@@ -19,6 +19,7 @@ from opaque_keys import InvalidKeyError
 from opaque_keys.edx.asides import AsideUsageKeyV2
 from opaque_keys.edx.keys import CourseKey, UsageKey
 from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator
+from openedx_authz.constants.roles import COURSE_ADMIN, COURSE_AUDITOR, COURSE_EDITOR, COURSE_STAFF
 from openedx_events.content_authoring.data import DuplicatedXBlockData
 from openedx_events.content_authoring.signals import XBLOCK_DUPLICATED
 from openedx_events.testing import OpenEdxEventsTestMixin
@@ -54,6 +55,7 @@ from common.djangoapps.xblock_django.models import (
 from common.djangoapps.xblock_django.user_service import DjangoXBlockUserService
 from common.test.utils import assert_dict_contains_subset
 from lms.djangoapps.lms_xblock.mixin import NONSENSICAL_ACCESS_RESTRICTION
+from openedx.core.djangoapps.authz.tests.mixins import CourseAuthoringAuthzTestMixin
 from openedx.core.djangoapps.content_tagging import api as tagging_api
 from openedx.core.djangoapps.discussions.models import DiscussionsConfiguration
 from openedx.core.djangoapps.video_config.toggles import PUBLIC_VIDEO_SHARE
@@ -3484,6 +3486,145 @@ class TestXBlockInfo(ItemTest):
                     )
         else:
             self.assertIsNone(xblock_info.get("child_info", None))  # noqa: PT009
+
+
+@ddt.ddt
+class TestXBlockOutlineHandlerAuthz(CourseAuthoringAuthzTestMixin, ItemTest):
+    """
+    Unit tests for xblock_outline_handler authorization functionality.
+    """
+
+    def setUp(self):
+        super().setUp()
+        user_id = self.user.id
+        self.chapter = BlockFactory.create(
+            parent_location=self.course.location,
+            category="chapter",
+            display_name="Week 1",
+            user_id=user_id,
+        )
+        self.sequential = BlockFactory.create(
+            parent_location=self.chapter.location,
+            category="sequential",
+            display_name="Lesson 1",
+            user_id=user_id,
+        )
+        self.vertical = BlockFactory.create(
+            parent_location=self.sequential.location,
+            category="vertical",
+            display_name="Unit 1",
+            user_id=user_id,
+        )
+        # Assign COURSE_STAFF role to authorized_user for the course
+        self.add_user_to_role_in_course(
+            self.authorized_user,
+            COURSE_STAFF.external_key,
+            self.course.id
+        )
+
+    def test_authorized_user_gets_json_response(self):
+        """
+        Test that authorized user gets JSON response from xblock_outline_handler.
+        """
+        outline_url = reverse_usage_url("xblock_outline_handler", self.usage_key)
+
+        self.client.login(username=self.authorized_user.username, password=self.password)
+        resp = self.client.get(outline_url, HTTP_ACCEPT="application/json")
+
+        assert resp.status_code == 200
+        json_response = json.loads(resp.content.decode("utf-8"))
+        assert "id" in json_response
+        assert "display_name" in json_response
+        assert "child_info" in json_response
+
+    @ddt.data(
+        COURSE_ADMIN.external_key,
+        COURSE_AUDITOR.external_key,
+        COURSE_EDITOR.external_key,
+    )
+    def test_other_course_roles_can_view_outline(self, role_key):
+        """
+        Test that course_admin, course_auditor, and course_editor roles
+        can access the outline (all have COURSES_VIEW_COURSE).
+        """
+        role_user = UserFactory(password=self.password)
+        self.add_user_to_role_in_course(role_user, role_key, self.course.id)
+
+        outline_url = reverse_usage_url("xblock_outline_handler", self.usage_key)
+        self.client.login(username=role_user.username, password=self.password)
+        resp = self.client.get(outline_url, HTTP_ACCEPT="application/json")
+
+        assert resp.status_code == 200
+
+    def test_unauthorized_user_gets_permission_denied(self):
+        """
+        Test that unauthorized user gets 403 response from xblock_outline_handler.
+        """
+        outline_url = reverse_usage_url("xblock_outline_handler", self.usage_key)
+
+        self.client.login(username=self.unauthorized_user.username, password=self.password)
+        resp = self.client.get(outline_url, HTTP_ACCEPT="application/json")
+
+        assert resp.status_code == 403
+
+    def test_superuser_gets_json_response(self):
+        """
+        Test that superuser gets JSON response from xblock_outline_handler.
+        """
+        outline_url = reverse_usage_url("xblock_outline_handler", self.usage_key)
+
+        self.client.login(username=self.super_user.username, password=self.password)
+        resp = self.client.get(outline_url, HTTP_ACCEPT="application/json")
+
+        assert resp.status_code == 200
+        json_response = json.loads(resp.content.decode("utf-8"))
+        assert "id" in json_response
+        assert "display_name" in json_response
+        assert "child_info" in json_response
+
+    def test_staff_user_gets_json_response(self):
+        """
+        Test that staff user gets JSON response from xblock_outline_handler.
+        """
+        outline_url = reverse_usage_url("xblock_outline_handler", self.usage_key)
+
+        self.client.login(username=self.staff_user.username, password=self.password)
+        resp = self.client.get(outline_url, HTTP_ACCEPT="application/json")
+
+        assert resp.status_code == 200
+        json_response = json.loads(resp.content.decode("utf-8"))
+        assert "id" in json_response
+        assert "display_name" in json_response
+        assert "child_info" in json_response
+
+    def test_authorized_chapter_outline(self):
+        """
+        Test that authorized user can access chapter-level outline.
+        """
+        outline_url = reverse_usage_url("xblock_outline_handler", self.chapter.location)
+
+        self.client.login(username=self.authorized_user.username, password=self.password)
+        resp = self.client.get(outline_url, HTTP_ACCEPT="application/json")
+
+        assert resp.status_code == 200
+        json_response = json.loads(resp.content.decode("utf-8"))
+        assert json_response["display_name"] == "Week 1"
+        assert "child_info" in json_response
+        # Verify that children are included (should have the sequential)
+        children = json_response["child_info"]["children"]
+        assert len(children) > 0
+        assert children[0]["display_name"] == "Lesson 1"
+
+    def test_unauthorized_chapter_outline(self):
+        """
+        Test that unauthorized user cannot access chapter-level outline.
+        """
+        outline_url = reverse_usage_url("xblock_outline_handler", self.chapter.location)
+
+        self.client.login(username=self.unauthorized_user.username, password=self.password)
+        resp = self.client.get(outline_url, HTTP_ACCEPT="application/json")
+
+        assert resp.status_code == 403
 
 
 class TestGetMetadataWithProblemDefaults(ModuleStoreTestCase):

@@ -895,13 +895,9 @@ def _migrate_container(
     ).publishable_entity_version
 
     # Publish the container
-    # Call post publish events synchronously to avoid
-    # an error when calling `wait_for_post_publish_events`
-    # inside a celery task.
     libraries_api.publish_container_changes(
         container.container_key,
         context.created_by,
-        call_post_publish_events_sync=True,
     )
     context.used_container_slugs.add(container.container_key.container_id)
     return container_publishable_entity_version, None
@@ -963,16 +959,18 @@ def _migrate_component(
         return component.versioning.draft.publishable_entity_version, None
 
     # If component existed and was deleted or we have to replace the current version
-    # Create the new component version for it
-    component_version = libraries_api.set_library_block_olx(target_key, new_olx_str=olx)
+    paths_to_media_ids = {}
     for filename, media_pk in context.content_by_filename.items():
         filename_no_ext, _ = os.path.splitext(filename)
         if filename_no_ext not in olx:
             continue
         new_path = f"static/{filename}"
-        content_api.create_component_version_media(
-            component_version.pk, media_pk, path=new_path
-        )
+        paths_to_media_ids[new_path] = media_pk
+
+    # Create the new component version for it
+    component_version = libraries_api.set_library_block_olx(
+        target_key, new_olx_str=olx, paths_to_media=paths_to_media_ids,
+    )
 
     # Publish the component
     libraries_api.publish_component_changes(target_key, context.created_by)

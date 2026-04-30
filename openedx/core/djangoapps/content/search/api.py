@@ -883,36 +883,27 @@ def upsert_library_collection_index_doc(collection_key: LibraryCollectionLocator
     If the Collection is not found or disabled (i.e. soft-deleted), then delete it from the search index.
     """
     doc = searchable_doc_for_collection(collection_key)
-    update_items = False
-
-    # Soft-deleted/disabled collections are removed from the index
-    # and their components updated.
-    if doc.get("_disabled"):
+    # Soft-deleted/disabled/hard-deleted collections are removed from the index:
+    # (If the collection is soft-deleted, searchable_doc_for_collection() sets `_disabled: True`)
+    # (If the collection is hard-deleted, searchable_doc_for_collection() leaves all fields other than ID empty)
+    if doc.get("_disabled") or not doc.get(Fields.type):
         _delete_index_doc(doc[Fields.id])
+        return
 
-        update_items = True
+    # Normal case - update the collection doc.
+    _update_index_docs([doc])
 
-    # Hard-deleted collections are also deleted from the index,
-    # but their components are automatically updated as part of the deletion process, so we don't have to.
-    elif not doc.get(Fields.type):
-        _delete_index_doc(doc[Fields.id])
-
-    # Otherwise, upsert the collection.
-    # Newly-added/restored collection get their components updated too.
-    else:
-        already_indexed = _get_document_from_index(doc[Fields.id])
-        if not already_indexed:
-            update_items = True
-
-        _update_index_docs([doc])
-
-    # Asynchronously update the collection's components "collections" field
-    if update_items:
-        from .tasks import update_library_components_collections as update_components_task
-        from .tasks import update_library_containers_collections as update_containers_task
-
-        update_components_task.delay(str(collection_key))
-        update_containers_task.delay(str(collection_key))
+    # We do NOT update the individual entities (components/containers) in the collection here.
+    # This event can be called if a single entity is added or removed from the collection (to update the "# of items in
+    # collection" field (Fields.num_children), and we don't want to re-index all entities in that case).
+    #
+    # If the collection is renamed, the COLLECTION_CHANGED signal will be emitted, and content_libraries will handle it
+    # and emit CONTENT_OBJECT_ASSOCIATIONS_CHANGED for every entity in the collection, which will update their
+    # "collections" field in the search index.
+    #
+    # If the collection is enabled/disabled/deleted, the COLLECTION_CHANGED signal will include all entities in the
+    # collection as added or removed, which the same libraries signal handler will convert to
+    # CONTENT_OBJECT_ASSOCIATIONS_CHANGED events, which will update them.
 
 
 def update_library_components_collections(

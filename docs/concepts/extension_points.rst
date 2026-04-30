@@ -119,9 +119,16 @@ Here are the different integration points that python plugins can use:
      - The course home page (the landing page for the course) includes a "Course Tools" section that provides links to "tools" associated with the course. Examples of course tool plugins included in the core are reviews, updates, and bookmarks. See |course_tools.py|_ to learn more.
 
        This API may be changing soon with the new Courseware microfrontend implementation.
-   * - Custom registration form app (``REGISTRATION_EXTENSION_FORM`` Django setting in the LMS)
+   * - Custom profile extension form app (``PROFILE_EXTENSION_FORM`` Django setting in the LMS)
      - Trial, Stable
-     - By default, the registration page for each instance of Open edX has fields that ask for information such as a user’s name, country, and highest level of education completed. You can add custom fields to the registration page for your own Open edX instance. These fields can be different types, including text entry fields and drop-down lists. See `Adding Custom Fields to the Registration Page`_.
+     - By default, the registration page for each instance of Open edX has fields that ask for information such as a user’s name, country, and highest level of education completed. You can add custom fields to the registration page and user profile for your own Open edX instance. These fields can be different types, including text entry fields and drop-down lists. See `Adding Custom Fields to the Registration Page`_.
+
+       **Important Migration Note:**
+
+       - ``REGISTRATION_EXTENSION_FORM`` (deprecated) continues to work with old behavior: custom fields only for registration, data stored in UserProfile.meta
+       - ``PROFILE_EXTENSION_FORM`` (new) enables new capabilities: custom fields in registration and account settings, data stored in dedicated model
+
+       Sites using the deprecated setting will maintain backward compatibility. To get the new capabilities, migrate to ``PROFILE_EXTENSION_FORM``.
    * - Learning Context (``openedx.learning_context``)
      - Trial, Limited
      - A "Learning Context" is a course, a library, a program, a blog, an external site, or some other collection of content where learning happens. If you are trying to build a totally new learning experience that's not a type of course, you may need to implement a new learning context. Learning contexts are a new abstraction and are only supported in the nascent openedx_content-based XBlock runtime. Since existing courses use modulestore instead of openedx_content, they are not yet implemented as learning contexts. However, openedx_content-based content libraries are. See |learning_context.py|_ to learn more.

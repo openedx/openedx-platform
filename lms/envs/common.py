@@ -2630,8 +2630,33 @@ FINANCIAL_ASSISTANCE_MAX_LENGTH = 2500
 # Note: If you want to use a model to store the results of the form, you will
 # need to add the model's app to the ADDL_INSTALLED_APPS array in your
 # lms.yml file.
+#
+# REGISTRATION_EXTENSION_FORM is deprecated but will continue to work for backward compatibility.
+# Sites using this setting will maintain the old behavior:
+# - Data is stored in UserProfile.meta JSON field
+# - No ability to update extended fields after registration via account settings API
+#
+# To get new capabilities (model-based storage), migrate to PROFILE_EXTENSION_FORM.
+REGISTRATION_EXTENSION_FORM = None  # DEPRECATED: Use PROFILE_EXTENSION_FORM instead
 
-REGISTRATION_EXTENSION_FORM = None
+# PROFILE_EXTENSION_FORM is a Django ModelForm class used for extending user profiles
+# beyond the default fields. This setting enables new capabilities for profile management:
+# - Data is stored in a dedicated model (not just UserProfile.meta)
+# - Users can update their extended profile fields via the account settings API
+#
+# This setting supersedes REGISTRATION_EXTENSION_FORM and provides more accurate naming
+# for profile extension functionality.
+#
+# Example: PROFILE_EXTENSION_FORM = 'myapp.forms.ExtendedProfileForm'
+#
+# The custom form's model should have:
+# - A OneToOneField to User (typically named 'user')
+# - Additional fields for extended profile data
+#
+# MIGRATION NOTE: If you're currently using REGISTRATION_EXTENSION_FORM (deprecated),
+# your custom fields will continue working as before (data in meta field).
+# To get the new capabilities, migrate to PROFILE_EXTENSION_FORM.
+PROFILE_EXTENSION_FORM = None
 
 # Identifier included in the User Agent from Open edX mobile apps.
 MOBILE_APP_USER_AGENT_REGEXES = [

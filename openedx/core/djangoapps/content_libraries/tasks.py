@@ -14,17 +14,21 @@ Architecture note:
     A longer-term solution to this issue would be to move the content_libraries app to cms:
     https://github.com/openedx/edx-platform/issues/33428
 """
+
 from __future__ import annotations
 
 import json
 import logging
 import os
 import shutil
+from collections.abc import Iterable
 from datetime import datetime
 from io import StringIO
 from tempfile import NamedTemporaryFile, mkdtemp
 
-from celery import shared_task
+from celery import Task, shared_task
+from celery.exceptions import TimeoutError as CeleryTimeout
+from celery.result import AsyncResult
 from celery.utils.log import get_task_logger
 from celery_utils.logged_task import LoggedTask
 from django.conf import settings
@@ -38,22 +42,27 @@ from edx_django_utils.monitoring import (
     set_code_owner_attribute_from_module,
     set_custom_attribute,
 )
+from opaque_keys import OpaqueKey
 from opaque_keys.edx.locator import (
     BlockUsageLocator,
-    LibraryCollectionLocator,
     LibraryContainerLocator,
     LibraryLocatorV2,
+    LibraryUsageLocatorV2,
 )
 from openedx_content import api as content_api
 from openedx_content.api import create_zip_file as create_lib_zip_file
-from openedx_content.models_api import DraftChangeLog, PublishLog
-from openedx_events.content_authoring.data import LibraryBlockData, LibraryCollectionData, LibraryContainerData
+from openedx_content.models_api import LearningPackage, PublishableEntity, PublishLog
+from openedx_events.content_authoring.data import (
+    ContentObjectChangedData,
+    LibraryBlockData,
+    LibraryContainerData,
+)
 from openedx_events.content_authoring.signals import (
+    CONTENT_OBJECT_ASSOCIATIONS_CHANGED,
     LIBRARY_BLOCK_CREATED,
     LIBRARY_BLOCK_DELETED,
     LIBRARY_BLOCK_PUBLISHED,
     LIBRARY_BLOCK_UPDATED,
-    LIBRARY_COLLECTION_UPDATED,
     LIBRARY_CONTAINER_CREATED,
     LIBRARY_CONTAINER_DELETED,
     LIBRARY_CONTAINER_PUBLISHED,
@@ -74,6 +83,7 @@ from xmodule.modulestore.exceptions import ItemNotFoundError
 from xmodule.modulestore.mixed import MixedModuleStore
 
 from . import api
+from .models import ContentLibrary
 
 log = logging.getLogger(__name__)
 TASK_LOGGER = get_task_logger(__name__)
@@ -85,7 +95,203 @@ DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%SZ'  # Should match serializer format. Redefi
 
 @shared_task(base=LoggedTask)
 @set_code_owner_attribute
-def send_events_after_publish(publish_log_pk: int, library_key_str: str) -> None:
+def send_change_events_for_modified_entities(
+    learning_package_id: LearningPackage.ID,
+    change_list: list[dict],  # we want list[ChangeLogRecordData], but that's not JSON serializable, so use dicts
+):
+    """
+    Sends a various library-specific events for each modified library entity in
+    the given change log, after any kind of edit was made in the library. This
+    could be in response to an entity (component or container) being created,
+    modified, deleted, un-deleted, or one of its dependencies doing those
+    things.
+
+    ⏳ This task is designed to be run asynchronously so it can handle many
+       entities, but you can also call it synchronously if you are only
+       processing a single entity. Handlers of the events that we emit here
+       should be synchronous and fast, to support the "update one item
+       synchronously" use case, but can be async if needed.
+    """
+    changes = [content_api.signals.ChangeLogRecordData(**r) for r in change_list]
+    library = ContentLibrary.objects.get(learning_package_id=learning_package_id)
+    changes_by_entity_id = {change.entity_id: change for change in changes}
+    entities = (
+        content_api.get_publishable_entities(learning_package_id)
+        .filter(id__in=changes_by_entity_id.keys())
+        .select_related("component", "container")
+    )
+
+    for entity in entities:
+        change = changes_by_entity_id[entity.id]
+        if hasattr(entity, "component"):
+            # This is a library XBlock (component)
+            block_key = api.library_component_usage_key(library.library_key, entity.component)
+            event_data = LibraryBlockData(library_key=library.library_key, usage_key=block_key)
+            if change.old_version is None and change.new_version:
+                # .. event_implemented_name: LIBRARY_BLOCK_CREATED
+                # .. event_type: org.openedx.content_authoring.library_block.created.v1
+                LIBRARY_BLOCK_CREATED.send_event(library_block=event_data)
+            elif change.old_version and change.new_version is None:
+                # .. event_implemented_name: LIBRARY_BLOCK_DELETED
+                # .. event_type: org.openedx.content_authoring.library_block.deleted.v1
+                LIBRARY_BLOCK_DELETED.send_event(library_block=event_data)
+            else:
+                # This component was modified.
+                # .. event_implemented_name: LIBRARY_BLOCK_UPDATED
+                # .. event_type: org.openedx.content_authoring.library_block.updated.v1
+                LIBRARY_BLOCK_UPDATED.send_event(library_block=event_data)
+
+        elif hasattr(entity, "container"):
+            container_key = api.library_container_locator(library.library_key, entity.container)
+            event_data = LibraryContainerData(container_key=container_key)
+            if change.old_version is None and change.new_version:
+                # .. event_implemented_name: LIBRARY_CONTAINER_CREATED
+                # .. event_type: org.openedx.content_authoring.content_library.container.created.v1
+                LIBRARY_CONTAINER_CREATED.send_event(library_container=event_data)
+            elif change.old_version and change.new_version is None:
+                # .. event_implemented_name: LIBRARY_CONTAINER_DELETED
+                # .. event_type: org.openedx.content_authoring.content_library.container.deleted.v1
+                LIBRARY_CONTAINER_DELETED.send_event(library_container=event_data)
+            else:
+                # .. event_implemented_name: LIBRARY_CONTAINER_UPDATED
+                # .. event_type: org.openedx.content_authoring.content_library.container.updated.v1
+                LIBRARY_CONTAINER_UPDATED.send_event(library_container=event_data)
+                # TODO: to optimze this, once we have https://github.com/openedx/openedx-events/pull/570 merged,
+                # change the above event to use `send_async=not container_itself_changed`, so that direct changes are
+                # processed immediately but side effects can happen async.
+
+            # If the version numbers are different, this container was modified.
+            # If not, it was included as a side effect of some other change, like its child being modified.
+            container_itself_changed = change.old_version != change.new_version
+
+            if container_itself_changed:
+                # If entities were added/removed from this container, we need to notify things like the search index
+                # that the list of parent containers for each entity has changed.
+                check_container_content_changes.delay(
+                    container_key_str=str(container_key),
+                    old_version_id=change.old_version_id,
+                    new_version_id=change.new_version_id,
+                )
+        else:
+            log.error("Unknown publishable entity type: %s", entity)
+            continue
+
+
+@shared_task(base=LoggedTask)
+@set_code_owner_attribute
+def check_container_content_changes(
+    container_key_str: str,
+    old_version_id: int | None,
+    new_version_id: int | None,
+):
+    """
+    Whenever a container is edited, we need to check if child entities were
+    added or removed, and if so send out a CONTENT_OBJECT_ASSOCIATIONS_CHANGED
+    event for each added/removed child.
+
+    For example, removing an entity from a unit should result in::
+
+        CONTENT_OBJECT_ASSOCIATIONS_CHANGED(
+            object_id=...,
+            changes=["units"],
+        )
+
+    ⏳ This task is always run asynchronously.
+    """
+    if old_version_id == new_version_id:
+        return  # Same versions
+
+    old_version = content_api.get_container_version(old_version_id) if old_version_id else None
+    new_version = content_api.get_container_version(new_version_id) if new_version_id else None
+
+    # TODO: there is no "get entity list for container version" API in openedx_content
+    old_child_ids: Iterable[PublishableEntity.ID] = (
+        old_version.entity_list.entitylistrow_set.values_list("entity_id", flat=True) if old_version else []
+    )
+    new_child_ids: Iterable[PublishableEntity.ID]= (
+        new_version.entity_list.entitylistrow_set.values_list("entity_id", flat=True) if new_version else []
+    )
+
+    # If the title has changed, we notify ALL children that their parent container(s) have changed, e.g. to update the
+    # list of "units this component is used in", "sections this subsection is used in", etc. in the search index.
+    old_title = old_version.title if old_version else ""
+    new_title = new_version.title if new_version else ""
+    if old_title != new_title:
+        # notify ALL current children, plus any deleted children, that their parent container(s) changed
+        changed_child_ids = list(set(new_child_ids) | (set(old_child_ids) - set(new_child_ids)))
+    else:
+        # Normal case: we only need to notify any added or removed children that their parent container(s) changed:
+        changed_child_ids = list(set(old_child_ids) ^ set(new_child_ids))
+
+    container_key = LibraryContainerLocator.from_string(container_key_str)
+    library = ContentLibrary.objects.get_by_key(container_key.lib_key)
+    entities = (
+        content_api.get_publishable_entities(library.learning_package_id)
+        .filter(id__in=changed_child_ids)
+        .select_related("component", "container")
+    )
+    for entity in entities:
+        child_key: LibraryUsageLocatorV2 | LibraryContainerLocator
+        if hasattr(entity, "component"):
+            child_key = api.library_component_usage_key(library.library_key, entity.component)
+        elif hasattr(entity, "container"):
+            child_key = api.library_container_locator(library.library_key, entity.container)
+        else:
+            log.error("Unknown publishable entity type: %s", entity)
+            continue
+        CONTENT_OBJECT_ASSOCIATIONS_CHANGED.send_event(
+            content_object=ContentObjectChangedData(
+                object_id=str(child_key),
+                changes=[container_key.container_type + "s"],  # e.g. "units"
+            ),
+        )
+
+
+@shared_task(base=LoggedTask)
+@set_code_owner_attribute
+def send_collections_changed_events(
+    publishable_entity_ids: list[PublishableEntity.ID],
+    learning_package_id: LearningPackage.ID,
+    library_key_str: str,
+):
+    """
+    Sends a CONTENT_OBJECT_ASSOCIATIONS_CHANGED event for each modified library
+    entity in the given list, because their associated collections have changed.
+
+    ⏳ This task is designed to be run asynchronously so it can handle many
+       entities, but you can also call it synchronously if you are only
+       processing a single entity. Handlers should be synchronous and fast, to
+       support the "update one item synchronously" use case, but can be async if
+       needed.
+    """
+    library_key = LibraryLocatorV2.from_string(library_key_str)
+    entities = (
+        content_api.get_publishable_entities(learning_package_id)
+        .filter(id__in=publishable_entity_ids)
+        .select_related("component", "container")
+    )
+
+    for entity in entities:
+        opaque_key: OpaqueKey
+
+        if hasattr(entity, "component"):
+            opaque_key = api.library_component_usage_key(library_key, entity.component)
+        elif hasattr(entity, "container"):
+            opaque_key = api.library_container_locator(library_key, entity.container)
+        else:
+            log.error("Unknown publishable entity type: %s", entity)
+            continue
+
+        # .. event_implemented_name: CONTENT_OBJECT_ASSOCIATIONS_CHANGED
+        # .. event_type: org.openedx.content_authoring.content.object.associations.changed.v1
+        CONTENT_OBJECT_ASSOCIATIONS_CHANGED.send_event(
+            content_object=ContentObjectChangedData(object_id=str(opaque_key), changes=["collections"]),
+        )
+
+
+@shared_task(base=LoggedTask)
+@set_code_owner_attribute
+def send_events_after_publish(publish_log_id: int, library_key_str: str) -> None:
     """
     Send events to trigger actions like updating the search index, after we've
     published some items in a library.
@@ -99,12 +305,11 @@ def send_events_after_publish(publish_log_pk: int, library_key_str: str) -> None
     event handlers like updating the search index may a while to complete in
     that case.
     """
-    publish_log = PublishLog.objects.get(pk=publish_log_pk)
+    publish_log = PublishLog.objects.get(id=publish_log_id)
     library_key = LibraryLocatorV2.from_string(library_key_str)
     affected_entities = publish_log.records.select_related(
         "entity", "entity__container", "entity__container__container_type", "entity__component",
     ).all()
-    affected_containers: set[LibraryContainerLocator] = set()
 
     # Update anything that needs to be updated (e.g. search index):
     for record in affected_entities:
@@ -118,198 +323,20 @@ def send_events_after_publish(publish_log_pk: int, library_key_str: str) -> None
             LIBRARY_BLOCK_PUBLISHED.send_event(
                 library_block=LibraryBlockData(library_key=library_key, usage_key=usage_key)
             )
-            # Publishing a container will auto-publish its children, but publishing a single component or all changes
-            # in the library will NOT usually include any parent containers. But we do need to notify listeners that the
-            # parent container(s) have changed, e.g. so the search index can update the "has_unpublished_changes"
-            try:
-                for parent_container in api.get_containers_contains_item(usage_key):
-                    affected_containers.add(parent_container.container_key)
-                    # TODO: should this be a CONTAINER_CHILD_PUBLISHED event instead of CONTAINER_PUBLISHED ?
-            except api.ContentLibraryBlockNotFound:
-                # The component has been deleted.
-                pass
         elif hasattr(record.entity, "container"):
             container_key = api.library_container_locator(library_key, record.entity.container)
-            affected_containers.add(container_key)
-
-            try:
-                # We do need to notify listeners that the parent container(s) have changed,
-                # e.g. so the search index can update the "has_unpublished_changes"
-                for parent_container in api.get_containers_contains_item(container_key):
-                    affected_containers.add(parent_container.container_key)
-            except api.ContentLibraryContainerNotFound:
-                # The deleted children remains in the entity, so, in this case, the container may not be found.
-                pass
+            # Note: this container may have been directly published, or perhaps one of its children was published and
+            # it hasn't technically changed. Such ancestors of published entities are still included in the publish log.
+            # .. event_implemented_name: LIBRARY_CONTAINER_PUBLISHED
+            # .. event_type: org.openedx.content_authoring.content_library.container.published.v1
+            LIBRARY_CONTAINER_PUBLISHED.send_event(
+                library_container=LibraryContainerData(container_key=container_key)
+            )
         else:
             log.warning(
                 f"PublishableEntity {record.entity.pk} / {record.entity.entity_ref} "
                 "was modified during publish operation but is of unknown type."
             )
-
-    for container_key in affected_containers:
-        # .. event_implemented_name: LIBRARY_CONTAINER_PUBLISHED
-        # .. event_type: org.openedx.content_authoring.content_library.container.published.v1
-        LIBRARY_CONTAINER_PUBLISHED.send_event(
-            library_container=LibraryContainerData(container_key=container_key)
-        )
-
-
-def wait_for_post_publish_events(publish_log: PublishLog, library_key: LibraryLocatorV2):
-    """
-    After publishing some changes, trigger the required event handlers (e.g.
-    update the search index). Try to wait for that to complete before returning,
-    up to some reasonable timeout, and then finish anything remaining
-    asynchonrously.
-    """
-    # Update the search index (and anything else) for the affected blocks
-    result = send_events_after_publish.apply_async(args=(publish_log.pk, str(library_key)))
-    # Try waiting a bit for those post-publish events to be handled:
-    try:
-        result.get(timeout=15)
-    except TimeoutError:
-        pass
-        # This is fine! The search index is still being updated, and/or other
-        # event handlers are still following up on the results, but the publish
-        # already *did* succeed, and the events will continue to be processed in
-        # the background by the celery worker until everything is updated.
-
-
-@shared_task(base=LoggedTask)
-@set_code_owner_attribute
-def send_events_after_revert(draft_change_log_id: int, library_key_str: str) -> None:
-    """
-    Send events to trigger actions like updating the search index, after we've
-    reverted some unpublished changes in a library.
-
-    See notes on the analogous function above, send_events_after_publish.
-    """
-    try:
-        draft_change_log = DraftChangeLog.objects.get(id=draft_change_log_id)
-    except DraftChangeLog.DoesNotExist:
-        # When a revert operation is a no-op, openedx_content deletes the empty
-        # DraftChangeLog, so we'll assume that's what happened here.
-        log.info(f"Library revert in {library_key_str} did not result in any changes.")
-        return
-
-    library_key = LibraryLocatorV2.from_string(library_key_str)
-    affected_entities = draft_change_log.records.select_related(
-        "entity", "entity__container", "entity__component",
-    ).all()
-
-    created_container_keys: set[LibraryContainerLocator] = set()
-    updated_container_keys: set[LibraryContainerLocator] = set()
-    deleted_container_keys: set[LibraryContainerLocator] = set()
-    affected_collection_keys: set[LibraryCollectionLocator] = set()
-
-    # Update anything that needs to be updated (e.g. search index):
-    for record in affected_entities:
-        # This will be true if the entity was [soft] deleted, but we're now reverting that deletion:
-        is_undeleted = (record.old_version is None and record.new_version is not None)
-        # This will be true if the entity was created and we're now deleting it by reverting that creation:
-        is_deleted = (record.old_version is not None and record.new_version is None)
-        if hasattr(record.entity, "component"):
-            usage_key = api.library_component_usage_key(library_key, record.entity.component)
-            event = LIBRARY_BLOCK_UPDATED
-            if is_deleted:
-                event = LIBRARY_BLOCK_DELETED
-            elif is_undeleted:
-                event = LIBRARY_BLOCK_CREATED
-
-            # .. event_implemented_name: LIBRARY_BLOCK_UPDATED
-            # .. event_type: org.openedx.content_authoring.library_block.updated.v1
-
-            # .. event_implemented_name: LIBRARY_BLOCK_DELETED
-            # .. event_type: org.openedx.content_authoring.library_block.deleted.v1
-
-            # .. event_implemented_name: LIBRARY_BLOCK_CREATED
-            # .. event_type: org.openedx.content_authoring.library_block.created.v1
-            event.send_event(library_block=LibraryBlockData(library_key=library_key, usage_key=usage_key))
-            # If any containers contain this component, their child list / component count may need to be updated
-            # e.g. if this was a newly created component in the container and is now deleted, or this was deleted and
-            # is now restored.
-            # TODO: we should be able to rewrite this to use the "side effects" functionality of the publishing API.
-            try:
-                for parent_container in api.get_containers_contains_item(usage_key):
-                    updated_container_keys.add(parent_container.container_key)
-            except api.ContentLibraryBlockNotFound:
-                pass  # The item 'usage_key' has been deleted. But shouldn't we still handle that?
-
-            # TODO: do we also need to send CONTENT_OBJECT_ASSOCIATIONS_CHANGED for this component, or is
-            # LIBRARY_BLOCK_UPDATED sufficient?
-        elif hasattr(record.entity, "container"):
-            container_key = api.library_container_locator(library_key, record.entity.container)
-            if is_deleted:
-                deleted_container_keys.add(container_key)
-            elif is_undeleted:
-                created_container_keys.add(container_key)
-            else:
-                updated_container_keys.add(container_key)
-        else:
-            log.warning(
-                f"PublishableEntity {record.entity.pk} / {record.entity.entity_ref} "
-                "was modified during publish operation but is of unknown type."
-            )
-        # If any collections contain this entity, their item count may need to be updated, e.g. if this was a
-        # newly created component in the collection and is now deleted, or this was deleted and is now re-added.
-        for parent_collection in content_api.get_entity_collections(
-            record.entity.learning_package_id, record.entity.entity_ref,
-        ):
-            collection_key = api.library_collection_locator(
-                library_key=library_key,
-                collection_key=parent_collection.collection_code,
-            )
-            affected_collection_keys.add(collection_key)
-
-    for container_key in deleted_container_keys:
-        # .. event_implemented_name: LIBRARY_CONTAINER_DELETED
-        # .. event_type: org.openedx.content_authoring.content_library.container.deleted.v1
-        LIBRARY_CONTAINER_DELETED.send_event(
-            library_container=LibraryContainerData(container_key=container_key)
-        )
-        # Don't bother sending UPDATED events for these containers that are now deleted
-        created_container_keys.discard(container_key)
-
-    for container_key in created_container_keys:
-        # .. event_implemented_name: LIBRARY_CONTAINER_CREATED
-        # .. event_type: org.openedx.content_authoring.content_library.container.created.v1
-        LIBRARY_CONTAINER_CREATED.send_event(
-            library_container=LibraryContainerData(container_key=container_key)
-        )
-
-    for container_key in updated_container_keys:
-        # .. event_implemented_name: LIBRARY_CONTAINER_UPDATED
-        # .. event_type: org.openedx.content_authoring.content_library.container.updated.v1
-        LIBRARY_CONTAINER_UPDATED.send_event(
-            library_container=LibraryContainerData(container_key=container_key)
-        )
-
-    for collection_key in affected_collection_keys:
-        # .. event_implemented_name: LIBRARY_COLLECTION_UPDATED
-        # .. event_type: org.openedx.content_authoring.content_library.collection.updated.v1
-        LIBRARY_COLLECTION_UPDATED.send_event(
-            library_collection=LibraryCollectionData(collection_key=collection_key)
-        )
-
-
-def wait_for_post_revert_events(draft_change_log: DraftChangeLog, library_key: LibraryLocatorV2):
-    """
-    After discard all changes in a library, trigger the required event handlers
-    (e.g. update the search index). Try to wait for that to complete before
-    returning, up to some reasonable timeout, and then finish anything remaining
-    asynchonrously.
-    """
-    # Update the search index (and anything else) for the affected blocks
-    result = send_events_after_revert.apply_async(args=(draft_change_log.pk, str(library_key)))
-    # Try waiting a bit for those post-publish events to be handled:
-    try:
-        result.get(timeout=15)
-    except TimeoutError:
-        pass
-        # This is fine! The search index is still being updated, and/or other
-        # event handlers are still following up on the results, but the revert
-        # already *did* succeed, and the events will continue to be processed in
-        # the background by the celery worker until everything is updated.
-
 
 
 def _filter_child(store, usage_key, capa_type):
@@ -672,3 +699,50 @@ def restore_library(self, user_id, storage_path):
         # Make sure to clean up the uploaded file from storage
         course_import_export_storage.delete(storage_path)
         TASK_LOGGER.info('Deleted uploaded file %s after restore', storage_path)
+
+
+def dispatch_and_wait(task_fn: Task, wait_for_full_completion: bool = False, **kwargs) -> None:
+    """
+    Try to wait for the given celery task to complete before returning,
+    up to some reasonable timeout, and then finish anything remaining work
+    asynchonrously.
+
+    Note: we're not using async python, so this function will unfortunately
+    block the current CMS worker for a few seconds.
+
+    Usage example
+    -------------
+
+    Instead of::
+
+        tasks.send_change_events_for_modified_entities.delay(...)
+
+    Do::
+
+        dispatch_and_wait(
+            tasks.send_change_events_for_modified_entities,
+            ...
+        )
+
+    The ``wait_for_full_completion`` param is to simplify a common pattern. When
+    it's True, this will just call the function directly (not using celery) and
+    wait indefinitely for it to complete. When it's False, we'll dispatch the
+    task using celery and wait up to a given timeout. So you should set it True
+    if you are fairly certain the task will be able to complete quickly (e.g.
+    when processing a small number of changes).
+    """
+    if wait_for_full_completion:
+        task_fn(**kwargs)
+        return
+
+    result: AsyncResult = task_fn.delay(**kwargs)
+    # Try waiting a bit for the task to finish before we complete the request:
+    try:
+        result.get(timeout=10)
+    except CeleryTimeout:
+        pass
+        # This is fine! The search index is still being updated, and/or other
+        # event handlers are still following up on the results, but the action
+        # that let to this event handler being called already *did* succeed,
+        # and the events will continue to be processed in the background by the
+        # celery worker until everything is updated.

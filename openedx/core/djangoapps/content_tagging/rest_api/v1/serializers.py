@@ -4,14 +4,18 @@ API Serializers for content tagging org
 
 from __future__ import annotations
 
+from openedx_authz import api as authz_api
+from openedx_authz.constants.permissions import COURSES_MANAGE_TAGS
 from openedx_tagging.rest_api.v1.serializers import (
     ObjectTagMinimalSerializer,
+    ObjectTagsByTaxonomySerializer,
     TaxonomyListQueryParamsSerializer,
     TaxonomySerializer,
 )
 from organizations.models import Organization
 from rest_framework import fields, serializers
 
+from ...auth import should_use_course_authz_for_object
 from ...models import TaxonomyOrg
 
 
@@ -95,12 +99,35 @@ class TaxonomyOrgSerializer(TaxonomySerializer):
         read_only_fields = ["orgs", "all_orgs"]
 
 
+class ObjectTagOrgByTaxonomySerializer(ObjectTagsByTaxonomySerializer):
+    """
+    Extend ObjectTagsByTaxonomySerializer to conditionally use openedx-authz for can_tag_object.
+    """
+
+    def can_tag_object(self, obj_tag) -> bool | None:
+        """
+        Check if the user is authorized to tag the provided object.
+        Conditionally use openedx-authz for course objects with the toggle enabled.
+        """
+        should_use_authz, course_key = should_use_course_authz_for_object(obj_tag.object_id)
+        if should_use_authz:
+            request = self.context.get('request')
+            if request and hasattr(request, 'user'):
+                return authz_api.is_user_allowed(
+                    request.user.username, COURSES_MANAGE_TAGS.identifier, str(course_key)
+                )
+            return False
+
+        # Fall back to parent implementation
+        return super().can_tag_object(obj_tag)
+
+
 class ObjectTagCopiedMinimalSerializer(ObjectTagMinimalSerializer):
     """
     Serializer for Object Tags.
 
-    This override `get_can_delete_objecttag` to avoid delete
-    object tags if is copied.
+    This overrides `can_delete_object_tag` to avoid deleting
+    object tags if they are copied and to conditionally use openedx-authz.
     """
 
     is_copied = serializers.BooleanField(read_only=True)
@@ -108,14 +135,25 @@ class ObjectTagCopiedMinimalSerializer(ObjectTagMinimalSerializer):
     class Meta(ObjectTagMinimalSerializer.Meta):
         fields = ObjectTagMinimalSerializer.Meta.fields + ["is_copied"]
 
-    def get_can_delete_objecttag(self, instance):
+    def can_delete_object_tag(self, instance) -> bool | None:
         """
-        Verify if the user can delete the object tag.
+        Check if the user is authorized to delete the provided tag.
 
-        Override to return `False` if the object tag is copied.
+        Override to return `False` if the object tag is copied,
+        and conditionally use openedx-authz for course objects with the toggle enabled.
         """
         if instance.is_copied:
             # The user can't delete copied tags.
             return False
 
-        return super().get_can_delete_objecttag(instance)
+        should_use_authz, course_key = should_use_course_authz_for_object(instance.object_id)
+        if should_use_authz:
+            request = self.context.get('request')
+            if request and hasattr(request, 'user'):
+                return authz_api.is_user_allowed(
+                    request.user.username, COURSES_MANAGE_TAGS.identifier, str(course_key)
+                )
+            return False
+
+        # Fall back to parent implementation
+        return super().can_delete_object_tag(instance)

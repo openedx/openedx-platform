@@ -11,6 +11,7 @@ from django.shortcuts import get_object_or_404
 from drf_yasg import openapi
 from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
 from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
+from forum import api as forum_api
 from opaque_keys.edx.keys import CourseKey
 from rest_framework import permissions, status
 from rest_framework.authentication import SessionAuthentication
@@ -35,8 +36,6 @@ from openedx.core.djangoapps.discussions.config.waffle import ENABLE_NEW_STRUCTU
 from openedx.core.djangoapps.discussions.models import DiscussionsConfiguration, Provider
 from openedx.core.djangoapps.discussions.serializers import DiscussionSettingsSerializer
 from openedx.core.djangoapps.django_comment_common import comment_client
-from openedx.core.djangoapps.django_comment_common.comment_client.comment import Comment
-from openedx.core.djangoapps.django_comment_common.comment_client.thread import Thread
 from openedx.core.djangoapps.django_comment_common.models import CourseDiscussionSettings, Role
 from openedx.core.djangoapps.user_api.accounts.permissions import CanReplaceUsername, CanRetireUser
 from openedx.core.djangoapps.user_api.models import UserRetirementStatus
@@ -1571,7 +1570,6 @@ class BulkDeleteUserPosts(DeveloperErrorViewMixin, APIView):
     def post(self, request, course_id):
         """
         Implements the delete user posts endpoint.
-        TODO: Add support for MySQLBackend as well
         """
         username = request.GET.get("username", None)
         execute_task = request.GET.get("execute", "false").lower() == "true"
@@ -1595,8 +1593,12 @@ class BulkDeleteUserPosts(DeveloperErrorViewMixin, APIView):
             log.info(f"<<Bulk Delete>> {username} enrolled in {enrollments}")
         log.info(f"<<Bulk Delete>> Posts for {username} in {course_ids} - for {course_or_org} {course_id}")
 
-        comment_count = Comment.get_user_comment_count(user.id, course_ids)
-        thread_count = Thread.get_user_threads_count(user.id, course_ids)
+        thread_count = 0
+        comment_count = 0
+        for cid in course_ids:
+            counts = forum_api.get_user_post_counts(user_id=str(user.id), course_id=cid)
+            thread_count += counts.get("thread_count", 0)
+            comment_count += counts.get("comment_count", 0)
         log.info(f"<<Bulk Delete>> {username} in {course_ids} - Count thread {thread_count}, comment {comment_count}")
 
         if execute_task:

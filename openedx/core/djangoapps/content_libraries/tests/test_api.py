@@ -28,6 +28,8 @@ from openedx_events.content_authoring.signals import (
     LIBRARY_CONTAINER_DELETED,
     LIBRARY_CONTAINER_UPDATED,
 )
+from openedx_events.testing import EventsIsolationMixin
+from openedx_events.tooling import OpenEdxPublicSignal
 from user_tasks.models import UserTaskStatus
 
 from common.djangoapps.student.tests.factories import UserFactory
@@ -37,12 +39,20 @@ from ..models import ContentLibrary
 from .base import ContentLibrariesRestApiTest
 
 
-class ContentLibraryCollectionsTest(ContentLibrariesRestApiTest):
+class ContentLibraryCollectionsTest(ContentLibrariesRestApiTest, EventsIsolationMixin):
     """
     Tests for Content Library API collections methods.
 
     Same guidelines as ContentLibrariesTestCase.
     """
+
+    @classmethod
+    def setUpClass(cls):
+        """Test setup"""
+        super().setUpClass()
+        # By default, errors thrown in signal handlers get suppressed. We want to see them though!
+        # https://github.com/openedx/openedx-events/issues/569
+        cls.allow_send_events_failure(*(s.event_type for s in OpenEdxPublicSignal.all_events()))
 
     def setUp(self) -> None:
         super().setUp()
@@ -252,11 +262,12 @@ class ContentLibraryCollectionsTest(ContentLibrariesRestApiTest):
         self.assertDictContainsEntries(
             event_receiver.call_args_list[0].kwargs,
             {
-                "signal": CONTENT_OBJECT_ASSOCIATIONS_CHANGED,
-                "sender": None,
-                "content_object": ContentObjectChangedData(
-                    object_id=self.lib1_problem_block["id"],
-                    changes=["collections"],
+                "signal": LIBRARY_COLLECTION_UPDATED,
+                "library_collection": LibraryCollectionData(
+                    collection_key=api.library_collection_locator(
+                        self.lib1.library_key,
+                        collection_key="COL1",
+                    ),
                 ),
             },
         )
@@ -264,9 +275,8 @@ class ContentLibraryCollectionsTest(ContentLibrariesRestApiTest):
             event_receiver.call_args_list[1].kwargs,
             {
                 "signal": CONTENT_OBJECT_ASSOCIATIONS_CHANGED,
-                "sender": None,
                 "content_object": ContentObjectChangedData(
-                    object_id=self.lib1_html_block["id"],
+                    object_id=self.lib1_problem_block["id"],
                     changes=["collections"],
                 ),
             },
@@ -275,9 +285,8 @@ class ContentLibraryCollectionsTest(ContentLibrariesRestApiTest):
             event_receiver.call_args_list[2].kwargs,
             {
                 "signal": CONTENT_OBJECT_ASSOCIATIONS_CHANGED,
-                "sender": None,
                 "content_object": ContentObjectChangedData(
-                    object_id=self.unit1["id"],
+                    object_id=self.lib1_html_block["id"],
                     changes=["collections"],
                 ),
             },
@@ -285,13 +294,10 @@ class ContentLibraryCollectionsTest(ContentLibrariesRestApiTest):
         self.assertDictContainsEntries(
             event_receiver.call_args_list[3].kwargs,
             {
-                "signal": LIBRARY_COLLECTION_UPDATED,
-                "sender": None,
-                "library_collection": LibraryCollectionData(
-                    collection_key=api.library_collection_locator(
-                        self.lib1.library_key,
-                        collection_key="COL1",
-                    ),
+                "signal": CONTENT_OBJECT_ASSOCIATIONS_CHANGED,
+                "content_object": ContentObjectChangedData(
+                    object_id=self.unit1["id"],
+                    changes=["collections"],
                 ),
             },
         )
@@ -346,16 +352,14 @@ class ContentLibraryCollectionsTest(ContentLibrariesRestApiTest):
         assert {event["library_collection"] for event in collection_update_events} == {
             LibraryCollectionData(
                 collection_key=api.library_collection_locator(
-                    self.lib2.library_key, collection_key=self.col2.collection_code,
-                ),
-                background=True,
+                    self.lib2.library_key, collection_key=self.col2.collection_code
+                )
             ),
             LibraryCollectionData(
                 collection_key=api.library_collection_locator(
-                    self.lib2.library_key, collection_key=self.col3.collection_code,
-                ),
-                background=True,
-            )
+                    self.lib2.library_key, collection_key=self.col3.collection_code
+                )
+            ),
         }
 
     def test_delete_library_block(self) -> None:
@@ -381,10 +385,8 @@ class ContentLibraryCollectionsTest(ContentLibrariesRestApiTest):
                 "sender": None,
                 "library_collection": LibraryCollectionData(
                     collection_key=api.library_collection_locator(
-                        self.lib1.library_key,
-                        collection_key=self.col1.collection_code,
+                        self.lib1.library_key, collection_key=self.col1.collection_code
                     ),
-                    background=True,
                 ),
             },
         )
@@ -423,7 +425,6 @@ class ContentLibraryCollectionsTest(ContentLibrariesRestApiTest):
                         self.lib1.library_key,
                         collection_key=self.col1.collection_code,
                     ),
-                    background=True,
                 ),
             },
         )
@@ -435,7 +436,7 @@ class ContentLibraryCollectionsTest(ContentLibrariesRestApiTest):
                 "library_container": LibraryContainerData(
                     container_key=self.subsection1.container_key,
                     background=False,
-                )
+                ),
             },
         )
 
@@ -503,19 +504,22 @@ class ContentLibraryCollectionsTest(ContentLibrariesRestApiTest):
         )
 
     def test_restore_library_block(self) -> None:
+        usage_key = LibraryUsageLocatorV2.from_string(self.lib1_problem_block["id"])
         api.update_library_collection_items(
             self.lib1.library_key,
             self.col1.collection_code,
             opaque_keys=[
-                LibraryUsageLocatorV2.from_string(self.lib1_problem_block["id"]),
+                usage_key,
                 LibraryUsageLocatorV2.from_string(self.lib1_html_block["id"]),
             ],
         )
 
+        api.delete_library_block(usage_key)
+
         event_receiver = mock.Mock()
         LIBRARY_COLLECTION_UPDATED.connect(event_receiver)
 
-        api.restore_library_block(LibraryUsageLocatorV2.from_string(self.lib1_problem_block["id"]))
+        api.restore_library_block(usage_key)
 
         assert event_receiver.call_count == 1
         self.assertDictContainsEntries(
@@ -528,7 +532,6 @@ class ContentLibraryCollectionsTest(ContentLibrariesRestApiTest):
                         self.lib1.library_key,
                         collection_key=self.col1.collection_code,
                     ),
-                    background=True,
                 ),
             },
         )
@@ -555,6 +558,8 @@ class ContentLibraryCollectionsTest(ContentLibrariesRestApiTest):
         collection_update_event_receiver = mock.Mock()
         LIBRARY_COLLECTION_UPDATED.connect(collection_update_event_receiver)
 
+        # Reverting the change essentially deletes the item, so we should get an event that the collection's contents
+        # have been updated.
         api.revert_changes(self.lib1.library_key)
 
         assert collection_update_event_receiver.call_count == 1

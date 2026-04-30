@@ -229,6 +229,9 @@ class StudioDocumentsTest(SharedModuleStoreTestCase):
             "tags": {
                 "taxonomy": ["Difficulty"],
                 "level0": ["Difficulty > Easy"],
+                "level1": [],
+                "level2": [],
+                "level3": [],
             },
         }
 
@@ -276,6 +279,7 @@ class StudioDocumentsTest(SharedModuleStoreTestCase):
                 "level0": ["Difficulty > Normal", "Subject > Hypertext", "Subject > Linguistics"],
                 "level1": ["Subject > Hypertext > Jump Links", "Subject > Linguistics > Asian Languages"],
                 "level2": ["Subject > Linguistics > Asian Languages > Chinese"],
+                "level3": [],
             },
         }
 
@@ -285,7 +289,9 @@ class StudioDocumentsTest(SharedModuleStoreTestCase):
         """
         block_usage_key = self.toy_course_key.make_usage_key("video", "Welcome")
         block = self.store.get_item(block_usage_key)
-        doc = searchable_doc_for_course_block(block)
+        doc = {}
+        doc.update(searchable_doc_for_course_block(block))
+        doc.update(searchable_doc_tags(block.usage_key))
         assert doc == {
             "id": "block-v1edxtoy2012_falltypevideoblockwelcome-0c9fd626",
             "type": "course_block",
@@ -307,7 +313,13 @@ class StudioDocumentsTest(SharedModuleStoreTestCase):
             ],
             "content": {},
             "modified": self.created_date.timestamp(),
-            # This video has no tags.
+            "tags": {
+                "taxonomy": [],
+                "level0": [],
+                "level1": [],
+                "level2": [],
+                "level3": [],
+            },
         }
 
     def test_html_library_block(self):
@@ -346,6 +358,9 @@ class StudioDocumentsTest(SharedModuleStoreTestCase):
             "tags": {
                 "taxonomy": ["Difficulty"],
                 "level0": ["Difficulty > Normal"],
+                "level1": [],
+                "level2": [],
+                "level3": [],
             },
             "publish_status": "never",
         }
@@ -385,6 +400,9 @@ class StudioDocumentsTest(SharedModuleStoreTestCase):
             "tags": {
                 "taxonomy": ["Difficulty"],
                 "level0": ["Difficulty > Normal"],
+                "level1": [],
+                "level2": [],
+                "level3": [],
             },
             'published': {'display_name': 'Text'},
             "publish_status": "published",
@@ -427,6 +445,9 @@ class StudioDocumentsTest(SharedModuleStoreTestCase):
             "tags": {
                 "taxonomy": ["Difficulty"],
                 "level0": ["Difficulty > Normal"],
+                "level1": [],
+                "level2": [],
+                "level3": [],
             },
             "published": {"display_name": "Text"},
             "publish_status": "published",
@@ -467,6 +488,9 @@ class StudioDocumentsTest(SharedModuleStoreTestCase):
             "tags": {
                 "taxonomy": ["Difficulty"],
                 "level0": ["Difficulty > Normal"],
+                "level1": [],
+                "level2": [],
+                "level3": [],
             },
             "published": {
                 "display_name": "Text 2",
@@ -506,7 +530,10 @@ class StudioDocumentsTest(SharedModuleStoreTestCase):
             "modified": 1680674828.0,
             'tags': {
                 'taxonomy': ['Difficulty'],
-                'level0': ['Difficulty > Normal']
+                'level0': ['Difficulty > Normal'],
+                'level1': [],
+                'level2': [],
+                'level3': [],
             },
             "published": {
                 "num_children": 0
@@ -535,7 +562,10 @@ class StudioDocumentsTest(SharedModuleStoreTestCase):
             "modified": 1680674828.0,
             'tags': {
                 'taxonomy': ['Difficulty'],
-                'level0': ['Difficulty > Normal']
+                'level0': ['Difficulty > Normal'],
+                'level1': [],
+                'level2': [],
+                'level3': [],
             },
             "published": {
                 "num_children": 1
@@ -579,7 +609,10 @@ class StudioDocumentsTest(SharedModuleStoreTestCase):
             "last_published": None,
             "tags": {
                 "taxonomy": ["Difficulty"],
-                "level0": ["Difficulty > Normal"]
+                "level0": ["Difficulty > Normal"],
+                "level1": [],
+                "level2": [],
+                "level3": [],
             },
             # "published" is not set since we haven't published it yet
         }
@@ -627,7 +660,10 @@ class StudioDocumentsTest(SharedModuleStoreTestCase):
             "last_published": 1680674828.0,
             "tags": {
                 "taxonomy": ["Difficulty"],
-                "level0": ["Difficulty > Normal"]
+                "level0": ["Difficulty > Normal"],
+                "level1": [],
+                "level2": [],
+                "level3": [],
             },
             "published": {
                 "num_children": 1,
@@ -701,7 +737,10 @@ class StudioDocumentsTest(SharedModuleStoreTestCase):
             "last_published": 1680674828.0,
             "tags": {
                 "taxonomy": ["Difficulty"],
-                "level0": ["Difficulty > Normal"]
+                "level0": ["Difficulty > Normal"],
+                "level1": [],
+                "level2": [],
+                "level3": [],
             },
             "published": {
                 "num_children": 1,
