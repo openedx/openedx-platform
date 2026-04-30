@@ -12,6 +12,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.http import Http404
 from django.test import SimpleTestCase, override_settings
+from django.test.client import Client as DjangoClient
 from django.urls import NoReverseMatch, reverse
 from edx_when.api import set_date_for_block, set_dates_for_course
 from opaque_keys import InvalidKeyError
@@ -39,6 +40,7 @@ from lms.djangoapps.certificates.data import CertificateStatuses
 from lms.djangoapps.certificates.models import CertificateAllowlist, CertificateGenerationHistory
 from lms.djangoapps.certificates.tests.factories import GeneratedCertificateFactory
 from lms.djangoapps.courseware.models import StudentModule
+from lms.djangoapps.courseware.tests.helpers import MasqueradeMixin
 from lms.djangoapps.instructor.access import ROLE_DISPLAY_NAMES
 from lms.djangoapps.instructor.permissions import InstructorPermission
 from lms.djangoapps.instructor.views.serializers_v2 import CourseInformationSerializerV2
@@ -50,7 +52,7 @@ from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 
 
 @ddt.ddt
-class CourseMetadataViewTest(SharedModuleStoreTestCase):
+class CourseMetadataViewTest(SharedModuleStoreTestCase, MasqueradeMixin):
     """
     Tests for the CourseMetadataView API endpoint.
     """
@@ -638,6 +640,31 @@ class CourseMetadataViewTest(SharedModuleStoreTestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
         self.assertEqual(response.data['pacing'], 'self')  # noqa: PT009
+
+    def test_masquerade_as_student_role_returns_403(self):
+        """
+        Test that the endpoint returns 403 when a staff user masquerades as a student role.
+        """
+        # Use Django's test Client for masquerade (MasqueradeMixin is incompatible with DRF APIClient)
+        original_client = self.client
+        self.client = DjangoClient()
+        self.client.login(username=self.staff.username, password='Password1234')
+        self.update_masquerade(course=self.course, role='student')
+        response = self.client.get(self._get_url())
+        self.client = original_client
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_masquerade_as_specific_student_returns_403(self):
+        """
+        Test that the endpoint returns 403 when a staff user masquerades as a specific student.
+        """
+        original_client = self.client
+        self.client = DjangoClient()
+        self.client.login(username=self.staff.username, password='Password1234')
+        self.update_masquerade(course=self.course, username=self.student.username)
+        response = self.client.get(self._get_url())
+        self.client = original_client
+        assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
 class BuildTabUrlTest(SimpleTestCase):
