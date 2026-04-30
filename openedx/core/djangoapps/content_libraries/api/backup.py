@@ -7,9 +7,7 @@ import os
 import shutil
 import zipfile
 from datetime import datetime
-import shutil
 from tempfile import mkdtemp
-import zipfile
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -41,11 +39,11 @@ def create_library_v2_zip(library_key: LibraryLocatorV2, user) -> tuple:
     filename = f'{sanitized_lib_key}-{timestamp}.zip'
     file_path = os.path.join(root_dir, filename)
     origin_server = getattr(settings, 'CMS_BASE', None)
-    create_lib_zip_file(lp_key=str(library_key), path=file_path, user=user, origin_server=origin_server)
+    create_lib_zip_file(package_ref=str(library_key), path=file_path, user=user, origin_server=origin_server)
     return root_dir, file_path
 
 
-def extract_library_v2_zip_to_dir(library_key, root_dir, library_dir, user=None):
+def extract_library_v2_zip_to_dir(library_key, root_dir, library_dir, username=None):
     """
     Export a v2 library to a directory by creating a zip backup and extracting it.
 
@@ -57,13 +55,18 @@ def extract_library_v2_zip_to_dir(library_key, root_dir, library_dir, user=None)
         library_key: LibraryLocatorV2 for the library to export
         root_dir: Root directory where library_dir will be created
         library_dir: Directory name under root_dir to extract the library into
-        user: Username string for the backup API (optional)
+        username: Username string for the backup API (optional)
 
     Raises:
         Exception: If backup creation or extraction fails
+        DoesNotExist: If the specified user does not exist
     """
-    # Get user object for backup API
-    user_obj = get_user_model().objects.filter(username=user).first()
+    # Get user object for backup API (if username provided)
+    user_obj = None
+    if username:
+        # Let it raise if given user doesn't exist
+        user_obj = get_user_model().objects.get(username=username)
+
     temp_dir, zip_path = create_library_v2_zip(library_key, user_obj)
 
     try:

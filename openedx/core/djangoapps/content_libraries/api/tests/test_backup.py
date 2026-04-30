@@ -50,15 +50,15 @@ class TestExtractLibraryV2ZipToDir(TestCase):
         temp_zip_dir, zip_path = self._make_zip_in_temp_dir({'content.xml': b'<lib/>'})
         mock_create_zip.return_value = (temp_zip_dir, zip_path)
         mock_user = MagicMock()
-        mock_get_user_model.return_value.objects.filter.return_value.first.return_value = mock_user
+        mock_get_user_model.return_value.objects.get.return_value = mock_user
 
         try:
             target = root_dir / 'my-library'
             assert not target.exists(), "Target dir should not exist before the call"
 
-            extract_library_v2_zip_to_dir(LIBRARY_KEY, str(root_dir), 'my-library', user='testuser')
+            extract_library_v2_zip_to_dir(LIBRARY_KEY, str(root_dir), 'my-library', username='testuser')
 
-            mock_get_user_model.return_value.objects.filter.assert_called_once_with(username='testuser')
+            mock_get_user_model.return_value.objects.get.assert_called_once_with(username='testuser')
             mock_create_zip.assert_called_once_with(LIBRARY_KEY, mock_user)
             assert target.isdir(), "Target dir should have been created"
             assert (target / 'content.xml').exists(), "Zip content should be extracted"
@@ -76,12 +76,12 @@ class TestExtractLibraryV2ZipToDir(TestCase):
         root_dir = Path(tempfile.mkdtemp())
         temp_zip_dir, zip_path = self._make_zip_in_temp_dir()
         mock_create_zip.return_value = (temp_zip_dir, zip_path)
-        mock_get_user_model.return_value.objects.filter.return_value.first.return_value = None
+        mock_get_user_model.return_value.objects.get.return_value = None
 
         try:
             with patch('zipfile.ZipFile.extractall', side_effect=OSError('disk full')):
                 with pytest.raises(OSError, match='disk full'):
-                    extract_library_v2_zip_to_dir(LIBRARY_KEY, str(root_dir), 'my-library', user=None)
+                    extract_library_v2_zip_to_dir(LIBRARY_KEY, str(root_dir), 'my-library', username=None)
             assert not temp_zip_dir.exists(), "Temp dir should be cleaned up on error"
         finally:
             shutil.rmtree(root_dir, ignore_errors=True)

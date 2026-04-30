@@ -18,7 +18,7 @@ from opaque_keys.edx.locator import LibraryLocator, LibraryLocatorV2
 from openedx.core.djangoapps.content_libraries.api import extract_library_v2_zip_to_dir
 from xmodule.contentstore.django import contentstore
 from xmodule.modulestore.django import modulestore
-from xmodule.modulestore.xml_exporter import export_course_to_xml, export_library_to_xml
+from xmodule.modulestore.xml_exporter import CourseLocator, export_course_to_xml, export_library_to_xml
 
 log = logging.getLogger(__name__)
 
@@ -68,12 +68,12 @@ def cmd_log(cmd, cwd):
     return output
 
 
-def export_to_git(content_key, repo, user='', rdir=None):
+def export_to_git(context_key, repo, user='', rdir=None):
     """
     Export a course or library to git.
 
     Args:
-        content_key: CourseKey or LibraryLocator for the content to export
+        context_key: LearningContextKey for the content to export
         repo (str): Git repository URL
         user (str): Optional username for git commit identity
         rdir (str): Optional custom directory name for the repository
@@ -83,17 +83,12 @@ def export_to_git(content_key, repo, user='', rdir=None):
     """
     # pylint: disable=too-many-statements
 
-    # Detect content type and select appropriate export function
-    content_type_label = "library"
-    is_library_v2 = isinstance(content_key, LibraryLocatorV2)
-    if is_library_v2:
-        # V2 libraries use backup API with zip extraction
-        content_export_func = extract_library_v2_zip_to_dir
-    elif isinstance(content_key, LibraryLocator):
-        content_export_func = export_library_to_xml
-    else:
-        content_export_func = export_course_to_xml
-        content_type_label = "course"
+    # Validate context_key type and determine export function and content type label
+    if not isinstance(context_key, (LibraryLocatorV2, LibraryLocator, CourseLocator)):
+        raise TypeError(
+            f"{context_key!r} for git export must be LibraryLocatorV2, LibraryLocator, "
+            f"or CourseLocator, not {type(context_key)}"
+        )
 
     if not GIT_REPO_EXPORT_DIR:
         raise GitExportError(GitExportError.NO_EXPORT_DIR)
@@ -157,12 +152,23 @@ def export_to_git(content_key, repo, user='', rdir=None):
     root_dir = os.path.dirname(rdirp)
     content_dir = os.path.basename(rdirp).rsplit('.git', 1)[0]
 
+    content_type_label = "course" if context_key.is_course else "library"
+
+    is_library_v2 = isinstance(context_key, LibraryLocatorV2)
+    if is_library_v2:
+        # V2 libraries use backup API with zip extraction
+        content_export_func = extract_library_v2_zip_to_dir
+    elif isinstance(context_key, LibraryLocator):
+        content_export_func = export_library_to_xml
+    else:
+        content_export_func = export_course_to_xml
+
     try:
         if is_library_v2:
-            content_export_func(content_key, root_dir, content_dir, user)
+            content_export_func(context_key, root_dir, content_dir, user)
         else:
             # V1 libraries and courses: use XML export (no user parameter)
-            content_export_func(modulestore(), contentstore(), content_key,
+            content_export_func(modulestore(), contentstore(), context_key,
                             root_dir, content_dir)
     except (OSError, AttributeError):
         log.exception('Failed to export %s', content_type_label)
@@ -212,6 +218,6 @@ def export_to_git(content_key, repo, user='', rdir=None):
     log.info(
         '%s %s exported to git repository %s successfully',
         content_type_label.capitalize(),
-        content_key,
+        context_key,
         repo,
     )
