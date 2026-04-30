@@ -2,13 +2,12 @@
 Information about the release line of this Open edX code.
 """
 
-
 import unittest
 
 # The release line: an Open edX release name ("ficus"), or "master".
 # This should always be "master" on the master branch, and will be changed
 # manually when we start release-line branches, like open-release/ficus.master.
-RELEASE_LINE = "master"
+RELEASE_LINE = "verawood"
 
 
 def doc_version():
