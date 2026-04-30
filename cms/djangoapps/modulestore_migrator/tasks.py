@@ -374,7 +374,23 @@ def _import_structure(
             context=migration_context,
             source_node=root_node,
         )
-    change_log.save()
+    # Publishing is not allowed inside bulk_draft_changes_for(), so publish
+    # everything that was modified now that the context has exited. We use the
+    # change log to identify which drafts to publish. If the context produced
+    # no records, it deletes the change log on exit (clearing its PK), in which
+    # case there's nothing to publish and we return None so callers don't try
+    # to associate the deleted change log with the migration.
+    if not change_log.pk:
+        return None, root_migrated_node
+    if change_log.records.exists():
+        drafts_to_publish = content_api.get_all_drafts(migration.target.id).filter(
+            entity_id__in=change_log.records.values_list("entity_id", flat=True),
+        )
+        content_api.publish_from_drafts(
+            migration.target.id,
+            draft_qset=drafts_to_publish,
+            published_by=migration_context.created_by,
+        )
     return change_log, root_migrated_node
 
 
@@ -894,11 +910,7 @@ def _migrate_container(
         created_by=context.created_by,
     ).publishable_entity_version
 
-    # Publish the container
-    libraries_api.publish_container_changes(
-        container.container_key,
-        context.created_by,
-    )
+    # Note: Publishing happens after bulk_draft_changes_for exits, in _import_structure.
     context.used_container_slugs.add(container.container_key.container_id)
     return container_publishable_entity_version, None
 
@@ -972,8 +984,7 @@ def _migrate_component(
         target_key, new_olx_str=olx, paths_to_media=paths_to_media_ids,
     )
 
-    # Publish the component
-    libraries_api.publish_component_changes(target_key, context.created_by)
+    # Note: Publishing happens after bulk_draft_changes_for exits, in _import_structure.
     context.used_component_keys.add(target_key)
     return component_version.publishable_entity_version, None
 
