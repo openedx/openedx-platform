@@ -114,4 +114,3 @@ class TestUnpack(unittest.TestCase):
 
         with pytest.raises(MissingRequiredClaimError):
             unpack_jwt(token, test_user_id, test_now)
-            
