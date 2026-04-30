@@ -278,7 +278,7 @@ ENTERPRISE_ADMIN_PORTAL_NETLOC = 'localhost:1991'
 ENTERPRISE_ADMIN_PORTAL_BASE_URL = 'http://' + ENTERPRISE_ADMIN_PORTAL_NETLOC
 
 ########################## GRADEBOOK APP ##############################
-WRITABLE_GRADEBOOK_URL = 'http://localhost:1994'
+WRITABLE_GRADEBOOK_URL = 'http://localhost:1994/gradebook'
 
 ########################## ORA STAFF GRADING APP ##############################
 ORA_GRADING_MICROFRONTEND_URL = 'http://localhost:1993'

@@ -2,7 +2,7 @@
 Tests for openedx_content-based Content Libraries
 """
 import textwrap
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import ddt
 from freezegun import freeze_time
@@ -38,8 +38,8 @@ class ContainersTestCase(ContentLibrariesRestApiTest):
 
     def setUp(self) -> None:
         super().setUp()
-        self.create_date = datetime(2024, 9, 8, 7, 6, 5, tzinfo=timezone.utc)  # noqa: UP017
-        self.modified_date = datetime(2024, 10, 9, 8, 7, 6, tzinfo=timezone.utc)  # noqa: UP017
+        self.create_date = datetime(2024, 9, 8, 7, 6, 5, tzinfo=UTC)
+        self.modified_date = datetime(2024, 10, 9, 8, 7, 6, tzinfo=UTC)
         self.lib = self._create_library(
             slug="containers",
             title="Container Test Library",
@@ -159,7 +159,7 @@ class ContainersTestCase(ContentLibrariesRestApiTest):
         Test Create, Read, Update, and Delete of a Containers
         """
         # Create container:
-        create_date = datetime(2024, 9, 8, 7, 6, 5, tzinfo=timezone.utc)  # noqa: UP017
+        create_date = datetime(2024, 9, 8, 7, 6, 5, tzinfo=UTC)
         with freeze_time(create_date):
             container_data = self._create_container(
                 self.lib["id"],
@@ -190,7 +190,7 @@ class ContainersTestCase(ContentLibrariesRestApiTest):
         self.assertDictContainsEntries(container_as_read, expected_data)
 
         # Update the container:
-        modified_date = datetime(2024, 10, 9, 8, 7, 6, tzinfo=timezone.utc)  # noqa: UP017
+        modified_date = datetime(2024, 10, 9, 8, 7, 6, tzinfo=UTC)
         with freeze_time(modified_date):
             container_data = self._update_container(container_id, display_name=f"New Display Name for {container_type}")
         expected_data["last_draft_created"] = expected_data["modified"] = "2024-10-09T08:07:06Z"
@@ -1013,3 +1013,114 @@ class ContainersTestCase(ContentLibrariesRestApiTest):
         assert c2_units_after[1]["id"] == subsection_4["id"]
         assert c2_units_after[1]["has_unpublished_changes"]  # unaffected
         assert c2_units_after[1]["published_by"] is None
+
+    def test_container_draft_history_empty_after_publish(self):
+        """
+        A container with no unpublished changes since its last publish has an empty draft history.
+        """
+        unit = self._create_container(self.lib["id"], "unit", display_name="History Unit", slug=None)
+        self._publish_container(unit["id"])
+
+        history = self._get_container_draft_history(unit["id"])
+        assert history == []
+
+    def test_container_draft_history_shows_unpublished_edits(self):
+        """
+        Draft history contains entries for edits made since the last publication,
+        ordered most-recent-first, with the correct fields.
+        """
+        with freeze_time(datetime(2026, 1, 1, tzinfo=UTC)):
+            unit = self._create_container(self.lib["id"], "unit", display_name="History Unit Edits", slug=None)
+        with freeze_time(datetime(2026, 2, 1, tzinfo=UTC)):
+            self._publish_container(unit["id"])
+
+        edit1_time = datetime(2026, 4, 1, 10, 0, 0, tzinfo=UTC)
+        with freeze_time(edit1_time):
+            self._update_container(unit["id"], display_name="History Unit Edits v2")
+
+        edit2_time = datetime(2026, 4, 2, 10, 0, 0, tzinfo=UTC)
+        with freeze_time(edit2_time):
+            self._update_container(unit["id"], display_name="History Unit Edits v3")
+
+        history = self._get_container_draft_history(unit["id"])
+        assert len(history) == 2
+        assert history[0]["changed_at"] == edit2_time.isoformat().replace("+00:00", "Z")
+        assert history[1]["changed_at"] == edit1_time.isoformat().replace("+00:00", "Z")
+        entry = history[0]
+        assert "contributor" in entry
+        assert "title" in entry
+        assert "action" in entry
+
+    def test_container_draft_history_includes_descendant_components(self):
+        """
+        The history of a container includes entries from its descendant components,
+        merged and sorted newest-first.
+        """
+        with freeze_time(datetime(2026, 1, 1, tzinfo=UTC)):
+            unit = self._create_container(self.lib["id"], "unit", display_name="History Unit Children", slug=None)
+            block = self._add_block_to_library(self.lib["id"], "problem", "hist-prob", can_stand_alone=False)
+            self._add_container_children(unit["id"], children_ids=[block["id"]])
+        with freeze_time(datetime(2026, 2, 1, tzinfo=UTC)):
+            self._publish_container(unit["id"])
+
+        container_edit_time = datetime(2026, 4, 1, 10, 0, 0, tzinfo=UTC)
+        with freeze_time(container_edit_time):
+            self._update_container(unit["id"], display_name="History Unit Children v2")
+
+        block_edit_time = datetime(2026, 4, 2, 10, 0, 0, tzinfo=UTC)
+        with freeze_time(block_edit_time):
+            self._set_library_block_olx(block["id"], "<problem><p>edited</p></problem>")
+
+        history = self._get_container_draft_history(unit["id"])
+        changed_at_list = [entry["changed_at"] for entry in history]
+        # Both the container edit and the block edit should appear in the history.
+        block_edit_time_str = block_edit_time.isoformat().replace("+00:00", "Z")
+        container_edit_time_str = container_edit_time.isoformat().replace("+00:00", "Z")
+        assert block_edit_time_str in changed_at_list
+        assert container_edit_time_str in changed_at_list
+        # History is sorted newest-first, so the block edit should come before the container edit.
+        assert changed_at_list.index(block_edit_time_str) < changed_at_list.index(container_edit_time_str)
+
+    def test_container_draft_history_action_renamed(self):
+        """
+        When the title changes, the action is 'renamed'.
+        """
+        unit = self._create_container(self.lib["id"], "unit", display_name="Original Name", slug=None)
+        self._publish_container(unit["id"])
+        self._update_container(unit["id"], display_name="New Name")
+
+        history = self._get_container_draft_history(unit["id"])
+        assert len(history) >= 1
+        assert history[0]["action"] == "renamed"
+
+    def test_container_draft_history_cleared_after_publish(self):
+        """
+        After publishing, the draft history resets to empty.
+        """
+        unit = self._create_container(self.lib["id"], "unit", display_name="Clear History Unit", slug=None)
+        self._publish_container(unit["id"])
+        self._update_container(unit["id"], display_name="Updated Name")
+        assert len(self._get_container_draft_history(unit["id"])) >= 1
+
+        self._publish_container(unit["id"])
+        assert self._get_container_draft_history(unit["id"]) == []
+
+    def test_container_draft_history_nonexistent_container(self):
+        """
+        Requesting draft history for a non-existent container returns 404.
+        """
+        self._get_container_draft_history(
+            "lct:CL-TEST:containers:unit:nonexistent",
+            expect_response=404,
+        )
+
+    def test_container_draft_history_permissions(self):
+        """
+        A user without library access receives 403.
+        """
+        unit = self._create_container(self.lib["id"], "unit", display_name="Auth Unit", slug=None)
+        self._update_container(unit["id"], display_name="Updated Auth Unit")
+
+        unauthorized = UserFactory.create(username="noauth-container-hist", password="edx")
+        with self.as_user(unauthorized):
+            self._get_container_draft_history(unit["id"], expect_response=403)

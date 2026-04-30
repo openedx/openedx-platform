@@ -88,6 +88,7 @@ from lms.djangoapps.courseware.tabs import get_course_tab_list
 from lms.djangoapps.instructor import enrollment, permissions
 from lms.djangoapps.instructor.access import (
     FORUM_ROLES,
+    INSTRUCTOR_DASHBOARD_ROLE_SORT_ORDER,
     ROLE_DISPLAY_NAMES,
     ROLES,
     allow_access,
@@ -160,6 +161,7 @@ from .serializers_v2 import (
     TaskStatusSerializer,
     ToggleCertificateGenerationSerializer,
     UnitExtensionSerializer,
+    derive_exam_type,
 )
 from .tools import find_unit, get_units_with_due_date, keep_field_private, set_due_date_extension, title_or_url
 
@@ -3181,20 +3183,26 @@ class CourseTeamRolesView(DeveloperErrorViewMixin, APIView):
     ``CUSTOM_COURSES_EDX`` feature flag is enabled **and** the course
     has CCX enabled (``course.enable_ccx``).
 
+    When the `editable=true` query parameter is passed, the results
+    are further filtered to only include roles the requesting user has
+    permission to assign. Discussion Administrators will only see forum
+    roles; instructors will see all roles.
+
     **GET Example Request**
 
         GET /api/instructor/v2/courses/{course_id}/team/roles
+        GET /api/instructor/v2/courses/{course_id}/team/roles?editable=true
 
     **GET Response Values**
 
         {
             "course_id": "course-v1:edX+DemoX+Demo_Course",
             "results": [
-                {"role": "beta", "display_name": "Beta Tester"},
-                {"role": "data_researcher", "display_name": "Data Researcher"},
-                {"role": "instructor", "display_name": "Admin"},
+                {"role": "staff", "display_name": "Staff"},
                 {"role": "limited_staff", "display_name": "Limited Staff"},
-                {"role": "staff", "display_name": "Staff"}
+                {"role": "instructor", "display_name": "Admin"},
+                {"role": "beta", "display_name": "Beta Tester"},
+                {"role": "data_researcher", "display_name": "Data Researcher"}
             ]
         }
 
@@ -3211,21 +3219,33 @@ class CourseTeamRolesView(DeveloperErrorViewMixin, APIView):
         course_key = CourseKey.from_string(course_id)
         course = get_course_by_id(course_key)
 
+        editable = request.query_params.get('editable', 'false').lower() == 'true'
+
         roles = set(ROLES.keys()) | set(FORUM_ROLES)
 
         ccx_enabled = settings.FEATURES.get('CUSTOM_COURSES_EDX', False) and course.enable_ccx
         if not ccx_enabled:
             roles.discard('ccx_coach')
 
+        if editable and not has_access(request.user, 'instructor', course):
+            roles = set(FORUM_ROLES)
+
+        role_order = {role: i for i, role in enumerate(INSTRUCTOR_DASHBOARD_ROLE_SORT_ORDER)}
+
         results = [
             {'role': rolename, 'display_name': str(ROLE_DISPLAY_NAMES[rolename])}
-            for rolename in sorted(roles)
+            for rolename in sorted(
+                roles, key=lambda r: role_order.get(r, len(INSTRUCTOR_DASHBOARD_ROLE_SORT_ORDER))
+            )
         ]
 
-        return Response({
-            'course_id': str(course_key),
-            'results': results,
-        }, status=status.HTTP_200_OK)
+        return Response(
+            {
+                'course_id': str(course_key),
+                'results': results,
+            },
+            status=status.HTTP_200_OK
+        )
 
 
 @method_decorator(cache_control(no_cache=True, no_store=True, must_revalidate=True), name='dispatch')
@@ -3415,9 +3435,9 @@ class CourseTeamView(DeveloperErrorViewMixin, APIView):
         rolename = serializer.validated_data['role']
         action = serializer.validated_data['action']
 
-        if rolename == 'instructor' and not has_access(request.user, 'instructor', course):
+        if not is_forum_role(rolename) and not has_access(request.user, 'instructor', course):
             return Response(
-                {'error': _('Managing the instructor role requires instructor access.')},
+                {'error': _('You do not have permissions to change this role.')},
                 status=status.HTTP_403_FORBIDDEN,
             )
 
@@ -3517,11 +3537,13 @@ class CourseTeamMemberView(DeveloperErrorViewMixin, APIView):
 
         roles = revoke_serializer.validated_data['roles']
 
-        if 'instructor' in roles and not has_access(request.user, 'instructor', course):
-            return Response(
-                {'error': _('Managing the instructor role requires instructor access.')},
-                status=status.HTTP_403_FORBIDDEN,
-            )
+        if not has_access(request.user, 'instructor', course):
+            non_forum_roles = [r for r in roles if not is_forum_role(r)]
+            if non_forum_roles:
+                return Response(
+                    {'error': _('You do not have permissions to change the requested roles.')},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
 
         try:
             user = get_student_from_identifier(email_or_username)
@@ -4469,6 +4491,40 @@ class ExamAllowanceView(DeveloperErrorViewMixin, APIView):
         )
 
 
+def _sort_in_memory(items, ordering):
+    """
+    Sort a list of dicts by the given ordering param.
+
+    Supports dotted paths (e.g. 'user.username') and descending with '-' prefix.
+
+    Note: Sorting is done in Python because edx_proctoring's API functions
+    (get_all_exam_attempts, get_allowances_for_course) return pre-serialized
+    lists of dicts with no sorting parameter. Database-level sorting would
+    require changes to the edx-proctoring package:
+    https://github.com/openedx/edx-proctoring/issues/1320
+    """
+    if not ordering:
+        return items
+    descending = ordering.startswith('-')
+    field = ordering.lstrip('-')
+
+    def sort_key(item):
+        value = item
+        for part in field.split('.'):
+            if isinstance(value, dict):
+                value = value.get(part)
+            else:
+                value = None
+                break
+        # Return a tuple (is_none, value) so None values sort last
+        # and non-None values compare naturally within their type.
+        if value is None:
+            return (1, '')
+        return (0, value)
+
+    return sorted(items, key=sort_key, reverse=descending)
+
+
 class CourseAllowancesView(DeveloperErrorViewMixin, ListAPIView):
     """
     List or bulk-create exam allowances for a course.
@@ -4477,12 +4533,33 @@ class CourseAllowancesView(DeveloperErrorViewMixin, ListAPIView):
 
         GET /api/instructor/v2/courses/{course_id}/special_exams/allowances
         GET /api/instructor/v2/courses/{course_id}/special_exams/allowances?search=student1
+        GET /api/instructor/v2/courses/{course_id}/special_exams/allowances?ordering=-value
         POST /api/instructor/v2/courses/{course_id}/special_exams/allowances
+
+    **Query Parameters**
+
+        search (optional): Filter by username or email.
+        ordering (optional): Sort by field. Prefix with '-' for descending.
+            Valid values: username, email, exam_name, allowance_type, value.
+        page (optional): Page number for pagination.
+        page_size (optional): Number of results per page.
     """
 
     permission_classes = (IsAuthenticated, permissions.InstructorPermission)
     permission_name = permissions.EXAM_RESULTS
     serializer_class = ExamAllowanceSerializer
+
+    ORDERING_FIELDS = {
+        'username': 'user.username',
+        'user.username': 'user.username',
+        'email': 'user.email',
+        'user.email': 'user.email',
+        'exam_name': 'proctored_exam.exam_name',
+        'proctored_exam.exam_name': 'proctored_exam.exam_name',
+        'allowance_type': 'key',
+        'key': 'key',
+        'value': 'value',
+    }
 
     def get_queryset(self):
         course_id = self.kwargs['course_id']
@@ -4494,6 +4571,11 @@ class CourseAllowancesView(DeveloperErrorViewMixin, ListAPIView):
                 if search in a.get('user', {}).get('username', '').lower()
                 or search in a.get('user', {}).get('email', '').lower()
             ]
+        ordering = self.request.query_params.get('ordering', '')
+        field = ordering.lstrip('-')
+        if field in self.ORDERING_FIELDS:
+            prefix = '-' if ordering.startswith('-') else ''
+            allowances = _sort_in_memory(allowances, prefix + self.ORDERING_FIELDS[field])
         return allowances
 
     def post(self, request, course_id):
@@ -4526,23 +4608,62 @@ class CourseAllowancesView(DeveloperErrorViewMixin, ListAPIView):
 
 class CourseExamAttemptsView(DeveloperErrorViewMixin, ListAPIView):
     """
-    List all exam attempts across all exams in a course with optional search and pagination.
+    List all exam attempts across all exams in a course with optional search, sorting, and pagination.
 
     **Example Requests**
 
         GET /api/instructor/v2/courses/{course_id}/special_exams/attempts
         GET /api/instructor/v2/courses/{course_id}/special_exams/attempts?search=student1
+        GET /api/instructor/v2/courses/{course_id}/special_exams/attempts?ordering=-started_at
         GET /api/instructor/v2/courses/{course_id}/special_exams/attempts?page=2&page_size=50
+
+    **Query Parameters**
+
+        search (optional): Filter by username or email.
+        ordering (optional): Sort by field. Prefix with '-' for descending.
+            Valid values: username, exam_name, time_limit, type, started_at, completed_at, status.
+        page (optional): Page number for pagination.
+        page_size (optional): Number of results per page.
     """
 
     permission_classes = (IsAuthenticated, permissions.InstructorPermission)
     permission_name = permissions.EXAM_RESULTS
     serializer_class = ExamAttemptSerializer
 
+    ORDERING_FIELDS = {
+        'username': 'user.username',
+        'user.username': 'user.username',
+        'email': 'user.email',
+        'user.email': 'user.email',
+        'exam_name': 'proctored_exam.exam_name',
+        'proctored_exam.exam_name': 'proctored_exam.exam_name',
+        'time_limit': 'proctored_exam.time_limit_mins',
+        'proctored_exam.time_limit_mins': 'proctored_exam.time_limit_mins',
+        'started_at': 'started_at',
+        'start_time': 'started_at',
+        'completed_at': 'completed_at',
+        'end_time': 'completed_at',
+        'status': 'status',
+    }
+
+    @staticmethod
+    def _get_exam_type(attempt):
+        """Derive exam type string for sorting purposes."""
+        return derive_exam_type(attempt.get('proctored_exam', {}))
+
     def get_queryset(self):
         course_id = self.kwargs['course_id']
         search = self.request.query_params.get('search', '').strip()
         if search:
-            # get_filtered_exam_attempts does server-side filtering by username/email
-            return get_filtered_exam_attempts(course_id, search)
-        return get_all_exam_attempts(course_id)
+            attempts = get_filtered_exam_attempts(course_id, search)
+        else:
+            attempts = get_all_exam_attempts(course_id)
+        ordering = self.request.query_params.get('ordering', '')
+        field = ordering.lstrip('-')
+        if field == 'type':
+            descending = ordering.startswith('-')
+            attempts = sorted(attempts, key=self._get_exam_type, reverse=descending)
+        elif field in self.ORDERING_FIELDS:
+            prefix = '-' if ordering.startswith('-') else ''
+            attempts = _sort_in_memory(attempts, prefix + self.ORDERING_FIELDS[field])
+        return attempts

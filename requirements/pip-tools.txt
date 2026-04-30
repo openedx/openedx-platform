@@ -4,11 +4,11 @@
 #
 #    make upgrade
 #
-build==1.4.4
+build==1.5.0
     # via pip-tools
 click==8.3.3
     # via pip-tools
-packaging==26.1
+packaging==26.2
     # via
     #   build
     #   wheel
@@ -22,7 +22,7 @@ wheel==0.47.0
     # via pip-tools
 
 # The following packages are considered to be unsafe in a requirements file:
-pip==26.0.1
+pip==26.1
     # via pip-tools
 setuptools==81.0.0
     # via

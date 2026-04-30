@@ -4581,6 +4581,24 @@ class TestChangeDueDateV2(SharedModuleStoreTestCase, LoginEnrollmentTestCase):
 
         assert get_extended_due(self.course, self.homework, self.user1) == due_date
 
+    def test_change_due_date_v2_without_reason(self):
+        """Test that reason is optional — both omitted and blank are accepted."""
+        url = reverse('instructor_api_v2:change_due_date', kwargs={'course_id': str(self.course.id)})
+        base_payload = {
+            'email_or_username': self.user1.username,
+            'block_id': str(self.homework.location),
+            'due_datetime': '12/30/2013 00:00',
+        }
+        # Omitted reason
+        response = self.client.post(url, json.dumps(base_payload), content_type='application/json')
+        assert response.status_code == 200, response.content
+
+        # Blank reason
+        response = self.client.post(
+            url, json.dumps({**base_payload, 'reason': ''}), content_type='application/json'
+        )
+        assert response.status_code == 200, response.content
+
     def test_change_due_date_v2_with_email(self):
         """Test due date change using email instead of username"""
         url = reverse('instructor_api_v2:change_due_date', kwargs={'course_id': str(self.course.id)})

@@ -70,18 +70,3 @@ class LearningContext:
         Retuns None if the usage key doesn't exist in this context.
         """
         raise NotImplementedError
-
-    def send_block_updated_event(self, usage_key):
-        """
-        Send a "block updated" event for the block with the given usage_key in this context.
-
-        usage_key: the UsageKeyV2 subclass used for this learning context
-        """
-
-    def send_container_updated_events(self, usage_key):
-        """
-        Send "container updated" events for containers that contains the block with
-        the given usage_key in this context.
-
-        usage_key: the UsageKeyV2 subclass used for this learning context
-        """

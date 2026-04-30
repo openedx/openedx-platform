@@ -46,6 +46,8 @@ urlpatterns = [
             path('team/user/<str:username>/', libraries.LibraryTeamUserView.as_view()),
             # Add/Edit (PUT) or remove (DELETE) a group's permission to use this library
             path('team/group/<str:group_name>/', libraries.LibraryTeamGroupView.as_view()),
+            # Get draft change entries for a specific publish event (component or container)
+            path('publish_history_entries/', blocks.LibraryPublishHistoryEntriesView.as_view()),
             # Paste contents of clipboard into library
             path('paste_clipboard/', libraries.LibraryPasteClipboardView.as_view()),
             # Start a backup task for this library
@@ -68,6 +70,12 @@ urlpatterns = [
             path('assets/', blocks.LibraryBlockAssetListView.as_view()),
             path('assets/<path:file_path>', blocks.LibraryBlockAssetView.as_view()),
             path('publish/', blocks.LibraryBlockPublishView.as_view()),
+            # Get the draft change history for this block
+            path('draft_history/', blocks.LibraryComponentDraftHistoryView.as_view()),
+            # Get the publish history for this block (list of publish events)
+            path('publish_history/', blocks.LibraryComponentPublishHistoryView.as_view()),
+            # Get the creation entry for this block
+            path('creation_entry/', blocks.LibraryComponentCreationEntryView.as_view()),
             # Future: discard changes for just this one block
         ])),
         # Containers are Sections, Subsections, and Units
@@ -85,6 +93,12 @@ urlpatterns = [
             # Publish a container (or reset to last published)
             path('publish/', containers.LibraryContainerPublishView.as_view()),
             path('copy/', containers.LibraryContainerCopyView.as_view()),
+            # Get the draft change history for this container
+            path('draft_history/', containers.LibraryContainerDraftHistoryView.as_view()),
+            # Get the publish history for this container (list of publish events)
+            path('publish_history/', containers.LibraryContainerPublishHistoryView.as_view()),
+            # Get the creation entry for this container
+            path('creation_entry/', containers.LibraryContainerCreationEntryView.as_view()),
         ])),
     ])),
     path('library_assets/', include([
