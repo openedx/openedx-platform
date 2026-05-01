@@ -264,7 +264,9 @@ class SpecialExamAttemptsViewTest(ModuleStoreTestCase):
         data = response.json()
         assert data['count'] == 1
         assert data['results'][0]['exam_id'] == exam_id
+        assert data['results'][0]['exam_name'] == 'Test Exam'
         assert data['results'][0]['exam_type'] == expected_type
+        assert data['results'][0]['ready_to_resume'] is False
         assert data['results'][0]['user']['username'] == 'student1'
 
     def test_list_attempts_filters_by_exam(self):
@@ -682,6 +684,8 @@ class CourseExamAttemptsViewTest(ModuleStoreTestCase):
         data = response.json()
         assert data['count'] == 1
         assert data['results'][0]['exam_id'] == self.exam_id
+        assert data['results'][0]['exam_name'] == 'Midterm Exam'
+        assert data['results'][0]['ready_to_resume'] is False
 
     def test_search_attempts_by_username(self):
         create_exam_attempt(self.exam_id, self.student.id)
