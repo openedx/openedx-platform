@@ -3,6 +3,7 @@ Test that various filters are fired for models/views in the student app.
 """
 from django.test import override_settings
 from openedx_filters import PipelineStep
+from openedx_filters.learning.filters import InstructorDashboardTabsRequested
 
 from common.djangoapps.util import course
 from openedx.core.djangolib.testing.utils import skip_unless_lms
@@ -76,3 +77,53 @@ class CourseAboutPageURLRequestedFiltersTest(ModuleStoreTestCase):
         )
 
         self.assertEqual(expected_course_about, course_about_url)  # noqa: PT009
+
+
+class TestInstructorDashCustomTab(PipelineStep):
+    """
+    Utility class used when getting steps for pipeline.
+    """
+
+    def run_filter(self, tabs, user, course_key):  # pylint: disable=arguments-differ,unused-argument
+        """Pipeline step that appends a custom instructor dashboard tab."""
+        result = {
+            "tabs": tabs + [{
+                "tab_id": "custom",
+                "title": "Custom Tab",
+                "url": f"/courses/{course_key}/instructor/custom",
+                "sort_order": 999,
+            }],
+        }
+        return result
+
+
+class TestPreventTabsGenerationWithTabs(PipelineStep):
+    """
+    Pipeline step that raises PreventTabsGeneration with a custom tabs list.
+    Used to test that the exception handler in get_tabs uses exc.tabs when present.
+    """
+
+    def run_filter(self, tabs, user, course_key):  # pylint: disable=arguments-differ,unused-argument
+        """Pipeline step that raises PreventTabsGeneration with custom tabs."""
+        raise InstructorDashboardTabsRequested.PreventTabsGeneration(
+            "Preventing default tabs in favor of custom ones.",
+            tabs=[{
+                "tab_id": "plugin_tab",
+                "title": "Plugin Tab",
+                "url": f"/courses/{course_key}/instructor/plugin",
+                "sort_order": 5,
+            }],
+        )
+
+
+class TestPreventTabsGenerationWithoutTabs(PipelineStep):
+    """
+    Pipeline step that raises PreventTabsGeneration without a tabs list.
+    Used to test that the exception handler in get_tabs falls back to an empty list.
+    """
+
+    def run_filter(self, tabs, user, course_key):  # pylint: disable=arguments-differ,unused-argument
+        """Pipeline step that raises PreventTabsGeneration without providing tabs."""
+        raise InstructorDashboardTabsRequested.PreventTabsGeneration(
+            "Preventing all tabs from being generated."
+        )
