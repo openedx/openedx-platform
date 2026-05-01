@@ -435,7 +435,7 @@ class BulkCertificateExceptionsViewTest(SharedModuleStoreTestCase):
     @patch('lms.djangoapps.instructor.views.api_v2.certs_api.create_or_update_certificate_allowlist_entry')
     def test_unenrolled_learner(self, mock_create):
         """Test error when learner exists but is not enrolled in course."""
-        student1 = UserFactory.create(username='unenrolled')
+        UserFactory.create(username='unenrolled')
         # Don't enroll the student
 
         self.client.force_authenticate(user=self.instructor)
