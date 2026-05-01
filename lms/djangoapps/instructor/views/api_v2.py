@@ -43,6 +43,7 @@ from edx_proctoring.exceptions import (
     ProctoredBaseException,
     ProctoredExamNotFoundException,
 )
+from edx_proctoring.models import ProctoredExamStudentAllowance
 from edx_rest_framework_extensions.paginators import DefaultPagination
 from edx_when import api as edx_when_api
 from opaque_keys import InvalidKeyError
@@ -4233,6 +4234,23 @@ class ProctoringSettingsView(DeveloperErrorViewMixin, APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+def add_or_replace_allowance_for_user(exam_id, username_or_email, key, value):
+    """
+    Add an allowance for a user on an exam, removing any existing allowance with a different key.
+
+    Enforces one allowance per user per exam regardless of allowance type. If the user already
+    has an allowance for this exam with a different key, it is removed before the new one is created.
+    """
+    user_id = get_user_by_username_or_email(username_or_email).id
+
+    with transaction.atomic():
+        for allowance in ProctoredExamStudentAllowance.get_allowances_for_user(exam_id, user_id):
+            if allowance.key != key:
+                remove_allowance_for_user(exam_id, user_id, allowance.key)
+
+        add_allowance_for_user(exam_id, username_or_email, key, value)
+
+
 class ExamAllowanceView(DeveloperErrorViewMixin, APIView):
     """
     Grant, update, or remove an allowance for a student on a proctored exam.
@@ -4289,17 +4307,17 @@ class ExamAllowanceView(DeveloperErrorViewMixin, APIView):
 
         validated = serializer.validated_data
         results = []
-        for user_info in validated['user_ids']:
+        for username_or_email in validated['user_ids']:
             try:
-                add_allowance_for_user(
+                add_or_replace_allowance_for_user(
                     int(exam_id),
-                    user_info,
+                    username_or_email,
                     validated['allowance_type'],
                     validated['value'],
                 )
-                results.append({'identifier': user_info, 'success': True})
-            except ProctoredBaseException as err:
-                results.append({'identifier': user_info, 'success': False, 'error': str(err)})
+                results.append({'identifier': username_or_email, 'success': True})
+            except (ProctoredBaseException, User.DoesNotExist, User.MultipleObjectsReturned) as err:
+                results.append({'identifier': username_or_email, 'success': False, 'error': str(err)})
 
         return Response(
             {'allowance_type': validated['allowance_type'], 'results': results},
@@ -4471,17 +4489,24 @@ class CourseAllowancesView(DeveloperErrorViewMixin, ListAPIView):
         validated = serializer.validated_data
         results = []
         for exam_id in validated['exam_ids']:
-            for user_info in validated['user_ids']:
+            for username_or_email in validated['user_ids']:
                 try:
-                    add_allowance_for_user(
+                    add_or_replace_allowance_for_user(
                         exam_id,
-                        user_info,
+                        username_or_email,
                         validated['allowance_type'],
                         validated['value'],
                     )
-                    results.append({'identifier': user_info, 'exam_id': exam_id, 'success': True})
-                except ProctoredBaseException as err:
-                    results.append({'identifier': user_info, 'exam_id': exam_id, 'success': False, 'error': str(err)})
+                    results.append({'identifier': username_or_email, 'exam_id': exam_id, 'success': True})
+                except (ProctoredBaseException, User.DoesNotExist, User.MultipleObjectsReturned) as err:
+                    results.append(
+                        {
+                            'identifier': username_or_email,
+                            'exam_id': exam_id,
+                            'success': False,
+                            'error': str(err)
+                        }
+                    )
 
         return Response({
             'allowance_type': validated['allowance_type'],

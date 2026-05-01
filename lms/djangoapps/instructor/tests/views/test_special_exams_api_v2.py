@@ -12,6 +12,7 @@ from edx_proctoring.api import (
     add_allowance_for_user,
     create_exam,
     create_exam_attempt,
+    get_allowances_for_course,
 )
 from edx_proctoring.models import ProctoredExamStudentAttempt
 from rest_framework import status
@@ -428,6 +429,33 @@ class ExamAllowanceViewTest(ModuleStoreTestCase):
         assert response.status_code == status.HTTP_200_OK
         assert response.json()['results'][0]['success'] is True
 
+    def test_grant_allowance_replaces_different_key(self):
+        """Granting an allowance with a different key replaces the existing one (one per user+exam)."""
+        self.client.post(
+            self._url(),
+            data={
+                'user_ids': [self.student.username],
+                'allowance_type': 'additional_time_granted',
+                'value': '30',
+            },
+            format='json',
+        )
+        response = self.client.post(
+            self._url(),
+            data={
+                'user_ids': [self.student.username],
+                'allowance_type': 'review_policy_exception',
+                'value': 'special review',
+            },
+            format='json',
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json()['results'][0]['success'] is True
+        allowances = get_allowances_for_course(self.course_id)
+        user_allowances = [a for a in allowances if a['user']['username'] == self.student.username]
+        assert len(user_allowances) == 1
+        assert user_allowances[0]['key'] == 'review_policy_exception'
+
     def test_delete_allowance(self):
         add_allowance_for_user(self.exam_id, self.student.username, 'additional_time_granted', '30')
         response = self.client.delete(
@@ -547,6 +575,26 @@ class CourseAllowancesViewTest(ModuleStoreTestCase):
         assert data['value'] == '30'
         assert len(data['results']) == 4
         assert all(r['success'] is True for r in data['results'])
+
+    def test_bulk_create_allowances_replaces_different_key(self):
+        """Bulk-creating an allowance with a different key replaces the existing one."""
+        add_allowance_for_user(self.exam_id, self.student.username, 'additional_time_granted', '30')
+        response = self.client.post(
+            self._url(),
+            data={
+                'exam_ids': [self.exam_id],
+                'user_ids': [self.student.username],
+                'allowance_type': 'review_policy_exception',
+                'value': 'special review',
+            },
+            format='json',
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json()['results'][0]['success'] is True
+        allowances = get_allowances_for_course(self.course_id)
+        user_allowances = [a for a in allowances if a['user']['username'] == self.student.username]
+        assert len(user_allowances) == 1
+        assert user_allowances[0]['key'] == 'review_policy_exception'
 
     def test_bulk_create_allowances_missing_fields(self):
         response = self.client.post(
