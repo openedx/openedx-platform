@@ -994,6 +994,15 @@ data-url='/problem/quiz/'> \
   describe("refreshMath", function () {
     beforeEach(function () {
       this.problem = new Problem($(".xblock-student_view"));
+      // Reset Queue spy so that bind()'s Queue call ([fn, null, domEl]) is not
+      // included when toHaveBeenCalledWith scans recorded calls. In Jasmine 2.99,
+      // toHaveBeenCalledWith iterates ALL recorded calls' args element-by-element
+      // (even mismatched ones, for diff output). jasmine-jquery's custom equality
+      // tester calls $(domEl).is(anyString) when comparing a DOM node against a
+      // string — which throws a Sizzle syntax error if the string isn't a valid
+      // CSS selector (e.g. "E=mc^2"). Resetting here isolates this describe to
+      // testing only what refreshMath itself queues.
+      MathJax.Hub.Queue.calls.reset();
       $("#input_example_1").val("E=mc^2");
       this.problem.refreshMath({ target: $("#input_example_1").get(0) });
     });
