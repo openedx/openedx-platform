@@ -1230,7 +1230,7 @@ class ExamAttemptSerializer(serializers.Serializer):
     start_time = serializers.DateTimeField(source='started_at', allow_null=True, required=False)
     end_time = serializers.DateTimeField(source='completed_at', allow_null=True, required=False)
     allowed_time_limit_mins = serializers.IntegerField(allow_null=True, required=False)
-    ready_to_resume = serializers.BooleanField(default=False)
+    ready_to_resume = serializers.BooleanField()
 
     def get_exam_type(self, obj):
         """Derive exam type from proctored_exam flags."""

@@ -282,6 +282,18 @@ class SpecialExamAttemptsViewTest(ModuleStoreTestCase):
         assert data['count'] == 1
         assert data['results'][0]['exam_id'] == exam_id
 
+    def test_ready_to_resume_true(self):
+        """Verify ready_to_resume reflects the actual attempt state."""
+        exam_id = self._create_exam()
+        attempt_id = create_exam_attempt(exam_id, self.student.id)
+        attempt = ProctoredExamStudentAttempt.objects.get(id=attempt_id)
+        attempt.ready_to_resume = True
+        attempt.save()
+
+        response = self.client.get(self._url(exam_id))
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json()['results'][0]['ready_to_resume'] is True
+
 
 @override_settings(**PROCTORING_SETTINGS)
 @patch.dict(settings.FEATURES, {'ENABLE_SPECIAL_EXAMS': True})
@@ -754,3 +766,14 @@ class CourseExamAttemptsViewTest(ModuleStoreTestCase):
         results = response.json()['results']
         assert results[0]['user']['username'] == 'student2'
         assert results[1]['user']['username'] == 'student1'
+
+    def test_ready_to_resume_true(self):
+        """Verify ready_to_resume reflects the actual attempt state."""
+        attempt_id = create_exam_attempt(self.exam_id, self.student.id)
+        attempt = ProctoredExamStudentAttempt.objects.get(id=attempt_id)
+        attempt.ready_to_resume = True
+        attempt.save()
+
+        response = self.client.get(self._url())
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json()['results'][0]['ready_to_resume'] is True
