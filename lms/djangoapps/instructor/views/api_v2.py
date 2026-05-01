@@ -2170,69 +2170,67 @@ class BulkCertificateExceptionsView(DeveloperErrorViewMixin, APIView):
         }
 
         try:
-            # Read and parse CSV file
             file_content = uploaded_file.read().decode('utf-8-sig')
-            csv_reader = csv.reader(file_content.splitlines())
-
-            learners_with_notes = []
-            for _row_num, row in enumerate(csv_reader, start=1):
-                if not row or not row[0].strip():
-                    continue  # Skip empty rows
-
-                learner = row[0].strip()
-                notes = row[1].strip() if len(row) > 1 and row[1].strip() else ''
-
-                learners_with_notes.append((learner, notes))
-
-            if not learners_with_notes:
-                return Response(
-                    {'message': _('CSV file is empty or contains no valid entries')},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
-            # Extract learners for resolution and build a notes lookup
-            learners = [learner for learner, _ in learners_with_notes]
-            notes_by_learner = dict(learners_with_notes)
-
-            # Resolve all usernames/emails to users upfront
-            learner_to_user, user_errors = _resolve_learners_to_users(learners)
-            results['errors'].extend(user_errors)
-
-            # Validate learners for certificate exceptions
-            exceptions_to_create, validation_errors = _validate_learners_for_certificate_exceptions(
-                learner_to_user, course_key
-            )
-            results['errors'].extend(validation_errors)
-
-            # Create all exceptions using the certificates API
-            for learner, user in exceptions_to_create:
-                notes = notes_by_learner.get(learner, '')
-
-                try:
-                    certs_api.create_or_update_certificate_allowlist_entry(user, course_key, notes)
-                    log.info(
-                        "Certificate exception granted for user %s (%s) in course %s by %s via CSV upload",
-                        user.id, learner, course_key, request.user.username
-                    )
-                    results['success'].append(learner)
-                except Exception as exc:  # pylint: disable=broad-except
-                    log.exception(
-                        "Error creating certificate exception for user %s in course %s",
-                        user.id, course_key
-                    )
-                    results['errors'].append({
-                        'learner': learner,
-                        'message': str(exc)
-                    })
-
-            return Response(results, status=status.HTTP_200_OK)
-
-        except Exception as exc:  # pylint: disable=broad-except
+            csv_reader = list(csv.reader(file_content.splitlines()))
+        except (UnicodeDecodeError, csv.Error) as exc:
             log.exception("Error processing CSV file for certificate exceptions")
             return Response(
                 {'message': _('Error processing CSV file: {error}').format(error=str(exc))},
                 status=status.HTTP_400_BAD_REQUEST
             )
+
+        learners_with_notes = []
+        for row in csv_reader:
+            if not row or not row[0].strip():
+                continue  # Skip empty rows
+
+            learner = row[0].strip()
+            notes = row[1].strip() if len(row) > 1 and row[1].strip() else ''
+
+            learners_with_notes.append((learner, notes))
+
+        if not learners_with_notes:
+            return Response(
+                {'message': _('CSV file is empty or contains no valid entries')},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Extract learners for resolution and build a notes lookup
+        learners = [learner for learner, _ in learners_with_notes]
+        notes_by_learner = dict(learners_with_notes)
+
+        # Resolve all usernames/emails to users upfront
+        learner_to_user, user_errors = _resolve_learners_to_users(learners)
+        results['errors'].extend(user_errors)
+
+        # Validate learners for certificate exceptions
+        exceptions_to_create, validation_errors = _validate_learners_for_certificate_exceptions(
+            learner_to_user, course_key
+        )
+        results['errors'].extend(validation_errors)
+
+        # Create all exceptions using the certificates API
+        for learner, user in exceptions_to_create:
+            notes = notes_by_learner.get(learner, '')
+
+            try:
+                certs_api.create_or_update_certificate_allowlist_entry(user, course_key, notes)
+                log.info(
+                    "Certificate exception granted for user %s (%s) in course %s by %s via CSV upload",
+                    user.id, learner, course_key, request.user.username
+                )
+                results['success'].append(learner)
+            except Exception as exc:  # pylint: disable=broad-except
+                log.exception(
+                    "Error creating certificate exception for user %s in course %s",
+                    user.id, course_key
+                )
+                results['errors'].append({
+                    'learner': learner,
+                    'message': str(exc)
+                })
+
+        return Response(results, status=status.HTTP_200_OK)
 
 
 class CertificateInvalidationsView(DeveloperErrorViewMixin, APIView):
