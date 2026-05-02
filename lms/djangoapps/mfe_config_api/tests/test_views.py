@@ -13,6 +13,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from lms.djangoapps.mfe_config_api.views import mfe_name_to_app_id
+from openedx.core.release import doc_version
 
 # Default legacy configuration values, used in tests to build a correct expected response
 default_legacy_config = {
@@ -23,6 +24,8 @@ default_legacy_config = {
     "HOMEPAGE_PROMO_VIDEO_YOUTUBE_ID": None,
     "ENABLE_COURSE_DISCOVERY": False,
 }
+
+INSTRUCTOR_SUPPORT_URL = f"https://docs.openedx.org/en/{doc_version()}/educators/index.html"
 
 
 @ddt.ddt
@@ -313,7 +316,7 @@ class MFEConfigTestCase(APITestCase):
         data = response.json()
         self.assertEqual(  # noqa: PT009
             data["SUPPORT_URL"],
-            "https://docs.openedx.org/en/latest/educators/index.html",
+            INSTRUCTOR_SUPPORT_URL,
         )
 
     @patch("lms.djangoapps.mfe_config_api.views.configuration_helpers")
@@ -787,7 +790,7 @@ class FrontendSiteConfigTestCase(APITestCase):
         instructor = apps_by_id["org.openedx.frontend.app.instructorDashboard"]
         self.assertEqual(  # noqa: PT009
             instructor["config"]["SUPPORT_URL"],
-            "https://docs.openedx.org/en/latest/educators/index.html",
+            INSTRUCTOR_SUPPORT_URL,
         )
 
     @patch("lms.djangoapps.mfe_config_api.views.configuration_helpers")

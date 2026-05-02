@@ -1,17 +1,25 @@
 define([
+    'sinon',
     'js/api_admin/views/catalog_preview',
     'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers'
 ], function(
-    CatalogPreviewView, AjaxHelpers
+    sinon, CatalogPreviewView, AjaxHelpers
 ) {
     'use strict';
 
     describe('Catalog preview view', function() {
         var view,
+            requests,
+            xhrFactory,
             previewUrl = 'http://example.com/api-admin/catalogs/preview/',
             catalogApiUrl = 'http://api.example.com/catalog/v1/courses/';
 
         beforeEach(function() {
+            xhrFactory = sinon.useFakeXMLHttpRequest();
+            requests = [];
+            requests.currentIndex = 0;
+            requests.restore = function() { xhrFactory.restore(); };
+            xhrFactory.onCreate = function(req) { requests.push(req); };
             setFixtures(
                 '<div class="catalog-body">'
                 + '<textarea id="id_query"></textarea>'
@@ -26,12 +34,15 @@ define([
             view.render();
         });
 
+        afterEach(function() {
+            requests.restore();
+        });
+
         it('can render itself', function() {
             expect(view.$('button.preview-query').length).toBe(1);
         });
 
         it('can retrieve a list of catalogs and display them', function() {
-            var requests = AjaxHelpers.requests(this);
             view.$('#id_query').val('*');
             view.$('.preview-query').click();
             AjaxHelpers.expectRequest(requests, 'GET', previewUrl + '?q=*');
@@ -46,7 +57,6 @@ define([
         });
 
         it('displays an error when courses cannot be retrieved', function() {
-            var requests = AjaxHelpers.requests(this);
             view.$('#id_query').val('*');
             view.$('.preview-query').click();
             AjaxHelpers.respondWithError(requests, 500);

@@ -17,6 +17,7 @@
                 resetModel = null,
                 view = null,
                 requests = null,
+                xhrFactory = null,
                 authComplete = false,
                 PLATFORM_NAME = 'edX',
                 ENTERPRISE_SLUG_LOGIN_URL = 'enterprise/login',
@@ -96,9 +97,6 @@
                     isEnterpriseEnable: IS_ENTERPRISE_ENABLE
                 });
 
-                // Spy on AJAX requests
-                requests = AjaxHelpers.requests(test);
-
                 // Intercept events from the view
                 authComplete = false;
                 view.on('auth-complete', function() {
@@ -132,6 +130,15 @@
                 setFixtures('<div id="login-form"></div>');
                 TemplateHelpers.installTemplate('templates/student_account/login');
                 TemplateHelpers.installTemplate('templates/student_account/form_field');
+                xhrFactory = sinon.useFakeXMLHttpRequest();
+                requests = [];
+                requests.currentIndex = 0;
+                requests.restore = function() { xhrFactory.restore(); };
+                xhrFactory.onCreate = function(req) { requests.push(req); };
+            });
+
+            afterEach(function() {
+                requests.restore();
             });
 
             it('logs the user in', function() {

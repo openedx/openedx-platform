@@ -1,6 +1,7 @@
 import $ from 'jquery';
 import _ from 'underscore';
 import str from 'underscore.string';
+import sinon from 'sinon';
 import AjaxHelpers from 'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers';
 import TemplateHelpers from 'common/js/spec_helpers/template_helpers';
 import EditHelpers from 'js/spec_helpers/edit_helpers';
@@ -14,7 +15,7 @@ import Course from 'js/models/course';
 var VisibilityState = XBlockUtils.VisibilityState;
 
 describe('Container Subviews', function() {
-    var model, containerPage, requests, createContainerPage, renderContainerPage,
+    var model, containerPage, requests, xhrFactory, createContainerPage, renderContainerPage,
         respondWithHtml, fetch,
         disabledCss = 'is-disabled',
         defaultXBlockInfo, createXBlockInfo,
@@ -22,6 +23,11 @@ describe('Container Subviews', function() {
         mockContainerXBlockHtml = readFixtures('templates/mock/mock-empty-container-xblock.underscore');
 
     beforeEach(function() {
+        xhrFactory = sinon.useFakeXMLHttpRequest();
+        requests = [];
+        requests.currentIndex = 0;
+        requests.restore = function() { xhrFactory.restore(); };
+        xhrFactory.onCreate = function(req) { requests.push(req); };
         window.course = new Course({
             id: '5',
             name: 'Course Name',
@@ -37,10 +43,10 @@ describe('Container Subviews', function() {
         TemplateHelpers.installTemplate('unit-outline');
         TemplateHelpers.installTemplate('container-message');
         appendSetFixtures(mockContainerPage);
-        requests = AjaxHelpers.requests(this);
     });
 
     afterEach(function() {
+        requests.restore();
         delete window.course;
         if (containerPage !== undefined) {
             containerPage.remove();

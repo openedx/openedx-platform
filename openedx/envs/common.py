@@ -2698,7 +2698,8 @@ NOTIFICATION_WEEKLY_DIGEST_DELIVERY_HOUR = 17  # Hour of day (0-23) to send week
 NOTIFICATION_WEEKLY_DIGEST_DELIVERY_MINUTE = 0 # Minute of hour (0-59) to send weekly digest
 
 # These settings are used to override the default notification preferences values for apps and types.
-# Here is complete documentation about how to use them: openedx/core/djangoapps/notifications/docs/settings.md
+# Here is complete documentation about how to use them:
+# https://docs.openedx.org/en/latest/site_ops/how-tos/enable_notifications.html#how-to-override-default-notification-preferences
 NOTIFICATION_APPS_OVERRIDE = {}
 NOTIFICATION_TYPES_OVERRIDE = {}
 

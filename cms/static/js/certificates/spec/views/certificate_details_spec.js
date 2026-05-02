@@ -2,6 +2,7 @@
 
 define([
     'underscore',
+    'sinon',
     'js/models/course',
     'js/certificates/collections/certificates',
     'js/certificates/models/certificate',
@@ -14,9 +15,11 @@ define([
     'js/spec_helpers/validation_helpers',
     'js/certificates/spec/custom_matchers'
 ],
-function(_, Course, CertificatesCollection, CertificateModel, CertificateDetailsView, CertificatePreview,
+function(_, sinon, Course, CertificatesCollection, CertificateModel, CertificateDetailsView, CertificatePreview,
     Notification, AjaxHelpers, TemplateHelpers, ViewHelpers, ValidationHelpers, CustomMatchers) {
     'use strict';
+
+    var requests, xhrFactory;
 
     var SELECTORS = {
         detailsView: '.certificate-details',
@@ -58,6 +61,11 @@ function(_, Course, CertificatesCollection, CertificateModel, CertificateDetails
         };
 
         beforeEach(function() {
+            xhrFactory = sinon.useFakeXMLHttpRequest();
+            requests = [];
+            requests.currentIndex = 0;
+            requests.restore = function() { xhrFactory.restore(); };
+            xhrFactory.onCreate = function(req) { requests.push(req); };
             window.course = new Course({
                 id: '5',
                 name: 'Course Name',
@@ -108,6 +116,7 @@ function(_, Course, CertificatesCollection, CertificateModel, CertificateDetails
         });
 
         afterEach(function() {
+            requests.restore();
             delete window.course;
             delete window.certWebPreview;
             delete window.CMS.User;
@@ -228,8 +237,7 @@ function(_, Course, CertificatesCollection, CertificateModel, CertificateDetails
             });
 
             it('correctly persists changes made during in-line signatory editing', function() {
-                var requests = AjaxHelpers.requests(this),
-                    notificationSpy = ViewHelpers.createNotificationSpy();
+            var notificationSpy = ViewHelpers.createNotificationSpy();
 
                 this.view.$(SELECTORS.edit_signatory).click();
 

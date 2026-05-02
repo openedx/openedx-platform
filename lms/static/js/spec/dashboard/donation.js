@@ -1,7 +1,7 @@
-define(['common/js/spec_helpers/template_helpers',
+define(['sinon', 'common/js/spec_helpers/template_helpers',
     'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers',
     'js/dashboard/donation'],
-function(TemplateHelpers, AjaxHelpers) {
+function(sinon, TemplateHelpers, AjaxHelpers) {
     'use strict';
 
     describe('edx.dashboard.donation.DonationView', function() {
@@ -15,6 +15,7 @@ function(TemplateHelpers, AjaxHelpers) {
 
         var view = null;
         var requests = null;
+        var xhrFactory = null;
 
         beforeEach(function() {
             setFixtures('<div></div>');
@@ -34,12 +35,18 @@ function(TemplateHelpers, AjaxHelpers) {
 
             // Stub the analytics event tracker
             window.analytics = jasmine.createSpyObj('analytics', ['track']);
+            xhrFactory = sinon.useFakeXMLHttpRequest();
+            requests = [];
+            requests.currentIndex = 0;
+            requests.restore = function() { xhrFactory.restore(); };
+            xhrFactory.onCreate = function(req) { requests.push(req); };
+        });
+
+        afterEach(function() {
+            requests.restore();
         });
 
         it('processes a donation for a course', function() {
-            // Spy on AJAX requests
-            requests = AjaxHelpers.requests(this);
-
             // Enter a donation amount and proceed to the payment page
             view.$amount.val(AMOUNT);
             view.donate();
@@ -119,9 +126,6 @@ function(TemplateHelpers, AjaxHelpers) {
         });
 
         it('displays an error when the server cannot be contacted', function() {
-            // Spy on AJAX requests
-            requests = AjaxHelpers.requests(this);
-
             // Simulate an error from the LMS servers
             view.donate();
             AjaxHelpers.respondWithError(requests);

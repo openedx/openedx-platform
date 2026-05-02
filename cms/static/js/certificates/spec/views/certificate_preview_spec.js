@@ -3,14 +3,17 @@
 define([
     'underscore',
     'jquery',
+    'sinon',
     'js/models/course',
     'js/certificates/views/certificate_preview',
     'common/js/spec_helpers/template_helpers',
     'common/js/spec_helpers/view_helpers',
     'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers'
 ],
-function(_, $, Course, CertificatePreview, TemplateHelpers, ViewHelpers, AjaxHelpers) {
+function(_, $, sinon, Course, CertificatePreview, TemplateHelpers, ViewHelpers, AjaxHelpers) {
     'use strict';
+
+    var requests, xhrFactory;
 
     var SELECTORS = {
         course_modes: '#course-modes',
@@ -27,6 +30,11 @@ function(_, $, Course, CertificatePreview, TemplateHelpers, ViewHelpers, AjaxHel
         };
 
         beforeEach(function() {
+            xhrFactory = sinon.useFakeXMLHttpRequest();
+            requests = [];
+            requests.currentIndex = 0;
+            requests.restore = function() { xhrFactory.restore(); };
+            xhrFactory.onCreate = function(req) { requests.push(req); };
             window.course = new Course({
                 id: '5',
                 name: 'Course Name',
@@ -50,6 +58,7 @@ function(_, $, Course, CertificatePreview, TemplateHelpers, ViewHelpers, AjaxHel
         });
 
         afterEach(function() {
+            requests.restore();
             delete window.course;
             delete window.CMS.User;
         });
@@ -84,8 +93,7 @@ function(_, $, Course, CertificatePreview, TemplateHelpers, ViewHelpers, AjaxHel
             });
 
             it('certificate deactivation works fine', function() {
-                var requests = AjaxHelpers.requests(this),
-                    notificationSpy = ViewHelpers.createNotificationSpy();
+            var notificationSpy = ViewHelpers.createNotificationSpy();
                 this.view.$(SELECTORS.activate_certificate).click();
                 AjaxHelpers.expectJsonRequest(requests, 'POST', '/certificates/activation/' + window.course.id, {
                     is_active: false
@@ -94,8 +102,7 @@ function(_, $, Course, CertificatePreview, TemplateHelpers, ViewHelpers, AjaxHel
             });
 
             it('certificate activation works fine', function() {
-                var requests = AjaxHelpers.requests(this),
-                    notificationSpy = ViewHelpers.createNotificationSpy();
+            var notificationSpy = ViewHelpers.createNotificationSpy();
                 this.view.is_active = false;
                 this.view.$(SELECTORS.activate_certificate).click();
                 AjaxHelpers.expectJsonRequest(requests, 'POST', '/certificates/activation/' + window.course.id, {

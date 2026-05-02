@@ -1,7 +1,8 @@
-define(['jquery', 'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers', 'common/js/spec_helpers/view_helpers',
+define(['jquery', 'sinon', 'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers', 'common/js/spec_helpers/view_helpers',
     'js/views/course_rerun', 'js/views/utils/create_course_utils', 'common/js/components/utils/view_utils',
     'jquery.simulate'],
-function($, AjaxHelpers, ViewHelpers, CourseRerunUtils, CreateCourseUtilsFactory, ViewUtils) {
+function($, sinon, AjaxHelpers, ViewHelpers, CourseRerunUtils, CreateCourseUtilsFactory, ViewUtils) {
+    var requests, xhrFactory;
     describe('Create course rerun page', function() {
         var selectors = {
                 org: '.rerun-course-org',
@@ -37,6 +38,11 @@ function($, AjaxHelpers, ViewHelpers, CourseRerunUtils, CreateCourseUtilsFactory
         };
 
         beforeEach(function() {
+            xhrFactory = sinon.useFakeXMLHttpRequest();
+            requests = [];
+            requests.currentIndex = 0;
+            requests.restore = function() { xhrFactory.restore(); };
+            xhrFactory.onCreate = function(req) { requests.push(req); };
             ViewHelpers.installMockAnalytics();
             window.source_course_key = 'test_course_key';
             appendSetFixtures(mockCreateCourseRerunHTML);
@@ -44,6 +50,7 @@ function($, AjaxHelpers, ViewHelpers, CourseRerunUtils, CreateCourseUtilsFactory
         });
 
         afterEach(function() {
+            requests.restore();
             ViewHelpers.removeMockAnalytics();
             delete window.source_course_key;
         });
@@ -157,7 +164,6 @@ function($, AjaxHelpers, ViewHelpers, CourseRerunUtils, CreateCourseUtilsFactory
         });
 
         it('saves course reruns', function() {
-            var requests = AjaxHelpers.requests(this);
             var redirectSpy = spyOn(ViewUtils, 'redirect');
             fillInFields('DemoX', 'DM101', '2014', 'Demo course');
             $(selectors.save).click();
@@ -178,7 +184,6 @@ function($, AjaxHelpers, ViewHelpers, CourseRerunUtils, CreateCourseUtilsFactory
         });
 
         it('displays an error when saving fails', function() {
-            var requests = AjaxHelpers.requests(this);
             fillInFields('DemoX', 'DM101', '2014', 'Demo course');
             $(selectors.save).click();
             AjaxHelpers.respondWithJson(requests, {
@@ -191,7 +196,6 @@ function($, AjaxHelpers, ViewHelpers, CourseRerunUtils, CreateCourseUtilsFactory
         });
 
         it('does not save if there are validation errors', function() {
-            var requests = AjaxHelpers.requests(this);
             fillInFields('DemoX', 'DM101', '', 'Demo course');
             $(selectors.save).click();
             AjaxHelpers.expectNoRequests(requests);

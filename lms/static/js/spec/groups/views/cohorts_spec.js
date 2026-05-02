@@ -1,12 +1,12 @@
 /* globals _ */
 
-define(['backbone', 'jquery', 'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers',
+define(['backbone', 'jquery', 'sinon', 'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers',
     'common/js/spec_helpers/template_helpers',
     'js/groups/views/cohorts', 'js/groups/collections/cohort', 'js/groups/models/content_group',
     'js/groups/models/course_cohort_settings', 'js/utils/animation', 'js/vendor/jquery.qubit',
     'js/groups/views/course_cohort_settings_notification'
 ],
-function(Backbone, $, AjaxHelpers, TemplateHelpers, CohortsView, CohortCollection, ContentGroupModel,
+function(Backbone, $, sinon, AjaxHelpers, TemplateHelpers, CohortsView, CohortCollection, ContentGroupModel,
     CourseCohortSettingsModel, AnimationUtil, Qubit, CourseCohortSettingsNotificationView) {
     'use strict';
 
@@ -17,7 +17,7 @@ function(Backbone, $, AjaxHelpers, TemplateHelpers, CohortsView, CohortCollectio
             notAllowedUserMessage,
             invalidEmailMessage, createMockCohort, createMockCohorts, createMockContentGroups,
             createMockCohortSettingsJson,
-            createCohortsView, cohortsView, requests, respondToRefresh, verifyMessage, verifyNoMessage,
+            createCohortsView, cohortsView, requests, xhrFactory, respondToRefresh, verifyMessage, verifyNoMessage,
             verifyDetailedMessage, verifyHeader,
             expectCohortAddRequest, getAddModal, selectContentGroup, clearContentGroup,
             saveFormAndExpectErrors, createMockCohortSettings, MOCK_COHORTED_USER_PARTITION_ID,
@@ -85,7 +85,6 @@ function(Backbone, $, AjaxHelpers, TemplateHelpers, CohortsView, CohortCollectio
             cohortSettings.url = '/mock_service/cohorts/settings';
             cohorts.url = '/mock_service/cohorts';
 
-            requests = AjaxHelpers.requests(test);
             cohortsView = new CohortsView({
                 model: cohorts,
                 contentGroups: contentGroups,
@@ -215,6 +214,11 @@ function(Backbone, $, AjaxHelpers, TemplateHelpers, CohortsView, CohortCollectio
         };
 
         beforeEach(function() {
+            xhrFactory = sinon.useFakeXMLHttpRequest();
+            requests = [];
+            requests.currentIndex = 0;
+            requests.restore = function() { xhrFactory.restore(); };
+            xhrFactory.onCreate = function(req) { requests.push(req); };
             setFixtures('<ul class="instructor-nav">'
                     + '<li class="nav-item"><button type="button" data-section="cohort_management" '
                     + 'class="active-section">Cohort Management</button></li></ul><div></div>'
@@ -227,6 +231,10 @@ function(Backbone, $, AjaxHelpers, TemplateHelpers, CohortsView, CohortCollectio
             TemplateHelpers.installTemplate('templates/instructor/instructor_dashboard_2/notification');
             TemplateHelpers.installTemplate('templates/instructor/instructor_dashboard_2/cohort-state');
             TemplateHelpers.installTemplate('templates/file-upload');
+        });
+
+        afterEach(function() {
+            requests.restore();
         });
 
         it('shows an error if no cohorts are defined', function() {

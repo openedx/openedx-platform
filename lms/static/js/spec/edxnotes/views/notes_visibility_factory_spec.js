@@ -1,12 +1,13 @@
 define([
-    'jquery', 'underscore', 'annotator_1.2.9', 'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers',
+    'jquery', 'underscore', 'sinon', 'annotator_1.2.9', 'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers',
     'js/edxnotes/views/notes_visibility_factory', 'js/edxnotes/utils/notes_collector', 'js/spec/edxnotes/helpers'
 ], function(
-    $, _, Annotator, AjaxHelpers, NotesVisibilityFactory, NotesCollector, Helpers
+    $, _, sinon, Annotator, AjaxHelpers, NotesVisibilityFactory, NotesCollector, Helpers
 ) {
     'use strict';
 
     describe('EdxNotes ToggleNotesFactory', function() {
+        var requests, xhrFactory;
         var params = {
             endpoint: '/test_endpoint/',
             user: 'user12345',
@@ -17,6 +18,11 @@ define([
         };
 
         beforeEach(function() {
+            xhrFactory = sinon.useFakeXMLHttpRequest();
+            requests = [];
+            requests.currentIndex = 0;
+            requests.restore = function() { xhrFactory.restore(); };
+            xhrFactory.onCreate = function(req) { requests.push(req); };
             loadFixtures(
                 'js/fixtures/edxnotes/edxnotes_wrapper.html',
                 'js/fixtures/edxnotes/toggle_notes.html'
@@ -42,10 +48,10 @@ define([
             }
             $('.annotator-notice').remove();
             NotesCollector.cleanup();
+            requests.restore();
         });
 
         it('can toggle notes', function() {
-            var requests = AjaxHelpers.requests(this);
 
             expect(this.toggleVisibilityButton).not.toHaveClass('is-disabled');
             expect(this.label).toContainText('Hide notes');
@@ -85,8 +91,7 @@ define([
         });
 
         it('can handle errors', function() {
-            var requests = AjaxHelpers.requests(this),
-                $errorContainer = $('.annotator-notice');
+            var $errorContainer = $('.annotator-notice');
 
             this.toggleVisibilityButton.click();
             AjaxHelpers.respondWithError(requests);

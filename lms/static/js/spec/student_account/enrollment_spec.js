@@ -1,22 +1,29 @@
-define(['edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers', 'js/student_account/enrollment'],
-    function(AjaxHelpers, EnrollmentInterface) {
+define(['sinon', 'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers', 'js/student_account/enrollment'],
+    function(sinon, AjaxHelpers, EnrollmentInterface) {
         'use strict';
 
         describe('EnrollmentInterface', function() {
             var COURSE_KEY = 'edX/DemoX/Fall',
                 ENROLL_URL = '/api/commerce/v0/baskets/',
                 FORWARD_URL = '/course_modes/choose/edX/DemoX/Fall/',
-                EMBARGO_MSG_URL = '/embargo/blocked-message/enrollment/default/';
+                EMBARGO_MSG_URL = '/embargo/blocked-message/enrollment/default/',
+                requests, xhrFactory;
 
             beforeEach(function() {
                 // Mock the redirect call
                 spyOn(EnrollmentInterface, 'redirect').and.callFake(function() {});
+                xhrFactory = sinon.useFakeXMLHttpRequest();
+                requests = [];
+                requests.currentIndex = 0;
+                requests.restore = function() { xhrFactory.restore(); };
+                xhrFactory.onCreate = function(req) { requests.push(req); };
+            });
+
+            afterEach(function() {
+                requests.restore();
             });
 
             it('enrolls a user in a course', function() {
-                // Spy on Ajax requests
-                var requests = AjaxHelpers.requests(this);
-
                 // Attempt to enroll the user
                 EnrollmentInterface.enroll(COURSE_KEY, FORWARD_URL);
 
@@ -36,9 +43,6 @@ define(['edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers', 'js/student_account
             });
 
             it('redirects the user if enrollment fails', function() {
-                // Spy on Ajax requests
-                var requests = AjaxHelpers.requests(this);
-
                 // Attempt to enroll the user
                 EnrollmentInterface.enroll(COURSE_KEY, FORWARD_URL);
 
@@ -50,9 +54,6 @@ define(['edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers', 'js/student_account
             });
 
             it('redirects the user if blocked by an embargo', function() {
-                // Spy on Ajax requests
-                var requests = AjaxHelpers.requests(this);
-
                 // Attempt to enroll the user
                 EnrollmentInterface.enroll(COURSE_KEY, FORWARD_URL);
 

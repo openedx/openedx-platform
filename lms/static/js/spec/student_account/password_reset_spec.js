@@ -4,16 +4,18 @@
     define([
         'jquery',
         'underscore',
+        'sinon',
         'common/js/spec_helpers/template_helpers',
         'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers',
         'js/student_account/models/PasswordResetModel',
         'js/student_account/views/PasswordResetView'
     ],
-    function($, _, TemplateHelpers, AjaxHelpers, PasswordResetModel, PasswordResetView) {
+    function($, _, sinon, TemplateHelpers, AjaxHelpers, PasswordResetModel, PasswordResetView) {
         describe('edx.student.account.PasswordResetView', function() {
             var model = null,
                 view = null,
                 requests = null,
+                xhrFactory = null,
                 EMAIL = 'xsy@edx.org',
                 FORM_DESCRIPTION = {
                     method: 'post',
@@ -43,8 +45,6 @@
                     model: model
                 });
 
-                // Spy on AJAX requests
-                requests = AjaxHelpers.requests(that);
             };
 
             var submitEmail = function(validationSuccess) {
@@ -72,6 +72,15 @@
                 setFixtures('<div id="password-reset-form" class="form-wrapper hidden"></div>');
                 TemplateHelpers.installTemplate('templates/student_account/password_reset');
                 TemplateHelpers.installTemplate('templates/student_account/form_field');
+                xhrFactory = sinon.useFakeXMLHttpRequest();
+                requests = [];
+                requests.currentIndex = 0;
+                requests.restore = function() { xhrFactory.restore(); };
+                xhrFactory.onCreate = function(req) { requests.push(req); };
+            });
+
+            afterEach(function() {
+                requests.restore();
             });
 
             it('allows the user to request a new password', function() {

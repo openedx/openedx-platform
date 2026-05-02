@@ -1,14 +1,17 @@
 define([
     'underscore',
     'URI',
+    'sinon',
     'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers',
     'edx-ui-toolkit/js/pagination/paging-collection',
     'common/js/components/views/search_field'
-], function(_, URI, AjaxHelpers, PagingCollection, SearchFieldView) {
+], function(_, URI, sinon, AjaxHelpers, PagingCollection, SearchFieldView) {
     'use strict';
 
     describe('SearchFieldView', function() {
         var searchFieldView,
+            requests,
+            xhrFactory,
             mockUrl = '/api/mock_collection';
 
         var newCollection = function(size, perPage) {
@@ -55,7 +58,16 @@ define([
         };
 
         beforeEach(function() {
+            xhrFactory = sinon.useFakeXMLHttpRequest();
+            requests = [];
+            requests.currentIndex = 0;
+            requests.restore = function() { xhrFactory.restore(); };
+            xhrFactory.onCreate = function(req) { requests.push(req); };
             setFixtures('<section class="test-search"></section>');
+        });
+
+        afterEach(function() {
+            requests.restore();
         });
 
         it('correctly displays itself', function() {
@@ -72,7 +84,6 @@ define([
         });
 
         it('refreshes the collection when performing a search', function() {
-            var requests = AjaxHelpers.requests(this);
             searchFieldView = createSearchFieldView().render();
             searchFieldView.$('.search-field').val('foo');
             searchFieldView.$('.action-search').click();
@@ -92,7 +103,6 @@ define([
         });
 
         it('can clear the search', function() {
-            var requests = AjaxHelpers.requests(this);
             searchFieldView = createSearchFieldView({
                 searchString: 'foo'
             }).render();

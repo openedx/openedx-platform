@@ -380,15 +380,23 @@ def searchable_doc_tags(object_id: OpaqueKey) -> dict:
     # if we used get_all_object_tags() to load all the tags for the library in a single query rather than loading the
     # tags for each component separately.
     all_tags = tagging_api.get_object_tags(str(object_id)).all()
-    if not all_tags:
-        # Clear out tags in the index when unselecting all tags for the block, otherwise
-        # it would remain the last value if a cleared Fields.tags field is not included
-        return {Fields.tags: {}}
     result = {
         Fields.tags_taxonomy: [],
         Fields.tags_level0: [],
-        # ... other levels added as needed
+        Fields.tags_level1: [],
+        Fields.tags_level2: [],
+        Fields.tags_level3: [],
     }
+    if not all_tags:
+        # Clear out tags in the index when the block has no tags (anymore)
+        # Note: due to a bug in Meilisearch, just setting `{Fields.tags: {}}`
+        # does not properly clear previously-set values within the tags field,
+        # like tags.level0, so we explicitly set `{Field.tags: { level0: [], ... }}`
+        # etc. to work around that and ensure tags are removed properly.
+        # In the future, if Meili's bug is fixed, we can perhaps simplify this
+        # and go back to just setting {Fields.tags: {}}` when there are no tags.
+        return {Fields.tags: result}
+
     for obj_tag in all_tags:
         # Add the taxonomy name:
         if obj_tag.taxonomy.name not in result[Fields.tags_taxonomy]:
@@ -594,8 +602,8 @@ def searchable_doc_for_container(
     found using faceted search.
 
     If no container is found for the given container key, the returned document
-    will contain only basic information derived from the container key, and no
-    Fields.type value will be included in the returned dict.
+    will contain only basic information derived from the container key, and some
+    fields like Fields.display_name will be missing from the returned dict.
     """
     doc = {
         Fields.id: meili_id_from_opaque_key(container_key),

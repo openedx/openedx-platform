@@ -1,4 +1,5 @@
 import $ from 'jquery';
+import sinon from 'sinon';
 import AjaxHelpers from 'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers';
 import EditHelpers from 'js/spec_helpers/edit_helpers';
 import ContainerView from 'js/views/container';
@@ -12,7 +13,7 @@ describe('Container View', () => {
     describe('Supports reordering components', () => {
         var model, containerView, mockContainerHTML, init, getComponent,
             getDragHandle, dragComponentVertically, dragComponentAbove,
-            verifyRequest, verifyNumReorderCalls, respondToRequest, notificationSpy,
+            verifyRequest, verifyNumReorderCalls, respondToRequest, notificationSpy, requests, xhrFactory,
 
             rootLocator = 'locator-container',
             containerTestUrl = '/xblock/' + rootLocator,
@@ -32,6 +33,11 @@ describe('Container View', () => {
         mockContainerHTML = readFixtures('templates/mock/mock-container-xblock.underscore');
 
         beforeEach(() => {
+            xhrFactory = sinon.useFakeXMLHttpRequest();
+            requests = [];
+            requests.currentIndex = 0;
+            requests.restore = function() { xhrFactory.restore(); };
+            xhrFactory.onCreate = function(req) { requests.push(req); };
             EditHelpers.installMockXBlock();
             EditHelpers.installViewTemplates();
             appendSetFixtures('<div class="wrapper-xblock level-page studio-xblock-wrapper" data-locator="' + rootLocator + '"></div>');
@@ -50,12 +56,12 @@ describe('Container View', () => {
         });
 
         afterEach(() => {
+            requests.restore();
             EditHelpers.uninstallMockXBlock();
             containerView.remove();
         });
 
-        init = function(caller) {
-            var requests = AjaxHelpers.requests(caller);
+        init = function() {
             containerView.render();
 
             AjaxHelpers.respondWithJson(requests, {
@@ -76,7 +82,6 @@ describe('Container View', () => {
             // drag and drop fails as the elements on bunched on top of each other.
             $('.level-element').css('height', 230);
 
-            return requests;
         };
 
         getComponent = function(locator) {
@@ -132,7 +137,7 @@ describe('Container View', () => {
         };
 
         it('can reorder within a group', () => {
-            var requests = init(this);
+            init();
             // Drag the third component in Group A to be the first
             dragComponentAbove(groupAComponent3, groupAComponent1);
             respondToRequest(requests, 0, 200);
@@ -140,7 +145,7 @@ describe('Container View', () => {
         });
 
         it('can drag from one group to another', () => {
-            var requests = init(this);
+            init();
             // Drag the first component in Group B to the top of group A.
             dragComponentAbove(groupBComponent1, groupAComponent1);
 
@@ -154,7 +159,7 @@ describe('Container View', () => {
         });
 
         it('does not remove from old group if addition to new group fails', () => {
-            var requests = init(this);
+            init();
             // Drag the first component in Group B to the first group.
             dragComponentAbove(groupBComponent1, groupAComponent1);
             respondToRequest(requests, 0, 500);
@@ -166,7 +171,7 @@ describe('Container View', () => {
         });
 
         it('can swap group A and group B', () => {
-            var requests = init(this);
+            init();
             // Drag Group B before group A.
             dragComponentAbove(groupB, groupA);
             respondToRequest(requests, 0, 200);
@@ -175,8 +180,8 @@ describe('Container View', () => {
 
         describe('Shows a saving message', () => {
             it('hides saving message upon success', () => {
-                var requests, savingOptions;
-                requests = init(this);
+                var savingOptions;
+                init();
 
                 // Drag the first component in Group B to the first group.
                 dragComponentAbove(groupBComponent1, groupAComponent1);
@@ -188,7 +193,7 @@ describe('Container View', () => {
             });
 
             it('does not hide saving message if failure', () => {
-                var requests = init(this);
+                init();
 
                 // Drag the first component in Group B to the first group.
                 dragComponentAbove(groupBComponent1, groupAComponent1);

@@ -2,20 +2,26 @@
 
 import $ from 'jquery';
 import _ from 'underscore';
+import sinon from 'sinon';
 import AjaxHelpers from 'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers';
 import EditHelpers from 'js/spec_helpers/edit_helpers';
 import EditXBlockModal from 'js/views/modals/edit_xblock';
 import XBlockInfo from 'js/models/xblock_info';
 
 describe('EditXBlockModal', function() {
-    var model, modal, showModal;
+    var model, modal, showModal, requests, xhrFactory;
 
-    showModal = function(requests, mockHtml, options) {
+    showModal = function(mockHtml, options) {
         var $xblockElement = $('.xblock');
         return EditHelpers.showEditModal(requests, $xblockElement, model, mockHtml, options);
     };
 
     beforeEach(function() {
+        xhrFactory = sinon.useFakeXMLHttpRequest();
+        requests = [];
+        requests.currentIndex = 0;
+        requests.restore = function() { xhrFactory.restore(); };
+        xhrFactory.onCreate = function(req) { requests.push(req); };
         EditHelpers.installEditTemplates();
         appendSetFixtures('<div class="xblock" data-locator="mock-xblock"></div>');
         model = new XBlockInfo({
@@ -26,6 +32,7 @@ describe('EditXBlockModal', function() {
     });
 
     afterEach(function() {
+        requests.restore();
         EditHelpers.cancelModalIfShowing();
     });
 
@@ -44,39 +51,34 @@ describe('EditXBlockModal', function() {
         });
 
         it('can show itself', function() {
-            var requests = AjaxHelpers.requests(this);
-            modal = showModal(requests, mockXBlockEditorHtml);
+            modal = showModal(mockXBlockEditorHtml);
             expect(EditHelpers.isShowingModal(modal)).toBeTruthy();
             EditHelpers.cancelModal(modal);
             expect(EditHelpers.isShowingModal(modal)).toBeFalsy();
         });
 
         it('does not show the "Save" button', function() {
-            var requests = AjaxHelpers.requests(this);
-            modal = showModal(requests, mockXBlockEditorHtml);
+            modal = showModal(mockXBlockEditorHtml);
             expect(modal.$('.action-save')).not.toBeVisible();
             expect(modal.$('.action-cancel').text()).toBe('Close');
         });
 
         it('shows the correct title', function() {
-            var requests = AjaxHelpers.requests(this);
-            modal = showModal(requests, mockXBlockEditorHtml);
+            modal = showModal(mockXBlockEditorHtml);
             expect(modal.$('.modal-window-title').text()).toBe('Editing: Component');
         });
 
         it('does not show any editor mode buttons', function() {
-            var requests = AjaxHelpers.requests(this);
-            modal = showModal(requests, mockXBlockEditorHtml);
+            modal = showModal(mockXBlockEditorHtml);
             expect(modal.$('.editor-modes a').length).toBe(0);
         });
 
         it('hides itself and refreshes after save notification', function() {
-            var requests = AjaxHelpers.requests(this),
-                refreshed = false,
+            var refreshed = false,
                 refresh = function() {
                     refreshed = true;
                 };
-            modal = showModal(requests, mockXBlockEditorHtml, {refresh: refresh});
+            modal = showModal(mockXBlockEditorHtml, {refresh: refresh});
             modal.editorView.notifyRuntime('save', {state: 'start'});
             modal.editorView.notifyRuntime('save', {state: 'end'});
             expect(EditHelpers.isShowingModal(modal)).toBeFalsy();
@@ -85,12 +87,11 @@ describe('EditXBlockModal', function() {
         });
 
         it('hides itself and does not refresh after cancel notification', function() {
-            var requests = AjaxHelpers.requests(this),
-                refreshed = false,
+            var refreshed = false,
                 refresh = function() {
                     refreshed = true;
                 };
-            modal = showModal(requests, mockXBlockEditorHtml, {refresh: refresh});
+            modal = showModal(mockXBlockEditorHtml, {refresh: refresh});
             modal.editorView.notifyRuntime('cancel');
             expect(EditHelpers.isShowingModal(modal)).toBeFalsy();
             expect(refreshed).toBeFalsy();
@@ -103,8 +104,7 @@ describe('EditXBlockModal', function() {
             mockCustomButtonsHtml = readFixtures('templates/mock/mock-xblock-editor-with-custom-buttons.underscore');
 
             it('hides the modal\'s button bar', function() {
-                var requests = AjaxHelpers.requests(this);
-                modal = showModal(requests, mockCustomButtonsHtml);
+                modal = showModal(mockCustomButtonsHtml);
                 expect(modal.$('.modal-actions')).toBeHidden();
             });
         });
@@ -124,24 +124,21 @@ describe('EditXBlockModal', function() {
         });
 
         it('can render itself', function() {
-            var requests = AjaxHelpers.requests(this);
-            modal = showModal(requests, mockXModuleEditorHtml);
+            modal = showModal(mockXModuleEditorHtml);
             expect(EditHelpers.isShowingModal(modal)).toBeTruthy();
             EditHelpers.cancelModal(modal);
             expect(EditHelpers.isShowingModal(modal)).toBeFalsy();
         });
 
         it('shows the correct title', function() {
-            var requests = AjaxHelpers.requests(this);
-            modal = showModal(requests, mockXModuleEditorHtml);
+            modal = showModal(mockXModuleEditorHtml);
             expect(modal.$('.modal-window-title span.modal-button-title').text()).toBe('Editing: Component');
         });
 
         it('shows the correct default buttons', function() {
-            var requests = AjaxHelpers.requests(this),
-                editorButton,
+            var editorButton,
                 settingsButton;
-            modal = showModal(requests, mockXModuleEditorHtml);
+            modal = showModal(mockXModuleEditorHtml);
             expect(modal.$('.editor-modes a').length).toBe(2);
             editorButton = modal.$('.editor-button');
             settingsButton = modal.$('.settings-button');
@@ -152,10 +149,9 @@ describe('EditXBlockModal', function() {
         });
 
         it('can switch tabs', function() {
-            var requests = AjaxHelpers.requests(this),
-                editorButton,
+            var editorButton,
                 settingsButton;
-            modal = showModal(requests, mockXModuleEditorHtml);
+            modal = showModal(mockXModuleEditorHtml);
             expect(modal.$('.editor-modes a').length).toBe(2);
             editorButton = modal.$('.editor-button');
             settingsButton = modal.$('.settings-button');
@@ -172,14 +168,12 @@ describe('EditXBlockModal', function() {
             mockCustomTabsHtml = readFixtures('templates/mock/mock-xmodule-editor-with-custom-tabs.underscore');
 
             it('hides the modal\'s header', function() {
-                var requests = AjaxHelpers.requests(this);
-                modal = showModal(requests, mockCustomTabsHtml);
+                modal = showModal(mockCustomTabsHtml);
                 expect(modal.$('.modal-header')).toBeHidden();
             });
 
             it('shows the correct title', function() {
-                var requests = AjaxHelpers.requests(this);
-                modal = showModal(requests, mockCustomTabsHtml);
+                modal = showModal(mockCustomTabsHtml);
                 expect(modal.$('.component-name').text()).toBe('Editing: Component');
             });
         });
@@ -199,16 +193,14 @@ describe('EditXBlockModal', function() {
         });
 
         it('can render itself', function() {
-            var requests = AjaxHelpers.requests(this);
-            modal = showModal(requests, mockXModuleEditorHtml);
+            modal = showModal(mockXModuleEditorHtml);
             expect(EditHelpers.isShowingModal(modal)).toBeTruthy();
             EditHelpers.cancelModal(modal);
             expect(EditHelpers.isShowingModal(modal)).toBeFalsy();
         });
 
         it('does not show any mode buttons', function() {
-            var requests = AjaxHelpers.requests(this);
-            modal = showModal(requests, mockXModuleEditorHtml);
+            modal = showModal(mockXModuleEditorHtml);
             expect(modal.$('.editor-modes li').length).toBe(0);
         });
     });
