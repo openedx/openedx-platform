@@ -18,7 +18,7 @@ from lxml import etree
 from web_fragments.fragment import Fragment
 from xblock.core import XBlock
 from xblock.fields import Boolean, Dict, List, Scope, String  # pylint: disable=wrong-import-order
-from xblock_poll import PollBlock as _ExtractedPollBlock
+from xblock_poll_question import PollBlock as _ExtractedPollBlock
 
 from openedx.core.djangolib.markup import HTML, Text
 from xmodule.mako_block import MakoTemplateBlockBase
@@ -43,8 +43,9 @@ class _BuiltInPollBlock(
     Poll Block.
 
     .. deprecated:: 2026-03
-       This built-in poll block is deprecated. Please use the extracted ``PollBlock``
-       from ``xblock_poll`` instead.
+       This built-in poll block will soon be removed. Please use the extracted ``PollBlock``
+       from ``xblock_poll_question`` instead, which is unsupported but stable. Alternatively, use
+       https://github.com/open-craft/xblock-poll instead, which is supported and stable.
     """
 
     is_extracted = False
@@ -270,7 +271,7 @@ if not settings.USE_EXTRACTED_POLL_QUESTION_BLOCK:
     warnings.warn(
         "The built-in `xmodule.poll_block` PollBlock implementation is deprecated. "
         "To fix this warning, enable `USE_EXTRACTED_POLL_QUESTION_BLOCK` (set it to True) to use "
-        "`xblock_poll.PollBlock` instead. "
+        "`xblock_poll_question.PollBlock` instead. "
         "Support for the built-in implementation, and the `USE_EXTRACTED_POLL_QUESTION_BLOCK` setting, "
         "will be removed in Willow.",
         DeprecationWarning,
