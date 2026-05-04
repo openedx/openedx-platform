@@ -3,7 +3,7 @@ Video Configuration Service for XBlock runtime.
 
 This service provides video-related configuration and feature flags
 that are specific to the edx-platform implementation
-for the extracted video block in xblocks-contrib repository.
+for the extracted video block in xblocks-core repository.
 """
 
 import logging
