@@ -8,6 +8,7 @@ on:
   push:
     branches:
       - master
+      - release/*
 
 concurrency:
   # We only need to be running tests for the latest commit on each PR
