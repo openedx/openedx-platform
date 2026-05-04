@@ -81,7 +81,7 @@
     "react-focus-lock": "^1",
     "react-redux": "^5",
     "react-router-dom": "^5",
-    "react-slick": "^0.30",
+    "react-slick": "^0.31.0",
     "redux": "3.7.2",
     "redux-thunk": "2.2.0",
     "requirejs": "^2",
