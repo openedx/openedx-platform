@@ -60,7 +60,7 @@
     "datatables": "^1",
     "datatables.net-fixedcolumns": "^5",
     "edx-ui-toolkit": "^1",
-    "exports-loader": "^0.6",
+    "exports-loader": "^0.7.0",
     "file-loader": "^6",
     "font-awesome": "^4",
     "hls.js": "^1",
