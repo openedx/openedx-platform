@@ -545,7 +545,7 @@ def index_course(
     course_key: CourseKey,
     index_name: str | None = None,
     status_cb: Callable[[str], None] | None = None,
-) -> list:
+) -> list[dict]:
     """
     Rebuilds the index for a given course.
     """
