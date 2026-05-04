@@ -92,3 +92,18 @@ releases/ulmo.txt
 * SciPy is upgraded from 1.15.2 to 1.16.3
 
 .. _SciPy changelog: https://docs.scipy.org/doc/scipy/release.html
+
+releases/verawood.txt
+---------------------
+
+* Frozen at the time of the Verawood release
+* BREAKING CHANGE: Drops support for Python 3.11
+* Supports Python 3.12
+* NumPy is upgraded to 1.26.4
+* SciPy is upgraded to 1.17.1
+* Several other libraries (such as matplotlib, nltk, sympy) have also been updated
+  to newer versions. These upgrades continue improvements for Python 3.12
+  compatibility and include minor dependency refreshes.
+
+.. _SciPy changelog: https://docs.scipy.org/doc/scipy/release.html
+.. _NumPy changelog: https://numpy.org/doc/stable/release.html
