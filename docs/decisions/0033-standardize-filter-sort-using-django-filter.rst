@@ -109,7 +109,7 @@ To ensure smooth transition for existing API consumers:
 2. **Deprecation Warnings**: Return HTTP headers warning about deprecated parameters:
 
   * Deprecation: Parameter 'course' is deprecated. Use 'course_key' instead.
-  * Support will be removed in release 'quince'.
+  * Support will be removed in release '<release_name>'.
 
 3. **Gradual Migration**: 
 
