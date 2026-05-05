@@ -1,7 +1,7 @@
 Standardize Pagination Across APIs
 ===================================
 
-:Status: Proposed
+:Status: Accepted
 :Date: 2026-04-08
 :Deciders: API Working Group
 :Technical Story: Open edX REST API Standards - Pagination standardization for consistency and scalability

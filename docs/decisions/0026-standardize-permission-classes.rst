@@ -1,7 +1,7 @@
 Open edX ADR 0026: Standardize Permission Classes Across APIs
 =============================================================
 
-:Status: Proposed
+:Status: Accepted
 :Date: 2026-03-18
 :Deciders: API Working Group
 :Technical Story: Open edX REST API Standards - Permission standardization for security consistency
