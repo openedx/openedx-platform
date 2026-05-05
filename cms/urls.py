@@ -7,6 +7,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.contrib.admin import autodiscover as django_autodiscover
+from django.shortcuts import redirect
 from django.urls import include, path, re_path
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
@@ -85,7 +86,7 @@ urlpatterns = oauth2_urlpatterns + [
          ),
 
     # Darklang View to change the preview language (or dark language)
-    path('update_lang/', include('openedx.core.djangoapps.dark_lang.urls', namespace='dark_lang')),
+    path('update_lang/', lambda request: redirect(f'{settings.LMS_ROOT_URL}/update_lang/')),
 
     # For redirecting to help pages.
     path('help_token/', include('help_tokens.urls')),
