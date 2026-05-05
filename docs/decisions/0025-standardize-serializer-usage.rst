@@ -1,7 +1,7 @@
 Standardize Serializer Usage Across APIs
 ========================================
 
-:Status: Proposed
+:Status: Accepted
 :Date: 2026-03-09
 :Deciders: API Working Group
 :Technical Story: Open edX REST API Standards - Serializer standardization for consistency

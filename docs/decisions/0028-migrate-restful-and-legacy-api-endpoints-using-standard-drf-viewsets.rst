@@ -1,7 +1,7 @@
 Migrating RESTful & Legacy Django API Endpoints to Standard DRF ViewSets
 ========================================================================
 
-:Status: Proposed
+:Status: Accepted
 :Date: 2026-03-19
 :Deciders: API Working Group
 :Technical Story: Open edX REST API Standards - RESTful & Legacy Django API endpoint structure standardization using DRF ViewSets
