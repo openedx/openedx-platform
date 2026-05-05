@@ -47,7 +47,7 @@
     "@testing-library/jest-dom": "^6",
     "@testing-library/react": "^12",
     "@testing-library/user-event": "^12",
-    "babel-loader": "^9",
+    "babel-loader": "^10.0.0",
     "babel-plugin-transform-class-properties": "^6",
     "babel-polyfill": "^6",
     "backbone": "^1",
