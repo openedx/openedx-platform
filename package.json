@@ -119,7 +119,7 @@
     "plato": "^1",
     "react-test-renderer": "^16",
     "selenium-webdriver": "^4",
-    "sinon": "^19",
+    "sinon": "^21.0.0",
     "squirejs": "^0.1",
     "string-replace-loader": "^3",
     "stylelint-formatter-pretty": "^4",
