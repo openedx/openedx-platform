@@ -95,44 +95,41 @@ Relevance in edx-platform
 Code examples (authentication patterns by use case)
 ===================================================
 
-* **External API (OAuth2 JWT — clients obtain token via OAuth2 flow at** ``/oauth2/`` **):**
+* **Example APIs (Keep supporting OAuth2 JWT token & session authentication and deprecate Bearer token)**
 
 .. code-block:: python
 
-   from rest_framework import viewsets
+   # lms/djangoapps/course_home_api/dates/views.py — target state (BearerAuth removed as per decision #3)
    from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
-   from rest_framework.permissions import IsAuthenticated
-
-   class ExternalCourseViewSet(viewsets.ViewSet):
-       """External API — OAuth2 JWT authentication. Send as: Authorization: JWT <token>"""
-       authentication_classes = [JwtAuthentication]
-       permission_classes = [IsAuthenticated]
-
-* **Internal Service API (JWT issued via** ``create_jwt_for_user()`` **):**
-
-.. code-block:: python
-
-   from rest_framework import viewsets
-   from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
-   from rest_framework.permissions import IsAuthenticated
-
-   class InternalServiceViewSet(viewsets.ViewSet):
-       """Internal service-to-service API — same JwtAuthentication, different token issuance."""
-       authentication_classes = [JwtAuthentication]
-       permission_classes = [IsAuthenticated]
-
-* **Browser-based API (Session only):**
-
-.. code-block:: python
-
-   from rest_framework import viewsets
    from openedx.core.lib.api.authentication import SessionAuthenticationAllowInactiveUser
    from rest_framework.permissions import IsAuthenticated
 
-   class BrowserUIViewSet(viewsets.ViewSet):
-       """Browser UI API - Session authentication only."""
-       authentication_classes = [SessionAuthenticationAllowInactiveUser]
-       permission_classes = [IsAuthenticated]
+   class DatesTabView(RetrieveAPIView):
+       """Request details for the Dates Tab."""
+       authentication_classes = (
+           JwtAuthentication,
+           SessionAuthenticationAllowInactiveUser,
+       )
+       permission_classes = (IsAuthenticated,)
+
+
+* **Browser-first API (Session primary, JWT added & deprecate Bearer Auth):**
+
+
+.. code-block:: python
+
+   # lms/djangoapps/teams/views.py — target state (BearerAuth removed & add JWT authentication support)
+   from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
+   from openedx.core.lib.api.authentication import SessionAuthenticationAllowInactiveUser
+   from rest_framework.permissions import IsAuthenticated
+
+   class TeamsDashboardView(GenericAPIView):
+       """View methods related to the teams dashboard."""
+       authentication_classes = (
+           SessionAuthenticationAllowInactiveUser,
+           JwtAuthentication,
+       )
+       permission_classes = (IsAuthenticated,)
 
 Implementation Notes
 ====================
