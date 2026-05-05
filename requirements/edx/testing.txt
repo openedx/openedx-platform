@@ -674,7 +674,7 @@ edx-when==4.0.0
     # via
     #   -r requirements/edx/base.txt
     #   edx-proctoring
-edxval==4.0.0
+edxval==4.0.1
     # via
     #   -r requirements/edx/base.txt
     #   xblocks-contrib
