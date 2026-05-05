@@ -100,14 +100,14 @@ bleach[css]==6.3.0
     #   ora2
     #   xblock-drag-and-drop-v2
     #   xblock-poll
-boto3==1.43.0
+boto3==1.43.3
     # via
     #   -r requirements/edx/base.txt
     #   django-ses
     #   fs-s3fs
     #   ora2
     #   snowflake-connector-python
-botocore==1.43.0
+botocore==1.43.3
     # via
     #   -r requirements/edx/base.txt
     #   boto3
@@ -123,7 +123,7 @@ cachecontrol==0.14.4
     # via
     #   -r requirements/edx/base.txt
     #   firebase-admin
-cachetools==7.0.6
+cachetools==7.1.1
     # via
     #   -r requirements/edx/base.txt
     #   edxval
@@ -221,7 +221,7 @@ coverage[toml]==7.13.5
     #   pytest-cov
 crowdsourcehinter-xblock==1.0.0
     # via -r requirements/edx/base.txt
-cryptography==47.0.0
+cryptography==48.0.0
     # via
     #   -r requirements/edx/base.txt
     #   django-fernet-fields-v2
@@ -753,7 +753,7 @@ google-api-core[grpc]==2.30.3
     #   google-cloud-core
     #   google-cloud-firestore
     #   google-cloud-storage
-google-auth==2.49.2
+google-auth==2.50.0
     # via
     #   -r requirements/edx/base.txt
     #   google-api-core
@@ -835,7 +835,7 @@ hyperframe==6.1.0
     # via
     #   -r requirements/edx/base.txt
     #   h2
-icalendar==7.0.3
+icalendar==7.1.0
     # via -r requirements/edx/base.txt
 idna==3.13
     # via
@@ -1081,7 +1081,7 @@ openedx-events==11.2.0
     #   openedx-authz
     #   openedx-core
     #   ora2
-openedx-filters==3.1.0
+openedx-filters==3.3.0
     # via
     #   -r requirements/edx/base.txt
     #   edx-enterprise
@@ -1104,9 +1104,9 @@ packaging==26.2
     #   snowflake-connector-python
     #   tox
     #   wheel
-pact-python==3.3.1
+pact-python==3.4.0
     # via -r requirements/edx/testing.in
-pact-python-ffi==0.5.3.0
+pact-python-ffi==0.5.4.0
     # via pact-python
 paramiko==4.0.0
     # via
@@ -1279,7 +1279,7 @@ pynacl==1.6.2
     #   paramiko
 pynliner==0.8.0
     # via -r requirements/edx/base.txt
-pyopenssl==26.1.0
+pyopenssl==26.2.0
     # via
     #   -r requirements/edx/base.txt
     #   snowflake-connector-python
@@ -1367,7 +1367,7 @@ python3-openid==3.2.0 ; python_version >= "3"
     #   social-auth-core
 python3-saml==1.16.0
     # via -r requirements/edx/base.txt
-pytz==2026.1.post1
+pytz==2026.2
     # via
     #   -r requirements/edx/base.txt
     #   drf-yasg
@@ -1594,7 +1594,7 @@ tomlkit==0.14.0
     #   openedx-core
     #   pylint
     #   snowflake-connector-python
-tox==4.53.0
+tox==4.53.1
     # via -r requirements/edx/testing.in
 tqdm==4.67.3
     # via
@@ -1666,7 +1666,7 @@ vine==5.1.0
     #   amqp
     #   celery
     #   kombu
-virtualenv==21.3.0
+virtualenv==21.3.1
     # via tox
 voluptuous==0.16.0
     # via
@@ -1680,7 +1680,7 @@ wcmatch==10.1
     # via
     #   -r requirements/edx/base.txt
     #   pycasbin
-wcwidth==0.6.0
+wcwidth==0.7.0
     # via
     #   -r requirements/edx/base.txt
     #   prompt-toolkit

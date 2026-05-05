@@ -43,7 +43,7 @@ click-option-group==0.5.9
     # via semgrep
 colorama==0.4.6
     # via semgrep
-cryptography==47.0.0
+cryptography==48.0.0
     # via pyjwt
 exceptiongroup==1.2.2
     # via semgrep
