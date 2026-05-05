@@ -739,10 +739,6 @@ SOCIAL_SHARING_SETTINGS:
   DASHBOARD_FACEBOOK: true
   DASHBOARD_TWITTER: true
 SOFTWARE_SECURE_RETRY_MAX_ATTEMPTS: 5
-STATICFILES_STORAGE_KWARGS:
-  openedx.core.storage.ProductionS3Storage:
-    bucket_name: static
-    default_acl: null
 STATIC_ROOT_BASE: /edx/var/edxapp/staticfiles
 STATIC_URL_BASE: /static/
 STUDIO_NAME: Studio

@@ -1108,10 +1108,6 @@ SOCIAL_SHARING_SETTINGS:
   DASHBOARD_TWITTER: true
 SOFTWARE_SECURE_RETRY_MAX_ATTEMPTS: 5
 SOFTWARE_SECURE_VERIFICATION_ROUTING_KEY: hello
-STATICFILES_STORAGE_KWARGS:
-  openedx.core.storage.ProductionS3Storage:
-    bucket_name: hello
-    default_acl: hello
 STATIC_ROOT_BASE: /tmp/static
 STATIC_URL_BASE: /static
 STUDIO_NAME: Studio
@@ -1246,4 +1242,3 @@ ZENDESK_GROUP_ID_MAPPING:
 ZENDESK_OAUTH_ACCESS_TOKEN: test_zendesk_oauth
 ZENDESK_URL: https://12345.zendesk.com
 ZENDESK_USER: daemon@example.com
-
