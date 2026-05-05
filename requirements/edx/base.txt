@@ -563,7 +563,7 @@ edx-when==4.0.0
     # via
     #   -r requirements/edx/kernel.in
     #   edx-proctoring
-edxval==4.0.0
+edxval==4.0.1
     # via
     #   -r requirements/edx/kernel.in
     #   xblocks-contrib
