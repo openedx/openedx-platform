@@ -68,6 +68,8 @@ Consequences
   * Teams need to understand and implement proper authentication choices(where to use JWT or session)
   * External clients still using Bearer tokens must migrate to JWT
   * Migration effort for services currently using mixed authentication
+  * Depending on configs, Bearer tokens last ~2 weeks; JWTs expire in ~1 hour — long-running jobs that reuse
+    a token without checking expiry will start failing after migration
 
 Relevance in edx-platform
 =========================
@@ -152,7 +154,10 @@ Rollout Plan
 ------------
 
 1. Audit existing APIs and categorize — flag any using ``BearerAuthentication`` variants
-2. Check client metrics for active Bearer token usage
+2. Check active Bearer token usage via the custom monitoring attribute on
+   ``BearerAuthentication`` (see ``openedx/core/lib/api/authentication.py`` and
+   ``edx_rest_framework_extensions/auth/bearer/authentication.py`` — note both files
+   use the same attribute name, so correlate carefully to distinguish which class is active)
 3. Update ``view_auth_classes`` decorator to remove ``BearerAuthenticationAllowInactiveUser``
 4. Mark ``BearerAuthentication`` / ``BearerAuthenticationAllowInactiveUser`` deprecated in source
 5. Remove overdue ``JWT_AUTH_ADD_KID_HEADER`` toggle — make KID header always-on
@@ -163,6 +168,7 @@ References
 ==========
 
 * `OEP-0042`_ — Open edX Authentication Best Practices (primary reference)
+* `DEPR: BearerAuthentication <https://github.com/openedx/edx-drf-extensions/issues/284>`_ — Deprecation ticket for ``BearerAuthentication`` in edx-drf-extensions and edx-platform
 * Django REST Framework - Authentication and permissions
 * Django OAuth Toolkit documentation
 * Open edX Authentication Patterns Guide
