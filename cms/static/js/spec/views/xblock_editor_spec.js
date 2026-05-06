@@ -1,12 +1,13 @@
 import $ from 'jquery';
 import _ from 'underscore';
+import sinon from 'sinon';
 import AjaxHelpers from 'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers';
 import EditHelpers from 'js/spec_helpers/edit_helpers';
 import XBlockEditorView from 'js/views/xblock_editor';
 import XBlockInfo from 'js/models/xblock_info';
 
 describe('XBlockEditorView', function() {
-    var model, editor, testDisplayName, mockSaveResponse;
+    var model, editor, testDisplayName, mockSaveResponse, requests, xhrFactory;
 
     testDisplayName = 'Test Display Name';
     mockSaveResponse = {
@@ -17,6 +18,11 @@ describe('XBlockEditorView', function() {
     };
 
     beforeEach(function() {
+        xhrFactory = sinon.useFakeXMLHttpRequest();
+        requests = [];
+        requests.currentIndex = 0;
+        requests.restore = function() { xhrFactory.restore(); };
+        xhrFactory.onCreate = function(req) { requests.push(req); };
         EditHelpers.installEditTemplates();
         model = new XBlockInfo({
             id: 'testCourse/branch/draft/block/verticalFFF',
@@ -26,6 +32,10 @@ describe('XBlockEditorView', function() {
         editor = new XBlockEditorView({
             model: model
         });
+    });
+
+    afterEach(function() {
+        requests.restore();
     });
 
     describe('Editing an xblock', function() {
@@ -42,7 +52,6 @@ describe('XBlockEditorView', function() {
         mockXBlockEditorHtml = readFixtures('templates/mock/mock-xblock-editor.underscore');
 
         it('can render itself', function() {
-            var requests = AjaxHelpers.requests(this);
             editor.render();
             AjaxHelpers.respondWithJson(requests, {
                 html: mockXBlockEditorHtml,
@@ -68,7 +77,6 @@ describe('XBlockEditorView', function() {
         });
 
         it('can render itself', function() {
-            var requests = AjaxHelpers.requests(this);
             editor.render();
             AjaxHelpers.respondWithJson(requests, {
                 html: mockXModuleEditorHtml,
@@ -80,8 +88,7 @@ describe('XBlockEditorView', function() {
         });
 
         it('saves any custom metadata', function() {
-            var requests = AjaxHelpers.requests(this),
-                request, response;
+            var request, response;
             editor.render();
             AjaxHelpers.respondWithJson(requests, {
                 html: mockXModuleEditorHtml,
@@ -97,8 +104,7 @@ describe('XBlockEditorView', function() {
         });
 
         it('can render a module with only settings', function() {
-            var requests = AjaxHelpers.requests(this),
-                // eslint-disable-next-line no-shadow
+            var // eslint-disable-next-line no-shadow
                 mockXModuleEditorHtml;
             mockXModuleEditorHtml = readFixtures('templates/mock/mock-xmodule-settings-only-editor.underscore');
 

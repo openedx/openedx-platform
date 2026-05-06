@@ -6,7 +6,7 @@ Utilities for view tests.
 import json
 
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase
-from xmodule.modulestore.tests.factories import BlockFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import BlockFactory  # pylint: disable=wrong-import-order
 
 from ...helpers import xblock_studio_url
 

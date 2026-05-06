@@ -28,7 +28,7 @@ class NotificationType(TypedDict):
     # When True, user preferences are taken from the notification app's configuration,
     # overriding the `web`, `email`, `push`, `email_cadence`, and `non_editable` attributes set here.
     use_app_defaults: bool
-    # Template string for notification content (see ./docs/templates.md).
+    # Template string for notification content.
     # Wrap in gettext_lazy (_) for translation support.
     content_template: str
     # A map of variable names that can be used in the template, along with their descriptions.
@@ -58,7 +58,8 @@ class NotificationType(TypedDict):
     info: NotRequired[str]
 
 
-# For help defining new notifications, see ./docs/creating_a_new_notification_guide.md
+# For help defining new notifications, see
+# https://docs.openedx.org/en/latest/site_ops/how-tos/enable_notifications.html#creating-a-new-notification
 _COURSE_NOTIFICATION_TYPES = {
     'new_comment_on_response': {
         'notification_app': 'discussion',

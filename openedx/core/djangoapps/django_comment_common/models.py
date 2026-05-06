@@ -6,7 +6,7 @@ import logging
 
 from config_models.models import ConfigurationModel
 from django.conf import settings
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
@@ -20,8 +20,8 @@ from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.roles import GlobalStaff
 from openedx.core.djangoapps.xmodule_django.models import NoneToEmptyManager
 from openedx.core.lib.cache_utils import request_cached
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.exceptions import ItemNotFoundError  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
+from xmodule.modulestore.exceptions import ItemNotFoundError  # pylint: disable=wrong-import-order
 
 FORUM_ROLE_ADMINISTRATOR = gettext_noop('Administrator')
 FORUM_ROLE_MODERATOR = gettext_noop('Moderator')
@@ -106,7 +106,7 @@ class Role(models.Model):
             self.add_permission(per)
 
     def add_permission(self, permission):
-        self.permissions.add(Permission.objects.get_or_create(name=permission)[0])  # lint-amnesty, pylint: disable=no-member
+        self.permissions.add(Permission.objects.get_or_create(name=permission)[0])  # pylint: disable=no-member
 
     def has_permission(self, permission):
         """

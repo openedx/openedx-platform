@@ -1,4 +1,4 @@
-# lint-amnesty, pylint: disable=missing-module-docstring
+# pylint: disable=missing-module-docstring
 
 import copy
 from collections import namedtuple
@@ -47,7 +47,7 @@ class SplitMongoKVS(InheritanceKeyValueStore):
         self.aside_fields = aside_fields if aside_fields else {}
 
     def get(self, key):
-        if key.block_family == XBlockAside.entry_point:  # lint-amnesty, pylint: disable=no-else-raise
+        if key.block_family == XBlockAside.entry_point:  # pylint: disable=no-else-raise
             if key.scope not in self.VALID_SCOPES:
                 raise InvalidScopeError(key, self.VALID_SCOPES)
 
@@ -70,7 +70,7 @@ class SplitMongoKVS(InheritanceKeyValueStore):
             if key.field_name not in self._fields:
                 if key.scope == Scope.parent:
                     return self.parent
-                if key.scope == Scope.children:  # lint-amnesty, pylint: disable=no-else-raise
+                if key.scope == Scope.children:  # pylint: disable=no-else-raise
                     # didn't find children in _fields; so, see if there's a default
                     raise KeyError()
                 elif key.scope == Scope.settings:

@@ -6,11 +6,11 @@ Script for importing courseware from XML format
 from django.core.management.base import BaseCommand
 
 from openedx.core.djangoapps.django_comment_common.utils import are_permissions_roles_seeded, seed_permissions_roles
-from xmodule.contentstore.django import contentstore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.django import SignalHandler, modulestore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.xml_importer import import_course_from_xml  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.util.sandboxing import DEFAULT_PYTHON_LIB_FILENAME  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.contentstore.django import contentstore  # pylint: disable=wrong-import-order
+from xmodule.modulestore import ModuleStoreEnum  # pylint: disable=wrong-import-order
+from xmodule.modulestore.django import SignalHandler, modulestore  # pylint: disable=wrong-import-order
+from xmodule.modulestore.xml_importer import import_course_from_xml  # pylint: disable=wrong-import-order
+from xmodule.util.sandboxing import DEFAULT_PYTHON_LIB_FILENAME  # pylint: disable=wrong-import-order
 
 
 class Command(BaseCommand):

@@ -53,6 +53,11 @@ FORUM_ROLES = (
     FORUM_ROLE_COMMUNITY_TA,
 )
 
+INSTRUCTOR_DASHBOARD_ROLE_SORT_ORDER = (
+    'staff', 'limited_staff', 'instructor', 'beta', 'data_researcher',
+    *FORUM_ROLES, 'ccx_coach',
+)
+
 ROLE_DISPLAY_NAMES = {
     'instructor': _('Admin'),
     'staff': _('Staff'),
@@ -127,7 +132,7 @@ def _change_access(course, user, level, action, send_email=True):
     try:
         role = ROLES[level](course.id)
     except KeyError:
-        raise ValueError(f"unrecognized level '{level}'")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise ValueError(f"unrecognized level '{level}'")  # pylint: disable=raise-missing-from  # noqa: B904
 
     if action == 'allow':
         if level == 'ccx_coach':

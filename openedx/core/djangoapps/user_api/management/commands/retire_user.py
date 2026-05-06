@@ -1,8 +1,8 @@
-# lint-amnesty, pylint: disable=missing-module-docstring
+# pylint: disable=missing-module-docstring
 import logging
 
-from django.contrib.auth import get_user_model  # lint-amnesty, pylint: disable=unused-import
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth import get_user_model  # pylint: disable=unused-import
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from social_django.models import UserSocialAuth
@@ -65,7 +65,7 @@ class Command(BaseCommand):
         except Exception as exc:
             error_message = f'Error while reading file: {exc}'
             logger.error(error_message)
-            raise CommandError(error_message)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise CommandError(error_message)  # pylint: disable=raise-missing-from  # noqa: B904
 
         for record in userinfo:
             if isinstance(record, bytes):
@@ -137,7 +137,7 @@ class Command(BaseCommand):
                 'trying again'
             )
             logger.error(error_message)
-            raise CommandError(error_message + f': {unknown_users}')  # lint-amnesty, pylint: disable=raise-missing-from
+            raise CommandError(error_message + f': {unknown_users}')  # pylint: disable=raise-missing-from
 
         try:
             with transaction.atomic():
@@ -161,13 +161,13 @@ class Command(BaseCommand):
         except KeyError:
             error_message = f'Username not specified {user}'
             logger.error(error_message)
-            raise CommandError(error_message)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise CommandError(error_message)  # pylint: disable=raise-missing-from  # noqa: B904
         except user_model.DoesNotExist:
             error_message = f'The user "{user.username}" does not exist.'
             logger.error(error_message)
-            raise CommandError(error_message)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise CommandError(error_message)  # pylint: disable=raise-missing-from  # noqa: B904
         except Exception as exc:  # pylint: disable=broad-except
             error_message = f'500 error deactivating account: {exc}'
             logger.error(error_message)
-            raise CommandError(error_message)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise CommandError(error_message)  # pylint: disable=raise-missing-from  # noqa: B904
         logger.info("User successfully moved to the retirement pipeline")

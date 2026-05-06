@@ -150,7 +150,7 @@ class ModuleStoreSettingsMigration(TestCase):
         """
         stores = get_mixed_stores(mixed_setting)
         split_settings = [store for store in stores if store['ENGINE'].endswith('.DraftVersioningModuleStore')]
-        if len(split_settings):  # lint-amnesty, pylint: disable=len-as-condition
+        if len(split_settings):  # pylint: disable=len-as-condition
             # there should only be one setting for split
             assert len(split_settings) == 1
             # verify name
@@ -198,7 +198,7 @@ class ModuleStoreSettingsMigration(TestCase):
     def test_no_conversion(self):
         # make sure there is no migration done on an already updated config
         old_mixed_setting = self.ALREADY_UPDATED_MIXED_CONFIG
-        new_mixed_setting, new_default_store_setting = self.assertMigrated(old_mixed_setting)  # lint-amnesty, pylint: disable=unused-variable
+        new_mixed_setting, new_default_store_setting = self.assertMigrated(old_mixed_setting)  # pylint: disable=unused-variable
         assert self.is_split_configured(new_mixed_setting)
         assert old_mixed_setting == new_mixed_setting
 

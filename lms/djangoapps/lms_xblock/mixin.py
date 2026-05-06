@@ -12,8 +12,8 @@ from xblock.fields import Boolean, Dict, Scope, String
 from xblock.validation import ValidationMessage
 
 from lms.lib.utils import is_unit
-from xmodule.modulestore.inheritance import UserPartitionList  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.partitions.partitions import (  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.inheritance import UserPartitionList  # pylint: disable=wrong-import-order
+from xmodule.partitions.partitions import (  # pylint: disable=wrong-import-order
     NoSuchUserPartitionError,
     NoSuchUserPartitionGroupError,
 )
@@ -205,7 +205,7 @@ class LmsBlockMixin(XBlockMixin):
         has_invalid_groups = False
         block_is_unit = is_unit(self)
 
-        for user_partition_id, group_ids in self.group_access.items():  # lint-amnesty, pylint:disable=no-member
+        for user_partition_id, group_ids in self.group_access.items():  # pylint:disable=no-member
             try:
                 user_partition = self._get_user_partition(user_partition_id)
             except NoSuchUserPartitionError:
@@ -255,7 +255,7 @@ class LmsBlockMixin(XBlockMixin):
         Publish completion data from the front end.
         """
         completion_service = self.runtime.service(self, 'completion')
-        if completion_service is None:  # lint-amnesty, pylint: disable=no-else-raise
+        if completion_service is None:  # pylint: disable=no-else-raise
             raise JsonHandlerError(500, "No completion service found")
         elif not completion_service.completion_tracking_enabled():
             raise JsonHandlerError(404, "Completion tracking is not enabled and API calls are unexpected")

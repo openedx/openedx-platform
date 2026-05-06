@@ -6,7 +6,7 @@ from unittest.mock import patch
 from uuid import uuid4
 
 from django.conf import settings
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils.http import urlencode

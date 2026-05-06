@@ -67,7 +67,7 @@ class UserStandingTest(TestCase):
     @skip_unless_lms
     def test_disable_account(self):
         assert UserStanding.objects.filter(user=self.good_user).count() == 0
-        response = self.admin_client.post(reverse('disable_account_ajax'), {  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841
+        response = self.admin_client.post(reverse('disable_account_ajax'), {  # pylint: disable=unused-variable  # noqa: F841
             'username': self.good_user.username,
             'account_action': 'disable',
         })
@@ -79,7 +79,7 @@ class UserStandingTest(TestCase):
 
     @skip_unless_lms
     def test_reenable_account(self):
-        response = self.admin_client.post(reverse('disable_account_ajax'), {  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841
+        response = self.admin_client.post(reverse('disable_account_ajax'), {  # pylint: disable=unused-variable  # noqa: F841
             'username': self.bad_user.username,
             'account_action': 'reenable'
         })

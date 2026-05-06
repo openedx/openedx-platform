@@ -1070,7 +1070,7 @@ class TestCCXGrades(FieldOverrideTestMixin, SharedModuleStoreTestCase, LoginEnro
         get_course.return_value = self.course
         self.addCleanup(patch_context.stop)
 
-        self.client.login(username=self.student.username, password=self.TEST_PASSWORD)  # lint-amnesty, pylint: disable=no-member
+        self.client.login(username=self.student.username, password=self.TEST_PASSWORD)  # pylint: disable=no-member
         url = reverse(
             'progress',
             kwargs={'course_id': self.ccx_key}

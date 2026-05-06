@@ -13,12 +13,12 @@ WAFFLE_NAMESPACE = 'studio'
 LOG_PREFIX = 'Studio: '
 
 # Switches
-ENABLE_ACCESSIBILITY_POLICY_PAGE = WaffleSwitch(  # lint-amnesty, pylint: disable=toggle-missing-annotation
+ENABLE_ACCESSIBILITY_POLICY_PAGE = WaffleSwitch(  # pylint: disable=toggle-missing-annotation
     f'{WAFFLE_NAMESPACE}.enable_policy_page', __name__
 )
 
 # TODO: After removing this flag, add a migration to remove waffle flag in a follow-up deployment.
-ENABLE_CHECKLISTS_QUALITY = CourseWaffleFlag(  # lint-amnesty, pylint: disable=toggle-missing-annotation
+ENABLE_CHECKLISTS_QUALITY = CourseWaffleFlag(  # pylint: disable=toggle-missing-annotation
     f'{WAFFLE_NAMESPACE}.enable_checklists_quality', __name__, LOG_PREFIX
 )
 

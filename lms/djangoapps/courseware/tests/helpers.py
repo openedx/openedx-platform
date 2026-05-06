@@ -9,7 +9,7 @@ from datetime import timedelta
 from unittest.mock import Mock
 
 from django.contrib import messages
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.test import TestCase
 from django.test.client import Client, RequestFactory
 from django.urls import reverse
@@ -26,16 +26,16 @@ from lms.djangoapps.courseware.utils import verified_upgrade_deadline_link
 from lms.djangoapps.lms_xblock.field_data import LmsFieldData
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from openedx.core.lib.url_utils import quote_slashes
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.django_utils import (  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (  # pylint: disable=wrong-import-order
     TEST_DATA_SPLIT_MODULESTORE,
     ModuleStoreTestCase,
 )
-from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import (  # pylint: disable=wrong-import-order
     BlockFactory,
     CourseFactory,
 )
-from xmodule.tests import (  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.tests import (  # pylint: disable=wrong-import-order
     get_test_descriptor_system,
     get_test_system,
     prepare_block_runtime,
@@ -84,7 +84,7 @@ class BaseTestXmodule(ModuleStoreTestCase):
         runtime.get_block = modulestore().get_item
         return runtime
 
-    def initialize_module(self, runtime_kwargs=None, **kwargs):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def initialize_module(self, runtime_kwargs=None, **kwargs):  # pylint: disable=missing-function-docstring
         kwargs.update({
             'parent_location': self.section.location,
             'category': self.CATEGORY
@@ -97,7 +97,7 @@ class BaseTestXmodule(ModuleStoreTestCase):
         field_data = {}
         field_data.update(self.MODEL_DATA)
         student_data = DictFieldData(field_data)
-        self.block._field_data = LmsFieldData(self.block._field_data, student_data)  # lint-amnesty, pylint: disable=protected-access
+        self.block._field_data = LmsFieldData(self.block._field_data, student_data)  # pylint: disable=protected-access
 
         if runtime_kwargs is None:
             runtime_kwargs = {}
@@ -105,7 +105,7 @@ class BaseTestXmodule(ModuleStoreTestCase):
 
         self.item_url = str(self.block.location)
 
-    def setup_course(self):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def setup_course(self):  # pylint: disable=missing-function-docstring
         self.course = CourseFactory.create()
 
         # Turn off cache.
@@ -153,9 +153,9 @@ class BaseTestXmodule(ModuleStoreTestCase):
         )
 
 
-class XModuleRenderingTestBase(BaseTestXmodule):  # lint-amnesty, pylint: disable=missing-class-docstring
+class XModuleRenderingTestBase(BaseTestXmodule):  # pylint: disable=missing-class-docstring
 
-    # lint-amnesty, pylint: disable=arguments-differ
+    # pylint: disable=arguments-differ
     def new_module_runtime(self, **kwargs):
         """
         Create a runtime that actually does html rendering
@@ -178,9 +178,9 @@ class LoginEnrollmentTestCase(TestCase):
         """
         Create a user account, activate, and log in.
         """
-        self.email = 'foo@test.com'  # lint-amnesty, pylint: disable=attribute-defined-outside-init
-        self.password = 'Password1234'  # lint-amnesty, pylint: disable=attribute-defined-outside-init
-        self.username = 'test'  # lint-amnesty, pylint: disable=attribute-defined-outside-init
+        self.email = 'foo@test.com'  # pylint: disable=attribute-defined-outside-init
+        self.password = 'Password1234'  # pylint: disable=attribute-defined-outside-init
+        self.username = 'test'  # pylint: disable=attribute-defined-outside-init
         self.user = self.create_account(
             self.username,
             self.email,
@@ -200,7 +200,7 @@ class LoginEnrollmentTestCase(TestCase):
         assert response.status_code == status_code, f'{method} request to {url} returned status code {response.status_code}, expected status code {status_code}'  # pylint: disable=line-too-long
         return response
 
-    def assert_account_activated(self, url, method="GET", **kwargs):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def assert_account_activated(self, url, method="GET", **kwargs):  # pylint: disable=missing-function-docstring
         make_request = getattr(self.client, method.lower())
         response = make_request(url, **kwargs)
         message_list = list(messages.get_messages(response.wsgi_request))
@@ -417,7 +417,7 @@ def _create_mock_json_request(user, data, method='POST'):
     return request
 
 
-def get_expiration_banner_text(user, course, language='en'):  # lint-amnesty, pylint: disable=unused-argument
+def get_expiration_banner_text(user, course, language='en'):  # pylint: disable=unused-argument
     """
     Get text for banner that messages user course expiration date
     for different tests that depend on it.

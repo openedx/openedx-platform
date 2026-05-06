@@ -15,7 +15,7 @@ from common.djangoapps.student.tests.factories import TEST_PASSWORD, AdminFactor
 from openedx.core.djangoapps.catalog.tests.factories import CourseRunFactory
 from openedx.features.enterprise_support.admin.forms import CSVImportForm
 from xmodule.modulestore.tests.django_utils import (
-    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+    ModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
 
 
@@ -38,7 +38,7 @@ class EnrollmentAttributeOverrideViewTest(ModuleStoreTestCase):
             self.users.append(UserFactory())
 
         self.course = CourseRunFactory()
-        self.course_id = self.course.get('key')  # lint-amnesty, pylint: disable=no-member
+        self.course_id = self.course.get('key')  # pylint: disable=no-member
         self.csv_data = [
             [self.users[0].id, self.course_id, 'OP_4321'],
             [self.users[1].id, self.course_id, 'OP_8765'],

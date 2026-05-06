@@ -142,7 +142,7 @@ class TestXMLModuleStore(TestCase):
         assert shared_item_loc in other_parent.children
 
 
-class TestModuleStoreIgnore(TestXMLModuleStore):  # lint-amnesty, pylint: disable=missing-class-docstring, test-inherits-tests
+class TestModuleStoreIgnore(TestXMLModuleStore):  # pylint: disable=missing-class-docstring, test-inherits-tests
     course_dir = DATA_DIR / "course_ignore"
 
     def setUp(self):

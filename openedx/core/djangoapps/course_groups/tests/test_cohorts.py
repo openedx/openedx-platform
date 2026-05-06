@@ -7,7 +7,7 @@ from unittest.mock import call, patch
 
 import ddt
 import pytest
-from django.contrib.auth.models import AnonymousUser, User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import AnonymousUser, User  # pylint: disable=imported-auth-user
 from django.db import IntegrityError
 from django.http import Http404
 from django.test import TestCase
@@ -17,12 +17,12 @@ from openedx_events.testing import OpenEdxEventsTestMixin
 
 from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.tests.factories import UserFactory
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.django_utils import (  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (  # pylint: disable=wrong-import-order
     TEST_DATA_SPLIT_MODULESTORE,
     ModuleStoreTestCase,
 )
-from xmodule.modulestore.tests.factories import ToyCourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import ToyCourseFactory  # pylint: disable=wrong-import-order
 
 from .. import cohorts
 from ..models import CourseCohort, CourseUserGroup, CourseUserGroupPartitionGroup, UnregisteredLearnerCohortAssignments

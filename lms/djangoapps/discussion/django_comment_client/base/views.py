@@ -7,7 +7,7 @@ import time
 
 import six
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.core import exceptions
 from django.http import Http404, HttpResponse, HttpResponseServerError
 from django.utils.translation import gettext as _
@@ -1036,7 +1036,7 @@ def un_pin_thread(request, course_id, thread_id):
 @require_POST
 @login_required
 @permitted
-def follow_thread(request, course_id, thread_id):  # lint-amnesty, pylint: disable=missing-function-docstring, unused-argument
+def follow_thread(request, course_id, thread_id):  # pylint: disable=missing-function-docstring, unused-argument
     user = cc.User.from_django_user(request.user)
     course_key = CourseKey.from_string(course_id)
     course = get_course_by_id(course_key)
@@ -1052,7 +1052,7 @@ def follow_thread(request, course_id, thread_id):  # lint-amnesty, pylint: disab
 @require_POST
 @login_required
 @permitted
-def follow_commentable(request, course_id, commentable_id):  # lint-amnesty, pylint: disable=unused-argument
+def follow_commentable(request, course_id, commentable_id):  # pylint: disable=unused-argument
     """
     given a course_id and commentable id, follow this commentable
     ajax only
@@ -1066,7 +1066,7 @@ def follow_commentable(request, course_id, commentable_id):  # lint-amnesty, pyl
 @require_POST
 @login_required
 @permitted
-def unfollow_thread(request, course_id, thread_id):  # lint-amnesty, pylint: disable=unused-argument
+def unfollow_thread(request, course_id, thread_id):  # pylint: disable=unused-argument
     """
     given a course id and thread id, stop following this thread
     ajax only
@@ -1086,7 +1086,7 @@ def unfollow_thread(request, course_id, thread_id):  # lint-amnesty, pylint: dis
 @require_POST
 @login_required
 @permitted
-def unfollow_commentable(request, course_id, commentable_id):  # lint-amnesty, pylint: disable=unused-argument
+def unfollow_commentable(request, course_id, commentable_id):  # pylint: disable=unused-argument
     """
     given a course id and commentable id stop following commentable
     ajax only
@@ -1101,7 +1101,7 @@ def unfollow_commentable(request, course_id, commentable_id):  # lint-amnesty, p
 @login_required
 @csrf.csrf_exempt
 @xframe_options_exempt
-def upload(request, course_id):  # ajax upload file to a question or answer  # lint-amnesty, pylint: disable=unused-argument
+def upload(request, course_id):  # ajax upload file to a question or answer  # pylint: disable=unused-argument
     """view that handles file upload via Ajax
     """
 
@@ -1149,7 +1149,7 @@ def upload(request, course_id):  # ajax upload file to a question or answer  # l
     # Using content-type of text/plain here instead of JSON because
     # IE doesn't know how to handle the JSON response and prompts the
     # user to save the JSON as a file instead of passing it to the callback.
-    return HttpResponse(json.dumps({  # lint-amnesty, pylint: disable=http-response-with-json-dumps
+    return HttpResponse(json.dumps({  # pylint: disable=http-response-with-json-dumps
         'result': {
             'msg': result,
             'error': error,

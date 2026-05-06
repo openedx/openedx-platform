@@ -19,12 +19,12 @@ from openedx.core.djangoapps.content.course_overviews.models import CourseOvervi
 from openedx.core.djangoapps.schedules.models import ScheduleExperience
 from openedx.core.djangoapps.site_configuration.tests.factories import SiteFactory
 from openedx.core.djangolib.testing.utils import skip_unless_lms
-from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.django_utils import (  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore import ModuleStoreEnum  # pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (  # pylint: disable=wrong-import-order
     ModuleStoreTestCase,
     SharedModuleStoreTestCase,
 )
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 from ..models import Schedule
 from ..tests.factories import ScheduleConfigFactory
@@ -32,7 +32,7 @@ from ..tests.factories import ScheduleConfigFactory
 
 @ddt.ddt
 @skip_unless_lms
-class CreateScheduleTests(SharedModuleStoreTestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class CreateScheduleTests(SharedModuleStoreTestCase):  # pylint: disable=missing-class-docstring
 
     def assert_schedule_created(self, is_self_paced=True, experience_type=ScheduleExperience.EXPERIENCES.default):
         """
@@ -48,14 +48,14 @@ class CreateScheduleTests(SharedModuleStoreTestCase):  # lint-amnesty, pylint: d
         assert enrollment.schedule.upgrade_deadline is None
         assert enrollment.schedule.experience.experience_type == experience_type
 
-    def assert_schedule_not_created(self):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def assert_schedule_not_created(self):  # pylint: disable=missing-function-docstring
         course = _create_course_run(self_paced=True)
         enrollment = CourseEnrollmentFactory(
             course_id=course.id,
             mode=CourseMode.AUDIT,
         )
         with pytest.raises(Schedule.DoesNotExist):
-            enrollment.schedule  # lint-amnesty, pylint: disable=pointless-statement  # noqa: B018
+            enrollment.schedule  # pylint: disable=pointless-statement  # noqa: B018
 
     def test_create_schedule(self):
         self.assert_schedule_created()
@@ -97,7 +97,7 @@ class CreateScheduleTests(SharedModuleStoreTestCase):  # lint-amnesty, pylint: d
 
 @ddt.ddt
 @skip_unless_lms
-class UpdateScheduleTests(ModuleStoreTestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class UpdateScheduleTests(ModuleStoreTestCase):  # pylint: disable=missing-class-docstring
     ENABLED_SIGNALS = ['course_published']
     VERIFICATION_DEADLINE_DAYS = 14
 
@@ -145,7 +145,7 @@ class UpdateScheduleTests(ModuleStoreTestCase):  # lint-amnesty, pylint: disable
 
 
 @skip_unless_lms
-class ResetScheduleTests(SharedModuleStoreTestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class ResetScheduleTests(SharedModuleStoreTestCase):  # pylint: disable=missing-class-docstring
     def setUp(self):
         super().setUp()
 

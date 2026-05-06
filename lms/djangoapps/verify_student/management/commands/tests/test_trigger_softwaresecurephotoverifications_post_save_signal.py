@@ -4,7 +4,7 @@ in the verify_student module
 """
 
 
-from unittest.mock import ANY, call, patch  # lint-amnesty, pylint: disable=wrong-import-order
+from unittest.mock import ANY, call, patch  # pylint: disable=wrong-import-order
 
 from django.conf import settings
 from django.core.management import call_command

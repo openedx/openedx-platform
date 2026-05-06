@@ -105,7 +105,7 @@ class SplitTestBlockTest(XModuleXmlImportTest, PartitionTestCase):
 
         # Mock user_service user
         user_service = Mock()
-        user_service._django_user = user  # lint-amnesty, pylint: disable=protected-access
+        user_service._django_user = user  # pylint: disable=protected-access
 
         self.split_test_block = self.course_sequence.get_children()[0]
         self.split_test_block.runtime = self.course.runtime
@@ -187,7 +187,7 @@ class SplitTestBlockStudioTest(SplitTestBlockTest):
     """
 
     @patch('xmodule.split_test_block.SplitTestBlock.group_configuration_url', return_value='http://example.com')
-    def test_render_author_view(self, group_configuration_url):  # lint-amnesty, pylint: disable=unused-argument
+    def test_render_author_view(self, group_configuration_url):  # pylint: disable=unused-argument
         """
         Test the rendering of the Studio author view.
         """
@@ -353,7 +353,7 @@ class SplitTestBlockStudioTest(SplitTestBlockTest):
         assert active_children == []
         assert inactive_children == children
 
-    def test_validation_messages(self):  # lint-amnesty, pylint: disable=too-many-statements
+    def test_validation_messages(self):  # pylint: disable=too-many-statements
         """
         Test the validation messages produced for different split test configurations.
         """

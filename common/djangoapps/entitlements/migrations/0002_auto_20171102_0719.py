@@ -19,12 +19,12 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='courseentitlement',
             name='enrollment_course_run',
-            field=models.ForeignKey(to='student.CourseEnrollment', help_text='The current Course enrollment for this entitlement. If NULL the Learner has not enrolled.', null=True, on_delete=models.CASCADE),  # lint-amnesty, pylint: disable=line-too-long
+            field=models.ForeignKey(to='student.CourseEnrollment', help_text='The current Course enrollment for this entitlement. If NULL the Learner has not enrolled.', null=True, on_delete=models.CASCADE),  # pylint: disable=line-too-long
         ),
         migrations.AlterField(
             model_name='courseentitlement',
             name='expired_at',
-            field=models.DateTimeField(help_text='The date that an entitlement expired, if NULL the entitlement has not expired.', null=True),  # lint-amnesty, pylint: disable=line-too-long
+            field=models.DateTimeField(help_text='The date that an entitlement expired, if NULL the entitlement has not expired.', null=True),  # pylint: disable=line-too-long
         ),
         migrations.AlterField(
             model_name='courseentitlement',

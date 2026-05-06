@@ -16,7 +16,7 @@ from common.djangoapps.third_party_auth import pipeline
 from common.djangoapps.third_party_auth.tests.specs import base
 
 
-class GoogleOauth2IntegrationTest(base.Oauth2IntegrationTest):  # lint-amnesty, pylint: disable=test-inherits-tests
+class GoogleOauth2IntegrationTest(base.Oauth2IntegrationTest):  # pylint: disable=test-inherits-tests
     """Integration tests for provider.GoogleOauth2."""
 
     PROVIDER_NAME = "google"

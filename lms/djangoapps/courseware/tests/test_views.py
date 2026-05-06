@@ -595,7 +595,7 @@ class ViewsTestCase(BaseViewsTestCase):
     @ddt.unpack
     def test_submission_history_timezone(self, timezone, hour_diff):
         with freeze_time('2012-01-01'):
-            with (override_settings(TIME_ZONE=timezone)):  # lint-amnesty, pylint: disable=superfluous-parens
+            with (override_settings(TIME_ZONE=timezone)):  # pylint: disable=superfluous-parens
                 course = CourseFactory.create()
                 course_key = course.id
                 client = Client()
@@ -621,7 +621,7 @@ class ViewsTestCase(BaseViewsTestCase):
 
     def _email_opt_in_checkbox(self, response, org_name_string=None):
         """Check if the email opt-in checkbox appears in the response content."""
-        checkbox_html = '<input id="email-opt-in" type="checkbox" name="opt-in" class="email-opt-in" value="true" checked>'  # lint-amnesty, pylint: disable=line-too-long
+        checkbox_html = '<input id="email-opt-in" type="checkbox" name="opt-in" class="email-opt-in" value="true" checked>'  # pylint: disable=line-too-long
         if org_name_string:
             # Verify that the email opt-in checkbox appears, and that the expected
             # organization name is displayed.
@@ -879,7 +879,7 @@ class TestProgramMarketingView(SharedModuleStoreTestCase):
         super().setUpClass()
 
         modulestore_course = CourseFactory()
-        course_run = CourseRunFactory(key=str(modulestore_course.id))  # lint-amnesty, pylint: disable=no-member
+        course_run = CourseRunFactory(key=str(modulestore_course.id))  # pylint: disable=no-member
         course = CatalogCourseFactory(course_runs=[course_run])
 
         cls.data = ProgramFactory(
@@ -1118,7 +1118,7 @@ class ProgressPageTests(ProgressPageBaseTests):
 
         # Create new course
         # Enroll student into course
-        self.course = CourseFactory.create()  # lint-amnesty, pylint: disable=attribute-defined-outside-init
+        self.course = CourseFactory.create()  # pylint: disable=attribute-defined-outside-init
         CourseEnrollmentFactory(user=self.user, course_id=self.course.id, mode=CourseMode.HONOR)
 
         # Invalid Student Ids (Integer and Non-int)
@@ -1670,7 +1670,7 @@ class ProgressPageShowCorrectnessTests(ProgressPageBaseTests):
         super().setUp()
         self.staff_user = UserFactory.create(is_staff=True)
 
-    def setup_course(self, show_correctness='', due_date=None, graded=False, **course_options):  # lint-amnesty, pylint: disable=arguments-differ
+    def setup_course(self, show_correctness='', due_date=None, graded=False, **course_options):  # pylint: disable=arguments-differ
         """
         Set up course with a subsection with the given show_correctness, due_date, and graded settings.
         """
@@ -1717,10 +1717,10 @@ class ProgressPageShowCorrectnessTests(ProgressPageBaseTests):
             choices=[True, False],
             choice_names=['choice_0', 'choice_1']
         )
-        self.problem = BlockFactory.create(category='problem', parent_location=self.vertical.location,  # lint-amnesty, pylint: disable=attribute-defined-outside-init
+        self.problem = BlockFactory.create(category='problem', parent_location=self.vertical.location,  # pylint: disable=attribute-defined-outside-init
                                            data=problem_xml, display_name='Problem 1')
         # Re-fetch the course from the database
-        self.course = self.store.get_course(self.course.id)  # lint-amnesty, pylint: disable=attribute-defined-outside-init
+        self.course = self.store.get_course(self.course.id)  # pylint: disable=attribute-defined-outside-init
 
     def answer_problem(self, value=1, max_value=1):
         """
@@ -1746,7 +1746,7 @@ class ProgressPageShowCorrectnessTests(ProgressPageBaseTests):
         block.runtime.publish(self.problem, 'grade', grade_dict)
 
     def assert_progress_page_show_grades(self, response, show_correctness, due_date, graded,
-                                         show_grades, score, max_score, avg):  # lint-amnesty, pylint: disable=unused-argument
+                                         show_grades, score, max_score, avg):  # pylint: disable=unused-argument
         """
         Ensures that grades and scores are shown or not shown on the progress page as required.
         """
@@ -2021,7 +2021,7 @@ class GenerateUserCertTests(ModuleStoreTestCase):
 
     @patch('lms.djangoapps.courseware.views.views.is_course_passed', return_value=True)
     @override_settings(CERT_QUEUE='certificates')
-    def test_user_with_passing_grade(self, mock_is_course_passed):  # lint-amnesty, pylint: disable=unused-argument
+    def test_user_with_passing_grade(self, mock_is_course_passed):  # pylint: disable=unused-argument
         # If user has above passing grading then json will return cert generating message and
         # status valid code
         with patch('xblocks_contrib.problem.capa.xqueue_interface.XQueueInterface.send_to_queue') as mock_send_to_queue:
@@ -2652,13 +2652,13 @@ class TestRenderPublicVideoXBlock(TestBasePublicVideoXBlock):
         self.assertEqual(expected_status_code, embed_response.status_code)  # noqa: PT009
 
 
-class TestRenderXBlockSelfPaced(TestRenderXBlock):  # lint-amnesty, pylint: disable=test-inherits-tests
+class TestRenderXBlockSelfPaced(TestRenderXBlock):  # pylint: disable=test-inherits-tests
     """
     Test rendering XBlocks for a self-paced course. Relies on the query
     count assertions in the tests defined by RenderXBlockMixin.
     """
 
-    def setUp(self):  # lint-amnesty, pylint: disable=useless-super-delegation
+    def setUp(self):  # pylint: disable=useless-super-delegation
         super().setUp()
 
     def course_options(self):
@@ -2693,7 +2693,7 @@ class EnterpriseConsentTestCase(EnterpriseTestConsentRequired, ModuleStoreTestCa
                 reverse("progress", kwargs=dict(course_id=course_id)),
                 reverse("student_progress", kwargs=dict(course_id=course_id, student_id=str(self.user.id))),
         ):
-            self.verify_consent_required(self.client, url)  # lint-amnesty, pylint: disable=no-value-for-parameter
+            self.verify_consent_required(self.client, url)  # pylint: disable=no-value-for-parameter
 
 
 @ddt.ddt

@@ -65,14 +65,14 @@ LOGGER = logging.getLogger(__name__)
 WAFFLE_NAMESPACE = 'videos'
 
 # Waffle switch for enabling/disabling video image upload feature
-VIDEO_IMAGE_UPLOAD_ENABLED = WaffleSwitch(  # lint-amnesty, pylint: disable=toggle-missing-annotation
+VIDEO_IMAGE_UPLOAD_ENABLED = WaffleSwitch(  # pylint: disable=toggle-missing-annotation
     f'{WAFFLE_NAMESPACE}.video_image_upload_enabled', __name__
 )
 
 # Waffle flag namespace for studio
 WAFFLE_STUDIO_FLAG_NAMESPACE = 'studio'
 
-ENABLE_VIDEO_UPLOAD_PAGINATION = CourseWaffleFlag(  # lint-amnesty, pylint: disable=toggle-missing-annotation
+ENABLE_VIDEO_UPLOAD_PAGINATION = CourseWaffleFlag(  # pylint: disable=toggle-missing-annotation
     f'{WAFFLE_STUDIO_FLAG_NAMESPACE}.enable_video_upload_pagination', __name__
 )
 # Default expiration, in seconds, of one-time URLs used for uploading videos.

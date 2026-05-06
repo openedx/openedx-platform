@@ -180,14 +180,14 @@ def set_has_profile_image(username, is_uploaded, upload_dt=None):
         ValueError: is_uploaded was True, but no upload datetime was supplied.
         UserNotFound: no user with username `username` exists.
     """
-    if is_uploaded and upload_dt is None:  # lint-amnesty, pylint: disable=no-else-raise
+    if is_uploaded and upload_dt is None:  # pylint: disable=no-else-raise
         raise ValueError("No upload datetime was supplied.")
     elif not is_uploaded:
         upload_dt = None
     try:
         profile = UserProfile.objects.get(user__username=username)
     except ObjectDoesNotExist:
-        raise UserNotFound()  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise UserNotFound()  # pylint: disable=raise-missing-from  # noqa: B904
 
     profile.profile_image_uploaded_at = upload_dt
     profile.save()

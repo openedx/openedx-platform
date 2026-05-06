@@ -11,7 +11,7 @@ from edx_ace.utils import date
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.student.models import CourseEnrollment
-from common.djangoapps.student.signals import ENROLLMENT_TRACK_UPDATED  # lint-amnesty, pylint: disable=unused-import
+from common.djangoapps.student.signals import ENROLLMENT_TRACK_UPDATED  # pylint: disable=unused-import
 from lms.djangoapps.courseware.models import (
     CourseDynamicUpgradeDeadlineConfiguration,
     DynamicUpgradeDeadlineConfiguration,
@@ -40,7 +40,7 @@ def create_schedule(sender, **kwargs):  # pylint: disable=unused-argument
         schedule_details = _create_schedule(enrollment, enrollment_created)
 
         if schedule_details:
-            log.debug(  # lint-amnesty, pylint: disable=logging-not-lazy
+            log.debug(  # pylint: disable=logging-not-lazy
                 'Schedules: created a new schedule starting at ' +
                 '%s with an upgrade deadline of %s and experience type: %s',
                 schedule_details['content_availability_date'],
@@ -87,7 +87,7 @@ def reset_schedule_on_mode_change(sender, user, course_key, mode, **kwargs):  # 
     reset_self_paced_schedule(user, course_key, use_enrollment_date=use_enrollment_date)
 
 
-def _calculate_upgrade_deadline(course_id, content_availability_date):  # lint-amnesty, pylint: disable=missing-function-docstring
+def _calculate_upgrade_deadline(course_id, content_availability_date):  # pylint: disable=missing-function-docstring
     upgrade_deadline = None
 
     delta = _get_upgrade_deadline_delta_setting(course_id)
@@ -109,7 +109,7 @@ def _calculate_upgrade_deadline(course_id, content_availability_date):  # lint-a
     return upgrade_deadline
 
 
-def _get_upgrade_deadline_delta_setting(course_id):  # lint-amnesty, pylint: disable=missing-function-docstring
+def _get_upgrade_deadline_delta_setting(course_id):  # pylint: disable=missing-function-docstring
     delta = None
 
     global_config = DynamicUpgradeDeadlineConfiguration.current()

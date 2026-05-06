@@ -125,7 +125,7 @@ class DOTAccessTokenExchangeViewTestFacebook(
     """
     Rerun AccessTokenExchangeViewTestFacebook tests against DOT backend
     """
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 # This is necessary because cms does not implement third party auth
@@ -141,7 +141,7 @@ class DOTAccessTokenExchangeViewTestGoogle(
     Tests for AccessTokenExchangeView used with Google using
     django-oauth-toolkit backend.
     """
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 @skip_unless_lms

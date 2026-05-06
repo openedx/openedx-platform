@@ -1,13 +1,16 @@
 define([
     'jquery',
     'URI',
+    'sinon',
     'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers',
     'edx-ui-toolkit/js/pagination/paging-collection',
     'js/views/paging',
     'js/views/paging_header'
 ],
-function($, URI, AjaxHelpers, PagingCollection, PagingView, PagingHeader) {
+function($, URI, sinon, AjaxHelpers, PagingCollection, PagingView, PagingHeader) {
     'use strict';
+
+    var requests, xhrFactory;
 
     var createPageableItem = function(index) {
         var id = 'item_' + index;
@@ -78,15 +81,23 @@ function($, URI, AjaxHelpers, PagingCollection, PagingView, PagingHeader) {
             });
 
         beforeEach(function() {
+            xhrFactory = sinon.useFakeXMLHttpRequest();
+            requests = [];
+            requests.currentIndex = 0;
+            requests.restore = function() { xhrFactory.restore(); };
+            xhrFactory.onCreate = function(req) { requests.push(req); };
             var collection = new TestPagingCollection();
             collection.url = '/dummy/';
             pagingView = new MockPagingView({collection: collection});
         });
 
+        afterEach(function() {
+            requests.restore();
+        });
+
         describe('PagingView', function() {
             describe('setPage', function() {
                 it('can set the current page', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingView.setPage(1);
                     respondWithMockItems(requests);
                     expect(pagingView.collection.getPageNumber()).toBe(1);
@@ -96,7 +107,6 @@ function($, URI, AjaxHelpers, PagingCollection, PagingView, PagingHeader) {
                 });
 
                 it('should not change page after a server error', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingView.setPage(1);
                     respondWithMockItems(requests);
                     pagingView.setPage(2);
@@ -109,7 +119,6 @@ function($, URI, AjaxHelpers, PagingCollection, PagingView, PagingHeader) {
 
             describe('nextPage', function() {
                 it('does not move forward after a server error', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingView.setPage(1);
                     respondWithMockItems(requests);
                     pagingView.nextPage();
@@ -118,7 +127,6 @@ function($, URI, AjaxHelpers, PagingCollection, PagingView, PagingHeader) {
                 });
 
                 it('can move to the next page', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingView.setPage(1);
                     respondWithMockItems(requests);
                     pagingView.nextPage();
@@ -129,7 +137,6 @@ function($, URI, AjaxHelpers, PagingCollection, PagingView, PagingHeader) {
                 });
 
                 it('can not move forward from the final page', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingView.setPage(2);
                     respondWithMockItems(requests);
                     pagingView.nextPage();
@@ -139,7 +146,6 @@ function($, URI, AjaxHelpers, PagingCollection, PagingView, PagingHeader) {
 
             describe('previousPage', function() {
                 it('can move back a page', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingView.setPage(2);
                     respondWithMockItems(requests);
                     pagingView.previousPage();
@@ -148,7 +154,6 @@ function($, URI, AjaxHelpers, PagingCollection, PagingView, PagingHeader) {
                 });
 
                 it('can not move back from the first page', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingView.setPage(1);
                     respondWithMockItems(requests);
                     pagingView.previousPage();
@@ -156,7 +161,6 @@ function($, URI, AjaxHelpers, PagingCollection, PagingView, PagingHeader) {
                 });
 
                 it('does not move back after a server error', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingView.setPage(2);
                     respondWithMockItems(requests);
                     pagingView.previousPage();
@@ -167,7 +171,6 @@ function($, URI, AjaxHelpers, PagingCollection, PagingView, PagingHeader) {
 
             describe('toggleSortOrder', function() {
                 it('can toggle direction of the current sort', function() {
-                    var requests = AjaxHelpers.requests(this);
                     expect(pagingView.collection.sortDirection).toBe('desc');
                     pagingView.toggleSortOrder('date-col');
                     respondWithMockItems(requests);
@@ -178,7 +181,6 @@ function($, URI, AjaxHelpers, PagingCollection, PagingView, PagingHeader) {
                 });
 
                 it('sets the correct default sort direction for a column', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingView.toggleSortOrder('name-col');
                     respondWithMockItems(requests);
                     expect(pagingView.sortDisplayName()).toBe('Name');
@@ -222,7 +224,6 @@ function($, URI, AjaxHelpers, PagingCollection, PagingView, PagingHeader) {
                 });
 
                 it('does not move forward if a server error occurs', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingView.setPage(1);
                     respondWithMockItems(requests);
                     pagingHeader.$('.next-page-link').click();
@@ -232,7 +233,6 @@ function($, URI, AjaxHelpers, PagingCollection, PagingView, PagingHeader) {
                 });
 
                 it('can move to the next page', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingView.setPage(1);
                     respondWithMockItems(requests);
                     pagingHeader.$('.next-page-link').click();
@@ -241,21 +241,18 @@ function($, URI, AjaxHelpers, PagingCollection, PagingView, PagingHeader) {
                 });
 
                 it('should be enabled when there is at least one more page', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingView.setPage(1);
                     respondWithMockItems(requests);
                     expect(pagingHeader.$('.next-page-link')).not.toHaveClass('is-disabled');
                 });
 
                 it('should be disabled on the final page', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingView.setPage(2);
                     respondWithMockItems(requests);
                     expect(pagingHeader.$('.next-page-link')).toHaveClass('is-disabled');
                 });
 
                 it('should be disabled on an empty page', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingView.setPage(1);
                     AjaxHelpers.respondWithJson(requests, mockEmptyPage);
                     expect(pagingHeader.$('.next-page-link')).toHaveClass('is-disabled');
@@ -270,7 +267,6 @@ function($, URI, AjaxHelpers, PagingCollection, PagingView, PagingHeader) {
                 });
 
                 it('does not move back if a server error occurs', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingView.setPage(2);
                     respondWithMockItems(requests);
                     pagingHeader.$('.previous-page-link').click();
@@ -279,7 +275,6 @@ function($, URI, AjaxHelpers, PagingCollection, PagingView, PagingHeader) {
                 });
 
                 it('can go back a page', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingView.setPage(2);
                     respondWithMockItems(requests);
                     pagingHeader.$('.previous-page-link').click();
@@ -288,21 +283,18 @@ function($, URI, AjaxHelpers, PagingCollection, PagingView, PagingHeader) {
                 });
 
                 it('should be disabled on the first page', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingView.setPage(1);
                     respondWithMockItems(requests);
                     expect(pagingHeader.$('.previous-page-link')).toHaveClass('is-disabled');
                 });
 
                 it('should be enabled on the second page', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingView.setPage(2);
                     respondWithMockItems(requests);
                     expect(pagingHeader.$('.previous-page-link')).not.toHaveClass('is-disabled');
                 });
 
                 it('should be disabled for an empty page', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingView.setPage(1);
                     AjaxHelpers.respondWithJson(requests, mockEmptyPage);
                     expect(pagingHeader.$('.previous-page-link')).toHaveClass('is-disabled');
@@ -311,8 +303,7 @@ function($, URI, AjaxHelpers, PagingCollection, PagingView, PagingHeader) {
 
             describe('Page metadata section', function() {
                 it('shows the correct metadata for the current page', function() {
-                    var requests = AjaxHelpers.requests(this),
-                        message;
+                    var message;
                     pagingView.setPage(1);
                     respondWithMockItems(requests);
                     message = pagingHeader.$('.meta').html().trim();
@@ -322,8 +313,7 @@ function($, URI, AjaxHelpers, PagingCollection, PagingView, PagingHeader) {
                 });
 
                 it('shows the correct metadata when sorted ascending', function() {
-                    var requests = AjaxHelpers.requests(this),
-                        message;
+                    var message;
                     pagingView.setPage(1);
                     pagingView.toggleSortOrder('name-col');
                     respondWithMockItems(requests);
@@ -336,21 +326,18 @@ function($, URI, AjaxHelpers, PagingCollection, PagingView, PagingHeader) {
 
             describe('Item count label', function() {
                 it('should show correct count on first page', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingView.setPage(1);
                     respondWithMockItems(requests);
                     expect(pagingHeader.$('.count-current-shown')).toHaveHtml('1-3');
                 });
 
                 it('should show correct count on second page', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingView.setPage(2);
                     respondWithMockItems(requests);
                     expect(pagingHeader.$('.count-current-shown')).toHaveHtml('4-4');
                 });
 
                 it('should show correct count for an empty collection', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingView.setPage(1);
                     AjaxHelpers.respondWithJson(requests, mockEmptyPage);
                     expect(pagingHeader.$('.count-current-shown')).toHaveHtml('0-0');
@@ -359,21 +346,18 @@ function($, URI, AjaxHelpers, PagingCollection, PagingView, PagingHeader) {
 
             describe('Item total label', function() {
                 it('should show correct total on the first page', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingView.setPage(1);
                     respondWithMockItems(requests);
                     expect(pagingHeader.$('.count-total')).toHaveText('4 total');
                 });
 
                 it('should show correct total on the second page', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingView.setPage(2);
                     respondWithMockItems(requests);
                     expect(pagingHeader.$('.count-total')).toHaveText('4 total');
                 });
 
                 it('should show zero total for an empty collection', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingView.setPage(1);
                     AjaxHelpers.respondWithJson(requests, mockEmptyPage);
                     expect(pagingHeader.$('.count-total')).toHaveText('0 total');
@@ -382,14 +366,12 @@ function($, URI, AjaxHelpers, PagingCollection, PagingView, PagingHeader) {
 
             describe('Sort order label', function() {
                 it('should show correct initial sort order', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingView.setPage(1);
                     respondWithMockItems(requests);
                     expect(pagingHeader.$('.sort-order')).toHaveText('Date');
                 });
 
                 it('should show updated sort order', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingView.toggleSortOrder('name-col');
                     respondWithMockItems(requests);
                     expect(pagingHeader.$('.sort-order')).toHaveText('Name');

@@ -519,28 +519,6 @@ def enable_course_optimizer(course_id):
     return ENABLE_COURSE_OPTIMIZER.is_enabled(course_id)
 
 
-# .. toggle_name: legacy_studio.logged_out_home
-# .. toggle_implementation: WaffleFlag
-# .. toggle_default: False
-# .. toggle_description: Temporarily fall back to the old Studio "How it Works" page when unauthenticated
-# .. toggle_use_cases: temporary
-# .. toggle_creation_date: 2025-03-14
-# .. toggle_target_removal_date: 2025-09-14
-# .. toggle_tickets: https://github.com/openedx/edx-platform/issues/36275
-# .. toggle_warning: In Ulmo, this toggle will be removed, along with the legacy page. The only available
-#  behavior will be to send the user to the log-in page with a redirect to Studio Course Listing (/home).
-LEGACY_STUDIO_LOGGED_OUT_HOME = WaffleFlag('legacy_studio.logged_out_home', __name__)
-
-
-def use_legacy_logged_out_home():
-    """
-    Returns whether the old "how it works" page should be shown.
-
-    If not, then we should just go to the login page w/ redirect to studio course listing.
-    """
-    return LEGACY_STUDIO_LOGGED_OUT_HOME.is_enabled()
-
-
 # .. toggle_name: contentstore.enable_course_optimizer_check_prev_run_links
 # .. toggle_implementation: CourseWaffleFlag
 # .. toggle_default: False

@@ -16,7 +16,7 @@ from unittest.mock import patch
 import ddt
 import pytest
 from celery.states import FAILURE, SUCCESS
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.test.utils import override_settings
 from django.urls import reverse
 from xblocks_contrib.problem.capa.responsetypes import StudentInputError
@@ -43,8 +43,8 @@ from lms.djangoapps.instructor_task.tests.test_base import (
 )
 from openedx.core.djangoapps.util.testing import TestConditionalContent
 from openedx.core.lib.url_utils import quote_slashes
-from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import BlockFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore import ModuleStoreEnum  # pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import BlockFactory  # pylint: disable=wrong-import-order
 
 log = logging.getLogger(__name__)
 
@@ -377,7 +377,7 @@ class TestRescoringTask(TestIntegrationTask):
                 InstructorTaskModuleTestCase.problem_location(problem_url_name)
             )
             block.data = problem_xml
-            with self.module_store.branch_setting(ModuleStoreEnum.Branch.draft_preferred, block.location.course_key):  # lint-amnesty, pylint: disable=line-too-long
+            with self.module_store.branch_setting(ModuleStoreEnum.Branch.draft_preferred, block.location.course_key):  # pylint: disable=line-too-long
                 self.module_store.update_item(block, self.user.id)
                 self.module_store.publish(block.location, self.user.id)
         else:
@@ -609,7 +609,7 @@ class TestGradeReportConditionalContent(TestReportMixin, TestConditionalContent,
             Arguments:
                 dicts: tuple of dicts
             """
-            return dict([item for d in dicts for item in d.items()])  # lint-amnesty, pylint: disable=consider-using-dict-comprehension
+            return dict([item for d in dicts for item in d.items()])  # pylint: disable=consider-using-dict-comprehension
 
         def user_partition_group(user):
             """Return a dict having single key with value equals to students group in partition"""

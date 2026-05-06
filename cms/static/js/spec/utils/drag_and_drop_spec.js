@@ -303,18 +303,24 @@ function(sinon, ContentDragger, Notification, AjaxHelpers, $, _) {
             });
         });
         describe('AJAX', function() {
+            var requests, xhrFactory;
             beforeEach(function() {
+                xhrFactory = sinon.useFakeXMLHttpRequest();
+                requests = [];
+                requests.currentIndex = 0;
+                requests.restore = function() { xhrFactory.restore(); };
+                xhrFactory.onCreate = function(req) { requests.push(req); };
                 this.savingSpies = jasmine.stealth.spyOnConstructor(Notification, 'Mini', ['show', 'hide']);
                 this.savingSpies.show.and.returnValue(this.savingSpies);
                 this.clock = sinon.useFakeTimers();
             });
             afterEach(function() {
+                requests.restore();
                 this.clock.restore();
                 jasmine.stealth.clearSpies();
             });
             it('should send an update on reorder from one parent to another', function() {
-                var requests, request, savingOptions;
-                requests = AjaxHelpers.requests(this);
+                var request, savingOptions;
                 ContentDragger.dragState.dropDestination = $('#unit-4');
                 ContentDragger.dragState.attachMethod = 'after';
                 ContentDragger.dragState.parentList = $('#subsection-2');
@@ -345,8 +351,7 @@ function(sinon, ContentDragger, Notification, AjaxHelpers, $, _) {
                 expect($('#subsection-2').data('refresh')).toHaveBeenCalled();
             });
             it('should send an update on reorder within the same parent', function() {
-                var requests = AjaxHelpers.requests(this),
-                    request;
+                var request;
                 ContentDragger.dragState.dropDestination = $('#unit-2');
                 ContentDragger.dragState.attachMethod = 'after';
                 ContentDragger.dragState.parentList = $('#subsection-1');

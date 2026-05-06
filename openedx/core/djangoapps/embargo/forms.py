@@ -49,7 +49,7 @@ class RestrictedCourseForm(forms.ModelForm):
         try:
             course_key = CourseKey.from_string(cleaned_id)
         except InvalidKeyError:
-            raise forms.ValidationError(error_msg)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise forms.ValidationError(error_msg)  # pylint: disable=raise-missing-from  # noqa: B904
 
         if not modulestore().has_course(course_key):
             raise forms.ValidationError(error_msg)

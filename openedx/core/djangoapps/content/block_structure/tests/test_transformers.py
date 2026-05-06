@@ -21,7 +21,7 @@ class TestBlockStructureTransformers(ChildrenMapTestMixin, TestCase):
         """
         Mock transformer that is not registered.
         """
-        pass  # lint-amnesty, pylint: disable=unnecessary-pass
+        pass  # pylint: disable=unnecessary-pass
 
     def setUp(self):
         super().setUp()

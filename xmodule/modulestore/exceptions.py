@@ -15,14 +15,14 @@ class MultipleCourseBlocksFound(Exception):
     """
     Raise this exception when Iterating over the course blocks return multiple course blocks.
     """
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 class MultipleLibraryBlocksFound(Exception):
     """
     Raise this exception when Iterating over the library blocks return multiple library blocks.
     """
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 class InsufficientSpecificationError(Exception):
@@ -47,7 +47,7 @@ class ReferentialIntegrityError(Exception):
     xblock points to a nonexistent child (which probably raises ItemNotFoundError instead depending
     on context).
     """
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 class DuplicateItemError(Exception):
@@ -103,7 +103,7 @@ class InvalidBranchSetting(Exception):
     Raised when the process' branch setting did not match the required setting for the attempted operation on a store.
     """
     def __init__(self, expected_setting, actual_setting):
-        super().__init__(f"Invalid branch: expected {expected_setting} but got {actual_setting}")  # lint-amnesty, pylint: disable=line-too-long, super-with-arguments
+        super().__init__(f"Invalid branch: expected {expected_setting} but got {actual_setting}")  # pylint: disable=line-too-long, super-with-arguments
         self.expected_setting = expected_setting
         self.actual_setting = actual_setting
 

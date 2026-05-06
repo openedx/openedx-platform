@@ -20,27 +20,16 @@ PACT_FILE = "api-courseware-contract.json"
 class ProviderVerificationServer(LiveServerTestCase):
     """ Live Server for Pact Verification"""
 
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-
-        cls.PACT_URL = cls.live_server_url
-
-        cls.verifier = Verifier(
-            provider='lms',
-            provider_base_url=cls.PACT_URL,
-        )
-
-    @classmethod
-    def tearDownClass(cls):
-        super().tearDownClass()
-
     @override_waffle_flag(DISCOUNT_APPLICABILITY_FLAG, active=True)
     def test_verify_pact(self):
-        output, _ = self.verifier.verify_pacts(
-            os.path.join(PACT_DIR, PACT_FILE),
-            headers=['Pact-Authentication: Allow', ],
-            provider_states_setup_url=f"{self.PACT_URL}{reverse('courseware_api:provider-state-view')}",
+        (
+            Verifier(name='lms')
+            .add_transport(url=self.live_server_url)
+            .add_source(os.path.join(PACT_DIR, PACT_FILE))
+            .add_custom_header('Pact-Authentication', 'Allow')
+            .state_handler(
+                f"{self.live_server_url}{reverse('courseware_api:provider-state-view')}",
+                body=True,
+            )
+            .verify()
         )
-
-        assert output == 0

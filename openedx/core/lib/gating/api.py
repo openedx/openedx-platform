@@ -6,7 +6,7 @@ import json
 import logging
 
 from completion.models import BlockCompletion
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.urls import reverse
 from django.utils.translation import gettext as _
 from milestones import api as milestones_api
@@ -18,8 +18,8 @@ from lms.djangoapps.course_blocks.api import get_course_blocks
 from lms.djangoapps.courseware.access import _has_access_to_course
 from lms.djangoapps.grades.api import SubsectionGradeFactory
 from openedx.core.lib.gating.exceptions import GatingValidationError
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.exceptions import ItemNotFoundError  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
+from xmodule.modulestore.exceptions import ItemNotFoundError  # pylint: disable=wrong-import-order
 
 log = logging.getLogger(__name__)
 
@@ -72,7 +72,7 @@ def _validate_min_score(min_score):
         try:
             min_score = int(min_score)
         except ValueError:
-            raise GatingValidationError(message)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise GatingValidationError(message)  # pylint: disable=raise-missing-from  # noqa: B904
 
         if min_score < 0 or min_score > 100:
             raise GatingValidationError(message)

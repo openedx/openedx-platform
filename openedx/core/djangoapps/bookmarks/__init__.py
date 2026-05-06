@@ -1,6 +1,6 @@
 """
-# lint-amnesty, pylint: disable=django-not-configured
-# lint-amnesty, pylint: disable=django-not-configured
+# pylint: disable=django-not-configured
+# pylint: disable=django-not-configured
 Bookmarks module.
 """
 

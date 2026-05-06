@@ -1,4 +1,4 @@
-# lint-amnesty, pylint: disable=missing-module-docstring
+# pylint: disable=missing-module-docstring
 import logging
 from datetime import datetime
 from typing import Dict  # noqa: UP035
@@ -6,15 +6,15 @@ from typing import Dict  # noqa: UP035
 from opaque_keys.edx.keys import CourseKey
 
 from openedx.core import types
-from xmodule.partitions.enrollment_track_partition_generator import (  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.partitions.enrollment_track_partition_generator import (  # pylint: disable=wrong-import-order
     create_enrollment_track_partition_with_course_id,
 )
-from xmodule.partitions.partitions import (  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.partitions.partitions import (  # pylint: disable=wrong-import-order
     ENROLLMENT_TRACK_PARTITION_ID,
-    Group,  # lint-amnesty, pylint: disable=wrong-import-order
+    Group,  # pylint: disable=wrong-import-order
 )
 from xmodule.partitions.partitions_service import (
-    get_user_partition_groups,  # lint-amnesty, pylint: disable=wrong-import-order
+    get_user_partition_groups,  # pylint: disable=wrong-import-order
 )
 
 from .base import OutlineProcessor

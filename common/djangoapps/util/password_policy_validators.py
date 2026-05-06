@@ -22,7 +22,7 @@ log = logging.getLogger(__name__)
 DEFAULT_MAX_PASSWORD_LENGTH = 5000
 
 
-def create_validator_config(name, options={}):  # lint-amnesty, pylint: disable=dangerous-default-value  # noqa: B006
+def create_validator_config(name, options={}):  # pylint: disable=dangerous-default-value  # noqa: B006
     """
     This function is meant to be used for testing purposes to create validators
     easily. It returns a validator config of the form:
@@ -70,7 +70,7 @@ def password_validators_instruction_texts():
             complexity_instructions=' & '.join(complexity_instructions)
         )
     else:
-        return _(f'Your password must contain {length_instruction}.')  # lint-amnesty, pylint: disable=translation-of-non-string
+        return _(f'Your password must contain {length_instruction}.')  # pylint: disable=translation-of-non-string
 
 
 def password_validators_restrictions():
@@ -98,7 +98,7 @@ def normalize_password(password):
             password = str(password, encoding='utf8')
         except UnicodeDecodeError:
             # no reason to get into weeds
-            raise ValidationError([_('Invalid password.')])  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise ValidationError([_('Invalid password.')])  # pylint: disable=raise-missing-from  # noqa: B904
     return unicodedata.normalize('NFKC', password)
 
 
@@ -143,7 +143,7 @@ def _validate_condition(password, fn, min_count):
     return valid_count >= min_count
 
 
-class MinimumLengthValidator(DjangoMinimumLengthValidator):  # lint-amnesty, pylint: disable=missing-class-docstring
+class MinimumLengthValidator(DjangoMinimumLengthValidator):  # pylint: disable=missing-class-docstring
     def get_instruction_text(self):
         return ngettext(
             'at least %(min_length)d character',
@@ -168,7 +168,7 @@ class MaximumLengthValidator:
     def __init__(self, max_length=75):
         self.max_length = max_length
 
-    def validate(self, password, user=None):  # lint-amnesty, pylint: disable=unused-argument
+    def validate(self, password, user=None):  # pylint: disable=unused-argument
         if len(password) > self.max_length:
             raise ValidationError(
                 ngettext(
@@ -205,7 +205,7 @@ class AlphabeticValidator:
     def __init__(self, min_alphabetic=0):
         self.min_alphabetic = min_alphabetic
 
-    def validate(self, password, user=None):  # lint-amnesty, pylint: disable=unused-argument
+    def validate(self, password, user=None):  # pylint: disable=unused-argument
         if _validate_condition(password, lambda c: c.isalpha(), self.min_alphabetic):
             return
         raise ValidationError(
@@ -225,7 +225,7 @@ class AlphabeticValidator:
             self.min_alphabetic
         ) % {'min_alphabetic': self.min_alphabetic}
 
-    def get_instruction_text(self):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def get_instruction_text(self):  # pylint: disable=missing-function-docstring
         if self.min_alphabetic > 0:
             return ngettext(
                 '%(num)d letter',
@@ -253,7 +253,7 @@ class NumericValidator:
     def __init__(self, min_numeric=0):
         self.min_numeric = min_numeric
 
-    def validate(self, password, user=None):  # lint-amnesty, pylint: disable=unused-argument
+    def validate(self, password, user=None):  # pylint: disable=unused-argument
         if _validate_condition(password, lambda c: c.isnumeric(), self.min_numeric):
             return
         raise ValidationError(
@@ -273,7 +273,7 @@ class NumericValidator:
             self.min_numeric
         ) % {'min_numeric': self.min_numeric}
 
-    def get_instruction_text(self):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def get_instruction_text(self):  # pylint: disable=missing-function-docstring
         if self.min_numeric > 0:
             return ngettext(
                 '%(num)d number',
@@ -301,7 +301,7 @@ class UppercaseValidator:
     def __init__(self, min_upper=0):
         self.min_upper = min_upper
 
-    def validate(self, password, user=None):  # lint-amnesty, pylint: disable=unused-argument
+    def validate(self, password, user=None):  # pylint: disable=unused-argument
         if _validate_condition(password, lambda c: c.isupper(), self.min_upper):
             return
         raise ValidationError(
@@ -321,7 +321,7 @@ class UppercaseValidator:
             self.min_upper
         ) % {'min_upper': self.min_upper}
 
-    def get_instruction_text(self):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def get_instruction_text(self):  # pylint: disable=missing-function-docstring
         if self.min_upper > 0:
             return ngettext(
                 '%(num)d uppercase letter',
@@ -349,7 +349,7 @@ class LowercaseValidator:
     def __init__(self, min_lower=0):
         self.min_lower = min_lower
 
-    def validate(self, password, user=None):  # lint-amnesty, pylint: disable=unused-argument
+    def validate(self, password, user=None):  # pylint: disable=unused-argument
         if _validate_condition(password, lambda c: c.islower(), self.min_lower):
             return
         raise ValidationError(
@@ -369,7 +369,7 @@ class LowercaseValidator:
             self.min_lower
         ) % {'min_lower': self.min_lower}
 
-    def get_instruction_text(self):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def get_instruction_text(self):  # pylint: disable=missing-function-docstring
         if self.min_lower > 0:
             return ngettext(
                 '%(num)d lowercase letter',
@@ -398,7 +398,7 @@ class PunctuationValidator:
     def __init__(self, min_punctuation=0):
         self.min_punctuation = min_punctuation
 
-    def validate(self, password, user=None):  # lint-amnesty, pylint: disable=unused-argument
+    def validate(self, password, user=None):  # pylint: disable=unused-argument
         if _validate_condition(password, lambda c: 'P' in unicodedata.category(c), self.min_punctuation):
             return
         raise ValidationError(
@@ -418,7 +418,7 @@ class PunctuationValidator:
             self.min_punctuation
         ) % {'min_punctuation': self.min_punctuation}
 
-    def get_instruction_text(self):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def get_instruction_text(self):  # pylint: disable=missing-function-docstring
         if self.min_punctuation > 0:
             return ngettext(
                 '%(num)d punctuation mark',
@@ -446,7 +446,7 @@ class SymbolValidator:
     def __init__(self, min_symbol=0):
         self.min_symbol = min_symbol
 
-    def validate(self, password, user=None):  # lint-amnesty, pylint: disable=unused-argument
+    def validate(self, password, user=None):  # pylint: disable=unused-argument
         if _validate_condition(password, lambda c: 'S' in unicodedata.category(c), self.min_symbol):
             return
         raise ValidationError(
@@ -466,7 +466,7 @@ class SymbolValidator:
             self.min_symbol
         ) % {'min_symbol': self.min_symbol}
 
-    def get_instruction_text(self):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def get_instruction_text(self):  # pylint: disable=missing-function-docstring
         if self.min_symbol > 0:
             return ngettext(
                 '%(num)d symbol',

@@ -622,7 +622,7 @@ class CourseIdListViewTestCase(CourseApiTestViewMixin, ModuleStoreTestCase):
         assert filtered_response.data['results'][0].startswith(f'course-v1:{self.course.org}+')
 
 
-class LazyPageNumberPaginationTestCase(TestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class LazyPageNumberPaginationTestCase(TestCase):  # pylint: disable=missing-class-docstring
 
     def test_lazy_page_number_pagination(self):
         number_sequence = range(20)

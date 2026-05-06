@@ -20,9 +20,9 @@ from openedx.core.djangoapps.course_apps.toggles import exams_ida_enabled
 from openedx.core.djangoapps.discussions.config.waffle_utils import legacy_discussion_experience_enabled
 from openedx.core.lib.teams_config import CONTENT_GROUPS_FOR_TEAMS, TeamsConfig, TeamsetType
 from openedx.features.course_experience import COURSE_ENABLE_UNENROLLED_ACCESS_FLAG
-from xmodule.course_block import get_available_providers  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.exceptions import InvalidProctoringProvider  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.course_block import get_available_providers  # pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
+from xmodule.modulestore.exceptions import InvalidProctoringProvider  # pylint: disable=wrong-import-order
 from xmodule.partitions.partitions import MINIMUM_UNUSED_PARTITION_ID
 from xmodule.partitions.partitions_service import get_all_partitions_for_course
 
@@ -191,14 +191,14 @@ class CourseMetadata:
             if filter_fields and field.name not in filter_fields:
                 continue
 
-            field_help = _(field.help)  # lint-amnesty, pylint: disable=translation-of-non-string
+            field_help = _(field.help)  # pylint: disable=translation-of-non-string
             help_args = field.runtime_options.get('help_format_args')
             if help_args is not None:
                 field_help = field_help.format(**help_args)
 
             result[field.name] = {
                 'value': field.read_json(block),
-                'display_name': _(field.display_name),  # lint-amnesty, pylint: disable=translation-of-non-string
+                'display_name': _(field.display_name),  # pylint: disable=translation-of-non-string
                 'help': field_help,
                 'deprecated': field.runtime_options.get('deprecated', False),
                 'hide_on_enabled_publisher': field.runtime_options.get('hide_on_enabled_publisher', False)
@@ -232,7 +232,7 @@ class CourseMetadata:
                     else:
                         key_values[key] = block.fields[key].from_json(val)
             except (TypeError, ValueError) as err:
-                raise ValueError(_("Incorrect format for field '{name}'. {detailed_message}").format(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+                raise ValueError(_("Incorrect format for field '{name}'. {detailed_message}").format(  # pylint: disable=raise-missing-from  # noqa: B904
                     name=model['display_name'], detailed_message=str(err)))
 
         return cls.update_from_dict(key_values, block, user)

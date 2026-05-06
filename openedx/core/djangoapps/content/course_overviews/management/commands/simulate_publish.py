@@ -26,7 +26,7 @@ from opaque_keys.edx.keys import CourseKey
 
 from lms.djangoapps.ccx.tasks import course_published_handler as ccx_receiver_fn
 from openedx.core.djangoapps.content.course_overviews.models import SimulateCoursePublishConfig
-from xmodule.modulestore.django import SignalHandler, modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import SignalHandler, modulestore  # pylint: disable=wrong-import-order
 
 log = logging.getLogger('simulate_publish')
 
@@ -194,7 +194,7 @@ class Command(BaseCommand):
             if options['force_lms']:
                 log.info("Forcing simulate_publish to run in LMS process.")
             else:
-                log.fatal(  # lint-amnesty, pylint: disable=logging-not-lazy
+                log.fatal(  # pylint: disable=logging-not-lazy
                     "simulate_publish should be run as a CMS (Studio) " +
                     "command, not %s (override with --force-lms).",
                     settings.SERVICE_VARIANT
@@ -245,7 +245,7 @@ class Command(BaseCommand):
         log.info("%d receivers specified: %s", len(receiver_names), ", ".join(receiver_names))
         receiver_names_set = set(receiver_names)
         for receiver_fn in get_receiver_fns():
-            if receiver_fn == ccx_receiver_fn and not skip_ccx:  # lint-amnesty, pylint: disable=comparison-with-callable
+            if receiver_fn == ccx_receiver_fn and not skip_ccx:  # pylint: disable=comparison-with-callable
                 continue
             fn_name = name_from_fn(receiver_fn)
             if fn_name not in receiver_names_set:

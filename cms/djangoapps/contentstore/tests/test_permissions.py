@@ -13,7 +13,7 @@ from common.djangoapps.student import auth
 from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRole, OrgInstructorRole, OrgStaffRole
 from common.djangoapps.student.tests.factories import UserFactory
 from xmodule.modulestore.tests.django_utils import (
-    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+    ModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
 
 
@@ -101,7 +101,7 @@ class TestCourseAccess(ModuleStoreTestCase):
             user = users.pop()
             group.add_users(user)
             user_by_role[role].append(user)
-            self.assertTrue(auth.has_course_author_access(user, self.course_key), f"{user} does not have access")  # lint-amnesty, pylint: disable=line-too-long  # noqa: PT009
+            self.assertTrue(auth.has_course_author_access(user, self.course_key), f"{user} does not have access")  # pylint: disable=line-too-long  # noqa: PT009
 
         course_team_url = reverse_course_url('course_team_handler', self.course_key)
         response = self.client.get_html(course_team_url)
@@ -139,4 +139,4 @@ class TestCourseAccess(ModuleStoreTestCase):
                     auth.remove_users(self.user, role(self.course_key.org), user)
                 else:
                     auth.remove_users(self.user, role(self.course_key), user)
-                self.assertFalse(auth.has_course_author_access(user, self.course_key), f"{user} remove didn't work")  # lint-amnesty, pylint: disable=line-too-long  # noqa: PT009
+                self.assertFalse(auth.has_course_author_access(user, self.course_key), f"{user} remove didn't work")  # pylint: disable=line-too-long  # noqa: PT009

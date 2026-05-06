@@ -3,7 +3,7 @@ Permissions classes for User-API aware views.
 """
 
 
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from rest_framework import permissions

@@ -85,7 +85,7 @@ class XModuleFactory(Factory):
         model = Dummy
 
     @lazy_attribute
-    def modulestore(self):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def modulestore(self):  # pylint: disable=missing-function-docstring
         msg = "XMODULE_FACTORY_LOCK not enabled. Please use ModuleStoreTestCase as your test baseclass."
         assert XMODULE_FACTORY_LOCK.is_enabled(), msg
 
@@ -106,7 +106,7 @@ class CourseFactory(XModuleFactory):
 
     # pylint: disable=unused-argument
     @classmethod
-    def _create(cls, target_class, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ
+    def _create(cls, target_class, **kwargs):  # pylint: disable=arguments-differ
         """
         Create and return a new course. For performance reasons, we do not emit
         signals during this process, but if you need signals to run, you can
@@ -265,7 +265,7 @@ class LibraryFactory(XModuleFactory):
 
     # pylint: disable=unused-argument
     @classmethod
-    def _create(cls, target_class, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ
+    def _create(cls, target_class, **kwargs):  # pylint: disable=arguments-differ
         """
         Create a library with a unique name and key.
         All class attributes (from this class and base classes) are automagically
@@ -296,14 +296,14 @@ class BlockFactory(XModuleFactory):
     descriptive_tag = None
 
     @lazy_attribute_sequence
-    def display_name(self, n):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def display_name(self, n):  # pylint: disable=missing-function-docstring
         if self.descriptive_tag:
             return f"{self.category} {n} - {self.descriptive_tag}"
         else:
             return f"{self.category} {n}"
 
     @lazy_attribute
-    def location(self):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def location(self):  # pylint: disable=missing-function-docstring
         if self.display_name is None:
             dest_name = uuid4().hex
         else:
@@ -316,7 +316,7 @@ class BlockFactory(XModuleFactory):
         return new_location
 
     @lazy_attribute
-    def parent_location(self):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def parent_location(self):  # pylint: disable=missing-function-docstring
         default_location = getattr(last_course, 'loc', None)
         try:
             parent = self.parent
@@ -332,7 +332,7 @@ class BlockFactory(XModuleFactory):
 
     @classmethod
     @strip_key
-    def _create(cls, target_class, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ, too-many-statements, unused-argument
+    def _create(cls, target_class, **kwargs):  # pylint: disable=arguments-differ, too-many-statements, unused-argument
         """
         Uses ``**kwargs``:
 
@@ -436,7 +436,7 @@ class BlockFactory(XModuleFactory):
                 store.update_item(course, user_id)
 
             # parent and publish the item, so it can be accessed
-            if 'detached' not in block._class_tags:  # lint-amnesty, pylint: disable=protected-access
+            if 'detached' not in block._class_tags:  # pylint: disable=protected-access
                 parent.children.append(location)
                 store.update_item(parent, user_id)
                 if publish_item:
@@ -711,7 +711,7 @@ class CourseAboutFactory(XModuleFactory):
     """
 
     @classmethod
-    def _create(cls, target_class, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ, unused-argument
+    def _create(cls, target_class, **kwargs):  # pylint: disable=arguments-differ, unused-argument
         """
         Uses **kwargs:
 

@@ -236,7 +236,7 @@ class CourseMode(models.Model):
         app_label = "course_modes"
         unique_together = ('course', 'mode_slug', 'currency')
 
-    def __init__(self, *args, **kwargs):  # lint-amnesty, pylint: disable=useless-super-delegation
+    def __init__(self, *args, **kwargs):  # pylint: disable=useless-super-delegation
         super().__init__(*args, **kwargs)
 
     def clean(self):
@@ -254,14 +254,14 @@ class CourseMode(models.Model):
         if int(self.min_price) < min_price_for_mode:
             mode_display_name = mode_config.get('display_name', self.mode_slug)
             raise ValidationError(
-                _(  # lint-amnesty, pylint: disable=translation-of-non-string
-                    "The {course_mode} course mode has a minimum price of {min_price}. You must set a price greater than or equal to {min_price}.".format(  # lint-amnesty, pylint: disable=line-too-long
+                _(  # pylint: disable=translation-of-non-string
+                    "The {course_mode} course mode has a minimum price of {min_price}. You must set a price greater than or equal to {min_price}.".format(  # pylint: disable=line-too-long
                         course_mode=mode_display_name, min_price=min_price_for_mode
                     )
                 )
             )
 
-    def save(self, force_insert=False, force_update=False, using=None):  # lint-amnesty, pylint: disable=arguments-differ  # noqa: DJ012
+    def save(self, force_insert=False, force_update=False, using=None):  # pylint: disable=arguments-differ  # noqa: DJ012
         # Ensure currency is always lowercase.
         self.clean()  # ensure object-level validation is performed before we save.
         self.currency = self.currency.lower()

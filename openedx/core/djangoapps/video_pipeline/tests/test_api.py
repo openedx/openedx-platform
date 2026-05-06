@@ -19,7 +19,7 @@ class TestAPIUtils(VideoPipelineMixin, TestCase):
     """
     Tests for API Utils.
     """
-    def setUp(self):  # lint-amnesty, pylint: disable=super-method-not-called
+    def setUp(self):  # pylint: disable=super-method-not-called
         """
         Setup VEM oauth client.
         """

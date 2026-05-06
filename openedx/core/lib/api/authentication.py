@@ -43,7 +43,7 @@ class BearerAuthentication(BaseAuthentication):
         set_custom_attribute("BearerAuthentication", "Failed")  # default value
         auth = get_authorization_header(request).split()
 
-        if len(auth) == 1:  # lint-amnesty, pylint: disable=no-else-raise
+        if len(auth) == 1:  # pylint: disable=no-else-raise
             raise AuthenticationFailed({
                 'error_code': OAUTH2_TOKEN_ERROR_NOT_PROVIDED,
                 'developer_message': 'Invalid token header. No credentials provided.'})
@@ -75,12 +75,12 @@ class BearerAuthentication(BaseAuthentication):
         try:
             token = self.get_access_token(access_token)
         except AuthenticationFailed as exc:
-            raise AuthenticationFailed({  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise AuthenticationFailed({  # pylint: disable=raise-missing-from  # noqa: B904
                 'error_code': OAUTH2_TOKEN_ERROR,
                 'developer_message': exc.detail
             })
 
-        if not token:  # lint-amnesty, pylint: disable=no-else-raise
+        if not token:  # pylint: disable=no-else-raise
             raise AuthenticationFailed({
                 'error_code': OAUTH2_TOKEN_ERROR_NONEXISTENT,
                 'developer_message': 'The provided access token does not match any valid tokens.'
@@ -100,7 +100,7 @@ class BearerAuthentication(BaseAuthentication):
                     'developer_message': msg})
 
             # Check to make sure the users have activated their account (by confirming their email)
-            if not self.allow_inactive_users and not user.is_active:  # lint-amnesty, pylint: disable=no-else-raise
+            if not self.allow_inactive_users and not user.is_active:  # pylint: disable=no-else-raise
                 set_custom_attribute("BearerAuthentication_user_active", False)
                 msg = 'User inactive or deleted: %s' % user.get_username()  # noqa: UP031
                 raise AuthenticationFailed({

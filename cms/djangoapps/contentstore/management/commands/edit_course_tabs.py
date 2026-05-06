@@ -1,4 +1,4 @@
-# lint-amnesty, pylint: disable=missing-module-docstring
+# pylint: disable=missing-module-docstring
 ###
 ### Script for editing the course's tabs
 ###
@@ -38,7 +38,7 @@ def print_course(course):
 # {u'type': u'progress', u'name': u'Progress'}]
 
 
-class Command(BaseCommand):  # lint-amnesty, pylint: disable=missing-class-docstring
+class Command(BaseCommand):  # pylint: disable=missing-class-docstring
     help = """See and edit a course's tabs list. Only supports insertion
 and deletion. Move and rename etc. can be done with a delete
 followed by an insert. The tabs are numbered starting with 1.
@@ -98,4 +98,4 @@ command again, adding --insert or --delete to edit the list.
                     tabs.primitive_insert(course, num - 1, tab_type, name)  # -1 as above
         except ValueError as e:
             # Cute: translate to CommandError so the CLI error prints nicely.
-            raise CommandError(e)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise CommandError(e)  # pylint: disable=raise-missing-from  # noqa: B904

@@ -1,4 +1,4 @@
-# lint-amnesty, pylint: disable=missing-module-docstring
+# pylint: disable=missing-module-docstring
 
 
 import datetime
@@ -114,7 +114,7 @@ class PureXBlockImportTest(BaseCourseTestCase):
         assert not mock_location.called
 
 
-class ImportTestCase(BaseCourseTestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class ImportTestCase(BaseCourseTestCase):  # pylint: disable=missing-class-docstring
     date = Date()
 
     def test_fallback(self):

@@ -86,12 +86,12 @@ class ThreadListGetForm(_PaginationForm):
         try:
             return CourseLocator.from_string(value)
         except InvalidKeyError:
-            raise ValidationError(f"'{value}' is not a valid course id")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise ValidationError(f"'{value}' is not a valid course id")  # pylint: disable=raise-missing-from  # noqa: B904
 
     def clean_following(self):
         """Validate following"""
         value = self.cleaned_data["following"]
-        if value is False:  # lint-amnesty, pylint: disable=no-else-raise
+        if value is False:  # pylint: disable=no-else-raise
             raise ValidationError("The value of the 'following' parameter must be true.")
         else:
             return value
@@ -147,7 +147,7 @@ class UserCommentListGetForm(_PaginationForm):
         try:
             return CourseLocator.from_string(value)
         except InvalidKeyError:
-            raise ValidationError(f"'{value}' is not a valid course id")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise ValidationError(f"'{value}' is not a valid course id")  # pylint: disable=raise-missing-from  # noqa: B904
 
 
 class CommentActionsForm(Form):
@@ -185,7 +185,7 @@ class CourseDiscussionSettingsForm(Form):
             self.cleaned_data['course_key'] = course_key
             return course_id
         except InvalidKeyError:
-            raise ValidationError(f"'{str(course_id)}' is not a valid course key")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise ValidationError(f"'{str(course_id)}' is not a valid course key")  # pylint: disable=raise-missing-from  # noqa: B904
 
 
 class CourseDiscussionRolesForm(CourseDiscussionSettingsForm):

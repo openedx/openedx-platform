@@ -6,7 +6,7 @@ from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, U
 from lms.djangoapps.support.models import CourseResetAudit, CourseResetCourseOptIn
 
 
-class CourseResetCourseOptInFactory(DjangoModelFactory):  # lint-amnesty, pylint: disable=missing-class-docstring
+class CourseResetCourseOptInFactory(DjangoModelFactory):  # pylint: disable=missing-class-docstring
     class Meta:
         model = CourseResetCourseOptIn
 
@@ -14,7 +14,7 @@ class CourseResetCourseOptInFactory(DjangoModelFactory):  # lint-amnesty, pylint
     active = True
 
 
-class CourseResetAuditFactory(DjangoModelFactory):  # lint-amnesty, pylint: disable=missing-class-docstring
+class CourseResetAuditFactory(DjangoModelFactory):  # pylint: disable=missing-class-docstring
     class Meta:
         model = CourseResetAudit
 

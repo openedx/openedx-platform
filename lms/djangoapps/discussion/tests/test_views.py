@@ -38,7 +38,7 @@ log = logging.getLogger(__name__)
 QUERY_COUNT_TABLE_IGNORELIST = WAFFLE_TABLES
 
 
-class ViewsExceptionTestCase(UrlResetMixin, ModuleStoreTestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class ViewsExceptionTestCase(UrlResetMixin, ModuleStoreTestCase):  # pylint: disable=missing-class-docstring
 
     @patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
     def setUp(self):
@@ -110,7 +110,7 @@ class ViewsExceptionTestCase(UrlResetMixin, ModuleStoreTestCase):  # lint-amnest
         assert response.status_code == 404
 
 
-def make_mock_thread_data(  # lint-amnesty, pylint: disable=missing-function-docstring
+def make_mock_thread_data(  # pylint: disable=missing-function-docstring
         course,
         text,
         thread_id,
@@ -154,7 +154,7 @@ def make_mock_thread_data(  # lint-amnesty, pylint: disable=missing-function-doc
     return thread_data
 
 
-def make_mock_collection_data(  # lint-amnesty, pylint: disable=missing-function-docstring
+def make_mock_collection_data(  # pylint: disable=missing-function-docstring
     course,
     text,
     thread_id,
@@ -181,7 +181,7 @@ def make_mock_collection_data(  # lint-amnesty, pylint: disable=missing-function
         ]
 
 
-def make_mock_perform_request_impl(  # lint-amnesty, pylint: disable=missing-function-docstring
+def make_mock_perform_request_impl(  # pylint: disable=missing-function-docstring
         course,
         text,
         thread_id="dummy_thread_id",
@@ -230,7 +230,7 @@ def make_mock_perform_request_impl(  # lint-amnesty, pylint: disable=missing-fun
     return mock_perform_request_impl
 
 
-def make_mock_request_impl(  # lint-amnesty, pylint: disable=missing-function-docstring
+def make_mock_request_impl(  # pylint: disable=missing-function-docstring
         course,
         text,
         thread_id="dummy_thread_id",
@@ -262,7 +262,7 @@ def make_mock_request_impl(  # lint-amnesty, pylint: disable=missing-function-do
     return mock_request_impl
 
 
-class StringEndsWithMatcher:  # lint-amnesty, pylint: disable=missing-class-docstring
+class StringEndsWithMatcher:  # pylint: disable=missing-class-docstring
     def __init__(self, suffix):
         self.suffix = suffix
 
@@ -270,7 +270,7 @@ class StringEndsWithMatcher:  # lint-amnesty, pylint: disable=missing-class-docs
         return other.endswith(self.suffix)
 
 
-class PartialDictMatcher:  # lint-amnesty, pylint: disable=missing-class-docstring
+class PartialDictMatcher:  # pylint: disable=missing-class-docstring
     def __init__(self, expected_values):
         self.expected_values = expected_values
 
@@ -301,7 +301,7 @@ class AllowPlusOrMinusOneInt(int):
 
 
 @patch('requests.request', autospec=True)
-class CommentsServiceRequestHeadersTestCase(UrlResetMixin, ModuleStoreTestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class CommentsServiceRequestHeadersTestCase(UrlResetMixin, ModuleStoreTestCase):  # pylint: disable=missing-class-docstring
 
     CREATE_USER = False
 
@@ -331,7 +331,7 @@ class CommentsServiceRequestHeadersTestCase(UrlResetMixin, ModuleStoreTestCase):
 
         self.addCleanup(translation.deactivate)
 
-    def assert_all_calls_have_header(self, mock_request, key, value):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def assert_all_calls_have_header(self, mock_request, key, value):  # pylint: disable=missing-function-docstring
         expected = call(
             ANY,  # method
             ANY,  # url
@@ -397,7 +397,7 @@ class EnrollmentTestCase(ModuleStoreTestCase):
             views.forum_form_discussion(request, course_id=str(self.course.id))  # pylint: disable=no-value-for-parameter, unexpected-keyword-arg
 
 
-class DividedDiscussionsTestCase(CohortViewsTestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class DividedDiscussionsTestCase(CohortViewsTestCase):  # pylint: disable=missing-class-docstring
 
     def create_divided_discussions(self):
         """

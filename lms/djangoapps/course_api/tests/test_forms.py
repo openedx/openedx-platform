@@ -12,9 +12,9 @@ from django.http import QueryDict
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.util.test_forms import FormTestMixin
 from xmodule.modulestore.tests.django_utils import (
-    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+    SharedModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 from ..forms import CourseDetailGetForm, CourseIdListGetForm, CourseListGetForm
 
@@ -113,7 +113,7 @@ class TestCourseListGetForm(FormTestMixin, UsernameTestMixin, SharedModuleStoreT
         self.assert_error('course_keys', "'invalid_course_key' is not a valid course key.")
 
 
-class TestCourseIdListGetForm(FormTestMixin, UsernameTestMixin, SharedModuleStoreTestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class TestCourseIdListGetForm(FormTestMixin, UsernameTestMixin, SharedModuleStoreTestCase):  # pylint: disable=missing-class-docstring
     FORM_CLASS = CourseIdListGetForm
 
     @classmethod

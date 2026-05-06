@@ -1,4 +1,4 @@
-# lint-amnesty, pylint: disable=missing-module-docstring
+# pylint: disable=missing-module-docstring
 import datetime
 from unittest.mock import patch
 
@@ -19,7 +19,7 @@ from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 
 
 @skip_unless_lms
-class TestContentHighlights(ModuleStoreTestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class TestContentHighlights(ModuleStoreTestCase):  # pylint: disable=missing-class-docstring
     def setUp(self):
         super().setUp()
         self._setup_course()
@@ -87,7 +87,7 @@ class TestContentHighlights(ModuleStoreTestCase):  # lint-amnesty, pylint: disab
             self._create_chapter(display_name="Week 1")
             self._create_chapter(display_name="Week 2")
 
-        self.course = self.store.get_course(self.course_key)  # lint-amnesty, pylint: disable=attribute-defined-outside-init
+        self.course = self.store.get_course(self.course_key)  # pylint: disable=attribute-defined-outside-init
         assert len(self.course.get_children()) == 2
 
         assert not course_has_highlights_from_store(self.course_key)

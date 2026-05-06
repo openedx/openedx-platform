@@ -10,8 +10,8 @@ from factory.django import DjangoModelFactory
 from opaque_keys.edx.locator import CourseLocator
 
 from openedx.core.djangoapps.django_comment_common.models import CourseDiscussionSettings
-from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore import ModuleStoreEnum  # pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 
 from ..cohorts import set_course_cohorted
 from ..models import CohortMembership, CourseCohort, CourseCohortsSettings, CourseUserGroup
@@ -34,8 +34,8 @@ class CohortFactory(DjangoModelFactory):
         Returns the users associated with the cohort.
         """
         if extracted:
-            self.users.add(*extracted)  # lint-amnesty, pylint: disable=no-member
-            for user in self.users.all():  # lint-amnesty, pylint: disable=no-member
+            self.users.add(*extracted)  # pylint: disable=no-member
+            for user in self.users.all():  # pylint: disable=no-member
                 CohortMembership.objects.create(
                     user=user,
                     course_user_group=self,

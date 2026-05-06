@@ -156,7 +156,7 @@ class BlockStructureModelTestCase(TestCase):
         bs_model, _ = BlockStructureModel.update_or_create('test data', **self.params)
         with pytest.raises(expected_error_raised):  # noqa: PT012
             with _storage_error_handling(bs_model, 'operation', is_read_operation):
-                if errno_raised is not None:  # lint-amnesty, pylint: disable=no-else-raise
+                if errno_raised is not None:  # pylint: disable=no-else-raise
                     raise error_raised_in_operation(errno_raised, message_raised)
                 else:
                     raise error_raised_in_operation

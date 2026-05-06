@@ -44,7 +44,7 @@ django-stubs<6
 # The team that owns this package will manually bump this package rather than having it pulled in automatically.
 # This is to allow them to better control its deployment and to do it in a process that works better
 # for them.
-edx-enterprise==7.0.7
+edx-enterprise==8.0.2
 
 # Date: 2023-07-26
 # Our legacy Sass code is incompatible with anything except this ancient libsass version.
@@ -61,11 +61,10 @@ libsass==0.10.0
 numpy<2.0.0
 
 # Date: 2023-09-18
-# Library is still in active development. Minor versions (0.x, 0.x+1) may have
-# breaking changes which openedx-core devs want to roll out manually. New patch versions
-# are OK to accept automatically.
+# Library is still in active development. Major versions require review
+# from openedx-maintainers. Minor and patch versions can roll out automatically.
 # Issue for unpinning: https://github.com/openedx/edx-platform/issues/35269
-openedx-core<0.45
+openedx-core<2
 
 # Date: 2023-11-29
 # Open AI version 1.0.0 dropped support for openai.ChatCompletion which is currently in use in enterprise.
@@ -124,17 +123,6 @@ xmlsec==1.3.14
 # https://github.com/django-commons/django-debug-toolbar/issues/2172
 # Pin this back to the previous version until that bug is fixed.
 django-debug-toolbar<6.0.0
-
-# Date 2025-10-07
-# Cryptography 46.0.0 conflicts with system dependencies needed for snowflake-connector-python
-# snowflake-connector-python comes as a dependency of edx-enterprise so it can not be directly pinned here.
-# See issue https://github.com/openedx/edx-platform/issues/37417 for details on this.
-# This can be unpinned once snowflake-connector-python==4.0.0 is available (contains the fix).
-# pact-python==3.0.0 also removes cffi dependency and is causing the upgrade build to fail
-# This should also be removed together with cryptography constraint.
-# Issue: https://github.com/openedx/edx-platform/issues/37435
-cryptography<46.0.0
-pact-python<3.0.0
 
 # Date 2026-01-13
 # Sphinx-autoapi changed the version of astroid it needs

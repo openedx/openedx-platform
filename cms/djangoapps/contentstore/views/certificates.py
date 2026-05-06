@@ -46,8 +46,8 @@ from common.djangoapps.student.auth import has_studio_write_access
 from common.djangoapps.student.roles import GlobalStaff
 from common.djangoapps.util.json_request import JsonResponse
 from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin
-from xmodule.modulestore import EdxJSONEncoder  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore import EdxJSONEncoder  # pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 
 from ..toggles import use_new_certificates_page
 from ..utils import get_certificates_context, get_certificates_url, reverse_course_url

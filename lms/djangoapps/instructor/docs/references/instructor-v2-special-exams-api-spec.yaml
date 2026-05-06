@@ -488,6 +488,11 @@ definitions:
             type: string
       exam_id:
         type: integer
+      exam_name:
+        type: string
+      exam_type:
+        type: string
+        enum: [timed, proctored, practice]
       status:
         type: string
       start_time:
@@ -501,6 +506,8 @@ definitions:
       allowed_time_limit_mins:
         type: integer
         x-nullable: true
+      ready_to_resume:
+        type: boolean
 
   ProctoringSettings:
     type: object

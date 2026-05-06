@@ -1,6 +1,7 @@
-define(['jquery', 'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers', 'URI', 'js/views/assets',
+define(['jquery', 'sinon', 'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers', 'URI', 'js/views/assets',
     'js/collections/asset', 'common/js/spec_helpers/view_helpers'],
-function($, AjaxHelpers, URI, AssetsView, AssetCollection, ViewHelpers) {
+function($, sinon, AjaxHelpers, URI, AssetsView, AssetCollection, ViewHelpers) {
+    var requests, xhrFactory;
     describe('Assets', function() {
         var assetsView, mockEmptyAssetsResponse, mockAssetUploadResponse, mockFileUpload,
             assetLibraryTpl, assetTpl, uploadModalTpl;
@@ -10,6 +11,36 @@ function($, AjaxHelpers, URI, AssetsView, AssetCollection, ViewHelpers) {
         uploadModalTpl = readFixtures('asset-upload-modal.underscore');
 
         beforeEach(function() {
+            // Fake XHR must be installed BEFORE new AssetsView() for two reasons:
+            //
+            // 1. AssetsView.initialize() calls createPagingView() which immediately calls
+            //    pagingView.setPage(1), firing an AJAX request. If real XHR is active at that
+            //    point, the request goes to Karma's server which returns 404. Jasmine 2.x
+            //    schedules beforeEach and it() with setTimeout(0) between them, giving the
+            //    browser event loop a window to process pending async work. The Karma 404
+            //    response fires during that window, triggering AssetsView's error callback
+            //    -> getTableBody() -> DOM creation -> .upload-button becomes visible. Tests
+            //    that check this button is hidden (in loading state) then fail.
+            //
+            // 2. This test suite tests the loading -> loaded state transition. Several tests
+            //    call setup() inside it(), which calls setPage(1) and responds to it, driving
+            //    the view from "loading" to "loaded". That precondition requires the view to
+            //    still be in "loading" state at the start of it(). Responding to the init
+            //    request in beforeEach (to avoid the dangling request) would put the view
+            //    into "loaded" state too early and break those assertions.
+            //
+            // With sinon installed first, the init setPage(1) is captured as requests[0] —
+            // a frozen pending fake request that never gets a response unless explicitly told
+            // to. No response means no callbacks, no DOM mutation, view stays in "loading"
+            // state. We advance currentIndex to 1 so AjaxHelpers treats that request as
+            // already consumed; test-driven setPage() calls start at index 1. The pending
+            // requests[0] is abandoned when xhrFactory.restore() runs in afterEach.
+            xhrFactory = sinon.useFakeXMLHttpRequest();
+            requests = [];
+            requests.currentIndex = 0;
+            requests.restore = function() { xhrFactory.restore(); };
+            xhrFactory.onCreate = function(req) { requests.push(req); };
+
             setFixtures($('<script>', {id: 'asset-library-tpl', type: 'text/template'}).text(assetLibraryTpl));
             appendSetFixtures($('<script>', {id: 'asset-tpl', type: 'text/template'}).text(assetTpl));
             appendSetFixtures(uploadModalTpl);
@@ -29,8 +60,16 @@ function($, AjaxHelpers, URI, AssetsView, AssetCollection, ViewHelpers) {
                 collection: collection,
                 el: $('#asset_table_body')
             });
-
+            // render() calls afterRender(), which binds the close-button click handler
+            // against the upload modal already in the fixture DOM (from appendSetFixtures
+            // above). render() itself issues no XHR (pagingView.render() is a no-op), so
+            // requests[0] is still the init setPage from new AssetsView() above.
             assetsView.render();
+            requests.currentIndex = 1;
+        });
+
+        afterEach(function() {
+            requests.restore();
         });
 
         var mockAsset = {
@@ -143,7 +182,6 @@ function($, AjaxHelpers, URI, AssetsView, AssetCollection, ViewHelpers) {
         describe('AssetsView', function() {
             var setup;
             setup = function(responseData) {
-                var requests = AjaxHelpers.requests(this);
                 assetsView.pagingView.setPage(1);
                 if (!responseData) {
                     AjaxHelpers.respondWithJson(requests, mockEmptyAssetsResponse);
@@ -274,7 +312,6 @@ function($, AjaxHelpers, URI, AssetsView, AssetCollection, ViewHelpers) {
 
             it('make sure _toggleFilterColumn filters asset list', function() {
                 expect(assetsView).toBeDefined();
-                var requests = AjaxHelpers.requests(this);
                 $.each(assetsView.pagingView.filterableColumns, function(columnID, columnData) {
                     var $typeColumn = $('#' + columnID);
                     assetsView.pagingView.setPage(1);
@@ -306,7 +343,6 @@ function($, AjaxHelpers, URI, AssetsView, AssetCollection, ViewHelpers) {
 
             it('check filtering works with sorting by column on', function() {
                 expect(assetsView).toBeDefined();
-                var requests = AjaxHelpers.requests(this);
                 assetsView.pagingView.registerSortableColumn('name-col', 'Name Column', 'nameField', 'asc');
                 assetsView.pagingView.registerFilterableColumn('js-asset-type-col', gettext('Type'), 'asset_type');
                 assetsView.pagingView.setInitialSortColumn('name-col');
@@ -323,7 +359,6 @@ function($, AjaxHelpers, URI, AssetsView, AssetCollection, ViewHelpers) {
 
             it('shows type select menu, selects type, and filters results', function() {
                 expect(assetsView).toBeDefined();
-                var requests = AjaxHelpers.requests(this);
                 $.each(assetsView.pagingView.filterableColumns, function(columnID, columnData) {
                     assetsView.pagingView.setPage(1);
                     respondWithMockAssets(requests);
@@ -420,7 +455,6 @@ function($, AjaxHelpers, URI, AssetsView, AssetCollection, ViewHelpers) {
                     };
 
                 it('can move forward a page using the next page button', function() {
-                    var requests = AjaxHelpers.requests(this);
                     assetsView.pagingView.setPage(1);
                     AjaxHelpers.respondWithJson(requests, firstPageAssets);
                     expect(assetsView.pagingView.pagingFooter).toBeDefined();
@@ -433,7 +467,6 @@ function($, AjaxHelpers, URI, AssetsView, AssetCollection, ViewHelpers) {
                 });
 
                 it('can move back a page using the previous page button', function() {
-                    var requests = AjaxHelpers.requests(this);
                     assetsView.pagingView.setPage(2);
                     AjaxHelpers.respondWithJson(requests, secondPageAssets);
                     expect(assetsView.pagingView.pagingFooter).toBeDefined();
@@ -446,7 +479,6 @@ function($, AjaxHelpers, URI, AssetsView, AssetCollection, ViewHelpers) {
                 });
 
                 it('can set the current page using the page number input', function() {
-                    var requests = AjaxHelpers.requests(this);
                     assetsView.pagingView.setPage(1);
                     AjaxHelpers.respondWithJson(requests, firstPageAssets);
                     assetsView.pagingView.pagingFooter.$('#page-number-input').val('2');

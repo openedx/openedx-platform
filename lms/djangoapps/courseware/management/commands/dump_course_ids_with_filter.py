@@ -15,7 +15,7 @@ from django.db.models import Q
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 
 
-class Command(BaseCommand):  # lint-amnesty, pylint: disable=missing-class-docstring
+class Command(BaseCommand):  # pylint: disable=missing-class-docstring
     help = dedent(__doc__).strip()
 
     def add_arguments(self, parser):

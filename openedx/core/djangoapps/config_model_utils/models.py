@@ -326,7 +326,7 @@ class StackedConfigurationModel(ConfigurationModel):
 
     @classmethod
     @request_cached()
-    def _site_from_org(cls, org):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def _site_from_org(cls, org):  # pylint: disable=missing-function-docstring
 
         configuration = SiteConfiguration.get_configuration_for_org(org, select_related=['site'])
         if configuration is None:

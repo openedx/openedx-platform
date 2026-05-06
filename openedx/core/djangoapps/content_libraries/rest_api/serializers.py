@@ -147,6 +147,7 @@ class PublishableItemSerializer(serializers.Serializer):
     last_draft_created_by = serializers.CharField(read_only=True)
     has_unpublished_changes = serializers.BooleanField(read_only=True)
     created = serializers.DateTimeField(format=DATETIME_FORMAT, read_only=True)
+    created_by = serializers.CharField(read_only=True, allow_null=True)
     modified = serializers.DateTimeField(format=DATETIME_FORMAT, read_only=True)
 
     # When creating a new XBlock in a library, the slug becomes the ID part of
@@ -174,6 +175,98 @@ class LibraryXBlockMetadataSerializer(PublishableItemSerializer):
     Serializer for LibraryXBlockMetadata
     """
     block_type = serializers.CharField(source="usage_key.block_type")
+
+
+class LibraryHistoryContributorSerializer(serializers.Serializer):
+    """
+    Serializer for a contributor in a publish history group.
+    """
+    username = serializers.CharField(read_only=True)
+    profile_image_urls = serializers.DictField(child=serializers.CharField(), read_only=True)
+
+
+class LibraryHistoryEntrySerializer(serializers.Serializer):
+    """
+    Serializer for a single entry in the history of a library item.
+    """
+    contributor = LibraryHistoryContributorSerializer(allow_null=True, read_only=True)
+    changed_at = serializers.DateTimeField(format=DATETIME_FORMAT, read_only=True)
+    title = serializers.CharField(read_only=True)
+    item_type = serializers.CharField(read_only=True)
+    action = serializers.CharField(read_only=True)
+    old_version = serializers.IntegerField(read_only=True)
+    new_version = serializers.IntegerField(read_only=True, allow_null=True)
+
+
+class UsageKeyV2Serializer(serializers.BaseSerializer):
+    """
+    Serializes a library Component (XBlock) key.
+    """
+    def to_representation(self, value: LibraryUsageLocatorV2) -> str:
+        """
+        Returns the LibraryUsageLocatorV2 value as a string.
+        """
+        return str(value)
+
+    def to_internal_value(self, value: str) -> LibraryUsageLocatorV2:
+        """
+        Returns a LibraryUsageLocatorV2 from the string value.
+
+        Raises ValidationError if invalid LibraryUsageLocatorV2.
+        """
+        try:
+            return LibraryUsageLocatorV2.from_string(value)
+        except InvalidKeyError as err:
+            raise ValidationError from err
+
+
+class OpaqueKeySerializer(serializers.BaseSerializer):
+    """
+    Serializes a OpaqueKey with the correct class.
+    """
+    def to_representation(self, value: OpaqueKey) -> str:
+        """
+        Returns the OpaqueKey value as a string.
+        """
+        return str(value)
+
+    def to_internal_value(self, value: str) -> OpaqueKey:
+        """
+        Returns a LibraryUsageLocatorV2 or a LibraryContainerLocator from the string value.
+
+        Raises ValidationError if invalid UsageKeyV2 or LibraryContainerLocator.
+        """
+        try:
+            return LibraryUsageLocatorV2.from_string(value)
+        except InvalidKeyError:
+            try:
+                return LibraryContainerLocator.from_string(value)
+            except InvalidKeyError as err:
+                raise ValidationError from err
+
+
+class DirectPublishedEntitySerializer(serializers.Serializer):
+    """
+    Serializer for one entity the user directly requested to publish (direct=True).
+    """
+    entity_key = OpaqueKeySerializer(read_only=True)
+    title = serializers.CharField(read_only=True)
+    entity_type = serializers.CharField(read_only=True)
+
+
+class LibraryPublishHistoryGroupSerializer(serializers.Serializer):
+    """
+    Serializer for a publish event summary in the publish history of a library item.
+    """
+    publish_log_uuid = serializers.UUIDField(read_only=True)
+    published_by = serializers.SerializerMethodField()
+    published_at = serializers.DateTimeField(format=DATETIME_FORMAT, read_only=True)
+    contributors = LibraryHistoryContributorSerializer(many=True, read_only=True)
+    direct_published_entities = DirectPublishedEntitySerializer(many=True, read_only=True)
+    scope_entity_key = OpaqueKeySerializer(read_only=True, allow_null=True)
+
+    def get_published_by(self, obj) -> str | None:
+        return obj.published_by.username if obj.published_by else None
 
 
 class LibraryXBlockTypeSerializer(serializers.Serializer):
@@ -300,53 +393,6 @@ class ContentLibraryCollectionUpdateSerializer(serializers.Serializer):
 
     title = serializers.CharField()
     description = serializers.CharField(allow_blank=True)
-
-
-class UsageKeyV2Serializer(serializers.BaseSerializer):
-    """
-    Serializes a library Component (XBlock) key.
-    """
-    def to_representation(self, value: LibraryUsageLocatorV2) -> str:
-        """
-        Returns the LibraryUsageLocatorV2 value as a string.
-        """
-        return str(value)
-
-    def to_internal_value(self, value: str) -> LibraryUsageLocatorV2:
-        """
-        Returns a LibraryUsageLocatorV2 from the string value.
-
-        Raises ValidationError if invalid LibraryUsageLocatorV2.
-        """
-        try:
-            return LibraryUsageLocatorV2.from_string(value)
-        except InvalidKeyError as err:
-            raise ValidationError from err
-
-
-class OpaqueKeySerializer(serializers.BaseSerializer):
-    """
-    Serializes a OpaqueKey with the correct class.
-    """
-    def to_representation(self, value: OpaqueKey) -> str:
-        """
-        Returns the OpaqueKey value as a string.
-        """
-        return str(value)
-
-    def to_internal_value(self, value: str) -> OpaqueKey:
-        """
-        Returns a LibraryUsageLocatorV2 or a LibraryContainerLocator from the string value.
-
-        Raises ValidationError if invalid UsageKeyV2 or LibraryContainerLocator.
-        """
-        try:
-            return LibraryUsageLocatorV2.from_string(value)
-        except InvalidKeyError:
-            try:
-                return LibraryContainerLocator.from_string(value)
-            except InvalidKeyError as err:
-                raise ValidationError from err
 
 
 class ContentLibraryItemContainerKeysSerializer(serializers.Serializer):

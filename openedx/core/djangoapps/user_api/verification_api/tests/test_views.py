@@ -176,12 +176,12 @@ class VerificationsDetailsViewTests(VerificationStatusViewTestsMixin, TestCase):
         }]
 
     def test_multiple_verification_types(self):
-        self.manual_verification = ManualVerification.objects.create(  # lint-amnesty, pylint: disable=attribute-defined-outside-init
+        self.manual_verification = ManualVerification.objects.create(  # pylint: disable=attribute-defined-outside-init
             user=self.user,
             status='approved',
             reason='testing'
         )
-        self.sso_verification = SSOVerificationFactory(user=self.user, status='approved')  # lint-amnesty, pylint: disable=attribute-defined-outside-init
+        self.sso_verification = SSOVerificationFactory(user=self.user, status='approved')  # pylint: disable=attribute-defined-outside-init
         self.photo_verification.error_msg = 'tested_error'
         self.photo_verification.error_code = 'error_code'
         self.photo_verification.status = 'denied'
@@ -219,7 +219,7 @@ class VerificationsDetailsViewTests(VerificationStatusViewTestsMixin, TestCase):
         assert json.loads(response.content.decode('utf-8')) == expected
 
     def test_multiple_verification_instances(self):
-        self.sso_verification = SSOVerificationFactory(user=self.user, status='approved')  # lint-amnesty, pylint: disable=attribute-defined-outside-init
+        self.sso_verification = SSOVerificationFactory(user=self.user, status='approved')  # pylint: disable=attribute-defined-outside-init
         second_ss_photo_verification = SoftwareSecurePhotoVerification.objects.create(
             user=self.user,
             status='denied',

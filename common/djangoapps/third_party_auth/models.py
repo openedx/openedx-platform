@@ -60,7 +60,7 @@ def clean_json(value, of_type):
     try:
         value_python = json.loads(value)
     except ValueError as err:
-        raise ValidationError(f"Invalid JSON: {err}")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise ValidationError(f"Invalid JSON: {err}")  # pylint: disable=raise-missing-from  # noqa: B904
     if not isinstance(value_python, of_type):
         raise ValidationError(f"Expected a JSON {of_type}")
     return json.dumps(value_python, indent=4)

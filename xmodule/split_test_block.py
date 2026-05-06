@@ -88,7 +88,7 @@ class SplitTestFields:
     )
 
     user_partition_id = Integer(
-        help=_("The configuration defines how users are grouped for this content experiment. Caution: Changing the group configuration of a student-visible experiment will impact the experiment data."),  # lint-amnesty, pylint: disable=line-too-long
+        help=_("The configuration defines how users are grouped for this content experiment. Caution: Changing the group configuration of a student-visible experiment will impact the experiment data."),  # pylint: disable=line-too-long
         scope=Scope.content,
         display_name=_("Group Configuration"),
         default=no_partition_selected["value"],
@@ -119,7 +119,7 @@ def get_split_user_partitions(user_partitions):
 @XBlock.needs('mako')
 @XBlock.needs('partitions')
 @XBlock.needs('user')
-class SplitTestBlock(  # lint-amnesty, pylint: disable=abstract-method
+class SplitTestBlock(  # pylint: disable=abstract-method
     SplitTestFields,
     SequenceMixin,
     ProctoringFields,
@@ -248,7 +248,7 @@ class SplitTestBlock(  # lint-amnesty, pylint: disable=abstract-method
             child_block = self.get_child_block_by_location(child_location)
         else:
             # Oops.  Config error.
-            log.debug("configuration error in split test block: invalid group_id %r (not one of %r).  Showing error", str_group_id, list(self.group_id_to_child.keys()))  # lint-amnesty, pylint: disable=line-too-long
+            log.debug("configuration error in split test block: invalid group_id %r (not one of %r).  Showing error", str_group_id, list(self.group_id_to_child.keys()))  # pylint: disable=line-too-long
 
         if child_block is None:
             # Peak confusion is great.  Now that we set child_block,
@@ -401,7 +401,7 @@ class SplitTestBlock(  # lint-amnesty, pylint: disable=abstract-method
             return fragment
 
     @XBlock.handler
-    def log_child_render(self, request, suffix=''):  # lint-amnesty, pylint: disable=unused-argument
+    def log_child_render(self, request, suffix=''):  # pylint: disable=unused-argument
         """
         Record in the tracking logs which child was rendered
         """
@@ -471,7 +471,7 @@ class SplitTestBlock(  # lint-amnesty, pylint: disable=abstract-method
             try:
                 block = system.process_xml(etree.tostring(child))
                 children.append(block.scope_ids.usage_id)
-            except Exception:  # lint-amnesty, pylint: disable=broad-except
+            except Exception:  # pylint: disable=broad-except
                 msg = "Unable to load child when parsing split_test block."
                 log.exception(msg)
                 system.error_tracker(msg)
@@ -495,7 +495,7 @@ class SplitTestBlock(  # lint-amnesty, pylint: disable=abstract-method
         """
         return True
 
-    def editor_saved(self, user, old_metadata, old_content):  # lint-amnesty, pylint: disable=unused-argument
+    def editor_saved(self, user, old_metadata, old_content):  # pylint: disable=unused-argument
         """
         Used to create default verticals for the groups.
 
@@ -548,7 +548,7 @@ class SplitTestBlock(  # lint-amnesty, pylint: disable=abstract-method
         Returns the partition that this split block is currently using, or None
         if the currently selected partition ID does not match any of the defined partitions.
         """
-        for user_partition in self.user_partitions:  # lint-amnesty, pylint: disable=not-an-iterable
+        for user_partition in self.user_partitions:  # pylint: disable=not-an-iterable
             if user_partition.id == self.user_partition_id:
                 return user_partition
 
@@ -638,7 +638,7 @@ class SplitTestBlock(  # lint-amnesty, pylint: disable=abstract-method
                 split_validation.add(
                     StudioValidationMessage(
                         StudioValidationMessage.ERROR,
-                        _("The experiment uses a deleted group configuration. Select a valid group configuration or delete this experiment.")  # lint-amnesty, pylint: disable=line-too-long
+                        _("The experiment uses a deleted group configuration. Select a valid group configuration or delete this experiment.")  # pylint: disable=line-too-long
                     )
                 )
             else:
@@ -691,7 +691,7 @@ class SplitTestBlock(  # lint-amnesty, pylint: disable=abstract-method
         return None
 
     @XBlock.handler
-    def add_missing_groups(self, request, suffix=''):  # lint-amnesty, pylint: disable=unused-argument
+    def add_missing_groups(self, request, suffix=''):  # pylint: disable=unused-argument
         """
         Create verticals for any missing groups in the split test instance.
 
@@ -713,7 +713,7 @@ class SplitTestBlock(  # lint-amnesty, pylint: disable=abstract-method
         return Response()
 
     @property
-    def group_configuration_url(self):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def group_configuration_url(self):  # pylint: disable=missing-function-docstring
         assert hasattr(self.runtime, 'modulestore') and hasattr(self.runtime.modulestore, 'get_course'), \
             "modulestore has to be available"  # noqa: PT018
 

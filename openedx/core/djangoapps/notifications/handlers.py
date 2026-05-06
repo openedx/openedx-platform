@@ -79,7 +79,7 @@ def calculate_course_wide_notification_audience(course_key, audience_filters):
 
     audience_user_ids = []
     for filter_type, filter_values in audience_filters.items():
-        if filter_type in AUDIENCE_FILTER_CLASSES.keys():  # lint-amnesty, pylint: disable=consider-iterating-dictionary
+        if filter_type in AUDIENCE_FILTER_CLASSES.keys():  # pylint: disable=consider-iterating-dictionary
             filter_class = AUDIENCE_FILTER_CLASSES.get(filter_type)
             if filter_class:
                 filter_instance = filter_class(course_key)

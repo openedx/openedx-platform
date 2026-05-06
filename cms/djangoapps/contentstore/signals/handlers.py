@@ -61,7 +61,7 @@ log = logging.getLogger(__name__)
 GRADING_POLICY_COUNTDOWN_SECONDS = 3600
 
 
-def locked(expiry_seconds, key):  # lint-amnesty, pylint: disable=missing-function-docstring
+def locked(expiry_seconds, key):  # pylint: disable=missing-function-docstring
     def task_decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):

@@ -64,7 +64,7 @@ class CourseBookmarksFragmentView(EdxFragmentView):
     Fragment view that shows a user's bookmarks for a course.
     """
 
-    def render_to_fragment(self, request, course_id=None, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ
+    def render_to_fragment(self, request, course_id=None, **kwargs):  # pylint: disable=arguments-differ
         """
         Renders the user's course bookmarks as a fragment.
         """

@@ -1,4 +1,4 @@
-# lint-amnesty, pylint: disable=missing-module-docstring
+# pylint: disable=missing-module-docstring
 
 import logging
 
@@ -70,7 +70,7 @@ class MakoLoader:
             try:
                 template = Engine.get_default().from_string(source)
                 return template
-            except ImproperlyConfigured:  # lint-amnesty, pylint: disable=try-except-raise
+            except ImproperlyConfigured:  # pylint: disable=try-except-raise
                 # Either no DjangoTemplates engine was configured -or- multiple engines
                 # were configured, making the get_default() call above fail.
                 raise
@@ -96,17 +96,17 @@ class MakoLoader:
         self.base_loader.reset()
 
 
-class MakoFilesystemLoader(MakoLoader):  # lint-amnesty, pylint: disable=missing-class-docstring
+class MakoFilesystemLoader(MakoLoader):  # pylint: disable=missing-class-docstring
     is_usable = True
     _accepts_engine_in_init = True
 
     def __init__(self, *args):
-        MakoLoader.__init__(self, FilesystemLoader(*args))  # lint-amnesty, pylint: disable=no-value-for-parameter
+        MakoLoader.__init__(self, FilesystemLoader(*args))  # pylint: disable=no-value-for-parameter
 
 
-class MakoAppDirectoriesLoader(MakoLoader):  # lint-amnesty, pylint: disable=missing-class-docstring
+class MakoAppDirectoriesLoader(MakoLoader):  # pylint: disable=missing-class-docstring
     is_usable = True
     _accepts_engine_in_init = True
 
     def __init__(self, *args):
-        MakoLoader.__init__(self, AppDirectoriesLoader(*args))  # lint-amnesty, pylint: disable=no-value-for-parameter
+        MakoLoader.__init__(self, AppDirectoriesLoader(*args))  # pylint: disable=no-value-for-parameter

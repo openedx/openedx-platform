@@ -1,5 +1,6 @@
 import $ from 'jquery';
 import _ from 'underscore';
+import sinon from 'sinon';
 import AjaxHelpers from 'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers';
 import EditHelpers from 'js/spec_helpers/edit_helpers';
 import TemplateHelpers from 'common/js/spec_helpers/template_helpers';
@@ -24,7 +25,7 @@ describe('MoveXBlock', function() {
         verifyNotificationStatus, sendMoveXBlockRequest, moveXBlockWithSuccess, getMovedAlertNotification,
         verifyConfirmationFeedbackTitleText, verifyConfirmationFeedbackRedirectLinkText,
         verifyUndoConfirmationFeedbackTitleText, verifyConfirmationFeedbackUndoMoveActionText,
-        sourceParentXBlockInfo, mockContainerPage, createContainerPage, containerPage,
+        sourceParentXBlockInfo, mockContainerPage, createContainerPage, containerPage, requests, xhrFactory,
         sourceDisplayName = 'component_display_name_0',
         sourceLocator = 'component_ID_0',
         sourceParentLocator = 'unit_ID_0';
@@ -91,6 +92,11 @@ describe('MoveXBlock', function() {
     };
 
     beforeEach(function() {
+        xhrFactory = sinon.useFakeXMLHttpRequest();
+        requests = [];
+        requests.currentIndex = 0;
+        requests.restore = function() { xhrFactory.restore(); };
+        xhrFactory.onCreate = function(req) { requests.push(req); };
         setFixtures("<div id='page-alert'></div>");
         mockContainerPage = readFixtures('templates/mock/mock-container-page.underscore');
         TemplateHelpers.installTemplates([
@@ -115,6 +121,7 @@ describe('MoveXBlock', function() {
     });
 
     afterEach(function() {
+        requests.restore();
         modal.hide();
         courseOutline = null;
         containerPage.remove();
@@ -723,7 +730,6 @@ describe('MoveXBlock', function() {
         });
 
         it('move an xblock when move button is clicked', function() {
-            var requests = AjaxHelpers.requests(this);
             moveXBlockWithSuccess(requests);
         });
 
@@ -734,8 +740,7 @@ describe('MoveXBlock', function() {
         });
 
         it('undo move an xblock when undo move link is clicked', function() {
-            var sourceIndex = 0,
-                requests = AjaxHelpers.requests(this);
+            var sourceIndex = 0;
             moveXBlockWithSuccess(requests);
             getMovedAlertNotification().find('.action-save').click();
             AjaxHelpers.respondWithJson(requests, {
@@ -749,8 +754,7 @@ describe('MoveXBlock', function() {
 
     describe('shows a notification', function() {
         it('mini operation message when moving an xblock', function() {
-            var requests = AjaxHelpers.requests(this),
-                notificationSpy = ViewHelpers.createNotificationSpy();
+            var notificationSpy = ViewHelpers.createNotificationSpy();
             // navigate to a target parent and click
             renderViews(courseOutline);
             _.each(_.range(3), function() {
@@ -761,8 +765,7 @@ describe('MoveXBlock', function() {
         });
 
         it('mini operation message when undo moving an xblock', function() {
-            var notificationSpy,
-                requests = AjaxHelpers.requests(this);
+            var notificationSpy;
             moveXBlockWithSuccess(requests);
             notificationSpy = ViewHelpers.createNotificationSpy();
             getMovedAlertNotification().find('.action-save').click();
@@ -770,8 +773,7 @@ describe('MoveXBlock', function() {
         });
 
         it('error message when move request fails', function() {
-            var requests = AjaxHelpers.requests(this),
-                notificationSpy = ViewHelpers.createNotificationSpy('Error');
+            var notificationSpy = ViewHelpers.createNotificationSpy('Error');
             // select a target item and click
             renderViews(courseOutline);
             _.each(_.range(3), function() {
@@ -783,8 +785,7 @@ describe('MoveXBlock', function() {
         });
 
         it('error message when undo move request fails', function() {
-            var requests = AjaxHelpers.requests(this),
-                notificationSpy = ViewHelpers.createNotificationSpy('Error');
+            var notificationSpy = ViewHelpers.createNotificationSpy('Error');
             moveXBlockWithSuccess(requests);
             getMovedAlertNotification().find('.action-save').click();
             AjaxHelpers.respondWithError(requests);

@@ -11,7 +11,7 @@ from zoneinfo import ZoneInfo
 import ddt
 import httpretty
 import pytest
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.core import mail
 from django.db import connection
 from django.test.utils import override_settings
@@ -43,9 +43,9 @@ from openedx.core.djangoapps.credit.models import (
 )
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 from xmodule.modulestore.tests.django_utils import (
-    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+    ModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 TEST_CREDIT_PROVIDER_SECRET_KEY = "931433d583c84ca7ba41784bad3232e6"
 TEST_CREDIT_PROVIDER_SECRET_KEY_TWO = "abcf433d583c8baebae1784bad3232e6"
@@ -972,7 +972,7 @@ class CreditProviderIntegrationApiTests(CreditApiTestBase):
         assert parameters['final_grade'] == str(self.FINAL_GRADE)
 
         # Validate user information
-        for key in self.USER_INFO.keys():  # lint-amnesty, pylint: disable=consider-iterating-dictionary
+        for key in self.USER_INFO.keys():  # pylint: disable=consider-iterating-dictionary
             param_key = f'user_{key}'
             assert param_key in parameters
             expected = '' if key == 'mailing_address' else self.USER_INFO[key]

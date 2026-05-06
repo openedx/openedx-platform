@@ -1,4 +1,4 @@
-# lint-amnesty, pylint: disable=missing-module-docstring
+# pylint: disable=missing-module-docstring
 
 import json
 from datetime import datetime
@@ -9,7 +9,7 @@ from django.test import TestCase
 from common.djangoapps.track.utils import DateTimeJSONEncoder
 
 
-class TestDateTimeJSONEncoder(TestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class TestDateTimeJSONEncoder(TestCase):  # pylint: disable=missing-class-docstring
     def test_datetime_encoding(self):
         a_naive_datetime = datetime(2012, 5, 1, 7, 27, 10, 20000)
         a_tz_datetime = datetime(2012, 5, 1, 7, 27, 10, 20000, tzinfo=ZoneInfo("UTC"))

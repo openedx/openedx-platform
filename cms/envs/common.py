@@ -256,9 +256,6 @@ ENABLE_JASMINE = False
 
 MARKETING_EMAILS_OPT_IN = False
 
-############################# MICROFRONTENDS ###################################
-COURSE_AUTHORING_MICROFRONTEND_URL = None
-
 ############################# SET PATH INFORMATION #############################
 PROJECT_ROOT = path(__file__).abspath().dirname().dirname()  # /edx-platform/cms
 CMS_ROOT = REPO_ROOT / "cms"  # noqa: F405

@@ -104,7 +104,7 @@ class CourseMetadataUtilsTestCase(TestCase):
             else:
                 raise ValueError("Invalid format string :" + format_string)
 
-        def noop_gettext(text):  # lint-amnesty, pylint: disable=unused-variable
+        def noop_gettext(text):  # pylint: disable=unused-variable
             """Dummy implementation of gettext, so we don't need Django."""
             return text
 

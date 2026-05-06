@@ -13,7 +13,7 @@ from edx_toggles.toggles import WaffleSwitch
 PROGRAMS_WAFFLE_SWITCH_NAMESPACE = 'programs'
 
 # This is meant to be enabled until https://openedx.atlassian.net/browse/LEARNER-5573 needs to be resolved
-ALWAYS_CALCULATE_PROGRAM_PRICE_AS_ANONYMOUS_USER = WaffleSwitch(  # lint-amnesty, pylint: disable=toggle-missing-annotation
+ALWAYS_CALCULATE_PROGRAM_PRICE_AS_ANONYMOUS_USER = WaffleSwitch(  # pylint: disable=toggle-missing-annotation
     f'{PROGRAMS_WAFFLE_SWITCH_NAMESPACE}.always_calculate_program_price_as_anonymous_user',
     __name__
 )

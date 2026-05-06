@@ -80,7 +80,7 @@ class InstructorServiceTests(SharedModuleStoreTestCase):
         Negative test of trying to reset attempts with bad content_id
         """
 
-        result = self.service.delete_student_attempt(  # lint-amnesty, pylint: disable=assignment-from-none
+        result = self.service.delete_student_attempt(  # pylint: disable=assignment-from-none
             self.student.username,
             str(self.course.id),
             'foo/bar/baz',
@@ -93,7 +93,7 @@ class InstructorServiceTests(SharedModuleStoreTestCase):
         Negative test of trying to reset attempts with bad user identifier
         """
 
-        result = self.service.delete_student_attempt(  # lint-amnesty, pylint: disable=assignment-from-none
+        result = self.service.delete_student_attempt(  # pylint: disable=assignment-from-none
             'bad_student',
             str(self.course.id),
             'foo/bar/baz',
@@ -106,7 +106,7 @@ class InstructorServiceTests(SharedModuleStoreTestCase):
         Negative test of trying to reset attempts with bad user identifier
         """
 
-        result = self.service.delete_student_attempt(  # lint-amnesty, pylint: disable=assignment-from-none
+        result = self.service.delete_student_attempt(  # pylint: disable=assignment-from-none
             self.student.username,
             str(self.course.id),
             str(self.problem_2.location),

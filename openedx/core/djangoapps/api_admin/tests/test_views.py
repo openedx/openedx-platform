@@ -351,9 +351,9 @@ class CatalogEditViewTest(CatalogTest):
         )
         response = self.client.post(self.url, {'delete-catalog': 'on'})
         self.assertRedirects(response, reverse('api_admin:catalog-search'))
-        assert httpretty.last_request().method == 'DELETE'  # lint-amnesty, pylint: disable=no-member
+        assert httpretty.last_request().method == 'DELETE'  # pylint: disable=no-member
         assert httpretty.last_request().path == \
-               f'/api/v1/catalogs/{self.catalog.id}/'  # lint-amnesty, pylint: disable=no-member
+               f'/api/v1/catalogs/{self.catalog.id}/'  # pylint: disable=no-member
         assert len(httpretty.httpretty.latest_requests) == 1
 
     @httpretty.activate

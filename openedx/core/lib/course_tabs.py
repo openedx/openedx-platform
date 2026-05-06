@@ -2,7 +2,7 @@
 Tabs for courseware.
 """
 
-from functools import cmp_to_key  # lint-amnesty, pylint: disable=wrong-import-order
+from functools import cmp_to_key  # pylint: disable=wrong-import-order
 
 from edx_django_utils.plugins import PluginManager
 

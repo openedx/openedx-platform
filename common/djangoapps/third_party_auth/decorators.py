@@ -6,7 +6,7 @@ Decorators that can be used to interact with third_party_auth.
 from functools import wraps
 
 from django.conf import settings
-from six.moves.urllib.parse import urlparse  # lint-amnesty, pylint: disable=unused-import
+from six.moves.urllib.parse import urlparse  # pylint: disable=unused-import
 
 from common.djangoapps.third_party_auth.models import LTIProviderConfig
 

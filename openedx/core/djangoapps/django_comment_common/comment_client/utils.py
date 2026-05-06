@@ -11,13 +11,13 @@ log = logging.getLogger(__name__)
 
 
 def strip_none(dic):
-    return {k: v for k, v in dic.items() if v is not None}  # lint-amnesty, pylint: disable=consider-using-dict-comprehension
+    return {k: v for k, v in dic.items() if v is not None}  # pylint: disable=consider-using-dict-comprehension
 
 
 def strip_blank(dic):
     def _is_blank(v):
         return isinstance(v, str) and len(v.strip()) == 0
-    return {k: v for k, v in dic.items() if not _is_blank(v)}  # lint-amnesty, pylint: disable=consider-using-dict-comprehension
+    return {k: v for k, v in dic.items() if not _is_blank(v)}  # pylint: disable=consider-using-dict-comprehension
 
 
 def extract(dic, keys):

@@ -66,7 +66,7 @@ class TestSortedAssetList(unittest.TestCase):
 
     def setUp(self):
         super().setUp()
-        asset_list = [dict(list(zip(AssetStoreTestData.asset_fields, asset))) for asset in AssetStoreTestData.all_asset_data]  # lint-amnesty, pylint: disable=line-too-long  # noqa: B905
+        asset_list = [dict(list(zip(AssetStoreTestData.asset_fields, asset))) for asset in AssetStoreTestData.all_asset_data]  # pylint: disable=line-too-long  # noqa: B905
         self.sorted_asset_list_by_filename = SortedAssetList(iterable=asset_list)
         self.sorted_asset_list_by_last_edit = SortedAssetList(iterable=asset_list, key=lambda x: x['edited_on'])
         self.course_key = CourseLocator('org', 'course', 'run')
@@ -109,7 +109,7 @@ class TestMongoAssetMetadataStorage(TestCase):
         """
         So we can use the below date comparison
         """
-        for attr in mdata1.ATTRS_ALLOWED_TO_UPDATE:  # lint-amnesty, pylint: disable=redefined-outer-name  # noqa: F402
+        for attr in mdata1.ATTRS_ALLOWED_TO_UPDATE:  # pylint: disable=redefined-outer-name  # noqa: F402
             if attr == "edited_on":
                 continue  # The edited_on gets updated during save, so comparing it makes tests flaky.
             if isinstance(getattr(mdata1, attr), datetime):

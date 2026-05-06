@@ -93,7 +93,7 @@ class IsMasterCourseStaffInstructor(permissions.BasePermission):
             try:
                 course_key = CourseKey.from_string(master_course_id)
             except InvalidKeyError:
-                raise Http404()  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+                raise Http404()  # pylint: disable=raise-missing-from  # noqa: B904
             return (hasattr(request, 'user') and
                     (CourseInstructorRole(course_key).has_user(request.user) or
                      CourseStaffRole(course_key).has_user(request.user)))

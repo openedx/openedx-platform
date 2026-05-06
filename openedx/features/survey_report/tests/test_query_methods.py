@@ -16,7 +16,7 @@ from openedx.features.survey_report.queries import (
 )
 from xmodule.modulestore.django import modulestore
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 
 class TestSurveyReportCommands(ModuleStoreTestCase):
@@ -29,7 +29,7 @@ class TestSurveyReportCommands(ModuleStoreTestCase):
         Setup for users and courses.
         """
         super().setUp()
-        self.store = modulestore()  # lint-amnesty, pylint: disable=protected-access
+        self.store = modulestore()  # pylint: disable=protected-access
         self.first_course = CourseFactory.create(
             org="test", course="course1", display_name="run1"
         )

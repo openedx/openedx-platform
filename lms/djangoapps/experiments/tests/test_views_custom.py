@@ -16,12 +16,12 @@ from common.djangoapps.course_modes.tests.factories import CourseModeFactory
 from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory
 from lms.djangoapps.course_blocks.transformers.tests.helpers import ModuleStoreTestCase
 from lms.djangoapps.experiments.views_custom import MOBILE_UPSELL_FLAG
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 CROSS_DOMAIN_REFERER = 'https://ecommerce.edx.org'
 
 
-class Rev934LoggedOutTests(APITestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class Rev934LoggedOutTests(APITestCase):  # pylint: disable=missing-class-docstring
     def test_not_logged_in(self):
         """Test mobile app upsell API is not available if not logged in"""
         url = reverse('api_experiments:rev_934')

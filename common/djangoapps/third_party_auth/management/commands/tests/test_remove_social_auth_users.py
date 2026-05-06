@@ -47,7 +47,7 @@ class TestRemoveSocialAuthUsersCommand(TestCase):
         self.create_social_auth_entry(self.user_viktor, self.provider_durmstrang)
 
     @contextmanager
-    def _replace_stdin(self, text):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def _replace_stdin(self, text):  # pylint: disable=missing-function-docstring
         orig = sys.stdin
         sys.stdin = StringIO(text)
         yield

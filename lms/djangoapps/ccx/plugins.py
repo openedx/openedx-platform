@@ -7,7 +7,7 @@ from django.conf import settings
 from django.utils.translation import gettext_noop
 
 from common.djangoapps.student.roles import CourseCcxCoachRole
-from xmodule.tabs import CourseTab  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.tabs import CourseTab  # pylint: disable=wrong-import-order
 
 from .permissions import VIEW_CCX_COACH_DASHBOARD
 

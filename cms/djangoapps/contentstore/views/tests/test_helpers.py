@@ -6,7 +6,7 @@ from unittest.mock import Mock, patch
 from urllib.parse import quote
 
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase
-from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import (  # pylint: disable=wrong-import-order
     BlockFactory,
     LibraryFactory,
 )

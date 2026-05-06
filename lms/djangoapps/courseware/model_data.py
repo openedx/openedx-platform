@@ -37,7 +37,7 @@ from xblock.fields import Scope, UserScope
 from xblock.runtime import KeyValueStore
 
 from lms.djangoapps.courseware.user_state_client import DjangoXBlockUserStateClient
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 
 from .models import StudentModule, XModuleStudentInfoField, XModuleStudentPrefsField, XModuleUserStateSummaryField
 
@@ -107,7 +107,7 @@ class DjangoKeyValueStore(KeyValueStore):
         Scope.user_info,
     )
 
-    def __init__(self, field_data_cache):  # lint-amnesty, pylint: disable=super-init-not-called
+    def __init__(self, field_data_cache):  # pylint: disable=super-init-not-called
         self._field_data_cache = field_data_cache
 
     def get(self, key):
@@ -120,7 +120,7 @@ class DjangoKeyValueStore(KeyValueStore):
         """
         self.set_many({key: value})
 
-    def set_many(self, kv_dict):  # lint-amnesty, pylint: disable=arguments-differ
+    def set_many(self, kv_dict):  # pylint: disable=arguments-differ
         """
         Provide a bulk save mechanism.
 
@@ -228,7 +228,7 @@ class DjangoOrmFieldCache(metaclass=ABCMeta):
 
             except DatabaseError:
                 log.exception("Saving field %r failed", kvs_key.field_name)
-                raise KeyValueMultiSaveError(saved_fields)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+                raise KeyValueMultiSaveError(saved_fields)  # pylint: disable=raise-missing-from  # noqa: B904
 
             finally:
                 saved_fields.append(kvs_key.field_name)
@@ -406,7 +406,7 @@ class UserStateCache:
             )
         except DatabaseError:
             log.exception("Saving user state failed for %s", self.user.username)
-            raise KeyValueMultiSaveError([])  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise KeyValueMultiSaveError([])  # pylint: disable=raise-missing-from  # noqa: B904
         finally:
             self._cache.update(pending_updates)
 
@@ -841,7 +841,7 @@ class FieldDataCache:
                 saved_fields.extend(key.field_name for key in set_many_data)
             except KeyValueMultiSaveError as exc:
                 log.exception('Error saving fields %r', [key.field_name for key in set_many_data])
-                raise KeyValueMultiSaveError(saved_fields + exc.saved_field_names)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+                raise KeyValueMultiSaveError(saved_fields + exc.saved_field_names)  # pylint: disable=raise-missing-from  # noqa: B904
 
     def delete(self, key):
         """

@@ -28,7 +28,7 @@ from openedx.features.course_experience import (
     COURSE_PRE_START_ACCESS_FLAG,
     ENFORCE_MASQUERADE_START_DATES,
 )
-from xmodule.course_block import COURSE_VISIBILITY_PUBLIC  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.course_block import COURSE_VISIBILITY_PUBLIC  # pylint: disable=wrong-import-order
 
 DEBUG_ACCESS = False
 log = getLogger(__name__)

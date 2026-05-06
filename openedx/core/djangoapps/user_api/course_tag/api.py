@@ -20,7 +20,7 @@ from ..models import UserCourseTag
 COURSE_SCOPE = 'course'
 
 
-class BulkCourseTags:  # lint-amnesty, pylint: disable=missing-class-docstring
+class BulkCourseTags:  # pylint: disable=missing-class-docstring
     CACHE_NAMESPACE = 'user_api.course_tag.api'
 
     @classmethod

@@ -1,8 +1,10 @@
 define([
-    'jquery', 'js/models/settings/course_details', 'js/views/settings/main',
+    'jquery', 'sinon', 'js/models/settings/course_details', 'js/views/settings/main',
     'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers', 'common/js/spec_helpers/template_helpers'
-], function($, CourseDetailsModel, MainView, AjaxHelpers, TemplateHelpers) {
+], function($, sinon, CourseDetailsModel, MainView, AjaxHelpers, TemplateHelpers) {
     'use strict';
+
+    var requests, xhrFactory;
 
     var SELECTORS = {
         entrance_exam_min_score: '#entrance-exam-minimum-score-pct',
@@ -60,6 +62,11 @@ define([
             instructorInfoTpl = readFixtures('course-instructor-details.underscore');
 
         beforeEach(function() {
+            xhrFactory = sinon.useFakeXMLHttpRequest();
+            requests = [];
+            requests.currentIndex = 0;
+            requests.restore = function() { xhrFactory.restore(); };
+            xhrFactory.onCreate = function(req) { requests.push(req); };
             TemplateHelpers.installTemplates(['course-settings-learning-fields', 'course-instructor-details'], true);
             appendSetFixtures(mockSettingsPage);
             appendSetFixtures(
@@ -84,6 +91,7 @@ define([
         });
 
         afterEach(function() {
+            requests.restore();
             // Clean up after the $.datepicker
             $('#start_date').datepicker('destroy');
             $('#due_date').datepicker('destroy');
@@ -91,8 +99,7 @@ define([
         });
 
         it('Changing the time field do not affect other time fields', function() {
-            var requests = AjaxHelpers.requests(this),
-                expectedJson = $.extend(true, {}, modelData, {
+            var expectedJson = $.extend(true, {}, modelData, {
                     // Expect to see changes just in `start_date` field.
                     start_date: '2014-10-05T22:00:00.000Z'
                 });
@@ -110,8 +117,7 @@ define([
 
         it('Selecting a course in pre-requisite drop down should save it as part of course details', function() {
             var pre_requisite_courses = ['test/CSS101/2012_T1'];
-            var requests = AjaxHelpers.requests(this),
-                expectedJson = $.extend(true, {}, modelData, {
+            var expectedJson = $.extend(true, {}, modelData, {
                     pre_requisite_courses: pre_requisite_courses
                 });
             this.view.$el.find('#pre-requisite-course')
@@ -168,8 +174,7 @@ define([
                 entrance_exam_min_score = this.view.$(SELECTORS.entrance_exam_min_score),
                 entrance_exam_enabled_field = this.view.$(SELECTORS.entrance_exam_enabled_field);
 
-            var requests = AjaxHelpers.requests(this),
-                expectedJson = $.extend(true, {}, modelData, {
+            var expectedJson = $.extend(true, {}, modelData, {
                     entrance_exam_enabled: entrance_exam_enabled,
                     entrance_exam_minimum_score_pct: entrance_exam_minimum_score_pct
                 });
@@ -190,7 +195,6 @@ define([
         });
 
         it('should save language as part of course details', function() {
-            var requests = AjaxHelpers.requests(this);
             var expectedJson = $.extend(true, {}, modelData, {
                 language: 'en'
             });
@@ -203,7 +207,6 @@ define([
         });
 
         it('should not error if about_page_editable is False', function() {
-            var requests = AjaxHelpers.requests(this);
             // if about_page_editable is false, there is no section.course_details
             $('.course_details').remove();
             expect(this.model.get('language')).toEqual('');
@@ -212,8 +215,7 @@ define([
         });
 
         it('should save title', function() {
-            var requests = AjaxHelpers.requests(this),
-                expectedJson = $.extend(true, {}, modelData, {
+            var expectedJson = $.extend(true, {}, modelData, {
                     title: 'course title'
                 });
 
@@ -228,8 +230,7 @@ define([
         });
 
         it('should save subtitle', function() {
-            var requests = AjaxHelpers.requests(this),
-                expectedJson = $.extend(true, {}, modelData, {
+            var expectedJson = $.extend(true, {}, modelData, {
                     subtitle: 'course subtitle'
                 });
 
@@ -244,8 +245,7 @@ define([
         });
 
         it('should save duration', function() {
-            var requests = AjaxHelpers.requests(this),
-                expectedJson = $.extend(true, {}, modelData, {
+            var expectedJson = $.extend(true, {}, modelData, {
                     duration: '8 weeks'
                 });
 
@@ -260,8 +260,7 @@ define([
         });
 
         it('should save description', function() {
-            var requests = AjaxHelpers.requests(this),
-                expectedJson = $.extend(true, {}, modelData, {
+            var expectedJson = $.extend(true, {}, modelData, {
                     description: 'course description'
                 });
 
@@ -295,8 +294,7 @@ define([
 
         it('can save learning information', function() {
             expect(this.model.get('learning_info').length).toEqual(1);
-            var requests = AjaxHelpers.requests(this),
-                expectedJson = $.extend(true, {}, modelData, {
+            var expectedJson = $.extend(true, {}, modelData, {
                     learning_info: ['testing info']
                 });
 
@@ -327,8 +325,7 @@ define([
         });
 
         it('can save instructor information', function() {
-            var requests = AjaxHelpers.requests(this),
-                expectedJson = $.extend(true, {}, modelData, {
+            var expectedJson = $.extend(true, {}, modelData, {
                     instructor_info: {
                         instructors:
                         [{

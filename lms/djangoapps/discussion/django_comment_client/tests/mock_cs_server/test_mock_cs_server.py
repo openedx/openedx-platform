@@ -1,4 +1,4 @@
-# lint-amnesty, pylint: disable=missing-module-docstring
+# pylint: disable=missing-module-docstring
 import json
 import threading
 import unittest
@@ -48,10 +48,10 @@ class MockCommentServiceServerTest(unittest.TestCase):
                   'external_id': '4', 'email': 'user100@edx.org'}
         data = json.dumps(values)
         headers = {'Content-Type': 'application/json', 'Content-Length': len(data), 'X-Edx-Api-Key': 'TEST_API_KEY'}
-        req = six.moves.urllib.request.Request(self.server_url + '/api/v1/users/4', data, headers)  # lint-amnesty, pylint: disable=undefined-variable  # noqa: F821
+        req = six.moves.urllib.request.Request(self.server_url + '/api/v1/users/4', data, headers)  # pylint: disable=undefined-variable  # noqa: F821
 
         # Send the request to the mock cs server
-        response = six.moves.urllib.request.urlopen(req)  # lint-amnesty, pylint: disable=undefined-variable  # noqa: F821
+        response = six.moves.urllib.request.urlopen(req)  # pylint: disable=undefined-variable  # noqa: F821
 
         # Receive the reply from the mock cs server
         response_dict = json.loads(response.read())

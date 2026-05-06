@@ -42,7 +42,7 @@ class AuditExpiredError(AccessError):
                 expiration_date=expiration_date
             )
 
-        # lint-amnesty, pylint: disable=super-with-arguments
+        # pylint: disable=super-with-arguments
         super().__init__(error_code, developer_message, user_message, additional_context_user_message)
 
 

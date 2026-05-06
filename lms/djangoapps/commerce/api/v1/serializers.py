@@ -10,7 +10,7 @@ from opaque_keys.edx.keys import CourseKey
 from rest_framework import serializers
 
 from common.djangoapps.course_modes.models import CourseMode
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 
 from .models import UNDEFINED, Course
 
@@ -46,7 +46,7 @@ def validate_course_id(course_id):
     try:
         course_key = CourseKey.from_string(str(course_id))
     except InvalidKeyError:
-        raise serializers.ValidationError(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise serializers.ValidationError(  # pylint: disable=raise-missing-from  # noqa: B904
             _("{course_id} is not a valid course key.").format(
                 course_id=course_id
             )

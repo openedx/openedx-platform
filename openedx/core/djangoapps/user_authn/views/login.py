@@ -101,7 +101,7 @@ def _do_third_party_auth(request):
             register_label_strong=HTML("<strong>{register_text}</strong>").format(register_text=_("Register")),
         )
 
-        raise AuthFailedError(message, error_code="third-party-auth-with-no-linked-account")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise AuthFailedError(message, error_code="third-party-auth-with-no-linked-account")  # pylint: disable=raise-missing-from  # noqa: B904
 
 
 def _get_user_by_email(email):
@@ -187,7 +187,7 @@ def _generate_locked_out_error_message():
     )
 
 
-def _enforce_password_policy_compliance(request, user):  # lint-amnesty, pylint: disable=missing-function-docstring
+def _enforce_password_policy_compliance(request, user):  # pylint: disable=missing-function-docstring
     try:
         password_policy_compliance.enforce_compliance_on_login(user, request.POST.get("password"))
     except password_policy_compliance.NonCompliantPasswordWarning as e:
@@ -210,7 +210,7 @@ def _enforce_password_policy_compliance(request, user):  # lint-amnesty, pylint:
         send_password_reset_email_for_user(user, request)
 
         # Prevent the login attempt.
-        raise AuthFailedError(HTML(str(e)), error_code=e.__class__.__name__)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise AuthFailedError(HTML(str(e)), error_code=e.__class__.__name__)  # pylint: disable=raise-missing-from  # noqa: B904
 
 
 def _log_and_raise_inactive_user_auth_error(unauthenticated_user):
@@ -240,7 +240,7 @@ def _authenticate_first_party(request, unauthenticated_user, third_party_auth_re
     if should_be_rate_limited:
         raise AuthFailedError(
             _("Too many failed login attempts. Try again later.")
-        )  # lint-amnesty, pylint: disable=raise-missing-from
+        )  # pylint: disable=raise-missing-from
 
     # If the user doesn't exist, we want to set the username to an invalid username so that authentication is guaranteed
     # to fail and we can take advantage of the ratelimited backend
@@ -513,13 +513,13 @@ def enterprise_selection_page(request, user, next_url):
     rate=settings.LOGISTRATION_PER_EMAIL_RATELIMIT_RATE,
     method="POST",
     block=False,
-)  # lint-amnesty, pylint: disable=too-many-statements
+)  # pylint: disable=too-many-statements
 @ratelimit(
     key="openedx.core.djangoapps.util.ratelimit.real_ip",
     rate=settings.LOGISTRATION_RATELIMIT_RATE,
     method="POST",
     block=False,
-)  # lint-amnesty, pylint: disable=too-many-statements
+)  # pylint: disable=too-many-statements
 def login_user(request, api_version="v1"):  # pylint: disable=too-many-statements
     """
     AJAX request to log in the user.
@@ -701,7 +701,7 @@ def login_user(request, api_version="v1"):  # pylint: disable=too-many-statement
 # complexity.
 @csrf_exempt
 @require_http_methods(["POST"])
-def login_refresh(request):  # lint-amnesty, pylint: disable=missing-function-docstring
+def login_refresh(request):  # pylint: disable=missing-function-docstring
     if not request.user.is_authenticated or request.user.is_anonymous:
         return JsonResponse("Unauthorized", status=401)
 
@@ -753,7 +753,7 @@ class LoginSessionView(APIView):
 
     @method_decorator(ensure_csrf_cookie)
     def get(self, request, *args, **kwargs):
-        return HttpResponse(get_login_session_form(request).to_json(), content_type="application/json")  # lint-amnesty, pylint: disable=http-response-with-content-type-json
+        return HttpResponse(get_login_session_form(request).to_json(), content_type="application/json")  # pylint: disable=http-response-with-content-type-json
 
     @swagger_auto_schema(
         request_body=login_user_schema,

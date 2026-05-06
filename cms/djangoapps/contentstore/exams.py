@@ -33,7 +33,7 @@ def register_exams(course_key):
 
     course = modulestore().get_course(course_key)
     if course is None:
-        raise ItemNotFoundError("Course {} does not exist", str(course_key))  # lint-amnesty, pylint: disable=raising-format-tuple
+        raise ItemNotFoundError("Course {} does not exist", str(course_key))  # pylint: disable=raising-format-tuple
 
     # get all sequences, since they can be marked as timed/proctored exams
     _timed_exams = modulestore().get_items(

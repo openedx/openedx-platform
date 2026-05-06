@@ -67,7 +67,7 @@ class Command(BaseCommand):
                 page_size=page_size
             )
         except Exception as err:
-            raise CommandError(f'Error creating CatalogIntegration: {err}')  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise CommandError(f'Error creating CatalogIntegration: {err}')  # pylint: disable=raise-missing-from  # noqa: B904
 
         self.stdout.write(self.style.SUCCESS(
             'Successfully created CatalogIntegration enabled={} url={} service_username={}').format(

@@ -9,7 +9,7 @@ import time
 from urllib.parse import urljoin
 
 from django.conf import settings
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.dispatch import Signal
 from django.urls import NoReverseMatch, reverse
 from django.utils.http import http_date, parse_http_date
@@ -361,6 +361,6 @@ def _get_login_oauth_client():
     try:
         return Application.objects.get(client_id=login_client_id)
     except Application.DoesNotExist:
-        raise AuthFailedError(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise AuthFailedError(  # pylint: disable=raise-missing-from  # noqa: B904
             f"OAuth Client for the Login service, '{login_client_id}', is not configured."
         )

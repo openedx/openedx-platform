@@ -9,7 +9,7 @@ import logging
 import os
 from textwrap import dedent
 
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.contrib.sites.models import Site
 from django.core.management.base import BaseCommand
 from oauth2_provider.models import Application

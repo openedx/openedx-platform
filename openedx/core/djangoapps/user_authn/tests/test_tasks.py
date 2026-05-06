@@ -3,7 +3,7 @@ Tests for the Sending activation email celery tasks
 """
 
 
-from unittest import mock  # lint-amnesty, pylint: disable=wrong-import-order
+from unittest import mock  # pylint: disable=wrong-import-order
 
 from django.conf import settings
 from django.test import TestCase
@@ -50,7 +50,7 @@ class SendActivationEmailTestCase(TestCase):
 
     @mock.patch('time.sleep', mock.Mock(return_value=None))
     @mock.patch('openedx.core.djangoapps.user_authn.tasks.log')
-    @mock.patch('openedx.core.djangoapps.user_authn.tasks.ace.send', mock.Mock(side_effect=RecoverableChannelDeliveryError(None, None)))  # lint-amnesty, pylint: disable=line-too-long
+    @mock.patch('openedx.core.djangoapps.user_authn.tasks.ace.send', mock.Mock(side_effect=RecoverableChannelDeliveryError(None, None)))  # pylint: disable=line-too-long
     def test_RetrySendUntilFail(self, mock_log):
         """
         Tests retries when the activation email doesn't send

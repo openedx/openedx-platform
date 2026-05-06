@@ -1,10 +1,11 @@
 define([
     'backbone',
     'jquery',
+    'sinon',
     'js/staff_debug_actions',
     'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers'
 ],
-function(Backbone, $, tmp, AjaxHelpers) {
+function(Backbone, $, sinon, tmp, AjaxHelpers) {
     'use strict';
 
     var StaffDebug = window.StaffDebug;
@@ -23,6 +24,19 @@ function(Backbone, $, tmp, AjaxHelpers) {
         var esclocationName = 'P2:problem_1';
         var escapableId = 'result_' + esclocationName;
         var $escapableResultArea = $('<div>', {id: escapableId});
+        var requests, xhrFactory;
+
+        beforeEach(function() {
+            xhrFactory = sinon.useFakeXMLHttpRequest();
+            requests = [];
+            requests.currentIndex = 0;
+            requests.restore = function() { xhrFactory.restore(); };
+            xhrFactory.onCreate = function(req) { requests.push(req); };
+        });
+
+        afterEach(function() {
+            requests.restore();
+        });
 
         describe('getURL ', function() {
             it('defines url to courseware ajax entry point', function() {
@@ -83,7 +97,6 @@ function(Backbone, $, tmp, AjaxHelpers) {
         describe('doInstructorDashAction success', function() {
             it('adds a success message to the results element after using an action', function() {
                 $('body').append($escapableResultArea);
-                var requests = AjaxHelpers.requests(this);
                 var action = {
                     courseId: courseId,
                     locationName: esclocationName,
@@ -98,7 +111,6 @@ function(Backbone, $, tmp, AjaxHelpers) {
         describe('doInstructorDashAction error', function() {
             it('adds a failure message to the results element after using an action', function() {
                 $('body').append($escapableResultArea);
-                var requests = AjaxHelpers.requests(this);
                 var action = {
                     courseId: courseId,
                     locationName: esclocationName,

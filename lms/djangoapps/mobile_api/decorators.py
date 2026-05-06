@@ -15,7 +15,7 @@ from lms.djangoapps.courseware.courses import get_course_with_access
 from lms.djangoapps.courseware.courseware_access_exception import CoursewareAccessException
 from lms.djangoapps.courseware.exceptions import CourseAccessRedirect
 from openedx.core.lib.api.view_utils import view_auth_classes
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 
 
 def mobile_course_access(depth=0):
@@ -54,7 +54,7 @@ def mobile_course_access(depth=0):
                     if error.access_error is not None:
                         return Response(data=error.access_error.to_json(), status=status.HTTP_404_NOT_FOUND)
                     # Raise a 404 if the user does not have course access
-                    raise Http404  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+                    raise Http404  # pylint: disable=raise-missing-from  # noqa: B904
                 return func(self, request, course=course, *args, **kwargs)  # noqa: B026
 
         return _wrapper

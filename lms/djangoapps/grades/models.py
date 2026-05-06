@@ -26,7 +26,7 @@ from openedx_events.learning.signals import PERSISTENT_GRADE_SUMMARY_CHANGED
 from simple_history.models import HistoricalRecords
 
 from lms.djangoapps.courseware.fields import UnsignedBigIntAutoField
-from lms.djangoapps.grades import events  # lint-amnesty, pylint: disable=unused-import
+from lms.djangoapps.grades import events  # pylint: disable=unused-import
 from lms.djangoapps.grades.signals.signals import (
     COURSE_GRADE_PASSED_FIRST_TIME,
     COURSE_GRADE_PASSED_UPDATE_IN_LEARNER_PATHWAY,
@@ -363,7 +363,7 @@ class PersistentSubsectionGrade(TimeStampedModel):
         """
         Returns the "correct" usage key value with the run filled in.
         """
-        if self.usage_key.run is None:  # lint-amnesty, pylint: disable=no-member
+        if self.usage_key.run is None:  # pylint: disable=no-member
             # pylint: disable=unexpected-keyword-arg,no-value-for-parameter
             return self.usage_key.replace(course_key=self.course_id)
         else:
@@ -647,7 +647,7 @@ class PersistentCourseGrade(TimeStampedModel):
             except KeyError:
                 # user's grade is not in the prefetched dict, so
                 # assume they have no grade
-                raise cls.DoesNotExist  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+                raise cls.DoesNotExist  # pylint: disable=raise-missing-from  # noqa: B904
         except KeyError:
             # grades were not prefetched for the course, so fetch it
             return cls.objects.get(user_id=user_id, course_id=course_id)
@@ -794,7 +794,7 @@ class PersistentSubsectionGradeOverride(models.Model):
         }
 
     @classmethod
-    def get_override(cls, user_id, usage_key):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def get_override(cls, user_id, usage_key):  # pylint: disable=missing-function-docstring
         prefetch_values = get_cache(cls._CACHE_NAMESPACE).get((user_id, str(usage_key.course_key)), None)
         if prefetch_values is not None:
             return prefetch_values.get(usage_key)
@@ -809,7 +809,7 @@ class PersistentSubsectionGradeOverride(models.Model):
 
     @classmethod
     def update_or_create_override(
-        cls, requesting_user, subsection_grade_model, feature=None, action=None, **override_data  # lint-amnesty, pylint: disable=unused-argument
+        cls, requesting_user, subsection_grade_model, feature=None, action=None, **override_data  # pylint: disable=unused-argument
     ):
         """
         Creates or updates an override object for the given PersistentSubsectionGrade.

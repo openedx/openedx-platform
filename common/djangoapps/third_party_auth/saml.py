@@ -420,7 +420,7 @@ class SapSuccessFactorsIdentityProvider(EdXSAMLIdentityProvider):
             )
             return missing
 
-    def log_bizx_api_exception(self, transaction_data, err):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def log_bizx_api_exception(self, transaction_data, err):  # pylint: disable=missing-function-docstring
         try:
             sys_msg = err.response.content
         except AttributeError:
@@ -514,7 +514,7 @@ class SapSuccessFactorsIdentityProvider(EdXSAMLIdentityProvider):
             return None
         return token_response.json()
 
-    def get_bizx_odata_api_client(self, user_id):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def get_bizx_odata_api_client(self, user_id):  # pylint: disable=missing-function-docstring
         session = requests.Session()
         access_token_data = self.generate_bizx_oauth_api_access_token(user_id)
         if not access_token_data:

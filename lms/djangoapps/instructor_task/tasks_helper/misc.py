@@ -13,7 +13,7 @@ from datetime import datetime
 from tempfile import TemporaryFile
 from time import time
 
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.core.exceptions import ValidationError
 from django.core.files.storage import DefaultStorage
 from openassessment.data import OraAggregateData, OraDownloadData
@@ -159,7 +159,7 @@ def _get_csv_file_content(csv_file):
     return csv_content
 
 
-def cohort_students_and_upload(_xblock_instance_args, _entry_id, course_id, task_input, action_name):  # lint-amnesty, pylint: disable=too-many-statements
+def cohort_students_and_upload(_xblock_instance_args, _entry_id, course_id, task_input, action_name):  # pylint: disable=too-many-statements
     """
     Within a given course, cohort students in bulk, then upload the results
     using a `ReportStore`.
@@ -221,7 +221,7 @@ def cohort_students_and_upload(_xblock_instance_args, _entry_id, course_id, task
             try:
                 # If add_user_to_cohort successfully adds a user, a user object is returned.
                 # If a user is preassigned to a cohort, no user object is returned (we already have the email address).
-                (user, previous_cohort, preassigned) = add_user_to_cohort(cohorts_status[cohort_name]['cohort'], username_or_email)  # lint-amnesty, pylint: disable=line-too-long, unused-variable
+                (user, previous_cohort, preassigned) = add_user_to_cohort(cohorts_status[cohort_name]['cohort'], username_or_email)  # pylint: disable=line-too-long, unused-variable
                 if preassigned:
                     cohorts_status[cohort_name]['Preassigned Learners'].add(username_or_email)
                     task_progress.preassigned += 1
@@ -249,10 +249,10 @@ def cohort_students_and_upload(_xblock_instance_args, _entry_id, course_id, task
     task_progress.update_task_state(extra_meta=current_step)
 
     # Filter the output of `add_users_to_cohorts` in order to upload the result.
-    output_header = ['Cohort Name', 'Exists', 'Learners Added', 'Learners Not Found', 'Invalid Email Addresses', 'Preassigned Learners']  # lint-amnesty, pylint: disable=line-too-long
+    output_header = ['Cohort Name', 'Exists', 'Learners Added', 'Learners Not Found', 'Invalid Email Addresses', 'Preassigned Learners']  # pylint: disable=line-too-long
     output_rows = [
         [
-            ','.join(status_dict.get(column_name, '')) if (column_name == 'Learners Not Found'  # lint-amnesty, pylint: disable=consider-using-in
+            ','.join(status_dict.get(column_name, '')) if (column_name == 'Learners Not Found'  # pylint: disable=consider-using-in
                                                            or column_name == 'Invalid Email Addresses'
                                                            or column_name == 'Preassigned Learners')
             else status_dict[column_name]
@@ -459,7 +459,7 @@ def upload_ora2_submission_files(
             'Failed to upload zip file to storage.',
             'Error while uploading zip file to storage',
         ):
-            zip_filename = upload_zip_to_report_store(zip_file, 'submission_files', course_id, start_date),  # lint-amnesty, pylint: disable=trailing-comma-tuple
+            zip_filename = upload_zip_to_report_store(zip_file, 'submission_files', course_id, start_date),  # pylint: disable=trailing-comma-tuple
 
         if not zip_filename:
             TASK_LOG.info('%s, zip_filename is None, aborting.', task_info_string)
@@ -475,7 +475,7 @@ def upload_ora2_submission_files(
     return UPDATE_STATUS_SUCCEEDED
 
 
-def generate_anonymous_ids(_xblock_instance_args, _entry_id, course_id, task_input, action_name):  # lint-amnesty, pylint: disable=too-many-statements
+def generate_anonymous_ids(_xblock_instance_args, _entry_id, course_id, task_input, action_name):  # pylint: disable=too-many-statements
     """
     Generate a 2-column CSV output of user-id, anonymized-user-id
     """

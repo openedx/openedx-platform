@@ -27,7 +27,7 @@ from lms.djangoapps.grades.tasks import (
     recalculate_subsection_grade_v3,
 )
 from openedx.core.djangoapps.course_groups.signals.signals import COHORT_MEMBERSHIP_UPDATED
-from openedx.core.djangoapps.signals.signals import (  # lint-amnesty, pylint: disable=wrong-import-order
+from openedx.core.djangoapps.signals.signals import (  # pylint: disable=wrong-import-order
     COURSE_GRADE_NOW_FAILED,
     COURSE_GRADE_NOW_PASSED,
 )

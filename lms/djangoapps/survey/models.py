@@ -57,9 +57,9 @@ class SurveyForm(TimeStampedModel):
             fields = cls.get_field_names_from_html(html)
         except Exception as ex:
             log.exception(f"Cannot parse SurveyForm html: {ex}")
-            raise ValidationError(f"Cannot parse SurveyForm as HTML: {ex}")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise ValidationError(f"Cannot parse SurveyForm as HTML: {ex}")  # pylint: disable=raise-missing-from  # noqa: B904
 
-        if not len(fields):  # lint-amnesty, pylint: disable=len-as-condition
+        if not len(fields):  # pylint: disable=len-as-condition
             raise ValidationError("SurveyForms must contain at least one form input field")
 
     @classmethod

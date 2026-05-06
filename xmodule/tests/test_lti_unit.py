@@ -89,7 +89,7 @@ class _TestLTIBase(TestCase):
             settings.LMS_BASE
         )
 
-        sourced_id = ':'.join(parse.quote(i) for i in (self.lti_id, self.unquoted_resource_link_id, self.user_id))  # lint-amnesty, pylint: disable=line-too-long
+        sourced_id = ':'.join(parse.quote(i) for i in (self.lti_id, self.unquoted_resource_link_id, self.user_id))  # pylint: disable=line-too-long
 
         self.defaults = {
             'namespace': "http://www.imsglobal.org/services/ltiv1p1/xsd/imsoms_v1p0",

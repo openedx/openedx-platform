@@ -7,7 +7,7 @@ import json
 import re
 
 from django.conf import settings
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.test.client import Client
 from django.urls import reverse, reverse_lazy
 from django.utils import translation

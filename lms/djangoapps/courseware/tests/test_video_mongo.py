@@ -84,7 +84,7 @@ I am overwatch.
 TRANSCRIPT_FILE_SJSON_DATA = """{\n   "start": [10],\n   "end": [100],\n   "text": ["Hi, welcome to edxval."]\n}"""
 
 
-class TestVideoYouTube(TestVideo):  # lint-amnesty, pylint: disable=missing-class-docstring, test-inherits-tests
+class TestVideoYouTube(TestVideo):  # pylint: disable=missing-class-docstring, test-inherits-tests
     METADATA = {}
 
     @patch('xblock.utils.resources.ResourceLoader.render_django_template', side_effect=mock_render_template)
@@ -411,7 +411,7 @@ class TestGetHtmlMethod(BaseTestVideoXBlock):
     @patch('xblock.utils.resources.ResourceLoader.render_django_template', side_effect=mock_render_template)
     def test_get_html_track(self, mock_render_django_template):
         # pylint: disable=invalid-name
-        # lint-amnesty, pylint: disable=redefined-outer-name
+        # pylint: disable=redefined-outer-name
         SOURCE_XML = """
             <video show_captions="true"
             display_name="{name}"
@@ -542,7 +542,7 @@ class TestGetHtmlMethod(BaseTestVideoXBlock):
 
     @patch('xblock.utils.resources.ResourceLoader.render_django_template', side_effect=mock_render_template)
     def test_get_html_source(self, mock_render_django_template):
-        # lint-amnesty, pylint: disable=invalid-name, redefined-outer-name
+        # pylint: disable=invalid-name, redefined-outer-name
         SOURCE_XML = """
             <video show_captions="true"
             display_name="{name}"
@@ -633,7 +633,7 @@ class TestGetHtmlMethod(BaseTestVideoXBlock):
         initial_context['metadata']['duration'] = None
 
         for data in cases:
-            DATA = SOURCE_XML.format(  # lint-amnesty, pylint: disable=invalid-name
+            DATA = SOURCE_XML.format(  # pylint: disable=invalid-name
                 download_video=data['download_video'],
                 source=data['source'],
                 sources=data['sources'],
@@ -671,7 +671,7 @@ class TestGetHtmlMethod(BaseTestVideoXBlock):
         Tests the VideoBlock get_html where a edx_video_id is given but a video is not found
         """
         # pylint: disable=invalid-name
-        # lint-amnesty, pylint: disable=redefined-outer-name
+        # pylint: disable=redefined-outer-name
         SOURCE_XML = """
             <video show_captions="true"
             display_name="{name}"
@@ -720,7 +720,7 @@ class TestGetHtmlMethod(BaseTestVideoXBlock):
 
     @patch('xblock.utils.resources.ResourceLoader.render_django_template', side_effect=mock_render_template)
     def test_get_html_with_mocked_edx_video_id(self, mock_render_django_template):
-        # lint-amnesty, pylint: disable=invalid-name, redefined-outer-name
+        # pylint: disable=invalid-name, redefined-outer-name
         SOURCE_XML = """
             <video show_captions="true"
             display_name="A Name"
@@ -781,7 +781,7 @@ class TestGetHtmlMethod(BaseTestVideoXBlock):
             'video_id': 'mock item',
         }
 
-        DATA = SOURCE_XML.format(  # lint-amnesty, pylint: disable=invalid-name
+        DATA = SOURCE_XML.format(  # pylint: disable=invalid-name
             download_video=data['download_video'],
             source=data['source'],
             sources=data['sources'],
@@ -859,7 +859,7 @@ class TestGetHtmlMethod(BaseTestVideoXBlock):
         Create expected context and get actual context returned by `get_html` method.
         """
         # make sure the urls for the various encodings are included as part of the alternative sources.
-        # lint-amnesty, pylint: disable=invalid-name, redefined-outer-name
+        # pylint: disable=invalid-name, redefined-outer-name
         SOURCE_XML = """
             <video show_captions="true"
             display_name="A Name"
@@ -941,7 +941,7 @@ class TestGetHtmlMethod(BaseTestVideoXBlock):
         Test if sources got from CDN
         """
 
-        def side_effect(*args, **kwargs):  # lint-amnesty, pylint: disable=unused-argument
+        def side_effect(*args, **kwargs):  # pylint: disable=unused-argument
             cdn = {
                 'http://example.com/example.mp4': 'http://cdn-example.com/example.mp4',
                 'http://example.com/example.webm': 'http://cdn-example.com/example.webm',
@@ -1520,7 +1520,7 @@ class TestEditorSavedMethod(BaseTestVideoXBlock):
         """
         self.initialize_block(metadata=self.metadata)
         item = self.store.get_item(self.block.location)
-        with open(self.file_path, "rb") as myfile:  # lint-amnesty, pylint: disable=bad-option-value, open-builtin
+        with open(self.file_path, "rb") as myfile:  # pylint: disable=bad-option-value, open-builtin
             save_to_store(myfile.read(), self.file_name, 'text/sjson', item.location)
         item.sub = "3_yD_cEKoCk"
         # subs_video.srt.sjson does not exist before calling editor_saved function
@@ -1538,7 +1538,7 @@ class TestEditorSavedMethod(BaseTestVideoXBlock):
         """
         self.initialize_block(metadata=self.metadata)
         item = self.store.get_item(self.block.location)
-        with open(self.file_path, "rb") as myfile:  # lint-amnesty, pylint: disable=bad-option-value, open-builtin
+        with open(self.file_path, "rb") as myfile:  # pylint: disable=bad-option-value, open-builtin
             save_to_store(myfile.read(), self.file_name, 'text/sjson', item.location)
             save_to_store(myfile.read(), 'subs_video.srt.sjson', 'text/sjson', item.location)
         item.sub = "3_yD_cEKoCk"
@@ -2462,7 +2462,7 @@ class TestVideoWithBumper(TestVideo):  # pylint: disable=test-inherits-tests
 
 
 @ddt.ddt
-class TestAutoAdvanceVideo(TestVideo):  # lint-amnesty, pylint: disable=test-inherits-tests
+class TestAutoAdvanceVideo(TestVideo):  # pylint: disable=test-inherits-tests
     """
     Tests the server side of video auto-advance.
     """

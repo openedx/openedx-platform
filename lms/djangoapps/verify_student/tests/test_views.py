@@ -42,12 +42,12 @@ from lms.djangoapps.verify_student.views import PayAndVerifyView, checkout_with_
 from openedx.core.djangoapps.embargo.test_utils import restrict_course
 from openedx.core.djangoapps.theming.tests.test_util import with_comprehensive_theme
 from openedx.core.djangoapps.user_api.accounts.api import get_account_settings
-from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore import ModuleStoreEnum  # pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 from xmodule.modulestore.tests.django_utils import (
-    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+    ModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 
 def mock_render_to_response(*args, **kwargs):
@@ -130,7 +130,7 @@ class StartView(TestCase):
         self.client.login(username="rusty", password=TEST_PASSWORD)
 
     def must_be_logged_in(self):
-        self.assertHttpForbidden(self.client.get(self.start_url()))  # lint-amnesty, pylint: disable=no-member
+        self.assertHttpForbidden(self.client.get(self.start_url()))  # pylint: disable=no-member
 
 
 @ddt.ddt
@@ -860,7 +860,7 @@ class TestPayAndVerifyView(UrlResetMixin, ModuleStoreTestCase, XssTestMixin, Tes
             attempt.system_error("Error!")
 
         if status == "expired":
-            days_good_for = settings.VERIFY_STUDENT["DAYS_GOOD_FOR"]  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841
+            days_good_for = settings.VERIFY_STUDENT["DAYS_GOOD_FOR"]  # pylint: disable=unused-variable  # noqa: F841
             attempt.expiration_date = now() - timedelta(days=1)
             attempt.save()
 

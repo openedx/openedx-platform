@@ -6,26 +6,26 @@ consist primarily of authentication, request validation, and serialization.
 
 import logging
 
-from django.core.exceptions import (  # lint-amnesty, pylint: disable=wrong-import-order
+from django.core.exceptions import (  # pylint: disable=wrong-import-order
     ObjectDoesNotExist,
     ValidationError,
 )
-from django.db import IntegrityError  # lint-amnesty, pylint: disable=wrong-import-order
-from django.db.models import Q  # lint-amnesty, pylint: disable=wrong-import-order
-from django.utils.decorators import method_decorator  # lint-amnesty, pylint: disable=wrong-import-order
-from edx_rest_framework_extensions.auth.jwt.authentication import (  # lint-amnesty, pylint: disable=wrong-import-order
+from django.db import IntegrityError  # pylint: disable=wrong-import-order
+from django.db.models import Q  # pylint: disable=wrong-import-order
+from django.utils.decorators import method_decorator  # pylint: disable=wrong-import-order
+from edx_rest_framework_extensions.auth.jwt.authentication import (  # pylint: disable=wrong-import-order
     JwtAuthentication,
 )
-from edx_rest_framework_extensions.auth.session.authentication import (  # lint-amnesty, pylint: disable=wrong-import-order
+from edx_rest_framework_extensions.auth.session.authentication import (  # pylint: disable=wrong-import-order
     SessionAuthenticationAllowInactiveUser,
 )
-from opaque_keys import InvalidKeyError  # lint-amnesty, pylint: disable=wrong-import-order
-from opaque_keys.edx.keys import CourseKey  # lint-amnesty, pylint: disable=wrong-import-order
-from rest_framework import permissions, status  # lint-amnesty, pylint: disable=wrong-import-order
-from rest_framework.generics import ListAPIView  # lint-amnesty, pylint: disable=wrong-import-order
-from rest_framework.response import Response  # lint-amnesty, pylint: disable=wrong-import-order
-from rest_framework.throttling import UserRateThrottle  # lint-amnesty, pylint: disable=wrong-import-order
-from rest_framework.views import APIView  # lint-amnesty, pylint: disable=wrong-import-order
+from opaque_keys import InvalidKeyError  # pylint: disable=wrong-import-order
+from opaque_keys.edx.keys import CourseKey  # pylint: disable=wrong-import-order
+from rest_framework import permissions, status  # pylint: disable=wrong-import-order
+from rest_framework.generics import ListAPIView  # pylint: disable=wrong-import-order
+from rest_framework.response import Response  # pylint: disable=wrong-import-order
+from rest_framework.throttling import UserRateThrottle  # pylint: disable=wrong-import-order
+from rest_framework.views import APIView  # pylint: disable=wrong-import-order
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.student.auth import user_has_role
@@ -73,7 +73,7 @@ REQUIRED_ATTRIBUTES = {
 class EnrollmentCrossDomainSessionAuth(SessionAuthenticationAllowInactiveUser, SessionAuthenticationCrossDomainCsrf):
     """Session authentication that allows inactive users and cross-domain requests."""
 
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 class ApiKeyPermissionMixIn:
@@ -787,7 +787,7 @@ class EnrollmentListView(APIView, ApiKeyPermissionMixIn):
                         username,
                         course_id,
                     )
-                    raise CourseEnrollmentError(str(error))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+                    raise CourseEnrollmentError(str(error))  # pylint: disable=raise-missing-from  # noqa: B904
                 kwargs = {
                     "username": username,
                     "course_id": str(course_id),

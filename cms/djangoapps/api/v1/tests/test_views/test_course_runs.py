@@ -2,7 +2,7 @@
 
 
 import datetime
-from unittest.mock import patch  # lint-amnesty, pylint: disable=unused-import  # noqa: F401
+from unittest.mock import patch  # pylint: disable=unused-import  # noqa: F401
 
 import ddt
 import pytz
@@ -16,14 +16,14 @@ from rest_framework.test import APIClient
 from common.djangoapps.student.models import CourseAccessRole
 from common.djangoapps.student.tests.factories import TEST_PASSWORD, AdminFactory, UserFactory
 from openedx.core.lib.courses import course_image_url
-from xmodule.contentstore.content import StaticContent  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.contentstore.django import contentstore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.exceptions import NotFoundError  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.contentstore.content import StaticContent  # pylint: disable=wrong-import-order
+from xmodule.contentstore.django import contentstore  # pylint: disable=wrong-import-order
+from xmodule.exceptions import NotFoundError  # pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 from xmodule.modulestore.tests.django_utils import (
-    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+    ModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
-from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import (  # pylint: disable=wrong-import-order
     CourseFactory,
     ToyCourseFactory,
 )
@@ -336,7 +336,7 @@ class CourseRunViewSetTests(ModuleStoreTestCase):
         original_course_run = ToyCourseFactory()
         add_organization({
             'name': 'Test Organization',
-            'short_name': original_course_run.id.org,  # lint-amnesty, pylint: disable=no-member
+            'short_name': original_course_run.id.org,  # pylint: disable=no-member
             'description': 'Testing Organization Description',
         })
         start = datetime.datetime.now(pytz.UTC).replace(microsecond=0)
@@ -344,7 +344,7 @@ class CourseRunViewSetTests(ModuleStoreTestCase):
         user = UserFactory()
         role = 'instructor'
         run = '3T2017'
-        url = reverse('api:v1:course_run-rerun', kwargs={'pk': str(original_course_run.id)})  # lint-amnesty, pylint: disable=no-member
+        url = reverse('api:v1:course_run-rerun', kwargs={'pk': str(original_course_run.id)})  # pylint: disable=no-member
         data = {
             'run': run,
             'schedule': {
@@ -374,16 +374,16 @@ class CourseRunViewSetTests(ModuleStoreTestCase):
 
         if number:
             assert course_run.id.course == number
-            assert course_run.id.course != original_course_run.id.course  # lint-amnesty, pylint: disable=no-member
+            assert course_run.id.course != original_course_run.id.course  # pylint: disable=no-member
         else:
-            assert course_run.id.course == original_course_run.id.course  # lint-amnesty, pylint: disable=no-member
+            assert course_run.id.course == original_course_run.id.course  # pylint: disable=no-member
 
         self.assert_course_run_schedule(course_run, start, end)
         self.assert_access_role(course_run, user, role)
         self.assert_course_access_role_count(course_run, 1)
         course_orgs = get_course_organizations(course_run_key)
         self.assertEqual(len(course_orgs), 1)  # noqa: PT009
-        self.assertEqual(course_orgs[0]['short_name'], original_course_run.id.org)  # lint-amnesty, pylint: disable=no-member  # noqa: PT009
+        self.assertEqual(course_orgs[0]['short_name'], original_course_run.id.org)  # pylint: disable=no-member  # noqa: PT009
 
     def test_rerun_duplicate_run(self):
         course_run = ToyCourseFactory()

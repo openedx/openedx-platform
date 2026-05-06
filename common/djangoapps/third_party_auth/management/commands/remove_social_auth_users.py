@@ -7,7 +7,7 @@ integration sandboxes to allow partners reset users and enrollment data.
 import logging
 
 from django.conf import settings
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
@@ -44,7 +44,7 @@ class Command(BaseCommand):
         try:
             SAMLProviderConfig.objects.current_set().get(slug=slug)
         except SAMLProviderConfig.DoesNotExist:
-            raise CommandError(f'No SAML provider found for slug {slug}')  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise CommandError(f'No SAML provider found for slug {slug}')  # pylint: disable=raise-missing-from  # noqa: B904
 
         users = User.objects.filter(social_auth__provider=slug)
         user_count = len(users)

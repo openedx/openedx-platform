@@ -1,7 +1,7 @@
-define(['backbone', 'jquery', 'underscore', 'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers',
+define(['backbone', 'jquery', 'underscore', 'sinon', 'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers',
     'common/js/spec_helpers/template_helpers', 'js/views/fields', 'js/spec/views/fields_helpers',
     'string_utils'],
-function(Backbone, $, _, AjaxHelpers, TemplateHelpers, FieldViews, FieldViewsSpecHelpers) {
+function(Backbone, $, _, sinon, AjaxHelpers, TemplateHelpers, FieldViews, FieldViewsSpecHelpers) {
     'use strict';
 
     var USERNAME = 'Legolas',
@@ -9,6 +9,7 @@ function(Backbone, $, _, AjaxHelpers, TemplateHelpers, FieldViews, FieldViewsSpe
 
     describe('edx.FieldViews', function() {
         var requests,
+            xhrFactory,
             timerCallback,
             dropdownSelectClass = '.u-field-value > select',
             dropdownButtonClass = '.u-field-value > button',
@@ -25,10 +26,16 @@ function(Backbone, $, _, AjaxHelpers, TemplateHelpers, FieldViews, FieldViewsSpe
         beforeEach(function() {
             timerCallback = jasmine.createSpy('timerCallback');
             jasmine.clock().install();
+            xhrFactory = sinon.useFakeXMLHttpRequest();
+            requests = [];
+            requests.currentIndex = 0;
+            requests.restore = function() { xhrFactory.restore(); };
+            xhrFactory.onCreate = function(req) { requests.push(req); };
         });
 
         afterEach(function() {
             jasmine.clock().uninstall();
+            requests.restore();
         });
 
         it('updates messages correctly for all fields', function() {
@@ -60,7 +67,6 @@ function(Backbone, $, _, AjaxHelpers, TemplateHelpers, FieldViews, FieldViewsSpe
         });
 
         it('sends a PATCH request when saveAttributes is called', function() {
-            requests = AjaxHelpers.requests(this);
 
             var fieldViewClass = FieldViews.EditableFieldView;
             var fieldData = FieldViewsSpecHelpers.createFieldData(fieldViewClass, {
@@ -99,7 +105,6 @@ function(Backbone, $, _, AjaxHelpers, TemplateHelpers, FieldViews, FieldViewsSpe
         });
 
         it('correctly renders, updates and persists changes to TextFieldView when editable == always', function() {
-            requests = AjaxHelpers.requests(this);
 
             var fieldData = FieldViewsSpecHelpers.createFieldData(FieldViews.TextFieldView, {
                 title: 'Full Name',
@@ -122,7 +127,6 @@ function(Backbone, $, _, AjaxHelpers, TemplateHelpers, FieldViews, FieldViewsSpe
         });
 
         it('correctly renders and updates DropdownFieldView when editable == never', function() {
-            requests = AjaxHelpers.requests(this);
 
             var fieldData = FieldViewsSpecHelpers.createFieldData(FieldViews.DropdownFieldView, {
                 title: 'Full Name',
@@ -160,7 +164,6 @@ function(Backbone, $, _, AjaxHelpers, TemplateHelpers, FieldViews, FieldViewsSpe
         });
 
         it('correctly renders, updates and persists changes to DropdownFieldView when editable == always', function() {
-            requests = AjaxHelpers.requests(this);
 
             var fieldData = FieldViewsSpecHelpers.createFieldData(FieldViews.DropdownFieldView, {
                 title: 'Full Name',
@@ -183,7 +186,6 @@ function(Backbone, $, _, AjaxHelpers, TemplateHelpers, FieldViews, FieldViewsSpe
         });
 
         it('correctly renders, updates and persists changes to DropdownFieldView when editable == toggle', function() {
-            requests = AjaxHelpers.requests(this);
 
             var fieldData = FieldViewsSpecHelpers.createFieldData(FieldViews.DropdownFieldView, {
                 title: 'Full Name',
@@ -208,7 +210,6 @@ function(Backbone, $, _, AjaxHelpers, TemplateHelpers, FieldViews, FieldViewsSpe
         });
 
         it('only shows empty option in DropdownFieldView if required is false or model value is not set', function() {
-            requests = AjaxHelpers.requests(this);
 
             var editableOptions = ['toggle', 'always'];
             _.each(editableOptions, function(editable) {
@@ -271,7 +272,6 @@ function(Backbone, $, _, AjaxHelpers, TemplateHelpers, FieldViews, FieldViewsSpe
         });
 
         it('correctly renders, updates and persists changes to TextAreaFieldView when editable == toggle', function() {
-            requests = AjaxHelpers.requests(this);
 
             var valueInputSelector = '.u-field-value > textarea';
             var fieldData = FieldViewsSpecHelpers.createFieldData(FieldViews.TextareaFieldView, {
@@ -327,7 +327,6 @@ function(Backbone, $, _, AjaxHelpers, TemplateHelpers, FieldViews, FieldViewsSpe
         });
 
         it("can't persist changes if persistChanges is off", function() {
-            requests = AjaxHelpers.requests(this);
             var fieldClasses = [
                 FieldViews.TextFieldView,
                 FieldViews.DropdownFieldView,

@@ -143,7 +143,7 @@ class BlockSerializer(serializers.Serializer):  # pylint: disable=abstract-metho
 
         return value if (value is not None) else default
 
-    def to_representation(self, block_key):  # lint-amnesty, pylint: disable=arguments-differ
+    def to_representation(self, block_key):  # pylint: disable=arguments-differ
         """
         Return a serializable representation of the requested block
         """

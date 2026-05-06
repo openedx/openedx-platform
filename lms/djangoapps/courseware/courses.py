@@ -72,9 +72,9 @@ from openedx.core.lib.courses import get_course_by_id
 from openedx.features.course_duration_limits.access import AuditExpiredError
 from openedx.features.course_experience import RELATIVE_DATES_FLAG
 from openedx.features.course_experience.utils import is_block_structure_complete_for_assignments
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.exceptions import ItemNotFoundError  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.x_module import STUDENT_VIEW  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
+from xmodule.modulestore.exceptions import ItemNotFoundError  # pylint: disable=wrong-import-order
+from xmodule.x_module import STUDENT_VIEW  # pylint: disable=wrong-import-order
 
 log = logging.getLogger(__name__)
 
@@ -156,7 +156,7 @@ def get_course_overview_with_access(user, action, course_key, check_if_enrolled=
     try:
         course_overview = CourseOverview.get_from_id(course_key)
     except CourseOverview.DoesNotExist:
-        raise Http404("Course not found.")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise Http404("Course not found.")  # pylint: disable=raise-missing-from  # noqa: B904
     check_course_access_with_redirect(course_overview, user, action, check_if_enrolled)
     return course_overview
 
@@ -246,7 +246,7 @@ def check_course_access_with_redirect(
     request = get_current_request()
     check_content_start_date_for_masquerade_user(course.id, user, request, course.start)
 
-    access_response = check_course_access(course, user, action, check_if_enrolled, check_survey_complete, check_if_authenticated)  # lint-amnesty, pylint: disable=line-too-long
+    access_response = check_course_access(course, user, action, check_if_enrolled, check_survey_complete, check_if_authenticated)  # pylint: disable=line-too-long
 
     if not access_response:
         # StartDateError should be ignored
@@ -636,7 +636,7 @@ def get_course_blocks_completion_summary(course_key, user):
 
 
 @request_cached()
-def get_course_assignments(course_key, user, include_access=False, include_without_due=False,):  # lint-amnesty, pylint: disable=too-many-statements
+def get_course_assignments(course_key, user, include_access=False, include_without_due=False,):  # pylint: disable=too-many-statements
     """
     Returns a list of assignment (at the subsection/sequential level) due dates for the given course.
 
@@ -652,7 +652,7 @@ def get_course_assignments(course_key, user, include_access=False, include_witho
 
     now = datetime.now(pytz.UTC)
     assignments = []
-    for section_key in block_data.get_children(course_usage_key):  # lint-amnesty, pylint: disable=too-many-nested-blocks
+    for section_key in block_data.get_children(course_usage_key):  # pylint: disable=too-many-nested-blocks
         for subsection_key in block_data.get_children(section_key):
             due = block_data.get_xblock_field(subsection_key, 'due')
             graded = block_data.get_xblock_field(subsection_key, 'graded', False)

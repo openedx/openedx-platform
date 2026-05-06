@@ -1,13 +1,14 @@
 define([
-    'jquery', 'underscore', 'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers',
+    'jquery', 'underscore', 'sinon', 'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers',
     'common/js/spec_helpers/template_helpers', 'js/spec/edxnotes/helpers', 'logger',
     'js/edxnotes/models/note', 'js/edxnotes/views/note_item'
 ], function(
-    $, _, AjaxHelpers, TemplateHelpers, Helpers, Logger, NoteModel, NoteItemView
+    $, _, sinon, AjaxHelpers, TemplateHelpers, Helpers, Logger, NoteModel, NoteItemView
 ) {
     'use strict';
 
     describe('EdxNotes NoteItemView', function() {
+        var requests, xhrFactory;
         var getView = function(model, scrollToTag, formattedText) {
             model = new NoteModel(_.defaults(model || {}, {
                 id: 'id-123',
@@ -26,8 +27,17 @@ define([
         };
 
         beforeEach(function() {
+            xhrFactory = sinon.useFakeXMLHttpRequest();
+            requests = [];
+            requests.currentIndex = 0;
+            requests.restore = function() { xhrFactory.restore(); };
+            xhrFactory.onCreate = function(req) { requests.push(req); };
             TemplateHelpers.installTemplate('templates/edxnotes/note-item');
             spyOn(Logger, 'log').and.callThrough();
+        });
+
+        afterEach(function() {
+            requests.restore();
         });
 
         it('can be rendered properly', function() {
@@ -111,8 +121,7 @@ define([
         });
 
         it('should log the edx.course.student_notes.used_unit_link event properly', function() {
-            var requests = AjaxHelpers.requests(this),
-                view = getView();
+            var view = getView();
             spyOn(view, 'redirectTo');
             view.$('.reference-unit-link').click();
             expect(Logger.log).toHaveBeenCalledWith(

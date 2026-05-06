@@ -104,13 +104,13 @@ class GradeViewMixin(DeveloperErrorViewMixin):
         try:
             yield self._get_single_user(request, course_key)
         except USER_MODEL.DoesNotExist:
-            raise self.api_error(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise self.api_error(  # pylint: disable=raise-missing-from  # noqa: B904
                 status_code=status.HTTP_404_NOT_FOUND,
                 developer_message='The user matching the requested username does not exist.',
                 error_code='user_does_not_exist'
             )
         except CourseEnrollment.DoesNotExist:
-            raise self.api_error(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise self.api_error(  # pylint: disable=raise-missing-from  # noqa: B904
                 status_code=status.HTTP_404_NOT_FOUND,
                 developer_message='The user matching the requested username is not enrolled in this course',
                 error_code='user_not_enrolled'

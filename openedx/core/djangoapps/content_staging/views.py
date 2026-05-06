@@ -93,7 +93,7 @@ class ClipboardEndpoint(APIView):
         try:
             usage_key = UsageKey.from_string(request.data["usage_key"])
         except (ValueError, InvalidKeyError):
-            raise ValidationError('Invalid usage key')  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise ValidationError('Invalid usage key')  # pylint: disable=raise-missing-from  # noqa: B904
         if usage_key.block_type in ('course', 'chapter', 'sequential'):
             raise ValidationError('Requested XBlock tree is too large')
         course_key = usage_key.context_key

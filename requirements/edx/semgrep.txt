@@ -43,10 +43,8 @@ click-option-group==0.5.9
     # via semgrep
 colorama==0.4.6
     # via semgrep
-cryptography==45.0.7
-    # via
-    #   -c requirements/constraints.txt
-    #   pyjwt
+cryptography==47.0.0
+    # via pyjwt
 exceptiongroup==1.2.2
     # via semgrep
 face==26.0.0
@@ -120,7 +118,7 @@ opentelemetry-semantic-conventions==0.58b0
     #   opentelemetry-sdk
 opentelemetry-util-http==0.58b0
     # via opentelemetry-instrumentation-requests
-packaging==26.1
+packaging==26.2
     # via
     #   opentelemetry-instrumentation
     #   semgrep
@@ -148,7 +146,7 @@ pyjwt[crypto]==2.12.1
     #   semgrep
 python-dotenv==1.2.2
     # via pydantic-settings
-python-multipart==0.0.26
+python-multipart==0.0.27
     # via mcp
 referencing==0.37.0
     # via
@@ -172,7 +170,7 @@ semantic-version==2.10.0
     # via semgrep
 semgrep==1.161.0
     # via -r requirements/edx/semgrep.in
-sse-starlette==3.3.4
+sse-starlette==3.4.1
     # via mcp
 starlette==1.0.0
     # via

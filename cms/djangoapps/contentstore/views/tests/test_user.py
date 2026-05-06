@@ -3,7 +3,7 @@ Tests for contentstore/views/user.py.
 """
 import json
 
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from edx_toggles.toggles.testutils import override_waffle_flag
 
 from cms.djangoapps.contentstore import toggles
@@ -15,7 +15,7 @@ from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRol
 from common.djangoapps.student.tests.factories import UserFactory
 
 
-class UsersTestCase(CourseTestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class UsersTestCase(CourseTestCase):  # pylint: disable=missing-class-docstring
     def setUp(self):
         super().setUp()
         self.ext_user = UserFactory.create(

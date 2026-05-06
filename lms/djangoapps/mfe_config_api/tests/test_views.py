@@ -13,6 +13,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from lms.djangoapps.mfe_config_api.views import mfe_name_to_app_id
+from openedx.core.release import doc_version
 
 # Default legacy configuration values, used in tests to build a correct expected response
 default_legacy_config = {
@@ -23,6 +24,8 @@ default_legacy_config = {
     "HOMEPAGE_PROMO_VIDEO_YOUTUBE_ID": None,
     "ENABLE_COURSE_DISCOVERY": False,
 }
+
+INSTRUCTOR_SUPPORT_URL = f"https://docs.openedx.org/en/{doc_version()}/educators/index.html"
 
 
 @ddt.ddt
@@ -297,6 +300,45 @@ class MFEConfigTestCase(APITestCase):
         # Value in original MFE_CONFIG not overridden by catalog config should be preserved
         self.assertEqual(data["PRESERVED_SETTING"], "preserved")  # noqa: PT009
 
+    @patch("lms.djangoapps.mfe_config_api.views.configuration_helpers")
+    def test_legacy_overrides_instructor_dashboard(self, configuration_helpers_mock):
+        """Legacy help-tokens SUPPORT_URL is included for instructor-dashboard when no explicit override is set."""
+        def side_effect(key, default=None):
+            if key == "MFE_CONFIG":
+                return {"LMS_BASE_URL": "https://courses.example.com"}
+            if key == "MFE_CONFIG_OVERRIDES":
+                return {}
+            return default
+        configuration_helpers_mock.get_value.side_effect = side_effect
+
+        response = self.client.get(f"{self.mfe_config_api_url}?mfe=instructor-dashboard")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        data = response.json()
+        self.assertEqual(  # noqa: PT009
+            data["SUPPORT_URL"],
+            INSTRUCTOR_SUPPORT_URL,
+        )
+
+    @patch("lms.djangoapps.mfe_config_api.views.configuration_helpers")
+    def test_explicit_override_wins_over_legacy_overrides(self, configuration_helpers_mock):
+        """An explicit SUPPORT_URL in MFE_CONFIG_OVERRIDES wins over the help-tokens fallback."""
+        def side_effect(key, default=None):
+            if key == "MFE_CONFIG":
+                return {"LMS_BASE_URL": "https://courses.example.com"}
+            if key == "MFE_CONFIG_OVERRIDES":
+                return {
+                    "instructor-dashboard": {
+                        "SUPPORT_URL": "https://help.example.com/instructor",
+                    },
+                }
+            return default
+        configuration_helpers_mock.get_value.side_effect = side_effect
+
+        response = self.client.get(f"{self.mfe_config_api_url}?mfe=instructor-dashboard")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        data = response.json()
+        self.assertEqual(data["SUPPORT_URL"], "https://help.example.com/instructor")  # noqa: PT009
+
 
 class MfeNameToAppIdTests(SimpleTestCase):
     """Tests for the mfe_name_to_app_id helper."""
@@ -315,6 +357,12 @@ class MfeNameToAppIdTests(SimpleTestCase):
         self.assertEqual(  # noqa: PT009
             mfe_name_to_app_id("course-authoring"),
             "org.openedx.frontend.app.authoring",
+        )
+
+    def test_instructor_dashboard(self):
+        self.assertEqual(  # noqa: PT009
+            mfe_name_to_app_id("instructor-dashboard"),
+            "org.openedx.frontend.app.instructorDashboard",
         )
 
     def test_fallback_for_unknown_name(self):
@@ -420,8 +468,9 @@ class FrontendSiteConfigTestCase(APITestCase):
         for legacy_key in default_legacy_config:
             self.assertIn(legacy_key, common)  # noqa: PT009
 
+    @patch("lms.djangoapps.mfe_config_api.views.get_legacy_config_overrides", return_value={})
     @patch("lms.djangoapps.mfe_config_api.views.configuration_helpers")
-    def test_apps_from_overrides(self, configuration_helpers_mock):
+    def test_apps_from_overrides(self, configuration_helpers_mock, _legacy_overrides_mock):  # noqa: PT019
         """Each MFE_CONFIG_OVERRIDES entry becomes an app with shared base config + overrides."""
         mfe_config_overrides = {
             "authn": {
@@ -521,9 +570,10 @@ class FrontendSiteConfigTestCase(APITestCase):
         self.assertNotIn("BASE_URL", data["commonAppConfig"])  # noqa: PT009
         self.assertNotIn("LOGIN_URL", data["commonAppConfig"])  # noqa: PT009
 
+    @patch("lms.djangoapps.mfe_config_api.views.get_legacy_config_overrides", return_value={})
     @patch("lms.djangoapps.mfe_config_api.views.configuration_helpers")
-    def test_no_apps_when_no_overrides(self, configuration_helpers_mock):
-        """The apps key is omitted when MFE_CONFIG_OVERRIDES is empty."""
+    def test_no_apps_when_no_overrides(self, configuration_helpers_mock, _legacy_overrides_mock):  # noqa: PT019
+        """The apps key is omitted when MFE_CONFIG_OVERRIDES is empty and no legacy overrides are present."""
         def side_effect(key, default=None):
             if key == "MFE_CONFIG":
                 return {"LMS_BASE_URL": "https://courses.example.com"}
@@ -566,8 +616,9 @@ class FrontendSiteConfigTestCase(APITestCase):
         self.assertEqual(common["CREDENTIALS_BASE_URL"], "https://credentials.example.com")  # noqa: PT009
         self.assertEqual(common["STUDIO_BASE_URL"], "https://studio.example.com")  # noqa: PT009
 
+    @patch("lms.djangoapps.mfe_config_api.views.get_legacy_config_overrides", return_value={})
     @patch("lms.djangoapps.mfe_config_api.views.configuration_helpers")
-    def test_invalid_override_entry_skipped(self, configuration_helpers_mock):
+    def test_invalid_override_entry_skipped(self, configuration_helpers_mock, _legacy_overrides_mock):  # noqa: PT019
         """Non-dict override entries are silently skipped."""
         mfe_config_overrides = {
             "authn": {"SOME_KEY": "value"},
@@ -720,3 +771,49 @@ class FrontendSiteConfigTestCase(APITestCase):
         # Brand new app from FRONTEND_SITE_CONFIG is appended
         brand_new = apps_by_id["org.openedx.frontend.app.brand.new"]["config"]
         self.assertEqual(brand_new["BRAND_NEW_KEY"], "value")  # noqa: PT009
+
+    @patch("lms.djangoapps.mfe_config_api.views.configuration_helpers")
+    def test_legacy_overrides_instructor_dashboard_support_url(self, configuration_helpers_mock):
+        """Instructor dashboard gets SUPPORT_URL from help-tokens when no explicit override is set."""
+        def side_effect(key, default=None):
+            if key == "MFE_CONFIG":
+                return {"LMS_BASE_URL": "https://courses.example.com"}
+            if key == "MFE_CONFIG_OVERRIDES":
+                return {}
+            return default
+        configuration_helpers_mock.get_value.side_effect = side_effect
+
+        response = self.client.get(self.url)
+        data = response.json()
+
+        apps_by_id = {app["appId"]: app for app in data["apps"]}
+        instructor = apps_by_id["org.openedx.frontend.app.instructorDashboard"]
+        self.assertEqual(  # noqa: PT009
+            instructor["config"]["SUPPORT_URL"],
+            INSTRUCTOR_SUPPORT_URL,
+        )
+
+    @patch("lms.djangoapps.mfe_config_api.views.configuration_helpers")
+    def test_explicit_override_wins_over_legacy_overrides(self, configuration_helpers_mock):
+        """An explicit SUPPORT_URL in MFE_CONFIG_OVERRIDES wins over the help-tokens fallback."""
+        def side_effect(key, default=None):
+            if key == "MFE_CONFIG":
+                return {"LMS_BASE_URL": "https://courses.example.com"}
+            if key == "MFE_CONFIG_OVERRIDES":
+                return {
+                    "instructor-dashboard": {
+                        "SUPPORT_URL": "https://help.example.com/instructor",
+                    },
+                }
+            return default
+        configuration_helpers_mock.get_value.side_effect = side_effect
+
+        response = self.client.get(self.url)
+        data = response.json()
+
+        apps_by_id = {app["appId"]: app for app in data["apps"]}
+        instructor = apps_by_id["org.openedx.frontend.app.instructorDashboard"]
+        self.assertEqual(  # noqa: PT009
+            instructor["config"]["SUPPORT_URL"],
+            "https://help.example.com/instructor",
+        )

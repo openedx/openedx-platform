@@ -21,9 +21,9 @@ from django.utils.translation import gettext as _
 
 from cms.djangoapps.contentstore.utils import send_course_update_notification, track_course_update_event
 from openedx.core.lib.xblock_utils import get_course_update_items
-from xmodule.html_block import CourseInfoBlock  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.exceptions import ItemNotFoundError  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.html_block import CourseInfoBlock  # pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
+from xmodule.modulestore.exceptions import ItemNotFoundError  # pylint: disable=wrong-import-order
 
 # # This should be in a class which inherits from XModuleDescriptor
 log = logging.getLogger(__name__)

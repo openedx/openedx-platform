@@ -1,4 +1,4 @@
-# lint-amnesty, pylint: disable=missing-module-docstring
+# pylint: disable=missing-module-docstring
 
 from unittest import mock
 
@@ -8,7 +8,7 @@ from xmodule.modulestore.tests.factories import CourseFactory
 from ..tasks import enqueue_async_course_overview_update_tasks
 
 
-class BatchedAsyncCourseOverviewUpdateTests(ModuleStoreTestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class BatchedAsyncCourseOverviewUpdateTests(ModuleStoreTestCase):  # pylint: disable=missing-class-docstring
     def setUp(self):
         super().setUp()
         self.course_1 = CourseFactory.create()

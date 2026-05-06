@@ -24,4 +24,4 @@ class BaseBackend(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def send(self, event):
         """Send event to tracker."""
-        pass  # lint-amnesty, pylint: disable=unnecessary-pass
+        pass  # pylint: disable=unnecessary-pass

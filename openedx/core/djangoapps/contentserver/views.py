@@ -365,7 +365,7 @@ def parse_range_header(header_value, content_length):
         for byte_range_string in byte_ranges_string.split(','):
             byte_range_string = byte_range_string.strip()
             # Case 0:
-            if '-' not in byte_range_string:  # Invalid syntax of header value.  # lint-amnesty, pylint: disable=no-else-raise
+            if '-' not in byte_range_string:  # Invalid syntax of header value.  # pylint: disable=no-else-raise
                 raise ValueError('Invalid syntax.')
             # Case 1: -500
             elif byte_range_string.startswith('-'):

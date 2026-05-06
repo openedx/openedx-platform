@@ -115,7 +115,7 @@ def validate_and_update_video_image(course_key_string, edx_video_id, image_file,
 
     update_video_image(edx_video_id, course_key_string, image_file, image_filename)
     LOGGER.info(
-        'VIDEOS: Scraping youtube video thumbnail for edx_video_id [%s] in course [%s]', edx_video_id, course_key_string  # lint-amnesty, pylint: disable=line-too-long
+        'VIDEOS: Scraping youtube video thumbnail for edx_video_id [%s] in course [%s]', edx_video_id, course_key_string  # pylint: disable=line-too-long
     )
 
 

@@ -29,7 +29,7 @@ logger = getLogger(__name__)  # pylint: disable=invalid-name
 
 
 @request_cached()
-def get_template_path(relative_path, **kwargs):  # lint-amnesty, pylint: disable=unused-argument
+def get_template_path(relative_path, **kwargs):  # pylint: disable=unused-argument
     """
     The calculated value is cached for the lifetime of the current request.
     """

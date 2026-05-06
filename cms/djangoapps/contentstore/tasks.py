@@ -409,7 +409,7 @@ def create_export_tarball(course_block, course_key, context, status=None):
     """
     name = course_block.url_name
     export_file = NamedTemporaryFile(prefix=name + '.',
-                                     suffix=".tar.gz")  # lint-amnesty, pylint: disable=consider-using-with
+                                     suffix=".tar.gz")  # pylint: disable=consider-using-with
     root_dir = path(mkdtemp())
 
     try:
@@ -540,7 +540,7 @@ def sync_discussion_settings(course_key, user):
 @shared_task(base=CourseImportTask, bind=True)
 # Note: The decorator @set_code_owner_attribute cannot be used here because the UserTaskMixin
 #   does stack inspection and can't handle additional decorators.
-# lint-amnesty, pylint: disable=too-many-statements
+# pylint: disable=too-many-statements
 def import_olx(self, user_id, course_key_string, archive_path, archive_name, language):
     """
     Import a course or library from a provided OLX .tar.gz or .zip archive.
@@ -947,7 +947,7 @@ def copy_v1_user_roles_into_v2_library(v2_library_key, v1_library_key):
         return permissions
 
     permissions = _get_users_by_access_level(v1_library_key)
-    for access_level in permissions.keys():  # lint-amnesty, pylint: disable=consider-iterating-dictionary
+    for access_level in permissions.keys():  # pylint: disable=consider-iterating-dictionary
         for user in permissions[access_level]:
             v2contentlib_api.set_library_user_permissions(v2_library_key, user, access_level)
 
@@ -964,7 +964,7 @@ def delete_v1_library(v1_library_key_string):
     try:
         delete_course(v1_library_key, ModuleStoreEnum.UserID.mgmt_command, True)
         LOGGER.info(f"Deleted course {v1_library_key}")
-    except Exception as error:  # lint-amnesty, pylint: disable=broad-except
+    except Exception as error:  # pylint: disable=broad-except
         return {
             "v1_library_id": v1_library_key_string,
             "status": "FAILED",
@@ -996,7 +996,7 @@ def validate_all_library_source_blocks_ids_for_course(course_key_string, v1_to_v
             )
             for xblock in blocks:
                 if xblock.source_library_id not in v1_to_v2_lib_map.values():
-                    # lint-amnesty, pylint: disable=broad-except
+                    # pylint: disable=broad-except
                     raise Exception(
                         f'{xblock.source_library_id} in {course_id} is not found in mapping. Validation failed'
                     )
@@ -1007,7 +1007,7 @@ def validate_all_library_source_blocks_ids_for_course(course_key_string, v1_to_v
 
 @shared_task(time_limit=30)
 @set_code_owner_attribute
-def replace_all_library_source_blocks_ids_for_course(course_key_string, v1_to_v2_lib_map):  # lint-amnesty, pylint: disable=useless-return
+def replace_all_library_source_blocks_ids_for_course(course_key_string, v1_to_v2_lib_map):  # pylint: disable=useless-return
     """Search a Modulestore for all library source blocks in a course by querying mongo.
         replace all source_library_ids with the corresponding v2 value from the map.
 
@@ -1066,7 +1066,7 @@ def replace_all_library_source_blocks_ids_for_course(course_key_string, v1_to_v2
 
 @shared_task(time_limit=30)
 @set_code_owner_attribute
-def undo_all_library_source_blocks_ids_for_course(course_key_string, v1_to_v2_lib_map):  # lint-amnesty, pylint: disable=useless-return
+def undo_all_library_source_blocks_ids_for_course(course_key_string, v1_to_v2_lib_map):  # pylint: disable=useless-return
     """Search a Modulestore for all library source blocks in a course by querying mongo.
         replace all source_library_ids with the corresponding v1 value from the inverted map.
         This is exists to undo changes made previously.
@@ -1483,14 +1483,14 @@ async def _validate_url_access(session, url_data, course_key):
         parsed = urlparse(url)
         domain = parsed.netloc.lower()
         headers = DOMAIN_HEADERS.get(domain, DEFAULT_HEADERS)
-    except Exception as e:  # lint-amnesty, pylint: disable=broad-except
+    except Exception as e:  # pylint: disable=broad-except
         LOGGER.debug(f'[Link Check] Error parsing URL {url}: {str(e)}')
         headers = DEFAULT_HEADERS
 
     try:
         async with session.get(standardized_url, headers=headers, timeout=5) as response:
             result.update({'status': response.status})
-    except Exception as e:  # lint-amnesty, pylint: disable=broad-except
+    except Exception as e:  # pylint: disable=broad-except
         result.update({'status': None})
         LOGGER.debug(f'[Link Check] Request error when validating {url}: {str(e)}')
     return result

@@ -9,7 +9,7 @@ from openedx.core.djangoapps.user_api.accounts import USERNAME_BAD_LENGTH_MSG
 
 
 @override_settings(RATELIMIT_ENABLE=False)
-class TestLongUsernameEmail(TestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class TestLongUsernameEmail(TestCase):  # pylint: disable=missing-class-docstring
 
     def setUp(self):
         super().setUp()
@@ -41,7 +41,7 @@ class TestLongUsernameEmail(TestCase):  # lint-amnesty, pylint: disable=missing-
         """
         Test name cannot contain html.
         """
-        self.url_params['name'] = '<p style="font-size:300px; color:green;"></br>Name<input type="text"></br>Content spoof'  # lint-amnesty, pylint: disable=line-too-long
+        self.url_params['name'] = '<p style="font-size:300px; color:green;"></br>Name<input type="text"></br>Content spoof'  # pylint: disable=line-too-long
         response = self.client.post(self.url, self.url_params)
         assert response.status_code == 400
 

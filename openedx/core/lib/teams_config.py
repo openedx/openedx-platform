@@ -178,7 +178,7 @@ class TeamsConfig:
         try:
             teamset = self.teamsets_by_id[teamset_id]
         except KeyError:
-            raise ValueError(f"Team-set {teamset_id!r} does not exist.")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise ValueError(f"Team-set {teamset_id!r} does not exist.")  # pylint: disable=raise-missing-from  # noqa: B904
         if teamset.teamset_type != TeamsetType.open:
             return MANAGED_TEAM_MAX_TEAM_SIZE
         if teamset.max_team_size:

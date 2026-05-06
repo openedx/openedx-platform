@@ -11,7 +11,7 @@ from ..models import CrawlersConfig
 
 
 @ddt.ddt
-class CrawlersConfigTest(TestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class CrawlersConfigTest(TestCase):  # pylint: disable=missing-class-docstring
 
     def setUp(self):
         super().setUp()

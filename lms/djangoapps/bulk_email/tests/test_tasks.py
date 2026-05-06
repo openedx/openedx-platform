@@ -7,18 +7,18 @@ paths actually work.
 """
 
 
-import json  # lint-amnesty, pylint: disable=wrong-import-order
+import json  # pylint: disable=wrong-import-order
 from datetime import datetime
-from itertools import chain, cycle, repeat  # lint-amnesty, pylint: disable=wrong-import-order
-from smtplib import (  # lint-amnesty, pylint: disable=wrong-import-order
+from itertools import chain, cycle, repeat  # pylint: disable=wrong-import-order
+from smtplib import (  # pylint: disable=wrong-import-order
     SMTPAuthenticationError,
     SMTPConnectError,
     SMTPDataError,
     SMTPSenderRefused,
     SMTPServerDisconnected,
 )
-from unittest.mock import Mock, patch  # lint-amnesty, pylint: disable=wrong-import-order
-from uuid import uuid4  # lint-amnesty, pylint: disable=wrong-import-order
+from unittest.mock import Mock, patch  # pylint: disable=wrong-import-order
+from uuid import uuid4  # pylint: disable=wrong-import-order
 
 import pytest
 from botocore.exceptions import ClientError, EndpointConnectionError
@@ -35,14 +35,14 @@ from lms.djangoapps.instructor_task.subtasks import SubtaskStatus, update_subtas
 from lms.djangoapps.instructor_task.tasks import send_bulk_course_email
 from lms.djangoapps.instructor_task.tests.factories import InstructorTaskFactory
 from lms.djangoapps.instructor_task.tests.test_base import InstructorTaskCourseTestCase
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 from ..models import SEND_TO_LEARNERS, SEND_TO_MYSELF, SEND_TO_STAFF, CourseEmail, Optout
 
 
 class TestTaskFailure(Exception):
     """Dummy exception used for unit tests."""
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 def my_update_subtask_status(entry_id, current_task_id, new_subtask_status):
@@ -73,7 +73,7 @@ def my_update_subtask_status(entry_id, current_task_id, new_subtask_status):
         update_subtask_status(entry_id, current_task_id, new_subtask_status)
 
 
-@patch('lms.djangoapps.bulk_email.models.html_to_text', Mock(return_value='Mocking CourseEmail.text_message', autospec=True))  # lint-amnesty, pylint: disable=line-too-long
+@patch('lms.djangoapps.bulk_email.models.html_to_text', Mock(return_value='Mocking CourseEmail.text_message', autospec=True))  # pylint: disable=line-too-long
 class TestBulkEmailInstructorTask(InstructorTaskCourseTestCase):
     """Tests instructor task that send bulk email."""
 

@@ -1,8 +1,8 @@
 """
 Tests for certificate generation
 """
-import logging  # lint-amnesty, pylint: disable=wrong-import-order
-from unittest import mock, skipUnless  # lint-amnesty, pylint: disable=wrong-import-order
+import logging  # pylint: disable=wrong-import-order
+from unittest import mock, skipUnless  # pylint: disable=wrong-import-order
 
 import ddt
 
@@ -16,9 +16,9 @@ from lms.djangoapps.certificates.models import GeneratedCertificate
 from lms.djangoapps.certificates.tests.factories import GeneratedCertificateFactory
 from openedx.features.name_affirmation_api.utils import get_name_affirmation_service
 from xmodule.modulestore.tests.django_utils import (
-    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+    ModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 log = logging.getLogger(__name__)
 

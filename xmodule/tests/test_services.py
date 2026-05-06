@@ -22,7 +22,7 @@ from xmodule.services import ConfigurationService, SettingsService, TeamsConfigu
 
 class _DummyBlock:
     """ Dummy Xblock class """
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 class DummyConfig(ConfigurationModel):
@@ -37,7 +37,7 @@ class DummyUnexpected:
     """
     Dummy Unexpected Class
     """
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 @ddt.ddt
@@ -131,7 +131,7 @@ class MockConfigurationService(TeamsConfigurationService):
     """
     Mock ConfigurationService for testing.
     """
-    def __init__(self, course, **kwargs):  # lint-amnesty, pylint: disable=unused-argument
+    def __init__(self, course, **kwargs):  # pylint: disable=unused-argument
         super().__init__()
         self._course = course
 

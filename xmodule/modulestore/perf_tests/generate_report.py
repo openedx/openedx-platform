@@ -128,7 +128,7 @@ class ImportExportReportGen(ReportGenerator):
         html = HTMLDocument("Results")
 
         # Output comparison of each phase to a different table.
-        for phase in self.run_data.keys():  # lint-amnesty, pylint: disable=consider-iterating-dictionary, too-many-nested-blocks
+        for phase in self.run_data.keys():  # pylint: disable=consider-iterating-dictionary, too-many-nested-blocks
             if phase in ('fake_assets',):
                 continue
             per_phase = self.run_data[phase]
@@ -228,7 +228,7 @@ class FindReportGen(ReportGenerator):
         #     per_phase = self.run_data[store]
         #     html.add_header(1, store)
 
-        for phase in self.run_data.keys():  # lint-amnesty, pylint: disable=consider-iterating-dictionary
+        for phase in self.run_data.keys():  # pylint: disable=consider-iterating-dictionary
             per_phase = self.run_data[phase]
 
             # Make the table header columns and the table.

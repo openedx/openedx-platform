@@ -1,16 +1,19 @@
-define(['jquery', 'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers', 'common/js/spec_helpers/template_helpers',
+define(['jquery', 'sinon', 'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers', 'common/js/spec_helpers/template_helpers',
     'common/js/spec_helpers/view_helpers', 'common/js/components/utils/view_utils', 'js/models/course',
     'js/views/unit_outline', 'js/models/xblock_info'],
-function($, AjaxHelpers, TemplateHelpers, ViewHelpers, ViewUtils,
+function($, sinon, AjaxHelpers, TemplateHelpers, ViewHelpers, ViewUtils,
     Course, UnitOutlineView, XBlockInfo) {
     'use strict';
 
     describe('UnitOutlineView', function() {
+        // Preload before beforeEach installs fake XHR, so readFixtures uses real XHR
+        // and the result is cached. See group_configuration_spec.js for full explanation.
+        readFixtures('unit-outline.underscore');
+
         var createUnitOutlineView, createMockXBlockInfo,
-            requests, model, unitOutlineView;
+            requests, xhrFactory, model, unitOutlineView;
 
         createUnitOutlineView = function(test, unitJSON, createOnly) {
-            requests = AjaxHelpers.requests(test);
             model = new XBlockInfo(unitJSON, {parse: true});
             unitOutlineView = new UnitOutlineView({
                 model: model,
@@ -74,6 +77,11 @@ function($, AjaxHelpers, TemplateHelpers, ViewHelpers, ViewUtils,
         };
 
         beforeEach(function() {
+            xhrFactory = sinon.useFakeXMLHttpRequest();
+            requests = [];
+            requests.currentIndex = 0;
+            requests.restore = function() { xhrFactory.restore(); };
+            xhrFactory.onCreate = function(req) { requests.push(req); };
             window.course = new Course({
                 id: '5',
                 name: 'Course Name',
@@ -89,6 +97,7 @@ function($, AjaxHelpers, TemplateHelpers, ViewHelpers, ViewUtils,
         });
 
         afterEach(function() {
+            requests.restore();
             delete window.course;
             ViewHelpers.removeMockAnalytics();
         });

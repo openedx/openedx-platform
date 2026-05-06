@@ -1,4 +1,4 @@
-# lint-amnesty, pylint: disable=missing-module-docstring
+# pylint: disable=missing-module-docstring
 import logging
 import time
 
@@ -14,7 +14,7 @@ from openedx.core.djangoapps.authz.decorators import authz_permission_required
 from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin, view_auth_classes
 from openedx.core.lib.cache_utils import request_cached
 from openedx.core.lib.graph_traversals import traverse_pre_order
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 
 from .utils import get_bool_param
 
@@ -135,7 +135,7 @@ class CourseQualityView(DeveloperErrorViewMixin, GenericAPIView):
 
         return Response(response)
 
-    def _required_course_depth(self, request, all_requested):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def _required_course_depth(self, request, all_requested):  # pylint: disable=missing-function-docstring
         if get_bool_param(request, 'units', all_requested):
             # The num_blocks metric for "units" requires retrieving all blocks in the graph.
             return None
@@ -158,7 +158,7 @@ class CourseQualityView(DeveloperErrorViewMixin, GenericAPIView):
             highlights_enabled=True,  # used to be controlled by a waffle switch, now just always enabled
         )
 
-    def _subsections_quality(self, course, request):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def _subsections_quality(self, course, request):  # pylint: disable=missing-function-docstring
         subsection_unit_dict = self._get_subsections_and_units(course, request)
         num_block_types_per_subsection_dict = {}
         for subsection_key, unit_dict in subsection_unit_dict.items():
@@ -174,7 +174,7 @@ class CourseQualityView(DeveloperErrorViewMixin, GenericAPIView):
             num_block_types=self._stats_dict(list(num_block_types_per_subsection_dict.values())),
         )
 
-    def _units_quality(self, course, request):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def _units_quality(self, course, request):  # pylint: disable=missing-function-docstring
         subsection_unit_dict = self._get_subsections_and_units(course, request)
         num_leaf_blocks_per_unit = [
             unit_info['num_leaf_blocks']
@@ -186,7 +186,7 @@ class CourseQualityView(DeveloperErrorViewMixin, GenericAPIView):
             num_blocks=self._stats_dict(num_leaf_blocks_per_unit),
         )
 
-    def _videos_quality(self, course):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def _videos_quality(self, course):  # pylint: disable=missing-function-docstring
         video_blocks_in_course = modulestore().get_items(course.id, qualifiers={'category': 'video'})
         video_durations = [cv.video.duration for cv in get_course_videos_qset(course.id)]
 
@@ -232,7 +232,7 @@ class CourseQualityView(DeveloperErrorViewMixin, GenericAPIView):
         return cls._get_all_children(course)
 
     @classmethod
-    def _get_all_children(cls, parent):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def _get_all_children(cls, parent):  # pylint: disable=missing-function-docstring
         store = modulestore()
         children = [store.get_item(child_usage_key) for child_usage_key in cls._get_children(parent)]
         visible_children = [
@@ -247,14 +247,14 @@ class CourseQualityView(DeveloperErrorViewMixin, GenericAPIView):
         return visible_chidren
 
     @classmethod
-    def _get_children(cls, parent):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def _get_children(cls, parent):  # pylint: disable=missing-function-docstring
         if not hasattr(parent, 'children'):
             return []
         else:
             return parent.children
 
     @classmethod
-    def _get_leaf_blocks(cls, unit):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def _get_leaf_blocks(cls, unit):  # pylint: disable=missing-function-docstring
         def leaf_filter(block):
             return (
                 block.location.block_type not in ('chapter', 'sequential', 'vertical') and
@@ -263,7 +263,7 @@ class CourseQualityView(DeveloperErrorViewMixin, GenericAPIView):
 
         return list(traverse_pre_order(unit, cls._get_visible_children, leaf_filter))
 
-    def _stats_dict(self, data):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def _stats_dict(self, data):  # pylint: disable=missing-function-docstring
         if not data:
             return dict(
                 min=None,

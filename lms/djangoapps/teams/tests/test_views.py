@@ -13,13 +13,13 @@ import ddt
 import pytz
 from dateutil import parser
 from django.conf import settings
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db.models.signals import post_save
 from django.test import override_settings
 from django.urls import reverse
 from django.utils import translation
-from elasticsearch.exceptions import ConnectionError  # lint-amnesty, pylint: disable=redefined-builtin
+from elasticsearch.exceptions import ConnectionError  # pylint: disable=redefined-builtin
 from rest_framework.test import APIClient, APITestCase
 from search.search_engine_base import SearchEngine
 
@@ -33,9 +33,9 @@ from openedx.core.djangoapps.django_comment_common.models import FORUM_ROLE_COMM
 from openedx.core.djangoapps.django_comment_common.utils import seed_permissions_roles
 from openedx.core.lib.teams_config import TeamsConfig
 from xmodule.modulestore.tests.django_utils import (
-    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+    SharedModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
-from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import (  # pylint: disable=wrong-import-order
     BlockFactory,
     CourseFactory,
 )

@@ -398,24 +398,6 @@ class EcommerceApi(BaseApiClient):
     Ecommerce API client with convenience methods for making API calls.
     """
 
-    @_retry_lms_api()
-    def retire_learner(self, learner):
-        """
-        Performs the learner retirement step for Ecommerce
-        """
-        data = {"username": learner["original_username"]}
-        api_url = self.get_api_url("api/v2/user/retire")
-        return self._request("POST", api_url, json=data)
-
-    @_retry_lms_api()
-    def get_tracking_key(self, learner):
-        """
-        Fetches the ecommerce tracking id used for Segment tracking when
-        ecommerce doesn't have access to the LMS user id.
-        """
-        api_url = self.get_api_url(f"api/v2/retirement/tracking_id/{learner['original_username']}")
-        return self._request("GET", api_url)["ecommerce_tracking_id"]
-
     def replace_usernames(self, username_mappings):
         """
         Calls the ecommerce API to replace usernames.
@@ -433,15 +415,6 @@ class CredentialsApi(BaseApiClient):
     """
     Credentials API client with convenience methods for making API calls.
     """
-
-    @_retry_lms_api()
-    def retire_learner(self, learner):
-        """
-        Performs the learner retirement step for Credentials
-        """
-        data = {"username": learner["original_username"]}
-        api_url = self.get_api_url("user/retire")
-        return self._request("POST", api_url, json=data)
 
     def replace_usernames(self, username_mappings):
         """

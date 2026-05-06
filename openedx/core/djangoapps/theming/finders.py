@@ -29,7 +29,7 @@ from openedx.core.djangoapps.theming.helpers import get_themes
 from openedx.core.djangoapps.theming.storage import ThemeStorage
 
 
-class ThemeFilesFinder(BaseFinder):  # lint-amnesty, pylint: disable=abstract-method
+class ThemeFilesFinder(BaseFinder):  # pylint: disable=abstract-method
     """
     A static files finder that looks in the directory of each theme as
     specified in the source_dir attribute.

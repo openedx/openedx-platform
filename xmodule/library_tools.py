@@ -3,7 +3,7 @@ XBlock runtime services for LegacyLibraryContentBlock
 """
 from __future__ import annotations
 
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.core.exceptions import ObjectDoesNotExist
 from opaque_keys.edx.locator import LibraryLocator
 from user_tasks.models import UserTaskStatus

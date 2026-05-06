@@ -8,8 +8,8 @@ from xblock.core import XBlock, XBlockAside
 from xblock.fields import Dict, Scope
 
 from common.djangoapps.edxmako.shortcuts import render_to_string
-from xmodule.capa_block import ProblemBlock  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.x_module import AUTHOR_VIEW  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.capa_block import ProblemBlock  # pylint: disable=wrong-import-order
+from xmodule.x_module import AUTHOR_VIEW  # pylint: disable=wrong-import-order
 
 _ = lambda text: text
 
@@ -73,7 +73,7 @@ class StructuredTagsAside(XBlockAside):
             return Fragment('')
 
     @XBlock.handler
-    def save_tags(self, request=None, suffix=None):  # lint-amnesty, pylint: disable=unused-argument
+    def save_tags(self, request=None, suffix=None):  # pylint: disable=unused-argument
         """
         Handler to save choosen tags with connected XBlock
         """

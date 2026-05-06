@@ -8,7 +8,7 @@ import ddt
 from crum import set_current_request
 from django.conf import settings
 from django.contrib.auth import SESSION_KEY
-from django.contrib.auth.models import AnonymousUser, User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import AnonymousUser, User  # pylint: disable=imported-auth-user
 from django.http import HttpResponse, HttpResponseRedirect, SimpleCookie
 from django.test import TestCase
 from django.test.utils import override_settings

@@ -54,7 +54,8 @@ function($, sinon, AjaxHelpers, CertificateExceptionModel, CertificateAllowlistV
 
     describe('edx.certificates.collections.certificate_allowlist.CertificateAllowlist', function() {
         var certificateAllowlist = null,
-            certificateExceptionUrl = 'test/url/';
+            certificateExceptionUrl = 'test/url/',
+            requests, xhrFactory;
         var certificatesExceptionsJson = [
             {
                 id: 1,
@@ -77,12 +78,21 @@ function($, sinon, AjaxHelpers, CertificateExceptionModel, CertificateAllowlistV
         ];
 
         beforeEach(function() {
+            xhrFactory = sinon.useFakeXMLHttpRequest();
+            requests = [];
+            requests.currentIndex = 0;
+            requests.restore = function() { xhrFactory.restore(); };
+            xhrFactory.onCreate = function(req) { requests.push(req); };
             certificateAllowlist = new CertificateAllowlistCollection(certificatesExceptionsJson, {
                 parse: true,
                 canBeEmpty: true,
                 url: certificateExceptionUrl,
                 generate_certificates_url: certificateExceptionUrl
             });
+        });
+
+        afterEach(function() {
+            requests.restore();
         });
 
         it('has 2 models in the collection after initialization', function() {
@@ -126,7 +136,6 @@ function($, sinon, AjaxHelpers, CertificateExceptionModel, CertificateAllowlistV
         it('sends empty certificate exceptions list if no model is added', function() {
             var successCallback = sinon.spy(),
                 errorCallback = sinon.spy(),
-                requests = AjaxHelpers.requests(this),
                 addStudents = 'all';
             var expected = {
                 url: certificateExceptionUrl + addStudents,
@@ -140,7 +149,6 @@ function($, sinon, AjaxHelpers, CertificateExceptionModel, CertificateAllowlistV
         it('syncs only newly added models with the server', function() {
             var successCallback = sinon.spy(),
                 errorCallback = sinon.spy(),
-                requests = AjaxHelpers.requests(this),
                 addStudents = 'new',
                 expected;
 
@@ -293,7 +301,8 @@ function($, sinon, AjaxHelpers, CertificateExceptionModel, CertificateAllowlistV
     describe('edx.certificates.views.certificate_allowlist_editor.CertificateAllowlistEditorView', function() {
         var view = null,
             listView = null,
-            certificateExceptionUrl = 'test/url/';
+            certificateExceptionUrl = 'test/url/',
+            requests, xhrFactory;
         var certificatesExceptionsJson = [
             {
                 url: certificateExceptionUrl,
@@ -319,6 +328,11 @@ function($, sinon, AjaxHelpers, CertificateExceptionModel, CertificateAllowlistV
         ];
 
         beforeEach(function() {
+            xhrFactory = sinon.useFakeXMLHttpRequest();
+            requests = [];
+            requests.currentIndex = 0;
+            requests.restore = function() { xhrFactory.restore(); };
+            xhrFactory.onCreate = function(req) { requests.push(req); };
             var fixture, fixture2, certificateAllowlist;
             setFixtures();
 
@@ -357,6 +371,10 @@ function($, sinon, AjaxHelpers, CertificateExceptionModel, CertificateAllowlistV
             listView.render();
         });
 
+        afterEach(function() {
+            requests.restore();
+        });
+
         it('verifies view is initialized and rendered successfully', function() {
             expect(view).not.toBe(undefined);
             expect(view.$el.find('#certificate-exception').length).toBe(1);
@@ -368,7 +386,6 @@ function($, sinon, AjaxHelpers, CertificateExceptionModel, CertificateAllowlistV
             var messageSelector = '.message',
                 successMessage = 'test_user has been successfully added to the exception list. Click Generate'
                         + ' Exception Certificate below to send the certificate.',
-                requests = AjaxHelpers.requests(this),
                 duplicateUser = 'test_user';
 
             var errorMessages = {
@@ -417,8 +434,7 @@ function($, sinon, AjaxHelpers, CertificateExceptionModel, CertificateAllowlistV
         it('verifies certificate exception can be deleted by clicking "delete" ', function() {
             var username = 'test1',
                 certificateExceptionSelector = "div.allowlisted-students table tr:contains('" + username + "')",
-                deleteBtnSelector = certificateExceptionSelector + ' td .delete-exception',
-                requests = AjaxHelpers.requests(this);
+                deleteBtnSelector = certificateExceptionSelector + ' td .delete-exception';
 
             $(deleteBtnSelector).click();
             AjaxHelpers.respondWithJson(requests, {});

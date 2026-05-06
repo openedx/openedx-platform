@@ -11,9 +11,9 @@ from django.core.management import call_command
 from path import Path as path
 
 from openedx.core.djangoapps.django_comment_common.utils import are_permissions_roles_seeded
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 from xmodule.modulestore.tests.django_utils import (
-    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+    ModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
 
 
@@ -22,7 +22,7 @@ class TestImport(ModuleStoreTestCase):
     Unit tests for importing a course from command line
     """
 
-    def create_course_xml(self, content_dir, course_id):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def create_course_xml(self, content_dir, course_id):  # pylint: disable=missing-function-docstring
         directory = tempfile.mkdtemp(dir=content_dir)
         os.makedirs(os.path.join(directory, "course"))
         with open(os.path.join(directory, "course.xml"), "w+") as f:

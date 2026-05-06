@@ -700,7 +700,7 @@ def user_profile_pre_save_callback(sender, **kwargs):
     # Cache "old" field values on the model instance so that they can be
     # retrieved in the post_save callback when we emit an event with new and
     # old field values.
-    user_profile._changed_fields = get_changed_fields_dict(user_profile, sender)  # lint-amnesty, pylint: disable=protected-access
+    user_profile._changed_fields = get_changed_fields_dict(user_profile, sender)  # pylint: disable=protected-access
 
 
 @receiver(post_save, sender=UserProfile)
@@ -724,7 +724,7 @@ def user_pre_save_callback(sender, **kwargs):
     private field on the current model for use in the post_save callback.
     """
     user = kwargs['instance']
-    user._changed_fields = get_changed_fields_dict(user, sender)  # lint-amnesty, pylint: disable=protected-access
+    user._changed_fields = get_changed_fields_dict(user, sender)  # pylint: disable=protected-access
 
 
 @receiver(post_save, sender=User)
@@ -738,7 +738,7 @@ def user_post_save_callback(sender, **kwargs):
     """
     user = kwargs['instance']
 
-    changed_fields = user._changed_fields  # lint-amnesty, pylint: disable=protected-access
+    changed_fields = user._changed_fields  # pylint: disable=protected-access
 
     if 'is_active' in changed_fields or 'email' in changed_fields:
         if user.is_active:
@@ -878,7 +878,7 @@ class Registration(models.Model):  # noqa: DJ008
         self.user = user
         self.save()
 
-    def activate(self):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def activate(self):  # pylint: disable=missing-function-docstring
         self.user.is_active = True
         self.user.save(update_fields=['is_active'])
         self.activation_timestamp = datetime.utcnow()
@@ -1089,7 +1089,7 @@ class CourseAccessRole(models.Model):
         Overriding eq b/c the django impl relies on the primary key which requires fetch. sometimes we
         just want to compare roles w/o doing another fetch.
         """
-        return type(self) == type(other) and self._key == other._key  # lint-amnesty, pylint: disable=protected-access, unidiomatic-typecheck
+        return type(self) == type(other) and self._key == other._key  # pylint: disable=protected-access, unidiomatic-typecheck
 
     def __hash__(self):
         return hash(self._key)
@@ -1101,7 +1101,7 @@ class CourseAccessRole(models.Model):
         return self._key < other._key
 
     def __str__(self):
-        return f"[CourseAccessRole] user: {self.user.username}   role: {self.role}   org: {self.org}   course: {self.course_id}"  # lint-amnesty, pylint: disable=line-too-long
+        return f"[CourseAccessRole] user: {self.user.username}   role: {self.role}   org: {self.org}   course: {self.course_id}"  # pylint: disable=line-too-long
 
 
 class CourseAccessRoleHistory(TimeStampedModel):
@@ -1177,7 +1177,7 @@ def get_user(email):
     return user, u_prof
 
 
-def user_info(email):  # lint-amnesty, pylint: disable=missing-function-docstring
+def user_info(email):  # pylint: disable=missing-function-docstring
     user, u_prof = get_user(email)
     print("User id", user.id)
     print("Username", user.username)
@@ -1236,7 +1236,7 @@ DEFAULT_GROUPS = {
 }
 
 
-def add_user_to_default_group(user, group):  # lint-amnesty, pylint: disable=missing-function-docstring
+def add_user_to_default_group(user, group):  # pylint: disable=missing-function-docstring
     try:
         utg = UserTestGroup.objects.get(name=group)
     except UserTestGroup.DoesNotExist:
@@ -1248,7 +1248,7 @@ def add_user_to_default_group(user, group):  # lint-amnesty, pylint: disable=mis
     utg.save()
 
 
-def create_comments_service_user(user):  # lint-amnesty, pylint: disable=missing-function-docstring
+def create_comments_service_user(user):  # pylint: disable=missing-function-docstring
     if not settings.FEATURES['ENABLE_DISCUSSION_SERVICE']:
         # Don't try--it won't work, and it will fill the logs with lots of errors
         return
@@ -1269,7 +1269,7 @@ def create_comments_service_user(user):  # lint-amnesty, pylint: disable=missing
 
 
 @receiver(user_logged_in)
-def log_successful_login(sender, request, user, **kwargs):  # lint-amnesty, pylint: disable=unused-argument
+def log_successful_login(sender, request, user, **kwargs):  # pylint: disable=unused-argument
     """Handler to log when logins have occurred successfully."""
     tracker.emit(
         USER_LOGGED_IN_EVENT_NAME,
@@ -1285,7 +1285,7 @@ def log_successful_login(sender, request, user, **kwargs):  # lint-amnesty, pyli
 
 
 @receiver(user_logged_out)
-def log_successful_logout(sender, request, user, **kwargs):  # lint-amnesty, pylint: disable=unused-argument
+def log_successful_logout(sender, request, user, **kwargs):  # pylint: disable=unused-argument
     """Handler to log when logouts have occurred successfully."""
     if hasattr(request, 'user'):
         tracker.emit(

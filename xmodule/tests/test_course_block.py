@@ -35,7 +35,7 @@ _NEXT_WEEK = _TODAY + timedelta(days=7)
 
 
 @ddt.ddt()
-class CourseFieldsTestCase(unittest.TestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class CourseFieldsTestCase(unittest.TestCase):  # pylint: disable=missing-class-docstring
 
     def test_default_start_date(self):
         assert xmodule.course_block.CourseFields.start.default == DEFAULT_START_DATE
@@ -45,7 +45,7 @@ class CourseFieldsTestCase(unittest.TestCase):  # lint-amnesty, pylint: disable=
         with override_settings(CREATE_COURSE_WITH_DEFAULT_ENROLLMENT_START_DATE=should_have_default_enroll_start):
             # reimport, so settings override could take effect
             del sys.modules['xmodule.course_block']
-            import xmodule.course_block  # lint-amnesty, pylint: disable=redefined-outer-name, reimported
+            import xmodule.course_block  # pylint: disable=redefined-outer-name, reimported
             expected = DEFAULT_START_DATE if should_have_default_enroll_start else None
             assert xmodule.course_block.CourseFields.enrollment_start.default == expected
 
@@ -123,7 +123,7 @@ class HasEndedMayCertifyTestCase(unittest.TestCase):
     def setUp(self):
         super().setUp()
 
-        system = DummyModuleStoreRuntime(load_error_blocks=True)  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841
+        system = DummyModuleStoreRuntime(load_error_blocks=True)  # pylint: disable=unused-variable  # noqa: F841
 
         past_end = (datetime.now() - timedelta(days=12)).strftime("%Y-%m-%dT%H:%M:00")
         future_end = (datetime.now() + timedelta(days=12)).strftime("%Y-%m-%dT%H:%M:00")

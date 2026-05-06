@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, Callable  # noqa: UP035
 
 from completion.services import CompletionService
 from django.conf import settings
-from django.contrib.auth.models import AnonymousUser, User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import AnonymousUser, User  # pylint: disable=imported-auth-user
 from django.core.cache import cache
 from django.db import transaction
 from django.http import Http404, HttpResponse, HttpResponseForbidden
@@ -125,7 +125,7 @@ class LmsModuleRenderError(Exception):
     """
     An exception class for exceptions thrown by block_render that don't fit well elsewhere
     """
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 def make_track_function(request):
@@ -652,7 +652,7 @@ def prepare_runtime_for_user(
     runtime.get_block_for_descriptor = inner_get_block
 
     runtime.wrappers = block_wrappers
-    runtime._services.update(services)  # lint-amnesty, pylint: disable=protected-access
+    runtime._services.update(services)  # pylint: disable=protected-access
     runtime.request_token = request_token
     runtime.wrap_asides_override = lms_wrappers_aside
     runtime.applicable_aside_types_override = lms_applicable_aside_types
@@ -806,13 +806,13 @@ def handle_xblock_callback(request, course_id, usage_id, handler, suffix=None):
     try:
         course_key = CourseKey.from_string(course_id)
     except InvalidKeyError:
-        raise Http404(f'{course_id} is not a valid course key')  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise Http404(f'{course_id} is not a valid course key')  # pylint: disable=raise-missing-from  # noqa: B904
 
     with modulestore().bulk_operations(course_key):
         try:
             course = modulestore().get_course(course_key)
         except ItemNotFoundError:
-            raise Http404(f'{course_id} does not exist in the modulestore')  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise Http404(f'{course_id} does not exist in the modulestore')  # pylint: disable=raise-missing-from  # noqa: B904
 
         return _invoke_xblock_handler(request, course_id, usage_id, handler, suffix, course=course)
 
@@ -973,12 +973,12 @@ def _invoke_xblock_handler(request, course_id, usage_id, handler, suffix, course
 
         except NoSuchHandlerError:
             log.exception("XBlock %s attempted to access missing handler %r", instance, handler)
-            raise Http404  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise Http404  # pylint: disable=raise-missing-from  # noqa: B904
 
         # If we can't find the block, respond with a 404
         except (XModuleNotFoundError, NotFoundError, TranscriptNotFoundError):
             log.exception("Module indicating to user that request doesn't exist")
-            raise Http404  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise Http404  # pylint: disable=raise-missing-from  # noqa: B904
 
         # For XBlock-specific errors, we log the error and respond with an error message
         except ProcessingError as err:
@@ -1013,7 +1013,7 @@ def xblock_view(request, course_id, usage_id, view_name):
     try:
         course_key = CourseKey.from_string(course_id)
     except InvalidKeyError:
-        raise Http404("Invalid location")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise Http404("Invalid location")  # pylint: disable=raise-missing-from  # noqa: B904
 
     with modulestore().bulk_operations(course_key):
         course = modulestore().get_course(course_key)
@@ -1023,7 +1023,7 @@ def xblock_view(request, course_id, usage_id, view_name):
             fragment = instance.render(view_name, context=request.GET)
         except NoSuchViewError:
             log.exception("Attempt to render missing view on %s: %s", instance, view_name)
-            raise Http404  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise Http404  # pylint: disable=raise-missing-from  # noqa: B904
 
         hashed_resources = OrderedDict()
         for resource in fragment.resources:

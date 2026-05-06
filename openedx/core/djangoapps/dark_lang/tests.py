@@ -251,7 +251,7 @@ class DarkLangMiddlewareTests(CacheIsolationTestCase):
         """
         Sends a post request to set the preview language
         """
-        return self.client.post('/update_lang/', {'preview_language': preview_language, 'action': 'set_preview_language'})  # lint-amnesty, pylint: disable=line-too-long
+        return self.client.post('/update_lang/', {'preview_language': preview_language, 'action': 'set_preview_language'})  # pylint: disable=line-too-long
 
     def _post_clear_preview_lang(self):
         """

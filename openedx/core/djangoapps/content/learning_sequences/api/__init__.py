@@ -1,4 +1,4 @@
-# lint-amnesty, pylint: disable=missing-module-docstring
+# pylint: disable=missing-module-docstring
 from .outlines import (
     get_content_errors,  # noqa: F401
     get_course_keys_with_outlines,  # noqa: F401

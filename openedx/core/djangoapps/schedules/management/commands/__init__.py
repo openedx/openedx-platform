@@ -12,7 +12,7 @@ from django.core.management.base import BaseCommand
 from openedx.core.djangoapps.schedules.utils import PrefixedDebugLoggerMixin
 
 
-class SendEmailBaseCommand(PrefixedDebugLoggerMixin, BaseCommand):  # lint-amnesty, pylint: disable=missing-class-docstring
+class SendEmailBaseCommand(PrefixedDebugLoggerMixin, BaseCommand):  # pylint: disable=missing-class-docstring
     async_send_task = None  # define in subclass
 
     # An iterable of day offsets (e.g. -7, -14, -21, -28, ...) that defines the days for

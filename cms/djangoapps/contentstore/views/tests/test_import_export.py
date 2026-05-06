@@ -115,7 +115,7 @@ class ImportEntranceExamTestCase(CourseTestCase, MilestonesTestCaseMixin):
         self.assertIsNotNone(course)  # noqa: PT009
         self.assertEqual(course.entrance_exam_enabled, False)  # noqa: PT009
 
-        with open(self.entrance_exam_tar, 'rb') as gtar:  # lint-amnesty, pylint: disable=bad-option-value, open-builtin
+        with open(self.entrance_exam_tar, 'rb') as gtar:  # pylint: disable=bad-option-value, open-builtin
             args = {"name": self.entrance_exam_tar, "course-data": [gtar]}
             resp = self.client.post(self.url, args)
         self.assertEqual(resp.status_code, 200)  # noqa: PT009
@@ -147,7 +147,7 @@ class ImportEntranceExamTestCase(CourseTestCase, MilestonesTestCaseMixin):
         self.assertTrue(len(content_milestones))  # noqa: PT009
 
         # Now import entrance exam course
-        with open(self.entrance_exam_tar, 'rb') as gtar:  # lint-amnesty, pylint: disable=bad-option-value, open-builtin
+        with open(self.entrance_exam_tar, 'rb') as gtar:  # pylint: disable=bad-option-value, open-builtin
             args = {"name": self.entrance_exam_tar, "course-data": [gtar]}
             resp = self.client.post(self.url, args)
         self.assertEqual(resp.status_code, 200)  # noqa: PT009
@@ -558,7 +558,7 @@ class ImportTestCase(CourseTestCase):
             # Construct the modulestore for storing the import (using the previously created contentstore)
             with SPLIT_MODULESTORE_SETUP.build(contentstore=source_content) as source_store:
                 # Use the test branch setting.
-                with source_store.branch_setting(branch_setting):  # lint-amnesty, pylint: disable=no-member
+                with source_store.branch_setting(branch_setting):  # pylint: disable=no-member
                     source_library_key = LibraryLocator(org='TestOrg', library='TestProbs')
 
                     extract_dir = path(tempfile.mkdtemp(dir=settings.DATA_DIR))
@@ -791,7 +791,7 @@ class ExportTestCase(CourseTestCase):
             resp_content += item
 
         buff = BytesIO(resp_content)
-        return tarfile.open(fileobj=buff)  # lint-amnesty, pylint: disable=consider-using-with
+        return tarfile.open(fileobj=buff)  # pylint: disable=consider-using-with
 
     def _verify_export_succeeded(self, resp):
         """ Export success helper method. """

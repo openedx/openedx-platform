@@ -9,7 +9,7 @@ from unittest import mock
 
 import pytest
 from django import test
-from django.conf import settings  # lint-amnesty, pylint: disable=reimported
+from django.conf import settings  # pylint: disable=reimported
 from django.conf import settings as django_settings  # pylint: disable=reimported
 from django.contrib import auth, messages
 from django.contrib.auth import models as auth_models
@@ -71,7 +71,7 @@ class HelperMixin:
 
     def assert_register_response_in_pipeline_looks_correct(
         self, response, pipeline_kwargs, required_fields
-    ):  # lint-amnesty, pylint: disable=invalid-name
+    ):  # pylint: disable=invalid-name
         """Performs spot checks of the rendered register.html page.
 
         When we display the new account registration form after the user signs
@@ -138,7 +138,7 @@ class HelperMixin:
 
     def assert_register_form_populates_unicode_username_correctly(
         self, request
-    ):  # lint-amnesty, pylint: disable=invalid-name
+    ):  # pylint: disable=invalid-name
         """
         Check the registration form username field behaviour with unicode values.
 
@@ -1139,7 +1139,7 @@ class IntegrationTest(testutil.TestCase, test.TestCase, HelperMixin):
 
 # pylint: disable=abstract-method
 @django_utils.override_settings(ECOMMERCE_API_URL=TEST_API_URL)
-class Oauth2IntegrationTest(IntegrationTest):  # lint-amnesty, pylint: disable=test-inherits-tests
+class Oauth2IntegrationTest(IntegrationTest):  # pylint: disable=test-inherits-tests
     """Base test case for integration tests of Oauth2 providers."""
 
     # Dict of string -> object. Information about the token granted to the

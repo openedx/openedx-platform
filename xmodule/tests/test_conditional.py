@@ -1,4 +1,4 @@
-# lint-amnesty, pylint: disable=missing-module-docstring
+# pylint: disable=missing-module-docstring
 
 import json
 import unittest
@@ -45,7 +45,7 @@ class DummyModuleStoreRuntime(XMLImportingModuleStoreRuntime):  # pylint: disabl
         )
 
     @property
-    def render_template(self):  # lint-amnesty, pylint: disable=method-hidden
+    def render_template(self):  # pylint: disable=method-hidden
         raise Exception("Shouldn't be called")
 
 
@@ -93,8 +93,8 @@ class ConditionalFactory:
         # construct other blocks:
         child_block = Mock(name='child_block')
         child_block.visible_to_staff_only = False
-        child_block._xmodule.student_view.return_value = Fragment(content='<p>This is a secret</p>')  # lint-amnesty, pylint: disable=protected-access
-        child_block.student_view = child_block._xmodule.student_view  # lint-amnesty, pylint: disable=protected-access
+        child_block._xmodule.student_view.return_value = Fragment(content='<p>This is a secret</p>')  # pylint: disable=protected-access
+        child_block.student_view = child_block._xmodule.student_view  # pylint: disable=protected-access
         child_block.runtime = system
         child_block.render = lambda view, context=None: system.render(child_block, view, context)
         child_block.location = source_location.replace(category='html', name='child')
@@ -158,7 +158,7 @@ class ConditionalBlockBasicTest(unittest.TestCase):
         for attempted in ["false", "true"]:
             for icon_class in ['other', 'problem', 'video']:
                 blocks['source_block'].is_attempted = attempted
-                blocks['child_block'].get_icon_class = lambda: icon_class  # lint-amnesty, pylint: disable=cell-var-from-loop  # noqa: B023
+                blocks['child_block'].get_icon_class = lambda: icon_class  # pylint: disable=cell-var-from-loop  # noqa: B023
                 assert blocks['cond_block'].get_icon_class() == icon_class
 
     def test_get_html(self):
@@ -293,7 +293,7 @@ class ConditionalBlockXmlTest(unittest.TestCase):
             dummy_scope_ids,
         )
 
-        new_run = conditional.location.course_key.run  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841
+        new_run = conditional.location.course_key.run  # pylint: disable=unused-variable  # noqa: F841
         assert conditional.sources_list[0] == BlockUsageLocator.from_string(conditional.xml_attributes['sources'])\
             .replace(run=dummy_location.course_key.run)
 
@@ -304,7 +304,7 @@ class ConditionalBlockXmlTest(unittest.TestCase):
         dummy_scope_ids = ScopeIds(None, None, dummy_location, dummy_location)
         dummy_field_data = DictFieldData({
             'data': '<conditional/>',
-            'xml_attributes': {'sources': 'i4x://HarvardX/ER22x/poll_question/T15_poll;i4x://HarvardX/ER22x/poll_question/T16_poll'},  # lint-amnesty, pylint: disable=line-too-long
+            'xml_attributes': {'sources': 'i4x://HarvardX/ER22x/poll_question/T15_poll;i4x://HarvardX/ER22x/poll_question/T16_poll'},  # pylint: disable=line-too-long
             'children': None,
         })
         conditional = ConditionalBlock(

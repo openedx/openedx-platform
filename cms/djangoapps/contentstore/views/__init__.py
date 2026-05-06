@@ -4,7 +4,7 @@ from .assets import *  # noqa: F403
 from .block import *  # noqa: F403
 from .checklists import *  # noqa: F403
 from .component import *  # noqa: F403
-from .course import *  # lint-amnesty, pylint: disable=redefined-builtin  # noqa: F403
+from .course import *  # pylint: disable=redefined-builtin  # noqa: F403
 from .entrance_exam import *  # noqa: F403
 from .error import *  # noqa: F403
 from .export_git import *  # noqa: F403

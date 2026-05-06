@@ -8,13 +8,13 @@ import time
 from datetime import timedelta
 
 from django.conf import settings
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user, wrong-import-order
-from django.contrib.sites.models import Site  # lint-amnesty, pylint: disable=wrong-import-order
-from django.core.management.base import BaseCommand, CommandError  # lint-amnesty, pylint: disable=wrong-import-order
-from django.db.models import Q  # lint-amnesty, pylint: disable=wrong-import-order
-from django.utils.timezone import now  # lint-amnesty, pylint: disable=wrong-import-order
-from edx_ace import ace  # lint-amnesty, pylint: disable=wrong-import-order
-from edx_ace.recipient import Recipient  # lint-amnesty, pylint: disable=wrong-import-order
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user, wrong-import-order
+from django.contrib.sites.models import Site  # pylint: disable=wrong-import-order
+from django.core.management.base import BaseCommand, CommandError  # pylint: disable=wrong-import-order
+from django.db.models import Q  # pylint: disable=wrong-import-order
+from django.utils.timezone import now  # pylint: disable=wrong-import-order
+from edx_ace import ace  # pylint: disable=wrong-import-order
+from edx_ace.recipient import Recipient  # pylint: disable=wrong-import-order
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.student.models import CourseEnrollment

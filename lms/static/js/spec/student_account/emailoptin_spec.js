@@ -1,15 +1,26 @@
-define(['edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers', 'js/student_account/emailoptin'],
-    function(AjaxHelpers, EmailOptInInterface) {
+define(['sinon', 'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers', 'js/student_account/emailoptin'],
+    function(sinon, AjaxHelpers, EmailOptInInterface) {
         'use strict';
 
         describe('EmailOptInInterface', function() {
             var COURSE_KEY = 'edX/DemoX/Fall',
                 EMAIL_OPT_IN = 'True',
-                EMAIL_OPT_IN_URL = '/api/user/v1/preferences/email_opt_in/';
+                EMAIL_OPT_IN_URL = '/api/user/v1/preferences/email_opt_in/',
+                requests, xhrFactory;
+
+            beforeEach(function() {
+                xhrFactory = sinon.useFakeXMLHttpRequest();
+                requests = [];
+                requests.currentIndex = 0;
+                requests.restore = function() { xhrFactory.restore(); };
+                xhrFactory.onCreate = function(req) { requests.push(req); };
+            });
+
+            afterEach(function() {
+                requests.restore();
+            });
 
             it('Opts in for organization emails', function() {
-                // Spy on Ajax requests
-                var requests = AjaxHelpers.requests(this);
 
                 // Attempt to enroll the user
                 EmailOptInInterface.setPreference(COURSE_KEY, EMAIL_OPT_IN);

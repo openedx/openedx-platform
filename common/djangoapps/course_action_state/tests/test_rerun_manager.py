@@ -96,7 +96,7 @@ class TestCourseRerunStateManager(TestCase):
         exception = Exception("failure in rerunning")
         try:
             raise exception
-        except:  # lint-amnesty, pylint: disable=bare-except
+        except:  # pylint: disable=bare-except
             CourseRerunState.objects.failed(course_key=self.course_key)
 
         self.expected_rerun_state.update(

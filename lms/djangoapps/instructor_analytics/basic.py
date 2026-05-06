@@ -598,7 +598,7 @@ def course_registration_features(features, registration_codes, csv_type):
         site_name = configuration_helpers.get_value('SITE_NAME', settings.SITE_NAME)
         registration_features = [x for x in COURSE_REGISTRATION_FEATURES if x in features]
 
-        course_registration_dict = {feature: getattr(registration_code, feature) for feature in registration_features}  # lint-amnesty, pylint: disable=line-too-long
+        course_registration_dict = {feature: getattr(registration_code, feature) for feature in registration_features}  # pylint: disable=line-too-long
         course_registration_dict['company_name'] = None
         if registration_code.invoice_item:
             course_registration_dict['company_name'] = registration_code.invoice_item.invoice.company_name

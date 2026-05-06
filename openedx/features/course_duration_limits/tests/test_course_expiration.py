@@ -50,7 +50,7 @@ from xmodule.partitions.partitions import ENROLLMENT_TRACK_PARTITION_ID
 class CourseExpirationTestCase(ModuleStoreTestCase, MasqueradeMixin):
     """Tests to verify the get_user_course_expiration_date function is working correctly"""
     def setUp(self):
-        super().setUp()  # lint-amnesty, pylint: disable=super-with-arguments
+        super().setUp()  # pylint: disable=super-with-arguments
         self.catalog_patch = patch(
             'openedx.core.djangoapps.catalog.models.CatalogIntegration.is_enabled',
             return_value=True
@@ -84,7 +84,7 @@ class CourseExpirationTestCase(ModuleStoreTestCase, MasqueradeMixin):
     def tearDown(self):
         self.catalog_patch.stop()
         CourseEnrollment.unenroll(self.user, self.course.id)
-        super().tearDown()  # lint-amnesty, pylint: disable=super-with-arguments
+        super().tearDown()  # pylint: disable=super-with-arguments
 
     def get_courseware(self):
         """Returns a response from a GET on a courseware section"""

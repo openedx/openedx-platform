@@ -100,7 +100,8 @@ class RegistrationFieldsContext(APIView):
         """
         Returns the required or optional fields configured in REGISTRATION_EXTRA_FIELDS settings.
         """
-        # Custom form fields can be added via the form set in settings.REGISTRATION_EXTENSION_FORM
+        # Custom form fields can be added via the form set in settings.PROFILE_EXTENSION_FORM
+        # (or deprecated settings.REGISTRATION_EXTENSION_FORM)
         custom_form = get_registration_extension_form() or {}
         response = {}
         for field in self.valid_fields:

@@ -15,9 +15,9 @@ from search.search_engine_base import SearchEngine
 from cms.djangoapps.contentstore.course_group_config import GroupConfiguration
 from common.djangoapps.course_modes.models import CourseMode
 from openedx.core.lib.courses import course_image_url, course_organization_image_url
-from xmodule.annotator_mixin import html_to_text  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.library_tools import normalize_key_for_search  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.annotator_mixin import html_to_text  # pylint: disable=wrong-import-order
+from xmodule.library_tools import normalize_key_for_search  # pylint: disable=wrong-import-order
+from xmodule.modulestore import ModuleStoreEnum  # pylint: disable=wrong-import-order
 
 # REINDEX_AGE is the default amount of time that we look back for changes
 # that might have happened. If we are provided with a time at which the
@@ -114,7 +114,7 @@ class SearchIndexerBase(metaclass=ABCMeta):
         searcher.remove(result_ids)
 
     @classmethod
-    def index(cls, modulestore, structure_key, triggered_at=None, reindex_age=REINDEX_AGE, timeout=INDEXING_REQUEST_TIMEOUT):  # lint-amnesty, pylint: disable=line-too-long, too-many-statements
+    def index(cls, modulestore, structure_key, triggered_at=None, reindex_age=REINDEX_AGE, timeout=INDEXING_REQUEST_TIMEOUT):  # pylint: disable=line-too-long, too-many-statements
         """
         Process course for indexing
 
@@ -185,7 +185,7 @@ class SearchIndexerBase(metaclass=ABCMeta):
 
             item_content_groups = None
 
-            if item.category == "split_test":  # lint-amnesty, pylint: disable=too-many-nested-blocks
+            if item.category == "split_test":  # pylint: disable=too-many-nested-blocks
                 split_partition = item.get_selected_partition()
                 for split_test_child in item.get_children():
                     if split_partition:
@@ -326,7 +326,7 @@ class SearchIndexerBase(metaclass=ABCMeta):
         Returns:
             None
         """
-        pass  # lint-amnesty, pylint: disable=unnecessary-pass
+        pass  # pylint: disable=unnecessary-pass
 
     @classmethod
     def supplemental_fields(cls, item):  # pylint: disable=unused-argument
@@ -669,7 +669,7 @@ class CourseAboutSearchIndexer(CoursewareSearchIndexer):
         return {"course": str(normalized_structure_key), "org": normalized_structure_key.org}
 
     @classmethod
-    def remove_deleted_items(cls, structure_key):  # lint-amnesty, pylint: disable=arguments-differ
+    def remove_deleted_items(cls, structure_key):  # pylint: disable=arguments-differ
         """ Remove item from Course About Search_index """
         searcher = SearchEngine.get_search_engine(cls.INDEX_NAME)
         if not searcher:

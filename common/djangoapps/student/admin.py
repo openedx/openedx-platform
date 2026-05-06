@@ -53,7 +53,7 @@ from common.djangoapps.student.models import (
 )
 from common.djangoapps.student.roles import REGISTERED_ACCESS_ROLES
 from openedx.core.lib.courses import clean_course_id
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 
 User = get_user_model()  # pylint:disable=invalid-name
 
@@ -141,7 +141,7 @@ class CourseAccessRoleForm(forms.ModelForm):
         fields = '__all__'  # noqa: DJ007
 
     email = forms.EmailField(required=True)
-    COURSE_ACCESS_ROLES = [(role_name, role_name) for role_name in REGISTERED_ACCESS_ROLES.keys()]  # lint-amnesty, pylint: disable=consider-iterating-dictionary
+    COURSE_ACCESS_ROLES = [(role_name, role_name) for role_name in REGISTERED_ACCESS_ROLES.keys()]  # pylint: disable=consider-iterating-dictionary
     role = forms.ChoiceField(choices=COURSE_ACCESS_ROLES)
 
     def clean_course_id(self):
@@ -175,7 +175,7 @@ class CourseAccessRoleForm(forms.ModelForm):
         try:
             user = User.objects.get(email=email)
         except Exception:
-            raise forms.ValidationError(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise forms.ValidationError(  # pylint: disable=raise-missing-from  # noqa: B904
                 "Email does not exist. Could not find {email}. Please re-enter email address".format(  # noqa: UP032
                     email=email
                 )
@@ -309,7 +309,7 @@ class CourseAccessRoleHistoryAdmin(admin.ModelAdmin):
                             f"{history_record.user.username} in {history_record.course_id}"
                         )
                     reverted_count += 1
-            except Exception as e:  # lint-amnesty, pylint: disable=broad-except
+            except Exception as e:  # pylint: disable=broad-except
                 self.message_user(request, f"Error reverting record {history_record.id}: {e}", level='ERROR')
 
         if reverted_count > 0:
@@ -339,7 +339,7 @@ class CourseAccessRoleHistoryAdmin(admin.ModelAdmin):
             try:
                 history_record.delete()
                 deleted_count += 1
-            except Exception as e:  # lint-amnesty, pylint: disable=broad-except
+            except Exception as e:  # pylint: disable=broad-except
                 self.message_user(request, f"Error deleting record {history_record.id}: {e}", level='ERROR')
 
         if deleted_count > 0:
@@ -373,7 +373,7 @@ class CourseEnrollmentForm(forms.ModelForm):
             try:
                 args_copy['course'] = CourseKey.from_string(args_copy['course'])
             except InvalidKeyError:
-                raise forms.ValidationError("Cannot make a valid CourseKey from id {}!".format(args_copy['course']))  # lint-amnesty, pylint: disable=raise-missing-from,line-too-long  # noqa: B904
+                raise forms.ValidationError("Cannot make a valid CourseKey from id {}!".format(args_copy['course']))  # pylint: disable=raise-missing-from,line-too-long  # noqa: B904
             args = [args_copy]
 
         super().__init__(*args, **kwargs)
@@ -387,19 +387,19 @@ class CourseEnrollmentForm(forms.ModelForm):
                 # However, the args copy above before the super() call handles this case.
                 pass
 
-    def clean_course_id(self):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def clean_course_id(self):  # pylint: disable=missing-function-docstring
         course_id = self.cleaned_data['course']
         try:
             course_key = CourseKey.from_string(course_id)
         except InvalidKeyError:
-            raise forms.ValidationError(f"Cannot make a valid CourseKey from id {course_id}!")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise forms.ValidationError(f"Cannot make a valid CourseKey from id {course_id}!")  # pylint: disable=raise-missing-from  # noqa: B904
 
         if not modulestore().has_course(course_key):
             raise forms.ValidationError(f"Cannot find course with id {course_id} in the modulestore")
 
         return course_key
 
-    def save(self, *args, **kwargs):  # lint-amnesty, pylint: disable=signature-differs, unused-argument
+    def save(self, *args, **kwargs):  # pylint: disable=signature-differs, unused-argument
         course_enrollment = super().save(commit=False)
         user = self.cleaned_data['user']
         course_overview = self.cleaned_data['course']
@@ -438,7 +438,7 @@ class CourseEnrollmentAdmin(DisableEnrollmentAdminMixin, admin.ModelAdmin):
         return qs, use_distinct
 
     def get_queryset(self, request):
-        return super().get_queryset(request).select_related('user')  # lint-amnesty, pylint: disable=no-member, super-with-arguments
+        return super().get_queryset(request).select_related('user')  # pylint: disable=no-member, super-with-arguments
 
 
 @method_decorator(login_required, name='dispatch')
@@ -556,7 +556,7 @@ class UserAdmin(BaseUserAdmin):
     def get_readonly_fields(self, request, obj=None):
         """
         Allows editing the users while skipping the username check, so we can have Unicode username with no problems.
-        The username is marked read-only when editing existing users regardless of `ENABLE_UNICODE_USERNAME`, to simplify the bokchoy tests.  # lint-amnesty, pylint: disable=line-too-long
+        The username is marked read-only when editing existing users regardless of `ENABLE_UNICODE_USERNAME`, to simplify the bokchoy tests.  # pylint: disable=line-too-long
         """
         django_readonly = super().get_readonly_fields(request, obj)
         if obj:
@@ -709,14 +709,14 @@ class AllowedAuthUserForm(forms.ModelForm):
         email_domain = email.split('@')[-1]
         allowed_site_email_domain = self.cleaned_data['site'].configuration.get_value('THIRD_PARTY_AUTH_ONLY_DOMAIN')
 
-        if not allowed_site_email_domain:  # lint-amnesty, pylint: disable=no-else-raise
+        if not allowed_site_email_domain:  # pylint: disable=no-else-raise
             raise forms.ValidationError(
                 _("Please add a key/value 'THIRD_PARTY_AUTH_ONLY_DOMAIN/{site_email_domain}' in SiteConfiguration "
                   "model's site_values field.")
             )
         elif email_domain != allowed_site_email_domain:
             raise forms.ValidationError(
-                _(f"Email doesn't have {allowed_site_email_domain} domain name.")  # lint-amnesty, pylint: disable=translation-of-non-string
+                _(f"Email doesn't have {allowed_site_email_domain} domain name.")  # pylint: disable=translation-of-non-string
             )
         elif not User.objects.filter(email=email).exists():
             raise forms.ValidationError(_("User with this email doesn't exist in system."))

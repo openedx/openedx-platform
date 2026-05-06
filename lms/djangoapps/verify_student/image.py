@@ -13,7 +13,7 @@ class InvalidImageData(Exception):
     """
     The provided image data could not be decoded.
     """
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 def decode_image_data(data):
@@ -34,4 +34,4 @@ def decode_image_data(data):
         return base64.b64decode(data.split(",")[1])
     except (IndexError, UnicodeEncodeError):
         log.exception("Could not decode image data")
-        raise InvalidImageData  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise InvalidImageData  # pylint: disable=raise-missing-from  # noqa: B904

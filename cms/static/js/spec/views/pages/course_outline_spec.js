@@ -1,4 +1,5 @@
 import $ from 'jquery';
+import sinon from 'sinon';
 import AjaxHelpers from 'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers';
 import ViewUtils from 'common/js/components/utils/view_utils';
 import CourseOutlinePage from 'js/views/pages/course_outline';
@@ -9,7 +10,7 @@ import TemplateHelpers from 'common/js/spec_helpers/template_helpers';
 import Course from 'js/models/course';
 
 describe('CourseOutlinePage', function() {
-    var createCourseOutlinePage, displayNameInput, model, outlinePage, requests, getItemsOfType, getItemHeaders,
+    var createCourseOutlinePage, displayNameInput, model, outlinePage, requests, xhrFactory, getItemsOfType, getItemHeaders,
         verifyItemsExpanded, expandItemsAndVerifyState, collapseItemsAndVerifyState, selectBasicSettings,
         selectVisibilitySettings, selectDiscussionSettings, selectAdvancedSettings, createMockCourseJSON, createMockSectionJSON,
         createMockSubsectionJSON, verifyTypePublishable, mockCourseJSON, mockEmptyCourseJSON, setSelfPaced, setSelfPacedCustomPLS,
@@ -223,7 +224,6 @@ describe('CourseOutlinePage', function() {
     };
 
     createCourseOutlinePage = function(test, courseJSON, createOnly) {
-        requests = AjaxHelpers.requests(test);
         model = new XBlockOutlineInfo(courseJSON, {parse: true});
         outlinePage = new CourseOutlinePage({
             model: model,
@@ -305,6 +305,11 @@ describe('CourseOutlinePage', function() {
     };
 
     beforeEach(function() {
+        xhrFactory = sinon.useFakeXMLHttpRequest();
+        requests = [];
+        requests.currentIndex = 0;
+        requests.restore = function() { xhrFactory.restore(); };
+        xhrFactory.onCreate = function(req) { requests.push(req); };
         window.course = new Course({
             id: '5',
             name: 'Course Name',
@@ -365,6 +370,7 @@ describe('CourseOutlinePage', function() {
     });
 
     afterEach(function() {
+        requests.restore();
         EditHelpers.cancelModalIfShowing();
         EditHelpers.removeMockAnalytics();
         // Clean up after the $.datepicker

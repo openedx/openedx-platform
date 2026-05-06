@@ -55,17 +55,17 @@ class SamlIntegrationTestUtilities:
     USER_USERNAME = "myself"
 
     def setUp(self):
-        super().setUp()  # lint-amnesty, pylint: disable=no-member, super-with-arguments
-        self.enable_saml(  # lint-amnesty, pylint: disable=no-member
-            private_key=self._get_private_key(),  # lint-amnesty, pylint: disable=no-member
-            public_key=self._get_public_key(),  # lint-amnesty, pylint: disable=no-member
+        super().setUp()  # pylint: disable=no-member, super-with-arguments
+        self.enable_saml(  # pylint: disable=no-member
+            private_key=self._get_private_key(),  # pylint: disable=no-member
+            public_key=self._get_public_key(),  # pylint: disable=no-member
             entity_id="https://saml.example.none",
         )
         # Mock out HTTP requests that may be made to TestShib:
         httpretty.enable()
         httpretty.reset()
-        self.addCleanup(httpretty.reset)  # lint-amnesty, pylint: disable=no-member
-        self.addCleanup(httpretty.disable)  # lint-amnesty, pylint: disable=no-member
+        self.addCleanup(httpretty.reset)  # pylint: disable=no-member
+        self.addCleanup(httpretty.disable)  # pylint: disable=no-member
 
         def metadata_callback(_request, _uri, headers):
             """Return a cached copy of TestShib's metadata by reading it from disk"""
@@ -73,7 +73,7 @@ class SamlIntegrationTestUtilities:
                 200,
                 headers,
                 self.read_data_file("testshib_metadata.xml"),
-            )  # lint-amnesty, pylint: disable=no-member
+            )  # pylint: disable=no-member
 
         httpretty.register_uri(httpretty.GET, TESTSHIB_METADATA_URL, content_type="text/xml", body=metadata_callback)
 
@@ -83,7 +83,7 @@ class SamlIntegrationTestUtilities:
                 200,
                 headers,
                 self.read_data_file("testshib_metadata_with_cache_duration.xml"),
-            )  # lint-amnesty, pylint: disable=no-member
+            )  # pylint: disable=no-member
 
         httpretty.register_uri(
             httpretty.GET,
@@ -96,14 +96,14 @@ class SamlIntegrationTestUtilities:
         # Doing this and freezing the time allows us to play back recorded request/response pairs
         uid_patch = patch("onelogin.saml2.utils.OneLogin_Saml2_Utils.generate_unique_id", return_value="TESTID")
         uid_patch.start()
-        self.addCleanup(uid_patch.stop)  # lint-amnesty, pylint: disable=no-member
+        self.addCleanup(uid_patch.stop)  # pylint: disable=no-member
         self._freeze_time(timestamp=1434326820)  # This is the time when the saved request/response was recorded.
 
     def _freeze_time(self, timestamp):
         """Mock the current time for SAML, so we can replay canned requests/responses"""
         now_patch = patch("onelogin.saml2.utils.OneLogin_Saml2_Utils.now", return_value=timestamp)
         now_patch.start()
-        self.addCleanup(now_patch.stop)  # lint-amnesty, pylint: disable=no-member
+        self.addCleanup(now_patch.stop)  # pylint: disable=no-member
 
     def _configure_testshib_provider(self, **kwargs):
         """Enable and configure the TestShib SAML IdP as a third_party_auth provider"""
@@ -124,21 +124,21 @@ class SamlIntegrationTestUtilities:
         saml_provider = self.configure_saml_provider(**kwargs)  # pylint: disable=no-member
 
         if fetch_metadata:
-            assert httpretty.is_enabled()  # lint-amnesty, pylint: disable=no-member
+            assert httpretty.is_enabled()  # pylint: disable=no-member
             num_total, num_skipped, num_attempted, num_updated, num_failed, failure_messages = fetch_saml_metadata()
             if assert_metadata_updates:
-                assert num_total == 1  # lint-amnesty, pylint: disable=no-member
-                assert num_skipped == 0  # lint-amnesty, pylint: disable=no-member
-                assert num_attempted == 1  # lint-amnesty, pylint: disable=no-member
-                assert num_updated == 1  # lint-amnesty, pylint: disable=no-member
-                assert num_failed == 0  # lint-amnesty, pylint: disable=no-member
-                assert len(failure_messages) == 0  # lint-amnesty, pylint: disable=no-member
+                assert num_total == 1  # pylint: disable=no-member
+                assert num_skipped == 0  # pylint: disable=no-member
+                assert num_attempted == 1  # pylint: disable=no-member
+                assert num_updated == 1  # pylint: disable=no-member
+                assert num_failed == 0  # pylint: disable=no-member
+                assert len(failure_messages) == 0  # pylint: disable=no-member
         return saml_provider
 
     def do_provider_login(self, provider_redirect_url):
         """Mocked: the user logs in to TestShib and then gets redirected back"""
         # The SAML provider (TestShib) will authenticate the user, then get the browser to POST a response:
-        assert provider_redirect_url.startswith(TESTSHIB_SSO_URL)  # lint-amnesty, pylint: disable=no-member
+        assert provider_redirect_url.startswith(TESTSHIB_SSO_URL)  # pylint: disable=no-member
 
         saml_response_xml = utils.read_and_pre_process_xml(
             os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "testshib_saml_response.xml")
@@ -154,8 +154,8 @@ class SamlIntegrationTestUtilities:
         if relay_state:
             data += '&RelayState=' + quote(relay_state)  # Append as string to the URL-encoded data
 
-        return self.client.post(  # lint-amnesty, pylint: disable=no-member
-            self.complete_url,  # lint-amnesty, pylint: disable=no-member
+        return self.client.post(  # pylint: disable=no-member
+            self.complete_url,  # pylint: disable=no-member
             content_type="application/x-www-form-urlencoded",
             data=data,
         )
@@ -529,7 +529,7 @@ class SuccessFactorsIntegrationTest(SamlIntegrationTestUtilities, IntegrationTes
         Mock an error response when calling the OData API for user details.
         """
 
-        def callback(request, uri, headers):  # lint-amnesty, pylint: disable=unused-argument
+        def callback(request, uri, headers):  # pylint: disable=unused-argument
             """
             Return a 500 error when someone tries to call the URL.
             """

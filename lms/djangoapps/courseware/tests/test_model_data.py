@@ -41,7 +41,7 @@ def mock_field(scope, name):
     return field
 
 
-def mock_block(fields=[]):  # lint-amnesty, pylint: disable=dangerous-default-value, missing-function-docstring  # noqa: B006
+def mock_block(fields=[]):  # pylint: disable=dangerous-default-value, missing-function-docstring  # noqa: B006
     block = Mock(entry_point=XBlock.entry_point)
     block.scope_ids = ScopeIds('user1', 'mock_problem', LOCATION('def_id'), LOCATION('usage_id'))
     block.module_class.fields.values.return_value = fields
@@ -64,7 +64,7 @@ class StudentModuleFactory(cmfStudentModuleFactory):
     course_id = COURSE_KEY
 
 
-class TestInvalidScopes(TestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class TestInvalidScopes(TestCase):  # pylint: disable=missing-class-docstring
     def setUp(self):
         super().setUp()
         self.user = UserFactory.create(username='user')
@@ -160,7 +160,7 @@ class TestStudentModuleStorage(OtherUserFailureTestMixin, TestCase):
                 self.kvs.set(user_state_key('a_field'), 'new_value')
         assert 1 == StudentModule.objects.all().count()
         assert {'b_field': 'b_value', 'a_field': 'new_value'} == json.loads(StudentModule.objects.all()[0].state)
-        # lint-amnesty, pylint: disable=line-too-long
+        # pylint: disable=line-too-long
 
     def test_set_missing_field(self):
         "Test that setting a new user_state field changes the value"
@@ -174,7 +174,7 @@ class TestStudentModuleStorage(OtherUserFailureTestMixin, TestCase):
                 self.kvs.set(user_state_key('not_a_field'), 'new_value')
         assert 1 == StudentModule.objects.all().count()
         assert {'b_field': 'b_value', 'a_field': 'a_value', 'not_a_field': 'new_value'} == json.loads(StudentModule.objects.all()[0].state)
-        # lint-amnesty, pylint: disable=line-too-long
+        # pylint: disable=line-too-long
 
     def test_delete_existing_field(self):
         "Test that deleting an existing field removes it from the StudentModule"
@@ -245,7 +245,7 @@ class TestStudentModuleStorage(OtherUserFailureTestMixin, TestCase):
         assert exception_context.value.saved_field_names == []
 
 
-class TestMissingStudentModule(FilteredQueryCountMixin, TestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class TestMissingStudentModule(FilteredQueryCountMixin, TestCase):  # pylint: disable=missing-class-docstring
     # Tell Django to clean out all databases, not just default
     databases = set(connections)
 

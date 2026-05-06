@@ -37,7 +37,7 @@ class Command(BaseCommand):
         try:
             result = CourseTeam.objects.get(team_id=team_id)
         except ObjectDoesNotExist:
-            raise CommandError(f'Argument {team_id} is not a course_team team_id')  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise CommandError(f'Argument {team_id} is not a course_team team_id')  # pylint: disable=raise-missing-from  # noqa: B904
 
         return result
 

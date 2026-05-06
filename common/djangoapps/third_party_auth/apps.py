@@ -1,10 +1,10 @@
-# lint-amnesty, pylint: disable=missing-module-docstring
+# pylint: disable=missing-module-docstring
 
 from django.apps import AppConfig
 from django.conf import settings
 
 
-class ThirdPartyAuthConfig(AppConfig):  # lint-amnesty, pylint: disable=missing-class-docstring
+class ThirdPartyAuthConfig(AppConfig):  # pylint: disable=missing-class-docstring
     name = 'common.djangoapps.third_party_auth'
     verbose_name = "Third-party authentication"
 

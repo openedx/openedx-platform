@@ -2,7 +2,7 @@
 Tests for the models that configures 'VideoUploadsEnabledByDefault' feature.
 """
 
-import itertools  # lint-amnesty, pylint: disable=wrong-import-order
+import itertools  # pylint: disable=wrong-import-order
 
 import ddt
 from django.test import TestCase

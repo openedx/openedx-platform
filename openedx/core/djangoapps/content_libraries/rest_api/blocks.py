@@ -1,6 +1,8 @@
 """
 Content Library REST APIs related to XBlocks/Components and their static assets
 """
+from uuid import UUID
+
 import edx_api_doc_tools as apidocs
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
@@ -8,7 +10,8 @@ from django.db.transaction import non_atomic_requests
 from django.http import Http404, HttpResponse, StreamingHttpResponse
 from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
-from opaque_keys.edx.locator import LibraryLocatorV2, LibraryUsageLocatorV2
+from opaque_keys import InvalidKeyError
+from opaque_keys.edx.locator import LibraryContainerLocator, LibraryLocatorV2, LibraryUsageLocatorV2
 from openedx_authz.constants import permissions as authz_permissions
 from openedx_content import api as content_api
 from rest_framework import status
@@ -90,7 +93,7 @@ class LibraryBlocksView(GenericAPIView):
         try:
             result = api.create_library_block(library_key, user_id=request.user.id, **serializer.validated_data)
         except api.IncompatibleTypesError as err:
-            raise ValidationError(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise ValidationError(  # pylint: disable=raise-missing-from  # noqa: B904
                 detail={'block_type': str(err)},
             )
 
@@ -139,6 +142,120 @@ class LibraryBlockView(APIView):
         api.require_permission_for_library_key(key.lib_key, request.user, permissions.CAN_EDIT_THIS_CONTENT_LIBRARY)
         api.delete_library_block(key, user_id=request.user.id)
         return Response({})
+
+
+@method_decorator(non_atomic_requests, name="dispatch")
+@view_auth_classes()
+class LibraryComponentDraftHistoryView(APIView):
+    """
+    View to get the draft change history of a library component.
+    """
+    serializer_class = serializers.LibraryHistoryEntrySerializer
+
+    @convert_exceptions
+    def get(self, request, usage_key_str):
+        """
+        Get the draft change history for a library component since its last publication.
+        """
+        key = LibraryUsageLocatorV2.from_string(usage_key_str)
+        api.require_permission_for_library_key(key.lib_key, request.user, permissions.CAN_VIEW_THIS_CONTENT_LIBRARY)
+        history = api.get_library_component_draft_history(key, request=request)
+        return Response(self.serializer_class(history, many=True).data)
+
+
+@method_decorator(non_atomic_requests, name="dispatch")
+@view_auth_classes()
+class LibraryComponentPublishHistoryView(APIView):
+    """
+    View to get the publish history of a library component as a list of publish events.
+    """
+    serializer_class = serializers.LibraryPublishHistoryGroupSerializer
+
+    @convert_exceptions
+    def get(self, request, usage_key_str):
+        """
+        Get the publish history for a library component, ordered most-recent-first.
+        """
+        key = LibraryUsageLocatorV2.from_string(usage_key_str)
+        api.require_permission_for_library_key(key.lib_key, request.user, permissions.CAN_VIEW_THIS_CONTENT_LIBRARY)
+        history = api.get_library_component_publish_history(key, request=request)
+        return Response(self.serializer_class(history, many=True).data)
+
+
+@method_decorator(non_atomic_requests, name="dispatch")
+@view_auth_classes()
+class LibraryPublishHistoryEntriesView(APIView):
+    """
+    Unified view to get individual draft change entries for a specific publish event.
+
+    Accepts any library entity key (component usage_key or container key) via the
+    scope_entity_key query parameter and routes to the appropriate API function.
+
+    For containers, scope_entity_key identifies the container being viewed — not
+    necessarily the entity that was directly published. In Post-Verawood a parent
+    container may have been directly published, but scope_entity_key is the child
+    Unit the user is currently browsing.
+    """
+    serializer_class = serializers.LibraryHistoryEntrySerializer
+
+    @convert_exceptions
+    def get(self, request, lib_key_str):
+        """
+        Get the draft change entries for a specific publish event, ordered most-recent-first.
+
+        Query parameters:
+          - scope_entity_key: the usage_key (component) or container_key (scope container)
+          - publish_log_uuid: UUID of the publish event
+        """
+        lib_key = LibraryLocatorV2.from_string(lib_key_str)
+        api.require_permission_for_library_key(lib_key, request.user, permissions.CAN_VIEW_THIS_CONTENT_LIBRARY)
+        scope_entity_key_str = request.query_params.get("scope_entity_key", "")
+        publish_log_uuid_str = request.query_params.get("publish_log_uuid", "")
+        if not scope_entity_key_str or not publish_log_uuid_str:
+            return Response({"error": "scope_entity_key and publish_log_uuid are required."}, status=400)
+        try:
+            publish_log_uuid = UUID(publish_log_uuid_str)
+        except ValueError:
+            return Response({"error": f"Invalid publish_log_uuid: {publish_log_uuid_str!r}"}, status=400)
+
+        try:
+            usage_key = LibraryUsageLocatorV2.from_string(scope_entity_key_str)
+            entries = api.get_library_component_publish_history_entries(
+                usage_key, publish_log_uuid, request=request
+            )
+        except ObjectDoesNotExist:
+            entries = []
+        except (InvalidKeyError, AttributeError):
+            try:
+                container_key = LibraryContainerLocator.from_string(scope_entity_key_str)
+                entries = api.get_library_container_publish_history_entries(
+                    container_key, publish_log_uuid, request=request
+                )
+            except (InvalidKeyError, AttributeError):
+                return Response({"error": f"Invalid scope_entity_key: {scope_entity_key_str!r}"}, status=400)
+
+        return Response(self.serializer_class(entries, many=True).data)
+
+
+@method_decorator(non_atomic_requests, name="dispatch")
+@view_auth_classes()
+class LibraryComponentCreationEntryView(APIView):
+    """
+    View to get the creation entry for a library component.
+    """
+    serializer_class = serializers.LibraryHistoryEntrySerializer
+
+    @convert_exceptions
+    def get(self, request, usage_key_str):
+        """
+        Get the creation entry for a library component (the moment it was first saved).
+        """
+        key = LibraryUsageLocatorV2.from_string(usage_key_str)
+        api.require_permission_for_library_key(key.lib_key, request.user, permissions.CAN_VIEW_THIS_CONTENT_LIBRARY)
+        entry = api.get_library_component_creation_entry(key, request=request)
+        if entry is None:
+            return Response(None)
+        return Response(self.serializer_class(entry).data)
 
 
 @method_decorator(non_atomic_requests, name="dispatch")
@@ -205,7 +322,7 @@ class LibraryBlockAssetView(APIView):
         try:
             result = api.add_library_block_static_asset_file(usage_key, file_path, file_content, request.user)
         except ValueError:
-            raise ValidationError("Invalid file path")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise ValidationError("Invalid file path")  # pylint: disable=raise-missing-from  # noqa: B904
         return Response(self.serializer_class(result).data)
 
     @convert_exceptions
@@ -220,7 +337,7 @@ class LibraryBlockAssetView(APIView):
         try:
             api.delete_library_block_static_asset_file(usage_key, file_path, request.user)
         except ValueError:
-            raise ValidationError("Invalid file path")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise ValidationError("Invalid file path")  # pylint: disable=raise-missing-from  # noqa: B904
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -318,7 +435,7 @@ class LibraryBlockOlxView(APIView):
         try:
             version_num = api.set_library_block_olx(key, new_olx_str).version_num
         except ValueError as err:
-            raise ValidationError(detail=str(err))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise ValidationError(detail=str(err))  # pylint: disable=raise-missing-from  # noqa: B904
         return Response(self.serializer_class({"olx": new_olx_str, "version_num": version_num}).data)
 
 

@@ -8,8 +8,9 @@ from __future__ import annotations
 import logging
 import mimetypes
 from datetime import datetime, timezone
+from functools import cache
 from typing import TYPE_CHECKING
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
@@ -25,20 +26,8 @@ from opaque_keys.edx.keys import LearningContextKey, UsageKeyV2
 from opaque_keys.edx.locator import LibraryContainerLocator, LibraryLocatorV2, LibraryUsageLocatorV2
 from openedx_content import api as content_api
 from openedx_content.models_api import Collection, Component, ComponentVersion, Container, LearningPackage, MediaType
-from openedx_events.content_authoring.data import (
-    ContentObjectChangedData,
-    LibraryBlockData,
-    LibraryCollectionData,
-    LibraryContainerData,
-)
-from openedx_events.content_authoring.signals import (
-    CONTENT_OBJECT_ASSOCIATIONS_CHANGED,
-    LIBRARY_BLOCK_CREATED,
-    LIBRARY_BLOCK_DELETED,
-    LIBRARY_BLOCK_UPDATED,
-    LIBRARY_COLLECTION_UPDATED,
-    LIBRARY_CONTAINER_UPDATED,
-)
+from openedx_events.content_authoring.data import LibraryBlockData
+from openedx_events.content_authoring.signals import LIBRARY_BLOCK_DELETED
 from xblock.core import XBlock
 
 from openedx.core.djangoapps.content_staging.data import StagedContentID
@@ -49,16 +38,23 @@ from openedx.core.djangoapps.xblock.api import (
 )
 from openedx.core.types import User as UserType
 
-from .. import tasks
 from ..models import ContentLibrary
-from .block_metadata import LibraryXBlockMetadata, LibraryXBlockStaticFile
-from .collections import library_collection_locator
+from .block_metadata import (
+    DirectPublishedEntity,
+    LibraryHistoryContributor,
+    LibraryHistoryEntry,
+    LibraryPublishHistoryGroup,
+    LibraryXBlockMetadata,
+    LibraryXBlockStaticFile,
+    direct_published_entity_from_record,
+    make_contributor,
+    resolve_change_action,
+)
 from .container_metadata import container_subclass_for_olx_tag
 from .containers import (
     ContainerMetadata,
     create_container,
     get_container,
-    get_containers_contains_item,
     update_container_children,
 )
 from .exceptions import (
@@ -77,6 +73,7 @@ if TYPE_CHECKING:
     from openedx.core.djangoapps.content_staging.api import StagedContentFileData
 
 log = logging.getLogger(__name__)
+
 
 # The public API is only the following symbols:
 __all__ = [
@@ -97,6 +94,10 @@ __all__ = [
     "add_library_block_static_asset_file",
     "delete_library_block_static_asset_file",
     "publish_component_changes",
+    "get_library_component_draft_history",
+    "get_library_component_publish_history",
+    "get_library_component_publish_history_entries",
+    "get_library_component_creation_entry",
 ]
 
 
@@ -193,7 +194,230 @@ def get_library_block(usage_key: LibraryUsageLocatorV2, include_collections=Fals
     return xblock_metadata
 
 
-def set_library_block_olx(usage_key: LibraryUsageLocatorV2, new_olx_str: str) -> ComponentVersion:
+def get_library_component_draft_history(
+    usage_key: LibraryUsageLocatorV2,
+    request=None,
+) -> list[LibraryHistoryEntry]:
+    """
+    Return the draft change history for a library component since its last publication,
+    ordered from most recent to oldest.
+
+    Raises ContentLibraryBlockNotFound if the component does not exist.
+    """
+    try:
+        component = get_component_from_usage_key(usage_key)
+    except ObjectDoesNotExist as exc:
+        raise ContentLibraryBlockNotFound(usage_key) from exc
+
+    @cache
+    def _contributor(user):
+        return make_contributor(user, request)
+
+    draft_change_records = (
+        content_api.get_entity_draft_history(component.publishable_entity)
+        .select_related("entity__component__component_type", "draft_change_log__changed_by__profile")
+    )
+    entries = []
+    for record in draft_change_records:
+        version = record.new_version if record.new_version is not None else record.old_version
+        # old_version is None only for the very first publish (entity had no prior published version)
+        old_version_num = record.old_version.version_num if record.old_version else 0
+        # new_version is None for soft-delete publishes (component deleted without a new draft version)
+        new_version_num = record.new_version.version_num if record.new_version else None
+        entries.append(LibraryHistoryEntry(
+            contributor=_contributor(record.draft_change_log.changed_by),
+            changed_at=record.draft_change_log.changed_at,
+            title=version.title if version is not None else "",
+            item_type=record.entity.component.component_type.name,
+            action=resolve_change_action(record.old_version, record.new_version),
+            old_version=old_version_num,
+            new_version=new_version_num,
+        ))
+    return entries
+
+
+def get_library_component_publish_history(
+    usage_key: LibraryUsageLocatorV2,
+    request=None,
+) -> list[LibraryPublishHistoryGroup]:
+    """
+    Return the publish history of a library component as a list of groups.
+
+    Each group corresponds to one publish event (PublishLogRecord) and includes:
+    - who published and when
+    - the distinct set of contributors: users who authored draft changes between
+      the previous publish and this one (via DraftChangeLogRecord version bounds)
+
+    direct_published_entities per era:
+    - Pre-Verawood (direct=None): single entry for the component itself.
+    - Post-Verawood, direct=True: single entry for the component (directly published).
+    - Post-Verawood, direct=False: all direct=True records from the same PublishLog
+      (e.g. a parent container that was directly published).
+
+    Groups are ordered most-recent-first. Returns [] if the component has never
+    been published.
+    """
+    try:
+        component = get_component_from_usage_key(usage_key)
+    except ObjectDoesNotExist as exc:
+        raise ContentLibraryBlockNotFound(usage_key) from exc
+
+    entity = component.publishable_entity
+    publish_records = (
+        content_api.get_entity_publish_history(entity)
+        .select_related("entity__component__component_type")
+    )
+
+    groups = []
+    for pub_record in publish_records:
+        # old_version is None only for the very first publish (entity had no prior published version)
+        old_version_num = pub_record.old_version.version_num if pub_record.old_version else 0
+        # new_version is None for soft-delete publishes (component deleted without a new draft version)
+        new_version_num = pub_record.new_version.version_num if pub_record.new_version else None
+
+        contributing_users = content_api.get_entity_version_contributors(
+            entity,
+            old_version_num=old_version_num,
+            new_version_num=new_version_num,
+        ).select_related('profile')
+        contributors = [
+            LibraryHistoryContributor.from_user(user, request)
+            for user in contributing_users
+        ]
+
+        if pub_record.direct is None or pub_record.direct is True:
+            # Pre-Verawood or component was directly published: single entry for itself.
+            # Use new_version title normally; fall back to old_version for soft-delete publishes
+            # (new_version=None means the component was deleted).
+            version = pub_record.new_version or pub_record.old_version
+            direct_published_entities = [DirectPublishedEntity(
+                entity_key=usage_key,
+                title=version.title if version else "",
+                entity_type=pub_record.entity.component.component_type.name,
+            )]
+        else:
+            # Post-Verawood, direct=False: component published as a dependency.
+            # Find all direct=True records in the same PublishLog.
+            direct_records = (
+                pub_record.publish_log.records
+                .filter(direct=True)
+                .select_related(
+                    'entity__component__component_type',
+                    'entity__container__container_type',
+                    'new_version',
+                    'old_version',
+                )
+            )
+            direct_published_entities = [
+                direct_published_entity_from_record(r, usage_key.lib_key)
+                for r in direct_records
+            ]
+
+        groups.append(LibraryPublishHistoryGroup(
+            publish_log_uuid=pub_record.publish_log.uuid,
+            published_by=pub_record.publish_log.published_by,
+            published_at=pub_record.publish_log.published_at,
+            contributors=contributors,
+            direct_published_entities=direct_published_entities,
+            scope_entity_key=usage_key,
+        ))
+
+    return groups
+
+
+def get_library_component_publish_history_entries(
+    usage_key: LibraryUsageLocatorV2,
+    publish_log_uuid: UUID,
+    request=None,
+) -> list[LibraryHistoryEntry]:
+    """
+    Return the individual draft change entries for a specific publish event.
+
+    Called lazily when the user expands a publish event in the UI. Entries are
+    the DraftChangeLogRecords that fall between the previous publish event and
+    this one, ordered most-recent-first.
+    """
+    try:
+        component = get_component_from_usage_key(usage_key)
+    except ObjectDoesNotExist as exc:
+        raise ContentLibraryBlockNotFound(usage_key) from exc
+
+    @cache
+    def _contributor(user):
+        return make_contributor(user, request)
+
+    records = (
+        content_api.get_entity_publish_history_entries(
+            component.publishable_entity, str(publish_log_uuid)
+        )
+        .select_related("entity__component__component_type", "draft_change_log__changed_by__profile")
+    )
+    entries = []
+    for record in records:
+        # Deleted components can't reach this endpoint, so new_version is always set.
+        # (Unlike containers — see get_library_container_publish_history_entries.)
+        assert record.new_version is not None  # for satisfy the type check
+        # old_version is None only for the very first publish (entity had no prior published version)
+        old_version_num = record.old_version.version_num if record.old_version else 0
+        # new_version is None for soft-delete publishes (component deleted without a new draft version)
+        new_version_num = record.new_version.version_num if record.new_version else None
+        entries.append(LibraryHistoryEntry(
+            contributor=_contributor(record.draft_change_log.changed_by),
+            changed_at=record.draft_change_log.changed_at,
+            title=record.new_version.title,
+            item_type=record.entity.component.component_type.name,
+            action=resolve_change_action(record.old_version, record.new_version),
+            old_version=old_version_num,
+            new_version=new_version_num,
+        ))
+    return entries
+
+
+def get_library_component_creation_entry(
+    usage_key: LibraryUsageLocatorV2,
+    request=None,
+) -> LibraryHistoryEntry | None:
+    """
+    Return the creation entry for a library component.
+
+    This is a single LibraryHistoryEntry representing the moment the
+    component was first created. Returns None if the component
+    has no versions yet.
+
+    Raises ContentLibraryBlockNotFound if the component does not exist.
+    """
+    try:
+        component = get_component_from_usage_key(usage_key)
+    except ObjectDoesNotExist as exc:
+        raise ContentLibraryBlockNotFound(usage_key) from exc
+
+    # TODO: replace with component.versioning.earliest once VersioningHelper exposes that helper.
+    first_version = (
+        component.publishable_entity.versions
+        .order_by('version_num')
+        .select_related("created_by__profile")
+        .first()
+    )
+    if first_version is None:
+        return None
+
+    user = first_version.created_by
+    return LibraryHistoryEntry(
+        contributor=make_contributor(user, request),
+        changed_at=first_version.created,
+        title=first_version.title,
+        item_type=component.component_type.name,
+        action="created",
+        old_version=0,
+        new_version=first_version.version_num,
+    )
+
+
+def set_library_block_olx(
+    usage_key: LibraryUsageLocatorV2,
+    new_olx_str: str,
+    paths_to_media: dict | None = None,
+) -> ComponentVersion:
     """
     Replace the OLX source of the given XBlock.
 
@@ -201,9 +425,19 @@ def set_library_block_olx(usage_key: LibraryUsageLocatorV2, new_olx_str: str) ->
     very little validation is done and this can easily result in a broken XBlock
     that won't load.
 
+    The optional ``paths_to_media`` parameter can be used to attach
+    openedx_content Media to this XBlock. A common use case for this would be to
+    add images or other static assets to a text block::
+
+      figure_a_media = content_api.get_or_create_file_media(...)
+      paths_to_media={
+          'static/figure_a.png': figure_a_media,
+      }
+
     Returns the version number of the newly created ComponentVersion.
     """
     assert isinstance(usage_key, LibraryUsageLocatorV2)
+    paths_to_media = paths_to_media or {}
 
     # HTMLBlock uses CDATA to preserve HTML inside the XML, so make sure we
     # don't strip that out.
@@ -240,7 +474,7 @@ def set_library_block_olx(usage_key: LibraryUsageLocatorV2, new_olx_str: str) ->
     now = datetime.now(tz=timezone.utc)  # noqa: UP017
 
     with transaction.atomic():
-        new_content = content_api.get_or_create_text_media(
+        new_olx_media = content_api.get_or_create_text_media(
             component.learning_package_id,
             get_or_create_olx_media_type(usage_key.block_type).id,
             text=new_olx_str,
@@ -250,33 +484,11 @@ def set_library_block_olx(usage_key: LibraryUsageLocatorV2, new_olx_str: str) ->
             component.id,
             title=new_title,
             media_to_replace={
-                'block.xml': new_content.pk,
+                **paths_to_media,
+                'block.xml': new_olx_media.pk,
             },
             created=now,
         )
-
-    # .. event_implemented_name: LIBRARY_BLOCK_UPDATED
-    # .. event_type: org.openedx.content_authoring.library_block.updated.v1
-    transaction.on_commit(lambda: LIBRARY_BLOCK_UPDATED.send_event(
-        library_block=LibraryBlockData(
-            library_key=usage_key.context_key,
-            usage_key=usage_key
-        )
-    ))
-
-    # For each container, trigger LIBRARY_CONTAINER_UPDATED signal and set background=True to trigger
-    # container indexing asynchronously.
-    affected_containers = get_containers_contains_item(usage_key)
-    for container in affected_containers:
-        # .. event_implemented_name: LIBRARY_CONTAINER_UPDATED
-        # .. event_type: org.openedx.content_authoring.content_library.container.updated.v1
-        container_key = container.container_key
-        transaction.on_commit(lambda ck=container_key: LIBRARY_CONTAINER_UPDATED.send_event(  # type: ignore[misc]
-            library_container=LibraryContainerData(
-                container_key=ck,
-                background=True,
-            )
-        ))
 
     return new_component_version
 
@@ -354,16 +566,6 @@ def create_library_block(
     _create_component_for_block(content_library, usage_key, user_id, can_stand_alone)
 
     # Now return the metadata about the new block:
-
-    # .. event_implemented_name: LIBRARY_BLOCK_CREATED
-    # .. event_type: org.openedx.content_authoring.library_block.created.v1
-    LIBRARY_BLOCK_CREATED.send_event(
-        library_block=LibraryBlockData(
-            library_key=content_library.library_key,
-            usage_key=usage_key
-        )
-    )
-
     return get_library_block(usage_key)
 
 
@@ -433,11 +635,7 @@ def _import_staged_block(
             created_by=user.id,
         )
 
-        # This will create the first component version and set the OLX/title
-        # appropriately. It will not publish. Once we get the newly created
-        # ComponentVersion back from this, we can attach all our files to it.
-        component_version = set_library_block_olx(usage_key, olx_str)
-
+        paths_to_media = {}
         for staged_content_file_data in staged_content_files:
             # The ``data`` attribute is going to be None because the clipboard
             # is optimized to not do redundant file copying when copying/pasting
@@ -484,27 +682,18 @@ def _import_staged_block(
                 media_type_str = "application/octet-stream"
 
             media_type = content_api.get_or_create_media_type(media_type_str)
-            content = content_api.get_or_create_file_media(
+            media = content_api.get_or_create_file_media(
                 learning_package.id,
                 media_type.id,
                 data=file_data,
                 created=now,
             )
-            content_api.create_component_version_media(
-                component_version.pk,
-                content.id,
-                path=filename,
-            )
+            paths_to_media[filename] = media.id
 
-    # Emit library block created event
-    # .. event_implemented_name: LIBRARY_BLOCK_CREATED
-    # .. event_type: org.openedx.content_authoring.library_block.created.v1
-    transaction.on_commit(lambda: LIBRARY_BLOCK_CREATED.send_event(
-        library_block=LibraryBlockData(
-            library_key=content_library.library_key,
-            usage_key=usage_key
-        )
-    ))
+        # This will create the first component version and set the OLX/title
+        # appropriately. It will not publish. Once we get the newly created
+        # ComponentVersion back from this, we can attach all our files to it.
+        set_library_block_olx(usage_key, olx_str, paths_to_media)
 
     # Now return the metadata about the new block
     return get_library_block(usage_key)
@@ -685,7 +874,6 @@ def import_staged_content_from_user_clipboard(library_key: LibraryLocatorV2, use
             now,
         )
 
-
 def get_or_create_olx_media_type(block_type: str) -> MediaType:
     """
     Get or create a MediaType for the block type.
@@ -707,16 +895,6 @@ def delete_library_block(
     """
     library_key = usage_key.context_key
 
-    def send_block_deleted_signal():
-        # .. event_implemented_name: LIBRARY_BLOCK_DELETED
-        # .. event_type: org.openedx.content_authoring.library_block.deleted.v1
-        LIBRARY_BLOCK_DELETED.send_event(
-            library_block=LibraryBlockData(
-                library_key=library_key,
-                usage_key=usage_key
-            )
-        )
-
     try:
         component = get_component_from_usage_key(usage_key)
     except Component.DoesNotExist:
@@ -725,46 +903,15 @@ def delete_library_block(
         # (an intermediate error occurred).
         # In that case, we keep the index updated by removing the entry,
         # but still raise the error so the caller knows the component did not exist.
-        send_block_deleted_signal()
+
+        # .. event_implemented_name: LIBRARY_BLOCK_DELETED
+        # .. event_type: org.openedx.content_authoring.library_block.deleted.v1
+        LIBRARY_BLOCK_DELETED.send_event(
+            library_block=LibraryBlockData(library_key=library_key, usage_key=usage_key)
+        )
         raise
 
-    affected_collections = content_api.get_entity_collections(component.learning_package_id, component.entity_ref)
-    affected_containers = get_containers_contains_item(usage_key)
-
     content_api.soft_delete_draft(component.id, deleted_by=user_id)
-
-    send_block_deleted_signal()
-
-    # For each collection, trigger LIBRARY_COLLECTION_UPDATED signal and set background=True to trigger
-    # collection indexing asynchronously.
-    #
-    # To delete the component on collections
-    for collection in affected_collections:
-        # .. event_implemented_name: LIBRARY_COLLECTION_UPDATED
-        # .. event_type: org.openedx.content_authoring.content_library.collection.updated.v1
-        LIBRARY_COLLECTION_UPDATED.send_event(
-            library_collection=LibraryCollectionData(
-                collection_key=library_collection_locator(
-                    library_key=library_key,
-                    collection_key=collection.collection_code,
-                ),
-                background=True,
-            )
-        )
-
-    # For each container, trigger LIBRARY_CONTAINER_UPDATED signal and set background=True to trigger
-    # container indexing asynchronously.
-    #
-    # To update the components count in containers
-    for container in affected_containers:
-        # .. event_implemented_name: LIBRARY_CONTAINER_UPDATED
-        # .. event_type: org.openedx.content_authoring.content_library.container.updated.v1
-        LIBRARY_CONTAINER_UPDATED.send_event(
-            library_container=LibraryContainerData(
-                container_key=container.container_key,
-                background=True,
-            )
-        )
 
 
 def restore_library_block(usage_key: LibraryUsageLocatorV2, user_id: int | None = None) -> None:
@@ -772,66 +919,12 @@ def restore_library_block(usage_key: LibraryUsageLocatorV2, user_id: int | None 
     Restore the specified library block.
     """
     component = get_component_from_usage_key(usage_key)
-    library_key = usage_key.context_key
-    affected_collections = content_api.get_entity_collections(component.learning_package_id, component.entity_ref)
-
     # Set draft version back to the latest available component version id.
     content_api.set_draft_version(
         component.id,
         component.versioning.latest.pk,
         set_by=user_id,
     )
-
-    # .. event_implemented_name: LIBRARY_BLOCK_CREATED
-    # .. event_type: org.openedx.content_authoring.library_block.created.v1
-    LIBRARY_BLOCK_CREATED.send_event(
-        library_block=LibraryBlockData(
-            library_key=library_key,
-            usage_key=usage_key
-        )
-    )
-
-    # Add tags and collections back to index
-    # .. event_implemented_name: CONTENT_OBJECT_ASSOCIATIONS_CHANGED
-    # .. event_type: org.openedx.content_authoring.content.object.associations.changed.v1
-    CONTENT_OBJECT_ASSOCIATIONS_CHANGED.send_event(
-        content_object=ContentObjectChangedData(
-            object_id=str(usage_key),
-            changes=["collections", "tags", "units"],
-        ),
-    )
-
-    # For each collection, trigger LIBRARY_COLLECTION_UPDATED signal and set background=True to trigger
-    # collection indexing asynchronously.
-    #
-    # To restore the component in the collections
-    for collection in affected_collections:
-        # .. event_implemented_name: LIBRARY_COLLECTION_UPDATED
-        # .. event_type: org.openedx.content_authoring.content_library.collection.updated.v1
-        LIBRARY_COLLECTION_UPDATED.send_event(
-            library_collection=LibraryCollectionData(
-                collection_key=library_collection_locator(
-                    library_key=library_key,
-                    collection_key=collection.collection_code,
-                ),
-                background=True,
-            )
-        )
-
-    # For each container, trigger LIBRARY_CONTAINER_UPDATED signal and set background=True to trigger
-    # container indexing asynchronously.
-    #
-    # To update the components count in containers
-    affected_containers = get_containers_contains_item(usage_key)
-    for container in affected_containers:
-        # .. event_implemented_name: LIBRARY_CONTAINER_UPDATED
-        # .. event_type: org.openedx.content_authoring.content_library.container.updated.v1
-        LIBRARY_CONTAINER_UPDATED.send_event(
-            library_container=LibraryContainerData(
-                container_key=container.container_key,
-                background=True,
-            )
-        )
 
 
 def get_library_block_static_asset_files(usage_key: LibraryUsageLocatorV2) -> list[LibraryXBlockStaticFile]:
@@ -918,16 +1011,6 @@ def add_library_block_static_asset_file(
             created=datetime.now(tz=timezone.utc),  # noqa: UP017
             created_by=user.id if user else None,
         )
-        transaction.on_commit(
-            # .. event_implemented_name: LIBRARY_BLOCK_UPDATED
-            # .. event_type: org.openedx.content_authoring.library_block.updated.v1
-            lambda: LIBRARY_BLOCK_UPDATED.send_event(
-                library_block=LibraryBlockData(
-                    library_key=usage_key.context_key,
-                    usage_key=usage_key,
-                )
-            )
-        )
 
     # Now figure out the URL for the newly created asset...
     site_root_url = get_xblock_app_config().get_site_root_url()
@@ -966,16 +1049,6 @@ def delete_library_block_static_asset_file(usage_key, file_path, user=None):
             created=now,
             created_by=user.id if user else None,
         )
-        transaction.on_commit(
-            # .. event_implemented_name: LIBRARY_BLOCK_UPDATED
-            # .. event_type: org.openedx.content_authoring.library_block.updated.v1
-            lambda: LIBRARY_BLOCK_UPDATED.send_event(
-                library_block=LibraryBlockData(
-                    library_key=usage_key.context_key,
-                    usage_key=usage_key,
-                )
-            )
-        )
 
 
 def publish_component_changes(usage_key: LibraryUsageLocatorV2, user_id: int):
@@ -990,13 +1063,7 @@ def publish_component_changes(usage_key: LibraryUsageLocatorV2, user_id: int):
     # The core publishing API is based on draft objects, so find the draft that corresponds to this component:
     drafts_to_publish = content_api.get_all_drafts(learning_package.id).filter(entity__entity_ref=component.entity_ref)
     # Publish the component and update anything that needs to be updated (e.g. search index):
-    publish_log = content_api.publish_from_drafts(
-        learning_package.id, draft_qset=drafts_to_publish, published_by=user_id,
-    )
-    # Since this is a single component, it should be safe to process synchronously and in-process:
-    tasks.send_events_after_publish(publish_log.pk, str(library_key))
-    # IF this is found to be a performance issue, we could instead make it async where necessary:
-    # tasks.wait_for_post_publish_events(publish_log, library_key=library_key)
+    content_api.publish_from_drafts(learning_package.id, draft_qset=drafts_to_publish, published_by=user_id)
 
 
 def _component_exists(usage_key: UsageKeyV2) -> bool:
@@ -1046,7 +1113,13 @@ def _create_component_for_block(
         component_type = content_api.get_or_create_component_type(
             "xblock.v1", usage_key.block_type
         )
-        component, component_version = content_api.create_component_and_version(
+        block_olx_media = content_api.get_or_create_text_media(
+            learning_package.id,
+            get_or_create_olx_media_type(usage_key.block_type).id,
+            text=xml_text,
+            created=now,
+        )
+        _component, component_version = content_api.create_component_and_version(
             learning_package.id,
             component_type=component_type,
             component_code=usage_key.block_id,
@@ -1054,17 +1127,9 @@ def _create_component_for_block(
             created=now,
             created_by=user_id,
             can_stand_alone=can_stand_alone,
-        )
-        content = content_api.get_or_create_text_media(
-            learning_package.id,
-            get_or_create_olx_media_type(usage_key.block_type).id,
-            text=xml_text,
-            created=now,
-        )
-        content_api.create_component_version_media(
-            component_version.pk,
-            content.id,
-            path="block.xml",
+            media={
+                'block.xml': block_olx_media
+            }
         )
 
         return component_version

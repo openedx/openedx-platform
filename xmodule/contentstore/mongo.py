@@ -27,7 +27,7 @@ class MongoContentStore(ContentStore):
     """
     MongoDB-backed ContentStore.
     """
-    # lint-amnesty, pylint: disable=unused-argument
+    # pylint: disable=unused-argument
 
     def __init__(
         self, host, db,
@@ -121,8 +121,8 @@ class MongoContentStore(ContentStore):
         # the location as the _id, we must delete before adding (there's no replace method in gridFS)
         self.delete(content_id)  # delete is a noop if the entry doesn't exist; so, don't waste time checking
 
-        thumbnail_location = content.thumbnail_location.to_deprecated_list_repr() if content.thumbnail_location else None  # lint-amnesty, pylint: disable=line-too-long
-        with self.fs.new_file(_id=content_id, filename=str(content.location), content_type=content.content_type,  # lint-amnesty, pylint: disable=line-too-long
+        thumbnail_location = content.thumbnail_location.to_deprecated_list_repr() if content.thumbnail_location else None  # pylint: disable=line-too-long
+        with self.fs.new_file(_id=content_id, filename=str(content.location), content_type=content.content_type,  # pylint: disable=line-too-long
                               displayname=content.name, content_son=content_son,
                               thumbnail_location=thumbnail_location,
                               import_path=content.import_path,
@@ -161,7 +161,7 @@ class MongoContentStore(ContentStore):
         # Deletes of non-existent files are considered successful
         self.fs.delete(location_or_id)
 
-    def find(self, location, throw_on_not_found=True, as_stream=False):  # lint-amnesty, pylint: disable=arguments-differ
+    def find(self, location, throw_on_not_found=True, as_stream=False):  # pylint: disable=arguments-differ
         content_id, __ = self.asset_db_key(location)
 
         try:
@@ -169,8 +169,8 @@ class MongoContentStore(ContentStore):
                 fp = self.fs.get(content_id)
                 # Need to replace dict IDs with SON for chunk lookup to work under Python 3
                 # because field order can be different and mongo cares about the order
-                if isinstance(fp._id, dict):  # lint-amnesty, pylint: disable=protected-access
-                    fp._file['_id'] = content_id  # lint-amnesty, pylint: disable=protected-access
+                if isinstance(fp._id, dict):  # pylint: disable=protected-access
+                    fp._file['_id'] = content_id  # pylint: disable=protected-access
                 thumbnail_location = getattr(fp, 'thumbnail_location', None)
                 if thumbnail_location:
                     thumbnail_location = location.course_key.make_asset_key(
@@ -189,8 +189,8 @@ class MongoContentStore(ContentStore):
                 with self.fs.get(content_id) as fp:
                     # Need to replace dict IDs with SON for chunk lookup to work under Python 3
                     # because field order can be different and mongo cares about the order
-                    if isinstance(fp._id, dict):  # lint-amnesty, pylint: disable=protected-access
-                        fp._file['_id'] = content_id  # lint-amnesty, pylint: disable=protected-access
+                    if isinstance(fp._id, dict):  # pylint: disable=protected-access
+                        fp._file['_id'] = content_id  # pylint: disable=protected-access
                     thumbnail_location = getattr(fp, 'thumbnail_location', None)
                     if thumbnail_location:
                         thumbnail_location = location.course_key.make_asset_key(
@@ -206,12 +206,12 @@ class MongoContentStore(ContentStore):
                         content_digest=getattr(fp, 'custom_md5', None),
                     )
         except NoFile:
-            if throw_on_not_found:  # lint-amnesty, pylint: disable=no-else-raise
-                raise NotFoundError(content_id)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            if throw_on_not_found:  # pylint: disable=no-else-raise
+                raise NotFoundError(content_id)  # pylint: disable=raise-missing-from  # noqa: B904
             else:
                 return None
 
-    def export(self, location, output_directory):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def export(self, location, output_directory):  # pylint: disable=missing-function-docstring
         content = self.find(location)
 
         filename = content.name
@@ -432,8 +432,8 @@ class MongoContentStore(ContentStore):
                 __, asset_key = self.asset_db_key(asset_key)
             # Need to replace dict IDs with SON for chunk lookup to work under Python 3
             # because field order can be different and mongo cares about the order
-            if isinstance(source_content._id, dict):  # lint-amnesty, pylint: disable=protected-access
-                source_content._file['_id'] = asset_key.copy()  # lint-amnesty, pylint: disable=protected-access
+            if isinstance(source_content._id, dict):  # pylint: disable=protected-access
+                source_content._file['_id'] = asset_key.copy()  # pylint: disable=protected-access
             asset_key['org'] = dest_course_key.org
             asset_key['course'] = dest_course_key.course
             if getattr(dest_course_key, 'deprecated', False):  # remove the run if exists

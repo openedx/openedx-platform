@@ -24,29 +24,29 @@ def convert_exceptions(fn):
             return fn(*args, **kwargs)
         except InvalidKeyError as exc:
             log.exception(str(exc))
-            raise NotFound  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise NotFound  # pylint: disable=raise-missing-from  # noqa: B904
         except api.ContentLibraryNotFound:
             log.exception("Content library not found")
-            raise NotFound  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise NotFound  # pylint: disable=raise-missing-from  # noqa: B904
         except api.ContentLibraryBlockNotFound:
             log.exception("XBlock not found in content library")
-            raise NotFound  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise NotFound  # pylint: disable=raise-missing-from  # noqa: B904
         except api.ContentLibraryCollectionNotFound:
             log.exception("Collection not found in content library")
-            raise NotFound  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise NotFound  # pylint: disable=raise-missing-from  # noqa: B904
         except api.ContentLibraryContainerNotFound:
             log.exception("Container not found in content library")
-            raise NotFound  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise NotFound  # pylint: disable=raise-missing-from  # noqa: B904
         except api.LibraryCollectionAlreadyExists as exc:
             log.exception(str(exc))
-            raise ValidationError(str(exc))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise ValidationError(str(exc))  # pylint: disable=raise-missing-from  # noqa: B904
         except api.LibraryBlockAlreadyExists as exc:
             log.exception(str(exc))
-            raise ValidationError(str(exc))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise ValidationError(str(exc))  # pylint: disable=raise-missing-from  # noqa: B904
         except api.InvalidNameError as exc:
             log.exception(str(exc))
-            raise ValidationError(str(exc))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise ValidationError(str(exc))  # pylint: disable=raise-missing-from  # noqa: B904
         except api.BlockLimitReachedError as exc:
             log.exception(str(exc))
-            raise ValidationError(str(exc))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise ValidationError(str(exc))  # pylint: disable=raise-missing-from  # noqa: B904
     return wrapped_fn

@@ -22,7 +22,7 @@ class TopLevelTemplateURI(str):
     to the URI should be looked up straight in the standard edx-platform location instead of trying to locate an
     overridding template in the current theme first.
     """
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 class DynamicTemplateLookup(TemplateLookup):

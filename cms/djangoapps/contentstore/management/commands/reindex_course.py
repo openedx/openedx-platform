@@ -15,7 +15,7 @@ from opaque_keys.edx.locator import CourseLocator
 from search.search_engine_base import SearchEngine
 
 from cms.djangoapps.contentstore.courseware_index import CourseAboutSearchIndexer, CoursewareSearchIndexer
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 
 from .prompt import query_yes_no
 
@@ -60,7 +60,7 @@ class Command(BaseCommand):
         try:
             result = CourseKey.from_string(raw_value)
         except InvalidKeyError:
-            raise CommandError("Invalid course_key: '%s'." % raw_value)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, UP031
+            raise CommandError("Invalid course_key: '%s'." % raw_value)  # pylint: disable=raise-missing-from  # noqa: B904, UP031
 
         if not isinstance(result, CourseLocator):
             raise CommandError(f"Argument {raw_value} is not a course key")
@@ -172,7 +172,7 @@ class Command(BaseCommand):
                     t = time() - start
                     remaining = total - success - len(errors)
                     logging.warning(f'{success} courses reindexed in {t:.1f} seconds. {remaining} remaining...')
-            except Exception as exc:  # lint-amnesty, pylint: disable=broad-except
+            except Exception as exc:  # pylint: disable=broad-except
                 errors.append(course_key)
                 logging.exception('Error indexing course %s due to the error: %s.', course_key, exc)
 

@@ -9,7 +9,7 @@ import logging
 from os.path import abspath, dirname, join
 from urllib.parse import urlparse
 
-# pylint: enable=unicode-format-string  # lint-amnesty, pylint: disable=bad-option-value
+# pylint: enable=unicode-format-string  # pylint: disable=bad-option-value
 #####################################################################
 from edx_django_utils.plugins import add_plugins
 
@@ -116,7 +116,7 @@ DEBUG_TOOLBAR_CONFIG = {
 }
 
 
-def should_show_debug_toolbar(request):  # lint-amnesty, pylint: disable=missing-function-docstring
+def should_show_debug_toolbar(request):  # pylint: disable=missing-function-docstring
     # We always want the toolbar on devstack unless running tests from another Docker container
     hostname = request.get_host()
     if hostname.startswith('edx.devstack.lms:') or hostname.startswith('lms.devstack.edx:'):
@@ -278,7 +278,7 @@ ENTERPRISE_ADMIN_PORTAL_NETLOC = 'localhost:1991'
 ENTERPRISE_ADMIN_PORTAL_BASE_URL = 'http://' + ENTERPRISE_ADMIN_PORTAL_NETLOC
 
 ########################## GRADEBOOK APP ##############################
-WRITABLE_GRADEBOOK_URL = 'http://localhost:1994'
+WRITABLE_GRADEBOOK_URL = 'http://localhost:1994/gradebook'
 
 ########################## ORA STAFF GRADING APP ##############################
 ORA_GRADING_MICROFRONTEND_URL = 'http://localhost:1993'
@@ -400,6 +400,8 @@ AUTHN_MICROFRONTEND_DOMAIN = 'localhost:1999'
 EXAMS_DASHBOARD_MICROFRONTEND_URL = 'http://localhost:2020'
 INSTRUCTOR_MICROFRONTEND_URL = 'http://localhost:2003/instructor-dashboard'
 CATALOG_MICROFRONTEND_URL = 'http://localhost:1998/catalog'
+COURSE_AUTHORING_MICROFRONTEND_URL = 'http://localhost:2001/authoring'
+ADMIN_CONSOLE_MICROFRONTEND_URL = 'http://localhost:2025/admin-console'
 
 ################### FRONTEND APPLICATION DISCUSSIONS ###################
 DISCUSSIONS_MICROFRONTEND_URL = 'http://localhost:2002'

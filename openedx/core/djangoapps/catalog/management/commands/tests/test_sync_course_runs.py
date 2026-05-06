@@ -10,9 +10,9 @@ from openedx.core.djangoapps.catalog.management.commands.sync_course_runs import
 from openedx.core.djangoapps.catalog.tests.factories import CourseRunFactory
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from xmodule.modulestore.tests.django_utils import (
-    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+    ModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 COMMAND_MODULE = 'openedx.core.djangoapps.catalog.management.commands.sync_course_runs'
 

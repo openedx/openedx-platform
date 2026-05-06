@@ -16,7 +16,7 @@ class VerificationApproved(BaseMessageType):
         self.options['transactional'] = True
 
 
-class VerificationExpiry(BaseMessageType):  # lint-amnesty, pylint: disable=missing-class-docstring
+class VerificationExpiry(BaseMessageType):  # pylint: disable=missing-class-docstring
     APP_LABEL = 'verify_student'
     Name = 'verificationexpiry'
 

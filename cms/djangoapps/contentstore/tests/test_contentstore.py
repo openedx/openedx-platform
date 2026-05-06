@@ -1,4 +1,4 @@
-# lint-amnesty, pylint: disable=missing-module-docstring
+# pylint: disable=missing-module-docstring
 
 # TODO: Rewrite several of these assertions so that they check the output of the REST or Python
 # APIs rather than parsing HTML from the deprecated legacy frontend pages. In particular, any
@@ -17,7 +17,7 @@ from uuid import uuid4
 
 import ddt
 from django.conf import settings
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.test import TestCase
 from django.test.utils import override_settings
 from django.urls import reverse
@@ -79,7 +79,7 @@ def requires_pillow_jpeg(func):
         try:
             from PIL import Image
         except ImportError:
-            raise SkipTest("Pillow is not installed (or not found)")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise SkipTest("Pillow is not installed (or not found)")  # pylint: disable=raise-missing-from  # noqa: B904
         if not getattr(Image.core, "jpeg_decoder", False):
             raise SkipTest("Pillow cannot open JPEG files")
         return func(*args, **kwargs)
@@ -301,7 +301,7 @@ class ImportRequiredTestCases(ContentStoreTestCase):
         html_block = self.store.get_item(html_block_location)
         self.assertIn('/jump_to_id/nonportable_link', html_block.data)  # noqa: PT009
 
-    def verify_content_existence(self, store, root_dir, course_id, dirname, category_name, filename_suffix=''):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def verify_content_existence(self, store, root_dir, course_id, dirname, category_name, filename_suffix=''):  # pylint: disable=missing-function-docstring
         filesystem = OSFS(root_dir / 'test_export')
         self.assertTrue(filesystem.exists(dirname))  # noqa: PT009
 
@@ -709,7 +709,7 @@ class MiscCourseTests(ContentStoreTestCase):
         """Verifies rendering the editor in all the verticals in the given test course"""
         self._check_verticals([self.vert_loc])
 
-    def _get_draft_counts(self, item):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def _get_draft_counts(self, item):  # pylint: disable=missing-function-docstring
         cnt = 1 if not self.store.has_published_version(item) else 0
         for child in item.get_children():
             cnt = cnt + self._get_draft_counts(child)
@@ -1447,7 +1447,7 @@ class ContentStoreTest(ContentStoreTestCase):
         problem_loc = UsageKey.from_string(payload['locator'])
         problem = self.store.get_item(problem_loc)
         self.assertIsInstance(problem, ProblemBlock, "New problem is not a ProblemBlock")  # noqa: PT009
-        self.assertNotIn('markdown', problem.editable_metadata_fields, "Markdown slipped into the editable metadata fields")  # lint-amnesty, pylint: disable=line-too-long  # noqa: PT009
+        self.assertNotIn('markdown', problem.editable_metadata_fields, "Markdown slipped into the editable metadata fields")  # pylint: disable=line-too-long  # noqa: PT009
 
     def test_cms_imported_course_walkthrough(self):
         """
@@ -2142,12 +2142,13 @@ class EntryPageTestCase(TestCase):
         resp = self.client.get_html(page)
         self.assertEqual(resp.status_code, status_code)  # noqa: PT009
 
-    @override_waffle_flag(toggles.LEGACY_STUDIO_LOGGED_OUT_HOME, True)
-    def test_how_it_works_legacy(self):
-        self._test_page("/howitworks")
+    def test_homepage_redirects_to_home(self):
+        # Root URL permanently redirects to studio home (sign-in page).
+        self._test_page("/", 301)
 
-    def test_how_it_works_redirect_to_signin(self):
-        self._test_page("/howitworks", 302)
+    def test_howitworks_redirects_to_home(self):
+        # Legacy landing page permanently redirects; preserves bookmarks.
+        self._test_page("/howitworks", 301)
 
     def test_signup(self):
         # deprecated signup url redirects to LMS register.

@@ -4,7 +4,7 @@
 from django.db import migrations, models
 
 
-class Migration(migrations.Migration):  # lint-amnesty, pylint: disable=missing-class-docstring
+class Migration(migrations.Migration):  # pylint: disable=missing-class-docstring
 
     dependencies = [
         ('entitlements', '0011_historicalcourseentitlement'),

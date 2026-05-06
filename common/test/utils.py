@@ -31,7 +31,7 @@ def nostderr():
         """ /dev/null incarnation as output-stream-like object """
         def write(self, _):
             """ Write method - just does nothing"""
-            pass  # lint-amnesty, pylint: disable=unnecessary-pass
+            pass  # pylint: disable=unnecessary-pass
 
     sys.stderr = Devnull()
     try:

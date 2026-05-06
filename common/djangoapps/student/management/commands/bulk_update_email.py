@@ -66,5 +66,5 @@ class Command(BaseCommand):
             len(failed_updates)
         )
 
-        if (failed_updates):  # lint-amnesty, pylint: disable=superfluous-parens
-            exit(-1)  # lint-amnesty, pylint: disable=consider-using-sys-exit
+        if (failed_updates):  # pylint: disable=superfluous-parens
+            exit(-1)  # pylint: disable=consider-using-sys-exit

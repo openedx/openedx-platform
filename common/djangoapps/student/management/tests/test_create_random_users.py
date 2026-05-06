@@ -10,9 +10,9 @@ from opaque_keys import InvalidKeyError
 
 from common.djangoapps.student.models import CourseEnrollment
 from xmodule.modulestore.tests.django_utils import (
-    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+    SharedModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 
 class CreateRandomUserTests(SharedModuleStoreTestCase):

@@ -23,6 +23,6 @@ class SelfPacedDateOverrideProvider(FieldOverrideProvider):
         return default
 
     @classmethod
-    def enabled_for(cls, block):  # lint-amnesty, pylint: disable=arguments-differ
+    def enabled_for(cls, block):  # pylint: disable=arguments-differ
         """This provider is enabled for self-paced courses only."""
         return block is not None and block.self_paced

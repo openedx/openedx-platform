@@ -11,7 +11,7 @@ from zoneinfo import ZoneInfo
 import ddt
 from config_models.models import cache
 from django.conf import settings
-from django.contrib.auth.models import AnonymousUser, User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import AnonymousUser, User  # pylint: disable=imported-auth-user
 from django.test import TestCase, override_settings
 from django.test.client import Client
 from django.urls import reverse
@@ -49,12 +49,12 @@ from openedx.core.djangoapps.site_configuration.tests.mixins import SiteMixin
 from openedx.core.djangoapps.site_configuration.tests.test_util import with_site_configuration_context
 from openedx.core.djangolib.testing.utils import CacheIsolationTestCase, skip_unless_lms
 from openedx.features.course_experience.url_helpers import make_learning_mfe_courseware_url
-from xmodule.data import CertificatesDisplayBehaviors  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.django_utils import (  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.data import CertificatesDisplayBehaviors  # pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (  # pylint: disable=wrong-import-order
     ModuleStoreTestCase,
     SharedModuleStoreTestCase,
 )
-from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import (  # pylint: disable=wrong-import-order
     CourseFactory,
     check_mongo_calls,
 )
@@ -667,7 +667,7 @@ class UserSettingsEventTestMixin(EventTestMixin):
     """
     Mixin for verifying that user setting events were emitted during a test.
     """
-    def setUp(self):  # lint-amnesty, pylint: disable=arguments-differ
+    def setUp(self):  # pylint: disable=arguments-differ
         super().setUp('common.djangoapps.util.model_utils.tracker')
 
     def assert_user_setting_event_emitted(self, **kwargs):
@@ -694,7 +694,7 @@ class UserSettingsEventTestMixin(EventTestMixin):
 
 class EnrollmentEventTestMixin(EventTestMixin):
     """ Mixin with assertions for validating enrollment events. """
-    def setUp(self):  # lint-amnesty, pylint: disable=arguments-differ
+    def setUp(self):  # pylint: disable=arguments-differ
         super().setUp('common.djangoapps.student.models.course_enrollment.tracker')
         segment_patcher = patch('common.djangoapps.student.models.course_enrollment.segment')
         self.mock_segment_tracker = segment_patcher.start()

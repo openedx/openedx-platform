@@ -15,7 +15,7 @@ from openedx.core.djangoapps.content.course_overviews.tests.factories import Cou
 
 
 # Factories are self documenting
-class CourseModeFactory(DjangoModelFactory):  # lint-amnesty, pylint: disable=missing-class-docstring
+class CourseModeFactory(DjangoModelFactory):  # pylint: disable=missing-class-docstring
     class Meta:
         model = CourseMode
 

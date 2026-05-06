@@ -3,7 +3,7 @@ course_groups API
 """
 
 
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 
 from openedx.core.djangoapps.course_groups.models import CohortMembership
 

@@ -24,7 +24,7 @@ from openedx.core.djangoapps.user_api.models import UserPreference
 
 
 @override_settings(SECRET_KEY="test secret key")
-class NotificationPrefViewTest(UrlResetMixin, TestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class NotificationPrefViewTest(UrlResetMixin, TestCase):  # pylint: disable=missing-class-docstring
     INITIALIZATION_VECTOR = b"\x00" * 16
 
     @patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})

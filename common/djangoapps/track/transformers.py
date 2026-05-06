@@ -9,7 +9,7 @@ apply them to the appropriate events.
 import json
 import logging
 
-import six  # lint-amnesty, pylint: disable=unused-import  # noqa: F401
+import six  # pylint: disable=unused-import  # noqa: F401
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import UsageKey
 
@@ -184,7 +184,7 @@ class EventTransformer(dict):
             always be run.
     """
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)  # lint-amnesty, pylint: disable=super-with-arguments
+        super().__init__(*args, **kwargs)  # pylint: disable=super-with-arguments
         self.load_payload()
 
     # Properties to be overridden
@@ -261,14 +261,14 @@ class EventTransformer(dict):
         Override this method to specify how to update event fields to maintain
         compatibility with legacy events.
         """
-        pass  # lint-amnesty, pylint: disable=unnecessary-pass
+        pass  # pylint: disable=unnecessary-pass
 
     def process_event(self):
         """
         Override this method to make unconditional modifications to event
         fields.
         """
-        pass  # lint-amnesty, pylint: disable=unnecessary-pass
+        pass  # pylint: disable=unnecessary-pass
 
 
 @EventTransformerRegistry.register
@@ -395,7 +395,7 @@ class VideoEventTransformer(EventTransformer):
         expected types of events.
         """
         if self.name in self.name_to_event_type_map:
-            super().transform()  # lint-amnesty, pylint: disable=super-with-arguments
+            super().transform()  # pylint: disable=super-with-arguments
 
     def process_event(self):
         """

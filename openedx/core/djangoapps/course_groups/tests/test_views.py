@@ -9,7 +9,7 @@ import json
 from collections import namedtuple
 
 import pytest
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.http import Http404
 from django.test.client import RequestFactory
 from opaque_keys.edx.locator import CourseLocator
@@ -18,9 +18,9 @@ from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.tests.factories import InstructorFactory, StaffFactory, UserFactory
 from openedx.core.djangoapps.django_comment_common.models import CourseDiscussionSettings
 from xmodule.modulestore.tests.django_utils import (
-    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+    ModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 from ..cohorts import DEFAULT_COHORT_NAME, get_cohort, get_cohort_by_id, get_cohort_by_name, get_group_info_for_cohort
 from ..models import CourseCohort, CourseUserGroup

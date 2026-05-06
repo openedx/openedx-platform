@@ -443,7 +443,7 @@ def get_course_runs():
     return course_runs
 
 
-def get_course_runs_for_course(course_uuid):  # lint-amnesty, pylint: disable=missing-function-docstring
+def get_course_runs_for_course(course_uuid):  # pylint: disable=missing-function-docstring
     if course_uuid is None:
         raise ValueError("missing course_uuid")
     user, catalog_integration = check_catalog_integration_and_get_user(error_message_field="Course runs")

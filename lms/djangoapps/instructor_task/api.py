@@ -51,7 +51,7 @@ from lms.djangoapps.instructor_task.tasks import (
     reset_problem_attempts,
     send_bulk_course_email,
 )
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 
 log = logging.getLogger(__name__)
 
@@ -60,7 +60,7 @@ class SpecificStudentIdMissingError(Exception):
     """
     Exception indicating that a student id was not provided when generating a certificate for a specific student.
     """
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 def get_running_instructor_tasks(course_id):

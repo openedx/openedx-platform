@@ -43,6 +43,7 @@ from edx_proctoring.exceptions import (
     ProctoredBaseException,
     ProctoredExamNotFoundException,
 )
+from edx_proctoring.models import ProctoredExamStudentAllowance
 from edx_rest_framework_extensions.paginators import DefaultPagination
 from edx_when import api as edx_when_api
 from opaque_keys import InvalidKeyError
@@ -88,6 +89,7 @@ from lms.djangoapps.courseware.tabs import get_course_tab_list
 from lms.djangoapps.instructor import enrollment, permissions
 from lms.djangoapps.instructor.access import (
     FORUM_ROLES,
+    INSTRUCTOR_DASHBOARD_ROLE_SORT_ORDER,
     ROLE_DISPLAY_NAMES,
     ROLES,
     allow_access,
@@ -130,7 +132,9 @@ from .serializers_v2 import (
     BetaTesterModifyResponseSerializerV2,
     BlockDueDateSerializerV2,
     BulkAllowanceRequestSerializer,
+    CertificateExceptionSerializer,
     CertificateGenerationHistorySerializer,
+    CertificateInvalidationSerializer,
     CourseEnrollmentSerializerV2,
     CourseInformationSerializerV2,
     CourseTeamModifySerializer,
@@ -142,6 +146,7 @@ from .serializers_v2 import (
     ExamAttemptSerializer,
     InstructorTaskListSerializer,
     IssuedCertificateSerializer,
+    LearnerInputSerializer,
     LearnerSerializer,
     ORASerializer,
     ORASummarySerializer,
@@ -149,11 +154,15 @@ from .serializers_v2 import (
     ProctoringSettingsSerializer,
     ProctoringSettingsUpdateSerializer,
     RegenerateCertificatesSerializer,
+    RemoveCertificateExceptionSerializer,
+    RemoveCertificateInvalidationSerializer,
     ScoreOverrideRequestSerializer,
     SpecialExamSerializer,
     SyncOperationResultSerializer,
     TaskStatusSerializer,
+    ToggleCertificateGenerationSerializer,
     UnitExtensionSerializer,
+    derive_exam_type,
 )
 from .tools import find_unit, get_units_with_due_date, keep_field_private, set_due_date_extension, title_or_url
 
@@ -228,6 +237,8 @@ class CourseMetadataView(DeveloperErrorViewMixin, APIView):
                 "grade_cutoffs": "A is 0.9, B is 0.8, C is 0.7, D is 0.6",
                 "course_errors": [],
                 "studio_url": "https://studio.example.com/course/course-v1:edX+DemoX+2024",
+                # May be null if user does not have access:
+                "admin_console_url": "http://apps.local.openedx.io:2025/admin-console/authz",
                 "permissions": {
                     "admin": false,
                     "instructor": true,
@@ -1274,6 +1285,148 @@ class IssuedCertificatesView(ListAPIView):
     permission_name = permissions.VIEW_ISSUED_CERTIFICATES
     serializer_class = IssuedCertificateSerializer
 
+    def _create_certificate_dict_for_allowlisted_user(self, allowlist_entry, enrollment_dict):
+        """
+        Create a dictionary representing certificate data for an allowlisted user
+        who may not have a GeneratedCertificate record yet.
+        """
+        user = allowlist_entry.user
+        enrollment_mode = enrollment_dict.get(user.id, '')
+
+        # Determine certificate status based on enrollment
+        if enrollment_mode == 'audit':
+            cert_status = 'audit_notpassing'
+        elif enrollment_mode == 'verified':
+            cert_status = 'downloadable'
+        else:
+            cert_status = 'notpassing'
+
+        return {
+            'username': user.username,
+            'email': user.email,
+            'enrollment_track': enrollment_mode,
+            'certificate_status': cert_status,
+            'special_case': 'Exception',
+            'exception_granted': allowlist_entry.created.isoformat(),
+            'exception_notes': allowlist_entry.notes or '',
+            'invalidated_by': None,
+            'invalidation_date': None,
+            'invalidation_note': '',
+        }
+
+    def list(self, request, *args, **kwargs):
+        """
+        Override list to handle granted_exceptions and invalidated filters specially.
+
+        For these filters, we need to show ALL relevant users,
+        even those without GeneratedCertificate records yet.
+        """
+        filter_type = request.query_params.get("filter", "all")
+
+        if filter_type == "granted_exceptions":
+            course_id = self.kwargs["course_id"]
+            course_key = CourseKey.from_string(course_id)
+            search = request.query_params.get("search", "").strip()
+
+            # Get enrollment data for context
+            enrollments = CourseEnrollment.objects.filter(
+                course_id=course_key
+            ).select_related('user')
+            enrollment_dict = {e.user_id: e.mode for e in enrollments}
+
+            # Get all allowlist entries
+            allowlist_qs = CertificateAllowlist.objects.filter(
+                course_id=course_key,
+                allowlist=True
+            ).select_related('user')
+
+            # Apply search filter
+            if search:
+                allowlist_qs = allowlist_qs.filter(
+                    Q(user__username__icontains=search) | Q(user__email__icontains=search)
+                )
+
+            # Get existing certificates for allowlisted users
+            allowlist_user_ids = list(allowlist_qs.values_list('user_id', flat=True))
+            existing_certs = GeneratedCertificate.objects.filter(
+                course_id=course_key,
+                user_id__in=allowlist_user_ids
+            ).select_related('user')
+            existing_cert_user_ids = set(existing_certs.values_list('user_id', flat=True))
+
+            # Build list of certificate data
+            certificate_data = []
+
+            # Add existing certificates
+            context = self.get_serializer_context()
+            for cert in existing_certs:
+                serializer = self.get_serializer(cert, context=context)
+                certificate_data.append(serializer.data)
+
+            # Add synthetic certificates for allowlisted users without GeneratedCertificate
+            for entry in allowlist_qs:
+                if entry.user_id not in existing_cert_user_ids:
+                    cert_dict = self._create_certificate_dict_for_allowlisted_user(entry, enrollment_dict)
+                    certificate_data.append(cert_dict)
+
+            # Sort by username
+            certificate_data.sort(key=lambda x: x['username'])
+
+            # Paginate manually
+            paginator = self.pagination_class()
+            page = paginator.paginate_queryset(certificate_data, request)
+
+            return paginator.get_paginated_response(page if page is not None else certificate_data)
+
+        elif filter_type == "invalidated":
+            course_id = self.kwargs["course_id"]
+            course_key = CourseKey.from_string(course_id)
+            search = request.query_params.get("search", "").strip()
+
+            # Get enrollment data for context
+            enrollments = CourseEnrollment.objects.filter(
+                course_id=course_key
+            ).select_related('user')
+            enrollment_dict = {e.user_id: e.mode for e in enrollments}
+
+            # Get all invalidations
+            invalidations_qs = CertificateInvalidation.objects.filter(
+                generated_certificate__course_id=course_key,
+                active=True
+            ).select_related('generated_certificate__user', 'invalidated_by')
+
+            # Apply search filter
+            if search:
+                invalidations_qs = invalidations_qs.filter(
+                    Q(generated_certificate__user__username__icontains=search) |
+                    Q(generated_certificate__user__email__icontains=search)
+                )
+
+            # Get existing certificates for invalidated users
+            invalidated_cert_ids = list(invalidations_qs.values_list('generated_certificate_id', flat=True))
+            existing_certs = GeneratedCertificate.objects.filter(
+                id__in=invalidated_cert_ids
+            ).select_related('user')
+
+            # Build list of certificate data using existing certificates
+            certificate_data = []
+            context = self.get_serializer_context()
+            for cert in existing_certs:
+                serializer = self.get_serializer(cert, context=context)
+                certificate_data.append(serializer.data)
+
+            # Sort by username
+            certificate_data.sort(key=lambda x: x['username'])
+
+            # Paginate manually
+            paginator = self.pagination_class()
+            page = paginator.paginate_queryset(certificate_data, request)
+
+            return paginator.get_paginated_response(page if page is not None else certificate_data)
+
+        # For other filters, use default behavior
+        return super().list(request, *args, **kwargs)
+
     def _apply_certificate_status_filter(self, certificates, filter_type, cert_statuses, course_key):
         """Apply status-based filters to certificate queryset."""
         if filter_type == "received":
@@ -1288,18 +1441,6 @@ class IssuedCertificatesView(ListAPIView):
             return certificates.filter(status=cert_statuses.audit_notpassing)
         elif filter_type == "error":
             return certificates.filter(status=cert_statuses.error)
-        elif filter_type == "granted_exceptions":
-            return certificates.filter(
-                user_id__in=CertificateAllowlist.objects.filter(
-                    course_id=course_key, allowlist=True
-                ).values_list('user_id', flat=True)
-            )
-        elif filter_type == "invalidated":
-            return certificates.filter(
-                user_id__in=CertificateInvalidation.objects.filter(
-                    generated_certificate__course_id=course_key, active=True
-                ).values_list('generated_certificate__user_id', flat=True)
-            )
         return certificates
 
     def get_serializer_context(self):
@@ -1337,7 +1478,8 @@ class IssuedCertificatesView(ListAPIView):
         context['invalidation_dict'] = {
             inv.generated_certificate.user_id: {
                 'invalidated_by': inv.invalidated_by.email,
-                'created': inv.created.isoformat()
+                'created': inv.created.isoformat(),
+                'notes': inv.notes or ''
             }
             for inv in invalidations
         }
@@ -1383,7 +1525,7 @@ class IssuedCertificatesView(ListAPIView):
             course_key, filter_type
         )
 
-        # Apply filter based on filter type (includes granted_exceptions and invalidated)
+        # Apply filter based on filter type (includes invalidated)
         certificates = self._apply_certificate_status_filter(
             certificates, filter_type, CertificateStatuses, course_key
         )
@@ -1628,6 +1770,641 @@ class CertificateConfigView(DeveloperErrorViewMixin, APIView):
         return Response({'enabled': enabled}, status=status.HTTP_200_OK)
 
 
+class ToggleCertificateGenerationView(DeveloperErrorViewMixin, APIView):
+    """
+    View to toggle certificate generation for a course.
+
+    **Example Requests**
+
+        POST /api/instructor/v2/courses/{course_id}/certificates/toggle_generation
+
+    **Request Body**
+
+        {
+            "enabled": true
+        }
+
+    **Response Values**
+
+        {
+            "enabled": true
+        }
+
+    **Returns**
+
+        * 200: OK - Certificate generation toggled successfully
+        * 400: Bad Request - Invalid request body
+        * 401: Unauthorized - User is not authenticated
+        * 403: Forbidden - User lacks instructor permissions
+    """
+    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_name = permissions.ENABLE_CERTIFICATE_GENERATION
+
+    def post(self, request, course_id):
+        """Toggle certificate generation for a course."""
+        course_key = CourseKey.from_string(course_id)
+        # Validate that the course exists before updating certificate settings
+        get_course_by_id(course_key)
+
+        # Validate request body
+        serializer = ToggleCertificateGenerationSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        enabled = serializer.validated_data['enabled']
+
+        try:
+            certs_api.set_cert_generation_enabled(course_key, enabled)
+            return Response({'enabled': enabled}, status=status.HTTP_200_OK)
+        except Exception:  # pylint: disable=broad-except
+            log.exception("Error toggling certificate generation for course %s", course_id)
+            return Response(
+                {'message': _('Unable to update certificate generation settings')},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class CertificateExceptionsView(DeveloperErrorViewMixin, APIView):
+    """
+    View to grant or remove certificate exceptions (allowlist).
+
+    **Example Requests**
+
+        POST /api/instructor/v2/courses/{course_id}/certificates/exceptions
+        DELETE /api/instructor/v2/courses/{course_id}/certificates/exceptions
+
+    **POST Request Body**
+
+        {
+            "learners": ["username1", "username2"],
+            "notes": "Reason for granting exceptions"
+        }
+
+    **DELETE Request Body**
+
+        {
+            "username": "username1"
+        }
+
+    **Returns**
+
+        * 200: OK - Exception granted/removed successfully
+        * 400: Bad Request - Invalid request or user not found
+        * 401: Unauthorized - User is not authenticated
+        * 403: Forbidden - User lacks instructor permissions
+    """
+    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_name = permissions.CERTIFICATE_EXCEPTION_VIEW
+
+    def post(self, request, course_id):
+        """Grant certificate exceptions (add to allowlist)."""
+        course_key = CourseKey.from_string(course_id)
+        # Validate that the course exists
+        get_course_by_id(course_key)
+
+        # Validate request data
+        serializer = CertificateExceptionSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        learners = serializer.validated_data['learners']
+        notes = serializer.validated_data['notes']
+
+        results = {
+            'success': [],
+            'errors': []
+        }
+
+        # Resolve all usernames/emails to users upfront
+        learner_to_user, user_errors = _resolve_learners_to_users(learners)
+        results['errors'].extend(user_errors)
+
+        # Validate learners for certificate exceptions
+        exceptions_to_create, validation_errors = _validate_learners_for_certificate_exceptions(
+            learner_to_user, course_key
+        )
+        results['errors'].extend(validation_errors)
+
+        # Create all exceptions using the certificates API to ensure idempotency
+        # and avoid race conditions with the unique_together constraint
+        for learner, user in exceptions_to_create:
+            try:
+                certs_api.create_or_update_certificate_allowlist_entry(user, course_key, notes)
+                log.info(
+                    "Certificate exception granted for user %s (%s) in course %s by %s",
+                    user.id, learner, course_key, request.user.username
+                )
+                results['success'].append(learner)
+            except Exception as exc:  # pylint: disable=broad-except
+                log.exception(
+                    "Error creating certificate exception for user %s in course %s",
+                    user.id, course_key
+                )
+                results['errors'].append({
+                    'learner': learner,
+                    'message': str(exc)
+                })
+
+        return Response(results, status=status.HTTP_200_OK)
+
+    def delete(self, request, course_id):
+        """Remove certificate exception (remove from allowlist)."""
+        course_key = CourseKey.from_string(course_id)
+        # Validate that the course exists
+        get_course_by_id(course_key)
+
+        # Validate request data
+        serializer = RemoveCertificateExceptionSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        user = serializer.validated_data['username']
+
+        try:
+            # Remove exception via certificates API so any existing certificate
+            # is invalidated before the allowlist entry is removed
+            if not certs_api.get_allowlist_entry(user, course_key):
+                return Response(
+                    {'message': _('No certificate exception found for this user')},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+            certs_api.remove_allowlist_entry(user, course_key)
+
+            return Response(
+                {'message': _('Certificate exception removed successfully')},
+                status=status.HTTP_200_OK
+            )
+
+        except Exception:  # pylint: disable=broad-except
+            log.exception("Error removing certificate exception for course %s", course_id)
+            return Response(
+                {'message': _('Unable to remove certificate exception')},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+def _resolve_learners_to_users(learners):
+    """
+    Resolve a list of learner identifiers (usernames or emails) to User objects.
+
+    Args:
+        learners: List of learner identifiers (usernames or email addresses)
+
+    Returns:
+        tuple: (learner_to_user, errors) where:
+            - learner_to_user: Dictionary mapping learner identifiers to User objects
+            - errors: List of error dictionaries with 'learner' and 'message' keys
+    """
+    learner_to_user = {}
+    errors = []
+
+    for learner in learners:
+        try:
+            user = get_user_by_username_or_email(learner)
+            learner_to_user[learner] = user
+        except (User.DoesNotExist, User.MultipleObjectsReturned) as exc:
+            errors.append({
+                'learner': learner,
+                'message': str(exc)
+            })
+
+    return learner_to_user, errors
+
+
+def _validate_learners_for_certificate_exceptions(learner_to_user, course_key):
+    """
+    Validate learners to ensure they can receive certificate exceptions.
+
+    Args:
+        learner_to_user: Dictionary mapping learner identifiers to User objects
+        course_key: Course key for the course
+
+    Returns:
+        tuple: (exceptions_to_create, errors) where:
+            - exceptions_to_create: List of (learner, user) tuples ready for exception creation
+            - errors: List of error dictionaries with 'learner' and 'message' keys
+    """
+    errors = []
+    exceptions_to_create = []
+
+    if not learner_to_user:
+        return exceptions_to_create, errors
+
+    users = list(learner_to_user.values())
+    user_ids = [u.id for u in users]
+
+    # Bulk fetch active enrollments
+    enrollments = CourseEnrollment.objects.filter(
+        course_id=course_key,
+        user_id__in=user_ids,
+        is_active=True
+    ).values_list('user_id', flat=True)
+    enrolled_user_ids = set(enrollments)
+
+    # Bulk fetch existing active allowlist entries
+    existing_allowlist = CertificateAllowlist.objects.filter(
+        course_id=course_key,
+        user_id__in=user_ids,
+        allowlist=True
+    ).values_list('user_id', flat=True)
+    allowlisted_user_ids = set(existing_allowlist)
+
+    # Bulk fetch active invalidations
+    active_invalidations = CertificateInvalidation.objects.filter(
+        generated_certificate__course_id=course_key,
+        generated_certificate__user_id__in=user_ids,
+        active=True
+    ).values_list('generated_certificate__user_id', flat=True)
+    invalidated_user_ids = set(active_invalidations)
+
+    # Validate each learner
+    for learner, user in learner_to_user.items():
+        try:
+            # Check if user is enrolled
+            if user.id not in enrolled_user_ids:
+                errors.append({
+                    'learner': learner,
+                    'message': _('User is not enrolled in this course')
+                })
+                continue
+
+            # Check if user already has an exception
+            if user.id in allowlisted_user_ids:
+                errors.append({
+                    'learner': learner,
+                    'message': _('User already has a certificate exception')
+                })
+                continue
+
+            # Check if user has an active invalidation
+            if user.id in invalidated_user_ids:
+                errors.append({
+                    'learner': learner,
+                    'message': _('User has an active certificate invalidation')
+                })
+                continue
+
+            # Learner is ready for exception creation
+            exceptions_to_create.append((learner, user))
+
+        except Exception as exc:  # pylint: disable=broad-except
+            errors.append({
+                'learner': learner,
+                'message': str(exc)
+            })
+
+    return exceptions_to_create, errors
+
+
+def _validate_certificates_for_invalidation(learner_to_user, course_key):
+    """
+    Validate certificates for a set of users to ensure they can be invalidated.
+
+    Args:
+        learner_to_user: Dictionary mapping learner identifiers to User objects
+        course_key: Course key for the course
+
+    Returns:
+        tuple: (certificates_to_invalidate, errors) where:
+            - certificates_to_invalidate: List of (learner, certificate) tuples ready for invalidation
+            - errors: List of error dictionaries with 'learner' and 'message' keys
+    """
+    errors = []
+    certificates_to_invalidate = []
+
+    if not learner_to_user:
+        return certificates_to_invalidate, errors
+
+    users = list(learner_to_user.values())
+    user_ids = [u.id for u in users]
+
+    # Bulk fetch certificates (exclude deleted/deleting status)
+    certificates = GeneratedCertificate.objects.filter(
+        course_id=course_key,
+        user_id__in=user_ids
+    ).exclude(
+        status__in=[CertificateStatuses.deleted, CertificateStatuses.deleting]
+    ).select_related('user')
+    user_id_to_certificate = {cert.user_id: cert for cert in certificates}
+
+    # Validate each learner's certificate
+    for learner, user in learner_to_user.items():
+        try:
+            # Check if certificate exists
+            certificate = user_id_to_certificate.get(user.id)
+            if not certificate:
+                errors.append({
+                    'learner': learner,
+                    'message': _('Certificate not found for this user')
+                })
+                continue
+
+            # Verify that the certificate is valid before invalidating
+            if not certificate.is_valid():
+                errors.append({
+                    'learner': learner,
+                    'message': _('Certificate is already invalid')
+                })
+                continue
+
+            # Certificate is ready for invalidation
+            certificates_to_invalidate.append((learner, certificate))
+
+        except Exception as exc:  # pylint: disable=broad-except
+            errors.append({
+                'learner': learner,
+                'message': str(exc)
+            })
+
+    return certificates_to_invalidate, errors
+
+
+class BulkCertificateExceptionsView(DeveloperErrorViewMixin, APIView):
+    """
+    View to grant certificate exceptions via CSV upload.
+
+    **Example Requests**
+
+        POST /api/instructor/v2/courses/{course_id}/certificates/exceptions/bulk
+
+    **POST Request Body**
+
+        Form data with CSV file uploaded as 'file' field.
+        CSV format: username_or_email,notes (optional second column)
+
+    **Returns**
+
+        * 200: OK - Bulk exceptions processed with success/error details
+        * 400: Bad Request - Invalid CSV file or format
+        * 401: Unauthorized - User is not authenticated
+        * 403: Forbidden - User lacks instructor permissions
+    """
+    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_name = permissions.CERTIFICATE_EXCEPTION_VIEW
+
+    def post(self, request, course_id):
+        """Grant certificate exceptions via CSV upload."""
+        course_key = CourseKey.from_string(course_id)
+        # Validate that the course exists
+        get_course_by_id(course_key)
+
+        # Check if file was uploaded
+        if 'file' not in request.FILES:
+            return Response(
+                {'message': _('No file uploaded')},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        uploaded_file = request.FILES['file']
+
+        # Validate file type
+        if not uploaded_file.name.endswith('.csv'):
+            return Response(
+                {'message': _('File must be in CSV format')},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        results = {
+            'success': [],
+            'errors': []
+        }
+
+        try:
+            file_content = uploaded_file.read().decode('utf-8-sig')
+            csv_reader = list(csv.reader(file_content.splitlines()))
+        except (UnicodeDecodeError, csv.Error) as exc:
+            log.exception("Error processing CSV file for certificate exceptions")
+            return Response(
+                {'message': _('Error processing CSV file: {error}').format(error=str(exc))},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        learners_with_notes = []
+        for row in csv_reader:
+            if not row or not row[0].strip():
+                continue  # Skip empty rows
+
+            learner = row[0].strip()
+            notes = row[1].strip() if len(row) > 1 and row[1].strip() else ''
+
+            learners_with_notes.append((learner, notes))
+
+        if not learners_with_notes:
+            return Response(
+                {'message': _('CSV file is empty or contains no valid entries')},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Extract learners for resolution and build a notes lookup
+        learners = [learner for learner, _ in learners_with_notes]
+        notes_by_learner = dict(learners_with_notes)
+
+        # Resolve all usernames/emails to users upfront
+        learner_to_user, user_errors = _resolve_learners_to_users(learners)
+        results['errors'].extend(user_errors)
+
+        # Validate learners for certificate exceptions
+        exceptions_to_create, validation_errors = _validate_learners_for_certificate_exceptions(
+            learner_to_user, course_key
+        )
+        results['errors'].extend(validation_errors)
+
+        # Create all exceptions using the certificates API
+        for learner, user in exceptions_to_create:
+            notes = notes_by_learner.get(learner, '')
+
+            try:
+                certs_api.create_or_update_certificate_allowlist_entry(user, course_key, notes)
+                log.info(
+                    "Certificate exception granted for user %s (%s) in course %s by %s via CSV upload",
+                    user.id, learner, course_key, request.user.username
+                )
+                results['success'].append(learner)
+            except Exception as exc:  # pylint: disable=broad-except
+                log.exception(
+                    "Error creating certificate exception for user %s in course %s",
+                    user.id, course_key
+                )
+                results['errors'].append({
+                    'learner': learner,
+                    'message': str(exc)
+                })
+
+        return Response(results, status=status.HTTP_200_OK)
+
+
+class CertificateInvalidationsView(DeveloperErrorViewMixin, APIView):
+    """
+    View to invalidate or re-validate certificates.
+
+    **Example Requests**
+
+        POST /api/instructor/v2/courses/{course_id}/certificates/invalidations
+        DELETE /api/instructor/v2/courses/{course_id}/certificates/invalidations
+
+    **POST Request Body**
+
+        {
+            "learners": ["username1", "username2"],
+            "notes": "Reason for invalidation"
+        }
+
+    **DELETE Request Body**
+
+        {
+            "username": "username1"
+        }
+
+    **Returns**
+
+        * 200: OK - Certificate invalidated/re-validated successfully
+        * 400: Bad Request - Invalid request or certificate not found
+        * 401: Unauthorized - User is not authenticated
+        * 403: Forbidden - User lacks instructor permissions
+    """
+    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_name = permissions.CERTIFICATE_INVALIDATION_VIEW
+
+    def post(self, request, course_id):
+        """Invalidate certificates."""
+        course_key = CourseKey.from_string(course_id)
+        # Validate that the course exists
+        get_course_by_id(course_key)
+
+        # Validate request data
+        serializer = CertificateInvalidationSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        learners = serializer.validated_data['learners']
+        notes = serializer.validated_data['notes']
+
+        results = {
+            'success': [],
+            'errors': []
+        }
+
+        # Resolve all usernames/emails to users upfront
+        learner_to_user, user_errors = _resolve_learners_to_users(learners)
+        results['errors'].extend(user_errors)
+
+        # Validate certificates for invalidation
+        certificates_to_invalidate, validation_errors = _validate_certificates_for_invalidation(
+            learner_to_user, course_key
+        )
+        results['errors'].extend(validation_errors)
+
+        # Invalidate certificates using the certificates API to ensure idempotency
+        # and consistency with v1 behavior
+        for learner, certificate in certificates_to_invalidate:
+            try:
+                with transaction.atomic():
+                    # Create invalidation entry (uses update_or_create for idempotency)
+                    certs_api.create_certificate_invalidation_entry(
+                        certificate,
+                        request.user,
+                        notes,
+                    )
+                    # Invalidate the certificate with explicit source for auditability
+                    certificate.invalidate(source='instructor_api_v2')
+                    log.info(
+                        "Certificate invalidated for user %s (%s) in course %s by %s",
+                        certificate.user_id, learner, course_key, request.user.username
+                    )
+                    results['success'].append(learner)
+            except AlreadyRunningError:
+                log.warning(
+                    "Certificate generation already running for user %s in course %s",
+                    certificate.user_id, course_key
+                )
+                results['errors'].append({
+                    'learner': learner,
+                    'message': _('Cannot invalidate certificate while certificate generation is in progress. '
+                                 'Please wait for it to complete.')
+                })
+            except Exception as exc:  # pylint: disable=broad-except
+                log.exception(
+                    "Error invalidating certificate for user %s in course %s",
+                    certificate.user_id, course_key
+                )
+                results['errors'].append({
+                    'learner': learner,
+                    'message': str(exc)
+                })
+
+        return Response(results, status=status.HTTP_200_OK)
+
+    def delete(self, request, course_id):
+        """Re-validate certificate (remove invalidation)."""
+        course_key = CourseKey.from_string(course_id)
+        # Validate that the course exists
+        get_course_by_id(course_key)
+
+        # Validate request data
+        serializer = RemoveCertificateInvalidationSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        user = serializer.validated_data['username']
+
+        try:
+            # Get the certificate (exclude deleted/deleting status)
+            try:
+                certificate = GeneratedCertificate.objects.exclude(
+                    status__in=[CertificateStatuses.deleted, CertificateStatuses.deleting]
+                ).get(
+                    course_id=course_key,
+                    user=user
+                )
+            except GeneratedCertificate.DoesNotExist:
+                return Response(
+                    {'message': _('Certificate not found for this user')},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+            # Remove invalidation and restore certificate generation
+            with transaction.atomic():
+                updated_count = CertificateInvalidation.objects.filter(
+                    generated_certificate=certificate,
+                    active=True
+                ).update(active=False)
+
+                if updated_count == 0:
+                    return Response(
+                        {'message': _('No active invalidation found for this certificate')},
+                        status=status.HTTP_404_NOT_FOUND
+                    )
+
+            # Trigger certificate regeneration after transaction commits
+            log.info(
+                "Re-validating certificate for student %s in course %s - triggering regeneration",
+                user.id, course_key
+            )
+            try:
+                task_api.generate_certificates_for_students(
+                    request, course_key, student_set="specific_student", specific_student_id=user.id
+                )
+            except Exception as cert_gen_error:  # pylint: disable=broad-except
+                # Log but don't fail - the invalidation was already removed
+                log.warning(
+                    "Certificate regeneration failed for student %s in course %s: %s",
+                    user.id, course_key, str(cert_gen_error)
+                )
+
+            return Response(
+                {'message': _('Certificate invalidation removed successfully')},
+                status=status.HTTP_200_OK
+            )
+
+        except Exception as exc:  # pylint: disable=broad-except
+            log.exception("Error removing certificate invalidation for course %s: %s", course_id, str(exc))
+            return Response(
+                {'message': _('Unable to remove certificate invalidation')},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
 class CourseEnrollmentsView(DeveloperErrorViewMixin, ListAPIView):
     """
     List all active enrollments for a course with optional search, filtering, and pagination.
@@ -1754,19 +2531,12 @@ class LearnerView(DeveloperErrorViewMixin, APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        UserModel = get_user_model()
-        try:
-            student = get_user_by_username_or_email(email_or_username)
-        except UserModel.DoesNotExist:
-            return Response(
-                {'error': 'Learner not found'},
-                status=status.HTTP_404_NOT_FOUND
-            )
-        except UserModel.MultipleObjectsReturned:
-            return Response(
-                {'error': 'Multiple learners found for the given identifier'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        # Validate learner identifier
+        serializer = LearnerInputSerializer(data={'email_or_username': email_or_username})
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        student = serializer.validated_data['email_or_username']
 
         # Build progress URL (MFE or legacy depending on feature flag)
         if course_home_mfe_progress_tab_is_active(course_key):
@@ -1903,19 +2673,12 @@ class ProblemView(DeveloperErrorViewMixin, APIView):
 
         learner_identifier = request.query_params.get('email_or_username')
         if learner_identifier:
-            UserModel = get_user_model()
-            try:
-                student = get_user_by_username_or_email(learner_identifier)
-            except UserModel.DoesNotExist:
-                return Response(
-                    {'error': 'Learner not found'},
-                    status=status.HTTP_404_NOT_FOUND
-                )
-            except UserModel.MultipleObjectsReturned:
-                return Response(
-                    {'error': 'Multiple learners found for the given identifier'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+            # Validate learner identifier
+            serializer = LearnerInputSerializer(data={'email_or_username': learner_identifier})
+            if not serializer.is_valid():
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+            student = serializer.validated_data['email_or_username']
 
             try:
                 student_module = StudentModule.objects.get(
@@ -2419,20 +3182,26 @@ class CourseTeamRolesView(DeveloperErrorViewMixin, APIView):
     ``CUSTOM_COURSES_EDX`` feature flag is enabled **and** the course
     has CCX enabled (``course.enable_ccx``).
 
+    When the `editable=true` query parameter is passed, the results
+    are further filtered to only include roles the requesting user has
+    permission to assign. Discussion Administrators will only see forum
+    roles; instructors will see all roles.
+
     **GET Example Request**
 
         GET /api/instructor/v2/courses/{course_id}/team/roles
+        GET /api/instructor/v2/courses/{course_id}/team/roles?editable=true
 
     **GET Response Values**
 
         {
             "course_id": "course-v1:edX+DemoX+Demo_Course",
             "results": [
-                {"role": "beta", "display_name": "Beta Tester"},
-                {"role": "data_researcher", "display_name": "Data Researcher"},
-                {"role": "instructor", "display_name": "Admin"},
+                {"role": "staff", "display_name": "Staff"},
                 {"role": "limited_staff", "display_name": "Limited Staff"},
-                {"role": "staff", "display_name": "Staff"}
+                {"role": "instructor", "display_name": "Admin"},
+                {"role": "beta", "display_name": "Beta Tester"},
+                {"role": "data_researcher", "display_name": "Data Researcher"}
             ]
         }
 
@@ -2449,21 +3218,33 @@ class CourseTeamRolesView(DeveloperErrorViewMixin, APIView):
         course_key = CourseKey.from_string(course_id)
         course = get_course_by_id(course_key)
 
+        editable = request.query_params.get('editable', 'false').lower() == 'true'
+
         roles = set(ROLES.keys()) | set(FORUM_ROLES)
 
         ccx_enabled = settings.FEATURES.get('CUSTOM_COURSES_EDX', False) and course.enable_ccx
         if not ccx_enabled:
             roles.discard('ccx_coach')
 
+        if editable and not has_access(request.user, 'instructor', course):
+            roles = set(FORUM_ROLES)
+
+        role_order = {role: i for i, role in enumerate(INSTRUCTOR_DASHBOARD_ROLE_SORT_ORDER)}
+
         results = [
             {'role': rolename, 'display_name': str(ROLE_DISPLAY_NAMES[rolename])}
-            for rolename in sorted(roles)
+            for rolename in sorted(
+                roles, key=lambda r: role_order.get(r, len(INSTRUCTOR_DASHBOARD_ROLE_SORT_ORDER))
+            )
         ]
 
-        return Response({
-            'course_id': str(course_key),
-            'results': results,
-        }, status=status.HTTP_200_OK)
+        return Response(
+            {
+                'course_id': str(course_key),
+                'results': results,
+            },
+            status=status.HTTP_200_OK
+        )
 
 
 @method_decorator(cache_control(no_cache=True, no_store=True, must_revalidate=True), name='dispatch')
@@ -2653,9 +3434,9 @@ class CourseTeamView(DeveloperErrorViewMixin, APIView):
         rolename = serializer.validated_data['role']
         action = serializer.validated_data['action']
 
-        if rolename == 'instructor' and not has_access(request.user, 'instructor', course):
+        if not is_forum_role(rolename) and not has_access(request.user, 'instructor', course):
             return Response(
-                {'error': _('Managing the instructor role requires instructor access.')},
+                {'error': _('You do not have permissions to change this role.')},
                 status=status.HTTP_403_FORBIDDEN,
             )
 
@@ -2755,11 +3536,13 @@ class CourseTeamMemberView(DeveloperErrorViewMixin, APIView):
 
         roles = revoke_serializer.validated_data['roles']
 
-        if 'instructor' in roles and not has_access(request.user, 'instructor', course):
-            return Response(
-                {'error': _('Managing the instructor role requires instructor access.')},
-                status=status.HTTP_403_FORBIDDEN,
-            )
+        if not has_access(request.user, 'instructor', course):
+            non_forum_roles = [r for r in roles if not is_forum_role(r)]
+            if non_forum_roles:
+                return Response(
+                    {'error': _('You do not have permissions to change the requested roles.')},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
 
         try:
             user = get_student_from_identifier(email_or_username)
@@ -3565,6 +4348,23 @@ class ProctoringSettingsView(DeveloperErrorViewMixin, APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+def add_or_replace_allowance_for_user(exam_id, username_or_email, key, value):
+    """
+    Add an allowance for a user on an exam, removing any existing allowance with a different key.
+
+    Enforces one allowance per user per exam regardless of allowance type. If the user already
+    has an allowance for this exam with a different key, it is removed before the new one is created.
+    """
+    user_id = get_user_by_username_or_email(username_or_email).id
+
+    with transaction.atomic():
+        for allowance in ProctoredExamStudentAllowance.get_allowances_for_user(exam_id, user_id):
+            if allowance.key != key:
+                remove_allowance_for_user(exam_id, user_id, allowance.key)
+
+        add_allowance_for_user(exam_id, username_or_email, key, value)
+
+
 class ExamAllowanceView(DeveloperErrorViewMixin, APIView):
     """
     Grant, update, or remove an allowance for a student on a proctored exam.
@@ -3621,17 +4421,17 @@ class ExamAllowanceView(DeveloperErrorViewMixin, APIView):
 
         validated = serializer.validated_data
         results = []
-        for user_info in validated['user_ids']:
+        for username_or_email in validated['user_ids']:
             try:
-                add_allowance_for_user(
+                add_or_replace_allowance_for_user(
                     int(exam_id),
-                    user_info,
+                    username_or_email,
                     validated['allowance_type'],
                     validated['value'],
                 )
-                results.append({'identifier': user_info, 'success': True})
-            except ProctoredBaseException as err:
-                results.append({'identifier': user_info, 'success': False, 'error': str(err)})
+                results.append({'identifier': username_or_email, 'success': True})
+            except (ProctoredBaseException, User.DoesNotExist, User.MultipleObjectsReturned) as err:
+                results.append({'identifier': username_or_email, 'success': False, 'error': str(err)})
 
         return Response(
             {'allowance_type': validated['allowance_type'], 'results': results},
@@ -3707,6 +4507,40 @@ class ExamAllowanceView(DeveloperErrorViewMixin, APIView):
         )
 
 
+def _sort_in_memory(items, ordering):
+    """
+    Sort a list of dicts by the given ordering param.
+
+    Supports dotted paths (e.g. 'user.username') and descending with '-' prefix.
+
+    Note: Sorting is done in Python because edx_proctoring's API functions
+    (get_all_exam_attempts, get_allowances_for_course) return pre-serialized
+    lists of dicts with no sorting parameter. Database-level sorting would
+    require changes to the edx-proctoring package:
+    https://github.com/openedx/edx-proctoring/issues/1320
+    """
+    if not ordering:
+        return items
+    descending = ordering.startswith('-')
+    field = ordering.lstrip('-')
+
+    def sort_key(item):
+        value = item
+        for part in field.split('.'):
+            if isinstance(value, dict):
+                value = value.get(part)
+            else:
+                value = None
+                break
+        # Return a tuple (is_none, value) so None values sort last
+        # and non-None values compare naturally within their type.
+        if value is None:
+            return (1, '')
+        return (0, value)
+
+    return sorted(items, key=sort_key, reverse=descending)
+
+
 class CourseAllowancesView(DeveloperErrorViewMixin, ListAPIView):
     """
     List or bulk-create exam allowances for a course.
@@ -3715,12 +4549,33 @@ class CourseAllowancesView(DeveloperErrorViewMixin, ListAPIView):
 
         GET /api/instructor/v2/courses/{course_id}/special_exams/allowances
         GET /api/instructor/v2/courses/{course_id}/special_exams/allowances?search=student1
+        GET /api/instructor/v2/courses/{course_id}/special_exams/allowances?ordering=-value
         POST /api/instructor/v2/courses/{course_id}/special_exams/allowances
+
+    **Query Parameters**
+
+        search (optional): Filter by username or email.
+        ordering (optional): Sort by field. Prefix with '-' for descending.
+            Valid values: username, email, exam_name, allowance_type, value.
+        page (optional): Page number for pagination.
+        page_size (optional): Number of results per page.
     """
 
     permission_classes = (IsAuthenticated, permissions.InstructorPermission)
     permission_name = permissions.EXAM_RESULTS
     serializer_class = ExamAllowanceSerializer
+
+    ORDERING_FIELDS = {
+        'username': 'user.username',
+        'user.username': 'user.username',
+        'email': 'user.email',
+        'user.email': 'user.email',
+        'exam_name': 'proctored_exam.exam_name',
+        'proctored_exam.exam_name': 'proctored_exam.exam_name',
+        'allowance_type': 'key',
+        'key': 'key',
+        'value': 'value',
+    }
 
     def get_queryset(self):
         course_id = self.kwargs['course_id']
@@ -3732,6 +4587,11 @@ class CourseAllowancesView(DeveloperErrorViewMixin, ListAPIView):
                 if search in a.get('user', {}).get('username', '').lower()
                 or search in a.get('user', {}).get('email', '').lower()
             ]
+        ordering = self.request.query_params.get('ordering', '')
+        field = ordering.lstrip('-')
+        if field in self.ORDERING_FIELDS:
+            prefix = '-' if ordering.startswith('-') else ''
+            allowances = _sort_in_memory(allowances, prefix + self.ORDERING_FIELDS[field])
         return allowances
 
     def post(self, request, course_id):
@@ -3743,17 +4603,24 @@ class CourseAllowancesView(DeveloperErrorViewMixin, ListAPIView):
         validated = serializer.validated_data
         results = []
         for exam_id in validated['exam_ids']:
-            for user_info in validated['user_ids']:
+            for username_or_email in validated['user_ids']:
                 try:
-                    add_allowance_for_user(
+                    add_or_replace_allowance_for_user(
                         exam_id,
-                        user_info,
+                        username_or_email,
                         validated['allowance_type'],
                         validated['value'],
                     )
-                    results.append({'identifier': user_info, 'exam_id': exam_id, 'success': True})
-                except ProctoredBaseException as err:
-                    results.append({'identifier': user_info, 'exam_id': exam_id, 'success': False, 'error': str(err)})
+                    results.append({'identifier': username_or_email, 'exam_id': exam_id, 'success': True})
+                except (ProctoredBaseException, User.DoesNotExist, User.MultipleObjectsReturned) as err:
+                    results.append(
+                        {
+                            'identifier': username_or_email,
+                            'exam_id': exam_id,
+                            'success': False,
+                            'error': str(err)
+                        }
+                    )
 
         return Response({
             'allowance_type': validated['allowance_type'],
@@ -3764,23 +4631,62 @@ class CourseAllowancesView(DeveloperErrorViewMixin, ListAPIView):
 
 class CourseExamAttemptsView(DeveloperErrorViewMixin, ListAPIView):
     """
-    List all exam attempts across all exams in a course with optional search and pagination.
+    List all exam attempts across all exams in a course with optional search, sorting, and pagination.
 
     **Example Requests**
 
         GET /api/instructor/v2/courses/{course_id}/special_exams/attempts
         GET /api/instructor/v2/courses/{course_id}/special_exams/attempts?search=student1
+        GET /api/instructor/v2/courses/{course_id}/special_exams/attempts?ordering=-started_at
         GET /api/instructor/v2/courses/{course_id}/special_exams/attempts?page=2&page_size=50
+
+    **Query Parameters**
+
+        search (optional): Filter by username or email.
+        ordering (optional): Sort by field. Prefix with '-' for descending.
+            Valid values: username, exam_name, time_limit, type, started_at, completed_at, status.
+        page (optional): Page number for pagination.
+        page_size (optional): Number of results per page.
     """
 
     permission_classes = (IsAuthenticated, permissions.InstructorPermission)
     permission_name = permissions.EXAM_RESULTS
     serializer_class = ExamAttemptSerializer
 
+    ORDERING_FIELDS = {
+        'username': 'user.username',
+        'user.username': 'user.username',
+        'email': 'user.email',
+        'user.email': 'user.email',
+        'exam_name': 'proctored_exam.exam_name',
+        'proctored_exam.exam_name': 'proctored_exam.exam_name',
+        'time_limit': 'proctored_exam.time_limit_mins',
+        'proctored_exam.time_limit_mins': 'proctored_exam.time_limit_mins',
+        'started_at': 'started_at',
+        'start_time': 'started_at',
+        'completed_at': 'completed_at',
+        'end_time': 'completed_at',
+        'status': 'status',
+    }
+
+    @staticmethod
+    def _get_exam_type(attempt):
+        """Derive exam type string for sorting purposes."""
+        return derive_exam_type(attempt.get('proctored_exam', {}))
+
     def get_queryset(self):
         course_id = self.kwargs['course_id']
         search = self.request.query_params.get('search', '').strip()
         if search:
-            # get_filtered_exam_attempts does server-side filtering by username/email
-            return get_filtered_exam_attempts(course_id, search)
-        return get_all_exam_attempts(course_id)
+            attempts = get_filtered_exam_attempts(course_id, search)
+        else:
+            attempts = get_all_exam_attempts(course_id)
+        ordering = self.request.query_params.get('ordering', '')
+        field = ordering.lstrip('-')
+        if field == 'type':
+            descending = ordering.startswith('-')
+            attempts = sorted(attempts, key=self._get_exam_type, reverse=descending)
+        elif field in self.ORDERING_FIELDS:
+            prefix = '-' if ordering.startswith('-') else ''
+            attempts = _sort_in_memory(attempts, prefix + self.ORDERING_FIELDS[field])
+        return attempts

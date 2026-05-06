@@ -1,7 +1,7 @@
 """Tests for the goal_reminder_email command"""
 import uuid
 from datetime import datetime
-from unittest import mock  # lint-amnesty, pylint: disable=wrong-import-order
+from unittest import mock  # pylint: disable=wrong-import-order
 
 import ddt
 from botocore.exceptions import NoCredentialsError

@@ -13,7 +13,7 @@ class CollapsedReferenceSerializer(serializers.HyperlinkedModelSerializer):
     """Serializes arbitrary models in a collapsed format, with just an id and url."""
     url = serializers.HyperlinkedIdentityField(view_name='')
 
-    def __init__(self, model_class, view_name, id_source='id', lookup_field=None, *args, **kwargs):  # lint-amnesty, pylint: disable=keyword-arg-before-vararg
+    def __init__(self, model_class, view_name, id_source='id', lookup_field=None, *args, **kwargs):  # pylint: disable=keyword-arg-before-vararg
         """Configures the serializer.
 
         Args:
@@ -46,7 +46,7 @@ class CollapsedReferenceSerializer(serializers.HyperlinkedModelSerializer):
 class CourseKeyField(serializers.Field):
     """ Serializer field for a model CourseKey field. """
 
-    def to_representation(self, data):  # lint-amnesty, pylint: disable=arguments-differ
+    def to_representation(self, data):  # pylint: disable=arguments-differ
         """Convert a course key to unicode. """
         return str(data)
 
@@ -61,7 +61,7 @@ class CourseKeyField(serializers.Field):
 class UsageKeyField(serializers.Field):
     """ Serializer field for a model UsageKey field. """
 
-    def to_representation(self, data):  # lint-amnesty, pylint: disable=arguments-differ
+    def to_representation(self, data):  # pylint: disable=arguments-differ
         """Convert a usage key to unicode. """
         return str(data)
 

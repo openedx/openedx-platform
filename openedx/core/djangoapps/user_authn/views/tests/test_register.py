@@ -9,7 +9,7 @@ from zoneinfo import ZoneInfo
 import ddt
 import httpretty
 from django.conf import settings
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.core import mail
 from django.core.cache import cache
 from django.test import TransactionTestCase
@@ -2056,7 +2056,7 @@ class RegistrationViewTestV2(RegistrationViewTestV1):
     # pylint: disable=test-inherits-tests
 
     def setUp(self):  # pylint: disable=arguments-differ
-        super(RegistrationViewTestV1, self).setUp()  # lint-amnesty, pylint: disable=bad-super-call
+        super(RegistrationViewTestV1, self).setUp()  # pylint: disable=bad-super-call
         self.url = reverse("user_api_registration_v2")
 
     @override_settings(

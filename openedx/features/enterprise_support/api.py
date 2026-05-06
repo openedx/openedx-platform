@@ -11,7 +11,7 @@ import requests
 from crum import get_current_request
 from django.apps import apps as django_apps
 from django.conf import settings
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.contrib.sites.models import Site
 from django.core.cache import cache
 from django.shortcuts import redirect
@@ -193,7 +193,7 @@ class EnterpriseApiClient:
                 course_id=course_id,
             )
             LOGGER.exception(message)
-            raise EnterpriseApiException(message)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise EnterpriseApiException(message)  # pylint: disable=raise-missing-from  # noqa: B904
 
     def fetch_enterprise_learner_data(self, user):
         """

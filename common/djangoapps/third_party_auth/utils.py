@@ -9,7 +9,7 @@ from zoneinfo import ZoneInfo
 
 import dateutil.parser
 from django.conf import settings
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.utils.timezone import now
 from enterprise.models import EnterpriseCustomerIdentityProvider, EnterpriseCustomerUser
 from lxml import etree
@@ -27,12 +27,12 @@ SAML_XML_NS = 'urn:oasis:names:tc:SAML:2.0:metadata'  # The SAML Metadata XML na
 
 class MetadataParseError(Exception):
     """ An error occurred while parsing the SAML metadata from an IdP """
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 class SAMLMetadataURLError(Exception):
     """ A SAML metadata URL failed security validation """
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 def validate_saml_metadata_url(url):
@@ -151,7 +151,7 @@ def parse_metadata_xml(xml, entity_id):
         # The only binding supported by python-saml and python-social-auth is HTTP-Redirect:
         sso_url = sso_bindings['urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect']
     except KeyError:
-        raise MetadataParseError("Unable to find SSO URL with HTTP-Redirect binding.")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise MetadataParseError("Unable to find SSO URL with HTTP-Redirect binding.")  # pylint: disable=raise-missing-from  # noqa: B904
     return public_keys, sso_url, expires_at
 
 

@@ -16,12 +16,12 @@ from ..helpers import FormDescription, InvalidFieldError, intercept_errors
 
 class FakeInputException(Exception):
     """Fake exception that should be intercepted."""
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 class FakeOutputException(Exception):
     """Fake exception that should be raised."""
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 @intercept_errors(FakeOutputException, ignore_errors=[ValueError])

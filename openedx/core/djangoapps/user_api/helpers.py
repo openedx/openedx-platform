@@ -63,7 +63,7 @@ def intercept_errors(api_error, ignore_errors=None):
                             func_name=func.__name__,
                             args=args,
                             kwargs=kwargs,
-                            exception=ex.developer_message if hasattr(ex, 'developer_message') else repr(ex)  # lint-amnesty, pylint: disable=no-member
+                            exception=ex.developer_message if hasattr(ex, 'developer_message') else repr(ex)  # pylint: disable=no-member
                         )
                         LOGGER.warning(msg)
                         raise
@@ -79,11 +79,11 @@ def intercept_errors(api_error, ignore_errors=None):
                     func_name=func.__name__,
                     args=args,
                     kwargs=kwargs,
-                    exception=ex.developer_message if hasattr(ex, 'developer_message') else repr(ex),  # lint-amnesty, pylint: disable=no-member
+                    exception=ex.developer_message if hasattr(ex, 'developer_message') else repr(ex),  # pylint: disable=no-member
                     caller=caller.strip(),
                 )
                 LOGGER.exception(msg)
-                raise api_error(msg)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+                raise api_error(msg)  # pylint: disable=raise-missing-from  # noqa: B904
         return _wrapped
     return _decorator
 
@@ -353,7 +353,7 @@ class LocalizedJSONEncoder(DjangoJSONEncoder):
     """
     # pylint: disable=method-hidden
 
-    def default(self, obj):  # lint-amnesty, pylint: disable=arguments-differ
+    def default(self, obj):  # pylint: disable=arguments-differ
         """
         Forces evaluation of gettext_lazy promises.
         """

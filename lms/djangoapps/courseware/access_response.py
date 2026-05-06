@@ -135,7 +135,7 @@ class StartDateError(AccessError):
             user_message = _("Course has not started")
         else:
             developer_message = f"Course does not start until {start_date}"
-            user_message = _("Course does not start until {}"  # lint-amnesty, pylint: disable=translation-of-non-string
+            user_message = _("Course does not start until {}"  # pylint: disable=translation-of-non-string
                              .format(f"{start_date:%B %d, %Y}"))
         super().__init__(
             error_code,
@@ -162,7 +162,7 @@ class StartDateEnterpriseLearnerError(AccessError):
             developer_message = (
                 f"Course does not start until {start_date}, and the learner is enrolled via an enterprise subsidy."
             )
-            user_message = _("Course does not start until {}"  # lint-amnesty, pylint: disable=translation-of-non-string
+            user_message = _("Course does not start until {}"  # pylint: disable=translation-of-non-string
                              .format(f"{start_date:%B %d, %Y}"))
         super().__init__(
             error_code,

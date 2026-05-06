@@ -232,14 +232,14 @@ class ProblemViewTestCase(ModuleStoreTestCase):
         self.assertIsNone(data['attempts'])  # noqa: PT009
 
     def test_get_problem_with_unknown_learner_returns_404(self):
-        """Test that a 404 is returned when learner does not exist"""
+        """Test that a 400 is returned when learner does not exist"""
         url = reverse('instructor_api_v2:problem_detail', kwargs={
             'course_id': str(self.course.id),
             'location': str(self.problem.location)
         })
         response = self.client.get(url, {'email_or_username': 'nonexistent_user'})
 
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)  # noqa: PT009
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)  # noqa: PT009
 
     def test_get_problem_requires_authentication(self):
         """Test that endpoint requires authentication"""

@@ -39,9 +39,9 @@ from lms.djangoapps.instructor_task.tests.factories import InstructorTaskFactory
 from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory
 from openedx.features.name_affirmation_api.utils import get_name_affirmation_service
 from xmodule.modulestore.tests.django_utils import (
-    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+    SharedModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 ENROLLMENT_METHOD = 'common.djangoapps.student.models.course_enrollment.CourseEnrollment.enrollment_mode_for_user'
 PROFILE_METHOD = 'common.djangoapps.student.models_api.get_name'
@@ -267,22 +267,22 @@ class TestCertificateGenerationHistory(OpenEdxEventsTestMixin, TestCase):
     ENABLED_OPENEDX_EVENTS = []
 
     @ddt.data(
-        ({"student_set": "allowlisted_not_generated"}, "For exceptions", True),
-        ({"student_set": "allowlisted_not_generated"}, "For exceptions", False),
+        ({"student_set": "allowlisted_not_generated"}, "Granted Exceptions", True),
+        ({"student_set": "allowlisted_not_generated"}, "Granted Exceptions", False),
         # check "students" key for backwards compatibility
-        ({"students": [1, 2, 3]}, "For exceptions", True),
-        ({"students": [1, 2, 3]}, "For exceptions", False),
-        ({}, "All learners", True),
-        ({}, "All learners", False),
+        ({"students": [1, 2, 3]}, "Granted Exceptions", True),
+        ({"students": [1, 2, 3]}, "Granted Exceptions", False),
+        ({}, "All Learners", True),
+        ({}, "All Learners", False),
         # test single status to regenerate returns correctly
-        ({"statuses_to_regenerate": ['downloadable']}, 'already received', True),
-        ({"statuses_to_regenerate": ['downloadable']}, 'already received', False),
+        ({"statuses_to_regenerate": ['downloadable']}, 'Received', True),
+        ({"statuses_to_regenerate": ['downloadable']}, 'Received', False),
         # test that list of > 1 statuses render correctly
-        ({"statuses_to_regenerate": ['downloadable', 'error']}, 'already received, error states', True),
-        ({"statuses_to_regenerate": ['downloadable', 'error']}, 'already received, error states', False),
+        ({"statuses_to_regenerate": ['downloadable', 'error']}, 'Received, Error State', True),
+        ({"statuses_to_regenerate": ['downloadable', 'error']}, 'Received, Error State', False),
         # test that only "readable" statuses are returned
-        ({"statuses_to_regenerate": ['downloadable', 'not_readable']}, 'already received', True),
-        ({"statuses_to_regenerate": ['downloadable', 'not_readable']}, 'already received', False),
+        ({"statuses_to_regenerate": ['downloadable', 'not_readable']}, 'Received', True),
+        ({"statuses_to_regenerate": ['downloadable', 'not_readable']}, 'Received', False),
     )
     @ddt.unpack
     def test_get_certificate_generation_candidates(self, task_input, expected, is_regeneration):

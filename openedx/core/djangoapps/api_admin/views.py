@@ -38,7 +38,7 @@ class ApiRequestView(CreateView):
     template_name = 'api_admin/api_access_request_form.html'
     success_url = reverse_lazy('api_admin:api-status')
 
-    def get(self, request):  # lint-amnesty, pylint: disable=arguments-differ
+    def get(self, request):  # pylint: disable=arguments-differ
         """
         If the requesting user has already requested API access, redirect
         them to the client creation page.
@@ -116,7 +116,7 @@ class ApiRequestStatusView(ApplicationRegistration):
         return self.get(self.request, form)
 
     @require_api_access
-    def post(self, request):  # lint-amnesty, pylint: disable=arguments-differ
+    def post(self, request):  # pylint: disable=arguments-differ
         return super().post(request)
 
 

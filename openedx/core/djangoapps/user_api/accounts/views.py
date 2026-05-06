@@ -36,7 +36,7 @@ from wiki.models import ArticleRevision
 from wiki.models.pluginbase import RevisionPluginRevision
 
 from common.djangoapps.entitlements.models import CourseEntitlement
-from common.djangoapps.student.models import (  # lint-amnesty, pylint: disable=unused-import
+from common.djangoapps.student.models import (  # pylint: disable=unused-import
     CourseEnrollmentAllowed,
     LoginFailures,
     ManualEnrollmentAudit,
@@ -993,7 +993,7 @@ class AccountRetirementStatusView(ViewSet):
             # than one row returned here (due to our MySQL collation being case-insensitive), and need
             # to disambiguate them in Python, which will respect case in the comparison.
             retirement = None
-            if len(retirements) < 1:  # lint-amnesty, pylint: disable=no-else-raise
+            if len(retirements) < 1:  # pylint: disable=no-else-raise
                 raise UserRetirementStatus.DoesNotExist()
             elif len(retirements) >= 1:
                 for r in retirements:

@@ -1,4 +1,4 @@
-# lint-amnesty, pylint: disable=missing-module-docstring
+# pylint: disable=missing-module-docstring
 
 import string
 from uuid import uuid4
@@ -22,7 +22,7 @@ class CourseEntitlementPolicyFactory(factory.django.DjangoModelFactory):
     site = factory.SubFactory(SiteFactory)
 
 
-class CourseEntitlementFactory(factory.django.DjangoModelFactory):  # lint-amnesty, pylint: disable=missing-class-docstring
+class CourseEntitlementFactory(factory.django.DjangoModelFactory):  # pylint: disable=missing-class-docstring
     class Meta:
         model = CourseEntitlement
 

@@ -27,7 +27,7 @@ from cms.djangoapps.contentstore.video_storage_handlers import TranscriptProvide
 from common.djangoapps.student.auth import has_course_author_access
 from common.djangoapps.util.json_request import JsonResponse
 from openedx.core.djangoapps.content_libraries import api as lib_api
-from openedx.core.djangoapps.video_config.transcripts_utils import (  # lint-amnesty, pylint: disable=wrong-import-order
+from openedx.core.djangoapps.video_config.transcripts_utils import (  # pylint: disable=wrong-import-order
     GetTranscriptsFromYouTubeException,
     Transcript,
     TranscriptsRequestValidationException,
@@ -42,11 +42,11 @@ from openedx.core.djangoapps.video_config.transcripts_utils import (  # lint-amn
 )
 from openedx.core.djangoapps.xblock import api as xblock_api
 from openedx.core.djangoapps.xblock.data import CheckPerm
-from xmodule.contentstore.content import StaticContent  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.contentstore.django import contentstore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.exceptions import NotFoundError  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.exceptions import ItemNotFoundError  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.contentstore.content import StaticContent  # pylint: disable=wrong-import-order
+from xmodule.contentstore.django import contentstore  # pylint: disable=wrong-import-order
+from xmodule.exceptions import NotFoundError  # pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
+from xmodule.modulestore.exceptions import ItemNotFoundError  # pylint: disable=wrong-import-order
 
 __all__ = [
     'upload_transcripts',
@@ -309,7 +309,7 @@ def download_transcripts(request):
     try:
         content, filename, mimetype = get_transcript(video, lang='en')
     except NotFoundError:
-        raise Http404  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise Http404  # pylint: disable=raise-missing-from  # noqa: B904
 
     # Construct an HTTP response
     response = HttpResponse(content, content_type=mimetype)
@@ -318,7 +318,7 @@ def download_transcripts(request):
 
 
 @login_required
-def check_transcripts(request):  # lint-amnesty, pylint: disable=too-many-statements
+def check_transcripts(request):  # pylint: disable=too-many-statements
     """
     Check state of transcripts availability.
 
@@ -521,7 +521,7 @@ def _validate_transcripts_data(request):
     try:
         item = _get_item(request, data)
     except (InvalidKeyError, ItemNotFoundError):
-        raise TranscriptsRequestValidationException(_("Can't find item by locator."))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise TranscriptsRequestValidationException(_("Can't find item by locator."))  # pylint: disable=raise-missing-from  # noqa: B904
 
     if item.usage_key.block_type != 'video':
         raise TranscriptsRequestValidationException(_('Transcripts are supported only for "video" blocks.'))

@@ -7,7 +7,7 @@ import json
 import operator
 
 import dateutil
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.http import HttpResponseBadRequest
 from django.utils.translation import gettext as _
 from edx_when import api
@@ -75,7 +75,7 @@ def require_student_from_identifier(unique_student_identifier):
     try:
         return get_student_from_identifier(unique_student_identifier)
     except User.DoesNotExist:
-        raise DashboardError(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise DashboardError(  # pylint: disable=raise-missing-from  # noqa: B904
             _("Could not find student matching identifier: {student_identifier}").format(
                 student_identifier=unique_student_identifier
             )
@@ -90,7 +90,7 @@ def parse_datetime(datestr):
     try:
         return dateutil.parser.parse(datestr).replace(tzinfo=UTC)
     except ValueError:
-        raise DashboardError(_("Unable to parse date: ") + datestr)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise DashboardError(_("Unable to parse date: ") + datestr)  # pylint: disable=raise-missing-from  # noqa: B904
 
 
 def find_unit(course, url):

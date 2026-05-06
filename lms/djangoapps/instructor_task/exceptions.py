@@ -10,9 +10,9 @@ class UpdateProblemModuleStateError(Exception):
     Used when the current module cannot be processed and no more
     modules should be attempted.
     """
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 class DuplicateTaskException(Exception):
     """Exception indicating that a task already exists or has already completed."""
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass

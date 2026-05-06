@@ -1,12 +1,13 @@
 /* global define */
 define([
     'jquery',
+    'sinon',
     'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers',
     'js/certificates/models/certificate_invalidation',
     'js/certificates/views/certificate_invalidation_view',
     'js/certificates/collections/certificate_invalidation_collection'
 ],
-function($, AjaxHelpers, CertificateInvalidationModel, CertificateInvalidationView,
+function($, sinon, AjaxHelpers, CertificateInvalidationModel, CertificateInvalidationView,
     CertificateInvalidationCollection) {
     'use strict';
 
@@ -99,7 +100,8 @@ function($, AjaxHelpers, CertificateInvalidationModel, CertificateInvalidationVi
             invalidate_button = null,
             duplicate_user = 'test2',
             new_user = 'test4@test.com',
-            requests = null;
+            requests = null,
+            xhrFactory = null;
 
         var messages = {
             error: {
@@ -163,7 +165,15 @@ function($, AjaxHelpers, CertificateInvalidationModel, CertificateInvalidationVi
             notes_field = $('#certificate-invalidation-notes');
             invalidate_button = $('#invalidate-certificate');
 
-            requests = AjaxHelpers.requests(this);
+            xhrFactory = sinon.useFakeXMLHttpRequest();
+            requests = [];
+            requests.currentIndex = 0;
+            requests.restore = function() { xhrFactory.restore(); };
+            xhrFactory.onCreate = function(req) { requests.push(req); };
+        });
+
+        afterEach(function() {
+            requests.restore();
         });
 
         it('verifies view is initialized and rendered successfully', function() {

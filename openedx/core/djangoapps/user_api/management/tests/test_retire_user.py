@@ -7,14 +7,14 @@ import csv
 import os
 
 import pytest
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.core.management import CommandError, call_command
 
-from common.djangoapps.student.tests.factories import UserFactory  # lint-amnesty, pylint: disable=wrong-import-order
-from openedx.core.djangoapps.user_api.accounts.tests.retirement_helpers import (  # lint-amnesty, pylint: disable=unused-import, wrong-import-order
+from common.djangoapps.student.tests.factories import UserFactory  # pylint: disable=wrong-import-order
+from openedx.core.djangoapps.user_api.accounts.tests.retirement_helpers import (  # pylint: disable=unused-import, wrong-import-order
     setup_retirement_states,  # noqa: F401
 )
-from openedx.core.djangolib.testing.utils import skip_unless_lms  # lint-amnesty, pylint: disable=wrong-import-order
+from openedx.core.djangolib.testing.utils import skip_unless_lms  # pylint: disable=wrong-import-order
 
 from ...models import UserRetirementStatus
 
@@ -61,7 +61,7 @@ def remove_user_file():
 
 
 @skip_unless_lms
-def test_successful_retire_with_userfile(setup_retirement_states):  # lint-amnesty, pylint: disable=redefined-outer-name, unused-argument  # noqa: F811
+def test_successful_retire_with_userfile(setup_retirement_states):  # pylint: disable=redefined-outer-name, unused-argument  # noqa: F811
     user = UserFactory.create(username='user0', email="user0@example.com")
     username = user.username
     user_email = user.email
@@ -77,7 +77,7 @@ def test_successful_retire_with_userfile(setup_retirement_states):  # lint-amnes
 
 
 @skip_unless_lms
-def test_retire_user_with_usename_email_mismatch(setup_retirement_states):  # lint-amnesty, pylint: disable=redefined-outer-name, unused-argument  # noqa: F811
+def test_retire_user_with_usename_email_mismatch(setup_retirement_states):  # pylint: disable=redefined-outer-name, unused-argument  # noqa: F811
     create_user_file(True)
     with pytest.raises(CommandError, match=r'Could not find users with specified username and email '):
         call_command('retire_user', user_file=user_file)
@@ -85,7 +85,7 @@ def test_retire_user_with_usename_email_mismatch(setup_retirement_states):  # li
 
 
 @skip_unless_lms
-def test_successful_retire_with_username_email(setup_retirement_states):  # lint-amnesty, pylint: disable=redefined-outer-name, unused-argument  # noqa: F811
+def test_successful_retire_with_username_email(setup_retirement_states):  # pylint: disable=redefined-outer-name, unused-argument  # noqa: F811
     user = UserFactory.create(username='user0', email="user0@example.com")
     username = user.username
     user_email = user.email
@@ -99,7 +99,7 @@ def test_successful_retire_with_username_email(setup_retirement_states):  # lint
 
 
 @skip_unless_lms
-def test_retire_with_username_email_userfile(setup_retirement_states):  # lint-amnesty, pylint: disable=redefined-outer-name, unused-argument  # noqa: F811
+def test_retire_with_username_email_userfile(setup_retirement_states):  # pylint: disable=redefined-outer-name, unused-argument  # noqa: F811
     user = UserFactory.create(username='user0', email="user0@example.com")
     username = user.username
     user_email = user.email

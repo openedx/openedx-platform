@@ -1,4 +1,4 @@
-# lint-amnesty, pylint: disable=missing-module-docstring
+# pylint: disable=missing-module-docstring
 
 import copy
 import logging
@@ -40,7 +40,7 @@ _ = lambda text: text
 @XBlock.needs("i18n")
 @XBlock.needs("mako")
 @XBlock.needs("user")
-class _BuiltinHtmlBlockMixin(  # lint-amnesty, pylint: disable=abstract-method
+class _BuiltinHtmlBlockMixin(  # pylint: disable=abstract-method
     XmlMixin, EditingMixin,
     XModuleToXBlockMixin, XModuleMixin,
 ):
@@ -221,7 +221,7 @@ class _BuiltinHtmlBlockMixin(  # lint-amnesty, pylint: disable=abstract-method
     # snippets that will be included in the middle of pages.
 
     @classmethod
-    def load_definition(cls, xml_object, system, location, id_generator):  # lint-amnesty, pylint: disable=arguments-differ
+    def load_definition(cls, xml_object, system, location, id_generator):  # pylint: disable=arguments-differ
         '''Load a descriptor from the specified xml_object:
 
         If there is a filename attribute, load it as a string, and
@@ -371,7 +371,7 @@ class _BuiltinHtmlBlockMixin(  # lint-amnesty, pylint: disable=abstract-method
 
 
 @edxnotes
-class _BuiltInHtmlBlock(_BuiltinHtmlBlockMixin):  # lint-amnesty, pylint: disable=abstract-method
+class _BuiltInHtmlBlock(_BuiltinHtmlBlockMixin):  # pylint: disable=abstract-method
     """
     This is the actual HTML XBlock.
     Nothing extra is required; this is just a wrapper to include edxnotes support.
@@ -398,7 +398,7 @@ def reset_Mixin():
 reset_Mixin()
 
 
-class AboutFields:  # lint-amnesty, pylint: disable=missing-class-docstring
+class AboutFields:  # pylint: disable=missing-class-docstring
     display_name = String(
         help=_("The display name for this component."),
         scope=Scope.settings,
@@ -414,7 +414,7 @@ class AboutFields:  # lint-amnesty, pylint: disable=missing-class-docstring
 @XBlock.tag("detached")
 # ResourceTemplates is required on the LMS side to load template resources for this AboutBlock.
 # On the CMS side, it is already included via XBLOCK_MIXINS.
-class AboutBlock(AboutFields, ResourceTemplates, HtmlBlockMixin):  # lint-amnesty, pylint: disable=abstract-method
+class AboutBlock(AboutFields, ResourceTemplates, HtmlBlockMixin):  # pylint: disable=abstract-method
     """
     These pieces of course content are treated as HtmlBlocks but we need to overload where the templates are located
     in order to be able to create new ones
@@ -449,7 +449,7 @@ class StaticTabFields:
 
 
 @XBlock.tag("detached")
-class StaticTabBlock(StaticTabFields, HtmlBlockMixin):  # lint-amnesty, pylint: disable=abstract-method
+class StaticTabBlock(StaticTabFields, HtmlBlockMixin):  # pylint: disable=abstract-method
     """
     These pieces of course content are treated as HtmlBlocks but we need to overload where the templates are located
     in order to be able to create new ones
@@ -476,7 +476,7 @@ class CourseInfoFields:
 @XBlock.tag("detached")
 @XBlock.needs('replace_urls')
 @XBlock.needs('mako')
-class CourseInfoBlock(CourseInfoFields, HtmlBlockMixin):  # lint-amnesty, pylint: disable=abstract-method
+class CourseInfoBlock(CourseInfoFields, HtmlBlockMixin):  # pylint: disable=abstract-method
     """
     These pieces of course content are treated as HtmlBlock but we need to overload where the templates are located
     in order to be able to create new ones
@@ -510,7 +510,7 @@ class CourseInfoBlock(CourseInfoFields, HtmlBlockMixin):  # lint-amnesty, pylint
             )
 
     @classmethod
-    def order_updates(self, updates):  # lint-amnesty, pylint: disable=bad-classmethod-argument
+    def order_updates(self, updates):  # pylint: disable=bad-classmethod-argument
         """
         Returns any course updates in reverse chronological order.
         """

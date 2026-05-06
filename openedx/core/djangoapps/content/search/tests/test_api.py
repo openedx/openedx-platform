@@ -4,7 +4,7 @@ Tests for the Studio content search API.
 from __future__ import annotations
 
 import copy
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import MagicMock, Mock, call, patch
 
 import ddt
@@ -33,6 +33,13 @@ except RuntimeError:
     SearchAccess = {}
 
 STUDIO_SEARCH_ENDPOINT_URL = "/api/content_search/v2/studio/"
+EMPTY_TAGS = {
+    "taxonomy": [],
+    "level0": [],
+    "level1": [],
+    "level2": [],
+    "level3": [],
+}
 
 
 @ddt.ddt
@@ -61,7 +68,7 @@ class TestSearchApi(ModuleStoreTestCase):
         # Clear the Meilisearch client to avoid side effects from other tests
         api.clear_meilisearch_client()
 
-        modified_date = datetime(2024, 5, 6, 7, 8, 9, tzinfo=timezone.utc)  # noqa: UP017
+        modified_date = datetime(2024, 5, 6, 7, 8, 9, tzinfo=UTC)
         # Create course
         with freeze_time(modified_date):
             self.course = self.store.create_course(
@@ -134,7 +141,7 @@ class TestSearchApi(ModuleStoreTestCase):
         lib_access, _ = SearchAccess.objects.get_or_create(context_key=self.library.key)
 
         # Populate it with 2 problems, freezing the date so we can verify created date serializes correctly.
-        self.created_date = datetime(2023, 4, 5, 6, 7, 8, tzinfo=timezone.utc)  # noqa: UP017
+        self.created_date = datetime(2023, 4, 5, 6, 7, 8, tzinfo=UTC)
         with freeze_time(self.created_date):
             self.problem1 = library_api.create_library_block(self.library.key, "problem", "p1")
             self.problem2 = library_api.create_library_block(self.library.key, "problem", "p2")
@@ -342,29 +349,29 @@ class TestSearchApi(ModuleStoreTestCase):
 
         # Add tags field to doc, since reindex calls includes tags
         doc_sequential = copy.deepcopy(self.doc_sequential)
-        doc_sequential["tags"] = {}
+        doc_sequential["tags"] = copy.deepcopy(EMPTY_TAGS)
         doc_vertical = copy.deepcopy(self.doc_vertical)
-        doc_vertical["tags"] = {}
+        doc_vertical["tags"] = copy.deepcopy(EMPTY_TAGS)
         doc_problem1 = copy.deepcopy(self.doc_problem1)
-        doc_problem1["tags"] = {}
+        doc_problem1["tags"] = copy.deepcopy(EMPTY_TAGS)
         doc_problem1["collections"] = {'display_name': [], 'key': []}
         doc_problem1["units"] = {'display_name': [], 'key': []}
         doc_problem2 = copy.deepcopy(self.doc_problem2)
-        doc_problem2["tags"] = {}
+        doc_problem2["tags"] = copy.deepcopy(EMPTY_TAGS)
         doc_problem2["collections"] = {'display_name': [], 'key': []}
         doc_problem2["units"] = {'display_name': [], 'key': []}
         doc_collection = copy.deepcopy(self.collection_dict)
-        doc_collection["tags"] = {}
+        doc_collection["tags"] = copy.deepcopy(EMPTY_TAGS)
         doc_unit = copy.deepcopy(self.unit_dict)
-        doc_unit["tags"] = {}
+        doc_unit["tags"] = copy.deepcopy(EMPTY_TAGS)
         doc_unit["collections"] = {'display_name': [], 'key': []}
         doc_unit["subsections"] = {'display_name': ['Subsection 1'], 'key': ['lct:org1:lib:subsection:subsection-1']}
         doc_subsection = copy.deepcopy(self.subsection_dict)
-        doc_subsection["tags"] = {}
+        doc_subsection["tags"] = copy.deepcopy(EMPTY_TAGS)
         doc_subsection["collections"] = {'display_name': [], 'key': []}
         doc_subsection["sections"] = {'display_name': ['Section 1'], 'key': ['lct:org1:lib:section:section-1']}
         doc_section = copy.deepcopy(self.section_dict)
-        doc_section["tags"] = {}
+        doc_section["tags"] = copy.deepcopy(EMPTY_TAGS)
         doc_section["collections"] = {'display_name': [], 'key': []}
 
         api.rebuild_index()
@@ -384,29 +391,29 @@ class TestSearchApi(ModuleStoreTestCase):
 
         # Add tags field to doc, since reindex calls includes tags
         doc_sequential = copy.deepcopy(self.doc_sequential)
-        doc_sequential["tags"] = {}
+        doc_sequential["tags"] = copy.deepcopy(EMPTY_TAGS)
         doc_vertical = copy.deepcopy(self.doc_vertical)
-        doc_vertical["tags"] = {}
+        doc_vertical["tags"] = copy.deepcopy(EMPTY_TAGS)
         doc_problem1 = copy.deepcopy(self.doc_problem1)
-        doc_problem1["tags"] = {}
+        doc_problem1["tags"] = copy.deepcopy(EMPTY_TAGS)
         doc_problem1["collections"] = {"display_name": [], "key": []}
         doc_problem1["units"] = {'display_name': [], 'key': []}
         doc_problem2 = copy.deepcopy(self.doc_problem2)
-        doc_problem2["tags"] = {}
+        doc_problem2["tags"] = copy.deepcopy(EMPTY_TAGS)
         doc_problem2["collections"] = {"display_name": [], "key": []}
         doc_problem2["units"] = {'display_name': [], 'key': []}
         doc_collection = copy.deepcopy(self.collection_dict)
-        doc_collection["tags"] = {}
+        doc_collection["tags"] = copy.deepcopy(EMPTY_TAGS)
         doc_unit = copy.deepcopy(self.unit_dict)
-        doc_unit["tags"] = {}
+        doc_unit["tags"] = copy.deepcopy(EMPTY_TAGS)
         doc_unit["collections"] = {"display_name": [], "key": []}
         doc_unit["subsections"] = {'display_name': ['Subsection 1'], 'key': ['lct:org1:lib:subsection:subsection-1']}
         doc_subsection = copy.deepcopy(self.subsection_dict)
-        doc_subsection["tags"] = {}
+        doc_subsection["tags"] = copy.deepcopy(EMPTY_TAGS)
         doc_subsection["collections"] = {'display_name': [], 'key': []}
         doc_subsection["sections"] = {'display_name': ['Section 1'], 'key': ['lct:org1:lib:section:section-1']}
         doc_section = copy.deepcopy(self.section_dict)
-        doc_section["tags"] = {}
+        doc_section["tags"] = copy.deepcopy(EMPTY_TAGS)
         doc_section["collections"] = {'display_name': [], 'key': []}
 
         api.rebuild_index(incremental=True)
@@ -524,11 +531,11 @@ class TestSearchApi(ModuleStoreTestCase):
 
         # Add tags field to doc, since reindex calls includes tags
         doc_sequential = copy.deepcopy(self.doc_sequential)
-        doc_sequential["tags"] = {}
+        doc_sequential["tags"] = copy.deepcopy(EMPTY_TAGS)
         doc_vertical = copy.deepcopy(self.doc_vertical)
-        doc_vertical["tags"] = {}
+        doc_vertical["tags"] = copy.deepcopy(EMPTY_TAGS)
         doc_problem2 = copy.deepcopy(self.doc_problem2)
-        doc_problem2["tags"] = {}
+        doc_problem2["tags"] = copy.deepcopy(EMPTY_TAGS)
         doc_problem2["collections"] = {'display_name': [], 'key': []}
         doc_problem2["units"] = {'display_name': [], 'key': []}
 
@@ -611,14 +618,20 @@ class TestSearchApi(ModuleStoreTestCase):
             "id": self.doc_sequential["id"],
             "tags": {
                 'taxonomy': ['A'],
-                'level0': ['A > one', 'A > two']
+                'level0': ['A > one', 'A > two'],
+                'level1': [],
+                'level2': [],
+                'level3': [],
             }
         }
         doc_sequential_with_tags2 = {
             "id": self.doc_sequential["id"],
             "tags": {
                 'taxonomy': ['A', 'B'],
-                'level0': ['A > one', 'A > two', 'B > four', 'B > three']
+                'level0': ['A > one', 'A > two', 'B > four', 'B > three'],
+                'level1': [],
+                'level2': [],
+                'level3': [],
             }
         }
 
@@ -627,6 +640,41 @@ class TestSearchApi(ModuleStoreTestCase):
             [
                 call([doc_sequential_with_tags1]),
                 call([doc_sequential_with_tags2]),
+            ],
+            any_order=True,
+        )
+
+    @override_settings(MEILISEARCH_ENABLED=True)
+    def test_remove_xblock_tag_clears_index_tags(self, mock_meilisearch) -> None:
+        """
+        Test that removing tags from an XBlock clears tag facets in the index.
+        """
+        # Add a tag first so we can verify it is later cleared.
+        tagging_api.tag_object(str(self.sequential.usage_key), self.taxonomyA, ["one"])
+
+        # Remove all tags for taxonomyA from this object.
+        tagging_api.tag_object(str(self.sequential.usage_key), self.taxonomyA, [])
+
+        doc_with_tag = {
+            "id": self.doc_sequential["id"],
+            "tags": {
+                "taxonomy": ["A"],
+                "level0": ["A > one"],
+                "level1": [],
+                "level2": [],
+                "level3": [],
+            },
+        }
+        doc_without_tags = {
+            "id": self.doc_sequential["id"],
+            "tags": copy.deepcopy(EMPTY_TAGS),
+        }
+
+        assert mock_meilisearch.return_value.index.return_value.update_documents.call_count == 2
+        mock_meilisearch.return_value.index.return_value.update_documents.assert_has_calls(
+            [
+                call([doc_with_tag]),
+                call([doc_without_tags]),
             ],
             any_order=True,
         )
@@ -670,14 +718,20 @@ class TestSearchApi(ModuleStoreTestCase):
             "id": self.doc_problem1["id"],
             "tags": {
                 'taxonomy': ['A'],
-                'level0': ['A > one', 'A > two']
+                'level0': ['A > one', 'A > two'],
+                'level1': [],
+                'level2': [],
+                'level3': [],
             }
         }
         doc_problem_with_tags2 = {
             "id": self.doc_problem1["id"],
             "tags": {
                 'taxonomy': ['A', 'B'],
-                'level0': ['A > one', 'A > two', 'B > four', 'B > three']
+                'level0': ['A > one', 'A > two', 'B > four', 'B > three'],
+                'level1': [],
+                'level2': [],
+                'level3': [],
             }
         }
 
@@ -696,8 +750,10 @@ class TestSearchApi(ModuleStoreTestCase):
         Test indexing an Library Block and the Collections it's in.
         """
         # Create collections (these internally call `upsert_library_collection_index_doc`)
-        created_date = datetime(2023, 5, 6, 7, 8, 9, tzinfo=timezone.utc)  # noqa: UP017
-        with freeze_time(created_date):
+        created_date = datetime(2023, 5, 6, 7, 8, 9, tzinfo=UTC)
+        # Note: because TestCase keeps the transaction open, we need self.captureOnCommitCallbacks(execute=True) to
+        # ensure events get emitted here as if this part were its own transaction as it normally would be.
+        with freeze_time(created_date), self.captureOnCommitCallbacks(execute=True):
             collection1 = library_api.create_library_collection(
                 self.library.key,
                 collection_key="COL1",
@@ -717,9 +773,9 @@ class TestSearchApi(ModuleStoreTestCase):
         # Add Problem1 to both Collections (these internally call `upsert_item_collections_index_docs` and
         # `upsert_library_collection_index_doc`)
         # (adding in reverse order to test sorting of collection tag)
-        updated_date = datetime(2023, 6, 7, 8, 9, 10, tzinfo=timezone.utc)  # noqa: UP017
-        with freeze_time(updated_date):
-            for collection in (collection2, collection1):
+        updated_date = datetime(2023, 6, 7, 8, 9, 10, tzinfo=UTC)
+        for collection in (collection2, collection1):
+            with freeze_time(updated_date), self.captureOnCommitCallbacks(execute=True):
                 library_api.update_library_collection_items(
                     self.library.key,
                     collection_key=collection.collection_code,
@@ -874,14 +930,20 @@ class TestSearchApi(ModuleStoreTestCase):
             "id": "lib-collectionorg1libmycol-5b647617",
             "tags": {
                 'taxonomy': ['A'],
-                'level0': ['A > one', 'A > two']
+                'level0': ['A > one', 'A > two'],
+                'level1': [],
+                'level2': [],
+                'level3': [],
             }
         }
         doc_collection_with_tags2 = {
             "id": "lib-collectionorg1libmycol-5b647617",
             "tags": {
                 'taxonomy': ['A', 'B'],
-                'level0': ['A > one', 'A > two', 'B > four', 'B > three']
+                'level0': ['A > one', 'A > two', 'B > four', 'B > three'],
+                'level1': [],
+                'level2': [],
+                'level3': [],
             }
         }
 
@@ -900,8 +962,10 @@ class TestSearchApi(ModuleStoreTestCase):
         Test soft-deleting, restoring, and hard-deleting a collection.
         """
         # Add a component to the collection
-        updated_date = datetime(2023, 6, 7, 8, 9, 10, tzinfo=timezone.utc)  # noqa: UP017
-        with freeze_time(updated_date):
+        updated_date = datetime(2023, 6, 7, 8, 9, 10, tzinfo=UTC)
+        # Note: because TestCase keeps the transaction open, we need self.captureOnCommitCallbacks(execute=True) to
+        # ensure events get emitted here as if this part were its own transaction as it normally would be.
+        with freeze_time(updated_date), self.captureOnCommitCallbacks(execute=True):
             library_api.update_library_collection_items(
                 self.library.key,
                 collection_key=self.collection.collection_code,
@@ -942,10 +1006,11 @@ class TestSearchApi(ModuleStoreTestCase):
         mock_meilisearch.return_value.index.reset_mock()
 
         # Soft-delete the collection
-        content_api.delete_collection(
-            self.collection.learning_package_id,
-            self.collection.collection_code,
-        )
+        with self.captureOnCommitCallbacks(execute=True):
+            content_api.delete_collection(
+                self.collection.learning_package_id,
+                self.collection.collection_code,
+            )
 
         doc_problem_without_collection = {
             "id": self.doc_problem1["id"],
@@ -975,8 +1040,8 @@ class TestSearchApi(ModuleStoreTestCase):
         mock_meilisearch.return_value.get_index.return_value.get_document.return_value = None
 
         # Restore the collection
-        restored_date = datetime(2023, 8, 9, 10, 11, 12, tzinfo=timezone.utc)  # noqa: UP017
-        with freeze_time(restored_date):
+        restored_date = datetime(2023, 8, 9, 10, 11, 12, tzinfo=UTC)
+        with freeze_time(restored_date), self.captureOnCommitCallbacks(execute=True):
             content_api.restore_collection(
                 self.collection.learning_package_id,
                 self.collection.collection_code,
@@ -999,11 +1064,12 @@ class TestSearchApi(ModuleStoreTestCase):
         mock_meilisearch.return_value.index.reset_mock()
 
         # Hard-delete the collection
-        content_api.delete_collection(
-            self.collection.learning_package_id,
-            self.collection.collection_code,
-            hard_delete=True,
-        )
+        with self.captureOnCommitCallbacks(execute=True):
+            content_api.delete_collection(
+                self.collection.learning_package_id,
+                self.collection.collection_code,
+                hard_delete=True,
+            )
 
         # Should delete the collection document
         mock_meilisearch.return_value.index.return_value.delete_document.assert_called_once_with(
@@ -1026,7 +1092,11 @@ class TestSearchApi(ModuleStoreTestCase):
     @override_settings(MEILISEARCH_ENABLED=True)
     def test_delete_index_container(self, container_type, mock_meilisearch) -> None:
         """
-        Test delete a container index.
+        Test that the search index is updated correctly when a container is deleted.
+
+        That container's entry should be deleted, and its parent and children should also be updated.
+
+        Then test reverting/restoring the container.
         """
         container = getattr(self, container_type)
         container_dict = getattr(self, f"{container_type}_dict")
@@ -1042,20 +1112,27 @@ class TestSearchApi(ModuleStoreTestCase):
                 },
             }
         if container_type == "unit":
+            # The parent subsection's "child_usage_keys" and "child_display_names" should be cleared:
             update_doc_calls.append(call([clear_contents(self.subsection_dict)]))
         elif container_type == "subsection":
+            # The parent section's "child_usage_keys" and "child_display_names" should be cleared:
             update_doc_calls.append(call([clear_contents(self.section_dict)]))
+            # The subsection gets removed from the child unit's "subsections this is used in":
             update_doc_calls.append(call([{
                 'id': self.unit_dict['id'],
                 'subsections': {'display_name': [], 'key': []},
             }]))
         elif container_type == "section":
+            # The subsection gets removed from the child unit's "subsections this is used in":
             update_doc_calls.append(call([{
                 'id': self.subsection_dict['id'],
                 'sections': {'display_name': [], 'key': []},
             }]))
 
-        library_api.delete_container(container.container_key)
+        # Note: because TestCase keeps the transaction open, we need self.captureOnCommitCallbacks(execute=True) to
+        # ensure events get emitted here as if this part were its own transaction as it normally would be.
+        with self.captureOnCommitCallbacks(execute=True):
+            library_api.delete_container(container.container_key)
 
         mock_meilisearch.return_value.index.return_value.delete_document.assert_called_once_with(
             container_dict["id"],
@@ -1068,7 +1145,8 @@ class TestSearchApi(ModuleStoreTestCase):
             )
 
         # Restore
-        library_api.restore_container(container.container_key)
+        with self.captureOnCommitCallbacks(execute=True):
+            library_api.restore_container(container.container_key)
         if container_type == "unit":
             update_doc_calls.append(call([self.subsection_dict]))
         elif container_type == "subsection":
@@ -1130,14 +1208,20 @@ class TestSearchApi(ModuleStoreTestCase):
             "id": container_id,
             "tags": {
                 'taxonomy': ['A'],
-                'level0': ['A > one', 'A > two']
+                'level0': ['A > one', 'A > two'],
+                'level1': [],
+                'level2': [],
+                'level3': [],
             }
         }
         doc_unit_with_tags2 = {
             "id": container_id,
             "tags": {
                 'taxonomy': ['A', 'B'],
-                'level0': ['A > one', 'A > two', 'B > four', 'B > three']
+                'level0': ['A > one', 'A > two', 'B > four', 'B > three'],
+                'level1': [],
+                'level2': [],
+                'level3': [],
             }
         }
 
@@ -1152,7 +1236,10 @@ class TestSearchApi(ModuleStoreTestCase):
 
     @override_settings(MEILISEARCH_ENABLED=True)
     def test_block_in_units(self, mock_meilisearch) -> None:
-        with freeze_time(self.created_date):
+        """Test that search index is updated correctly when we add a problem block to a unit"""
+        # Note: because TestCase keeps the transaction open, we need self.captureOnCommitCallbacks(execute=True) to
+        # ensure events get emitted here as if this part were its own transaction as it normally would be.
+        with freeze_time(self.created_date), self.captureOnCommitCallbacks(execute=True):
             library_api.update_container_children(
                 LibraryContainerLocator.from_string(self.unit_key),
                 [self.problem1.usage_key],
@@ -1175,18 +1262,36 @@ class TestSearchApi(ModuleStoreTestCase):
             }
         }
 
-        assert mock_meilisearch.return_value.index.return_value.update_documents.call_count == 2
+        assert mock_meilisearch.return_value.index.return_value.update_documents.call_count == 4
         mock_meilisearch.return_value.index.return_value.update_documents.assert_has_calls(
             [
+                # The problem block's index document gets updated so that its "[parent] units" field lists the new unit
                 call([doc_block_with_units]),
+                # Update the parent unit so that the problem block is in "child_usage_keys" and "child_display_names"
                 call([new_unit_dict]),
+                # The ancestor containers are updated too, because they're included as dependencies in the event.
+                # We don't really need this.
+                call([self.subsection_dict]),
+                call([self.section_dict]),
             ],
             any_order=True,
         )
 
     @override_settings(MEILISEARCH_ENABLED=True)
     def test_units_in_subsection(self, mock_meilisearch) -> None:
-        with freeze_time(self.created_date):
+        """Test adding a unit to a subsection"""
+
+        # First, remove all children from the subsection:
+        with self.captureOnCommitCallbacks(execute=False):  # suppress events
+            library_api.update_container_children(self.subsection.container_key, [], None)
+
+        # We suppresssed events just now so we don't expect Meilisearch to have updated
+        assert mock_meilisearch.return_value.index.return_value.update_documents.call_count == 0
+
+        # Now add the unit to the subsection - this is what we want to test.
+        # Note: because TestCase keeps the transaction open, we need self.captureOnCommitCallbacks(execute=True) to
+        # ensure events get emitted here as if this part were its own transaction as it normally would be.
+        with freeze_time(self.created_date), self.captureOnCommitCallbacks(execute=True):
             library_api.update_container_children(
                 LibraryContainerLocator.from_string(self.subsection_key),
                 [LibraryContainerLocator.from_string(self.unit_key)],
@@ -1208,21 +1313,36 @@ class TestSearchApi(ModuleStoreTestCase):
                 'child_display_names': [self.unit.display_name]
             }
         }
-        assert mock_meilisearch.return_value.index.return_value.update_documents.call_count == 2
+        assert mock_meilisearch.return_value.index.return_value.update_documents.call_count == 3
         mock_meilisearch.return_value.index.return_value.update_documents.assert_has_calls(
             [
+                # The unit isn't directly modified but its "parent subsections: ..." field must be updated:
                 call([doc_block_with_subsections]),
+                # Update the parent subsection so that the new unit is in "child_usage_keys" and "child_display_names"
                 call([new_subsection_dict]),
+                # The ancestor section is updated too because it's included in the event. We don't really need this.
+                call([self.section_dict]),
             ],
             any_order=True,
         )
 
     @override_settings(MEILISEARCH_ENABLED=True)
-    def test_section_in_usbsections(self, mock_meilisearch) -> None:
-        with freeze_time(self.created_date):
+    def test_section_in_subsections(self, mock_meilisearch) -> None:
+        """Test that search index is updated correctly when we add a subsection to a section"""
+
+        # Setup: first, remove all children from the section:
+        with self.captureOnCommitCallbacks(execute=False):  # suppress events
+            library_api.update_container_children(self.section.container_key, [], None)
+        # We suppresssed events just now so we don't expect Meilisearch to have updated
+        assert mock_meilisearch.return_value.index.return_value.update_documents.call_count == 0
+
+        # Now add the subsection to the section - this is what we want to test.
+        # Note: because TestCase keeps the transaction open, we need self.captureOnCommitCallbacks(execute=True) to
+        # ensure events get emitted here as if this part were its own transaction as it normally would be.
+        with freeze_time(self.created_date), self.captureOnCommitCallbacks(execute=True):
             library_api.update_container_children(
-                LibraryContainerLocator.from_string(self.section_key),
-                [LibraryContainerLocator.from_string(self.subsection_key)],
+                self.section.container_key,
+                [self.subsection.container_key],
                 None,
             )
 
@@ -1244,7 +1364,9 @@ class TestSearchApi(ModuleStoreTestCase):
         assert mock_meilisearch.return_value.index.return_value.update_documents.call_count == 2
         mock_meilisearch.return_value.index.return_value.update_documents.assert_has_calls(
             [
+                # The subsection isn't directly modified but its "parent sections: ..." field must be updated:
                 call([doc_block_with_sections]),
+                # Update the parent section so that the new subsection is in "child_usage_keys" & "child_display_names"
                 call([new_section_dict]),
             ],
             any_order=True,

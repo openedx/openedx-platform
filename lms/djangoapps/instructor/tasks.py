@@ -14,8 +14,8 @@ from common.djangoapps.student.models import get_user_by_username_or_email
 from lms.djangoapps.courseware.block_render import get_block_for_descriptor
 from lms.djangoapps.courseware.model_data import FieldDataCache
 from openedx.core.lib.request_utils import get_request_or_stub
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.exceptions import ItemNotFoundError  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
+from xmodule.modulestore.exceptions import ItemNotFoundError  # pylint: disable=wrong-import-order
 
 log = logging.getLogger(__name__)
 

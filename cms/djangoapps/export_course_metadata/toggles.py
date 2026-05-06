@@ -12,4 +12,4 @@ from edx_toggles.toggles import WaffleFlag
 # .. toggle_creation_date: 2021-03-01
 # .. toggle_target_removal_date: None
 # .. toggle_tickets: AA-461
-EXPORT_COURSE_METADATA_FLAG = WaffleFlag('cms.export_course_metadata', __name__)  # lint-amnesty, pylint: disable=toggle-missing-annotation
+EXPORT_COURSE_METADATA_FLAG = WaffleFlag('cms.export_course_metadata', __name__)  # pylint: disable=toggle-missing-annotation

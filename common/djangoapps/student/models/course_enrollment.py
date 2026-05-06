@@ -1,15 +1,15 @@
 """Models for course enrollment"""
-import hashlib  # lint-amnesty, pylint: disable=wrong-import-order
-import logging  # lint-amnesty, pylint: disable=wrong-import-order
-import uuid  # lint-amnesty, pylint: disable=wrong-import-order
-from collections import defaultdict, namedtuple  # lint-amnesty, pylint: disable=wrong-import-order
-from datetime import date, datetime, timedelta  # lint-amnesty, pylint: disable=wrong-import-order
+import hashlib  # pylint: disable=wrong-import-order
+import logging  # pylint: disable=wrong-import-order
+import uuid  # pylint: disable=wrong-import-order
+from collections import defaultdict, namedtuple  # pylint: disable=wrong-import-order
+from datetime import date, datetime, timedelta  # pylint: disable=wrong-import-order
 from urllib.parse import urljoin
 from zoneinfo import ZoneInfo
 
 from config_models.models import ConfigurationModel
 from django.conf import settings
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.core.cache import cache
 from django.core.exceptions import MultipleObjectsReturned, ObjectDoesNotExist
 from django.core.validators import FileExtensionValidator
@@ -739,7 +739,7 @@ class CourseEnrollment(models.Model):
             )
             if check_access:
                 log.warning("User %s failed to enroll in non-existent course %s", user.username, str(course_key))
-                raise NonExistentCourseError  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+                raise NonExistentCourseError  # pylint: disable=raise-missing-from  # noqa: B904
 
         if check_access:
             if cls.is_enrollment_closed(user, course) and not can_upgrade:
@@ -1316,9 +1316,9 @@ class CourseEnrollment(models.Model):
 
             log.debug(
                 'Schedules: Pulling upgrade deadline for CourseEnrollment %d from Schedule %d.',
-                self.id, self.schedule.id  # lint-amnesty, pylint: disable=no-member
+                self.id, self.schedule.id  # pylint: disable=no-member
             )
-            return self.schedule.upgrade_deadline  # lint-amnesty, pylint: disable=no-member
+            return self.schedule.upgrade_deadline  # pylint: disable=no-member
         except ObjectDoesNotExist:
             # NOTE: Schedule has a one-to-one mapping with CourseEnrollment. If no schedule is associated
             # with this enrollment, Django will raise an exception rather than return None.
@@ -1421,7 +1421,7 @@ class CourseEnrollment(models.Model):
         RequestCache(cls.MODE_CACHE_NAMESPACE).clear()
 
         records = cls.objects.filter(user__in=users, course_id=course_key).select_related('user')
-        cache = cls._get_mode_active_request_cache()  # lint-amnesty, pylint: disable=redefined-outer-name
+        cache = cls._get_mode_active_request_cache()  # pylint: disable=redefined-outer-name
         for record in records:
             enrollment_state = CourseEnrollmentState(record.mode, record.is_active)
             cls._update_enrollment_state_in_cache(cache, record.user.id, course_key, enrollment_state)
@@ -1451,7 +1451,7 @@ class CourseEnrollment(models.Model):
                                               user.id, course_key, enrollment_state)
 
     @classmethod
-    def _update_enrollment_state_in_cache(cls, cache, user_id, course_key, enrollment_state):  # lint-amnesty, pylint: disable=redefined-outer-name
+    def _update_enrollment_state_in_cache(cls, cache, user_id, course_key, enrollment_state):  # pylint: disable=redefined-outer-name
         """
         Updates the cached value for the user's enrollment in the
         given cache.
@@ -1754,7 +1754,7 @@ class EnrollmentRefundConfiguration(ConfigurationModel):
         self.refund_window_microseconds = int(refund_window.total_seconds() * 1000000)
 
 
-class BulkUnenrollConfiguration(ConfigurationModel):  # lint-amnesty, pylint: disable=empty-docstring
+class BulkUnenrollConfiguration(ConfigurationModel):  # pylint: disable=empty-docstring
     """
     .. no_pii:
     """

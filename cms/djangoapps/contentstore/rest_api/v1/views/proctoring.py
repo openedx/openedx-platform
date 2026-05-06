@@ -16,11 +16,11 @@ from cms.djangoapps.models.settings.course_metadata import CourseMetadata
 from common.djangoapps.student.auth import check_course_advanced_settings_access
 from openedx.core.djangoapps.course_apps.toggles import exams_ida_enabled
 from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin, verify_course_exists, view_auth_classes
-from xmodule.course_block import (  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.course_block import (  # pylint: disable=wrong-import-order
     get_available_providers,
     get_requires_escalation_email_providers,
 )
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 
 from ..serializers import (
     LimitedProctoredExamSettingsSerializer,

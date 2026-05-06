@@ -230,7 +230,7 @@ def xblock_type_display_name(xblock, default_display_name=None):
         return _('Problem Bank')
     component_class = XBlock.load_class(category)
     if hasattr(component_class, 'display_name') and component_class.display_name.default:
-        return _(component_class.display_name.default)  # lint-amnesty, pylint: disable=translation-of-non-string
+        return _(component_class.display_name.default)  # pylint: disable=translation-of-non-string
     else:
         return default_display_name
 
@@ -509,8 +509,18 @@ def _fetch_and_set_upstream_link(
             # temp_xblock.display_name == temp_xblock.upstream_display_name
             # temp_xblock.data == temp_xblock.upstream_data   # for html blocks
             # Even then we want to set `downstream_customized` value to avoid overriding user customisations on sync
-            downstream_customized = temp_xblock.xml_attributes.get("downstream_customized", '[]')
-            temp_xblock.downstream_customized = json.loads(downstream_customized)
+            downstream_customized = getattr(temp_xblock, "downstream_customized", [])
+            # XmlMixin blocks expose raw XML attrs on `xml_attributes`; other blocks (e.g. DnD)
+            # may not have this attribute, but still have parsed downstream_customized field.
+            xml_attributes = getattr(temp_xblock, "xml_attributes", None)
+            if isinstance(xml_attributes, dict):
+                raw_downstream_customized = xml_attributes.get("downstream_customized")
+                if isinstance(raw_downstream_customized, str):
+                    downstream_customized = json.loads(raw_downstream_customized)
+                elif isinstance(raw_downstream_customized, list):
+                    downstream_customized = raw_downstream_customized
+            if hasattr(temp_xblock, "downstream_customized"):
+                temp_xblock.downstream_customized = downstream_customized
 
 
 def _import_xml_node_to_parent(
@@ -691,7 +701,7 @@ def _import_files_into_course(
                 pass  # This file already exists; no action needed.
             else:
                 conflicting_files.append(file_data_obj.filename)
-        except Exception:  # lint-amnesty, pylint: disable=broad-except
+        except Exception:  # pylint: disable=broad-except
             error_files.append(file_data_obj.filename)
             log.exception(f"Failed to import Files & Uploads file {file_data_obj.filename}")
 

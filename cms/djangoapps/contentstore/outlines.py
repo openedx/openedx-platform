@@ -18,8 +18,8 @@ from openedx.core.djangoapps.content.learning_sequences.data import (
     ExamData,
     VisibilityData,
 )
-from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore import ModuleStoreEnum  # pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 
 
 def _remove_version_info(usage_key):

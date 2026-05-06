@@ -7,7 +7,7 @@ from datetime import datetime
 from uuid import uuid4
 
 import pytz
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.dispatch import receiver
@@ -113,7 +113,7 @@ class CourseTeam(models.Model):
         return f"{self.name} in {self.course_id}"
 
     def __repr__(self):
-        return (  # lint-amnesty, pylint: disable=missing-format-attribute  # noqa: UP032
+        return (  # pylint: disable=missing-format-attribute  # noqa: UP032
             "<CourseTeam"
             " id={0.id}"
             " team_id={0.team_id}"
@@ -233,7 +233,7 @@ class CourseTeamMembership(models.Model):
         return f"{self.user.username} is member of {self.team}"
 
     def __repr__(self):
-        return (  # lint-amnesty, pylint: disable=missing-format-attribute  # noqa: UP032
+        return (  # pylint: disable=missing-format-attribute  # noqa: UP032
             "<CourseTeamMembership"
             " id={0.id}"
             " user_id={0.user.id}"
@@ -276,7 +276,7 @@ class CourseTeamMembership(models.Model):
                     )
         super().__setattr__(name, value)
 
-    def save(self, *args, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ, signature-differs
+    def save(self, *args, **kwargs):  # pylint: disable=arguments-differ, signature-differs
         """Customize save method to set the last_activity_at if it does not
         currently exist. Also resets the team's size if this model is
         being created.
@@ -290,7 +290,7 @@ class CourseTeamMembership(models.Model):
         if should_reset_team_size:
             self.team.reset_team_size()
 
-    def delete(self, *args, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ, signature-differs
+    def delete(self, *args, **kwargs):  # pylint: disable=arguments-differ, signature-differs
         """Recompute the related team's team_size after deleting a membership"""
         team = self.team  # store reference before deleting
         super().delete(*args, **kwargs)

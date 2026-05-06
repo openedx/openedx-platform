@@ -1,4 +1,4 @@
-#   Copyright (c) 2008 Mikeal Rogers  # lint-amnesty, pylint: disable=missing-module-docstring
+#   Copyright (c) 2008 Mikeal Rogers  # pylint: disable=missing-module-docstring
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ class Template:
         self.engine = kwargs.pop('engine', engines[Engines.MAKO])
         if kwargs.get('origin') is None:
             self.origin = Origin(UNKNOWN_SOURCE)
-        if len(args) and isinstance(args[0], MakoTemplate):  # lint-amnesty, pylint: disable=len-as-condition
+        if len(args) and isinstance(args[0], MakoTemplate):  # pylint: disable=len-as-condition
             self.mako_template = args[0]
         else:
             kwargs['lookup'] = LOOKUP['main']

@@ -294,7 +294,7 @@ class LTI20BlockMixin:
             self.verify_oauth_body_sign(request, content_type=LTI_2_0_JSON_CONTENT_TYPE)
         except (ValueError, LTIError) as err:
             log.info(f"[LTI]: v2.0 result service -- OAuth body verification failed:  {str(err)}")
-            raise LTIError(str(err))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise LTIError(str(err))  # pylint: disable=raise-missing-from  # noqa: B904
 
     def parse_lti_2_0_result_json(self, json_str):
         """
@@ -321,7 +321,7 @@ class LTI20BlockMixin:
         except (ValueError, TypeError):
             msg = f"Supplied JSON string in request body could not be decoded: {json_str}"
             log.info(f"[LTI] {msg}")
-            raise LTIError(msg)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise LTIError(msg)  # pylint: disable=raise-missing-from  # noqa: B904
 
         # the standard supports a list of objects, who knows why. It must contain at least 1 element, and the
         # first element must be a dict
@@ -365,6 +365,6 @@ class LTI20BlockMixin:
         except (TypeError, ValueError) as err:
             msg = f"Could not convert resultScore to float: {str(err)}"
             log.info(f"[LTI] {msg}")
-            raise LTIError(msg)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise LTIError(msg)  # pylint: disable=raise-missing-from  # noqa: B904
 
         return score, json_obj.get('comment', "")

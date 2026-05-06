@@ -121,7 +121,7 @@ class CustomAuthorizationViewTestCase(TestCase):
         self.restricted_dot_app = self._create_restricted_app()
         self._create_expired_token(self.restricted_dot_app)
 
-    def _create_restricted_app(self):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def _create_restricted_app(self):  # pylint: disable=missing-function-docstring
         restricted_app = self.dot_adapter.create_confidential_client(
             name='test restricted dot application',
             user=self.user,

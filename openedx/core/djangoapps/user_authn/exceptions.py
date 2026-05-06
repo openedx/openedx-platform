@@ -9,7 +9,7 @@ class AuthFailedError(Exception):
     This is a helper for the login view, allowing the various sub-methods to error out with an appropriate failure
     message.
     """
-    def __init__(  # lint-amnesty, pylint: disable=dangerous-default-value
+    def __init__(  # pylint: disable=dangerous-default-value
         self, value=None, redirect=None, redirect_url=None, error_code=None, context={},  # noqa: B006
     ):
         super().__init__()

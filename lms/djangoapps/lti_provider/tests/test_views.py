@@ -15,7 +15,7 @@ from common.djangoapps.student.tests.factories import UserFactory
 from lms.djangoapps.courseware.testutils import RenderXBlockTestMixin
 from lms.djangoapps.lti_provider import models, views
 from xmodule.modulestore.tests.django_utils import (
-    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+    ModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
 
 LTI_DEFAULT_PARAMS = {

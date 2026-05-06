@@ -82,12 +82,12 @@ from openedx.core.djangoapps.site_configuration import helpers as configuration_
 from openedx.core.djangolib.js_utils import dump_js_escaped_json
 from openedx.core.lib.api.view_utils import view_auth_classes
 from openedx.core.lib.course_tabs import CourseTabPluginManager
-from xmodule.course_block import CourseBlock, CourseFields  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.error_block import ErrorBlock  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore import EdxJSONEncoder  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.exceptions import DuplicateCourseError  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.tabs import (  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.course_block import CourseBlock, CourseFields  # pylint: disable=wrong-import-order
+from xmodule.error_block import ErrorBlock  # pylint: disable=wrong-import-order
+from xmodule.modulestore import EdxJSONEncoder  # pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
+from xmodule.modulestore.exceptions import DuplicateCourseError  # pylint: disable=wrong-import-order
+from xmodule.tabs import (  # pylint: disable=wrong-import-order
     CourseTab,
     CourseTabList,
     InvalidTabsException,
@@ -152,7 +152,7 @@ class AccessListFallback(Exception):
     An exception that is raised whenever we need to `fall back` to fetching *all* courses
     available to a user, rather than using a shorter method (i.e. fetching by group)
     """
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 def _get_course_block(course_key, depth=0):
@@ -339,7 +339,7 @@ def course_handler(request, course_key_string=None):
         else:
             return HttpResponseNotFound()
     except InvalidKeyError:
-        raise Http404  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise Http404  # pylint: disable=raise-missing-from  # noqa: B904
 
 
 @login_required
@@ -405,7 +405,7 @@ def _course_outline_json(request, course_block):
     return create_xblock_info(
         course_block,
         include_child_info=True,
-        course_outline=False if is_concise else True,  # lint-amnesty, pylint: disable=simplifiable-if-expression
+        course_outline=False if is_concise else True,  # pylint: disable=simplifiable-if-expression
         include_children_predicate=include_children_predicate,
         is_concise=is_concise,
         user=request.user
@@ -1190,7 +1190,7 @@ def create_new_course(user, org, number, run, fields):
     try:
         org_data = ensure_organization(org)
     except InvalidOrganizationException:
-        raise ValidationError(_(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise ValidationError(_(  # pylint: disable=raise-missing-from  # noqa: B904
             'You must link this course to an organization in order to continue. Organization '
             'you selected does not exist in the system, you will need to add it to the system'
         ))
@@ -1299,7 +1299,7 @@ def course_info_handler(request, course_key_string):
     try:
         course_key = CourseKey.from_string(course_key_string)
     except InvalidKeyError:
-        raise Http404  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise Http404  # pylint: disable=raise-missing-from  # noqa: B904
 
     return redirect(get_updates_url(course_key))
 
@@ -1346,7 +1346,7 @@ def course_info_update_handler(request, course_key_string, provided_id=None):
     elif request.method == 'DELETE':
         try:
             return JsonResponse(delete_course_update(usage_key, request.json, provided_id, request.user))
-        except:  # lint-amnesty, pylint: disable=bare-except
+        except:  # pylint: disable=bare-except
             return HttpResponseBadRequest(
                 "Failed to delete",
                 content_type="text/plain"
@@ -1357,7 +1357,7 @@ def course_info_update_handler(request, course_key_string, provided_id=None):
             return JsonResponse(update_course_updates(
                 usage_key, request.json, provided_id, request.user, request.method
             ))
-        except:  # lint-amnesty, pylint: disable=bare-except
+        except:  # pylint: disable=bare-except
             return HttpResponseBadRequest(
                 "Failed to save",
                 content_type="text/plain"
@@ -1368,7 +1368,7 @@ def course_info_update_handler(request, course_key_string, provided_id=None):
 @ensure_csrf_cookie
 @require_http_methods(("GET", "PUT", "POST"))
 @expect_json
-def settings_handler(request, course_key_string):  # lint-amnesty, pylint: disable=too-many-statements
+def settings_handler(request, course_key_string):  # pylint: disable=too-many-statements
     """
     Course settings for dates and about pages
     GET
@@ -1604,7 +1604,7 @@ def update_course_advanced_settings(course_block: CourseBlock, data: Dict, user:
 
 class TextbookValidationError(Exception):
     "An error thrown when a textbook input is invalid"
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 def validate_textbooks_json(text):
@@ -1616,7 +1616,7 @@ def validate_textbooks_json(text):
     try:
         textbooks = json.loads(text)
     except ValueError:
-        raise TextbookValidationError("invalid JSON")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise TextbookValidationError("invalid JSON")  # pylint: disable=raise-missing-from  # noqa: B904
     if not isinstance(textbooks, (list, tuple)):
         raise TextbookValidationError("must be JSON list")
     for textbook in textbooks:
@@ -1639,7 +1639,7 @@ def validate_textbook_json(textbook):
         try:
             textbook = json.loads(textbook)
         except ValueError:
-            raise TextbookValidationError("invalid JSON")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise TextbookValidationError("invalid JSON")  # pylint: disable=raise-missing-from  # noqa: B904
     if not isinstance(textbook, dict):
         raise TextbookValidationError("must be JSON object")
     if not textbook.get("tab_title"):
@@ -1923,7 +1923,7 @@ def group_configurations_detail_handler(request, course_key_string, group_config
 
         if request.method in ('POST', 'PUT'):  # can be either and sometimes django is rewriting one to the other
             try:
-                new_configuration = GroupConfiguration(request.body, course, group_configuration_id).get_user_partition()  # lint-amnesty, pylint: disable=line-too-long
+                new_configuration = GroupConfiguration(request.body, course, group_configuration_id).get_user_partition()  # pylint: disable=line-too-long
             except GroupConfigurationsValidationError as err:
                 return JsonResponse({"error": str(err)}, status=400)
 
@@ -2028,7 +2028,7 @@ def bulk_enable_disable_discussions(request, course_key_string):
                             store.publish(vertical.location, user.id)
                         changed += 1
             return JsonResponse({"units_updated_and_republished": changed})
-        except Exception as e:  # lint-amnesty, pylint: disable=broad-except
+        except Exception as e:  # pylint: disable=broad-except
             log.exception("Exception occurred while enabling/disabling discussion: %s", str(e))
             return JsonResponseBadRequest({"error": str(e)})
 

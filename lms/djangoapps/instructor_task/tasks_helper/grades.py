@@ -43,10 +43,10 @@ from openedx.core.djangoapps.course_groups.cohorts import bulk_cache_cohorts, ge
 from openedx.core.djangoapps.user_api.course_tag.api import BulkCourseTags
 from openedx.core.lib.cache_utils import get_cache
 from openedx.core.lib.courses import get_course_by_id
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 from xmodule.modulestore.exceptions import ItemNotFoundError
-from xmodule.partitions.partitions_service import PartitionService  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.split_test_block import get_split_user_partitions  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.partitions.partitions_service import PartitionService  # pylint: disable=wrong-import-order
+from xmodule.split_test_block import get_split_user_partitions  # pylint: disable=wrong-import-order
 
 from .runner import TaskProgress
 from .utils import upload_csv_file_to_report_store, upload_csv_to_report_store
@@ -247,7 +247,7 @@ class _CertificateBulkContext:
         }
 
 
-class _TeamBulkContext:  # lint-amnesty, pylint: disable=missing-class-docstring
+class _TeamBulkContext:  # pylint: disable=missing-class-docstring
     def __init__(self, context, users):
         self.enabled = context.teams_enabled
         if self.enabled:
@@ -266,7 +266,7 @@ class _EnrollmentBulkContext:
         self.verified_users = set(IDVerificationService.get_verified_user_ids(users))
 
 
-class _CourseGradeBulkContext:  # lint-amnesty, pylint: disable=missing-class-docstring
+class _CourseGradeBulkContext:  # pylint: disable=missing-class-docstring
     def __init__(self, context, users):
         self.certs = _CertificateBulkContext(context, users)
         self.teams = _TeamBulkContext(context, users)
@@ -919,7 +919,7 @@ class ProblemResponses:
         student_data_keys = OrderedDict()
 
         with store.bulk_operations(course_key):
-            for usage_key in usage_keys:  # lint-amnesty, pylint: disable=too-many-nested-blocks
+            for usage_key in usage_keys:  # pylint: disable=too-many-nested-blocks
                 if max_count is not None and max_count <= 0:
                     break
                 course_blocks = get_course_blocks(user, usage_key, transformers=report_transformers)

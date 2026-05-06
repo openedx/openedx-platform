@@ -1,6 +1,6 @@
 define([
-    'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers', 'js/discovery/models/course_discovery'
-], function(AjaxHelpers, CourseDiscovery) {
+    'sinon', 'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers', 'js/discovery/models/course_discovery'
+], function(sinon, AjaxHelpers, CourseDiscovery) {
     'use strict';
 
     var JSON_RESPONSE = {
@@ -70,11 +70,21 @@ define([
     };
 
     describe('discovery.models.CourseDiscovery', function() {
+        var requests, xhrFactory;
+
         beforeEach(function() {
-            var requests = AjaxHelpers.requests(this);
+            xhrFactory = sinon.useFakeXMLHttpRequest();
+            requests = [];
+            requests.currentIndex = 0;
+            requests.restore = function() { xhrFactory.restore(); };
+            xhrFactory.onCreate = function(req) { requests.push(req); };
             this.discovery = new CourseDiscovery();
             this.discovery.fetch();
             AjaxHelpers.respondWithJson(requests, JSON_RESPONSE);
+        });
+
+        afterEach(function() {
+            requests.restore();
         });
 
         it('parses server response', function() {

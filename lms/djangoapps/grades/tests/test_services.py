@@ -15,9 +15,9 @@ from lms.djangoapps.grades.constants import GradeOverrideFeatureEnum
 from lms.djangoapps.grades.models import PersistentSubsectionGrade, PersistentSubsectionGradeOverride
 from lms.djangoapps.grades.services import GradesService
 from xmodule.modulestore.tests.django_utils import (
-    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+    ModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
-from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import (  # pylint: disable=wrong-import-order
     BlockFactory,
     CourseFactory,
 )
@@ -245,7 +245,7 @@ class GradesServiceTests(ModuleStoreTestCase):
             grade=self.grade,
             system=GradeOverrideFeatureEnum.proctoring
         )
-        override_id = override.id  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841
+        override_id = override.id  # pylint: disable=unused-variable  # noqa: F841
         self.service.undo_override_subsection_grade(
             user_id=self.user.id,
             course_key_or_id=self.course.id,

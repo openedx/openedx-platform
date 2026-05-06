@@ -49,7 +49,7 @@ class CustomCoursesForEdxOverrideProvider(FieldOverrideProvider):
         return default
 
     @classmethod
-    def enabled_for(cls, block):  # lint-amnesty, pylint: disable=arguments-differ
+    def enabled_for(cls, block):  # pylint: disable=arguments-differ
         """
         CCX field overrides are enabled for CCX blocks.
         """

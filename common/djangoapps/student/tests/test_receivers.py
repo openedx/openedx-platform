@@ -12,7 +12,7 @@ from lms.djangoapps.courseware.toggles import COURSEWARE_MICROFRONTEND_PROGRESS_
 from openedx.core.djangolib.testing.utils import get_mock_request, skip_unless_lms
 from openedx.features.name_affirmation_api.utils import is_name_affirmation_installed
 from xmodule.modulestore.tests.django_utils import (
-    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+    SharedModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
 
 name_affirmation_installed = is_name_affirmation_installed()

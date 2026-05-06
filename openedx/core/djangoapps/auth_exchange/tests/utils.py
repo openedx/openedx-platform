@@ -61,11 +61,11 @@ class AccessTokenExchangeTestMixin(ThirdPartyOAuthTestMixin):
         for field in ["access_token", "client_id"]:
             data = dict(self.data)
             del data[field]
-            self._assert_error(data, "invalid_request", f"{field} is required")  # lint-amnesty, pylint: disable=no-value-for-parameter
+            self._assert_error(data, "invalid_request", f"{field} is required")  # pylint: disable=no-value-for-parameter
 
     def test_invalid_client(self):
         self.data["client_id"] = "nonexistent_client"
-        self._assert_error(  # lint-amnesty, pylint: disable=no-value-for-parameter
+        self._assert_error(  # pylint: disable=no-value-for-parameter
             self.data,
             "invalid_client",
             "nonexistent_client is not a valid client_id"
@@ -74,7 +74,7 @@ class AccessTokenExchangeTestMixin(ThirdPartyOAuthTestMixin):
     def test_confidential_client(self):
         self.data['client_id'] += '_confidential'
         self.oauth_client = self.create_confidential_client(self.user, self.data['client_id'])
-        self._assert_error(  # lint-amnesty, pylint: disable=no-value-for-parameter
+        self._assert_error(  # pylint: disable=no-value-for-parameter
             self.data,
             "invalid_client",
             f"{self.client_id}_confidential is not a public client",
@@ -88,13 +88,13 @@ class AccessTokenExchangeTestMixin(ThirdPartyOAuthTestMixin):
 
     def test_invalid_acess_token(self):
         self._setup_provider_response(success=False)
-        self._assert_error(self.data, "invalid_grant", "access_token is not valid")  # lint-amnesty, pylint: disable=no-value-for-parameter
+        self._assert_error(self.data, "invalid_grant", "access_token is not valid")  # pylint: disable=no-value-for-parameter
 
     def test_no_linked_user(self):
         UserSocialAuth.objects.all().delete()
         Partial.objects.all().delete()
         self._setup_provider_response(success=True)
-        self._assert_error(self.data, "invalid_grant", "access_token is not valid")  # lint-amnesty, pylint: disable=no-value-for-parameter
+        self._assert_error(self.data, "invalid_grant", "access_token is not valid")  # pylint: disable=no-value-for-parameter
 
     def test_user_automatically_linked_by_email(self):
         UserSocialAuth.objects.all().delete()
@@ -108,4 +108,4 @@ class AccessTokenExchangeTestMixin(ThirdPartyOAuthTestMixin):
         self._setup_provider_response(success=True, email=self.user.email)
         self.user.is_active = False
         self.user.save()
-        self._assert_error(self.data, "invalid_grant", "access_token is not valid")  # lint-amnesty, pylint: disable=no-value-for-parameter
+        self._assert_error(self.data, "invalid_grant", "access_token is not valid")  # pylint: disable=no-value-for-parameter

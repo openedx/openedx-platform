@@ -14,7 +14,7 @@ from completion.exceptions import UnavailableCompletionData
 from completion.utilities import get_key_to_last_completed_block
 from django.conf import settings
 from django.contrib.auth import load_backend
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 from django.core.validators import ValidationError
 from django.db import IntegrityError, ProgrammingError, transaction
@@ -59,7 +59,7 @@ from openedx.core.djangoapps.site_configuration import helpers as configuration_
 from openedx.core.djangoapps.theming.helpers import get_themes
 from openedx.core.djangoapps.user_authn.utils import is_safe_login_or_logout_redirect
 from openedx.core.lib.time_zone_utils import get_time_zone_offset
-from xmodule.data import CertificatesDisplayBehaviors  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.data import CertificatesDisplayBehaviors  # pylint: disable=wrong-import-order
 
 # Enumeration of per-course verification statuses
 # we display on the student dashboard.
@@ -714,14 +714,14 @@ def do_create_account(form, custom_form=None):
         # AccountValidationError and a consistent user message returned (i.e. both should
         # return "It looks like {username} belongs to an existing account. Try again with a
         # different username.")
-        if username_exists_or_retired(user.username):  # lint-amnesty, pylint: disable=no-else-raise
-            raise AccountValidationError(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        if username_exists_or_retired(user.username):  # pylint: disable=no-else-raise
+            raise AccountValidationError(  # pylint: disable=raise-missing-from  # noqa: B904
                 USERNAME_EXISTS_MSG_FMT.format(username=proposed_username),
                 field="username",
                 error_code='duplicate-username',
             )
         elif email_exists_or_retired(user.email):
-            raise AccountValidationError(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise AccountValidationError(  # pylint: disable=raise-missing-from  # noqa: B904
                 _("An account with the Email '{email}' already exists.").format(email=user.email),
                 field="email",
                 error_code='duplicate-email'

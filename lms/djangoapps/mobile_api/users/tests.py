@@ -43,8 +43,8 @@ from openedx.core.djangoapps.discussions.models import DiscussionsConfiguration
 from openedx.core.lib.courses import course_image_url
 from openedx.features.course_duration_limits.models import CourseDurationLimitConfig
 from openedx.features.course_experience.tests.views.helpers import add_course_mode
-from xmodule.course_block import DEFAULT_START_DATE  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.course_block import DEFAULT_START_DATE  # pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import (  # pylint: disable=wrong-import-order
     BlockFactory,
     CourseFactory,
 )
@@ -347,7 +347,7 @@ class TestUserEnrollmentApi(UrlResetMixin, MobileAPITestCase, MobileAuthUserTest
 
         return result
 
-    def _assert_enrollment_results(self, api_version, courses, num_courses_returned, gating_enabled=True):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def _assert_enrollment_results(self, api_version, courses, num_courses_returned, gating_enabled=True):  # pylint: disable=missing-function-docstring
         assert len(courses) == num_courses_returned
 
         if api_version == API_V05:

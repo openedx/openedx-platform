@@ -1,18 +1,49 @@
 define([
-    'underscore', 'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers', 'common/js/spec_helpers/template_helpers',
+    'underscore', 'sinon', 'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers', 'common/js/spec_helpers/template_helpers',
     'common/js/spec_helpers/view_helpers', 'js/models/course', 'js/models/group_configuration', 'js/models/group',
     'js/collections/group_configuration', 'js/collections/group', 'js/views/group_configuration_details',
     'js/views/group_configurations_list', 'js/views/group_configuration_editor', 'js/views/group_configuration_item',
     'js/views/experiment_group_edit', 'js/views/partition_group_list', 'js/views/partition_group_details',
     'js/views/content_group_editor', 'js/views/partition_group_item'
 ], function(
-    _, AjaxHelpers, TemplateHelpers, ViewHelpers, Course, GroupConfigurationModel, GroupModel,
+    _, sinon, AjaxHelpers, TemplateHelpers, ViewHelpers, Course, GroupConfigurationModel, GroupModel,
     GroupConfigurationCollection, GroupCollection, GroupConfigurationDetailsView, GroupConfigurationsListView,
     GroupConfigurationEditorView, GroupConfigurationItemView, ExperimentGroupEditView, GroupList,
     PartitionGroupDetailsView, ContentGroupEditorView, PartitionGroupItemView
 ) {
     'use strict';
 
+    // Wrap all specs in a single describe so that the beforeEach/afterEach below are
+    // scoped to this file only. Without this wrapper those hooks sit at the top level of
+    // the AMD factory, which Jasmine treats as global hooks — they run before/after every
+    // spec in the entire test suite, not just the ones in this file. That causes two problems:
+    //
+    //   1. sinon conflict: other spec files also call sinon.useFakeXMLHttpRequest() in their
+    //      own beforeEach. In sinon v19, restoring one factory clears the .restore() method
+    //      on all other active factories. When the global afterEach then calls
+    //      xhrFactory.restore(), it throws "TypeError: xhrFactory.restore is not a function".
+    //
+    //   2. State leak: the global afterEach deletes window.course, corrupting tests in other
+    //      spec files that set up window.course in their own beforeEach.
+    describe('Group Configurations', function() {
+
+    // Pre-populate the jasmine-fixtures cache for every template used in the inner
+    // beforeEach blocks below. The outer beforeEach installs sinon.useFakeXMLHttpRequest(),
+    // which intercepts the synchronous XHR that readFixtures() uses to load .underscore
+    // files from the Karma server. Calling readFixtures() here — at describe-body level,
+    // before any beforeEach runs — loads the files over real XHR and caches the results.
+    // Subsequent readFixtures() calls inside beforeEach then return from cache without
+    // making a new (intercepted) request.
+    readFixtures(
+        'group-configuration-details.underscore',
+        'group-configuration-editor.underscore',
+        'group-edit.underscore',
+        'list.underscore',
+        'content-group-editor.underscore',
+        'partition-group-details.underscore'
+    );
+
+    var requests, xhrFactory;
     var SELECTORS = {
         detailsView: '.group-configuration-details',
         editView: '.group-configuration-edit',
@@ -101,8 +132,7 @@ define([
         expect(view.$(editView)).not.toExist();
     };
     var assertAndDeleteItemError = function(that, url, promptText) {
-        var requests = AjaxHelpers.requests(that),
-            promptSpy = ViewHelpers.createPromptSpy(),
+        var promptSpy = ViewHelpers.createPromptSpy(),
             notificationSpy = ViewHelpers.createNotificationSpy();
 
         ViewHelpers.clickDeleteItem(that, promptSpy, promptText);
@@ -114,8 +144,7 @@ define([
         expect($(SELECTORS.itemView)).not.toExist();
     };
     var assertAndDeleteItemWithError = function(that, url, listItemView, promptText) {
-        var requests = AjaxHelpers.requests(that),
-            promptSpy = ViewHelpers.createPromptSpy(),
+        var promptSpy = ViewHelpers.createPromptSpy(),
             notificationSpy = ViewHelpers.createNotificationSpy();
 
         ViewHelpers.clickDeleteItem(that, promptSpy, promptText);
@@ -143,6 +172,11 @@ define([
     };
 
     beforeEach(function() {
+        xhrFactory = sinon.useFakeXMLHttpRequest();
+        requests = [];
+        requests.currentIndex = 0;
+        requests.restore = function() { xhrFactory.restore(); };
+        xhrFactory.onCreate = function(req) { requests.push(req); };
         window.course = new Course({
             id: '5',
             name: 'Course Name',
@@ -220,6 +254,7 @@ define([
     });
 
     afterEach(function() {
+        requests.restore();
         delete window.course;
     });
 
@@ -400,8 +435,7 @@ define([
         });
 
         it('should save properly', function() {
-            var requests = AjaxHelpers.requests(this),
-                notificationSpy = ViewHelpers.createNotificationSpy(),
+            var notificationSpy = ViewHelpers.createNotificationSpy(),
                 groups;
 
             this.view.$('.action-add-group').click();
@@ -424,8 +458,7 @@ define([
         });
 
         it('does not hide saving message if failure', function() {
-            var requests = AjaxHelpers.requests(this),
-                notificationSpy = ViewHelpers.createNotificationSpy();
+            var notificationSpy = ViewHelpers.createNotificationSpy();
 
             setValuesToInputs(this.view, {inputName: 'New Configuration'});
             ViewHelpers.submitAndVerifyFormError(this.view, requests, notificationSpy);
@@ -463,8 +496,6 @@ define([
         });
 
         it('should be possible to correct validation errors', function() {
-            var requests = AjaxHelpers.requests(this);
-
             // Set incorrect value
             setValuesToInputs(this.view, {inputName: ''});
             // Try to save
@@ -798,8 +829,7 @@ define([
         });
 
         it('can create an initial group and save', function() {
-            var requests = AjaxHelpers.requests(this),
-                newGroupName = 'New Group Name',
+            var newGroupName = 'New Group Name',
                 view = renderView();
             editNewGroup(view, {newName: newGroupName, save: true});
             respondToSave(requests, view);
@@ -808,8 +838,7 @@ define([
         });
 
         it('can add another group and save', function() {
-            var requests = AjaxHelpers.requests(this),
-                oldGroupName = 'Old Group Name',
+            var oldGroupName = 'Old Group Name',
                 newGroupName = 'New Group Name',
                 view = renderView({1: oldGroupName});
             editNewGroup(view, {newName: newGroupName, save: true});
@@ -819,8 +848,7 @@ define([
         });
 
         it('can cancel adding a group', function() {
-            var requests = AjaxHelpers.requests(this),
-                newGroupName = 'New Group Name',
+            var newGroupName = 'New Group Name',
                 view = renderView();
             editNewGroup(view, {newName: newGroupName, cancel: true});
             AjaxHelpers.expectNoRequests(requests);
@@ -829,8 +857,7 @@ define([
         });
 
         it('can cancel editing a group', function() {
-            var requests = AjaxHelpers.requests(this),
-                originalGroupName = 'Original Group Name',
+            var originalGroupName = 'Original Group Name',
                 view = renderView([originalGroupName]);
             editExistingGroup(view, {newName: 'New Group Name', cancel: true});
             verifyEditingGroup(view, false);
@@ -839,8 +866,7 @@ define([
         });
 
         it('can show and correct a validation error', function() {
-            var requests = AjaxHelpers.requests(this),
-                newGroupName = 'New Group Name',
+            var newGroupName = 'New Group Name',
                 view = renderView();
             editNewGroup(view, {newName: '', save: true});
             AjaxHelpers.expectNoRequests(requests);
@@ -848,8 +874,7 @@ define([
         });
 
         it('can not invalidate an existing content group', function() {
-            var requests = AjaxHelpers.requests(this),
-                oldGroupName = 'Old Group Name',
+            var oldGroupName = 'Old Group Name',
                 view = renderView([oldGroupName]);
             editExistingGroup(view, {newName: '', save: true});
             AjaxHelpers.expectNoRequests(requests);
@@ -857,8 +882,7 @@ define([
         });
 
         it('trims whitespace', function() {
-            var requests = AjaxHelpers.requests(this),
-                newGroupName = 'New Group Name',
+            var newGroupName = 'New Group Name',
                 view = renderView();
             editNewGroup(view, {newName: '  ' + newGroupName + '  ', save: true});
             respondToSave(requests, view);
@@ -963,8 +987,7 @@ define([
         });
 
         it('should save properly', function() {
-            var requests = AjaxHelpers.requests(this),
-                notificationSpy = ViewHelpers.createNotificationSpy();
+            var notificationSpy = ViewHelpers.createNotificationSpy();
 
             this.view.$('.action-add').click();
             this.view.$(SELECTORS.inputName).val('New Content Group');
@@ -978,8 +1001,7 @@ define([
         });
 
         it('does not hide saving message if failure', function() {
-            var requests = AjaxHelpers.requests(this),
-                notificationSpy = ViewHelpers.createNotificationSpy();
+            var notificationSpy = ViewHelpers.createNotificationSpy();
             this.view.$(SELECTORS.inputName).val('New Content Group');
 
             ViewHelpers.submitAndVerifyFormError(this.view, requests, notificationSpy);
@@ -1052,4 +1074,6 @@ define([
             );
         });
     });
+
+    }); // end describe('Group Configurations')
 });

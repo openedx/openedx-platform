@@ -30,19 +30,19 @@ class BlockMock(Mock):
         """
         A test handler method.
         """
-        pass  # lint-amnesty, pylint: disable=unnecessary-pass
+        pass  # pylint: disable=unnecessary-pass
 
     def handler1(self, _context):
         """
         A test handler method.
         """
-        pass  # lint-amnesty, pylint: disable=unnecessary-pass
+        pass  # pylint: disable=unnecessary-pass
 
     def handler_a(self, _context):
         """
         A test handler method.
         """
-        pass  # lint-amnesty, pylint: disable=unnecessary-pass
+        pass  # pylint: disable=unnecessary-pass
 
 
 class TestHandlerUrl(TestCase):

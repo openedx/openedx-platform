@@ -241,7 +241,7 @@ class SafeCookieData:
             raw_cookie_components = str(safe_cookie_string).split(cls.SEPARATOR)
             safe_cookie_data = SafeCookieData(*raw_cookie_components)
         except TypeError:
-            raise SafeCookieError(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise SafeCookieError(  # pylint: disable=raise-missing-from  # noqa: B904
                 f"SafeCookieData BWC parse error: {safe_cookie_string!r}."
             )
         if safe_cookie_data.version != cls.CURRENT_VERSION:
@@ -391,7 +391,7 @@ class SafeSessionMiddleware(SessionMiddleware, MiddlewareMixin):
                 # Save off for debugging and logging in _verify_user_and_log_mismatch
                 request.cookie_session_field = safe_cookie_data.session_id
 
-        process_request_response = super().process_request(request)  # Step 3  # lint-amnesty, pylint: disable=assignment-from-no-return, super-with-arguments
+        process_request_response = super().process_request(request)  # Step 3  # pylint: disable=assignment-from-no-return, super-with-arguments
         if process_request_response:
             # The process_request pipeline has been short circuited so
             # return the response.

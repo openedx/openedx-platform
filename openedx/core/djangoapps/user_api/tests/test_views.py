@@ -13,9 +13,9 @@ from openedx.core.djangolib.testing.utils import CacheIsolationTestCase, skip_un
 from openedx.core.lib.api.test_utils import TEST_API_KEY, ApiTestCase
 from openedx.core.lib.time_zone_utils import get_display_time_zone
 from xmodule.modulestore.tests.django_utils import (
-    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+    SharedModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 from ..accounts.tests.retirement_helpers import (  # pylint: disable=unused-import
     RetirementTestCase,  # noqa: F401
@@ -58,7 +58,7 @@ class UserAPITestCase(ApiTestCase):
         self.assertCountEqual(list(user.keys()), ["email", "id", "name", "username", "preferences", "url"])  # noqa: PT009  # pylint: disable=line-too-long
         self.assertCountEqual(  # noqa: PT009
             list(user["preferences"].items()),
-            [(pref.key, pref.value) for pref in self.prefs if pref.user.id == user["id"]]  # lint-amnesty, pylint: disable=no-member
+            [(pref.key, pref.value) for pref in self.prefs if pref.user.id == user["id"]]  # pylint: disable=no-member
         )
         self.assertSelfReferential(user)
 

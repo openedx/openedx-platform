@@ -12,7 +12,7 @@ def html_to_text(html_message):
     Currently uses lynx in a subprocess; should be refactored to
     use something more pythonic.
     """
-    process = Popen(  # lint-amnesty, pylint: disable=consider-using-with
+    process = Popen(  # pylint: disable=consider-using-with
         ['lynx', '-stdin', '-display_charset=UTF-8', '-assume_charset=UTF-8', '-dump'],
         stdin=PIPE,
         stdout=PIPE

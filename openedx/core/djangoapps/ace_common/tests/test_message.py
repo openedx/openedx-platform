@@ -10,7 +10,7 @@ from openedx.core.djangoapps.ace_common.message import BaseMessageType
 
 
 @ddt.ddt
-class TestAbsoluteUrl(TestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class TestAbsoluteUrl(TestCase):  # pylint: disable=missing-class-docstring
 
     @ddt.data(
         ('test@example.com', True),

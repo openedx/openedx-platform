@@ -87,6 +87,26 @@ v2_api_urls = [
         name='certificate_config'
     ),
     re_path(
+        rf'^courses/{COURSE_ID_PATTERN}/certificates/toggle_generation$',
+        api_v2.ToggleCertificateGenerationView.as_view(),
+        name='toggle_certificate_generation'
+    ),
+    re_path(
+        rf'^courses/{COURSE_ID_PATTERN}/certificates/exceptions$',
+        api_v2.CertificateExceptionsView.as_view(),
+        name='certificate_exceptions'
+    ),
+    re_path(
+        rf'^courses/{COURSE_ID_PATTERN}/certificates/exceptions/bulk$',
+        api_v2.BulkCertificateExceptionsView.as_view(),
+        name='bulk_certificate_exceptions'
+    ),
+    re_path(
+        rf'^courses/{COURSE_ID_PATTERN}/certificates/invalidations$',
+        api_v2.CertificateInvalidationsView.as_view(),
+        name='certificate_invalidations'
+    ),
+    re_path(
         rf'^courses/{COURSE_ID_PATTERN}/enrollments$',
         api_v2.CourseEnrollmentsView.as_view(),
         name='course_enrollments'

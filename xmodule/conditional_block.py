@@ -177,7 +177,7 @@ class ConditionalBlock(
                     for item in ConditionalBlock.parse_sources(self.xml_attributes)
                 ]
 
-    def is_condition_satisfied(self):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def is_condition_satisfied(self):  # pylint: disable=missing-function-docstring
         attr_name = self.conditions_map[self.conditional_attr]
 
         if self.conditional_value and self.get_required_blocks:
@@ -329,7 +329,7 @@ class ConditionalBlock(
                 try:
                     block = system.process_xml(etree.tostring(child, encoding='unicode'))
                     children.append(block.scope_ids.usage_id)
-                except:  # lint-amnesty, pylint: disable=bare-except
+                except:  # pylint: disable=bare-except
                     msg = "Unable to load child when parsing Conditional."
                     log.exception(msg)
                     system.error_tracker(msg)

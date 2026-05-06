@@ -7,7 +7,7 @@ import all the Studio code.
 import os  # noqa: F401
 from textwrap import dedent
 
-from cms.envs.common import (  # lint-amnesty, pylint: disable=unused-import
+from cms.envs.common import (  # pylint: disable=unused-import
     ADVANCED_PROBLEM_TYPES,  # noqa: F401
     COURSE_IMPORT_EXPORT_STORAGE,  # noqa: F401
     ENABLE_SEND_XBLOCK_LIFECYCLE_EVENTS_OVER_BUS,  # noqa: F401
@@ -17,7 +17,7 @@ from cms.envs.common import (  # lint-amnesty, pylint: disable=unused-import
     UPDATE_SEARCH_INDEX_JOB_QUEUE,  # noqa: F401
     VIDEO_TRANSCRIPT_MIGRATIONS_JOB_QUEUE,  # noqa: F401
 )
-from lms.envs.common import *  # lint-amnesty, pylint: disable=wildcard-import  # noqa: F403
+from lms.envs.common import *  # pylint: disable=wildcard-import  # noqa: F403
 from openedx.core.lib.derived import derive_settings
 
 # Turn on all the boolean feature flags, so that conditionally included

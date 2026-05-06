@@ -6,7 +6,7 @@ import uuid
 
 from django.conf import settings
 from django.contrib.auth import login as django_login
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.core.exceptions import PermissionDenied
 from django.core.validators import ValidationError
 from django.http import HttpResponseForbidden
@@ -14,7 +14,7 @@ from django.shortcuts import redirect
 from django.template.context_processors import csrf
 from django.urls import NoReverseMatch, reverse
 from django.utils.translation import gettext as _
-from edx_django_utils.user import generate_password  # lint-amnesty, pylint: disable=wrong-import-order
+from edx_django_utils.user import generate_password  # pylint: disable=wrong-import-order
 from opaque_keys.edx.locator import CourseLocator
 
 from common.djangoapps.student.helpers import (

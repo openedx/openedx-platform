@@ -10,7 +10,7 @@ from collections import defaultdict
 from contextlib import contextmanager
 from dataclasses import dataclass
 
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from opaque_keys.edx.django.models import CourseKeyField
 from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locator import CourseLocator
@@ -172,7 +172,7 @@ def get_authz_compat_course_access_roles_for_user(user: User) -> set[AuthzCompat
     return compat_role_assignments
 
 
-class BulkRoleCache:  # lint-amnesty, pylint: disable=missing-class-docstring
+class BulkRoleCache:  # pylint: disable=missing-class-docstring
     """
     This class provides a caching mechanism for roles grouped by users and courses,
     using a nested dictionary structure to optimize lookup performance. The cache structure is designed as follows:
@@ -196,7 +196,7 @@ class BulkRoleCache:  # lint-amnesty, pylint: disable=missing-class-docstring
     CACHE_KEY = 'roles_by_user'
 
     @classmethod
-    def prefetch(cls, users):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def prefetch(cls, users):  # pylint: disable=missing-function-docstring
         roles_by_user = defaultdict(lambda: defaultdict(set))
         get_cache(cls.CACHE_NAMESPACE)[cls.CACHE_KEY] = roles_by_user
 
@@ -324,14 +324,14 @@ class AccessRole(metaclass=ABCMeta):
         """
         Add the role to the supplied django users.
         """
-        pass  # lint-amnesty, pylint: disable=unnecessary-pass
+        pass  # pylint: disable=unnecessary-pass
 
     @abstractmethod
     def remove_users(self, *users):
         """
         Remove the role from the supplied django users.
         """
-        pass  # lint-amnesty, pylint: disable=unnecessary-pass
+        pass  # pylint: disable=unnecessary-pass
 
     @abstractmethod
     def users_with_role(self):
@@ -429,7 +429,7 @@ class RoleBase(AccessRole):
         """
         # silently ignores anonymous and inactive users so that any that are
         # legit get updated.
-        from common.djangoapps.student.models import (  # lint-amnesty, pylint: disable=redefined-outer-name, reimported
+        from common.djangoapps.student.models import (  # pylint: disable=redefined-outer-name, reimported
             CourseAccessRole,
         )
         for user in users:
@@ -593,17 +593,17 @@ class CourseRole(RoleBase):
         super().__init__(role, course_key.org, course_key)
 
     @classmethod
-    def _authz_course_group_already_exists(cls, course_key):  # lint-amnesty, pylint: disable=bad-classmethod-argument
+    def _authz_course_group_already_exists(cls, course_key):  # pylint: disable=bad-classmethod-argument
         # AuthZ compatibility layer
         return len(authz_api.get_all_user_role_assignments_in_scope(scope_external_key=str(course_key))) > 0
 
     @classmethod
-    def _legacy_course_group_already_exists(cls, course_key):  # lint-amnesty, pylint: disable=bad-classmethod-argument
+    def _legacy_course_group_already_exists(cls, course_key):  # pylint: disable=bad-classmethod-argument
         # Legacy implementation
         return CourseAccessRole.objects.filter(org=course_key.org, course_id=course_key).exists()
 
     @classmethod
-    def course_group_already_exists(cls, course_key):  # lint-amnesty, pylint: disable=bad-classmethod-argument
+    def course_group_already_exists(cls, course_key):  # pylint: disable=bad-classmethod-argument
         """
         Returns whether role assignations for a course already exist
         """

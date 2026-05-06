@@ -8,13 +8,10 @@ from django.conf import settings
 from django.http.response import Http404
 from django.shortcuts import redirect
 
-from common.djangoapps.edxmako.shortcuts import render_to_response
-
 from ..config.waffle import ENABLE_ACCESSIBILITY_POLICY_PAGE
-from ..toggles import use_legacy_logged_out_home
 
 __all__ = [
-    'register_redirect_to_lms', 'login_redirect_to_lms', 'howitworks', 'accessibility',
+    'register_redirect_to_lms', 'login_redirect_to_lms', 'accessibility',
     'redirect_to_lms_login_for_admin',
 ]
 
@@ -60,15 +57,6 @@ def _build_next_param(request):
         absolute_next_url = request.build_absolute_uri(next_url)
         return '?next=' + quote_plus(absolute_next_url)
     return ''
-
-
-def howitworks(request):
-    """
-    Deprecated logged-out home page. New behavior is just login w/ redirect to studio course list.
-    """
-    if use_legacy_logged_out_home() and not request.user.is_authenticated:
-        return render_to_response('howitworks.html', {})
-    return redirect('/home/')
 
 
 def accessibility(request):

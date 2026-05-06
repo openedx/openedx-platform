@@ -1,4 +1,4 @@
-# lint-amnesty, pylint: disable=missing-module-docstring
+# pylint: disable=missing-module-docstring
 from wiki.core.plugins import registry as plugin_registry
 from wiki.core.plugins.base import BasePlugin
 

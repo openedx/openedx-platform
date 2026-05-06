@@ -193,7 +193,7 @@ class BlockStructureStore:
             # Somehow failed to de-serialized the data, assume it's corrupt.
             bs_model = self._get_model(root_block_usage_key)
             logger.exception("BlockStructure: Failed to load data from cache for %s", bs_model)
-            raise BlockStructureNotFound(bs_model.data_usage_key)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise BlockStructureNotFound(bs_model.data_usage_key)  # pylint: disable=raise-missing-from  # noqa: B904
 
         return BlockStructureFactory.create_new(
             root_block_usage_key,

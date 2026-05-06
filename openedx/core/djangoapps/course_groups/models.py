@@ -6,20 +6,20 @@ Django models related to course groups functionality.
 import json
 import logging
 
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
 from django.db.models.signals import pre_delete
 from django.dispatch import receiver
 from opaque_keys.edx.django.models import CourseKeyField
-from openedx_events.learning.data import (  # lint-amnesty, pylint: disable=wrong-import-order
+from openedx_events.learning.data import (  # pylint: disable=wrong-import-order
     CohortData,
     CourseData,
     UserData,
     UserPersonalData,
 )
 from openedx_events.learning.signals import (
-    COHORT_MEMBERSHIP_CHANGED,  # lint-amnesty, pylint: disable=wrong-import-order
+    COHORT_MEMBERSHIP_CHANGED,  # pylint: disable=wrong-import-order
 )
 from openedx_filters.learning.filters import CohortAssignmentRequested, CohortChangeRequested
 
@@ -104,7 +104,7 @@ class CohortMembership(models.Model):  # noqa: DJ008
     class Meta:
         unique_together = (('user', 'course_id'), )
 
-    def clean_fields(self, *args, **kwargs):  # lint-amnesty, pylint: disable=signature-differs
+    def clean_fields(self, *args, **kwargs):  # pylint: disable=signature-differs
         if self.course_id is None:
             self.course_id = self.course_user_group.course_id
         super().clean_fields(*args, **kwargs)

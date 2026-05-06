@@ -11,9 +11,9 @@ from django.test import TestCase
 
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.user_api.partition_schemes import RandomUserPartitionScheme, UserPartitionError
-from xmodule.partitions.partitions import Group, UserPartition  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.partitions.partitions import Group, UserPartition  # pylint: disable=wrong-import-order
 from xmodule.partitions.tests.test_partitions import (
-    PartitionTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+    PartitionTestCase,  # pylint: disable=wrong-import-order
 )
 
 
@@ -34,7 +34,7 @@ class MemoryCourseTagAPI:
 
     class BulkCourseTags:
         @classmethod
-        def is_prefetched(self, course_id):  # lint-amnesty, pylint: disable=bad-classmethod-argument, unused-argument
+        def is_prefetched(self, course_id):  # pylint: disable=bad-classmethod-argument, unused-argument
             return False
 
 

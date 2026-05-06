@@ -7,7 +7,7 @@ from collections import OrderedDict
 from copy import deepcopy
 from urllib.parse import quote
 
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.urls import reverse
 
 from common.test.utils import XssTestMixin

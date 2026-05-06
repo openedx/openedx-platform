@@ -22,7 +22,7 @@ class InMemoryBackend:
     """A backend that simply stores all events in memory"""
 
     def __init__(self):
-        super().__init__()  # lint-amnesty, pylint: disable=super-with-arguments
+        super().__init__()  # pylint: disable=super-with-arguments
         self.events = []
 
     def send(self, event):
@@ -48,7 +48,7 @@ class EventTrackingTestCase(TestCase):
         freezer.start()
         self.addCleanup(freezer.stop)
 
-        super().setUp()  # lint-amnesty, pylint: disable=super-with-arguments
+        super().setUp()  # pylint: disable=super-with-arguments
 
         self.recreate_tracker()
 

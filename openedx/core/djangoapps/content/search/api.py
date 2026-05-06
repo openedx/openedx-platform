@@ -541,7 +541,11 @@ def init_index(status_cb: Callable[[str], None] | None = None, warn_cb: Callable
     reconcile_index(status_cb=status_cb, warn_cb=warn_cb)
 
 
-def index_course(course_key: CourseKey, index_name: str | None = None) -> list:
+def index_course(
+    course_key: CourseKey,
+    index_name: str | None = None,
+    status_cb: Callable[[str], None] | None = None,
+) -> list[dict]:
     """
     Rebuilds the index for a given course.
     """
@@ -550,8 +554,15 @@ def index_course(course_key: CourseKey, index_name: str | None = None) -> list:
     docs = []
     if index_name is None:
         index_name = STUDIO_INDEX_NAME
+    if status_cb is None:
+        status_cb = log.info
+
     # Pre-fetch the course with all of its children:
     course = store.get_course(course_key, depth=None)
+
+    if course is None:
+        status_cb(f"Error: course {course_key} does not seem to exist! It may have been incompletely deleted.")
+        return []
 
     def add_with_children(block):
         """Recursively index the given XBlock/component"""
@@ -571,7 +582,7 @@ def index_course(course_key: CourseKey, index_name: str | None = None) -> list:
 
 def rebuild_index(  # pylint: disable=too-many-statements
     status_cb: Callable[[str], None] | None = None, incremental=False
-) -> None:  # lint-amnesty
+) -> None:
     """
     Rebuild the Meilisearch index from scratch
     """
@@ -585,6 +596,8 @@ def rebuild_index(  # pylint: disable=too-many-statements
     keys_indexed = []
     if incremental:
         keys_indexed = list(IncrementalIndexCompleted.objects.values_list("context_key", flat=True))
+        if keys_indexed:
+            status_cb(f"Resuming incremental index - {len(keys_indexed)} courses/libraries already indexed.")
     lib_keys = [
         lib.library_key
         for lib in lib_api.ContentLibrary.objects.select_related("org").only("org", "slug").order_by("-id")
@@ -698,7 +711,8 @@ def rebuild_index(  # pylint: disable=too-many-statements
             collections = content_api.get_collections(library.learning_package_id, enabled=True)
             num_collections = collections.count()
             num_collections_done = 0
-            status_cb(f"{num_collections_done}/{num_collections}. Now indexing collections in library {lib_key}")
+            if num_collections:
+                status_cb(f"Now indexing {num_collections} collections in library {lib_key}")
             paginator = Paginator(collections, 100)
             for p in paginator.page_range:
                 num_collections_done = index_collection_batch(
@@ -706,15 +720,14 @@ def rebuild_index(  # pylint: disable=too-many-statements
                     num_collections_done,
                     lib_key,
                 )
-            if incremental:
-                IncrementalIndexCompleted.objects.get_or_create(context_key=lib_key)
-            status_cb(f"{num_collections_done}/{num_collections} collections indexed for library {lib_key}")
+            status_cb(f"Indexed {num_collections_done}/{num_collections} collections in library {lib_key}")
 
             # Similarly, batch process Containers (units, sections, etc) in pages of 100
             containers = content_api.get_containers(library.learning_package_id)
             num_containers = containers.count()
             num_containers_done = 0
-            status_cb(f"{num_containers_done}/{num_containers}. Now indexing containers in library {lib_key}")
+            if num_containers:
+                status_cb(f"Now indexing {num_containers} containers in library {lib_key}")
             paginator = Paginator(containers, 100)
             for p in paginator.page_range:
                 num_containers_done = index_container_batch(
@@ -722,7 +735,9 @@ def rebuild_index(  # pylint: disable=too-many-statements
                     num_containers_done,
                     lib_key,
                 )
-                status_cb(f"{num_containers_done}/{num_containers} containers indexed for library {lib_key}")
+                status_cb(f"Indexed {num_containers_done}/{num_containers} containers in library {lib_key}")
+
+            # Mark this library as indexed:
             if incremental:
                 IncrementalIndexCompleted.objects.get_or_create(context_key=lib_key)
 
@@ -732,7 +747,7 @@ def rebuild_index(  # pylint: disable=too-many-statements
         status_cb("Indexing courses...")
         # To reduce memory usage on large instances, split up the CourseOverviews into pages of 1,000 courses:
 
-        paginator = Paginator(CourseOverview.objects.only("id", "display_name"), 1000)
+        paginator = Paginator(CourseOverview.objects.only("id", "display_name").order_by("-created", "id"), 1000)
         for p in paginator.page_range:
             for course in paginator.page(p).object_list:
                 status_cb(
@@ -741,7 +756,7 @@ def rebuild_index(  # pylint: disable=too-many-statements
                 if course.id in keys_indexed:
                     num_contexts_done += 1
                     continue
-                course_docs = index_course(course.id, index_name)
+                course_docs = index_course(course.id, index_name, status_cb)
                 if incremental:
                     IncrementalIndexCompleted.objects.get_or_create(context_key=course.id)
                 num_contexts_done += 1
@@ -883,36 +898,27 @@ def upsert_library_collection_index_doc(collection_key: LibraryCollectionLocator
     If the Collection is not found or disabled (i.e. soft-deleted), then delete it from the search index.
     """
     doc = searchable_doc_for_collection(collection_key)
-    update_items = False
-
-    # Soft-deleted/disabled collections are removed from the index
-    # and their components updated.
-    if doc.get("_disabled"):
+    # Soft-deleted/disabled/hard-deleted collections are removed from the index:
+    # (If the collection is soft-deleted, searchable_doc_for_collection() sets `_disabled: True`)
+    # (If the collection is hard-deleted, searchable_doc_for_collection() leaves all fields other than ID empty)
+    if doc.get("_disabled") or not doc.get(Fields.type):
         _delete_index_doc(doc[Fields.id])
+        return
 
-        update_items = True
+    # Normal case - update the collection doc.
+    _update_index_docs([doc])
 
-    # Hard-deleted collections are also deleted from the index,
-    # but their components are automatically updated as part of the deletion process, so we don't have to.
-    elif not doc.get(Fields.type):
-        _delete_index_doc(doc[Fields.id])
-
-    # Otherwise, upsert the collection.
-    # Newly-added/restored collection get their components updated too.
-    else:
-        already_indexed = _get_document_from_index(doc[Fields.id])
-        if not already_indexed:
-            update_items = True
-
-        _update_index_docs([doc])
-
-    # Asynchronously update the collection's components "collections" field
-    if update_items:
-        from .tasks import update_library_components_collections as update_components_task
-        from .tasks import update_library_containers_collections as update_containers_task
-
-        update_components_task.delay(str(collection_key))
-        update_containers_task.delay(str(collection_key))
+    # We do NOT update the individual entities (components/containers) in the collection here.
+    # This event can be called if a single entity is added or removed from the collection (to update the "# of items in
+    # collection" field (Fields.num_children), and we don't want to re-index all entities in that case).
+    #
+    # If the collection is renamed, the COLLECTION_CHANGED signal will be emitted, and content_libraries will handle it
+    # and emit CONTENT_OBJECT_ASSOCIATIONS_CHANGED for every entity in the collection, which will update their
+    # "collections" field in the search index.
+    #
+    # If the collection is enabled/disabled/deleted, the COLLECTION_CHANGED signal will include all entities in the
+    # collection as added or removed, which the same libraries signal handler will convert to
+    # CONTENT_OBJECT_ASSOCIATIONS_CHANGED events, which will update them.
 
 
 def update_library_components_collections(

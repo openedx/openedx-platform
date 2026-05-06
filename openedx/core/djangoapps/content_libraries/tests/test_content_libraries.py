@@ -5,7 +5,7 @@ import os
 import tempfile
 import uuid
 import zipfile
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from io import StringIO
 from unittest import skip
 from unittest.mock import ANY, patch
@@ -318,11 +318,11 @@ class ContentLibrariesTestCase(ContentLibrariesRestApiTest):
         assert self._get_library_blocks(lib_id)['results'] == []
 
         # Add a 'problem' XBlock to the library:
-        create_date = datetime(2024, 6, 6, 6, 6, 6, tzinfo=timezone.utc)  # noqa: UP017
+        create_date = datetime(2024, 6, 6, 6, 6, 6, tzinfo=UTC)
         with freeze_time(create_date):
-            block_data = self._add_block_to_library(lib_id, "problem", "ࠒröblæm1")
+            block_data = self._add_block_to_library(lib_id, "problem", "problem1")
         self.assertDictContainsEntries(block_data, {
-            "id": "lb:CL-TEST:téstlꜟط:problem:ࠒröblæm1",
+            "id": "lb:CL-TEST:téstlꜟط:problem:problem1",
             "display_name": "Blank Problem",
             "block_type": "problem",
             "has_unpublished_changes": True,
@@ -338,7 +338,7 @@ class ContentLibrariesTestCase(ContentLibrariesRestApiTest):
         assert self._get_library(lib_id)['has_unpublished_changes'] is True
 
         # Publish the changes:
-        publish_date = datetime(2024, 7, 7, 7, 7, 7, tzinfo=timezone.utc)  # noqa: UP017
+        publish_date = datetime(2024, 7, 7, 7, 7, 7, tzinfo=UTC)
         with freeze_time(publish_date):
             self._commit_library_changes(lib_id)
         assert self._get_library(lib_id)['has_unpublished_changes'] is False
@@ -367,7 +367,7 @@ class ContentLibrariesTestCase(ContentLibrariesRestApiTest):
             </multiplechoiceresponse>
         </problem>
         """.strip()
-        update_date = datetime(2024, 8, 8, 8, 8, 8, tzinfo=timezone.utc)  # noqa: UP017
+        update_date = datetime(2024, 8, 8, 8, 8, 8, tzinfo=UTC)
         with freeze_time(update_date):
             self._set_library_block_olx(block_id, new_olx)
         # now reading it back, we should get that exact OLX (no change to whitespace etc.):
@@ -409,7 +409,7 @@ class ContentLibrariesTestCase(ContentLibrariesRestApiTest):
         assert self._get_library_block_olx(block_id) == new_olx
         unpublished_block_data = self._get_library_block(block_id)
         assert unpublished_block_data['has_unpublished_changes'] is True
-        block_update_date = datetime(2024, 8, 8, 8, 8, 9, tzinfo=timezone.utc)  # noqa: UP017
+        block_update_date = datetime(2024, 8, 8, 8, 8, 9, tzinfo=UTC)
         with freeze_time(block_update_date):
             self._publish_library_block(block_id)
         # Confirm the block is now published:
@@ -432,7 +432,7 @@ class ContentLibrariesTestCase(ContentLibrariesRestApiTest):
         assert self._get_library_blocks(lib_id)['results'] == []
 
         # Add a 'html' XBlock to the library:
-        create_date = datetime(2024, 6, 6, 6, 6, 6, tzinfo=timezone.utc)  # noqa: UP017
+        create_date = datetime(2024, 6, 6, 6, 6, 6, tzinfo=UTC)
         with freeze_time(create_date):
             block_data = self._add_block_to_library(lib_id, "problem", "problem1")
         self.assertDictContainsEntries(block_data, {
@@ -452,7 +452,7 @@ class ContentLibrariesTestCase(ContentLibrariesRestApiTest):
         assert self._get_library(lib_id)['has_unpublished_changes'] is True
 
         # Publish the changes:
-        publish_date = datetime(2024, 7, 7, 7, 7, 7, tzinfo=timezone.utc)  # noqa: UP017
+        publish_date = datetime(2024, 7, 7, 7, 7, 7, tzinfo=UTC)
         with freeze_time(publish_date):
             self._commit_library_changes(lib_id)
         assert self._get_library(lib_id)['has_unpublished_changes'] is False
@@ -469,7 +469,7 @@ class ContentLibrariesTestCase(ContentLibrariesRestApiTest):
         assert '<problem' in orig_olx
         new_olx = "<problem><b>Hello world!</b></problem>"
 
-        update_date = datetime(2024, 8, 8, 8, 8, 8, tzinfo=timezone.utc)  # noqa: UP017
+        update_date = datetime(2024, 8, 8, 8, 8, 8, tzinfo=UTC)
         with freeze_time(update_date):
             self._set_library_block_olx(block_id, new_olx)
         # now reading it back, we should get that exact OLX (no change to whitespace etc.):
@@ -889,6 +889,669 @@ class ContentLibrariesTestCase(ContentLibrariesRestApiTest):
             lib_id = lib["id"]
             block_types = self._get_library_block_types(lib_id)
             assert [dict(item) for item in block_types] == expected
+
+    def test_draft_history_empty_after_publish(self):
+        """
+        A block with no unpublished changes since its last publish has an empty draft history.
+        """
+        lib = self._create_library(slug="draft-hist-empty", title="Draft History Empty")
+        block = self._add_block_to_library(lib["id"], "problem", "prob1")
+        block_key = block["id"]
+
+        self._publish_library_block(block_key)
+
+        history = self._get_block_draft_history(block_key)
+        assert history == []
+
+    def test_draft_history_shows_unpublished_edits(self):
+        """
+        Draft history contains entries for edits made since the last publication,
+        ordered most-recent-first, with the correct fields.
+        """
+        with freeze_time(datetime(2026, 1, 1, tzinfo=UTC)):
+            lib = self._create_library(slug="draft-hist-edits", title="Draft History Edits")
+            block = self._add_block_to_library(lib["id"], "problem", "prob1")
+            block_key = block["id"]
+
+        with freeze_time(datetime(2026, 2, 1, tzinfo=UTC)):
+            self._publish_library_block(block_key)
+
+        edit1_time = datetime(2026, 4, 1, 10, 0, 0, tzinfo=UTC)
+        with freeze_time(edit1_time):
+            self._set_library_block_olx(block_key, "<problem><p>edit 1</p></problem>")
+
+        edit2_time = datetime(2026, 4, 2, 10, 0, 0, tzinfo=UTC)
+        with freeze_time(edit2_time):
+            self._set_library_block_olx(block_key, "<problem><p>edit 2</p></problem>")
+
+        history = self._get_block_draft_history(block_key)
+        assert len(history) == 2
+        assert history[0]["changed_at"] == edit2_time.isoformat().replace("+00:00", "Z")
+        assert history[1]["changed_at"] == edit1_time.isoformat().replace("+00:00", "Z")
+        entry = history[0]
+        assert "contributor" in entry
+        assert "title" in entry
+        assert "action" in entry
+
+    def test_draft_history_action_renamed(self):
+        """
+        When the title changes between versions, the action is 'renamed'.
+        """
+        lib = self._create_library(slug="draft-hist-rename", title="Draft History Rename")
+        block = self._add_block_to_library(lib["id"], "problem", "prob1")
+        block_key = block["id"]
+
+        self._publish_library_block(block_key)
+        self._set_library_block_olx(
+            block_key,
+            '<problem display_name="New Title"><p>content</p></problem>',
+        )
+
+        history = self._get_block_draft_history(block_key)
+        assert len(history) >= 1
+        assert history[0]["action"] == "renamed"
+
+    def test_draft_history_action_edited(self):
+        """
+        When only the content changes (not the title), the action is 'edited'.
+        """
+        lib = self._create_library(slug="draft-hist-edit", title="Draft History Edit")
+        block = self._add_block_to_library(lib["id"], "problem", "prob1")
+        block_key = block["id"]
+
+        self._publish_library_block(block_key)
+        self._set_library_block_olx(block_key, "<problem><p>changed content</p></problem>")
+
+        history = self._get_block_draft_history(block_key)
+        assert len(history) >= 1
+        assert history[0]["action"] == "edited"
+
+    def test_draft_history_action_created(self):
+        """
+        When a block is first created (old_version=None), the action is 'created'.
+        """
+        lib = self._create_library(slug="draft-hist-create", title="Draft History Create")
+        block = self._add_block_to_library(lib["id"], "problem", "prob1")
+        block_key = block["id"]
+
+        history = self._get_block_draft_history(block_key)
+        assert len(history) >= 1
+        assert history[-1]["action"] == "created"
+        assert history[-1]["old_version"] == 0
+        assert history[-1]["new_version"] is not None
+
+    def test_draft_history_action_deleted(self):
+        """
+        When a block is soft-deleted (new_version=None), the action is 'deleted'.
+        """
+        lib = self._create_library(slug="draft-hist-delete", title="Draft History Delete")
+        block = self._add_block_to_library(lib["id"], "problem", "prob1")
+        block_key = block["id"]
+
+        self._publish_library_block(block_key)
+        self._delete_library_block(block_key)
+
+        history = self._get_block_draft_history(block_key)
+        assert len(history) >= 1
+        assert history[0]["action"] == "deleted"
+
+    def test_draft_history_cleared_after_publish(self):
+        """
+        After publishing, the draft history resets to empty.
+        """
+        lib = self._create_library(slug="draft-hist-clear", title="Draft History Clear")
+        block = self._add_block_to_library(lib["id"], "problem", "prob1")
+        block_key = block["id"]
+
+        self._publish_library_block(block_key)
+        self._set_library_block_olx(block_key, "<problem><p>unpublished</p></problem>")
+        assert len(self._get_block_draft_history(block_key)) >= 1
+
+        self._publish_library_block(block_key)
+        assert self._get_block_draft_history(block_key) == []
+
+    def test_draft_history_nonexistent_block(self):
+        """
+        Requesting draft history for a non-existent block returns 404.
+        """
+        self._get_block_draft_history("lb:CL-TEST:draft-hist-404:problem:nope", expect_response=404)
+
+    def test_draft_history_permissions(self):
+        """
+        A user without library access receives 403.
+        """
+        lib = self._create_library(slug="draft-hist-auth", title="Draft History Auth")
+        block = self._add_block_to_library(lib["id"], "problem", "prob1")
+        block_key = block["id"]
+        self._set_library_block_olx(block_key, "<problem><p>edit</p></problem>")
+
+        unauthorized = UserFactory.create(username="noauth-draft", password="edx")
+        with self.as_user(unauthorized):
+            self._get_block_draft_history(block_key, expect_response=403)
+
+    def test_publish_history_empty_before_first_publish(self):
+        """
+        A block that has never been published has an empty publish history.
+        """
+        lib = self._create_library(slug="hist-empty", title="History Empty")
+        block = self._add_block_to_library(lib["id"], "problem", "prob1")
+        history = self._get_block_publish_history(block["id"])
+        assert history == []
+
+    def test_publish_history_after_single_publish(self):
+        """
+        Post-Verawood: After one direct component publish (direct=True) the history
+        contains exactly one group with the correct publisher, timestamp, contributor,
+        and a single entry in direct_published_entities for the component itself.
+        """
+        lib = self._create_library(slug="hist-single", title="History Single")
+        block = self._add_block_to_library(lib["id"], "problem", "prob1")
+        block_key = block["id"]
+
+        publish_time = datetime(2026, 1, 10, 12, 0, 0, tzinfo=UTC)
+        with freeze_time(publish_time):
+            self._publish_library_block(block_key)
+
+        history = self._get_block_publish_history(block_key)
+        assert len(history) == 1
+        group = history[0]
+        assert group["published_by"] == self.user.username
+        assert group["published_at"] == publish_time.isoformat().replace("+00:00", "Z")
+        assert isinstance(group["publish_log_uuid"], str)
+        assert any(c["username"] == self.user.username for c in group["contributors"])
+        # Post-Verawood: component was directly published → single entry for itself
+        assert len(group["direct_published_entities"]) == 1
+        entity = group["direct_published_entities"][0]
+        assert entity["entity_key"] == block_key
+        assert entity["entity_type"] == "problem"
+
+    def test_publish_history_deleted_block_retains_title(self):
+        """
+        When a block is soft-deleted and published, the direct_published_entities
+        entry shows the block's last known title (from old_version), not an empty string.
+        """
+        lib = self._create_library(slug="hist-delete-title", title="History Delete Title")
+        block = self._add_block_to_library(lib["id"], "problem", "prob1")
+        block_key = block["id"]
+        self._set_library_block_olx(
+            block_key,
+            '<problem display_name="My Problem Title"><p>content</p></problem>',
+        )
+        self._publish_library_block(block_key)
+        self._delete_library_block(block_key)
+        self._publish_library_block(block_key)
+
+        history = self._get_block_publish_history(block_key)
+        # Most recent publish is the deletion
+        deletion_group = history[0]
+        assert len(deletion_group["direct_published_entities"]) == 1
+        assert deletion_group["direct_published_entities"][0]["title"] == "My Problem Title"
+
+    def test_publish_history_multiple_publishes(self):
+        """
+        Multiple publish events are returned newest-first.
+        """
+        lib = self._create_library(slug="hist-multi", title="History Multi")
+        block = self._add_block_to_library(lib["id"], "problem", "prob1")
+        block_key = block["id"]
+
+        first_publish = datetime(2026, 1, 1, 0, 0, 0, tzinfo=UTC)
+        with freeze_time(first_publish):
+            self._publish_library_block(block_key)
+
+        self._set_library_block_olx(block_key, "<problem><p>v2</p></problem>")
+
+        second_publish = datetime(2026, 2, 1, 0, 0, 0, tzinfo=UTC)
+        with freeze_time(second_publish):
+            self._publish_library_block(block_key)
+
+        history = self._get_block_publish_history(block_key)
+        assert len(history) == 2
+        assert history[0]["published_at"] == second_publish.isoformat().replace("+00:00", "Z")
+        assert history[1]["published_at"] == first_publish.isoformat().replace("+00:00", "Z")
+
+    def test_publish_history_tracks_contributors(self):
+        """
+        Contributors for the first publish include the block creator.
+        Note: set_library_block_olx does not record created_by, so OLX
+        edits are not tracked as contributions.
+        """
+        lib = self._create_library(slug="hist-contrib", title="History Contributors")
+        block = self._add_block_to_library(lib["id"], "problem", "prob1")
+        block_key = block["id"]
+
+        with freeze_time(datetime(2026, 1, 1, tzinfo=UTC)):
+            self._publish_library_block(block_key)
+
+        history = self._get_block_publish_history(block_key)
+        assert len(history) == 1
+        group = history[0]
+        assert any(c["username"] == self.user.username for c in group["contributors"])
+
+    def test_publish_history_entries(self):
+        """
+        The entries endpoint returns the individual draft change records for a publish event.
+        """
+        lib = self._create_library(slug="hist-entries", title="History Entries")
+        block = self._add_block_to_library(lib["id"], "problem", "prob1")
+        block_key = block["id"]
+
+        with freeze_time(datetime(2026, 2, 15, tzinfo=UTC)):
+            self._set_library_block_olx(block_key, "<problem><p>edit 1</p></problem>")
+        with freeze_time(datetime(2026, 2, 20, tzinfo=UTC)):
+            self._set_library_block_olx(block_key, "<problem><p>edit 2</p></problem>")
+
+        with freeze_time(datetime(2026, 3, 1, tzinfo=UTC)):
+            self._publish_library_block(block_key)
+
+        history = self._get_block_publish_history(block_key)
+        assert len(history) == 1
+        publish_log_uuid = history[0]["publish_log_uuid"]
+
+        entries = self._get_block_publish_history_entries(block_key, publish_log_uuid)
+        assert len(entries) >= 1
+        entry = entries[0]
+        assert "contributor" in entry
+        assert "changed_at" in entry
+        assert "title" in entry
+        assert "action" in entry
+        assert "old_version" in entry
+        assert "new_version" in entry
+
+    def test_draft_history_deleted_has_null_new_version(self):
+        """
+        Deleted draft history entry exposes new_version as null.
+        """
+        lib = self._create_library(slug="draft-hist-delete-null", title="Draft History Delete Null")
+        block = self._add_block_to_library(lib["id"], "problem", "prob1")
+        block_key = block["id"]
+
+        self._publish_library_block(block_key)
+        self._delete_library_block(block_key)
+
+        history = self._get_block_draft_history(block_key)
+        assert len(history) >= 1
+        assert history[0]["action"] == "deleted"
+        assert history[0]["old_version"] > 0
+        assert history[0]["new_version"] is None
+
+    def test_publish_history_entries_unknown_uuid(self):
+        """
+        Requesting entries for a publish_log_uuid unrelated to this component returns an empty list.
+        """
+        lib = self._create_library(slug="hist-baduid", title="History Bad UUID")
+        block = self._add_block_to_library(lib["id"], "problem", "prob1")
+        block_key = block["id"]
+
+        with freeze_time(datetime(2026, 1, 1, tzinfo=UTC)):
+            self._publish_library_block(block_key)
+
+        fake_uuid = str(uuid.uuid4())
+        entries = self._get_block_publish_history_entries(block_key, fake_uuid, expect_response=200)
+        assert entries == []
+
+    def test_publish_history_nonexistent_block(self):
+        """
+        Requesting publish history for a non-existent block returns 404.
+        """
+        self._get_block_publish_history("lb:CL-TEST:hist-404:problem:nope", expect_response=404)
+
+    def test_publish_history_permissions(self):
+        """
+        A user without library access receives 403.
+        """
+        lib = self._create_library(slug="hist-auth", title="History Auth")
+        block = self._add_block_to_library(lib["id"], "problem", "prob1")
+        block_key = block["id"]
+
+        with freeze_time(datetime(2026, 1, 1, tzinfo=UTC)):
+            self._publish_library_block(block_key)
+
+        unauthorized = UserFactory.create(username="noauth-hist", password="edx")
+        with self.as_user(unauthorized):
+            self._get_block_publish_history(block_key, expect_response=403)
+
+    # --- Post-Verawood publish history tests ---
+
+    def test_post_verawood_component_published_directly(self):
+        """
+        Post-Verawood, direct=True: when a component is published directly,
+        direct_published_entities has a single entry for the component itself.
+        The component's own history and the container's history both show the
+        component as the directly published entity.
+        """
+        lib = self._create_library(slug="pv-comp-direct", title="PV Comp Direct")
+        unit = self._create_container(lib["id"], "unit", "u1", "Unit 1")
+        unit_key = unit["id"]
+        block = self._add_block_to_library(lib["id"], "problem", "prob1")
+        block_key = block["id"]
+        self._add_container_children(unit_key, [block_key])
+
+        # Publish the component directly (not the unit)
+        self._publish_library_block(block_key)
+
+        # Component history: direct_published_entities = [component]
+        comp_history = self._get_block_publish_history(block_key)
+        assert len(comp_history) == 1
+        entities = comp_history[0]["direct_published_entities"]
+        assert len(entities) == 1
+        assert entities[0]["entity_key"] == block_key
+        assert entities[0]["entity_type"] == "problem"
+        # scope_entity_key is always the component itself for component history
+        assert comp_history[0]["scope_entity_key"] == block_key
+
+        # Container history: same publish log → same direct_published_entities
+        unit_history = self._get_container_publish_history(unit_key)
+        assert len(unit_history) == 1
+        entities = unit_history[0]["direct_published_entities"]
+        assert len(entities) == 1
+        assert entities[0]["entity_key"] == block_key
+        assert entities[0]["entity_type"] == "problem"
+        # Post-Verawood container group: scope_entity_key is null (frontend uses current container)
+        assert unit_history[0]["scope_entity_key"] is None
+
+    def test_post_verawood_unit_published_directly(self):
+        """
+        Post-Verawood, direct=True on the Unit: when a Unit is published directly,
+        the Unit's history shows the unit as directly published. The child component's
+        history shows the unit as the directly published entity (direct=False on component).
+        """
+        lib = self._create_library(slug="pv-unit-direct", title="PV Unit Direct")
+        unit = self._create_container(lib["id"], "unit", "u1", "Unit 1")
+        unit_key = unit["id"]
+        block = self._add_block_to_library(lib["id"], "problem", "prob1")
+        block_key = block["id"]
+        self._add_container_children(unit_key, [block_key])
+
+        # Publish the unit directly (component is published as a dependency)
+        self._publish_container(unit_key)
+
+        # Container history: 1 group, unit is direct
+        unit_history = self._get_container_publish_history(unit_key)
+        assert len(unit_history) == 1
+        entities = unit_history[0]["direct_published_entities"]
+        assert len(entities) == 1
+        assert entities[0]["entity_key"] == unit_key
+        assert entities[0]["entity_type"] == "unit"
+        assert unit_history[0]["scope_entity_key"] is None
+
+        # Component history: 1 group, unit is the directly published entity
+        comp_history = self._get_block_publish_history(block_key)
+        assert len(comp_history) == 1
+        entities = comp_history[0]["direct_published_entities"]
+        assert len(entities) == 1
+        assert entities[0]["entity_key"] == unit_key
+        assert entities[0]["entity_type"] == "unit"
+        assert comp_history[0]["scope_entity_key"] == block_key
+
+    def test_post_verawood_container_history_merges_same_publish_log(self):
+        """
+        Post-Verawood: when the Unit and a Component are both touched in the same
+        PublishLog, the container history returns ONE merged group (not two separate
+        groups as in Pre-Verawood).
+        """
+        lib = self._create_library(slug="pv-merged", title="PV Merged")
+        unit = self._create_container(lib["id"], "unit", "u1", "Unit 1")
+        unit_key = unit["id"]
+        block = self._add_block_to_library(lib["id"], "problem", "prob1")
+        block_key = block["id"]
+        self._add_container_children(unit_key, [block_key])
+
+        self._publish_container(unit_key)
+
+        unit_history = self._get_container_publish_history(unit_key)
+        # Post-Verawood: ONE merged group for the entire PublishLog
+        assert len(unit_history) == 1
+
+    def test_post_verawood_container_history_entries_scope(self):
+        """
+        Post-Verawood: the entries endpoint for a container returns entries for all
+        entities in scope (container + descendants) that participated in the PublishLog,
+        not just the container itself.
+        """
+        lib = self._create_library(slug="pv-entries-scope", title="PV Entries Scope")
+        unit = self._create_container(lib["id"], "unit", "u1", "Unit 1")
+        unit_key = unit["id"]
+        block = self._add_block_to_library(lib["id"], "problem", "prob1")
+        block_key = block["id"]
+        self._add_container_children(unit_key, [block_key])
+
+        self._publish_container(unit_key)
+
+        unit_history = self._get_container_publish_history(unit_key)
+        assert len(unit_history) == 1
+        publish_log_uuid = unit_history[0]["publish_log_uuid"]
+
+        entries = self._get_container_publish_history_entries(unit_key, publish_log_uuid)
+        # Post-Verawood: entries for both the unit and the component
+        assert len(entries) >= 1
+        item_types = {e["item_type"] for e in entries}
+        assert "unit" in item_types
+        assert "problem" in item_types
+
+    def test_post_verawood_multiple_publishes_stay_separate(self):
+        """
+        Post-Verawood: two separate publish events produce two separate groups,
+        ordered most-recent-first.
+        """
+        lib = self._create_library(slug="pv-multi", title="PV Multi")
+        unit = self._create_container(lib["id"], "unit", "u1", "Unit 1")
+        unit_key = unit["id"]
+        block = self._add_block_to_library(lib["id"], "problem", "prob1")
+        block_key = block["id"]
+        self._add_container_children(unit_key, [block_key])
+
+        first_publish = datetime(2026, 1, 1, tzinfo=UTC)
+        with freeze_time(first_publish):
+            self._publish_container(unit_key)
+
+        self._set_library_block_olx(block_key, "<problem><p>v2</p></problem>")
+
+        second_publish = datetime(2026, 2, 1, tzinfo=UTC)
+        with freeze_time(second_publish):
+            self._publish_container(unit_key)
+
+        unit_history = self._get_container_publish_history(unit_key)
+        assert len(unit_history) == 2
+        assert unit_history[0]["published_at"] == second_publish.isoformat().replace("+00:00", "Z")
+        assert unit_history[1]["published_at"] == first_publish.isoformat().replace("+00:00", "Z")
+
+    # --- Pre-Verawood publish history tests ---
+    # Pre-Verawood records have direct=None. We simulate them by publishing and
+    # then backfilling direct=None on the resulting PublishLogRecords, mirroring
+    # what the 0007_publishlogrecord_direct migration does for historical data.
+
+    def test_pre_verawood_component_history_uses_component_as_entity(self):
+        """
+        Pre-Verawood (direct=None): component history has one group per publish event.
+        direct_published_entities has a single approximated entry for the component itself.
+        """
+        from openedx_content.models_api import PublishLogRecord
+
+        lib = self._create_library(slug="prev-comp", title="PreV Comp")
+        block = self._add_block_to_library(lib["id"], "problem", "prob1")
+        block_key = block["id"]
+        self._publish_library_block(block_key)
+
+        # Simulate Pre-Verawood by backfilling direct=None
+        PublishLogRecord.objects.all().update(direct=None)
+
+        history = self._get_block_publish_history(block_key)
+        assert len(history) == 1
+        entities = history[0]["direct_published_entities"]
+        assert len(entities) == 1
+        assert entities[0]["entity_key"] == block_key
+        assert entities[0]["entity_type"] == "problem"
+        assert history[0]["scope_entity_key"] == block_key
+
+    def test_pre_verawood_container_history_produces_separate_groups(self):
+        """
+        Pre-Verawood (direct=None): when a Unit and Component are published in the
+        same PublishLog, the container history produces SEPARATE groups — one per
+        entity (unlike Post-Verawood which merges into one group).
+        """
+        from openedx_content.models_api import PublishLogRecord
+
+        lib = self._create_library(slug="prev-separate", title="PreV Separate")
+        unit = self._create_container(lib["id"], "unit", "u1", "Unit 1")
+        unit_key = unit["id"]
+        block = self._add_block_to_library(lib["id"], "problem", "prob1")
+        block_key = block["id"]
+        self._add_container_children(unit_key, [block_key])
+        self._publish_container(unit_key)
+
+        # Simulate Pre-Verawood by backfilling direct=None
+        PublishLogRecord.objects.all().update(direct=None)
+
+        unit_history = self._get_container_publish_history(unit_key)
+        # Pre-Verawood: one group per entity (unit + component = 2 groups)
+        assert len(unit_history) == 2
+        # Each group's scope_entity_key matches its own entity_key
+        for group in unit_history:
+            assert group["scope_entity_key"] == group["direct_published_entities"][0]["entity_key"]
+
+    def test_pre_verawood_container_history_entries_only_container_itself(self):
+        """
+        Pre-Verawood (direct=None): the entries endpoint returns entries only for
+        the container itself, not for descendant components (old behavior preserved).
+        """
+        from openedx_content.models_api import PublishLogRecord
+
+        lib = self._create_library(slug="prev-entries", title="PreV Entries")
+        unit = self._create_container(lib["id"], "unit", "u1", "Unit 1")
+        unit_key = unit["id"]
+        block = self._add_block_to_library(lib["id"], "problem", "prob1")
+        block_key = block["id"]
+        self._add_container_children(unit_key, [block_key])
+        self._publish_container(unit_key)
+
+        # Simulate Pre-Verawood by backfilling direct=None
+        PublishLogRecord.objects.all().update(direct=None)
+
+        unit_history = self._get_container_publish_history(unit_key)
+        # Find the group whose approximated entity_key is the unit itself
+        unit_group = next(
+            g for g in unit_history
+            if g["direct_published_entities"][0]["entity_key"] == unit_key
+        )
+        publish_log_uuid = unit_group["publish_log_uuid"]
+
+        entries = self._get_container_publish_history_entries(unit_key, publish_log_uuid)
+        # Pre-Verawood: entries only for the container itself
+        assert len(entries) >= 1
+        # All entries should be for the unit, not the component
+        for entry in entries:
+            assert entry["item_type"] == "unit"
+
+    def test_creation_entry_returns_first_version(self):
+        """
+        The creation entry corresponds to the first time the block was saved,
+        with action='created' and the correct fields populated.
+        """
+        lib = self._create_library(slug="creation-entry-basic", title="Creation Entry Basic")
+        block = self._add_block_to_library(lib["id"], "problem", "prob1")
+        block_key = block["id"]
+
+        entry = self._get_block_creation_entry(block_key)
+
+        assert entry is not None
+        assert entry["action"] == "created"
+        assert entry["item_type"] == "problem"
+        assert entry["old_version"] == 0
+        assert entry["new_version"] == 1
+        assert "changed_at" in entry
+        assert "title" in entry
+        assert "contributor" in entry
+
+    def test_creation_entry_unchanged_after_edits(self):
+        """
+        Subsequent edits and publishes do not affect the creation entry — it
+        always reflects the first saved version.
+        """
+        lib = self._create_library(slug="creation-entry-stable", title="Creation Entry Stable")
+        block = self._add_block_to_library(lib["id"], "problem", "prob1")
+        block_key = block["id"]
+
+        # Record the creation entry before any edits
+        entry_before = self._get_block_creation_entry(block_key)
+
+        self._set_library_block_olx(block_key, "<problem><p>edited</p></problem>")
+        self._publish_library_block(block_key)
+
+        entry_after = self._get_block_creation_entry(block_key)
+
+        assert entry_after["changed_at"] == entry_before["changed_at"]
+        assert entry_after["action"] == "created"
+
+    def test_creation_entry_nonexistent_block(self):
+        """
+        Requesting the creation entry for a non-existent block returns 404.
+        """
+        self._get_block_creation_entry("lb:CL-TEST:creation-404:problem:nope", expect_response=404)
+
+    def test_creation_entry_permissions(self):
+        """
+        A user without library access receives 403.
+        """
+        lib = self._create_library(slug="creation-entry-auth", title="Creation Entry Auth")
+        block = self._add_block_to_library(lib["id"], "problem", "prob1")
+        block_key = block["id"]
+
+        unauthorized = UserFactory.create(username="noauth-creation", password="edx")
+        with self.as_user(unauthorized):
+            self._get_block_creation_entry(block_key, expect_response=403)
+
+    def test_container_creation_entry_returns_first_version(self):
+        """
+        The container creation entry corresponds to the first time the container was
+        saved, with action='created' and item_type matching the container type.
+        """
+        lib = self._create_library(slug="ct-creation-basic", title="Container Creation Basic")
+        unit = self._create_container(lib["id"], "unit", slug="unit1", display_name="My Unit")
+        unit_key = unit["id"]
+
+        entry = self._get_container_creation_entry(unit_key)
+
+        assert entry is not None
+        assert entry["action"] == "created"
+        assert entry["item_type"] == "unit"
+        assert entry["old_version"] == 0
+        assert entry["new_version"] == 1
+        assert entry["title"] == "My Unit"
+        assert "changed_at" in entry
+        assert "contributor" in entry
+
+    def test_container_creation_entry_unchanged_after_edits(self):
+        """
+        Subsequent edits and publishes do not affect the creation entry — it always
+        reflects the first saved version of the container.
+        """
+        lib = self._create_library(slug="ct-creation-stable", title="Container Creation Stable")
+        unit = self._create_container(lib["id"], "unit", slug="unit1", display_name="Original Title")
+        unit_key = unit["id"]
+
+        entry_before = self._get_container_creation_entry(unit_key)
+
+        self._update_container(unit_key, display_name="Updated Title")
+        self._publish_container(unit_key)
+
+        entry_after = self._get_container_creation_entry(unit_key)
+
+        assert entry_after["changed_at"] == entry_before["changed_at"]
+        assert entry_after["action"] == "created"
+        assert entry_after["title"] == "Original Title"
+
+    def test_container_creation_entry_permissions(self):
+        """
+        A user without library access receives 403 for the container creation entry.
+        """
+        lib = self._create_library(slug="ct-creation-auth", title="Container Creation Auth")
+        unit = self._create_container(lib["id"], "unit", slug="unit1", display_name="Auth Unit")
+        unit_key = unit["id"]
+
+        unauthorized = UserFactory.create(username="noauth-ct-creation", password="edx")
+        with self.as_user(unauthorized):
+            self._get_container_creation_entry(unit_key, expect_response=403)
 
 
 class LibraryRestoreViewTestCase(ContentLibrariesRestApiTest):

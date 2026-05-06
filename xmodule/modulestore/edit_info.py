@@ -65,39 +65,39 @@ class EditInfoRuntimeMixin(metaclass=ABCMeta):
         """
         The datetime of the last change to this xblock content, children, or settings.
         """
-        pass  # lint-amnesty, pylint: disable=unnecessary-pass
+        pass  # pylint: disable=unnecessary-pass
 
     @abstractmethod
     def get_edited_on(self, xblock):
         """
         The datetime of the last change to this xblock content, children, or settings.
         """
-        pass  # lint-amnesty, pylint: disable=unnecessary-pass
+        pass  # pylint: disable=unnecessary-pass
 
     @abstractmethod
     def get_subtree_edited_by(self, xblock):
         """
         The user id of the last user to change content, children, or settings in this xblock's subtree
         """
-        pass  # lint-amnesty, pylint: disable=unnecessary-pass
+        pass  # pylint: disable=unnecessary-pass
 
     @abstractmethod
     def get_subtree_edited_on(self, xblock):
         """
         The datetime of the last change content, children, or settings in this xblock's subtree
         """
-        pass  # lint-amnesty, pylint: disable=unnecessary-pass
+        pass  # pylint: disable=unnecessary-pass
 
     @abstractmethod
     def get_published_by(self, xblock):
         """
         The user id of the last user to publish this specific xblock (or a previous version of it).
         """
-        pass  # lint-amnesty, pylint: disable=unnecessary-pass
+        pass  # pylint: disable=unnecessary-pass
 
     @abstractmethod
     def get_published_on(self, xblock):
         """
         The datetime of the last time this specific xblock was published.
         """
-        pass  # lint-amnesty, pylint: disable=unnecessary-pass
+        pass  # pylint: disable=unnecessary-pass

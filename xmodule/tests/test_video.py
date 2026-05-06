@@ -105,12 +105,12 @@ def instantiate_block(**field_data):
 
 class _MockValVideoNotFoundError(Exception):
     """Mock ValVideoNotFoundError exception"""
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 class _MockValCannotCreateError(Exception):
     """Mock ValCannotCreateError exception"""
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 class VideoBlockTest(unittest.TestCase):

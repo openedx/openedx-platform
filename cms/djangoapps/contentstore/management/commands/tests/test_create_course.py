@@ -16,7 +16,7 @@ class TestArgParsing(TestCase):
     """
     Tests for parsing arguments for the `create_course` management command
     """
-    def setUp(self):  # lint-amnesty, pylint: disable=useless-super-delegation
+    def setUp(self):  # pylint: disable=useless-super-delegation
         super().setUp()
 
     def test_no_args(self):

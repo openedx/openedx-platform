@@ -4,31 +4,31 @@ Outline Tab Views
 from datetime import datetime, timezone
 from functools import cached_property
 
-from completion.exceptions import UnavailableCompletionData  # lint-amnesty, pylint: disable=wrong-import-order
+from completion.exceptions import UnavailableCompletionData  # pylint: disable=wrong-import-order
 from completion.models import BlockCompletion
-from completion.utilities import get_key_to_last_completed_block  # lint-amnesty, pylint: disable=wrong-import-order
-from django.conf import settings  # lint-amnesty, pylint: disable=wrong-import-order
+from completion.utilities import get_key_to_last_completed_block  # pylint: disable=wrong-import-order
+from django.conf import settings  # pylint: disable=wrong-import-order
 from django.core.cache import cache
-from django.shortcuts import get_object_or_404  # lint-amnesty, pylint: disable=wrong-import-order
-from django.urls import reverse  # lint-amnesty, pylint: disable=wrong-import-order
-from django.utils.translation import gettext as _  # lint-amnesty, pylint: disable=wrong-import-order
-from edx_django_utils import monitoring as monitoring_utils  # lint-amnesty, pylint: disable=wrong-import-order
+from django.shortcuts import get_object_or_404  # pylint: disable=wrong-import-order
+from django.urls import reverse  # pylint: disable=wrong-import-order
+from django.utils.translation import gettext as _  # pylint: disable=wrong-import-order
+from edx_django_utils import monitoring as monitoring_utils  # pylint: disable=wrong-import-order
 from edx_rest_framework_extensions.auth.jwt.authentication import (
-    JwtAuthentication,  # lint-amnesty, pylint: disable=wrong-import-order
+    JwtAuthentication,  # pylint: disable=wrong-import-order
 )
 from edx_rest_framework_extensions.auth.session.authentication import (
-    SessionAuthenticationAllowInactiveUser,  # lint-amnesty, pylint: disable=wrong-import-order
+    SessionAuthenticationAllowInactiveUser,  # pylint: disable=wrong-import-order
 )
-from opaque_keys.edx.keys import CourseKey  # lint-amnesty, pylint: disable=wrong-import-order
-from rest_framework.decorators import (  # lint-amnesty, pylint: disable=wrong-import-order
+from opaque_keys.edx.keys import CourseKey  # pylint: disable=wrong-import-order
+from rest_framework.decorators import (  # pylint: disable=wrong-import-order
     api_view,
     authentication_classes,
     permission_classes,
 )
-from rest_framework.exceptions import APIException, ParseError  # lint-amnesty, pylint: disable=wrong-import-order
-from rest_framework.generics import RetrieveAPIView  # lint-amnesty, pylint: disable=wrong-import-order
-from rest_framework.permissions import IsAuthenticated  # lint-amnesty, pylint: disable=wrong-import-order
-from rest_framework.response import Response  # lint-amnesty, pylint: disable=wrong-import-order
+from rest_framework.exceptions import APIException, ParseError  # pylint: disable=wrong-import-order
+from rest_framework.generics import RetrieveAPIView  # pylint: disable=wrong-import-order
+from rest_framework.permissions import IsAuthenticated  # pylint: disable=wrong-import-order
+from rest_framework.response import Response  # pylint: disable=wrong-import-order
 from xblock.completable import XBlockCompletionMode
 from xblock.core import XBlock
 
@@ -65,7 +65,7 @@ from openedx.features.course_experience.course_updates import (
 from openedx.features.course_experience.url_helpers import get_learning_mfe_home_url
 from openedx.features.course_experience.utils import get_course_outline_block_tree, get_start_block
 from openedx.features.discounts.utils import generate_offer_data
-from xmodule.course_block import (  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.course_block import (  # pylint: disable=wrong-import-order
     COURSE_VISIBILITY_PUBLIC,
     COURSE_VISIBILITY_PUBLIC_OUTLINE,
 )

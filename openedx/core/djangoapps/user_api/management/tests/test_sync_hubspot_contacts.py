@@ -37,7 +37,7 @@ class TestHubspotSyncCommand(TestCase):
         cls._create_users(cls.site_config)
 
     @classmethod
-    def _create_users(cls, site_conf):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def _create_users(cls, site_conf):  # pylint: disable=missing-function-docstring
         # Create some test users
         for i in range(1, 20):
             profile_meta = {
