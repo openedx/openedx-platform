@@ -457,13 +457,16 @@ class FrontendSiteConfigTestCase(APITestCase):
         response = self.client.get(self.url)
         data = response.json()
 
-        # Site-level key translated to top level
+        common = data["commonAppConfig"]
+        # Site-level keys are translated to top level
         self.assertEqual(data["lmsBaseUrl"], "https://courses.example.com")  # noqa: PT009
+        self.assertEqual(data["cmsBaseUrl"], "https://studio.example.com")  # noqa: PT009
+        # Site-level keys translated to top level don't appear in commonAppConfig
+        self.assertNotIn("LMS_BASE_URL", common)  # noqa: PT009
+        self.assertNotIn("STUDIO_BASE_URL", common)  # noqa: PT009
         # Unmapped MFE_CONFIG keys appear in commonAppConfig (not at the top level)
         self.assertNotIn("CREDENTIALS_BASE_URL", data)  # noqa: PT009
-        common = data["commonAppConfig"]
         self.assertEqual(common["CREDENTIALS_BASE_URL"], "https://credentials.example.com")  # noqa: PT009
-        self.assertEqual(common["STUDIO_BASE_URL"], "https://studio.example.com")  # noqa: PT009
         # Legacy config keys also appear in commonAppConfig
         for legacy_key in default_legacy_config:
             self.assertIn(legacy_key, common)  # noqa: PT009
@@ -609,12 +612,13 @@ class FrontendSiteConfigTestCase(APITestCase):
         response = self.client.get(self.url)
         data = response.json()
 
-        # Site-level key is promoted to the top level
+        # Site-level keys are promoted to the top level
         self.assertEqual(data["lmsBaseUrl"], "https://courses.example.com")  # noqa: PT009
+        self.assertEqual(data["cmsBaseUrl"], "https://studio.example.com")  # noqa: PT009
         # Unmapped keys are preserved in commonAppConfig
         common = data["commonAppConfig"]
         self.assertEqual(common["CREDENTIALS_BASE_URL"], "https://credentials.example.com")  # noqa: PT009
-        self.assertEqual(common["STUDIO_BASE_URL"], "https://studio.example.com")  # noqa: PT009
+        self.assertNotIn("STUDIO_BASE_URL", common)  # noqa: PT009
 
     @patch("lms.djangoapps.mfe_config_api.views.get_legacy_config_overrides", return_value={})
     @patch("lms.djangoapps.mfe_config_api.views.configuration_helpers")
