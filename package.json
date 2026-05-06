@@ -64,7 +64,7 @@
     "file-loader": "^6",
     "font-awesome": "^4",
     "hls.js": "^1",
-    "imports-loader": "^0.8",
+    "imports-loader": "^5.0.0",
     "jest-environment-jsdom": "^29",
     "jquery": "^2",
     "jquery-migrate": "^1",
