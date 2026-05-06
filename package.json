@@ -66,7 +66,7 @@
     "hls.js": "^1",
     "imports-loader": "^0.8",
     "jest-environment-jsdom": "^29",
-    "jquery": "^2",
+    "jquery": "^3.0.0",
     "jquery-migrate": "^1",
     "jquery.scrollto": "^2",
     "js-cookie": "^3",
