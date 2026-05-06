@@ -154,9 +154,15 @@ def _wait_for_meili_task(info: TaskInfo) -> None:
     or management commands.
     """
     client = _get_meilisearch_client()
+    # This function almost always gets called immediately after enqueing a task, and from experiments, an initial wait
+    # of at least 15ms is warranted, as the task is almost never done in less than 10ms. We are using 20ms which seems
+    # to work well without requiring an additional wait in most cases.
+    sleep_delay = 0.020  # Initial wait is only 20ms but we will back off exponentially
+    time.sleep(sleep_delay)
     current_status = client.get_task(info.task_uid)
     while current_status.status in ("enqueued", "processing"):
-        time.sleep(0.5)
+        time.sleep(sleep_delay)
+        sleep_delay = min(sleep_delay * 1.5, 2.0)  # Increase delay up to 2s
         current_status = client.get_task(info.task_uid)
     if current_status.status != "succeeded":
         try:
