@@ -43,7 +43,7 @@
     "@edx/edx-bootstrap": "^1",
     "@edx/edx-proctoring": "^4",
     "@edx/frontend-component-cookie-policy-banner": "2.2.0",
-    "@edx/paragon": "^2",
+    "@edx/paragon": "^21.0.0",
     "@testing-library/jest-dom": "^6",
     "@testing-library/react": "^12",
     "@testing-library/user-event": "^12",
