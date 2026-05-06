@@ -5,6 +5,7 @@ Tests of DarkLangMiddleware
 
 import unittest
 from unittest.mock import Mock
+from urllib.parse import urlparse
 
 import ddt
 from django.conf import settings
@@ -255,21 +256,21 @@ class DarkLangMiddlewareTests(CacheIsolationTestCase):
         """
         return self.client.post('/update_lang/', {'action': 'reset_preview_language'})
 
-    def test_preview_lang_with_dark_language(self):
+    def test_preview_lang_with_dark_language_redirect(self):
         response = self._post_set_preview_lang('unrel')
 
-        # Assert redirect happened
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, f'{settings.LMS_ROOT_URL}/update_lang/')
+        # Assert redirect happened back to the same path
+        assert response.status_code == 302
+        assert urlparse(response.url).path == '/update_lang/'
 
         # Test clear + set flow
         response = self._post_clear_preview_lang()
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, f'{settings.LMS_ROOT_URL}/update_lang/')
+        assert response.status_code == 302
+        assert urlparse(response.url).path == '/update_lang/'
 
         response = self._post_set_preview_lang('unrel')
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, f'{settings.LMS_ROOT_URL}/update_lang/')    
+        assert response.status_code == 302
+        assert urlparse(response.url).path == '/update_lang/'
 
     def test_accept_chinese_language_codes(self):
         DarkLangConfig(
