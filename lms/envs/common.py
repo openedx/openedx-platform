@@ -3773,6 +3773,18 @@ RECAPTCHA_SITE_KEYS = {
 #     The project ID should be obtained from the Google Cloud Console when creating a reCAPTCHA
 RECAPTCHA_PROJECT_ID = None
 
+# .. setting_name: OPEN_EDX_FILTERS_CONFIG
+# .. setting_default: {}
+# .. setting_description: Configuration dict for openedx-filters pipeline steps.
+#    Keys are filter type strings; values are dicts with 'fail_silently' (bool) and
+#    'pipeline' (list of dotted-path strings to PipelineStep subclasses).
+OPEN_EDX_FILTERS_CONFIG = {
+    "org.openedx.learning.dashboard.render.started.v1": {
+        "fail_silently": False,
+        "pipeline": ["enterprise.filters.dashboard.DashboardContextEnricher"],
+    },
+}
+
 ############################## Miscellaneous ###############################
 
 # To limit the number of courses displayed on learner dashboard

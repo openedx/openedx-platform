@@ -44,7 +44,6 @@ class SendActivationEmailTestCase(TestCase):
         assert self.msg.context['routed_user_email'] == self.student.email
         assert self.msg.context['routed_profile_name'] == ''
         assert self.msg.context['registration_flow'] is False
-        assert self.msg.context['is_enterprise_learner'] is False
         assert self.msg.context['is_first_purchase_discount_overridden'] is False
 
     @mock.patch('time.sleep', mock.Mock(return_value=None))

@@ -41,7 +41,6 @@ from openedx.features.enterprise_support.api import (
     enterprise_enabled,
     get_active_enterprise_customer_user,
     get_consent_notification_data,
-    get_consent_required_courses,
     get_dashboard_consent_notification,
     get_data_sharing_consents,
     get_enterprise_consent_url,
@@ -529,38 +528,6 @@ class TestEnterpriseApi(EnterpriseServiceMockMixin, CacheIsolationTestCase):
                     expected_message.format(username=user.username, course_id=course_id)
                 )
             )
-
-    @httpretty.activate
-    @mock.patch('enterprise.models.EnterpriseCustomer.catalog_contains_course')
-    def test_get_consent_required_courses(self, mock_catalog_contains_course):
-        mock_catalog_contains_course.return_value = True
-        user = UserFactory()
-        enterprise_customer_user = EnterpriseCustomerUserFactory(user_id=user.id)
-
-        course_id = 'fake-course'
-        data_sharing_consent = DataSharingConsent(
-            course_id=course_id,
-            enterprise_customer=enterprise_customer_user.enterprise_customer,
-            username=user.username,
-            granted=False
-        )
-        data_sharing_consent.save()
-        consent_required = get_consent_required_courses(user, [course_id])
-        assert course_id in consent_required
-
-        # now grant consent and call our method again
-        data_sharing_consent.granted = True
-        data_sharing_consent.save()
-        consent_required = get_consent_required_courses(user, [course_id])
-        assert course_id not in consent_required
-
-    def test_consent_not_required_for_non_enterprise_user(self):
-        user = UserFactory()
-        course_id = 'fake-course'
-
-        consent_required_courses = get_consent_required_courses(user, [course_id])
-
-        assert set() == consent_required_courses
 
     @mock.patch('openedx.features.enterprise_support.api.create_jwt_for_user')
     def test_fetch_enterprise_learner_data_unauthenticated(self, mock_jwt_builder):
