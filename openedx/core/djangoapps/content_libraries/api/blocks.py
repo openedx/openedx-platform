@@ -417,6 +417,9 @@ def set_library_block_olx(
     usage_key: LibraryUsageLocatorV2,
     new_olx_str: str,
     paths_to_media: dict | None = None,
+    # The following arg can be removed after https://github.com/openedx/openedx-core/pull/573 lands
+    # then we can presumably just get the name from the bulk_draft_changes_for context
+    created_by: int | None = None,
 ) -> ComponentVersion:
     """
     Replace the OLX source of the given XBlock.
@@ -488,6 +491,7 @@ def set_library_block_olx(
                 'block.xml': new_olx_media.pk,
             },
             created=now,
+            created_by=created_by,
         )
 
     return new_component_version

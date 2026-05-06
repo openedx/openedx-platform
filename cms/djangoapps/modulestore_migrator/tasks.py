@@ -7,7 +7,7 @@ import mimetypes
 import os
 import typing as t
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timezone
 from enum import Enum
 from gettext import ngettext
 
@@ -341,6 +341,7 @@ def _import_structure(
                   openedx_content equivalent.
     """
     migration = source_data.migration
+    migration_start_time = datetime.now(UTC)
     migration_context = _MigrationContext(
         used_component_keys=set(
             LibraryUsageLocatorV2(target_library.key, block_type, block_id)  # type: ignore[abstract]
@@ -367,9 +368,13 @@ def _import_structure(
         repeat_handling_strategy=RepeatHandlingStrategy(migration.repeat_handling_strategy),
         preserve_url_slugs=migration.preserve_url_slugs,
         created_by=status.user_id,
-        created_at=datetime.now(timezone.utc),  # noqa: UP017
+        created_at=migration_start_time,
     )
-    with content_api.bulk_draft_changes_for(migration.target.id) as change_log:
+    with content_api.bulk_draft_changes_for(
+        learning_package_id=migration.target.id,
+        changed_by=migration_context.created_by,
+        changed_at=migration_start_time,
+    ) as change_log:
         root_migrated_node = _migrate_node(
             context=migration_context,
             source_node=root_node,
@@ -390,6 +395,7 @@ def _import_structure(
             migration.target.id,
             draft_qset=drafts_to_publish,
             published_by=migration_context.created_by,
+            # published_at will be later than 'migration_start_time' as _migrate_node() may have taken quite a while.
         )
     return change_log, root_migrated_node
 
@@ -424,7 +430,7 @@ def _populate_collection(user_id: int, migration: models.ModulestoreMigration) -
     )
     if block_target_pks:
         content_api.add_to_collection(
-            learning_package_id=migration.target.pk,
+            learning_package_id=migration.target.id,
             collection_code=migration.target_collection.collection_code,
             entities_qset=PublishableEntity.objects.filter(id__in=block_target_pks),
             created_by=user_id,
@@ -437,6 +443,7 @@ def _create_collection(
     library_key: LibraryLocatorV2,
     title: str,
     course_name: str | None = None,
+    created_by: int | None = None,
 ) -> Collection:
     """
     Creates a collection in the given library
@@ -462,6 +469,7 @@ def _create_collection(
                     collection_key=modified_key,
                     title=f"{title}{f'_{attempt}' if attempt > 0 else ''}",
                     description=description,
+                    created_by=created_by,
                 )
         except libraries_api.LibraryCollectionAlreadyExists:
             attempt += 1
@@ -721,6 +729,7 @@ def bulk_migrate_from_modulestore(
                         library_key=target_library_locator,
                         title=legacy_root_list[i].display_name,
                         course_name=legacy_root_list[i].display_name if source_data.source.key.is_course else None,
+                        created_by=user_id,
                     )
                 )
             _populate_collection(user_id, migration)
@@ -981,7 +990,7 @@ def _migrate_component(
 
     # Create the new component version for it
     component_version = libraries_api.set_library_block_olx(
-        target_key, new_olx_str=olx, paths_to_media=paths_to_media_ids,
+        target_key, new_olx_str=olx, paths_to_media=paths_to_media_ids, created_by=context.created_by,
     )
 
     # Note: Publishing happens after bulk_draft_changes_for exits, in _import_structure.
