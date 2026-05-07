@@ -12,5 +12,5 @@ idna==3.13
     # via requests
 requests==2.33.1
     # via -r scripts/xblock/requirements.in
-urllib3==2.6.3
+urllib3==2.7.0
     # via requests
