@@ -53,7 +53,7 @@
     "backbone": "^1",
     "backbone-associations": "^0.6",
     "backbone.paginator": "^2",
-    "bootstrap": "4.0.0",
+    "bootstrap": "4.3.1",
     "camelize": "^1",
     "classnames": "^2",
     "css-loader": "^7",
