@@ -152,6 +152,10 @@ def _wait_for_meili_task(info: TaskInfo) -> None:
     Simple helper method to wait for a Meilisearch task to complete
     This method will block until the task is completed, so it should only be used in celery tasks
     or management commands.
+
+    ✨ Note: "Meilisearch processes tasks in the order they were added to the queue."
+       per https://www.meilisearch.com/docs/capabilities/indexing/tasks_and_batches/monitor_tasks#monitoring-task-status
+       so if you need to wait for multiple tasks, simply wait for the final (last) task.
     """
     client = _get_meilisearch_client()
     # This function almost always gets called immediately after enqueing a task, and from experiments, an initial wait
@@ -170,15 +174,6 @@ def _wait_for_meili_task(info: TaskInfo) -> None:
         except (TypeError, KeyError):
             err_reason = "Unknown error"
         raise MeilisearchError(err_reason)
-
-
-def _wait_for_meili_tasks(info_list: list[TaskInfo]) -> None:
-    """
-    Simple helper method to wait for multiple Meilisearch tasks to complete
-    """
-    while info_list:
-        info = info_list.pop()
-        _wait_for_meili_task(info)
 
 
 def _index_exists(index_name: str) -> bool:
@@ -330,13 +325,10 @@ def _update_index_docs(docs) -> None:
     client = _get_meilisearch_client()
     current_rebuild_index_name = _get_running_rebuild_index_name()
 
-    tasks = []
     if current_rebuild_index_name:
         # If there is a rebuild in progress, the document will also be added to the new index.
-        tasks.append(client.index(current_rebuild_index_name).update_documents(docs))
-    tasks.append(client.index(STUDIO_INDEX_NAME).update_documents(docs))
-
-    _wait_for_meili_tasks(tasks)
+        client.index(current_rebuild_index_name).update_documents(docs)
+    _wait_for_meili_task(client.index(STUDIO_INDEX_NAME).update_documents(docs))
 
 
 def only_if_meilisearch_enabled(f):
@@ -834,13 +826,10 @@ def _delete_documents(filter_query: str) -> None:
     client = _get_meilisearch_client()
     current_rebuild_index_name = _get_running_rebuild_index_name()
 
-    tasks = []
     if current_rebuild_index_name:
         # If there is a rebuild in progress, the document will also be removed from the new index.
-        tasks.append(client.index(current_rebuild_index_name).delete_documents(filter=filter_query))
-    tasks.append(client.index(STUDIO_INDEX_NAME).delete_documents(filter=filter_query))
-
-    _wait_for_meili_tasks(tasks)
+        client.index(current_rebuild_index_name).delete_documents(filter=filter_query)
+    _wait_for_meili_task(client.index(STUDIO_INDEX_NAME).delete_documents(filter=filter_query))
 
 
 def _delete_index_doc(doc_id) -> None:
@@ -855,14 +844,11 @@ def _delete_index_doc(doc_id) -> None:
     client = _get_meilisearch_client()
     current_rebuild_index_name = _get_running_rebuild_index_name()
 
-    tasks = []
     if current_rebuild_index_name:
         # If there is a rebuild in progress, the document will also be removed from the new index.
-        tasks.append(client.index(current_rebuild_index_name).delete_document(doc_id))
+        client.index(current_rebuild_index_name).delete_document(doc_id)
 
-    tasks.append(client.index(STUDIO_INDEX_NAME).delete_document(doc_id))
-
-    _wait_for_meili_tasks(tasks)
+    _wait_for_meili_task(client.index(STUDIO_INDEX_NAME).delete_document(doc_id))
 
 
 def upsert_library_block_index_doc(usage_key: UsageKey) -> None:
