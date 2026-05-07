@@ -35,8 +35,9 @@ Decision
 
 1. **JWT authentication via** ``JwtAuthentication`` **MUST be the standard
    authentication mechanism for all API(external and internal) access**, per `OEP-0042`_
-2. **Session authentication MAY be supported alongside** ``JwtAuthentication``
-   on any endpoint — this is the platform default and is acceptable.
+2. **Session authentication MUST also be used when** the expected client for an API
+   is a Browser/MFE. This would be added alongside ``JwtAuthentication`` on the
+   endpoint — which is the platform default.
 3. **``BearerAuthentication`` and ``BearerAuthenticationAllowInactiveUser`` are
    deprecated and MUST NOT be used in new code**
 4. **``OAuth2Authentication`` and ``OAuth2AuthenticationAllowInactiveUser`` are
@@ -97,41 +98,48 @@ Relevance in edx-platform
 Code examples (authentication patterns by use case)
 ===================================================
 
-* **Example APIs (Keep supporting OAuth2 JWT token & session authentication and deprecate Bearer token)**
+* **Standard API (JWT + Session):**
+
+  Example: ``lms/djangoapps/course_home_api/dates/views.py (DatesTabView)``
+  (`permalink <https://github.com/openedx/openedx-platform/blob/be3fc121148587fb1da507519534063c89387091/lms/djangoapps/course_home_api/dates/views.py#L68-L72>`_)
 
 .. code-block:: python
 
-   # lms/djangoapps/course_home_api/dates/views.py — target state (BearerAuth removed as per decision #3)
-   from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
-   from openedx.core.lib.api.authentication import SessionAuthenticationAllowInactiveUser
-   from rest_framework.permissions import IsAuthenticated
+   # Current state
+   authentication_classes = (
+       JwtAuthentication,
+       BearerAuthenticationAllowInactiveUser,  # to be removed per Decision #3
+       SessionAuthenticationAllowInactiveUser,
+   )
 
-   class DatesTabView(RetrieveAPIView):
-       """Request details for the Dates Tab."""
-       authentication_classes = (
-           JwtAuthentication,
-           SessionAuthenticationAllowInactiveUser,
-       )
-       permission_classes = (IsAuthenticated,)
+   # Target state (after BearerAuth removal)
+   authentication_classes = (
+       JwtAuthentication,
+       SessionAuthenticationAllowInactiveUser,
+   )
 
+Note: use ``SessionAuthenticationAllowInactiveUser`` or ``SessionAuthentication`` based on usecase of the API.
 
-* **Browser-first API (Session primary, JWT added & deprecate Bearer Auth):**
+* **API intended for MFE/Browser clients:**
 
+  Example: ``lms/djangoapps/teams/views.py (TeamsDashboardView)``
+  (`permalink <https://github.com/openedx/openedx-platform/blob/be3fc121148587fb1da507519534063c89387091/lms/djangoapps/teams/views.py#L114-L122>`_)
 
 .. code-block:: python
 
-   # lms/djangoapps/teams/views.py — target state (BearerAuth removed & add JWT authentication support)
-   from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
-   from openedx.core.lib.api.authentication import SessionAuthenticationAllowInactiveUser
-   from rest_framework.permissions import IsAuthenticated
+   # Current state
+   authentication_classes = (
+       BearerAuthenticationAllowInactiveUser,  # to be removed per Decision #3
+       SessionAuthenticationAllowInactiveUser,
+   )
 
-   class TeamsDashboardView(GenericAPIView):
-       """View methods related to the teams dashboard."""
-       authentication_classes = (
-           SessionAuthenticationAllowInactiveUser,
-           JwtAuthentication,
-       )
-       permission_classes = (IsAuthenticated,)
+   # Target state (BearerAuth removed, JwtAuthentication added per Decision #1)
+   authentication_classes = (
+       JwtAuthentication,
+       SessionAuthenticationAllowInactiveUser,
+   )
+
+Note: use ``SessionAuthenticationAllowInactiveUser`` or ``SessionAuthentication`` based on usecase of the API.
 
 Implementation Notes
 ====================
@@ -139,6 +147,13 @@ Implementation Notes
 * Supporting both ``JwtAuthentication`` and ``SessionAuthentication`` on the same
   endpoint is acceptable — this is already the platform default in
   ``openedx/envs/common.py`` (``DEFAULT_AUTHENTICATION_CLASSES``)
+* ``SessionAuthenticationAllowInactiveUser`` is used in examples for consistency with
+  ``JwtAuthentication``, which also allows inactive users by default. Using standard
+  ``SessionAuthentication`` alongside ``JwtAuthentication`` would create inconsistent
+  behavior — active-user enforcement would depend on which auth method the client used.
+  Endpoints that need to enforce active-user status should do so via a permission class
+  rather than the authentication class. This ADR does not take a stance on inactive
+  user policy beyond noting this inconsistency.
 * The primary migration target is the ``view_auth_classes`` decorator — one change
   removes ``BearerAuthentication`` from 49+ endpoints
 * Verify no active external clients are still sending Bearer tokens before
@@ -158,11 +173,16 @@ Rollout Plan
    ``BearerAuthentication`` (see ``openedx/core/lib/api/authentication.py`` and
    ``edx_rest_framework_extensions/auth/bearer/authentication.py`` — note both files
    use the same attribute name, so correlate carefully to distinguish which class is active)
-3. Update ``view_auth_classes`` decorator to remove ``BearerAuthenticationAllowInactiveUser``
-4. Mark ``BearerAuthentication`` / ``BearerAuthenticationAllowInactiveUser`` deprecated in source
+3. Mark ``BearerAuthentication`` / ``BearerAuthenticationAllowInactiveUser`` deprecated in source
+4. Update ``view_auth_classes`` decorator to remove ``BearerAuthenticationAllowInactiveUser``
+   from new code
 5. Remove overdue ``JWT_AUTH_ADD_KID_HEADER`` toggle — make KID header always-on
 6. Migrate external clients from Bearer tokens to JWT token flow
 7. Remove ``BearerAuthentication`` and its ``OAuth2Authentication`` aliases once migration is complete
+
+For full removal details, open questions around third-party client migration, and
+token expiry considerations, see the
+`DEPR: BearerAuthentication <https://github.com/openedx/edx-drf-extensions/issues/284>`_ ticket.
 
 References
 ==========
