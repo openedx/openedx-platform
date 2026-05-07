@@ -166,7 +166,7 @@ def send_change_events_for_modified_entities(
                     container_key_str=str(container_key),
                     old_version_id=change.old_version_id,
                     new_version_id=change.new_version_id,
-                )
+                ).forget()  # Best practice: free celery result using forget() after calling delay()
         else:
             log.error("Unknown publishable entity type: %s", entity)
             continue
@@ -726,7 +726,11 @@ def dispatch_and_wait(task_fn: Task, wait_for_full_completion: bool = False, **k
     result: AsyncResult = task_fn.delay(**kwargs)
     # Try waiting a bit for the task to finish before we complete the request:
     try:
-        result.get(timeout=10)
+        # We use `disable_sync_subtasks=False` because some of our tasks emit
+        # events whose handlers then spawn additional tasks which are sometimes
+        # synchronous. Ideal usage of celery would be to "chain" the tasks
+        # instead of spawning subtasks, but that would require a major refactor.
+        result.get(timeout=10, disable_sync_subtasks=False)
     except CeleryTimeout:
         pass
         # This is fine! The search index is still being updated, and/or other
