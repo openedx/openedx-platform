@@ -12,7 +12,7 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from lms.djangoapps.mfe_config_api.views import mfe_name_to_app_id
+from lms.djangoapps.mfe_config_api.views import mfe_name_to_app_id, translate_paragon_theme_urls
 from openedx.core.release import doc_version
 
 # Default legacy configuration values, used in tests to build a correct expected response
@@ -373,6 +373,113 @@ class MfeNameToAppIdTests(SimpleTestCase):
         )
 
 
+class TranslateParagonThemeUrlsTests(SimpleTestCase):
+    """Tests for the translate_paragon_theme_urls helper."""
+
+    def test_brand_override_only(self):
+        """urls.brandOverride is selected and emitted as `url`; defaults pass through."""
+        legacy = {
+            "core": {
+                "urls": {
+                    "default": "https://cdn.example.com/paragon/core.css",
+                    "brandOverride": "https://cdn.example.com/brand/core.css",
+                },
+            },
+            "defaults": {"light": "light", "dark": "dark"},
+            "variants": {
+                "light": {
+                    "urls": {
+                        "default": "https://cdn.example.com/paragon/light.css",
+                        "brandOverride": "https://cdn.example.com/brand/light.css",
+                    },
+                },
+                "dark": {
+                    "urls": {
+                        "default": "https://cdn.example.com/paragon/dark.css",
+                        "brandOverride": "https://cdn.example.com/brand/dark.css",
+                    },
+                },
+            },
+        }
+        self.assertEqual(  # noqa: PT009
+            translate_paragon_theme_urls(legacy),
+            {
+                "core": {"url": "https://cdn.example.com/brand/core.css"},
+                "defaults": {"light": "light", "dark": "dark"},
+                "variants": {
+                    "light": {"url": "https://cdn.example.com/brand/light.css"},
+                    "dark": {"url": "https://cdn.example.com/brand/dark.css"},
+                },
+            },
+        )
+
+    def test_default_only_yields_no_theme(self):
+        """Input with only `urls.default` (Paragon defaults) yields no theme at all.
+
+        `defaults` is dropped too: it is meaningless without a URL to point at.
+        """
+        legacy = {
+            "core": {"urls": {"default": "https://cdn.example.com/paragon/core.css"}},
+            "defaults": {"light": "light"},
+            "variants": {
+                "light": {"urls": {"default": "https://cdn.example.com/paragon/light.css"}},
+            },
+        }
+        self.assertEqual(translate_paragon_theme_urls(legacy), {})  # noqa: PT009
+
+    def test_bare_url_ignored(self):
+        """Bare `url` (legacy Paragon-default form) is dropped."""
+        legacy = {
+            "core": {"url": "https://cdn.example.com/paragon/core.css"},
+            "variants": {
+                "light": {"url": "https://cdn.example.com/paragon/light.css"},
+                "green": {"url": "https://cdn.example.com/brand/green.css"},
+            },
+        }
+        self.assertEqual(translate_paragon_theme_urls(legacy), {})  # noqa: PT009
+
+    def test_mixed_variants(self):
+        """A variant with brandOverride is kept; siblings without it are dropped."""
+        legacy = {
+            "defaults": {"light": "light"},
+            "variants": {
+                "light": {
+                    "urls": {
+                        "default": "https://cdn.example.com/paragon/light.css",
+                        "brandOverride": "https://cdn.example.com/brand/light.css",
+                    },
+                },
+                "dark": {"urls": {"default": "https://cdn.example.com/paragon/dark.css"}},
+            },
+        }
+        self.assertEqual(  # noqa: PT009
+            translate_paragon_theme_urls(legacy),
+            {
+                "defaults": {"light": "light"},
+                "variants": {"light": {"url": "https://cdn.example.com/brand/light.css"}},
+            },
+        )
+
+    def test_non_dict_input(self):
+        """Non-dict inputs yield an empty translation."""
+        self.assertEqual(translate_paragon_theme_urls(None), {})  # noqa: PT009
+        self.assertEqual(translate_paragon_theme_urls("string"), {})  # noqa: PT009
+        self.assertEqual(translate_paragon_theme_urls([]), {})  # noqa: PT009
+
+    def test_empty_dict(self):
+        """An empty legacy theme dict yields an empty translation."""
+        self.assertEqual(translate_paragon_theme_urls({}), {})  # noqa: PT009
+
+    def test_empty_brand_override_string_skipped(self):
+        """A blank brandOverride is treated as absent."""
+        legacy = {
+            "variants": {
+                "light": {"urls": {"brandOverride": ""}},
+            },
+        }
+        self.assertEqual(translate_paragon_theme_urls(legacy), {})  # noqa: PT009
+
+
 class FrontendSiteConfigTestCase(APITestCase):
     """Tests for the FrontendSiteConfigView endpoint."""
 
@@ -668,6 +775,142 @@ class FrontendSiteConfigTestCase(APITestCase):
         for app in data["apps"]:
             self.assertNotIn("LANGUAGE_PREFERENCE_COOKIE_NAME", app["config"])  # noqa: PT009
             self.assertNotIn("LOGO_URL", app["config"])  # noqa: PT009
+
+    @patch("lms.djangoapps.mfe_config_api.views.configuration_helpers")
+    def test_paragon_theme_urls_translated_to_theme(self, configuration_helpers_mock):
+        """PARAGON_THEME_URLS is translated to a top-level `theme` site config entry."""
+        def side_effect(key, default=None):
+            if key == "MFE_CONFIG":
+                return {
+                    "PARAGON_THEME_URLS": {
+                        "core": {
+                            "urls": {
+                                "default": "https://cdn.example.com/paragon/core.css",
+                                "brandOverride": "https://cdn.example.com/brand/core.css",
+                            },
+                        },
+                        "defaults": {"light": "light"},
+                        "variants": {
+                            "light": {
+                                "urls": {
+                                    "default": "https://cdn.example.com/paragon/light.css",
+                                    "brandOverride": "https://cdn.example.com/brand/light.css",
+                                },
+                            },
+                        },
+                    },
+                }
+            if key == "MFE_CONFIG_OVERRIDES":
+                return {}
+            return default
+        configuration_helpers_mock.get_value.side_effect = side_effect
+
+        response = self.client.get(self.url)
+        data = response.json()
+
+        self.assertEqual(  # noqa: PT009
+            data["theme"],
+            {
+                "core": {"url": "https://cdn.example.com/brand/core.css"},
+                "defaults": {"light": "light"},
+                "variants": {"light": {"url": "https://cdn.example.com/brand/light.css"}},
+            },
+        )
+        # The legacy key must not leak into commonAppConfig.
+        self.assertNotIn("PARAGON_THEME_URLS", data["commonAppConfig"])  # noqa: PT009
+
+    @patch("lms.djangoapps.mfe_config_api.views.configuration_helpers")
+    def test_paragon_theme_urls_without_brand_override_omits_theme(self, configuration_helpers_mock):
+        """A PARAGON_THEME_URLS with only Paragon-default URLs produces no `theme` entry."""
+        def side_effect(key, default=None):
+            if key == "MFE_CONFIG":
+                return {
+                    "PARAGON_THEME_URLS": {
+                        "core": {"url": "https://cdn.example.com/paragon/core.css"},
+                        "defaults": {"light": "light"},
+                        "variants": {
+                            "light": {"url": "https://cdn.example.com/paragon/light.css"},
+                        },
+                    },
+                }
+            if key == "MFE_CONFIG_OVERRIDES":
+                return {}
+            return default
+        configuration_helpers_mock.get_value.side_effect = side_effect
+
+        response = self.client.get(self.url)
+        data = response.json()
+
+        self.assertNotIn("theme", data)  # noqa: PT009
+        self.assertNotIn("PARAGON_THEME_URLS", data["commonAppConfig"])  # noqa: PT009
+
+    @patch("lms.djangoapps.mfe_config_api.views.get_legacy_config_overrides", return_value={})
+    @patch("lms.djangoapps.mfe_config_api.views.configuration_helpers")
+    def test_paragon_theme_urls_stripped_from_app_overrides(
+        self, configuration_helpers_mock, _legacy_overrides_mock,  # noqa: PT019
+    ):
+        """PARAGON_THEME_URLS in MFE_CONFIG_OVERRIDES is stripped (theme is site-level only)."""
+        def side_effect(key, default=None):
+            if key == "MFE_CONFIG":
+                return {}
+            if key == "MFE_CONFIG_OVERRIDES":
+                return {
+                    "authn": {
+                        "PARAGON_THEME_URLS": {
+                            "variants": {
+                                "light": {"urls": {"brandOverride": "https://example.com/light.css"}},
+                            },
+                        },
+                        "APP_SPECIFIC_KEY": "app_value",
+                    },
+                }
+            return default
+        configuration_helpers_mock.get_value.side_effect = side_effect
+
+        response = self.client.get(self.url)
+        data = response.json()
+
+        self.assertNotIn("theme", data)  # noqa: PT009
+        app_config = data["apps"][0]["config"]
+        self.assertNotIn("PARAGON_THEME_URLS", app_config)  # noqa: PT009
+        self.assertEqual(app_config["APP_SPECIFIC_KEY"], "app_value")  # noqa: PT009
+
+    @patch("lms.djangoapps.mfe_config_api.views.configuration_helpers")
+    def test_frontend_site_config_theme_overrides_legacy_theme(self, configuration_helpers_mock):
+        """FRONTEND_SITE_CONFIG.theme replaces the translated legacy theme wholesale."""
+        def side_effect(key, default=None):
+            if key == "MFE_CONFIG":
+                return {
+                    "PARAGON_THEME_URLS": {
+                        "variants": {
+                            "light": {"urls": {"brandOverride": "https://legacy.example.com/light.css"}},
+                        },
+                    },
+                }
+            if key == "MFE_CONFIG_OVERRIDES":
+                return {}
+            if key == "FRONTEND_SITE_CONFIG":
+                return {
+                    "theme": {
+                        "core": {"url": "https://new.example.com/core.css"},
+                        "defaults": {"light": "light"},
+                        "variants": {"light": {"url": "https://new.example.com/light.css"}},
+                    },
+                }
+            return default
+        configuration_helpers_mock.get_value.side_effect = side_effect
+
+        response = self.client.get(self.url)
+        data = response.json()
+
+        self.assertEqual(  # noqa: PT009
+            data["theme"],
+            {
+                "core": {"url": "https://new.example.com/core.css"},
+                "defaults": {"light": "light"},
+                "variants": {"light": {"url": "https://new.example.com/light.css"}},
+            },
+        )
 
     @patch("lms.djangoapps.mfe_config_api.views.configuration_helpers")
     def test_frontend_site_config_overrides_translated(self, configuration_helpers_mock):
