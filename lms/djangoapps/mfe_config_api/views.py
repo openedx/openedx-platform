@@ -40,6 +40,12 @@ SITE_CONFIG_TRANSLATION_MAP: dict[str, str] = {
     "SEGMENT_KEY": "segmentKey",
 }
 
+# Legacy MFE_CONFIG keys that get promoted to site-level fields in frontend-base's
+# SiteConfig and therefore must not leak into per-app config.  Includes both the
+# 1:1 renames in SITE_CONFIG_TRANSLATION_MAP and the structurally-translated
+# PARAGON_THEME_URLS (mapped to `theme`).
+LEGACY_SITE_LEVEL_KEYS: set[str] = set(SITE_CONFIG_TRANSLATION_MAP) | {"PARAGON_THEME_URLS"}
+
 
 # Translation map from known MFE names to reverse-domain appIds.
 MFE_NAME_TO_APP_ID: dict[str, str] = {
@@ -168,6 +174,58 @@ def get_mfe_config_overrides() -> dict:
     }
 
 
+def translate_paragon_theme_urls(legacy_theme) -> dict:
+    """Translate legacy PARAGON_THEME_URLS into frontend-base's `theme` site config.
+
+    frontend-base loads Paragon's base CSS via its shell stylesheet, so the runtime
+    `theme` setting is only for brand overrides.  Only `urls.brandOverride` entries
+    are kept; legacy `url` and `urls.default` values point at Paragon defaults and
+    would clobber the bundled CSS, so they are dropped.  `defaults` passes through
+    unchanged.
+
+    Non-dict inputs (e.g., misconfigured settings) yield an empty dict.
+    """
+    if not isinstance(legacy_theme, dict):
+        return {}
+
+    def _brand_override(entry) -> str | None:
+        if not isinstance(entry, dict):
+            return None
+        urls = entry.get("urls")
+        if isinstance(urls, dict):
+            override = urls.get("brandOverride")
+            if isinstance(override, str) and override:
+                return override
+        return None
+
+    theme: dict = {}
+
+    core_url = _brand_override(legacy_theme.get("core"))
+    if core_url:
+        theme["core"] = {"url": core_url}
+
+    variants = legacy_theme.get("variants")
+    if isinstance(variants, dict):
+        translated_variants = {
+            name: {"url": url}
+            for name, entry in variants.items()
+            if (url := _brand_override(entry))
+        }
+        if translated_variants:
+            theme["variants"] = translated_variants
+
+    # `defaults` alone is meaningless without at least one URL to point at,
+    # so emit nothing if no core/variants survived.
+    if not theme:
+        return {}
+
+    defaults = legacy_theme.get("defaults")
+    if isinstance(defaults, dict) and defaults:
+        theme["defaults"] = dict(defaults)
+
+    return theme
+
+
 def get_frontend_site_config() -> dict:
     """Return frontend site configuration from settings or site configuration.
 
@@ -281,6 +339,10 @@ def translate_legacy_mfe_config() -> dict:
     get_legacy_config/get_mfe_config/get_mfe_config_overrides helpers) is fully
     deprecated.
 
+    Most legacy keys are renamed via SITE_CONFIG_TRANSLATION_MAP.  PARAGON_THEME_URLS
+    is structurally translated into the new `theme` setting and intentionally narrowed
+    to brand-override URLs only (see translate_paragon_theme_urls).
+
     Returns a dict in the shape expected by frontend-base's SiteConfig.
     """
     mfe_config = get_mfe_config()
@@ -293,7 +355,11 @@ def translate_legacy_mfe_config() -> dict:
     site_config = {}
     common_app_config = get_legacy_config()
     for key, value in mfe_config.items():
-        if key in SITE_CONFIG_TRANSLATION_MAP:
+        if key == "PARAGON_THEME_URLS":
+            theme = translate_paragon_theme_urls(value)
+            if theme:
+                site_config["theme"] = theme
+        elif key in SITE_CONFIG_TRANSLATION_MAP:
             site_config[SITE_CONFIG_TRANSLATION_MAP[key]] = value
         else:
             common_app_config[key] = value
@@ -319,7 +385,7 @@ def translate_legacy_mfe_config() -> dict:
         overrides = {
             k: v
             for k, v in mfe_config_overrides[mfe_name].items()
-            if k not in SITE_CONFIG_TRANSLATION_MAP
+            if k not in LEGACY_SITE_LEVEL_KEYS
         }
         apps.append(
             {
