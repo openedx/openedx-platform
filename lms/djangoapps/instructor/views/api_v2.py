@@ -284,7 +284,6 @@ class CourseMetadataView(DeveloperErrorViewMixin, APIView):
             request,
             course_key,
             staff_access=original_user_is_staff,
-            reset_masquerade_data=True,
         )
 
         if get_masquerade_role(request.user, course_key) == 'student' or \
