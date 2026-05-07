@@ -489,11 +489,11 @@ class ContentLibrariesRestApiTest(APITransactionTestCase):
         """ Restore a deleted a container (unit etc.) """
         return self._api('post', URL_LIB_CONTAINER_RESTORE.format(container_key=container_key), None, expect_response)
 
-    def _get_container_children(self, container_key: ContainerKey | str, expect_response=200):
+    def _get_container_children(self, container_key: ContainerKey | str, published=False, expect_response=200):
         """ Get container children"""
         return self._api(
             'get',
-            URL_LIB_CONTAINER_CHILDREN.format(container_key=container_key),
+            URL_LIB_CONTAINER_CHILDREN.format(container_key=container_key) + ("?published=true" if published else ""),
             None,
             expect_response
         )
