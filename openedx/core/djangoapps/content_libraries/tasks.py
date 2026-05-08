@@ -64,6 +64,7 @@ from openedx_events.content_authoring.signals import (
     LIBRARY_CONTAINER_PUBLISHED,
     LIBRARY_CONTAINER_UPDATED,
 )
+from openedx_tagging import api as tagging_api
 from user_tasks.models import UserTaskArtifact
 from user_tasks.tasks import UserTask, UserTaskStatus
 from xblock.fields import Scope
@@ -118,10 +119,11 @@ def send_change_events_for_modified_entities(
 
     for entity in entities:
         change = changes_by_entity_id[entity.id]
+        entity_opaque_key: LibraryUsageLocatorV2 | LibraryContainerLocator
         if hasattr(entity, "component"):
             # This is a library XBlock (component)
-            block_key = api.library_component_usage_key(library.library_key, entity.component)
-            event_data = LibraryBlockData(library_key=library.library_key, usage_key=block_key)
+            entity_opaque_key = api.library_component_usage_key(library.library_key, entity.component)
+            event_data = LibraryBlockData(library_key=library.library_key, usage_key=entity_opaque_key)
             if change.old_version is None and change.new_version:
                 # .. event_implemented_name: LIBRARY_BLOCK_CREATED
                 # .. event_type: org.openedx.content_authoring.library_block.created.v1
@@ -137,8 +139,8 @@ def send_change_events_for_modified_entities(
                 LIBRARY_BLOCK_UPDATED.send_event(library_block=event_data)
 
         elif hasattr(entity, "container"):
-            container_key = api.library_container_locator(library.library_key, entity.container)
-            event_data = LibraryContainerData(container_key=container_key)
+            entity_opaque_key = api.library_container_locator(library.library_key, entity.container)
+            event_data = LibraryContainerData(container_key=entity_opaque_key)
             if change.old_version is None and change.new_version:
                 # .. event_implemented_name: LIBRARY_CONTAINER_CREATED
                 # .. event_type: org.openedx.content_authoring.content_library.container.created.v1
@@ -163,13 +165,35 @@ def send_change_events_for_modified_entities(
                 # If entities were added/removed from this container, we need to notify things like the search index
                 # that the list of parent containers for each entity has changed.
                 check_container_content_changes.delay(
-                    container_key_str=str(container_key),
+                    container_key_str=str(entity_opaque_key),
                     old_version_id=change.old_version_id,
                     new_version_id=change.new_version_id,
-                ).forget()  # Best practice: free celery result using forget() after calling delay()
+                )
         else:
             log.error("Unknown publishable entity type: %s", entity)
             continue
+
+        if change.restored:
+            # This block/container was previously soft-deleted and is now un-deleted. It may have tags or collections.
+            # It would be best to expand the LIBRARY_BLOCK_CREATED event to include the "restored" flag, but in
+            # the interests of minimizing breaking event changes for now we'll just emit a
+            # CONTENT_OBJECT_ASSOCIATIONS_CHANGED event to ensure relevant search index records get updated.
+            association_changes: list[str] = []
+            if content_api.get_entity_collections(learning_package_id, entity_ref=entity.entity_ref).exists():
+                association_changes.append("collections")  # This entity is part of at least one collection
+            if tagging_api.get_object_tags(str(entity_opaque_key)).exists():
+                association_changes.append("tags")  # This entity has tags
+            if association_changes:
+                # .. event_implemented_name: CONTENT_OBJECT_ASSOCIATIONS_CHANGED
+                # .. event_type: org.openedx.content_authoring.content.object.associations.changed.v1
+                CONTENT_OBJECT_ASSOCIATIONS_CHANGED.send_event(
+                    content_object=ContentObjectChangedData(
+                        object_id=str(entity_opaque_key),
+                        changes=association_changes,
+                    ),
+                )
+            # Notifying parent containers that a child has been restored is not necessary here - they'll already be
+            # included in 'change_list' [as side effects].
 
 
 @shared_task(base=LoggedTask)
