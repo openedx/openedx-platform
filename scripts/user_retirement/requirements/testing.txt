@@ -14,11 +14,11 @@ attrs==26.1.0
     #   zeep
 backoff==2.2.1
     # via -r scripts/user_retirement/requirements/base.txt
-boto3==1.43.5
+boto3==1.43.6
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   moto
-botocore==1.43.5
+botocore==1.43.6
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   boto3
@@ -75,7 +75,7 @@ google-api-core==2.30.3
     #   google-api-python-client
 google-api-python-client==2.196.0
     # via -r scripts/user_retirement/requirements/base.txt
-google-auth==2.51.0
+google-auth==2.52.0
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   google-api-core

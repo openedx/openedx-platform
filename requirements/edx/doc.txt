@@ -105,14 +105,14 @@ bleach[css]==6.3.0
     #   ora2
     #   xblock-drag-and-drop-v2
     #   xblock-poll
-boto3==1.43.5
+boto3==1.43.6
     # via
     #   -r requirements/edx/base.txt
     #   django-ses
     #   fs-s3fs
     #   ora2
     #   snowflake-connector-python
-botocore==1.43.5
+botocore==1.43.6
     # via
     #   -r requirements/edx/base.txt
     #   boto3
@@ -624,7 +624,7 @@ edx-rest-api-client==7.0.0
     #   edx-enterprise
     #   edx-proctoring
     #   enterprise-integrated-channels
-edx-search==5.0.0
+edx-search==5.0.1
     # via
     #   -r requirements/edx/base.txt
     #   openedx-forum
@@ -728,7 +728,7 @@ google-api-core[grpc]==2.30.3
     #   google-cloud-core
     #   google-cloud-firestore
     #   google-cloud-storage
-google-auth==2.51.0
+google-auth==2.52.0
     # via
     #   -r requirements/edx/base.txt
     #   google-api-core
