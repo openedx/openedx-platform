@@ -3,7 +3,7 @@ Unit tests for instructor API v2 endpoints.
 """
 import json
 from datetime import datetime, timedelta
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 from urllib.parse import urlencode
 from uuid import uuid4
 
@@ -2209,6 +2209,135 @@ class IssuedCertificatesViewTest(SharedModuleStoreTestCase):
         assert results['student2']['certificate_status'] == 'audit_notpassing'
         assert results['student2']['special_case'] == 'Exception'
         assert results['student2']['exception_notes'] == 'Special case'
+
+
+class RegenerateCertificatesViewTest(SharedModuleStoreTestCase):
+    """
+    Tests for the RegenerateCertificatesView API endpoint.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.course = CourseFactory.create(
+            org='edX',
+            number='TestX',
+            run='Test_Course',
+            display_name='Test Course',
+        )
+        cls.course_key = cls.course.id
+
+    def setUp(self):
+        super().setUp()
+        self.client = APIClient()
+        self.instructor = InstructorFactory.create(course_key=self.course_key)
+        self.student = UserFactory.create(username='student1', email='student1@example.com')
+
+        # Enroll student
+        CourseEnrollmentFactory.create(
+            user=self.student,
+            course_id=self.course_key,
+            mode='verified',
+            is_active=True
+        )
+
+    def _get_url(self, course_id=None):
+        """Helper to get the API URL."""
+        if course_id is None:
+            course_id = str(self.course_key)
+        return reverse('instructor_api_v2:regenerate_certificates', kwargs={'course_id': course_id})
+
+    @patch('lms.djangoapps.instructor.views.api_v2.task_api.generate_certificates_for_students')
+    def test_allowlisted_not_generated_passes_correct_student_set(self, mock_generate_certs):
+        """
+        Test that student_set='allowlisted_not_generated' is passed correctly to the task layer.
+
+        This test prevents future drift between the API layer and task layer if either
+        is renamed independently.
+        """
+        # Mock the task API to return a fake InstructorTask
+        mock_task = MagicMock()
+        mock_task.task_id = 'test-task-id-123'
+        mock_generate_certs.return_value = mock_task
+
+        # Authenticate and make the request
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.post(
+            self._get_url(),
+            data={'student_set': 'allowlisted_not_generated'},
+            format='json'
+        )
+
+        # Assert the response is successful
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data['task_id'] == 'test-task-id-123'
+
+        # Assert the task API was called with the correct parameters
+        # Expected call signature: generate_certificates_for_students(request, course_key, student_set=...)
+        mock_generate_certs.assert_called_once()
+        call_args = mock_generate_certs.call_args
+        _, course_key_arg = call_args.args[:2]  # Unpack request and course_key positional args
+        assert course_key_arg == self.course_key
+        assert call_args.kwargs['student_set'] == 'allowlisted_not_generated'
+
+    @patch('lms.djangoapps.instructor.views.api_v2.task_api.generate_certificates_for_students')
+    def test_allowlisted_translates_to_all_allowlisted(self, mock_generate_certs):
+        """
+        Test that student_set='allowlisted' is translated to 'all_allowlisted' for the task layer.
+
+        This preserves the legacy translation from the pre-allowlist "whitelist" naming era.
+        """
+        # Mock the task API to return a fake InstructorTask
+        mock_task = MagicMock()
+        mock_task.task_id = 'test-task-id-456'
+        mock_generate_certs.return_value = mock_task
+
+        # Authenticate and make the request
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.post(
+            self._get_url(),
+            data={'student_set': 'allowlisted'},
+            format='json'
+        )
+
+        # Assert the response is successful
+        assert response.status_code == status.HTTP_200_OK
+
+        # Assert the task API was called with the translated value
+        mock_generate_certs.assert_called_once()
+        call_kwargs = mock_generate_certs.call_args.kwargs
+        assert call_kwargs['student_set'] == 'all_allowlisted'
+
+    @patch('lms.djangoapps.instructor.views.api_v2.task_api.generate_certificates_for_students')
+    def test_all_students_omits_student_set_kwarg(self, mock_generate_certs):
+        """
+        Test that student_set='all' calls the task layer without a student_set kwarg.
+
+        This ensures the default behavior (generate for all enrolled students) is preserved.
+        """
+        # Mock the task API to return a fake InstructorTask
+        mock_task = MagicMock()
+        mock_task.task_id = 'test-task-id-789'
+        mock_generate_certs.return_value = mock_task
+
+        # Authenticate and make the request with student_set='all'
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.post(
+            self._get_url(),
+            data={'student_set': 'all'},
+            format='json'
+        )
+
+        # Assert the response is successful
+        assert response.status_code == status.HTTP_200_OK
+
+        # Assert the task API was called without student_set kwarg
+        # Expected call signature: generate_certificates_for_students(request, course_key)
+        mock_generate_certs.assert_called_once()
+        call_args = mock_generate_certs.call_args
+        _, course_key_arg = call_args.args[:2]  # Unpack request and course_key positional args
+        assert course_key_arg == self.course_key
+        assert 'student_set' not in call_args.kwargs
 
 
 @ddt.ddt

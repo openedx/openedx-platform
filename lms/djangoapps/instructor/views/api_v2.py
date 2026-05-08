@@ -1635,7 +1635,8 @@ class RegenerateCertificatesView(DeveloperErrorViewMixin, APIView):
     **Request Body Parameters**
 
         statuses (optional): List of certificate statuses to regenerate
-        student_set (optional): "all" for all learners, "allowlisted" for allowlisted learners only
+        student_set (optional): "all" for all learners, "allowlisted" for allowlisted learners only,
+                               "allowlisted_not_generated" for allowlisted learners without certificates
 
     **Response Values**
 
@@ -1697,6 +1698,13 @@ class RegenerateCertificatesView(DeveloperErrorViewMixin, APIView):
                     request,
                     course_key,
                     student_set='all_allowlisted'
+                )
+            elif student_set == 'allowlisted_not_generated':
+                # Generate for allowlisted students who don't have certificates yet
+                task = task_api.generate_certificates_for_students(
+                    request,
+                    course_key,
+                    student_set='allowlisted_not_generated'
                 )
             elif statuses:
                 # Regenerate for specified statuses
