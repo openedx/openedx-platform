@@ -169,19 +169,11 @@ Rollout Plan
 ------------
 
 1. Audit existing APIs and categorize — flag any using ``BearerAuthentication`` variants
-2. Check active Bearer token usage via the custom monitoring attribute on
-   ``BearerAuthentication`` (see ``openedx/core/lib/api/authentication.py`` and
-   ``edx_rest_framework_extensions/auth/bearer/authentication.py`` — note both files
-   use the same attribute name, so correlate carefully to distinguish which class is active)
-3. Mark ``BearerAuthentication`` / ``BearerAuthenticationAllowInactiveUser`` deprecated in source
-4. Update ``view_auth_classes`` decorator to remove ``BearerAuthenticationAllowInactiveUser``
-   from new code
-5. Remove overdue ``JWT_AUTH_ADD_KID_HEADER`` toggle — make KID header always-on
-6. Migrate external clients from Bearer tokens to JWT token flow
-7. Remove ``BearerAuthentication`` and its ``OAuth2Authentication`` aliases once migration is complete
+2. Remove overdue ``JWT_AUTH_ADD_KID_HEADER`` toggle — make KID header always-on
 
-For full removal details, open questions around third-party client migration, and
-token expiry considerations, see the
+For all steps related to ``BearerAuthentication`` deprecation and removal (monitoring
+active usage, marking deprecated in source, migrating external clients, token expiry
+considerations, and third-party communication), see the
 `DEPR: BearerAuthentication <https://github.com/openedx/edx-drf-extensions/issues/284>`_ ticket.
 
 References
