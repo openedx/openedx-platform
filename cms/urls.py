@@ -166,6 +166,9 @@ urlpatterns = oauth2_urlpatterns + [
             contentstore_views.grading_handler, name='grading_handler'),
     re_path(fr'^settings/advanced/{settings.COURSE_KEY_PATTERN}$', contentstore_views.advanced_settings_handler,
             name='advanced_settings_handler'),
+    # Backward-compat redirect: old /settings/<course_key> URL now unconditionally goes to MFE.
+    # Must come after all other ^settings/... patterns so it doesn't shadow them.
+    re_path(fr'^settings/{settings.COURSE_KEY_PATTERN}$', contentstore_views.settings_handler),
     re_path(fr'^textbooks/{settings.COURSE_KEY_PATTERN}$', contentstore_views.textbooks_list_handler,
             name='textbooks_list_handler'),
     re_path(fr'^textbooks/{settings.COURSE_KEY_PATTERN}/(?P<textbook_id>\d[^/]*)$',

@@ -1493,10 +1493,12 @@ class ContentStoreTest(ContentStoreTestCase):
             test_get_html('export_handler')
         with override_waffle_flag(toggles.LEGACY_STUDIO_COURSE_TEAM, True):
             test_get_html('course_team_handler')
-        with override_waffle_flag(toggles.LEGACY_STUDIO_SCHEDULE_DETAILS, True):
-            test_get_html('settings_handler')
-        with override_waffle_flag(toggles.LEGACY_STUDIO_GRADING, True):
-            test_get_html('grading_handler')
+        with override_settings(COURSE_AUTHORING_MICROFRONTEND_URL='https://mfe.example'):
+            resp = self.client.get_html(get_url('settings_handler', course_key, 'course_key_string'))
+            self.assertEqual(resp.status_code, 302)  # noqa: PT009
+        with override_settings(COURSE_AUTHORING_MICROFRONTEND_URL='https://mfe.example'):
+            resp = self.client.get_html(get_url('grading_handler', course_key, 'course_key_string'))
+            self.assertEqual(resp.status_code, 302)  # noqa: PT009
         with override_waffle_flag(toggles.LEGACY_STUDIO_ADVANCED_SETTINGS, True):
             test_get_html('advanced_settings_handler')
         test_get_json('textbooks_list_handler')

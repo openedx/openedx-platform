@@ -100,17 +100,13 @@ from ..tasks import rerun_course as rerun_course_task
 from ..toggles import (
     default_enable_flexible_peer_openassessments,
     use_new_advanced_settings_page,
-    use_new_grading_page,
     use_new_group_configurations_page,
-    use_new_schedule_details_page,
 )
 from ..utils import (
     add_instructor,
     get_advanced_settings_url,
-    get_course_grading,
     get_course_outline_url,
     get_course_rerun_context,
-    get_course_settings,
     get_grading_url,
     get_group_configurations_context,
     get_group_configurations_url,
@@ -1382,10 +1378,7 @@ def settings_handler(request, course_key_string):  # pylint: disable=too-many-st
     with modulestore().bulk_operations(course_key):
         course_block = get_course_and_check_access(course_key, request.user)
         if 'text/html' in request.META.get('HTTP_ACCEPT', '') and request.method == 'GET':
-            if use_new_schedule_details_page(course_key):
-                return redirect(get_schedule_details_url(course_key))
-            settings_context = get_course_settings(request, course_key, course_block)
-            return render_to_response('settings.html', settings_context)
+            return redirect(get_schedule_details_url(course_key))
         elif 'application/json' in request.META.get('HTTP_ACCEPT', ''):  # pylint: disable=too-many-nested-blocks
             if request.method == 'GET':
                 course_details = CourseDetails.fetch(course_key)
@@ -1425,10 +1418,7 @@ def grading_handler(request, course_key_string, grader_index=None):
             raise PermissionDenied()
 
         if 'text/html' in request.META.get('HTTP_ACCEPT', '') and request.method == 'GET':
-            if use_new_grading_page(course_key):
-                return redirect(get_grading_url(course_key))
-            grading_context = get_course_grading(course_key)
-            return render_to_response('settings_graders.html', grading_context)
+            return redirect(get_grading_url(course_key))
         elif 'application/json' in request.META.get('HTTP_ACCEPT', ''):
             if request.method == 'GET':
                 if grader_index is None:
