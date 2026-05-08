@@ -16,9 +16,9 @@ class ContentLibraryAdmin(admin.ModelAdmin):
         "library_key",
         "org",
         "slug",
+        "learning_package",
         "allow_public_learning",
         "allow_public_read",
-        "authorized_lti_configs",
     )
     list_display = ("slug", "org",)
 
@@ -26,7 +26,7 @@ class ContentLibraryAdmin(admin.ModelAdmin):
         """
         Ensure that 'slug' and 'uuid' cannot be edited after creation.
         """
+        always_ro_fields = ["library_key", "learning_package"]
         if obj:
-            return ["library_key", "org", "slug"]
-        else:
-            return ["library_key", ]
+            return [*always_ro_fields, "org", "slug"]
+        return always_ro_fields

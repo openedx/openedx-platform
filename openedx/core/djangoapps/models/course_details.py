@@ -218,7 +218,7 @@ class CourseDetails:
             # is what the setter expects as input.
             date = Date()
 
-            if jsondict['overview'] == '':
+            if jsondict.get('overview') == '':
                 jsondict['overview'] = '<p>&nbsp;</p>'
 
             if 'start_date' in jsondict:
@@ -323,7 +323,8 @@ class CourseDetails:
                 if attribute in jsondict:
                     cls.update_about_item(block, attribute, jsondict[attribute], user.id)
 
-            cls.update_about_video(block, jsondict['intro_video'], user.id)
+            if 'intro_video' in jsondict:
+                cls.update_about_video(block, jsondict['intro_video'], user.id)
 
         # Could just return jsondict w/o doing any db reads, but I put
         # the reads in as a means to confirm it persisted correctly

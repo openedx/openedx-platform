@@ -141,11 +141,22 @@ class SAMLAuthBackend(SAMLAuth):  # pylint: disable=abstract-method
 
     def disconnect(self, *args, **kwargs):
         """
-        Override of SAMLAuth.disconnect to unlink the learner from enterprise customer if associated.
+        Override of SAMLAuth.disconnect to emit a signal when a user disconnects their SAML account.
         """
-        from openedx.features.enterprise_support.api import unlink_enterprise_user_from_idp
-        user = kwargs.get('user', None)
-        unlink_enterprise_user_from_idp(self.strategy.request, user, self.name)
+        from common.djangoapps.third_party_auth.signals import SAMLAccountDisconnected
+        # Emit the signal before super().disconnect() so that handlers (e.g. enterprise
+        # user unlinking) run while the social auth record still exists.
+        user = kwargs['user']  # Upstream social_core always passes a non-None user.
+        log.info(
+            '[THIRD_PARTY_AUTH] Emitting SAMLAccountDisconnected signal for user_id=%s, backend=%s',
+            user.id, self.name,
+        )
+        SAMLAccountDisconnected.send(
+            sender=self.__class__,
+            request=self.strategy.request,
+            user=user,
+            saml_backend=self,
+        )
         return super().disconnect(*args, **kwargs)
 
     def _check_entitlements(self, idp, attributes):

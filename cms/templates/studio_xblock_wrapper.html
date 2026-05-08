@@ -8,12 +8,11 @@ from lms.lib.utils import is_unit
 from openedx.core.djangolib.js_utils import (
     dump_js_escaped_json, js_escaped_string
 )
-from cms.djangoapps.contentstore.toggles import use_new_pdf_editor, use_new_video_editor, use_video_gallery_flow
+from cms.djangoapps.contentstore.toggles import use_new_pdf_editor, use_video_gallery_flow
 from cms.lib.xblock.upstream_sync import UpstreamLink
 from openedx.core.djangoapps.content_tagging.toggles import is_tagging_feature_disabled
 %>
 <%
-use_new_editor_video = use_new_video_editor(xblock.context_key)
 use_new_editor_pdf = use_new_pdf_editor()
 use_new_video_gallery_flow = use_video_gallery_flow()
 use_tagging = not is_tagging_feature_disabled()
@@ -83,7 +82,6 @@ can_unlink = upstream_info.upstream_ref and not upstream_info.top_level_parent_k
         is-collapsed
     % endif
     "
-    use-new-editor-video = ${use_new_editor_video}
     use-new-editor-pdf = ${use_new_editor_pdf}
     use-video-gallery-flow = ${use_new_video_gallery_flow}
     authoring_MFE_base_url = ${get_editor_page_base_url(xblock.location.course_key)}

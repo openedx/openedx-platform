@@ -40,12 +40,11 @@ edx-enterprise repository:
 * ``enterprise/api/v1/views/saml_provider_config.py``
 * ``enterprise/api/v1/views/saml_provider_data.py``
 
-They will be registered in ``enterprise/api/v1/urls.py`` under the same
-``auth/saml/v0/`` prefix, so the API contract is preserved for existing clients.
+They will be registered under the same ``auth/saml/v0/`` prefix, so the API
+contract is preserved for existing clients.
 
 The underlying ``SAMLProviderConfig``, ``SAMLProviderData``, and
-``SAMLConfiguration`` models remain in
-``common/djangoapps/third_party_auth/models.py`` because they are
+``SAMLConfiguration`` models remain in openedx-platform because they are
 general-purpose SAML models used by the platform's authentication layer
 regardless of whether the enterprise plugin is installed.
 
@@ -58,10 +57,9 @@ Consequences
 
 * **Dependency direction**: edx-enterprise now imports ``SAMLProviderConfig``,
   ``SAMLProviderData``, and several utility functions from
-  ``common.djangoapps.third_party_auth``. This is the correct dependency
-  direction (plugin depends on platform, not the reverse).
-
-* **Deployments without edx-enterprise**: The SAML admin API endpoints will not
-  be available in deployments that do not install edx-enterprise. This is
-  acceptable because the endpoints ONLY serve frontend-app-admin-portal
-  which doesn't work without edx-enterprise installed anyway.
+  ``common.djangoapps.third_party_auth``. This makes the plugin more sensitive to
+  platform code changes in these models/functions. But this isn't worse than
+  before, which was just the same problem in the opposite direction. Ideally
+  there'd be a cleaner and more stable set of hooks into TPA that enterprise
+  can leverage, but that's a major enhancement which is not in scope for this
+  phase of the migration work.

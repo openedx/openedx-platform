@@ -39,8 +39,7 @@ from cms.djangoapps.models.settings.course_grading import (
 from cms.djangoapps.models.settings.course_metadata import CourseMetadata
 from cms.djangoapps.models.settings.encoder import CourseSettingsEncoder
 from cms.djangoapps.models.settings.waffle import MATERIAL_RECOMPUTE_ONLY_FLAG
-from common.djangoapps.course_modes.models import CourseMode
-from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRole
+from common.djangoapps.student.roles import CourseStaffRole
 from common.djangoapps.student.tests.factories import UserFactory
 from common.djangoapps.util import milestones_helpers
 from common.djangoapps.xblock_django.models import XBlockStudioConfigurationFlag
@@ -162,54 +161,25 @@ class CourseAdvanceSettingViewTest(CourseTestCase, MilestonesTestCaseMixin):
                 self.assertEqual('discussion_blackouts' in response, fields_visible)  # noqa: PT009
                 self.assertEqual('discussion_topics' in response, fields_visible)  # noqa: PT009
 
-    @ddt.data(False, True)
-    @override_waffle_flag(toggles.LEGACY_STUDIO_ADVANCED_SETTINGS, True)
-    @override_waffle_flag(toggles.LEGACY_STUDIO_IMPORT, True)
-    @override_waffle_flag(toggles.LEGACY_STUDIO_EXPORT, True)
-    @override_waffle_flag(toggles.LEGACY_STUDIO_COURSE_TEAM, True)
-    @override_waffle_flag(toggles.LEGACY_STUDIO_SCHEDULE_DETAILS, True)
-    @override_waffle_flag(toggles.LEGACY_STUDIO_GRADING, True)
-    def test_disable_advanced_settings_feature(self, disable_advanced_settings):
-        """
-        If this feature is enabled, only Django Staff/Superuser should be able to access the "Advanced Settings" page.
-        For non-staff users the "Advanced Settings" tab link should not be visible.
-        """
-        advanced_settings_link_html = f"<a href=\"{self.course_setting_url}\">Advanced Settings</a>".encode('utf-8')  # noqa: UP012  # pylint: disable=line-too-long
+    def test_grading_handler_redirects_to_mfe(self):
+        """grading_handler redirects to the authoring MFE."""
+        response = self.client.get_html(get_url(self.course.id, 'grading_handler'))
+        self.assertEqual(response.status_code, 302)  # noqa: PT009
 
-        with override_settings(FEATURES={
-            'DISABLE_ADVANCED_SETTINGS': disable_advanced_settings,
-        }):
-            for handler in (
-                'import_handler',
-                'export_handler',
-                'course_team_handler',
-                'settings_handler',
-                'grading_handler',
-            ):
-                # Test that non-staff users don't see the "Advanced Settings" tab link.
-                response = self.non_staff_client.get_html(
-                    get_url(self.course.id, handler)
-                )
-                self.assertEqual(response.status_code, 200)  # noqa: PT009
-                if disable_advanced_settings:
-                    self.assertNotIn(advanced_settings_link_html, response.content)  # noqa: PT009
-                else:
-                    self.assertIn(advanced_settings_link_html, response.content)  # noqa: PT009
+    def test_settings_handler_redirects_to_mfe(self):
+        """settings_handler (schedule & details) redirects to the authoring MFE."""
+        response = self.client.get_html(get_url(self.course.id, 'settings_handler'))
+        self.assertEqual(response.status_code, 302)  # noqa: PT009
 
-                # Test that staff users see the "Advanced Settings" tab link.
-                response = self.client.get_html(
-                    get_url(self.course.id, handler)
-                )
-                self.assertEqual(response.status_code, 200)  # noqa: PT009
-                self.assertIn(advanced_settings_link_html, response.content)  # noqa: PT009
+    def test_import_handler_redirects_to_mfe(self):
+        """import_handler redirects to the authoring MFE."""
+        response = self.client.get_html(get_url(self.course.id, 'import_handler'))
+        self.assertEqual(response.status_code, 302)  # noqa: PT009
 
-            # Test that non-staff users can't access the "Advanced Settings" page.
-            response = self.non_staff_client.get_html(self.course_setting_url)
-            self.assertEqual(response.status_code, 403 if disable_advanced_settings else 200)  # noqa: PT009
-
-            # Test that staff users can access the "Advanced Settings" page.
-            response = self.client.get_html(self.course_setting_url)
-            self.assertEqual(response.status_code, 200)  # noqa: PT009
+    def test_export_handler_redirects_to_mfe(self):
+        """export_handler redirects to the authoring MFE."""
+        response = self.client.get_html(get_url(self.course.id, 'export_handler'))
+        self.assertEqual(response.status_code, 302)  # noqa: PT009
 
 
 @ddt.ddt
@@ -301,37 +271,6 @@ class CourseDetailsViewTest(CourseTestCase, MilestonesTestCaseMixin):
         elif field in encoded and encoded[field] is not None:
             self.fail(field + " included in encoding but missing from details at " + context)
 
-    @ddt.data(
-        (False, False),
-        (True, False),
-        (True, True),
-    )
-    @ddt.unpack
-    @override_waffle_flag(toggles.LEGACY_STUDIO_SCHEDULE_DETAILS, True)
-    def test_upgrade_deadline(self, has_verified_mode, has_expiration_date):
-        if has_verified_mode:
-            deadline = None
-            if has_expiration_date:
-                deadline = self.course.start + datetime.timedelta(days=2)
-            CourseMode.objects.get_or_create(
-                course_id=self.course.id,
-                mode_display_name="Verified",
-                mode_slug="verified",
-                min_price=1,
-                _expiration_datetime=deadline,
-            )
-
-        settings_details_url = get_url(self.course.id)
-        response = self.client.get_html(settings_details_url)
-        self.assertEqual(b"Upgrade Deadline Date" in response.content, has_expiration_date and has_verified_mode)  # noqa: PT009  # pylint: disable=line-too-long
-
-    @mock.patch.dict("django.conf.settings.FEATURES", {'ENABLE_PREREQUISITE_COURSES': True})
-    @override_waffle_flag(toggles.LEGACY_STUDIO_SCHEDULE_DETAILS, True)
-    def test_pre_requisite_course_list_present(self):
-        settings_details_url = get_url(self.course.id)
-        response = self.client.get_html(settings_details_url)
-        self.assertContains(response, "Prerequisite Course")
-
     @mock.patch.dict("django.conf.settings.FEATURES", {'ENABLE_PREREQUISITE_COURSES': True})
     def test_pre_requisite_course_update_and_fetch(self):
         self.assertFalse(milestones_helpers.any_unfulfilled_milestones(self.course.id, self.user.id),  # noqa: PT009
@@ -381,62 +320,6 @@ class CourseDetailsViewTest(CourseTestCase, MilestonesTestCaseMixin):
         response = self.client.ajax_post(url, course_detail_json)
         self.assertEqual(400, response.status_code)  # noqa: PT009
 
-    @ddt.data(
-        (False, False, False),
-        (True, False, True),
-        (False, True, False),
-        (True, True, True),
-    )
-    @override_waffle_flag(toggles.LEGACY_STUDIO_SCHEDULE_DETAILS, True)
-    @override_settings(MILESTONES_APP=False)
-    def test_visibility_of_entrance_exam_section(self, feature_flags):
-        """
-        Tests entrance exam section is available if ENTRANCE_EXAMS feature is enabled no matter any other
-        feature is enabled or disabled i.e ENABLE_PUBLISHER.
-        """
-        with patch.dict("django.conf.settings.FEATURES", {
-            'ENABLE_PUBLISHER': feature_flags[1]
-        }), override_settings(ENTRANCE_EXAMS=feature_flags[0]):
-            course_details_url = get_url(self.course.id)
-            resp = self.client.get_html(course_details_url)
-            self.assertEqual(  # noqa: PT009
-                feature_flags[2],
-                b'<h3 id="heading-entrance-exam">' in resp.content
-            )
-
-    @override_waffle_flag(toggles.LEGACY_STUDIO_SCHEDULE_DETAILS, True)
-    @override_settings(MILESTONES_APP=False)
-    @override_settings(ENTRANCE_EXAMS=False)
-    def test_marketing_site_fetch(self):
-        settings_details_url = get_url(self.course.id)
-
-        with mock.patch.dict('django.conf.settings.FEATURES', {
-            'ENABLE_PUBLISHER': True,
-            'ENABLE_MKTG_SITE': True,
-            'ENABLE_PREREQUISITE_COURSES': False,
-        }):
-            response = self.client.get_html(settings_details_url)
-            self.assertNotContains(response, "Course Summary Page")
-            self.assertNotContains(response, "Send a note to students via email")
-            self.assertContains(response, "course summary page will not be viewable")
-
-            self.assertContains(response, "Course Start Date")
-            self.assertContains(response, "Course End Date")
-            self.assertContains(response, "Enrollment Start Date")
-            self.assertContains(response, "Enrollment End Date")
-
-            self.assertContains(response, "Course Short Description")
-            self.assertNotContains(response, "Course About Sidebar HTML")
-            self.assertNotContains(response, "Course Title")
-            self.assertNotContains(response, "Course Subtitle")
-            self.assertNotContains(response, "Course Duration")
-            self.assertNotContains(response, "Course Description")
-            self.assertNotContains(response, "Course Overview")
-            self.assertNotContains(response, "Course Introduction Video")
-            self.assertNotContains(response, "Requirements")
-            self.assertNotContains(response, "Course Banner Image")
-            self.assertNotContains(response, "Course Video Thumbnail Image")
-
     @unittest.skipUnless(settings.FEATURES.get('ENTRANCE_EXAMS', False), True)
     def test_entrance_exam_created_updated_and_deleted_successfully(self):
         """
@@ -451,13 +334,6 @@ class CourseDetailsViewTest(CourseTestCase, MilestonesTestCaseMixin):
         data = {
             'entrance_exam_enabled': 'true',
             'entrance_exam_minimum_score_pct': '60',
-            'syllabus': 'none',
-            'short_description': 'empty',
-            'overview': '',
-            'effort': '',
-            'intro_video': '',
-            'start_date': '2012-01-01',
-            'end_date': '2012-12-31',
         }
         response = self.client.post(settings_details_url, data=json.dumps(data), content_type='application/json',
                                     HTTP_ACCEPT='application/json')
@@ -512,13 +388,6 @@ class CourseDetailsViewTest(CourseTestCase, MilestonesTestCaseMixin):
         settings_details_url = get_url(self.course.id)
         test_data_1 = {
             'entrance_exam_enabled': 'true',
-            'syllabus': 'none',
-            'short_description': 'empty',
-            'overview': '',
-            'effort': '',
-            'intro_video': '',
-            'start_date': '2012-01-01',
-            'end_date': '2012-12-31',
         }
         response = self.client.post(
             settings_details_url,
@@ -533,19 +402,11 @@ class CourseDetailsViewTest(CourseTestCase, MilestonesTestCaseMixin):
         # entrance_exam_minimum_score_pct is not present in the request so default value should be saved.
         self.assertEqual(course.entrance_exam_minimum_score_pct, .5)  # noqa: PT009
 
-        #add entrance_exam_minimum_score_pct with empty value in json request.
+        # add entrance_exam_minimum_score_pct with empty value in json request.
         test_data_2 = {
             'entrance_exam_enabled': 'true',
             'entrance_exam_minimum_score_pct': '',
-            'syllabus': 'none',
-            'short_description': 'empty',
-            'overview': '',
-            'effort': '',
-            'intro_video': '',
-            'start_date': '2012-01-01',
-            'end_date': '2012-12-31',
         }
-
         response = self.client.post(
             settings_details_url,
             data=json.dumps(test_data_2),
@@ -617,14 +478,6 @@ class CourseDetailsViewTest(CourseTestCase, MilestonesTestCaseMixin):
         assert milestones_helpers.any_unfulfilled_milestones(self.course.id, self.user.id), \
             'The entrance exam should be required.'
 
-    @override_waffle_flag(toggles.LEGACY_STUDIO_SCHEDULE_DETAILS, True)
-    def test_editable_short_description_fetch(self):
-        settings_details_url = get_url(self.course.id)
-
-        with mock.patch.dict('django.conf.settings.FEATURES', {'EDITABLE_SHORT_DESCRIPTION': False}):
-            response = self.client.get_html(settings_details_url)
-            self.assertNotContains(response, "Course Short Description")
-
     def test_empty_course_overview_keep_default_value(self):
         """
         Test saving the course with an empty course overview.
@@ -656,35 +509,6 @@ class CourseDetailsViewTest(CourseTestCase, MilestonesTestCaseMixin):
         self.assertEqual(response.status_code, 200)  # noqa: PT009
         self.assertEqual(course_details.overview, '<p>&nbsp;</p>')  # noqa: PT009
 
-    @override_waffle_flag(toggles.LEGACY_STUDIO_SCHEDULE_DETAILS, True)
-    def test_regular_site_fetch(self):
-        settings_details_url = get_url(self.course.id)
-
-        with mock.patch.dict('django.conf.settings.FEATURES', {'ENABLE_PUBLISHER': False,
-                                                               'ENABLE_EXTENDED_COURSE_DETAILS': True}):
-            response = self.client.get_html(settings_details_url)
-            self.assertContains(response, "Course Summary Page")
-            self.assertContains(response, "Send a note to students via email")
-            self.assertNotContains(response, "course summary page will not be viewable")
-
-            self.assertContains(response, "Course Start Date")
-            self.assertContains(response, "Course End Date")
-            self.assertContains(response, "Enrollment Start Date")
-            self.assertContains(response, "Enrollment End Date")
-
-            self.assertContains(response, "Introducing Your Course")
-            self.assertContains(response, "Course Card Image")
-            self.assertContains(response, "Course Title")
-            self.assertContains(response, "Course Subtitle")
-            self.assertContains(response, "Course Duration")
-            self.assertContains(response, "Course Description")
-            self.assertContains(response, "Course Short Description")
-            self.assertNotContains(response, "Course About Sidebar HTML")
-            self.assertContains(response, "Course Overview")
-            self.assertContains(response, "Course Introduction Video")
-            self.assertContains(response, "Requirements")
-            self.assertContains(response, "Course Banner Image")
-            self.assertContains(response, "Course Video Thumbnail Image")
 
 
 @ddt.ddt
@@ -1924,132 +1748,3 @@ class CourseGraderUpdatesTest(CourseTestCase):
         self.assertEqual(obj, grader)  # noqa: PT009
         current_graders = CourseGradingModel.fetch(self.course.id).graders
         self.assertEqual(len(self.starting_graders) + 1, len(current_graders))  # noqa: PT009
-
-
-class CourseEnrollmentEndFieldTest(CourseTestCase):
-    """
-    Base class to test the enrollment end fields in the course settings details view in Studio
-    when using marketing site flag and global vs non-global staff to access the page.
-    """
-
-    NOT_EDITABLE_HELPER_MESSAGE = "Contact your edX partner manager to update these settings."
-    NOT_EDITABLE_DATE_WRAPPER = "<div class=\"field date is-not-editable\" id=\"field-enrollment-end-date\">"
-    NOT_EDITABLE_TIME_WRAPPER = "<div class=\"field time is-not-editable\" id=\"field-enrollment-end-time\">"
-    NOT_EDITABLE_DATE_FIELD = "<input type=\"text\" class=\"end-date date end\" \
-id=\"course-enrollment-end-date\" placeholder=\"MM/DD/YYYY\" autocomplete=\"off\" readonly aria-readonly=\"true\" />"
-    NOT_EDITABLE_TIME_FIELD = "<input type=\"text\" class=\"time end\" id=\"course-enrollment-end-time\" \
-value=\"\" placeholder=\"HH:MM\" autocomplete=\"off\" readonly aria-readonly=\"true\" />"
-
-    EDITABLE_DATE_WRAPPER = "<div class=\"field date \" id=\"field-enrollment-end-date\">"
-    EDITABLE_TIME_WRAPPER = "<div class=\"field time \" id=\"field-enrollment-end-time\">"
-    EDITABLE_DATE_FIELD = "<input type=\"text\" class=\"end-date date end\" \
-id=\"course-enrollment-end-date\" placeholder=\"MM/DD/YYYY\" autocomplete=\"off\"  />"
-    EDITABLE_TIME_FIELD = "<input type=\"text\" class=\"time end\" \
-id=\"course-enrollment-end-time\" value=\"\" placeholder=\"HH:MM\" autocomplete=\"off\"  />"
-
-    EDITABLE_ELEMENTS = [
-        EDITABLE_DATE_WRAPPER,
-        EDITABLE_TIME_WRAPPER,
-        EDITABLE_DATE_FIELD,
-        EDITABLE_TIME_FIELD,
-    ]
-
-    NOT_EDITABLE_ELEMENTS = [
-        NOT_EDITABLE_HELPER_MESSAGE,
-        NOT_EDITABLE_DATE_WRAPPER,
-        NOT_EDITABLE_TIME_WRAPPER,
-        NOT_EDITABLE_DATE_FIELD,
-        NOT_EDITABLE_TIME_FIELD,
-    ]
-
-    def setUp(self):
-        """
-        Initialize course used to test enrollment fields.
-        """
-        super().setUp()
-        self.course = CourseFactory.create(org='edX', number='dummy', display_name='Marketing Site Course')
-        self.course_details_url = reverse_course_url('settings_handler', str(self.course.id))
-
-    def _get_course_details_response(self, global_staff):
-        """
-        Return the course details page as either global or non-global staff
-        """
-        user = UserFactory(is_staff=global_staff, password=self.TEST_PASSWORD)
-        CourseInstructorRole(self.course.id).add_users(user)
-
-        self.client.login(username=user.username, password=self.TEST_PASSWORD)
-
-        return self.client.get_html(self.course_details_url)
-
-    def _verify_editable(self, response):
-        """
-        Verify that the response has expected editable fields.
-
-        Assert that all editable field content exists and no
-        uneditable field content exists for enrollment end fields.
-        """
-        self.assertEqual(response.status_code, 200)  # noqa: PT009
-        for element in self.NOT_EDITABLE_ELEMENTS:
-            self.assertNotContains(response, element)
-
-        for element in self.EDITABLE_ELEMENTS:
-            self.assertContains(response, element)
-
-    def _verify_not_editable(self, response):
-        """
-        Verify that the response has expected non-editable fields.
-
-        Assert that all uneditable field content exists and no
-        editable field content exists for enrollment end fields.
-        """
-        self.assertEqual(response.status_code, 200)  # noqa: PT009
-        for element in self.NOT_EDITABLE_ELEMENTS:
-            self.assertContains(response, element)
-
-        for element in self.EDITABLE_ELEMENTS:
-            self.assertNotContains(response, element)
-
-    @mock.patch.dict("django.conf.settings.FEATURES", {'ENABLE_PUBLISHER': False})
-    @override_waffle_flag(toggles.LEGACY_STUDIO_SCHEDULE_DETAILS, True)
-    def test_course_details_with_disabled_setting_global_staff(self):
-        """
-        Test that user enrollment end date is editable in response.
-
-        Feature flag 'ENABLE_PUBLISHER' is not enabled.
-        User is global staff.
-        """
-        self._verify_editable(self._get_course_details_response(True))
-
-    @mock.patch.dict("django.conf.settings.FEATURES", {'ENABLE_PUBLISHER': False})
-    @override_waffle_flag(toggles.LEGACY_STUDIO_SCHEDULE_DETAILS, True)
-    def test_course_details_with_disabled_setting_non_global_staff(self):
-        """
-        Test that user enrollment end date is editable in response.
-
-        Feature flag 'ENABLE_PUBLISHER' is not enabled.
-        User is non-global staff.
-        """
-        self._verify_editable(self._get_course_details_response(False))
-
-    @mock.patch.dict("django.conf.settings.FEATURES", {'ENABLE_PUBLISHER': True})
-    @override_waffle_flag(toggles.LEGACY_STUDIO_SCHEDULE_DETAILS, True)
-    def test_course_details_with_enabled_setting_global_staff(self):
-        """
-        Test that user enrollment end date is editable in response.
-
-        Feature flag 'ENABLE_PUBLISHER' is enabled.
-        User is global staff.
-        """
-        self._verify_editable(self._get_course_details_response(True))
-
-    @mock.patch.dict("django.conf.settings.FEATURES", {'ENABLE_PUBLISHER': True})
-    @override_settings(PLATFORM_NAME='edX')
-    @override_waffle_flag(toggles.LEGACY_STUDIO_SCHEDULE_DETAILS, True)
-    def test_course_details_with_enabled_setting_non_global_staff(self):
-        """
-        Test that user enrollment end date is not editable in response.
-
-        Feature flag 'ENABLE_PUBLISHER' is enabled.
-        User is non-global staff.
-        """
-        self._verify_not_editable(self._get_course_details_response(False))

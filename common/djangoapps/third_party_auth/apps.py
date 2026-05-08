@@ -1,7 +1,6 @@
 # pylint: disable=missing-module-docstring
 
 from django.apps import AppConfig
-from django.conf import settings
 
 
 class ThirdPartyAuthConfig(AppConfig):  # pylint: disable=missing-class-docstring
@@ -11,12 +10,3 @@ class ThirdPartyAuthConfig(AppConfig):  # pylint: disable=missing-class-docstrin
     def ready(self):
         # Import signal handlers to register them
         from .signals import handlers  # noqa: F401 pylint: disable=unused-import
-
-        # Note: Third-party auth settings are now defined statically in lms/envs/common.py
-        # However, the enterprise pipeline step must be inserted dynamically because
-        # it requires checking if enterprise is enabled, which can't be done at
-        # settings load time.
-        # Only insert enterprise elements if SOCIAL_AUTH_PIPELINE exists (LMS only, not CMS).
-        if hasattr(settings, 'SOCIAL_AUTH_PIPELINE'):
-            from openedx.features.enterprise_support.api import insert_enterprise_pipeline_elements
-            insert_enterprise_pipeline_elements(settings.SOCIAL_AUTH_PIPELINE)

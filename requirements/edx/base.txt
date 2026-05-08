@@ -483,7 +483,7 @@ edx-drf-extensions==10.6.0
     #   enterprise-integrated-channels
     #   openedx-authz
     #   openedx-core
-edx-enterprise==8.0.2
+edx-enterprise==8.0.8
     # via
     #   -c requirements/constraints.txt
     #   -r requirements/edx/kernel.in
@@ -1024,7 +1024,9 @@ python3-openid==3.2.0 ; python_version >= "3"
     #   -r requirements/edx/kernel.in
     #   social-auth-core
 python3-saml==1.16.0
-    # via -r requirements/edx/kernel.in
+    # via
+    #   -r requirements/edx/kernel.in
+    #   edx-enterprise
 pytz==2026.1.post1
     # via
     #   -r requirements/edx/kernel.in

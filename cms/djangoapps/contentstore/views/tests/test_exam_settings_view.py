@@ -25,10 +25,9 @@ from common.djangoapps.util.testing import UrlResetMixin
     },
 )
 @override_waffle_flag(toggles.LEGACY_STUDIO_CERTIFICATES, True)
-@override_waffle_flag(toggles.LEGACY_STUDIO_SCHEDULE_DETAILS, True)
 @override_waffle_flag(toggles.LEGACY_STUDIO_CONFIGURATIONS, True)
-@override_waffle_flag(toggles.LEGACY_STUDIO_GRADING, True)
 @override_waffle_flag(toggles.LEGACY_STUDIO_ADVANCED_SETTINGS, True)
+@override_settings(COURSE_AUTHORING_MICROFRONTEND_URL='https://mfe.example')
 class TestExamSettingsView(CourseTestCase, UrlResetMixin):
     """
     Unit tests for the exam settings view.
@@ -52,9 +51,7 @@ class TestExamSettingsView(CourseTestCase, UrlResetMixin):
     @override_waffle_flag(toggles.LEGACY_STUDIO_EXAM_SETTINGS, True)
     @ddt.data(
         "certificates_list_handler",
-        "settings_handler",
         "group_configurations_list_handler",
-        "grading_handler",
         "advanced_settings_handler"
     )
     def test_view_without_exam_settings_enabled(self, handler):
@@ -69,9 +66,7 @@ class TestExamSettingsView(CourseTestCase, UrlResetMixin):
 
     @ddt.data(
         "certificates_list_handler",
-        "settings_handler",
         "group_configurations_list_handler",
-        "grading_handler",
         "advanced_settings_handler"
     )
     def test_view_with_exam_settings_enabled(self, handler):
@@ -83,6 +78,19 @@ class TestExamSettingsView(CourseTestCase, UrlResetMixin):
         resp = self.client.get(outline_url, HTTP_ACCEPT='text/html')
         self.assertEqual(resp.status_code, 200)  # noqa: PT009
         self.assertContains(resp, 'Proctored Exam Settings')
+
+    def test_grading_handler_redirects_to_mfe(self):
+        """grading_handler redirects to the authoring MFE."""
+        url = reverse_course_url('grading_handler', self.course.id)
+        resp = self.client.get(url, HTTP_ACCEPT='text/html')
+        self.assertEqual(resp.status_code, 302)  # noqa: PT009
+
+    def test_settings_handler_redirects_to_mfe(self):
+        """settings_handler (schedule & details) redirects to the authoring MFE."""
+        url = reverse_course_url('settings_handler', self.course.id)
+        resp = self.client.get(url, HTTP_ACCEPT='text/html')
+        self.assertEqual(resp.status_code, 302)  # noqa: PT009
+
 
     @override_settings(
         PROCTORING_BACKENDS={

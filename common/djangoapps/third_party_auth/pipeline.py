@@ -86,10 +86,7 @@ from common.djangoapps import third_party_auth
 from common.djangoapps.edxmako.shortcuts import render_to_string
 from common.djangoapps.third_party_auth.utils import (
     get_associated_user_by_email_response,
-    get_user_from_email,
-    is_enterprise_customer_user,
     is_oauth_provider,
-    is_saml_provider,
     user_exists,
 )
 from common.djangoapps.track import segment
@@ -780,80 +777,18 @@ def associate_by_email_if_oauth(auth_entry, backend, details, user, strategy, *a
             return association_response
 
 
-@partial.partial
 def associate_by_email_if_saml(auth_entry, backend, details, user, strategy, *args, **kwargs):
     """
-    This pipeline step associates the current social auth with the user with the
-    same email address in the database.  It defers to the social library's associate_by_email
-    implementation, which verifies that only a single database user is associated with the email.
+    Deprecated — enterprise SAML email association moved to
+    enterprise.tpa_pipeline.enterprise_associate_by_email.
 
-    This association is done ONLY if the user entered the pipeline belongs to SAML provider.
+    Retained as a no-op for backwards compatibility with custom pipeline configs.
     """
-    from openedx.features.enterprise_support.api import enterprise_is_enabled
-
-    def get_user():
-        """
-        This is the helper method to get the user from system by matching email.
-        """
-        user_details = {'email': details.get('email')} if details else None
-        return get_user_from_email(user_details or {})
-
-    @enterprise_is_enabled()
-    def associate_by_email_if_enterprise_user():
-        """
-        If the learner arriving via SAML is already linked to the enterprise customer linked to the same IdP,
-        they should not be prompted for their edX password.
-        """
-        try:
-            enterprise_customer_user = is_enterprise_customer_user(current_provider.provider_id, current_user)
-            logger.info(
-                '[Multiple_SSO_SAML_Accounts_Association_to_User] Enterprise user verification:'  # noqa: UP032
-                'User Email: {email}, User ID: {user_id}, Provider ID: {provider_id},'
-                ' is_enterprise_customer_user: {enterprise_customer_user}'.format(
-                    email=current_user.email,
-                    user_id=current_user.id,
-                    provider_id=current_provider.provider_id,
-                    enterprise_customer_user=enterprise_customer_user,
-                )
-            )
-
-            if enterprise_customer_user:
-                # this is python social auth pipeline default method to automatically associate social accounts
-                # if the email already matches a user account.
-                association_response, user_is_active = get_associated_user_by_email_response(
-                    backend, details, user, *args, **kwargs)
-
-                if not user_is_active:
-                    logger.info(
-                        '[Multiple_SSO_SAML_Accounts_Association_to_User] User association account is not'  # noqa: UP032  # pylint: disable=line-too-long
-                        ' active: User Email: {email}, User ID: {user_id}, Provider ID: {provider_id},'
-                        ' is_enterprise_customer_user: {enterprise_customer_user}'.format(
-                            email=current_user.email,
-                            user_id=current_user.id,
-                            provider_id=current_provider.provider_id,
-                            enterprise_customer_user=enterprise_customer_user
-                        )
-                    )
-                    return None
-
-                return association_response
-
-        except Exception as ex:  # pylint: disable=broad-except
-            logger.exception('[Multiple_SSO_SAML_Accounts_Association_to_User] Error in'
-                             ' saml multiple accounts association: User ID: %s, User Email: %s:,'
-                             'Provider ID: %s, Exception: %s', current_user.id, current_user.email,
-                             current_provider.provider_id, ex)
-
-    saml_provider, current_provider = is_saml_provider(strategy.request.backend.name, kwargs)
-
-    if saml_provider:
-        # get the user by matching email if the pipeline user is not available.
-        current_user = user if user else get_user()
-
-        # Verify that the user linked to enterprise customer of current identity provider and an active user
-        associate_response = associate_by_email_if_enterprise_user() if current_user else None
-        if associate_response:
-            return associate_response
+    logger.warning(
+        "associate_by_email_if_saml is deprecated and is now a no-op. "
+        "Enterprise SAML email association has moved to "
+        "enterprise.tpa_pipeline.enterprise_associate_by_email."
+    )
 
 
 def user_details_force_sync(auth_entry, strategy, details, user=None, *args, **kwargs):  # pylint: disable=keyword-arg-before-vararg

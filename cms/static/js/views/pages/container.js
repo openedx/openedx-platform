@@ -538,12 +538,11 @@ function($, _, Backbone, gettext, BasePage,
             if (!options || options.view !== 'visibility_view') {
                 const primaryHeader = $(event.target).closest('.xblock-header-primary, .nav-actions');
 
-                var useNewVideoEditor = primaryHeader.attr('use-new-editor-video'),
-                    blockType = primaryHeader.attr('data-block-type'),
+                var blockType = primaryHeader.attr('data-block-type'),
                     useNewPdfEditor = primaryHeader.attr('use-new-editor-pdf');
 
                 if((blockType === 'html')
-                        || (useNewVideoEditor === 'True' && blockType === 'video')
+                        || (blockType === 'video')
                         || (blockType === 'problem')
                         || (useNewPdfEditor === 'True' && blockType === 'pdf')
                 ) {
@@ -1204,8 +1203,7 @@ function($, _, Backbone, gettext, BasePage,
         },
 
         onNewXBlock: function(xblockElement, scrollOffset, is_duplicate, data) {
-            var useNewVideoEditor = this.$('.xblock-header-primary').attr('use-new-editor-video'),
-                useVideoGalleryFlow = this.$('.xblock-header-primary').attr("use-video-gallery-flow");
+            var useVideoGalleryFlow = this.$('.xblock-header-primary').attr("use-video-gallery-flow");
 
             // find the block type in the locator if availible
             if(data.hasOwnProperty('locator')) {
@@ -1214,7 +1212,7 @@ function($, _, Backbone, gettext, BasePage,
             }
             // open mfe editors for new blocks only and not for content imported from libraries
             if(!data.hasOwnProperty('upstreamRef') && (blockType.includes('html')
-                    || (useNewVideoEditor === 'True' && blockType.includes('video'))
+                    || (blockType.includes('video'))
                     || (blockType.includes('problem')))
             ){
                 if (this.options.isIframeEmbed && (this.isSplitTestContentPage || this.isVerticalContentPage)) {

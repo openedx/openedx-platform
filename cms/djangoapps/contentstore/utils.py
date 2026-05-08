@@ -45,10 +45,8 @@ from cms.djangoapps.contentstore.toggles import (
     use_new_certificates_page,
     use_new_course_team_page,
     use_new_export_page,
-    use_new_grading_page,
     use_new_group_configurations_page,
     use_new_import_page,
-    use_new_schedule_details_page,
     use_new_unit_page,
 )
 from cms.djangoapps.models.settings.course_grading import CourseGradingModel
@@ -304,13 +302,10 @@ def get_schedule_details_url(course_locator) -> str:
     """
     Gets course authoring microfrontend URL for schedule and details pages view.
     """
-    schedule_details_url = None
-    if use_new_schedule_details_page(course_locator):
-        mfe_base_url = get_course_authoring_url(course_locator)
-        course_mfe_url = f'{mfe_base_url}/course/{course_locator}/settings/details'
-        if mfe_base_url:
-            schedule_details_url = course_mfe_url
-    return schedule_details_url
+    mfe_base_url = get_course_authoring_url(course_locator)
+    if mfe_base_url:
+        return f'{mfe_base_url}/course/{course_locator}/settings/details'
+    return None
 
 
 def get_advanced_settings_url(course_locator) -> str:
@@ -330,13 +325,10 @@ def get_grading_url(course_locator) -> str:
     """
     Gets course authoring microfrontend URL for grading page view.
     """
-    grading_url = None
-    if use_new_grading_page(course_locator):
-        mfe_base_url = get_course_authoring_url(course_locator)
-        course_mfe_url = f'{mfe_base_url}/course/{course_locator}/settings/grading'
-        if mfe_base_url:
-            grading_url = course_mfe_url
-    return grading_url
+    mfe_base_url = get_course_authoring_url(course_locator)
+    if mfe_base_url:
+        return f'{mfe_base_url}/course/{course_locator}/settings/grading'
+    return None
 
 
 def get_course_team_url(course_locator) -> str:

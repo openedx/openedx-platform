@@ -12,9 +12,7 @@ from urllib.parse import parse_qs, quote, urlparse
 
 import ddt
 import httpretty
-from django.conf import settings
 from django.contrib import auth
-from enterprise.models import EnterpriseCustomerIdentityProvider, EnterpriseCustomerUser
 from freezegun import freeze_time
 from social_core import actions
 from social_django import views as social_views
@@ -25,11 +23,11 @@ from common.djangoapps.third_party_auth import pipeline
 from common.djangoapps.third_party_auth.exceptions import IncorrectConfigurationException
 from common.djangoapps.third_party_auth.saml import SapSuccessFactorsIdentityProvider
 from common.djangoapps.third_party_auth.saml import log as saml_log
+from common.djangoapps.third_party_auth.signals import SAMLAccountDisconnected
 from common.djangoapps.third_party_auth.tasks import fetch_saml_metadata
 from common.djangoapps.third_party_auth.tests import testutil, utils
 from common.test.utils import assert_dict_contains_subset
 from openedx.core.djangoapps.user_authn.views.login import login_user
-from openedx.features.enterprise_support.tests.factories import EnterpriseCustomerFactory
 
 from .base import IntegrationTestMixin
 
@@ -220,13 +218,7 @@ class TestShibIntegrationTest(SamlIntegrationTestUtilities, IntegrationTestMixin
         "session_index": "1",
     }
 
-    @patch("openedx.features.enterprise_support.api.enterprise_customer_for_request")
-    @patch("openedx.features.enterprise_support.utils.third_party_auth.provider.Registry.get")
-    def test_full_pipeline_succeeds_for_unlinking_testshib_account(
-        self,
-        mock_auth_provider,
-        mock_enterprise_customer_for_request,
-    ):
+    def test_full_pipeline_succeeds_for_unlinking_testshib_account(self):
 
         # First, create, the request and strategy that store pipeline state,
         # configure the backend, and mock out wire traffic.
@@ -245,30 +237,6 @@ class TestShibIntegrationTest(SamlIntegrationTestUtilities, IntegrationTestMixin
         # We're already logged in, so simulate that the cookie is set correctly
         self.set_logged_in_cookies(request)
 
-        # linking a learner with enterprise customer.
-        enterprise_customer = EnterpriseCustomerFactory()
-        assert EnterpriseCustomerUser.objects.count() == 0, "Precondition check: no link records should exist"
-        EnterpriseCustomerUser.objects.link_user(enterprise_customer, user.email)
-        assert (
-            EnterpriseCustomerUser.objects.filter(enterprise_customer=enterprise_customer, user_id=user.id).count() == 1
-        )
-        EnterpriseCustomerIdentityProvider.objects.get_or_create(
-            enterprise_customer=enterprise_customer, provider_id=self.provider.provider_id
-        )
-
-        enterprise_customer_data = {
-            "uuid": enterprise_customer.uuid,
-            "name": enterprise_customer.name,
-            "identity_provider": "saml-default",
-            "identity_providers": [
-                {
-                    "provider_id": "saml-default",
-                }
-            ],
-        }
-        mock_auth_provider.return_value.backend_name = "tpa-saml"
-        mock_enterprise_customer_for_request.return_value = enterprise_customer_data
-
         # Instrument the pipeline to get to the dashboard with the full expected state.
         self.client.get(pipeline.get_login_url(self.provider.provider_id, pipeline.AUTH_ENTRY_LOGIN))
 
@@ -285,31 +253,30 @@ class TestShibIntegrationTest(SamlIntegrationTestUtilities, IntegrationTestMixin
         # First we expect that we're in the linked state, with a backend entry.
         self.assert_social_auth_exists_for_user(request.user, strategy)
 
-        FEATURES_WITH_ENTERPRISE_ENABLED = settings.FEATURES.copy()
-        FEATURES_WITH_ENTERPRISE_ENABLED["ENABLE_ENTERPRISE_INTEGRATION"] = True
-        with patch.dict("django.conf.settings.FEATURES", FEATURES_WITH_ENTERPRISE_ENABLED):
-            # Fire off the disconnect pipeline without the user information.
-            actions.do_disconnect(
-                request.backend, None, None, redirect_field_name=auth.REDIRECT_FIELD_NAME, request=request
-            )
-            assert (
-                EnterpriseCustomerUser.objects.filter(enterprise_customer=enterprise_customer, user_id=user.id).count()
-                != 0
-            )
+        # Track signal emissions to verify the disconnect signal is sent.
+        signal_calls = []
 
+        def signal_receiver(sender, **kwargs):
+            signal_calls.append(kwargs)
+
+        SAMLAccountDisconnected.connect(signal_receiver)
+        try:
             # Fire off the disconnect pipeline to unlink.
             self.assert_redirect_after_pipeline_completes(
                 actions.do_disconnect(
                     request.backend, user, None, redirect_field_name=auth.REDIRECT_FIELD_NAME, request=request
                 )
             )
-            # Now we expect to be in the unlinked state, with no backend entry.
-            self.assert_third_party_accounts_state(request, linked=False)
-            self.assert_social_auth_does_not_exist_for_user(user, strategy)
-            assert (
-                EnterpriseCustomerUser.objects.filter(enterprise_customer=enterprise_customer, user_id=user.id).count()
-                == 0
-            )
+        finally:
+            SAMLAccountDisconnected.disconnect(signal_receiver)
+
+        # Now we expect to be in the unlinked state, with no backend entry.
+        self.assert_third_party_accounts_state(request, linked=False)
+        self.assert_social_auth_does_not_exist_for_user(user, strategy)
+        # Verify that the SAMLAccountDisconnected signal was emitted.
+        # The actual enterprise user unlinking is handled by edx-enterprise's
+        # signal handler, not by openedx-platform.
+        assert len(signal_calls) == 1, f"Expected 1 signal emission, got {len(signal_calls)}"
 
     def get_response_data(self):
         """Gets dict (string -> object) of merged data about the user."""

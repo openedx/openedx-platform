@@ -14,7 +14,6 @@ from django.http import HttpResponseRedirect
 from django.test.utils import override_settings
 from django.urls import reverse
 from edx_django_utils.cache import TieredCache, get_cache_key
-from enterprise.models import EnterpriseCustomerUser  # pylint: disable=wrong-import-order
 from requests.exceptions import HTTPError
 from six.moves.urllib.parse import parse_qs
 from testfixtures import LogCapture
@@ -50,8 +49,6 @@ from openedx.features.enterprise_support.api import (
     get_enterprise_learner_data_from_api,
     get_enterprise_learner_data_from_db,
     get_enterprise_learner_portal_enabled_message,
-    insert_enterprise_pipeline_elements,
-    unlink_enterprise_user_from_idp,
 )
 from openedx.features.enterprise_support.tests import FEATURES_WITH_ENTERPRISE_ENABLED
 from openedx.features.enterprise_support.tests.factories import (
@@ -1075,21 +1072,6 @@ class TestEnterpriseApi(EnterpriseServiceMockMixin, CacheIsolationTestCase):
         the utilities to return the expected default values.
         """
         assert not enterprise_enabled()
-        assert insert_enterprise_pipeline_elements(None) is None
-
-    def test_utils_with_enterprise_enabled(self):
-        """
-        Test that enabling enterprise integration (which is currently on by default) causes the
-        the utilities to return the expected values.
-        """
-        assert enterprise_enabled()
-        pipeline = ['abc', 'social_core.pipeline.social_auth.load_extra_data', 'def']
-        insert_enterprise_pipeline_elements(pipeline)
-        assert pipeline == \
-               [
-                   'abc', 'enterprise.tpa_pipeline.handle_enterprise_logistration',
-                   'social_core.pipeline.social_auth.load_extra_data', 'def'
-               ]
 
     @mock.patch('openedx.features.enterprise_support.api.get_enterprise_learner_data_from_db')
     def test_enterprise_customer_from_session_or_db_cache_miss_no_customer(self, mock_learner_data_from_db):
@@ -1363,45 +1345,3 @@ class TestEnterpriseApi(EnterpriseServiceMockMixin, CacheIsolationTestCase):
 
         assert mock_override.declined_notification_title == title_template
         assert mock_override.declined_notification_message == message_template
-
-    @mock.patch('openedx.features.enterprise_support.api.Registry')
-    @mock.patch('openedx.features.enterprise_support.api.enterprise_customer_for_request')
-    def test_unlink_enterprise_user_from_idp(self, mock_customer_from_request, mock_registry):
-        customer_idp = EnterpriseCustomerIdentityProviderFactory.create(
-            provider_id='the-provider',
-        )
-        customer = customer_idp.enterprise_customer
-        customer_user = EnterpriseCustomerUserFactory.create(  # pylint: disable=unused-variable  # noqa: F841
-            enterprise_customer=customer,
-            user_id=self.user.id,
-        )
-        mock_customer_from_request.return_value = {
-            'uuid': customer.uuid,
-        }
-        mock_registry.get_enabled_by_backend_name.return_value = [
-            mock.Mock(provider_id='the-provider')
-        ]
-        request = mock.Mock()
-
-        unlink_enterprise_user_from_idp(request, self.user, idp_backend_name='the-backend-name')
-
-        assert 0 == EnterpriseCustomerUser.objects.filter(user_id=self.user.id).count()
-
-    @mock.patch('openedx.features.enterprise_support.api.Registry')
-    @mock.patch('openedx.features.enterprise_support.api.enterprise_customer_for_request')
-    def test_unlink_enterprise_user_from_idp_no_customer_user(self, mock_customer_from_request, mock_registry):
-        customer_idp = EnterpriseCustomerIdentityProviderFactory.create(
-            provider_id='the-provider',
-        )
-        customer = customer_idp.enterprise_customer
-        mock_customer_from_request.return_value = {
-            'uuid': customer.uuid,
-        }
-        mock_registry.get_enabled_by_backend_name.return_value = [
-            mock.Mock(provider_id='the-provider')
-        ]
-        request = mock.Mock()
-
-        unlink_enterprise_user_from_idp(request, self.user, idp_backend_name='the-backend-name')
-
-        assert 0 == EnterpriseCustomerUser.objects.filter(user_id=self.user.id).count()

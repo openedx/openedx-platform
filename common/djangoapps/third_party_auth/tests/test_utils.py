@@ -18,17 +18,12 @@ from common.djangoapps.third_party_auth.utils import (
     create_or_update_bulk_saml_provider_data,
     get_associated_user_by_email_response,
     get_user_from_email,
-    is_enterprise_customer_user,
     is_oauth_provider,
     parse_metadata_xml,
     user_exists,
     validate_saml_metadata_url,
 )
 from openedx.core.djangolib.testing.utils import skip_unless_lms
-from openedx.features.enterprise_support.tests.factories import (
-    EnterpriseCustomerIdentityProviderFactory,
-    EnterpriseCustomerUserFactory,
-)
 
 
 @ddt.ddt
@@ -58,26 +53,6 @@ class TestUtils(TestCase):
         UserFactory(username='test_user', email='test_user@example.com')
         assert get_user_from_email({'email': 'test_user@example.com'})
         assert not get_user_from_email({'email': 'invalid@example.com'})
-
-    def test_is_enterprise_customer_user(self):
-        """
-        Verify that if user is an enterprise learner.
-        """
-        # Create users from factory
-
-        user = UserFactory(username='test_user', email='test_user@example.com')
-        other_user = UserFactory(username='other_user', email='other_user@example.com')
-        customer_idp = EnterpriseCustomerIdentityProviderFactory.create(
-            provider_id='the-provider',
-        )
-        customer = customer_idp.enterprise_customer
-        EnterpriseCustomerUserFactory.create(
-            enterprise_customer=customer,
-            user_id=user.id,
-        )
-
-        assert is_enterprise_customer_user('the-provider', user)
-        assert not is_enterprise_customer_user('the-provider', other_user)
 
     @ddt.data(
         ('saml-farkle', False),
