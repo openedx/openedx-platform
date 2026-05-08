@@ -34,7 +34,9 @@ Decision
 ========
 
 1. **JWT authentication via** ``JwtAuthentication`` **MUST be the standard
-   authentication mechanism for all API(external and internal) access**, per `OEP-0042`_
+   authentication mechanism for all DRF API endpoints that take user-authenticated
+   requests**, per `OEP-0042`_. This excludes admin views, ``/oauth2/access_token/``,
+   and HMAC/webhook endpoints, which have their own authentication mechanisms.
 2. **Session authentication MUST also be used when** the expected client for an API
    is a Browser/MFE. This would be added alongside ``JwtAuthentication`` on the
    endpoint — which is the platform default.
