@@ -7,7 +7,7 @@ import random
 import re
 import string
 
-import waffle  # lint-amnesty, pylint: disable=invalid-django-waffle-import
+import waffle  # pylint: disable=invalid-django-waffle-import
 from completion.models import BlockCompletion
 from completion.waffle import ENABLE_COMPLETION_TRACKING_SWITCH
 from django.conf import settings
@@ -19,7 +19,7 @@ from common.djangoapps.student.models import AccountRecovery, Registration, get_
 from openedx.core.djangoapps.site_configuration.models import SiteConfiguration
 from openedx.core.djangoapps.theming.helpers import get_config_value_from_site_or_settings, get_current_site
 from openedx.core.djangolib.oauth2_retirement_utils import retire_dot_oauth2_models
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 
 from ..models import UserRetirementStatus
 

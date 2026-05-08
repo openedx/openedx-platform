@@ -16,7 +16,7 @@ import lms.djangoapps.grades.scores as scores
 from lms.djangoapps.grades.models import BlockRecord
 from lms.djangoapps.grades.transformer import GradesTransformer
 from openedx.core.djangoapps.content.block_structure.block_structure import BlockData
-from xmodule.graders import ProblemScore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.graders import ProblemScore  # pylint: disable=wrong-import-order
 
 NOW = now()
 

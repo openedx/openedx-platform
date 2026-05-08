@@ -7,9 +7,9 @@ from django.urls import reverse
 
 from common.djangoapps.student.tests.factories import TEST_PASSWORD, UserFactory
 from xmodule.modulestore.tests.django_utils import (
-    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+    ModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 
 class TestCourseUserDiscount(ModuleStoreTestCase):

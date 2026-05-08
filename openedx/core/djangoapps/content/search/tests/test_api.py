@@ -33,6 +33,13 @@ except RuntimeError:
     SearchAccess = {}
 
 STUDIO_SEARCH_ENDPOINT_URL = "/api/content_search/v2/studio/"
+EMPTY_TAGS = {
+    "taxonomy": [],
+    "level0": [],
+    "level1": [],
+    "level2": [],
+    "level3": [],
+}
 
 
 @ddt.ddt
@@ -342,29 +349,29 @@ class TestSearchApi(ModuleStoreTestCase):
 
         # Add tags field to doc, since reindex calls includes tags
         doc_sequential = copy.deepcopy(self.doc_sequential)
-        doc_sequential["tags"] = {}
+        doc_sequential["tags"] = copy.deepcopy(EMPTY_TAGS)
         doc_vertical = copy.deepcopy(self.doc_vertical)
-        doc_vertical["tags"] = {}
+        doc_vertical["tags"] = copy.deepcopy(EMPTY_TAGS)
         doc_problem1 = copy.deepcopy(self.doc_problem1)
-        doc_problem1["tags"] = {}
+        doc_problem1["tags"] = copy.deepcopy(EMPTY_TAGS)
         doc_problem1["collections"] = {'display_name': [], 'key': []}
         doc_problem1["units"] = {'display_name': [], 'key': []}
         doc_problem2 = copy.deepcopy(self.doc_problem2)
-        doc_problem2["tags"] = {}
+        doc_problem2["tags"] = copy.deepcopy(EMPTY_TAGS)
         doc_problem2["collections"] = {'display_name': [], 'key': []}
         doc_problem2["units"] = {'display_name': [], 'key': []}
         doc_collection = copy.deepcopy(self.collection_dict)
-        doc_collection["tags"] = {}
+        doc_collection["tags"] = copy.deepcopy(EMPTY_TAGS)
         doc_unit = copy.deepcopy(self.unit_dict)
-        doc_unit["tags"] = {}
+        doc_unit["tags"] = copy.deepcopy(EMPTY_TAGS)
         doc_unit["collections"] = {'display_name': [], 'key': []}
         doc_unit["subsections"] = {'display_name': ['Subsection 1'], 'key': ['lct:org1:lib:subsection:subsection-1']}
         doc_subsection = copy.deepcopy(self.subsection_dict)
-        doc_subsection["tags"] = {}
+        doc_subsection["tags"] = copy.deepcopy(EMPTY_TAGS)
         doc_subsection["collections"] = {'display_name': [], 'key': []}
         doc_subsection["sections"] = {'display_name': ['Section 1'], 'key': ['lct:org1:lib:section:section-1']}
         doc_section = copy.deepcopy(self.section_dict)
-        doc_section["tags"] = {}
+        doc_section["tags"] = copy.deepcopy(EMPTY_TAGS)
         doc_section["collections"] = {'display_name': [], 'key': []}
 
         api.rebuild_index()
@@ -384,29 +391,29 @@ class TestSearchApi(ModuleStoreTestCase):
 
         # Add tags field to doc, since reindex calls includes tags
         doc_sequential = copy.deepcopy(self.doc_sequential)
-        doc_sequential["tags"] = {}
+        doc_sequential["tags"] = copy.deepcopy(EMPTY_TAGS)
         doc_vertical = copy.deepcopy(self.doc_vertical)
-        doc_vertical["tags"] = {}
+        doc_vertical["tags"] = copy.deepcopy(EMPTY_TAGS)
         doc_problem1 = copy.deepcopy(self.doc_problem1)
-        doc_problem1["tags"] = {}
+        doc_problem1["tags"] = copy.deepcopy(EMPTY_TAGS)
         doc_problem1["collections"] = {"display_name": [], "key": []}
         doc_problem1["units"] = {'display_name': [], 'key': []}
         doc_problem2 = copy.deepcopy(self.doc_problem2)
-        doc_problem2["tags"] = {}
+        doc_problem2["tags"] = copy.deepcopy(EMPTY_TAGS)
         doc_problem2["collections"] = {"display_name": [], "key": []}
         doc_problem2["units"] = {'display_name': [], 'key': []}
         doc_collection = copy.deepcopy(self.collection_dict)
-        doc_collection["tags"] = {}
+        doc_collection["tags"] = copy.deepcopy(EMPTY_TAGS)
         doc_unit = copy.deepcopy(self.unit_dict)
-        doc_unit["tags"] = {}
+        doc_unit["tags"] = copy.deepcopy(EMPTY_TAGS)
         doc_unit["collections"] = {"display_name": [], "key": []}
         doc_unit["subsections"] = {'display_name': ['Subsection 1'], 'key': ['lct:org1:lib:subsection:subsection-1']}
         doc_subsection = copy.deepcopy(self.subsection_dict)
-        doc_subsection["tags"] = {}
+        doc_subsection["tags"] = copy.deepcopy(EMPTY_TAGS)
         doc_subsection["collections"] = {'display_name': [], 'key': []}
         doc_subsection["sections"] = {'display_name': ['Section 1'], 'key': ['lct:org1:lib:section:section-1']}
         doc_section = copy.deepcopy(self.section_dict)
-        doc_section["tags"] = {}
+        doc_section["tags"] = copy.deepcopy(EMPTY_TAGS)
         doc_section["collections"] = {'display_name': [], 'key': []}
 
         api.rebuild_index(incremental=True)
@@ -524,11 +531,11 @@ class TestSearchApi(ModuleStoreTestCase):
 
         # Add tags field to doc, since reindex calls includes tags
         doc_sequential = copy.deepcopy(self.doc_sequential)
-        doc_sequential["tags"] = {}
+        doc_sequential["tags"] = copy.deepcopy(EMPTY_TAGS)
         doc_vertical = copy.deepcopy(self.doc_vertical)
-        doc_vertical["tags"] = {}
+        doc_vertical["tags"] = copy.deepcopy(EMPTY_TAGS)
         doc_problem2 = copy.deepcopy(self.doc_problem2)
-        doc_problem2["tags"] = {}
+        doc_problem2["tags"] = copy.deepcopy(EMPTY_TAGS)
         doc_problem2["collections"] = {'display_name': [], 'key': []}
         doc_problem2["units"] = {'display_name': [], 'key': []}
 
@@ -611,14 +618,20 @@ class TestSearchApi(ModuleStoreTestCase):
             "id": self.doc_sequential["id"],
             "tags": {
                 'taxonomy': ['A'],
-                'level0': ['A > one', 'A > two']
+                'level0': ['A > one', 'A > two'],
+                'level1': [],
+                'level2': [],
+                'level3': [],
             }
         }
         doc_sequential_with_tags2 = {
             "id": self.doc_sequential["id"],
             "tags": {
                 'taxonomy': ['A', 'B'],
-                'level0': ['A > one', 'A > two', 'B > four', 'B > three']
+                'level0': ['A > one', 'A > two', 'B > four', 'B > three'],
+                'level1': [],
+                'level2': [],
+                'level3': [],
             }
         }
 
@@ -627,6 +640,41 @@ class TestSearchApi(ModuleStoreTestCase):
             [
                 call([doc_sequential_with_tags1]),
                 call([doc_sequential_with_tags2]),
+            ],
+            any_order=True,
+        )
+
+    @override_settings(MEILISEARCH_ENABLED=True)
+    def test_remove_xblock_tag_clears_index_tags(self, mock_meilisearch) -> None:
+        """
+        Test that removing tags from an XBlock clears tag facets in the index.
+        """
+        # Add a tag first so we can verify it is later cleared.
+        tagging_api.tag_object(str(self.sequential.usage_key), self.taxonomyA, ["one"])
+
+        # Remove all tags for taxonomyA from this object.
+        tagging_api.tag_object(str(self.sequential.usage_key), self.taxonomyA, [])
+
+        doc_with_tag = {
+            "id": self.doc_sequential["id"],
+            "tags": {
+                "taxonomy": ["A"],
+                "level0": ["A > one"],
+                "level1": [],
+                "level2": [],
+                "level3": [],
+            },
+        }
+        doc_without_tags = {
+            "id": self.doc_sequential["id"],
+            "tags": copy.deepcopy(EMPTY_TAGS),
+        }
+
+        assert mock_meilisearch.return_value.index.return_value.update_documents.call_count == 2
+        mock_meilisearch.return_value.index.return_value.update_documents.assert_has_calls(
+            [
+                call([doc_with_tag]),
+                call([doc_without_tags]),
             ],
             any_order=True,
         )
@@ -670,14 +718,20 @@ class TestSearchApi(ModuleStoreTestCase):
             "id": self.doc_problem1["id"],
             "tags": {
                 'taxonomy': ['A'],
-                'level0': ['A > one', 'A > two']
+                'level0': ['A > one', 'A > two'],
+                'level1': [],
+                'level2': [],
+                'level3': [],
             }
         }
         doc_problem_with_tags2 = {
             "id": self.doc_problem1["id"],
             "tags": {
                 'taxonomy': ['A', 'B'],
-                'level0': ['A > one', 'A > two', 'B > four', 'B > three']
+                'level0': ['A > one', 'A > two', 'B > four', 'B > three'],
+                'level1': [],
+                'level2': [],
+                'level3': [],
             }
         }
 
@@ -876,14 +930,20 @@ class TestSearchApi(ModuleStoreTestCase):
             "id": "lib-collectionorg1libmycol-5b647617",
             "tags": {
                 'taxonomy': ['A'],
-                'level0': ['A > one', 'A > two']
+                'level0': ['A > one', 'A > two'],
+                'level1': [],
+                'level2': [],
+                'level3': [],
             }
         }
         doc_collection_with_tags2 = {
             "id": "lib-collectionorg1libmycol-5b647617",
             "tags": {
                 'taxonomy': ['A', 'B'],
-                'level0': ['A > one', 'A > two', 'B > four', 'B > three']
+                'level0': ['A > one', 'A > two', 'B > four', 'B > three'],
+                'level1': [],
+                'level2': [],
+                'level3': [],
             }
         }
 
@@ -1148,14 +1208,20 @@ class TestSearchApi(ModuleStoreTestCase):
             "id": container_id,
             "tags": {
                 'taxonomy': ['A'],
-                'level0': ['A > one', 'A > two']
+                'level0': ['A > one', 'A > two'],
+                'level1': [],
+                'level2': [],
+                'level3': [],
             }
         }
         doc_unit_with_tags2 = {
             "id": container_id,
             "tags": {
                 'taxonomy': ['A', 'B'],
-                'level0': ['A > one', 'A > two', 'B > four', 'B > three']
+                'level0': ['A > one', 'A > two', 'B > four', 'B > three'],
+                'level1': [],
+                'level2': [],
+                'level3': [],
             }
         }
 

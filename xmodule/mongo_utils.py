@@ -6,7 +6,7 @@ Common MongoDB connection functions.
 import logging
 
 import pymongo
-from pymongo.read_preferences import (  # lint-amnesty, pylint: disable=unused-import
+from pymongo.read_preferences import (  # pylint: disable=unused-import
     _MODES,
     _MONGOS_MODES,
     ReadPreference,

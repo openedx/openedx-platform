@@ -1240,7 +1240,7 @@ def get_comment_list(request, thread_id, endorsed, page, page_size, flagged=Fals
     # responses to question threads must be separated by endorsed due to the
     # existing comments service interface
     if cc_thread["thread_type"] == "question" and not merge_question_type_responses:
-        if endorsed is None:  # lint-amnesty, pylint: disable=no-else-raise
+        if endorsed is None:  # pylint: disable=no-else-raise
             raise ValidationError({"endorsed": ["This field is required for question threads."]})
         elif endorsed:
             # CS does not apply resp_skip and resp_limit to endorsed responses

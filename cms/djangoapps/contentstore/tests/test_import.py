@@ -239,7 +239,7 @@ class ContentStoreImportTest(ModuleStoreTestCase):
             {"0": '9f0941d021414798836ef140fb5f6841', "1": '0faf29473cf1497baa33fcc828b179cd'},
         )
 
-    def _verify_split_test_import(self, target_course_name, source_course_name, split_test_name, groups_to_verticals):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def _verify_split_test_import(self, target_course_name, source_course_name, split_test_name, groups_to_verticals):  # pylint: disable=missing-function-docstring
         module_store = modulestore()
         target_id = module_store.make_course_key('testX', target_course_name, 'copy_run')
         import_course_from_xml(

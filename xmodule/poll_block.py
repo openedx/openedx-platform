@@ -17,7 +17,7 @@ from django.conf import settings
 from lxml import etree
 from web_fragments.fragment import Fragment
 from xblock.core import XBlock
-from xblock.fields import Boolean, Dict, List, Scope, String  # lint-amnesty, pylint: disable=wrong-import-order
+from xblock.fields import Boolean, Dict, List, Scope, String  # pylint: disable=wrong-import-order
 from xblocks_contrib.poll import PollBlock as _ExtractedPollBlock
 
 from openedx.core.djangolib.markup import HTML, Text
@@ -86,7 +86,7 @@ class _BuiltInPollBlock(
     resources_dir = None
     uses_xmodule_styles_setup = True
 
-    def handle_ajax(self, dispatch, data):  # lint-amnesty, pylint: disable=unused-argument
+    def handle_ajax(self, dispatch, data):  # pylint: disable=unused-argument
         """Ajax handler.
 
         Args:
@@ -232,7 +232,7 @@ class _BuiltInPollBlock(
         xml_object = etree.fromstring(poll_str)
         xml_object.set('display_name', self.display_name)
 
-        def add_child(xml_obj, answer):  # lint-amnesty, pylint: disable=unused-argument
+        def add_child(xml_obj, answer):  # pylint: disable=unused-argument
             # Escape answer text before adding to xml tree.
             answer_text = str(answer['text'])
             child_str = Text('{tag_begin}{text}{tag_end}').format(

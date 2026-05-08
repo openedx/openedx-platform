@@ -31,7 +31,7 @@ class FakeContentTask(FakeInfo):
         'requester',
     ]
 
-    def __init__(self, email_id, num_sent, num_failed, sent_to):  # lint-amnesty, pylint: disable=unused-argument
+    def __init__(self, email_id, num_sent, num_failed, sent_to):  # pylint: disable=unused-argument
         super().__init__()
         self.task_id = random.randint(1, 15401)
         self.task_type = 'test_task'

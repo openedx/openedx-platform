@@ -20,7 +20,7 @@ from organizations.tests.factories import OrganizationFactory
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase, setup_caption_responses
 from openedx.core.djangoapps.content_libraries import api as lib_api
 from openedx.core.djangoapps.contentserver.caching import del_cached_content
-from openedx.core.djangoapps.video_config.transcripts_utils import (  # lint-amnesty, pylint: disable=wrong-import-order
+from openedx.core.djangoapps.video_config.transcripts_utils import (  # pylint: disable=wrong-import-order
     GetTranscriptsFromYouTubeException,
     Transcript,
     get_transcript,
@@ -28,11 +28,11 @@ from openedx.core.djangoapps.video_config.transcripts_utils import (  # lint-amn
     remove_subs_from_store,
 )
 from openedx.core.djangoapps.xblock import api as xblock_api
-from xmodule.contentstore.content import StaticContent  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.contentstore.django import contentstore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.exceptions import NotFoundError  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.video_block import VideoBlock  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.contentstore.content import StaticContent  # pylint: disable=wrong-import-order
+from xmodule.contentstore.django import contentstore  # pylint: disable=wrong-import-order
+from xmodule.exceptions import NotFoundError  # pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
+from xmodule.video_block import VideoBlock  # pylint: disable=wrong-import-order
 
 TEST_DATA_CONTENTSTORE = copy.deepcopy(settings.CONTENTSTORE)
 TEST_DATA_CONTENTSTORE['DOC_STORE_CONFIG']['db'] = 'test_xcontent_%s' % uuid4().hex  # noqa: UP031
@@ -202,7 +202,7 @@ class TestUploadTranscripts(BaseTranscripts):
         """
         Setup a transcript file with suffix and content.
         """
-        transcript_file = tempfile.NamedTemporaryFile(suffix=suffix)  # lint-amnesty, pylint: disable=consider-using-with
+        transcript_file = tempfile.NamedTemporaryFile(suffix=suffix)  # pylint: disable=consider-using-with
         wrapped_content = textwrap.dedent(content)
         if include_bom:
             wrapped_content = wrapped_content.encode('utf-8-sig')

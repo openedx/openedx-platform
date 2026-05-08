@@ -9,20 +9,20 @@ from django.conf import settings
 from django.test.client import Client
 from milestones.tests.utils import MilestonesTestCaseMixin
 
-from common.djangoapps.student.models import CourseEnrollment  # lint-amnesty, pylint: disable=unused-import
+from common.djangoapps.student.models import CourseEnrollment  # pylint: disable=unused-import
 from common.djangoapps.student.roles import GlobalStaff
 from common.djangoapps.student.tests.factories import UserFactory
 from common.djangoapps.student.views import get_course_enrollments
 from common.djangoapps.util.milestones_helpers import get_pre_requisite_courses_not_completed, set_prerequisite_courses
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from openedx.core.djangolib.testing.utils import skip_unless_lms
-from xmodule.error_block import ErrorBlock  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.error_block import ErrorBlock  # pylint: disable=wrong-import-order
+from xmodule.modulestore import ModuleStoreEnum  # pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 from xmodule.modulestore.tests.django_utils import (
-    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+    ModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 
 class TestCourseListing(ModuleStoreTestCase, MilestonesTestCaseMixin):

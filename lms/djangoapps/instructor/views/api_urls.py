@@ -97,6 +97,11 @@ v2_api_urls = [
         name='certificate_exceptions'
     ),
     re_path(
+        rf'^courses/{COURSE_ID_PATTERN}/certificates/exceptions/bulk$',
+        api_v2.BulkCertificateExceptionsView.as_view(),
+        name='bulk_certificate_exceptions'
+    ),
+    re_path(
         rf'^courses/{COURSE_ID_PATTERN}/certificates/invalidations$',
         api_v2.CertificateInvalidationsView.as_view(),
         name='certificate_invalidations'

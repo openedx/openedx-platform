@@ -18,9 +18,9 @@ from lms.djangoapps.certificates.tests.factories import GeneratedCertificateFact
 from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 from xmodule.modulestore.tests.django_utils import (
-    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+    ModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 # Entitlements is not in CMS' INSTALLED_APPS so these imports will error during test collection
 if settings.ROOT_URLCONF == 'lms.urls':
@@ -94,7 +94,7 @@ class TestCourseEntitlementModelHelpers(ModuleStoreTestCase):
 
         new_course = CourseFactory()
         CourseModeFactory(
-            course_id=new_course.id,  # lint-amnesty, pylint: disable=no-member
+            course_id=new_course.id,  # pylint: disable=no-member
             mode_slug=CourseMode.VERIFIED,
             # This must be in the future to ensure it is returned by downstream code.
             expiration_datetime=now() + timedelta(days=1)
@@ -110,7 +110,7 @@ class TestCourseEntitlementModelHelpers(ModuleStoreTestCase):
             )
             assert not CourseEnrollment.is_enrolled(user=self.user, course_key=new_course.id)
         except AttributeError as error:
-            self.fail(error.message)  # lint-amnesty, pylint: disable=no-member
+            self.fail(error.message)  # pylint: disable=no-member
 
 
 @skip_unless_lms
@@ -237,7 +237,7 @@ class TestModels(TestCase):
         # or the exact same as the original expiration_period_days if somehow no time has passed
         assert entitlement.get_days_until_expiration() <= entitlement.policy.expiration_period.days
 
-    def test_expired_at_datetime(self):  # lint-amnesty, pylint: disable=too-many-statements
+    def test_expired_at_datetime(self):  # pylint: disable=too-many-statements
         """
         Tests that using the getter method properly updates the expired_at field for an entitlement
         """

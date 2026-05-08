@@ -8,11 +8,11 @@ from rest_framework.test import APITestCase
 from rest_framework.views import APIView
 
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
-from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore import ModuleStoreEnum  # pylint: disable=wrong-import-order
 from xmodule.modulestore.tests.django_utils import (
-    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+    SharedModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 from ..view_utils import DeveloperErrorViewMixin, verify_course_exists
 

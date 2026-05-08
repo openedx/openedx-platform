@@ -10,9 +10,9 @@ from lms.djangoapps.teams.models import CourseTeam, CourseTeamMembership
 from lms.djangoapps.teams.tests.factories import CourseTeamFactory
 from openedx.core.lib.teams_config import TeamsConfig
 from xmodule.modulestore.tests.django_utils import (
-    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+    SharedModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 
 def csv_import(course, csv_dict_rows):
@@ -408,7 +408,7 @@ class TeamMembershipImportManagerTests(TeamMembershipEventTestMixin, SharedModul
             ['username', 'mode', 'teamset_1'],
             [user.username, mode, ''],
         ])
-        result = self.import_manager.set_team_memberships(csv_data)  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841
+        result = self.import_manager.set_team_memberships(csv_data)  # pylint: disable=unused-variable  # noqa: F841
 
         # Then they are removed from the team and the correct events are issued
         assert not CourseTeamMembership.is_user_on_team(user, team)
@@ -461,7 +461,7 @@ class TeamMembershipImportManagerTests(TeamMembershipEventTestMixin, SharedModul
             ['username', 'mode', 'teamset_1'],
             [user.username, mode, 'new_exciting_team'],
         ])
-        result = self.import_manager.set_team_memberships(csv_data)  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841
+        result = self.import_manager.set_team_memberships(csv_data)  # pylint: disable=unused-variable  # noqa: F841
 
         # Then a new team is created
         assert CourseTeam.objects.all().count() == 1

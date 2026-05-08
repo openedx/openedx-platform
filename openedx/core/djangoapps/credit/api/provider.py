@@ -118,7 +118,7 @@ def check_keys_exist(shared_secret_key, provider_id):
     Raise CreditProviderNotConfigured if no key available.
     """
     # Accounts for old way of storing provider key
-    if shared_secret_key is None:  # lint-amnesty, pylint: disable=no-else-raise
+    if shared_secret_key is None:  # pylint: disable=no-else-raise
         msg = 'Credit provider with ID "{provider_id}" does not have a secret key configured.'.format(  # noqa: UP032
             provider_id=provider_id
         )
@@ -211,10 +211,10 @@ def create_credit_request(course_key, provider_id, username):
             'but the user is not eligible for credit',
             username, course_key
         )
-        raise UserIsNotEligible  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise UserIsNotEligible  # pylint: disable=raise-missing-from  # noqa: B904
     except CreditProvider.DoesNotExist:
         log.error('Credit provider with ID "%s" has not been configured.', provider_id)
-        raise CreditProviderNotConfigured  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise CreditProviderNotConfigured  # pylint: disable=raise-missing-from  # noqa: B904
 
     # Check if we've enabled automatic integration with the credit
     # provider.  If not, we'll show the user a link to a URL
@@ -285,7 +285,7 @@ def create_credit_request(course_key, provider_id, username):
         msg = 'Could not retrieve final grade from the credit eligibility table for ' \
               'user [{user_id}] in course [{course_key}].'.format(user_id=user.id, course_key=course_key)  # noqa: UP032
         log.exception(msg)
-        raise UserIsNotEligible(msg)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise UserIsNotEligible(msg)  # pylint: disable=raise-missing-from  # noqa: B904
 
     # Getting the students's enrollment date
     course_enrollment = CourseEnrollment.get_enrollment(user, course_key)
@@ -381,7 +381,7 @@ def update_credit_request_status(request_uuid, provider_id, status):
             'with this UUID is associated with the provider.'
         ).format(provider_id=provider_id, request_uuid=request_uuid)
         log.warning(msg)
-        raise CreditRequestNotFound(msg)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise CreditRequestNotFound(msg)  # pylint: disable=raise-missing-from  # noqa: B904
 
 
 def get_credit_requests_for_user(username):

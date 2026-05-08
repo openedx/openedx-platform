@@ -8,7 +8,7 @@ import logging
 from datetime import datetime
 
 from ccx_keys.locator import CCXLocator
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.db import models
 from lazy import lazy
 from opaque_keys.edx.django.models import CourseKeyField, UsageKeyField

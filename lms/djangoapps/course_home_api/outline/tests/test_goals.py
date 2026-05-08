@@ -9,7 +9,7 @@ from unittest import mock
 from django.contrib.auth import get_user_model
 from django.test.utils import override_settings
 from django.urls import reverse
-from edx_toggles.toggles.testutils import override_waffle_flag  # lint-amnesty, pylint: disable=wrong-import-order
+from edx_toggles.toggles.testutils import override_waffle_flag  # pylint: disable=wrong-import-order
 from rest_framework.test import APIClient
 
 from common.djangoapps.student.models import CourseEnrollment
@@ -18,9 +18,9 @@ from lms.djangoapps.course_goals.models import CourseGoal
 from lms.djangoapps.course_home_api.tests.utils import BaseCourseHomeTests
 from openedx.features.course_experience import ENABLE_COURSE_GOALS
 from xmodule.modulestore.tests.django_utils import (
-    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+    SharedModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 EVENT_NAME_ADDED = 'edx.course.goal.added'
 EVENT_NAME_UPDATED = 'edx.course.goal.updated'

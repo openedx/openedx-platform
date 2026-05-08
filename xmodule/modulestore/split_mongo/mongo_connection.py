@@ -133,11 +133,11 @@ class QueryTimer:
         tagger = Tagger(self._sample_rate)
         metric_name = f"{self._metric_base}.{metric_name}"
 
-        start = time()  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841
+        start = time()  # pylint: disable=unused-variable  # noqa: F841
         try:
             yield tagger
         finally:
-            end = time()  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841
+            end = time()  # pylint: disable=unused-variable  # noqa: F841
             tags = tagger.tags
             tags.append(f'course:{course_context}')
 
@@ -232,7 +232,7 @@ class CourseStructureCache:
                 tagger.measure('uncompressed_size', len(pickled_data))
 
                 return pickle.loads(pickled_data, encoding='latin-1')
-            except Exception:  # lint-amnesty, pylint: disable=broad-except
+            except Exception:  # pylint: disable=broad-except
                 # The cached data is corrupt in some way, get rid of it.
                 log.warning("CourseStructureCache: Bad data in cache for %s", course_context)
                 self.cache.delete(key)
@@ -273,7 +273,7 @@ class MongoPersistenceBackend:
 
     def __init__(
         self, db, collection, host, port=27017, tz_aware=True, user=None, password=None,
-        asset_collection=None, with_mysql_subclass=False, **kwargs  # lint-amnesty, pylint: disable=unused-argument
+        asset_collection=None, with_mysql_subclass=False, **kwargs  # pylint: disable=unused-argument
     ):
         """
         Create & open the connection, authenticate, and provide pointers to the collections
@@ -317,7 +317,7 @@ class MongoPersistenceBackend:
             self.database.client.admin.command('ismaster')
             return True
         except pymongo.errors.ConnectionFailure:
-            raise HeartbeatFailure(f"Can't connect to {self.database.name}", 'mongo')  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise HeartbeatFailure(f"Can't connect to {self.database.name}", 'mongo')  # pylint: disable=raise-missing-from  # noqa: B904
 
     def check_connection(self):
         """

@@ -164,7 +164,7 @@ def login_and_registration_form(request, initial_mode="login"):
     # If present, we display a login page focused on third-party auth with that provider.
     third_party_auth_hint = None
     tpa_hint_provider = None
-    if '?' in redirect_to:  # lint-amnesty, pylint: disable=too-many-nested-blocks
+    if '?' in redirect_to:  # pylint: disable=too-many-nested-blocks
         try:
             next_args = urllib.parse.parse_qs(urllib.parse.urlparse(redirect_to).query)
             if 'tpa_hint' in next_args:

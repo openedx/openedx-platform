@@ -6,7 +6,7 @@ from openedx.core.djangoapps.ace_common.utils import setup_firebase_app
 ACE_ROUTING_KEY = 'edx.lms.core.default'
 
 
-def plugin_settings(settings):  # lint-amnesty, pylint: disable=missing-function-docstring, missing-module-docstring
+def plugin_settings(settings):  # pylint: disable=missing-function-docstring, missing-module-docstring
     if 'push_notifications' not in settings.INSTALLED_APPS:
         settings.INSTALLED_APPS.append('push_notifications')
     settings.ACE_ENABLED_CHANNELS = [

@@ -25,7 +25,7 @@ from xmodule.tests import DATA_DIR
 from xmodule.x_module import XModuleMixin
 
 
-def load_function(path):  # lint-amnesty, pylint: disable=redefined-outer-name
+def load_function(path):  # pylint: disable=redefined-outer-name
     """
     Load a function by name.
 
@@ -63,7 +63,7 @@ def create_modulestore_instance(
     )
 
 
-def add_temp_files_from_dict(file_dict, dir):  # lint-amnesty, pylint: disable=redefined-builtin
+def add_temp_files_from_dict(file_dict, dir):  # pylint: disable=redefined-builtin
     """
     Takes in a dict formatted as: { file_name: content }, and adds files to directory
     """
@@ -74,7 +74,7 @@ def add_temp_files_from_dict(file_dict, dir):  # lint-amnesty, pylint: disable=r
                 opened_file.write(str(content))
 
 
-def remove_temp_files_from_list(file_list, dir):  # lint-amnesty, pylint: disable=redefined-builtin
+def remove_temp_files_from_list(file_list, dir):  # pylint: disable=redefined-builtin
     """
     Takes in a list of file names and removes them from dir if they exist
     """
@@ -376,7 +376,7 @@ class MixedModulestoreBuilder(StoreBuilderBase):
         names, generators = list(zip(*self.store_builders))  # noqa: B905
 
         with ExitStack() as stack:
-            modulestores = [stack.enter_context(gen.build_with_contentstore(contentstore, **kwargs)) for gen in generators]  # lint-amnesty, pylint: disable=line-too-long
+            modulestores = [stack.enter_context(gen.build_with_contentstore(contentstore, **kwargs)) for gen in generators]  # pylint: disable=line-too-long
             # Make the modulestore creation function just return the already-created modulestores
             store_iterator = iter(modulestores)
             next_modulestore = lambda *args, **kwargs: next(store_iterator)

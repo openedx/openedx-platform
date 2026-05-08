@@ -317,7 +317,7 @@ def footer(request):
             with translation.override(language):
                 footer_dict = branding_api.get_footer(is_secure=request.is_secure())
                 cache.set(cache_key, footer_dict, settings.FOOTER_CACHE_TIMEOUT)
-        return JsonResponse(footer_dict, 200, content_type="application/json; charset=utf-8")  # lint-amnesty, pylint: disable=redundant-content-type-for-json-response
+        return JsonResponse(footer_dict, 200, content_type="application/json; charset=utf-8")  # pylint: disable=redundant-content-type-for-json-response
 
     else:
         return HttpResponse(status=406)

@@ -220,7 +220,7 @@ class FieldOverridePerformanceTestCase(FieldOverrideTestMixin, ProceduralCourseT
             XBLOCK_FIELD_DATA_WRAPPERS=['lms.djangoapps.courseware.field_overrides:OverrideModulestoreFieldData.wrap'],
             MODULESTORE_FIELD_OVERRIDE_PROVIDERS=providers[overrides],
         ):
-            sql_queries, mongo_reads = self.TEST_DATA[  # lint-amnesty, pylint: disable=unsubscriptable-object
+            sql_queries, mongo_reads = self.TEST_DATA[  # pylint: disable=unsubscriptable-object
                 (overrides, course_width, enable_ccx, view_as_ccx)
             ]
             self.instrument_course_progress_render(

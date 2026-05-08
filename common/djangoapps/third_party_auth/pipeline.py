@@ -72,7 +72,7 @@ import six
 import social_django
 from django.conf import settings
 from django.contrib.auth import REDIRECT_FIELD_NAME, logout
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.core.mail.message import EmailMessage
 from django.http import HttpResponseBadRequest
 from django.shortcuts import redirect
@@ -86,10 +86,7 @@ from common.djangoapps import third_party_auth
 from common.djangoapps.edxmako.shortcuts import render_to_string
 from common.djangoapps.third_party_auth.utils import (
     get_associated_user_by_email_response,
-    get_user_from_email,
-    is_enterprise_customer_user,
     is_oauth_provider,
-    is_saml_provider,
     user_exists,
 )
 from common.djangoapps.track import segment
@@ -102,7 +99,6 @@ from openedx.core.djangoapps.user_api.accounts.utils import username_suffix_gene
 from openedx.core.djangoapps.user_authn import cookies as user_authn_cookies
 from openedx.core.djangoapps.user_authn.toggles import is_auto_generated_username_enabled
 from openedx.core.djangoapps.user_authn.utils import is_safe_login_or_logout_redirect
-from openedx.core.djangoapps.user_authn.views.utils import get_auto_generated_username
 
 from . import provider
 
@@ -143,7 +139,7 @@ AUTH_ENTRY_CUSTOM = getattr(settings, 'THIRD_PARTY_AUTH_CUSTOM_AUTH_FORMS', {})
 
 def is_api(auth_entry):
     """Returns whether the auth entry point is via an API call."""
-    return (auth_entry == AUTH_ENTRY_LOGIN_API) or (auth_entry == AUTH_ENTRY_REGISTER_API)  # lint-amnesty, pylint: disable=consider-using-in
+    return (auth_entry == AUTH_ENTRY_LOGIN_API) or (auth_entry == AUTH_ENTRY_REGISTER_API)  # pylint: disable=consider-using-in
 
 # URLs associated with auth entry points
 # These are used to request additional user information
@@ -558,7 +554,7 @@ def redirect_to_custom_form(request, auth_entry, details, kwargs):
 
 
 @partial.partial
-def ensure_user_information(strategy, auth_entry, backend=None, user=None, social=None, current_partial=None,  # lint-amnesty, pylint: disable=keyword-arg-before-vararg
+def ensure_user_information(strategy, auth_entry, backend=None, user=None, social=None, current_partial=None,  # pylint: disable=keyword-arg-before-vararg
                             allow_inactive_user=False, details=None, *args, **kwargs):
     """
     Ensure that we have the necessary information about a user (either an
@@ -662,7 +658,7 @@ def ensure_user_information(strategy, auth_entry, backend=None, user=None, socia
 
 
 @partial.partial
-def set_logged_in_cookies(backend=None, user=None, strategy=None, auth_entry=None, current_partial=None,  # lint-amnesty, pylint: disable=keyword-arg-before-vararg
+def set_logged_in_cookies(backend=None, user=None, strategy=None, auth_entry=None, current_partial=None,  # pylint: disable=keyword-arg-before-vararg
                           *args, **kwargs):
     """This pipeline step sets the "logged in" cookie for authenticated users.
 
@@ -714,7 +710,7 @@ def set_logged_in_cookies(backend=None, user=None, strategy=None, auth_entry=Non
 
 
 @partial.partial
-def login_analytics(strategy, auth_entry, current_partial=None, *args, **kwargs):  # lint-amnesty, pylint: disable=keyword-arg-before-vararg
+def login_analytics(strategy, auth_entry, current_partial=None, *args, **kwargs):  # pylint: disable=keyword-arg-before-vararg
     """ Sends login info to Segment """
 
     event_name = None
@@ -743,7 +739,7 @@ def login_analytics(strategy, auth_entry, current_partial=None, *args, **kwargs)
 
 
 @partial.partial
-def associate_by_email_if_login_api(auth_entry, backend, details, user, current_partial=None, *args, **kwargs):  # lint-amnesty, pylint: disable=keyword-arg-before-vararg
+def associate_by_email_if_login_api(auth_entry, backend, details, user, current_partial=None, *args, **kwargs):  # pylint: disable=keyword-arg-before-vararg
     """
     This pipeline step associates the current social auth with the user with the
     same email address in the database.  It defers to the social library's associate_by_email
@@ -781,83 +777,21 @@ def associate_by_email_if_oauth(auth_entry, backend, details, user, strategy, *a
             return association_response
 
 
-@partial.partial
 def associate_by_email_if_saml(auth_entry, backend, details, user, strategy, *args, **kwargs):
     """
-    This pipeline step associates the current social auth with the user with the
-    same email address in the database.  It defers to the social library's associate_by_email
-    implementation, which verifies that only a single database user is associated with the email.
+    Deprecated — enterprise SAML email association moved to
+    enterprise.tpa_pipeline.enterprise_associate_by_email.
 
-    This association is done ONLY if the user entered the pipeline belongs to SAML provider.
+    Retained as a no-op for backwards compatibility with custom pipeline configs.
     """
-    from openedx.features.enterprise_support.api import enterprise_is_enabled
-
-    def get_user():
-        """
-        This is the helper method to get the user from system by matching email.
-        """
-        user_details = {'email': details.get('email')} if details else None
-        return get_user_from_email(user_details or {})
-
-    @enterprise_is_enabled()
-    def associate_by_email_if_enterprise_user():
-        """
-        If the learner arriving via SAML is already linked to the enterprise customer linked to the same IdP,
-        they should not be prompted for their edX password.
-        """
-        try:
-            enterprise_customer_user = is_enterprise_customer_user(current_provider.provider_id, current_user)
-            logger.info(
-                '[Multiple_SSO_SAML_Accounts_Association_to_User] Enterprise user verification:'  # noqa: UP032
-                'User Email: {email}, User ID: {user_id}, Provider ID: {provider_id},'
-                ' is_enterprise_customer_user: {enterprise_customer_user}'.format(
-                    email=current_user.email,
-                    user_id=current_user.id,
-                    provider_id=current_provider.provider_id,
-                    enterprise_customer_user=enterprise_customer_user,
-                )
-            )
-
-            if enterprise_customer_user:
-                # this is python social auth pipeline default method to automatically associate social accounts
-                # if the email already matches a user account.
-                association_response, user_is_active = get_associated_user_by_email_response(
-                    backend, details, user, *args, **kwargs)
-
-                if not user_is_active:
-                    logger.info(
-                        '[Multiple_SSO_SAML_Accounts_Association_to_User] User association account is not'  # noqa: UP032  # pylint: disable=line-too-long
-                        ' active: User Email: {email}, User ID: {user_id}, Provider ID: {provider_id},'
-                        ' is_enterprise_customer_user: {enterprise_customer_user}'.format(
-                            email=current_user.email,
-                            user_id=current_user.id,
-                            provider_id=current_provider.provider_id,
-                            enterprise_customer_user=enterprise_customer_user
-                        )
-                    )
-                    return None
-
-                return association_response
-
-        except Exception as ex:  # pylint: disable=broad-except
-            logger.exception('[Multiple_SSO_SAML_Accounts_Association_to_User] Error in'
-                             ' saml multiple accounts association: User ID: %s, User Email: %s:,'
-                             'Provider ID: %s, Exception: %s', current_user.id, current_user.email,
-                             current_provider.provider_id, ex)
-
-    saml_provider, current_provider = is_saml_provider(strategy.request.backend.name, kwargs)
-
-    if saml_provider:
-        # get the user by matching email if the pipeline user is not available.
-        current_user = user if user else get_user()
-
-        # Verify that the user linked to enterprise customer of current identity provider and an active user
-        associate_response = associate_by_email_if_enterprise_user() if current_user else None
-        if associate_response:
-            return associate_response
+    logger.warning(
+        "associate_by_email_if_saml is deprecated and is now a no-op. "
+        "Enterprise SAML email association has moved to "
+        "enterprise.tpa_pipeline.enterprise_associate_by_email."
+    )
 
 
-def user_details_force_sync(auth_entry, strategy, details, user=None, *args, **kwargs):  # lint-amnesty, pylint: disable=keyword-arg-before-vararg
+def user_details_force_sync(auth_entry, strategy, details, user=None, *args, **kwargs):  # pylint: disable=keyword-arg-before-vararg
     """
     Update normally protected user details using data from provider.
 
@@ -944,7 +878,7 @@ def user_details_force_sync(auth_entry, strategy, details, user=None, *args, **k
                                      'notification email. Username: {username}'.format(username=user.username))
 
 
-def set_id_verification_status(auth_entry, strategy, details, user=None, *args, **kwargs):  # lint-amnesty, pylint: disable=keyword-arg-before-vararg
+def set_id_verification_status(auth_entry, strategy, details, user=None, *args, **kwargs):  # pylint: disable=keyword-arg-before-vararg
     """
     Use the user's authentication with the provider, if configured, as evidence of their identity being verified.
     """
@@ -972,7 +906,7 @@ def set_id_verification_status(auth_entry, strategy, details, user=None, *args, 
             verification.send_approval_signal(current_provider.slug)
 
 
-def get_username(strategy, details, backend, user=None, *args, **kwargs):  # lint-amnesty, pylint: disable=keyword-arg-before-vararg
+def get_username(strategy, details, backend, user=None, *args, **kwargs):  # pylint: disable=keyword-arg-before-vararg
     """
     Copy of social_core.pipeline.user.get_username to achieve
     1. additional logging
@@ -1010,6 +944,8 @@ def get_username(strategy, details, backend, user=None, *args, **kwargs):  # lin
             slug_func = lambda val: val
 
         if is_auto_generated_username_enabled() and details.get('username') is None:
+            # Lazy import to avoid circular dependency
+            from openedx.core.djangoapps.user_authn.views.utils import get_auto_generated_username
             username = get_auto_generated_username(details)
         else:
             if email_as_username and details.get('email'):

@@ -27,9 +27,9 @@ from lms.djangoapps.verify_student.models import (
 from lms.djangoapps.verify_student.services import IDVerificationService
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from xmodule.modulestore.tests.django_utils import (
-    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+    ModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 FAKE_SETTINGS = {
     "DAYS_GOOD_FOR": 365,

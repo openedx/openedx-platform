@@ -3,7 +3,7 @@
 from rest_framework.serializers import Field, URLField
 
 
-class ExpandableField(Field):  # lint-amnesty, pylint: disable=abstract-method
+class ExpandableField(Field):  # pylint: disable=abstract-method
     """Field that can dynamically use a more detailed serializer based on a user-provided "expand" parameter.
 
     Kwargs:
@@ -18,7 +18,7 @@ class ExpandableField(Field):  # lint-amnesty, pylint: disable=abstract-method
         self.expanded = kwargs.pop('expanded_serializer')
         super().__init__(**kwargs)
 
-    def to_representation(self, obj):  # lint-amnesty, pylint: disable=arguments-differ
+    def to_representation(self, obj):  # pylint: disable=arguments-differ
         """
         Return a representation of the field that is either expanded or collapsed.
         """

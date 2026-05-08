@@ -18,7 +18,7 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 from opaque_keys.edx.locator import LibraryLocatorV2
 from openedx_content.models_api import LearningPackage
-from organizations.models import Organization  # lint-amnesty, pylint: disable=wrong-import-order
+from organizations.models import Organization  # pylint: disable=wrong-import-order
 
 from openedx.core.djangoapps.content_libraries.constants import ALL_RIGHTS_RESERVED, LICENSE_OPTIONS
 
@@ -149,7 +149,7 @@ class ContentLibraryPermission(models.Model):
             ('library', 'group'),
         ]
 
-    def save(self, *args, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ, signature-differs
+    def save(self, *args, **kwargs):  # pylint: disable=arguments-differ, signature-differs
         """
         Validate any constraints on the model.
 

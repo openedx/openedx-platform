@@ -6,7 +6,7 @@ import time
 from django.core.files.uploadhandler import FileUploadHandler
 
 
-class DebugFileUploader(FileUploadHandler):  # lint-amnesty, pylint: disable=missing-class-docstring
+class DebugFileUploader(FileUploadHandler):  # pylint: disable=missing-class-docstring
     def __init__(self, request=None):
         super().__init__(request)
         self.count = 0

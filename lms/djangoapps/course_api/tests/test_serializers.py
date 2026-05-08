@@ -143,7 +143,7 @@ class TestCourseSerializer(CourseApiFactoryMixin, ModuleStoreTestCase):
         assert result['pacing'] == expected_pacing
 
 
-class TestCourseDetailSerializer(TestCourseSerializer):  # lint-amnesty, pylint: disable=test-inherits-tests
+class TestCourseDetailSerializer(TestCourseSerializer):  # pylint: disable=test-inherits-tests
     """
     Test CourseDetailSerializer by rerunning all the tests
     in TestCourseSerializer, but with the
@@ -232,7 +232,7 @@ class TestCourseDetailSerializer(TestCourseSerializer):  # lint-amnesty, pylint:
         return request
 
 
-class TestCourseKeySerializer(TestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class TestCourseKeySerializer(TestCase):  # pylint: disable=missing-class-docstring
 
     def test_course_key_serializer(self):
         course_key = CourseLocator(org='org', course='course', run='2020_Q3')

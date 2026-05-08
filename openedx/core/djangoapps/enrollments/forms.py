@@ -30,7 +30,7 @@ class CourseEnrollmentsApiListForm(Form):
             try:
                 return CourseKey.from_string(course_id)
             except InvalidKeyError:
-                raise ValidationError(f"'{course_id}' is not a valid course id.")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+                raise ValidationError(f"'{course_id}' is not a valid course id.")  # pylint: disable=raise-missing-from  # noqa: B904
         return course_id
 
     def clean_username(self):

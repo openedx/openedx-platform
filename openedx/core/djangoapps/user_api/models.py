@@ -4,7 +4,7 @@ Django ORM model specifications for the User API application
 
 
 from config_models.models import ConfigurationModel
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.core.validators import FileExtensionValidator, RegexValidator
 from django.db import models
 from django.db.models.signals import post_delete, post_save, pre_save
@@ -316,7 +316,7 @@ class UserRetirementStatus(TimeStampedModel):
                 raise ValueError()
         except ValueError:
             err = f'{new_state} does not exist or is an eariler state than current state {self.current_state}'
-            raise RetirementStateError(err)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise RetirementStateError(err)  # pylint: disable=raise-missing-from  # noqa: B904
 
     def _validate_update_data(self, data):
         """
@@ -343,7 +343,7 @@ class UserRetirementStatus(TimeStampedModel):
         try:
             pending = RetirementState.objects.all().order_by('state_execution_order')[0]
         except IndexError:
-            raise RetirementStateError('Default state does not exist! Populate retirement states to retire users.')  # lint-amnesty, pylint: disable=raise-missing-from,line-too-long  # noqa: B904
+            raise RetirementStateError('Default state does not exist! Populate retirement states to retire users.')  # pylint: disable=raise-missing-from,line-too-long  # noqa: B904
 
         if cls.objects.filter(user=user).exists():
             raise RetirementStateError(f'User {user} already has a retirement status row!')

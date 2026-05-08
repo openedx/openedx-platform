@@ -122,7 +122,7 @@ class CompletionServiceTestCase(CompletionWaffleTestMixin, SharedModuleStoreTest
         Bind a block (part of self.course) so we can access student-specific data.
         """
         prepare_block_runtime(block.runtime, course_id=block.location.course_key)
-        block.runtime._services.update({'library_tools': LegacyLibraryToolsService(self.store, self.user.id)})  # lint-amnesty, pylint: disable=protected-access
+        block.runtime._services.update({'library_tools': LegacyLibraryToolsService(self.store, self.user.id)})  # pylint: disable=protected-access
 
         def get_block(descriptor):
             """Mocks module_system get_block_for_descriptor function"""

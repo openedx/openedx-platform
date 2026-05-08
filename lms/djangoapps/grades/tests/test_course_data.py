@@ -8,11 +8,11 @@ import pytest
 from common.djangoapps.student.tests.factories import UserFactory
 from lms.djangoapps.course_blocks.api import get_course_blocks
 from openedx.core.djangoapps.content.block_structure.api import get_course_in_cache
-from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore import ModuleStoreEnum  # pylint: disable=wrong-import-order
 from xmodule.modulestore.tests.django_utils import (
-    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+    ModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 from ..course_data import CourseData
 
@@ -54,7 +54,7 @@ class CourseDataTest(ModuleStoreTestCase):
             course_data = CourseData(self.user, **kwargs)
             for arg in self.expected_results:
                 # No point validating the data we used as input, and c_b_s is input-only
-                if arg != kwarg and arg != "collected_block_structure":  # lint-amnesty, pylint: disable=consider-using-in
+                if arg != kwarg and arg != "collected_block_structure":  # pylint: disable=consider-using-in
                     expected = self.expected_results[arg]
                     actual = getattr(course_data, arg)
                     if arg == 'course':
@@ -63,7 +63,7 @@ class CourseDataTest(ModuleStoreTestCase):
                         assert expected == actual
 
     def test_properties(self):
-        expected_edited_on = getattr(  # lint-amnesty, pylint: disable=literal-used-as-attribute  # noqa: B009
+        expected_edited_on = getattr(  # pylint: disable=literal-used-as-attribute  # noqa: B009
             self.one_true_structure[self.one_true_structure.root_block_usage_key],
             'subtree_edited_on',
         )

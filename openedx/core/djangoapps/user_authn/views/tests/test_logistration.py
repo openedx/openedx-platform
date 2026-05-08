@@ -31,7 +31,7 @@ from openedx.core.djangolib.js_utils import dump_js_escaped_json
 from openedx.core.djangolib.markup import HTML, Text
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 from xmodule.modulestore.tests.django_utils import (
-    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+    ModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
 
 

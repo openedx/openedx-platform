@@ -122,7 +122,7 @@ DEBUG_TOOLBAR_CONFIG = {
 }
 
 
-def should_show_debug_toolbar(request):  # lint-amnesty, pylint: disable=missing-function-docstring
+def should_show_debug_toolbar(request):  # pylint: disable=missing-function-docstring
     # We always want the toolbar on devstack unless running tests from another Docker container
     hostname = request.get_host()
     if hostname.startswith('edx.devstack.studio:') or hostname.startswith('studio.devstack.edx:'):
@@ -217,7 +217,7 @@ JWT_AUTH.update({  # noqa: F405
     ),
 })
 
-# pylint: enable=unicode-format-string  # lint-amnesty, pylint: disable=bad-option-value
+# pylint: enable=unicode-format-string  # pylint: disable=bad-option-value
 
 IDA_LOGOUT_URI_LIST = [
     'http://localhost:18130/logout/',  # ecommerce

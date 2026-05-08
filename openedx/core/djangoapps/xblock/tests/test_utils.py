@@ -7,7 +7,7 @@ import pytest
 from django.test import override_settings
 from freezegun import freeze_time
 
-from openedx.core.djangoapps.xblock.utils import (  # lint-amnesty, pylint: disable=reimported
+from openedx.core.djangoapps.xblock.utils import (  # pylint: disable=reimported
     _get_secure_token_for_xblock_handler,
     get_secure_token_for_xblock_handler,
     validate_secure_token_for_xblock_handler,

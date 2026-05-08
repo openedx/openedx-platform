@@ -152,11 +152,21 @@ def _wait_for_meili_task(info: TaskInfo) -> None:
     Simple helper method to wait for a Meilisearch task to complete
     This method will block until the task is completed, so it should only be used in celery tasks
     or management commands.
+
+    ✨ Note: "Meilisearch processes tasks in the order they were added to the queue."
+       per https://www.meilisearch.com/docs/capabilities/indexing/tasks_and_batches/monitor_tasks#monitoring-task-status
+       so if you need to wait for multiple tasks, simply wait for the final (last) task.
     """
     client = _get_meilisearch_client()
+    # This function almost always gets called immediately after enqueing a task, and from experiments, an initial wait
+    # of at least 15ms is warranted, as the task is almost never done in less than 10ms. We are using 20ms which seems
+    # to work well without requiring an additional wait in most cases.
+    sleep_delay = 0.020  # Initial wait is only 20ms but we will back off exponentially
+    time.sleep(sleep_delay)
     current_status = client.get_task(info.task_uid)
     while current_status.status in ("enqueued", "processing"):
-        time.sleep(0.5)
+        time.sleep(sleep_delay)
+        sleep_delay = min(sleep_delay * 1.5, 2.0)  # Increase delay up to 2s
         current_status = client.get_task(info.task_uid)
     if current_status.status != "succeeded":
         try:
@@ -164,15 +174,6 @@ def _wait_for_meili_task(info: TaskInfo) -> None:
         except (TypeError, KeyError):
             err_reason = "Unknown error"
         raise MeilisearchError(err_reason)
-
-
-def _wait_for_meili_tasks(info_list: list[TaskInfo]) -> None:
-    """
-    Simple helper method to wait for multiple Meilisearch tasks to complete
-    """
-    while info_list:
-        info = info_list.pop()
-        _wait_for_meili_task(info)
 
 
 def _index_exists(index_name: str) -> bool:
@@ -324,13 +325,10 @@ def _update_index_docs(docs) -> None:
     client = _get_meilisearch_client()
     current_rebuild_index_name = _get_running_rebuild_index_name()
 
-    tasks = []
     if current_rebuild_index_name:
         # If there is a rebuild in progress, the document will also be added to the new index.
-        tasks.append(client.index(current_rebuild_index_name).update_documents(docs))
-    tasks.append(client.index(STUDIO_INDEX_NAME).update_documents(docs))
-
-    _wait_for_meili_tasks(tasks)
+        client.index(current_rebuild_index_name).update_documents(docs)
+    _wait_for_meili_task(client.index(STUDIO_INDEX_NAME).update_documents(docs))
 
 
 def only_if_meilisearch_enabled(f):
@@ -541,7 +539,11 @@ def init_index(status_cb: Callable[[str], None] | None = None, warn_cb: Callable
     reconcile_index(status_cb=status_cb, warn_cb=warn_cb)
 
 
-def index_course(course_key: CourseKey, index_name: str | None = None) -> list:
+def index_course(
+    course_key: CourseKey,
+    index_name: str | None = None,
+    status_cb: Callable[[str], None] | None = None,
+) -> list[dict]:
     """
     Rebuilds the index for a given course.
     """
@@ -550,8 +552,15 @@ def index_course(course_key: CourseKey, index_name: str | None = None) -> list:
     docs = []
     if index_name is None:
         index_name = STUDIO_INDEX_NAME
+    if status_cb is None:
+        status_cb = log.info
+
     # Pre-fetch the course with all of its children:
     course = store.get_course(course_key, depth=None)
+
+    if course is None:
+        status_cb(f"Error: course {course_key} does not seem to exist! It may have been incompletely deleted.")
+        return []
 
     def add_with_children(block):
         """Recursively index the given XBlock/component"""
@@ -571,7 +580,7 @@ def index_course(course_key: CourseKey, index_name: str | None = None) -> list:
 
 def rebuild_index(  # pylint: disable=too-many-statements
     status_cb: Callable[[str], None] | None = None, incremental=False
-) -> None:  # lint-amnesty
+) -> None:
     """
     Rebuild the Meilisearch index from scratch
     """
@@ -585,6 +594,8 @@ def rebuild_index(  # pylint: disable=too-many-statements
     keys_indexed = []
     if incremental:
         keys_indexed = list(IncrementalIndexCompleted.objects.values_list("context_key", flat=True))
+        if keys_indexed:
+            status_cb(f"Resuming incremental index - {len(keys_indexed)} courses/libraries already indexed.")
     lib_keys = [
         lib.library_key
         for lib in lib_api.ContentLibrary.objects.select_related("org").only("org", "slug").order_by("-id")
@@ -698,7 +709,8 @@ def rebuild_index(  # pylint: disable=too-many-statements
             collections = content_api.get_collections(library.learning_package_id, enabled=True)
             num_collections = collections.count()
             num_collections_done = 0
-            status_cb(f"{num_collections_done}/{num_collections}. Now indexing collections in library {lib_key}")
+            if num_collections:
+                status_cb(f"Now indexing {num_collections} collections in library {lib_key}")
             paginator = Paginator(collections, 100)
             for p in paginator.page_range:
                 num_collections_done = index_collection_batch(
@@ -706,15 +718,14 @@ def rebuild_index(  # pylint: disable=too-many-statements
                     num_collections_done,
                     lib_key,
                 )
-            if incremental:
-                IncrementalIndexCompleted.objects.get_or_create(context_key=lib_key)
-            status_cb(f"{num_collections_done}/{num_collections} collections indexed for library {lib_key}")
+            status_cb(f"Indexed {num_collections_done}/{num_collections} collections in library {lib_key}")
 
             # Similarly, batch process Containers (units, sections, etc) in pages of 100
             containers = content_api.get_containers(library.learning_package_id)
             num_containers = containers.count()
             num_containers_done = 0
-            status_cb(f"{num_containers_done}/{num_containers}. Now indexing containers in library {lib_key}")
+            if num_containers:
+                status_cb(f"Now indexing {num_containers} containers in library {lib_key}")
             paginator = Paginator(containers, 100)
             for p in paginator.page_range:
                 num_containers_done = index_container_batch(
@@ -722,7 +733,9 @@ def rebuild_index(  # pylint: disable=too-many-statements
                     num_containers_done,
                     lib_key,
                 )
-                status_cb(f"{num_containers_done}/{num_containers} containers indexed for library {lib_key}")
+                status_cb(f"Indexed {num_containers_done}/{num_containers} containers in library {lib_key}")
+
+            # Mark this library as indexed:
             if incremental:
                 IncrementalIndexCompleted.objects.get_or_create(context_key=lib_key)
 
@@ -732,7 +745,7 @@ def rebuild_index(  # pylint: disable=too-many-statements
         status_cb("Indexing courses...")
         # To reduce memory usage on large instances, split up the CourseOverviews into pages of 1,000 courses:
 
-        paginator = Paginator(CourseOverview.objects.only("id", "display_name"), 1000)
+        paginator = Paginator(CourseOverview.objects.only("id", "display_name").order_by("-created", "id"), 1000)
         for p in paginator.page_range:
             for course in paginator.page(p).object_list:
                 status_cb(
@@ -741,7 +754,7 @@ def rebuild_index(  # pylint: disable=too-many-statements
                 if course.id in keys_indexed:
                     num_contexts_done += 1
                     continue
-                course_docs = index_course(course.id, index_name)
+                course_docs = index_course(course.id, index_name, status_cb)
                 if incremental:
                     IncrementalIndexCompleted.objects.get_or_create(context_key=course.id)
                 num_contexts_done += 1
@@ -813,13 +826,10 @@ def _delete_documents(filter_query: str) -> None:
     client = _get_meilisearch_client()
     current_rebuild_index_name = _get_running_rebuild_index_name()
 
-    tasks = []
     if current_rebuild_index_name:
         # If there is a rebuild in progress, the document will also be removed from the new index.
-        tasks.append(client.index(current_rebuild_index_name).delete_documents(filter=filter_query))
-    tasks.append(client.index(STUDIO_INDEX_NAME).delete_documents(filter=filter_query))
-
-    _wait_for_meili_tasks(tasks)
+        client.index(current_rebuild_index_name).delete_documents(filter=filter_query)
+    _wait_for_meili_task(client.index(STUDIO_INDEX_NAME).delete_documents(filter=filter_query))
 
 
 def _delete_index_doc(doc_id) -> None:
@@ -834,14 +844,11 @@ def _delete_index_doc(doc_id) -> None:
     client = _get_meilisearch_client()
     current_rebuild_index_name = _get_running_rebuild_index_name()
 
-    tasks = []
     if current_rebuild_index_name:
         # If there is a rebuild in progress, the document will also be removed from the new index.
-        tasks.append(client.index(current_rebuild_index_name).delete_document(doc_id))
+        client.index(current_rebuild_index_name).delete_document(doc_id)
 
-    tasks.append(client.index(STUDIO_INDEX_NAME).delete_document(doc_id))
-
-    _wait_for_meili_tasks(tasks)
+    _wait_for_meili_task(client.index(STUDIO_INDEX_NAME).delete_document(doc_id))
 
 
 def upsert_library_block_index_doc(usage_key: UsageKey) -> None:

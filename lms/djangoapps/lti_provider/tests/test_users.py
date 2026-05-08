@@ -8,7 +8,7 @@ from unittest.mock import MagicMock, PropertyMock, patch
 
 import ddt
 import pytest
-from django.contrib.auth.models import AnonymousUser, User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import AnonymousUser, User  # pylint: disable=imported-auth-user
 from django.core.exceptions import PermissionDenied
 from django.db.utils import IntegrityError
 from django.test import TestCase
@@ -69,7 +69,7 @@ class UserManagementHelperTest(TestCase):
             username = users.generate_random_edx_username()
             assert len(username) <= 30, 'Username too long'
             # Check that the username contains only allowable characters
-            for char in range(len(username)):  # lint-amnesty, pylint: disable=consider-using-enumerate
+            for char in range(len(username)):  # pylint: disable=consider-using-enumerate
                 assert username[char] in (string.ascii_letters + string.digits), \
                     f"Username has forbidden character '{username[char]}'"
 

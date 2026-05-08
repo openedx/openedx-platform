@@ -7,7 +7,7 @@ from unittest.mock import sentinel
 import ddt
 import pytest
 from django.test.utils import override_settings
-from opaque_keys.edx.locator import CourseLocator  # lint-amnesty, pylint: disable=wrong-import-order
+from opaque_keys.edx.locator import CourseLocator  # pylint: disable=wrong-import-order
 
 from openedx.core.lib.tests.assertions.events import assert_events_equal
 

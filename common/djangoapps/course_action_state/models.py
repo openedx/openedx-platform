@@ -10,7 +10,7 @@ file and check it in at the same time as your model changes. To do that,
 
 """
 
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.db import models
 from opaque_keys.edx.django.models import CourseKeyField
 

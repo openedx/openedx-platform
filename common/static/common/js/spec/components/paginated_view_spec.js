@@ -2,10 +2,11 @@ define([
     'jquery',
     'backbone',
     'underscore',
+    'sinon',
     'edx-ui-toolkit/js/pagination/paging-collection',
     'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers',
     'common/js/components/views/paginated_view'
-], function($, Backbone, _, PagingCollection, AjaxHelpers, PaginatedView) {
+], function($, Backbone, _, sinon, PagingCollection, AjaxHelpers, PaginatedView) {
     'use strict';
 
     describe('PaginatedView', function() {
@@ -23,6 +24,8 @@ define([
             TestPaginatedView = PaginatedView.extend({type: 'test', itemViewClass: TestItemView}),
             testCollection,
             testView,
+            requests,
+            xhrFactory,
             initialItems,
             nextPageButtonCss = '.next-page-link',
             previousPageButtonCss = '.previous-page-link',
@@ -35,6 +38,11 @@ define([
             };
 
         beforeEach(function() {
+            xhrFactory = sinon.useFakeXMLHttpRequest();
+            requests = [];
+            requests.currentIndex = 0;
+            requests.restore = function() { xhrFactory.restore(); };
+            xhrFactory.onCreate = function(req) { requests.push(req); };
             setFixtures('<div class="test-container"></div>');
             initialItems = generateItems(5);
             var TestPagingCollection = PagingCollection.extend({
@@ -52,6 +60,10 @@ define([
                 results: initialItems
             }, {parse: true});
             testView = new TestPaginatedView({el: '.test-container', collection: testCollection}).render();
+        });
+
+        afterEach(function() {
+            requests.restore();
         });
 
         /**
@@ -112,8 +124,7 @@ define([
         });
 
         it('can change to the next page', function() {
-            var requests = AjaxHelpers.requests(this),
-                newItems = generateItems(1);
+            var newItems = generateItems(1);
             expectHeader('Showing 1-5 out of 6 total');
             expectItems(initialItems);
             expectFooter({currentPage: 1, totalPages: 2, isHidden: false});
@@ -131,8 +142,7 @@ define([
         });
 
         it('can change to the previous page', function() {
-            var requests = AjaxHelpers.requests(this),
-                previousPageItems;
+            var previousPageItems;
             initialItems = generateItems(1);
             testCollection.set(
                 {
@@ -160,7 +170,6 @@ define([
         });
 
         it('sets focus for screen readers', function() {
-            var requests = AjaxHelpers.requests(this);
             spyOn($.fn, 'focus');
             testView.$(nextPageButtonCss).click();
             AjaxHelpers.respondWithJson(requests, {
@@ -173,8 +182,7 @@ define([
         });
 
         it('does not change on server error', function() {
-            var requests = AjaxHelpers.requests(this),
-                expectInitialState = function() {
+            var expectInitialState = function() {
                     expectHeader('Showing 1-5 out of 6 total');
                     expectItems(initialItems);
                     expectFooter({currentPage: 1, totalPages: 2, isHidden: false});

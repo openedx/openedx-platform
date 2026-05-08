@@ -76,7 +76,7 @@ class CourseVideosViewTest(CourseTestCase, PermissionAccessMixin):
         self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
         self.assertDictEqual(expected_response, response.data)  # noqa: PT009
 
-    @override_waffle_switch(WaffleSwitch(  # lint-amnesty, pylint: disable=toggle-missing-annotation
+    @override_waffle_switch(WaffleSwitch(  # pylint: disable=toggle-missing-annotation
         'videos.video_image_upload_enabled', __name__
     ), True)
     def test_video_image_upload_enabled(self):

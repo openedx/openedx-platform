@@ -43,7 +43,7 @@ class CourseExpirationTestCase(ModuleStoreTestCase):
     """Tests to verify the get_user_course_expiration_date function is working correctly"""
 
     def setUp(self):
-        super().setUp()  # lint-amnesty, pylint: disable=super-with-arguments
+        super().setUp()  # pylint: disable=super-with-arguments
         self.catalog_patch = patch(
             'openedx.core.djangoapps.catalog.models.CatalogIntegration.is_enabled',
             return_value=True
@@ -206,7 +206,7 @@ class TestEnrollmentAudienceFilter(ModuleStoreTestCase):
     Tests for the EnrollmentAudienceFilter.
     """
     def setUp(self):
-        super().setUp()  # lint-amnesty, pylint: disable=super-with-arguments
+        super().setUp()  # pylint: disable=super-with-arguments
         self.course = CourseFactory()
         self.students = [UserFactory() for _ in range(30)]
 
@@ -246,7 +246,7 @@ class TestForumRoleAudienceFilter(ModuleStoreTestCase):
     Tests for the ForumRoleAudienceFilter.
     """
     def setUp(self):
-        super().setUp()  # lint-amnesty, pylint: disable=super-with-arguments
+        super().setUp()  # pylint: disable=super-with-arguments
         self.course = CourseFactory()
         self.students = [UserFactory() for _ in range(25)]
 
@@ -298,7 +298,7 @@ class TestCourseRoleAudienceFilter(ModuleStoreTestCase):
     Tests for the CourseRoleAudienceFilter.
     """
     def setUp(self):
-        super().setUp()  # lint-amnesty, pylint: disable=super-with-arguments
+        super().setUp()  # pylint: disable=super-with-arguments
         self.course = CourseFactory()
         self.students = [UserFactory() for _ in range(10)]
 
@@ -334,7 +334,7 @@ class TestCohortAudienceFilter(ModuleStoreTestCase):
     Tests for the CohortAudienceFilter.
     """
     def setUp(self):
-        super().setUp()  # lint-amnesty, pylint: disable=super-with-arguments
+        super().setUp()  # pylint: disable=super-with-arguments
         self.course = CourseFactory()
 
         self.cohort1_users = [UserFactory() for _ in range(3)]
@@ -372,7 +372,7 @@ class TestTeamAudienceFilter(ModuleStoreTestCase):
     Tests for the TeamAudienceFilter.
     """
     def setUp(self):
-        super().setUp()  # lint-amnesty, pylint: disable=super-with-arguments
+        super().setUp()  # pylint: disable=super-with-arguments
         self.course = CourseFactory()
         self.teams = [CourseTeamFactory(course_id=self.course.id, team_id=f"team-{i}") for i in range(2)]
 
@@ -414,7 +414,7 @@ class TestAudienceFilter(ModuleStoreTestCase):
     Tests for audience filtration based on different filters.
     """
     def setUp(self):
-        super().setUp()  # lint-amnesty, pylint: disable=super-with-arguments
+        super().setUp()  # pylint: disable=super-with-arguments
         self.course = CourseFactory()
         self.students = [UserFactory() for _ in range(30)]
 

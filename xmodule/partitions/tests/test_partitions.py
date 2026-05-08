@@ -115,7 +115,7 @@ class MockUserPartitionScheme:
         return groups[0]
 
 
-class MockEnrollmentTrackUserPartitionScheme(MockUserPartitionScheme):  # lint-amnesty, pylint: disable=missing-class-docstring
+class MockEnrollmentTrackUserPartitionScheme(MockUserPartitionScheme):  # pylint: disable=missing-class-docstring
 
     def create_user_partition(self, id, name, description, groups=None, parameters=None, active=True):  # pylint: disable=redefined-builtin, invalid-name
         """

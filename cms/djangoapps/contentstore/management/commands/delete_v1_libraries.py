@@ -62,7 +62,7 @@ class Command(BaseCommand):
             raise CommandError(f"Argument {raw_value} is not a library key")
         return result
 
-    def handle(self, *args, **options):  # lint-amnesty, pylint: disable=unused-argument
+    def handle(self, *args, **options):  # pylint: disable=unused-argument
         """Parse args and generate tasks for deleting content."""
 
         if (not options['library_ids'] and not options['all']) or (options['library_ids'] and options['all']):

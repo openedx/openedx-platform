@@ -27,14 +27,14 @@ class CourseUpdatesTool(CourseTool):
         return 'edx.updates'
 
     @classmethod
-    def title(cls):  # lint-amnesty, pylint: disable=arguments-differ
+    def title(cls):  # pylint: disable=arguments-differ
         """
         Returns the title of this tool.
         """
         return _('Updates')
 
     @classmethod
-    def icon_classes(cls):  # lint-amnesty, pylint: disable=arguments-differ
+    def icon_classes(cls):  # pylint: disable=arguments-differ
         """
         Returns icon classes needed to represent this tool.
         """

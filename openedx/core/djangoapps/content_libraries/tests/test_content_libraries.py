@@ -977,6 +977,8 @@ class ContentLibrariesTestCase(ContentLibrariesRestApiTest):
         history = self._get_block_draft_history(block_key)
         assert len(history) >= 1
         assert history[-1]["action"] == "created"
+        assert history[-1]["old_version"] == 0
+        assert history[-1]["new_version"] is not None
 
     def test_draft_history_action_deleted(self):
         """
@@ -1153,6 +1155,25 @@ class ContentLibrariesTestCase(ContentLibrariesRestApiTest):
         assert "changed_at" in entry
         assert "title" in entry
         assert "action" in entry
+        assert "old_version" in entry
+        assert "new_version" in entry
+
+    def test_draft_history_deleted_has_null_new_version(self):
+        """
+        Deleted draft history entry exposes new_version as null.
+        """
+        lib = self._create_library(slug="draft-hist-delete-null", title="Draft History Delete Null")
+        block = self._add_block_to_library(lib["id"], "problem", "prob1")
+        block_key = block["id"]
+
+        self._publish_library_block(block_key)
+        self._delete_library_block(block_key)
+
+        history = self._get_block_draft_history(block_key)
+        assert len(history) >= 1
+        assert history[0]["action"] == "deleted"
+        assert history[0]["old_version"] > 0
+        assert history[0]["new_version"] is None
 
     def test_publish_history_entries_unknown_uuid(self):
         """
@@ -1436,6 +1457,8 @@ class ContentLibrariesTestCase(ContentLibrariesRestApiTest):
         assert entry is not None
         assert entry["action"] == "created"
         assert entry["item_type"] == "problem"
+        assert entry["old_version"] == 0
+        assert entry["new_version"] == 1
         assert "changed_at" in entry
         assert "title" in entry
         assert "contributor" in entry
@@ -1492,6 +1515,8 @@ class ContentLibrariesTestCase(ContentLibrariesRestApiTest):
         assert entry is not None
         assert entry["action"] == "created"
         assert entry["item_type"] == "unit"
+        assert entry["old_version"] == 0
+        assert entry["new_version"] == 1
         assert entry["title"] == "My Unit"
         assert "changed_at" in entry
         assert "contributor" in entry

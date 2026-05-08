@@ -7,4 +7,4 @@ class GatingValidationError(Exception):
     """
     Exception class for validation errors related to course gating information
     """
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass

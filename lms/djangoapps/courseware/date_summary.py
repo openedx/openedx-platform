@@ -128,7 +128,7 @@ class DateSummary:
         # 'absolute'. For example, 'absolute' might be "Jan 01, 2020",
         # and if today were December 5th, 2020, 'relative' would be "1
         # month".
-        date_format = _("{relative} ago - {absolute}") if date_has_passed else _("in {relative} - {absolute}")  # lint-amnesty, pylint: disable=redefined-outer-name
+        date_format = _("{relative} ago - {absolute}") if date_has_passed else _("in {relative} - {absolute}")  # pylint: disable=redefined-outer-name
         return date_format.format(
             relative=relative_date,
             absolute='{date}',
@@ -176,7 +176,7 @@ class DateSummary:
         locale = to_locale(get_language())
         return format_timedelta(self.date - self.current_time, locale=locale)
 
-    def date_html(self, date_format='shortDate'):  # lint-amnesty, pylint: disable=redefined-outer-name
+    def date_html(self, date_format='shortDate'):  # pylint: disable=redefined-outer-name
         """
         Returns a representation of the date as HTML.
 
@@ -229,7 +229,7 @@ class TodaysDate(DateSummary):
 
     # The date is shown in the title, no need to display it again.
     def get_context(self):
-        context = super().get_context()  # lint-amnesty, pylint: disable=no-member, super-with-arguments
+        context = super().get_context()  # pylint: disable=no-member, super-with-arguments
         context['date'] = ''
         return context
 
@@ -468,7 +468,7 @@ class VerifiedUpgradeDeadlineDate(DateSummary):
         return can_show_verified_upgrade(self.user, self.enrollment, self.course)
 
     @lazy
-    def date(self):  # lint-amnesty, pylint: disable=invalid-overridden-method
+    def date(self):  # pylint: disable=invalid-overridden-method
         if self.enrollment:
             return self.enrollment.upgrade_deadline
         else:
@@ -577,7 +577,7 @@ class VerificationDeadlineDate(DateSummary):
         )
 
     @lazy
-    def date(self):  # lint-amnesty, pylint: disable=invalid-overridden-method
+    def date(self):  # pylint: disable=invalid-overridden-method
         return VerificationDeadline.deadline_for_course(self.course_id)
 
     @property

@@ -43,6 +43,7 @@ from edx_proctoring.exceptions import (
     ProctoredBaseException,
     ProctoredExamNotFoundException,
 )
+from edx_proctoring.models import ProctoredExamStudentAllowance
 from edx_rest_framework_extensions.paginators import DefaultPagination
 from edx_when import api as edx_when_api
 from opaque_keys import InvalidKeyError
@@ -161,6 +162,7 @@ from .serializers_v2 import (
     TaskStatusSerializer,
     ToggleCertificateGenerationSerializer,
     UnitExtensionSerializer,
+    derive_exam_type,
 )
 from .tools import find_unit, get_units_with_due_date, keep_field_private, set_due_date_extension, title_or_url
 
@@ -2116,6 +2118,120 @@ def _validate_certificates_for_invalidation(learner_to_user, course_key):
             })
 
     return certificates_to_invalidate, errors
+
+
+class BulkCertificateExceptionsView(DeveloperErrorViewMixin, APIView):
+    """
+    View to grant certificate exceptions via CSV upload.
+
+    **Example Requests**
+
+        POST /api/instructor/v2/courses/{course_id}/certificates/exceptions/bulk
+
+    **POST Request Body**
+
+        Form data with CSV file uploaded as 'file' field.
+        CSV format: username_or_email,notes (optional second column)
+
+    **Returns**
+
+        * 200: OK - Bulk exceptions processed with success/error details
+        * 400: Bad Request - Invalid CSV file or format
+        * 401: Unauthorized - User is not authenticated
+        * 403: Forbidden - User lacks instructor permissions
+    """
+    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_name = permissions.CERTIFICATE_EXCEPTION_VIEW
+
+    def post(self, request, course_id):
+        """Grant certificate exceptions via CSV upload."""
+        course_key = CourseKey.from_string(course_id)
+        # Validate that the course exists
+        get_course_by_id(course_key)
+
+        # Check if file was uploaded
+        if 'file' not in request.FILES:
+            return Response(
+                {'message': _('No file uploaded')},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        uploaded_file = request.FILES['file']
+
+        # Validate file type
+        if not uploaded_file.name.endswith('.csv'):
+            return Response(
+                {'message': _('File must be in CSV format')},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        results = {
+            'success': [],
+            'errors': []
+        }
+
+        try:
+            file_content = uploaded_file.read().decode('utf-8-sig')
+            csv_reader = list(csv.reader(file_content.splitlines()))
+        except (UnicodeDecodeError, csv.Error) as exc:
+            log.exception("Error processing CSV file for certificate exceptions")
+            return Response(
+                {'message': _('Error processing CSV file: {error}').format(error=str(exc))},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        learners_with_notes = []
+        for row in csv_reader:
+            if not row or not row[0].strip():
+                continue  # Skip empty rows
+
+            learner = row[0].strip()
+            notes = row[1].strip() if len(row) > 1 and row[1].strip() else ''
+
+            learners_with_notes.append((learner, notes))
+
+        if not learners_with_notes:
+            return Response(
+                {'message': _('CSV file is empty or contains no valid entries')},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Extract learners for resolution and build a notes lookup
+        learners = [learner for learner, _ in learners_with_notes]
+        notes_by_learner = dict(learners_with_notes)
+
+        # Resolve all usernames/emails to users upfront
+        learner_to_user, user_errors = _resolve_learners_to_users(learners)
+        results['errors'].extend(user_errors)
+
+        # Validate learners for certificate exceptions
+        exceptions_to_create, validation_errors = _validate_learners_for_certificate_exceptions(
+            learner_to_user, course_key
+        )
+        results['errors'].extend(validation_errors)
+
+        # Create all exceptions using the certificates API
+        for learner, user in exceptions_to_create:
+            notes = notes_by_learner.get(learner, '')
+
+            try:
+                certs_api.create_or_update_certificate_allowlist_entry(user, course_key, notes)
+                log.info(
+                    "Certificate exception granted for user %s (%s) in course %s by %s via CSV upload",
+                    user.id, learner, course_key, request.user.username
+                )
+                results['success'].append(learner)
+            except Exception as exc:  # pylint: disable=broad-except
+                log.exception(
+                    "Error creating certificate exception for user %s in course %s",
+                    user.id, course_key
+                )
+                results['errors'].append({
+                    'learner': learner,
+                    'message': str(exc)
+                })
+
+        return Response(results, status=status.HTTP_200_OK)
 
 
 class CertificateInvalidationsView(DeveloperErrorViewMixin, APIView):
@@ -4232,6 +4348,23 @@ class ProctoringSettingsView(DeveloperErrorViewMixin, APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+def add_or_replace_allowance_for_user(exam_id, username_or_email, key, value):
+    """
+    Add an allowance for a user on an exam, removing any existing allowance with a different key.
+
+    Enforces one allowance per user per exam regardless of allowance type. If the user already
+    has an allowance for this exam with a different key, it is removed before the new one is created.
+    """
+    user_id = get_user_by_username_or_email(username_or_email).id
+
+    with transaction.atomic():
+        for allowance in ProctoredExamStudentAllowance.get_allowances_for_user(exam_id, user_id):
+            if allowance.key != key:
+                remove_allowance_for_user(exam_id, user_id, allowance.key)
+
+        add_allowance_for_user(exam_id, username_or_email, key, value)
+
+
 class ExamAllowanceView(DeveloperErrorViewMixin, APIView):
     """
     Grant, update, or remove an allowance for a student on a proctored exam.
@@ -4288,17 +4421,17 @@ class ExamAllowanceView(DeveloperErrorViewMixin, APIView):
 
         validated = serializer.validated_data
         results = []
-        for user_info in validated['user_ids']:
+        for username_or_email in validated['user_ids']:
             try:
-                add_allowance_for_user(
+                add_or_replace_allowance_for_user(
                     int(exam_id),
-                    user_info,
+                    username_or_email,
                     validated['allowance_type'],
                     validated['value'],
                 )
-                results.append({'identifier': user_info, 'success': True})
-            except ProctoredBaseException as err:
-                results.append({'identifier': user_info, 'success': False, 'error': str(err)})
+                results.append({'identifier': username_or_email, 'success': True})
+            except (ProctoredBaseException, User.DoesNotExist, User.MultipleObjectsReturned) as err:
+                results.append({'identifier': username_or_email, 'success': False, 'error': str(err)})
 
         return Response(
             {'allowance_type': validated['allowance_type'], 'results': results},
@@ -4374,6 +4507,40 @@ class ExamAllowanceView(DeveloperErrorViewMixin, APIView):
         )
 
 
+def _sort_in_memory(items, ordering):
+    """
+    Sort a list of dicts by the given ordering param.
+
+    Supports dotted paths (e.g. 'user.username') and descending with '-' prefix.
+
+    Note: Sorting is done in Python because edx_proctoring's API functions
+    (get_all_exam_attempts, get_allowances_for_course) return pre-serialized
+    lists of dicts with no sorting parameter. Database-level sorting would
+    require changes to the edx-proctoring package:
+    https://github.com/openedx/edx-proctoring/issues/1320
+    """
+    if not ordering:
+        return items
+    descending = ordering.startswith('-')
+    field = ordering.lstrip('-')
+
+    def sort_key(item):
+        value = item
+        for part in field.split('.'):
+            if isinstance(value, dict):
+                value = value.get(part)
+            else:
+                value = None
+                break
+        # Return a tuple (is_none, value) so None values sort last
+        # and non-None values compare naturally within their type.
+        if value is None:
+            return (1, '')
+        return (0, value)
+
+    return sorted(items, key=sort_key, reverse=descending)
+
+
 class CourseAllowancesView(DeveloperErrorViewMixin, ListAPIView):
     """
     List or bulk-create exam allowances for a course.
@@ -4382,12 +4549,33 @@ class CourseAllowancesView(DeveloperErrorViewMixin, ListAPIView):
 
         GET /api/instructor/v2/courses/{course_id}/special_exams/allowances
         GET /api/instructor/v2/courses/{course_id}/special_exams/allowances?search=student1
+        GET /api/instructor/v2/courses/{course_id}/special_exams/allowances?ordering=-value
         POST /api/instructor/v2/courses/{course_id}/special_exams/allowances
+
+    **Query Parameters**
+
+        search (optional): Filter by username or email.
+        ordering (optional): Sort by field. Prefix with '-' for descending.
+            Valid values: username, email, exam_name, allowance_type, value.
+        page (optional): Page number for pagination.
+        page_size (optional): Number of results per page.
     """
 
     permission_classes = (IsAuthenticated, permissions.InstructorPermission)
     permission_name = permissions.EXAM_RESULTS
     serializer_class = ExamAllowanceSerializer
+
+    ORDERING_FIELDS = {
+        'username': 'user.username',
+        'user.username': 'user.username',
+        'email': 'user.email',
+        'user.email': 'user.email',
+        'exam_name': 'proctored_exam.exam_name',
+        'proctored_exam.exam_name': 'proctored_exam.exam_name',
+        'allowance_type': 'key',
+        'key': 'key',
+        'value': 'value',
+    }
 
     def get_queryset(self):
         course_id = self.kwargs['course_id']
@@ -4399,6 +4587,11 @@ class CourseAllowancesView(DeveloperErrorViewMixin, ListAPIView):
                 if search in a.get('user', {}).get('username', '').lower()
                 or search in a.get('user', {}).get('email', '').lower()
             ]
+        ordering = self.request.query_params.get('ordering', '')
+        field = ordering.lstrip('-')
+        if field in self.ORDERING_FIELDS:
+            prefix = '-' if ordering.startswith('-') else ''
+            allowances = _sort_in_memory(allowances, prefix + self.ORDERING_FIELDS[field])
         return allowances
 
     def post(self, request, course_id):
@@ -4410,17 +4603,24 @@ class CourseAllowancesView(DeveloperErrorViewMixin, ListAPIView):
         validated = serializer.validated_data
         results = []
         for exam_id in validated['exam_ids']:
-            for user_info in validated['user_ids']:
+            for username_or_email in validated['user_ids']:
                 try:
-                    add_allowance_for_user(
+                    add_or_replace_allowance_for_user(
                         exam_id,
-                        user_info,
+                        username_or_email,
                         validated['allowance_type'],
                         validated['value'],
                     )
-                    results.append({'identifier': user_info, 'exam_id': exam_id, 'success': True})
-                except ProctoredBaseException as err:
-                    results.append({'identifier': user_info, 'exam_id': exam_id, 'success': False, 'error': str(err)})
+                    results.append({'identifier': username_or_email, 'exam_id': exam_id, 'success': True})
+                except (ProctoredBaseException, User.DoesNotExist, User.MultipleObjectsReturned) as err:
+                    results.append(
+                        {
+                            'identifier': username_or_email,
+                            'exam_id': exam_id,
+                            'success': False,
+                            'error': str(err)
+                        }
+                    )
 
         return Response({
             'allowance_type': validated['allowance_type'],
@@ -4431,23 +4631,62 @@ class CourseAllowancesView(DeveloperErrorViewMixin, ListAPIView):
 
 class CourseExamAttemptsView(DeveloperErrorViewMixin, ListAPIView):
     """
-    List all exam attempts across all exams in a course with optional search and pagination.
+    List all exam attempts across all exams in a course with optional search, sorting, and pagination.
 
     **Example Requests**
 
         GET /api/instructor/v2/courses/{course_id}/special_exams/attempts
         GET /api/instructor/v2/courses/{course_id}/special_exams/attempts?search=student1
+        GET /api/instructor/v2/courses/{course_id}/special_exams/attempts?ordering=-started_at
         GET /api/instructor/v2/courses/{course_id}/special_exams/attempts?page=2&page_size=50
+
+    **Query Parameters**
+
+        search (optional): Filter by username or email.
+        ordering (optional): Sort by field. Prefix with '-' for descending.
+            Valid values: username, exam_name, time_limit, type, started_at, completed_at, status.
+        page (optional): Page number for pagination.
+        page_size (optional): Number of results per page.
     """
 
     permission_classes = (IsAuthenticated, permissions.InstructorPermission)
     permission_name = permissions.EXAM_RESULTS
     serializer_class = ExamAttemptSerializer
 
+    ORDERING_FIELDS = {
+        'username': 'user.username',
+        'user.username': 'user.username',
+        'email': 'user.email',
+        'user.email': 'user.email',
+        'exam_name': 'proctored_exam.exam_name',
+        'proctored_exam.exam_name': 'proctored_exam.exam_name',
+        'time_limit': 'proctored_exam.time_limit_mins',
+        'proctored_exam.time_limit_mins': 'proctored_exam.time_limit_mins',
+        'started_at': 'started_at',
+        'start_time': 'started_at',
+        'completed_at': 'completed_at',
+        'end_time': 'completed_at',
+        'status': 'status',
+    }
+
+    @staticmethod
+    def _get_exam_type(attempt):
+        """Derive exam type string for sorting purposes."""
+        return derive_exam_type(attempt.get('proctored_exam', {}))
+
     def get_queryset(self):
         course_id = self.kwargs['course_id']
         search = self.request.query_params.get('search', '').strip()
         if search:
-            # get_filtered_exam_attempts does server-side filtering by username/email
-            return get_filtered_exam_attempts(course_id, search)
-        return get_all_exam_attempts(course_id)
+            attempts = get_filtered_exam_attempts(course_id, search)
+        else:
+            attempts = get_all_exam_attempts(course_id)
+        ordering = self.request.query_params.get('ordering', '')
+        field = ordering.lstrip('-')
+        if field == 'type':
+            descending = ordering.startswith('-')
+            attempts = sorted(attempts, key=self._get_exam_type, reverse=descending)
+        elif field in self.ORDERING_FIELDS:
+            prefix = '-' if ordering.startswith('-') else ''
+            attempts = _sort_in_memory(attempts, prefix + self.ORDERING_FIELDS[field])
+        return attempts

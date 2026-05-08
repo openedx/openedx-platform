@@ -9,9 +9,9 @@ from django.test import TestCase
 from common.djangoapps.student.tests.factories import UserFactory
 from common.djangoapps.student.tests.tests import UserSettingsEventTestMixin
 from xmodule.modulestore.tests.django_utils import (
-    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+    ModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 from ..models import UserOrgTag, UserPreference
 from ..preferences.api import set_user_preference

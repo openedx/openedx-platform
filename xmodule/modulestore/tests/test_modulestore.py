@@ -5,7 +5,7 @@ This file should potentially be renamed "utilties" since this file contains no t
 """
 
 
-def check_has_course_method(modulestore, locator, locator_key_fields):  # lint-amnesty, pylint: disable=missing-function-docstring
+def check_has_course_method(modulestore, locator, locator_key_fields):  # pylint: disable=missing-function-docstring
     error_message = "Called has_course with query {0} and ignore_case is {1}."
 
     for ignore_case in [True, False]:

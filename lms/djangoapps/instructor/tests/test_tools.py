@@ -10,7 +10,7 @@ from unittest import mock
 from unittest.mock import MagicMock, patch
 
 import pytest
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.core.exceptions import MultipleObjectsReturned
 from django.test import TestCase
 from edx_when.api import get_dates_for_course, set_dates_for_course
@@ -60,7 +60,7 @@ class TestHandleDashboardError(unittest.TestCase):
 
     def test_no_error(self):
         @tools.handle_dashboard_error
-        def view(request, course_id):  # lint-amnesty, pylint: disable=unused-argument
+        def view(request, course_id):  # pylint: disable=unused-argument
             """
             Returns "Oh yes!"
             """

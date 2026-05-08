@@ -60,7 +60,7 @@ def clean_json(value, of_type):
     try:
         value_python = json.loads(value)
     except ValueError as err:
-        raise ValidationError(f"Invalid JSON: {err}")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise ValidationError(f"Invalid JSON: {err}")  # pylint: disable=raise-missing-from  # noqa: B904
     if not isinstance(value_python, of_type):
         raise ValidationError(f"Expected a JSON {of_type}")
     return json.dumps(value_python, indent=4)
@@ -237,6 +237,10 @@ class ProviderConfig(ConfigurationModel):
         help_text="Use the presence of a profile from a trusted third party as proof of identity verification.",
     )
 
+    # Enterprise-only field: excludes this provider from the EnterpriseCustomer Django admin IDP
+    # dropdown. Added in ENT-1366 after social auth providers (Facebook, Google, etc.) were linked
+    # as enterprise IDPs, incorrectly associating all their users with an enterprise. Should ideally
+    # be migrated into the enterprise plugin.
     disable_for_enterprise_sso = models.BooleanField(
         default=False,
         verbose_name='Disabled for Enterprise TPA',

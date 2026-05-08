@@ -1,9 +1,9 @@
 define([
-    'jquery', 'common/js/spec_helpers/template_helpers', 'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers',
+    'jquery', 'sinon', 'common/js/spec_helpers/template_helpers', 'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers',
     'js/edxnotes/collections/notes', 'js/edxnotes/collections/tabs', 'js/edxnotes/views/tabs/recent_activity',
     'js/spec/edxnotes/helpers'
 ], function(
-    $, TemplateHelpers, AjaxHelpers, NotesCollection, TabsCollection, RecentActivityView, Helpers
+    $, sinon, TemplateHelpers, AjaxHelpers, NotesCollection, TabsCollection, RecentActivityView, Helpers
 ) {
     'use strict';
 
@@ -36,7 +36,8 @@ define([
                     }
                 ]
             },
-            getView, tabInfo, recentActivityTabId;
+            getView, tabInfo, recentActivityTabId,
+            requests, xhrFactory;
 
         getView = function(collection, tabsCollection, options) {
             var view;
@@ -66,6 +67,11 @@ define([
         recentActivityTabId = '#recent-panel';
 
         beforeEach(function() {
+            xhrFactory = sinon.useFakeXMLHttpRequest();
+            requests = [];
+            requests.currentIndex = 0;
+            requests.restore = function() { xhrFactory.restore(); };
+            xhrFactory.onCreate = function(req) { requests.push(req); };
             loadFixtures('js/fixtures/edxnotes/edxnotes.html');
             TemplateHelpers.installTemplates([
                 'templates/edxnotes/note-item', 'templates/edxnotes/tab-item'
@@ -74,6 +80,10 @@ define([
             this.collection = new NotesCollection(notes, {perPage: 10, parse: true});
             this.collection.url = '/test/notes/';
             this.tabsCollection = new TabsCollection();
+        });
+
+        afterEach(function() {
+            requests.restore();
         });
 
         it('displays a tab and content with proper data and order', function() {
@@ -100,7 +110,6 @@ define([
         });
 
         it('can go to a page number', function() {
-            var requests = AjaxHelpers.requests(this);
             // eslint-disable-next-line no-shadow
             var notes = Helpers.createNotesData(
                 {
@@ -141,7 +150,6 @@ define([
         });
 
         it('can navigate forward and backward', function() {
-            var requests = AjaxHelpers.requests(this);
             var page1Notes = Helpers.createNotesData(
                 {
                     numNotesToCreate: 10,
@@ -188,7 +196,6 @@ define([
         });
 
         it('sends correct page size value', function() {
-            var requests = AjaxHelpers.requests(this);
             // eslint-disable-next-line no-shadow
             var notes = Helpers.createNotesData(
                 {

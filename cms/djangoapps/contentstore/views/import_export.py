@@ -39,7 +39,7 @@ from common.djangoapps.util.monitoring import monitor_import_failure
 from common.djangoapps.util.views import ensure_valid_course_key
 from openedx.core.djangoapps.authz.constants import LegacyAuthoringPermission
 from openedx.core.djangoapps.authz.decorators import user_has_course_permission
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 
 from ..storage import course_import_export_storage
 from ..tasks import CourseExportTask, CourseImportTask, export_olx, import_olx
@@ -93,7 +93,7 @@ def import_handler(request, course_key_string):
         raise PermissionDenied()
 
     if 'application/json' in request.META.get('HTTP_ACCEPT', 'application/json'):
-        if request.method == 'GET':  # lint-amnesty, pylint: disable=no-else-raise
+        if request.method == 'GET':  # pylint: disable=no-else-raise
             raise NotImplementedError('coming soon')
         else:
             return _write_chunk(request, courselike_key)
@@ -126,7 +126,7 @@ def _save_request_status(request, key, status):
     request.session.save()
 
 
-def _write_chunk(request, courselike_key):  # lint-amnesty, pylint: disable=too-many-statements
+def _write_chunk(request, courselike_key):  # pylint: disable=too-many-statements
     """
     Write the OLX file data chunk from the given request to the local filesystem.
     """
@@ -468,7 +468,7 @@ def export_output_handler(request, course_key_string):
             tarball = course_import_export_storage.open(artifact.file.name)
             return send_tarball(tarball, artifact.file.storage.size(artifact.file.name))
         except UserTaskArtifact.DoesNotExist:
-            raise Http404  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise Http404  # pylint: disable=raise-missing-from  # noqa: B904
         finally:
             if artifact:
                 artifact.file.close()

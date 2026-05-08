@@ -22,10 +22,10 @@ _ = lambda text: text
 
 class UserPartitionList(List):
     """Special List class for listing UserPartitions"""
-    def from_json(self, values):  # lint-amnesty, pylint: disable=arguments-differ
+    def from_json(self, values):  # pylint: disable=arguments-differ
         return [UserPartition.from_json(v) for v in values]
 
-    def to_json(self, values):  # lint-amnesty, pylint: disable=arguments-differ
+    def to_json(self, values):  # pylint: disable=arguments-differ
         return [user_partition.to_json()
                 for user_partition in values]
 
@@ -132,19 +132,19 @@ class InheritanceMixin(XBlockMixin):
     )
     static_asset_path = String(
         display_name=_("Static Asset Path"),
-        help=_("Enter the path to use for files on the Files & Uploads page. This value overrides the Studio default, c4x://."),  # lint-amnesty, pylint: disable=line-too-long
+        help=_("Enter the path to use for files on the Files & Uploads page. This value overrides the Studio default, c4x://."),  # pylint: disable=line-too-long
         scope=Scope.settings,
         default='',
     )
     use_latex_compiler = Boolean(
         display_name=_("Enable LaTeX Compiler"),
-        help=_("Enter true or false. If true, you can use the LaTeX templates for HTML components and advanced Problem components."),  # lint-amnesty, pylint: disable=line-too-long
+        help=_("Enter true or false. If true, you can use the LaTeX templates for HTML components and advanced Problem components."),  # pylint: disable=line-too-long
         default=False,
         scope=Scope.settings
     )
     max_attempts = Integer(
         display_name=_("Maximum Attempts"),
-        help=_("Enter the maximum number of times a student can try to answer problems. By default, Maximum Attempts is set to null, meaning that students have an unlimited number of attempts for problems. You can override this course-wide setting for individual problems. However, if the course-wide setting is a specific number, you cannot set the Maximum Attempts for individual problems to unlimited."),  # lint-amnesty, pylint: disable=line-too-long
+        help=_("Enter the maximum number of times a student can try to answer problems. By default, Maximum Attempts is set to null, meaning that students have an unlimited number of attempts for problems. You can override this course-wide setting for individual problems. However, if the course-wide setting is a specific number, you cannot set the Maximum Attempts for individual problems to unlimited."),  # pylint: disable=line-too-long
         values={"min": 0}, scope=Scope.settings
     )
     matlab_api_key = String(
@@ -173,7 +173,7 @@ class InheritanceMixin(XBlockMixin):
     video_auto_advance = Boolean(
         display_name=_("Enable video auto-advance"),
         help=_(
-            "Specify whether to show an auto-advance button in videos. If the student clicks it, when the last video in a unit finishes it will automatically move to the next unit and autoplay the first video."  # lint-amnesty, pylint: disable=line-too-long
+            "Specify whether to show an auto-advance button in videos. If the student clicks it, when the last video in a unit finishes it will automatically move to the next unit and autoplay the first video."  # pylint: disable=line-too-long
         ),
         scope=Scope.settings,
         default=False
@@ -294,7 +294,7 @@ def compute_inherited_metadata(block):
         else:
             parent_metadata = {}
         # add any of block's explicitly set fields to the inheriting list
-        for field in InheritanceMixin.fields.values():  # lint-amnesty, pylint: disable=no-member
+        for field in InheritanceMixin.fields.values():  # pylint: disable=no-member
             if field.is_set_on(block):
                 # inherited_settings values are json repr
                 parent_metadata[field.name] = field.read_json(block)
@@ -403,7 +403,7 @@ class InheritingFieldData(KvsFieldData):
 def inheriting_field_data(kvs):
     """Create an InheritanceFieldData that inherits the names in InheritanceMixin."""
     return InheritingFieldData(
-        inheritable_names=InheritanceMixin.fields.keys(),  # lint-amnesty, pylint: disable=no-member
+        inheritable_names=InheritanceMixin.fields.keys(),  # pylint: disable=no-member
         kvs=kvs,
     )
 

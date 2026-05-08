@@ -120,7 +120,7 @@ class LocationMixin(XBlockMixin):
         )
 
 
-class StaticContentImporter:  # lint-amnesty, pylint: disable=missing-class-docstring
+class StaticContentImporter:  # pylint: disable=missing-class-docstring
     def __init__(self, static_content_store, course_data_path, target_id):
         self.static_content_store = static_content_store
         self.target_id = target_id
@@ -128,7 +128,7 @@ class StaticContentImporter:  # lint-amnesty, pylint: disable=missing-class-docs
         try:
             with open(course_data_path / 'policies/assets.json') as f:
                 self.policy = json.load(f)
-        except (OSError, ValueError) as err:  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841
+        except (OSError, ValueError) as err:  # pylint: disable=unused-variable  # noqa: F841
             # xml backed courses won't have this file, only exported courses;
             # so, its absence is not really an exception.
             self.policy = {}
@@ -137,7 +137,7 @@ class StaticContentImporter:  # lint-amnesty, pylint: disable=missing-class-docs
         mimetypes.add_type('application/octet-stream', '.srt')
         self.mimetypes_list = list(mimetypes.types_map.values())
 
-    def import_static_content_directory(self, content_subdir=DEFAULT_STATIC_CONTENT_SUBDIR, verbose=False):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def import_static_content_directory(self, content_subdir=DEFAULT_STATIC_CONTENT_SUBDIR, verbose=False):  # pylint: disable=missing-function-docstring
         remap_dict = {}
 
         static_dir = self.course_data_path / content_subdir
@@ -163,7 +163,7 @@ class StaticContentImporter:  # lint-amnesty, pylint: disable=missing-class-docs
 
         return remap_dict
 
-    def import_static_file(self, full_file_path, base_dir):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def import_static_file(self, full_file_path, base_dir):  # pylint: disable=missing-function-docstring
         filename = os.path.basename(full_file_path)
         try:
             with open(full_file_path, 'rb') as f:
@@ -209,7 +209,7 @@ class StaticContentImporter:  # lint-amnesty, pylint: disable=missing-class-docs
         # then commit the content
         try:
             self.static_content_store.save(content)
-        except Exception as err:  # lint-amnesty, pylint: disable=broad-except
+        except Exception as err:  # pylint: disable=broad-except
             msg = f'Error importing {file_subpath}, error={err}'
             log.exception(f'Course import {self.target_id}: {msg}')
             monitor_import_failure(self.target_id, 'Updating', exception=err)
@@ -397,7 +397,7 @@ class ImportManager:
             logging.info(f'Course import {course_id}: No {assets_filename} file present.')
             return
         except Exception as exc:  # pylint: disable=W0703
-            if self.raise_on_failure:  # lint-amnesty, pylint: disable=no-else-raise
+            if self.raise_on_failure:  # pylint: disable=no-else-raise
                 monitor_import_failure(course_id, 'Updating', exception=exc)
                 logging.exception(f'Course import {course_id}: Error while parsing {assets_filename}.')
                 raise ErrorReadingFileException(assets_filename)  # pylint: disable=raise-missing-from  # noqa: B904
@@ -448,7 +448,7 @@ class ImportManager:
         """
         Updates any special static items, such as PDF coursebooks.
         """
-        pass  # lint-amnesty, pylint: disable=unnecessary-pass
+        pass  # pylint: disable=unnecessary-pass
 
     @abstractmethod
     def get_dest_id(self, courselike_key):
@@ -796,7 +796,7 @@ class LibraryImportManager(ImportManager):
         """
         Libraries have no special static items to import.
         """
-        pass  # lint-amnesty, pylint: disable=unnecessary-pass
+        pass  # pylint: disable=unnecessary-pass
 
     def import_children(self, source_courselike, courselike, courselike_key, dest_id):
         """
@@ -1191,7 +1191,7 @@ def create_xml_attributes(block, xml):
     block.xml_attributes = xml_attrs
 
 
-def validate_no_non_editable_metadata(module_store, course_id, category):  # lint-amnesty, pylint: disable=missing-function-docstring
+def validate_no_non_editable_metadata(module_store, course_id, category):  # pylint: disable=missing-function-docstring
     err_cnt = 0
     for block_loc in module_store.modules[course_id]:
         block = module_store.modules[course_id][block_loc]
@@ -1201,7 +1201,7 @@ def validate_no_non_editable_metadata(module_store, course_id, category):  # lin
     return err_cnt
 
 
-def validate_category_hierarchy(  # lint-amnesty, pylint: disable=missing-function-docstring
+def validate_category_hierarchy(  # pylint: disable=missing-function-docstring
         module_store, course_id, parent_category, expected_child_category):
     err_cnt = 0
 
@@ -1227,7 +1227,7 @@ def validate_category_hierarchy(  # lint-amnesty, pylint: disable=missing-functi
     return err_cnt
 
 
-def validate_data_source_path_existence(path, is_err=True, extra_msg=None):  # lint-amnesty, pylint: disable=missing-function-docstring, redefined-outer-name
+def validate_data_source_path_existence(path, is_err=True, extra_msg=None):  # pylint: disable=missing-function-docstring, redefined-outer-name
     _cnt = 0
     if not os.path.exists(path):
         print(
@@ -1241,7 +1241,7 @@ def validate_data_source_path_existence(path, is_err=True, extra_msg=None):  # l
     return _cnt
 
 
-def validate_data_source_paths(data_dir, course_dir):  # lint-amnesty, pylint: disable=missing-function-docstring
+def validate_data_source_paths(data_dir, course_dir):  # pylint: disable=missing-function-docstring
     # check that there is a '/static/' directory
     course_path = data_dir / course_dir
     err_cnt = 0
@@ -1265,14 +1265,14 @@ def validate_course_policy(module_store, course_id):
     warn_cnt = 0
     for block in module_store.modules[course_id].values():
         if block.location.block_type == 'course':
-            if not block._field_data.has(block, 'rerandomize'):  # lint-amnesty, pylint: disable=protected-access
+            if not block._field_data.has(block, 'rerandomize'):  # pylint: disable=protected-access
                 warn_cnt += 1
                 print(
                     'WARN: course policy does not specify value for '
                     '"rerandomize" whose default is now "never". '
                     'The behavior of your course may change.'
                 )
-            if not block._field_data.has(block, 'showanswer'):  # lint-amnesty, pylint: disable=protected-access
+            if not block._field_data.has(block, 'showanswer'):  # pylint: disable=protected-access
                 warn_cnt += 1
                 print(
                     'WARN: course policy does not specify value for '
@@ -1282,7 +1282,7 @@ def validate_course_policy(module_store, course_id):
     return warn_cnt
 
 
-def perform_xlint(  # lint-amnesty, pylint: disable=missing-function-docstring
+def perform_xlint(  # pylint: disable=missing-function-docstring
         data_dir, source_dirs,
         default_class='xmodule.hidden_block.HiddenBlock',
         load_error_blocks=True,

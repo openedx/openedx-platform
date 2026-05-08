@@ -25,14 +25,14 @@ from cms.djangoapps.contentstore.views import assets
 from common.djangoapps.static_replace import replace_static_urls
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.authz.tests.mixins import CourseAuthzTestMixin
-from xmodule.assetstore import AssetMetadata  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.contentstore.content import StaticContent  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.contentstore.django import contentstore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.assetstore import AssetMetadata  # pylint: disable=wrong-import-order
+from xmodule.contentstore.content import StaticContent  # pylint: disable=wrong-import-order
+from xmodule.contentstore.django import contentstore  # pylint: disable=wrong-import-order
+from xmodule.modulestore import ModuleStoreEnum  # pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE
 from xmodule.modulestore.tests.factories import CourseFactory
-from xmodule.modulestore.xml_importer import import_course_from_xml  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.xml_importer import import_course_from_xml  # pylint: disable=wrong-import-order
 
 TEST_DATA_DIR = settings.COMMON_TEST_DATA_ROOT
 

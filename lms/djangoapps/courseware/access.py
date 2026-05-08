@@ -34,7 +34,7 @@ from common.djangoapps.student.roles import (
     OrgStaffRole,
     SupportStaffRole,
 )
-from common.djangoapps.util import (  # lint-amnesty, pylint: disable=useless-import-alias
+from common.djangoapps.util import (  # pylint: disable=useless-import-alias
     milestones_helpers as milestones_helpers,
 )
 from common.djangoapps.util.milestones_helpers import (
@@ -67,13 +67,13 @@ from openedx.core import toggles as core_toggles
 from openedx.core.djangoapps.authz.decorators import user_has_course_permission
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from openedx.features.course_duration_limits.access import check_course_expired
-from xmodule.course_block import (  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.course_block import (  # pylint: disable=wrong-import-order
     CATALOG_VISIBILITY_ABOUT,
     CATALOG_VISIBILITY_CATALOG_AND_ABOUT,
     CourseBlock,
 )
-from xmodule.error_block import ErrorBlock  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.partitions.partitions import (  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.error_block import ErrorBlock  # pylint: disable=wrong-import-order
+from xmodule.partitions.partitions import (  # pylint: disable=wrong-import-order
     NoSuchUserPartitionError,
     NoSuchUserPartitionGroupError,
 )

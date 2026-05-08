@@ -33,8 +33,8 @@ def strip_filenames(block):
     Recursively strips 'filename' from all children's definitions.
     """
     print(f"strip filename from {str(block.location)}")
-    if block._field_data.has(block, 'filename'):  # lint-amnesty, pylint: disable=protected-access
-        block._field_data.delete(block, 'filename')  # lint-amnesty, pylint: disable=protected-access
+    if block._field_data.has(block, 'filename'):  # pylint: disable=protected-access
+        block._field_data.delete(block, 'filename')  # pylint: disable=protected-access
 
     if hasattr(block, 'xml_attributes'):
         if 'filename' in block.xml_attributes:
@@ -171,14 +171,14 @@ class TestEdxJsonEncoder(unittest.TestCase):
 
         self.encoder = EdxJSONEncoder()
 
-        class OffsetTZ(tzinfo):  # lint-amnesty, pylint: disable=abstract-method
+        class OffsetTZ(tzinfo):  # pylint: disable=abstract-method
             """A timezone with non-None utcoffset"""
             def utcoffset(self, _dt):
                 return timedelta(hours=4)
 
         self.offset_tz = OffsetTZ()
 
-        class NullTZ(tzinfo):  # lint-amnesty, pylint: disable=abstract-method
+        class NullTZ(tzinfo):  # pylint: disable=abstract-method
             """A timezone with None as its utcoffset"""
             def utcoffset(self, _dt):
                 return None
@@ -216,6 +216,6 @@ class TestEdxJsonEncoder(unittest.TestCase):
 
         # Initializing a lazy text object with Unicode
         unicode_text = "Your 𝓟𝓵𝓪𝓽𝓯𝓸𝓻𝓶 Name Here"
-        lazy_text = gettext_lazy(unicode_text)  # lint-amnesty, pylint: disable=translation-of-non-string
+        lazy_text = gettext_lazy(unicode_text)  # pylint: disable=translation-of-non-string
 
         assert unicode_text == self.encoder.default(lazy_text)

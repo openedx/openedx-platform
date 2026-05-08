@@ -1,4 +1,4 @@
-# lint-amnesty, pylint: disable=missing-module-docstring
+# pylint: disable=missing-module-docstring
 
 import logging
 import sys
@@ -35,7 +35,7 @@ class SplitModuleStoreRuntime(ModuleStoreRuntime, EditInfoRuntimeMixin):  # pyli
 
     Computes the settings (nee 'metadata') inheritance upon creation.
     """
-    def __init__(self, modulestore, course_entry, default_class, module_data, lazy, **kwargs):  # lint-amnesty, pylint: disable=redefined-outer-name
+    def __init__(self, modulestore, course_entry, default_class, module_data, lazy, **kwargs):  # pylint: disable=redefined-outer-name
         """
         Computes the settings inheritance and sets up the cache.
 
@@ -51,7 +51,7 @@ class SplitModuleStoreRuntime(ModuleStoreRuntime, EditInfoRuntimeMixin):  # pyli
         # needed by capa_problem (as runtime.resources_fs via this.resources_fs)
         course_library = get_library_or_course_attribute(course_entry.course_key)
         if course_library:
-            root = modulestore.fs_root / course_entry.course_key.org / course_library / course_entry.course_key.run  # lint-amnesty, pylint: disable=line-too-long
+            root = modulestore.fs_root / course_entry.course_key.org / course_library / course_entry.course_key.run  # pylint: disable=line-too-long
         else:
             root = modulestore.fs_root / str(course_entry.structure['_id'])
         root.makedirs_p()  # create directory if it doesn't exist
@@ -83,7 +83,7 @@ class SplitModuleStoreRuntime(ModuleStoreRuntime, EditInfoRuntimeMixin):  # pyli
         self.block_field_datas = weakref.WeakKeyDictionary()
 
     @lazy
-    def _parent_map(self):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def _parent_map(self):  # pylint: disable=missing-function-docstring
         parent_map = {}
         for block_key, block in self.course_entry.structure['blocks'].items():
             for child in block.fields.get('children', []):
@@ -107,7 +107,7 @@ class SplitModuleStoreRuntime(ModuleStoreRuntime, EditInfoRuntimeMixin):  # pyli
                 try:
                     return self.local_modules[usage_key]
                 except KeyError:
-                    raise ItemNotFoundError  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+                    raise ItemNotFoundError  # pylint: disable=raise-missing-from  # noqa: B904
             else:
                 block_key = BlockKey.from_usage_key(usage_key)
                 version_guid = self.course_entry.course_key.version_guid
@@ -323,13 +323,13 @@ class SplitModuleStoreRuntime(ModuleStoreRuntime, EditInfoRuntimeMixin):  # pyli
         """
         See :meth: cms.lib.xblock.runtime.EditInfoRuntimeMixin.get_edited_by
         """
-        return xblock._edited_by  # lint-amnesty, pylint: disable=protected-access
+        return xblock._edited_by  # pylint: disable=protected-access
 
     def get_edited_on(self, xblock):
         """
         See :class: cms.lib.xblock.runtime.EditInfoRuntimeMixin
         """
-        return xblock._edited_on  # lint-amnesty, pylint: disable=protected-access
+        return xblock._edited_on  # pylint: disable=protected-access
 
     def get_subtree_edited_by(self, xblock):
         """

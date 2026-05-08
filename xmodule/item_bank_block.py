@@ -293,7 +293,7 @@ class ItemBankMixin(
         for block_type, block_id in self.selected_children():
             yield self.runtime.get_block(self.context_key.make_usage_key(block_type, block_id))
 
-    def student_view(self, context):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def student_view(self, context):  # pylint: disable=missing-function-docstring
         fragment = Fragment()
         contents = []
         child_context = {} if not context else copy(context)

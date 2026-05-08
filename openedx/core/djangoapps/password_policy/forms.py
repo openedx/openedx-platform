@@ -28,6 +28,6 @@ class PasswordPolicyAwareAdminAuthForm(AdminAuthenticationForm):
                 messages.warning(self.request, HTML(str(e)))
             except password_policy_compliance.NonCompliantPasswordException as e:
                 # Prevent the login attempt.
-                raise ValidationError(HTML(str(e)))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+                raise ValidationError(HTML(str(e)))  # pylint: disable=raise-missing-from  # noqa: B904
 
         return cleaned_data

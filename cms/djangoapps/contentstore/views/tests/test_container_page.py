@@ -17,9 +17,9 @@ from pytz import UTC
 import cms.djangoapps.contentstore.views.component as views
 from cms.djangoapps.contentstore import toggles
 from cms.djangoapps.contentstore.tests.test_libraries import LibraryTestCase
-from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore import ModuleStoreEnum  # pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import (  # pylint: disable=wrong-import-order
     BlockFactory,
     CourseFactory,
 )
@@ -251,7 +251,7 @@ class ContainerPageTestCase(StudioPageTestCase, LibraryTestCase):
         self.assertEqual(response.status_code, 200)  # noqa: PT009
 
 
-class ContainerEmbedPageTestCase(ContainerPageTestCase):  # lint-amnesty, pylint: disable=test-inherits-tests
+class ContainerEmbedPageTestCase(ContainerPageTestCase):  # pylint: disable=test-inherits-tests
     """
     Unit tests for the container embed page.
     """
@@ -301,7 +301,7 @@ class ContainerEmbedPageTestCase(ContainerPageTestCase):  # lint-amnesty, pylint
         draft_container = self.store.get_item(draft_container.location)
         test_container_html(draft_container)
 
-    def _test_html_content(self, xblock, expected_section_tag):  # lint-amnesty, pylint: disable=arguments-differ
+    def _test_html_content(self, xblock, expected_section_tag):  # pylint: disable=arguments-differ
         """
         Get the HTML for a container page and verify the section tag is correct
         and the breadcrumbs trail is correct.

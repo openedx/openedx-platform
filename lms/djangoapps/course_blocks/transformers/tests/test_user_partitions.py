@@ -19,8 +19,8 @@ from openedx.core.djangoapps.course_groups.tests.helpers import CohortFactory, c
 from openedx.core.djangoapps.course_groups.views import link_cohort_to_partition_group
 from openedx.features.content_type_gating.models import ContentTypeGatingConfig
 from openedx.features.content_type_gating.partitions import create_content_gating_partition
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.partitions.partitions import Group, UserPartition  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
+from xmodule.partitions.partitions import Group, UserPartition  # pylint: disable=wrong-import-order
 
 from ...api import get_course_blocks
 from ..user_partitions import UserPartitionTransformer, _MergedGroupAccess

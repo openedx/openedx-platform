@@ -29,7 +29,7 @@ def get_default_time_display(dtime):
         return ""
     if dtime.tzinfo is not None:
         try:
-            timezone = " " + dtime.tzinfo.tzname(dtime)  # lint-amnesty, pylint: disable=redefined-outer-name
+            timezone = " " + dtime.tzinfo.tzname(dtime)  # pylint: disable=redefined-outer-name
         except NotImplementedError:
             timezone = dtime.strftime('%z')
     else:
@@ -137,7 +137,7 @@ def strftime_localized(dtime, format):      # pylint: disable=redefined-builtin
 
     if format == "SHORT_DATE":
         format = "%x"
-    elif format == "LONG_DATE":  # lint-amnesty, pylint: disable=comparison-with-callable
+    elif format == "LONG_DATE":  # pylint: disable=comparison-with-callable
         # Translators: the translation for "LONG_DATE_FORMAT" must be a format
         # string for formatting dates in a long form.  For example, the
         # American English form is "%A, %B %d %Y".
@@ -145,7 +145,7 @@ def strftime_localized(dtime, format):      # pylint: disable=redefined-builtin
         format = gettext("LONG_DATE_FORMAT")
         if format == "LONG_DATE_FORMAT":
             format = DEFAULT_LONG_DATE_FORMAT
-    elif format == "DATE_TIME":  # lint-amnesty, pylint: disable=comparison-with-callable
+    elif format == "DATE_TIME":  # pylint: disable=comparison-with-callable
         # Translators: the translation for "DATE_TIME_FORMAT" must be a format
         # string for formatting dates with times.  For example, the American
         # English form is "%b %d, %Y at %H:%M".
@@ -153,9 +153,9 @@ def strftime_localized(dtime, format):      # pylint: disable=redefined-builtin
         format = gettext("DATE_TIME_FORMAT")
         if format == "DATE_TIME_FORMAT":
             format = DEFAULT_DATE_TIME_FORMAT
-    elif format == "DAY_AND_TIME":  # lint-amnesty, pylint: disable=comparison-with-callable
+    elif format == "DAY_AND_TIME":  # pylint: disable=comparison-with-callable
         format = DEFAULT_DAY_AND_TIME_FORMAT
-    elif format == "TIME":  # lint-amnesty, pylint: disable=comparison-with-callable
+    elif format == "TIME":  # pylint: disable=comparison-with-callable
         format = "%X"
 
     def process_percent_code(match):

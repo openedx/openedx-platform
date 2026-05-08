@@ -62,7 +62,7 @@ class Command(BaseCommand):
     def validate(self, v1_to_v2_lib_map):
         """ Validate that replace_all_library_source_blocks_ids was successful"""
         course_id_strings = list(CourseOverview.get_all_course_keys())
-        tasks = group(validate_all_library_source_blocks_ids_for_course.s(course_id, v1_to_v2_lib_map) for course_id in course_id_strings)  # lint-amnesty, pylint: disable=line-too-long
+        tasks = group(validate_all_library_source_blocks_ids_for_course.s(course_id, v1_to_v2_lib_map) for course_id in course_id_strings)  # pylint: disable=line-too-long
         results = tasks.apply_async()
 
         validation = set()
@@ -124,7 +124,7 @@ class Command(BaseCommand):
 
         except FileNotFoundError:
             log.error("File not found at '%s'.", {file_path})
-        except Exception as e:  # lint-amnesty, pylint: disable=broad-except
+        except Exception as e:  # pylint: disable=broad-except
             log.error("An error occurred: %s", {str(e)})
 
         if kwargs['validate']:

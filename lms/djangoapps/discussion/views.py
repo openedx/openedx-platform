@@ -496,7 +496,7 @@ def _create_base_discussion_view_context(request, course_key):
 
 
 def _get_discussion_default_topic_id(course):
-    for topic, entry in course.discussion_topics.items():  # lint-amnesty, pylint: disable=unused-variable  # noqa: B007
+    for topic, entry in course.discussion_topics.items():  # pylint: disable=unused-variable  # noqa: B007
         if entry.get('default') is True:
             return entry['id']
 
@@ -520,7 +520,7 @@ def _create_discussion_board_context(request, base_context, thread=None):
         # we need only return the thread information for this one.
         threads = [thread.to_dict()]
 
-        for thread in threads:  # lint-amnesty, pylint: disable=redefined-argument-from-local
+        for thread in threads:  # pylint: disable=redefined-argument-from-local
             # patch for backward compatibility with comments service
             if "pinned" not in thread:
                 thread["pinned"] = False
@@ -668,7 +668,7 @@ def user_profile(request, course_key, user_id):
 
             return tab_view.get(request, str(course_key), 'discussion', profile_page_context=context)
     except User.DoesNotExist:
-        raise Http404  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise Http404  # pylint: disable=raise-missing-from  # noqa: B904
     except ValueError:
         return HttpResponseServerError("Invalid group_id")
 
@@ -751,7 +751,7 @@ def followed_threads(request, course_key, user_id):
 
             return render(request, 'discussion/user_profile.html', context)
     except User.DoesNotExist:
-        raise Http404  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise Http404  # pylint: disable=raise-missing-from  # noqa: B904
 
 
 def is_course_staff(course_key: CourseKey, user: User):
@@ -782,7 +782,7 @@ class DiscussionBoardFragmentView(EdxFragmentView):
     Component implementation of the discussion board.
     """
 
-    def render_to_fragment(  # lint-amnesty, pylint: disable=arguments-differ
+    def render_to_fragment(  # pylint: disable=arguments-differ
         self,
         request,
         course_id=None,
@@ -954,7 +954,7 @@ def discussion_topics(request, course_key_string):
     course_key = CourseKey.from_string(course_key_string)
     course = get_course_with_access(request.user, 'staff', course_key)
 
-    discussion_topics = {}  # lint-amnesty, pylint: disable=redefined-outer-name
+    discussion_topics = {}  # pylint: disable=redefined-outer-name
     discussion_category_map = utils.get_discussion_category_map(
         course, request.user, divided_only_if_explicit=True, exclude_unstarted=False
     )

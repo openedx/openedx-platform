@@ -7,7 +7,7 @@ from config_models.admin import ConfigurationModelAdmin, KeyedConfigurationModel
 from django.contrib import admin
 from django.utils.translation import gettext_lazy as _
 
-from common.djangoapps.xblock_django.models import (  # lint-amnesty, pylint: disable=line-too-long
+from common.djangoapps.xblock_django.models import (  # pylint: disable=line-too-long
     XBlockConfiguration,
     XBlockStudioConfiguration,
     XBlockStudioConfigurationFlag,

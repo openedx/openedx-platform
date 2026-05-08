@@ -103,7 +103,7 @@ def lti_launch(request, course_id, usage_id):
             usage_id,
             request.path
         )
-        raise Http404()  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise Http404()  # pylint: disable=raise-missing-from  # noqa: B904
     params['course_key'] = course_key
     params['usage_key'] = usage_key
 

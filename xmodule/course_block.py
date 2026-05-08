@@ -25,7 +25,7 @@ from openedx.core.djangoapps.video_config.sharing import (
 )
 from openedx.core.djangoapps.video_pipeline.models import VideoUploadsEnabledByDefault
 from openedx.core.lib.license import LicenseMixin
-from openedx.core.lib.teams_config import TeamsConfig  # lint-amnesty, pylint: disable=unused-import
+from openedx.core.lib.teams_config import TeamsConfig  # pylint: disable=unused-import
 from xmodule import course_metadata_utils
 from xmodule.course_metadata_utils import DEFAULT_GRADING_POLICY, DEFAULT_START_DATE
 from xmodule.data import CertificatesDisplayBehaviors
@@ -77,8 +77,8 @@ CREATE_COURSE_WITH_DEFAULT_ENROLLMENT_START_DATE = SettingToggle(
 )
 
 
-class StringOrDate(Date):  # lint-amnesty, pylint: disable=missing-class-docstring
-    def from_json(self, value):  # lint-amnesty, pylint: disable=arguments-differ
+class StringOrDate(Date):  # pylint: disable=missing-class-docstring
+    def from_json(self, value):  # pylint: disable=arguments-differ
         """
         Parse an optional metadata key containing a time or a string:
         if present, assume it's a string if it doesn't parse.
@@ -98,7 +98,7 @@ class StringOrDate(Date):  # lint-amnesty, pylint: disable=missing-class-docstri
         """
         try:
             result = super().to_json(value)
-        except:  # lint-amnesty, pylint: disable=bare-except
+        except:  # pylint: disable=bare-except
             return value
         if result is None:
             return value
@@ -125,7 +125,7 @@ edx_xml_parser = etree.XMLParser(dtd_validation=False, load_dtd=False,
 _cached_toc = {}
 
 
-class Textbook:  # lint-amnesty, pylint: disable=missing-class-docstring
+class Textbook:  # pylint: disable=missing-class-docstring
     def __init__(self, title, book_url):
         self.title = title
         self.book_url = book_url
@@ -135,7 +135,7 @@ class Textbook:  # lint-amnesty, pylint: disable=missing-class-docstring
         return int(self.table_of_contents[0].attrib['page'])
 
     @lazy
-    def end_page(self):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def end_page(self):  # pylint: disable=missing-function-docstring
         # The last page should be the last element in the table of contents,
         # but it may be nested. So recurse all the way down the last element
         last_el = self.table_of_contents[-1]
@@ -168,7 +168,7 @@ class Textbook:  # lint-amnesty, pylint: disable=missing-class-docstring
                 # expire every 10 minutes
                 if age.seconds < 600:
                     return table_of_contents
-        except Exception as err:  # lint-amnesty, pylint: disable=broad-except, unused-variable  # noqa: F841
+        except Exception as err:  # pylint: disable=broad-except, unused-variable  # noqa: F841
             pass
 
         # Get the table of contents from S3
@@ -178,7 +178,7 @@ class Textbook:  # lint-amnesty, pylint: disable=missing-class-docstring
         except Exception as err:
             msg = f'Error {err}: Unable to retrieve textbook table of contents at {toc_url}'
             log.error(msg)
-            raise Exception(msg)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise Exception(msg)  # pylint: disable=raise-missing-from  # noqa: B904
 
         # TOC is XML. Parse it
         try:
@@ -186,7 +186,7 @@ class Textbook:  # lint-amnesty, pylint: disable=missing-class-docstring
         except Exception as err:
             msg = f'Error {err}: Unable to parse XML for textbook table of contents at {toc_url}'
             log.error(msg)
-            raise Exception(msg)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise Exception(msg)  # pylint: disable=raise-missing-from  # noqa: B904
 
         return table_of_contents
 
@@ -198,13 +198,13 @@ class Textbook:  # lint-amnesty, pylint: disable=missing-class-docstring
         return not self == other
 
 
-class TextbookList(List):  # lint-amnesty, pylint: disable=missing-class-docstring
-    def from_json(self, values):  # lint-amnesty, pylint: disable=arguments-differ
+class TextbookList(List):  # pylint: disable=missing-class-docstring
+    def from_json(self, values):  # pylint: disable=arguments-differ
         textbooks = []
         for title, book_url in values:
             try:
                 textbooks.append(Textbook(title, book_url))
-            except:  # lint-amnesty, pylint: disable=bare-except
+            except:  # pylint: disable=bare-except
                 # If we can't get to S3 (e.g. on a train with no internet), don't break
                 # the rest of the courseware.
                 log.exception(f"Couldn't load textbook ({title}, {book_url})")
@@ -212,7 +212,7 @@ class TextbookList(List):  # lint-amnesty, pylint: disable=missing-class-docstri
 
         return textbooks
 
-    def to_json(self, values):  # lint-amnesty, pylint: disable=arguments-differ
+    def to_json(self, values):  # pylint: disable=arguments-differ
         json_data = []
         for val in values:
             if isinstance(val, Textbook):
@@ -344,7 +344,7 @@ class TeamsConfigField(Dict):
         return value.cleaned_data
 
 
-class CourseFields:  # lint-amnesty, pylint: disable=missing-class-docstring
+class CourseFields:  # pylint: disable=missing-class-docstring
     lti_passports = List(
         display_name=_("LTI Passports"),
         help=_('Enter the passports for course LTI tools in the following format: "id:client_key:client_secret".'),
@@ -1128,7 +1128,7 @@ class CourseBlock(
             if not getattr(self, "tabs", []):
                 CourseTabList.initialize_default(self)
         except InvalidTabsException as err:
-            raise type(err)(f'{str(err)} For course: {str(self.id)}')  # lint-amnesty, pylint: disable=line-too-long  # noqa: B904
+            raise type(err)(f'{str(err)} For course: {str(self.id)}')  # pylint: disable=line-too-long  # noqa: B904
 
     def set_grading_policy(self, course_policy):
         """
@@ -1233,7 +1233,7 @@ class CourseBlock(
 
         if self.textbooks:
             textbook_xml_object = etree.Element('textbook')
-            for textbook in self.textbooks:  # lint-amnesty, pylint: disable=not-an-iterable
+            for textbook in self.textbooks:  # pylint: disable=not-an-iterable
                 textbook_xml_object.set('title', textbook.title)
                 textbook_xml_object.set('book_url', textbook.book_url)
 
@@ -1271,7 +1271,7 @@ class CourseBlock(
         return grader_from_conf(self.raw_grader)
 
     @property
-    def raw_grader(self):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def raw_grader(self):  # pylint: disable=missing-function-docstring
         # force the caching of the xblock value so that it can detect the change
         # pylint: disable=pointless-statement
         self.grading_policy['GRADER']

@@ -17,10 +17,10 @@ from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.roles import CourseDataResearcherRole
 from common.djangoapps.student.tests.factories import AdminFactory, CourseEnrollmentFactory, UserFactory
 from openedx.core.djangoapps.discussions.models import DiscussionsConfiguration, Provider
-from xmodule.modulestore.tests.django_utils import (  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (  # pylint: disable=wrong-import-order
     SharedModuleStoreTestCase,
 )
-from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import (  # pylint: disable=wrong-import-order
     BlockFactory,
     ToyCourseFactory,
 )

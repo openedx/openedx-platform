@@ -194,6 +194,8 @@ class LibraryHistoryEntrySerializer(serializers.Serializer):
     title = serializers.CharField(read_only=True)
     item_type = serializers.CharField(read_only=True)
     action = serializers.CharField(read_only=True)
+    old_version = serializers.IntegerField(read_only=True)
+    new_version = serializers.IntegerField(read_only=True, allow_null=True)
 
 
 class UsageKeyV2Serializer(serializers.BaseSerializer):

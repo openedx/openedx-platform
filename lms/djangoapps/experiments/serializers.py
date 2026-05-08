@@ -11,7 +11,7 @@ from .models import ExperimentData, ExperimentKeyValue
 User = get_user_model()  # pylint:disable=invalid-name
 
 
-class ExperimentDataCreateSerializer(serializers.ModelSerializer):  # lint-amnesty, pylint: disable=missing-class-docstring
+class ExperimentDataCreateSerializer(serializers.ModelSerializer):  # pylint: disable=missing-class-docstring
     user = serializers.SlugRelatedField(slug_field='username', default=serializers.CurrentUserDefault(), required=False,
                                         queryset=User.objects.all())
 

@@ -23,14 +23,14 @@ from lms.djangoapps.mobile_api.testutils import MobileAPITestCase, MobileAuthTes
 from lms.djangoapps.mobile_api.utils import API_V05, API_V1
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from openedx.features.course_experience import ENABLE_COURSE_GOALS
-from xmodule.html_block import CourseInfoBlock  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.html_block import CourseInfoBlock  # pylint: disable=wrong-import-order
+from xmodule.modulestore import ModuleStoreEnum  # pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 from xmodule.modulestore.tests.django_utils import (
-    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+    SharedModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
 from xmodule.modulestore.tests.factories import CourseFactory
-from xmodule.modulestore.xml_importer import import_course_from_xml  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.xml_importer import import_course_from_xml  # pylint: disable=wrong-import-order
 
 User = get_user_model()
 
@@ -269,7 +269,7 @@ class TestCourseGoalsUserActivityAPI(MobileAPITestCase, SharedModuleStoreTestCas
 
 
 @ddt.ddt
-class TestBlocksInfoInCourseView(TestBlocksInCourseView, MilestonesTestCaseMixin):  # lint-amnesty, pylint: disable=test-inherits-tests
+class TestBlocksInfoInCourseView(TestBlocksInCourseView, MilestonesTestCaseMixin):  # pylint: disable=test-inherits-tests
     """
     Test class for BlocksInfoInCourseView
     """
@@ -434,7 +434,7 @@ class TestBlocksInfoInCourseView(TestBlocksInCourseView, MilestonesTestCaseMixin
             self.assertNotEqual('assignment_progress', block_info)  # noqa: PT009
 
 
-class TestCourseEnrollmentDetailsView(MobileAPITestCase, MilestonesTestCaseMixin):  # lint-amnesty, pylint: disable=test-inherits-tests
+class TestCourseEnrollmentDetailsView(MobileAPITestCase, MilestonesTestCaseMixin):  # pylint: disable=test-inherits-tests
     """
     Test class for CourseEnrollmentDetailsView
     """

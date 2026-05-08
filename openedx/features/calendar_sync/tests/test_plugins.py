@@ -10,11 +10,11 @@ from edx_toggles.toggles.testutils import override_waffle_flag
 
 from openedx.features.calendar_sync.plugins import CalendarSyncToggleTool
 from openedx.features.course_experience import CALENDAR_SYNC_FLAG, RELATIVE_DATES_FLAG
-from xmodule.modulestore.tests.django_utils import (  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (  # pylint: disable=wrong-import-order
     CourseUserType,
     SharedModuleStoreTestCase,
 )
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 
 @ddt.ddt

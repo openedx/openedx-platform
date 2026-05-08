@@ -96,14 +96,14 @@ from openedx.core.lib.teams_config import CONTENT_GROUPS_FOR_TEAMS, TEAM_SCHEME
 from openedx.features.content_type_gating.models import ContentTypeGatingConfig
 from openedx.features.content_type_gating.partitions import CONTENT_TYPE_GATING_SCHEME
 from openedx.features.course_experience.waffle import ENABLE_COURSE_ABOUT_SIDEBAR_HTML
-from xmodule.course_block import DEFAULT_START_DATE  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.course_block import DEFAULT_START_DATE  # pylint: disable=wrong-import-order
 from xmodule.data import CertificatesDisplayBehaviors
 from xmodule.library_tools import LegacyLibraryToolsService
-from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.exceptions import ItemNotFoundError  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore import ModuleStoreEnum  # pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
+from xmodule.modulestore.exceptions import ItemNotFoundError  # pylint: disable=wrong-import-order
 from xmodule.partitions.partitions_service import (
-    get_all_partitions_for_course,  # lint-amnesty, pylint: disable=wrong-import-order
+    get_all_partitions_for_course,  # pylint: disable=wrong-import-order
 )
 from xmodule.services import ConfigurationService, SettingsService, TeamsConfigurationService
 from xmodule.util.keys import BlockKey
@@ -179,7 +179,7 @@ def _remove_instructors(course_key):
 
     try:
         remove_all_instructors(course_key)
-    except Exception as err:  # lint-amnesty, pylint: disable=broad-except
+    except Exception as err:  # pylint: disable=broad-except
         log.error(f"Error in deleting course groups for {course_key}: {err}")
 
 
@@ -599,7 +599,7 @@ def is_currently_visible_to_students(xblock):
         return False
 
     # Check start date
-    if 'detached' not in published._class_tags and published.start is not None:  # lint-amnesty, pylint: disable=protected-access
+    if 'detached' not in published._class_tags and published.start is not None:  # pylint: disable=protected-access
         return datetime.now(UTC) > published.start
 
     # No start date, so it's always visible
@@ -1324,7 +1324,7 @@ def load_services_for_studio(runtime, user):
         "video_config": VideoConfigService(),
     }
 
-    runtime._services.update(services)  # lint-amnesty, pylint: disable=protected-access
+    runtime._services.update(services)  # pylint: disable=protected-access
 
 
 def update_course_details(request, course_key, payload, course_block):
@@ -1494,7 +1494,7 @@ def get_course_settings(request, course_key, course_block):
 
             # if 'minimum_grade_credit' of a course is not set or 0 then
             # show warning message to course author.
-            show_min_grade_warning = False if course_block.minimum_grade_credit > 0 else True  # lint-amnesty, pylint: disable=simplifiable-if-expression
+            show_min_grade_warning = False if course_block.minimum_grade_credit > 0 else True  # pylint: disable=simplifiable-if-expression
             settings_context.update(
                 {
                     'is_credit_course': True,
@@ -1804,7 +1804,7 @@ def get_course_videos_context(course_block, pagination_conf, course_key=None):
     from openedx.core.djangoapps.video_config.models import VideoTranscriptEnabledFlag
     from openedx.core.djangoapps.video_config.toggles import use_xpert_translations_component
     from openedx.core.djangoapps.video_config.transcripts_utils import (
-        Transcript,  # lint-amnesty, pylint: disable=wrong-import-order
+        Transcript,  # pylint: disable=wrong-import-order
     )
 
     from .video_storage_handlers import _get_default_video_image_url, _get_index_videos, get_all_transcript_languages
@@ -1815,7 +1815,7 @@ def get_course_videos_context(course_block, pagination_conf, course_key=None):
     }
     VIDEO_UPLOAD_MAX_FILE_SIZE_GB = 5
     # Waffle switch for enabling/disabling video image upload feature
-    VIDEO_IMAGE_UPLOAD_ENABLED = WaffleSwitch(  # lint-amnesty, pylint: disable=toggle-missing-annotation
+    VIDEO_IMAGE_UPLOAD_ENABLED = WaffleSwitch(  # pylint: disable=toggle-missing-annotation
         'videos.video_image_upload_enabled', __name__
     )
 
@@ -1950,7 +1950,7 @@ def _get_course_index_context(request, course_key, course_block):
         'lms_link': lms_link,
         'sections': sections,
         'course_structure': course_structure,
-        'initial_state': course_outline_initial_state(locator_to_show, course_structure) if locator_to_show else None,  # lint-amnesty, pylint: disable=line-too-long
+        'initial_state': course_outline_initial_state(locator_to_show, course_structure) if locator_to_show else None,  # pylint: disable=line-too-long
         'initial_user_clipboard': user_clipboard,
         'rerun_notification_id': current_action.id if current_action else None,
         'course_release_date': course_release_date,
@@ -2176,7 +2176,7 @@ def get_group_configurations_context(course, store):
         GroupConfiguration,
     )
     from cms.djangoapps.contentstore.views.course import are_content_experiments_enabled
-    from xmodule.partitions.partitions import UserPartition  # lint-amnesty, pylint: disable=wrong-import-order
+    from xmodule.partitions.partitions import UserPartition  # pylint: disable=wrong-import-order
 
     course_key = course.id
     group_configuration_url = reverse_course_url('group_configurations_list_handler', course_key)

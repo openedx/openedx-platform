@@ -23,7 +23,7 @@ VERSION_GUID_DICT = {
 SAMPLE_GUIDS_LIST = ['SAMPLE_VERSION_GUID', 'SAMPLE_UNICODE_VERSION_GUID', 'BSON_OBJECTID']
 
 
-class TestBulkWriteMixin(unittest.TestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class TestBulkWriteMixin(unittest.TestCase):  # pylint: disable=missing-class-docstring
 
     def setUp(self):
         super().setUp()
@@ -182,13 +182,13 @@ class TestBulkWriteMixinClosed(TestBulkWriteMixin):
         self.bulk._begin_bulk_operation(self.course_key)
         self.conn.reset_mock()
         self.bulk.update_definition(self.course_key, self.definition)
-        self.bulk.insert_course_index(self.course_key, {'versions': {self.course_key.branch: self.definition['_id']}})  # lint-amnesty, pylint: disable=no-member
+        self.bulk.insert_course_index(self.course_key, {'versions': {self.course_key.branch: self.definition['_id']}})  # pylint: disable=no-member
         self.assertConnCalls()
         self.bulk._end_bulk_operation(self.course_key)
         self.assertConnCalls(
             call.insert_definition(self.definition, self.course_key),
             call.update_course_index(
-                {'versions': {self.course_key.branch: self.definition['_id']}},  # lint-amnesty, pylint: disable=no-member
+                {'versions': {self.course_key.branch: self.definition['_id']}},  # pylint: disable=no-member
                 from_index=original_index,
                 course_context=self.course_key
             )
@@ -202,7 +202,7 @@ class TestBulkWriteMixinClosed(TestBulkWriteMixin):
         self.bulk.update_definition(self.course_key.replace(branch='a'), self.definition)
         other_definition = {'another': 'definition', '_id': ObjectId()}
         self.bulk.update_definition(self.course_key.replace(branch='b'), other_definition)
-        self.bulk.insert_course_index(self.course_key, {'versions': {'a': self.definition['_id'], 'b': other_definition['_id']}})  # lint-amnesty, pylint: disable=line-too-long
+        self.bulk.insert_course_index(self.course_key, {'versions': {'a': self.definition['_id'], 'b': other_definition['_id']}})  # pylint: disable=line-too-long
         self.bulk._end_bulk_operation(self.course_key)
         self.assertCountEqual(  # noqa: PT009
             [
@@ -249,13 +249,13 @@ class TestBulkWriteMixinClosed(TestBulkWriteMixin):
         self.bulk._begin_bulk_operation(self.course_key)
         self.conn.reset_mock()
         self.bulk.update_structure(self.course_key, self.structure)
-        self.bulk.insert_course_index(self.course_key, {'versions': {self.course_key.branch: self.structure['_id']}})  # lint-amnesty, pylint: disable=no-member
+        self.bulk.insert_course_index(self.course_key, {'versions': {self.course_key.branch: self.structure['_id']}})  # pylint: disable=no-member
         self.assertConnCalls()
         self.bulk._end_bulk_operation(self.course_key)
         self.assertConnCalls(
             call.insert_structure(self.structure, self.course_key),
             call.update_course_index(
-                {'versions': {self.course_key.branch: self.structure['_id']}},  # lint-amnesty, pylint: disable=no-member
+                {'versions': {self.course_key.branch: self.structure['_id']}},  # pylint: disable=no-member
                 from_index=original_index,
                 course_context=self.course_key,
             )
@@ -269,7 +269,7 @@ class TestBulkWriteMixinClosed(TestBulkWriteMixin):
         self.bulk.update_structure(self.course_key.replace(branch='a'), self.structure)
         other_structure = {'another': 'structure', '_id': ObjectId()}
         self.bulk.update_structure(self.course_key.replace(branch='b'), other_structure)
-        self.bulk.insert_course_index(self.course_key, {'versions': {'a': self.structure['_id'], 'b': other_structure['_id']}})  # lint-amnesty, pylint: disable=line-too-long
+        self.bulk.insert_course_index(self.course_key, {'versions': {'a': self.structure['_id'], 'b': other_structure['_id']}})  # pylint: disable=line-too-long
         self.bulk._end_bulk_operation(self.course_key)
         self.assertCountEqual(  # noqa: PT009
             [
@@ -295,11 +295,11 @@ class TestBulkWriteMixinClosed(TestBulkWriteMixin):
         assert version_result == get_result
 
 
-class TestBulkWriteMixinClosedAfterPrevTransaction(TestBulkWriteMixinClosed, TestBulkWriteMixinPreviousTransaction):  # lint-amnesty, pylint: disable=test-inherits-tests
+class TestBulkWriteMixinClosedAfterPrevTransaction(TestBulkWriteMixinClosed, TestBulkWriteMixinPreviousTransaction):  # pylint: disable=test-inherits-tests
     """
     Test that operations on with a closed transaction aren't affected by a previously executed transaction
     """
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 @ddt.ddt
@@ -642,8 +642,8 @@ class TestBulkWriteMixinOpen(TestBulkWriteMixin):
         self.conn.get_course_index.assert_called_once_with(self.course_key, ignore_case=False)
 
 
-class TestBulkWriteMixinOpenAfterPrevTransaction(TestBulkWriteMixinOpen, TestBulkWriteMixinPreviousTransaction):  # lint-amnesty, pylint: disable=test-inherits-tests
+class TestBulkWriteMixinOpenAfterPrevTransaction(TestBulkWriteMixinOpen, TestBulkWriteMixinPreviousTransaction):  # pylint: disable=test-inherits-tests
     """
     Test that operations on with an open transaction aren't affected by a previously executed transaction
     """
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass

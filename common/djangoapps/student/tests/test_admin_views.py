@@ -11,14 +11,14 @@ from zoneinfo import ZoneInfo
 import ddt
 import pytest
 from django.contrib.admin.sites import AdminSite
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.forms import ValidationError
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils.timezone import now
 from edx_toggles.toggles.testutils import override_waffle_switch
 
-from common.djangoapps.student.admin import (  # lint-amnesty, pylint: disable=line-too-long
+from common.djangoapps.student.admin import (  # pylint: disable=line-too-long
     COURSE_ENROLLMENT_ADMIN_SWITCH,
     AllowedAuthUserForm,
     CourseEnrollmentForm,
@@ -29,9 +29,9 @@ from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, U
 from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory
 from openedx.core.djangoapps.site_configuration.tests.mixins import SiteMixin
 from xmodule.modulestore.tests.django_utils import (
-    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+    SharedModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 
 class AdminCourseRolesPageTest(SharedModuleStoreTestCase):

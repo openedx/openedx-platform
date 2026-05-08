@@ -44,7 +44,7 @@ def is_ccx_course(course_key):
     Check whether the course locator maps to a CCX course; this is important
     because we don't allow access to CCX courses in Studio.
     """
-    return isinstance(course_key, CCXLocator) or isinstance(course_key, CCXBlockUsageLocator)  # lint-amnesty, pylint: disable=consider-merging-isinstance
+    return isinstance(course_key, CCXLocator) or isinstance(course_key, CCXBlockUsageLocator)  # pylint: disable=consider-merging-isinstance
 
 
 def user_has_role(user, role):
@@ -336,7 +336,7 @@ def _check_caller_authority(caller, role):
     if GlobalStaff().has_user(caller):
         return
 
-    if isinstance(role, (GlobalStaff, CourseCreatorRole, OrgContentCreatorRole)):  # lint-amnesty, pylint: disable=no-else-raise
+    if isinstance(role, (GlobalStaff, CourseCreatorRole, OrgContentCreatorRole)):  # pylint: disable=no-else-raise
         raise PermissionDenied
     elif isinstance(role, CourseRole):  # instructors can change the roles w/in their course
         if not user_has_role(caller, CourseInstructorRole(role.course_key)):

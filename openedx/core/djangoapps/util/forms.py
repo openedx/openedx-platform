@@ -22,7 +22,7 @@ class MultiValueField(Field):
     """
     widget = MultipleHiddenInput
 
-    def to_python(self, list_of_string_values):  # lint-amnesty, pylint: disable=arguments-differ
+    def to_python(self, list_of_string_values):  # pylint: disable=arguments-differ
         """
         Convert the form input to a list of strings
         """
@@ -37,7 +37,7 @@ class MultiValueField(Field):
 
         return values
 
-    def validate(self, values):  # lint-amnesty, pylint: disable=arguments-differ
+    def validate(self, values):  # pylint: disable=arguments-differ
         """
         Ensure no empty values were passed
         """

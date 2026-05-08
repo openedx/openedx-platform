@@ -11,21 +11,21 @@ from django.db.utils import IntegrityError
 from django.test import TestCase
 from django_countries.fields import Country
 from opaque_keys.edx.keys import CourseKey
-from openedx_events.learning.data import (  # lint-amnesty, pylint: disable=wrong-import-order
+from openedx_events.learning.data import (  # pylint: disable=wrong-import-order
     CourseAccessRoleData,
     CourseData,
     CourseEnrollmentData,
     UserData,
     UserPersonalData,
 )
-from openedx_events.learning.signals import (  # lint-amnesty, pylint: disable=wrong-import-order
+from openedx_events.learning.signals import (  # pylint: disable=wrong-import-order
     COURSE_ACCESS_ROLE_ADDED,
     COURSE_ACCESS_ROLE_REMOVED,
     COURSE_ENROLLMENT_CHANGED,
     COURSE_ENROLLMENT_CREATED,
     COURSE_UNENROLLMENT_COMPLETED,
 )
-from openedx_events.testing import OpenEdxEventsTestMixin  # lint-amnesty, pylint: disable=wrong-import-order
+from openedx_events.testing import OpenEdxEventsTestMixin  # pylint: disable=wrong-import-order
 
 from common.djangoapps.student.models import CourseEnrollment, CourseEnrollmentAllowed
 from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRole
@@ -35,9 +35,9 @@ from common.test.utils import assert_dict_contains_subset
 from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 from xmodule.modulestore.tests.django_utils import (
-    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+    SharedModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 
 class TestUserProfileEvents(UserSettingsEventTestMixin, TestCase):
@@ -187,7 +187,7 @@ class TestUserEvents(UserSettingsEventTestMixin, TestCase):
         """
         Test that when a user's email changes, the user is enrolled in pending courses.
         """
-        pending_enrollment = CourseEnrollmentAllowedFactory(auto_enroll=True)  # lint-amnesty, pylint: disable=unused-variable
+        pending_enrollment = CourseEnrollmentAllowedFactory(auto_enroll=True)  # pylint: disable=unused-variable
 
         # Create a CourseOverview for the enrollment course
         course_overview = CourseOverviewFactory.create(id=pending_enrollment.course_id)

@@ -12,13 +12,13 @@ from openedx.core.djangoapps.django_comment_common.utils import seed_permissions
 from openedx.core.djangoapps.user_api.tests.factories import UserCourseTagFactory
 from openedx.core.lib.teams_config import TeamsConfig
 from xmodule.modulestore.tests.django_utils import (
-    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+    ModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
-from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import (  # pylint: disable=wrong-import-order
     BlockFactory,
     CourseFactory,
 )
-from xmodule.partitions.partitions import Group, UserPartition  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.partitions.partitions import Group, UserPartition  # pylint: disable=wrong-import-order
 
 
 class ContentGroupTestCase(ModuleStoreTestCase):

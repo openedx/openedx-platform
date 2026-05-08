@@ -69,7 +69,7 @@ def exception_decorator(func):
             return func(*args, **kwds)
         except (TranscriptsGenerationException, UnicodeDecodeError) as ex:
             log.exception(str(ex))
-            raise NotFoundError  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise NotFoundError  # pylint: disable=raise-missing-from  # noqa: B904
     return wrapper
 
 
@@ -196,7 +196,7 @@ def get_transcript_link_from_youtube(youtube_id):
         return None
 
 
-def get_transcript_links_from_youtube(youtube_id, settings, i18n, youtube_transcript_name=''):  # lint-amnesty, pylint: disable=redefined-outer-name
+def get_transcript_links_from_youtube(youtube_id, settings, i18n, youtube_transcript_name=''):  # pylint: disable=redefined-outer-name
     """
     Gets transcripts from youtube for youtube_id.
 
@@ -255,7 +255,7 @@ def get_transcript_from_youtube(link, youtube_id, i18n):
     return {'start': sub_starts, 'end': sub_ends, 'text': sub_texts}
 
 
-def download_youtube_subs(youtube_id, video_block, settings):  # lint-amnesty, pylint: disable=redefined-outer-name
+def download_youtube_subs(youtube_id, video_block, settings):  # pylint: disable=redefined-outer-name
     """
     Download transcripts from Youtube.
 
@@ -310,7 +310,7 @@ def generate_subs_from_source(speed_subs, subs_type, subs_filedata, block, langu
         msg = _("Something wrong with SubRip transcripts file during parsing. Inner message is {error_message}").format(
             error_message=str(ex)
         )
-        raise TranscriptsGenerationException(msg)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise TranscriptsGenerationException(msg)  # pylint: disable=raise-missing-from  # noqa: B904
     if not srt_subs_obj:
         raise TranscriptsGenerationException(_("Something wrong with SubRip transcripts file during parsing."))
 

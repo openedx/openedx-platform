@@ -50,8 +50,8 @@ from openedx.core.djangoapps.discussions.config.waffle import (
 )
 from openedx.core.djangoapps.models.course_details import CourseDetails
 from openedx.core.lib.teams_config import TeamsConfig
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 from .utils import AjaxEnabledTestClient, CourseTestCase
 

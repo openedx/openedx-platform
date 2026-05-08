@@ -96,7 +96,7 @@ class Command(BaseCommand):
 
         for task in tasks:
             print(
-                "{task_state} task '{task_id}', of type '{task_type}', created on '{created}', will be marked as 'FAILURE'".format(  # lint-amnesty, pylint: disable=line-too-long  # noqa: UP032
+                "{task_state} task '{task_id}', of type '{task_type}', created on '{created}', will be marked as 'FAILURE'".format(  # pylint: disable=line-too-long  # noqa: UP032
                     task_state=task.task_state,
                     task_id=task.task_id,
                     task_type=task.task_type,

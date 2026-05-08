@@ -19,7 +19,7 @@ class IDVerificationStatusView(APIView):
     authentication_classes = (JwtAuthentication, BearerAuthentication, SessionAuthentication,)
     permission_classes = (IsStaffOrOwner,)
 
-    def get(self, request, **kwargs):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def get(self, request, **kwargs):  # pylint: disable=missing-function-docstring
         username = kwargs.get('username')
         User = get_user_model()
         try:
@@ -35,7 +35,7 @@ class IDVerificationStatusView(APIView):
             })
 
         except User.DoesNotExist:
-            raise Http404  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise Http404  # pylint: disable=raise-missing-from  # noqa: B904
 
 
 class IDVerificationStatusDetailsView(ListAPIView):
@@ -59,4 +59,4 @@ class IDVerificationStatusDetailsView(ListAPIView):
 
             return sorted(verifications, key=lambda x: x.updated_at, reverse=True)
         except User.DoesNotExist:
-            raise Http404  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise Http404  # pylint: disable=raise-missing-from  # noqa: B904

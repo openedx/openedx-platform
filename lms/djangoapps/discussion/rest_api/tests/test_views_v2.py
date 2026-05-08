@@ -1188,7 +1188,7 @@ class ReplaceUsernamesViewTest(DiscussionAPIViewTestMixin, ModuleStoreTestCase):
         """
         Override the parent implementation of this, we JWT auth for this API
         """
-        pass  # lint-amnesty, pylint: disable=unnecessary-pass
+        pass  # pylint: disable=unnecessary-pass
 
 
 @ddt.ddt
@@ -2016,7 +2016,7 @@ class RetireViewTest(DiscussionAPIViewTestMixin, ModuleStoreTestCase):
         """
         Override the parent implementation of this, we JWT auth for this API
         """
-        pass  # lint-amnesty, pylint: disable=unnecessary-pass
+        pass  # pylint: disable=unnecessary-pass
 
 
 @mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})

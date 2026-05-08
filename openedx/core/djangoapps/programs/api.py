@@ -5,7 +5,7 @@ Python APIs exposed by the Programs app to other in-process apps.
 from .utils import is_user_enrolled_in_program_type as _is_user_enrolled_in_program_type
 
 
-def is_user_enrolled_in_program_type(user, program_type_slug, paid_modes_only=False, enrollments=None, entitlements=None):  # lint-amnesty, pylint: disable=line-too-long
+def is_user_enrolled_in_program_type(user, program_type_slug, paid_modes_only=False, enrollments=None, entitlements=None):  # pylint: disable=line-too-long
     """
     This method will look at the learners Enrollments and Entitlements to determine
     if a learner is enrolled in a Program of the given type.

@@ -1,4 +1,4 @@
-# lint-amnesty, pylint: disable=missing-module-docstring
+# pylint: disable=missing-module-docstring
 
 import json
 from string import capwords
@@ -7,7 +7,7 @@ from unittest.mock import Mock, patch
 import ddt
 import pytest
 from django.conf import settings
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.core import mail
 from django.db import transaction
 from django.http import HttpResponse
@@ -33,18 +33,18 @@ from common.djangoapps.util.testing import EventTestMixin
 from openedx.core.djangoapps.ace_common.tests.mixins import EmailTemplateTagMixin
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.core.djangolib.testing.utils import CacheIsolationMixin, CacheIsolationTestCase, skip_unless_lms
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 from xmodule.modulestore.tests.django_utils import (
-    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+    ModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 
 class TestException(Exception):
     """
     Exception used for testing that nothing will catch explicitly
     """
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 def mock_render_to_string(template_name, context):
@@ -352,7 +352,7 @@ class EmailChangeRequestTests(EventTestMixin, EmailTemplateTagMixin, CacheIsolat
         assert self.user.email_user.called is False
 
     @patch('common.djangoapps.student.views.management.render_to_string',
-           Mock(side_effect=mock_render_to_string, autospec=True))  # lint-amnesty, pylint: disable=line-too-long
+           Mock(side_effect=mock_render_to_string, autospec=True))  # pylint: disable=line-too-long
     def test_duplicate_activation_key(self):
         """
         Assert that if two users change Email address simultaneously, no error is thrown
@@ -442,9 +442,9 @@ class EmailChangeRequestTests(EventTestMixin, EmailTemplateTagMixin, CacheIsolat
 
 @ddt.ddt
 @patch('common.djangoapps.student.views.management.render_to_response',
-       Mock(side_effect=mock_render_to_response, autospec=True))  # lint-amnesty, pylint: disable=line-too-long
+       Mock(side_effect=mock_render_to_response, autospec=True))  # pylint: disable=line-too-long
 @patch('common.djangoapps.student.views.management.render_to_string',
-       Mock(side_effect=mock_render_to_string, autospec=True))  # lint-amnesty, pylint: disable=line-too-long
+       Mock(side_effect=mock_render_to_string, autospec=True))  # pylint: disable=line-too-long
 class EmailChangeConfirmationTests(EmailTestMixin, EmailTemplateTagMixin, CacheIsolationMixin, TransactionTestCase):
     """
     Test that confirmation of email change requests function even in the face of exceptions thrown while sending email

@@ -38,7 +38,7 @@ class CourseOutlineViewTest(CacheIsolationTestCase, APITestCase):
     """
 
     @classmethod
-    def setUpTestData(cls):  # lint-amnesty, pylint: disable=super-method-not-called
+    def setUpTestData(cls):  # pylint: disable=super-method-not-called
         cls.staff = UserFactory.create(
             username='staff', email='staff@example.com', is_staff=True, password='staff_pass'
         )
@@ -127,7 +127,7 @@ class CourseOutlineViewTargetUserTest(CacheIsolationTestCase, APITestCase):
     Tests permissions of specifying a target user via url parameter.
     """
     @classmethod
-    def setUpTestData(cls):  # lint-amnesty, pylint: disable=super-method-not-called
+    def setUpTestData(cls):  # pylint: disable=super-method-not-called
         """Set up the basic course outline and our users."""
         # This is the course that we're creating staff for.
         cls.course_key = CourseKey.from_string("course-v1:OpenEdX+Masq+StaffAccess")

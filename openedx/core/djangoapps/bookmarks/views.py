@@ -27,7 +27,7 @@ from openedx.core.djangoapps.bookmarks.api import BookmarksLimitReachedError
 from openedx.core.lib.api.authentication import BearerAuthentication
 from openedx.core.lib.api.permissions import IsUserInUrl
 from openedx.core.lib.url_utils import unquote_slashes
-from xmodule.modulestore.exceptions import ItemNotFoundError  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.exceptions import ItemNotFoundError  # pylint: disable=wrong-import-order
 
 from . import DEFAULT_FIELDS, OPTIONAL_FIELDS, api
 from .serializers import BookmarkSerializer
@@ -91,7 +91,7 @@ class BookmarksViewMixin:
         return Response(
             {
                 "developer_message": developer_message,
-                "user_message": _(user_message)  # lint-amnesty, pylint: disable=translation-of-non-string
+                "user_message": _(user_message)  # pylint: disable=translation-of-non-string
             },
             status=error_status
         )
@@ -202,7 +202,7 @@ class BookmarksListView(ListCreateAPIView, BookmarksViewMixin):
         return page
 
     @apidocs.schema()
-    def post(self, request, *unused_args, **unused_kwargs):  # lint-amnesty, pylint: disable=unused-argument
+    def post(self, request, *unused_args, **unused_kwargs):  # pylint: disable=unused-argument
         """Create a new bookmark for a user.
 
         The POST request only needs to contain one parameter "usage_id".
@@ -312,7 +312,7 @@ class BookmarksDetailView(APIView, BookmarksViewMixin):
             return self.error_response(error_message, error_status=status.HTTP_404_NOT_FOUND)
 
     @apidocs.schema()
-    def get(self, request, username=None, usage_id=None):  # lint-amnesty, pylint: disable=unused-argument
+    def get(self, request, username=None, usage_id=None):  # pylint: disable=unused-argument
         """
         Get a specific bookmark for a user.
 

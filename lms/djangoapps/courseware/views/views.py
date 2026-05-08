@@ -15,7 +15,7 @@ import requests
 from completion.waffle import ENABLE_COMPLETION_TRACKING_SWITCH
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.models import AnonymousUser, User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import AnonymousUser, User  # pylint: disable=imported-auth-user
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.db.models import Q, prefetch_related_objects
@@ -143,7 +143,7 @@ from xmodule.course_block import (
     COURSE_VISIBILITY_PUBLIC,
     COURSE_VISIBILITY_PUBLIC_OUTLINE,
 )
-from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore import ModuleStoreEnum  # pylint: disable=wrong-import-order
 from xmodule.modulestore.django import modulestore
 from xmodule.modulestore.exceptions import ItemNotFoundError, NoPathToItem
 from xmodule.tabs import CourseTabList
@@ -478,7 +478,7 @@ class StaticCourseTabView(EdxFragmentView):
     """
     @method_decorator(ensure_csrf_cookie)
     @method_decorator(ensure_valid_course_key)
-    def get(self, request, course_id, tab_slug, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ
+    def get(self, request, course_id, tab_slug, **kwargs):  # pylint: disable=arguments-differ
         """
         Displays a static course tab page with a given name
         """
@@ -496,13 +496,13 @@ class StaticCourseTabView(EdxFragmentView):
 
         return super().get(request, course=course, tab=tab, **kwargs)
 
-    def render_to_fragment(self, request, course=None, tab=None, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ
+    def render_to_fragment(self, request, course=None, tab=None, **kwargs):  # pylint: disable=arguments-differ
         """
         Renders the static tab to a fragment.
         """
         return get_static_tab_fragment(request, course, tab)
 
-    def render_standalone_response(self, request, fragment, course=None, tab=None, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ
+    def render_standalone_response(self, request, fragment, course=None, tab=None, **kwargs):  # pylint: disable=arguments-differ
         """
         Renders this static tab's fragment to HTML for a standalone page.
         """
@@ -522,7 +522,7 @@ class CourseTabView(EdxFragmentView):
     @method_decorator(ensure_csrf_cookie)
     @method_decorator(ensure_valid_course_key)
     @method_decorator(data_sharing_consent_required)
-    def get(self, request, course_id, tab_type, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ
+    def get(self, request, course_id, tab_type, **kwargs):  # pylint: disable=arguments-differ
         """
         Displays a course tab page that contains a web fragment.
         """
@@ -623,10 +623,10 @@ class CourseTabView(EdxFragmentView):
         """
         Handle exceptions raised when rendering a view.
         """
-        if isinstance(exception, Redirect) or isinstance(exception, Http404):  # lint-amnesty, pylint: disable=consider-merging-isinstance
-            raise  # lint-amnesty, pylint: disable=misplaced-bare-raise
+        if isinstance(exception, Redirect) or isinstance(exception, Http404):  # pylint: disable=consider-merging-isinstance
+            raise  # pylint: disable=misplaced-bare-raise
         if settings.DEBUG:
-            raise  # lint-amnesty, pylint: disable=misplaced-bare-raise
+            raise  # pylint: disable=misplaced-bare-raise
         user = request.user
         log.exception(
             "Error in %s: user=%s, effective_user=%s, course=%s",
@@ -689,14 +689,14 @@ class CourseTabView(EdxFragmentView):
         )
         return context
 
-    def render_to_fragment(self, request, course=None, page_context=None, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ
+    def render_to_fragment(self, request, course=None, page_context=None, **kwargs):  # pylint: disable=arguments-differ
         """
         Renders the course tab to a fragment.
         """
         tab = page_context['tab']
         return tab.render_to_fragment(request, course, **kwargs)
 
-    def render_standalone_response(self, request, fragment, course=None, tab=None, page_context=None, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ
+    def render_standalone_response(self, request, fragment, course=None, tab=None, page_context=None, **kwargs):  # pylint: disable=arguments-differ
         """
         Renders this course tab's fragment to HTML for a standalone page.
         """
@@ -860,7 +860,7 @@ def course_about(request, course_id):  # pylint: disable=too-many-statements
                     single_paid_mode.bulk_sku, course_run_keys=[course_id]
                 )
 
-        registration_price, course_price = get_course_prices(course)  # lint-amnesty, pylint: disable=unused-variable
+        registration_price, course_price = get_course_prices(course)  # pylint: disable=unused-variable
 
         # Used to provide context to message to student if enrollment not allowed
         can_enroll = bool(request.user.has_perm(ENROLL_IN_COURSE, course))
@@ -999,7 +999,7 @@ def _progress(request, course_key, student_id):
             student_id = int(student_id)
         # Check for ValueError if 'student_id' cannot be converted to integer.
         except ValueError:
-            raise Http404  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise Http404  # pylint: disable=raise-missing-from  # noqa: B904
 
     course = get_course_with_access(request.user, 'load', course_key)
 
@@ -1023,7 +1023,7 @@ def _progress(request, course_key, student_id):
         try:
             student = User.objects.get(id=student_id)
         except User.DoesNotExist:
-            raise Http404  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise Http404  # pylint: disable=raise-missing-from  # noqa: B904
 
     # NOTE: To make sure impersonation by instructor works, use
     # student instead of request.user in the rest of the function.
@@ -1075,7 +1075,7 @@ def _progress(request, course_key, student_id):
     return response
 
 
-def _downloadable_certificate_message(course, cert_downloadable_status):  # lint-amnesty, pylint: disable=missing-function-docstring
+def _downloadable_certificate_message(course, cert_downloadable_status):  # pylint: disable=missing-function-docstring
     if certs_api.has_html_certificates_enabled(course):
         if certs_api.get_active_web_certificate(course) is not None:
             return _downloadable_cert_data(
@@ -1096,7 +1096,7 @@ def _missing_required_verification(student, enrollment_mode):
     )
 
 
-def _certificate_message(student, course, enrollment_mode):  # lint-amnesty, pylint: disable=missing-function-docstring
+def _certificate_message(student, course, enrollment_mode):  # pylint: disable=missing-function-docstring
     if certs_api.is_certificate_invalidated(student, course.id):
         return INVALID_CERT_DATA
 
@@ -1388,7 +1388,7 @@ def get_course_lti_endpoints(request, course_id):
         for block in lti_noauth_blocks
     ]
 
-    return HttpResponse(json.dumps(endpoints), content_type='application/json')  # lint-amnesty, pylint: disable=http-response-with-content-type-json, http-response-with-json-dumps
+    return HttpResponse(json.dumps(endpoints), content_type='application/json')  # pylint: disable=http-response-with-content-type-json, http-response-with-json-dumps
 
 
 @login_required
@@ -1593,7 +1593,7 @@ def render_xblock(request, usage_key_string, check_if_enrolled=True, disable_sta
         set_custom_attribute('block_extracted', is_extracted)
 
     requested_view = request.GET.get('view', 'student_view')
-    if requested_view != 'student_view' and requested_view != 'public_view':  # lint-amnesty, pylint: disable=consider-using-in
+    if requested_view != 'student_view' and requested_view != 'public_view':  # pylint: disable=consider-using-in
         return HttpResponseBadRequest(
             f"Rendering of the xblock view '{nh3.clean(requested_view)}' is not supported."
         )
@@ -1614,7 +1614,7 @@ def render_xblock(request, usage_key_string, check_if_enrolled=True, disable_sta
             try:
                 course = get_course_with_access(request.user, 'load', course_key, check_if_enrolled=check_if_enrolled)
             except CourseAccessRedirect:
-                raise Http404("Course not found.")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+                raise Http404("Course not found.")  # pylint: disable=raise-missing-from  # noqa: B904
 
             # with course access now verified:
             # assume masquerading role, if applicable.
@@ -2149,7 +2149,7 @@ def financial_assistance_request(request):
         )),
         group='Financial Assistance',
     )
-    if not (zendesk_submitted == 200 or zendesk_submitted == 201):  # lint-amnesty, pylint: disable=consider-using-in
+    if not (zendesk_submitted == 200 or zendesk_submitted == 201):  # pylint: disable=consider-using-in
         # The call to Zendesk failed. The frontend will display a
         # message to the user.
         return HttpResponse(status=status.HTTP_500_INTERNAL_SERVER_ERROR)

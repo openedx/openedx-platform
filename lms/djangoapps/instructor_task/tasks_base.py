@@ -14,7 +14,7 @@ from lms.djangoapps.instructor_task.models import InstructorTask
 TASK_LOG = logging.getLogger('edx.celery.task')
 
 
-class BaseInstructorTask(Task):  # lint-amnesty, pylint: disable=abstract-method
+class BaseInstructorTask(Task):  # pylint: disable=abstract-method
     """
     Base task class for use with InstructorTask models.
 
@@ -30,7 +30,7 @@ class BaseInstructorTask(Task):  # lint-amnesty, pylint: disable=abstract-method
     """
     abstract = True
 
-    def on_success(self, task_progress, task_id, args, kwargs):  # lint-amnesty, pylint: disable=arguments-differ
+    def on_success(self, task_progress, task_id, args, kwargs):  # pylint: disable=arguments-differ
         """
         Update InstructorTask object corresponding to this task with info about success.
 

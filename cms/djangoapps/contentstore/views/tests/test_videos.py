@@ -46,7 +46,7 @@ from openedx.core.djangoapps.video_pipeline.config.waffle import DEPRECATE_YOUTU
 from openedx.core.djangoapps.waffle_utils.models import WaffleFlagCourseOverrideModel
 from xmodule.modulestore.django import modulestore
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 from ..videos import KEY_EXPIRATION_IN_SECONDS, VIDEO_IMAGE_UPLOAD_ENABLED
 
@@ -79,16 +79,16 @@ class VideoUploadTestBase:
 
     def get_url_for_course_key(self, course_key, kwargs=None):
         """Return video handler URL for the given course"""
-        return reverse_course_url(self.VIEW_NAME, course_key, kwargs)  # lint-amnesty, pylint: disable=no-member
+        return reverse_course_url(self.VIEW_NAME, course_key, kwargs)  # pylint: disable=no-member
 
     def setUp(self):
-        super().setUp()  # lint-amnesty, pylint: disable=no-member
+        super().setUp()  # pylint: disable=no-member
         self.url = self.get_url_for_course_key(self.course.id)
         self.test_token = "test_token"
         self.course.video_upload_pipeline = {
             "course_video_upload_token": self.test_token,
         }
-        self.save_course()  # lint-amnesty, pylint: disable=no-member
+        self.save_course()  # pylint: disable=no-member
 
         # create another course for videos belonging to multiple courses
         self.course2 = CourseFactory.create()
@@ -96,7 +96,7 @@ class VideoUploadTestBase:
             "course_video_upload_token": self.test_token,
         }
         self.course2.save()
-        self.store.update_item(self.course2, self.user.id)  # lint-amnesty, pylint: disable=no-member
+        self.store.update_item(self.course2, self.user.id)  # pylint: disable=no-member
 
         # course ids for videos
         course_ids = [str(self.course.id), str(self.course2.id)]
@@ -1058,7 +1058,7 @@ class VideoImageTestCase(VideoUploadTestBase, CourseTestCase):
                 'width': 16,  # 16x9
                 'height': 9
             },
-            'Recommended image resolution is {image_file_max_width}x{image_file_max_height}. The minimum resolution is {image_file_min_width}x{image_file_min_height}.'.format(  # lint-amnesty, pylint: disable=line-too-long  # noqa: UP032
+            'Recommended image resolution is {image_file_max_width}x{image_file_max_height}. The minimum resolution is {image_file_min_width}x{image_file_min_height}.'.format(  # pylint: disable=line-too-long  # noqa: UP032
                 image_file_max_width=settings.VIDEO_IMAGE_MAX_WIDTH,
                 image_file_max_height=settings.VIDEO_IMAGE_MAX_HEIGHT,
                 image_file_min_width=settings.VIDEO_IMAGE_MIN_WIDTH,
@@ -1070,7 +1070,7 @@ class VideoImageTestCase(VideoUploadTestBase, CourseTestCase):
                 'width': settings.VIDEO_IMAGE_MIN_WIDTH - 10,
                 'height': settings.VIDEO_IMAGE_MIN_HEIGHT
             },
-            'Recommended image resolution is {image_file_max_width}x{image_file_max_height}. The minimum resolution is {image_file_min_width}x{image_file_min_height}.'.format(  # lint-amnesty, pylint: disable=line-too-long  # noqa: UP032
+            'Recommended image resolution is {image_file_max_width}x{image_file_max_height}. The minimum resolution is {image_file_min_width}x{image_file_min_height}.'.format(  # pylint: disable=line-too-long  # noqa: UP032
                 image_file_max_width=settings.VIDEO_IMAGE_MAX_WIDTH,
                 image_file_max_height=settings.VIDEO_IMAGE_MAX_HEIGHT,
                 image_file_min_width=settings.VIDEO_IMAGE_MIN_WIDTH,
@@ -1696,7 +1696,7 @@ class CourseYoutubeEdxVideoIds(ModuleStoreTestCase):
 
     def get_url_for_course_key(self, course_key, kwargs=None):
         """Return video handler URL for the given course"""
-        return reverse_course_url(self.VIEW_NAME, course_key, kwargs)  # lint-amnesty, pylint: disable=no-member
+        return reverse_course_url(self.VIEW_NAME, course_key, kwargs)  # pylint: disable=no-member
 
     def test_course_with_youtube_videos(self):
         course_key = self.course.id

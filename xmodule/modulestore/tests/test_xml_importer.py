@@ -91,7 +91,7 @@ def modulestore():
         options.update(ModuleStoreNoSettings.MODULESTORE['OPTIONS'])
         options['render_template'] = render_to_template_mock
 
-        # lint-amnesty, pylint: disable=bad-option-value, star-args
+        # pylint: disable=bad-option-value, star-args
         ModuleStoreNoSettings.modulestore = class_(
             None,  # contentstore
             ModuleStoreNoSettings.MODULESTORE['DOC_STORE_CONFIG'],
@@ -211,9 +211,9 @@ class UpdateLocationTest(ModuleStoreNoSettings):
             assert new_version.fields[field].is_set_on(new_version)  # pylint: disable=unsubscriptable-object
 
 
-class StaticContentImporterTest(unittest.TestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class StaticContentImporterTest(unittest.TestCase):  # pylint: disable=missing-class-docstring
 
-    def setUp(self):  # lint-amnesty, pylint: disable=super-method-not-called
+    def setUp(self):  # pylint: disable=super-method-not-called
         self.course_data_path = path('/path')
         self.mocked_content_store = mock.Mock()
         self.static_content_importer = StaticContentImporter(

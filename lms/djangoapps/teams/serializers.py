@@ -6,7 +6,7 @@ Defines serializers used by the Team API.
 from copy import deepcopy
 
 from django.conf import settings
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django_countries import countries
 from rest_framework import serializers
 

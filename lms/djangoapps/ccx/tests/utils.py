@@ -1,4 +1,4 @@
-"""  # lint-amnesty, pylint: disable=cyclic-import
+"""  # pylint: disable=cyclic-import
 Test utils for CCX
 """
 

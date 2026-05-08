@@ -5,7 +5,7 @@ CSV processing and generation utilities for Teams LMS app.
 import csv
 from collections import Counter
 
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.db.models import Prefetch
 
 from common.djangoapps.student.models import CourseEnrollment

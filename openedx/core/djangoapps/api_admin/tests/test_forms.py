@@ -34,7 +34,7 @@ class ViewersWidgetTest(TestCase):
         dummy_string_value = 'staff, verified'
         input_field_name = 'viewers'
         extra_formating = ''
-        expected_widget_html = '<input type="text" name="{input_field_name}" value="{serialized_value}"{extra_formating}>'.format(  # lint-amnesty, pylint: disable=line-too-long  # noqa: UP032
+        expected_widget_html = '<input type="text" name="{input_field_name}" value="{serialized_value}"{extra_formating}>'.format(  # pylint: disable=line-too-long  # noqa: UP032
             input_field_name=input_field_name,
             serialized_value=dummy_string_value,
             extra_formating=extra_formating,

@@ -41,7 +41,7 @@ class SystemWideRoleAssignment(UserRoleAssignment):  # pylint: disable=model-mis
         str_representation = "<SystemWideRoleAssignment for User {user} assigned to role {role}>"
         return str_representation.format(
             user=self.user.id,
-            role=self.role.name  # lint-amnesty, pylint: disable=no-member
+            role=self.role.name  # pylint: disable=no-member
         )
 
     def __repr__(self):

@@ -7,7 +7,7 @@ from collections import defaultdict
 from contextlib import contextmanager
 from typing import List  # noqa: UP035
 
-from django.core.exceptions import ValidationError  # lint-amnesty, pylint: disable=wrong-import-order
+from django.core.exceptions import ValidationError  # pylint: disable=wrong-import-order
 from django.db.models import Q
 from edx_rest_framework_extensions import permissions
 from edx_rest_framework_extensions.auth.bearer.authentication import BearerAuthentication
@@ -32,7 +32,7 @@ from openedx.core.djangoapps.enrollments.forms import CourseEnrollmentsApiListFo
 from openedx.core.djangoapps.enrollments.views import EnrollmentUserThrottle
 from openedx.core.lib.api.authentication import BearerAuthenticationAllowInactiveUser
 from openedx.core.lib.api.view_utils import PaginatedAPIView, get_course_key, verify_course_exists
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 
 log = logging.getLogger(__name__)
 
@@ -196,7 +196,7 @@ class CourseGradingPolicy(GradeViewMixin, ListAPIView):
         try:
             course_key = get_course_key(request, course_id)
         except InvalidKeyError:
-            raise self.api_error(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise self.api_error(  # pylint: disable=raise-missing-from  # noqa: B904
                 status_code=status.HTTP_400_BAD_REQUEST,
                 developer_message='The provided course key cannot be parsed.',
                 error_code='invalid_course_key'
@@ -420,7 +420,7 @@ class SubmissionHistoryView(GradeViewMixin, PaginatedAPIView):
         try:
             course_id = get_course_key(request, course_id)
         except InvalidKeyError:
-            raise self.api_error(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise self.api_error(  # pylint: disable=raise-missing-from  # noqa: B904
                 status_code=status.HTTP_400_BAD_REQUEST,
                 developer_message='The provided course key cannot be parsed.',
                 error_code='invalid_course_key'

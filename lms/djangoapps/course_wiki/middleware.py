@@ -36,12 +36,12 @@ class WikiAccessMiddleware(MiddlewareMixin):
             # See if we are able to view the course. If we are, redirect to it
             try:
                 get_course_overview_with_access(request.user, 'load', course_id)
-                return redirect(f"/courses/{str(course_id)}/wiki/{wiki_path}")  # lint-amnesty, pylint: disable=line-too-long
+                return redirect(f"/courses/{str(course_id)}/wiki/{wiki_path}")  # pylint: disable=line-too-long
             except Http404:
                 # Even though we came from the course, we can't see it. So don't worry about it.
                 pass
 
-    def process_view(self, request, view_func, view_args, view_kwargs):  # lint-amnesty, pylint: disable=unused-argument
+    def process_view(self, request, view_func, view_args, view_kwargs):  # pylint: disable=unused-argument
         """
         This function handles authentication logic for wiki urls and redirects from
         the "root wiki" to the "course wiki" if the user accesses the wiki from a course url

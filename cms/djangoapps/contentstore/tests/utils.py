@@ -6,7 +6,7 @@ Utilities for contentstore tests
 import json
 
 from django.conf import settings
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.test.client import Client
 from opaque_keys.edx.keys import AssetKey
 

@@ -15,9 +15,9 @@ from openedx.core.djangoapps.credit.api.eligibility import set_credit_requiremen
 from openedx.core.djangoapps.credit.models import CreditCourse
 from openedx.core.djangoapps.credit.services import CreditService
 from xmodule.modulestore.tests.django_utils import (
-    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+    ModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 
 @ddt.ddt
@@ -208,7 +208,7 @@ class CreditServiceTests(ModuleStoreTestCase):
         )
 
         # mark the grade as satisfied
-        retval = self.service.set_credit_requirement_status(  # lint-amnesty, pylint: disable=assignment-from-none
+        retval = self.service.set_credit_requirement_status(  # pylint: disable=assignment-from-none
             self.user.id,
             self.course.id,
             'grade',
@@ -217,7 +217,7 @@ class CreditServiceTests(ModuleStoreTestCase):
         assert retval is None
 
         # remove the requirement status with the invalid user id
-        retval = self.service.remove_credit_requirement_status(  # lint-amnesty, pylint: disable=assignment-from-none
+        retval = self.service.remove_credit_requirement_status(  # pylint: disable=assignment-from-none
             0,
             self.course.id,
             'grade',
@@ -376,7 +376,7 @@ class CreditServiceTests(ModuleStoreTestCase):
         )
 
         # mark the grade as satisfied
-        retval = self.service.set_credit_requirement_status(  # lint-amnesty, pylint: disable=assignment-from-none
+        retval = self.service.set_credit_requirement_status(  # pylint: disable=assignment-from-none
             0,
             self.course.id,
             'grade',

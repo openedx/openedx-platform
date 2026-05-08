@@ -52,7 +52,7 @@ def tabs_handler(request, course_key_string):
     course_item = modulestore().get_course(course_key)
 
     if "application/json" in request.META.get("HTTP_ACCEPT", "application/json"):
-        if request.method == "GET":  # lint-amnesty, pylint: disable=no-else-raise
+        if request.method == "GET":  # pylint: disable=no-else-raise
             raise NotImplementedError("coming soon")
         else:
             try:

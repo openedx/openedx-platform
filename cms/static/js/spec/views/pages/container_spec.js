@@ -4,6 +4,7 @@
 import $ from 'jquery';
 import _ from 'underscore';
 import str from 'underscore.string';
+import sinon from 'sinon';
 import AjaxHelpers from 'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers';
 import TemplateHelpers from 'common/js/spec_helpers/template_helpers';
 import EditHelpers from 'js/spec_helpers/edit_helpers';
@@ -17,7 +18,7 @@ import 'jquery.simulate';
 function parameterized_suite(label, globalPageOptions) {
     describe(label + ' ContainerPage', function() {
         var getContainerPage, renderContainerPage, handleContainerPageRefresh, expectComponents,
-            respondWithHtml, model, containerPage, requests, initialDisplayName,
+            respondWithHtml, model, containerPage, requests, xhrFactory, initialDisplayName,
             mockContainerPage = readFixtures('templates/mock/mock-container-page.underscore'),
             mockContainerXBlockHtml = readFixtures(globalPageOptions.initial),
             mockXBlockHtml = readFixtures(globalPageOptions.addResponse),
@@ -34,6 +35,11 @@ function parameterized_suite(label, globalPageOptions) {
         beforeEach(function() {
             var newDisplayName = 'New Display Name';
 
+            xhrFactory = sinon.useFakeXMLHttpRequest();
+            requests = [];
+            requests.currentIndex = 0;
+            requests.restore = function() { xhrFactory.restore(); };
+            xhrFactory.onCreate = function(req) { requests.push(req); };
             EditHelpers.installEditTemplates();
             TemplateHelpers.installTemplate('xblock-string-field-editor');
             TemplateHelpers.installTemplate('container-message');
@@ -64,6 +70,7 @@ function parameterized_suite(label, globalPageOptions) {
         });
 
         afterEach(function() {
+            requests.restore();
             EditHelpers.uninstallMockXBlock();
             if (containerPage !== undefined) {
                 containerPage.remove();
@@ -89,7 +96,6 @@ function parameterized_suite(label, globalPageOptions) {
         };
 
         renderContainerPage = function(test, html, options, componentTemplates) {
-            requests = AjaxHelpers.requests(test);
             containerPage = getContainerPage(options, componentTemplates);
             containerPage.render();
             respondWithHtml(html);
@@ -125,7 +131,6 @@ function parameterized_suite(label, globalPageOptions) {
             });
 
             it('shows a loading indicator', function() {
-                requests = AjaxHelpers.requests(this);
                 containerPage = getContainerPage();
                 containerPage.render();
                 expect(containerPage.$('.ui-loading')).not.toHaveClass('is-hidden');

@@ -10,7 +10,7 @@ from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.role_helpers import has_staff_roles
 from openedx.core.djangoapps.config_model_utils.utils import is_in_holdback
-from xmodule.partitions.partitions import Group  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.partitions.partitions import Group  # pylint: disable=wrong-import-order
 
 # Studio generates partition IDs starting at 100. There is already a manually generated
 # partition for Enrollment Track that uses ID 50, so we'll use 51.

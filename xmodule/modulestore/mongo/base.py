@@ -76,7 +76,7 @@ class InvalidWriteError(Exception):
     Raised to indicate that writing to a particular key
     in the KeyValueStore is disabled
     """
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 class MongoKeyValueStore(InheritanceKeyValueStore):
@@ -199,7 +199,7 @@ class OldModuleStoreRuntime(ModuleStoreRuntime, EditInfoRuntimeMixin):  # pylint
         # define an attribute here as well, even though it's None
         self.course_id = course_key
 
-    def load_item(self, location, for_parent=None):  # lint-amnesty, pylint: disable=method-hidden
+    def load_item(self, location, for_parent=None):  # pylint: disable=method-hidden
         """
         Return an XBlock instance for the specified location
         """
@@ -289,7 +289,7 @@ class OldModuleStoreRuntime(ModuleStoreRuntime, EditInfoRuntimeMixin):  # pylint
         key = UsageKey.from_string(ref_string)
         return key.replace(run=self.modulestore.fill_in_run(key.course_key).run)
 
-    def _convert_reference_fields_to_keys(self, class_, course_key, jsonfields):  # lint-amnesty, pylint: disable=unused-argument
+    def _convert_reference_fields_to_keys(self, class_, course_key, jsonfields):  # pylint: disable=unused-argument
         """
         Find all fields of type reference and convert the payload into UsageKeys
         :param class_: the XBlock class
@@ -421,7 +421,7 @@ class MongoBulkOpsMixin(BulkOperationsMixin):
         """
         return True
 
-    def _is_in_bulk_operation(self, course_id, ignore_case=False):  # lint-amnesty, pylint: disable=arguments-differ
+    def _is_in_bulk_operation(self, course_id, ignore_case=False):  # pylint: disable=arguments-differ
         """
         Returns whether a bulk operation is in progress for the given course.
         """
@@ -844,7 +844,7 @@ class MongoModuleStore(ModuleStoreDraftAndPublished, ModuleStoreWriteBase, Mongo
         """
         return BlockUsageLocator(course_key, 'course', course_key.run)
 
-    def get_course(self, course_key, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ
+    def get_course(self, course_key, **kwargs):  # pylint: disable=arguments-differ
         """
         Get the course with the given courseid (org/course/run)
         """
@@ -861,7 +861,7 @@ class MongoModuleStore(ModuleStoreDraftAndPublished, ModuleStoreWriteBase, Mongo
         except ItemNotFoundError:
             return None
 
-    def has_course(self, course_key, ignore_case=False, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ
+    def has_course(self, course_key, ignore_case=False, **kwargs):  # pylint: disable=arguments-differ
         """
         Returns the course_id of the course if it was found, else None
         Note: we return the course_id instead of a boolean here since the found course may have
@@ -907,7 +907,7 @@ class MongoModuleStore(ModuleStoreDraftAndPublished, ModuleStoreWriteBase, Mongo
         except ItemNotFoundError:
             return False
 
-    def get_item(self, usage_key, using_descriptor_system=None, for_parent=None, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ
+    def get_item(self, usage_key, using_descriptor_system=None, for_parent=None, **kwargs):  # pylint: disable=arguments-differ
         """
         Returns an XModuleDescriptor instance for the item at location.
 
@@ -955,7 +955,7 @@ class MongoModuleStore(ModuleStoreDraftAndPublished, ModuleStoreWriteBase, Mongo
             for key in ('tag', 'org', 'course', 'category', 'name', 'revision')
         ])
 
-    def get_items(  # lint-amnesty, pylint: disable=arguments-differ
+    def get_items(  # pylint: disable=arguments-differ
             self,
             course_id,
             settings=None,
@@ -1025,7 +1025,7 @@ class MongoModuleStore(ModuleStoreDraftAndPublished, ModuleStoreWriteBase, Mongo
         )
         return blocks
 
-    def create_course(self, org, course, run, user_id, fields=None, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ
+    def create_course(self, org, course, run, user_id, fields=None, **kwargs):  # pylint: disable=arguments-differ
         """
         Creates and returns the course.
 
@@ -1135,7 +1135,7 @@ class MongoModuleStore(ModuleStoreDraftAndPublished, ModuleStoreWriteBase, Mongo
         xblock.save()
         return xblock
 
-    def create_item(self, user_id, course_key, block_type, block_id=None, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ
+    def create_item(self, user_id, course_key, block_type, block_id=None, **kwargs):  # pylint: disable=arguments-differ
         """
         Creates and saves a new item in a course.
 
@@ -1161,7 +1161,7 @@ class MongoModuleStore(ModuleStoreDraftAndPublished, ModuleStoreWriteBase, Mongo
 
         return xblock
 
-    def create_child(self, user_id, parent_usage_key, block_type, block_id=None, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ
+    def create_child(self, user_id, parent_usage_key, block_type, block_id=None, **kwargs):  # pylint: disable=arguments-differ
         """
         Creates and saves a new xblock that as a child of the specified block
 
@@ -1253,7 +1253,7 @@ class MongoModuleStore(ModuleStoreDraftAndPublished, ModuleStoreWriteBase, Mongo
         '''
         return None
 
-    def get_modulestore_type(self, course_key=None):  # lint-amnesty, pylint: disable=arguments-differ, unused-argument
+    def get_modulestore_type(self, course_key=None):  # pylint: disable=arguments-differ, unused-argument
         """
         Returns an enumeration-like type reflecting the type of this modulestore per ModuleStoreEnum.Type
         Args:
@@ -1323,7 +1323,7 @@ class MongoModuleStore(ModuleStoreDraftAndPublished, ModuleStoreWriteBase, Mongo
         doc_id = None if course_assets is None else course_assets['_id']
         if course_assets is None:
             # Check to see if the course is created in the course collection.
-            if self.get_course(course_key) is None:  # lint-amnesty, pylint: disable=no-else-raise
+            if self.get_course(course_key) is None:  # pylint: disable=no-else-raise
                 raise ItemNotFoundError(course_key)
             else:
                 # Course exists, so create matching assets document.
@@ -1418,7 +1418,7 @@ class MongoModuleStore(ModuleStoreDraftAndPublished, ModuleStoreWriteBase, Mongo
         # Update the document.
         self.asset_collection.insert_one(dest_assets)
 
-    def set_asset_metadata_attrs(self, asset_key, attr_dict, user_id):  # lint-amnesty, pylint: disable=arguments-differ
+    def set_asset_metadata_attrs(self, asset_key, attr_dict, user_id):  # pylint: disable=arguments-differ
         """
         Add/set the given dict of attrs on the asset at the given location. Value can be any type which pymongo accepts.
 
@@ -1472,7 +1472,7 @@ class MongoModuleStore(ModuleStoreDraftAndPublished, ModuleStoreWriteBase, Mongo
         )
         return 1
 
-    def delete_all_asset_metadata(self, course_key, user_id):  # lint-amnesty, pylint: disable=unused-argument
+    def delete_all_asset_metadata(self, course_key, user_id):  # pylint: disable=unused-argument
         """
         Delete all of the assets which use this course_key as an identifier.
 
@@ -1497,7 +1497,7 @@ class MongoModuleStore(ModuleStoreDraftAndPublished, ModuleStoreWriteBase, Mongo
             self.database.client.admin.command('ismaster')
             return {ModuleStoreEnum.Type.mongo: True}
         except pymongo.errors.ConnectionFailure:
-            raise HeartbeatFailure(f"Can't connect to {self.database.name}", 'mongo')  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise HeartbeatFailure(f"Can't connect to {self.database.name}", 'mongo')  # pylint: disable=raise-missing-from  # noqa: B904
 
     def ensure_indexes(self):
         """
@@ -1534,7 +1534,7 @@ class MongoModuleStore(ModuleStoreDraftAndPublished, ModuleStoreWriteBase, Mongo
     def convert_to_draft(self, location, user_id):
         raise NotImplementedError()
 
-    def delete_item(self, location, user_id, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ
+    def delete_item(self, location, user_id, **kwargs):  # pylint: disable=arguments-differ
         raise NotImplementedError()
 
     def has_changes(self, xblock):
@@ -1552,6 +1552,6 @@ class MongoModuleStore(ModuleStoreDraftAndPublished, ModuleStoreWriteBase, Mongo
     def unpublish(self, location, user_id):
         raise NotImplementedError()
 
-    def update_item(self, xblock, user_id, allow_not_found=False, force=False, isPublish=False,  # lint-amnesty, pylint: disable=arguments-differ
+    def update_item(self, xblock, user_id, allow_not_found=False, force=False, isPublish=False,  # pylint: disable=arguments-differ
                     is_publish_root=True):
         raise NotImplementedError

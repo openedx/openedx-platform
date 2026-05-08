@@ -12,7 +12,7 @@ import pytz
 from completion.exceptions import UnavailableCompletionData
 from completion.models import BlockCompletion
 from completion.utilities import get_key_to_last_completed_block
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.contrib.auth.signals import user_logged_in
 from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect
@@ -29,7 +29,7 @@ from rest_framework.response import Response
 from xblock.fields import Scope
 from xblock.runtime import KeyValueStore
 
-from common.djangoapps.student.models import (  # lint-amnesty, pylint: disable=reimported  # noqa: F811
+from common.djangoapps.student.models import (  # pylint: disable=reimported  # noqa: F811
     CourseEnrollment,
     User,
 )
@@ -45,8 +45,8 @@ from lms.djangoapps.mobile_api.models import MobileConfig
 from lms.djangoapps.mobile_api.utils import API_V05, API_V1, API_V2, API_V3, API_V4
 from openedx.core.djangoapps.site_configuration.helpers import get_current_site_orgs
 from openedx.features.course_duration_limits.access import check_course_expired
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.exceptions import ItemNotFoundError  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
+from xmodule.modulestore.exceptions import ItemNotFoundError  # pylint: disable=wrong-import-order
 
 from .. import errors
 from ..decorators import mobile_course_access, mobile_view
@@ -223,7 +223,7 @@ class UserCourseStatus(views.APIView):
         return self._get_course_info(request, course)
 
     @mobile_course_access(depth=2)
-    def get(self, request, course, *args, **kwargs):  # lint-amnesty, pylint: disable=unused-argument
+    def get(self, request, course, *args, **kwargs):  # pylint: disable=unused-argument
         """
         Get the ID of the module that the specified user last visited in the specified course.
         """
@@ -242,7 +242,7 @@ class UserCourseStatus(views.APIView):
         return user_course_status
 
     @mobile_course_access(depth=2)
-    def patch(self, request, course, *args, **kwargs):  # lint-amnesty, pylint: disable=unused-argument
+    def patch(self, request, course, *args, **kwargs):  # pylint: disable=unused-argument
         """
         Update the ID of the module that the specified user last visited in the specified course.
         """

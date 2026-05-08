@@ -97,7 +97,7 @@ class CourseGradeFactory:
         for user in users:
             yield self._iter_grade_result(user, course_data, force_update)
 
-    def _iter_grade_result(self, user, course_data, force_update):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def _iter_grade_result(self, user, course_data, force_update):  # pylint: disable=missing-function-docstring
         try:
             kwargs = {
                 'user': user,
@@ -169,7 +169,7 @@ class CourseGradeFactory:
 
         should_persist = course_grade.attempted
         if should_persist:
-            course_grade._subsection_grade_factory.bulk_create_unsaved()  # lint-amnesty, pylint: disable=protected-access
+            course_grade._subsection_grade_factory.bulk_create_unsaved()  # pylint: disable=protected-access
             PersistentCourseGrade.update_or_create(
                 user_id=user.id,
                 course_id=course_data.course_key,

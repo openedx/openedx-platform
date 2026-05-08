@@ -3,4 +3,4 @@
 
 class InvalidResponseError(Exception):
     """ Exception raised when an API response is invalid. """
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass

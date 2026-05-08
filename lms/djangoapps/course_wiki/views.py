@@ -46,7 +46,7 @@ def course_wiki_redirect(request, course_id, wiki_path=""):
         log.exception("This course is improperly configured. The slug cannot be empty.")
         valid_slug = False
     if re.match(r'^[-\w\.]+$', course_slug) is None:
-        log.exception("This course is improperly configured. The slug can only contain letters, numbers, periods or hyphens.")  # lint-amnesty, pylint: disable=line-too-long
+        log.exception("This course is improperly configured. The slug can only contain letters, numbers, periods or hyphens.")  # pylint: disable=line-too-long
         valid_slug = False
 
     if not valid_slug:

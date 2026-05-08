@@ -74,7 +74,7 @@ class ModuleStoreEnum:
     class Branch:
         """
         Branch constants to use for stores, such as Mongo, that have only 2 branches: DRAFT and PUBLISHED
-        Note: These values are taken from server configuration settings, so should not be changed without alerting DevOps  # lint-amnesty, pylint: disable=line-too-long
+        Note: These values are taken from server configuration settings, so should not be changed without alerting DevOps  # pylint: disable=line-too-long
         """
         draft_preferred = 'draft-preferred'
         published_only = 'published-only'
@@ -222,7 +222,7 @@ class BulkOperationsMixin:
                 # Shortcut: check basic equivalence for cases where org/course/run might be None.
                 key_library = get_library_or_course_attribute(key)
                 course_library = get_library_or_course_attribute(course_key)
-                if (key == course_key) or (  # lint-amnesty, pylint: disable=too-many-boolean-expressions
+                if (key == course_key) or (  # pylint: disable=too-many-boolean-expressions
                         (key.org and key.org.lower() == course_key.org.lower()) and
                         (key_library and key_library.lower() == course_library.lower()) and
                         (key.run and key.run.lower() == course_key.run.lower())
@@ -253,7 +253,7 @@ class BulkOperationsMixin:
 
         Implementing classes must override this method; otherwise, the bulk operations are a noop
         """
-        pass  # lint-amnesty, pylint: disable=unnecessary-pass
+        pass  # pylint: disable=unnecessary-pass
 
     def _begin_bulk_operation(self, course_key, ignore_case=False):
         """
@@ -275,7 +275,7 @@ class BulkOperationsMixin:
 
         Implementing classes must override this method; otherwise, the bulk operations are a noop
         """
-        pass  # lint-amnesty, pylint: disable=unnecessary-pass
+        pass  # pylint: disable=unnecessary-pass
 
     def _end_bulk_operation(self, structure_key, emit_signals=True, ignore_case=False):
         """
@@ -299,7 +299,7 @@ class BulkOperationsMixin:
         if bulk_ops_record.active:
             return
 
-        dirty = self._end_outermost_bulk_operation(bulk_ops_record, structure_key)  # lint-amnesty, pylint: disable=assignment-from-no-return
+        dirty = self._end_outermost_bulk_operation(bulk_ops_record, structure_key)  # pylint: disable=assignment-from-no-return
 
         # The bulk op has ended. However, the signal tasks below still need to use the
         # built-up bulk op information (if the signals trigger tasks in the same thread).
@@ -537,10 +537,10 @@ class IncorrectlySortedList(Exception):
     """
     Thrown when calling find() on a SortedAssetList not sorted by filename.
     """
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
-class SortedAssetList(SortedKeyList):  # lint-amnesty, pylint: disable=abstract-method
+class SortedAssetList(SortedKeyList):  # pylint: disable=abstract-method
     """
     List of assets that is sorted based on an asset attribute.
     """
@@ -602,7 +602,7 @@ class ModuleStoreAssetBase:
             - AssetMetadata[] for all assets of the given asset_key's type
             - the index of asset in list (None if asset does not exist)
         """
-        course_assets = self._find_course_assets(asset_key.course_key)  # lint-amnesty, pylint: disable=no-member
+        course_assets = self._find_course_assets(asset_key.course_key)  # pylint: disable=no-member
         all_assets = SortedAssetList(iterable=course_assets.setdefault(asset_key.block_type, []))
         idx = all_assets.find(asset_key)
 
@@ -627,7 +627,7 @@ class ModuleStoreAssetBase:
         mdata.from_storable(all_assets[asset_idx])
         return mdata
 
-    def get_all_asset_metadata(self, course_key, asset_type, start=0, maxresults=-1, sort=None, **kwargs):  # lint-amnesty, pylint: disable=unused-argument
+    def get_all_asset_metadata(self, course_key, asset_type, start=0, maxresults=-1, sort=None, **kwargs):  # pylint: disable=unused-argument
         """
         Returns a list of asset metadata for all assets of the given asset_type in the course.
 
@@ -644,7 +644,7 @@ class ModuleStoreAssetBase:
         Returns:
             List of AssetMetadata objects.
         """
-        course_assets = self._find_course_assets(course_key)  # lint-amnesty, pylint: disable=no-member
+        course_assets = self._find_course_assets(course_key)  # pylint: disable=no-member
 
         # Determine the proper sort - with defaults of ('displayname', SortOrder.ascending).
         key_func = None
@@ -658,7 +658,7 @@ class ModuleStoreAssetBase:
         if asset_type is None:
             # Add assets of all types to the sorted list.
             all_assets = SortedAssetList(iterable=[], key=key_func)
-            for asset_type, val in course_assets.items():  # lint-amnesty, pylint: disable=redefined-argument-from-local  # noqa: B007
+            for asset_type, val in course_assets.items():  # pylint: disable=redefined-argument-from-local  # noqa: B007
                 all_assets.update(val)
         else:
             # Add assets of a single type to the sorted list.
@@ -793,7 +793,7 @@ class ModuleStoreAssetWriteInterface(ModuleStoreAssetBase):
             dest_course_key (CourseKey): identifier of course to copy to
             user_id (int): user ID copying the asset metadata
         """
-        pass  # lint-amnesty, pylint: disable=unnecessary-pass
+        pass  # pylint: disable=unnecessary-pass
 
 
 class ModuleStoreRead(ModuleStoreAssetBase, metaclass=ABCMeta):
@@ -807,7 +807,7 @@ class ModuleStoreRead(ModuleStoreAssetBase, metaclass=ABCMeta):
         """
         Returns True if usage_key exists in this ModuleStore.
         """
-        pass  # lint-amnesty, pylint: disable=unnecessary-pass
+        pass  # pylint: disable=unnecessary-pass
 
     @abstractmethod
     def get_item(self, usage_key, depth=0, using_descriptor_system=None, **kwargs):
@@ -827,7 +827,7 @@ class ModuleStoreRead(ModuleStoreAssetBase, metaclass=ABCMeta):
             in the request. The depth is counted in the number of calls to
             get_children() to cache. None indicates to cache all descendents
         """
-        pass  # lint-amnesty, pylint: disable=unnecessary-pass
+        pass  # pylint: disable=unnecessary-pass
 
     @abstractmethod
     def get_course_errors(self, course_key):
@@ -841,7 +841,7 @@ class ModuleStoreRead(ModuleStoreAssetBase, metaclass=ABCMeta):
         Args:
             course_key (:class:`.CourseKey`): The course to check for errors
         """
-        pass  # lint-amnesty, pylint: disable=unnecessary-pass
+        pass  # pylint: disable=unnecessary-pass
 
     @abstractmethod
     def get_items(self, course_id, qualifiers=None, **kwargs):
@@ -852,7 +852,7 @@ class ModuleStoreRead(ModuleStoreAssetBase, metaclass=ABCMeta):
 
         location: Something that can be passed to Location
         """
-        pass  # lint-amnesty, pylint: disable=unnecessary-pass
+        pass  # pylint: disable=unnecessary-pass
 
     def _block_matches(self, block, qualifiers):
         """
@@ -937,7 +937,7 @@ class ModuleStoreRead(ModuleStoreAssetBase, metaclass=ABCMeta):
 
         This key may represent a course that doesn't exist in this modulestore.
         """
-        pass  # lint-amnesty, pylint: disable=unnecessary-pass
+        pass  # pylint: disable=unnecessary-pass
 
     @abstractmethod
     def make_course_usage_key(self, course_key):
@@ -945,7 +945,7 @@ class ModuleStoreRead(ModuleStoreAssetBase, metaclass=ABCMeta):
         Return a valid :class:`~opaque_keys.edx.keys.UsageKey` for this modulestore
         that matches the supplied course_key.
         """
-        pass  # lint-amnesty, pylint: disable=unnecessary-pass
+        pass  # pylint: disable=unnecessary-pass
 
     @abstractmethod
     def get_courses(self, **kwargs):
@@ -955,7 +955,7 @@ class ModuleStoreRead(ModuleStoreAssetBase, metaclass=ABCMeta):
         will efficiently apply a filter so that only the courses of the specified
         ORG in the CourseKey will be fetched.
         '''
-        pass  # lint-amnesty, pylint: disable=unnecessary-pass
+        pass  # pylint: disable=unnecessary-pass
 
     @abstractmethod
     def get_course(self, course_id, depth=0, **kwargs):
@@ -963,7 +963,7 @@ class ModuleStoreRead(ModuleStoreAssetBase, metaclass=ABCMeta):
         Look for a specific course by its id (:class:`CourseKey`).
         Returns the course block, or None if not found.
         '''
-        pass  # lint-amnesty, pylint: disable=unnecessary-pass
+        pass  # pylint: disable=unnecessary-pass
 
     @abstractmethod
     def has_course(self, course_id, ignore_case=False, **kwargs):
@@ -974,7 +974,7 @@ class ModuleStoreRead(ModuleStoreAssetBase, metaclass=ABCMeta):
             ignore_case (boolean): some modulestores are case-insensitive. Use this flag
                 to search for whether a potentially conflicting course exists in that case.
         '''
-        pass  # lint-amnesty, pylint: disable=unnecessary-pass
+        pass  # pylint: disable=unnecessary-pass
 
     @abstractmethod
     def get_parent_location(self, location, **kwargs):
@@ -982,7 +982,7 @@ class ModuleStoreRead(ModuleStoreAssetBase, metaclass=ABCMeta):
         Find the location that is the parent of this location in this
         course.  Needed for path_to_location().
         '''
-        pass  # lint-amnesty, pylint: disable=unnecessary-pass
+        pass  # pylint: disable=unnecessary-pass
 
     @abstractmethod
     def get_orphans(self, course_key, **kwargs):
@@ -991,7 +991,7 @@ class ModuleStoreRead(ModuleStoreAssetBase, metaclass=ABCMeta):
         usually orphaned. NOTE: may include xblocks which still have references via xblocks which don't
         use children to point to their dependents.
         """
-        pass  # lint-amnesty, pylint: disable=unnecessary-pass
+        pass  # pylint: disable=unnecessary-pass
 
     @abstractmethod
     def get_errored_courses(self):
@@ -999,7 +999,7 @@ class ModuleStoreRead(ModuleStoreAssetBase, metaclass=ABCMeta):
         Return a dictionary of course_dir -> [(msg, exception_str)], for each
         course_dir where course loading failed.
         """
-        pass  # lint-amnesty, pylint: disable=unnecessary-pass
+        pass  # pylint: disable=unnecessary-pass
 
     @abstractmethod
     def get_modulestore_type(self, course_id):
@@ -1007,7 +1007,7 @@ class ModuleStoreRead(ModuleStoreAssetBase, metaclass=ABCMeta):
         Returns a type which identifies which modulestore is servicing the given
         course_id. The return can be either "xml" (for XML based courses) or "mongo" for MongoDB backed courses
         """
-        pass  # lint-amnesty, pylint: disable=unnecessary-pass
+        pass  # pylint: disable=unnecessary-pass
 
     @abstractmethod
     def get_courses_for_wiki(self, wiki_slug, **kwargs):
@@ -1016,21 +1016,21 @@ class ModuleStoreRead(ModuleStoreAssetBase, metaclass=ABCMeta):
         :param wiki_slug: the course wiki root slug
         :return: list of course keys
         """
-        pass  # lint-amnesty, pylint: disable=unnecessary-pass
+        pass  # pylint: disable=unnecessary-pass
 
     @abstractmethod
     def has_published_version(self, xblock):
         """
         Returns true if this xblock exists in the published course regardless of whether it's up to date
         """
-        pass  # lint-amnesty, pylint: disable=unnecessary-pass
+        pass  # pylint: disable=unnecessary-pass
 
     @abstractmethod
     def close_connections(self):
         """
         Closes any open connections to the underlying databases
         """
-        pass  # lint-amnesty, pylint: disable=unnecessary-pass
+        pass  # pylint: disable=unnecessary-pass
 
     @contextmanager
     def bulk_operations(self, course_id, emit_signals=True, ignore_case=False):    # pylint: disable=unused-argument
@@ -1047,7 +1047,7 @@ class ModuleStoreRead(ModuleStoreAssetBase, metaclass=ABCMeta):
         This method is intended for use by tests and administrative commands, and not
         to be run during server startup.
         """
-        pass  # lint-amnesty, pylint: disable=unnecessary-pass
+        pass  # pylint: disable=unnecessary-pass
 
 
 class ModuleStoreWrite(ModuleStoreRead, ModuleStoreAssetWriteInterface, metaclass=ABCMeta):
@@ -1070,7 +1070,7 @@ class ModuleStoreWrite(ModuleStoreRead, ModuleStoreAssetWriteInterface, metaclas
         :raises VersionConflictError: if org, course, run, and version_guid given and the current
         version head != version_guid and force is not True. (only applicable to version tracking stores)
         """
-        pass  # lint-amnesty, pylint: disable=unnecessary-pass
+        pass  # pylint: disable=unnecessary-pass
 
     @abstractmethod
     def delete_item(self, location, user_id, **kwargs):
@@ -1089,7 +1089,7 @@ class ModuleStoreWrite(ModuleStoreRead, ModuleStoreAssetWriteInterface, metaclas
         :raises VersionConflictError: if org, course, run, and version_guid given and the current
         version head != version_guid and force is not True. (only applicable to version tracking stores)
         """
-        pass  # lint-amnesty, pylint: disable=unnecessary-pass
+        pass  # pylint: disable=unnecessary-pass
 
     @abstractmethod
     def create_course(self, org, course, run, user_id, fields=None, **kwargs):
@@ -1106,7 +1106,7 @@ class ModuleStoreWrite(ModuleStoreRead, ModuleStoreAssetWriteInterface, metaclas
 
         Returns: a CourseBlock
         """
-        pass  # lint-amnesty, pylint: disable=unnecessary-pass
+        pass  # pylint: disable=unnecessary-pass
 
     @abstractmethod
     def create_item(self, user_id, course_key, block_type, block_id=None, fields=None, **kwargs):
@@ -1125,7 +1125,7 @@ class ModuleStoreWrite(ModuleStoreRead, ModuleStoreAssetWriteInterface, metaclas
             fields (dict): A dictionary specifying initial values for some or all fields
                 in the newly created block
         """
-        pass  # lint-amnesty, pylint: disable=unnecessary-pass
+        pass  # pylint: disable=unnecessary-pass
 
     @abstractmethod
     def clone_course(self, source_course_id, dest_course_id, user_id, fields=None):
@@ -1142,7 +1142,7 @@ class ModuleStoreWrite(ModuleStoreRead, ModuleStoreAssetWriteInterface, metaclas
             ItemNotFoundError: if the source course doesn't exist (or any of its xblocks aren't found)
             DuplicateItemError: if the destination course already exists (with content in some cases)
         """
-        pass  # lint-amnesty, pylint: disable=unnecessary-pass
+        pass  # pylint: disable=unnecessary-pass
 
     @abstractmethod
     def delete_course(self, course_key, user_id, **kwargs):
@@ -1154,7 +1154,7 @@ class ModuleStoreWrite(ModuleStoreRead, ModuleStoreAssetWriteInterface, metaclas
             course_key (CourseKey): which course to delete
             user_id: id of the user deleting the course
         """
-        pass  # lint-amnesty, pylint: disable=unnecessary-pass
+        pass  # pylint: disable=unnecessary-pass
 
     @abstractmethod
     def _drop_database(self, database=True, collections=True, connections=True):
@@ -1169,7 +1169,7 @@ class ModuleStoreWrite(ModuleStoreRead, ModuleStoreAssetWriteInterface, metaclas
 
         If connections is True, then close the connection to the database as well.
         """
-        pass  # lint-amnesty, pylint: disable=unnecessary-pass
+        pass  # pylint: disable=unnecessary-pass
 
 
 # pylint: disable=abstract-method
@@ -1177,7 +1177,7 @@ class ModuleStoreReadBase(BulkOperationsMixin, ModuleStoreRead):
     """
     Implement interface functionality that can be shared.
     """
-    def __init__(  # lint-amnesty, pylint: disable=unused-argument
+    def __init__(  # pylint: disable=unused-argument
         self,
         contentstore=None,
         doc_store_config=None,  # ignore if passed up
@@ -1317,7 +1317,7 @@ class ModuleStoreWriteBase(ModuleStoreReadBase, ModuleStoreWrite):
             result[field.scope][field_name] = value
         return result
 
-    def create_course(self, org, course, run, user_id, fields=None, runtime=None, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ
+    def create_course(self, org, course, run, user_id, fields=None, runtime=None, **kwargs):  # pylint: disable=arguments-differ
         """
         Creates any necessary other things for the course as a side effect and doesn't return
         anything useful. The real subclass should call this before it returns the course.
@@ -1338,7 +1338,7 @@ class ModuleStoreWriteBase(ModuleStoreReadBase, ModuleStoreWrite):
             continue_version=True,
         )
 
-    def clone_course(self, source_course_id, dest_course_id, user_id, fields=None, **kwargs):  # lint-amnesty, pylint: disable=unused-argument
+    def clone_course(self, source_course_id, dest_course_id, user_id, fields=None, **kwargs):  # pylint: disable=unused-argument
         """
         This base method just copies the assets. The lower level impls must do the actual cloning of
         content.
@@ -1391,7 +1391,7 @@ class ModuleStoreWriteBase(ModuleStoreReadBase, ModuleStoreWrite):
             fields (dict): A dictionary specifying initial values for some or all fields
                 in the newly created block
         """
-        item = self.create_item(user_id, parent_usage_key.course_key, block_type, block_id=block_id, fields=fields, **kwargs)  # lint-amnesty, pylint: disable=line-too-long
+        item = self.create_item(user_id, parent_usage_key.course_key, block_type, block_id=block_id, fields=fields, **kwargs)  # pylint: disable=line-too-long
         parent = self.get_item(parent_usage_key)
         parent.children.append(item.location)
         self.update_item(parent, user_id)

@@ -13,7 +13,7 @@ def get_localized_name(name):
     return name['localized'].get(locale, '')
 
 
-class LinkedInOauth2IntegrationTest(base.Oauth2IntegrationTest):  # lint-amnesty, pylint: disable=test-inherits-tests
+class LinkedInOauth2IntegrationTest(base.Oauth2IntegrationTest):  # pylint: disable=test-inherits-tests
     """Integration tests for provider.LinkedInOauth2."""
 
     PROVIDER_NAME = "linkedin"

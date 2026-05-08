@@ -95,6 +95,8 @@ class LibraryHistoryEntry:
     title: str  # title at time of change
     item_type: str
     action: str  # "created" | "edited" | "renamed" | "deleted"
+    old_version: int
+    new_version: int | None
 
 
 @dataclass(frozen=True)

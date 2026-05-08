@@ -53,7 +53,7 @@ urlpatterns = [
 
 @ddt.ddt  # pylint: disable=missing-docstring
 @override_settings(ROOT_URLCONF=__name__)
-class OAuth2AllowInActiveUsersTests(TestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class OAuth2AllowInActiveUsersTests(TestCase):  # pylint: disable=missing-class-docstring
     OAUTH2_BASE_TESTING_URL = '/oauth2-inactive-test/'
 
     def setUp(self):
@@ -214,7 +214,7 @@ class OAuth2AllowInActiveUsersTests(TestCase):  # lint-amnesty, pylint: disable=
         self.check_error_codes(response, status_code=status.HTTP_401_UNAUTHORIZED, error_code=token_error.error_code)
 
 
-class BearerAuthenticationTests(OAuth2AllowInActiveUsersTests):  # lint-amnesty, pylint: disable=missing-class-docstring, test-inherits-tests
+class BearerAuthenticationTests(OAuth2AllowInActiveUsersTests):  # pylint: disable=missing-class-docstring, test-inherits-tests
 
     OAUTH2_BASE_TESTING_URL = '/oauth2-test/'
 

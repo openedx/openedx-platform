@@ -1,4 +1,4 @@
-# lint-amnesty, pylint: disable=missing-module-docstring
+# pylint: disable=missing-module-docstring
 
 from django.conf import settings as django_settings
 from django.contrib.staticfiles.storage import staticfiles_storage
@@ -10,7 +10,7 @@ from common.djangoapps.edxmako.shortcuts import render_to_string
 from common.djangoapps.static_replace import try_staticfiles_lookup
 
 
-def compressed_css(package_name, raw=False):  # lint-amnesty, pylint: disable=missing-function-docstring
+def compressed_css(package_name, raw=False):  # pylint: disable=missing-function-docstring
     package = settings.STYLESHEETS.get(package_name, {})
     if package:
         package = {package_name: package}
@@ -25,7 +25,7 @@ def compressed_css(package_name, raw=False):  # lint-amnesty, pylint: disable=mi
         return render_individual_css(package, paths, raw=raw)
 
 
-def render_css(package, path, raw=False):  # lint-amnesty, pylint: disable=missing-function-docstring
+def render_css(package, path, raw=False):  # pylint: disable=missing-function-docstring
     template_name = package.template_name or "mako/css.html"
     context = package.extra_context
 
@@ -44,7 +44,7 @@ def render_individual_css(package, paths, raw=False):
     return '\n'.join(tags)
 
 
-def compressed_js(package_name):  # lint-amnesty, pylint: disable=missing-function-docstring
+def compressed_js(package_name):  # pylint: disable=missing-function-docstring
     package = settings.JAVASCRIPT.get(package_name, {})
     if package:
         package = {package_name: package}
@@ -60,7 +60,7 @@ def compressed_js(package_name):  # lint-amnesty, pylint: disable=missing-functi
         return render_individual_js(package, paths, templates)
 
 
-def render_js(package, path):  # lint-amnesty, pylint: disable=missing-function-docstring
+def render_js(package, path):  # pylint: disable=missing-function-docstring
     template_name = package.template_name or "mako/js.html"
     context = package.extra_context
     context.update({
@@ -70,7 +70,7 @@ def render_js(package, path):  # lint-amnesty, pylint: disable=missing-function-
     return render_to_string(template_name, context)
 
 
-def render_inline_js(package, js):  # lint-amnesty, pylint: disable=missing-function-docstring
+def render_inline_js(package, js):  # pylint: disable=missing-function-docstring
     context = package.extra_context
     context.update({
         'source': js

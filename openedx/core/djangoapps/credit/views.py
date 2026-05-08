@@ -86,7 +86,7 @@ class CreditProviderRequestCreateView(views.APIView):
         try:
             course_key = CourseKey.from_string(course_key)
         except InvalidKeyError:
-            raise InvalidCourseKey(course_key)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise InvalidCourseKey(course_key)  # pylint: disable=raise-missing-from  # noqa: B904
 
         # Validate the username
         username = request.data.get('username')
@@ -101,7 +101,7 @@ class CreditProviderRequestCreateView(views.APIView):
             credit_request = create_credit_request(course_key, provider.provider_id, username)
             return Response(credit_request)
         except CreditApiBadRequest as ex:
-            raise InvalidCreditRequest(str(ex))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise InvalidCreditRequest(str(ex))  # pylint: disable=raise-missing-from  # noqa: B904
 
 
 class CreditProviderCallbackView(views.APIView):
@@ -162,7 +162,7 @@ class CreditEligibilityView(generics.ListAPIView):
         try:
             course_key = CourseKey.from_string(course_key)
         except InvalidKeyError:
-            raise ValidationError({'detail': f'[{course_key}] is not a valid course key.'})  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise ValidationError({'detail': f'[{course_key}] is not a valid course key.'})  # pylint: disable=raise-missing-from  # noqa: B904
         return queryset.filter(
             username=username,
             course__course_key=course_key,

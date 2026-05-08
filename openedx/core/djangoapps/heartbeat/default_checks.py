@@ -76,7 +76,7 @@ def check_cache_set():
     try:
         cache.set(CACHE_KEY, CACHE_VALUE, 30)
         return 'cache_set', True, 'OK'
-    except Exception as fail:  # lint-amnesty, pylint: disable=broad-except
+    except Exception as fail:  # pylint: disable=broad-except
         return 'cache_set', False, str(fail)
 
 
@@ -94,7 +94,7 @@ def check_cache_get():
             return 'cache_get', True, 'OK'
         else:
             return 'cache_get', False, 'value check failed'
-    except Exception as fail:  # lint-amnesty, pylint: disable=broad-except
+    except Exception as fail:  # pylint: disable=broad-except
         return 'cache_get', False, str(fail)
 
 
@@ -119,5 +119,5 @@ def check_celery():
                 return 'celery', True, str({'time': finished})
             sleep(0.25)
         return 'celery', False, "expired"
-    except Exception as fail:  # lint-amnesty, pylint: disable=broad-except
+    except Exception as fail:  # pylint: disable=broad-except
         return 'celery', False, str(fail)

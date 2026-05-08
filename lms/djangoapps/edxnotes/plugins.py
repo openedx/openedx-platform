@@ -13,7 +13,7 @@ from openedx.core.djangoapps.content.course_overviews.models import CourseOvervi
 from openedx.core.djangoapps.course_apps.plugins import CourseApp
 from openedx.core.lib.courses import get_course_by_id
 from xmodule.modulestore.django import modulestore
-from xmodule.tabs import CourseTab, CourseTabList  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.tabs import CourseTab, CourseTabList  # pylint: disable=wrong-import-order
 
 User = get_user_model()
 

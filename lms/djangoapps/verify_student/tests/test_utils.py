@@ -152,7 +152,7 @@ class TestVerifyStudentUtils(unittest.TestCase):
 
     @mock.patch('lms.djangoapps.verify_student.utils.log')
     @mock.patch(
-        'lms.djangoapps.verify_student.tasks.send_request_to_ss_for_user.delay', mock.Mock(side_effect=Exception('error'))  # lint-amnesty, pylint: disable=line-too-long
+        'lms.djangoapps.verify_student.tasks.send_request_to_ss_for_user.delay', mock.Mock(side_effect=Exception('error'))  # pylint: disable=line-too-long
     )
     def test_submit_request_to_ss(self, mock_log):
         """Tests that we log appropriate information when celery task creation fails."""

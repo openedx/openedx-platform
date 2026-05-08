@@ -24,11 +24,11 @@ from xmodule.modulestore.exceptions import ItemNotFoundError, NoPathToItem
 from xmodule.modulestore.search import path_to_location
 
 
-class CourseOverviewField(serializers.RelatedField):  # lint-amnesty, pylint: disable=abstract-method
+class CourseOverviewField(serializers.RelatedField):  # pylint: disable=abstract-method
     """
     Custom field to wrap a CourseOverview object. Read-only.
     """
-    def to_representation(self, course_overview):  # lint-amnesty, pylint: disable=arguments-differ
+    def to_representation(self, course_overview):  # pylint: disable=arguments-differ
         course_id = str(course_overview.id)
         request = self.context.get('request')
         api_version = self.context.get('api_version')
@@ -135,7 +135,7 @@ class CourseEnrollmentSerializer(serializers.ModelSerializer):
             for mode in course_modes
         ]
 
-    def to_representation(self, instance: CourseEnrollment) -> 'OrderedDict':  # lint-amnesty, pylint: disable=unused-variable, line-too-long  # noqa: F821
+    def to_representation(self, instance: CourseEnrollment) -> 'OrderedDict':  # pylint: disable=unused-variable, line-too-long  # noqa: F821
         """
         Override the to_representation method to add the course_status field to the serialized data.
         """

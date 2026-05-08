@@ -70,7 +70,7 @@ from openedx.features.course_experience import ENABLE_COURSE_GOALS
 from openedx.features.course_experience.waffle import ENABLE_COURSE_ABOUT_SIDEBAR_HTML
 from openedx.features.discounts.utils import generate_offer_data
 from xmodule.course_block import COURSE_VISIBILITY_PUBLIC, COURSE_VISIBILITY_PUBLIC_OUTLINE
-from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore import ModuleStoreEnum  # pylint: disable=wrong-import-order
 from xmodule.modulestore.django import modulestore
 from xmodule.modulestore.exceptions import ItemNotFoundError, NoPathToItem
 from xmodule.modulestore.search import path_to_location
@@ -774,7 +774,7 @@ class SequenceMetadata(DeveloperErrorViewMixin, APIView):
         SessionAuthenticationAllowInactiveUser,
     )
 
-    def get(self, request, usage_key_string, *args, **kwargs):  # lint-amnesty, pylint: disable=unused-argument
+    def get(self, request, usage_key_string, *args, **kwargs):  # pylint: disable=unused-argument
         """
         Return response to a GET request.
         """
@@ -855,7 +855,7 @@ class Resume(DeveloperErrorViewMixin, APIView):
     )
     permission_classes = (IsAuthenticated,)
 
-    def get(self, request, course_key_string, *args, **kwargs):  # lint-amnesty, pylint: disable=unused-argument
+    def get(self, request, course_key_string, *args, **kwargs):  # pylint: disable=unused-argument
         """
         Return response to a GET request.
         """
@@ -911,7 +911,7 @@ class Celebration(DeveloperErrorViewMixin, APIView):
     permission_classes = (IsAuthenticated,)
     http_method_names = ['post']
 
-    def post(self, request, course_key_string, *args, **kwargs):  # lint-amnesty, pylint: disable=unused-argument
+    def post(self, request, course_key_string, *args, **kwargs):  # pylint: disable=unused-argument
         """
         Handle a POST request.
         """

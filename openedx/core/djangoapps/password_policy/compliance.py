@@ -19,7 +19,7 @@ class NonCompliantPasswordException(Exception):
     Exception that should be raised when a user who is required to be compliant with password policy requirements
     is found to have a non-compliant password.
     """
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 class NonCompliantPasswordWarning(Exception):
@@ -27,7 +27,7 @@ class NonCompliantPasswordWarning(Exception):
     Exception that should be raised when a user who will soon be required to be compliant with password policy
     requirements is found to have a non-compliant password.
     """
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 def should_enforce_compliance_on_login():
@@ -71,7 +71,7 @@ def enforce_compliance_on_login(user, password):
         return
 
     now = datetime.now(ZoneInfo("UTC"))
-    if now >= deadline:  # lint-amnesty, pylint: disable=no-else-raise
+    if now >= deadline:  # pylint: disable=no-else-raise
         raise NonCompliantPasswordException(
             HTML(_(
                 '{strong_tag_open}We recently changed our password requirements{strong_tag_close}{break_line_tag}'

@@ -13,7 +13,7 @@ from zoneinfo import ZoneInfo
 
 import markupsafe
 from django.conf import settings
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user  # noqa: F401
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user  # noqa: F401
 from django.contrib.staticfiles.storage import staticfiles_storage
 from django.urls import reverse
 from django.utils.html import escape
@@ -27,9 +27,9 @@ from xblock.scorable import ScorableXBlockMixin
 
 from common.djangoapps import static_replace  # noqa: F401
 from common.djangoapps.edxmako.shortcuts import render_to_string
-from xmodule.seq_block import SequenceBlock  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.vertical_block import VerticalBlock  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.x_module import (  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.seq_block import SequenceBlock  # pylint: disable=wrong-import-order
+from xmodule.vertical_block import VerticalBlock  # pylint: disable=wrong-import-order
+from xmodule.x_module import (  # pylint: disable=wrong-import-order
     PREVIEW_VIEWS,
     STUDENT_VIEW,
     STUDIO_VIEW,
@@ -388,7 +388,7 @@ def get_course_update_items(course_updates, provided_index=0):
         try:
             course_html_parsed = html.fromstring(course_updates.data)
         except (etree.XMLSyntaxError, etree.ParserError):
-            log.error("Cannot parse: " + course_updates.data)  # lint-amnesty, pylint: disable=logging-not-lazy
+            log.error("Cannot parse: " + course_updates.data)  # pylint: disable=logging-not-lazy
             escaped = escape(course_updates.data)
             # xss-lint: disable=python-concat-html
             course_html_parsed = html.fromstring("<ol><li>" + escaped + "</li></ol>")

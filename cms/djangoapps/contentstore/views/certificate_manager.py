@@ -26,14 +26,14 @@ class CertificateException(Exception):
     """
     Base exception for Certificates workflows
     """
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 class CertificateValidationError(CertificateException):
     """
     An exception raised when certificate information is invalid.
     """
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 def _delete_asset(course_key, asset_key_string):
@@ -88,7 +88,7 @@ class CertificateManager:
         try:
             certificate = json.loads(json_string)
         except ValueError:
-            raise CertificateValidationError(_("invalid JSON"))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise CertificateValidationError(_("invalid JSON"))  # pylint: disable=raise-missing-from  # noqa: B904
         # Include the data contract version
         certificate["version"] = CERTIFICATE_SCHEMA_VERSION
         # Ensure a signatories list is always returned

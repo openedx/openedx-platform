@@ -14,7 +14,7 @@ from opaque_keys.edx.keys import CourseKey
 
 from common.djangoapps.course_modes.models import CourseMode
 from openedx.core.djangoapps.enrollments import errors
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 
 log = logging.getLogger(__name__)
 
@@ -332,7 +332,7 @@ def update_enrollment(
     if mode is not None:
         validate_course_mode(course_id, mode, is_active=is_active, include_expired=include_expired)
     enrollment = _data_api().update_course_enrollment(username, course_id, mode=mode, is_active=is_active)
-    if enrollment is None:  # lint-amnesty, pylint: disable=no-else-raise
+    if enrollment is None:  # pylint: disable=no-else-raise
         msg = f"Course Enrollment not found for user {username} in course {course_id}"
         log.warning(msg)
         raise errors.EnrollmentNotFoundError(msg)
@@ -406,7 +406,7 @@ def get_course_enrollment_details(course_id, include_expired=False):
     except Exception:
         # Catch any unexpected errors during caching.
         log.exception("Error occurred while caching course enrollment details for course %s", course_id)
-        raise errors.CourseEnrollmentError("An unexpected error occurred while retrieving course enrollment details.")  # lint-amnesty, pylint: disable=raise-missing-from,line-too-long  # noqa: B904
+        raise errors.CourseEnrollmentError("An unexpected error occurred while retrieving course enrollment details.")  # pylint: disable=raise-missing-from,line-too-long  # noqa: B904
 
     return course_enrollment_details
 
@@ -615,4 +615,4 @@ def _data_api():
         return importlib.import_module(api_path)
     except (ImportError, ValueError):
         log.exception(f"Could not load module at '{api_path}'")
-        raise errors.EnrollmentApiLoadError(api_path)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise errors.EnrollmentApiLoadError(api_path)  # pylint: disable=raise-missing-from  # noqa: B904

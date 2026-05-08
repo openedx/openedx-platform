@@ -2,6 +2,7 @@
 
 define([
     'underscore',
+    'sinon',
     'js/models/course',
     'js/certificates/models/certificate',
     'js/certificates/models/signatory',
@@ -14,11 +15,12 @@ define([
     'js/spec_helpers/validation_helpers',
     'js/certificates/spec/custom_matchers'
 ],
-function(_, Course, CertificateModel, SignatoryModel, CertificatesCollection, CertificateEditorView,
+function(_, sinon, Course, CertificateModel, SignatoryModel, CertificatesCollection, CertificateEditorView,
     Notification, AjaxHelpers, TemplateHelpers, ViewHelpers, ValidationHelpers, CustomMatchers) {
     'use strict';
 
     var MAX_SIGNATORIES_LIMIT = 10;
+    var requests, xhrFactory;
     var SELECTORS = {
         detailsView: '.certificate-details',
         editView: '.certificate-edit',
@@ -45,8 +47,7 @@ function(_, Course, CertificateModel, SignatoryModel, CertificatesCollection, Ce
     };
 
     var clickDeleteItem = function(that, promptText, element, url) {
-        var requests = AjaxHelpers.requests(that),
-            promptSpy = ViewHelpers.createPromptSpy(),
+        var promptSpy = ViewHelpers.createPromptSpy(),
             notificationSpy = ViewHelpers.createNotificationSpy();
         that.view.$(element).click();
 
@@ -129,6 +130,11 @@ function(_, Course, CertificateModel, SignatoryModel, CertificatesCollection, Ce
 
         describe('Basic', function() {
             beforeEach(function() {
+                xhrFactory = sinon.useFakeXMLHttpRequest();
+                requests = [];
+                requests.currentIndex = 0;
+                requests.restore = function() { xhrFactory.restore(); };
+                xhrFactory.onCreate = function(req) { requests.push(req); };
                 appendSetFixtures(
                     $('<script>', {id: 'basic-modal-tpl', type: 'text/template'}).text(basicModalTpl)
                 );
@@ -141,6 +147,7 @@ function(_, Course, CertificateModel, SignatoryModel, CertificatesCollection, Ce
             });
 
             afterEach(function() {
+                requests.restore();
                 $('.wrapper-modal-window-assetupload').remove();
             });
 
@@ -157,8 +164,7 @@ function(_, Course, CertificateModel, SignatoryModel, CertificatesCollection, Ce
             });
 
             it('should save properly', function() {
-                var requests = AjaxHelpers.requests(this),
-                    notificationSpy = ViewHelpers.createNotificationSpy();
+                var notificationSpy = ViewHelpers.createNotificationSpy();
                 this.view.$('.action-add').click();
 
                 setValuesToInputs(this.view, {
@@ -174,8 +180,7 @@ function(_, Course, CertificateModel, SignatoryModel, CertificatesCollection, Ce
             });
 
             it('does not hide saving message if failure', function() {
-                var requests = AjaxHelpers.requests(this),
-                    notificationSpy = ViewHelpers.createNotificationSpy();
+                var notificationSpy = ViewHelpers.createNotificationSpy();
                 this.view.$(SELECTORS.inputCertificateName).val('New Test Name');
                 this.view.$(SELECTORS.inputCertificateDescription).val('New Test Description');
                 ViewHelpers.submitAndVerifyFormError(this.view, requests, notificationSpy);
@@ -293,8 +298,7 @@ function(_, Course, CertificateModel, SignatoryModel, CertificatesCollection, Ce
             });
 
             it('signatories should save properly', function() {
-                var requests = AjaxHelpers.requests(this),
-                    notificationSpy = ViewHelpers.createNotificationSpy();
+                var notificationSpy = ViewHelpers.createNotificationSpy();
                 this.view.$('.action-add').click();
 
                 setValuesToInputs(this.view, {

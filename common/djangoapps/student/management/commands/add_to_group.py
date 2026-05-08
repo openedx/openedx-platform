@@ -1,10 +1,10 @@
-# lint-amnesty, pylint: disable=missing-module-docstring
+# pylint: disable=missing-module-docstring
 
-from django.contrib.auth.models import Group, User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import Group, User  # pylint: disable=imported-auth-user
 from django.core.management.base import BaseCommand, CommandError
 
 
-class Command(BaseCommand):  # lint-amnesty, pylint: disable=missing-class-docstring
+class Command(BaseCommand):  # pylint: disable=missing-class-docstring
     def add_arguments(self, parser):
         parser.add_argument('name_or_email',
                             help='Username or email address of the user to add or remove')
@@ -47,7 +47,7 @@ class Command(BaseCommand):  # lint-amnesty, pylint: disable=missing-class-docst
                 group = Group(name=group_name)
                 group.save()
             else:
-                raise CommandError(f'Group {group_name} does not exist')  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+                raise CommandError(f'Group {group_name} does not exist')  # pylint: disable=raise-missing-from  # noqa: B904
 
         if options['remove']:
             user.groups.remove(group)

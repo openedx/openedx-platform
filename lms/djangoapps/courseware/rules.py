@@ -19,8 +19,8 @@ from common.djangoapps.student.models import CourseAccessRole
 from common.djangoapps.student.roles import CourseRole, OrgRole, strict_role_checking
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from openedx.core.djangoapps.enrollments.api import is_enrollment_valid_for_proctoring
-from xmodule.course_block import CourseBlock  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.error_block import ErrorBlock  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.course_block import CourseBlock  # pylint: disable=wrong-import-order
+from xmodule.error_block import ErrorBlock  # pylint: disable=wrong-import-order
 
 from .access import has_access
 
@@ -64,7 +64,7 @@ class HasAccessRule(Rule):
         return Q(pk__in=[])
 
 
-class StaffAccessExperiment(laboratory.Experiment):  # lint-amnesty, pylint: disable=missing-class-docstring
+class StaffAccessExperiment(laboratory.Experiment):  # pylint: disable=missing-class-docstring
     def compare(self, control, candidate):
         return bool(control.value) == candidate.value
 
@@ -155,7 +155,7 @@ class HasStaffAccessToContent(Rule):
         return query
 
 
-class HasRolesRule(Rule):  # lint-amnesty, pylint: disable=abstract-method, missing-class-docstring
+class HasRolesRule(Rule):  # pylint: disable=abstract-method, missing-class-docstring
     def __init__(self, *roles):
         self.roles = roles
 

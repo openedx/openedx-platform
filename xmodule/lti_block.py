@@ -220,7 +220,7 @@ class LTIFields:
     )
 
     # Users will be presented with a message indicating that their e-mail/username would be sent to a third
-    # party application. When "Open in New Page" is not selected, the tool automatically appears without any user action.  # lint-amnesty, pylint: disable=line-too-long
+    # party application. When "Open in New Page" is not selected, the tool automatically appears without any user action.  # pylint: disable=line-too-long
     ask_to_send_username = Boolean(
         display_name=_("Request user's username"),
         # Translators: This is used to request the user's username for a third party service.
@@ -239,7 +239,7 @@ class LTIFields:
     description = String(
         display_name=_("LTI Application Information"),
         help=_(
-            "Enter a description of the third party application. If requesting username and/or email, use this text box to inform users "  # lint-amnesty, pylint: disable=line-too-long
+            "Enter a description of the third party application. If requesting username and/or email, use this text box to inform users "  # pylint: disable=line-too-long
             "why their username and/or email will be forwarded to a third party application."
         ),
         default="",
@@ -388,7 +388,7 @@ class _BuiltInLTIBlock(
     def max_score(self):
         return self.weight if self.has_score else None
 
-    def get_input_fields(self):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def get_input_fields(self):  # pylint: disable=missing-function-docstring
         # LTI provides a list of default parameters that might be passed as
         # part of the POST data. These parameters should not be prefixed.
         # Likewise, The creator of an LTI link can add custom key/value parameters
@@ -438,7 +438,7 @@ class _BuiltInLTIBlock(
                 msg = _('Could not parse custom parameter: {custom_parameter}. Should be "x=y" string.').format(
                     custom_parameter=f"{custom_parameter!r}"
                 )
-                raise LTIError(msg)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+                raise LTIError(msg)  # pylint: disable=raise-missing-from  # noqa: B904
 
             # LTI specs: 'custom_' should be prepended before each custom parameter, as pointed in link above.
             if param_name not in PARAMETERS:
@@ -679,21 +679,21 @@ class _BuiltInLTIBlock(
                 'lis_outcome_service_url': self.get_outcome_service_url()
             })
 
-        self.user_email = ""  # lint-amnesty, pylint: disable=attribute-defined-outside-init
-        self.user_username = ""  # lint-amnesty, pylint: disable=attribute-defined-outside-init
+        self.user_email = ""  # pylint: disable=attribute-defined-outside-init
+        self.user_username = ""  # pylint: disable=attribute-defined-outside-init
 
         # Username and email can't be sent in studio mode, because the user object is not defined.
         # To test functionality test in LMS
 
         real_user_object = self.runtime.service(self, 'user').get_user_by_anonymous_id()
         try:
-            self.user_email = real_user_object.email  # lint-amnesty, pylint: disable=attribute-defined-outside-init
+            self.user_email = real_user_object.email  # pylint: disable=attribute-defined-outside-init
         except AttributeError:
-            self.user_email = ""  # lint-amnesty, pylint: disable=attribute-defined-outside-init
+            self.user_email = ""  # pylint: disable=attribute-defined-outside-init
         try:
-            self.user_username = real_user_object.username  # lint-amnesty, pylint: disable=attribute-defined-outside-init
+            self.user_username = real_user_object.username  # pylint: disable=attribute-defined-outside-init
         except AttributeError:
-            self.user_username = ""  # lint-amnesty, pylint: disable=attribute-defined-outside-init
+            self.user_username = ""  # pylint: disable=attribute-defined-outside-init
 
         if self.ask_to_send_username and self.user_username:
             body["lis_person_sourcedid"] = self.user_username
@@ -740,14 +740,14 @@ oauth_consumer_key="", oauth_signature="frVp4JuvT1mVXlxktiAUjQ7%2F1cw%3D"'}
         # so '='' becomes '%3D'.
         # We send form via browser, so browser will encode it again,
         # So we need to decode signature back:
-        params['oauth_signature'] = parse.unquote(params['oauth_signature']).encode('utf-8').decode('utf8')  # lint-amnesty, pylint: disable=line-too-long
+        params['oauth_signature'] = parse.unquote(params['oauth_signature']).encode('utf-8').decode('utf8')  # pylint: disable=line-too-long
 
         # Add LTI parameters to OAuth parameters for sending in form.
         params.update(body)
         return params
 
     @XBlock.handler
-    def grade_handler(self, request, suffix):  # lint-amnesty, pylint: disable=unused-argument
+    def grade_handler(self, request, suffix):  # pylint: disable=unused-argument
         """
         This is called by courseware.block_render, to handle an AJAX call.
 
@@ -828,9 +828,9 @@ oauth_consumer_key="", oauth_signature="frVp4JuvT1mVXlxktiAUjQ7%2F1cw%3D"'}
 
         try:
             imsx_messageIdentifier, sourcedId, score, action = self.parse_grade_xml_body(request.body)
-        except Exception as e:  # lint-amnesty, pylint: disable=broad-except
+        except Exception as e:  # pylint: disable=broad-except
             error_message = "Request body XML parsing error: " + escape(str(e))
-            log.debug("[LTI]: " + error_message)  # lint-amnesty, pylint: disable=logging-not-lazy
+            log.debug("[LTI]: " + error_message)  # pylint: disable=logging-not-lazy
             failure_values['imsx_description'] = error_message
             return Response(response_xml_template.format(**failure_values), content_type="application/xml")
 
@@ -841,7 +841,7 @@ oauth_consumer_key="", oauth_signature="frVp4JuvT1mVXlxktiAUjQ7%2F1cw%3D"'}
             failure_values['imsx_messageIdentifier'] = escape(imsx_messageIdentifier)
             error_message = "OAuth verification error: " + escape(str(e))
             failure_values['imsx_description'] = error_message
-            log.debug("[LTI]: " + error_message)  # lint-amnesty, pylint: disable=logging-not-lazy
+            log.debug("[LTI]: " + error_message)  # pylint: disable=logging-not-lazy
             return Response(response_xml_template.format(**failure_values), content_type="application/xml")
 
         real_user = self.runtime.service(self, 'user').get_user_by_anonymous_id(parse.unquote(sourcedId.split(':')[-1]))
@@ -887,7 +887,7 @@ oauth_consumer_key="", oauth_signature="frVp4JuvT1mVXlxktiAUjQ7%2F1cw%3D"'}
         imsx_messageIdentifier = root.xpath("//def:imsx_messageIdentifier", namespaces=namespaces)[0].text or ''
         sourcedId = root.xpath("//def:sourcedId", namespaces=namespaces)[0].text
         score = root.xpath("//def:textString", namespaces=namespaces)[0].text
-        action = root.xpath("//def:imsx_POXBody", namespaces=namespaces)[0].getchildren()[0].tag.replace('{' + lti_spec_namespace + '}', '')  # lint-amnesty, pylint: disable=line-too-long
+        action = root.xpath("//def:imsx_POXBody", namespaces=namespaces)[0].getchildren()[0].tag.replace('{' + lti_spec_namespace + '}', '')  # pylint: disable=line-too-long
         # Raise exception if score is not float or not in range 0.0-1.0 regarding spec.
         score = float(score)
         if not 0 <= score <= 1:
@@ -911,7 +911,7 @@ oauth_consumer_key="", oauth_signature="frVp4JuvT1mVXlxktiAUjQ7%2F1cw%3D"'}
             LTIError if request is incorrect.
         """
 
-        client_key, client_secret = self.get_client_key_secret()  # lint-amnesty, pylint: disable=unused-variable
+        client_key, client_secret = self.get_client_key_secret()  # pylint: disable=unused-variable
         headers = {
             'Authorization': str(request.headers.get('Authorization')),
             'Content-Type': content_type,
@@ -971,7 +971,7 @@ oauth_consumer_key="", oauth_signature="frVp4JuvT1mVXlxktiAUjQ7%2F1cw%3D"'}
                 msg = _('Could not parse LTI passport: {lti_passport}. Should be "id:key:secret" string.').format(
                     lti_passport=f'{lti_passport!r}'
                 )
-                raise LTIError(msg)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+                raise LTIError(msg)  # pylint: disable=raise-missing-from  # noqa: B904
 
             if lti_id == self.lti_id.strip():
                 return key, secret

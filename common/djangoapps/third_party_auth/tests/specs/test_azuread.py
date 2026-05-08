@@ -4,7 +4,7 @@
 from common.djangoapps.third_party_auth.tests.specs import base
 
 
-class AzureADOauth2IntegrationTest(base.Oauth2IntegrationTest):  # lint-amnesty, pylint: disable=test-inherits-tests
+class AzureADOauth2IntegrationTest(base.Oauth2IntegrationTest):  # pylint: disable=test-inherits-tests
     """Integration tests for Azure Active Directory / Microsoft Account provider."""
 
     PROVIDER_NAME = "azure"

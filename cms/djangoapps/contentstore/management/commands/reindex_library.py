@@ -8,7 +8,7 @@ from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locator import LibraryLocator
 
 from cms.djangoapps.contentstore.courseware_index import LibrarySearchIndexer
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 
 from .prompt import query_yes_no
 

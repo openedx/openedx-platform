@@ -1,45 +1,50 @@
 {
   extends: [
-    'config:recommended',
-    'schedule:weekly',
-    ':automergeLinters',
-    ':automergeMinor',
-    ':automergeTesters',
-    ':enableVulnerabilityAlerts',
-    ':semanticCommits',
-    ':updateNotScheduled',
+    'config:recommended',  // Renovate base defaults: dependency dashboard, monorepo grouping, sane PR limits
+    'schedule:weekly',     // Only open new PRs once a week
+    ':automergeLinters',   // Automerge linter updates (eslint, prettier, etc.)
+    ':automergeTesters',   // Automerge test runner updates (jest, mocha, etc.)
+    ':enableVulnerabilityAlerts',  // Open security PRs immediately, ignoring the weekly schedule
+    ':semanticCommits',    // Use conventional commit format (fix(deps):, chore(deps):)
+    ':updateNotScheduled', // Allow vulnerability fixes to bypass the weekly schedule
   ],
+
+  // Never auto-rebase PRs; let humans decide when to rebase
+  rebaseWhen: 'never',
+
+  // Wait 3 days after a release before opening a PR, giving time for early bugs and
+  // potentially malicious releases (e.g. supply chain attacks) to be detected
+  minimumReleaseAge: '3 days',
+
+  // Only manage npm dependencies
+  enabledManagers: [
+    'npm',
+  ],
+
+  // Only create PRs during Eastern time (aligns with the weekly schedule)
+  timezone: 'America/New_York',
+
+  // Cap the number of open Renovate PRs at any one time
+  prConcurrentLimit: 3,
+
+  // Packages with known breaking changes or no active maintainer
+  ignoreDeps: [
+    'karma-spec-reporter',
+  ],
+
   packageRules: [
     {
-      matchDepTypes: [
-        'devDependencies',
-      ],
-      matchUpdateTypes: [
-        'lockFileMaintenance',
-        'minor',
-        'patch',
-        'pin',
-      ],
-      automerge: true,
-    },
-    {
-      matchUpdateTypes: [
-        'minor',
-        'patch',
-      ],
-      automerge: true,
+      // Automerge minor and patch updates for @edx and @openedx scoped packages;
+      // these are maintained by the same org so breakage is caught upstream
       matchPackageNames: [
         '/@edx/',
         '/@openedx/',
       ],
+      matchUpdateTypes: [
+        'minor',
+        'patch',
+      ],
+      automerge: true,
     },
-  ],
-  ignoreDeps: [
-    'karma-spec-reporter',
-  ],
-  timezone: 'America/New_York',
-  prConcurrentLimit: 3,
-  enabledManagers: [
-    'npm',
   ],
 }

@@ -339,9 +339,8 @@ SOCIAL_AUTH_CLEAN_USERNAMES = Derived(
 # Social auth pipeline for third-party authentication.
 # Operators can override SOCIAL_AUTH_PIPELINE directly in their settings
 # to customize the pipeline.
-# Note: The enterprise step (handle_enterprise_logistration) is inserted dynamically
-# during app initialization by third_party_auth's AppConfig.ready() if enterprise
-# is enabled. It cannot be included statically because it requires runtime checks.
+# Note: Enterprise pipeline steps (enterprise_associate_by_email, handle_enterprise_logistration)
+# are inserted dynamically via enterprise/settings/common.py plugin_settings().
 SOCIAL_AUTH_PIPELINE = [
     'common.djangoapps.third_party_auth.pipeline.parse_query_params',
     'social_core.pipeline.social_auth.social_details',
@@ -349,7 +348,6 @@ SOCIAL_AUTH_PIPELINE = [
     'social_core.pipeline.social_auth.auth_allowed',
     'social_core.pipeline.social_auth.social_user',
     'common.djangoapps.third_party_auth.pipeline.associate_by_email_if_login_api',
-    'common.djangoapps.third_party_auth.pipeline.associate_by_email_if_saml',
     'common.djangoapps.third_party_auth.pipeline.associate_by_email_if_oauth',
     'common.djangoapps.third_party_auth.pipeline.get_username',
     'common.djangoapps.third_party_auth.pipeline.set_pipeline_timeout',
@@ -2630,8 +2628,33 @@ FINANCIAL_ASSISTANCE_MAX_LENGTH = 2500
 # Note: If you want to use a model to store the results of the form, you will
 # need to add the model's app to the ADDL_INSTALLED_APPS array in your
 # lms.yml file.
+#
+# REGISTRATION_EXTENSION_FORM is deprecated but will continue to work for backward compatibility.
+# Sites using this setting will maintain the old behavior:
+# - Data is stored in UserProfile.meta JSON field
+# - No ability to update extended fields after registration via account settings API
+#
+# To get new capabilities (model-based storage), migrate to PROFILE_EXTENSION_FORM.
+REGISTRATION_EXTENSION_FORM = None  # DEPRECATED: Use PROFILE_EXTENSION_FORM instead
 
-REGISTRATION_EXTENSION_FORM = None
+# PROFILE_EXTENSION_FORM is a Django ModelForm class used for extending user profiles
+# beyond the default fields. This setting enables new capabilities for profile management:
+# - Data is stored in a dedicated model (not just UserProfile.meta)
+# - Users can update their extended profile fields via the account settings API
+#
+# This setting supersedes REGISTRATION_EXTENSION_FORM and provides more accurate naming
+# for profile extension functionality.
+#
+# Example: PROFILE_EXTENSION_FORM = 'myapp.forms.ExtendedProfileForm'
+#
+# The custom form's model should have:
+# - A OneToOneField to User (typically named 'user')
+# - Additional fields for extended profile data
+#
+# MIGRATION NOTE: If you're currently using REGISTRATION_EXTENSION_FORM (deprecated),
+# your custom fields will continue working as before (data in meta field).
+# To get the new capabilities, migrate to PROFILE_EXTENSION_FORM.
+PROFILE_EXTENSION_FORM = None
 
 # Identifier included in the User Agent from Open edX mobile apps.
 MOBILE_APP_USER_AGENT_REGEXES = [

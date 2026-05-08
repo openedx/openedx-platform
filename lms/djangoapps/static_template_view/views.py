@@ -72,9 +72,9 @@ def render(request, template):
         result = render_to_response('static_templates/' + template, context, content_type=content_type)
         return result
     except TopLevelLookupException:
-        raise Http404  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise Http404  # pylint: disable=raise-missing-from  # noqa: B904
     except TemplateDoesNotExist:
-        raise Http404  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise Http404  # pylint: disable=raise-missing-from  # noqa: B904
 
 
 @ensure_csrf_cookie
@@ -91,7 +91,7 @@ def render_press_release(request, slug):
     try:
         resp = render_to_response('static_templates/press_releases/' + template, {})
     except TemplateDoesNotExist:
-        raise Http404  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise Http404  # pylint: disable=raise-missing-from  # noqa: B904
     return resp
 
 
@@ -107,13 +107,13 @@ def render_403(request, exception=None):
 
 
 @fix_crum_request
-def render_404(request, exception=None):  # lint-amnesty, pylint: disable=unused-argument
+def render_404(request, exception=None):  # pylint: disable=unused-argument
     request.view_name = '404'
     return HttpResponseNotFound(render_to_string('static_templates/404.html', {}, request=request))
 
 
 @fix_crum_request
-def render_429(request, exception=None):  # lint-amnesty, pylint: disable=unused-argument
+def render_429(request, exception=None):  # pylint: disable=unused-argument
     """
     Render the rate limit template as an HttpResponse.
     """

@@ -1,4 +1,4 @@
-# lint-amnesty, pylint: disable=missing-module-docstring
+# pylint: disable=missing-module-docstring
 
 import functools
 
@@ -19,7 +19,7 @@ class ScheduleExperienceAdminInline(admin.StackedInline):
     model = models.ScheduleExperience
 
 
-def _set_experience(db_name, human_name, modeladmin, request, queryset):  # lint-amnesty, pylint: disable=redefined-outer-name
+def _set_experience(db_name, human_name, modeladmin, request, queryset):  # pylint: disable=redefined-outer-name
     """
     A django action which will set all selected schedules to the supplied experience.
     The intended usage is with functools.partial to generate the action for each experience type
@@ -120,7 +120,7 @@ class CourseIdFilter(admin.SimpleListFilter):
 
 
 @admin.register(models.Schedule)
-class ScheduleAdmin(admin.ModelAdmin):  # lint-amnesty, pylint: disable=missing-class-docstring
+class ScheduleAdmin(admin.ModelAdmin):  # pylint: disable=missing-class-docstring
     list_display = ('username', 'course_id', 'start_date', 'upgrade_deadline', 'experience_display')
     list_display_links = ('start_date', 'upgrade_deadline', 'experience_display')
     list_filter = (
@@ -164,12 +164,12 @@ class ScheduleAdmin(admin.ModelAdmin):  # lint-amnesty, pylint: disable=missing-
         return qs
 
 
-class ScheduleConfigAdminForm(forms.ModelForm):  # lint-amnesty, pylint: disable=missing-class-docstring
+class ScheduleConfigAdminForm(forms.ModelForm):  # pylint: disable=missing-class-docstring
     pass
 
 
 @admin.register(models.ScheduleConfig)
-class ScheduleConfigAdmin(admin.ModelAdmin):  # lint-amnesty, pylint: disable=missing-class-docstring
+class ScheduleConfigAdmin(admin.ModelAdmin):  # pylint: disable=missing-class-docstring
     search_fields = ('site',)
     list_display = (
         'site',

@@ -1,4 +1,4 @@
-# lint-amnesty, pylint: disable=missing-module-docstring
+# pylint: disable=missing-module-docstring
 
 import datetime
 import json
@@ -7,7 +7,7 @@ import sys
 from textwrap import dedent
 from zoneinfo import ZoneInfo
 
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.core.management.base import BaseCommand
 
 from common.djangoapps.student.models import UserTestGroup
@@ -28,10 +28,10 @@ def group_from_value(groups, v):
         curr_sum = curr_sum + p_value
         if curr_sum > v:
             return group
-    return group  # For round-off errors  # lint-amnesty, pylint: disable=undefined-loop-variable
+    return group  # For round-off errors  # pylint: disable=undefined-loop-variable
 
 
-class Command(BaseCommand):  # lint-amnesty, pylint: disable=missing-class-docstring
+class Command(BaseCommand):  # pylint: disable=missing-class-docstring
     help = dedent("""
         Assign users to test groups. Takes a list of groups:
         a:0.3,b:0.4,c:0.3 file.txt "Testing something"
@@ -54,7 +54,7 @@ class Command(BaseCommand):  # lint-amnesty, pylint: disable=missing-class-docst
         print("Groups", groups)
 
         # Confirm group probabilities add up to 1
-        total = sum(zip(*groups)[1])  # lint-amnesty, pylint: disable=unsubscriptable-object  # noqa: B905
+        total = sum(zip(*groups)[1])  # pylint: disable=unsubscriptable-object  # noqa: B905
         print("Total:", total)
         if abs(total - 1) > 0.01:
             print("Total not 1")
@@ -68,13 +68,13 @@ class Command(BaseCommand):  # lint-amnesty, pylint: disable=missing-class-docst
 
         group_objects = {}
 
-        f = open(options['log_name'], "a+")  # lint-amnesty, pylint: disable=consider-using-with
+        f = open(options['log_name'], "a+")  # pylint: disable=consider-using-with
 
         # Create groups
         for group in dict(groups):
             utg = UserTestGroup()
             utg.name = group
-            utg.description = json.dumps({"description": options['description']},  # lint-amnesty, pylint: disable=too-many-function-args
+            utg.description = json.dumps({"description": options['description']},  # pylint: disable=too-many-function-args
                                          {"time": datetime.datetime.now(ZoneInfo("UTC")).isoformat()})
             group_objects[group] = utg
             group_objects[group].save()

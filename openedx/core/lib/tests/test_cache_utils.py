@@ -18,7 +18,7 @@ class TestRequestCachedDecorator(TestCase):
     """
     Test the request_cached decorator.
     """
-    def setUp(self):  # lint-amnesty, pylint: disable=super-method-not-called
+    def setUp(self):  # pylint: disable=super-method-not-called
         RequestCache.clear_all_namespaces()
 
     def test_request_cached_miss_and_then_hit(self):
@@ -33,7 +33,7 @@ class TestRequestCachedDecorator(TestCase):
             """Simple wrapper to let us decorate our mock."""
             return to_be_wrapped(*args, **kwargs)
 
-        wrapped = request_cached()(mock_wrapper)  # lint-amnesty, pylint: disable=no-value-for-parameter
+        wrapped = request_cached()(mock_wrapper)  # pylint: disable=no-value-for-parameter
         result = wrapped()
         assert result == 42
         assert to_be_wrapped.call_count == 1
@@ -54,7 +54,7 @@ class TestRequestCachedDecorator(TestCase):
             """Simple wrapper to let us decorate our mock."""
             return to_be_wrapped(*args, **kwargs)
 
-        wrapped = request_cached()(mock_wrapper)  # lint-amnesty, pylint: disable=no-value-for-parameter
+        wrapped = request_cached()(mock_wrapper)  # pylint: disable=no-value-for-parameter
         result = wrapped()
         assert result == 1
         assert to_be_wrapped.call_count == 1
@@ -88,7 +88,7 @@ class TestRequestCachedDecorator(TestCase):
             """Simple wrapper to let us decorate our mock."""
             return to_be_wrapped(*args, **kwargs)
 
-        wrapped = request_cached()(mock_wrapper)  # lint-amnesty, pylint: disable=no-value-for-parameter
+        wrapped = request_cached()(mock_wrapper)  # pylint: disable=no-value-for-parameter
 
         # This will be a miss, and make an underlying call.
         result = wrapped(1)
@@ -127,7 +127,7 @@ class TestRequestCachedDecorator(TestCase):
             """Simple wrapper to let us decorate our mock."""
             return to_be_wrapped(*args, **kwargs)
 
-        wrapped = request_cached()(mock_wrapper)  # lint-amnesty, pylint: disable=no-value-for-parameter
+        wrapped = request_cached()(mock_wrapper)  # pylint: disable=no-value-for-parameter
 
         # This will be a miss, and make an underlying call.
         result = wrapped(1, foo=1)
@@ -183,7 +183,7 @@ class TestRequestCachedDecorator(TestCase):
         assert dummy_function('Hello', 'World'), 'Should be callable with ASCII chars'
         assert dummy_function('H∂llå', 'Wørld'), 'Should be callable with non-ASCII chars'
 
-        wrapped = request_cached()(dummy_function)  # lint-amnesty, pylint: disable=no-value-for-parameter
+        wrapped = request_cached()(dummy_function)  # pylint: disable=no-value-for-parameter
 
         assert wrapped('Hello', 'World'), 'Wrapper should handle ASCII only chars'
         assert wrapped('H∂llå', 'Wørld'), 'Wrapper should handle non-ASCII chars'
@@ -202,7 +202,7 @@ class TestRequestCachedDecorator(TestCase):
             """Simple wrapper to let us decorate our mock."""
             return to_be_wrapped(*args, **kwargs)
 
-        wrapped = request_cached()(mock_wrapper)  # lint-amnesty, pylint: disable=no-value-for-parameter
+        wrapped = request_cached()(mock_wrapper)  # pylint: disable=no-value-for-parameter
 
         # This will be a miss, and make an underlying call.
         result = wrapped(1)
@@ -242,7 +242,7 @@ class TestRequestCachedDecorator(TestCase):
             return to_be_wrapped(*args, **kwargs)
 
         request_cache_getter = lambda args, kwargs: RequestCache('test')
-        wrapped = request_cached(request_cache_getter=request_cache_getter)(mock_wrapper)  # lint-amnesty, pylint: disable=no-value-for-parameter
+        wrapped = request_cached(request_cache_getter=request_cache_getter)(mock_wrapper)  # pylint: disable=no-value-for-parameter
 
         # This will be a miss, and make an underlying call.
         result = wrapped(1)
@@ -277,7 +277,7 @@ class TestRequestCachedDecorator(TestCase):
             return to_be_wrapped(*args, **kwargs)
 
         arg_map_function = lambda arg: str(arg == 1)
-        wrapped = request_cached(arg_map_function=arg_map_function)(mock_wrapper)  # lint-amnesty, pylint: disable=no-value-for-parameter
+        wrapped = request_cached(arg_map_function=arg_map_function)(mock_wrapper)  # pylint: disable=no-value-for-parameter
 
         # This will be a miss, and make an underlying call.
         result = wrapped(1)

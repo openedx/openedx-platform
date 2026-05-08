@@ -9,9 +9,8 @@ from zoneinfo import ZoneInfo
 
 import dateutil.parser
 from django.conf import settings
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.utils.timezone import now
-from enterprise.models import EnterpriseCustomerIdentityProvider, EnterpriseCustomerUser
 from lxml import etree
 from onelogin.saml2.utils import OneLogin_Saml2_Utils
 from social_core.pipeline.social_auth import associate_by_email
@@ -27,12 +26,12 @@ SAML_XML_NS = 'urn:oasis:names:tc:SAML:2.0:metadata'  # The SAML Metadata XML na
 
 class MetadataParseError(Exception):
     """ An error occurred while parsing the SAML metadata from an IdP """
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 class SAMLMetadataURLError(Exception):
     """ A SAML metadata URL failed security validation """
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 def validate_saml_metadata_url(url):
@@ -151,7 +150,7 @@ def parse_metadata_xml(xml, entity_id):
         # The only binding supported by python-saml and python-social-auth is HTTP-Redirect:
         sso_url = sso_bindings['urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect']
     except KeyError:
-        raise MetadataParseError("Unable to find SSO URL with HTTP-Redirect binding.")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise MetadataParseError("Unable to find SSO URL with HTTP-Redirect binding.")  # pylint: disable=raise-missing-from  # noqa: B904
     return public_keys, sso_url, expires_at
 
 
@@ -226,14 +225,6 @@ def is_saml_provider(backend, kwargs):
     saml_providers_list = list(provider.Registry.get_enabled_by_backend_name('tpa-saml'))
     return (current_provider and
             current_provider.slug in [saml_provider.slug for saml_provider in saml_providers_list]), current_provider
-
-
-def is_enterprise_customer_user(provider_id, user):
-    """ Verify that the user linked to enterprise customer of current identity provider"""
-    enterprise_idp = EnterpriseCustomerIdentityProvider.objects.get(provider_id=provider_id)
-
-    return EnterpriseCustomerUser.objects.filter(enterprise_customer=enterprise_idp.enterprise_customer,
-                                                 user_id=user.id).exists()
 
 
 def is_oauth_provider(backend_name, **kwargs):

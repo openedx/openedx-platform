@@ -10,9 +10,9 @@ from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, U
 from lms.djangoapps.grades.management.commands import recalculate_learner_grades
 from lms.djangoapps.grades.tests.test_tasks import HasCourseWithProblemsMixin
 from xmodule.modulestore.tests.django_utils import (
-    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+    ModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 DATE_FORMAT = "%Y-%m-%d %H:%M"
 

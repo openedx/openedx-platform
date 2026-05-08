@@ -26,18 +26,18 @@ from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.authz.tests.mixins import CourseAuthzTestMixin
 from openedx.features.content_type_gating.helpers import CONTENT_GATING_PARTITION_ID
 from openedx.features.content_type_gating.partitions import CONTENT_TYPE_GATING_SCHEME
-from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore import ModuleStoreEnum  # pylint: disable=wrong-import-order
 from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE
-from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import (  # pylint: disable=wrong-import-order
     BlockFactory,
     CourseFactory,
 )
-from xmodule.partitions.partitions import (  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.partitions.partitions import (  # pylint: disable=wrong-import-order
     ENROLLMENT_TRACK_PARTITION_ID,
     Group,
     UserPartition,
 )
-from xmodule.validation import (  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.validation import (  # pylint: disable=wrong-import-order
     StudioValidation,
     StudioValidationMessage,
 )
@@ -282,7 +282,7 @@ class GroupConfigurationsListHandlerTestCase(CourseTestCase, GroupConfigurations
 
         # This creates a random UserPartition.
         self.course.user_partitions = [
-            UserPartition(0, 'First name', 'First description', [Group(0, 'Group A'), Group(1, 'Group B'), Group(2, 'Group C')]),  # lint-amnesty, pylint: disable=line-too-long
+            UserPartition(0, 'First name', 'First description', [Group(0, 'Group A'), Group(1, 'Group B'), Group(2, 'Group C')]),  # pylint: disable=line-too-long
         ]
         self.save_course()
 
@@ -881,7 +881,7 @@ class GroupConfigurationsUsageInfoTestCase(CourseTestCase, HelperMethods):
         self.store.update_item(self.course, ModuleStoreEnum.UserID.test)
         self.reload_course()
 
-        __, split_test, problem = self._create_content_experiment(cid=0, name_suffix='0', group_id=3, cid_for_problem=1)  # lint-amnesty, pylint: disable=unused-variable
+        __, split_test, problem = self._create_content_experiment(cid=0, name_suffix='0', group_id=3, cid_for_problem=1)  # pylint: disable=unused-variable
 
         expected = {
             'id': 1,

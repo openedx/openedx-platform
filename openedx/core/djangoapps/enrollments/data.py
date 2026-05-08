@@ -6,7 +6,7 @@ source to be used throughout the API.
 
 import logging
 
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.db import transaction
 from opaque_keys.edx.keys import CourseKey
 
@@ -145,7 +145,7 @@ def create_course_enrollment(username, course_id, mode, is_active, enterprise_uu
     except User.DoesNotExist:
         msg = f"Not user with username '{username}' found."
         log.warning(msg)
-        raise UserNotFoundError(msg)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise UserNotFoundError(msg)  # pylint: disable=raise-missing-from  # noqa: B904
 
     try:
         enrollment = CourseEnrollment.enroll(
@@ -153,14 +153,14 @@ def create_course_enrollment(username, course_id, mode, is_active, enterprise_uu
         )
         return _update_enrollment(enrollment, is_active=is_active, mode=mode)
     except NonExistentCourseError as err:
-        raise CourseNotFoundError(str(err))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise CourseNotFoundError(str(err))  # pylint: disable=raise-missing-from  # noqa: B904
     except EnrollmentClosedError as err:
-        raise CourseEnrollmentClosedError(str(err))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise CourseEnrollmentClosedError(str(err))  # pylint: disable=raise-missing-from  # noqa: B904
     except CourseFullError as err:
-        raise CourseEnrollmentFullError(str(err))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise CourseEnrollmentFullError(str(err))  # pylint: disable=raise-missing-from  # noqa: B904
     except AlreadyEnrolledError as err:
         enrollment = get_course_enrollment(username, course_id)
-        raise CourseEnrollmentExistsError(str(err), enrollment)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise CourseEnrollmentExistsError(str(err), enrollment)  # pylint: disable=raise-missing-from  # noqa: B904
 
 
 def update_course_enrollment(username, course_id, mode=None, is_active=None):
@@ -185,7 +185,7 @@ def update_course_enrollment(username, course_id, mode=None, is_active=None):
     except User.DoesNotExist:
         msg = f"Not user with username '{username}' found."
         log.warning(msg)
-        raise UserNotFoundError(msg)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise UserNotFoundError(msg)  # pylint: disable=raise-missing-from  # noqa: B904
 
     try:
         enrollment = CourseEnrollment.objects.get(user=user, course_id=course_key)
@@ -260,7 +260,7 @@ def unenroll_user_from_all_courses(username):
         for enrollment in enrollments:
             _update_enrollment(enrollment, is_active=False)
 
-    return {str(enrollment.course_id.org) for enrollment in enrollments}  # lint-amnesty, pylint: disable=consider-using-set-comprehension
+    return {str(enrollment.course_id.org) for enrollment in enrollments}  # pylint: disable=consider-using-set-comprehension
 
 
 def _get_user(username):
@@ -276,7 +276,7 @@ def _get_user(username):
     except User.DoesNotExist:
         msg = f"Not user with username '{username}' found."
         log.warning(msg)
-        raise UserNotFoundError(msg)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise UserNotFoundError(msg)  # pylint: disable=raise-missing-from  # noqa: B904
 
 
 def _update_enrollment(enrollment, is_active=None, mode=None):
@@ -340,7 +340,7 @@ def get_course_enrollment_info(course_id, include_expired=False):
     except CourseOverview.DoesNotExist:
         msg = f"Requested enrollment information for unknown course {course_id}"
         log.warning(msg)
-        raise CourseNotFoundError(msg)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise CourseNotFoundError(msg)  # pylint: disable=raise-missing-from  # noqa: B904
     return CourseSerializer(course, include_expired=include_expired).data
 
 

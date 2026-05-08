@@ -1,11 +1,18 @@
 define([
-    'jquery', 'underscore', 'annotator_1.2.9', 'js/edxnotes/views/notes_factory',
+    'jquery', 'underscore', 'sinon', 'annotator_1.2.9', 'js/edxnotes/views/notes_factory',
     'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers', 'js/edxnotes/utils/notes_collector', 'js/spec/edxnotes/helpers'
-], function($, _, Annotator, NotesFactory, AjaxHelpers, NotesCollector, Helpers) {
+], function($, _, sinon, Annotator, NotesFactory, AjaxHelpers, NotesCollector, Helpers) {
     'use strict';
 
     describe('EdxNotes NotesFactory', function() {
+        var requests, xhrFactory;
+
         beforeEach(function() {
+            xhrFactory = sinon.useFakeXMLHttpRequest();
+            requests = [];
+            requests.currentIndex = 0;
+            requests.restore = function() { xhrFactory.restore(); };
+            xhrFactory.onCreate = function(req) { requests.push(req); };
             loadFixtures('js/fixtures/edxnotes/edxnotes_wrapper.html');
             NotesCollector.cleanup();
         });
@@ -14,11 +21,11 @@ define([
             while (Annotator._instances.length > 0) {
                 Annotator._instances[0].destroy();
             }
+            requests.restore();
         });
 
         it('can initialize annotator correctly', function(done) {
-            var requests = AjaxHelpers.requests(this),
-                token = Helpers.makeToken(),
+            var token = Helpers.makeToken(),
                 options = {
                     user: 'a user',
                     usage_id: 'an usage',

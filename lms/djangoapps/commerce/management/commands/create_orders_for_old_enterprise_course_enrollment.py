@@ -286,4 +286,4 @@ class Command(BaseCommand):
 
         except Exception as ex:
             traceback.print_exc()
-            raise CommandError('Command failed with traceback %s' % str(ex))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, UP031
+            raise CommandError('Command failed with traceback %s' % str(ex))  # pylint: disable=raise-missing-from  # noqa: B904, UP031

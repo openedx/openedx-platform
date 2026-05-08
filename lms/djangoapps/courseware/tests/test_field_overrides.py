@@ -133,7 +133,7 @@ class OverrideFieldDataTests(OverrideFieldBase):
 @override_settings(
     MODULESTORE_FIELD_OVERRIDE_PROVIDERS=['lms.djangoapps.courseware.tests.test_field_overrides.TestOverrideProvider']
 )
-class OverrideModulestoreFieldDataTests(FieldOverrideTestMixin, OverrideFieldDataTests):  # lint-amnesty, pylint: disable=missing-class-docstring, test-inherits-tests
+class OverrideModulestoreFieldDataTests(FieldOverrideTestMixin, OverrideFieldDataTests):  # pylint: disable=missing-class-docstring, test-inherits-tests
     def make_one(self):
         return OverrideModulestoreFieldData.wrap(self.course, DictFieldData({
             'foo': 'bar',

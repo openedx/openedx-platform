@@ -18,11 +18,11 @@ from lms.djangoapps.bulk_email.models_api import (
     is_bulk_email_feature_enabled,
 )
 from lms.djangoapps.instructor.toggles import LEGACY_INSTRUCTOR_DASHBOARD
-from xmodule.modulestore.tests.django_utils import (  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (  # pylint: disable=wrong-import-order
     TEST_DATA_MIXED_MODULESTORE,
     SharedModuleStoreTestCase,
 )
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 
 # Tests for legacy views. When DEPR-38432 is picked up, these tests will require the following changes:

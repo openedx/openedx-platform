@@ -44,7 +44,7 @@ class SegmentTrackTestCase(TestCase):
     def test_track_without_tracking_context(self):
         segment.track(sentinel.user_id, sentinel.name, self.properties)
         assert self.mock_segment_track.called
-        args, kwargs = self.mock_segment_track.call_args  # lint-amnesty, pylint: disable=unused-variable
+        args, kwargs = self.mock_segment_track.call_args  # pylint: disable=unused-variable
         expected_segment_context = {}
         assert (sentinel.user_id, sentinel.name, self.properties, expected_segment_context) == args
 
@@ -53,16 +53,16 @@ class SegmentTrackTestCase(TestCase):
         ({'ip': sentinel.ip}, {'ip': sentinel.provided_ip}, {'ip': sentinel.ip}),
         ({'agent': sentinel.agent}, {'userAgent': sentinel.provided_agent}, {'userAgent': sentinel.agent}),
         ({'path': sentinel.path}, {'page': {'path': sentinel.provided_path}}, {'page': {'path': sentinel.path}}),
-        ({'referer': sentinel.referer}, {'page': {'referrer': sentinel.provided_referer}}, {'page': {'referrer': sentinel.referer}}),  # lint-amnesty, pylint: disable=line-too-long
+        ({'referer': sentinel.referer}, {'page': {'referrer': sentinel.provided_referer}}, {'page': {'referrer': sentinel.referer}}),  # pylint: disable=line-too-long
         ({'page': sentinel.page}, {'page': {'url': sentinel.provided_page}}, {'page': {'url': sentinel.page}}),
-        ({'client_id': sentinel.client_id}, {'Google Analytics': {'clientId': sentinel.provided_client_id}}, {'Google Analytics': {'clientId': sentinel.client_id}}),  # lint-amnesty, pylint: disable=line-too-long
+        ({'client_id': sentinel.client_id}, {'Google Analytics': {'clientId': sentinel.provided_client_id}}, {'Google Analytics': {'clientId': sentinel.client_id}}),  # pylint: disable=line-too-long
     )
     @override_settings(LMS_SEGMENT_KEY="testkey")
     def test_track_context_with_stuff(self, tracking_context, provided_context, expected_segment_context):
         # Test first with tracking and no provided context.
         with self.tracker.context('test', tracking_context):
             segment.track(sentinel.user_id, sentinel.name, self.properties)
-        args, kwargs = self.mock_segment_track.call_args  # lint-amnesty, pylint: disable=unused-variable
+        args, kwargs = self.mock_segment_track.call_args  # pylint: disable=unused-variable
         assert (sentinel.user_id, sentinel.name, self.properties, expected_segment_context) == args
 
         # Test with provided context and no tracking context.
@@ -99,7 +99,7 @@ class SegmentTrackTestCase(TestCase):
             segment.track(sentinel.user_id, sentinel.name, self.properties)
 
         assert self.mock_segment_track.called
-        args, kwargs = self.mock_segment_track.call_args  # lint-amnesty, pylint: disable=unused-variable
+        args, kwargs = self.mock_segment_track.call_args  # pylint: disable=unused-variable
 
         expected_segment_context = {
             'ip': sentinel.ip,
@@ -139,7 +139,7 @@ class SegmentIdentifyTestCase(TestCase):
     def test_normal_call(self):
         segment.identify(sentinel.user_id, self.properties)
         assert self.mock_segment_identify.called
-        args, kwargs = self.mock_segment_identify.call_args  # lint-amnesty, pylint: disable=unused-variable
+        args, kwargs = self.mock_segment_identify.call_args  # pylint: disable=unused-variable
         assert (sentinel.user_id, self.properties, {}) == args
 
     @override_settings(LMS_SEGMENT_KEY="testkey")
@@ -147,5 +147,5 @@ class SegmentIdentifyTestCase(TestCase):
         provided_context = {sentinel.context_key: sentinel.context_value}
         segment.identify(sentinel.user_id, self.properties, provided_context)
         assert self.mock_segment_identify.called
-        args, kwargs = self.mock_segment_identify.call_args  # lint-amnesty, pylint: disable=unused-variable
+        args, kwargs = self.mock_segment_identify.call_args  # pylint: disable=unused-variable
         assert (sentinel.user_id, self.properties, provided_context) == args

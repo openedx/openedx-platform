@@ -1,27 +1,35 @@
 define([
+    'sinon',
     'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers',
     'js/student_account/multiple_enterprise',
     'js/student_account/utils'
 ],
-function(AjaxHelpers, MultipleEnterpriseInterface, Utils) {
+function(sinon, AjaxHelpers, MultipleEnterpriseInterface, Utils) {
     'use strict';
 
     describe('MultipleEnterpriseInterface', function() {
         var LEARNER_URL = '/enterprise/api/v1/enterprise-learner/?username=test-learner',
             NEXT_URL = '/dashboard',
             REDIRECT_URL = '/enterprise/select/active/?success_url=%2Fdashboard',
-            ENTERPRISE_ACTIVATION_URL = '/enterprise/select/active';
+            ENTERPRISE_ACTIVATION_URL = '/enterprise/select/active',
+            requests, xhrFactory;
 
         beforeEach(function() {
             // Mock the redirect call
             spyOn(MultipleEnterpriseInterface, 'redirect').and.callFake(function() {});
             spyOn(Utils, 'userFromEdxUserCookie').and.returnValue({username: 'test-learner'});
+            xhrFactory = sinon.useFakeXMLHttpRequest();
+            requests = [];
+            requests.currentIndex = 0;
+            requests.restore = function() { xhrFactory.restore(); };
+            xhrFactory.onCreate = function(req) { requests.push(req); };
+        });
+
+        afterEach(function() {
+            requests.restore();
         });
 
         it('gets learner information and checks redirect to enterprise selection page', function() {
-            // Spy on Ajax requests
-            var requests = AjaxHelpers.requests(this);
-
             // Attempt to fetch a learner
             MultipleEnterpriseInterface.check(NEXT_URL);
 
@@ -41,8 +49,6 @@ function(AjaxHelpers, MultipleEnterpriseInterface, Utils) {
         });
 
         it('checks bypass of enterprise selection page in case of enterprise in URL', function() {
-            // Spy on Ajax requests
-            var requests = AjaxHelpers.requests(this);
             spyOn(MultipleEnterpriseInterface, 'getEnterpriseFromUrl').and.returnValue('SomeEnterprise');
             spyOn(MultipleEnterpriseInterface, 'checkEnterpriseExists').and.returnValue(true);
 
@@ -75,8 +81,6 @@ function(AjaxHelpers, MultipleEnterpriseInterface, Utils) {
         });
 
         it('checks enterprise selection page redirect in case of enterprise activation failure', function() {
-            // Spy on Ajax requests
-            var requests = AjaxHelpers.requests(this);
             spyOn(MultipleEnterpriseInterface, 'getEnterpriseFromUrl').and.returnValue('SomeEnterprise');
             spyOn(MultipleEnterpriseInterface, 'checkEnterpriseExists').and.returnValue(true);
 
@@ -110,9 +114,6 @@ function(AjaxHelpers, MultipleEnterpriseInterface, Utils) {
         });
 
         it('gets learner information and checks that enterprise selection page is bypassed', function() {
-            // Spy on Ajax requests
-            var requests = AjaxHelpers.requests(this);
-
             // Attempt to fetch a learner
             MultipleEnterpriseInterface.check(NEXT_URL);
 
@@ -132,9 +133,6 @@ function(AjaxHelpers, MultipleEnterpriseInterface, Utils) {
         });
 
         it('correctly redirects the user if learner information call fails', function() {
-            // Spy on Ajax requests
-            var requests = AjaxHelpers.requests(this);
-
             // Attempt to fetch a learner
             MultipleEnterpriseInterface.check(NEXT_URL);
 

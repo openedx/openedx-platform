@@ -214,7 +214,7 @@ class ScrapeVideoThumbnailsTestCase(CourseTestCase):
             mocked_responses = []
             for resolution in YOUTUBE_THUMBNAIL_SIZES:
                 mocked_content = resolutions.get(resolution, '')
-                error_response = False if mocked_content else True  # lint-amnesty, pylint: disable=simplifiable-if-expression
+                error_response = False if mocked_content else True  # pylint: disable=simplifiable-if-expression
                 mocked_responses.append(self.mocked_youtube_thumbnail_response(mocked_content, error_response))
             return mocked_responses
 

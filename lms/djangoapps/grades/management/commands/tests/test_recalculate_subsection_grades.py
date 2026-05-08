@@ -16,7 +16,7 @@ from lms.djangoapps.grades.constants import ScoreDatabaseTableEnum
 from lms.djangoapps.grades.management.commands import recalculate_subsection_grades
 from lms.djangoapps.grades.tests.test_tasks import HasCourseWithProblemsMixin
 from xmodule.modulestore.tests.django_utils import (
-    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+    ModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
 
 DATE_FORMAT = "%Y-%m-%d %H:%M"
@@ -62,7 +62,7 @@ class TestRecalculateSubsectionGrades(HasCourseWithProblemsMixin, ModuleStoreTes
         id_mock.return_value.id = "ID"
         self._run_command_and_check_output(task_mock, ScoreDatabaseTableEnum.courseware_student_module)
 
-    def _run_command_and_check_output(self, task_mock, score_db_table, include_anonymous_id=False):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def _run_command_and_check_output(self, task_mock, score_db_table, include_anonymous_id=False):  # pylint: disable=missing-function-docstring
         self.command.handle(modified_start='2016-08-25 16:42', modified_end='2018-08-25 16:44')
         kwargs = {
             "user_id": "ID",

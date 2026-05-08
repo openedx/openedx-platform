@@ -2,7 +2,7 @@
 Table for storing information about whether or not Studio users have course creation privileges.
 """
 
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.db import models
 from django.db.models.signals import post_init, post_save
 from django.dispatch import Signal, receiver
@@ -61,7 +61,7 @@ class CourseCreator(models.Model):
 
 
 @receiver(post_init, sender=CourseCreator)
-def post_init_callback(sender, **kwargs):  # lint-amnesty, pylint: disable=unused-argument
+def post_init_callback(sender, **kwargs):  # pylint: disable=unused-argument
     """
     Extend to store previous state.
     """

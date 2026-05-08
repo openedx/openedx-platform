@@ -9,7 +9,7 @@ from unittest.mock import patch
 import ddt
 import pytest
 from dateutil.parser import parse as parse_datetime
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.test.utils import override_settings
 from django.urls import reverse
 from pytz import common_timezones, utc
@@ -19,11 +19,11 @@ from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangolib.testing.utils import CacheIsolationTestCase, skip_unless_lms
 from openedx.core.lib.time_zone_utils import get_display_time_zone
 from xmodule.modulestore.tests.django_utils import (
-    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+    ModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
-from ...errors import (  # lint-amnesty, pylint: disable=unused-import
+from ...errors import (  # pylint: disable=unused-import
     CountryCodeError,  # noqa: F401
     PreferenceUpdateError,
     PreferenceValidationError,
@@ -438,7 +438,7 @@ def get_expected_validation_developer_message(preference_key, preference_value):
     )
 
 
-def get_expected_key_error_user_message(preference_key, preference_value):  # lint-amnesty, pylint: disable=unused-argument
+def get_expected_key_error_user_message(preference_key, preference_value):  # pylint: disable=unused-argument
     """
     Returns the expected user message for an invalid key.
     """

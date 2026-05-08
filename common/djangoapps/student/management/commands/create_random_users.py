@@ -20,7 +20,7 @@ def random_user_data_generator(num_users):
         }
 
 
-class Command(BaseCommand):  # lint-amnesty, pylint: disable=missing-class-docstring
+class Command(BaseCommand):  # pylint: disable=missing-class-docstring
     help = """Create N new users, with random parameters.
 
 Usage: create_random_users.py N [course_id_to_enroll_in].

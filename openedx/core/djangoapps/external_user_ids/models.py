@@ -5,7 +5,7 @@ Models for External User Ids that are sent out of Open edX
 import uuid as uuid_tools
 from logging import getLogger
 
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.db import models
 from model_utils.models import TimeStampedModel
 from simple_history.models import HistoricalRecords

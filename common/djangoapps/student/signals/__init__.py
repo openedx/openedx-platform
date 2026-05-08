@@ -1,4 +1,4 @@
-# lint-amnesty, pylint: disable=missing-module-docstring
+# pylint: disable=missing-module-docstring
 
 from common.djangoapps.student.signals.signals import (
     ENROLL_STATUS_CHANGE,  # noqa: F401

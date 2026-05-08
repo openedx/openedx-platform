@@ -1,10 +1,10 @@
-# lint-amnesty, pylint: disable=django-not-configured
+# pylint: disable=django-not-configured
 """
 Script to process pytest warnings output by pytest-json-report plugin and output it as a html
 """
 
 import argparse
-import io  # lint-amnesty, pylint: disable=unused-import  # noqa: F401
+import io  # pylint: disable=unused-import  # noqa: F401
 import itertools
 import json
 import os

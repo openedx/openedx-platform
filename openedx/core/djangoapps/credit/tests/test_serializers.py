@@ -56,7 +56,7 @@ class CreditProviderCallbackSerializerTests(TestCase):
 
         serializer = serializers.CreditProviderCallbackSerializer()
         with pytest.raises(PermissionDenied):
-            serializer._check_keys_exist_for_provider(secret_key, provider_id)  # lint-amnesty, pylint: disable=protected-access
+            serializer._check_keys_exist_for_provider(secret_key, provider_id)  # pylint: disable=protected-access
 
     def test_check_keys_exist_for_provider_list_no_keys(self):
         """
@@ -70,7 +70,7 @@ class CreditProviderCallbackSerializerTests(TestCase):
 
         serializer = serializers.CreditProviderCallbackSerializer()
         with pytest.raises(PermissionDenied):
-            serializer._check_keys_exist_for_provider(secret_key, provider_id)  # lint-amnesty, pylint: disable=protected-access
+            serializer._check_keys_exist_for_provider(secret_key, provider_id)  # pylint: disable=protected-access
 
     def test_check_keys_exist_for_provider_list_with_key_present(self):
         """
@@ -82,7 +82,7 @@ class CreditProviderCallbackSerializerTests(TestCase):
         provider_id = 'asu'
 
         serializer = serializers.CreditProviderCallbackSerializer()
-        result = serializer._check_keys_exist_for_provider(secret_key, provider_id)  # lint-amnesty, pylint: disable=assignment-from-no-return, protected-access
+        result = serializer._check_keys_exist_for_provider(secret_key, provider_id)  # pylint: disable=assignment-from-no-return, protected-access
         # No return value, so we expect successful execution to return None
         assert result is None
 
@@ -101,7 +101,7 @@ class CreditProviderCallbackSerializerTests(TestCase):
         )
         with pytest.raises(PermissionDenied):
             # The first arg here is key we have (that doesn't match the sig)
-            serializer._compare_signatures('abcd1234', provider.provider_id)  # lint-amnesty, pylint: disable=protected-access
+            serializer._compare_signatures('abcd1234', provider.provider_id)  # pylint: disable=protected-access
 
     def test_compare_signatures_list_key(self):
         """
@@ -120,7 +120,7 @@ class CreditProviderCallbackSerializerTests(TestCase):
 
         with pytest.raises(PermissionDenied):
             # The first arg here is the list of keys he have (that dont matcht the sig)
-            serializer._compare_signatures(  # lint-amnesty, pylint: disable=protected-access
+            serializer._compare_signatures(  # pylint: disable=protected-access
                 ['abcd1234', 'xyz789'],
                 provider.provider_id
             )

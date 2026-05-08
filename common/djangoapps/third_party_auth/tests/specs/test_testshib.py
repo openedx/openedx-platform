@@ -12,9 +12,7 @@ from urllib.parse import parse_qs, quote, urlparse
 
 import ddt
 import httpretty
-from django.conf import settings
 from django.contrib import auth
-from enterprise.models import EnterpriseCustomerIdentityProvider, EnterpriseCustomerUser
 from freezegun import freeze_time
 from social_core import actions
 from social_django import views as social_views
@@ -25,11 +23,11 @@ from common.djangoapps.third_party_auth import pipeline
 from common.djangoapps.third_party_auth.exceptions import IncorrectConfigurationException
 from common.djangoapps.third_party_auth.saml import SapSuccessFactorsIdentityProvider
 from common.djangoapps.third_party_auth.saml import log as saml_log
+from common.djangoapps.third_party_auth.signals import SAMLAccountDisconnected
 from common.djangoapps.third_party_auth.tasks import fetch_saml_metadata
 from common.djangoapps.third_party_auth.tests import testutil, utils
 from common.test.utils import assert_dict_contains_subset
 from openedx.core.djangoapps.user_authn.views.login import login_user
-from openedx.features.enterprise_support.tests.factories import EnterpriseCustomerFactory
 
 from .base import IntegrationTestMixin
 
@@ -55,17 +53,17 @@ class SamlIntegrationTestUtilities:
     USER_USERNAME = "myself"
 
     def setUp(self):
-        super().setUp()  # lint-amnesty, pylint: disable=no-member, super-with-arguments
-        self.enable_saml(  # lint-amnesty, pylint: disable=no-member
-            private_key=self._get_private_key(),  # lint-amnesty, pylint: disable=no-member
-            public_key=self._get_public_key(),  # lint-amnesty, pylint: disable=no-member
+        super().setUp()  # pylint: disable=no-member, super-with-arguments
+        self.enable_saml(  # pylint: disable=no-member
+            private_key=self._get_private_key(),  # pylint: disable=no-member
+            public_key=self._get_public_key(),  # pylint: disable=no-member
             entity_id="https://saml.example.none",
         )
         # Mock out HTTP requests that may be made to TestShib:
         httpretty.enable()
         httpretty.reset()
-        self.addCleanup(httpretty.reset)  # lint-amnesty, pylint: disable=no-member
-        self.addCleanup(httpretty.disable)  # lint-amnesty, pylint: disable=no-member
+        self.addCleanup(httpretty.reset)  # pylint: disable=no-member
+        self.addCleanup(httpretty.disable)  # pylint: disable=no-member
 
         def metadata_callback(_request, _uri, headers):
             """Return a cached copy of TestShib's metadata by reading it from disk"""
@@ -73,7 +71,7 @@ class SamlIntegrationTestUtilities:
                 200,
                 headers,
                 self.read_data_file("testshib_metadata.xml"),
-            )  # lint-amnesty, pylint: disable=no-member
+            )  # pylint: disable=no-member
 
         httpretty.register_uri(httpretty.GET, TESTSHIB_METADATA_URL, content_type="text/xml", body=metadata_callback)
 
@@ -83,7 +81,7 @@ class SamlIntegrationTestUtilities:
                 200,
                 headers,
                 self.read_data_file("testshib_metadata_with_cache_duration.xml"),
-            )  # lint-amnesty, pylint: disable=no-member
+            )  # pylint: disable=no-member
 
         httpretty.register_uri(
             httpretty.GET,
@@ -96,14 +94,14 @@ class SamlIntegrationTestUtilities:
         # Doing this and freezing the time allows us to play back recorded request/response pairs
         uid_patch = patch("onelogin.saml2.utils.OneLogin_Saml2_Utils.generate_unique_id", return_value="TESTID")
         uid_patch.start()
-        self.addCleanup(uid_patch.stop)  # lint-amnesty, pylint: disable=no-member
+        self.addCleanup(uid_patch.stop)  # pylint: disable=no-member
         self._freeze_time(timestamp=1434326820)  # This is the time when the saved request/response was recorded.
 
     def _freeze_time(self, timestamp):
         """Mock the current time for SAML, so we can replay canned requests/responses"""
         now_patch = patch("onelogin.saml2.utils.OneLogin_Saml2_Utils.now", return_value=timestamp)
         now_patch.start()
-        self.addCleanup(now_patch.stop)  # lint-amnesty, pylint: disable=no-member
+        self.addCleanup(now_patch.stop)  # pylint: disable=no-member
 
     def _configure_testshib_provider(self, **kwargs):
         """Enable and configure the TestShib SAML IdP as a third_party_auth provider"""
@@ -124,21 +122,21 @@ class SamlIntegrationTestUtilities:
         saml_provider = self.configure_saml_provider(**kwargs)  # pylint: disable=no-member
 
         if fetch_metadata:
-            assert httpretty.is_enabled()  # lint-amnesty, pylint: disable=no-member
+            assert httpretty.is_enabled()  # pylint: disable=no-member
             num_total, num_skipped, num_attempted, num_updated, num_failed, failure_messages = fetch_saml_metadata()
             if assert_metadata_updates:
-                assert num_total == 1  # lint-amnesty, pylint: disable=no-member
-                assert num_skipped == 0  # lint-amnesty, pylint: disable=no-member
-                assert num_attempted == 1  # lint-amnesty, pylint: disable=no-member
-                assert num_updated == 1  # lint-amnesty, pylint: disable=no-member
-                assert num_failed == 0  # lint-amnesty, pylint: disable=no-member
-                assert len(failure_messages) == 0  # lint-amnesty, pylint: disable=no-member
+                assert num_total == 1  # pylint: disable=no-member
+                assert num_skipped == 0  # pylint: disable=no-member
+                assert num_attempted == 1  # pylint: disable=no-member
+                assert num_updated == 1  # pylint: disable=no-member
+                assert num_failed == 0  # pylint: disable=no-member
+                assert len(failure_messages) == 0  # pylint: disable=no-member
         return saml_provider
 
     def do_provider_login(self, provider_redirect_url):
         """Mocked: the user logs in to TestShib and then gets redirected back"""
         # The SAML provider (TestShib) will authenticate the user, then get the browser to POST a response:
-        assert provider_redirect_url.startswith(TESTSHIB_SSO_URL)  # lint-amnesty, pylint: disable=no-member
+        assert provider_redirect_url.startswith(TESTSHIB_SSO_URL)  # pylint: disable=no-member
 
         saml_response_xml = utils.read_and_pre_process_xml(
             os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "testshib_saml_response.xml")
@@ -154,8 +152,8 @@ class SamlIntegrationTestUtilities:
         if relay_state:
             data += '&RelayState=' + quote(relay_state)  # Append as string to the URL-encoded data
 
-        return self.client.post(  # lint-amnesty, pylint: disable=no-member
-            self.complete_url,  # lint-amnesty, pylint: disable=no-member
+        return self.client.post(  # pylint: disable=no-member
+            self.complete_url,  # pylint: disable=no-member
             content_type="application/x-www-form-urlencoded",
             data=data,
         )
@@ -220,13 +218,7 @@ class TestShibIntegrationTest(SamlIntegrationTestUtilities, IntegrationTestMixin
         "session_index": "1",
     }
 
-    @patch("openedx.features.enterprise_support.api.enterprise_customer_for_request")
-    @patch("openedx.features.enterprise_support.utils.third_party_auth.provider.Registry.get")
-    def test_full_pipeline_succeeds_for_unlinking_testshib_account(
-        self,
-        mock_auth_provider,
-        mock_enterprise_customer_for_request,
-    ):
+    def test_full_pipeline_succeeds_for_unlinking_testshib_account(self):
 
         # First, create, the request and strategy that store pipeline state,
         # configure the backend, and mock out wire traffic.
@@ -245,30 +237,6 @@ class TestShibIntegrationTest(SamlIntegrationTestUtilities, IntegrationTestMixin
         # We're already logged in, so simulate that the cookie is set correctly
         self.set_logged_in_cookies(request)
 
-        # linking a learner with enterprise customer.
-        enterprise_customer = EnterpriseCustomerFactory()
-        assert EnterpriseCustomerUser.objects.count() == 0, "Precondition check: no link records should exist"
-        EnterpriseCustomerUser.objects.link_user(enterprise_customer, user.email)
-        assert (
-            EnterpriseCustomerUser.objects.filter(enterprise_customer=enterprise_customer, user_id=user.id).count() == 1
-        )
-        EnterpriseCustomerIdentityProvider.objects.get_or_create(
-            enterprise_customer=enterprise_customer, provider_id=self.provider.provider_id
-        )
-
-        enterprise_customer_data = {
-            "uuid": enterprise_customer.uuid,
-            "name": enterprise_customer.name,
-            "identity_provider": "saml-default",
-            "identity_providers": [
-                {
-                    "provider_id": "saml-default",
-                }
-            ],
-        }
-        mock_auth_provider.return_value.backend_name = "tpa-saml"
-        mock_enterprise_customer_for_request.return_value = enterprise_customer_data
-
         # Instrument the pipeline to get to the dashboard with the full expected state.
         self.client.get(pipeline.get_login_url(self.provider.provider_id, pipeline.AUTH_ENTRY_LOGIN))
 
@@ -285,31 +253,30 @@ class TestShibIntegrationTest(SamlIntegrationTestUtilities, IntegrationTestMixin
         # First we expect that we're in the linked state, with a backend entry.
         self.assert_social_auth_exists_for_user(request.user, strategy)
 
-        FEATURES_WITH_ENTERPRISE_ENABLED = settings.FEATURES.copy()
-        FEATURES_WITH_ENTERPRISE_ENABLED["ENABLE_ENTERPRISE_INTEGRATION"] = True
-        with patch.dict("django.conf.settings.FEATURES", FEATURES_WITH_ENTERPRISE_ENABLED):
-            # Fire off the disconnect pipeline without the user information.
-            actions.do_disconnect(
-                request.backend, None, None, redirect_field_name=auth.REDIRECT_FIELD_NAME, request=request
-            )
-            assert (
-                EnterpriseCustomerUser.objects.filter(enterprise_customer=enterprise_customer, user_id=user.id).count()
-                != 0
-            )
+        # Track signal emissions to verify the disconnect signal is sent.
+        signal_calls = []
 
+        def signal_receiver(sender, **kwargs):
+            signal_calls.append(kwargs)
+
+        SAMLAccountDisconnected.connect(signal_receiver)
+        try:
             # Fire off the disconnect pipeline to unlink.
             self.assert_redirect_after_pipeline_completes(
                 actions.do_disconnect(
                     request.backend, user, None, redirect_field_name=auth.REDIRECT_FIELD_NAME, request=request
                 )
             )
-            # Now we expect to be in the unlinked state, with no backend entry.
-            self.assert_third_party_accounts_state(request, linked=False)
-            self.assert_social_auth_does_not_exist_for_user(user, strategy)
-            assert (
-                EnterpriseCustomerUser.objects.filter(enterprise_customer=enterprise_customer, user_id=user.id).count()
-                == 0
-            )
+        finally:
+            SAMLAccountDisconnected.disconnect(signal_receiver)
+
+        # Now we expect to be in the unlinked state, with no backend entry.
+        self.assert_third_party_accounts_state(request, linked=False)
+        self.assert_social_auth_does_not_exist_for_user(user, strategy)
+        # Verify that the SAMLAccountDisconnected signal was emitted.
+        # The actual enterprise user unlinking is handled by edx-enterprise's
+        # signal handler, not by openedx-platform.
+        assert len(signal_calls) == 1, f"Expected 1 signal emission, got {len(signal_calls)}"
 
     def get_response_data(self):
         """Gets dict (string -> object) of merged data about the user."""
@@ -529,7 +496,7 @@ class SuccessFactorsIntegrationTest(SamlIntegrationTestUtilities, IntegrationTes
         Mock an error response when calling the OData API for user details.
         """
 
-        def callback(request, uri, headers):  # lint-amnesty, pylint: disable=unused-argument
+        def callback(request, uri, headers):  # pylint: disable=unused-argument
             """
             Return a 500 error when someone tries to call the URL.
             """

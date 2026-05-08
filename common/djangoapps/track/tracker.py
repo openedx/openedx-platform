@@ -24,7 +24,7 @@ import inspect
 import warnings
 from importlib import import_module
 
-import six  # lint-amnesty, pylint: disable=unused-import  # noqa: F401
+import six  # pylint: disable=unused-import  # noqa: F401
 from django.conf import settings
 
 from common.djangoapps.track.backends import BaseBackend
@@ -67,7 +67,7 @@ def _instantiate_backend_from_name(name, options):
         module_name = '.'.join(parts[:-1])
         class_name = parts[-1]
     except IndexError:
-        raise ValueError('Invalid event track backend %s' % name)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, UP031
+        raise ValueError('Invalid event track backend %s' % name)  # pylint: disable=raise-missing-from  # noqa: B904, UP031
 
     # Get and verify the backend class
 
@@ -77,7 +77,7 @@ def _instantiate_backend_from_name(name, options):
         if not inspect.isclass(cls) or not issubclass(cls, BaseBackend):
             raise TypeError
     except (ValueError, AttributeError, TypeError, ImportError):
-        raise ValueError('Cannot find event track backend %s' % name)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, UP031
+        raise ValueError('Cannot find event track backend %s' % name)  # pylint: disable=raise-missing-from  # noqa: B904, UP031
 
     backend = cls(**options)
 
@@ -92,7 +92,7 @@ def send(event):
     warnings.warn(  # noqa: B028
         'track.tracker module is deprecated. Please use eventtracking to send events.', DeprecationWarning
     )
-    for name, backend in backends.items():  # lint-amnesty, pylint: disable=unused-variable  # noqa: B007
+    for name, backend in backends.items():  # pylint: disable=unused-variable  # noqa: B007
         backend.send(event)
 
 

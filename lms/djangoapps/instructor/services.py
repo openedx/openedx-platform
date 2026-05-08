@@ -17,7 +17,7 @@ from common.djangoapps.student.roles import CourseStaffRole
 from lms.djangoapps.commerce.utils import create_zendesk_ticket
 from lms.djangoapps.courseware.models import StudentModule
 from lms.djangoapps.instructor.tasks import update_exam_completion_task
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 
 log = logging.getLogger(__name__)
 

@@ -55,7 +55,7 @@ from openedx.core.djangoapps.video_config.models import VideoTranscriptEnabledFl
 from openedx.core.djangoapps.video_config.toggles import PUBLIC_VIDEO_SHARE
 from openedx.core.djangoapps.video_pipeline.config.waffle import DEPRECATE_YOUTUBE, ENABLE_DEVSTACK_VIDEO_UPLOADS
 from openedx.core.djangoapps.waffle_utils import CourseWaffleFlag
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 
 from .models import VideoUploadConfig
 from .toggles import use_mock_video_uploads
@@ -69,14 +69,14 @@ LOGGER = logging.getLogger(__name__)
 WAFFLE_NAMESPACE = 'videos'
 
 # Waffle switch for enabling/disabling video image upload feature
-VIDEO_IMAGE_UPLOAD_ENABLED = WaffleSwitch(  # lint-amnesty, pylint: disable=toggle-missing-annotation
+VIDEO_IMAGE_UPLOAD_ENABLED = WaffleSwitch(  # pylint: disable=toggle-missing-annotation
     f'{WAFFLE_NAMESPACE}.video_image_upload_enabled', __name__
 )
 
 # Waffle flag namespace for studio
 WAFFLE_STUDIO_FLAG_NAMESPACE = 'studio'
 
-ENABLE_VIDEO_UPLOAD_PAGINATION = CourseWaffleFlag(  # lint-amnesty, pylint: disable=toggle-missing-annotation
+ENABLE_VIDEO_UPLOAD_PAGINATION = CourseWaffleFlag(  # pylint: disable=toggle-missing-annotation
     f'{WAFFLE_STUDIO_FLAG_NAMESPACE}.enable_video_upload_pagination', __name__
 )
 # Default expiration, in seconds, of one-time URLs used for uploading videos.
@@ -245,7 +245,7 @@ def create_video_zip(course_key_string, files):
     """
     name = course_key_string + '_videos'
     video_folder_zip = NamedTemporaryFile(prefix=name + '_',
-                                          suffix=".zip")  # lint-amnesty, pylint: disable=consider-using-with
+                                          suffix=".zip")  # pylint: disable=consider-using-with
     root_dir = path(mkdtemp())
     video_dir = root_dir + '/' + name
     zip_folder = None
@@ -385,7 +385,7 @@ def validate_transcript_preferences(provider, cielo24_fidelity, cielo24_turnarou
 
     # validate transcription providers
     transcription_plans = get_3rd_party_transcription_plans()
-    if provider in list(transcription_plans.keys()):   # lint-amnesty, pylint: disable=consider-iterating-dictionary
+    if provider in list(transcription_plans.keys()):   # pylint: disable=consider-iterating-dictionary
 
         # Further validations for providers
         if provider == TranscriptProvider.CIELO24:
@@ -964,7 +964,7 @@ def get_course_youtube_edx_video_ids(course_id):
     invalid_key_error_msg = "Invalid course_key: '%s'." % course_id  # noqa: UP031
     unexpected_error_msg = "Unexpected error occurred for course_id: '%s'." % course_id  # noqa: UP031
 
-    try:  # lint-amnesty, pylint: disable=too-many-nested-blocks
+    try:  # pylint: disable=too-many-nested-blocks
         course_key = CourseKey.from_string(course_id)
         course = modulestore().get_course(course_key)
 

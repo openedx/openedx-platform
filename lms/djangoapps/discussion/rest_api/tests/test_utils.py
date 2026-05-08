@@ -35,7 +35,7 @@ class DiscussionAPIUtilsTestCase(ModuleStoreTestCase):
     CREATE_USER = False
 
     def setUp(self):
-        super().setUp()  # lint-amnesty, pylint: disable=super-with-arguments
+        super().setUp()  # pylint: disable=super-with-arguments
 
         self.course = CourseFactory.create()
         self.course.discussion_blackouts = [datetime.now(UTC) - timedelta(days=3),

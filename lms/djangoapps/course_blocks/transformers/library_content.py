@@ -18,8 +18,8 @@ from openedx.core.djangoapps.content.block_structure.transformer import (
     BlockStructureTransformer,
     FilteringTransformerMixin,
 )
-from xmodule.item_bank_block import ItemBankMixin  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.item_bank_block import ItemBankMixin  # pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 
 from ..utils import get_student_module_as_dict
 

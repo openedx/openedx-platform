@@ -82,7 +82,7 @@ def plugin_settings(settings):
     # .. toggle_tickets: https://github.com/openedx/edx-platform/pull/21260
     settings.ENABLE_AUTOMATED_SIGNUPS_EXTRA_FIELDS = False
 
-    # .. toggle_name: FEATURES['CERTIFICATES_INSTRUCTOR_GENERATION']  # lint-amnesty, pylint: disable=annotation-missing-token
+    # .. toggle_name: FEATURES['CERTIFICATES_INSTRUCTOR_GENERATION']  # pylint: disable=annotation-missing-token
     # .. toggle_implementation: DjangoSetting
     # .. toggle_default: False
     # .. toggle_description: Enable to allow batch generation of certificates from the instructor dashboard.
@@ -91,7 +91,7 @@ def plugin_settings(settings):
     # .. toggle_use_cases: opt_in
     settings.CERTIFICATES_INSTRUCTOR_GENERATION = False
 
-    # .. toggle_name: FEATURES['ENABLE_CERTIFICATES_INSTRUCTOR_MANAGE]  # lint-amnesty, pylint: disable=annotation-missing-token
+    # .. toggle_name: FEATURES['ENABLE_CERTIFICATES_INSTRUCTOR_MANAGE]  # pylint: disable=annotation-missing-token
     # .. toggle_implementation: DjangoSetting
     # .. toggle_default: False
     # .. toggle_description: Allow course instructors to manage certificates from the instructor dashboard.

@@ -17,17 +17,17 @@ from django.urls import reverse, reverse_lazy
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.course_modes.tests.factories import CourseModeFactory
 from common.djangoapps.student.models import CourseEnrollment
-from common.djangoapps.student.tests.tests import (  # lint-amnesty, pylint: disable=unused-import
+from common.djangoapps.student.tests.tests import (  # pylint: disable=unused-import
     EnrollmentEventTestMixin,  # noqa: F401
 )
 from openedx.core.djangoapps.embargo.test_utils import restrict_course
 from openedx.core.djangoapps.enrollments.api import get_enrollment
 from openedx.core.lib.django_test_client_utils import get_absolute_url
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 from xmodule.modulestore.tests.django_utils import (
-    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+    ModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 from ....constants import Messages
 from ....tests.mocks import mock_basket_order

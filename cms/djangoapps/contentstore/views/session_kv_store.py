@@ -10,8 +10,8 @@ def stringify(key):
     return repr(tuple(key))
 
 
-class SessionKeyValueStore(KeyValueStore):  # lint-amnesty, pylint: disable=missing-class-docstring
-    def __init__(self, request):  # lint-amnesty, pylint: disable=super-init-not-called
+class SessionKeyValueStore(KeyValueStore):  # pylint: disable=missing-class-docstring
+    def __init__(self, request):  # pylint: disable=super-init-not-called
         self._session = request.session
 
     def get(self, key):

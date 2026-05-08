@@ -52,7 +52,7 @@ from openedx.core.djangoapps.content.course_overviews.api import get_course_over
 from openedx.core.djangoapps.lang_pref.api import get_closest_released_language
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.core.lib.courses import course_image_url, get_course_by_id
-from xmodule.data import CertificatesDisplayBehaviors  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.data import CertificatesDisplayBehaviors  # pylint: disable=wrong-import-order
 
 log = logging.getLogger(__name__)
 _ = translation.gettext

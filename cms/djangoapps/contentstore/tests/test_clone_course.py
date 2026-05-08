@@ -14,10 +14,10 @@ from cms.djangoapps.contentstore.tests.utils import CourseTestCase
 from common.djangoapps.course_action_state.managers import CourseRerunUIStateManager
 from common.djangoapps.course_action_state.models import CourseRerunState
 from common.djangoapps.student.auth import has_course_author_access
-from xmodule.contentstore.content import StaticContent  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.contentstore.django import contentstore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore import EdxJSONEncoder, ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.contentstore.content import StaticContent  # pylint: disable=wrong-import-order
+from xmodule.contentstore.django import contentstore  # pylint: disable=wrong-import-order
+from xmodule.modulestore import EdxJSONEncoder, ModuleStoreEnum  # pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 TEST_DATA_DIR = settings.COMMON_TEST_DATA_ROOT
 
@@ -70,7 +70,7 @@ class CloneCourseTest(CourseTestCase):
         # Get & verify all assets of the course
         assets, count = contentstore().get_all_content_for_course(course.id)
         self.assertEqual(count, 1)  # noqa: PT009
-        self.assertEqual({asset['asset_key'].block_id for asset in assets}, course_assets)  # lint-amnesty, pylint: disable=consider-using-set-comprehension  # noqa: PT009
+        self.assertEqual({asset['asset_key'].block_id for asset in assets}, course_assets)  # pylint: disable=consider-using-set-comprehension  # noqa: PT009
 
         # rerun from split into split
         split_rerun_id = CourseLocator(org=org, course=course_number, run="2012_Q2")
@@ -129,7 +129,7 @@ class CloneCourseTest(CourseTestCase):
         )
 
         # try to hit the generic exception catch
-        with patch('xmodule.modulestore.split_mongo.mongo_connection.MongoPersistenceBackend.insert_course_index', Mock(side_effect=Exception)):  # lint-amnesty, pylint: disable=line-too-long
+        with patch('xmodule.modulestore.split_mongo.mongo_connection.MongoPersistenceBackend.insert_course_index', Mock(side_effect=Exception)):  # pylint: disable=line-too-long
             split_course4_id = CourseLocator(org="edx3", course="split3", run="rerun_fail")
             fields = {'display_name': 'total failure'}
             CourseRerunState.objects.initiated(split_course3_id, split_course4_id, self.user, fields['display_name'])

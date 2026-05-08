@@ -5,9 +5,9 @@ from common.djangoapps.student.tests.factories import UserFactory
 from openedx.features.calendar_sync.api import subscribe_user_to_calendar, unsubscribe_user_to_calendar
 from openedx.features.calendar_sync.models import UserCalendarSyncConfig
 from xmodule.modulestore.tests.django_utils import (
-    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+    SharedModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 TEST_PASSWORD = 'test'
 

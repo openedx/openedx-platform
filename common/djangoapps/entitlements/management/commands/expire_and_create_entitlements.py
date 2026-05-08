@@ -1,4 +1,4 @@
-# lint-amnesty, pylint: disable=django-not-configured
+# pylint: disable=django-not-configured
 """
 Management command for expiring entitlements older than 1 year / 18 months.
 """

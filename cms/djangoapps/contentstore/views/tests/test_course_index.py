@@ -21,10 +21,10 @@ from cms.djangoapps.contentstore.xblock_storage_handlers.view_handlers import Vi
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.authz.tests.mixins import CourseAuthoringAuthzTestMixin
 from openedx.core.djangoapps.waffle_utils.testutils import WAFFLE_TABLES
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.exceptions import ItemNotFoundError  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
+from xmodule.modulestore.exceptions import ItemNotFoundError  # pylint: disable=wrong-import-order
 from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE
-from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import (  # pylint: disable=wrong-import-order
     BlockFactory,
     check_mongo_calls,
 )

@@ -1,7 +1,7 @@
 """
 Encapsulates permissions checks for Course Blocks API
 """
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from opaque_keys.edx.keys import CourseKey
 
 from common.djangoapps.student.models import CourseEnrollment
@@ -11,10 +11,10 @@ from lms.djangoapps.courseware.access_response import AccessResponse
 from lms.djangoapps.courseware.access_utils import ACCESS_DENIED, ACCESS_GRANTED, check_public_access
 from lms.djangoapps.courseware.courses import get_course
 from lms.djangoapps.courseware.exceptions import CourseRunNotFound
-from openedx.core.djangoapps.content.course_overviews.models import (  # lint-amnesty, pylint: disable=unused-import
+from openedx.core.djangoapps.content.course_overviews.models import (  # pylint: disable=unused-import
     CourseOverview,  # noqa: F401
 )
-from xmodule.course_block import COURSE_VISIBILITY_PUBLIC  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.course_block import COURSE_VISIBILITY_PUBLIC  # pylint: disable=wrong-import-order
 
 
 def can_access_all_blocks(requesting_user, course_key):

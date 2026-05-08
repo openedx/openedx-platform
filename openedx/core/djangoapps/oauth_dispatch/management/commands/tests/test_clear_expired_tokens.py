@@ -47,7 +47,7 @@ def create_factory_refresh_token_for_user(user, expires, revoked=None):
 
 @ddt.ddt
 @skip_unless_lms
-class EdxClearExpiredTokensTests(TestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class EdxClearExpiredTokensTests(TestCase):  # pylint: disable=missing-class-docstring
 
     # patching REFRESH_TOKEN_EXPIRE_SECONDS because override_settings not working.
     @patch('oauth2_provider.settings.oauth2_settings.REFRESH_TOKEN_EXPIRE_SECONDS', 'xyz')

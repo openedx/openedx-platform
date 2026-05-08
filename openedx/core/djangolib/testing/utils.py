@@ -214,7 +214,7 @@ class FilteredQueryCountMixin:
     assertNumQueries with one that accepts a ignorelist of tables to filter out
     of the count.
     """
-    def assertNumQueries(self, num, func=None, table_ignorelist=None, *args, **kwargs):  # lint-amnesty, pylint: disable=keyword-arg-before-vararg
+    def assertNumQueries(self, num, func=None, table_ignorelist=None, *args, **kwargs):  # pylint: disable=keyword-arg-before-vararg
         """
         Used to replace Django's assertNumQueries with the same capability, with
         the addition of the following argument:

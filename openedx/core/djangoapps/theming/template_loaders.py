@@ -17,7 +17,7 @@ class ThemeTemplateLoader(MakoLoader):
     _accepts_engine_in_init = True
 
     def __init__(self, *args):
-        MakoLoader.__init__(self, ThemeFilesystemLoader(*args))  # lint-amnesty, pylint: disable=no-value-for-parameter
+        MakoLoader.__init__(self, ThemeFilesystemLoader(*args))  # pylint: disable=no-value-for-parameter
 
 
 class ThemeFilesystemLoader(FilesystemLoader):

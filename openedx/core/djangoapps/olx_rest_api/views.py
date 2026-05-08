@@ -27,7 +27,7 @@ def get_block_olx(request, usage_key_str):
     try:
         usage_key = UsageKey.from_string(usage_key_str)
     except (ValueError, InvalidKeyError):
-        raise ValidationError('Invalid usage key')  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise ValidationError('Invalid usage key')  # pylint: disable=raise-missing-from  # noqa: B904
     if usage_key.block_type in ('course', 'chapter', 'sequential'):
         raise ValidationError('Requested XBlock tree is too large - export verticals or their children only')
     course_key = usage_key.context_key
@@ -91,7 +91,7 @@ def get_block_exportfs_file(request, usage_key_str, path):
     try:
         usage_key = UsageKey.from_string(usage_key_str)
     except (ValueError, InvalidKeyError):
-        raise ValidationError('Invalid usage key')  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise ValidationError('Invalid usage key')  # pylint: disable=raise-missing-from  # noqa: B904
     if usage_key.block_type in ('course', 'chapter', 'sequential'):
         raise ValidationError('Requested XBlock tree is too large - export verticals or their children only')
     course_key = usage_key.context_key

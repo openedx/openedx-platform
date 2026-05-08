@@ -346,6 +346,10 @@ def get_library_container_draft_history(
             # Use the new version when available; fall back to the old version
             # (e.g. for delete records where new_version is None).
             version = record.new_version if record.new_version is not None else record.old_version
+            # old_version is None only for the very first publish (entity had no prior published version)
+            old_version_num = record.old_version.version_num if record.old_version else 0
+            # new_version is None for soft-delete publishes (container deleted without a new draft version)
+            new_version_num = record.new_version.version_num if record.new_version else None
             item_type = get_entity_item_type(record.entity)
             results.append(LibraryHistoryEntry(
                 contributor=_contributor(record.draft_change_log.changed_by),
@@ -353,6 +357,8 @@ def get_library_container_draft_history(
                 title=version.title if version is not None else "",
                 item_type=item_type,
                 action=resolve_change_action(record.old_version, record.new_version),
+                old_version=old_version_num,
+                new_version=new_version_num,
             ))
 
     # Return all entries sorted newest-first across the container and its children.
@@ -576,6 +582,10 @@ def get_library_container_publish_history_entries(
 
         for record in records:
             version = record.new_version if record.new_version is not None else record.old_version
+            # old_version is None only for the very first publish (entity had no prior published version)
+            old_version_num = record.old_version.version_num if record.old_version else 0
+            # new_version is None for soft-delete publishes (component deleted without a new draft version)
+            new_version_num = record.new_version.version_num if record.new_version else None
             item_type = get_entity_item_type(record.entity)
             entries.append(LibraryHistoryEntry(
                 contributor=_contributor(record.draft_change_log.changed_by),
@@ -583,6 +593,8 @@ def get_library_container_publish_history_entries(
                 title=version.title if version is not None else "",
                 item_type=item_type,
                 action=resolve_change_action(record.old_version, record.new_version),
+                old_version=old_version_num,
+                new_version=new_version_num,
             ))
 
     # Return entries sorted newest-first; use title as tiebreaker for determinism.
@@ -619,4 +631,6 @@ def get_library_container_creation_entry(
         title=first_version.title,
         item_type=container.container_type.type_code,
         action="created",
+        old_version=0,
+        new_version=first_version.version_num,
     )

@@ -220,12 +220,18 @@ def get_library_component_draft_history(
     entries = []
     for record in draft_change_records:
         version = record.new_version if record.new_version is not None else record.old_version
+        # old_version is None only for the very first publish (entity had no prior published version)
+        old_version_num = record.old_version.version_num if record.old_version else 0
+        # new_version is None for soft-delete publishes (component deleted without a new draft version)
+        new_version_num = record.new_version.version_num if record.new_version else None
         entries.append(LibraryHistoryEntry(
             contributor=_contributor(record.draft_change_log.changed_by),
             changed_at=record.draft_change_log.changed_at,
             title=version.title if version is not None else "",
             item_type=record.entity.component.component_type.name,
             action=resolve_change_action(record.old_version, record.new_version),
+            old_version=old_version_num,
+            new_version=new_version_num,
         ))
     return entries
 
@@ -351,12 +357,18 @@ def get_library_component_publish_history_entries(
         # Deleted components can't reach this endpoint, so new_version is always set.
         # (Unlike containers — see get_library_container_publish_history_entries.)
         assert record.new_version is not None  # for satisfy the type check
+        # old_version is None only for the very first publish (entity had no prior published version)
+        old_version_num = record.old_version.version_num if record.old_version else 0
+        # new_version is None for soft-delete publishes (component deleted without a new draft version)
+        new_version_num = record.new_version.version_num if record.new_version else None
         entries.append(LibraryHistoryEntry(
             contributor=_contributor(record.draft_change_log.changed_by),
             changed_at=record.draft_change_log.changed_at,
             title=record.new_version.title,
             item_type=record.entity.component.component_type.name,
             action=resolve_change_action(record.old_version, record.new_version),
+            old_version=old_version_num,
+            new_version=new_version_num,
         ))
     return entries
 
@@ -396,6 +408,8 @@ def get_library_component_creation_entry(
         title=first_version.title,
         item_type=component.component_type.name,
         action="created",
+        old_version=0,
+        new_version=first_version.version_num,
     )
 
 

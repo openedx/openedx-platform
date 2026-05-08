@@ -97,7 +97,7 @@ class DeveloperErrorViewMixin:
         elif isinstance(exc, ValidationError):
             return self._make_validation_error_response(exc)
         else:
-            raise  # lint-amnesty, pylint: disable=misplaced-bare-raise
+            raise  # pylint: disable=misplaced-bare-raise
 
 
 class ExpandableFieldViewMixin:
@@ -156,7 +156,7 @@ def add_serializer_errors(serializer, data, field_errors):
         for key, error in errors.items():
             error = clean_errors(error)
             if key == 'bio':
-                user_message = _(f"The about me field must be at most {BIO_MAX_LENGTH} characters long.")  # lint-amnesty, pylint: disable=translation-of-non-string
+                user_message = _(f"The about me field must be at most {BIO_MAX_LENGTH} characters long.")  # pylint: disable=translation-of-non-string
             else:
                 user_message = _("This value is invalid.")
 
@@ -180,7 +180,7 @@ def build_api_error(message, **kwargs):
     """
     return {
         'developer_message': message.format(**kwargs),
-        'user_message': _(message).format(**kwargs),  # lint-amnesty, pylint: disable=translation-of-non-string
+        'user_message': _(message).format(**kwargs),  # pylint: disable=translation-of-non-string
     }
 
 
@@ -291,7 +291,7 @@ class LazySequence(Sequence):
                     self._data.append(next(self.iterable))
                 except StopIteration:
                     self._exhausted = True
-                    raise IndexError("Underlying sequence exhausted")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+                    raise IndexError("Underlying sequence exhausted")  # pylint: disable=raise-missing-from  # noqa: B904
 
             return self._data[index]
         elif isinstance(index, slice):
@@ -347,10 +347,10 @@ class PaginatedAPIView(APIView):
         The paginator instance associated with the view, or `None`.
         """
         if not hasattr(self, '_paginator'):
-            if self.pagination_class is None:  # lint-amnesty, pylint: disable=no-member
+            if self.pagination_class is None:  # pylint: disable=no-member
                 self._paginator = None
             else:
-                self._paginator = self.pagination_class()  # lint-amnesty, pylint: disable=no-member
+                self._paginator = self.pagination_class()  # pylint: disable=no-member
         return self._paginator
 
     def paginate_queryset(self, queryset):

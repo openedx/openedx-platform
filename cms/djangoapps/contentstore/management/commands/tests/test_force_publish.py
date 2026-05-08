@@ -9,12 +9,12 @@ from django.core.management import CommandError, call_command
 
 from cms.djangoapps.contentstore.management.commands.force_publish import Command
 from cms.djangoapps.contentstore.management.commands.utils import get_course_versions
-from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.django_utils import (  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore import ModuleStoreEnum  # pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (  # pylint: disable=wrong-import-order
     ModuleStoreTestCase,
     SharedModuleStoreTestCase,
 )
-from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import (  # pylint: disable=wrong-import-order
     BlockFactory,
     CourseFactory,
 )

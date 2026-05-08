@@ -12,4 +12,4 @@ class OptimizedCachedRequireJsStorage(OptimizedFilesMixin, PipelineForgivingMixi
     """
     Custom storage backend that is used by Django-require.
     """
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass

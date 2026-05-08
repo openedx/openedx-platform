@@ -27,7 +27,7 @@ class UnitPageTestCase(StudioPageTestCase):
         """
         Verify that a public xblock's preview returns the expected HTML.
         """
-        published_video = self.store.publish(self.video.location, self.user.id)  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841
+        published_video = self.store.publish(self.video.location, self.user.id)  # pylint: disable=unused-variable  # noqa: F841
         self.validate_preview_html(self.video, STUDENT_VIEW, in_unit=True, can_add=False)
 
     def test_draft_component_preview_html(self):

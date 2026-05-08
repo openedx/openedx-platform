@@ -2,12 +2,13 @@ define([
     'jquery',
     'underscore',
     'backbone',
+    'sinon',
     'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers',
     'common/js/spec_helpers/template_helpers',
     'js/verify_student/views/review_photos_step_view',
     'js/verify_student/models/verification_model'
 ],
-function($, _, Backbone, AjaxHelpers, TemplateHelpers, ReviewPhotosStepView, VerificationModel) {
+function($, _, Backbone, sinon, AjaxHelpers, TemplateHelpers, ReviewPhotosStepView, VerificationModel) {
     'use strict';
 
     describe('edx.verify_student.ReviewPhotosStepView', function() {
@@ -15,7 +16,8 @@ function($, _, Backbone, AjaxHelpers, TemplateHelpers, ReviewPhotosStepView, Ver
             FULL_NAME = 'Test User',
             FACE_IMAGE = 'abcd1234',
             PHOTO_ID_IMAGE = 'efgh56789',
-            SERVER_ERROR_MSG = 'An error occurred!';
+            SERVER_ERROR_MSG = 'An error occurred!',
+            requests, xhrFactory;
 
         var createView = function() {
             return new ReviewPhotosStepView({
@@ -64,11 +66,18 @@ function($, _, Backbone, AjaxHelpers, TemplateHelpers, ReviewPhotosStepView, Ver
 
             setFixtures('<div id="current-step-container"></div>');
             TemplateHelpers.installTemplate('templates/verify_student/review_photos_step');
+            xhrFactory = sinon.useFakeXMLHttpRequest();
+            requests = [];
+            requests.currentIndex = 0;
+            requests.restore = function() { xhrFactory.restore(); };
+            xhrFactory.onCreate = function(req) { requests.push(req); };
+        });
+
+        afterEach(function() {
+            requests.restore();
         });
 
         it('allows the user to change her full name', function() {
-            var requests = AjaxHelpers.requests(this);
-
             createView();
             setFullName(FULL_NAME);
             submitPhotos(
@@ -83,8 +92,6 @@ function($, _, Backbone, AjaxHelpers, TemplateHelpers, ReviewPhotosStepView, Ver
         });
 
         it('submits photos for verification', function() {
-            var requests = AjaxHelpers.requests(this);
-
             createView();
             submitPhotos(
                 requests,
@@ -101,8 +108,7 @@ function($, _, Backbone, AjaxHelpers, TemplateHelpers, ReviewPhotosStepView, Ver
         });
 
         it('displays an error if photo submission fails', function() {
-            var view = createView(),
-                requests = AjaxHelpers.requests(this);
+            var view = createView();
 
             submitPhotos(
                 requests,

@@ -75,7 +75,7 @@ class CrossStoreXMLRoundtrip(unittest.TestCase):
         """
         Generate timings for different amounts of asset metadata and different modulestores.
         """
-        if CodeBlockTimer is None:  # lint-amnesty, pylint: disable=undefined-variable  # noqa: F821
+        if CodeBlockTimer is None:  # pylint: disable=undefined-variable  # noqa: F821
             pytest.skip("CodeBlockTimer undefined.")
 
         desc = "XMLRoundTrip:{}->{}:{}".format(  # noqa: UP032
@@ -84,9 +84,9 @@ class CrossStoreXMLRoundtrip(unittest.TestCase):
             num_assets
         )
 
-        with CodeBlockTimer(desc):  # lint-amnesty, pylint: disable=undefined-variable  # noqa: F821
+        with CodeBlockTimer(desc):  # pylint: disable=undefined-variable  # noqa: F821
 
-            with CodeBlockTimer("fake_assets"):  # lint-amnesty, pylint: disable=undefined-variable  # noqa: F821
+            with CodeBlockTimer("fake_assets"):  # pylint: disable=undefined-variable  # noqa: F821
                 # First, make the fake asset metadata.
                 make_asset_xml(num_assets, ASSET_XML_PATH)
                 validate_xml(ASSET_XSD_PATH, ASSET_XML_PATH)
@@ -96,7 +96,7 @@ class CrossStoreXMLRoundtrip(unittest.TestCase):
                     source_course_key = source_store.make_course_key('a', 'course', 'course')
                     dest_course_key = dest_store.make_course_key('a', 'course', 'course')
 
-                    with CodeBlockTimer("initial_import"):  # lint-amnesty, pylint: disable=undefined-variable  # noqa: F821
+                    with CodeBlockTimer("initial_import"):  # pylint: disable=undefined-variable  # noqa: F821
                         import_course_from_xml(
                             source_store,
                             'test_user',
@@ -108,7 +108,7 @@ class CrossStoreXMLRoundtrip(unittest.TestCase):
                             raise_on_failure=True,
                         )
 
-                    with CodeBlockTimer("export"):  # lint-amnesty, pylint: disable=undefined-variable  # noqa: F821
+                    with CodeBlockTimer("export"):  # pylint: disable=undefined-variable  # noqa: F821
                         export_course_to_xml(
                             source_store,
                             source_content,
@@ -117,7 +117,7 @@ class CrossStoreXMLRoundtrip(unittest.TestCase):
                             'exported_source_course',
                         )
 
-                    with CodeBlockTimer("second_import"):  # lint-amnesty, pylint: disable=undefined-variable  # noqa: F821
+                    with CodeBlockTimer("second_import"):  # pylint: disable=undefined-variable  # noqa: F821
                         import_course_from_xml(
                             dest_store,
                             'test_user',

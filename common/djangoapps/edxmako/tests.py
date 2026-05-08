@@ -1,4 +1,4 @@
-# lint-amnesty, pylint: disable=cyclic-import, missing-module-docstring
+# pylint: disable=cyclic-import, missing-module-docstring
 
 from unittest.mock import Mock, patch
 
@@ -71,7 +71,7 @@ class ShortcutsTests(UrlResetMixin, TestCase):
                 assert is_any_marketing_link_set(['ABOUT', 'NOT_CONFIGURED'])
                 assert not is_any_marketing_link_set(['NOT_CONFIGURED'])
 
-    def _get_test_url_name(self):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def _get_test_url_name(self):  # pylint: disable=missing-function-docstring
         if settings.ROOT_URLCONF == 'lms.urls':
             # return any lms url name
             return 'dashboard'

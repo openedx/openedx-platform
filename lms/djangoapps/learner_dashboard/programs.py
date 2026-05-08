@@ -10,7 +10,7 @@ from django.contrib.sites.shortcuts import get_current_site
 from django.http import Http404
 from django.template.loader import render_to_string
 from django.utils.translation import get_language, to_locale
-from django.utils.translation import gettext_lazy as _  # lint-amnesty, pylint: disable=unused-import
+from django.utils.translation import gettext_lazy as _  # pylint: disable=unused-import
 from lti_consumer.lti_1p1.contrib.django import lti_embed
 from web_fragments.fragment import Fragment
 
@@ -87,7 +87,7 @@ class ProgramDetailsFragmentView(EdxFragmentView):
         site = get_current_site(request)
         return f'{site.domain}-{program_uuid}'
 
-    def render_to_fragment(self, request, program_uuid, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ
+    def render_to_fragment(self, request, program_uuid, **kwargs):  # pylint: disable=arguments-differ
         """View details about a specific program."""
         programs_config = kwargs.get('programs_config') or ProgramsApiConfig.current()
         user = request.user

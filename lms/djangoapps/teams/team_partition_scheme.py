@@ -13,7 +13,7 @@ from lms.djangoapps.courseware.masquerade import (
 from lms.djangoapps.teams.api import get_teams_in_teamset
 from lms.djangoapps.teams.models import CourseTeamMembership
 from openedx.core.lib.teams_config import CONTENT_GROUPS_FOR_TEAMS
-from xmodule.partitions.partitions import Group, UserPartition  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.partitions.partitions import Group, UserPartition  # pylint: disable=wrong-import-order
 from xmodule.services import TeamsConfigurationService
 
 log = logging.getLogger(__name__)

@@ -5,7 +5,7 @@ import logging
 
 from celery import shared_task
 from celery.utils.log import get_task_logger
-from django.conf import settings  # lint-amnesty, pylint: disable=unused-import  # noqa: F401
+from django.conf import settings  # pylint: disable=unused-import  # noqa: F401
 from django.contrib.auth import get_user_model
 from edx_django_utils.monitoring import set_code_owner_attribute
 
@@ -65,7 +65,7 @@ def expire_old_entitlements(self, start, end, logid='...'):
         # The call above is idempotent, so retry at will
         raise self.retry(exc=exc, countdown=countdown, max_retries=MAX_RETRIES)  # noqa: B904
 
-    LOGGER.info('Successfully completed the task expire_old_entitlements after examining %d entries [%s]', entitlements.count(), logid)  # lint-amnesty, pylint: disable=line-too-long
+    LOGGER.info('Successfully completed the task expire_old_entitlements after examining %d entries [%s]', entitlements.count(), logid)  # pylint: disable=line-too-long
 
 
 @shared_task(bind=True)

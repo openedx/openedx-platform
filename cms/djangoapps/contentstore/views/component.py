@@ -31,8 +31,8 @@ from common.djangoapps.xblock_django.models import XBlockStudioConfigurationFlag
 from openedx.core.djangoapps.content_tagging.api import get_object_tags
 from openedx.core.djangoapps.discussions.models import DiscussionsConfiguration
 from openedx.core.lib.xblock_utils import get_aside_from_xblock, is_xblock_aside
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.exceptions import ItemNotFoundError  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
+from xmodule.modulestore.exceptions import ItemNotFoundError  # pylint: disable=wrong-import-order
 
 __all__ = [
     'container_handler',
@@ -146,7 +146,7 @@ def container_handler(request, usage_key_string):  # pylint: disable=too-many-st
         try:
             usage_key = UsageKey.from_string(usage_key_string)
         except InvalidKeyError:  # Raise Http404 on invalid 'usage_key_string'
-            raise Http404  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise Http404  # pylint: disable=raise-missing-from  # noqa: B904
         with modulestore().bulk_operations(usage_key.course_key):
             try:
                 course, xblock, lms_link, preview_lms_link = _get_item_in_course(request, usage_key)
@@ -194,13 +194,13 @@ def container_embed_handler(request, usage_key_string):  # pylint: disable=too-m
         try:
             course, xblock, lms_link, preview_lms_link = _get_item_in_course(request, usage_key)
         except ItemNotFoundError:
-            raise Http404  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise Http404  # pylint: disable=raise-missing-from  # noqa: B904
 
         container_handler_context = get_container_handler_context(request, usage_key, course, xblock)
         return render_to_response('container_chromeless.html', container_handler_context)
 
 
-def get_component_templates(courselike, library=False):  # lint-amnesty, pylint: disable=too-many-statements
+def get_component_templates(courselike, library=False):  # pylint: disable=too-many-statements
     """
     Returns the applicable component templates that can be used by the specified course or library.
     """
@@ -307,7 +307,7 @@ def get_component_templates(courselike, library=False):  # lint-amnesty, pylint:
     # Content Libraries currently don't allow opting in to unsupported xblocks/problem types.
     allow_unsupported = getattr(courselike, "allow_unsupported_xblocks", False)
 
-    for category in component_types:  # lint-amnesty, pylint: disable=too-many-nested-blocks
+    for category in component_types:  # pylint: disable=too-many-nested-blocks
         authorable_variations = authorable_xblocks(allow_unsupported=allow_unsupported, name=category)
         support_level_without_template = component_support_level(authorable_variations, category)
         templates_for_category = []
@@ -350,7 +350,7 @@ def get_component_templates(courselike, library=False):  # lint-amnesty, pylint:
 
                         templates_for_category.append(
                             create_template_dict(
-                                _(template['metadata'].get('display_name')),  # lint-amnesty, pylint: disable=translation-of-non-string
+                                _(template['metadata'].get('display_name')),  # pylint: disable=translation-of-non-string
                                 category,
                                 support_level_with_template,
                                 template_id,
@@ -580,7 +580,7 @@ def component_handler(request, usage_key_string, handler, suffix=''):
         resp = handler_block.handle(handler, req, suffix)
     except NoSuchHandlerError:
         log.info("XBlock %s attempted to access missing handler %r", handler_block, handler, exc_info=True)
-        raise Http404  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise Http404  # pylint: disable=raise-missing-from  # noqa: B904
 
     # unintentional update to handle any side effects of handle call
     # could potentially be updating actual course data or simply caching its values

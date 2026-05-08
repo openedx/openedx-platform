@@ -52,7 +52,7 @@ class ProfileDistribution:
 
     class ValidationError(ValueError):
         """ Error thrown if validation fails. """
-        pass  # lint-amnesty, pylint: disable=unnecessary-pass
+        pass  # pylint: disable=unnecessary-pass
 
     def __init__(self, feature):
         self.feature = feature
@@ -129,7 +129,7 @@ def profile_distribution(course_id, feature):
             ).count()
 
         distribution = {}
-        for (short, full) in choices:  # lint-amnesty, pylint: disable=unused-variable  # noqa: B007
+        for (short, full) in choices:  # pylint: disable=unused-variable  # noqa: B007
             # handle no data case
             if short == 'no_data':
                 distribution['no_data'] = 0

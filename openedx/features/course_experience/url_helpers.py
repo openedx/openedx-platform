@@ -14,9 +14,9 @@ from django.http.request import QueryDict
 from opaque_keys.edx.keys import CourseKey, UsageKey
 
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
-from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.search import path_to_location  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore import ModuleStoreEnum  # pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
+from xmodule.modulestore.search import path_to_location  # pylint: disable=wrong-import-order
 
 User = get_user_model()
 

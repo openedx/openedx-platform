@@ -12,7 +12,7 @@ from .config.models import GradeReportSetting
 from .models import InstructorTask
 
 
-def mark_tasks_as_failed(modeladmin, request, queryset):  # lint-amnesty, pylint: disable=unused-argument
+def mark_tasks_as_failed(modeladmin, request, queryset):  # pylint: disable=unused-argument
     queryset.update(
         task_state='FAILURE',
         task_output='{}',
@@ -22,7 +22,7 @@ def mark_tasks_as_failed(modeladmin, request, queryset):  # lint-amnesty, pylint
 mark_tasks_as_failed.short_description = "Mark Tasks as Failed"
 
 
-class InstructorTaskAdmin(admin.ModelAdmin):  # lint-amnesty, pylint: disable=missing-class-docstring
+class InstructorTaskAdmin(admin.ModelAdmin):  # pylint: disable=missing-class-docstring
     actions = [mark_tasks_as_failed]
     list_display = [
         'task_id',

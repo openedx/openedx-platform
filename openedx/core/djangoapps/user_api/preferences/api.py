@@ -17,7 +17,7 @@ from common.djangoapps.student.models import User, UserProfile
 from common.djangoapps.track import segment
 from openedx.core.lib.time_zone_utils import get_display_time_zone
 
-from ..errors import (  # lint-amnesty, pylint: disable=unused-import
+from ..errors import (  # pylint: disable=unused-import
     CountryCodeError,  # noqa: F401
     PreferenceUpdateError,
     PreferenceValidationError,
@@ -168,7 +168,7 @@ def update_user_preferences(requesting_user, update, user=None):
                 if serializer_is_dirty(serializer):
                     serializer.save()
             except Exception as error:
-                raise _create_preference_update_error(preference_key, preference_value, error)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+                raise _create_preference_update_error(preference_key, preference_value, error)  # pylint: disable=raise-missing-from  # noqa: B904
         else:
             delete_user_preference(requesting_user, preference_key)
 
@@ -208,7 +208,7 @@ def set_user_preference(requesting_user, preference_key, preference_value, usern
         try:
             serializer.save()
         except Exception as error:
-            raise _create_preference_update_error(preference_key, preference_value, error)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise _create_preference_update_error(preference_key, preference_value, error)  # pylint: disable=raise-missing-from  # noqa: B904
 
 
 @intercept_errors(UserAPIInternalError, ignore_errors=[UserAPIRequestError])
@@ -246,7 +246,7 @@ def delete_user_preference(requesting_user, preference_key, username=None):
     try:
         user_preference.delete()
     except Exception as error:
-        raise PreferenceUpdateError(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise PreferenceUpdateError(  # pylint: disable=raise-missing-from  # noqa: B904
             developer_message="Delete failed for user preference '{preference_key}': {error}".format(  # noqa: UP032
                 preference_key=preference_key, error=error
             ),
@@ -284,7 +284,7 @@ def update_email_opt_in(user, org, opt_in):
     try:
         user_profile = UserProfile.objects.get(user=user)
     except ObjectDoesNotExist:
-        raise UserNotFound()  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise UserNotFound()  # pylint: disable=raise-missing-from  # noqa: B904
     if user_profile.requires_parental_consent(
         age_limit=getattr(settings, 'EMAIL_OPTIN_MINIMUM_AGE', 13),
         default_requires_consent=False,
@@ -344,7 +344,7 @@ def _get_authorized_user(requesting_user, username=None, allow_staff=False):
     try:
         existing_user = User.objects.get(username=username)
     except ObjectDoesNotExist:
-        raise UserNotFound()  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise UserNotFound()  # pylint: disable=raise-missing-from  # noqa: B904
 
     return existing_user
 
@@ -403,7 +403,7 @@ def validate_user_preference_serializer(serializer, preference_key, preference_v
         raise PreferenceValidationError({
             preference_key: {
                 "developer_message": format_string.format(preference_key=preference_key),
-                "user_message": _(format_string).format(preference_key=preference_key)  # lint-amnesty, pylint: disable=translation-of-non-string
+                "user_message": _(format_string).format(preference_key=preference_key)  # pylint: disable=translation-of-non-string
             }
         })
     if not serializer.is_valid():

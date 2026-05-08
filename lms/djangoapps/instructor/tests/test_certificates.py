@@ -27,9 +27,9 @@ from lms.djangoapps.certificates.tests.factories import (
 )
 from lms.djangoapps.instructor.toggles import LEGACY_INSTRUCTOR_DASHBOARD
 from xmodule.modulestore.tests.django_utils import (
-    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+    SharedModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 
 @ddt.ddt

@@ -7,7 +7,7 @@ import math
 import random
 import re
 from urllib.parse import urlparse  # pylint: disable=import-error
-from uuid import uuid4  # lint-amnesty, pylint: disable=unused-import  # noqa: F401
+from uuid import uuid4  # pylint: disable=unused-import  # noqa: F401
 
 from django.conf import settings
 from django.utils import http

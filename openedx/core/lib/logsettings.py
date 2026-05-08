@@ -10,7 +10,7 @@ from logging.handlers import SysLogHandler
 LOG_LEVELS = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
 
 
-def get_logger_config(log_dir,  # lint-amnesty, pylint: disable=unused-argument
+def get_logger_config(log_dir,  # pylint: disable=unused-argument
                       logging_env="no_env",
                       local_loglevel='INFO',
                       service_variant=""):

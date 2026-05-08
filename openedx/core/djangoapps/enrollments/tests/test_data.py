@@ -12,7 +12,7 @@ import pytest
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.course_modes.tests.factories import CourseModeFactory
-from common.djangoapps.student.models import (  # lint-amnesty, pylint: disable=line-too-long
+from common.djangoapps.student.models import (  # pylint: disable=line-too-long
     AlreadyEnrolledError,
     CourseEnrollment,
     CourseFullError,
@@ -31,9 +31,9 @@ from openedx.core.djangoapps.enrollments.serializers import CourseEnrollmentSeri
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 from openedx.core.lib.exceptions import CourseNotFoundError
 from xmodule.modulestore.tests.django_utils import (
-    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+    ModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 
 @ddt.ddt

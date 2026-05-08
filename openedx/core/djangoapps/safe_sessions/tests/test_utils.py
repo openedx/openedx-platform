@@ -1,8 +1,8 @@
 """
 Shared test utilities for Safe Sessions tests
 """
-from contextlib import contextmanager  # lint-amnesty, pylint: disable=wrong-import-order
-from unittest.mock import patch  # lint-amnesty, pylint: disable=wrong-import-order
+from contextlib import contextmanager  # pylint: disable=wrong-import-order
+from unittest.mock import patch  # pylint: disable=wrong-import-order
 
 import pytest
 

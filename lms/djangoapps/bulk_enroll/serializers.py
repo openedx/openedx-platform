@@ -10,7 +10,7 @@ from rest_framework import serializers
 from openedx.core.djangoapps.course_groups.cohorts import is_cohort_exists
 
 
-class StringListField(serializers.ListField):  # lint-amnesty, pylint: disable=missing-class-docstring
+class StringListField(serializers.ListField):  # pylint: disable=missing-class-docstring
     def to_internal_value(self, data):
         if not data:
             return []
@@ -19,7 +19,7 @@ class StringListField(serializers.ListField):  # lint-amnesty, pylint: disable=m
         return data.split(',')
 
 
-class BulkEnrollmentSerializer(serializers.Serializer):  # lint-amnesty, pylint: disable=abstract-method
+class BulkEnrollmentSerializer(serializers.Serializer):  # pylint: disable=abstract-method
     """Serializes enrollment information for a collection of students/emails.
 
     This is mainly useful for implementing validation when performing bulk enrollment operations.
@@ -46,7 +46,7 @@ class BulkEnrollmentSerializer(serializers.Serializer):  # lint-amnesty, pylint:
             try:
                 CourseKey.from_string(course)
             except InvalidKeyError:
-                raise serializers.ValidationError(f"Course key not valid: {course}")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+                raise serializers.ValidationError(f"Course key not valid: {course}")  # pylint: disable=raise-missing-from  # noqa: B904
         return value
 
     def validate(self, attrs):

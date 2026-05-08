@@ -321,12 +321,12 @@ class EnsureUserInformationTestCase(TestCase):
         based on the provider's setting for send_to_registration_first.
         """
 
-        provider = mock.MagicMock(  # lint-amnesty, pylint: disable=redefined-outer-name
+        provider = mock.MagicMock(  # pylint: disable=redefined-outer-name
             send_to_registration_first=send_to_registration_first,
             skip_email_verification=False
         )
 
-        with mock.patch('common.djangoapps.third_party_auth.pipeline.provider.Registry.get_from_pipeline') as get_from_pipeline:  # lint-amnesty, pylint: disable=line-too-long
+        with mock.patch('common.djangoapps.third_party_auth.pipeline.provider.Registry.get_from_pipeline') as get_from_pipeline:  # pylint: disable=line-too-long
             get_from_pipeline.return_value = provider
             with mock.patch('social_core.pipeline.partial.partial_prepare') as partial_prepare:
                 partial_prepare.return_value = mock.MagicMock(token='')
@@ -359,7 +359,7 @@ class EnsureUserInformationTestCase(TestCase):
             send_to_registration_first=True,
             skip_email_verification=False
         )
-        with mock.patch('common.djangoapps.third_party_auth.pipeline.provider.Registry.get_from_pipeline') as get_from_pipeline:  # lint-amnesty, pylint: disable=line-too-long
+        with mock.patch('common.djangoapps.third_party_auth.pipeline.provider.Registry.get_from_pipeline') as get_from_pipeline:  # pylint: disable=line-too-long
             get_from_pipeline.return_value = saml_provider
             with mock.patch(
                 'common.djangoapps.third_party_auth.pipeline.provider.Registry.get_enabled_by_backend_name'
@@ -400,7 +400,7 @@ class UserDetailsForceSyncTestCase(TestCase):
         self.strategy = mock.MagicMock()
         self.strategy.storage.user.changed.side_effect = lambda user: user.save()
 
-        get_from_pipeline = mock.patch('common.djangoapps.third_party_auth.pipeline.provider.Registry.get_from_pipeline')  # lint-amnesty, pylint: disable=line-too-long
+        get_from_pipeline = mock.patch('common.djangoapps.third_party_auth.pipeline.provider.Registry.get_from_pipeline')  # pylint: disable=line-too-long
         self.get_from_pipeline = get_from_pipeline.start()
         self.get_from_pipeline.return_value = mock.MagicMock(sync_learner_profile_data=True)
         self.addCleanup(get_from_pipeline.stop)
@@ -497,7 +497,7 @@ class SetIDVerificationStatusTestCase(TestCase):
         self.strategy = mock.MagicMock()
         self.strategy.storage.user.changed.side_effect = lambda user: user.save()
 
-        get_from_pipeline = mock.patch('common.djangoapps.third_party_auth.pipeline.provider.Registry.get_from_pipeline')  # lint-amnesty, pylint: disable=line-too-long
+        get_from_pipeline = mock.patch('common.djangoapps.third_party_auth.pipeline.provider.Registry.get_from_pipeline')  # pylint: disable=line-too-long
         self.get_from_pipeline = get_from_pipeline.start()
         self.get_from_pipeline.return_value = mock.MagicMock(
             enable_sso_id_verification=True,
@@ -561,7 +561,7 @@ class SetIDVerificationStatusTestCase(TestCase):
             identity_provider_slug=self.provider_slug,
         )
 
-        with mock.patch('common.djangoapps.third_party_auth.pipeline.earliest_allowed_verification_date') as earliest_date:  # lint-amnesty, pylint: disable=line-too-long
+        with mock.patch('common.djangoapps.third_party_auth.pipeline.earliest_allowed_verification_date') as earliest_date:  # pylint: disable=line-too-long
             earliest_date.return_value = datetime.datetime.now(ZoneInfo("UTC")) + datetime.timedelta(days=1)
             # Begin the pipeline.
             pipeline.set_id_verification_status(

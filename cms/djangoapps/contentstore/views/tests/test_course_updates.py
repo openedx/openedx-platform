@@ -14,10 +14,10 @@ from cms.djangoapps.contentstore.utils import reverse_course_url, reverse_usage_
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.authz.tests.mixins import CourseAuthzTestMixin
 from openedx.core.lib.xblock_utils import get_course_update_items
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 
 
-class CourseUpdateTest(CourseTestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class CourseUpdateTest(CourseTestCase):  # pylint: disable=missing-class-docstring
 
     def create_update_url(self, provided_id=None, course_key=None):
         if course_key is None:
@@ -42,7 +42,7 @@ class CourseUpdateTest(CourseTestCase):  # lint-amnesty, pylint: disable=missing
 
             return json.loads(resp.content.decode('utf-8'))
 
-        init_content = '<iframe width="560" height="315" src="http://www.youtube.com/embed/RocY-Jd93XU" frameborder="0">'  # lint-amnesty, pylint: disable=line-too-long
+        init_content = '<iframe width="560" height="315" src="http://www.youtube.com/embed/RocY-Jd93XU" frameborder="0">'  # pylint: disable=line-too-long
         content = init_content + '</iframe>'
         payload = get_response(content, 'January 8, 2013')
         self.assertHTMLEqual(payload['content'], content)
@@ -220,7 +220,7 @@ class CourseUpdateTest(CourseTestCase):  # lint-amnesty, pylint: disable=missing
         course_updates.data = 'bad news'
         modulestore().update_item(course_updates, self.user.id)
 
-        init_content = '<iframe width="560" height="315" src="http://www.youtube.com/embed/RocY-Jd93XU" frameborder="0">'  # lint-amnesty, pylint: disable=line-too-long
+        init_content = '<iframe width="560" height="315" src="http://www.youtube.com/embed/RocY-Jd93XU" frameborder="0">'  # pylint: disable=line-too-long
         content = init_content + '</iframe>'
         payload = {'content': content, 'date': 'January 8, 2013'}
 

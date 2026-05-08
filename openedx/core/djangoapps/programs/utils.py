@@ -690,7 +690,7 @@ class ProgramDataExtender:
 
         return courses_without_enrollments
 
-    def _collect_one_click_purchase_eligibility_data(self):  # lint-amnesty, pylint: disable=too-many-statements
+    def _collect_one_click_purchase_eligibility_data(self):  # pylint: disable=too-many-statements
         """
         Extend the program data with data about learner's eligibility for one click purchase,
         discount data of the program and SKUs of seats that should be added to basket.
@@ -705,7 +705,7 @@ class ProgramDataExtender:
         course_keys = []
         bundle_variant = "full"
 
-        if is_learner_eligible_for_one_click_purchase:  # lint-amnesty, pylint: disable=too-many-nested-blocks
+        if is_learner_eligible_for_one_click_purchase:  # pylint: disable=too-many-nested-blocks
             courses = self.data["courses"]
             if not self.user.is_anonymous:
                 courses = self._filter_out_courses_with_enrollments(courses)
@@ -923,7 +923,7 @@ class ProgramMarketingDataExtender(ProgramDataExtender):
         pages. The certificate URL is not needed when rendering
         the program marketing page.
         """
-        pass  # lint-amnesty, pylint: disable=unnecessary-pass
+        pass  # pylint: disable=unnecessary-pass
 
     def _attach_course_run_upgrade_url(self, run_mode):
         if not self.user.is_anonymous:
@@ -962,7 +962,7 @@ class ProgramMarketingDataExtender(ProgramDataExtender):
 
 def is_user_enrolled_in_program_type(
     user, program_type_slug, paid_modes_only=False, enrollments=None, entitlements=None
-):  # lint-amnesty, pylint: disable=line-too-long
+):  # pylint: disable=line-too-long
     """
     This method will look at the learners Enrollments and Entitlements to determine
     if a learner is enrolled in a Program of the given type.

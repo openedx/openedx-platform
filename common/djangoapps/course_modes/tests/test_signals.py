@@ -12,16 +12,16 @@ from django.conf import settings
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.course_modes.signals import _listen_for_course_publish
-from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore import ModuleStoreEnum  # pylint: disable=wrong-import-order
 from xmodule.modulestore.tests.django_utils import (
-    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+    ModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
-from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import (  # pylint: disable=wrong-import-order
     BlockFactory,
     CourseFactory,
 )
 from xmodule.partitions.partitions import (
-    ENROLLMENT_TRACK_PARTITION_ID,  # lint-amnesty, pylint: disable=wrong-import-order
+    ENROLLMENT_TRACK_PARTITION_ID,  # pylint: disable=wrong-import-order
 )
 
 

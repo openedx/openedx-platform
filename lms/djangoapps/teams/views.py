@@ -7,7 +7,7 @@ import logging
 from collections import Counter
 
 from django.conf import settings
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.core.exceptions import PermissionDenied
 from django.db.models.signals import post_save
 from django.dispatch import receiver
@@ -43,7 +43,7 @@ from openedx.core.lib.api.view_utils import (
     build_api_error,
 )
 from openedx.core.lib.teams_config import TeamsetType
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 
 from . import is_feature_enabled
 from .api import (
@@ -1329,7 +1329,7 @@ class MembershipListView(ExpandableFieldViewMixin, GenericAPIView):
     permission_classes = (permissions.IsAuthenticated,)
     serializer_class = MembershipSerializer
 
-    def get(self, request):  # lint-amnesty, pylint: disable=too-many-statements
+    def get(self, request):  # pylint: disable=too-many-statements
         """GET /api/team/v0/team_membership"""
         specified_username_or_team = False
         username = None
@@ -1594,14 +1594,14 @@ class MembershipDetailView(ExpandableFieldViewMixin, GenericAPIView):
         try:
             return CourseTeam.objects.get(team_id=team_id)
         except CourseTeam.DoesNotExist:
-            raise Http404  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise Http404  # pylint: disable=raise-missing-from  # noqa: B904
 
     def get_membership(self, username, team):
         """Returns the membership for the given user and team, or throws Http404 if it does not exist."""
         try:
             return CourseTeamMembership.objects.get(user__username=username, team=team)
         except CourseTeamMembership.DoesNotExist:
-            raise Http404  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise Http404  # pylint: disable=raise-missing-from  # noqa: B904
 
     def get(self, request, team_id, username):
         """GET /api/team/v0/team_membership/{team_id},{username}"""
@@ -1711,7 +1711,7 @@ class MembershipBulkManagementView(GenericAPIView):
         try:
             course_id = CourseKey.from_string(course_id_string)
         except InvalidKeyError:
-            raise Http404(f'Invalid course key: {course_id_string}')  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise Http404(f'Invalid course key: {course_id_string}')  # pylint: disable=raise-missing-from  # noqa: B904
         course_block = modulestore().get_course(course_id)
         if not course_block:
             raise Http404(f'Course not found: {course_id}')

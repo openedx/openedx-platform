@@ -13,9 +13,9 @@ from common.djangoapps.student.models import EVENT_NAME_ENROLLMENT_MODE_CHANGED,
 from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from xmodule.modulestore.tests.django_utils import (
-    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+    SharedModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 
 @ddt.ddt

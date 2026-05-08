@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import logging
 from collections import namedtuple
-from enum import Enum  # lint-amnesty, pylint: disable=wrong-import-order
+from enum import Enum  # pylint: disable=wrong-import-order
 from typing import List, Type, TypeVar  # noqa: UP035
 
 from django.conf import settings

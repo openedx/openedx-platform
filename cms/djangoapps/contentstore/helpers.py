@@ -230,7 +230,7 @@ def xblock_type_display_name(xblock, default_display_name=None):
         return _('Problem Bank')
     component_class = XBlock.load_class(category)
     if hasattr(component_class, 'display_name') and component_class.display_name.default:
-        return _(component_class.display_name.default)  # lint-amnesty, pylint: disable=translation-of-non-string
+        return _(component_class.display_name.default)  # pylint: disable=translation-of-non-string
     else:
         return default_display_name
 
@@ -701,7 +701,7 @@ def _import_files_into_course(
                 pass  # This file already exists; no action needed.
             else:
                 conflicting_files.append(file_data_obj.filename)
-        except Exception:  # lint-amnesty, pylint: disable=broad-except
+        except Exception:  # pylint: disable=broad-except
             error_files.append(file_data_obj.filename)
             log.exception(f"Failed to import Files & Uploads file {file_data_obj.filename}")
 

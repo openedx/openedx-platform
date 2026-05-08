@@ -11,7 +11,7 @@ from datetime import datetime
 
 import pytz
 from django.conf import settings
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils.translation import override as override_language
@@ -22,7 +22,7 @@ from submissions import api as sub_api  # installed from the edx-submissions rep
 from submissions.models import score_reset, score_set
 
 from common.djangoapps.course_modes.models import CourseMode
-from common.djangoapps.student.models import (  # lint-amnesty, pylint: disable=line-too-long
+from common.djangoapps.student.models import (  # pylint: disable=line-too-long
     CourseEnrollment,
     CourseEnrollmentAllowed,
     anonymous_id_for_user,
@@ -51,8 +51,8 @@ from lms.djangoapps.instructor.message_types import (
 from openedx.core.djangoapps.lang_pref import LANGUAGE_KEY
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.core.djangoapps.user_api.models import UserPreference
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.exceptions import ItemNotFoundError  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
+from xmodule.modulestore.exceptions import ItemNotFoundError  # pylint: disable=wrong-import-order
 
 log = logging.getLogger(__name__)
 

@@ -12,7 +12,7 @@ from uuid import UUID, uuid4
 
 import ddt
 from django.conf import settings
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.db.models import signals
 from django.http import HttpResponse
 from django.test.utils import override_settings
@@ -1022,7 +1022,7 @@ class ProgramEnrollmentsInspectorViewTests(SupportViewTestCase):
                     )
 
                 program_course_enrollment = ProgramCourseEnrollmentFactory.create(  # noqa: F841
-                    # lint-amnesty, pylint: disable=unused-variable
+                    # pylint: disable=unused-variable
                     program_enrollment=program_enrollment,
                     course_key=course_id,
                     course_enrollment=course_enrollment,
@@ -1375,7 +1375,7 @@ class ProgramEnrollmentsInspectorAPIViewTests(SupportViewTestCase):
                     )
 
                 program_course_enrollment = ProgramCourseEnrollmentFactory.create(  # noqa: F841
-                    # lint-amnesty, pylint: disable=unused-variable
+                    # pylint: disable=unused-variable
                     program_enrollment=program_enrollment,
                     course_key=course_id,
                     course_enrollment=course_enrollment,
@@ -1571,7 +1571,7 @@ class ProgramEnrollmentsInspectorAPIViewTests(SupportViewTestCase):
         assert expected_info == response['learner_program_enrollments']
 
 
-class SsoRecordsTests(SupportViewTestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class SsoRecordsTests(SupportViewTestCase):  # pylint: disable=missing-class-docstring
 
     def setUp(self):
         """Make the user support staff"""
@@ -1603,7 +1603,7 @@ class SsoRecordsTests(SupportViewTestCase):  # lint-amnesty, pylint: disable=mis
         assert len(data) == 0
 
     def test_response(self):
-        user_social_auth = UserSocialAuth.objects.create(  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841
+        user_social_auth = UserSocialAuth.objects.create(  # pylint: disable=unused-variable  # noqa: F841
             user=self.student,
             uid=self.student.email,
             provider='tpa-saml'
@@ -1616,7 +1616,7 @@ class SsoRecordsTests(SupportViewTestCase):  # lint-amnesty, pylint: disable=mis
 
     def test_history_response(self):
         '''Tests changes in SSO history for a user'''
-        user_social_auth = UserSocialAuth.objects.create(  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841
+        user_social_auth = UserSocialAuth.objects.create(  # pylint: disable=unused-variable  # noqa: F841
             user=self.student,
             uid=self.student.email,
             provider='tpa-saml'
@@ -1927,7 +1927,7 @@ class TestOnboardingView(SupportViewTestCase, ProctoredExamTestCase):
 
         self.onboarding_exam = ProctoredExam.objects.get(id=self.onboarding_exam_id)
 
-    def tearDown(self):  # lint-amnesty, pylint: disable=super-method-not-called
+    def tearDown(self):  # pylint: disable=super-method-not-called
         """
         Override deafult implementation to prevent `default` key deletion from TRACKERS in
         an inherited tearDown() method of ProctoredExamTestCase

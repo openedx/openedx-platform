@@ -13,7 +13,7 @@ from common.djangoapps.util.milestones_helpers import add_prerequisite_course, f
 from lms.djangoapps.courseware.access_response import MilestoneAccessError
 from lms.djangoapps.courseware.tests.test_entrance_exam import add_entrance_exam_milestone, answer_entrance_exam_problem
 from openedx.core.djangolib.testing.utils import get_mock_request
-from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import (  # pylint: disable=wrong-import-order
     BlockFactory,
     CourseFactory,
 )

@@ -227,7 +227,7 @@ class LibraryRootView(GenericAPIView):
         try:
             ensure_organization(org_name)
         except InvalidOrganizationException:
-            raise ValidationError(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise ValidationError(  # pylint: disable=raise-missing-from  # noqa: B904
                 detail={"org": f"No such organization '{org_name}' found."}
             )
         # Ensure the user is allowed to create libraries under this org
@@ -235,7 +235,7 @@ class LibraryRootView(GenericAPIView):
             user_can_create_organizations(request.user) or
             org_name in get_allowed_organizations_for_libraries(request.user)
         ):
-            raise ValidationError(  # lint-amnesty, pylint: disable=raise-missing-from
+            raise ValidationError(  # pylint: disable=raise-missing-from
                 detail={"org": f"User not allowed to create libraries in '{org_name}'."}
             )
         org = Organization.objects.get(short_name=org_name)
@@ -252,7 +252,7 @@ class LibraryRootView(GenericAPIView):
                 # users can then manage roles for others.
                 api.assign_library_role_to_user(result.key, request.user, api.AccessLevel.ADMIN_LEVEL)
         except api.LibraryAlreadyExists:
-            raise ValidationError(detail={"slug": "A library with that ID already exists."})  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise ValidationError(detail={"slug": "A library with that ID already exists."})  # pylint: disable=raise-missing-from  # noqa: B904
 
         return Response(ContentLibraryMetadataSerializer(result).data)
 
@@ -290,7 +290,7 @@ class LibraryDetailsView(APIView):
         try:
             api.update_library(key, **data)
         except api.IncompatibleTypesError as err:
-            raise ValidationError({'type': str(err)})  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise ValidationError({'type': str(err)})  # pylint: disable=raise-missing-from  # noqa: B904
         result = api.get_library(key)
         return Response(ContentLibraryMetadataSerializer(result).data)
 
@@ -336,7 +336,7 @@ class LibraryTeamView(APIView):
         try:
             user = User.objects.get(email=serializer.validated_data.get('email'))
         except User.DoesNotExist:
-            raise ValidationError({'email': _('We could not find a user with that email address.')})  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise ValidationError({'email': _('We could not find a user with that email address.')})  # pylint: disable=raise-missing-from  # noqa: B904
         grant = api.get_library_user_permissions(key, user)
         if grant:
             return Response(
@@ -346,7 +346,7 @@ class LibraryTeamView(APIView):
         try:
             api.set_library_user_permissions(key, user, access_level=serializer.validated_data["access_level"])
         except api.LibraryPermissionIntegrityError as err:
-            raise ValidationError(detail=str(err))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise ValidationError(detail=str(err))  # pylint: disable=raise-missing-from  # noqa: B904
         grant = api.get_library_user_permissions(key, user)
         return Response(ContentLibraryPermissionSerializer(grant).data)
 
@@ -397,7 +397,7 @@ class LibraryTeamUserView(APIView):
         try:
             api.set_library_user_permissions(key, user, access_level=serializer.validated_data["access_level"])
         except api.LibraryPermissionIntegrityError as err:
-            raise ValidationError(detail=str(err))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise ValidationError(detail=str(err))  # pylint: disable=raise-missing-from  # noqa: B904
         grant = api.get_library_user_permissions(key, user)
         return Response(ContentLibraryPermissionSerializer(grant).data)
 
@@ -438,7 +438,7 @@ class LibraryTeamUserView(APIView):
         try:
             api.set_library_user_permissions(key, user, access_level=None)
         except api.LibraryPermissionIntegrityError as err:
-            raise ValidationError(detail=str(err))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise ValidationError(detail=str(err))  # pylint: disable=raise-missing-from  # noqa: B904
         return Response({})
 
 
@@ -627,7 +627,7 @@ class LibraryBlocksView(GenericAPIView):
         try:
             result = api.create_library_block(library_key, user_id=request.user.id, **serializer.validated_data)
         except api.IncompatibleTypesError as err:
-            raise ValidationError(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise ValidationError(  # pylint: disable=raise-missing-from  # noqa: B904
                 detail={'block_type': str(err)},
             )
 

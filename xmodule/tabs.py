@@ -534,7 +534,7 @@ class CourseTabList(List):
             )
             raise InvalidTabsException(msg)
 
-    def to_json(self, values):  # lint-amnesty, pylint: disable=arguments-differ
+    def to_json(self, values):  # pylint: disable=arguments-differ
         """
         Overrides the to_json method to serialize all the CourseTab objects to a json-serializable representation.
         """
@@ -549,7 +549,7 @@ class CourseTabList(List):
                     continue
         return json_data
 
-    def from_json(self, values):  # lint-amnesty, pylint: disable=arguments-differ
+    def from_json(self, values):  # pylint: disable=arguments-differ
         """
         Overrides the from_json method to de-serialize the CourseTab objects from a json-like representation.
         """
@@ -578,7 +578,7 @@ def key_checker(expected_keys):
         missing = set(expected_keys) - set(actual_dict.keys())
         if not missing:
             return True
-        if raise_error:  # lint-amnesty, pylint: disable=no-else-raise
+        if raise_error:  # pylint: disable=no-else-raise
             raise InvalidTabsException(
                 f"Expected keys '{expected_keys}' are not present in the given dict: {actual_dict}"
             )
@@ -641,11 +641,11 @@ class InvalidTabsException(Exception):
     """
     A complaint about invalid tabs.
     """
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 class UnequalTabsException(Exception):
     """
     A complaint about tab lists being unequal
     """
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass

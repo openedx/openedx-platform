@@ -38,7 +38,7 @@ def _(text):
 @XBlock.needs('mako')
 @XBlock.wants('discussion_config_service')
 class _BuiltInDiscussionXBlock(XBlock, StudioEditableXBlockMixin,
-                               XmlMixin):  # lint-amnesty, pylint: disable=abstract-method
+                               XmlMixin):  # pylint: disable=abstract-method
     """
     Provides a discussion forum that is inline with other content in the courseware.
     """

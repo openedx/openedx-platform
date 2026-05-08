@@ -12,9 +12,9 @@ from lms.djangoapps.courseware.access import has_access
 from lms.djangoapps.courseware.field_overrides import OverrideFieldData, OverrideModulestoreFieldData
 from openedx.core.djangoapps.discussions.utils import get_accessible_discussion_xblocks
 from xmodule.modulestore.tests.django_utils import (
-    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+    ModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
-from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import (  # pylint: disable=wrong-import-order
     BlockFactory,
     CourseFactory,
 )
@@ -63,7 +63,7 @@ class SelfPacedDateOverrideTest(ModuleStoreTestCase):
         inject_field_overrides((course, section), course, self.user)
         return (course, section)
 
-    def create_discussion_xblocks(self, parent):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def create_discussion_xblocks(self, parent):  # pylint: disable=missing-function-docstring
         # Create a released discussion xblock
         BlockFactory.create(
             parent=parent,

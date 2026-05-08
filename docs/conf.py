@@ -330,7 +330,7 @@ def update_settings_module(service='lms'):
     os.environ['DJANGO_SETTINGS_MODULE'] = settings_module
 
 
-def on_init(app):  # lint-amnesty, pylint: disable=redefined-outer-name, unused-argument
+def on_init(app):  # pylint: disable=redefined-outer-name, unused-argument
     """
     Run sphinx-apidoc after Sphinx initialization.
 
@@ -386,7 +386,7 @@ def skip_querysets(app, what, name, obj, skip, options):
     return skip
 
 
-def setup(app):  # lint-amnesty, pylint: disable=redefined-outer-name
+def setup(app):  # pylint: disable=redefined-outer-name
     """Sphinx extension: run sphinx-apidoc."""
     app.connect('builder-inited', on_init)
     app.connect('autodoc-skip-member', skip_querysets)

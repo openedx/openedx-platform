@@ -13,7 +13,7 @@ from django.conf import settings
 from lxml import etree
 from openedx_filters.learning.filters import VerticalBlockChildRenderStarted, VerticalBlockRenderCompleted
 from web_fragments.fragment import Fragment
-from xblock.core import XBlock  # lint-amnesty, pylint: disable=wrong-import-order
+from xblock.core import XBlock  # pylint: disable=wrong-import-order
 from xblock.fields import Boolean, Scope
 from xblock.progress import Progress
 
@@ -74,7 +74,7 @@ class VerticalBlock(
 
     show_in_read_only_mode = True
 
-    def _student_or_public_view(self, context, view):  # lint-amnesty, pylint: disable=too-many-statements
+    def _student_or_public_view(self, context, view):  # pylint: disable=too-many-statements
         """
         Renders the requested view type of the block in the LMS.
         """
@@ -90,14 +90,14 @@ class VerticalBlock(
             if 'bookmarked' not in child_context:
                 bookmarks_service = self.runtime.service(self, 'bookmarks')
                 child_context['bookmarked'] = bookmarks_service.is_bookmarked(
-                    usage_key=self.location),  # lint-amnesty, pylint: disable=no-member, trailing-comma-tuple
+                    usage_key=self.location),  # pylint: disable=no-member, trailing-comma-tuple
             if 'username' not in child_context:
                 user_service = self.runtime.service(self, 'user')
                 child_context['username'] = user_service.get_current_user().opt_attrs.get(
                     'edx-platform.username'
                 )
 
-        child_blocks = self.get_children()  # lint-amnesty, pylint: disable=no-member
+        child_blocks = self.get_children()  # pylint: disable=no-member
 
         child_blocks_to_complete_on_view = set()
         completion_service = self.runtime.service(self, 'completion')
@@ -272,7 +272,7 @@ class VerticalBlock(
         """
         non_editable_fields = super().non_editable_metadata_fields
         non_editable_fields.extend([
-            self.fields['due'],  # lint-amnesty, pylint: disable=unsubscriptable-object
+            self.fields['due'],  # pylint: disable=unsubscriptable-object
         ])
         return non_editable_fields
 

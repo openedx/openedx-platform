@@ -35,7 +35,7 @@ class CourseOutlineView(APIView):
     # We want to eventually allow unauthenticated users to use this as well...
     authentication_classes = (JwtAuthentication, SessionAuthenticationAllowInactiveUser)
 
-    class UserCourseOutlineDataSerializer(serializers.BaseSerializer):  # lint-amnesty, pylint: disable=abstract-method
+    class UserCourseOutlineDataSerializer(serializers.BaseSerializer):  # pylint: disable=abstract-method
         """
         Read-only serializer for CourseOutlineData for this endpoint.
 
@@ -55,7 +55,7 @@ class CourseOutlineView(APIView):
         are a critical part of the internals of edx-platform, so the in-process
         API uses them, but we translate them to "ids" for REST API clients.
         """
-        def to_representation(self, user_course_outline_details):  # lint-amnesty, pylint: disable=arguments-differ
+        def to_representation(self, user_course_outline_details):  # pylint: disable=arguments-differ
             """
             Convert to something DRF knows how to serialize (so no custom types)
 
@@ -151,7 +151,7 @@ class CourseOutlineView(APIView):
                 **schedule_item_dict,
             }
 
-    def get(self, request, course_key_str, format=None):  # lint-amnesty, pylint: disable=redefined-builtin, unused-argument
+    def get(self, request, course_key_str, format=None):  # pylint: disable=redefined-builtin, unused-argument
         """
         The CourseOutline, customized for a given user.
 

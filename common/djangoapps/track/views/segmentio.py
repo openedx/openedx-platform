@@ -6,7 +6,7 @@ import logging
 
 from dateutil import parser
 from django.conf import settings
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
@@ -86,7 +86,7 @@ def segmentio_event(request):
 
 class EventValidationError(Exception):
     """Raised when an invalid event is received."""
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 def track_segmentio_event(request):  # pylint: disable=too-many-statements
@@ -165,13 +165,13 @@ def track_segmentio_event(request):  # pylint: disable=too-many-statements
     if 'data' not in segment_properties:
         raise EventValidationError(ERROR_MISSING_DATA)
     segment_event_data = segment_properties.get('data', {})
-    if type(segment_event_data) is not dict:  # lint-amnesty, pylint: disable=unidiomatic-typecheck
+    if type(segment_event_data) is not dict:  # pylint: disable=unidiomatic-typecheck
         set_custom_attribute('segment_unexpected_data', str(segment_event_data))
         raise EventValidationError(ERROR_INVALID_DATA_FIELD_TYPE)
 
     # create and populate application field if it doesn't exist
     app_context = segment_properties.get('context', {})
-    if type(app_context) is not dict:  # lint-amnesty, pylint: disable=unidiomatic-typecheck
+    if type(app_context) is not dict:  # pylint: disable=unidiomatic-typecheck
         set_custom_attribute('segment_unexpected_context', str(app_context))
         raise EventValidationError(ERROR_INVALID_CONTEXT_FIELD_TYPE)
     if 'application' not in app_context:
@@ -202,9 +202,9 @@ def track_segmentio_event(request):  # pylint: disable=too-many-statements
     try:
         user = User.objects.get(pk=user_id)
     except User.DoesNotExist:
-        raise EventValidationError(ERROR_USER_NOT_EXIST)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise EventValidationError(ERROR_USER_NOT_EXIST)  # pylint: disable=raise-missing-from  # noqa: B904
     except ValueError:
-        raise EventValidationError(ERROR_INVALID_USER_ID)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise EventValidationError(ERROR_INVALID_USER_ID)  # pylint: disable=raise-missing-from  # noqa: B904
     context['user_id'] = user.id
     context['username'] = user.username
 

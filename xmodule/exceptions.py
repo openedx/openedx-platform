@@ -1,4 +1,4 @@
-# lint-amnesty, pylint: disable=missing-module-docstring
+# pylint: disable=missing-module-docstring
 class InvalidDefinitionError(Exception):
     pass
 
@@ -30,7 +30,7 @@ class UndefinedContext(Exception):
     """
     Tried to access an xmodule field which needs a different context (runtime) to have a value.
     """
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 class HeartbeatFailure(Exception):

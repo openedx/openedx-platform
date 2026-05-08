@@ -14,11 +14,11 @@ attrs==26.1.0
     #   zeep
 backoff==2.2.1
     # via -r scripts/user_retirement/requirements/base.txt
-boto3==1.42.97
+boto3==1.43.0
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   moto
-botocore==1.42.97
+botocore==1.43.0
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   boto3
@@ -221,7 +221,7 @@ responses==0.26.0
     # via
     #   -r scripts/user_retirement/requirements/testing.in
     #   moto
-s3transfer==0.16.1
+s3transfer==0.17.0
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   boto3

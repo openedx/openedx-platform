@@ -1,4 +1,4 @@
-# lint-amnesty, pylint: disable=imported-auth-user, missing-module-docstring
+# pylint: disable=imported-auth-user, missing-module-docstring
 from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand, CommandError
 from django.db.models import Q
@@ -6,7 +6,7 @@ from django.db.models import Q
 from openedx.core.djangoapps.django_comment_common.models import Role
 
 
-class Command(BaseCommand):  # lint-amnesty, pylint: disable=missing-class-docstring
+class Command(BaseCommand):  # pylint: disable=missing-class-docstring
     help = 'Assign a discussion forum role to a user.'
 
     def add_arguments(self, parser):

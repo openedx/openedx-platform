@@ -24,7 +24,7 @@ from edx_django_utils.cache import RequestCache
 from freezegun import freeze_time
 from pytz import UTC
 from xblocks_contrib.problem.capa.tests.response_xml_factory import (
-    MultipleChoiceResponseXMLFactory,  # lint-amnesty, pylint: disable=wrong-import-order
+    MultipleChoiceResponseXMLFactory,  # pylint: disable=wrong-import-order
 )
 
 import openedx.core.djangoapps.content.block_structure.api as bs_api
@@ -74,14 +74,14 @@ from openedx.core.djangoapps.util.testing import ContentGroupTestCase, TestCondi
 from openedx.core.djangolib.testing.utils import AUTHZ_TABLES
 from openedx.core.lib.teams_config import TeamsConfig
 from xmodule.modulestore.tests.django_utils import (
-    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+    SharedModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
-from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import (  # pylint: disable=wrong-import-order
     BlockFactory,
     CourseFactory,
     check_mongo_calls,
 )
-from xmodule.partitions.partitions import Group, UserPartition  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.partitions.partitions import Group, UserPartition  # pylint: disable=wrong-import-order
 
 # noinspection PyUnresolvedReferences
 from xmodule.tests.helpers import override_descriptor_system  # pylint: disable=unused-import  # noqa: F401
@@ -1587,7 +1587,7 @@ class MockDefaultStorage:
 
     def open(self, file_name):
         """Mock out DefaultStorage.open with standard python open"""
-        return open(file_name)  # lint-amnesty, pylint: disable=bad-option-value, open-builtin  # lint-amnesty, pylint: disable=consider-using-with
+        return open(file_name)  # pylint: disable=bad-option-value, open-builtin  # pylint: disable=consider-using-with
 
 
 @patch('lms.djangoapps.instructor_task.tasks_helper.misc.DefaultStorage', new=MockDefaultStorage)

@@ -19,8 +19,8 @@ from lms.djangoapps.courseware.access import get_user_role
 from lms.djangoapps.courseware.tabs import EnrolledTab
 from openedx.core.djangoapps.discussions.models import DiscussionsConfiguration
 from openedx.core.djangolib.markup import HTML
-from xmodule.course_block import CourseBlock  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.tabs import TabFragmentViewMixin, key_checker  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.course_block import CourseBlock  # pylint: disable=wrong-import-order
+from xmodule.tabs import TabFragmentViewMixin, key_checker  # pylint: disable=wrong-import-order
 
 
 class LtiCourseLaunchMixin:

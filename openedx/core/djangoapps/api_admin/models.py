@@ -7,7 +7,7 @@ from urllib.parse import urlunsplit
 
 from config_models.models import ConfigurationModel
 from django.conf import settings
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.contrib.sites.models import Site
 from django.core.mail import send_mail
 from django.db import models
@@ -249,7 +249,7 @@ class Catalog(models.Model):
         else:
             super().__init__(*args, **kwargs)
 
-    def save(self, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ, unused-argument
+    def save(self, **kwargs):  # pylint: disable=arguments-differ, unused-argument
         return None
 
     @property

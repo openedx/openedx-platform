@@ -1,7 +1,7 @@
-# lint-amnesty, pylint: disable=missing-module-docstring
+# pylint: disable=missing-module-docstring
 
 
-class UnicodeTestMixin:  # lint-amnesty, pylint: disable=missing-class-docstring
+class UnicodeTestMixin:  # pylint: disable=missing-class-docstring
     def test_ascii(self):
         self._test_unicode_data("This post contains ASCII.")
 

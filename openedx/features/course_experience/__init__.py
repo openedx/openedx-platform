@@ -14,12 +14,12 @@ from openedx.core.djangoapps.waffle_utils import CourseWaffleFlag
 WAFFLE_FLAG_NAMESPACE = 'course_experience'
 
 # Waffle flag to disable the separate course outline page and full width content.
-DISABLE_COURSE_OUTLINE_PAGE_FLAG = CourseWaffleFlag(  # lint-amnesty, pylint: disable=toggle-missing-annotation
+DISABLE_COURSE_OUTLINE_PAGE_FLAG = CourseWaffleFlag(  # pylint: disable=toggle-missing-annotation
     f'{WAFFLE_FLAG_NAMESPACE}.disable_course_outline_page', __name__
 )
 
 # Waffle flag to let learners access a course before its start date.
-COURSE_PRE_START_ACCESS_FLAG = WaffleFlag(f'{WAFFLE_FLAG_NAMESPACE}.pre_start_access', __name__)  # lint-amnesty, pylint: disable=toggle-missing-annotation
+COURSE_PRE_START_ACCESS_FLAG = WaffleFlag(f'{WAFFLE_FLAG_NAMESPACE}.pre_start_access', __name__)  # pylint: disable=toggle-missing-annotation
 
 # .. toggle_name: course_experience.enable_course_goals
 # .. toggle_implementation: CourseWaffleFlag
@@ -29,7 +29,7 @@ COURSE_PRE_START_ACCESS_FLAG = WaffleFlag(f'{WAFFLE_FLAG_NAMESPACE}.pre_start_ac
 # .. toggle_creation_date: 2017-09-11
 # .. toggle_target_removal_date: None
 # .. toggle_warning: This temporary feature toggle does not have a target removal date.
-ENABLE_COURSE_GOALS = CourseWaffleFlag(f'{WAFFLE_FLAG_NAMESPACE}.enable_course_goals', __name__)  # lint-amnesty, pylint: disable=toggle-missing-annotation
+ENABLE_COURSE_GOALS = CourseWaffleFlag(f'{WAFFLE_FLAG_NAMESPACE}.enable_course_goals', __name__)  # pylint: disable=toggle-missing-annotation
 
 # .. toggle_name: course_experience.enable_ses_for_goalreminder
 # .. toggle_implementation: CourseWaffleFlag
@@ -39,11 +39,11 @@ ENABLE_COURSE_GOALS = CourseWaffleFlag(f'{WAFFLE_FLAG_NAMESPACE}.enable_course_g
 # .. toggle_creation_date: 2024-10-06
 # .. toggle_target_removal_date: None
 # .. toggle_warning: This temporary feature toggle does not have a target removal date.
-ENABLE_SES_FOR_GOALREMINDER = CourseWaffleFlag(f'{WAFFLE_FLAG_NAMESPACE}.enable_ses_for_goalreminder', __name__)  # lint-amnesty, pylint: disable=toggle-missing-annotation
+ENABLE_SES_FOR_GOALREMINDER = CourseWaffleFlag(f'{WAFFLE_FLAG_NAMESPACE}.enable_ses_for_goalreminder', __name__)  # pylint: disable=toggle-missing-annotation
 
 # Waffle flag to enable anonymous access to a course
 SEO_WAFFLE_FLAG_NAMESPACE = 'seo'
-COURSE_ENABLE_UNENROLLED_ACCESS_FLAG = CourseWaffleFlag(  # lint-amnesty, pylint: disable=toggle-missing-annotation
+COURSE_ENABLE_UNENROLLED_ACCESS_FLAG = CourseWaffleFlag(  # pylint: disable=toggle-missing-annotation
     f'{SEO_WAFFLE_FLAG_NAMESPACE}.enable_anonymous_courseware_access', __name__
 )
 
@@ -57,7 +57,7 @@ COURSE_ENABLE_UNENROLLED_ACCESS_FLAG = CourseWaffleFlag(  # lint-amnesty, pylint
 # .. toggle_warning: To set a relative due date for self-paced courses, the weeks_to_complete field for a course run
 #   needs to be set. Currently it can be set through the publisher app.
 # .. toggle_tickets: https://openedx.atlassian.net/browse/AA-27
-RELATIVE_DATES_FLAG = CourseWaffleFlag(f'{WAFFLE_FLAG_NAMESPACE}.relative_dates', __name__)  # lint-amnesty, pylint: disable=toggle-missing-annotation
+RELATIVE_DATES_FLAG = CourseWaffleFlag(f'{WAFFLE_FLAG_NAMESPACE}.relative_dates', __name__)  # pylint: disable=toggle-missing-annotation
 
 # .. toggle_name: course_experience.relative_dates_disable_reset
 # .. toggle_implementation: CourseWaffleFlag
@@ -81,7 +81,7 @@ RELATIVE_DATES_DISABLE_RESET_FLAG = CourseWaffleFlag(f'{WAFFLE_FLAG_NAMESPACE}.r
 # .. toggle_creation_date: 2021-01-26
 # .. toggle_target_removal_date: 2021-04-26
 # .. toggle_tickets: https://openedx.atlassian.net/browse/AA-36
-CALENDAR_SYNC_FLAG = CourseWaffleFlag(f'{WAFFLE_FLAG_NAMESPACE}.calendar_sync', __name__)  # lint-amnesty, pylint: disable=toggle-missing-annotation
+CALENDAR_SYNC_FLAG = CourseWaffleFlag(f'{WAFFLE_FLAG_NAMESPACE}.calendar_sync', __name__)  # pylint: disable=toggle-missing-annotation
 
 # .. toggle_name: course_experience.enforce_masquerade_start_dates
 # .. toggle_implementation: CourseWaffleFlag

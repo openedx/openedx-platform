@@ -4,17 +4,19 @@
     define([
         'jquery',
         'underscore',
+        'sinon',
         'common/js/spec_helpers/template_helpers',
         'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers',
         'js/student_account/models/RegisterModel',
         'js/student_account/views/RegisterView',
         'js/student_account/tos_modal'
     ],
-    function($, _, TemplateHelpers, AjaxHelpers, RegisterModel, RegisterView) {
+    function($, _, sinon, TemplateHelpers, AjaxHelpers, RegisterModel, RegisterView) {
         describe('edx.student.account.RegisterView', function() {
             var model = null,
                 view = null,
                 requests = null,
+                xhrFactory = null,
                 authComplete = false,
                 PLATFORM_NAME = 'edX',
                 COURSE_ID = 'edX/DemoX/Fall',
@@ -245,9 +247,6 @@
                     platformName: PLATFORM_NAME
                 });
 
-                // Spy on AJAX requests
-                requests = AjaxHelpers.requests(that);
-
                 // Intercept events from the view
                 authComplete = false;
                 view.on('auth-complete', function() {
@@ -323,6 +322,15 @@
                 setFixtures('<div id="register-form"></div>');
                 TemplateHelpers.installTemplate('templates/student_account/register');
                 TemplateHelpers.installTemplate('templates/student_account/form_field');
+                xhrFactory = sinon.useFakeXMLHttpRequest();
+                requests = [];
+                requests.currentIndex = 0;
+                requests.restore = function() { xhrFactory.restore(); };
+                xhrFactory.onCreate = function(req) { requests.push(req); };
+            });
+
+            afterEach(function() {
+                requests.restore();
             });
 
             it('registers a new user', function() {

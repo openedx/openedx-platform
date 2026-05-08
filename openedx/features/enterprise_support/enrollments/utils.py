@@ -3,7 +3,7 @@ Utils for use in enrollment codebase such as views.
 """
 import logging
 
-from django.core.exceptions import ObjectDoesNotExist  # lint-amnesty, pylint: disable=wrong-import-order
+from django.core.exceptions import ObjectDoesNotExist  # pylint: disable=wrong-import-order
 from django.db import transaction
 
 from common.djangoapps.student.models import User

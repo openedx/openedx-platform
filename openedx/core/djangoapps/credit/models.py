@@ -17,7 +17,7 @@ from django.core.cache import cache
 from django.core.validators import RegexValidator
 from django.db import IntegrityError, models, transaction
 from django.dispatch import receiver
-from django.utils.translation import gettext as _  # lint-amnesty, pylint: disable=unused-import  # noqa: F401
+from django.utils.translation import gettext as _  # pylint: disable=unused-import  # noqa: F401
 from django.utils.translation import gettext_lazy
 from edx_django_utils.cache import RequestCache
 from jsonfield.fields import JSONField

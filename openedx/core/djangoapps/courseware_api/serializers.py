@@ -57,7 +57,7 @@ class _CourseApiMediaCollectionSerializer(serializers.Serializer):  # pylint: di
         ref_name = 'courseware_api'
 
 
-class CourseProgramSerializer(serializers.Serializer):  # lint-amnesty, pylint: disable=abstract-method, missing-class-docstring
+class CourseProgramSerializer(serializers.Serializer):  # pylint: disable=abstract-method, missing-class-docstring
     progress = serializers.SerializerMethodField()
     slug = serializers.CharField()
     title = serializers.CharField()

@@ -1,16 +1,18 @@
 define(
     [
+        'sinon',
         'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers',
         'common/js/components/utils/view_utils',
         'lms/js/preview/preview_factory'
     ],
-    function(AjaxHelpers, ViewUtils, PreviewFactory) {
+    function(sinon, AjaxHelpers, ViewUtils, PreviewFactory) {
         'use strict';
 
         describe('Preview Factory', function() {
             var showPreview,
                 previewActionSelect,
-                usernameInput;
+                usernameInput,
+                requests, xhrFactory;
 
             showPreview = function(options) {
                 PreviewFactory(options);
@@ -26,6 +28,15 @@ define(
 
             beforeEach(function() {
                 loadFixtures('lms/fixtures/preview/course_preview.html');
+                xhrFactory = sinon.useFakeXMLHttpRequest();
+                requests = [];
+                requests.currentIndex = 0;
+                requests.restore = function() { xhrFactory.restore(); };
+                xhrFactory.onCreate = function(req) { requests.push(req); };
+            });
+
+            afterEach(function() {
+                requests.restore();
             });
 
             it('can render preview for a staff user', function() {
@@ -47,8 +58,7 @@ define(
             });
 
             it('can switch to view as a student', function() {
-                var requests = AjaxHelpers.requests(this),
-                    reloadSpy = spyOn(ViewUtils, 'reload');
+                var reloadSpy = spyOn(ViewUtils, 'reload');
                 showPreview({
                     courseId: 'test_course'
                 });
@@ -67,8 +77,7 @@ define(
             });
 
             it('can switch to view as a content group', function() {
-                var requests = AjaxHelpers.requests(this),
-                    reloadSpy = spyOn(ViewUtils, 'reload');
+                var reloadSpy = spyOn(ViewUtils, 'reload');
                 showPreview({
                     courseId: 'test_course'
                 });
@@ -89,8 +98,7 @@ define(
             });
 
             it('can switch to masquerade as a specific student', function() {
-                var requests = AjaxHelpers.requests(this),
-                    reloadSpy = spyOn(ViewUtils, 'reload');
+                var reloadSpy = spyOn(ViewUtils, 'reload');
                 showPreview({
                     courseId: 'test_course'
                 });

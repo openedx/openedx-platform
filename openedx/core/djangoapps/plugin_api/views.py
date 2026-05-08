@@ -16,7 +16,7 @@ from common.djangoapps.edxmako.shortcuts import is_any_marketing_link_set, is_ma
 log = logging.getLogger('plugin_api')
 
 
-class EdxFragmentView(FragmentView):  # lint-amnesty, pylint: disable=abstract-method
+class EdxFragmentView(FragmentView):  # pylint: disable=abstract-method
     """
     The base class of all Open edX fragment views.
     """
@@ -79,7 +79,7 @@ class EdxFragmentView(FragmentView):  # lint-amnesty, pylint: disable=abstract-m
         for js_file in self.js_dependencies():
             fragment.add_javascript_url(staticfiles_storage.url(js_file))
 
-    def create_base_standalone_context(self, request, fragment, **kwargs):  # lint-amnesty, pylint: disable=unused-argument
+    def create_base_standalone_context(self, request, fragment, **kwargs):  # pylint: disable=unused-argument
         """
         Creates the base context for rendering a fragment as a standalone page.
         """
@@ -111,7 +111,7 @@ class EdxFragmentView(FragmentView):  # lint-amnesty, pylint: disable=abstract-m
             'is_marketing_link_set': is_marketing_link_set,
         })
 
-    def standalone_page_title(self, request, fragment, **kwargs):  # lint-amnesty, pylint: disable=unused-argument
+    def standalone_page_title(self, request, fragment, **kwargs):  # pylint: disable=unused-argument
         """
         Returns the page title for the standalone page, or None if there is no title.
         """

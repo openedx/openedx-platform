@@ -10,9 +10,9 @@ from xblock.fields import Scope
 
 from cms.djangoapps.contentstore.config.waffle import CUSTOM_RELATIVE_DATES
 from openedx.core.lib.graph_traversals import get_children, leaf_filter, traverse_pre_order
-from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.django import SignalHandler, modulestore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.util.misc import is_xblock_an_assignment  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore import ModuleStoreEnum  # pylint: disable=wrong-import-order
+from xmodule.modulestore.django import SignalHandler, modulestore  # pylint: disable=wrong-import-order
+from xmodule.util.misc import is_xblock_an_assignment  # pylint: disable=wrong-import-order
 
 from .models import SelfPacedRelativeDatesConfig
 from .utils import spaced_out_sections
@@ -38,7 +38,7 @@ def _field_values(fields, xblock):
                     location=str(xblock.location),
                     field_name=field.name
                 )
-                raise TypeError(exception_message)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+                raise TypeError(exception_message)  # pylint: disable=raise-missing-from  # noqa: B904
     return result
 
 
@@ -53,7 +53,7 @@ def _has_assignment_blocks(item):
     )
 
 
-def _gather_graded_items(root, due):  # lint-amnesty, pylint: disable=missing-function-docstring
+def _gather_graded_items(root, due):  # pylint: disable=missing-function-docstring
     items = [root]
     has_non_ora_scored_content = False
     collected_items = []

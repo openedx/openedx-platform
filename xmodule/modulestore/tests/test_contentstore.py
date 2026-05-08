@@ -60,17 +60,17 @@ class TestContentstore(unittest.TestCase):
         """
         # since MongoModuleStore and MongoContentStore are basically assumed to be together, create this class
         # as well
-        self.contentstore = MongoContentStore(HOST, DB, port=PORT)  # lint-amnesty, pylint: disable=attribute-defined-outside-init
+        self.contentstore = MongoContentStore(HOST, DB, port=PORT)  # pylint: disable=attribute-defined-outside-init
         self.addCleanup(self.contentstore._drop_database)  # pylint: disable=protected-access
 
         AssetLocator.deprecated = deprecated
         CourseLocator.deprecated = deprecated
 
-        self.course1_key = CourseLocator('test', 'asset_test', '2014_07')  # lint-amnesty, pylint: disable=attribute-defined-outside-init
-        self.course2_key = CourseLocator('test', 'asset_test2', '2014_07')  # lint-amnesty, pylint: disable=attribute-defined-outside-init
+        self.course1_key = CourseLocator('test', 'asset_test', '2014_07')  # pylint: disable=attribute-defined-outside-init
+        self.course2_key = CourseLocator('test', 'asset_test2', '2014_07')  # pylint: disable=attribute-defined-outside-init
 
-        self.course1_files = ['contains.sh', 'picture1.jpg', 'picture2.jpg']  # lint-amnesty, pylint: disable=attribute-defined-outside-init
-        self.course2_files = ['picture1.jpg', 'picture3.jpg', 'door_2.ogg']  # lint-amnesty, pylint: disable=attribute-defined-outside-init
+        self.course1_files = ['contains.sh', 'picture1.jpg', 'picture2.jpg']  # pylint: disable=attribute-defined-outside-init
+        self.course2_files = ['picture1.jpg', 'picture3.jpg', 'door_2.ogg']  # pylint: disable=attribute-defined-outside-init
 
         def load_assets(course_key, files):
             locked = False

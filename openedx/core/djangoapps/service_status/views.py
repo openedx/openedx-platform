@@ -7,7 +7,7 @@ import json
 import time
 
 from celery import current_app as celery
-from celery.exceptions import TimeoutError  # lint-amnesty, pylint: disable=redefined-builtin
+from celery.exceptions import TimeoutError  # pylint: disable=redefined-builtin
 from django.http import HttpResponse
 
 from openedx.core.djangoapps.service_status.tasks import delayed_ping
@@ -25,7 +25,7 @@ def celery_status(_):
     A view that returns Celery stats
     """
     stats = celery.control.inspect().stats() or {}
-    return HttpResponse(json.dumps(stats, indent=4),  # lint-amnesty, pylint: disable=http-response-with-content-type-json, http-response-with-json-dumps
+    return HttpResponse(json.dumps(stats, indent=4),  # pylint: disable=http-response-with-content-type-json, http-response-with-json-dumps
                         content_type="application/json")
 
 
@@ -52,5 +52,5 @@ def celery_ping(_):
         'time': time.time() - start,
     }
 
-    return HttpResponse(json.dumps(output, indent=4),  # lint-amnesty, pylint: disable=http-response-with-content-type-json, http-response-with-json-dumps
+    return HttpResponse(json.dumps(output, indent=4),  # pylint: disable=http-response-with-content-type-json, http-response-with-json-dumps
                         content_type="application/json")

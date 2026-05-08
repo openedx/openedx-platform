@@ -6,7 +6,7 @@ import logging
 from urllib.parse import urlencode, urljoin
 
 import requests
-import waffle  # lint-amnesty, pylint: disable=invalid-django-waffle-import
+import waffle  # pylint: disable=invalid-django-waffle-import
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.urls import reverse

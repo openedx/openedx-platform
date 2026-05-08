@@ -1,7 +1,7 @@
 """
 Test cases for the HTTP endpoints of the profile image api.
 """
-import datetime  # lint-amnesty, pylint: disable=wrong-import-order
+import datetime  # pylint: disable=wrong-import-order
 from contextlib import closing
 from unittest import mock
 from unittest.mock import patch

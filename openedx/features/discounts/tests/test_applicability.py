@@ -21,9 +21,9 @@ from openedx.core.djangoapps.content.course_overviews.models import CourseOvervi
 from openedx.features.discounts.models import DiscountRestrictionConfig
 from openedx.features.discounts.utils import REV1008_EXPERIMENT_ID
 from xmodule.modulestore.tests.django_utils import (
-    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+    ModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 from ..applicability import DISCOUNT_APPLICABILITY_FLAG, _is_in_holdback_and_bucket, can_receive_discount
 
@@ -80,8 +80,8 @@ class TestApplicability(ModuleStoreTestCase):
         assert applicability is False
 
         disabled_course = CourseFactory()
-        CourseModeFactory.create(course_id=disabled_course.id, mode_slug='verified')  # lint-amnesty, pylint: disable=no-member
-        disabled_course_overview = CourseOverview.get_from_id(disabled_course.id)  # lint-amnesty, pylint: disable=no-member
+        CourseModeFactory.create(course_id=disabled_course.id, mode_slug='verified')  # pylint: disable=no-member
+        disabled_course_overview = CourseOverview.get_from_id(disabled_course.id)  # pylint: disable=no-member
         DiscountRestrictionConfig.objects.create(disabled=True, course=disabled_course_overview)
         applicability = can_receive_discount(user=self.user, course=disabled_course)
         assert applicability is False

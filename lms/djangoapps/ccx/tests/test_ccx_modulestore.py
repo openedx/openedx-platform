@@ -43,7 +43,7 @@ class TestCCXModulestoreWrapper(SharedModuleStoreTestCase):
         ]
 
     @classmethod
-    def setUpTestData(cls):  # lint-amnesty, pylint: disable=super-method-not-called
+    def setUpTestData(cls):  # pylint: disable=super-method-not-called
         """
         Set up models for the whole TestCase.
         """

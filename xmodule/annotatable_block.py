@@ -1,4 +1,4 @@
-# lint-amnesty, pylint: disable=missing-module-docstring
+# pylint: disable=missing-module-docstring
 
 import logging
 import textwrap
@@ -82,7 +82,7 @@ class _BuiltInAnnotatableBlock(
 
     HIGHLIGHT_COLORS = ['yellow', 'orange', 'purple', 'blue', 'green']
 
-    def _get_annotation_class_attr(self, index, el):  # lint-amnesty, pylint: disable=unused-argument
+    def _get_annotation_class_attr(self, index, el):  # pylint: disable=unused-argument
         """ Returns a dict with the CSS class attribute to set on the annotation
             and an XML key to delete from the element.
          """
@@ -100,7 +100,7 @@ class _BuiltInAnnotatableBlock(
 
         return {'class': attr}
 
-    def _get_annotation_data_attr(self, index, el):  # lint-amnesty, pylint: disable=unused-argument
+    def _get_annotation_data_attr(self, index, el):  # pylint: disable=unused-argument
         """ Returns a dict in which the keys are the HTML data attributes
             to set on the annotation element. Each data attribute has a
             corresponding 'value' and (optional) '_delete' key to specify
@@ -114,7 +114,7 @@ class _BuiltInAnnotatableBlock(
             'problem': 'data-problem-id'
         }
 
-        for xml_key in attrs_map.keys():  # lint-amnesty, pylint: disable=consider-iterating-dictionary
+        for xml_key in attrs_map.keys():  # pylint: disable=consider-iterating-dictionary
             if xml_key in el.attrib:
                 value = el.get(xml_key, '')
                 html_key = attrs_map[xml_key]
@@ -130,7 +130,7 @@ class _BuiltInAnnotatableBlock(
 
         el.tag = 'span'
 
-        for key in attr.keys():  # lint-amnesty, pylint: disable=consider-iterating-dictionary
+        for key in attr.keys():  # pylint: disable=consider-iterating-dictionary
             el.set(key, attr[key]['value'])
             if '_delete' in attr[key] and attr[key]['_delete'] is not None:
                 delete_key = attr[key]['_delete']
@@ -177,7 +177,7 @@ class _BuiltInAnnotatableBlock(
 
         return self.runtime.service(self, 'mako').render_lms_template('annotatable.html', context)
 
-    def student_view(self, context):  # lint-amnesty, pylint: disable=unused-argument
+    def student_view(self, context):  # pylint: disable=unused-argument
         """
         Renders the output that a student will see.
         """

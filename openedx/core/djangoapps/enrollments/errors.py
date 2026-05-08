@@ -26,7 +26,7 @@ class CourseEnrollmentFullError(CourseEnrollmentError):
     pass
 
 
-class CourseEnrollmentExistsError(CourseEnrollmentError):  # lint-amnesty, pylint: disable=missing-class-docstring
+class CourseEnrollmentExistsError(CourseEnrollmentError):  # pylint: disable=missing-class-docstring
     enrollment = None
 
     def __init__(self, message, enrollment):
@@ -36,22 +36,22 @@ class CourseEnrollmentExistsError(CourseEnrollmentError):  # lint-amnesty, pylin
 
 class CourseModeNotFoundError(CourseEnrollmentError):
     """The requested course mode could not be found."""
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 class EnrollmentNotFoundError(CourseEnrollmentError):
     """The requested enrollment could not be found."""
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 class EnrollmentApiLoadError(CourseEnrollmentError):
     """The data API could not be loaded."""
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 class InvalidEnrollmentAttribute(CourseEnrollmentError):
     """Enrollment Attributes could not be validated"""
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 class CourseEnrollmentNotUpdatableError(CourseEnrollmentError):

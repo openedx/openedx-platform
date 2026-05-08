@@ -8,9 +8,9 @@ from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey
 
 from cms.djangoapps.contentstore.utils import delete_course
-from xmodule.contentstore.django import contentstore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.contentstore.django import contentstore  # pylint: disable=wrong-import-order
+from xmodule.modulestore import ModuleStoreEnum  # pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 
 from .prompt import query_yes_no
 
@@ -67,7 +67,7 @@ class Command(BaseCommand):
                 course_key = str(options['course_key'])
             course_key = CourseKey.from_string(course_key)
         except InvalidKeyError:
-            raise CommandError('Invalid course_key: {}'.format(options['course_key']))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise CommandError('Invalid course_key: {}'.format(options['course_key']))  # pylint: disable=raise-missing-from  # noqa: B904
 
         if not modulestore().get_course(course_key):
             raise CommandError('Course not found: {}'.format(options['course_key']))
@@ -80,6 +80,6 @@ class Command(BaseCommand):
 
                 if options['remove_assets']:
                     contentstore().delete_all_course_assets(course_key)
-                    print(f'Deleted assets for course {course_key}')  # lint-amnesty, pylint: disable=too-many-format-args
+                    print(f'Deleted assets for course {course_key}')  # pylint: disable=too-many-format-args
 
                 print(f'Deleted course {course_key}')

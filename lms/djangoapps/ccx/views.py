@@ -12,7 +12,7 @@ import pytz
 from ccx_keys.locator import CCXLocator
 from django.conf import settings
 from django.contrib import messages
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.db import transaction
 from django.http import Http404, HttpResponse, HttpResponseForbidden
 from django.shortcuts import redirect
@@ -53,7 +53,7 @@ from lms.djangoapps.instructor.views.gradebook_api import get_grade_book_page
 from openedx.core.djangoapps.django_comment_common.models import FORUM_ROLE_ADMINISTRATOR, assign_role
 from openedx.core.djangoapps.django_comment_common.utils import seed_permissions_roles
 from openedx.core.lib.courses import get_course_by_id
-from xmodule.modulestore.django import SignalHandler  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import SignalHandler  # pylint: disable=wrong-import-order
 
 log = logging.getLogger(__name__)
 TODAY = datetime.datetime.today  # for patching in tests
@@ -78,13 +78,13 @@ def coach_dashboard(view):
             try:
                 ccx = CustomCourseForEdX.objects.get(pk=ccx_id)
             except CustomCourseForEdX.DoesNotExist:
-                raise Http404  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+                raise Http404  # pylint: disable=raise-missing-from  # noqa: B904
 
         if ccx:
             course_key = ccx.course_id
         course = get_course_by_id(course_key, depth=None)
 
-        if not course.enable_ccx:  # lint-amnesty, pylint: disable=no-else-raise
+        if not course.enable_ccx:  # pylint: disable=no-else-raise
             raise Http404
         else:
             if bool(request.user.has_perm(VIEW_CCX_COACH_DASHBOARD, course)):
@@ -149,7 +149,7 @@ def dashboard(request, course, ccx=None):
         context['grading_policy_url'] = reverse(
             'ccx_set_grading_policy', kwargs={'course_id': ccx_locator})
 
-        with ccx_course(ccx_locator) as course:  # lint-amnesty, pylint: disable=redefined-argument-from-local
+        with ccx_course(ccx_locator) as course:  # pylint: disable=redefined-argument-from-local
             context['course'] = course
 
     else:
@@ -244,7 +244,7 @@ def create_ccx(request, course, ccx=None):
 @ensure_csrf_cookie
 @cache_control(no_cache=True, no_store=True, must_revalidate=True)
 @coach_dashboard
-def save_ccx(request, course, ccx=None):  # lint-amnesty, pylint: disable=too-many-statements
+def save_ccx(request, course, ccx=None):  # pylint: disable=too-many-statements
     """
     Save changes to CCX.
     """
@@ -337,7 +337,7 @@ def save_ccx(request, course, ccx=None):  # lint-amnesty, pylint: disable=too-ma
     for rec, response in responses:
         log.info('Signal fired when course is published. Receiver: %s. Response: %s', rec, response)
 
-    return HttpResponse(  # lint-amnesty, pylint: disable=http-response-with-content-type-json, http-response-with-json-dumps
+    return HttpResponse(  # pylint: disable=http-response-with-content-type-json, http-response-with-json-dumps
         json.dumps({
             'schedule': get_ccx_schedule(course, ccx),
             'grading_policy': json.dumps(policy, indent=4)}),
@@ -452,7 +452,7 @@ def ccx_schedule(request, course, ccx=None):
 
     schedule = get_ccx_schedule(course, ccx)
     json_schedule = json.dumps(schedule, indent=4)
-    return HttpResponse(json_schedule, content_type='application/json')  # lint-amnesty, pylint: disable=http-response-with-content-type-json
+    return HttpResponse(json_schedule, content_type='application/json')  # pylint: disable=http-response-with-content-type-json
 
 
 @ensure_csrf_cookie
@@ -491,7 +491,7 @@ def ccx_gradebook(request, course, ccx=None):
         raise Http404
 
     ccx_key = CCXLocator.from_course_locator(course.id, str(ccx.id))
-    with ccx_course(ccx_key) as course:  # lint-amnesty, pylint: disable=redefined-argument-from-local
+    with ccx_course(ccx_key) as course:  # pylint: disable=redefined-argument-from-local
         student_info, page = get_grade_book_page(request, course, course_key=ccx_key)
 
         return render_to_response('courseware/gradebook.html', {
@@ -518,7 +518,7 @@ def ccx_grades_csv(request, course, ccx=None):
         raise Http404
 
     ccx_key = CCXLocator.from_course_locator(course.id, str(ccx.id))
-    with ccx_course(ccx_key) as course:  # lint-amnesty, pylint: disable=redefined-argument-from-local
+    with ccx_course(ccx_key) as course:  # pylint: disable=redefined-argument-from-local
 
         enrolled_students = User.objects.filter(
             courseenrollment__course_id=ccx_key,

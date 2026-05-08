@@ -463,7 +463,7 @@ def submit_task(request, task_type, task_class, course_key, task_input, task_key
     try:
         task_class.apply_async(task_args, task_id=task_id)
 
-    except Exception as error:  # lint-amnesty, pylint: disable=broad-except
+    except Exception as error:  # pylint: disable=broad-except
         _handle_instructor_task_failure(instructor_task, error)
 
     return instructor_task

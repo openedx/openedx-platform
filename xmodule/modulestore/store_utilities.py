@@ -1,4 +1,4 @@
-# lint-amnesty, pylint: disable=missing-module-docstring
+# pylint: disable=missing-module-docstring
 import logging
 import re
 import uuid
@@ -48,7 +48,7 @@ def rewrite_nonportable_content_links(source_course_id, dest_course_id, text):
     try:
         text = _prefix_only_url_replace_regex(asset_block_pattern).sub(portable_asset_link_subtitution, text)
     except Exception as exc:  # pylint: disable=broad-except
-        logging.warning("Error producing regex substitution %r for text = %r.\n\nError msg = %s", asset_block_pattern, text, str(exc))  # lint-amnesty, pylint: disable=line-too-long
+        logging.warning("Error producing regex substitution %r for text = %r.\n\nError msg = %s", asset_block_pattern, text, str(exc))  # pylint: disable=line-too-long
 
     placeholder_category = f'cat_{uuid.uuid4().hex}'
     usage_block_pattern = str(source_course_id.make_usage_key(placeholder_category, placeholder_id))
@@ -60,7 +60,7 @@ def rewrite_nonportable_content_links(source_course_id, dest_course_id, text):
     try:
         text = _prefix_only_url_replace_regex(jump_to_link_base).sub(portable_jump_to_link_substitution, text)
     except Exception as exc:  # pylint: disable=broad-except
-        logging.warning("Error producing regex substitution %r for text = %r.\n\nError msg = %s", jump_to_link_base, text, str(exc))  # lint-amnesty, pylint: disable=line-too-long
+        logging.warning("Error producing regex substitution %r for text = %r.\n\nError msg = %s", jump_to_link_base, text, str(exc))  # pylint: disable=line-too-long
 
     # Also, there commonly is a set of link URL's used in the format:
     # /courses/<org>/<course>/<name> which will be broken if migrated to a different course_id
@@ -71,9 +71,9 @@ def rewrite_nonportable_content_links(source_course_id, dest_course_id, text):
     if source_course_id != dest_course_id:
         try:
             generic_courseware_link_base = f'/courses/{str(source_course_id)}/'
-            text = re.sub(_prefix_only_url_replace_regex(generic_courseware_link_base), portable_asset_link_subtitution, text)  # lint-amnesty, pylint: disable=line-too-long
+            text = re.sub(_prefix_only_url_replace_regex(generic_courseware_link_base), portable_asset_link_subtitution, text)  # pylint: disable=line-too-long
         except Exception as exc:  # pylint: disable=broad-except
-            logging.warning("Error producing regex substitution %r for text = %r.\n\nError msg = %s", source_course_id, text, str(exc))  # lint-amnesty, pylint: disable=line-too-long
+            logging.warning("Error producing regex substitution %r for text = %r.\n\nError msg = %s", source_course_id, text, str(exc))  # pylint: disable=line-too-long
 
     return text
 

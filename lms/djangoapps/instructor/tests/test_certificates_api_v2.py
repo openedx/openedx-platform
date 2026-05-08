@@ -1,6 +1,7 @@
 """
 Unit tests for instructor API v2 certificate management endpoints.
 """
+from io import BytesIO
 from unittest.mock import patch
 
 from django.urls import reverse
@@ -264,6 +265,233 @@ class CertificateExceptionsViewTest(SharedModuleStoreTestCase):
         )
         assert response.status_code == status.HTTP_200_OK
         mock_remove.assert_called_once_with(self.enrolled_student, self.course.id)
+
+
+class BulkCertificateExceptionsViewTest(SharedModuleStoreTestCase):
+    """Tests for BulkCertificateExceptionsView."""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.course = CourseFactory.create()
+
+    def setUp(self):
+        super().setUp()
+        self.client = APIClient()
+        self.instructor = InstructorFactory.create(course_key=self.course.id)
+        self.student = UserFactory.create()
+        self.url = reverse(
+            'instructor_api_v2:bulk_certificate_exceptions',
+            kwargs={'course_id': str(self.course.id)}
+        )
+
+    def _create_csv_file(self, content):
+        """Helper to create a CSV file upload."""
+        csv_file = BytesIO(content.encode('utf-8'))
+        csv_file.name = 'test.csv'
+        return csv_file
+
+    def test_permission_required(self):
+        """Test that only instructors can upload bulk exceptions."""
+        self.client.force_authenticate(user=self.student)
+        csv_file = self._create_csv_file('user1,notes1')
+        response = self.client.post(self.url, {'file': csv_file}, format='multipart')
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_no_file_uploaded(self):
+        """Test error when no file is uploaded."""
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.post(self.url, {}, format='multipart')
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert 'No file uploaded' in response.data['message']
+
+    def test_non_csv_file_type(self):
+        """Test error when uploaded file is not CSV."""
+        self.client.force_authenticate(user=self.instructor)
+        txt_file = BytesIO(b'user1,notes1')
+        txt_file.name = 'test.txt'
+        response = self.client.post(self.url, {'file': txt_file}, format='multipart')
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert 'CSV format' in response.data['message']
+
+    def test_empty_csv(self):
+        """Test error when CSV file is empty."""
+        self.client.force_authenticate(user=self.instructor)
+        csv_file = self._create_csv_file('')
+        response = self.client.post(self.url, {'file': csv_file}, format='multipart')
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert 'empty' in response.data['message']
+
+    def test_csv_with_only_empty_rows(self):
+        """Test error when CSV contains only empty rows."""
+        self.client.force_authenticate(user=self.instructor)
+        csv_file = self._create_csv_file('\n\n  \n')
+        response = self.client.post(self.url, {'file': csv_file}, format='multipart')
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert 'empty' in response.data['message']
+
+    @patch('lms.djangoapps.instructor.views.api_v2.certs_api.create_or_update_certificate_allowlist_entry')
+    def test_happy_path_csv(self, mock_create):
+        """Test successful bulk upload with valid CSV."""
+        student1 = UserFactory.create(username='student1')
+        student2 = UserFactory.create(username='student2', email='student2@example.com')
+        CourseEnrollmentFactory.create(user=student1, course_id=self.course.id)
+        CourseEnrollmentFactory.create(user=student2, course_id=self.course.id)
+
+        self.client.force_authenticate(user=self.instructor)
+        csv_content = 'student1,First student notes\nstudent2@example.com,Second student notes'
+        csv_file = self._create_csv_file(csv_content)
+        response = self.client.post(self.url, {'file': csv_file}, format='multipart')
+
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data['success']) == 2
+        assert 'student1' in response.data['success']
+        assert 'student2@example.com' in response.data['success']
+        assert len(response.data['errors']) == 0
+        assert mock_create.call_count == 2
+
+    @patch('lms.djangoapps.instructor.views.api_v2.certs_api.create_or_update_certificate_allowlist_entry')
+    def test_csv_without_notes_column(self, mock_create):
+        """Test CSV with only username column (no notes)."""
+        student1 = UserFactory.create(username='student1')
+        CourseEnrollmentFactory.create(user=student1, course_id=self.course.id)
+
+        self.client.force_authenticate(user=self.instructor)
+        csv_content = 'student1'
+        csv_file = self._create_csv_file(csv_content)
+        response = self.client.post(self.url, {'file': csv_file}, format='multipart')
+
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data['success']) == 1
+        # Verify empty notes were passed
+        call_args = mock_create.call_args
+        assert call_args[0][2] == ''  # notes parameter
+
+    def test_unresolvable_learners(self):
+        """Test error handling for users that don't exist."""
+        self.client.force_authenticate(user=self.instructor)
+        csv_content = 'nonexistent1,notes1\nnonexistent2,notes2'
+        csv_file = self._create_csv_file(csv_content)
+        response = self.client.post(self.url, {'file': csv_file}, format='multipart')
+
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data['success']) == 0
+        assert len(response.data['errors']) == 2
+        assert any('nonexistent1' in str(err) for err in response.data['errors'])
+        assert any('nonexistent2' in str(err) for err in response.data['errors'])
+
+    @patch('lms.djangoapps.instructor.views.api_v2.certs_api.create_or_update_certificate_allowlist_entry')
+    def test_partial_success(self, mock_create):
+        """Test mix of valid and invalid learners in CSV."""
+        student1 = UserFactory.create(username='valid_user')
+        CourseEnrollmentFactory.create(user=student1, course_id=self.course.id)
+
+        self.client.force_authenticate(user=self.instructor)
+        csv_content = 'valid_user,Valid notes\ninvalid_user,Invalid notes'
+        csv_file = self._create_csv_file(csv_content)
+        response = self.client.post(self.url, {'file': csv_file}, format='multipart')
+
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data['success']) == 1
+        assert 'valid_user' in response.data['success']
+        assert len(response.data['errors']) == 1
+        assert any('invalid_user' in str(err) for err in response.data['errors'])
+        mock_create.assert_called_once()
+
+    @patch('lms.djangoapps.instructor.views.api_v2.certs_api.create_or_update_certificate_allowlist_entry')
+    def test_duplicate_csv_identifiers(self, mock_create):
+        """Test that duplicate identifiers use last occurrence's notes."""
+        student1 = UserFactory.create(username='student1')
+        CourseEnrollmentFactory.create(user=student1, course_id=self.course.id)
+
+        self.client.force_authenticate(user=self.instructor)
+        # Same identifier twice with different notes
+        csv_content = 'student1,First notes\nstudent1,Last notes'
+        csv_file = self._create_csv_file(csv_content)
+        response = self.client.post(self.url, {'file': csv_file}, format='multipart')
+
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data['success']) == 1
+        # Verify the last notes value was used (dict behavior)
+        call_args = mock_create.call_args
+        assert call_args[0][2] == 'Last notes'
+
+    @patch('lms.djangoapps.instructor.views.api_v2.certs_api.create_or_update_certificate_allowlist_entry')
+    def test_csv_with_empty_notes(self, mock_create):
+        """Test CSV rows with empty notes column."""
+        student1 = UserFactory.create(username='student1')
+        CourseEnrollmentFactory.create(user=student1, course_id=self.course.id)
+
+        self.client.force_authenticate(user=self.instructor)
+        csv_content = 'student1,'
+        csv_file = self._create_csv_file(csv_content)
+        response = self.client.post(self.url, {'file': csv_file}, format='multipart')
+
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data['success']) == 1
+        call_args = mock_create.call_args
+        assert call_args[0][2] == ''
+
+    @patch('lms.djangoapps.instructor.views.api_v2.certs_api.create_or_update_certificate_allowlist_entry')
+    def test_unenrolled_learner(self, mock_create):
+        """Test error when learner exists but is not enrolled in course."""
+        UserFactory.create(username='unenrolled')
+        # Don't enroll the student
+
+        self.client.force_authenticate(user=self.instructor)
+        csv_content = 'unenrolled,notes'
+        csv_file = self._create_csv_file(csv_content)
+        response = self.client.post(self.url, {'file': csv_file}, format='multipart')
+
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data['success']) == 0
+        assert len(response.data['errors']) == 1
+        assert 'not enrolled' in response.data['errors'][0]['message']
+        mock_create.assert_not_called()
+
+    @patch('lms.djangoapps.instructor.views.api_v2.certs_api.create_or_update_certificate_allowlist_entry')
+    def test_learner_with_active_invalidation(self, mock_create):
+        """Test error when learner has an active certificate invalidation."""
+        student1 = UserFactory.create(username='invalidated')
+        CourseEnrollmentFactory.create(user=student1, course_id=self.course.id)
+        cert = GeneratedCertificateFactory.create(
+            user=student1,
+            course_id=self.course.id,
+            status=CertificateStatuses.unavailable
+        )
+        CertificateInvalidation.objects.create(
+            generated_certificate=cert,
+            invalidated_by=self.instructor,
+            notes='Test invalidation',
+            active=True
+        )
+
+        self.client.force_authenticate(user=self.instructor)
+        csv_content = 'invalidated,notes'
+        csv_file = self._create_csv_file(csv_content)
+        response = self.client.post(self.url, {'file': csv_file}, format='multipart')
+
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data['success']) == 0
+        assert len(response.data['errors']) == 1
+        assert 'invalidation' in response.data['errors'][0]['message']
+        mock_create.assert_not_called()
+
+    @patch('lms.djangoapps.instructor.views.api_v2.certs_api.create_or_update_certificate_allowlist_entry')
+    def test_csv_with_utf8_bom(self, mock_create):
+        """Test CSV file with UTF-8 BOM is handled correctly."""
+        student1 = UserFactory.create(username='student1')
+        CourseEnrollmentFactory.create(user=student1, course_id=self.course.id)
+
+        self.client.force_authenticate(user=self.instructor)
+        # UTF-8 BOM + CSV content
+        csv_content = '\ufeffstudent1,notes'
+        csv_file = self._create_csv_file(csv_content)
+        response = self.client.post(self.url, {'file': csv_file}, format='multipart')
+
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data['success']) == 1
+        mock_create.assert_called_once()
 
 
 class CertificateInvalidationsViewTest(SharedModuleStoreTestCase):

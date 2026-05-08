@@ -17,7 +17,7 @@ from common.djangoapps.student.tests.factories import AdminFactory
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 
 
-def make_entitlement(expired=False):  # lint-amnesty, pylint: disable=missing-function-docstring
+def make_entitlement(expired=False):  # pylint: disable=missing-function-docstring
     age = CourseEntitlementPolicy.DEFAULT_EXPIRATION_PERIOD_DAYS
     past_datetime = datetime.now(tz=ZoneInfo("UTC")) - timedelta(days=age)
     expired_at = past_datetime if expired else None

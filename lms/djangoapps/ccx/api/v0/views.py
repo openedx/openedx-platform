@@ -7,7 +7,7 @@ import logging
 
 import pytz
 from ccx_keys.locator import CCXLocator
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.db import transaction
 from django.http import Http404
 from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
@@ -29,7 +29,7 @@ from lms.djangoapps.instructor.enrollment import enroll_email, get_email_params
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from openedx.core.lib.api import authentication, permissions
 from openedx.core.lib.courses import get_course_by_id
-from xmodule.modulestore.django import SignalHandler  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import SignalHandler  # pylint: disable=wrong-import-order
 
 from .paginators import CCXAPIPagination
 from .serializers import CCXCourseSerializer
