@@ -50,7 +50,7 @@ from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey, UsageKey
 from pytz import UTC
 from rest_framework import status
-from rest_framework.exceptions import NotFound
+from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.generics import GenericAPIView, ListAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -84,6 +84,7 @@ from lms.djangoapps.certificates.models import (
 from lms.djangoapps.course_home_api.toggles import course_home_mfe_progress_tab_is_active
 from lms.djangoapps.courseware.access import has_access
 from lms.djangoapps.courseware.courses import get_course_with_access
+from lms.djangoapps.courseware.masquerade import get_masquerade_role, setup_masquerade
 from lms.djangoapps.courseware.models import StudentModule
 from lms.djangoapps.courseware.tabs import get_course_tab_list
 from lms.djangoapps.instructor import enrollment, permissions
@@ -277,6 +278,17 @@ class CourseMetadataView(DeveloperErrorViewMixin, APIView):
         """
         course_key = CourseKey.from_string(course_id)
         course = get_course_by_id(course_key)
+
+        original_user_is_staff = has_access(request.user, 'staff', course_key).has_access
+        _, request.user = setup_masquerade(
+            request,
+            course_key,
+            staff_access=original_user_is_staff,
+        )
+
+        if get_masquerade_role(request.user, course_key) == 'student' or \
+                not request.user.has_perm(permissions.VIEW_DASHBOARD, course):
+            raise PermissionDenied('This user does not have access to the instructor dashboard.')
 
         tabs = get_course_tab_list(request.user, course)
         context = {
