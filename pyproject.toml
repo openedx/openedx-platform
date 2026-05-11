@@ -177,9 +177,6 @@ content_type_gating = "openedx.features.content_type_gating.partitions:create_co
 enrollment_track = "xmodule.partitions.enrollment_track_partition_generator:create_enrollment_track_partition"
 team = "openedx.core.lib.teams_config:create_team_set_partition"
 
-[project.entry-points.console_scripts]
-xmodule_assets = "xmodule.static_content:main"
-
 [tool.pytest.ini_options]
 # Note: The first file of settings found is used, there is no combining, so
 # this file is only used for tests that don't find a pytest.ini file first.
