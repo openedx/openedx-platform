@@ -48,19 +48,21 @@ def escape_html_characters(content):
 
     # Removing HTML comments
     return re.sub(
-        r"<!--.*-->",
+        r"<!--.*?-->",
         "",
         # Removing HTML CDATA
         re.sub(
-            r"<!\[CDATA\[.*\]\]>",
+            r"<!\[CDATA\[.*?\]\]>",
             "",
             # Removing HTML-encoded non-breaking space characters
             re.sub(
                 r"(\s|&nbsp;|//)+",
                 " ",
                 html_to_text(content)
-            )
-        )
+            ),
+            flags=re.DOTALL
+        ),
+        flags=re.DOTALL
     )
 
 
