@@ -520,7 +520,7 @@ def searchable_doc_containers(object_id: OpaqueKey, container_type: str) -> dict
         else:
             log.warning(f"Unexpected key type for {object_id}")
 
-    except ObjectDoesNotExist:
+    except (ObjectDoesNotExist, lib_api.ContentLibraryBlockNotFound):
         log.warning(f"No library item found for {object_id}")
 
     if not containers:
