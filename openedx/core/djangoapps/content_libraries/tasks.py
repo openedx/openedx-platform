@@ -276,6 +276,8 @@ def send_collections_changed_events(
     """
     Sends a CONTENT_OBJECT_ASSOCIATIONS_CHANGED event for each modified library
     entity in the given list, because their associated collections have changed.
+    This is dispatched in response to a COLLECTION_CHANGED event, usually
+    because entities have been added to or removed from a collection.
 
     ⏳ This task is designed to be run asynchronously so it can handle many
        entities, but you can also call it synchronously if you are only
@@ -287,6 +289,8 @@ def send_collections_changed_events(
     entities = (
         content_api.get_publishable_entities(learning_package_id)
         .filter(id__in=publishable_entity_ids)
+        # Ignore deleted items (both draft & published are deleted) that are still associated with the collection:
+        .exclude(draft__version=None, published__version=None)
         .select_related("component", "container")
     )
 
