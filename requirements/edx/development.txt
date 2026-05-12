@@ -889,7 +889,7 @@ enmerkar-underscore==2.4.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
-enterprise-integrated-channels==0.1.57
+enterprise-integrated-channels==0.1.58
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
