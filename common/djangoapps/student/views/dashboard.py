@@ -58,11 +58,6 @@ from openedx.core.djangoapps.util.maintenance_banner import add_maintenance_bann
 from openedx.core.djangolib.markup import HTML, Text
 from openedx.features.content_type_gating.models import ContentTypeGatingConfig
 from openedx.features.course_duration_limits.access import get_user_course_duration, get_user_course_expiration_date
-from openedx.features.enterprise_support.api import (
-    get_dashboard_consent_notification,
-    get_enterprise_learner_portal_context,
-)
-from openedx.features.enterprise_support.utils import is_enterprise_learner
 from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 
 log = logging.getLogger("edx.student")
@@ -619,8 +614,6 @@ def student_dashboard(request):  # pylint: disable=too-many-statements
             link_end=HTML("</a>"),
         )
 
-    enterprise_message = get_dashboard_consent_notification(request, user, course_enrollments)
-
     recovery_email_message = recovery_email_activation_message = None
     if is_secondary_email_feature_enabled():
         try:
@@ -646,10 +639,6 @@ def student_dashboard(request):  # pylint: disable=too-many-statements
                     "Kindly visit your email and follow the instructions to activate it."
                 )
             )
-
-    # Disable lookup of Enterprise consent_required_course due to ENT-727
-    # Will re-enable after fixing WL-1315
-    consent_required_courses = set()
 
     # Account activation message
     account_activation_messages = [
@@ -801,8 +790,6 @@ def student_dashboard(request):  # pylint: disable=too-many-statements
     context = {
         'urls': urls,
         'programs_data': programs_data,
-        'enterprise_message': enterprise_message,
-        'consent_required_courses': consent_required_courses,
         'enrollment_message': enrollment_message,
         'redirect_message': Text(redirect_message),
         'account_activation_messages': account_activation_messages,
@@ -852,13 +839,7 @@ def student_dashboard(request):  # pylint: disable=too-many-statements
         'course_info': get_dashboard_course_info(user, course_enrollments),
         # TODO START: clean up as part of REVEM-199 (END)
         'disable_unenrollment': disable_unenrollment,
-        # TODO: clean when experiment(Merchandise 2U LOBs - Dashboard) would be stop. [VAN-1097]
-        'is_enterprise_user': is_enterprise_learner(user),
     }
-
-    # Include enterprise learner portal metadata and messaging
-    enterprise_learner_portal_context = get_enterprise_learner_portal_context(request)
-    context.update(enterprise_learner_portal_context)
 
     context_from_plugins = get_plugins_view_context(
         ProjectType.LMS,

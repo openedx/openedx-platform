@@ -711,29 +711,6 @@ def consent_needed_for_course(request, user, course_id, enrollment_exists=False)
     return True
 
 
-@enterprise_is_enabled(otherwise=set())
-def get_consent_required_courses(user, course_ids):
-    """
-    Returns a set of course_ids that require consent
-    Note that this function makes use of the Enterprise models directly instead of using the API calls
-    """
-    result = set()
-    enterprise_learner = EnterpriseCustomerUser.objects.filter(user_id=user.id).first()
-    if not enterprise_learner or not enterprise_learner.enterprise_customer:
-        return result
-
-    enterprise_uuid = enterprise_learner.enterprise_customer.uuid
-    data_sharing_consent = DataSharingConsent.objects.filter(username=user.username,
-                                                             course_id__in=course_ids,
-                                                             enterprise_customer__uuid=enterprise_uuid)
-
-    for consent in data_sharing_consent:
-        if consent.consent_required():
-            result.add(consent.course_id)
-
-    return result
-
-
 @enterprise_is_enabled(otherwise='')
 def get_enterprise_consent_url(request, course_id, user=None, return_to=None, enrollment_exists=False, source='lms'):
     """
