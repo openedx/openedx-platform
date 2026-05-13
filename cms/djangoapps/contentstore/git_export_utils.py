@@ -170,9 +170,9 @@ def export_to_git(context_key, repo, user='', rdir=None):
             # V1 libraries and courses: use XML export (no user parameter)
             content_export_func(modulestore(), contentstore(), context_key,
                             root_dir, content_dir)
-    except (OSError, AttributeError):
+    except (OSError, AttributeError) as ex:
         log.exception('Failed to export %s', content_type_label)
-        raise GitExportError(GitExportError.XML_EXPORT_FAIL)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise GitExportError(GitExportError.XML_EXPORT_FAIL) from ex
 
     # Get current branch if not already set
     if not branch:
