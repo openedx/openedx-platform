@@ -22,21 +22,18 @@ import logging
 import os
 import shutil
 from collections.abc import Iterable
-from datetime import datetime
 from io import StringIO
-from tempfile import NamedTemporaryFile, mkdtemp
+from tempfile import NamedTemporaryFile
 
 from celery import Task, shared_task
 from celery.exceptions import TimeoutError as CeleryTimeout
 from celery.result import AsyncResult
 from celery.utils.log import get_task_logger
 from celery_utils.logged_task import LoggedTask
-from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.files import File
 from django.core.files.base import ContentFile
 from django.core.serializers.json import DjangoJSONEncoder
-from django.utils.text import slugify
 from edx_django_utils.monitoring import (
     set_code_owner_attribute,
     set_code_owner_attribute_from_module,
@@ -50,7 +47,6 @@ from opaque_keys.edx.locator import (
     LibraryUsageLocatorV2,
 )
 from openedx_content import api as content_api
-from openedx_content.api import create_zip_file as create_lib_zip_file
 from openedx_content.models_api import LearningPackage, PublishableEntity, PublishLog
 from openedx_events.content_authoring.data import (
     ContentObjectChangedData,
@@ -71,7 +67,6 @@ from openedx_events.content_authoring.signals import (
     LIBRARY_CONTAINER_UPDATED,
 )
 from openedx_tagging import api as tagging_api
-from path import Path
 from user_tasks.models import UserTaskArtifact
 from user_tasks.tasks import UserTask, UserTaskStatus
 from xblock.fields import Scope
@@ -628,15 +623,8 @@ def backup_library(self, user_id: int, library_key_str: str) -> None:
         self.status.set_state('Exporting')
         set_custom_attribute("exporting_started", str(library_key))
 
-        root_dir = Path(mkdtemp())
-        sanitized_lib_key = str(library_key).replace(":", "-")
-        sanitized_lib_key = slugify(sanitized_lib_key, allow_unicode=True)
-        timestamp = datetime.now().strftime("%Y-%m-%d-%H%M%S")
-        filename = f'{sanitized_lib_key}-{timestamp}.zip'
-        file_path = os.path.join(root_dir, filename)
         user = User.objects.get(id=user_id)
-        origin_server = getattr(settings, 'CMS_BASE', None)
-        create_lib_zip_file(package_ref=str(library_key), path=file_path, user=user, origin_server=origin_server)
+        _root_dir, file_path = api.create_library_v2_zip(library_key, user)
         set_custom_attribute("exporting_completed", str(library_key))
 
         with open(file_path, 'rb') as zipfile:
