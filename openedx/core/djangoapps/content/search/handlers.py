@@ -9,6 +9,9 @@ from django.dispatch import receiver
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import UsageKey
 from opaque_keys.edx.locator import LibraryCollectionLocator, LibraryContainerLocator
+from openedx_content import api as content_api
+from openedx_content.api import signals as content_signals
+from openedx_content.models_api import LearningPackage, PublishableEntity
 from openedx_events.content_authoring.data import (
     ContentLibraryData,
     ContentObjectChangedData,
@@ -388,10 +391,76 @@ def library_container_deleted(**kwargs) -> None:
     # See https://github.com/openedx/edx-platform/pull/36640 discussion.
 
 
+@receiver(content_signals.ENTITIES_DRAFT_CHANGED)
+@only_if_meilisearch_enabled
+def entities_updated(
+    learning_package: content_signals.LearningPackageEventData,
+    change_log: content_signals.DraftChangeLogEventData,
+    **kwargs,
+) -> None:
+    """
+    When entities are deleted or un-deleted (as drafts), update any associated
+    collections, so their "# of draft entities in collection" count is correct.
+
+    💾 This event is only received after the transaction has committed.
+    ⏳ This event is emitted synchronously and this handler is called
+       synchronously, so we want to be as efficient as possible.
+    """
+    deleted_or_undeleted_entity_ids = [
+        r.entity_id for r in change_log.changes if r.new_version is None or (r.old_version is None and r.restored)
+    ]
+    # Note: we only care about deleted or un-deleted, not newly created drafts, because it's currently impossible for a
+    # newly-created draft to be part of a collection.
+    if not deleted_or_undeleted_entity_ids:
+        return  # No need to do anything more; if nothing was deleted or un-deleted, it won't affect collection counts.
+    notify_affected_collections(learning_package.id, deleted_or_undeleted_entity_ids)
+
+
+@receiver(content_signals.ENTITIES_PUBLISHED)
+@only_if_meilisearch_enabled
+def entities_published(
+    learning_package: content_signals.LearningPackageEventData,
+    change_log: content_signals.PublishLogEventData,
+    **kwargs,
+) -> None:
+    """
+    When entities get newly published or their published version is deleted,
+    update the "# of published entities in collection" count of any associated
+    collections.
+    """
+    newly_published_or_unpublished_entity_ids = [
+        r.entity_id for r in change_log.changes if r.new_version is None or r.old_version is None
+    ]
+    if not newly_published_or_unpublished_entity_ids:
+        return  # No need to do anything more; if nothing was deleted or un-deleted, it won't affect collection counts.
+    notify_affected_collections(learning_package.id, newly_published_or_unpublished_entity_ids)
+
+
+def notify_affected_collections(learning_package_id: LearningPackage.ID, entity_ids: PublishableEntity.ID):
+    """Helper for updating collections' "# of entities" count when draft/published entities affect it"""
+    # Check if any collections are affected:
+    affected_collections = (
+        content_api.get_collections(learning_package_id, enabled=True).filter(entities__id__in=entity_ids)
+    )
+    # If any collections were affected, update them asynchronously:
+    if not affected_collections:
+        return
+    # Collections are only used in libraries at the moment. Get the library key so we can form opaque keys for each
+    # collection too.
+    try:
+        library_key = lib_api.get_library_key(learning_package_id)
+    except lib_api.ContentLibraryNotFound:
+        return
+
+    for collection in affected_collections:
+        collection_key = lib_api.library_collection_locator(library_key, collection.collection_code)
+        update_library_collection_index_doc.delay(str(collection_key))  # Async - no need to wait for this ever.
+
+
 @receiver([COURSE_IMPORT_COMPLETED, COURSE_RERUN_COMPLETED])
 def handle_reindex_on_signal(**kwargs):
     """
-    Automatically update Meiliesearch index for course in database on new import or rerun.
+    Automatically update Meilisearch index for course in database on new import or rerun.
     """
     course_data = kwargs.get("course", None)
     if not course_data or not isinstance(course_data, CourseData):

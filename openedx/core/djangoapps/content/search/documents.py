@@ -558,6 +558,9 @@ def searchable_doc_for_collection(
     if collection:
         assert collection.collection_code == collection_key.collection_id
 
+        # Collections themselves are not publishable entities, so don't have a "draft" or "published" version, but the
+        # entities they contain are publishable, so the number of entities in the collection may be different between
+        # draft and published views, if some draft entities are unpublished or are published but the draft is deleted.
         draft_num_children = content_api.filter_publishable_entities(
             collection.entities,
             has_draft=True,
