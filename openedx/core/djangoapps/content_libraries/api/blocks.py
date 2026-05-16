@@ -901,6 +901,8 @@ def delete_library_block(
 
     try:
         component = get_component_from_usage_key(usage_key)
+        if component.versioning.draft is None:
+            raise Component.DoesNotExist("Component draft version was already deleted.")
     except Component.DoesNotExist:
         # There may be cases where entries are created in the
         # search index, but the component is not created
