@@ -51,6 +51,7 @@ from openedx_content.models_api import LearningPackage, PublishableEntity, Publi
 from openedx_events.content_authoring.data import (
     ContentObjectChangedData,
     LibraryBlockData,
+    LibraryCollectionData,
     LibraryContainerData,
 )
 from openedx_events.content_authoring.signals import (
@@ -59,6 +60,7 @@ from openedx_events.content_authoring.signals import (
     LIBRARY_BLOCK_DELETED,
     LIBRARY_BLOCK_PUBLISHED,
     LIBRARY_BLOCK_UPDATED,
+    LIBRARY_COLLECTION_UPDATED,
     LIBRARY_CONTAINER_CREATED,
     LIBRARY_CONTAINER_DELETED,
     LIBRARY_CONTAINER_PUBLISHED,
@@ -195,6 +197,35 @@ def send_change_events_for_modified_entities(
             # Notifying parent containers that a child has been restored is not necessary here - they'll already be
             # included in 'change_list' [as side effects].
 
+    # When entities are deleted or un-deleted (as drafts), update any associated collections, so their "# of draft
+    # entities in collection" count is correct.  We only care about deleted or un-deleted, not newly created drafts,
+    # because it's currently impossible for a newly-created draft to be part of a collection.
+    deleted_or_undeleted_entity_ids = [
+        r.entity_id for r in changes if r.new_version is None or (r.old_version is None and r.restored)
+    ]
+    if deleted_or_undeleted_entity_ids:
+        emit_collections_updated(library, entity_ids=deleted_or_undeleted_entity_ids)
+
+
+def emit_collections_updated(library: ContentLibrary, entity_ids: list[PublishableEntity.ID]) -> None:
+    """
+    Helper function to notify affected collections after an entity is deleted/un-deleted/published/un-published.
+
+    Used by `send_change_events_for_modified_entities()` and `send_events_after_publish()`
+    """
+    # Check if any collections are affected:
+    affected_collections = (
+        content_api.get_collections(library.learning_package_id, enabled=True).filter(entities__id__in=entity_ids)
+    )
+    for collection in affected_collections:
+        collection_key = api.library_collection_locator(
+            library_key=library.library_key,
+            collection_key=collection.collection_code,
+        )
+        # .. event_implemented_name: LIBRARY_COLLECTION_UPDATED
+        # .. event_type: org.openedx.content_authoring.content_library.collection.updated.v1
+        LIBRARY_COLLECTION_UPDATED.send_event(library_collection=LibraryCollectionData(collection_key=collection_key))
+
 
 @shared_task(base=LoggedTask)
 @set_code_owner_attribute
@@ -330,6 +361,7 @@ def send_events_after_publish(publish_log_id: int, library_key_str: str) -> None
     """
     publish_log = PublishLog.objects.get(id=publish_log_id)
     library_key = LibraryLocatorV2.from_string(library_key_str)
+    library = ContentLibrary.objects.get_by_key(library_key)
     affected_entities = publish_log.records.select_related(
         "entity", "entity__container", "entity__container__container_type", "entity__component",
     ).all()
@@ -360,6 +392,14 @@ def send_events_after_publish(publish_log_id: int, library_key_str: str) -> None
                 f"PublishableEntity {record.entity.pk} / {record.entity.entity_ref} "
                 "was modified during publish operation but is of unknown type."
             )
+
+    # When entities get newly published or their published version is deleted, update the "# of published entities in
+    # collection" count of any associated collections.
+    newly_published_or_unpublished_entity_ids = [
+        r.entity_id for r in affected_entities if r.new_version is None or r.old_version is None
+    ]
+    if not newly_published_or_unpublished_entity_ids:
+        emit_collections_updated(library, entity_ids=newly_published_or_unpublished_entity_ids)
 
 
 def _filter_child(store, usage_key, capa_type):

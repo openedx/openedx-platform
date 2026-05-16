@@ -95,7 +95,6 @@ __all__ = [
     "get_metadata",
     "require_permission_for_library_key",
     "get_library",
-    "get_library_key",
     "create_library",
     "get_library_team",
     "get_library_user_permissions",
@@ -414,15 +413,6 @@ def get_library(library_key: LibraryLocatorV2) -> ContentLibraryMetadata:
         updated=learning_package.updated,
         learning_package_id=learning_package.id,
     )
-
-
-def get_library_key(learning_package_id: LearningPackage.ID) -> LibraryLocatorV2:
-    """
-    Get the library key for the library with the specified learning package ID.
-
-    Raises ContentLibraryNotFound if the library doesn't exist.
-    """
-    return ContentLibrary.objects.get(learning_package_id=learning_package_id).library_key
 
 
 def create_library(
