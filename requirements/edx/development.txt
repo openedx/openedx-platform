@@ -281,7 +281,7 @@ colorama==0.4.6
     # via
     #   -r requirements/edx/testing.txt
     #   tox
-coverage[toml]==7.13.5
+coverage[toml]==7.14.0
     # via
     #   -r requirements/edx/testing.txt
     #   pytest-cov
@@ -593,7 +593,7 @@ django-stubs[compatible-mypy]==5.2.9
     #   -c requirements/constraints.txt
     #   -r requirements/edx/development.in
     #   djangorestframework-stubs
-django-stubs-ext==6.0.3
+django-stubs-ext==6.0.4
     # via django-stubs
 django-user-tasks==4.0.0
     # via
@@ -1079,7 +1079,7 @@ icalendar==7.1.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
-idna==3.13
+idna==3.14
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -1197,7 +1197,7 @@ lazy==1.6
     #   lti-consumer-xblock
     #   ora2
     #   xblock
-librt==0.10.0
+librt==0.11.0
     # via mypy
 libsass==0.10.0
     # via
@@ -1413,7 +1413,7 @@ openedx-events==11.2.0
     #   openedx-authz
     #   openedx-core
     #   ora2
-openedx-filters==3.3.0
+openedx-filters==3.4.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -1453,7 +1453,7 @@ pact-python-ffi==0.5.4.0
     # via
     #   -r requirements/edx/testing.txt
     #   pact-python
-paramiko==4.0.0
+paramiko==5.0.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -1523,7 +1523,7 @@ prompt-toolkit==3.0.52
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
     #   click-repl
-propcache==0.4.1
+propcache==0.5.2
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -1846,12 +1846,12 @@ referencing==0.37.0
     #   -r requirements/edx/testing.txt
     #   jsonschema
     #   jsonschema-specifications
-regex==2026.4.4
+regex==2026.5.9
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
     #   nltk
-requests==2.33.1
+requests==2.34.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -2129,7 +2129,7 @@ tomli-w==1.2.0
     # via
     #   -r requirements/edx/testing.txt
     #   tox
-tomlkit==0.14.0
+tomlkit==0.15.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -2144,7 +2144,7 @@ tqdm==4.67.3
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
     #   nltk
-types-pyyaml==6.0.12.20260508
+types-pyyaml==6.0.12.20260510
     # via
     #   django-stubs
     #   djangorestframework-stubs

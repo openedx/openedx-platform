@@ -64,7 +64,7 @@ httplib2==0.31.2
     # via
     #   google-api-python-client
     #   google-auth-httplib2
-idna==3.13
+idna==3.14
     # via requests
 isodate==0.7.2
     # via zeep
@@ -113,7 +113,7 @@ pytz==2026.2
     #   zeep
 pyyaml==6.0.3
     # via -r scripts/user_retirement/requirements/base.in
-requests==2.33.1
+requests==2.34.0
     # via
     #   -r scripts/user_retirement/requirements/base.in
     #   edx-rest-api-client

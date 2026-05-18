@@ -6,6 +6,9 @@ from django.conf import settings
 from django.utils.text import format_lazy
 from django.utils.translation import gettext_lazy as _
 
+# Import signals to ensure they are registered
+from . import signals  # noqa: F401, pylint: disable=unused-import
+
 # The maximum length for the bio ("about me") account field
 BIO_MAX_LENGTH = 300
 

@@ -94,7 +94,7 @@ httplib2==0.31.2
     #   -r scripts/user_retirement/requirements/base.txt
     #   google-api-python-client
     #   google-auth-httplib2
-idna==3.13
+idna==3.14
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   requests
@@ -123,7 +123,7 @@ more-itertools==11.0.2
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   simple-salesforce
-moto==5.2.0
+moto==5.2.1
     # via -r scripts/user_retirement/requirements/testing.in
 packaging==26.2
     # via pytest
@@ -189,7 +189,7 @@ pyyaml==6.0.3
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   responses
-requests==2.33.1
+requests==2.34.0
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   edx-rest-api-client

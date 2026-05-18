@@ -63,7 +63,7 @@ httpx==0.28.1
     # via mcp
 httpx-sse==0.4.3
     # via mcp
-idna==3.13
+idna==3.14
     # via
     #   anyio
     #   httpx
@@ -146,13 +146,13 @@ pyjwt[crypto]==2.12.1
     #   semgrep
 python-dotenv==1.2.2
     # via pydantic-settings
-python-multipart==0.0.27
+python-multipart==0.0.28
     # via mcp
 referencing==0.37.0
     # via
     #   jsonschema
     #   jsonschema-specifications
-requests==2.33.1
+requests==2.34.0
     # via
     #   opentelemetry-exporter-otlp-proto-http
     #   semgrep
@@ -170,7 +170,7 @@ semantic-version==2.10.0
     # via semgrep
 semgrep==1.162.0
     # via -r requirements/edx/semgrep.in
-sse-starlette==3.4.2
+sse-starlette==3.4.3
     # via mcp
 starlette==1.0.0
     # via

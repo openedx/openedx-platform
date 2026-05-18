@@ -8,9 +8,9 @@ certifi==2026.4.22
     # via requests
 charset-normalizer==3.4.7
     # via requests
-idna==3.13
+idna==3.14
     # via requests
-requests==2.33.1
+requests==2.34.0
     # via -r scripts/xblock/requirements.in
 urllib3==2.7.0
     # via requests

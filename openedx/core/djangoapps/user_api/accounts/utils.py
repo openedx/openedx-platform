@@ -11,6 +11,8 @@ import waffle  # pylint: disable=invalid-django-waffle-import
 from completion.models import BlockCompletion
 from completion.waffle import ENABLE_COMPLETION_TRACKING_SWITCH
 from django.conf import settings
+from django.db.models import CharField, Value
+from django.db.models.functions import Cast, Concat
 from django.utils.translation import gettext as _
 from edx_django_utils.user import generate_password
 from social_django.models import UserSocialAuth
@@ -22,6 +24,10 @@ from openedx.core.djangolib.oauth2_retirement_utils import retire_dot_oauth2_mod
 from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 
 from ..models import UserRetirementStatus
+
+# Prefix and suffix used to build a per-record redacted uid for UserSocialAuth.
+REDACTED_SOCIAL_AUTH_UID_PREFIX = 'redacted-before-delete-'
+REDACTED_SOCIAL_AUTH_UID_SUFFIX = '@safe.com'
 
 ENABLE_SECONDARY_EMAIL_FEATURE_SWITCH = 'enable_secondary_email_feature'
 LOGGER = logging.getLogger(__name__)
@@ -196,6 +202,30 @@ def is_secondary_email_feature_enabled():
     return waffle.switch_is_active(ENABLE_SECONDARY_EMAIL_FEATURE_SWITCH)
 
 
+def redact_and_delete_social_auth(user_id, skip_delete=False):
+    """
+    Redact PII from all UserSocialAuth records for the given user, then delete them.
+
+    Downstream copies of data may use soft-deletes, and redacting before deleting
+    ensures PII for retired users (or future retirements) is not retained.
+
+    ``skip_delete`` should only be set to True when called from the pre_delete signal
+    handler, where deletion is already in progress.
+    """
+    social_auth_queryset = UserSocialAuth.objects.filter(user_id=user_id)
+    # Important: this redacted uid must match the format used by ``get_redacted_social_auth_uid()``.
+    social_auth_queryset.update(
+        uid=Concat(
+            Value(REDACTED_SOCIAL_AUTH_UID_PREFIX),
+            Cast('id', output_field=CharField()),
+            Value(REDACTED_SOCIAL_AUTH_UID_SUFFIX),
+        ),
+        extra_data={},
+    )
+    if not skip_delete:
+        social_auth_queryset.delete()
+
+
 def create_retirement_request_and_deactivate_account(user):
     """
     Adds user to retirement queue, unlinks social auth accounts, changes user passwords
@@ -204,8 +234,8 @@ def create_retirement_request_and_deactivate_account(user):
     # Add user to retirement queue.
     UserRetirementStatus.create_retirement(user)
 
-    # Unlink LMS social auth accounts
-    UserSocialAuth.objects.filter(user_id=user.id).delete()
+    # Redact and unlink LMS social auth accounts.
+    redact_and_delete_social_auth(user.id)
 
     # Change LMS password & email
     user.email = get_retired_email_by_email(user.email)
