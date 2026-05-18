@@ -1504,6 +1504,71 @@ class TestAccountRetirementPost(RetirementTestCase):
         assert not CourseEnrollmentAllowed.objects.filter(email=self.original_email).exists()
         assert not UnregisteredLearnerCohortAssignments.objects.filter(email=self.original_email).exists()
 
+    @mock.patch('openedx.core.djangoapps.user_api.accounts.views.get_profile_image_names')
+    @mock.patch('openedx.core.djangoapps.user_api.accounts.views.remove_profile_images')
+    def test_cohort_assignment_email_redacted_before_delete(
+        self, mock_remove_profile_images, mock_get_profile_image_names
+    ):
+        """
+        Verify that UnregisteredLearnerCohortAssignments email is redacted (UPDATE) before the
+        record is deleted, so downstream systems (e.g. Snowflake) never see the raw email in
+        CDC/replication logs.
+
+        Uses CaptureQueriesContext to assert the UPDATE precedes the DELETE at the SQL level,
+        and that both operations use ID-based filtering to prevent over-affecting unrelated rows.
+        """
+        other_cohort = CourseUserGroup.objects.create(
+            name="OtherCohort",
+            course_id=self.course_key,
+            group_type=CourseUserGroup.COHORT,
+        )
+        other_assignment = UnregisteredLearnerCohortAssignments.objects.create(
+            course_user_group=other_cohort,
+            course_id=CourseKey.from_string('course-v1:edX+OtherX+Other_Course'),
+            email=self.original_email,
+        )
+
+        data = {'username': self.original_username}
+        with CaptureQueriesContext(connection) as context:
+            self.post_and_assert_status(data)
+
+        cohort_updates = [
+            q for q in context.captured_queries
+            if 'UPDATE' in q['sql'] and 'course_groups_unregisteredlearnercohortassignments' in q['sql']
+        ]
+        cohort_deletes = [
+            q for q in context.captured_queries
+            if 'DELETE' in q['sql'] and 'course_groups_unregisteredlearnercohortassignments' in q['sql']
+        ]
+
+        # Exactly one bulk UPDATE and one bulk DELETE — not per-record queries
+        assert len(cohort_updates) == 1, f"Expected 1 UPDATE, got {len(cohort_updates)}"
+        assert len(cohort_deletes) == 1, f"Expected 1 DELETE, got {len(cohort_deletes)}"
+
+        # UPDATE must use ID-based filtering to avoid over-redacting
+        assert '"id" IN' in cohort_updates[0]['sql'], (
+            f"UPDATE should use ID-based filtering: {cohort_updates[0]['sql']}"
+        )
+        # DELETE must use ID-based filtering to avoid over-deletion
+        assert '"id" IN' in cohort_deletes[0]['sql'], (
+            f"DELETE should use ID-based filtering: {cohort_deletes[0]['sql']}"
+        )
+
+        # UPDATE must appear before DELETE in the query stream
+        update_pos = context.captured_queries.index(cohort_updates[0])
+        delete_pos = context.captured_queries.index(cohort_deletes[0])
+        assert update_pos < delete_pos, "Email redaction (UPDATE) must precede record deletion (DELETE)"
+
+        # UPDATE must set email to the retired value
+        assert self.retired_email in cohort_updates[0]['sql'], (
+            f"UPDATE should set email to retired_email '{self.retired_email}': {cohort_updates[0]['sql']}"
+        )
+
+        # Both cohort assignments for original_email must be gone
+        assert not UnregisteredLearnerCohortAssignments.objects.filter(
+            id__in=[self.cohort_assignment.id, other_assignment.id]
+        ).exists()
+
     def test_retire_user_twice_idempotent(self):
         data = {'username': self.original_username}
         self.post_and_assert_status(data)

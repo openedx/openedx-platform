@@ -1176,7 +1176,19 @@ class AccountRetirementView(ViewSet):
 
             # Retire any objects linked to the user via their original email
             CourseEnrollmentAllowed.delete_by_user_value(original_email, field="email")
-            UnregisteredLearnerCohortAssignments.delete_by_user_value(original_email, field="email")
+            # Redact email PII before deletion so downstream systems (e.g. Snowflake) see only
+            # redacted data in CDC/replication logs, not the original email address.
+            cohort_assignment_ids = list(
+                UnregisteredLearnerCohortAssignments.objects.filter(
+                    email=original_email
+                ).values_list('id', flat=True)
+            )
+            UnregisteredLearnerCohortAssignments.objects.filter(
+                id__in=cohort_assignment_ids
+            ).update(email=retired_email)
+            UnregisteredLearnerCohortAssignments.objects.filter(
+                id__in=cohort_assignment_ids
+            ).delete()
 
             # This signal allows code in higher points of LMS to retire the user as necessary
             USER_RETIRE_LMS_CRITICAL.send(
