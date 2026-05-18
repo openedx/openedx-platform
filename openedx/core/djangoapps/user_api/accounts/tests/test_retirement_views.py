@@ -1559,9 +1559,9 @@ class TestAccountRetirementPost(RetirementTestCase):
         delete_pos = context.captured_queries.index(cohort_deletes[0])
         assert update_pos < delete_pos, "Email redaction (UPDATE) must precede record deletion (DELETE)"
 
-        # UPDATE must set email to the retired value
-        assert self.retired_email in cohort_updates[0]['sql'], (
-            f"UPDATE should set email to retired_email '{self.retired_email}': {cohort_updates[0]['sql']}"
+        # UPDATE must set email to the redacted sentinel value
+        assert 'redacted@retired.invalid' in cohort_updates[0]['sql'], (
+            f"UPDATE should set email to 'redacted@retired.invalid': {cohort_updates[0]['sql']}"
         )
 
         # Both cohort assignments for original_email must be gone

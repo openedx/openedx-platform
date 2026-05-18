@@ -8,9 +8,10 @@ from unittest.mock import call, patch
 import ddt
 import pytest
 from django.contrib.auth.models import AnonymousUser, User  # pylint: disable=imported-auth-user
-from django.db import IntegrityError
+from django.db import IntegrityError, connection
 from django.http import Http404
 from django.test import TestCase
+from django.test.utils import CaptureQueriesContext
 from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locator import CourseLocator
 from openedx_events.testing import OpenEdxEventsTestMixin
@@ -807,3 +808,51 @@ class TestUnregisteredLearnerCohortAssignments(TestCase):
 
         assert not was_retired
         assert self.cohort_assignment.email == known_learner_email
+
+    def test_email_redacted_before_delete(self):
+        """
+        Verify email is redacted (UPDATE) before the record is deleted, using
+        ID-based filtering to prevent over-affecting unrelated rows.
+        """
+        # Create an unrelated assignment with the same email in a different course
+        other_course_key = CourseKey.from_string('course-v1:edX+OtherX+Other_Course')
+        other_cohort = CourseUserGroup.objects.create(
+            name='OtherCohort',
+            course_id=other_course_key,
+            group_type=CourseUserGroup.COHORT,
+        )
+        other_assignment = UnregisteredLearnerCohortAssignments.objects.create(
+            course_user_group=other_cohort,
+            course_id=other_course_key,
+            email='learner@example.com',
+        )
+
+        with CaptureQueriesContext(connection) as context:
+            was_retired = UnregisteredLearnerCohortAssignments.delete_by_user_value(
+                value='learner@example.com',
+                field='email'
+            )
+
+        assert was_retired
+
+        updates = [q for q in context.captured_queries if 'UPDATE' in q['sql']]
+        deletes = [q for q in context.captured_queries if 'DELETE' in q['sql']]
+
+        # Exactly one bulk UPDATE and one bulk DELETE
+        assert len(updates) == 1
+        assert len(deletes) == 1
+
+        # Both must use ID-based filtering
+        assert '"id" IN' in updates[0]['sql']
+        assert '"id" IN' in deletes[0]['sql']
+
+        # UPDATE must precede DELETE
+        assert context.captured_queries.index(updates[0]) < context.captured_queries.index(deletes[0])
+
+        # UPDATE must set email to the redacted sentinel value
+        assert 'redacted@retired.invalid' in updates[0]['sql']
+
+        # Both records must be deleted
+        assert not UnregisteredLearnerCohortAssignments.objects.filter(
+            id__in=[self.cohort_assignment.id, other_assignment.id]
+        ).exists()

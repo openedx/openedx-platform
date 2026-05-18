@@ -311,3 +311,25 @@ class UnregisteredLearnerCohortAssignments(DeletableByUserValue, models.Model): 
     course_user_group = models.ForeignKey(CourseUserGroup, on_delete=models.CASCADE)  # noqa: DJ012
     email = models.CharField(blank=True, max_length=255, db_index=True)
     course_id = CourseKeyField(max_length=255)
+
+    @classmethod
+    def delete_by_user_value(cls, value, field):
+        """
+        Redacts the email field then deletes records where
+        ``field`` equals ``value``.
+
+        Returns True if deleted, False if no matching records found.
+        """
+        filter_kwargs = {field: value}
+        records_matching_user_value = cls.objects.filter(**filter_kwargs)
+
+        if not records_matching_user_value.exists():
+            return False
+
+        # Extract IDs to prevent over-affecting unrelated records
+        ids = list(records_matching_user_value.values_list('id', flat=True))
+
+        # Redact email before deletion
+        cls.objects.filter(id__in=ids).update(email='redacted@retired.invalid')
+        cls.objects.filter(id__in=ids).delete()
+        return True
