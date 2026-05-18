@@ -207,14 +207,14 @@ def create_or_update_bulk_saml_provider_data(entity_id, public_keys, sso_url, ex
                 obj.expires_at = expires_at
                 obj.fetched_at = fetched_at
             SAMLProviderData.objects.bulk_update(existing_data_objects, ['sso_url', 'expires_at', 'fetched_at'])
-            return True
+            new_records_created = True
         else:
             _, created = SAMLProviderData.objects.update_or_create(
                 public_key=key, entity_id=entity_id,
                 defaults={'sso_url': sso_url, 'expires_at': expires_at, 'fetched_at': fetched_at},
             )
-        if created:
-            new_records_created = True
+            if created:
+                new_records_created = True
 
     return new_records_created
 
