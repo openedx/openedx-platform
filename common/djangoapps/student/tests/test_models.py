@@ -10,8 +10,10 @@ from crum import set_current_request
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser, User  # pylint: disable=imported-auth-user
 from django.core.cache import cache
+from django.db import connection
 from django.db.models.functions import Lower
 from django.test import TestCase, override_settings
+from django.test.utils import CaptureQueriesContext
 from edx_toggles.toggles.testutils import override_waffle_flag
 from freezegun import freeze_time
 from opaque_keys.edx.keys import CourseKey
@@ -635,6 +637,48 @@ class TestCourseEnrollmentAllowed(ModuleStoreTestCase):  # pylint: disable=missi
             email=self.email
         )
         assert user_search_results.exists()
+
+    def test_email_redacted_before_delete(self):
+        """
+        Verify email is redacted (UPDATE) before the record is deleted, using
+        ID-based filtering to prevent over-affecting unrelated rows.
+        """
+        # Create an unrelated record with the same email in a different course
+        other_course_key = CourseKey.from_string('course-v1:edX+OtherX+Other_Course')
+        other_record = CourseEnrollmentAllowed.objects.create(
+            email=self.email,
+            course_id=other_course_key,
+        )
+
+        with CaptureQueriesContext(connection) as context:
+            is_successful = CourseEnrollmentAllowed.delete_by_user_value(
+                value=self.email,
+                field='email'
+            )
+
+        assert is_successful
+
+        updates = [q for q in context.captured_queries if 'UPDATE' in q['sql']]
+        deletes = [q for q in context.captured_queries if 'DELETE' in q['sql']]
+
+        # Exactly one bulk UPDATE and one bulk DELETE
+        assert len(updates) == 1
+        assert len(deletes) == 1
+
+        # Both must use ID-based filtering
+        assert '"id" IN' in updates[0]['sql']
+        assert '"id" IN' in deletes[0]['sql']
+
+        # UPDATE must precede DELETE
+        assert context.captured_queries.index(updates[0]) < context.captured_queries.index(deletes[0])
+
+        # UPDATE must set email to the redacted sentinel value
+        assert 'redacted@retired.invalid' in updates[0]['sql']
+
+        # Both records must be deleted
+        assert not CourseEnrollmentAllowed.objects.filter(
+            id__in=[self.allowed_enrollment.id, other_record.id]
+        ).exists()
 
     def test_may_enroll_and_unenrolled_result_is_based_on_unmarked_user_field(self):
         """

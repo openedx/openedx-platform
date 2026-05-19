@@ -1597,7 +1597,9 @@ class CourseEnrollmentAllowed(DeletableByUserValue, models.Model):
     the object is marked with the student who enrolled, to prevent students from changing e-mails and
     enrolling many accounts through the same e-mail.
 
-    .. no_pii:
+    .. pii: The email field stores PII.
+    .. pii_types: email_address
+    .. pii_retirement: local_api
     """
     email = models.CharField(max_length=255, db_index=True)
     course_id = CourseKeyField(max_length=255, db_index=True)
@@ -1645,6 +1647,28 @@ class CourseEnrollmentAllowed(DeletableByUserValue, models.Model):
         `course_id` identifies the course for which to compute the QuerySet.
         """
         return CourseEnrollmentAllowed.objects.filter(course_id=course_id, user__isnull=True)
+
+    @classmethod
+    def delete_by_user_value(cls, value, field):
+        """
+        Redacts the email field then deletes records where
+        ``field`` equals ``value``.
+
+        Returns True if deleted, False if no matching records found.
+        """
+        filter_kwargs = {field: value}
+        records_matching_user_value = cls.objects.filter(**filter_kwargs)
+
+        if not records_matching_user_value.exists():
+            return False
+
+        # Extract IDs to prevent over-affecting unrelated records
+        ids = list(records_matching_user_value.values_list('id', flat=True))
+
+        # Redact email before deletion
+        cls.objects.filter(id__in=ids).update(email='redacted@retired.invalid')
+        cls.objects.filter(id__in=ids).delete()
+        return True
 
 
 class CourseEnrollmentAttribute(models.Model):
