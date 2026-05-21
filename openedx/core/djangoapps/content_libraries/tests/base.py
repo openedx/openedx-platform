@@ -5,7 +5,6 @@ from contextlib import contextmanager
 import json
 from io import BytesIO
 from urllib.parse import urlencode
-from unittest import skip
 
 from organizations.models import Organization
 from rest_framework.test import APITransactionTestCase, APIClient
@@ -66,7 +65,6 @@ URL_BLOCK_XBLOCK_HANDLER = '/api/xblock/v2/xblocks/{block_key}/handler/{user_id}
 
 
 @skip_unless_cms  # Content Libraries REST API is only available in Studio
-@skip("Skipped until we get onto libraries V2:https://2u-internal.atlassian.net/browse/TNL2-306")
 class ContentLibrariesRestApiTest(APITransactionTestCase):
     """
     Base class for Learning-Core-based Content Libraries test that use the REST API
