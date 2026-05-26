@@ -25,7 +25,7 @@ boltons==21.0.0
     #   semgrep
 bracex==2.6
     # via wcmatch
-certifi==2026.4.22
+certifi==2026.5.20
     # via
     #   httpcore
     #   httpx
@@ -63,7 +63,7 @@ httpx==0.28.1
     # via mcp
 httpx-sse==0.4.3
     # via mcp
-idna==3.14
+idna==3.16
     # via
     #   anyio
     #   httpx
@@ -146,13 +146,13 @@ pyjwt[crypto]==2.12.1
     #   semgrep
 python-dotenv==1.2.2
     # via pydantic-settings
-python-multipart==0.0.28
+python-multipart==0.0.29
     # via mcp
 referencing==0.37.0
     # via
     #   jsonschema
     #   jsonschema-specifications
-requests==2.34.0
+requests==2.34.2
     # via
     #   opentelemetry-exporter-otlp-proto-http
     #   semgrep
@@ -168,11 +168,11 @@ ruamel-yaml-clib==0.2.15
     # via semgrep
 semantic-version==2.10.0
     # via semgrep
-semgrep==1.162.0
+semgrep==1.163.0
     # via -r requirements/edx/semgrep.in
-sse-starlette==3.4.3
+sse-starlette==3.4.4
     # via mcp
-starlette==1.0.0
+starlette==1.1.0
     # via
     #   mcp
     #   sse-starlette
@@ -201,7 +201,7 @@ urllib3==2.7.0
     # via
     #   requests
     #   semgrep
-uvicorn==0.46.0
+uvicorn==0.48.0
     # via mcp
 wcmatch==8.5.2
     # via semgrep
@@ -209,5 +209,5 @@ wrapt==1.17.3
     # via
     #   opentelemetry-instrumentation
     #   opentelemetry-instrumentation-threading
-zipp==3.23.1
+zipp==4.1.0
     # via importlib-metadata

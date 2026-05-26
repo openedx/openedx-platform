@@ -4,7 +4,7 @@
 #
 #    make upgrade
 #
-click==8.3.3
+click==8.4.1
     # via
     #   -r scripts/structures_pruning/requirements/base.in
     #   click-log
@@ -19,7 +19,7 @@ pymongo==4.4.0
     #   -c requirements/constraints.txt
     #   -r scripts/structures_pruning/requirements/base.in
     #   edx-opaque-keys
-stevedore==5.7.0
+stevedore==5.8.0
     # via edx-opaque-keys
 typing-extensions==4.15.0
     # via edx-opaque-keys
