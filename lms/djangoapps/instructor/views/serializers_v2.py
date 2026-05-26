@@ -309,7 +309,7 @@ class CourseInformationSerializerV2(serializers.Serializer):
         try:
             # .. filter_implemented_name: InstructorDashboardTabsRequested
             # .. filter_type: org.openedx.learning.instructor.dashboard.tabs.requested.v1
-            filtered_tabs = InstructorDashboardTabsRequested.run_filter(
+            filtered_tabs, _user, _course_key = InstructorDashboardTabsRequested.run_filter(
                 tabs=tabs,
                 user=request.user,
                 course_key=course_key
