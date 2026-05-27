@@ -1,6 +1,8 @@
 """
-gunicorn configuration file: http://docs.gunicorn.org/en/stable/configure.html
+gunicorn configuration file: https://gunicorn.org/reference/settings/
 """
+
+import os
 
 preload_app = False
 timeout = 300
@@ -8,6 +10,10 @@ bind = "127.0.0.1:8000"
 pythonpath = "/edx/app/edxapp/edx-platform"
 max_requests = 50
 workers = 17
+proc_name = os.getenv("GUNICORN_PROC_NAME", "edxapp-lms")
+statsd_host = os.getenv("GUNICORN_STATSD_HOST", "127.0.0.1:8125")
+statsd_prefix = os.getenv("GUNICORN_STATSD_PREFIX", "gunicorn")
+dogstatsd_tags = os.getenv("GUNICORN_DOGSTATSD_TAGS", "app:edxapp-lms")
 
 
 def pre_request(worker, req):
