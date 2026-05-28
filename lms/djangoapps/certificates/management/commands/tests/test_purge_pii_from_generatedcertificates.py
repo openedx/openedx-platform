@@ -89,6 +89,16 @@ class PurgePiiFromCertificatesTests(ModuleStoreTestCase):
         cert_for_retired_user = GeneratedCertificate.objects.get(user_id=self.user_retired)
         assert cert_for_retired_user.name == ""
 
+        active_history_names = list(
+            GeneratedCertificate.history.filter(user=self.user_active).values_list("name", flat=True)
+        )
+        assert all(n == self.user_active_name for n in active_history_names)
+
+        retired_history_names = list(
+            GeneratedCertificate.history.filter(user=self.user_retired).values_list("name", flat=True)
+        )
+        assert all(n == "" for n in retired_history_names)
+
     def test_management_command_dry_run(self):
         """
         Verify that the management command does not purge any data when invoked with the `--dry-run` flag
@@ -110,5 +120,10 @@ class PurgePiiFromCertificatesTests(ModuleStoreTestCase):
         assert cert_for_active_user.name == self.user_active_name
         cert_for_retired_user = GeneratedCertificate.objects.get(user_id=self.user_retired)
         assert cert_for_retired_user.name == self.user_retired_name
+
+        retired_history_names = list(
+            GeneratedCertificate.history.filter(user=self.user_retired).values_list("name", flat=True)
+        )
+        assert all(n == self.user_retired_name for n in retired_history_names)
 
         assert logger.records[0].msg == expected_log_msg

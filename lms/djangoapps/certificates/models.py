@@ -170,9 +170,9 @@ class GeneratedCertificate(models.Model):  # noqa: DJ008
     """
     Base model for generated course certificates
 
-    .. pii: PII can exist in the generated certificate linked to in this model. Certificate data is currently retained.
+    .. pii: PII can exist in the generated certificate linked to in this model.
     .. pii_types: name, username
-    .. pii_retirement: retained
+    .. pii_retirement: local_api
 
     course_id       - Course run key
     created_date    - Date and time the certificate was created

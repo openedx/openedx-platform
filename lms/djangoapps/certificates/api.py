@@ -977,6 +977,9 @@ def clear_pii_from_certificate_records_for_user(user):
     model's custom `save()` function, nor fire any Django signals (which is desired at the time of writing). There is
     nothing to update in our external systems by this update.
 
+    Both the live `certificates_generatedcertificate` table and the django-simple-history audit table
+    `certificates_historicalgeneratedcertificate` are updated so that no snapshot retains the learner's name.
+
     Args:
         user (User): The User instance of the learner actively being retired.
 
@@ -984,6 +987,7 @@ def clear_pii_from_certificate_records_for_user(user):
         None
     """
     GeneratedCertificate.objects.filter(user=user).update(name="")
+    GeneratedCertificate.history.filter(user=user).update(name="")
 
 
 def get_cert_history_for_course_id(course_id):
