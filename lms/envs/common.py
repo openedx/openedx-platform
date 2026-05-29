@@ -3218,6 +3218,36 @@ EVENT_BUS_PRODUCER_CONFIG.update({  # noqa: F405
             "enabled": False
         },
     },
+    'org.openedx.learning.program.certificate.awarded.v1': {
+        'learning-program-certificate-lifecycle': {
+            'event_key_field': 'program_certificate.program.uuid',
+            # .. toggle_name: EVENT_BUS_PRODUCER_CONFIG['org.openedx.learning.program.certificate.awarded.v1']
+            #    ['learning-program-certificate-lifecycle']['enabled']
+            # .. toggle_implementation: DjangoSetting
+            # .. toggle_default: False
+            # .. toggle_description: Enables sending PROGRAM_CERTIFICATE_AWARDED events over the event bus from
+            #    edx-platform. Disabled until Credentials IDA is ready to consume these events instead of
+            #    receiving REST API calls.
+            # .. toggle_use_cases: opt_in
+            # .. toggle_creation_date: 2026-05-26
+            'enabled': False,
+        },
+    },
+    'org.openedx.learning.program.certificate.revoked.v1': {
+        'learning-program-certificate-lifecycle': {
+            'event_key_field': 'program_certificate.program.uuid',
+            # .. toggle_name: EVENT_BUS_PRODUCER_CONFIG['org.openedx.learning.program.certificate.revoked.v1']
+            #    ['learning-program-certificate-lifecycle']['enabled']
+            # .. toggle_implementation: DjangoSetting
+            # .. toggle_default: False
+            # .. toggle_description: Enables sending PROGRAM_CERTIFICATE_REVOKED events over the event bus from
+            #    edx-platform. Disabled until Credentials IDA is ready to consume these events instead of
+            #    receiving REST API calls.
+            # .. toggle_use_cases: opt_in
+            # .. toggle_creation_date: 2026-05-26
+            'enabled': False,
+        },
+    },
 })
 
 #### Survey Report ####
