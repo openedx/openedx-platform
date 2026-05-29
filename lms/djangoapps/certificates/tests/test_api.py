@@ -14,7 +14,7 @@ from django.test import RequestFactory, TestCase
 from django.test.utils import override_settings
 from django.urls import reverse
 from django.utils import timezone
-from edx_toggles.toggles.testutils import override_waffle_switch
+from edx_toggles.toggles.testutils import override_waffle_flag, override_waffle_switch
 from freezegun import freeze_time
 from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locator import CourseLocator
@@ -54,7 +54,7 @@ from lms.djangoapps.certificates.api import (
     remove_allowlist_entry,
     set_cert_generation_enabled,
 )
-from lms.djangoapps.certificates.config import AUTO_CERTIFICATE_GENERATION
+from lms.djangoapps.certificates.config import AUTO_CERTIFICATE_GENERATION, ENABLE_HISTORICAL_PII_RETIREMENT
 from lms.djangoapps.certificates.models import (
     CertificateGenerationConfiguration,
     CertificateStatuses,
@@ -1279,17 +1279,22 @@ class CertificatesLearnerRetirementFunctionality(ModuleStoreTestCase):
 
     def test_clear_pii_from_certificate_records_clears_history_table(self):
         """
-        Verify that `clear_pii_from_certificate_records_for_user` also blanks `name` in the
-        django-simple-history audit table (`certificates_historicalgeneratedcertificate`).
+        Verify that `clear_pii_from_certificate_records_for_user` blanks `name` in the
+        django-simple-history audit table only when the ``certificates.enable_historical_pii_retirement``
+        waffle flag is enabled, and leaves it untouched when the flag is disabled.
         """
+        with override_waffle_flag(ENABLE_HISTORICAL_PII_RETIREMENT, active=False):
+            clear_pii_from_certificate_records_for_user(self.user)
+
         history_names = list(
             GeneratedCertificate.history.filter(user=self.user).values_list("name", flat=True)
         )
         assert all(n == self.user_full_name for n in history_names), (
-            "Expected all history rows to contain the full name before retirement."
+            "History rows should be untouched when the waffle flag is disabled."
         )
 
-        clear_pii_from_certificate_records_for_user(self.user)
+        with override_waffle_flag(ENABLE_HISTORICAL_PII_RETIREMENT, active=True):
+            clear_pii_from_certificate_records_for_user(self.user)
 
         history_names_after = list(
             GeneratedCertificate.history.filter(user=self.user).values_list("name", flat=True)
