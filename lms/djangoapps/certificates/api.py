@@ -978,9 +978,9 @@ def clear_pii_from_certificate_records_for_user(user):
     model's custom `save()` function, nor fire any Django signals (which is desired at the time of writing). There is
     nothing to update in our external systems by this update.
 
-    When the ``certificates.enable_redact_historical_pii_retirement`` waffle flag is enabled, the django-simple-history audit
-    table ``certificates_historicalgeneratedcertificate`` is also updated so that no snapshot retains the learner's
-    name.
+    When the ``certificates.enable_redact_historical_pii_retirement`` waffle flag is enabled, the
+    django-simple-history audit table ``certificates_historicalgeneratedcertificate`` is also updated so that
+    no snapshot retains the learner's name.
 
     Args:
         user (User): The User instance of the learner actively being retired.
