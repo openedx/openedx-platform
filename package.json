@@ -78,7 +78,7 @@
     "raw-loader": "^0.5",
     "react": "^16",
     "react-dom": "^16",
-    "react-focus-lock": "^1",
+    "react-focus-lock": "^2.0.0",
     "react-redux": "^5",
     "react-router-dom": "^5",
     "react-slick": "^0.31.0",
