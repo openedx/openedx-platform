@@ -24,7 +24,7 @@ from common.djangoapps.student.api import is_user_enrolled_in_course
 from common.djangoapps.student.models import CourseEnrollment
 from lms.djangoapps.branding import api as branding_api
 from lms.djangoapps.certificates.config import AUTO_CERTIFICATE_GENERATION as _AUTO_CERTIFICATE_GENERATION
-from lms.djangoapps.certificates.config import ENABLE_HISTORICAL_PII_RETIREMENT
+from lms.djangoapps.certificates.config import ENABLE_REDACT_HISTORICAL_PII_RETIREMENT
 from lms.djangoapps.certificates.data import CertificateStatuses, GeneratedCertificateData
 from lms.djangoapps.certificates.generation_handler import generate_certificate_task as _generate_certificate_task
 from lms.djangoapps.certificates.generation_handler import is_on_certificate_allowlist as _is_on_certificate_allowlist
@@ -978,7 +978,7 @@ def clear_pii_from_certificate_records_for_user(user):
     model's custom `save()` function, nor fire any Django signals (which is desired at the time of writing). There is
     nothing to update in our external systems by this update.
 
-    When the ``certificates.enable_historical_pii_retirement`` waffle flag is enabled, the django-simple-history audit
+    When the ``certificates.enable_redact_historical_pii_retirement`` waffle flag is enabled, the django-simple-history audit
     table ``certificates_historicalgeneratedcertificate`` is also updated so that no snapshot retains the learner's
     name.
 
@@ -989,7 +989,7 @@ def clear_pii_from_certificate_records_for_user(user):
         None
     """
     GeneratedCertificate.objects.filter(user=user).update(name="")
-    if ENABLE_HISTORICAL_PII_RETIREMENT.is_enabled():
+    if ENABLE_REDACT_HISTORICAL_PII_RETIREMENT.is_enabled():
         GeneratedCertificate.history.filter(user=user).update(name="")
 
 

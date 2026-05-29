@@ -12,7 +12,7 @@ import logging
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 
-from lms.djangoapps.certificates.config import ENABLE_HISTORICAL_PII_RETIREMENT
+from lms.djangoapps.certificates.config import ENABLE_REDACT_HISTORICAL_PII_RETIREMENT
 from lms.djangoapps.certificates.models import GeneratedCertificate
 from openedx.core.djangoapps.user_api.api import get_retired_user_ids
 
@@ -62,7 +62,7 @@ class Command(BaseCommand):
                 f"Purging `name` from the certificate records of the following users: {retired_user_ids}"
             )
             GeneratedCertificate.objects.filter(user_id__in=retired_user_ids).update(name="")
-            if ENABLE_HISTORICAL_PII_RETIREMENT.is_enabled():
+            if ENABLE_REDACT_HISTORICAL_PII_RETIREMENT.is_enabled():
                 log.warning(
                     f"Purging `name` from the historical certificate records of the following users: {retired_user_ids}"
                 )

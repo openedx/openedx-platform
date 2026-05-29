@@ -8,7 +8,7 @@ from edx_toggles.toggles.testutils import override_waffle_flag
 from testfixtures import LogCapture
 
 from common.djangoapps.student.tests.factories import UserFactory
-from lms.djangoapps.certificates.config import ENABLE_HISTORICAL_PII_RETIREMENT
+from lms.djangoapps.certificates.config import ENABLE_REDACT_HISTORICAL_PII_RETIREMENT
 from lms.djangoapps.certificates.data import CertificateStatuses
 from lms.djangoapps.certificates.models import GeneratedCertificate
 from lms.djangoapps.certificates.tests.factories import GeneratedCertificateFactory
@@ -84,7 +84,7 @@ class PurgePiiFromCertificatesTests(ModuleStoreTestCase):
         cert_for_retired_user = GeneratedCertificate.objects.get(user_id=self.user_retired)
         assert cert_for_retired_user.name == self.user_retired_name
 
-        with override_waffle_flag(ENABLE_HISTORICAL_PII_RETIREMENT, active=True):
+        with override_waffle_flag(ENABLE_REDACT_HISTORICAL_PII_RETIREMENT, active=True):
             call_command("purge_pii_from_generatedcertificates")
 
         cert_for_active_user = GeneratedCertificate.objects.get(user_id=self.user_active)
@@ -116,7 +116,7 @@ class PurgePiiFromCertificatesTests(ModuleStoreTestCase):
         cert_for_retired_user = GeneratedCertificate.objects.get(user_id=self.user_retired)
         assert cert_for_retired_user.name == self.user_retired_name
 
-        with override_waffle_flag(ENABLE_HISTORICAL_PII_RETIREMENT, active=True):
+        with override_waffle_flag(ENABLE_REDACT_HISTORICAL_PII_RETIREMENT, active=True):
             with LogCapture() as logger:
                 call_command("purge_pii_from_generatedcertificates", "--dry-run")
 
