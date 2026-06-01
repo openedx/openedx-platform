@@ -861,7 +861,7 @@ openedx-events==11.2.0
     #   openedx-authz
     #   openedx-core
     #   ora2
-openedx-filters==3.4.0
+openedx-filters==3.4.1
     # via
     #   -r requirements/edx/kernel.in
     #   edx-enterprise

@@ -6,6 +6,7 @@ from textwrap import dedent
 from unittest.mock import MagicMock, patch
 from uuid import uuid4
 
+from django.test import override_settings
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
@@ -692,3 +693,94 @@ class ScoreOverrideViewTestCase(GradingEndpointTestBase):
             format='json',
         )
         assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+class CourseMetadataViewTestCase(ModuleStoreTestCase):
+    """
+    Tests for GET /api/instructor/v2/courses/{course_id} with InstructorDashboardTabsRequested filter.
+    """
+    def setUp(self):
+        super().setUp()
+        self.client = APIClient()
+        self.course = CourseFactory.create()
+        self.instructor = InstructorFactory.create(course_key=self.course.id)
+        self.client.force_authenticate(user=self.instructor)
+
+    @override_settings(
+        OPEN_EDX_FILTERS_CONFIG={
+            "org.openedx.learning.instructor.dashboard.tabs.requested.v1": {
+                "pipeline": [
+                    "common.djangoapps.util.tests.test_filters.TestInstructorDashCustomTab",
+                ],
+                "fail_silently": False,
+            },
+        },
+    )
+    def test_tabs_filter_adds_custom_tab(self):
+        """Test that override settings drive a custom instructor dashboard tab."""
+        url = reverse("instructor_api_v2:course_metadata", kwargs={"course_id": str(self.course.id)})
+        response = self.client.get(url)
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        tabs_by_id = {tab["tab_id"]: tab for tab in data["tabs"]}
+
+        assert "course_info" in tabs_by_id
+        assert "custom" in tabs_by_id
+        assert tabs_by_id["custom"] == {
+            "tab_id": "custom",
+            "title": "Custom Tab",
+            "url": f"/courses/{self.course.id}/instructor/custom",
+            "sort_order": 999,
+        }
+
+    @override_settings(
+        OPEN_EDX_FILTERS_CONFIG={
+            "org.openedx.learning.instructor.dashboard.tabs.requested.v1": {
+                "pipeline": [
+                    "common.djangoapps.util.tests.test_filters.TestPreventTabsGenerationWithTabs",
+                ],
+                "fail_silently": False,
+            },
+        },
+    )
+    def test_tabs_filter_prevent_tabs_generation_with_custom_tabs(self):
+        """
+        Test that when PreventTabsGeneration is raised with a tabs attribute,
+        the serializer uses those custom tabs instead of the default ones.
+        """
+        url = reverse("instructor_api_v2:course_metadata", kwargs={"course_id": str(self.course.id)})
+        with self.assertLogs('openedx_filters.tooling', level='ERROR'):
+            response = self.client.get(url)
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["tabs"] == [{
+            "tab_id": "plugin_tab",
+            "title": "Plugin Tab",
+            "url": f"/courses/{self.course.id}/instructor/plugin",
+            "sort_order": 5,
+        }]
+
+    @override_settings(
+        OPEN_EDX_FILTERS_CONFIG={
+            "org.openedx.learning.instructor.dashboard.tabs.requested.v1": {
+                "pipeline": [
+                    "common.djangoapps.util.tests.test_filters.TestPreventTabsGenerationWithoutTabs",
+                ],
+                "fail_silently": False,
+            },
+        },
+    )
+    def test_tabs_filter_prevent_tabs_generation_without_tabs_attr(self):
+        """
+        Test that when PreventTabsGeneration is raised without a tabs attribute,
+        the serializer falls back to an empty list.
+        """
+        url = reverse("instructor_api_v2:course_metadata", kwargs={"course_id": str(self.course.id)})
+        with self.assertLogs('openedx_filters.tooling', level='ERROR'):
+            response = self.client.get(url)
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["tabs"] == []

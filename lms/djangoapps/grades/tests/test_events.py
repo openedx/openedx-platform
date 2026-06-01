@@ -5,6 +5,7 @@ Test that various events are fired for models in the grades app.
 from unittest import mock
 from unittest.mock import patch
 
+import pytest
 from ccx_keys.locator import CCXLocator
 from django.utils.timezone import now
 from openedx_events.learning.data import (
@@ -299,7 +300,7 @@ class GradeEventContextFilterTest(SharedModuleStoreTestCase):
 
         from lms.djangoapps.grades.events import course_grade_passed_first_time
 
-        with self.assertRaisesRegex(Exception, "boom"):
+        with pytest.raises(Exception, match="boom"):
             course_grade_passed_first_time(self.user.id, self.course.id)
 
         mock_log.exception.assert_called_once_with(
