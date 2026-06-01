@@ -355,19 +355,31 @@ class CourseMetadataViewTest(SharedModuleStoreTestCase, MasqueradeMixin):
         # Only configure 'honor' for this course — do NOT configure 'audit'
         CourseModeFactory.create(course_id=self.course_key, mode_slug='honor')
 
+        # Explicitly create an enrollment in an unconfigured mode
+        CourseEnrollmentFactory.create(
+            user=UserFactory.create(),
+            course_id=self.course_key,
+            mode='audit',
+            is_active=True,
+        )
+
         self.client.force_authenticate(user=self.instructor)
         response = self.client.get(self._get_url())
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        assert response.status_code == status.HTTP_200_OK
         enrollment_counts = response.data['enrollment_counts']
 
-        # 'audit' is not configured but has enrollments from setUp — it must appear
-        self.assertIn('audit', enrollment_counts)  # noqa: PT009
-        self.assertGreaterEqual(enrollment_counts['audit'], 1)  # noqa: PT009
+        # Configured mode must appear
+        assert 'honor' in enrollment_counts
+        # Unconfigured mode with enrollments must also appear
+        assert 'audit' in enrollment_counts
+        assert enrollment_counts['audit'] >= 1
+        # Total key must be present
+        assert 'total' in enrollment_counts
 
         # The sum of all mode counts must equal total
         mode_sum = sum(v for k, v in enrollment_counts.items() if k != 'total')
-        self.assertEqual(enrollment_counts['total'], mode_sum)  # noqa: PT009
+        assert enrollment_counts['total'] == mode_sum
 
     def _get_tabs_from_response(self, user, course_id=None):
         """Helper to get tabs from API response."""

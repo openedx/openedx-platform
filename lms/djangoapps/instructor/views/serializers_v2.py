@@ -411,7 +411,7 @@ class CourseInformationSerializerV2(serializers.Serializer):
         result = {mode.slug: counts[mode.slug] for mode in configured_modes}
         # Include any mode that has enrollments, even if not explicitly configured
         for mode_slug, count in counts.items():
-            if mode_slug != 'total' and mode_slug not in result:
+            if mode_slug != 'total' and mode_slug not in result and count > 0:
                 result[mode_slug] = count
         result['total'] = counts['total']
         return result
