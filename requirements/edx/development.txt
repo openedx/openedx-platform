@@ -17,7 +17,7 @@ aiohappyeyeballs==2.6.2
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
     #   aiohttp
-aiohttp==3.13.5
+aiohttp==3.14.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -134,7 +134,7 @@ bleach[css]==6.3.0
     #   ora2
     #   xblock-drag-and-drop-v2
     #   xblock-poll
-boto3==1.43.14
+boto3==1.43.19
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -142,7 +142,7 @@ boto3==1.43.14
     #   fs-s3fs
     #   ora2
     #   snowflake-connector-python
-botocore==1.43.14
+botocore==1.43.19
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -281,7 +281,7 @@ colorama==0.4.6
     # via
     #   -r requirements/edx/testing.txt
     #   tox
-coverage[toml]==7.14.0
+coverage[toml]==7.14.1
     # via
     #   -r requirements/edx/testing.txt
     #   pytest-cov
@@ -327,7 +327,7 @@ defusedxml==0.7.1
     #   python3-openid
     #   social-auth-core
     #   xblocks-contrib
-diff-cover==10.2.1
+diff-cover==10.3.0
     # via -r requirements/edx/testing.txt
 dill==0.4.1
     # via
@@ -423,7 +423,7 @@ django-appconf==1.2.0
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
     #   django-statici18n
-django-autocomplete-light==4.0.0
+django-autocomplete-light==4.0.1
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -539,7 +539,7 @@ django-oauth-toolkit==1.7.1
     #   -r requirements/edx/testing.txt
     #   edx-enterprise
     #   enterprise-integrated-channels
-django-object-actions==5.1.1
+django-object-actions==5.1.2
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -893,7 +893,7 @@ enterprise-integrated-channels==0.1.58
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
-event-tracking==4.0.0
+event-tracking==4.0.2
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -906,7 +906,7 @@ execnet==2.1.2
     #   pytest-xdist
 factory-boy==3.3.3
     # via -r requirements/edx/testing.txt
-faker==40.19.1
+faker==40.20.0
     # via
     #   -r requirements/edx/testing.txt
     #   factory-boy
@@ -1016,14 +1016,14 @@ grimp==3.14
     # via
     #   -r requirements/edx/testing.txt
     #   import-linter
-grpcio==1.80.0
+grpcio==1.81.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
     #   google-api-core
     #   google-cloud-firestore
     #   grpcio-status
-grpcio-status==1.80.0
+grpcio-status==1.81.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -1079,7 +1079,7 @@ icalendar==7.1.2
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
-idna==3.16
+idna==3.17
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -1203,7 +1203,7 @@ libsass==0.10.0
     # via
     #   -c requirements/constraints.txt
     #   -r requirements/edx/assets.txt
-lti-consumer-xblock==11.2.0
+lti-consumer-xblock==11.3.1
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -1497,7 +1497,7 @@ pillow==12.2.0
     #   edxval
 pip-tools==7.5.3
     # via -r requirements/pip-tools.txt
-platformdirs==4.9.6
+platformdirs==4.10.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -1535,7 +1535,7 @@ proto-plus==1.28.0
     #   -r requirements/edx/testing.txt
     #   google-api-core
     #   google-cloud-firestore
-protobuf==6.33.6
+protobuf==7.35.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -1693,7 +1693,7 @@ pyparsing==3.3.2
     #   chem
     #   openedx-calc
     #   xblocks-contrib
-pyproject-api==1.10.0
+pyproject-api==1.10.1
     # via
     #   -r requirements/edx/testing.txt
     #   tox
@@ -1759,7 +1759,7 @@ python-dateutil==2.9.0.post0
     #   olxcleaner
     #   ora2
     #   xblock
-python-discovery==1.3.1
+python-discovery==1.4.0
     # via
     #   -r requirements/edx/testing.txt
     #   tox
@@ -1835,7 +1835,7 @@ recommender-xblock==5.0.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
-redis==7.4.0
+redis==8.0.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -1893,13 +1893,13 @@ roman-numerals==4.1.0
     # via
     #   -r requirements/edx/doc.txt
     #   sphinx
-rpds-py==0.30.0
+rpds-py==2026.5.1
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
     #   jsonschema
     #   referencing
-ruff==0.15.14
+ruff==0.15.15
     # via -r requirements/edx/testing.txt
 rules==3.5
     # via
@@ -1908,7 +1908,7 @@ rules==3.5
     #   edx-enterprise
     #   edx-proctoring
     #   openedx-core
-s3transfer==0.17.0
+s3transfer==0.18.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -1985,7 +1985,7 @@ snowballstemmer==3.1.0
     # via
     #   -r requirements/edx/doc.txt
     #   sphinx
-snowflake-connector-python==4.5.0
+snowflake-connector-python==4.6.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -2137,7 +2137,7 @@ tomlkit==0.15.0
     #   openedx-core
     #   pylint
     #   snowflake-connector-python
-tox==4.54.0
+tox==4.55.0
     # via -r requirements/edx/testing.txt
 tqdm==4.67.3
     # via
@@ -2160,6 +2160,7 @@ typing-extensions==4.15.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
+    #   aiohttp
     #   aiosignal
     #   anyio
     #   beautifulsoup4
@@ -2233,7 +2234,7 @@ vine==5.1.0
     #   amqp
     #   celery
     #   kombu
-virtualenv==21.3.3
+virtualenv==21.4.2
     # via
     #   -r requirements/edx/testing.txt
     #   tox
