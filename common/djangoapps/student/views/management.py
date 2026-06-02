@@ -963,14 +963,17 @@ def confirm_email_change(request, key):
 
         user.email = pec.new_email
         user.save()
-        pec.delete()
+
+        # Redact pending email before deletion.
+        PendingEmailChange.delete_by_user_value(user, field="user")
+
         # And send it to the new email...
-        msg.recipient = Recipient(user.id, pec.new_email)
+        msg.recipient = Recipient(user.id, user.email)
         try:
             ace.send(msg)
         except Exception:  # pylint: disable=broad-except
             log.warning('Unable to send confirmation email to new address', exc_info=True)
-            response = render_to_response("email_change_failed.html", {'email': pec.new_email})
+            response = render_to_response("email_change_failed.html", {'email': user.email})
             transaction.set_rollback(True)
             return response
 

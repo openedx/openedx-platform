@@ -311,3 +311,10 @@ class UnregisteredLearnerCohortAssignments(DeletableByUserValue, models.Model): 
     course_user_group = models.ForeignKey(CourseUserGroup, on_delete=models.CASCADE)  # noqa: DJ012
     email = models.CharField(blank=True, max_length=255, db_index=True)
     course_id = CourseKeyField(max_length=255)
+
+    @classmethod
+    def redact_before_delete_fields(cls):
+        """
+        Redact email before deleting records for downstream soft-delete systems.
+        """
+        return {'email': 'redacted-before-delete@safe.com'}

@@ -35,6 +35,7 @@ locations.
     concepts/index
     extensions/tinymce_plugins
     decisions/index
+    apps/index
 
 .. grid:: 1 2 2 2
    :gutter: 3
@@ -90,6 +91,18 @@ locations.
          :expand:
 
          Hooks Extensions Framework
+
+   .. grid-item-card:: App Documentation
+      :class-card: sd-shadow-md sd-p-2
+      :class-footer: sd-border-0
+
+      * :doc:`apps/index`
+      * :doc:`decisions/app_decisions`
+      +++
+      .. button-ref:: apps/index
+         :color: primary
+         :outline:
+         :expand:
 
 
 Change History

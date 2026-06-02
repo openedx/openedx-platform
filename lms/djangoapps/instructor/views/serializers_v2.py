@@ -13,6 +13,7 @@ from django.contrib.auth import get_user_model
 from django.utils.html import escape
 from django.utils.translation import gettext as _
 from edx_when.api import is_enabled_for_course
+from openedx_filters.learning.filters import InstructorDashboardTabsRequested
 from rest_framework import serializers
 
 from common.djangoapps.course_modes.models import CourseMode
@@ -305,6 +306,19 @@ class CourseInformationSerializerV2(serializers.Serializer):
                 'sort_order': 110,
             })
 
+        try:
+            # .. filter_implemented_name: InstructorDashboardTabsRequested
+            # .. filter_type: org.openedx.learning.instructor.dashboard.tabs.requested.v1
+            filtered_tabs, _user, _course_key = InstructorDashboardTabsRequested.run_filter(
+                tabs=tabs,
+                user=request.user,
+                course_key=course_key
+            )
+            custom_tabs = filtered_tabs if filtered_tabs is not None else tabs
+        except InstructorDashboardTabsRequested.PreventTabsGeneration as exc:
+            # Plugin provided custom tabs or prevented tab generation
+            custom_tabs = getattr(exc, 'tabs', None) or []
+
         # We provide the tabs in a specific order based on how it was
         # historically presented in the frontend.  The frontend can use
         # this info or choose to ignore the ordering.
@@ -322,8 +336,7 @@ class CourseInformationSerializerV2(serializers.Serializer):
             'special_exams',
         ]
         order_index = {tab: i for i, tab in enumerate(tabs_order)}
-        tabs = sorted(tabs, key=lambda x: order_index.get(x['tab_id'], float("inf")))
-        return tabs
+        return sorted(custom_tabs, key=lambda x: order_index.get(x['tab_id'], float("inf")))
 
     def get_course_id(self, data):
         """Get course ID as string."""

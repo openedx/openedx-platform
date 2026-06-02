@@ -1597,7 +1597,9 @@ class CourseEnrollmentAllowed(DeletableByUserValue, models.Model):
     the object is marked with the student who enrolled, to prevent students from changing e-mails and
     enrolling many accounts through the same e-mail.
 
-    .. no_pii:
+    .. pii: Contains email, redacted then deleted in AccountRetirementView
+    .. pii_types: email_address
+    .. pii_retirement: local_api
     """
     email = models.CharField(max_length=255, db_index=True)
     course_id = CourseKeyField(max_length=255, db_index=True)
@@ -1645,6 +1647,13 @@ class CourseEnrollmentAllowed(DeletableByUserValue, models.Model):
         `course_id` identifies the course for which to compute the QuerySet.
         """
         return CourseEnrollmentAllowed.objects.filter(course_id=course_id, user__isnull=True)
+
+    @classmethod
+    def redact_before_delete_fields(cls):
+        """
+        Redact email before deleting records for downstream soft-delete systems.
+        """
+        return {'email': 'redacted-before-delete@safe.com'}
 
 
 class CourseEnrollmentAttribute(models.Model):

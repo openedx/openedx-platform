@@ -63,7 +63,7 @@ httpx==0.28.1
     # via mcp
 httpx-sse==0.4.3
     # via mcp
-idna==3.16
+idna==3.17
     # via
     #   anyio
     #   httpx
@@ -146,7 +146,7 @@ pyjwt[crypto]==2.12.1
     #   semgrep
 python-dotenv==1.2.2
     # via pydantic-settings
-python-multipart==0.0.29
+python-multipart==0.0.30
     # via mcp
 referencing==0.37.0
     # via
@@ -158,7 +158,7 @@ requests==2.34.2
     #   semgrep
 rich==15.0.0
     # via semgrep
-rpds-py==0.30.0
+rpds-py==2026.5.1
     # via
     #   jsonschema
     #   referencing
@@ -168,11 +168,11 @@ ruamel-yaml-clib==0.2.15
     # via semgrep
 semantic-version==2.10.0
     # via semgrep
-semgrep==1.163.0
+semgrep==1.164.0
     # via -r requirements/edx/semgrep.in
 sse-starlette==3.4.4
     # via mcp
-starlette==1.1.0
+starlette==1.2.1
     # via
     #   mcp
     #   sse-starlette

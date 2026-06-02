@@ -8,15 +8,17 @@ from unittest.mock import call, patch
 import ddt
 import pytest
 from django.contrib.auth.models import AnonymousUser, User  # pylint: disable=imported-auth-user
-from django.db import IntegrityError
+from django.db import IntegrityError, connection
 from django.http import Http404
 from django.test import TestCase
+from django.test.utils import CaptureQueriesContext
 from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locator import CourseLocator
 from openedx_events.testing import OpenEdxEventsTestMixin
 
 from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.tests.factories import UserFactory
+from openedx.core.djangolib.testing.utils import assert_redact_before_delete
 from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 from xmodule.modulestore.tests.django_utils import (  # pylint: disable=wrong-import-order
     TEST_DATA_SPLIT_MODULESTORE,
@@ -785,12 +787,18 @@ class TestUnregisteredLearnerCohortAssignments(TestCase):
         )
 
     def test_retired_user_has_deleted_record(self):
-        was_retired = UnregisteredLearnerCohortAssignments.delete_by_user_value(
-            value='learner@example.com',
-            field='email'
-        )
+        with CaptureQueriesContext(connection) as ctx:
+            was_retired = UnregisteredLearnerCohortAssignments.delete_by_user_value(
+                value='learner@example.com',
+                field='email'
+            )
 
         assert was_retired
+        assert_redact_before_delete(
+            [q['sql'] for q in ctx],
+            table=UnregisteredLearnerCohortAssignments._meta.db_table,
+            expected_redacted_value_list=['redacted-before-delete@safe.com'],
+        )
 
         search_retired_user_results = \
             UnregisteredLearnerCohortAssignments.objects.filter(

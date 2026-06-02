@@ -904,13 +904,20 @@ class PendingEmailChange(DeletableByUserValue, models.Model):  # noqa: DJ008
     """
     This model keeps track of pending requested changes to a user's email address.
 
-    .. pii: Contains new_email, retired in AccountRetirementView
+    .. pii: Contains new_email, redacted then deleted in AccountRetirementView
     .. pii_types: email_address
     .. pii_retirement: local_api
     """
     user = models.OneToOneField(User, unique=True, db_index=True, on_delete=models.CASCADE)
     new_email = models.CharField(blank=True, max_length=255, db_index=True)
     activation_key = models.CharField(('activation key'), max_length=32, unique=True, db_index=True)
+
+    @classmethod
+    def redact_before_delete_fields(cls):
+        """
+        Redact PII fields before delete in downstream soft-delete systems.
+        """
+        return {'new_email': 'redacted-before-delete@safe.com'}
 
     def request_change(self, email):
         """Request a change to a user's email.

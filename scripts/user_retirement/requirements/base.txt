@@ -10,9 +10,9 @@ attrs==26.1.0
     # via zeep
 backoff==2.2.1
     # via -r scripts/user_retirement/requirements/base.in
-boto3==1.43.14
+boto3==1.43.19
     # via -r scripts/user_retirement/requirements/base.in
-botocore==1.43.14
+botocore==1.43.19
     # via
     #   boto3
     #   s3transfer
@@ -49,7 +49,7 @@ edx-rest-api-client==7.0.0
     # via -r scripts/user_retirement/requirements/base.in
 google-api-core==2.30.3
     # via google-api-python-client
-google-api-python-client==2.196.0
+google-api-python-client==2.197.0
     # via -r scripts/user_retirement/requirements/base.in
 google-auth==2.53.0
     # via
@@ -64,7 +64,7 @@ httplib2==0.31.2
     # via
     #   google-api-python-client
     #   google-auth-httplib2
-idna==3.16
+idna==3.17
     # via requests
 isodate==0.7.2
     # via zeep
@@ -80,7 +80,7 @@ lxml==5.3.2
     #   zeep
 more-itertools==11.1.0
     # via simple-salesforce
-platformdirs==4.9.6
+platformdirs==4.10.0
     # via zeep
 proto-plus==1.28.0
     # via google-api-core
@@ -127,7 +127,7 @@ requests-file==3.0.1
     # via zeep
 requests-toolbelt==1.0.0
     # via zeep
-s3transfer==0.17.0
+s3transfer==0.18.0
     # via boto3
 simple-salesforce==1.12.9
     # via -r scripts/user_retirement/requirements/base.in
