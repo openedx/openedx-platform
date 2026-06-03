@@ -1122,16 +1122,6 @@ RESTRICT_AUTOMATIC_AUTH = True
 # .. toggle_tickets: https://github.com/openedx/edx-platform/pull/2749
 EMBARGO = False
 
-# .. toggle_name: ENABLE_MKTG_SITE
-# .. toggle_implementation: DjangoSetting
-# .. toggle_default: False
-# .. toggle_description: Toggle to enable alternate urls for marketing links.
-# .. toggle_use_cases: open_edx
-# .. toggle_creation_date: 2014-03-24
-# .. toggle_warning: When this is enabled, the MKTG_URLS setting should be defined. The use case of this feature
-#   toggle is uncertain.
-ENABLE_MKTG_SITE = False
-
 # Expose Mobile REST API.
 ENABLE_MOBILE_REST_API = False
 
