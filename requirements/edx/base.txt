@@ -68,14 +68,14 @@ bleach[css]==6.3.0
     #   ora2
     #   xblock-drag-and-drop-v2
     #   xblock-poll
-boto3==1.43.21
+boto3==1.43.22
     # via
     #   -r requirements/edx/kernel.in
     #   django-ses
     #   fs-s3fs
     #   ora2
     #   snowflake-connector-python
-botocore==1.43.21
+botocore==1.43.22
     # via
     #   -r requirements/edx/kernel.in
     #   boto3
@@ -834,7 +834,7 @@ openedx-atlas==0.7.0
     #   enterprise-integrated-channels
     #   openedx-authz
     #   openedx-forum
-openedx-authz==1.16.0
+openedx-authz==1.17.0
     # via -r requirements/edx/kernel.in
 openedx-calc==5.0.0
     # via
