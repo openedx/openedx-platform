@@ -1086,13 +1086,13 @@ class TestCourseDashboardNoticesRedirects(SharedModuleStoreTestCase):
         Verifies that we will redirect the learner to the URL returned from the `check_for_unacknowledged_notices`
         function.
         """
-        mock_notices.return_value = reverse("about")
+        mock_notices.return_value = reverse("root")
 
         with override_settings(FEATURES={**settings.FEATURES, 'ENABLE_NOTICES': True}):
             response = self.client.get(self.path)
 
         assert response.status_code == 302
-        assert response.url == "/about"
+        assert response.url == "/"
         mock_notices.assert_called_once()
 
     @patch('common.djangoapps.student.views.dashboard.check_for_unacknowledged_notices')

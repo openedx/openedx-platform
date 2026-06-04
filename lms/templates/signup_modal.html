@@ -4,7 +4,7 @@
 from openedx.core.djangolib.markup import HTML, Text
 from openedx.core.djangolib.js_utils import js_escaped_string
 from django.conf import settings
-from django.urls import reverse
+from common.djangoapps.edxmako.shortcuts import marketing_link
 from django_countries import countries
 from common.djangoapps.student.models import UserProfile
 from datetime import date
@@ -134,7 +134,7 @@ import calendar
           <label data-field="terms_of_service" class="terms-of-service" for="signup_tos">
             <input id="signup_tos" name="terms_of_service" type="checkbox" value="true">
             ${Text(_('I agree to the {link_start}Terms of Service{link_end}')).format(
-              link_start=HTML('<a href="{url}" rel="noopener" target="_blank">').format(url=reverse('tos')),
+              link_start=HTML('<a href="{url}" rel="noopener" target="_blank">').format(url=marketing_link('TOS')),
               link_end=HTML('</a>'))} *
           </label>
 
@@ -142,7 +142,7 @@ import calendar
           <label data-field="honor_code" class="honor-code" for="signup_honor">
             <input id="signup_honor" name="honor_code" type="checkbox" value="true">
             ${Text(_('I agree to the {link_start}Honor Code{link_end}')).format(
-              link_start=HTML('<a href="{url}" rel="noopener" target="_blank">').format(url=reverse('honor')),
+              link_start=HTML('<a href="{url}" rel="noopener" target="_blank">').format(url=marketing_link('HONOR')),
               link_end=HTML('</a>'))} *
           </label>
           % endif
