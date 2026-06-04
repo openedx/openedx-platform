@@ -2154,26 +2154,6 @@ SPECTACULAR_SETTINGS = {
     # set in devstack.py / production.py.
 }
 
-######################### MARKETING SITE ###############################
-
-MKTG_URL_LINK_MAP.update({  # noqa: F405
-    'ABOUT': 'about',
-    'CONTACT': 'contact',
-    'FAQ': 'help',
-    'COURSES': 'courses',
-    'ROOT': 'root',
-    'TOS': 'tos',
-    'HONOR': 'honor',  # If your site does not have an honor code, simply delete this line.
-    'TOS_AND_HONOR': 'edx-terms-service',
-    'PRIVACY': 'privacy',
-    'PRESS': 'press',
-    'BLOG': 'blog',
-    'DONATE': 'donate',
-    'SITEMAP.XML': 'sitemap_xml',
-
-    # Verified Certificates
-    'WHAT_IS_VERIFIED_CERT': 'verified-certificate',
-})
 
 STATIC_TEMPLATE_VIEW_DEFAULT_FILE_EXTENSION = 'html'
 

@@ -32,7 +32,8 @@ log = logging.getLogger(__name__)
 def marketing_link(name):
     """Returns the URL for a marketing site link from MKTG_URLS.
 
-    MKTG_URL_OVERRIDES take priority. Falls back to '#' if the link is not configured.
+    MKTG_URL_OVERRIDES take priority. 'ROOT' falls back to the local landing page
+    ('/'); any other unconfigured link falls back to '#'.
     """
     marketing_urls = configuration_helpers.get_value(
         'MKTG_URLS',
@@ -68,6 +69,11 @@ def marketing_link(name):
         # URLs in the MKTG_URLS setting
         # e.g. urljoin('https://marketing.com', 'https://open-edx.org/about') >>> 'https://open-edx.org/about'
         return urljoin(marketing_urls.get('ROOT'), marketing_urls.get(name))
+
+    # ROOT is the live site root (not a legacy marketing page), so default it to
+    # the local landing page when no marketing site ROOT is configured.
+    if name == 'ROOT':
+        return '/'
 
     log.debug("Cannot find corresponding link for name: %s", name)
     return '#'
@@ -108,9 +114,7 @@ def marketing_link_context_processor(request):
 
     return {
         "MKTG_URL_" + k: marketing_link(k)
-        for k in (
-            settings.MKTG_URL_LINK_MAP.keys() | marketing_urls.keys()
-        )
+        for k in marketing_urls.keys()
     }
 
 
