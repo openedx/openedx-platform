@@ -115,32 +115,17 @@ class AboutTestCase(LoginEnrollmentTestCase, SharedModuleStoreTestCase, EventTra
         resp = self.client.get(url)
         self.assertRedirects(resp, reverse('dashboard'), fetch_redirect_response=False)
 
-    @patch.dict(settings.FEATURES, {'ENABLE_MKTG_SITE': True})
+    @patch.dict(settings.FEATURES, {'ENABLE_COURSE_HOME_REDIRECT': True})
     def test_logged_in_marketing(self):
         self.setup_user()
         url = reverse('about_course', args=[str(self.course.id)])
         resp = self.client.get(url)
         self.assertRedirects(resp, course_home_url(self.course.id), fetch_redirect_response=False)
 
-    @patch.dict(settings.FEATURES, {'ENABLE_COURSE_HOME_REDIRECT': False})
-    @patch.dict(settings.FEATURES, {'ENABLE_MKTG_SITE': True})
     def test_logged_in_marketing_without_course_home_redirect(self):
         """
         Verify user is not redirected to course home page when
         ENABLE_COURSE_HOME_REDIRECT is set to False
-        """
-        self.setup_user()
-        url = reverse('about_course', args=[str(self.course.id)])
-        resp = self.client.get(url)
-        # should not be redirected
-        self.assertContains(resp, "OOGIE BLOOGIE")
-
-    @patch.dict(settings.FEATURES, {'ENABLE_COURSE_HOME_REDIRECT': True})
-    @patch.dict(settings.FEATURES, {'ENABLE_MKTG_SITE': False})
-    def test_logged_in_marketing_without_mktg_site(self):
-        """
-        Verify user is not redirected to course home page when
-        ENABLE_MKTG_SITE is set to False
         """
         self.setup_user()
         url = reverse('about_course', args=[str(self.course.id)])

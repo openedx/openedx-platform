@@ -400,13 +400,14 @@ ENABLE_COURSE_SORTING_BY_START_DATE = True
 
 # .. toggle_name: settings.ENABLE_COURSE_HOME_REDIRECT
 # .. toggle_implementation: DjangoSetting
-# .. toggle_default: True
+# .. toggle_default: False
 # .. toggle_description: When enabled, users who attempt to access a course "about" page will be redirected to the
-#   course home url.
+#   course home url. Previously this only took effect when ENABLE_MKTG_SITE was also True; now it is the sole gate.
+#   Operators who relied on ENABLE_MKTG_SITE=True to activate this redirect should set this to True explicitly.
 # .. toggle_use_cases: open_edx
 # .. toggle_creation_date: 2019-01-15
 # .. toggle_tickets: https://github.com/openedx/edx-platform/pull/19604
-ENABLE_COURSE_HOME_REDIRECT = True
+ENABLE_COURSE_HOME_REDIRECT = False
 
 # .. toggle_name: settings.ENABLE_COMBINED_LOGIN_REGISTRATION_FOOTER
 # .. toggle_implementation: DjangoSetting

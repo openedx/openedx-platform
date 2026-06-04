@@ -59,7 +59,7 @@ def get_link_for_about_page(course):
 
     if is_social_sharing_enabled and course.social_sharing_url:
         course_about_url = course.social_sharing_url
-    elif settings.FEATURES.get('ENABLE_MKTG_SITE') and getattr(course, 'marketing_url', None):
+    elif getattr(course, 'marketing_url', None):
         course_about_url = course.marketing_url
     else:
         course_about_url = f'{about_base_url}/courses/{course.id}/about'
