@@ -924,15 +924,7 @@ def confirm_email_change(request, key):
             transaction.set_rollback(True)
             return response
 
-        use_https = request.is_secure()
-        if settings.FEATURES['ENABLE_MKTG_SITE']:
-            contact_link = marketing_link('CONTACT')
-        else:
-            contact_link = '{protocol}://{site}{link}'.format(
-                protocol='https' if use_https else 'http',
-                site=configuration_helpers.get_value('SITE_NAME', settings.SITE_NAME),
-                link=reverse('contact'),
-            )
+        contact_link = marketing_link('CONTACT')
 
         site = Site.objects.get_current()
         message_context = get_base_template_context(site)

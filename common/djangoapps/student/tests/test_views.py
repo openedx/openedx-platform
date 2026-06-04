@@ -194,7 +194,6 @@ class StudentDashboardTests(SharedModuleStoreTestCase, MilestonesTestCaseMixin, 
     MOCK_SETTINGS = {
         'FEATURES': {
             'DISABLE_START_DATES': False,
-            'ENABLE_MKTG_SITE': True,
             'DISABLE_SET_JWT_COOKIES_FOR_TESTS': True,
         },
         'SOCIAL_SHARING_SETTINGS': {
