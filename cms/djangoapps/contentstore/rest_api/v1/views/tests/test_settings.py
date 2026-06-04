@@ -48,7 +48,7 @@ class CourseSettingsViewTest(CourseTestCase, PermissionAccessMixin):
             "is_prerequisite_courses_enabled": False,
             "language_options": settings.ALL_LANGUAGES,
             "lms_link_for_about_page": get_link_for_about_page(self.course),
-            "marketing_enabled": False,
+            "marketing_enabled": True,
             "mfe_proctored_exam_settings_url": get_proctored_exam_settings_url(
                 self.course.id
             ),
