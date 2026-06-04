@@ -404,11 +404,15 @@ class CourseInformationSerializerV2(serializers.Serializer):
         return self.get_total_enrollment(data) - self.get_learner_count(data)
 
     def get_enrollment_counts(self, data):
-        """Get enrollment counts for all configured course modes."""
+        """Get enrollment counts for all configured modes and any mode with active enrollments."""
         course_id = data['course'].id
         counts = CourseEnrollment.objects.enrollment_counts(course_id)
         configured_modes = CourseMode.modes_for_course(course_id)
         result = {mode.slug: counts[mode.slug] for mode in configured_modes}
+        # Include any mode that has enrollments, even if not explicitly configured
+        for mode_slug, count in counts.items():
+            if mode_slug != 'total' and mode_slug not in result and count > 0:
+                result[mode_slug] = count
         result['total'] = counts['total']
         return result
 
