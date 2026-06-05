@@ -230,6 +230,23 @@ running at the given ports.
      - localhost:1997
      - ACCOUNT_MICROFRONTEND_URL
 
+Security Deployment Requirements
+********************************
+
+Some platform features require a **shared** Django cache backend (Redis or
+Memcached) to function correctly across multiple LMS nodes:
+
+* **LTI Provider** — OAuth nonce replay protection stores seen nonces in the
+  Django ``default`` cache. A per-process backend (e.g. ``LocMemCache``) will
+  not detect replays that arrive on a different node. See
+  `lms/djangoapps/lti_provider/README.rst`_ for details.
+
+Tutor-based deployments satisfy this requirement automatically. For bare-metal
+or custom deployments, verify that ``CACHES['default']`` points at a shared
+Redis or Memcached instance before enabling these features.
+
+.. _lms/djangoapps/lti_provider/README.rst: lms/djangoapps/lti_provider/README.rst
+
 License
 *******
 

@@ -15,6 +15,7 @@ from openedx_events.learning.data import (
     UserPersonalData,
 )
 from openedx_events.learning.signals import CCX_COURSE_PASSING_STATUS_UPDATED, COURSE_PASSING_STATUS_UPDATED
+from openedx_filters.learning.filters import GradeEventContextRequested
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.student.models import CourseEnrollment
@@ -27,7 +28,6 @@ from common.djangoapps.track.event_transaction_utils import (
 )
 from lms.djangoapps.grades.signals.signals import SCHEDULE_FOLLOW_UP_SEGMENT_EVENT_FOR_COURSE_PASSED_FIRST_TIME
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
-from openedx.features.enterprise_support.context import get_enterprise_event_context
 
 log = getLogger(__name__)
 
@@ -166,10 +166,25 @@ def course_grade_passed_first_time(user_id, course_id):
     """
     event_name = COURSE_GRADE_PASSED_FIRST_TIME_EVENT_TYPE
     context = contexts.course_context_from_course_id(course_id)
-    context_enterprise = get_enterprise_event_context(user_id, course_id)
-    context.update(context_enterprise)
+    try:
+        filtered_context, _, _ = GradeEventContextRequested.run_filter(
+            context=context, user_id=user_id, course_id=course_id
+        )
+    except Exception:  # pylint: disable=broad-except
+        log.exception(
+            'GradeEventContextRequested failed for user_id=%s course_id=%s',
+            user_id,
+            course_id,
+        )
+        raise
+    log.debug(
+        'GradeEventContextRequested succeeded for user_id=%s course_id=%s',
+        user_id,
+        course_id,
+    )
+
     # TODO (AN-6134): remove this context manager
-    with tracker.get_tracker().context(event_name, context):
+    with tracker.get_tracker().context(event_name, filtered_context):
         tracker.emit(
             event_name,
             {

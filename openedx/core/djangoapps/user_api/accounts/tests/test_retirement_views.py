@@ -67,7 +67,7 @@ from openedx.core.djangoapps.user_api.models import (
     UserRetirementPartnerReportingStatus,
     UserRetirementStatus,
 )
-from openedx.core.djangolib.testing.utils import skip_unless_lms
+from openedx.core.djangolib.testing.utils import assert_redact_before_delete, skip_unless_lms
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory
 
@@ -1469,7 +1469,14 @@ class TestAccountRetirementPost(RetirementTestCase):
     @mock.patch('openedx.core.djangoapps.user_api.accounts.views.remove_profile_images')
     def test_retire_user(self, mock_remove_profile_images, mock_get_profile_image_names):
         data = {'username': self.original_username}
-        self.post_and_assert_status(data)
+        with CaptureQueriesContext(connection) as ctx:
+            self.post_and_assert_status(data)
+
+        assert_redact_before_delete(
+            [q['sql'] for q in ctx],
+            table=PendingEmailChange._meta.db_table,
+            expected_redacted_value_list=['redacted-before-delete@safe.com'],
+        )
 
         self.test_user.refresh_from_db()
         self.test_user.profile.refresh_from_db()  # pylint: disable=no-member
@@ -1700,3 +1707,42 @@ class TestLMSAccountRetirementPost(RetirementTestCase, ModuleStoreTestCase):
         self.post_and_assert_status(data)
         fake_completed_retirement(self.test_user)
         self.post_and_assert_status(data)
+
+    @mock.patch('openedx.core.djangoapps.user_api.accounts.views.USER_RETIRE_MAILINGS')
+    @mock.patch('openedx.core.djangoapps.user_api.accounts.views.USER_RETIRE_LMS_MISC')
+    @mock.patch('openedx.core.djangoapps.user_api.accounts.views.redact_and_delete_historical_social_auth')
+    @mock.patch('openedx.core.djangoapps.user_api.accounts.views.CreditRequirementStatus.retire_user')
+    @mock.patch('openedx.core.djangoapps.user_api.accounts.views.ApiAccessRequest.retire_user')
+    @mock.patch('openedx.core.djangoapps.user_api.accounts.views.CreditRequest.retire_user')
+    @mock.patch('openedx.core.djangoapps.user_api.accounts.views.ManualEnrollmentAudit.retire_manual_enrollments')
+    @mock.patch('openedx.core.djangoapps.user_api.accounts.views.PendingNameChange.delete_by_user_value')
+    @mock.patch('openedx.core.djangoapps.user_api.accounts.views.ArticleRevision.retire_user')
+    @mock.patch('openedx.core.djangoapps.user_api.accounts.views.RevisionPluginRevision.retire_user')
+    def test_retire_misc_calls_all_retirement_steps(
+        self,
+        mock_revision_plugin,
+        mock_article_revision,
+        mock_pending_name,
+        mock_manual_enroll,
+        mock_credit_request,
+        mock_api_access,
+        mock_credit_req_status,
+        mock_redact_historical,
+        mock_lms_misc_signal,
+        mock_mailings_signal,
+    ):
+        """
+        Ensure that all retirement steps in the retire_misc view are invoked.
+        """
+        self.post_and_assert_status({'username': self.original_username})
+
+        mock_revision_plugin.assert_called_once()
+        mock_article_revision.assert_called_once()
+        mock_pending_name.assert_called_once()
+        mock_manual_enroll.assert_called_once()
+        mock_credit_request.assert_called_once()
+        mock_api_access.assert_called_once()
+        mock_credit_req_status.assert_called_once()
+        mock_redact_historical.assert_called_once()
+        mock_lms_misc_signal.send.assert_called_once()
+        mock_mailings_signal.send.assert_called_once()

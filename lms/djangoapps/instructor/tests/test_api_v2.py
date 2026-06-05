@@ -342,29 +342,44 @@ class CourseMetadataViewTest(SharedModuleStoreTestCase, MasqueradeMixin):
         self.assertGreaterEqual(enrollment_counts['honor'], 1)  # noqa: PT009
         self.assertGreaterEqual(enrollment_counts['total'], 3)  # noqa: PT009
 
-    def test_enrollment_counts_excludes_unconfigured_modes(self):
+    def test_enrollment_counts_includes_unconfigured_modes_with_enrollments(self):
         """
-        Test that enrollment counts only include modes configured for the course,
-        not modes that exist on other courses.
+        Test that enrollment counts include modes with active enrollments even
+        when those modes are not explicitly configured for the course.
+
+        Regression test for https://github.com/openedx/frontend-app-instructor-dashboard/issues/210
+        The default enrollment mode (e.g. audit) may not be explicitly configured,
+        but learners can still be enrolled in it. The total must equal the sum of
+        all mode counts.
         """
-        # Only configure audit and honor for this course (not verified)
-        CourseModeFactory.create(course_id=self.course_key, mode_slug='audit')
+        # Only configure 'honor' for this course — do NOT configure 'audit'
         CourseModeFactory.create(course_id=self.course_key, mode_slug='honor')
+
+        # Explicitly create an enrollment in an unconfigured mode
+        CourseEnrollmentFactory.create(
+            user=UserFactory.create(),
+            course_id=self.course_key,
+            mode='audit',
+            is_active=True,
+        )
 
         self.client.force_authenticate(user=self.instructor)
         response = self.client.get(self._get_url())
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        assert response.status_code == status.HTTP_200_OK
         enrollment_counts = response.data['enrollment_counts']
 
-        # Only configured modes should appear
-        self.assertIn('audit', enrollment_counts)  # noqa: PT009
-        self.assertIn('honor', enrollment_counts)  # noqa: PT009
-        self.assertIn('total', enrollment_counts)  # noqa: PT009
+        # Configured mode must appear
+        assert 'honor' in enrollment_counts
+        # Unconfigured mode with enrollments must also appear
+        assert 'audit' in enrollment_counts
+        assert enrollment_counts['audit'] >= 1
+        # Total key must be present
+        assert 'total' in enrollment_counts
 
-        # verified is not configured, so it should not appear
-        # (even though there are verified enrollments from setUp)
-        self.assertNotIn('verified', enrollment_counts)  # noqa: PT009
+        # The sum of all mode counts must equal total
+        mode_sum = sum(v for k, v in enrollment_counts.items() if k != 'total')
+        assert enrollment_counts['total'] == mode_sum
 
     def _get_tabs_from_response(self, user, course_id=None):
         """Helper to get tabs from API response."""

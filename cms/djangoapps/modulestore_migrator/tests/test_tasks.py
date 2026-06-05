@@ -370,8 +370,9 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
             "problem", result.componentversion.component.component_type.name
         )
 
-        # The component is published
-        self.assertFalse(result.componentversion.component.versioning.has_unpublished_changes)  # noqa: PT009
+        # The component is left as a draft; publishing is the caller's responsibility
+        # (handled in _import_structure after bulk_draft_changes_for exits).
+        self.assertTrue(result.componentversion.component.versioning.has_unpublished_changes)  # noqa: PT009
 
     def test_migrate_component_failure(self):
         """
@@ -802,8 +803,9 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
 
                 container_version = result.containerversion
                 self.assertEqual(container_version.title, f"Test {block_type.title()}")  # noqa: PT009
-                # The container is published
-                self.assertFalse(content_api.contains_unpublished_changes(container_version.container.pk))  # noqa: PT009  # pylint: disable=line-too-long
+                # The container is left as a draft; publishing is the caller's
+                # responsibility (handled in _import_structure after bulk_draft_changes_for exits).
+                self.assertTrue(content_api.contains_unpublished_changes(container_version.container.pk))  # noqa: PT009  # pylint: disable=line-too-long
 
     def test_migrate_container_same_title(self):
         """

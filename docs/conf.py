@@ -338,7 +338,10 @@ def on_init(app):  # pylint: disable=redefined-outer-name, unused-argument
     avoid checking in the generated reStructuredText files.
     """
     repo_docs_build_path = f'{root}/docs/references/docs'
-    RepositoryDocs(root, repo_docs_build_path).build_rst_docs()
+    repo_docs = RepositoryDocs(root, repo_docs_build_path)
+    repo_docs.build_rst_docs()
+    repo_docs.build_apps_index(root / 'docs' / 'apps' / 'index.rst')
+    repo_docs.build_decisions_index(root / 'docs' / 'decisions' / 'app_decisions.rst')
 
     docs_path = root / 'docs'
     apidoc_path = 'sphinx-apidoc'

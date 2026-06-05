@@ -418,6 +418,17 @@ class ContentLibraryCollectionsTest(ContentLibrariesRestApiTest, EventsIsolation
         self.assertDictContainsEntries(
             event_receiver.call_args_list[0].kwargs,
             {
+                "signal": LIBRARY_CONTAINER_UPDATED,
+                "sender": None,
+                "library_container": LibraryContainerData(
+                    container_key=self.subsection1.container_key,
+                    background=False,
+                ),
+            },
+        )
+        self.assertDictContainsEntries(
+            event_receiver.call_args_list[1].kwargs,
+            {
                 "signal": LIBRARY_COLLECTION_UPDATED,
                 "sender": None,
                 "library_collection": LibraryCollectionData(
@@ -425,17 +436,6 @@ class ContentLibraryCollectionsTest(ContentLibrariesRestApiTest, EventsIsolation
                         self.lib1.library_key,
                         collection_key=self.col1.collection_code,
                     ),
-                ),
-            },
-        )
-        self.assertDictContainsEntries(
-            event_receiver.call_args_list[1].kwargs,
-            {
-                "signal": LIBRARY_CONTAINER_UPDATED,
-                "sender": None,
-                "library_container": LibraryContainerData(
-                    container_key=self.subsection1.container_key,
-                    background=False,
                 ),
             },
         )

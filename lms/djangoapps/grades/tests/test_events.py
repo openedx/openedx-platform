@@ -3,7 +3,9 @@ Test that various events are fired for models in the grades app.
 """
 
 from unittest import mock
+from unittest.mock import patch
 
+import pytest
 from ccx_keys.locator import CCXLocator
 from django.utils.timezone import now
 from openedx_events.learning.data import (
@@ -34,7 +36,7 @@ from xmodule.modulestore.tests.factories import CourseFactory
 
 class PersistentGradeEventsTest(OpenEdxEventsTestMixin, SharedModuleStoreTestCase):
     """
-    Tests for the Open edX Events associated with the persistant grade process through the update_or_create method.
+    Tests for the Open edX Events associated with the persistent grade process through the update_or_create method.
 
     This class guarantees that the following events are sent during the user updates their grade, with
     the exact Data Attributes as the event definition stated:
@@ -229,3 +231,81 @@ class CCXCoursePassingStatusEventsTest(
             },
             event_receiver.call_args.kwargs,
         )
+
+
+class GradeEventContextFilterTest(SharedModuleStoreTestCase):
+    """
+    Tests that course_grade_passed_first_time invokes the GradeEventContextRequested
+    filter and uses the returned context directly.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.user = UserFactory.create()
+        self.course = CourseFactory.create()
+
+    @patch('lms.djangoapps.grades.events.tracker')
+    @patch('lms.djangoapps.grades.events.contexts.course_context_from_course_id')
+    @patch('lms.djangoapps.grades.events.GradeEventContextRequested.run_filter')
+    def test_filter_called_with_context(
+        self,
+        mock_run_filter,
+        mock_course_context_from_course_id,
+        mock_tracker,
+    ):
+        """
+        course_grade_passed_first_time should call
+        GradeEventContextRequested.run_filter and use the returned context.
+        """
+        original_context = {"course_id": str(self.course.id)}
+        filtered_context = {
+            "course_id": str(self.course.id),
+            "org": "test_org",
+            "enterprise_uuid": "abc-123",
+        }
+        mock_course_context_from_course_id.return_value = original_context
+        mock_run_filter.return_value = (filtered_context, self.user.id, self.course.id)
+
+        from lms.djangoapps.grades.events import course_grade_passed_first_time
+
+        course_grade_passed_first_time(self.user.id, self.course.id)
+
+        mock_run_filter.assert_called_once_with(
+            context=original_context,
+            user_id=self.user.id,
+            course_id=self.course.id,
+        )
+        mock_tracker.get_tracker.return_value.context.assert_called_once_with(
+            'edx.course.grade.passed.first_time',
+            filtered_context,
+        )
+
+    @patch('lms.djangoapps.grades.events.log')
+    @patch('lms.djangoapps.grades.events.tracker')
+    @patch('lms.djangoapps.grades.events.contexts.course_context_from_course_id')
+    @patch('lms.djangoapps.grades.events.GradeEventContextRequested.run_filter')
+    def test_filter_exception_is_logged_and_raised(
+        self,
+        mock_run_filter,
+        mock_course_context_from_course_id,
+        mock_tracker,
+        mock_log,
+    ):
+        """
+        If run_filter raises an exception, it should be logged and re-raised.
+        """
+        original_context = {"course_id": str(self.course.id)}
+        mock_course_context_from_course_id.return_value = original_context
+        mock_run_filter.side_effect = Exception("boom")
+
+        from lms.djangoapps.grades.events import course_grade_passed_first_time
+
+        with pytest.raises(Exception, match="boom"):
+            course_grade_passed_first_time(self.user.id, self.course.id)
+
+        mock_log.exception.assert_called_once_with(
+            'GradeEventContextRequested failed for user_id=%s course_id=%s',
+            self.user.id,
+            self.course.id,
+        )
+        mock_tracker.get_tracker.return_value.context.assert_not_called()

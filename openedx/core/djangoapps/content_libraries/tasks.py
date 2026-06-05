@@ -51,6 +51,7 @@ from openedx_content.models_api import LearningPackage, PublishableEntity, Publi
 from openedx_events.content_authoring.data import (
     ContentObjectChangedData,
     LibraryBlockData,
+    LibraryCollectionData,
     LibraryContainerData,
 )
 from openedx_events.content_authoring.signals import (
@@ -59,11 +60,13 @@ from openedx_events.content_authoring.signals import (
     LIBRARY_BLOCK_DELETED,
     LIBRARY_BLOCK_PUBLISHED,
     LIBRARY_BLOCK_UPDATED,
+    LIBRARY_COLLECTION_UPDATED,
     LIBRARY_CONTAINER_CREATED,
     LIBRARY_CONTAINER_DELETED,
     LIBRARY_CONTAINER_PUBLISHED,
     LIBRARY_CONTAINER_UPDATED,
 )
+from openedx_tagging import api as tagging_api
 from user_tasks.models import UserTaskArtifact
 from user_tasks.tasks import UserTask, UserTaskStatus
 from xblock.fields import Scope
@@ -118,10 +121,11 @@ def send_change_events_for_modified_entities(
 
     for entity in entities:
         change = changes_by_entity_id[entity.id]
+        entity_opaque_key: LibraryUsageLocatorV2 | LibraryContainerLocator
         if hasattr(entity, "component"):
             # This is a library XBlock (component)
-            block_key = api.library_component_usage_key(library.library_key, entity.component)
-            event_data = LibraryBlockData(library_key=library.library_key, usage_key=block_key)
+            entity_opaque_key = api.library_component_usage_key(library.library_key, entity.component)
+            event_data = LibraryBlockData(library_key=library.library_key, usage_key=entity_opaque_key)
             if change.old_version is None and change.new_version:
                 # .. event_implemented_name: LIBRARY_BLOCK_CREATED
                 # .. event_type: org.openedx.content_authoring.library_block.created.v1
@@ -137,8 +141,8 @@ def send_change_events_for_modified_entities(
                 LIBRARY_BLOCK_UPDATED.send_event(library_block=event_data)
 
         elif hasattr(entity, "container"):
-            container_key = api.library_container_locator(library.library_key, entity.container)
-            event_data = LibraryContainerData(container_key=container_key)
+            entity_opaque_key = api.library_container_locator(library.library_key, entity.container)
+            event_data = LibraryContainerData(container_key=entity_opaque_key)
             if change.old_version is None and change.new_version:
                 # .. event_implemented_name: LIBRARY_CONTAINER_CREATED
                 # .. event_type: org.openedx.content_authoring.content_library.container.created.v1
@@ -163,13 +167,64 @@ def send_change_events_for_modified_entities(
                 # If entities were added/removed from this container, we need to notify things like the search index
                 # that the list of parent containers for each entity has changed.
                 check_container_content_changes.delay(
-                    container_key_str=str(container_key),
+                    container_key_str=str(entity_opaque_key),
                     old_version_id=change.old_version_id,
                     new_version_id=change.new_version_id,
                 )
         else:
             log.error("Unknown publishable entity type: %s", entity)
             continue
+
+        if change.restored:
+            # This block/container was previously soft-deleted and is now un-deleted. It may have tags or collections.
+            # It would be best to expand the LIBRARY_BLOCK_CREATED event to include the "restored" flag, but in
+            # the interests of minimizing breaking event changes for now we'll just emit a
+            # CONTENT_OBJECT_ASSOCIATIONS_CHANGED event to ensure relevant search index records get updated.
+            association_changes: list[str] = []
+            if content_api.get_entity_collections(learning_package_id, entity_ref=entity.entity_ref).exists():
+                association_changes.append("collections")  # This entity is part of at least one collection
+            if tagging_api.get_object_tags(str(entity_opaque_key)).exists():
+                association_changes.append("tags")  # This entity has tags
+            if association_changes:
+                # .. event_implemented_name: CONTENT_OBJECT_ASSOCIATIONS_CHANGED
+                # .. event_type: org.openedx.content_authoring.content.object.associations.changed.v1
+                CONTENT_OBJECT_ASSOCIATIONS_CHANGED.send_event(
+                    content_object=ContentObjectChangedData(
+                        object_id=str(entity_opaque_key),
+                        changes=association_changes,
+                    ),
+                )
+            # Notifying parent containers that a child has been restored is not necessary here - they'll already be
+            # included in 'change_list' [as side effects].
+
+    # When entities are deleted or un-deleted (as drafts), update any associated collections, so their "# of draft
+    # entities in collection" count is correct.  We only care about deleted or un-deleted, not newly created drafts,
+    # because it's currently impossible for a newly-created draft to be part of a collection.
+    deleted_or_undeleted_entity_ids = [
+        r.entity_id for r in changes if r.new_version is None or (r.old_version is None and r.restored)
+    ]
+    if deleted_or_undeleted_entity_ids:
+        emit_collections_updated(library, entity_ids=deleted_or_undeleted_entity_ids)
+
+
+def emit_collections_updated(library: ContentLibrary, entity_ids: list[PublishableEntity.ID]) -> None:
+    """
+    Helper function to notify affected collections after an entity is deleted/un-deleted/published/un-published.
+
+    Used by `send_change_events_for_modified_entities()` and `send_events_after_publish()`
+    """
+    # Check if any collections are affected:
+    affected_collections = (
+        content_api.get_collections(library.learning_package_id, enabled=True).filter(entities__id__in=entity_ids)
+    )
+    for collection in affected_collections:
+        collection_key = api.library_collection_locator(
+            library_key=library.library_key,
+            collection_key=collection.collection_code,
+        )
+        # .. event_implemented_name: LIBRARY_COLLECTION_UPDATED
+        # .. event_type: org.openedx.content_authoring.content_library.collection.updated.v1
+        LIBRARY_COLLECTION_UPDATED.send_event(library_collection=LibraryCollectionData(collection_key=collection_key))
 
 
 @shared_task(base=LoggedTask)
@@ -252,6 +307,8 @@ def send_collections_changed_events(
     """
     Sends a CONTENT_OBJECT_ASSOCIATIONS_CHANGED event for each modified library
     entity in the given list, because their associated collections have changed.
+    This is dispatched in response to a COLLECTION_CHANGED event, usually
+    because entities have been added to or removed from a collection.
 
     ⏳ This task is designed to be run asynchronously so it can handle many
        entities, but you can also call it synchronously if you are only
@@ -263,6 +320,8 @@ def send_collections_changed_events(
     entities = (
         content_api.get_publishable_entities(learning_package_id)
         .filter(id__in=publishable_entity_ids)
+        # Ignore deleted items (both draft & published are deleted) that are still associated with the collection:
+        .exclude(draft__version=None, published__version=None)
         .select_related("component", "container")
     )
 
@@ -302,6 +361,7 @@ def send_events_after_publish(publish_log_id: int, library_key_str: str) -> None
     """
     publish_log = PublishLog.objects.get(id=publish_log_id)
     library_key = LibraryLocatorV2.from_string(library_key_str)
+    library = ContentLibrary.objects.get_by_key(library_key)
     affected_entities = publish_log.records.select_related(
         "entity", "entity__container", "entity__container__container_type", "entity__component",
     ).all()
@@ -332,6 +392,14 @@ def send_events_after_publish(publish_log_id: int, library_key_str: str) -> None
                 f"PublishableEntity {record.entity.pk} / {record.entity.entity_ref} "
                 "was modified during publish operation but is of unknown type."
             )
+
+    # When entities get newly published or their published version is deleted, update the "# of published entities in
+    # collection" count of any associated collections.
+    newly_published_or_unpublished_entity_ids = [
+        r.entity_id for r in affected_entities if r.new_version is None or r.old_version is None
+    ]
+    if not newly_published_or_unpublished_entity_ids:
+        emit_collections_updated(library, entity_ids=newly_published_or_unpublished_entity_ids)
 
 
 def _filter_child(store, usage_key, capa_type):
@@ -726,7 +794,11 @@ def dispatch_and_wait(task_fn: Task, wait_for_full_completion: bool = False, **k
     result: AsyncResult = task_fn.delay(**kwargs)
     # Try waiting a bit for the task to finish before we complete the request:
     try:
-        result.get(timeout=10)
+        # We use `disable_sync_subtasks=False` because some of our tasks emit
+        # events whose handlers then spawn additional tasks which are sometimes
+        # synchronous. Ideal usage of celery would be to "chain" the tasks
+        # instead of spawning subtasks, but that would require a major refactor.
+        result.get(timeout=10, disable_sync_subtasks=False)
     except CeleryTimeout:
         pass
         # This is fine! The search index is still being updated, and/or other

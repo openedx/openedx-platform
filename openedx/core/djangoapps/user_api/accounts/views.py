@@ -62,7 +62,10 @@ from openedx.core.djangoapps.profile_images.images import remove_profile_images
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.core.djangoapps.user_api import accounts
 from openedx.core.djangoapps.user_api.accounts.image_helpers import get_profile_image_names, set_has_profile_image
-from openedx.core.djangoapps.user_api.accounts.utils import handle_retirement_cancellation
+from openedx.core.djangoapps.user_api.accounts.utils import (
+    handle_retirement_cancellation,
+    redact_and_delete_historical_social_auth,
+)
 from openedx.core.djangoapps.user_authn.exceptions import AuthFailedError
 from openedx.core.lib.api.authentication import BearerAuthentication, BearerAuthenticationAllowInactiveUser
 from openedx.core.lib.api.parsers import MergePatchParser
@@ -1104,6 +1107,7 @@ class LMSAccountRetirementView(ViewSet):
             CreditRequest.retire_user(retirement)
             ApiAccessRequest.retire_user(retirement.user)
             CreditRequirementStatus.retire_user(retirement)
+            redact_and_delete_historical_social_auth(retirement.user.id)
 
             # This signal allows code in higher points of LMS to retire the user as necessary
             USER_RETIRE_LMS_MISC.send(sender=self.__class__, user=retirement.user)

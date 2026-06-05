@@ -435,6 +435,11 @@ def set_course_mode_price(request, course_id):
     """
     set the new course price and add new entry in the CourseModesArchive Table
     """
+    if not request.user.is_staff:
+        return JsonResponse(
+            {'message': _("You do not have permission to perform this action.")},
+            status=403
+        )
     try:
         course_price = int(request.POST['course_price'])
     except ValueError:

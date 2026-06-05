@@ -1,4 +1,8 @@
-""" Unit tests for custom UserProfile properties. """
+"""
+Unit tests for user account utility functions.
+
+Includes tests for social links, social-auth PII redaction, completion, etc.
+"""
 
 from contextlib import contextmanager
 
@@ -9,16 +13,19 @@ from django.db import connection
 from django.db.models.signals import pre_delete
 from django.test import TestCase
 from django.test.utils import CaptureQueriesContext, override_settings
+from django.utils import timezone
 from social_django.models import UserSocialAuth
 
 from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.user_api.accounts.signals import redact_social_auth_pii_before_deletion
 from openedx.core.djangoapps.user_api.accounts.utils import (
+    REDACTED_SOCIAL_AUTH_UID_PREFIX,
+    redact_and_delete_historical_social_auth,
     redact_and_delete_social_auth,
     retrieve_last_sitewide_block_completed,
 )
-from openedx.core.djangolib.testing.utils import skip_unless_lms
+from openedx.core.djangolib.testing.utils import assert_redact_before_delete, skip_unless_lms
 from xmodule.modulestore.tests.django_utils import (
     SharedModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
@@ -29,26 +36,6 @@ from xmodule.modulestore.tests.factories import (  # pylint: disable=wrong-impor
 
 from ..utils import format_social_link, validate_social_link
 
-
-def assert_update_before_delete(sql_list, num_redact_delete_pairs=1, table='social_auth_usersocialauth'):
-    """
-    Assert that UPDATE and DELETE queries for ``table`` occur in consecutive pairs.
-    """
-    table_key = table.upper()
-    expected_sql_list = [
-        sql for sql in sql_list
-        if table_key in sql.upper() and ('UPDATE' in sql.upper() or 'DELETE' in sql.upper())
-    ]
-    assert len(expected_sql_list) == num_redact_delete_pairs * 2, (
-        f'Expected {num_redact_delete_pairs * 2} UPDATE/DELETE queries on {table}, '
-        f'got {len(expected_sql_list)}'
-    )
-
-    for index in range(0, len(expected_sql_list), 2):
-        update_sql = expected_sql_list[index]
-        delete_sql = expected_sql_list[index + 1]
-        assert 'UPDATE' in update_sql.upper(), f'Expected UPDATE at position {index} for {table}'
-        assert 'DELETE' in delete_sql.upper(), f'Expected DELETE at position {index + 1} for {table}'
 
 # Use a context manager to guarantee signal reconnection between tests.
 @contextmanager
@@ -203,42 +190,109 @@ class RedactAndDeleteSocialAuthTest(TestCase):
             extra_data=extra_data,
         )
 
-    def test_redact_and_delete_redacts_single_sso_record(self):
-        """
-        Test that redact_and_delete_social_auth redacts and deletes a single SSO record.
-        """
-        social_auth = self.create_social_auth(
-            provider='google-oauth2',
-            uid='google@example.com',
-            extra_data={'email': 'google@example.com', 'name': 'Google User'},
-        )
-        social_auth_id = social_auth.pk
-
-        with disconnected_social_auth_redaction_signal(), CaptureQueriesContext(connection) as ctx:
-            redact_and_delete_social_auth(self.user.id)
-
-        assert_update_before_delete([query['sql'] for query in ctx])
-        assert not UserSocialAuth.objects.filter(id=social_auth_id).exists()
-
-    def test_redact_and_delete_redacts_multiple_sso_records(self):
+    @ddt.data(
+        [
+            (
+                'google-oauth2',
+                'google@example.com',
+                {'email': 'google@example.com', 'name': 'Google User'},
+            ),
+        ],
+        [
+            (
+                'google-oauth2',
+                'google@example.com',
+                {'email': 'google@example.com', 'name': 'Google User'},
+            ),
+            (
+                'tpa-saml',
+                'saml@example.com',
+                {'email': 'saml@example.com', 'name': 'SAML User', 'uid': 'saml-uid'},
+            ),
+        ],
+    )
+    def test_redact_and_delete_redacts_sso_records(self, social_auth_records):
         """
         Test that redact_and_delete_social_auth redacts and deletes all SSO records for a user.
         """
         social_auth_ids = [
-            self.create_social_auth(
-                provider='google-oauth2',
-                uid='google@example.com',
-                extra_data={'email': 'google@example.com', 'name': 'Google User'},
-            ).pk,
-            self.create_social_auth(
-                provider='tpa-saml',
-                uid='saml@example.com',
-                extra_data={'email': 'saml@example.com', 'name': 'SAML User', 'uid': 'saml-uid'},
-            ).pk,
+            self.create_social_auth(provider=provider, uid=uid, extra_data=extra_data).pk
+            for provider, uid, extra_data in social_auth_records
         ]
 
         with disconnected_social_auth_redaction_signal(), CaptureQueriesContext(connection) as ctx:
             redact_and_delete_social_auth(self.user.id)
 
-        assert_update_before_delete([query['sql'] for query in ctx])
+        assert_redact_before_delete(
+            [query['sql'] for query in ctx],
+            table=UserSocialAuth._meta.db_table,
+            expected_redacted_value_list=[REDACTED_SOCIAL_AUTH_UID_PREFIX],
+        )
         assert not UserSocialAuth.objects.filter(id__in=social_auth_ids).exists()
+
+
+@skip_unless_lms
+class RedactAndDeleteHistoricalSocialAuthTest(TestCase):
+    """
+    Tests for the redact_and_delete_historical_social_auth utility function.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.user = UserFactory.create(username='testuser', email='testuser@example.com')
+        self.historical_social_auth_model = UserSocialAuth.history.model
+
+    def _create_historical_record(
+        self,
+        provider='google-oauth2',
+        uid='user@example.com',
+        extra_data=None,
+        source_id=1,
+        user=None,
+    ):
+        """
+        Create a HistoricalUserSocialAuth record directly for test setup.
+        """
+        if extra_data is None:
+            extra_data = {'email': uid, 'name': 'Test User'}
+        user = user or self.user
+        self.historical_social_auth_model.objects.create(
+            user=user,
+            id=source_id,
+            provider=provider,
+            uid=uid,
+            extra_data=extra_data,
+            created=timezone.now(),
+            modified=timezone.now(),
+            history_date=timezone.now(),
+            history_type='+',
+        )
+
+    def test_historical_social_auth_redact_before_delete(self):
+        """
+        Ensure HistoricalUserSocialAuth records are properly redacted and deleted for retirement.
+
+        The fields uid (email format) and extra_data must be redacted before delete.
+        """
+        self._create_historical_record(provider='google-oauth2', uid='google@example.com', source_id=1)
+        self._create_historical_record(provider='tpa-saml', uid='saml@example.com', source_id=2)
+
+        other_user = UserFactory.create(username='otheruser', email='other@example.com')
+        self._create_historical_record(
+            provider='google-oauth2',
+            uid='other@example.com',
+            extra_data={},
+            source_id=3,
+            user=other_user,
+        )
+
+        with CaptureQueriesContext(connection) as ctx:
+            redact_and_delete_historical_social_auth(self.user.id)
+
+        assert_redact_before_delete(
+            [query['sql'] for query in ctx],
+            table=self.historical_social_auth_model._meta.db_table,
+            expected_redacted_value_list=[REDACTED_SOCIAL_AUTH_UID_PREFIX],
+        )
+        assert not self.historical_social_auth_model.objects.filter(user=self.user).exists()
+        assert self.historical_social_auth_model.objects.filter(user=other_user).exists()

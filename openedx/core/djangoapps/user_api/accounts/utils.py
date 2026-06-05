@@ -11,7 +11,7 @@ import waffle  # pylint: disable=invalid-django-waffle-import
 from completion.models import BlockCompletion
 from completion.waffle import ENABLE_COMPLETION_TRACKING_SWITCH
 from django.conf import settings
-from django.db.models import CharField, Value
+from django.db.models import CharField, TextField, Value
 from django.db.models.functions import Cast, Concat
 from django.utils.translation import gettext as _
 from edx_django_utils.user import generate_password
@@ -224,6 +224,26 @@ def redact_and_delete_social_auth(user_id, skip_delete=False):
     )
     if not skip_delete:
         social_auth_queryset.delete()
+
+
+def redact_and_delete_historical_social_auth(user_id):
+    """
+    Redact PII from all HistoricalUserSocialAuth records for the given user, then delete them.
+
+    Downstream copies of data may use soft-deletes, and redacting before deleting
+    ensures PII for retired users (or future retirements) is not retained.
+    """
+    historical_social_auth_model = UserSocialAuth.history.model
+    historical_queryset = historical_social_auth_model.objects.filter(user_id=user_id)
+    historical_queryset.update(
+        uid=Concat(
+            Value(REDACTED_SOCIAL_AUTH_UID_PREFIX),
+            Cast('history_id', output_field=TextField()),
+            Value(REDACTED_SOCIAL_AUTH_UID_SUFFIX),
+        ),
+        extra_data={},
+    )
+    historical_queryset.delete()
 
 
 def create_retirement_request_and_deactivate_account(user):
