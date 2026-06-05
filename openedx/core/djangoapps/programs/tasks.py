@@ -16,6 +16,8 @@ from django.core.exceptions import ObjectDoesNotExist
 from edx_django_utils.monitoring import set_code_owner_attribute
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey
+from openedx_events.learning.data import ProgramCertificateData, ProgramData, UserData, UserPersonalData
+from openedx_events.learning.signals import PROGRAM_CERTIFICATE_AWARDED, PROGRAM_CERTIFICATE_REVOKED
 from requests.exceptions import HTTPError
 
 from common.djangoapps.course_modes.models import CourseMode
@@ -30,8 +32,6 @@ from openedx.core.djangoapps.credentials.utils import (
 )
 from openedx.core.djangoapps.programs.utils import ProgramProgressMeter
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
-from openedx_events.learning.data import ProgramCertificateData, ProgramData, UserData, UserPersonalData
-from openedx_events.learning.signals import PROGRAM_CERTIFICATE_AWARDED, PROGRAM_CERTIFICATE_REVOKED
 from xmodule.data import CertificatesDisplayBehaviors
 
 if TYPE_CHECKING:
