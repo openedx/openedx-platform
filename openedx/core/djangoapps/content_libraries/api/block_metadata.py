@@ -46,9 +46,20 @@ class LibraryXBlockMetadata(PublishableItem):
     usage_key: LibraryUsageLocatorV2
 
     @classmethod
-    def from_component(cls, library_key, component, associated_collections=None):
+    def from_component(
+        cls,
+        library_key: LibraryLocatorV2,
+        component,
+        associated_collections=None,
+        use_published=False,
+    ) -> LibraryXBlockMetadata:
         """
         Construct a LibraryXBlockMetadata from a Component object.
+
+        Requires that the draft version of the component exists, unless you
+        specify use_published=True, in which case it requires that the published
+        version exists. The 'display_name' and 'modified' fields will depend on
+        which version you request.
         """
         # Import content_tagging.api here to avoid circular imports
         from openedx.core.djangoapps.content_tagging.api import get_object_tag_counts
@@ -61,17 +72,17 @@ class LibraryXBlockMetadata(PublishableItem):
         draft = component.versioning.draft
         published = component.versioning.published
         last_draft_created = draft.created if draft else None
-        last_draft_created_by = draft.publishable_entity_version.created_by if draft else None
+        last_draft_created_by = draft.publishable_entity_version.created_by if draft else ""
         usage_key = library_component_usage_key(library_key, component)
         tags = get_object_tag_counts(str(usage_key), count_implicit=True)
 
         return cls(
             usage_key=usage_key,
-            display_name=draft.title,
+            display_name=published.title if use_published else draft.title,
             created=component.created,
             created_by=component.created_by.username if component.created_by else None,
-            modified=draft.created,
-            draft_version_num=draft.version_num,
+            modified=published.created if use_published else draft.created,
+            draft_version_num=draft.version_num if draft else None,
             published_version_num=published.version_num if published else None,
             published_display_name=published.title if published else None,
             last_published=None if last_publish_log is None else last_publish_log.published_at,
