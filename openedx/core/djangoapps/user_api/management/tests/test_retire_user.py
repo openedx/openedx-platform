@@ -15,17 +15,18 @@ from django.db.models.signals import pre_delete
 from django.test.utils import CaptureQueriesContext
 from social_django.models import UserSocialAuth
 
-from common.djangoapps.student.tests.factories import UserFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.user_api.accounts.signals import (
     redact_social_auth_pii_before_deletion,
 )
 from openedx.core.djangoapps.user_api.accounts.tests.retirement_helpers import (
     setup_retirement_states,  # noqa: F401
 )
-from openedx.core.djangoapps.user_api.accounts.tests.test_utils import (
-    assert_update_before_delete,
+from openedx.core.djangoapps.user_api.accounts.utils import REDACTED_SOCIAL_AUTH_UID_PREFIX
+from openedx.core.djangolib.testing.utils import (
+    assert_redact_before_delete,
+    skip_unless_lms,
 )
-from openedx.core.djangolib.testing.utils import skip_unless_lms  # pylint: disable=wrong-import-order
 
 from ...models import UserRetirementStatus
 
@@ -164,7 +165,11 @@ def test_retire_user_redacts_sso_pii_before_deletion(setup_retirement_states, so
     with disconnected_social_auth_redaction_signal(), CaptureQueriesContext(connection) as ctx:
         call_command('retire_user', username=user.username, user_email=user.email)
 
-    assert_update_before_delete([query['sql'] for query in ctx])
+    assert_redact_before_delete(
+        [query['sql'] for query in ctx],
+        table=UserSocialAuth._meta.db_table,
+        expected_redacted_value_list=[REDACTED_SOCIAL_AUTH_UID_PREFIX],
+    )
     for auth_id in auth_ids:
         assert not UserSocialAuth.objects.filter(id=auth_id).exists()
 
