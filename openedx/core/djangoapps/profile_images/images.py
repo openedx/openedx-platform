@@ -40,9 +40,20 @@ IMAGE_TYPES = {
 }
 
 
+# Colors drawn from the Paragon light theme design tokens (primary, brand,
+# success, info, and danger families). Yellow/warning shades are excluded
+# because they lack sufficient contrast against white text (WCAG AA).
 _AVATAR_COLORS = [
-    '#1565C0', '#2E7D32', '#6A1B9A', '#C62828', '#E65100',
-    '#00695C', '#4527A0', '#AD1457', '#0277BD', '#558B2F',
+    '#0A3055',  # primary
+    '#9D0054',  # brand
+    '#178253',  # success (green)
+    '#006DAA',  # info (teal)
+    '#C32D3A',  # danger (red)
+    '#476480',  # primary-400
+    '#B6407F',  # brand-400
+    '#15754B',  # success-600
+    '#006299',  # info-600
+    '#B02934',  # danger-600
 ]
 
 _AVATAR_STORAGE_PREFIX = 'auto_avatars'
