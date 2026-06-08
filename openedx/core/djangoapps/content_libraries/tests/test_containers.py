@@ -1,12 +1,13 @@
 """
 Tests for openedx_content-based Content Libraries
 """
+import copy
 import textwrap
 from datetime import UTC, datetime
 
 import ddt
 from freezegun import freeze_time
-from opaque_keys.edx.locator import LibraryLocatorV2
+from opaque_keys.edx.locator import LibraryContainerLocator, LibraryLocatorV2, LibraryUsageLocatorV2
 
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.content_libraries import api
@@ -103,10 +104,19 @@ class ContainersTestCase(ContentLibrariesRestApiTest):
             )
 
         # Create blocks
-        self.problem_block = self._add_block_to_library(self.lib["id"], "problem", "Problem1", can_stand_alone=False)
-        self.html_block = self._add_block_to_library(self.lib["id"], "html", "Html1", can_stand_alone=False)
-        self.problem_block_2 = self._add_block_to_library(self.lib["id"], "problem", "Problem2", can_stand_alone=False)
-        self.html_block_2 = self._add_block_to_library(self.lib["id"], "html", "Html2")
+        with freeze_time(self.create_date):
+            self.problem_block = self._add_block_to_library(
+                self.lib["id"], "problem", "Problem1", can_stand_alone=False
+            )
+            self.html_block = self._add_block_to_library(
+                self.lib["id"], "html", "Html1", can_stand_alone=False
+            )
+            self.problem_block_2 = self._add_block_to_library(
+                self.lib["id"], "problem", "Problem2", can_stand_alone=False
+            )
+            self.html_block_2 = self._add_block_to_library(
+                self.lib["id"], "html", "Html2"
+            )
 
         with freeze_time(self.modified_date):
             # Add components to `unit_with_components`
@@ -527,6 +537,194 @@ class ContainersTestCase(ContentLibrariesRestApiTest):
         assert len(data) == 2
         assert data[0]['id'] == new_subsection_1['id']
         assert data[1]['id'] == new_subsection_2['id']
+
+    def test_published_child_components(self) -> None:
+        """
+        Test that we can get the published version of a unit.
+        """
+        unit_key_str = self.unit_with_components["id"]
+        unit_key = LibraryContainerLocator.from_string(unit_key_str)
+        # Publish "unit with components"
+        self._publish_container(unit_key_str)
+        # Now both its draft and published versions contain 4 identical components:
+        assert api.get_container_children_count(unit_key, published=False) == 4
+        assert api.get_container_children_count(unit_key, published=True) == 4
+
+        original_children = self._get_container_children(unit_key_str)
+        draft_edited_date = datetime(2024, 9, 8, 7, 6, 5, tzinfo=UTC)
+        # Modify the first component:
+        first_child_key_str = original_children[0]["id"]
+        with freeze_time(draft_edited_date):
+            self._set_library_block_olx(first_child_key_str, "<problem display_name=\"DRAFT problem\"></problem>")
+        # And delete the last one:
+        last_child_key_str = original_children[3]["id"]
+        with freeze_time(draft_edited_date):
+            self._delete_library_block(last_child_key_str)
+
+        # Now the counts should be different - the draft has only three children:
+        assert api.get_container_children_count(unit_key, published=False) == 3
+        assert api.get_container_children_count(unit_key, published=True) == 4
+
+        # Check the published version
+        expected_published = copy.deepcopy(original_children)
+        # The first child was modified since publish:
+        expected_published[0]["has_unpublished_changes"] = True
+        # The last child was modified (deleted) since publish:
+        expected_published[3]["has_unpublished_changes"] = True
+        expected_published[3]["last_draft_created"] = None
+        expected_published[3]["last_draft_created_by"] = ""
+
+        assert self._get_container_children(unit_key_str, published=True) == expected_published
+
+        # Check the draft version:
+        expected_draft = copy.deepcopy(original_children)
+        # The first child was modified since publish:
+        expected_draft[0]["display_name"] = "DRAFT problem"
+        expected_draft[0]["has_unpublished_changes"] = True
+        # The last child was modified (deleted) since publish:
+        del expected_draft[3]
+
+        assert self._get_container_children(unit_key_str, published=False) == expected_draft
+
+    def test_published_child_containers(self) -> None:
+        """
+        Test that we can get the published version of a subsection.
+        """
+        subsection_key_str = self.subsection_with_units["id"]
+        subsection_key = LibraryContainerLocator.from_string(subsection_key_str)
+        # Publish "subsection with units"
+        self._publish_container(subsection_key_str)
+        # Now both its draft and published versions contain 4 identical units:
+        assert api.get_container_children_count(subsection_key, published=False) == 4
+        assert api.get_container_children_count(subsection_key, published=True) == 4
+
+        original_children = self._get_container_children(subsection_key_str)
+        draft_edited_date = datetime(2024, 9, 8, 7, 6, 5, tzinfo=UTC)
+        # Modify the first child unit:
+        first_child_key_str = original_children[0]["id"]
+        with freeze_time(draft_edited_date):
+            self._update_container(first_child_key_str, display_name="DRAFT unit")
+        # And delete the last one:
+        last_child_key_str = original_children[3]["id"]
+        with freeze_time(draft_edited_date):
+            self._delete_container(last_child_key_str)
+
+        # Now the counts should be different - the draft has only three children:
+        assert api.get_container_children_count(subsection_key, published=False) == 3
+        assert api.get_container_children_count(subsection_key, published=True) == 4
+
+        # Check the published version
+        expected_published = copy.deepcopy(original_children)
+        # The first child was modified since publish:
+        expected_published[0]["has_unpublished_changes"] = True
+        # The last child was modified (deleted) since publish:
+        expected_published[3]["has_unpublished_changes"] = True
+        expected_published[3]["last_draft_created"] = None
+        expected_published[3]["last_draft_created_by"] = ""  # last draft was deleted.
+
+        assert self._get_container_children(subsection_key_str, published=True)[0] == expected_published[0]
+        assert self._get_container_children(subsection_key_str, published=True)[3] == expected_published[3]
+        assert self._get_container_children(subsection_key_str, published=True) == expected_published
+
+        # Check the draft version:
+        expected_draft = copy.deepcopy(original_children)
+        # The first child was modified since publish:
+        expected_draft[0]["display_name"] = "DRAFT unit"
+        expected_draft[0]["has_unpublished_changes"] = True
+        # The last child was modified (deleted) since publish:
+        del expected_draft[3]
+
+        assert self._get_container_children(subsection_key_str, published=False) == expected_draft
+
+    def test_get_container_children_queries(self):
+        """
+        Test how many queries are used to retrieve the children of a container
+        """
+        empty_unit_key = LibraryContainerLocator.from_string(self.unit["id"])
+        unit_with_children_key = LibraryContainerLocator.from_string(self.unit_with_components["id"])
+        EMPTY_QUERIES = 6
+        PER_CHILD_QUERIES = 10  # There's room to optimize here.
+        with self.assertNumQueries(EMPTY_QUERIES):
+            result = api.get_container_children(empty_unit_key)
+            assert len(result) == 0
+        with self.assertNumQueries(6):
+            num_children = api.get_container_children_count(unit_with_children_key)
+        with self.assertNumQueries(EMPTY_QUERIES + PER_CHILD_QUERIES * num_children):
+            result = api.get_container_children(unit_with_children_key)
+            assert len(result) == num_children
+
+    def test_get_container_children_list_components(self) -> None:
+        """
+        Test that we can use get_container_children_list() to get the draft and
+        published children of any container, simply and performantly.
+        """
+        # Publish "unit with components"
+        unit_key_str = self.unit_with_components["id"]
+        unit_key = LibraryContainerLocator.from_string(unit_key_str)
+        self._publish_container(unit_key_str)
+
+        original_list = api.get_container_children_list(unit_key, published=True)
+        assert original_list == [
+            api.ContainerChildMetadata(
+                display_name='Blank Problem',
+                key=LibraryUsageLocatorV2.from_string('lb:CL-TEST:containers:problem:Problem1'),
+            ),
+            api.ContainerChildMetadata(
+                display_name='Text',
+                key=LibraryUsageLocatorV2.from_string('lb:CL-TEST:containers:html:Html1'),
+            ),
+            api.ContainerChildMetadata(
+                display_name='Blank Problem',
+                key=LibraryUsageLocatorV2.from_string('lb:CL-TEST:containers:problem:Problem2'),
+            ),
+            api.ContainerChildMetadata(
+                display_name='Text',
+                key=LibraryUsageLocatorV2.from_string('lb:CL-TEST:containers:html:Html2'),
+            ),
+        ]
+
+        # Modify the first component:
+        first_child_key = original_list[0].key
+        self._set_library_block_olx(str(first_child_key), "<problem display_name=\"DRAFT problem\"></problem>")
+        # And delete the last one:
+        last_child_key = original_list[3].key
+        self._delete_library_block(str(last_child_key))
+
+        # Now the counts should be different - the draft has only three children:
+        assert api.get_container_children_list(unit_key, published=True) == original_list
+        assert api.get_container_children_list(unit_key, published=False) == [
+            api.ContainerChildMetadata(
+                display_name='DRAFT problem',  # new name
+                key=LibraryUsageLocatorV2.from_string('lb:CL-TEST:containers:problem:Problem1'),
+            ),
+            api.ContainerChildMetadata(
+                display_name='Text',
+                key=LibraryUsageLocatorV2.from_string('lb:CL-TEST:containers:html:Html1'),
+            ),
+            api.ContainerChildMetadata(
+                display_name='Blank Problem',
+                key=LibraryUsageLocatorV2.from_string('lb:CL-TEST:containers:problem:Problem2'),
+            ),
+            # last component was deleted.
+        ]
+
+
+    def test_get_container_children_list_queries(self):
+        """
+        Test how many queries are used to retrieve the children of a container
+        """
+        empty_unit_key = LibraryContainerLocator.from_string(self.unit["id"])
+        unit_with_children_key = LibraryContainerLocator.from_string(self.unit_with_components["id"])
+        EMPTY_QUERIES = 6
+        PER_CHILD_QUERIES = 3  # There's room to optimize here - remove the componenttype lookups
+        with self.assertNumQueries(EMPTY_QUERIES):
+            result = api.get_container_children_list(empty_unit_key, published=False)
+            assert len(result) == 0
+        with self.assertNumQueries(6):
+            num_children = api.get_container_children_count(unit_with_children_key)
+        with self.assertNumQueries(EMPTY_QUERIES + PER_CHILD_QUERIES * num_children):
+            result = api.get_container_children_list(unit_with_children_key, published=False)
+            assert len(result) == num_children
 
     @ddt.data(
         "unit",
