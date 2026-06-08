@@ -306,5 +306,3 @@ def library_blocks_view(library, user, response_format):
         'xblock_info': xblock_info,
         'templates': CONTAINER_TEMPLATES,
     })
-
-
