@@ -1,7 +1,14 @@
 """
-Public rest API endpoints for the CMS API.
+Public rest API endpoints for the CMS API — v0 xblock (DEPRECATED).
+
+.. deprecated::
+    These views are superseded by ``XblockViewSet`` in
+    ``cms.djangoapps.contentstore.rest_api.v1.views.xblock``.
+    Use ``/api/contentstore/v1/xblock/`` going forward.
+    These v0 endpoints will be removed in a future release.
 """
 import logging
+import warnings
 
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.generics import CreateAPIView, RetrieveUpdateDestroyAPIView
@@ -17,10 +24,17 @@ from .utils import validate_request_with_serializer
 log = logging.getLogger(__name__)
 handle_xblock = view_handlers.handle_xblock
 
+_DEPRECATION_MSG = (
+    "The v0 xblock API (/api/contentstore/v0/xblock/) is deprecated. "
+    "Use /api/contentstore/v1/xblock/ instead."
+)
+
 
 @view_auth_classes()
 class XblockView(DeveloperErrorViewMixin, RetrieveUpdateDestroyAPIView):
     """
+    **DEPRECATED** — use ``/api/contentstore/v1/xblock/{usage_key_string}/`` instead.
+
     Public rest API endpoints for the CMS API.
     course_key: required argument, needed to authorize course authors.
     usage_key_string (optional):
@@ -32,29 +46,35 @@ class XblockView(DeveloperErrorViewMixin, RetrieveUpdateDestroyAPIView):
     @course_author_access_required
     @expect_json_in_class_view
     def retrieve(self, request, course_key, usage_key_string=None):
+        warnings.warn(_DEPRECATION_MSG, DeprecationWarning, stacklevel=2)
         return handle_xblock(request, usage_key_string)
 
     @course_author_access_required
     @expect_json_in_class_view
     @validate_request_with_serializer
     def update(self, request, course_key, usage_key_string=None):
+        warnings.warn(_DEPRECATION_MSG, DeprecationWarning, stacklevel=2)
         return handle_xblock(request, usage_key_string)
 
     @course_author_access_required
     @expect_json_in_class_view
     @validate_request_with_serializer
     def partial_update(self, request, course_key, usage_key_string=None):
+        warnings.warn(_DEPRECATION_MSG, DeprecationWarning, stacklevel=2)
         return handle_xblock(request, usage_key_string)
 
     @course_author_access_required
     @expect_json_in_class_view
     def destroy(self, request, course_key, usage_key_string=None):
+        warnings.warn(_DEPRECATION_MSG, DeprecationWarning, stacklevel=2)
         return handle_xblock(request, usage_key_string)
 
 
 @view_auth_classes()
 class XblockCreateView(DeveloperErrorViewMixin, CreateAPIView):
     """
+    **DEPRECATED** — use ``POST /api/contentstore/v1/xblock/`` instead.
+
     Public rest API endpoints for the CMS API.
     course_key: required argument, needed to authorize course authors.
     usage_key_string (optional):
@@ -68,4 +88,5 @@ class XblockCreateView(DeveloperErrorViewMixin, CreateAPIView):
     @expect_json_in_class_view
     @validate_request_with_serializer
     def create(self, request, course_key, usage_key_string=None):
+        warnings.warn(_DEPRECATION_MSG, DeprecationWarning, stacklevel=2)
         return handle_xblock(request, usage_key_string)
