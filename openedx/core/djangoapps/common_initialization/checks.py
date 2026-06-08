@@ -40,11 +40,4 @@ def validate_marketing_site_setting(app_configs, **kwargs):  # pylint: disable=u
                 id='common.djangoapps.common_initialization.E002',
             )
         )
-    elif not settings.MKTG_URLS.get('ROOT'):
-        errors.append(
-            Error(
-                'There is no ROOT defined in MKTG_URLS.',
-                id='common.djangoapps.common_initialization.E003',
-            )
-        )
     return errors
