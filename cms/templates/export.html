@@ -1,0 +1,278 @@
+<%page expression_filter="h"/>
+<%inherit file="base.html" />
+<%def name="online_help_token()">
+<%
+if library:
+    return "export_library"
+else:
+    return "export_course"
+%>
+</%def>
+<%namespace name='static' file='static_content.html'/>
+
+<%!
+  from django.utils.translation import gettext as _
+  from openedx.core.djangolib.markup import HTML, Text
+  from openedx.core.djangolib.js_utils import (
+      dump_js_escaped_json, js_escaped_string
+  )
+%>
+<%block name="title">
+%if library:
+    ${_("Library Export")}
+%else:
+    ${_("Course Export")}
+%endif
+</%block>
+<%block name="bodyclass">is-signedin course tools view-export</%block>
+
+<%block name="requirejs">
+  var courselikeHomeUrl = "${courselike_home_url | n, js_escaped_string}",
+      is_library = ${library | n, dump_js_escaped_json},
+      statusUrl = "${status_url | n, js_escaped_string}";
+
+  require(["js/factories/export"], function(ExportFactory) {
+      ExportFactory(courselikeHomeUrl, is_library, statusUrl);
+  });
+</%block>
+
+<%block name="content">
+<div class="wrapper-mast wrapper">
+  <header class="mast has-subtitle">
+    <h1 class="page-header">
+      <small class="subtitle">${_("Tools")}</small>
+        <span class="sr">&gt; </span>
+      %if library:
+        ${_("Library Export")}
+      %else:
+        ${_("Course Export")}
+      %endif
+    </h1>
+  </header>
+</div>
+
+<div class="wrapper-content wrapper">
+  <section class="content">
+    <article class="content-primary" role="main">
+
+      <div class="introduction">
+        %if library:
+          <h2 class="title">${_("About Exporting Libraries")}</h2>
+          <div class="copy">
+              ## Translators: ".tar.gz" is a file extension, and should not be translated
+              <p>${_("You can export libraries and edit them outside of {studio_name}. The exported file is a .tar.gz file (that is, a .tar file compressed with GNU Zip) that contains the library structure and content. You can also re-import libraries that you've exported.").format(
+          studio_name=settings.STUDIO_SHORT_NAME,
+          )}</p>
+          </div>
+        %else:
+          <h2 class="title">${_("About Exporting Courses")}</h2>
+          <div class="copy">
+              ## Translators: ".tar.gz" is a file extension, and should not be translated
+              <p>${_("You can export courses and edit them outside of {studio_name}. The exported file is a .tar.gz file (that is, a .tar file compressed with GNU Zip) that contains the course structure and content. You can also re-import courses that you've exported.").format(
+                studio_name=settings.STUDIO_SHORT_NAME
+              )}</p>
+              <p>${Text(_("{em_start}Caution:{em_end} When you export a course, information such as MATLAB API keys, LTI passports, annotation secret token strings, and annotation storage URLs are included in the exported data. If you share your exported files, you may also be sharing sensitive or license-specific information.")).format(
+                    em_start=HTML('<strong>'),
+                    em_end=HTML("</strong>")
+                  )}</p>
+          </div>
+        %endif
+      </div>
+
+      <div class="export-controls">
+        <h2 class="title">
+            %if library:
+                ${_("Export My Library Content")}
+            %else:
+                ${_("Export My Course Content")}
+            %endif</h2>
+
+        <ul class="list-actions">
+          <li class="item-action">
+            <a class="action action-export action-primary" href="#">
+              <span class="icon fa fa-arrow-circle-o-down" aria-hidden="true"></span>
+              <span class="copy">
+                  %if library:
+                      ${_("Export Library Content")}
+                  %else:
+                      ${_("Export Course Content")}
+                  %endif</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <div class="wrapper wrapper-status is-hidden">
+        <h3 class="title">
+            %if library:
+                ${_("Library Export Status")}
+            %else:
+                ${_("Course Export Status")}
+            %endif
+        </h3>
+
+        <ol class="status-progress list-progress">
+          <li class="item-progresspoint item-progresspoint-prepare is-complete">
+            <span class="deco status-visual">
+              <span class="icon fa fa-cog" aria-hidden="true"></span>
+              <span class="icon fa fa-warning" aria-hidden="true"></span>
+            </span>
+
+            <div class="status-detail">
+              <h3 class="title">${_("Preparing")}</h3>
+              <div class="progress-bar">
+                <div class="progress-fill"></div>
+              </div>
+              <p class="copy">${_("Preparing to start the export")}</p>
+            </div>
+          </li>
+
+          <li class="item-progresspoint item-progresspoint-export is-started">
+            <span class="deco status-visual">
+              <span class="icon fa fa-cog" aria-hidden="true"></span>
+              <span class="icon fa fa-warning" aria-hidden="true"></span>
+            </span>
+
+            <div class="status-detail">
+              <h3 class="title">${_("Exporting")}</h3>
+              <p class="copy">${_("Creating the export data files (You can now leave this page safely, but avoid making drastic changes to content until this export is complete)")}</p>
+            </div>
+          </li>
+
+          <li class="item-progresspoint item-progresspoint-compress is-not-started">
+            <span class="deco status-visual">
+              <span class="icon fa fa-cog" aria-hidden="true"></span>
+              <span class="icon fa fa-warning" aria-hidden="true"></span>
+            </span>
+
+            <div class="status-detail">
+              <h3 class="title">${_("Compressing")}</h3>
+              <p class="copy">${_("Compressing the exported data and preparing it for download")}</p>
+            </div>
+          </li>
+
+          <li class="item-progresspoint item-progresspoint-success has-actions is-not-started">
+            <span class="deco status-visual">
+              <span class="icon fa fa-square-o" aria-hidden="true"></span>
+            </span>
+
+            <div class="status-detail">
+              <h3 class="title">
+                ${_("Success")}
+                <span class="item-progresspoint-success-date"></span>
+              </h3>
+              <p class="copy">
+                  %if library:
+                      ${_("Your exported library can now be downloaded")}
+                  %else:
+                      ${_("Your exported course can now be downloaded")}
+                  %endif
+              </p>
+
+              <ul class="list-actions">
+                <li class="item-action">
+                  <a href="#" id="download-exported-button" class="action action-primary">
+                      %if library:
+                          ${_("Download Exported Library")}
+                      %else:
+                          ${_("Download Exported Course")}
+                      %endif
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </li>
+        </ol>
+      </div>
+
+    %if not library:
+      <div class="export-contents">
+        <div class="export-includes">
+          <h3 class="title-3">
+              ${Text(_("Data {em_start}exported with{em_end} your course:")).format(
+                em_start=HTML('<strong>'),
+                em_end=HTML("</strong>")
+              )}</h3>
+          <ul class="list-details list-export-includes">
+            <li class="item-detail">${_("Values from Advanced Settings, including MATLAB API keys and LTI passports")}</li>
+            <li class="item-detail">${_("Course Content (all Sections, Sub-sections, and Units)")}</li>
+            <li class="item-detail">${_("Course Structure")}</li>
+            <li class="item-detail">${_("Individual Problems")}</li>
+            <li class="item-detail">${_("Pages")}</li>
+            <li class="item-detail">${_("Course Assets")}</li>
+            <li class="item-detail">${_("Course Settings")}</li>
+          </ul>
+        </div>
+
+        <div class="export-excludes">
+          <h3 class="title-3">
+              ${Text(_("Data {em_start}not exported{em_end} with your course:")).format(
+                em_start=HTML('<strong>'),
+                em_end=HTML("</strong>")
+              )}</h3>
+          <ul class="list-details list-export-excludes">
+            <li class="item-detail">${_("User Data")}</li>
+            <li class="item-detail">${_("Course Team Data")}</li>
+            <li class="item-detail">${_("Forum/discussion Data")}</li>
+            <li class="item-detail">${_("Certificates")}</li>
+          </ul>
+        </div>
+      </div>
+    %endif
+    </article>
+  %if library:
+    <aside class="content-supplementary" role="complementary">
+      <div class="bit">
+          <h3 class="title-3">${_("Why export a library?")}</h3>
+          <p>${_("You may want to edit the XML in your library directly, outside of {studio_name}. You may want to create a backup copy of your library. Or, you may want to create a copy of your library that you can later import into another library instance and customize.").format(
+          studio_name=settings.STUDIO_SHORT_NAME,
+          )}</p>
+      </div>
+
+      <div class="bit">
+          <h3 class="title-3">${_("Opening the downloaded file")}</h3>
+          ## Translators: ".tar.gz" is a file extension, and should not be translated
+          <p>${_("Use an archive program to extract the data from the .tar.gz file. Extracted data includes the library.xml file, as well as subfolders that contain library content.")}</p>
+      </div>
+      <div class="bit external-help">
+          <a href="${get_online_help_info(online_help_token())['doc_url']}" rel="noopener" target="_blank" class="button external-help-button">${_("Learn more about exporting a library")}</a>
+      </div>
+    </aside>
+  %else:
+    <aside class="content-supplementary" role="complementary">
+      <div class="bit">
+        <h3 class="title-3">${_("Why export a course?")}</h3>
+        <p>${_("You may want to edit the XML in your course directly, outside of {studio_name}. You may want to create a backup copy of your course. Or, you may want to create a copy of your course that you can later import into another course instance and customize.").format(
+            studio_name=settings.STUDIO_SHORT_NAME,
+          )}</p>
+      </div>
+
+      <div class="bit">
+        <h3 class="title-3">${_("What content is exported?")}</h3>
+        <p>${_("The following content is exported.")}</p>
+        <ul>
+          <li>${_("Course content and structure")}</li>
+          <li>${_("Course dates")}</li>
+          <li>${_("Grading policy")}</li>
+          <li>${_("Any group configurations")}</li>
+          <li>${_("Settings on the Advanced Settings page, including MATLAB API keys and LTI passports")}</li>
+        </ul>
+        <p>${_("The following content is not exported.")}</p>
+        <ul>
+          <li>${_("Learner-specific content, such as learner grades and discussion forum data")}</li>
+          <li>${_("The course team")}</li>
+        </ul>
+      </div>
+      <div class="bit">
+        <h3 class="title-3">${_("Opening the downloaded file")}</h3>
+        ## Translators: ".tar.gz" is a file extension, and should not be translated
+        <p>${_("Use an archive program to extract the data from the .tar.gz file. Extracted data includes the course.xml file, as well as subfolders that contain course content.")}</p>
+      </div>
+      <div class="bit external-help">
+          <a href="${get_online_help_info(online_help_token())['doc_url']}" rel="noopener" target="_blank" class="button external-help-button">${_("Learn more about exporting a course")}</a>
+      </div>
+    </aside>
+  %endif
+  </section>
+</div>
+</%block>
