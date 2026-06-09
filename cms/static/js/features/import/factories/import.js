@@ -12,7 +12,7 @@ define([
     const IMPORTABLE_FILE_TYPES = /\.tar\.gz$|\.zip$/;
 
     return {
-        Import: function(feedbackUrl, library) {
+        Import: function(feedbackUrl) {
             var dbError,
                 $bar = $('.progress-bar'),
                 $fill = $('.progress-fill'),
@@ -52,11 +52,7 @@ define([
                     }
                 };
 
-            if (library) {
-                dbError = gettext('There was an error while importing the new library to our database.');
-            } else {
-                dbError = gettext('There was an error while importing the new course to our database.');
-            }
+            dbError = gettext('There was an error while importing the new course to our database.');
 
             $(window).on('beforeunload', function() { unloading = true; });
 
