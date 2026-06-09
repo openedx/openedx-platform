@@ -55,10 +55,14 @@ class XblockViewSet(StandardizedErrorMixin, viewsets.ViewSet):
     lookup_field = "usage_key_string"
     lookup_value_regex = r'(?:i4x://?[^/]+/[^/]+/[^/]+/[^@]+(?:@[^/]+)?)|(?:[^/]+)'
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.course_key = None
+
     def initial(self, request, *args, **kwargs):
         """
-        Derive course_key from the URL or request body and inject it into
-        kwargs before DRF runs permission checks.
+        Derive course_key and store it as self.course_key before DRF runs
+        permission checks.
 
         Detail actions (GET/PUT/PATCH/DELETE): course_key is extracted from
         the usage key embedded in the URL.
@@ -70,20 +74,20 @@ class XblockViewSet(StandardizedErrorMixin, viewsets.ViewSet):
         usage_key_string = kwargs.get("usage_key_string")
         if usage_key_string:
             try:
-                kwargs["course_key"] = UsageKey.from_string(usage_key_string).course_key
+                self.course_key = UsageKey.from_string(usage_key_string).course_key
             except InvalidKeyError:
-                kwargs["course_key"] = None
+                self.course_key = None
         else:
             try:
                 # pylint: disable=protected-access
                 body = json.loads(request._request.body or b'{}')
                 parent_locator = body.get("parent_locator", "")
-                kwargs["course_key"] = (
+                self.course_key = (
                     UsageKey.from_string(parent_locator).course_key
                     if parent_locator else None
                 )
             except (ValueError, InvalidKeyError):
-                kwargs["course_key"] = None
+                self.course_key = None
         super().initial(request, *args, **kwargs)
 
     @expect_json_in_class_view

@@ -21,7 +21,7 @@ class HasCourseAuthorAccess(BasePermission):
     """
 
     def has_permission(self, request, view):
-        course_key = view.kwargs.get("course_key")
+        course_key = getattr(view, "course_key", None)
         if not course_key:
             return False
         return has_course_author_access(request.user, course_key)

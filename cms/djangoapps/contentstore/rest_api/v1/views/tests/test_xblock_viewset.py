@@ -14,7 +14,7 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from cms.djangoapps.contentstore.tests.test_utils import AuthorizeStaffTestCase
+from common.djangoapps.student.tests.factories import GlobalStaffFactory, UserFactory
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 
 TEST_LOCATOR = "block-v1:edX+ToyX+Toy_Course+type@problem+block@ba6327f840da49289fb27a9243913478"
@@ -22,9 +22,7 @@ PARENT_LOCATOR = "block-v1:edX+ToyX+Toy_Course+type@vertical+block@vert1"
 
 _REQUIRED_ERROR_FIELDS = ("type", "title", "status", "detail", "instance")
 
-_MOCK_RESPONSE = JsonResponse(
-    {"locator": TEST_LOCATOR, "course_key": AuthorizeStaffTestCase.get_course_key_string()}
-)
+_MOCK_RESPONSE = JsonResponse({"locator": TEST_LOCATOR})
 
 _VIEW_MODULE = "cms.djangoapps.contentstore.rest_api.v1.views.xblock"
 
@@ -45,15 +43,16 @@ def _detail_url():
 # ---------------------------------------------------------------------------
 
 
-class XblockViewSetRoutingTest(AuthorizeStaffTestCase, ModuleStoreTestCase, APITestCase):
+class XblockViewSetRoutingTest(ModuleStoreTestCase, APITestCase):
     """Verify each HTTP method routes to the correct per-verb handler (ADR 0028)."""
 
-    def _login_as_instructor(self):
-        self.client.login(username=self.course_instructor.username, password=self.password)
+    def setUp(self):
+        super().setUp()
+        self.staff = GlobalStaffFactory(password='password')
+        self.client.force_authenticate(user=self.staff)
 
     @patch(f"{_VIEW_MODULE}.create_xblock_response", return_value=_MOCK_RESPONSE)
     def test_post_calls_create_xblock_response(self, mock_fn):
-        self._login_as_instructor()
         data = {"parent_locator": PARENT_LOCATOR, "category": "html"}
         response = self.client.post(_list_url(), data=data, format="json")
         assert response.status_code == status.HTTP_200_OK
@@ -62,7 +61,6 @@ class XblockViewSetRoutingTest(AuthorizeStaffTestCase, ModuleStoreTestCase, APIT
 
     @patch(f"{_VIEW_MODULE}.retrieve_xblock_response", return_value=_MOCK_RESPONSE)
     def test_get_calls_retrieve_xblock_response(self, mock_fn):
-        self._login_as_instructor()
         response = self.client.get(_detail_url())
         assert response.status_code == status.HTTP_200_OK
         mock_fn.assert_called_once()
@@ -70,7 +68,6 @@ class XblockViewSetRoutingTest(AuthorizeStaffTestCase, ModuleStoreTestCase, APIT
 
     @patch(f"{_VIEW_MODULE}.update_xblock_response", return_value=_MOCK_RESPONSE)
     def test_put_calls_update_xblock_response(self, mock_fn):
-        self._login_as_instructor()
         data = {"id": TEST_LOCATOR, "data": "<p>Updated</p>"}
         response = self.client.put(_detail_url(), data=data, format="json")
         assert response.status_code == status.HTTP_200_OK
@@ -79,7 +76,6 @@ class XblockViewSetRoutingTest(AuthorizeStaffTestCase, ModuleStoreTestCase, APIT
 
     @patch(f"{_VIEW_MODULE}.update_xblock_response", return_value=_MOCK_RESPONSE)
     def test_patch_calls_update_xblock_response(self, mock_fn):
-        self._login_as_instructor()
         data = {"id": TEST_LOCATOR, "display_name": "New Name"}
         response = self.client.patch(_detail_url(), data=data, format="json")
         assert response.status_code == status.HTTP_200_OK
@@ -88,7 +84,6 @@ class XblockViewSetRoutingTest(AuthorizeStaffTestCase, ModuleStoreTestCase, APIT
 
     @patch(f"{_VIEW_MODULE}.delete_xblock_response", return_value=_MOCK_RESPONSE)
     def test_delete_calls_delete_xblock_response(self, mock_fn):
-        self._login_as_instructor()
         response = self.client.delete(_detail_url())
         assert response.status_code == status.HTTP_200_OK
         mock_fn.assert_called_once()
@@ -100,8 +95,12 @@ class XblockViewSetRoutingTest(AuthorizeStaffTestCase, ModuleStoreTestCase, APIT
 # ---------------------------------------------------------------------------
 
 
-class XblockViewSetErrorShapeTest(AuthorizeStaffTestCase, ModuleStoreTestCase, APITestCase):
+class XblockViewSetErrorShapeTest(ModuleStoreTestCase, APITestCase):
     """Verify ADR 0029 standardized error envelope for auth failures."""
+
+    def setUp(self):
+        super().setUp()
+        self.non_author = UserFactory.create(password='password')
 
     def test_unauthenticated_returns_401(self):
         response = self.client.get(_detail_url())
@@ -118,19 +117,19 @@ class XblockViewSetErrorShapeTest(AuthorizeStaffTestCase, ModuleStoreTestCase, A
         assert response.json()["type"] == "https://docs.openedx.org/errors/authn"
 
     def test_non_author_returns_403(self):
-        self.client.login(username=self.student.username, password=self.password)
+        self.client.force_authenticate(user=self.non_author)
         response = self.client.get(_detail_url())
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
     def test_non_author_403_has_required_fields(self):
-        self.client.login(username=self.student.username, password=self.password)
+        self.client.force_authenticate(user=self.non_author)
         response = self.client.get(_detail_url())
         data = response.json()
         for field in _REQUIRED_ERROR_FIELDS:
             assert field in data, f"Missing ADR 0029 field: {field}"
 
     def test_non_author_403_type_uri(self):
-        self.client.login(username=self.student.username, password=self.password)
+        self.client.force_authenticate(user=self.non_author)
         response = self.client.get(_detail_url())
         assert response.json()["type"] == "https://docs.openedx.org/errors/authz"
 
