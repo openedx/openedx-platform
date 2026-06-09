@@ -10,7 +10,7 @@ aiohappyeyeballs==2.6.2
     # via
     #   -r requirements/edx/base.txt
     #   aiohttp
-aiohttp==3.14.0
+aiohttp==3.14.1
     # via
     #   -r requirements/edx/base.txt
     #   geoip2
@@ -80,7 +80,7 @@ bcrypt==5.0.0
     # via
     #   -r requirements/edx/base.txt
     #   paramiko
-beautifulsoup4==4.14.3
+beautifulsoup4==4.15.0
     # via
     #   -r requirements/edx/base.txt
     #   -r requirements/edx/testing.in
@@ -91,7 +91,7 @@ billiard==4.2.4
     # via
     #   -r requirements/edx/base.txt
     #   celery
-bleach[css]==6.3.0
+bleach[css]==6.4.0
     # via
     #   -r requirements/edx/base.txt
     #   edx-enterprise
@@ -100,14 +100,14 @@ bleach[css]==6.3.0
     #   ora2
     #   xblock-drag-and-drop-v2
     #   xblock-poll
-boto3==1.43.21
+boto3==1.43.25
     # via
     #   -r requirements/edx/base.txt
     #   django-ses
     #   fs-s3fs
     #   ora2
     #   snowflake-connector-python
-botocore==1.43.21
+botocore==1.43.25
     # via
     #   -r requirements/edx/base.txt
     #   boto3
@@ -256,7 +256,7 @@ diff-cover==10.3.0
     # via -r requirements/edx/coverage.txt
 dill==0.4.1
     # via pylint
-distlib==0.4.1
+distlib==0.4.2
     # via virtualenv
 django==5.2.15
     # via
@@ -1455,7 +1455,7 @@ rpds-py==2026.5.1
     #   -r requirements/edx/base.txt
     #   jsonschema
     #   referencing
-ruff==0.15.15
+ruff==0.15.16
     # via -r requirements/edx/testing.in
 rules==3.5
     # via
@@ -1583,7 +1583,7 @@ tincan==1.0.0
     # via
     #   -r requirements/edx/base.txt
     #   edx-enterprise
-tinycss2==1.4.0
+tinycss2==1.5.1
     # via
     #   -r requirements/edx/base.txt
     #   bleach
@@ -1596,9 +1596,9 @@ tomlkit==0.15.0
     #   openedx-core
     #   pylint
     #   snowflake-connector-python
-tox==4.55.0
+tox==4.55.1
     # via -r requirements/edx/testing.in
-tqdm==4.67.3
+tqdm==4.68.1
     # via
     #   -r requirements/edx/base.txt
     #   nltk
@@ -1683,7 +1683,7 @@ wcmatch==10.1
     # via
     #   -r requirements/edx/base.txt
     #   pycasbin
-wcwidth==0.7.0
+wcwidth==0.8.1
     # via
     #   -r requirements/edx/base.txt
     #   prompt-toolkit
