@@ -248,6 +248,11 @@ class GeneratedCertificate(models.Model):  # noqa: DJ008
     # imports this model's code. Simple History will attempt to connect to the installed
     # model in the certificates app, which will fail.
     if 'certificates' in apps.app_configs:
+        # The auto-generated ``HistoricalGeneratedCertificate`` table mirrors all fields of this model,
+        # including the PII ``name`` field. Retirement of PII in this history table is handled by
+        # ``clear_pii_from_certificate_records_for_user()`` (per-user) and the
+        # ``purge_pii_from_generatedcertificates`` management command (backfill), both gated by the
+        # ``certificates.enable_redact_historical_pii_retirement`` waffle flag.
         history = HistoricalRecords()
 
     class Meta:
