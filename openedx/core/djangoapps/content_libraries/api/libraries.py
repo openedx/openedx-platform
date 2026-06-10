@@ -200,7 +200,7 @@ class PublishableItem(LibraryItem):
     Common fields for anything that can be found in a content library that has
     draft/publish support.
     """
-    draft_version_num: int
+    draft_version_num: int | None
     published_version_num: int | None = None
     published_display_name: str | None
     last_published: datetime | None = None

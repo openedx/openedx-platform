@@ -17,7 +17,11 @@ from django.utils.translation import gettext as _
 from edx_django_utils.user import generate_password
 from social_django.models import UserSocialAuth
 
-from common.djangoapps.student.models import AccountRecovery, Registration, get_retired_email_by_email
+from common.djangoapps.student.models import (
+    AccountRecovery,
+    Registration,
+    get_retired_email_by_email,
+)
 from openedx.core.djangoapps.site_configuration.models import SiteConfiguration
 from openedx.core.djangoapps.theming.helpers import get_config_value_from_site_or_settings, get_current_site
 from openedx.core.djangolib.oauth2_retirement_utils import retire_dot_oauth2_models

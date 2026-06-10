@@ -6,6 +6,7 @@ Test the retire_user management command
 import csv
 import os
 from contextlib import contextmanager
+from unittest import mock
 
 import pytest
 from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
@@ -134,6 +135,21 @@ def test_retire_with_username_email_userfile(setup_retirement_states):  # pylint
 
 
 @skip_unless_lms
+@pytest.mark.usefixtures('setup_retirement_states')
+@mock.patch(
+    'openedx.core.djangoapps.user_api.management.commands.retire_user.create_retirement_request_and_deactivate_account'
+)
+def test_retire_user_calls_shared_deactivate_helper(mock_deactivate_helper):
+    """
+    Verify the command delegates retirement side effects to the shared helper.
+    """
+    user = UserFactory.create(username='user-cleanup', email='user-cleanup@example.com')
+
+    call_command('retire_user', username=user.username, user_email=user.email)
+
+    mock_deactivate_helper.assert_called_once_with(user)
+
+
 @pytest.mark.parametrize('social_auth_configs', [
     # Single SSO provider
     [

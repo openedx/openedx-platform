@@ -906,6 +906,7 @@ def _migrate_container(
                 user_id=context.created_by,
             )
     if container_exists and context.should_skip_strategy:
+        assert container.draft_version_num is not None  # We know it exists, this is just for mypy
         return PublishableEntityVersion.objects.get(
             entity_id=container.container_id,
             version_num=container.draft_version_num,

@@ -7,6 +7,7 @@ from __future__ import annotations
 import logging
 import operator
 import typing
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from functools import cache
 from uuid import UUID, uuid4
@@ -28,6 +29,7 @@ from .block_metadata import (
     LibraryXBlockMetadata,
     direct_published_entity_from_record,
     get_entity_item_type,
+    library_component_usage_key,
     make_contributor,
     resolve_change_action,
 )
@@ -48,9 +50,11 @@ if typing.TYPE_CHECKING:
 # 🛑 UNSTABLE: All APIs related to containers are unstable until we've figured
 #              out our approach to dynamic content (randomized, A/B tests, etc.)
 __all__ = [
+    "ContainerChildMetadata",
     "get_container",
     "create_container",
     "get_container_children",
+    "get_container_children_list",
     "get_container_children_count",
     "update_container",
     "delete_container",
@@ -68,6 +72,15 @@ __all__ = [
 ]
 
 log = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class ContainerChildMetadata:
+    """
+    Class that represents limited metadata about a child entity of a container
+    """
+    display_name: str
+    key: LibraryUsageLocatorV2 | LibraryContainerLocator
 
 
 def get_container(
@@ -202,8 +215,8 @@ def get_container_children(
     published=False,
 ) -> list[LibraryXBlockMetadata | ContainerMetadata]:
     """
-    [ 🛑 UNSTABLE ] Get the entities contained in the given container
-    (e.g. the components/xblocks in a unit, units in a subsection, subsections in a section)
+    [ 🛑 UNSTABLE ] Get the entities contained in the given container (e.g. the
+    components in a unit, units in a subsection, subsections in a section).
     """
     container = get_container_from_key(container_key)
 
@@ -211,10 +224,40 @@ def get_container_children(
     result: list[LibraryXBlockMetadata | ContainerMetadata] = []
     for entry in child_entities:
         if hasattr(entry.entity, "component"):  # the child is a Component
-            result.append(LibraryXBlockMetadata.from_component(container_key.lib_key, entry.entity.component))
+            result.append(LibraryXBlockMetadata.from_component(
+                container_key.lib_key, entry.entity.component, use_published=published,
+            ))
         else:
             assert isinstance(entry.entity.container, Container)
-            result.append(ContainerMetadata.from_container(container_key.lib_key, entry.entity.container))
+            result.append(ContainerMetadata.from_container(
+                container_key.lib_key, entry.entity.container, use_published=published,
+            ))
+    return result
+
+
+def get_container_children_list(
+    container_key: LibraryContainerLocator, *,
+    published: bool,
+) -> list[ContainerChildMetadata]:
+    """
+    [ 🛑 UNSTABLE ] Get the entities contained in the given container (e.g. the
+    components/xblocks in a unit, units in a subsection, subsections in a section)
+
+    Returns a list of ``ContainerChildMetadata`` objects (which give only each
+    child's display name and opaque key, though the opaque key also includes
+    information on what "type" of component/container it is).
+    """
+    container = get_container_from_key(container_key)
+    result: list[ContainerChildMetadata] = []
+    for entry in content_api.get_entities_in_container(container, published=published):
+        key: LibraryUsageLocatorV2 | LibraryContainerLocator
+        if hasattr(entry.entity, "component"):  # the child is a Component
+            key = library_component_usage_key(container_key.lib_key, entry.entity.component)
+        else:
+            assert isinstance(entry.entity.container, Container)
+            key = library_container_locator(container_key.lib_key, entry.entity.container)
+        display_name = entry.entity_version.title
+        result.append(ContainerChildMetadata(display_name=display_name, key=key))
     return result
 
 
@@ -254,7 +297,7 @@ def update_container_children(
 
 def get_containers_contains_item(key: LibraryUsageLocatorV2 | LibraryContainerLocator) -> list[ContainerMetadata]:
     """
-    [ 🛑 UNSTABLE ] Get containers that contains the item, that can be a component or another container.
+    [ 🛑 UNSTABLE ] Get list of draft containers that contain the item. Item can be a component or another container.
     """
     entity = get_entity_from_key(key)
     containers = content_api.get_containers_with_entity(entity.id).select_related("container_type")

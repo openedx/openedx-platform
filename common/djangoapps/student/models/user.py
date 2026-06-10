@@ -76,6 +76,9 @@ USER_LOGGED_IN_EVENT_NAME = 'edx.user.login'
 USER_LOGGED_OUT_EVENT_NAME = 'edx.user.logout'
 USER_STREAK_UPDATED_EVENT_NAME = "edx.user.celebration.streak_updated"
 
+# Placeholder for soft-deleted pending secondary email records
+PENDING_SECONDARY_EMAIL_REDACTED_VALUE = 'redact-before-delete@redacted.com'
+
 
 class AnonymousUserId(models.Model):  # noqa: DJ008
     """
@@ -941,13 +944,36 @@ class PendingSecondaryEmailChange(DeletableByUserValue, models.Model):  # noqa: 
     """
     This model keeps track of pending requested changes to a user's secondary email address.
 
-    .. pii: Contains new_secondary_email, not currently retired
+    .. pii: Contains new_secondary_email, redact and delete in `DeactivateLogoutView`
     .. pii_types: email_address
-    .. pii_retirement: retained
+    .. pii_retirement: local_api
     """
     user = models.OneToOneField(User, unique=True, db_index=True, on_delete=models.CASCADE)
     new_secondary_email = models.CharField(blank=True, max_length=255, db_index=True)
     activation_key = models.CharField(('activation key'), max_length=32, unique=True, db_index=True)
+
+    @classmethod
+    def redact_and_delete_pending_secondary_email(cls, user_id):
+        """
+        Redact and delete a pending secondary email change row for a user.
+
+        Redacts the email before deletion so any downstream soft-delete mirror does
+        not retain the original secondary email address in the final row image.
+        """
+        pending_secondary_email_records = cls.objects.filter(user_id=user_id)
+        pending_secondary_email_ids = list(
+            pending_secondary_email_records.values_list('id', flat=True)
+        )
+        if not pending_secondary_email_ids:
+            return False
+
+        # Converting to query set by id ensures we redact and delete the appropriate records
+        pending_secondary_email_records_by_id = cls.objects.filter(id__in=pending_secondary_email_ids)
+        pending_secondary_email_records_by_id.update(
+            new_secondary_email=PENDING_SECONDARY_EMAIL_REDACTED_VALUE,
+        )
+        pending_secondary_email_records_by_id.delete()
+        return True
 
 
 class LoginFailures(models.Model):
@@ -1695,7 +1721,7 @@ class AccountRecovery(models.Model):  # noqa: DJ008
     """
     Model for storing information for user's account recovery in case of access loss.
 
-    .. pii: the field named secondary_email contains pii, retired in the `DeactivateLogoutView`
+    .. pii: the field named secondary_email contains pii, redact and delete in the `DeactivateLogoutView`
     .. pii_types: email_address
     .. pii_retirement: local_api
     """
@@ -1728,19 +1754,30 @@ class AccountRecovery(models.Model):  # noqa: DJ008
     @classmethod
     def retire_recovery_email(cls, user_id):
         """
-        Retire user's recovery/secondary email as part of GDPR Phase I.
-        Returns 'True'
+        Redact and delete user's recovery/secondary email.
 
-        If an AccountRecovery record is found for this user it will be deleted,
-        if it is not found it is assumed this table has no PII for the given user.
+        If an AccountRecovery record is found for this user it will be redacted and
+        deleted. If it is not found it is assumed this table has no PII for the given user.
+
+        Note: In retire_recovery_email, "retire" means this is part of user retirement.
+        The recovery email itself remains available for use with future accounts.
 
         :param user_id: int
         :return: bool
         """
-        try:
-            cls.objects.get(user_id=user_id).delete()
-        except cls.DoesNotExist:
-            pass
+        account_recovery_records = cls.objects.filter(user_id=user_id)
+        account_recovery_ids = list(
+            account_recovery_records.values_list('id', flat=True)
+        )
+        if not account_recovery_ids:
+            return False
+
+        # Converting to query set by id ensures we redact and delete the appropriate records
+        account_recovery_records_by_id = cls.objects.filter(id__in=account_recovery_ids)
+        account_recovery_records_by_id.update(
+            secondary_email=f'redact-before-delete+{user_id}@redacted.com',
+        )
+        account_recovery_records_by_id.delete()
 
         return True
 
