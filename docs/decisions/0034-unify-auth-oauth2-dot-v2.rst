@@ -43,14 +43,34 @@ Decision
 3. **``BearerAuthentication`` and ``BearerAuthenticationAllowInactiveUser`` are
    deprecated and MUST NOT be used in new code**
 4. **``OAuth2Authentication`` and ``OAuth2AuthenticationAllowInactiveUser`` are
-   deprecated aliases for** ``BearerAuthentication`` **and MUST NOT be used in new code**
-5. **All new APIs MUST follow these authentication patterns based on use case**
-6. **Existing APIs MUST be audited and updated to remove** ``BearerAuthentication``
+   deprecated aliases for** ``BearerAuthentication`` **and MUST NOT be used in new code.**
+5. **New API endpoints MUST NOT set** ``authentication_classes`` **explicitly unless
+   deviating from platform defaults.** Platform defaults already supply ``JwtAuthentication``
+   and ``SessionAuthentication``. Deviations (e.g. service-to-service JWT-only, or
+   inactive-user session access via ``SessionAuthenticationAllowInactiveUser``) must be
+   explicit and commented.
+6. **Existing APIs MUST be audited and updated to remove** ``BearerAuthentication``.
 
 Implementation requirements:
 
-* All APIs: ``JwtAuthentication`` (+ ``SessionAuthentication`` where appropriate)
-* ``BearerAuthentication`` / ``BearerAuthenticationAllowInactiveUser``: remove from all endpoints
+* **New endpoints:** do not set ``authentication_classes`` explicitly. The platform
+  defaults (``DEFAULT_AUTHENTICATION_CLASSES`` in ``openedx/envs/common.py``) supply
+  ``DefaultJwtAuthentication`` and ``DefaultSessionAuthentication``, which is correct
+  for most endpoints.
+* **Existing endpoints:** the migration goal is to remove ``BearerAuthentication``
+  from the ``authentication_classes`` tuple. What remains depends on what the endpoint
+  currently has:
+
+  * Had ``(JwtAuthentication, BearerAuthenticationAllowInactiveUser, SessionAuthenticationAllowInactiveUser)``
+    → becomes ``(JwtAuthentication, SessionAuthenticationAllowInactiveUser)``
+  * Had ``(BearerAuthenticationAllowInactiveUser, SessionAuthenticationAllowInactiveUser)``
+    → becomes ``(JwtAuthentication, SessionAuthenticationAllowInactiveUser)``
+
+* **Explicit exceptions** (require a comment justifying the deviation):
+
+  * Service-to-service endpoints that must exclude session auth:
+    ``authentication_classes = (JwtAuthentication,)``
+
 * ``OAuth2Authentication`` / ``OAuth2AuthenticationAllowInactiveUser``: remove once external repos migrate
 
 Consequences
@@ -68,7 +88,7 @@ Consequences
 * Cons / Costs
 
   * Existing APIs need audit and potential refactoring to match patterns
-  * Teams need to understand and implement proper authentication choices(where to use JWT or session)
+  * Teams need to understand and implement proper authentication choices (when to use JWT or session)
   * External clients still using Bearer tokens must migrate to JWT
   * Migration effort for services currently using mixed authentication
   * Depending on configs, Bearer tokens last ~2 weeks; JWTs expire in ~1 hour — long-running jobs that reuse
@@ -100,7 +120,7 @@ Relevance in edx-platform
 Code examples (authentication patterns by use case)
 ===================================================
 
-* **Standard API (JWT + Session):**
+* **Standard API — had JWT + Bearer + SessionAllowInactive (remove Bearer only):**
 
   Example: ``lms/djangoapps/course_home_api/dates/views.py (DatesTabView)``
   (`permalink <https://github.com/openedx/openedx-platform/blob/be3fc121148587fb1da507519534063c89387091/lms/djangoapps/course_home_api/dates/views.py#L68-L72>`_)
@@ -114,15 +134,13 @@ Code examples (authentication patterns by use case)
        SessionAuthenticationAllowInactiveUser,
    )
 
-   # Target state (after BearerAuth removal)
+   # Target state — remove BearerAuthentication; keep the rest unchanged.
    authentication_classes = (
        JwtAuthentication,
        SessionAuthenticationAllowInactiveUser,
    )
 
-Note: use ``SessionAuthenticationAllowInactiveUser`` or ``SessionAuthentication`` based on usecase of the API.
-
-* **API intended for MFE/Browser clients:**
+* **MFE/Browser API — had Bearer + SessionAllowInactive but no JWT (add JWT, remove Bearer):**
 
   Example: ``lms/djangoapps/teams/views.py (TeamsDashboardView)``
   (`permalink <https://github.com/openedx/openedx-platform/blob/be3fc121148587fb1da507519534063c89387091/lms/djangoapps/teams/views.py#L114-L122>`_)
@@ -135,37 +153,36 @@ Note: use ``SessionAuthenticationAllowInactiveUser`` or ``SessionAuthentication`
        SessionAuthenticationAllowInactiveUser,
    )
 
-   # Target state (BearerAuth removed, JwtAuthentication added per Decision #1)
+   # Target state — add JwtAuthentication per Decision #1; remove BearerAuthentication.
    authentication_classes = (
        JwtAuthentication,
        SessionAuthenticationAllowInactiveUser,
    )
 
-Note: use ``SessionAuthenticationAllowInactiveUser`` or ``SessionAuthentication`` based on usecase of the API.
-
 Implementation Notes
 ====================
 
-* Supporting both ``JwtAuthentication`` and ``SessionAuthentication`` on the same
-  endpoint is acceptable — this is already the platform default in
-  ``openedx/envs/common.py`` (``DEFAULT_AUTHENTICATION_CLASSES``)
-* ``SessionAuthenticationAllowInactiveUser`` is used in examples for consistency with
-  ``JwtAuthentication``, which also allows inactive users by default. Using standard
-  ``SessionAuthentication`` alongside ``JwtAuthentication`` would create inconsistent
-  behavior — active-user enforcement would depend on which auth method the client used.
-  Endpoints that need to enforce active-user status should do so via a permission class
-  rather than the authentication class. This ADR does not take a stance on inactive
-  user policy beyond noting this inconsistency.
+* The platform default in ``openedx/envs/common.py`` (``DEFAULT_AUTHENTICATION_CLASSES``)
+  supplies ``DefaultJwtAuthentication`` and ``DefaultSessionAuthentication`` (standard
+  ``SessionAuthentication``, which blocks inactive users via session). New endpoints should
+  rely on this default rather than duplicating it explicitly.
+* ``JwtAuthentication`` does **not** check ``user.is_active`` — it allows inactive users by
+  default. ``SessionAuthenticationAllowInactiveUser`` similarly skips the active-user check.
+  Endpoints that need to enforce active-user status should use a permission class rather
+  than an authentication class.
+* Existing endpoints using ``SessionAuthenticationAllowInactiveUser`` must keep that class
+  explicitly when migrating — removing the override entirely would silently switch to
+  ``DefaultSessionAuthentication``, which blocks inactive users via session and changes behavior.
 * The primary migration target is the ``view_auth_classes`` decorator — one change
-  removes ``BearerAuthentication`` from 49+ endpoints
+  removes ``BearerAuthentication`` from 49+ endpoints.
 * Verify no active external clients are still sending Bearer tokens before
-  removing ``BearerAuthentication`` from any endpoint
+  removing ``BearerAuthentication`` from any endpoint.
 * ``JWT_AUTH_ADD_KID_HEADER`` toggle in ``openedx/core/djangoapps/oauth_dispatch/jwt.py``
   is past its removal date (target: 2024-04-20) — KID header should be made always-on
-  and the toggle removed
+  and the toggle removed.
 * ``OAuth2Authentication`` / ``OAuth2AuthenticationAllowInactiveUser`` in
   ``openedx/core/lib/api/authentication.py`` are deprecated aliases that exist only
-  to avoid breaking external repos — remove once those repos migrate to ``JwtAuthentication``
+  to avoid breaking external repos — remove once those repos migrate to ``JwtAuthentication``.
 
 Rollout Plan
 ------------
