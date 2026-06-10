@@ -74,6 +74,7 @@ class PurgePiiFromCertificatesTests(ModuleStoreTestCase):
         )
         UserRetirementRequestFactory(user=self.user_retired)
 
+    @override_waffle_flag(ENABLE_REDACT_HISTORICAL_PII_RETIREMENT, active=True)
     def test_management_command(self):
         """
         Verify the management command purges expected data from a GeneratedCertificate instance if a learner has
@@ -84,8 +85,7 @@ class PurgePiiFromCertificatesTests(ModuleStoreTestCase):
         cert_for_retired_user = GeneratedCertificate.objects.get(user_id=self.user_retired)
         assert cert_for_retired_user.name == self.user_retired_name
 
-        with override_waffle_flag(ENABLE_REDACT_HISTORICAL_PII_RETIREMENT, active=True):
-            call_command("purge_pii_from_generatedcertificates")
+        call_command("purge_pii_from_generatedcertificates")
 
         cert_for_active_user = GeneratedCertificate.objects.get(user_id=self.user_active)
         assert cert_for_active_user.name == self.user_active_name
@@ -104,6 +104,7 @@ class PurgePiiFromCertificatesTests(ModuleStoreTestCase):
         assert len(retired_history_names) > 0
         assert all(n == "" for n in retired_history_names)
 
+    @override_waffle_flag(ENABLE_REDACT_HISTORICAL_PII_RETIREMENT, active=True)
     def test_management_command_dry_run(self):
         """
         Verify that the management command does not purge any data when invoked with the `--dry-run` flag
@@ -118,9 +119,8 @@ class PurgePiiFromCertificatesTests(ModuleStoreTestCase):
         cert_for_retired_user = GeneratedCertificate.objects.get(user_id=self.user_retired)
         assert cert_for_retired_user.name == self.user_retired_name
 
-        with override_waffle_flag(ENABLE_REDACT_HISTORICAL_PII_RETIREMENT, active=True):
-            with LogCapture() as logger:
-                call_command("purge_pii_from_generatedcertificates", "--dry-run")
+        with LogCapture() as logger:
+            call_command("purge_pii_from_generatedcertificates", "--dry-run")
 
         cert_for_active_user = GeneratedCertificate.objects.get(user_id=self.user_active)
         assert cert_for_active_user.name == self.user_active_name
