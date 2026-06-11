@@ -2,13 +2,13 @@
 Tests for the `purge_pii_from_generatedcertificates` management command.
 """
 
-import ddt
+import pytest
 from django.core.management import call_command
 from edx_toggles.toggles.testutils import override_waffle_flag
 from testfixtures import LogCapture
 
 from common.djangoapps.student.tests.factories import UserFactory
-from lms.djangoapps.certificates.config import ENABLE_REDACT_HISTORICAL_PII_RETIREMENT
+from lms.djangoapps.certificates.config import REDACT_CERTIFICATES_HISTORICAL_PII
 from lms.djangoapps.certificates.data import CertificateStatuses
 from lms.djangoapps.certificates.models import GeneratedCertificate
 from lms.djangoapps.certificates.tests.factories import GeneratedCertificateFactory
@@ -22,7 +22,6 @@ from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory
 
 
-@ddt.ddt
 class PurgePiiFromCertificatesTests(ModuleStoreTestCase):
     """
     Tests for the `purge_pii_from_generatedcertificates` management command.
@@ -75,19 +74,18 @@ class PurgePiiFromCertificatesTests(ModuleStoreTestCase):
         )
         UserRetirementRequestFactory(user=self.user_retired)
 
-    @ddt.data(True, False)
-    def test_management_command(self, flag_enabled):
+    @pytest.mark.parametrize("redact_history_toggle_enabled", [True, False])
+    def test_management_command(self, redact_history_toggle_enabled):
         """
         Verify the management command purges expected data from a GeneratedCertificate instance if a learner has
-        successfully had their account retired. When the waffle flag is enabled, the history table is also purged;
-        when disabled, history rows are left untouched.
+        successfully had their account retired.
         """
         cert_for_active_user = GeneratedCertificate.objects.get(user_id=self.user_active)
         assert cert_for_active_user.name == self.user_active_name
         cert_for_retired_user = GeneratedCertificate.objects.get(user_id=self.user_retired)
         assert cert_for_retired_user.name == self.user_retired_name
 
-        with override_waffle_flag(ENABLE_REDACT_HISTORICAL_PII_RETIREMENT, active=flag_enabled):
+        with override_settings(REDACT_CERTIFICATES_HISTORICAL_PII=redact_history_toggle_enabled):
             call_command("purge_pii_from_generatedcertificates")
 
         cert_for_active_user = GeneratedCertificate.objects.get(user_id=self.user_active)
@@ -105,10 +103,10 @@ class PurgePiiFromCertificatesTests(ModuleStoreTestCase):
             GeneratedCertificate.history.filter(user=self.user_retired).values_list("name", flat=True)
         )
         assert len(retired_history_names) > 0
-        if flag_enabled:
-            assert all(n == "" for n in retired_history_names)
+        if redact_history_toggle_enabled:
+            assert all(n == "" for n in retired_history_names), "Names in the history table should have been redacted."
         else:
-            assert all(n == self.user_retired_name for n in retired_history_names)
+            assert all(n == self.user_retired_name for n in retired_history_names), "Names in the history table should not have been redacted."
 
     def test_management_command_dry_run(self):
         """

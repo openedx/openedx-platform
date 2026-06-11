@@ -54,7 +54,7 @@ from lms.djangoapps.certificates.api import (
     remove_allowlist_entry,
     set_cert_generation_enabled,
 )
-from lms.djangoapps.certificates.config import AUTO_CERTIFICATE_GENERATION, ENABLE_REDACT_HISTORICAL_PII_RETIREMENT
+from lms.djangoapps.certificates.config import AUTO_CERTIFICATE_GENERATION
 from lms.djangoapps.certificates.models import (
     CertificateGenerationConfiguration,
     CertificateStatuses,
@@ -1280,10 +1280,10 @@ class CertificatesLearnerRetirementFunctionality(ModuleStoreTestCase):
     def test_clear_pii_from_certificate_records_clears_history_table(self):
         """
         Verify that `clear_pii_from_certificate_records_for_user` blanks `name` in the
-        django-simple-history audit table only when the ``certificates.enable_redact_historical_pii_retirement``
-        waffle flag is enabled, and leaves it untouched when the flag is disabled.
+        django-simple-history audit table only when the ``REDACT_CERTIFICATES_HISTORICAL_PII``
+        setting toggle is enabled, and leaves it untouched when the toggle is disabled.
         """
-        with override_waffle_flag(ENABLE_REDACT_HISTORICAL_PII_RETIREMENT, active=False):
+        with override_settings(REDACT_CERTIFICATES_HISTORICAL_PII=False):
             clear_pii_from_certificate_records_for_user(self.user)
 
         history_names = list(
@@ -1293,7 +1293,7 @@ class CertificatesLearnerRetirementFunctionality(ModuleStoreTestCase):
             "History rows should be untouched when the waffle flag is disabled."
         )
 
-        with override_waffle_flag(ENABLE_REDACT_HISTORICAL_PII_RETIREMENT, active=True):
+        with override_settings(REDACT_CERTIFICATES_HISTORICAL_PII=True):
             clear_pii_from_certificate_records_for_user(self.user)
 
         history_names_after = list(
