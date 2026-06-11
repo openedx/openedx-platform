@@ -8,7 +8,6 @@ from django.test import override_settings
 from testfixtures import LogCapture
 
 from common.djangoapps.student.tests.factories import UserFactory
-from lms.djangoapps.certificates.config import REDACT_CERTIFICATES_HISTORICAL_PII
 from lms.djangoapps.certificates.data import CertificateStatuses
 from lms.djangoapps.certificates.models import GeneratedCertificate
 from lms.djangoapps.certificates.tests.factories import GeneratedCertificateFactory
