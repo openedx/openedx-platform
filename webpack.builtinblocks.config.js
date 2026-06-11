@@ -1,16 +1,5 @@
 module.exports = {
     entry: {
-        AnnotatableBlockDisplay: [
-            './xmodule/js/src/xmodule.js',
-            './xmodule/js/src/html/display.js',
-            './xmodule/js/src/annotatable/display.js',
-            './xmodule/js/src/javascript_loader.js',
-            './xmodule/js/src/collapsible.js'
-        ],
-        AnnotatableBlockEditor: [
-            './xmodule/js/src/xmodule.js',
-            './xmodule/js/src/raw/edit/xml.js'
-        ],
         ConditionalBlockDisplay: [
             './xmodule/js/src/xmodule.js',
             './xmodule/js/src/conditional/display.js',
