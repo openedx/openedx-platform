@@ -96,7 +96,7 @@ from openedx.core.djangoapps.oauth_dispatch.tests.factories import AccessTokenFa
 from openedx.core.lib.courses import course_image_url
 from openedx.core.lib.gating import api as gating_api
 from openedx.core.lib.url_utils import quote_slashes
-from xmodule.capa_block import ProblemBlock
+from xblocks_contrib.problem import ProblemBlock
 from xmodule.contentstore.django import contentstore
 from xmodule.html_block import AboutBlock, CourseInfoBlock, HtmlBlock, StaticTabBlock
 from xmodule.lti_block import LTIBlock

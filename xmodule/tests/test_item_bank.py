@@ -13,7 +13,7 @@ from xblock.runtime import Runtime as VanillaRuntime
 
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangolib.testing.utils import skip_unless_cms, skip_unless_lms
-from xmodule.capa_block import ProblemBlock
+from xblocks_contrib.problem import ProblemBlock
 from xmodule.modulestore.tests.factories import CourseFactory
 from xmodule.modulestore.tests.utils import MixedSplitTestCase
 from xmodule.tests import prepare_block_runtime
@@ -171,7 +171,7 @@ class TestItemBankForCms(ItemBankTestBase):
         'xmodule.modulestore.split_mongo.runtime.SplitModuleStoreRuntime.render',
         VanillaRuntime.render,
     )
-    @patch('xmodule.capa_block.ProblemBlock.author_view', dummy_render, create=True)
+    @patch('xblocks_contrib.problem.ProblemBlock.author_view', dummy_render, create=True)
     @patch('xmodule.x_module.ModuleStoreRuntime.applicable_aside_types', lambda self, block: [])
     def test_preview_view(self):
         """ Test preview view rendering """
@@ -186,7 +186,7 @@ class TestItemBankForCms(ItemBankTestBase):
         'xmodule.modulestore.split_mongo.runtime.SplitModuleStoreRuntime.render',
         VanillaRuntime.render,
     )
-    @patch('xmodule.capa_block.ProblemBlock.author_view', dummy_render, create=True)
+    @patch('xblocks_contrib.problem.ProblemBlock.author_view', dummy_render, create=True)
     @patch('xmodule.x_module.ModuleStoreRuntime.applicable_aside_types', lambda self, block: [])
     def test_author_view(self):
         """ Test author view rendering """
