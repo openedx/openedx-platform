@@ -26,14 +26,6 @@ module.exports = {
             './xmodule/js/src/xmodule.js',
             './xmodule/js/src/raw/edit/xml.js'
         ],
-        HtmlBlockDisplay: [
-            './xmodule/js/src/xmodule.js',
-            './xmodule/js/src/html/display.js',
-            './xmodule/js/src/javascript_loader.js',
-            './xmodule/js/src/collapsible.js',
-            './xmodule/js/src/html/imageModal.js',
-            './xmodule/js/common_static/js/vendor/draggabilly.js'
-        ],
         HtmlBlockEditor: [
             './xmodule/js/src/xmodule.js',
             './xmodule/js/src/html/edit.js'
