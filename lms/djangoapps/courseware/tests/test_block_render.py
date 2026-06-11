@@ -99,7 +99,7 @@ from openedx.core.lib.url_utils import quote_slashes
 from xmodule.capa_block import ProblemBlock
 from xmodule.contentstore.django import contentstore
 from xmodule.html_block import AboutBlock, CourseInfoBlock, HtmlBlock, StaticTabBlock
-from xmodule.lti_block import LTIBlock
+from xblocks_contrib.lti import LTIBlock
 from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.django import XBlockI18nService, modulestore
 from xmodule.modulestore.tests.django_utils import (
