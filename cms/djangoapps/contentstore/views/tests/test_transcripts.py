@@ -32,7 +32,7 @@ from xmodule.contentstore.content import StaticContent  # pylint: disable=wrong-
 from xmodule.contentstore.django import contentstore  # pylint: disable=wrong-import-order
 from xmodule.exceptions import NotFoundError  # pylint: disable=wrong-import-order
 from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
-from xmodule.video_block import VideoBlock  # pylint: disable=wrong-import-order
+from xblocks_contrib.video import VideoBlock  # pylint: disable=wrong-import-order
 
 TEST_DATA_CONTENTSTORE = copy.deepcopy(settings.CONTENTSTORE)
 TEST_DATA_CONTENTSTORE['DOC_STORE_CONFIG']['db'] = 'test_xcontent_%s' % uuid4().hex  # noqa: UP031

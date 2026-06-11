@@ -19,7 +19,7 @@ from lms.djangoapps.support.tasks import reset_student_course, send_reset_course
 from lms.djangoapps.support.tests.factories import CourseResetAuditFactory, CourseResetCourseOptInFactory
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from xmodule.modulestore.tests.factories import BlockFactory
-from xmodule.video_block import VideoBlock
+from xblocks_contrib.video import VideoBlock
 
 
 class ResetStudentCourse(TestSubmittingProblems):

@@ -11,7 +11,7 @@ from xblock.fields import ScopeIds
 
 from openedx.core.djangoapps.video_config.services import VideoConfigService
 from xmodule.tests import get_test_descriptor_system
-from xmodule.video_block import VideoBlock
+from xblocks_contrib.video import VideoBlock
 
 
 class VideoConfigServiceTestCase(unittest.TestCase):
