@@ -2,13 +2,43 @@
 Video block URL Transformer
 """
 
+import logging
+from urllib.parse import urlparse
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
+from django.core.validators import URLValidator
 
 from openedx.core.djangoapps.content.block_structure.transformer import BlockStructureTransformer
-from xmodule.video_block.video_utils import rewrite_video_url  # pylint: disable=wrong-import-order
 
 from .student_view import StudentViewTransformer
+
+log = logging.getLogger(__name__)
+
+
+def rewrite_video_url(cdn_base_url, original_video_url):
+    """
+    Returns a re-written video URL for cases when an alternate source
+    has been configured and is selected using factors like user location.
+
+    :param cdn_base_url: The scheme, hostname, port and any relevant path prefix for the alternate CDN.
+    :param original_video_url: The canonical source for this video.
+    :return: The re-written URL, or None if the result is not a valid URL.
+    """
+    if (not cdn_base_url) or (not original_video_url):
+        return None
+
+    parsed = urlparse(original_video_url)
+    rewritten_url = cdn_base_url.rstrip("/") + "/" + parsed.path.lstrip("/")
+    validator = URLValidator()
+
+    try:
+        validator(rewritten_url)
+        return rewritten_url
+    except ValidationError:
+        log.warning("Invalid CDN rewrite URL encountered, %s", rewritten_url)
+
+    return None
 
 
 class VideoBlockURLTransformer(BlockStructureTransformer):

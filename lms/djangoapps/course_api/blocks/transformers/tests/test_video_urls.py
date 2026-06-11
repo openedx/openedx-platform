@@ -65,7 +65,7 @@ class TestVideoBlockURLTransformer(ModuleStoreTestCase):
             block_structure=self.block_structure,
         )
 
-    @mock.patch('xmodule.video_block.VideoBlock.student_view_data')
+    @mock.patch('xblocks_contrib.video.VideoBlock.student_view_data')
     def test_rewrite_for_encoded_videos(self, mock_video_data):
         """
         Test that video URLs for videos with available encodings
@@ -95,7 +95,7 @@ class TestVideoBlockURLTransformer(ModuleStoreTestCase):
         for video_format, video_url in post_transform_data.items():
             assert pre_transform_data[video_format] != video_url
 
-    @mock.patch('xmodule.video_block.VideoBlock.student_view_data')
+    @mock.patch('xblocks_contrib.video.VideoBlock.student_view_data')
     def test_no_rewrite_for_third_party_vendor(self, mock_video_data):
         """
         Test that video URLs aren't re-written for the videos
@@ -125,7 +125,7 @@ class TestVideoBlockURLTransformer(ModuleStoreTestCase):
         for video_format, video_url in post_transform_data.items():
             assert pre_transform_data[video_format] == video_url
 
-    @mock.patch('xmodule.video_block.VideoBlock.student_view_data')
+    @mock.patch('xblocks_contrib.video.VideoBlock.student_view_data')
     def test_no_rewrite_for_web_only_videos(self, mock_video_data):
         """
         Verify no rewrite attempt is made for the videos

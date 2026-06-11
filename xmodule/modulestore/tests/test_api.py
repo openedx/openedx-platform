@@ -17,7 +17,7 @@ from xmodule.modulestore.api import (
     get_root_module_name,
     get_xblock_root_module_name,
 )
-from xmodule.video_block import VideoBlock
+from xblocks_contrib.video import VideoBlock
 
 
 def test_get_root_module_name():
