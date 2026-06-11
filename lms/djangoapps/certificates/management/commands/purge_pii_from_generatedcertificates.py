@@ -44,8 +44,8 @@ class Command(BaseCommand):
     """
 
     help = """
-    Purges learners' full names from the `certificates_generatedcertificate` and
-    `certificates_historicalgeneratedcertificate` tables if their account has been successfully retired.
+    Purges learners' full names from the `certificates_generatedcertificate` table and conditionally the
+    `certificates_historicalgeneratedcertificate` table if their account has been successfully retired.
     """
 
     def add_arguments(self, parser):
