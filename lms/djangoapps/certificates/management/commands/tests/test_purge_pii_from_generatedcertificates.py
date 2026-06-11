@@ -4,11 +4,10 @@ Tests for the `purge_pii_from_generatedcertificates` management command.
 
 import pytest
 from django.core.management import call_command
-from edx_toggles.toggles.testutils import override_waffle_flag
+from django.test import override_settings
 from testfixtures import LogCapture
 
 from common.djangoapps.student.tests.factories import UserFactory
-from lms.djangoapps.certificates.config import REDACT_CERTIFICATES_HISTORICAL_PII
 from lms.djangoapps.certificates.data import CertificateStatuses
 from lms.djangoapps.certificates.models import GeneratedCertificate
 from lms.djangoapps.certificates.tests.factories import GeneratedCertificateFactory
@@ -106,7 +105,9 @@ class PurgePiiFromCertificatesTests(ModuleStoreTestCase):
         if redact_history_toggle_enabled:
             assert all(n == "" for n in retired_history_names), "Names in the history table should have been redacted."
         else:
-            assert all(n == self.user_retired_name for n in retired_history_names), "Names in the history table should not have been redacted."
+            assert all(n == self.user_retired_name for n in retired_history_names), (
+                "Names in the history table should not have been redacted."
+            )
 
     def test_management_command_dry_run(self):
         """
