@@ -84,5 +84,5 @@ sympy==1.14.0
     # via
     #   -r requirements/edx-sandbox/base.in
     #   openedx-calc
-tqdm==4.67.3
+tqdm==4.68.1
     # via nltk

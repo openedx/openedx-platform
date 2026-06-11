@@ -146,7 +146,7 @@ pyjwt[crypto]==2.12.1
     #   semgrep
 python-dotenv==1.2.2
     # via pydantic-settings
-python-multipart==0.0.30
+python-multipart==0.0.32
     # via mcp
 referencing==0.37.0
     # via
@@ -168,7 +168,7 @@ ruamel-yaml-clib==0.2.15
     # via semgrep
 semantic-version==2.10.0
     # via semgrep
-semgrep==1.164.0
+semgrep==1.165.0
     # via -r requirements/edx/semgrep.in
 sse-starlette==3.4.4
     # via mcp
@@ -201,7 +201,7 @@ urllib3==2.7.0
     # via
     #   requests
     #   semgrep
-uvicorn==0.48.0
+uvicorn==0.49.0
     # via mcp
 wcmatch==8.5.2
     # via semgrep

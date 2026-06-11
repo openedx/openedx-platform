@@ -70,6 +70,7 @@ from common.djangoapps.student.message_types import (  # pylint: disable=line-to
     RecoveryEmailCreate,
 )
 from common.djangoapps.student.models import (  # pylint: disable=unused-import
+    PENDING_SECONDARY_EMAIL_REDACTED_VALUE,
     AccountRecovery,
     CourseEnrollment,
     EnrollmentNotAllowed,
@@ -890,6 +891,9 @@ def activate_secondary_email(request, key):
             'secondary_email': pending_secondary_email_change.new_secondary_email
         })
 
+    # Redact the pending email before deletion so downstream soft-delete mirrors do not retain the original address.
+    pending_secondary_email_change.new_secondary_email = PENDING_SECONDARY_EMAIL_REDACTED_VALUE
+    pending_secondary_email_change.save(update_fields=['new_secondary_email'])
     pending_secondary_email_change.delete()
 
     return render_to_response("secondary_email_change_successful.html")
