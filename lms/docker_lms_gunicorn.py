@@ -9,11 +9,6 @@ bind = "127.0.0.1:8000"
 pythonpath = "/edx/app/edxapp/edx-platform"
 max_requests = 50
 workers = 17
-proc_name = os.getenv("GUNICORN_PROC_NAME", "edxapp-lms")
-# Metrics emission is opt-in: these remain unset unless explicitly provided.
-statsd_host = os.getenv("GUNICORN_STATSD_HOST")
-statsd_prefix = os.getenv("GUNICORN_STATSD_PREFIX")
-dogstatsd_tags = os.getenv("GUNICORN_DOGSTATSD_TAGS")
 
 
 def pre_request(worker, req):
