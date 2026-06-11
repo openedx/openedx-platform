@@ -510,7 +510,7 @@ class TestProblemResponsesReport(TestReportMixin, InstructorTaskModuleTestCase):
         Temporarily removes the generate_report_data method so we can test
         report generation when it's absent.
         """
-        from xmodule.capa_block import ProblemBlock
+        from xblocks_contrib.problem import ProblemBlock
         generate_report_data = ProblemBlock.generate_report_data
         del ProblemBlock.generate_report_data
         try:
@@ -611,7 +611,7 @@ class TestProblemResponsesReport(TestReportMixin, InstructorTaskModuleTestCase):
         assert student_data_keys_list == ['username', 'title', 'location', 'block_key', 'state']
         mock_list_problem_responses.assert_called_with(self.course.id, ANY, ANY)
 
-    @patch('xmodule.capa_block.ProblemBlock.generate_report_data', create=True)
+    @patch('xblocks_contrib.problem.ProblemBlock.generate_report_data', create=True)
     def test_build_student_data_for_block_with_mock_generate_report_data(self, mock_generate_report_data):
         """
         Ensure that building student data for a block that supports the
@@ -658,7 +658,7 @@ class TestProblemResponsesReport(TestReportMixin, InstructorTaskModuleTestCase):
         assert student_data[0]['state'] == student_data[1]['state']
         assert student_data_keys_list == ['username', 'title', 'location', 'more', 'some', 'block_key', 'state']
 
-    @patch('xmodule.capa_block.ProblemBlock.generate_report_data', create=True)
+    @patch('xblocks_contrib.problem.ProblemBlock.generate_report_data', create=True)
     def test_build_student_data_for_block_with_ordered_generate_report_data(self, mock_generate_report_data):
         """
         Ensure that building student data for a block that returns OrderedDicts from the
@@ -801,7 +801,7 @@ class TestProblemResponsesReport(TestReportMixin, InstructorTaskModuleTestCase):
         assert len(student_data) == filtered_count
 
     @patch('lms.djangoapps.instructor_task.tasks_helper.grades.list_problem_responses')
-    @patch('xmodule.capa_block.ProblemBlock.generate_report_data', create=True)
+    @patch('xblocks_contrib.problem.ProblemBlock.generate_report_data', create=True)
     def test_build_student_data_for_block_with_generate_report_data_not_implemented(
             self,
             mock_generate_report_data,

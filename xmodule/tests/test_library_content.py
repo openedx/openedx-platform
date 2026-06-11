@@ -17,7 +17,7 @@ from xblock.runtime import Runtime as VanillaRuntime
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.content_libraries import api as lib_api
 from openedx.core.djangolib.testing.utils import skip_unless_cms
-from xmodule.capa_block import ProblemBlock
+from xblocks_contrib.problem import ProblemBlock
 from xmodule.library_content_block import ANY_CAPA_TYPE_VALUE, LegacyLibraryContentBlock
 from xmodule.library_tools import LegacyLibraryToolsService
 from xmodule.modulestore import ModuleStoreEnum

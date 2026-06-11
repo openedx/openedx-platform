@@ -9,7 +9,7 @@ from lms.djangoapps.ccx.tests.test_overrides import inject_field_overrides
 from lms.djangoapps.courseware.block_render import get_block
 from lms.djangoapps.courseware.model_data import FieldDataCache
 from openedx.features.course_experience import RELATIVE_DATES_FLAG
-from xmodule.capa_block import SHOWANSWER  # pylint: disable=wrong-import-order
+from xblocks_contrib.problem.capa_block import SHOWANSWER  # pylint: disable=wrong-import-order
 from xmodule.modulestore.tests.django_utils import (
     ModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )

@@ -26,7 +26,7 @@ from lms.djangoapps.lms_xblock.models import XBlockAsidesConfig
 from xmodule.modulestore.django import modulestore
 
 if TYPE_CHECKING:
-    from xmodule.capa_block import ProblemBlock
+    from xblocks_contrib.problem import ProblemBlock
 
 log = logging.getLogger(__name__)
 
