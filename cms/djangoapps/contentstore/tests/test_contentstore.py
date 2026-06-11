@@ -58,7 +58,7 @@ from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory, che
 from xmodule.modulestore.xml_exporter import export_course_to_xml
 from xmodule.modulestore.xml_importer import import_course_from_xml, perform_xlint
 from xmodule.seq_block import SequenceBlock
-from xmodule.video_block import VideoBlock
+from xblocks_contrib.video import VideoBlock
 
 TEST_DATA_CONTENTSTORE = copy.deepcopy(settings.CONTENTSTORE)
 TEST_DATA_CONTENTSTORE['DOC_STORE_CONFIG']['db'] = 'test_xcontent_%s' % uuid4().hex  # noqa: UP031

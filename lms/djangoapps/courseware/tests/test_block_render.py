@@ -116,7 +116,7 @@ from xmodule.modulestore.tests.factories import (  # pylint: disable=wrong-impor
 )
 from xmodule.modulestore.tests.test_asides import AsideTestType  # pylint: disable=wrong-import-order
 from xmodule.services import RebindUserServiceError
-from xmodule.video_block import VideoBlock  # pylint: disable=wrong-import-order
+from xblocks_contrib.video import VideoBlock  # pylint: disable=wrong-import-order
 from xmodule.x_module import STUDENT_VIEW, ModuleStoreRuntime  # pylint: disable=wrong-import-order
 
 TEST_DATA_DIR = settings.COMMON_TEST_DATA_ROOT
