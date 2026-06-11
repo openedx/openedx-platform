@@ -8,7 +8,7 @@ from xblock.core import XBlock, XBlockAside
 from xblock.fields import Dict, Scope
 
 from common.djangoapps.edxmako.shortcuts import render_to_string
-from xmodule.capa_block import ProblemBlock  # pylint: disable=wrong-import-order
+from xblocks_contrib.problem import ProblemBlock  # pylint: disable=wrong-import-order
 from xmodule.x_module import AUTHOR_VIEW  # pylint: disable=wrong-import-order
 
 _ = lambda text: text

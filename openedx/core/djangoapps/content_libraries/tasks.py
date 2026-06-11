@@ -71,7 +71,7 @@ from xblock.fields import Scope
 
 from cms.djangoapps.contentstore.storage import course_import_export_storage
 from openedx.core.lib import ensure_cms
-from xmodule.capa_block import ProblemBlock
+from xblocks_contrib.problem import ProblemBlock
 from xmodule.library_content_block import ANY_CAPA_TYPE_VALUE, LegacyLibraryContentBlock
 from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.django import modulestore
