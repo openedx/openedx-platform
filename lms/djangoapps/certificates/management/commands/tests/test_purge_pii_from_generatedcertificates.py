@@ -2,12 +2,13 @@
 Tests for the `purge_pii_from_generatedcertificates` management command.
 """
 
-import pytest
+import ddt
 from django.core.management import call_command
 from django.test import override_settings
 from testfixtures import LogCapture
 
 from common.djangoapps.student.tests.factories import UserFactory
+from lms.djangoapps.certificates.config import REDACT_CERTIFICATES_HISTORICAL_PII
 from lms.djangoapps.certificates.data import CertificateStatuses
 from lms.djangoapps.certificates.models import GeneratedCertificate
 from lms.djangoapps.certificates.tests.factories import GeneratedCertificateFactory
@@ -21,6 +22,7 @@ from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory
 
 
+@ddt.ddt
 class PurgePiiFromCertificatesTests(ModuleStoreTestCase):
     """
     Tests for the `purge_pii_from_generatedcertificates` management command.
@@ -73,7 +75,7 @@ class PurgePiiFromCertificatesTests(ModuleStoreTestCase):
         )
         UserRetirementRequestFactory(user=self.user_retired)
 
-    @pytest.mark.parametrize("redact_history_toggle_enabled", [True, False])
+    @ddt.data(True, False)
     def test_management_command(self, redact_history_toggle_enabled):
         """
         Verify the management command purges expected data from a GeneratedCertificate instance if a learner has
