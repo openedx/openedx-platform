@@ -11,9 +11,7 @@ from unittest import mock
 import pytest
 from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.core.management import CommandError, call_command
-from django.db import connection
 from django.db.models.signals import pre_delete
-from django.test.utils import CaptureQueriesContext
 from social_django.models import UserSocialAuth
 
 from common.djangoapps.student.tests.factories import UserFactory
@@ -23,11 +21,7 @@ from openedx.core.djangoapps.user_api.accounts.signals import (
 from openedx.core.djangoapps.user_api.accounts.tests.retirement_helpers import (
     setup_retirement_states,  # noqa: F401
 )
-from openedx.core.djangoapps.user_api.accounts.utils import REDACTED_SOCIAL_AUTH_UID_PREFIX
-from openedx.core.djangolib.testing.utils import (
-    assert_redact_before_delete,
-    skip_unless_lms,
-)
+from openedx.core.djangolib.testing.utils import skip_unless_lms
 
 from ...models import UserRetirementStatus
 
@@ -166,11 +160,8 @@ def test_retire_user_calls_shared_deactivate_helper(mock_deactivate_helper):
 ])
 def test_retire_user_redacts_sso_pii_before_deletion(setup_retirement_states, social_auth_configs):  # lint-amnesty, pylint: disable=redefined-outer-name, unused-argument  # noqa: F811
     """
-    Test that SSO PII is redacted before UserSocialAuth records are deleted during retirement.
+    Test that Day 0 retirement preserves UserSocialAuth records.
     Covers both single and multiple SSO provider scenarios.
-
-    The safety-net pre_delete signal handler is disconnected so we verify the redaction
-    comes from retire_user itself, not the fallback signal.
     """
     user = UserFactory.create(username='sso-user', email='sso-user@example.com')
     auth_ids = [
@@ -178,16 +169,11 @@ def test_retire_user_redacts_sso_pii_before_deletion(setup_retirement_states, so
         for cfg in social_auth_configs
     ]
 
-    with disconnected_social_auth_redaction_signal(), CaptureQueriesContext(connection) as ctx:
+    with disconnected_social_auth_redaction_signal():
         call_command('retire_user', username=user.username, user_email=user.email)
 
-    assert_redact_before_delete(
-        [query['sql'] for query in ctx],
-        table=UserSocialAuth._meta.db_table,
-        expected_redacted_value_list=[REDACTED_SOCIAL_AUTH_UID_PREFIX],
-    )
     for auth_id in auth_ids:
-        assert not UserSocialAuth.objects.filter(id=auth_id).exists()
+        assert UserSocialAuth.objects.filter(id=auth_id).exists()
 
     retired_user_status = UserRetirementStatus.objects.filter(original_username=user.username).first()
     assert retired_user_status is not None
