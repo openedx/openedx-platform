@@ -25,7 +25,7 @@ from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey
 from xblock.fields import Scope
 
-from xmodule.discussion_block import DiscussionXBlock
+from xblocks_contrib.discussion import DiscussionXBlock
 from xmodule.modulestore.django import modulestore
 from xmodule.modulestore.inheritance import compute_inherited_metadata, own_metadata
 

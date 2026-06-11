@@ -25,7 +25,7 @@ from lms.djangoapps.courseware.block_render import get_block_for_descriptor
 from lms.djangoapps.courseware.tests.helpers import XModuleRenderingTestBase
 from openedx.core.djangoapps.discussions.models import DiscussionsConfiguration, Provider
 from openedx.core.djangoapps.discussions.services import DiscussionConfigService
-from xmodule.discussion_block import DiscussionXBlock
+from xblocks_contrib.discussion import DiscussionXBlock
 from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, SharedModuleStoreTestCase
 from xmodule.modulestore.tests.factories import BlockFactory, ToyCourseFactory
 from xmodule.tests.helpers import mock_render_template

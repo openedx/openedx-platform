@@ -13,7 +13,7 @@ from openedx.core.lib.cache_utils import request_cached
 from openedx.core.lib.courses import get_course_by_id
 from openedx.core.types import User
 from xmodule.course_block import CourseBlock  # pylint: disable=wrong-import-order
-from xmodule.discussion_block import DiscussionXBlock
+from xblocks_contrib.discussion import DiscussionXBlock  # pylint: disable=wrong-import-order
 from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 from xmodule.partitions.partitions import (  # pylint: disable=wrong-import-order
     ENROLLMENT_TRACK_PARTITION_ID,
