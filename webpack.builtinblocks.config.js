@@ -42,14 +42,6 @@ module.exports = {
             './xmodule/js/src/xmodule.js',
             './xmodule/js/src/vertical/edit.js'
         ],
-        LTIBlockDisplay: [
-            './xmodule/js/src/xmodule.js',
-            './xmodule/js/src/lti/lti.js'
-        ],
-        LTIBlockEditor: [
-            './xmodule/js/src/xmodule.js',
-            './xmodule/js/src/raw/edit/metadata-only.js'
-        ],
         PollBlockDisplay: [
             './xmodule/js/src/xmodule.js',
             './xmodule/js/src/javascript_loader.js',
