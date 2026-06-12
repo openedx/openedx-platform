@@ -58,7 +58,7 @@ class CrossStoreXMLRoundtrip(CourseComparisonTest, PartitionTestCase):
         self.export_dir = mkdtemp()
         self.addCleanup(rmtree, self.export_dir, ignore_errors=True)
 
-    @patch('xblocks_contrib.video.video_block.edxval_api', None)
+    @patch('xblocks_contrib.video.video.edxval_api', None)
     @ddt.data(*itertools.product(
         (SPLIT_MODULESTORE_SETUP,),
         (SPLIT_MODULESTORE_SETUP,),
