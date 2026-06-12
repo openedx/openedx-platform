@@ -523,7 +523,7 @@ class TestLegacyLibraryContentBlockWithSearchIndex(LegacyLibraryContentBlockTest
 @patch(
     'xmodule.modulestore.split_mongo.runtime.SplitModuleStoreRuntime.render', VanillaRuntime.render
 )
-@patch('xmodule.html_block.HtmlBlock.author_view', dummy_render, create=True)
+@patch('xblocks_contrib.html.HtmlBlock.author_view', dummy_render, create=True)
 @patch('xmodule.x_module.ModuleStoreRuntime.applicable_aside_types', lambda self, block: [])
 class TestLibraryContentRender(LegacyLibraryContentTest):
     """
@@ -734,7 +734,7 @@ class TestLibraryContentAnalytics(LegacyLibraryContentTest):
 @patch(
     'xmodule.modulestore.split_mongo.runtime.SplitModuleStoreRuntime.render', VanillaRuntime.render
 )
-@patch('xmodule.html_block.HtmlBlock.author_view', dummy_render, create=True)
+@patch('xblocks_contrib.html.HtmlBlock.author_view', dummy_render, create=True)
 @patch('xmodule.x_module.ModuleStoreRuntime.applicable_aside_types', lambda self, block: [])
 class TestLegacyLibraryContentBlockMigration(LegacyLibraryContentTest):
     """
