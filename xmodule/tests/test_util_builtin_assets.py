@@ -20,7 +20,7 @@ class AddCssToFragmentTests(TestCase):
         with self.assertRaises(ValueError):  # noqa: PT027
             builtin_assets.add_css_to_fragment(
                 fragment,
-                "/openedx/edx-platform/xmodule/assets/VideoBlockEditor.css",
+                "/openedx/edx-platform/xmodule/assets/HtmlBlockEditor.css",
             )
 
     def test_not_css_raises_value_error(self):
@@ -45,15 +45,15 @@ class AddCssToFragmentTests(TestCase):
             with self.assertRaises(ImproperlyConfigured):  # noqa: PT027
                 builtin_assets.add_css_to_fragment(
                     fragment,
-                    "VideoBlockEditor.css",
+                    "HtmlBlockEditor.css",
                 )
 
     def test_happy_path(self):
         fragment = Fragment()
-        builtin_assets.add_css_to_fragment(fragment, "VideoBlockEditor.css")
+        builtin_assets.add_css_to_fragment(fragment, "HtmlBlockEditor.css")
         assert fragment.resources[0] == FragmentResource(
             kind='url',
-            data='/static/css-builtin-blocks/VideoBlockEditor.css',
+            data='/static/css-builtin-blocks/HtmlBlockEditor.css',
             mimetype='text/css',
             placement='head',
         )
