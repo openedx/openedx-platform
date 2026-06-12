@@ -17,7 +17,7 @@ import itertools
 import os
 from shutil import rmtree
 from tempfile import mkdtemp
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import ddt
 from path import Path as path
@@ -58,7 +58,7 @@ class CrossStoreXMLRoundtrip(CourseComparisonTest, PartitionTestCase):
         self.export_dir = mkdtemp()
         self.addCleanup(rmtree, self.export_dir, ignore_errors=True)
 
-    @patch('xblocks_contrib.video.video.get_edxval_api', lambda: None)
+    @patch('xblocks_contrib.video.video.get_edxval_api', new=MagicMock(return_value=None))
     @ddt.data(*itertools.product(
         (SPLIT_MODULESTORE_SETUP,),
         (SPLIT_MODULESTORE_SETUP,),
