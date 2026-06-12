@@ -6,9 +6,9 @@ from web_fragments.fragment import Fragment
 from webob import Response
 from xblock.core import XBlock, XBlockAside
 from xblock.fields import Dict, Scope
+from xblocks_contrib.problem import ProblemBlock  # pylint: disable=wrong-import-order
 
 from common.djangoapps.edxmako.shortcuts import render_to_string
-from xblocks_contrib.problem import ProblemBlock  # pylint: disable=wrong-import-order
 from xmodule.x_module import AUTHOR_VIEW  # pylint: disable=wrong-import-order
 
 _ = lambda text: text

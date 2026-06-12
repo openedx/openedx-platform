@@ -10,10 +10,10 @@ from lxml import etree
 from rest_framework import status
 from web_fragments.fragment import Fragment
 from xblock.runtime import Runtime as VanillaRuntime
+from xblocks_contrib.problem import ProblemBlock
 
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangolib.testing.utils import skip_unless_cms, skip_unless_lms
-from xblocks_contrib.problem import ProblemBlock
 from xmodule.modulestore.tests.factories import CourseFactory
 from xmodule.modulestore.tests.utils import MixedSplitTestCase
 from xmodule.tests import prepare_block_runtime
