@@ -3,9 +3,10 @@ FieldOverride that forces Show Answer values that use Past Due logic to
 new Show Answer values that remove the Past Due check (keeping the rest intact)
 """
 
+from xblocks_contrib.problem.capa_block import SHOWANSWER  # pylint: disable=wrong-import-order
+
 from lms.djangoapps.courseware.field_overrides import FieldOverrideProvider
 from openedx.features.course_experience import RELATIVE_DATES_FLAG
-from xblocks_contrib.problem.capa_block import SHOWANSWER  # pylint: disable=wrong-import-order
 
 
 class ShowAnswerFieldOverride(FieldOverrideProvider):
