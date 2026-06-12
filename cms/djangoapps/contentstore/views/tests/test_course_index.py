@@ -314,7 +314,7 @@ class TestCourseReIndex(CourseTestCase):
         self.assertContains(response, self.SUCCESSFUL_RESPONSE)
         self.assertEqual(response.status_code, 200)  # noqa: PT009
 
-    @mock.patch('xmodule.html_block.HtmlBlock.index_dictionary')
+    @mock.patch('xblocks_contrib.html.HtmlBlock.index_dictionary')
     def test_reindex_course_search_index_error(self, mock_index_dictionary):
         """
         Test json response with mocked error data for html
@@ -377,7 +377,7 @@ class TestCourseReIndex(CourseTestCase):
         with self.assertRaises(SearchIndexingError):  # noqa: PT027
             reindex_course_and_check_access(self.course.id, self.user)
 
-    @mock.patch('xmodule.html_block.HtmlBlock.index_dictionary')
+    @mock.patch('xblocks_contrib.html.HtmlBlock.index_dictionary')
     def test_reindex_html_error_json_responses(self, mock_index_dictionary):
         """
         Test json response with mocked error data for html
@@ -487,7 +487,7 @@ class TestCourseReIndex(CourseTestCase):
         with self.assertRaises(SearchIndexingError):  # noqa: PT027
             CoursewareSearchIndexer.do_course_reindex(modulestore(), self.course.id)
 
-    @mock.patch('xmodule.html_block.HtmlBlock.index_dictionary')
+    @mock.patch('xblocks_contrib.html.HtmlBlock.index_dictionary')
     def test_indexing_html_error_responses(self, mock_index_dictionary):
         """
         Test do_course_reindex response with mocked error data for html
