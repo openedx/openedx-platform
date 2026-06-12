@@ -8,6 +8,7 @@ import ddt
 from django.conf import settings
 from django.core import mail
 from django.test import TestCase, override_settings
+from xblocks_contrib.video import VideoBlock
 
 from common.djangoapps.student.models.course_enrollment import CourseEnrollment
 from common.djangoapps.student.roles import SupportStaffRole
@@ -19,7 +20,6 @@ from lms.djangoapps.support.tasks import reset_student_course, send_reset_course
 from lms.djangoapps.support.tests.factories import CourseResetAuditFactory, CourseResetCourseOptInFactory
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from xmodule.modulestore.tests.factories import BlockFactory
-from xblocks_contrib.video import VideoBlock
 
 
 class ResetStudentCourse(TestSubmittingProblems):
