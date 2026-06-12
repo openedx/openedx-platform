@@ -16,6 +16,7 @@ from django.urls import reverse
 from edxval.api import create_video
 from opaque_keys.edx.keys import UsageKey
 from organizations.tests.factories import OrganizationFactory
+from xblocks_contrib.video import VideoBlock  # pylint: disable=wrong-import-order
 
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase, setup_caption_responses
 from openedx.core.djangoapps.content_libraries import api as lib_api
@@ -32,7 +33,6 @@ from xmodule.contentstore.content import StaticContent  # pylint: disable=wrong-
 from xmodule.contentstore.django import contentstore  # pylint: disable=wrong-import-order
 from xmodule.exceptions import NotFoundError  # pylint: disable=wrong-import-order
 from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
-from xblocks_contrib.video import VideoBlock  # pylint: disable=wrong-import-order
 
 TEST_DATA_CONTENTSTORE = copy.deepcopy(settings.CONTENTSTORE)
 TEST_DATA_CONTENTSTORE['DOC_STORE_CONFIG']['db'] = 'test_xcontent_%s' % uuid4().hex  # noqa: UP031

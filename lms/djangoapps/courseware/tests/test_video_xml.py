@@ -16,7 +16,6 @@ course, section, subsection, unit, etc.
 
 
 from django.test import TestCase
-
 from xblocks_contrib.video import VideoBlock
 
 SOURCE_XML = """
