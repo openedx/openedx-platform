@@ -74,9 +74,14 @@ class ContainerMetadata(PublishableItem):
     container_id: Container.ID
 
     @classmethod
-    def from_container(cls, library_key, container: Container, associated_collections=None):
+    def from_container(cls, library_key, container: Container, associated_collections=None, use_published=False):
         """
         Construct a ContainerMetadata object from a Container object.
+
+        Requires that the draft version of the container exists, unless you
+        specify use_published=True, in which case it requires that the published
+        version exists. The 'display_name' and 'modified' fields will depend on
+        which version you request.
         """
         last_publish_log = container.versioning.last_publish_log
         container_key = library_container_locator(
@@ -100,10 +105,10 @@ class ContainerMetadata(PublishableItem):
             container_key=container_key,
             container_type_code=container_key.container_type,
             container_id=container.id,
-            display_name=draft.title,
+            display_name=published.title if use_published else draft.title,
             created=container.created,
-            modified=draft.created,
-            draft_version_num=draft.version_num,
+            modified=published.created if use_published else draft.created,
+            draft_version_num=draft.version_num if draft else None,
             published_version_num=published.version_num if published else None,
             published_display_name=published.title if published else None,
             last_published=None if last_publish_log is None else last_publish_log.published_at,

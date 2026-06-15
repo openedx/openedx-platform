@@ -82,7 +82,9 @@ class Notification(TimeStampedModel):
 
 class NotificationPreference(TimeStampedModel):
     """
-    Model to store notification preferences for users at account level
+    Model to store notification preferences for users at account level.
+
+    .. no_pii:
     """
 
     class EmailCadenceChoices(models.TextChoices):

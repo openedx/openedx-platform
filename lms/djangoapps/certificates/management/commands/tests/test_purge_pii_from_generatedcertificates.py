@@ -2,8 +2,9 @@
 Tests for the `purge_pii_from_generatedcertificates` management command.
 """
 
-
+import ddt
 from django.core.management import call_command
+from django.test import override_settings
 from testfixtures import LogCapture
 
 from common.djangoapps.student.tests.factories import UserFactory
@@ -20,6 +21,7 @@ from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory
 
 
+@ddt.ddt
 class PurgePiiFromCertificatesTests(ModuleStoreTestCase):
     """
     Tests for the `purge_pii_from_generatedcertificates` management command.
@@ -72,7 +74,8 @@ class PurgePiiFromCertificatesTests(ModuleStoreTestCase):
         )
         UserRetirementRequestFactory(user=self.user_retired)
 
-    def test_management_command(self):
+    @ddt.data(True, False)
+    def test_management_command(self, redact_history_toggle_enabled):
         """
         Verify the management command purges expected data from a GeneratedCertificate instance if a learner has
         successfully had their account retired.
@@ -82,12 +85,30 @@ class PurgePiiFromCertificatesTests(ModuleStoreTestCase):
         cert_for_retired_user = GeneratedCertificate.objects.get(user_id=self.user_retired)
         assert cert_for_retired_user.name == self.user_retired_name
 
-        call_command("purge_pii_from_generatedcertificates")
+        with override_settings(REDACT_CERTIFICATES_HISTORICAL_PII=redact_history_toggle_enabled):
+            call_command("purge_pii_from_generatedcertificates")
 
         cert_for_active_user = GeneratedCertificate.objects.get(user_id=self.user_active)
         assert cert_for_active_user.name == self.user_active_name
         cert_for_retired_user = GeneratedCertificate.objects.get(user_id=self.user_retired)
         assert cert_for_retired_user.name == ""
+
+        active_history_names = list(
+            GeneratedCertificate.history.filter(user=self.user_active).values_list("name", flat=True)
+        )
+        assert len(active_history_names) > 0
+        assert all(n == self.user_active_name for n in active_history_names)
+
+        retired_history_names = list(
+            GeneratedCertificate.history.filter(user=self.user_retired).values_list("name", flat=True)
+        )
+        assert len(retired_history_names) > 0
+        if redact_history_toggle_enabled:
+            assert all(n == "" for n in retired_history_names), "Names in the history table should have been redacted."
+        else:
+            assert all(n == self.user_retired_name for n in retired_history_names), (
+                "Names in the history table should not have been redacted."
+            )
 
     def test_management_command_dry_run(self):
         """
@@ -110,5 +131,11 @@ class PurgePiiFromCertificatesTests(ModuleStoreTestCase):
         assert cert_for_active_user.name == self.user_active_name
         cert_for_retired_user = GeneratedCertificate.objects.get(user_id=self.user_retired)
         assert cert_for_retired_user.name == self.user_retired_name
+
+        retired_history_names = list(
+            GeneratedCertificate.history.filter(user=self.user_retired).values_list("name", flat=True)
+        )
+        assert len(retired_history_names) > 0
+        assert all(n == self.user_retired_name for n in retired_history_names)
 
         assert logger.records[0].msg == expected_log_msg

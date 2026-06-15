@@ -170,9 +170,9 @@ class GeneratedCertificate(models.Model):  # noqa: DJ008
     """
     Base model for generated course certificates
 
-    .. pii: PII can exist in the generated certificate linked to in this model. Certificate data is currently retained.
-    .. pii_types: name, username
-    .. pii_retirement: retained
+    .. pii: PII can exist in the generated certificate linked to in this model.
+    .. pii_types: name
+    .. pii_retirement: local_api
 
     course_id       - Course run key
     created_date    - Date and time the certificate was created
@@ -248,6 +248,10 @@ class GeneratedCertificate(models.Model):  # noqa: DJ008
     # imports this model's code. Simple History will attempt to connect to the installed
     # model in the certificates app, which will fail.
     if 'certificates' in apps.app_configs:
+        # The PII is retained by default, but can be removed by enabling ``REDACT_CERTIFICATES_HISTORICAL_PII``.
+        # .. pii: The auto-generated ``HistoricalGeneratedCertificate`` table mirrors all fields of this model.
+        # .. pii_types: name
+        # .. pii_retirement: retained
         history = HistoricalRecords()
 
     class Meta:

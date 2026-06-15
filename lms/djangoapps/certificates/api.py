@@ -24,6 +24,7 @@ from common.djangoapps.student.api import is_user_enrolled_in_course
 from common.djangoapps.student.models import CourseEnrollment
 from lms.djangoapps.branding import api as branding_api
 from lms.djangoapps.certificates.config import AUTO_CERTIFICATE_GENERATION as _AUTO_CERTIFICATE_GENERATION
+from lms.djangoapps.certificates.config import REDACT_CERTIFICATES_HISTORICAL_PII
 from lms.djangoapps.certificates.data import CertificateStatuses, GeneratedCertificateData
 from lms.djangoapps.certificates.generation_handler import generate_certificate_task as _generate_certificate_task
 from lms.djangoapps.certificates.generation_handler import is_on_certificate_allowlist as _is_on_certificate_allowlist
@@ -977,6 +978,8 @@ def clear_pii_from_certificate_records_for_user(user):
     model's custom `save()` function, nor fire any Django signals (which is desired at the time of writing). There is
     nothing to update in our external systems by this update.
 
+    If the ``REDACT_CERTIFICATES_HISTORICAL_PII`` toggle is enabled, the history audit table will also be redacted.
+
     Args:
         user (User): The User instance of the learner actively being retired.
 
@@ -984,6 +987,8 @@ def clear_pii_from_certificate_records_for_user(user):
         None
     """
     GeneratedCertificate.objects.filter(user=user).update(name="")
+    if REDACT_CERTIFICATES_HISTORICAL_PII.is_enabled():
+        GeneratedCertificate.history.filter(user=user).update(name="")
 
 
 def get_cert_history_for_course_id(course_id):

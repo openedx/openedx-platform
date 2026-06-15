@@ -1277,6 +1277,32 @@ class CertificatesLearnerRetirementFunctionality(ModuleStoreTestCase):
         assert cert_course1.name == ""
         assert cert_course2.name == ""
 
+    def test_clear_pii_from_certificate_records_clears_history_table(self):
+        """
+        Verify that `clear_pii_from_certificate_records_for_user` blanks `name` in the
+        django-simple-history audit table only when the ``REDACT_CERTIFICATES_HISTORICAL_PII``
+        setting toggle is enabled, and leaves it untouched when the toggle is disabled.
+        """
+        with override_settings(REDACT_CERTIFICATES_HISTORICAL_PII=False):
+            clear_pii_from_certificate_records_for_user(self.user)
+
+        history_names = list(
+            GeneratedCertificate.history.filter(user=self.user).values_list("name", flat=True)
+        )
+        assert all(n == self.user_full_name for n in history_names), (
+            "History rows should be untouched when the waffle flag is disabled."
+        )
+
+        with override_settings(REDACT_CERTIFICATES_HISTORICAL_PII=True):
+            clear_pii_from_certificate_records_for_user(self.user)
+
+        history_names_after = list(
+            GeneratedCertificate.history.filter(user=self.user).values_list("name", flat=True)
+        )
+        assert all(n == "" for n in history_names_after), (
+            "Expected all history rows to have name blanked after retirement."
+        )
+
 
 class GetCourseIdsForUsernameTests(TestCase):
     """

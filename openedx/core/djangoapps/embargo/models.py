@@ -665,6 +665,8 @@ class CourseAccessRuleHistory(models.Model):  # noqa: DJ008
 class GlobalRestrictedCountry(models.Model):
     """
     Model to restrict access to specific countries globally.
+
+    .. no_pii:
     """
     country = models.ForeignKey(
         "Country",

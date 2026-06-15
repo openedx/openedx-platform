@@ -12,7 +12,7 @@ from django.utils.text import slugify
 from opaque_keys.edx.keys import ContainerKey, LearningContextKey, OpaqueKey, UsageKey
 from opaque_keys.edx.locator import LibraryCollectionLocator, LibraryContainerLocator
 from openedx_content import api as content_api
-from openedx_content.models_api import Collection, Section, Subsection, Unit
+from openedx_content.models_api import Collection
 from rest_framework.exceptions import NotFound
 
 from openedx.core.djangoapps.content.search.models import SearchAccess
@@ -630,33 +630,12 @@ def searchable_doc_for_container(
         log.error(f"Container {container_key} not found")
         return doc
 
-    draft_children = lib_api.get_container_children(
-        container_key,
-        published=False,
-    )
+    draft_children = lib_api.get_container_children_list(container_key, published=False)
     publish_status = PublishStatus.published
     if container.last_published is None:
         publish_status = PublishStatus.never
     elif container.has_unpublished_changes:
         publish_status = PublishStatus.modified
-
-    container_type_code = container_key.container_type
-
-    def get_child_keys(children) -> list[str]:
-        match container_type_code:
-            case Unit.type_code:
-                return [
-                    str(child.usage_key)
-                    for child in children
-                ]
-            case Subsection.type_code | Section.type_code:
-                return [
-                    str(child.container_key)
-                    for child in children
-                ]
-
-    def get_child_names(children) -> list[str]:
-        return [child.display_name for child in children]
 
     doc.update({
         Fields.display_name: container.display_name,
@@ -664,8 +643,8 @@ def searchable_doc_for_container(
         Fields.modified: container.modified.timestamp(),
         Fields.num_children: len(draft_children),
         Fields.content: {
-            Fields.child_usage_keys: get_child_keys(draft_children),
-            Fields.child_display_names: get_child_names(draft_children),
+            Fields.child_usage_keys: [str(child.key) for child in draft_children],
+            Fields.child_display_names: [child.display_name for child in draft_children],
         },
         Fields.publish_status: publish_status,
         Fields.last_published: container.last_published.timestamp() if container.last_published else None,
@@ -675,16 +654,13 @@ def searchable_doc_for_container(
         doc[Fields.breadcrumbs] = [{"display_name": library.title}]
 
     if container.published_version_num is not None:
-        published_children = lib_api.get_container_children(
-            container_key,
-            published=True,
-        )
+        published_children = lib_api.get_container_children_list(container_key, published=True)
         doc[Fields.published] = {
             Fields.published_display_name: container.published_display_name,
             Fields.published_num_children: len(published_children),
             Fields.published_content: {
-                Fields.child_usage_keys: get_child_keys(published_children),
-                Fields.child_display_names: get_child_names(published_children),
+                Fields.child_usage_keys: [str(child.key) for child in published_children],
+                Fields.child_display_names: [child.display_name for child in published_children],
             },
         }
 

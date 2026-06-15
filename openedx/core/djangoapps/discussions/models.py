@@ -559,7 +559,7 @@ class DiscussionTopicLink(models.Model):
     """
     A model linking discussion topics ids to the part of a course they are linked to.
 
-    ..no_pii:
+    .. no_pii:
     """
     context_key = LearningContextKeyField(
         db_index=True,

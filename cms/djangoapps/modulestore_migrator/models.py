@@ -42,6 +42,8 @@ class ModulestoreSource(models.Model):
     * When using the REST API directly, the default is to use the same behavior as the UI, but
       clients can also explicitly specify the `forward_source_to_target` boolean param in order to
       control whether `forwarded` is set to any given migration.
+
+        .. no_pii:
     """
     key = LearningContextKeyField(
         unique=True,
@@ -74,6 +76,8 @@ class ModulestoreMigration(models.Model):
       contains the progress of the import.
     * A single ModulestoreSource may very well have multiple ModulestoreMigrations; however,
       at most one of them with be the "authoritative" migration, as indicated by `forwarded`.
+
+        .. no_pii:
     """
 
     ## MIGRATION SPECIFICATION
@@ -179,6 +183,8 @@ class ModulestoreBlockSource(TimeStampedModel):
 
     The semantics of `forwarded` directly mirror those of `ModulestoreSource.forwarded`. Please see
     that class's docstring for details.
+
+    .. no_pii:
     """
     overall_source = models.ForeignKey(
         ModulestoreSource,
@@ -216,6 +222,8 @@ class ModulestoreBlockMigration(TimeStampedModel):
     * A single ModulestoreBlockSource may very well have multiple ModulestoreBlockMigrations; however,
       at most one of them with be the "authoritative" migration, as indicated by `forwarded`.
       This will coincide with the `overall_migration` being pointed to by `forwarded` as well.
+
+        .. no_pii:
     """
     overall_migration = models.ForeignKey(
         ModulestoreMigration,

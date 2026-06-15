@@ -6,11 +6,8 @@ from django.contrib.auth.models import User  # pylint: disable=imported-auth-use
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
-from common.djangoapps.student.models import AccountRecovery, Registration, get_retired_email_by_email
-from openedx.core.djangolib.oauth2_retirement_utils import retire_dot_oauth2_models
-
-from ...accounts.utils import redact_and_delete_social_auth
-from ...models import BulkUserRetirementConfig, UserRetirementStatus
+from ...accounts.utils import create_retirement_request_and_deactivate_account
+from ...models import BulkUserRetirementConfig
 
 logger = logging.getLogger(__name__)
 
@@ -142,22 +139,7 @@ class Command(BaseCommand):
         try:
             with transaction.atomic():
                 for user in users:
-                    # Add user to retirement queue.
-                    UserRetirementStatus.create_retirement(user)
-                    # Redact and unlink LMS social auth accounts.
-                    redact_and_delete_social_auth(user.id)
-                    # Change LMS password & email
-                    user.email = get_retired_email_by_email(user.email)
-                    user.set_unusable_password()
-                    user.save()
-
-                    # TODO: Unlink social accounts & change password on each IDA.
-                    # Remove the activation keys sent by email to the user for account activation.
-                    Registration.objects.filter(user=user).delete()
-
-                    # Delete OAuth tokens associated with the user.
-                    retire_dot_oauth2_models(user)
-                    AccountRecovery.retire_recovery_email(user.id)
+                    create_retirement_request_and_deactivate_account(user)
         except KeyError:
             error_message = f'Username not specified {user}'
             logger.error(error_message)

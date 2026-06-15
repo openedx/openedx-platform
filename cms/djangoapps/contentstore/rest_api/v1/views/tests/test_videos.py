@@ -1,20 +1,25 @@
 """
 Unit tests for course settings views.
 """
-from unittest.mock import patch
+from datetime import datetime
+from unittest.mock import MagicMock, patch
 
 import ddt
+import pytz
 from django.conf import settings
 from django.contrib.staticfiles.storage import staticfiles_storage
 from django.urls import reverse
 from edx_toggles.toggles import WaffleSwitch
 from edx_toggles.toggles.testutils import override_waffle_switch
 from edxval.api import (
+    create_profile,
+    create_video,
     get_3rd_party_transcription_plans,
     get_transcript_credentials_state_for_org,
     get_transcript_preferences,
 )
 from rest_framework import status
+from rest_framework.test import APIClient
 
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase
 from cms.djangoapps.contentstore.utils import reverse_course_url
@@ -135,3 +140,106 @@ class CourseVideosViewTest(CourseTestCase, PermissionAccessMixin):
             response = self.client.get(self.url)
             self.assertIn("is_ai_translations_enabled", response.data)  # noqa: PT009
             self.assertTrue(response.data["is_ai_translations_enabled"])  # noqa: PT009
+
+
+class VideoDownloadViewTest(CourseTestCase):
+    """
+    Tests for VideoDownloadView.
+
+    The download endpoint fetches each requested ``files[].url`` server-side and
+    returns the bytes inside a zip. Those URLs must therefore be restricted to
+    the course's own video URLs, otherwise the endpoint is an SSRF primitive
+    (see GHSA-fpf9-9rpr-jvrx).
+    """
+
+    ALLOWED_URL = "http://example.com/profile1/test.mp4"
+    # An internal address an attacker might try to reach via SSRF.
+    SSRF_URL = "http://169.254.169.254/latest/meta-data/"
+
+    def setUp(self):
+        super().setUp()
+        # reverse() with only course_id resolves to the download route (the
+        # usage route with the same name additionally requires edx_video_id).
+        self.url = reverse(
+            "cms.djangoapps.contentstore:v1:video_usage",
+            kwargs={"course_id": self.course.id},
+        )
+        self.api_client = APIClient()
+        self.api_client.force_authenticate(user=self.user)
+        create_profile("profile1")
+        create_video({
+            "edx_video_id": "test-video",
+            "client_video_id": "test.mp4",
+            "duration": 42.0,
+            "status": "file_complete",
+            "courses": [str(self.course.id)],
+            "created": datetime.now(pytz.utc),
+            "encoded_videos": [
+                {
+                    "profile": "profile1",
+                    "url": self.ALLOWED_URL,
+                    "file_size": 1600,
+                    "bitrate": 100,
+                },
+            ],
+        })
+
+    @patch("cms.djangoapps.contentstore.video_storage_handlers.requests.get")
+    def test_download_allowed_url(self, mock_get):
+        """A URL that belongs to the course's videos is fetched and zipped."""
+        mock_get.return_value = MagicMock(
+            content=b"video-bytes",
+            headers={"Content-Type": "video/mp4"},
+        )
+        response = self.api_client.put(
+            self.url,
+            data={"files": [{"url": self.ALLOWED_URL, "name": "test.mp4"}]},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        mock_get.assert_called_once_with(self.ALLOWED_URL, allow_redirects=True)
+
+    @patch("cms.djangoapps.contentstore.video_storage_handlers.requests.get")
+    def test_rejects_url_not_belonging_to_course(self, mock_get):
+        """
+        A URL that is not one of the course's video URLs is rejected before any
+        server-side request is made (SSRF protection).
+        """
+        response = self.api_client.put(
+            self.url,
+            data={"files": [{"url": self.SSRF_URL, "name": "evil.txt"}]},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)  # noqa: PT009
+        mock_get.assert_not_called()
+
+    @patch("cms.djangoapps.contentstore.video_storage_handlers.requests.get")
+    def test_rejects_when_any_url_is_disallowed(self, mock_get):
+        """
+        A request mixing an allowed URL with a disallowed one is rejected
+        outright, without fetching the allowed URL either.
+        """
+        response = self.api_client.put(
+            self.url,
+            data={"files": [
+                {"url": self.ALLOWED_URL, "name": "test.mp4"},
+                {"url": self.SSRF_URL, "name": "evil.txt"},
+            ]},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)  # noqa: PT009
+        mock_get.assert_not_called()
+
+    @patch("cms.djangoapps.contentstore.video_storage_handlers.requests.get")
+    def test_non_staff_user_denied(self, mock_get):
+        """A user without studio read access cannot reach the fetch path."""
+        __, nonstaff_user = self.create_non_staff_authed_user_client()
+        client = APIClient()
+        client.force_authenticate(user=nonstaff_user)
+        response = client.put(
+            self.url,
+            data={"files": [{"url": self.ALLOWED_URL, "name": "test.mp4"}]},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)  # noqa: PT009
+        mock_get.assert_not_called()

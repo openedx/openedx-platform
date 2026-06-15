@@ -1061,6 +1061,10 @@ class AppleMigrationUserIdInfo(models.Model):
     """
     Model to store users' Apple Unique Identifier during migration
     process of Apple team from edx Inc. to edx LLC.
+
+    .. pii: Contains Apple user identifiers (old_apple_id, transfer_id, new_apple_id).
+    .. pii_types: external_service
+    .. pii_retirement: local_api
     """
     old_apple_id = models.CharField(max_length=255)
     transfer_id = models.CharField(max_length=255, null=True, blank=True)  # noqa: DJ001
