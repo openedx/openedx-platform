@@ -14,7 +14,7 @@ codejail-includes==2.0.0
     # via -r requirements/edx-sandbox/base.in
 contourpy==1.3.3
     # via matplotlib
-cryptography==48.0.0
+cryptography==49.0.0
     # via -r requirements/edx-sandbox/base.in
 cycler==0.12.1
     # via matplotlib
@@ -36,7 +36,7 @@ markupsafe==3.0.3
     # via
     #   chem
     #   openedx-calc
-matplotlib==3.10.9
+matplotlib==3.11.0
     # via -r requirements/edx-sandbox/base.in
 mpmath==1.3.0
     # via sympy
@@ -84,5 +84,5 @@ sympy==1.14.0
     # via
     #   -r requirements/edx-sandbox/base.in
     #   openedx-calc
-tqdm==4.68.1
+tqdm==4.68.2
     # via nltk

@@ -14,11 +14,11 @@ attrs==26.1.0
     #   zeep
 backoff==2.2.1
     # via -r scripts/user_retirement/requirements/base.txt
-boto3==1.43.25
+boto3==1.43.30
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   moto
-botocore==1.43.25
+botocore==1.43.30
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   boto3
@@ -41,7 +41,7 @@ click==8.4.1
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   edx-django-utils
-cryptography==48.0.0
+cryptography==49.0.0
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   google-auth
@@ -75,7 +75,7 @@ google-api-core==2.31.0
     #   google-api-python-client
 google-api-python-client==2.197.0
     # via -r scripts/user_retirement/requirements/base.txt
-google-auth==2.53.0
+google-auth==2.55.0
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   google-api-core
@@ -137,7 +137,7 @@ proto-plus==1.28.0
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   google-api-core
-protobuf==7.35.0
+protobuf==7.35.1
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   google-api-core
@@ -174,7 +174,7 @@ pyparsing==3.3.2
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   httplib2
-pytest==9.0.3
+pytest==9.1.0
     # via -r scripts/user_retirement/requirements/testing.in
 python-dateutil==2.9.0.post0
     # via

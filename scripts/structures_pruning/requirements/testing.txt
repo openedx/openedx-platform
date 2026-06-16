@@ -30,7 +30,7 @@ pymongo==4.4.0
     # via
     #   -r scripts/structures_pruning/requirements/base.txt
     #   edx-opaque-keys
-pytest==9.0.3
+pytest==9.1.0
     # via -r scripts/structures_pruning/requirements/testing.in
 stevedore==5.8.0
     # via
