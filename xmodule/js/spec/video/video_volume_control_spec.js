@@ -42,8 +42,17 @@
                 expect(volumeControl.volume).toEqual(75);
             });
 
-            it('render the volume control', function() {
-                expect($('.volume')).toExist();
+            it('render the volume control', function(done) {
+                jasmine.waitUntil(function() {
+                    return state.videoVolumeControl &&
+                        state.videoVolumeControl.el &&
+                        state.videoVolumeControl.el.closest('.secondary-controls').length === 1;
+                }).then(function() {
+                    expect(state.videoVolumeControl.el).toBeInDOM();
+                    done();
+                }).fail(function() {
+                    done.fail('VideoVolumeControl did not render into .secondary-controls before the test timed out.');
+                });
             });
 
             it('create the slider', function() {
