@@ -806,7 +806,7 @@ def user_post_save_callback(sender, **kwargs):
                 'education': profile.level_of_education_display,
                 'address': profile.mailing_address,
                 'gender': profile.gender_display,
-                'country': str(profile.country),
+                'country': str(profile.country) if profile.country else '',
                 'is_marketable': False
             }
             # .. pii: Many pieces of PII are sent to Segment here. Retired directly through Segment API call in Tubular.
