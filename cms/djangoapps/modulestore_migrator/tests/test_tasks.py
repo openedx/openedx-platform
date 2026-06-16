@@ -724,7 +724,7 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
             created_by=self.user.id,
         )
         child_version_1 = content_api.create_next_component_version(
-            child_component_1.pk,
+            child_component_1.id,
             media_to_replace={},
             created=timezone.now(),
             created_by=self.user.id,
@@ -740,7 +740,7 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
             created_by=self.user.id,
         )
         child_version_2 = content_api.create_next_component_version(
-            child_component_2.pk,
+            child_component_2.id,
             media_to_replace={},
             created=timezone.now(),
             created_by=self.user.id,
@@ -805,7 +805,7 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
                 self.assertEqual(container_version.title, f"Test {block_type.title()}")  # noqa: PT009
                 # The container is left as a draft; publishing is the caller's
                 # responsibility (handled in _import_structure after bulk_draft_changes_for exits).
-                self.assertTrue(content_api.contains_unpublished_changes(container_version.container.pk))  # noqa: PT009  # pylint: disable=line-too-long
+                self.assertTrue(content_api.contains_unpublished_changes(container_version.container.id))  # noqa: PT009  # pylint: disable=line-too-long
 
     def test_migrate_container_same_title(self):
         """
@@ -913,7 +913,7 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
                 created_by=self.user.id,
             )
             child_version = content_api.create_next_component_version(
-                child_component.pk,
+                child_component.id,
                 media_to_replace={},
                 created=timezone.now(),
                 created_by=self.user.id,
@@ -953,7 +953,7 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
             created_by=self.user.id,
         )
         problem_version = content_api.create_next_component_version(
-            problem_component.pk,
+            problem_component.id,
             media_to_replace={},
             created=timezone.now(),
             created_by=self.user.id,
@@ -969,7 +969,7 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
             created_by=self.user.id,
         )
         html_version = content_api.create_next_component_version(
-            html_component.pk,
+            html_component.id,
             media_to_replace={},
             created=timezone.now(),
             created_by=self.user.id,
@@ -985,7 +985,7 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
             created_by=self.user.id,
         )
         video_version = content_api.create_next_component_version(
-            video_component.pk,
+            video_component.id,
             media_to_replace={},
             created=timezone.now(),
             created_by=self.user.id,
