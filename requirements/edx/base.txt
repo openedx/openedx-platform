@@ -835,7 +835,7 @@ openedx-atlas==0.7.0
     #   enterprise-integrated-channels
     #   openedx-authz
     #   openedx-forum
-openedx-authz==1.18.0
+openedx-authz==1.16.0
     # via -r requirements/edx/kernel.in
 openedx-calc==5.0.0
     # via
