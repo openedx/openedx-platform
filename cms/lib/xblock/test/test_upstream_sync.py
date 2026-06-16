@@ -293,7 +293,7 @@ class UpstreamTestCase(ModuleStoreTestCase):
         downstream.attempts_before_showanswer_button = 2
         downstream.due = datetime.datetime(2025, 2, 2, tzinfo=datetime.timezone.utc)  # noqa: UP017
         downstream.force_save_button = True
-        downstream.graceperiod = '2d'
+        downstream.graceperiod = datetime.timedelta(days=2)
         downstream.grading_method = 'last_score'
         downstream.max_attempts = 100
         downstream.show_correctness = 'always'
@@ -321,7 +321,7 @@ class UpstreamTestCase(ModuleStoreTestCase):
         assert downstream.attempts_before_showanswer_button == 2
         assert downstream.due == datetime.datetime(2025, 2, 2, tzinfo=datetime.timezone.utc)  # noqa: UP017
         assert downstream.force_save_button
-        assert downstream.graceperiod == '2d'
+        assert downstream.graceperiod == datetime.timedelta(days=2)
         assert downstream.grading_method == 'last_score'
         assert downstream.max_attempts == 100
         assert downstream.show_correctness == 'always'
