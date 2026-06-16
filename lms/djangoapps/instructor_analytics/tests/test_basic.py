@@ -195,10 +195,7 @@ class TestAnalyticsBasic(ModuleStoreTestCase):
     def test_enrolled_student_with_no_country_city(self):
         userreports = enrolled_students_features(self.course_key, ('username', 'city', 'country',))
         for userreport in userreports:
-            # This behaviour is somewhat inconsistent: None string fields
-            # objects are converted to "None", but non-JSON serializable fields
-            # are converted to an empty string.
-            assert userreport['city'] == 'None'
+            assert userreport['city'] == ''
             assert userreport['country'] == ''
 
     def test_enrolled_students_meta_features_keys(self):
