@@ -121,8 +121,12 @@ jobs:
       - name: run tests
         shell: bash
         run: |
-          python -Wd -m pytest -p no:randomly --ds=${{ env.settings_path }} ${{ env.unit_test_paths }} --cov=. \
-            ${{ env.report_log_arg }}
+          # --cov-report="" suppresses the per-shard terminal coverage table
+          # (~3.7k lines of noise). The .coverage data file is still written and
+          # uploaded as an artifact for the combined `coverage` job below, which
+          # is what reports to codecov.
+          python -Wd -m pytest -p no:randomly --ds=${{ env.settings_path }} ${{ env.unit_test_paths }} \
+            --cov=. --cov-report="" ${{ env.report_log_arg }}
 
       - name: Upload pytest timing report
         if: github.ref == 'refs/heads/master'
