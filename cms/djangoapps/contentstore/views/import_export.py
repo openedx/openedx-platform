@@ -26,6 +26,7 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_GET, require_http_methods
 from edx_django_utils.monitoring import set_custom_attribute, set_custom_attributes_for_course_key
 from opaque_keys.edx.keys import CourseKey
+from opaque_keys.edx.locator import LibraryLocator
 from openedx_authz.constants.permissions import COURSES_EXPORT_COURSE, COURSES_IMPORT_COURSE
 from path import Path as path
 from storages.backends.s3boto3 import S3Boto3Storage
@@ -72,6 +73,10 @@ def import_handler(request, course_key_string):
         json: import a course via the .tar.gz or .zip file specified in request.FILES
     """
     courselike_key = CourseKey.from_string(course_key_string)
+    # Legacy (v1) libraries are no longer supported for import. Reject early
+    # to avoid an invalid redirect to the MFE with a library key.
+    if isinstance(courselike_key, LibraryLocator):
+        raise Http404
     if not user_has_course_permission(
         user=request.user,
         authz_permission=COURSES_IMPORT_COURSE.identifier,
