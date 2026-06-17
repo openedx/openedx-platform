@@ -169,7 +169,7 @@ def _set_course_discussion_blackout(course, user_id):
 @ddt.ddt
 @disable_signal(api, "thread_created")
 @disable_signal(api, "thread_voted")
-@mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+@override_settings(ENABLE_DISCUSSION_SERVICE=True)
 class CreateThreadTest(
     UrlResetMixin,
     SharedModuleStoreTestCase,
@@ -228,9 +228,6 @@ class CreateThreadTest(
         super().tearDownClass()
         super().disposeForumMocks()
 
-    @mock.patch.dict(
-        "django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True}
-    )
     def setUp(self):
         super().setUp()
         self.course = CourseFactory.create()
@@ -585,7 +582,7 @@ class CreateThreadTest(
 @ddt.ddt
 @disable_signal(api, "comment_created")
 @disable_signal(api, "comment_voted")
-@mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+@override_settings(ENABLE_DISCUSSION_SERVICE=True)
 @mock.patch(
     "lms.djangoapps.discussion.signals.handlers.send_response_notifications",
     new=mock.Mock(),
@@ -610,9 +607,6 @@ class CreateCommentTest(
         super().tearDownClass()
         super().disposeForumMocks()
 
-    @mock.patch.dict(
-        "django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True}
-    )
     def setUp(self):
         super().setUp()
         httpretty.reset()
@@ -1028,7 +1022,7 @@ class CreateCommentTest(
 @ddt.ddt
 @disable_signal(api, "thread_edited")
 @disable_signal(api, "thread_voted")
-@mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+@override_settings(ENABLE_DISCUSSION_SERVICE=True)
 class UpdateThreadTest(
     UrlResetMixin,
     SharedModuleStoreTestCase,
@@ -1049,9 +1043,6 @@ class UpdateThreadTest(
         super().tearDownClass()
         super().disposeForumMocks()
 
-    @mock.patch.dict(
-        "django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True}
-    )
     def setUp(self):
         super().setUp()
 
@@ -1688,7 +1679,7 @@ class UpdateThreadTest(
 @ddt.ddt
 @disable_signal(api, "comment_edited")
 @disable_signal(api, "comment_voted")
-@mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+@override_settings(ENABLE_DISCUSSION_SERVICE=True)
 class UpdateCommentTest(
     UrlResetMixin,
     SharedModuleStoreTestCase,
@@ -1709,9 +1700,6 @@ class UpdateCommentTest(
         super().tearDownClass()
         super().disposeForumMocks()
 
-    @mock.patch.dict(
-        "django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True}
-    )
     def setUp(self):
         super().setUp()
 
@@ -2293,7 +2281,7 @@ class UpdateCommentTest(
 
 @ddt.ddt
 @disable_signal(api, "thread_deleted")
-@mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+@override_settings(ENABLE_DISCUSSION_SERVICE=True)
 class DeleteThreadTest(
     UrlResetMixin,
     SharedModuleStoreTestCase,
@@ -2314,9 +2302,6 @@ class DeleteThreadTest(
         super().tearDownClass()
         super().disposeForumMocks()
 
-    @mock.patch.dict(
-        "django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True}
-    )
     def setUp(self):
         super().setUp()
         httpretty.reset()
@@ -2472,7 +2457,7 @@ class DeleteThreadTest(
 
 @ddt.ddt
 @disable_signal(api, "comment_deleted")
-@mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+@override_settings(ENABLE_DISCUSSION_SERVICE=True)
 class DeleteCommentTest(
     UrlResetMixin,
     SharedModuleStoreTestCase,
@@ -2493,9 +2478,6 @@ class DeleteCommentTest(
         super().tearDownClass()
         super().disposeForumMocks()
 
-    @mock.patch.dict(
-        "django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True}
-    )
     def setUp(self):
         super().setUp()
         httpretty.reset()
@@ -2662,7 +2644,7 @@ class DeleteCommentTest(
 
 
 @ddt.ddt
-@mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+@override_settings(ENABLE_DISCUSSION_SERVICE=True)
 class RetrieveThreadTest(
     UrlResetMixin,
     SharedModuleStoreTestCase,
@@ -2682,9 +2664,6 @@ class RetrieveThreadTest(
         super().tearDownClass()
         super().disposeForumMocks()
 
-    @mock.patch.dict(
-        "django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True}
-    )
     def setUp(self):
         super().setUp()
         httpretty.reset()
@@ -2818,7 +2797,7 @@ class RetrieveThreadTest(
 
 
 @ddt.ddt
-@mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+@override_settings(ENABLE_DISCUSSION_SERVICE=True)
 class GetThreadListTest(
         ForumMockUtilsMixin, UrlResetMixin, SharedModuleStoreTestCase
 ):
@@ -2836,9 +2815,6 @@ class GetThreadListTest(
         super().tearDownClass()
         super().disposeForumMocks()
 
-    @mock.patch.dict(
-        "django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True}
-    )
     def setUp(self):
         super().setUp()
         httpretty.reset()
@@ -3453,7 +3429,7 @@ class GetThreadListTest(
 
 
 @ddt.ddt
-@mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+@override_settings(ENABLE_DISCUSSION_SERVICE=True)
 class GetCommentListTest(
         SharedModuleStoreTestCase, ForumMockUtilsMixin
 ):
@@ -3471,9 +3447,6 @@ class GetCommentListTest(
         super().tearDownClass()
         super().disposeForumMocks()
 
-    @mock.patch.dict(
-        "django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True}
-    )
     def setUp(self):
         super().setUp()
         httpretty.reset()
@@ -4225,10 +4198,9 @@ class CourseTopicsV2Test(ModuleStoreTestCase):
 
 
 @mock.patch.dict("django.conf.settings.FEATURES", {"DISABLE_START_DATES": False})
-@mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+@override_settings(ENABLE_DISCUSSION_SERVICE=True)
 class GetCourseTopicsTest(ForumMockUtilsMixin, UrlResetMixin, ModuleStoreTestCase):
     """Test for get_course_topics"""
-    @mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
     def setUp(self):
         httpretty.reset()
         httpretty.enable()
@@ -4660,7 +4632,7 @@ class GetCourseTopicsTest(ForumMockUtilsMixin, UrlResetMixin, ModuleStoreTestCas
         }
 
 
-@mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+@override_settings(ENABLE_DISCUSSION_SERVICE=True)
 @override_settings(DISCUSSION_MODERATION_EDIT_REASON_CODES={"test-edit-reason": "Test Edit Reason"})
 @override_settings(DISCUSSION_MODERATION_CLOSE_REASON_CODES={"test-close-reason": "Test Close Reason"})
 @ddt.ddt
@@ -4671,7 +4643,6 @@ class GetCourseTest(UrlResetMixin, SharedModuleStoreTestCase):
         super().setUpClass()
         cls.course = CourseFactory.create(org="x", course="y", run="z")
 
-    @mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
     def setUp(self):
         super().setUp()
         self.user = UserFactory.create()
@@ -4744,12 +4715,11 @@ class GetCourseTest(UrlResetMixin, SharedModuleStoreTestCase):
 
 
 @ddt.ddt
-@mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+@override_settings(ENABLE_DISCUSSION_SERVICE=True)
 class GetCourseTestBlackouts(UrlResetMixin, ModuleStoreTestCase):
     """
     Tests of get_course for courses that have blackout dates.
     """
-    @mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
     def setUp(self):
         super().setUp()
         self.course = CourseFactory.create(org="x", course="y", run="z")

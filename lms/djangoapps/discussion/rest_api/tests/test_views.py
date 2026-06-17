@@ -4,10 +4,10 @@ Tests for Discussion API views
 
 import json
 from datetime import datetime
-from unittest import mock
 from urllib.parse import urlencode
 
 import ddt
+from django.test import override_settings
 from django.urls import reverse
 from pytz import UTC
 from rest_framework import status
@@ -25,7 +25,7 @@ from xmodule.modulestore.tests.factories import CourseFactory
 
 
 @ddt.ddt
-@mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+@override_settings(ENABLE_DISCUSSION_SERVICE=True)
 class CommentViewSetListByUserTest(
     ForumMockUtilsMixin,
     UrlResetMixin,
@@ -45,7 +45,6 @@ class CommentViewSetListByUserTest(
         super().tearDownClass()
         super().disposeForumMocks()
 
-    @mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
     def setUp(self):
         super().setUp()
 
