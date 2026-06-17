@@ -1089,21 +1089,24 @@ class TestUserEnrollmentCertificates(UrlResetMixin, MobileAPITestCase, Milestone
         certificate_data = response.data[0]['certificate']
         self.assertDictEqual(certificate_data, {})  # noqa: PT009
 
-    @patch.dict(settings.FEATURES, {'CERTIFICATES_HTML_VIEW': False, 'ENABLE_MKTG_SITE': True})
+    @override_settings(CERTIFICATES_HTML_VIEW=False)
+    @patch.dict(settings.FEATURES, {'ENABLE_MKTG_SITE': True})
     def test_pdf_certificate_with_html_cert_disabled(self):
         """
         Tests PDF certificates with CERTIFICATES_HTML_VIEW set to True.
         """
         self.verify_pdf_certificate()
 
-    @patch.dict(settings.FEATURES, {'CERTIFICATES_HTML_VIEW': True, 'ENABLE_MKTG_SITE': True})
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
+    @patch.dict(settings.FEATURES, {'ENABLE_MKTG_SITE': True})
     def test_pdf_certificate_with_html_cert_enabled(self):
         """
         Tests PDF certificates with CERTIFICATES_HTML_VIEW set to True.
         """
         self.verify_pdf_certificate()
 
-    @patch.dict(settings.FEATURES, {'CERTIFICATES_HTML_VIEW': True, 'ENABLE_MKTG_SITE': True})
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
+    @patch.dict(settings.FEATURES, {'ENABLE_MKTG_SITE': True})
     def test_web_certificate(self):
         self.login_and_enroll()
 
