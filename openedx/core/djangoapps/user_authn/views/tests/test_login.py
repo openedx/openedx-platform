@@ -93,9 +93,6 @@ class LoginTest(OpenEdxEventsTestMixin, SiteMixin, CacheIsolationTestCase):
         self._assert_response(response, success=True)
         self._assert_audit_log(mock_audit_log, 'info', ['Login success', self.user_email])
 
-    FEATURES_WITH_AUTHN_MFE_ENABLED = settings.FEATURES.copy()
-    FEATURES_WITH_AUTHN_MFE_ENABLED['ENABLE_AUTHN_MICROFRONTEND'] = True
-
     @override_settings(MARKETING_EMAILS_OPT_IN=True)
     def test_login_success_with_opt_in_flag_enabled(self):
         self.user.is_active = False
@@ -188,7 +185,7 @@ class LoginTest(OpenEdxEventsTestMixin, SiteMixin, CacheIsolationTestCase):
     )
     @ddt.unpack
     @override_settings(LOGIN_REDIRECT_WHITELIST=['openedx.service'])
-    @override_settings(FEATURES=FEATURES_WITH_AUTHN_MFE_ENABLED)
+    @override_settings(ENABLE_AUTHN_MICROFRONTEND=True)
     @skip_unless_lms
     def test_login_success_with_redirect(self, next_url, course_id, expected_redirect):
         post_params = {}
@@ -209,7 +206,7 @@ class LoginTest(OpenEdxEventsTestMixin, SiteMixin, CacheIsolationTestCase):
 
     @ddt.data(('/dashboard', False), ('/enterprise/select/active/?success_url=/dashboard', True))
     @ddt.unpack
-    @patch.dict(settings.FEATURES, {'ENABLE_AUTHN_MICROFRONTEND': True, 'ENABLE_ENTERPRISE_INTEGRATION': True})
+    @override_settings(ENABLE_AUTHN_MICROFRONTEND=True, ENABLE_ENTERPRISE_INTEGRATION=True)
     @override_settings(LOGIN_REDIRECT_WHITELIST=['openedx.service'])
     @patch('openedx.features.enterprise_support.api.EnterpriseApiClient')
     @patch('openedx.core.djangoapps.user_authn.views.login.reverse')
@@ -259,7 +256,7 @@ class LoginTest(OpenEdxEventsTestMixin, SiteMixin, CacheIsolationTestCase):
 
     @ddt.data(('', True), ('/enterprise/select/active/?success_url=', False))
     @ddt.unpack
-    @patch.dict(settings.FEATURES, {'ENABLE_AUTHN_MICROFRONTEND': True, 'ENABLE_ENTERPRISE_INTEGRATION': True})
+    @override_settings(ENABLE_AUTHN_MICROFRONTEND=True, ENABLE_ENTERPRISE_INTEGRATION=True)
     @patch('openedx.features.enterprise_support.api.EnterpriseApiClient')
     @patch('openedx.core.djangoapps.user_authn.views.login.activate_learner_enterprise')
     @patch('openedx.core.djangoapps.user_authn.views.login.reverse')
