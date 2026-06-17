@@ -10,9 +10,9 @@ from common.djangoapps.util.testing import UrlResetMixin
 
 
 @override_settings(
+    CERTIFICATES_HTML_VIEW=True,
     FEATURES={
         **settings.FEATURES,
-        "CERTIFICATES_HTML_VIEW": True,
         "ENABLE_PROCTORED_EXAMS": True,
     },
 )

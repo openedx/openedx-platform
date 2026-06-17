@@ -249,7 +249,7 @@ class CertificatesInstructorDashTest(SharedModuleStoreTestCase):
             certs_api.set_cert_generation_enabled(self.course.id, True)
             self._assert_enable_certs_button(False)
 
-    @mock.patch.dict(settings.FEATURES, {'CERTIFICATES_HTML_VIEW': True})
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_show_enabled_button_for_html_certs(self):
         """
         Tests `Enable Student-Generated Certificates` button is enabled
@@ -265,11 +265,8 @@ class CertificatesInstructorDashTest(SharedModuleStoreTestCase):
         self.assertContains(response, 'enable-certificates-submit')
         self.assertNotContains(response, 'Generate Example Certificates')
 
-    @mock.patch.dict(settings.FEATURES, {
-        'CERTIFICATES_HTML_VIEW': True,
-        'CERTIFICATES_INSTRUCTOR_GENERATION': False
-    }
-    )
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
+    @mock.patch.dict(settings.FEATURES, {'CERTIFICATES_INSTRUCTOR_GENERATION': False})
     def test_buttons_for_html_certs_in_self_paced_course(self):
         """
         Tests `Enable Student-Generated Certificates` button is enabled

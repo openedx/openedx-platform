@@ -128,7 +128,7 @@ class CourseApiTestViews(BaseCoursewareTests, MasqueradeMixin):
         (True, 'verified'),
     )
     @ddt.unpack
-    @mock.patch.dict('django.conf.settings.FEATURES', {'CERTIFICATES_HTML_VIEW': True})
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_enrolled_course_metadata(self, logged_in, enrollment_mode):
         check_public_access = mock.Mock()
         check_public_access.return_value = ACCESS_DENIED
@@ -204,7 +204,7 @@ class CourseApiTestViews(BaseCoursewareTests, MasqueradeMixin):
         (False, ACCESS_GRANTED),
     )
     @ddt.unpack
-    @mock.patch.dict('django.conf.settings.FEATURES', {'CERTIFICATES_HTML_VIEW': True})
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_unenrolled_course_metadata(self, logged_in, enable_anonymous):
         check_public_access = mock.Mock()
         check_public_access.return_value = enable_anonymous

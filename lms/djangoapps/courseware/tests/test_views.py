@@ -1181,7 +1181,7 @@ class ProgressPageTests(ProgressPageBaseTests):
         resp = self._get_progress_page()
         self.assertNotContains(resp, 'Request Certificate')
 
-    @patch.dict('django.conf.settings.FEATURES', {'CERTIFICATES_HTML_VIEW': True})
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_view_certificate_for_unverified_student(self):
         """
         If user has already generated a certificate, it should be visible in case of user being
@@ -1212,7 +1212,7 @@ class ProgressPageTests(ProgressPageBaseTests):
             self.assertNotContains(resp, "Certificate unavailable")
             self.assertContains(resp, "Your certificate is available")
 
-    @patch.dict('django.conf.settings.FEATURES', {'CERTIFICATES_HTML_VIEW': True})
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_view_certificate_link(self):
         """
         If certificate web view is enabled then certificate web view button should appear for user who certificate is
@@ -1337,7 +1337,7 @@ class ProgressPageTests(ProgressPageBaseTests):
 
                 assert cert_button_hidden == ('Request Certificate' not in resp.content.decode('utf-8'))
 
-    @patch.dict('django.conf.settings.FEATURES', {'CERTIFICATES_HTML_VIEW': True})
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_page_with_invalidated_certificate_with_html_view(self):
         """
         Verify that for html certs if certificate is marked as invalidated than
@@ -1373,7 +1373,7 @@ class ProgressPageTests(ProgressPageBaseTests):
             self.assertContains(resp, "View Certificate")
             self.assert_invalidate_certificate(generated_certificate)
 
-    @patch.dict('django.conf.settings.FEATURES', {'CERTIFICATES_HTML_VIEW': True})
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_page_with_allowlisted_certificate_with_html_view(self):
         """
         Verify that view certificate appears for an allowlisted user
