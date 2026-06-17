@@ -36,7 +36,7 @@ Current patterns that should be migrated:
 Code example (target serializer usage)
 --------------------------------------
 
-**Example serializer and APIView using DRF best practices:**
+**Basic example — single serializer for both input and output:**
 
 .. code-block:: python
 
@@ -63,6 +63,8 @@ Code example (target serializer usage)
    from rest_framework import status
 
    class CertificateAPIView(APIView):
+       serializer_class = CertificateSerializer
+
        def get(self, request):
            data = {
                "username": "john_doe",
@@ -70,8 +72,59 @@ Code example (target serializer usage)
                "status": "downloadable",
                "grade": 0.95,
            }
-           serializer = CertificateSerializer(data)
+           serializer = self.serializer_class(data)
            return Response(serializer.data, status=status.HTTP_200_OK)
+
+**Advanced example — separate input and output serializers on a ViewSet:**
+
+Input and output serializers are often different — the request body may accept
+only a subset of fields, while the response includes computed or read-only
+fields the caller cannot set. Define them separately and point ``serializer_class``
+at the output serializer (used by ``drf_spectacular`` for schema generation and
+by callers who inspect ``self.serializer_class``).
+
+.. code-block:: python
+
+   # serializers.py
+   from rest_framework import serializers
+
+   class CourseEnrollmentInputSerializer(serializers.Serializer):
+       """Validates the request body for enrollment creation."""
+
+       course_id = serializers.CharField(
+           help_text="The course to enroll in."
+       )
+       mode = serializers.CharField(
+           default="audit",
+           help_text="Enrollment mode (e.g. audit, verified).",
+       )
+
+   class CourseEnrollmentOutputSerializer(serializers.Serializer):
+       """Shapes the enrollment response — includes read-only fields not accepted on input."""
+
+       course_id = serializers.CharField(help_text="The enrolled course.")
+       mode = serializers.CharField(help_text="Active enrollment mode.")
+       is_active = serializers.BooleanField(help_text="Whether the enrollment is active.")
+       created = serializers.DateTimeField(help_text="Enrollment creation timestamp.")
+
+   # views.py
+   from rest_framework import viewsets, status
+   from rest_framework.response import Response
+
+   class CourseEnrollmentViewSet(viewsets.ViewSet):
+       # Points to the output serializer — used by drf_spectacular for the response schema.
+       serializer_class = CourseEnrollmentOutputSerializer
+
+       def create(self, request):
+           # Validate the request body with the input serializer.
+           input_serializer = CourseEnrollmentInputSerializer(data=request.data)
+           input_serializer.is_valid(raise_exception=True)
+
+           enrollment = _enroll_user(request.user, **input_serializer.validated_data)
+
+           # Shape the response with the output serializer.
+           output_serializer = self.serializer_class(enrollment)
+           return Response(output_serializer.data, status=status.HTTP_201_CREATED)
 
 Consequences
 ------------
