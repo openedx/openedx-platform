@@ -37,9 +37,9 @@ Decision
    authentication mechanism for all DRF API endpoints that take user-authenticated
    requests**, per `OEP-0042`_. This excludes admin views, ``/oauth2/access_token/``,
    and HMAC/webhook endpoints, which have their own authentication mechanisms.
-2. **Session authentication MUST also be used when** the expected client for an API
-   is a Browser/MFE. This would be added alongside ``JwtAuthentication`` on the
-   endpoint — which is the platform default.
+2. **Both** ``JwtAuthentication`` **and** ``SessionAuthentication`` **are accepted
+   authentication schemes** which is the platform default. It is specifically the ``BearerAuthentication``
+   family that is deprecated and MUST NOT be used.
 3. **``BearerAuthentication`` and ``BearerAuthenticationAllowInactiveUser`` are
    deprecated and MUST NOT be used in new code**
 4. **``OAuth2Authentication`` and ``OAuth2AuthenticationAllowInactiveUser`` are
