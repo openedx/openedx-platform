@@ -7,6 +7,7 @@ from unittest.mock import patch
 import ddt
 import pytest
 from django.conf import settings
+from django.test import override_settings
 from django.urls import reverse
 from openedx_events.testing import OpenEdxEventsTestMixin
 
@@ -274,7 +275,7 @@ class EnrollmentTest(OpenEdxEventsTestMixin, UrlResetMixin, ModuleStoreTestCase)
     @patch.dict(
         'django.conf.settings.PROCTORING_BACKENDS', {'test_provider_honor_mode': {'allow_honor_mode': True}}
     )
-    @patch.dict(settings.FEATURES, {'ENABLE_PROCTORED_EXAMS': True})
+    @override_settings(ENABLE_PROCTORED_EXAMS=True)
     def test_enroll_in_proctored_course_honor_mode_allowed(self):
         """
         If the proctoring provider allows honor mode, send proctoring requirements email when learners

@@ -2505,7 +2505,7 @@ class TestRenderXBlock(RenderXBlockTestMixin, ModuleStoreTestCase, CompletionWaf
         }
     )
     @ddt.unpack
-    @patch.dict('django.conf.settings.FEATURES', {'ENABLE_PROCTORED_EXAMS': True})
+    @override_settings(ENABLE_PROCTORED_EXAMS=True)
     @patch('lms.djangoapps.courseware.views.views.unpack_jwt')
     def test_render_descendant_of_exam_gated_by_access_token(self, exam_access_token,
                                                              expected_response, _mock_unpack_jwt):  # noqa: PT019
