@@ -10,6 +10,8 @@ import logging
 from django.utils.translation import gettext as _
 from django.utils.translation import ngettext
 
+from django.conf import settings
+
 from lms.djangoapps.bulk_email.models import CourseEmail
 from lms.djangoapps.instructor_task.models import InstructorTaskSchedule
 from lms.djangoapps.instructor_task.views import get_task_completion_info
@@ -55,7 +57,10 @@ def extract_email_features(email_task):
     try:
         task_input_information = json.loads(email_task.task_input)
     except ValueError:
-        log.error("Could not parse task input as valid json; task input: %s", email_task.task_input)
+        if settings.FEATURES['SQUELCH_PII_IN_LOGS']:
+            log.error("Could not parse task input as valid json; task input: [REDACTED]")
+        else:
+            log.error("Could not parse task input as valid json; task input: %s", email_task.task_input)
         return email_error_information()
 
     email = CourseEmail.objects.get(id=task_input_information['email_id'])
@@ -82,6 +87,9 @@ def extract_email_features(email_task):
         try:
             task_output = json.loads(email_task.task_output)
         except ValueError:
+        if settings.FEATURES['SQUELCH_PII_IN_LOGS']:
+            log.error("Could not parse task output as valid json; task output: [REDACTED]")
+        else:
             log.error("Could not parse task output as valid json; task output: %s", email_task.task_output)
         else:
             if 'succeeded' in task_output and task_output['succeeded'] > 0:

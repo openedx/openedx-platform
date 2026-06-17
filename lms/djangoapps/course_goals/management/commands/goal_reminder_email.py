@@ -50,7 +50,10 @@ def send_ace_message(goal, session_id):
     """
     user = goal.user
     if not user.has_usable_password():
-        log.info(f'Goal Reminder User is disabled {user.username} course {goal.course_key}')
+        if settings.FEATURES['SQUELCH_PII_IN_LOGS']:
+            log.info(f'Goal Reminder User is disabled user ID {user.id} course {goal.course_key}')
+        else:
+            log.info(f'Goal Reminder User is disabled {user.username} course {goal.course_key}')
         return False
     try:
         course = CourseOverview.get_from_id(goal.course_key)

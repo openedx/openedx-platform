@@ -887,7 +887,10 @@ class Registration(models.Model):  # noqa: DJ008
         self.activation_timestamp = datetime.utcnow()
         self.save()
         USER_ACCOUNT_ACTIVATED.send_robust(self.__class__, user=self.user)
-        log.info('User %s (%s) account is successfully activated.', self.user.username, self.user.email)
+        if settings.FEATURES['SQUELCH_PII_IN_LOGS']:
+            log.info('User %s account is successfully activated.', self.user.id)
+        else:
+            log.info('User %s (%s) account is successfully activated.', self.user.username, self.user.email)
 
 
 class PendingNameChange(DeletableByUserValue, models.Model):  # noqa: DJ008

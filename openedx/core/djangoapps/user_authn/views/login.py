@@ -199,7 +199,10 @@ def _enforce_password_policy_compliance(request, user):  # pylint: disable=missi
         if LoginFailures.is_feature_enabled():
             LoginFailures.increment_lockout_counter(user)
 
-        AUDIT_LOG.info("Password reset initiated for email %s.", user.email)
+        if settings.FEATURES['SQUELCH_PII_IN_LOGS']:
+            AUDIT_LOG.info("Password reset initiated for user ID %s.", user.id)
+        else:
+            AUDIT_LOG.info("Password reset initiated for email %s.", user.email)
         tracker.emit(
             PASSWORD_RESET_INITIATED,
             {

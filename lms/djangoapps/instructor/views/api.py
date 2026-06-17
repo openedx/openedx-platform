@@ -462,7 +462,10 @@ class RegisterAndEnrollStudents(APIView):
                             warnings.append({
                                 'username': username, 'email': email, 'response': warning_message
                             })
-                            log.warning('email %s already exist', email)
+                            if settings.FEATURES['SQUELCH_PII_IN_LOGS']:
+                                log.warning('email [REDACTED] already exist')
+                            else:
+                                log.warning('email %s already exist', email)
                         else:
                             log.info(
                                 "user already exists with username '%s' and email '%s'",

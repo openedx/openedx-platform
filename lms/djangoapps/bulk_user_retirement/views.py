@@ -5,6 +5,7 @@ import logging
 
 from django.contrib.auth import get_user_model
 from django.db import transaction
+from django.conf import settings
 from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -56,11 +57,17 @@ class BulkUsersRetirementView(APIView):
                 user_to_retire = User.objects.get(username=username)
                 with transaction.atomic():
                     create_retirement_request_and_deactivate_account(user_to_retire)
-                log.info(f'The user "{username}" has been added to the retirement pipeline \
+                if settings.FEATURES['SQUELCH_PII_IN_LOGS']:
+                    log.info('A user has been added to the retirement pipeline')
+                else:
+                    log.info(f'The user "{username}" has been added to the retirement pipeline \')
                          by "{request.user}"')
 
             except User.DoesNotExist:
-                log.exception(f'The user "{username}" does not exist.')
+                if settings.FEATURES['SQUELCH_PII_IN_LOGS']:
+                    log.exception('A user does not exist for bulk retirement.')
+                else:
+                    log.exception(f'The user "{username}" does not exist.')
                 failed_user_retirements.append(username)
 
             except Exception as exc:  # pylint: disable=broad-except
