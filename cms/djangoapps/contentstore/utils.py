@@ -539,7 +539,7 @@ def course_import_olx_validation_is_enabled():
     """
     Check if course olx validation is enabled on course import.
     """
-    return settings.FEATURES.get('ENABLE_COURSE_OLX_VALIDATION', False)
+    return settings.ENABLE_COURSE_OLX_VALIDATION
 
 
 # pylint: disable=invalid-name
