@@ -89,44 +89,44 @@ class TestOrganizationsForLibraries(TestCase):
         )
 
     @override_settings(
+        ENABLE_CREATOR_GROUP=False,
         FEATURES={
             **settings.FEATURES,
             'ENABLE_ORGANIZATION_STAFF_ACCESS_FOR_CONTENT_LIBRARIES': False,
-            'ENABLE_CREATOR_GROUP': False,
-        }
+        },
     )
     def test_both_toggles_disabled(self):
         allowed_orgs = get_allowed_organizations_for_libraries(self.library_author)
         assert allowed_orgs == []
 
     @override_settings(
+        ENABLE_CREATOR_GROUP=True,
         FEATURES={
             **settings.FEATURES,
             'ENABLE_ORGANIZATION_STAFF_ACCESS_FOR_CONTENT_LIBRARIES': True,
-            'ENABLE_CREATOR_GROUP': True,
-        }
+        },
     )
     def test_both_toggles_enabled(self):
         allowed_orgs = get_allowed_organizations_for_libraries(self.library_author)
         assert allowed_orgs == ["CreatorOrg", "OrgStaffOrg"]
 
     @override_settings(
+        ENABLE_CREATOR_GROUP=False,
         FEATURES={
             **settings.FEATURES,
             'ENABLE_ORGANIZATION_STAFF_ACCESS_FOR_CONTENT_LIBRARIES': True,
-            'ENABLE_CREATOR_GROUP': False,
-        }
+        },
     )
     def test_org_staff_enabled(self):
         allowed_orgs = get_allowed_organizations_for_libraries(self.library_author)
         assert allowed_orgs == ["OrgStaffOrg"]
 
     @override_settings(
+        ENABLE_CREATOR_GROUP=True,
         FEATURES={
             **settings.FEATURES,
             'ENABLE_ORGANIZATION_STAFF_ACCESS_FOR_CONTENT_LIBRARIES': False,
-            'ENABLE_CREATOR_GROUP': True,
-        }
+        },
     )
     def test_creator_group_enabled(self):
         allowed_orgs = get_allowed_organizations_for_libraries(self.library_author)

@@ -202,7 +202,7 @@ class TestCourseListing(ModuleStoreTestCase):
             self.assertEqual(len(course_orgs), 1)  # noqa: PT009
             self.assertEqual(course_orgs[0]['short_name'], 'orgX')  # noqa: PT009
 
-    @override_settings(FEATURES={'ENABLE_CREATOR_GROUP': True})
+    @override_settings(ENABLE_CREATOR_GROUP=True)
     def test_course_creation_when_user_not_in_org(self):
         """
         Tests course creation when user doesn't have the required role.
@@ -215,7 +215,7 @@ class TestCourseListing(ModuleStoreTestCase):
         })
         self.assertEqual(response.status_code, 403)  # noqa: PT009
 
-    @override_settings(FEATURES={'ENABLE_CREATOR_GROUP': True})
+    @override_settings(ENABLE_CREATOR_GROUP=True)
     @mock.patch(
         'cms.djangoapps.course_creators.admin.render_to_string',
         mock.Mock(side_effect=mock_render_to_string, autospec=True)
@@ -242,7 +242,7 @@ class TestCourseListing(ModuleStoreTestCase):
         })
         self.assertEqual(response.status_code, 200)  # noqa: PT009
 
-    @override_settings(FEATURES={'ENABLE_CREATOR_GROUP': True})
+    @override_settings(ENABLE_CREATOR_GROUP=True)
     @mock.patch(
         'cms.djangoapps.course_creators.admin.render_to_string',
         mock.Mock(side_effect=mock_render_to_string, autospec=True)
@@ -269,7 +269,7 @@ class TestCourseListing(ModuleStoreTestCase):
         })
         self.assertEqual(response.status_code, 200)  # noqa: PT009
 
-    @override_settings(FEATURES={'ENABLE_CREATOR_GROUP': True})
+    @override_settings(ENABLE_CREATOR_GROUP=True)
     @mock.patch(
         'cms.djangoapps.course_creators.admin.render_to_string',
         mock.Mock(side_effect=mock_render_to_string, autospec=True)
@@ -298,7 +298,7 @@ class TestCourseListing(ModuleStoreTestCase):
         })
         self.assertEqual(response.status_code, 200)  # noqa: PT009
 
-    @override_settings(FEATURES={'ENABLE_CREATOR_GROUP': True})
+    @override_settings(ENABLE_CREATOR_GROUP=True)
     @mock.patch(
         'cms.djangoapps.course_creators.admin.render_to_string',
         mock.Mock(side_effect=mock_render_to_string, autospec=True)
