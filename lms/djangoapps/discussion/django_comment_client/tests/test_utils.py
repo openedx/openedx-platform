@@ -8,7 +8,7 @@ from unittest import mock
 
 import ddt
 import pytest
-from django.test import RequestFactory, TestCase
+from django.test import RequestFactory, TestCase, override_settings
 from django.urls import reverse
 from edx_django_utils.cache import RequestCache
 from opaque_keys.edx.keys import CourseKey
@@ -1165,7 +1165,7 @@ class DiscussionTabTestCase(ModuleStoreTestCase):
         return any(tab.type == 'discussion' for tab in all_tabs)
 
     def test_tab_access(self):
-        with self.settings(FEATURES={'ENABLE_DISCUSSION_SERVICE': True}):
+        with override_settings(ENABLE_DISCUSSION_SERVICE=True):
             assert self.discussion_tab_present(self.staff_user)
             assert self.discussion_tab_present(self.enrolled_user)
             assert not self.discussion_tab_present(self.unenrolled_user)
@@ -1173,7 +1173,7 @@ class DiscussionTabTestCase(ModuleStoreTestCase):
     @mock.patch('lms.djangoapps.ccx.overrides.get_current_ccx')
     def test_tab_settings(self, mock_get_ccx):
         mock_get_ccx.return_value = True
-        with self.settings(FEATURES={'ENABLE_DISCUSSION_SERVICE': False}):
+        with override_settings(ENABLE_DISCUSSION_SERVICE=False):
             assert not self.discussion_tab_present(self.enrolled_user)
 
         with self.settings(FEATURES={'CUSTOM_COURSES_EDX': True}):

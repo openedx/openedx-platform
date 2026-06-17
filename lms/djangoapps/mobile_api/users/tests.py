@@ -101,7 +101,7 @@ class TestUserInfoApi(MobileAPITestCase, MobileAuthTestMixin):
 
 
 @ddt.ddt
-@override_settings(MKTG_URLS={'ROOT': 'dummy-root'})
+@override_settings(MKTG_URLS={'ROOT': 'dummy-root'}, ENABLE_DISCUSSION_SERVICE=True)
 class TestUserEnrollmentApi(UrlResetMixin, MobileAPITestCase, MobileAuthUserTestMixin,
                             MobileCourseAccessTestMixin, MilestonesTestCaseMixin):
     """
@@ -121,10 +121,6 @@ class TestUserEnrollmentApi(UrlResetMixin, MobileAPITestCase, MobileAuthUserTest
         'last_week': LAST_WEEK,
         'default_start_date': DEFAULT_START_DATE,
     }
-
-    @patch.dict(settings.FEATURES, {"ENABLE_DISCUSSION_SERVICE": True})
-    def setUp(self):
-        super().setUp()
 
     def verify_success(self, response):
         """
@@ -251,7 +247,8 @@ class TestUserEnrollmentApi(UrlResetMixin, MobileAPITestCase, MobileAuthUserTest
         assert courses[0]['course']['start_display'] == expected_display
 
     @ddt.data(API_V05, API_V1, API_V2)
-    @patch.dict(settings.FEATURES, {"ENABLE_DISCUSSION_SERVICE": True, 'ENABLE_MKTG_SITE': True})
+    @override_settings(ENABLE_DISCUSSION_SERVICE=True)
+    @patch.dict(settings.FEATURES, {'ENABLE_MKTG_SITE': True})
     def test_discussion_url(self, api_version):
         self.login_and_enroll()
 
@@ -1381,7 +1378,7 @@ class TestDiscussionCourseEnrollmentSerializer(UrlResetMixin, MobileAPITestCase,
         """
         Setup data for test
         """
-        with patch.dict('django.conf.settings.FEATURES', {'ENABLE_DISCUSSION_SERVICE': True}):
+        with override_settings(ENABLE_DISCUSSION_SERVICE=True):
             super().setUp()
         self.login_and_enroll()
         self.request = RequestFactory().get('/')
@@ -1409,7 +1406,7 @@ class TestDiscussionCourseEnrollmentSerializer(UrlResetMixin, MobileAPITestCase,
         config, _ = DiscussionsConfiguration.objects.get_or_create(context_key=self.course.id)
         config.enabled = discussion_tab_enabled
         config.save()
-        with patch.dict('django.conf.settings.FEATURES', {'ENABLE_DISCUSSION_SERVICE': True}):
+        with override_settings(ENABLE_DISCUSSION_SERVICE=True):
             serialized = self.get_serialized_data(API_V2)
         discussion_url = serialized["course"]["discussion_url"]
         if discussion_tab_enabled:

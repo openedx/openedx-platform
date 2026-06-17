@@ -721,7 +721,7 @@ urlpatterns += [
 ]
 
 # discussion forums live within courseware, so courseware must be enabled first
-if settings.FEATURES.get('ENABLE_DISCUSSION_SERVICE'):
+if settings.ENABLE_DISCUSSION_SERVICE:
     urlpatterns += [
         path(
             'api/discussion/',
