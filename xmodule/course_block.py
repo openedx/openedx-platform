@@ -236,7 +236,7 @@ class ProctoringProvider(String):
         and include any inherited values from the platform default.
         """
         value = super().from_json(value)
-        if settings.FEATURES.get('ENABLE_PROCTORED_EXAMS'):
+        if getattr(settings, 'ENABLE_PROCTORED_EXAMS', False):
             # Only validate the provider value if ProctoredExams are enabled on the environment
             # Otherwise, the passed in provider does not matter. We should always return default
             if validate_providers:

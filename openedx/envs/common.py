@@ -1065,6 +1065,16 @@ CUSTOM_COURSES_EDX = False
 # Settings for course import olx validation
 ENABLE_COURSE_OLX_VALIDATION = False
 
+# .. toggle_name: ENABLE_PROCTORED_EXAMS
+# .. toggle_implementation: DjangoSetting
+# .. toggle_default: False
+# .. toggle_description: Global gate on the proctoring app. When True, the proctoring
+#   app advertises itself as available for all courses; per-course opt-in is a
+#   separate check.
+# .. toggle_use_cases: open_edx
+# .. toggle_creation_date: 2015-07-24
+ENABLE_PROCTORED_EXAMS = False
+
 # .. toggle_name: AUTOMATIC_AUTH_FOR_TESTING
 # .. toggle_implementation: DjangoSetting
 # .. toggle_default: False
