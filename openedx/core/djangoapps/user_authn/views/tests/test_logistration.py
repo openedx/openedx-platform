@@ -64,16 +64,13 @@ class LoginAndRegistrationTest(ThirdPartyAuthTestMixin, UrlResetMixin, ModuleSto
         )
         self.hidden_disabled_provider = self.configure_azure_ad_provider()
 
-    FEATURES_WITH_AUTHN_MFE_ENABLED = settings.FEATURES.copy()
-    FEATURES_WITH_AUTHN_MFE_ENABLED['ENABLE_AUTHN_MICROFRONTEND'] = True
-
     @ddt.data(
         ("signin_user", "/login"),
         ("register_user", "/register"),
         ("password_assistance", "/reset"),
     )
     @ddt.unpack
-    @override_settings(FEATURES=FEATURES_WITH_AUTHN_MFE_ENABLED)
+    @override_settings(ENABLE_AUTHN_MICROFRONTEND=True)
     def test_logistration_mfe_redirects(self, url_name, path):
         """
         Test that if Logistration MFE is enabled, then we redirect to
@@ -96,7 +93,7 @@ class LoginAndRegistrationTest(ThirdPartyAuthTestMixin, UrlResetMixin, ModuleSto
         )
     )
     @ddt.unpack
-    @override_settings(FEATURES=FEATURES_WITH_AUTHN_MFE_ENABLED)
+    @override_settings(ENABLE_AUTHN_MICROFRONTEND=True)
     def test_logistration_redirect_params(self, url_name, path, query_params):
         """
         Test that if request is redirected to logistration MFE,
