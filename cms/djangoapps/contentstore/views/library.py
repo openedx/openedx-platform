@@ -67,7 +67,7 @@ def _user_can_create_library_for_org(user, org=None):
         return False
     elif user.is_staff:
         return True
-    elif settings.FEATURES.get('ENABLE_CREATOR_GROUP', False):
+    elif getattr(settings, 'ENABLE_CREATOR_GROUP', False):
         is_course_creator = get_course_creator_status(user) == 'granted'
         if is_course_creator:
             return True

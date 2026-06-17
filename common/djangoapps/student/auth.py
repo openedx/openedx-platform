@@ -64,7 +64,7 @@ def user_has_role(user, role):
         if settings.FEATURES.get('DISABLE_COURSE_CREATION', False):
             return False
         # wide open course creation setting
-        if not settings.FEATURES.get('ENABLE_CREATOR_GROUP', False):
+        if not getattr(settings, 'ENABLE_CREATOR_GROUP', False):
             return True
 
     if role.has_user(user):
