@@ -89,7 +89,7 @@ class CreditRequestFactory(factory.django.DjangoModelFactory):
                 "user_email": user.email,
                 "user_full_name": user_profile.name,
                 "user_mailing_address": "",
-                "user_country": user_profile.country.code or "",
+                "user_country": user_profile.country.code if user_profile.country else "",
             })
 
         obj.save()

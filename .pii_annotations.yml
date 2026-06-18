@@ -1,7 +1,7 @@
 source_path: ./
 report_path: pii_report
 safelist_path: .annotation_safe_list.yml
-coverage_target: 85.3
+coverage_target: 100.0
 # See OEP-30 for more information on these values and what they mean:
 # https://open-edx-proposals.readthedocs.io/en/latest/oep-0030-arch-pii-markup-and-auditing.html#docstring-annotations
 annotations:

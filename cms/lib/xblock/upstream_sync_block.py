@@ -198,8 +198,8 @@ def _update_tags(*, upstream: XBlock, downstream: XBlock) -> None:
     # For any block synced with an upstream, copy the tags as read_only
     # This keeps tags added locally.
     copy_tags_as_read_only(
-        str(upstream.location),
-        str(downstream.location),
+        str(upstream.scope_ids.usage_id),
+        str(downstream.scope_ids.usage_id),
     )
 
 

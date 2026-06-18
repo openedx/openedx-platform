@@ -186,6 +186,9 @@ def _extract_attr(student, feature):
         )
         return None
 
+    if attr is None:
+        return ''
+
     try:
         DjangoJSONEncoder().default(attr)
         return attr

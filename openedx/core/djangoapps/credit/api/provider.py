@@ -309,7 +309,7 @@ def create_credit_request(course_key, provider_id, username):
         "user_mailing_address": "",
         "user_country": (
             user.profile.country.code
-            if user.profile.country.code is not None
+            if user.profile.country is not None
             else ""
         ),
     }

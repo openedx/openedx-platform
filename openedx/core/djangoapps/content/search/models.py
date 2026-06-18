@@ -21,6 +21,8 @@ class SearchAccess(models.Model):  # noqa: DJ008
 
     a) in some deployments, users may be granted access to more than 1_000 individual courses, and
     b) the search filter request is stored in the JWT, which is limited to 8Kib.
+
+    .. no_pii:
     """
     id = models.BigAutoField(
         primary_key=True,
@@ -70,6 +72,8 @@ def get_access_ids_for_request(request: Request, omit_orgs: list[str] = None) ->
 class IncrementalIndexCompleted(models.Model):  # noqa: DJ008
     """
     Stores the contex keys of aleady indexed courses and libraries for incremental indexing.
+
+    .. no_pii:
     """
 
     context_key = LearningContextKeyField(

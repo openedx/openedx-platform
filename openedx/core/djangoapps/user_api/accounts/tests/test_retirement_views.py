@@ -31,6 +31,7 @@ from common.djangoapps.student.models import (
     ManualEnrollmentAudit,
     PendingEmailChange,
     PendingNameChange,
+    PendingSecondaryEmailChange,
     Registration,
     SocialLink,
     UserProfile,
@@ -194,8 +195,8 @@ class TestDeactivateLogout(RetirementTestCase):
     @mock.patch('openedx.core.djangoapps.user_api.accounts.utils.retire_dot_oauth2_models')
     def test_user_can_deactivate_self(self, mock_retire_dot):
         """
-        Verify a user calling the deactivation endpoint logs out the user, deletes all their SSO tokens,
-        and creates a user retirement row.
+        Verify a user calling the deactivation endpoint logs out the user,
+        redacts user account record, and creates a user retirement row.
         """
         self.client.login(username=self.test_user.username, password=self.test_password)
         headers = build_jwt_headers(self.test_user)
@@ -205,7 +206,7 @@ class TestDeactivateLogout(RetirementTestCase):
         updated_user = User.objects.get(id=self.test_user.id)
         assert get_retired_email_by_email(self.test_user.email) == updated_user.email
         assert not updated_user.has_usable_password()
-        assert not list(UserSocialAuth.objects.filter(user=self.test_user))
+        assert list(UserSocialAuth.objects.filter(user=self.test_user))
         assert not list(Registration.objects.filter(user=self.test_user))
         assert len(UserRetirementStatus.objects.filter(user_id=self.test_user.id)) == 1
         # these retirement utils are tested elsewhere; just make sure we called them
@@ -1395,6 +1396,18 @@ class TestAccountRetirementPost(RetirementTestCase):
         UserOrgTagFactory.create(user=self.test_user, key='foo', value='bar')
         UserOrgTagFactory.create(user=self.test_user, key='cat', value='dog')
 
+        # Secondary email setup
+        PendingSecondaryEmailChange.objects.create(
+            user=self.test_user,
+            new_secondary_email='pending_secondary@example.com',
+            activation_key='test_activation_key_123'
+        )
+        AccountRecovery.objects.create(
+            user=self.test_user,
+            secondary_email='confirmed_secondary@example.com',
+            is_active=True
+        )
+
         CourseEnrollmentAllowedFactory.create(email=self.original_email)
 
         self.course_key = CourseKey.from_string('course-v1:edX+DemoX+Demo_Course')
@@ -1486,6 +1499,7 @@ class TestAccountRetirementPost(RetirementTestCase):
             'last_name': '',
             'is_active': False,
             'username': self.retired_username,
+            'email': self.retired_email,
         }
         for field, expected_value in expected_user_values.items():
             assert expected_value == getattr(self.test_user, field)
@@ -1507,6 +1521,10 @@ class TestAccountRetirementPost(RetirementTestCase):
 
         assert not PendingEmailChange.objects.filter(user=self.test_user).exists()
         assert not UserOrgTag.objects.filter(user=self.test_user).exists()
+
+        # Verify secondary email models were cleaned
+        assert not PendingSecondaryEmailChange.objects.filter(user=self.test_user).exists()
+        assert not AccountRecovery.objects.filter(user=self.test_user).exists()
 
         assert not CourseEnrollmentAllowed.objects.filter(email=self.original_email).exists()
         assert not UnregisteredLearnerCohortAssignments.objects.filter(email=self.original_email).exists()

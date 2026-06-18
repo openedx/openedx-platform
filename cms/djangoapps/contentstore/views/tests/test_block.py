@@ -4756,3 +4756,20 @@ class TestXblockEditView(CourseTestCase):
 
         self.assertGreater(len(resource_links), 0, f"No CSS resources found in HTML. Found: {resource_links}")  # noqa: PT009  # pylint: disable=line-too-long
         self.assertGreater(len(script_sources), 0, f"No JS resources found in HTML. Found: {script_sources}")  # noqa: PT009  # pylint: disable=line-too-long
+
+    def test_xblock_edit_view_contains_page_notification(self):
+        """
+        The page-notification element is required for XBlock runtime error
+        notifications (e.g. ORA validation errors) to be visible to the user.
+        """
+        url = reverse_usage_url("xblock_edit_handler", self.video.location)
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
+
+        html_content = resp.content.decode(resp.charset)
+        soup = BeautifulSoup(html_content, "html.parser")
+        self.assertIsNotNone(  # noqa: PT009
+            soup.find(id="page-notification"),
+            "container_editor.html must include a #page-notification element "
+            "so that XBlock runtime error notifications are rendered.",
+        )

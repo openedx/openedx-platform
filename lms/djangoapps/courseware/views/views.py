@@ -2234,7 +2234,7 @@ def financial_assistance_form(request, course_id=None):
             'email': user.email,
             'username': user.username,
             'name': user.profile.name,
-            'country': str(user.profile.country.name),
+            'country': str(user.profile.country.name) if user.profile.country else '',
         },
         'submit_url': reverse(submit_url),
         'fields': [

@@ -14,7 +14,7 @@ which defaults to 1209600 (2 weeks, in seconds).
 
 
 import logging
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 from django.conf import settings
 from django.contrib import auth
@@ -45,7 +45,7 @@ class SessionInactivityTimeout(MiddlewareMixin):
         # .. setting_warning:  Keep in sync with SESSION_COOKIE_AGE and must be larger than SESSION_ACTIVITY_SAVE_DELAY_SECONDS.
         timeout_in_seconds = getattr(settings, "SESSION_INACTIVITY_TIMEOUT_IN_SECONDS", None)
 
-        current_time = datetime.utcnow()
+        current_time = datetime.now(UTC)
         # Do we have this feature enabled?
         if timeout_in_seconds:
             # .. setting_name: SESSION_ACTIVITY_SAVE_DELAY_SECONDS

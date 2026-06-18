@@ -48,6 +48,7 @@ from opaque_keys.edx.keys import CourseKey
 from path import Path as path
 from pytz import UTC
 from rest_framework import status as rest_status
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
 from common.djangoapps.util.json_request import JsonResponse
@@ -237,6 +238,29 @@ def send_zip(zip_file, size=None):
     return response
 
 
+def get_course_video_download_urls(course_key_string):
+    """
+    Return the set of encoded-video URLs that legitimately belong to the given
+    course, as recorded in VAL.
+
+    The video download endpoint only ever needs to fetch URLs that were already
+    surfaced to the client by the video listing. Restricting fetches to this set
+    prevents server-side request forgery (SSRF) via attacker-supplied URLs.
+    """
+    videos, __ = get_videos_for_course(
+        course_key_string,
+        VideoSortField.created,
+        SortDirection.desc,
+        None,
+    )
+    return {
+        encoding['url']
+        for video in videos
+        for encoding in video['encoded_videos']
+        if encoding.get('url')
+    }
+
+
 def create_video_zip(course_key_string, files):
     """
     Generates the video zip, or returns None if there was an error.
@@ -249,6 +273,13 @@ def create_video_zip(course_key_string, files):
     root_dir = path(mkdtemp())
     video_dir = root_dir + '/' + name
     zip_folder = None
+    # Only allow fetching URLs that belong to this course's videos. Anything
+    # else (internal services, cloud metadata endpoints, arbitrary hosts) is a
+    # potential SSRF target and is rejected before any request is made.
+    allowed_urls = get_course_video_download_urls(course_key_string)
+    for file in files:
+        if file['url'] not in allowed_urls:
+            raise ValidationError(f"Invalid video download url: {file['url']}")
     try:
         for file in files:
             url = file['url']

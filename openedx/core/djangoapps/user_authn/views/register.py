@@ -374,7 +374,7 @@ def _track_user_registration(user, profile, params, third_party_provider, regist
             'education': profile.level_of_education_display,
             'address': profile.mailing_address,
             'gender': profile.gender_display,
-            'country': str(profile.country),
+            'country': str(profile.country) if profile.country else '',
             'is_marketable': is_marketable,
             'anonymous_id': anonymous_id
         }

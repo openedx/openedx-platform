@@ -125,7 +125,8 @@ class UserAgreement(models.Model):  # noqa: DJ008
         app_label = "agreements"
         constraints = [
             models.CheckConstraint(
-                check=models.Q(text__isnull=False) | models.Q(url__isnull=False), name="agreement_has_text_or_url"
+                condition=models.Q(text__isnull=False) | models.Q(url__isnull=False),
+                name="agreement_has_text_or_url",
             )
         ]
 

@@ -184,7 +184,9 @@ class UserReadOnlySerializer(serializers.Serializer):  # pylint: disable=abstrac
             data.update(
                 {
                     "bio": AccountLegacyProfileSerializer.convert_empty_to_None(user_profile.bio),
-                    "country": AccountLegacyProfileSerializer.convert_empty_to_None(user_profile.country.code),
+                    "country": AccountLegacyProfileSerializer.convert_empty_to_None(
+                        user_profile.country.code if user_profile.country else ""
+                    ),
                     "state": AccountLegacyProfileSerializer.convert_empty_to_None(user_profile.state),
                     "profile_image": AccountLegacyProfileSerializer.get_profile_image(
                         user_profile, user, self.context.get('request')
