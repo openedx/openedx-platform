@@ -43,7 +43,7 @@ class EnrollmentTest(OpenEdxEventsTestMixin, UrlResetMixin, ModuleStoreTestCase)
     PASSWORD = "edx"
     URLCONF_MODULES = ['openedx.core.djangoapps.embargo']
 
-    @patch.dict(settings.FEATURES, {'EMBARGO': True})
+    @override_settings(EMBARGO=True)
     def setUp(self):
         """ Create a course and user, then log in. """
         super().setUp()
@@ -294,7 +294,7 @@ class EnrollmentTest(OpenEdxEventsTestMixin, UrlResetMixin, ModuleStoreTestCase)
             CourseEnrollment.enroll(self.user, course_honor_mode.id, 'honor')  # pylint: disable=no-member
             assert mock_send_email.called
 
-    @patch.dict(settings.FEATURES, {'EMBARGO': True})
+    @override_settings(EMBARGO=True)
     def test_embargo_restrict(self):
         # When accessing the course from an embargoed country,
         # we should be blocked.
@@ -307,7 +307,7 @@ class EnrollmentTest(OpenEdxEventsTestMixin, UrlResetMixin, ModuleStoreTestCase)
         is_enrolled = CourseEnrollment.is_enrolled(self.user, self.course.id)
         assert not is_enrolled
 
-    @patch.dict(settings.FEATURES, {'EMBARGO': True})
+    @override_settings(EMBARGO=True)
     def test_embargo_allow(self):
         response = self._change_enrollment('enroll')
         assert response.status_code == 200

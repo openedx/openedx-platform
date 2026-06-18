@@ -825,7 +825,7 @@ if configuration_helpers.get_value('ENABLE_BULK_ENROLLMENT_VIEW', settings.FEATU
     ]
 
 # Embargo
-if settings.FEATURES.get('EMBARGO'):
+if settings.EMBARGO:
     urlpatterns += [
         path('embargo/', include(('openedx.core.djangoapps.embargo.urls', 'openedx.core.djangoapps.embargo'),
                                  namespace='embargo')),

@@ -3,7 +3,6 @@
 import json
 from datetime import datetime
 from unittest import mock, skipIf, skipUnless
-from unittest.mock import patch
 from zoneinfo import ZoneInfo
 
 import ddt
@@ -2429,7 +2428,7 @@ class RegistrationViewTestV2(RegistrationViewTestV1):
             })
         assert response.status_code == 400
 
-    @patch.dict(settings.FEATURES, {'EMBARGO': True})
+    @override_settings(EMBARGO=True)
     def test_register_with_disabled_country(self):
         """
         Test case to check user registration is forbidden when registration is disabled for a country
@@ -2456,7 +2455,7 @@ class RegistrationViewTestV2(RegistrationViewTestV1):
                 ], 'error_code': 'validation-error'}
         )
 
-    @patch.dict(settings.FEATURES, {'EMBARGO': False})
+    @override_settings(EMBARGO=False)
     def test_registration_allowed_when_embargo_disabled(self):
         """
         Ensures that user registration proceeds normally even for restricted countries
@@ -2572,7 +2571,7 @@ class ThirdPartyRegistrationTestMixin(
 
         self._verify_user_existence(user_exists=True, social_link_exists=True, user_is_active=False)
 
-    @patch.dict(settings.FEATURES, {'EMBARGO': True})
+    @override_settings(EMBARGO=True)
     def test_with_disabled_country(self):
         """
         Test case to check user registration is forbidden when registration is restricted for a country
@@ -2592,7 +2591,7 @@ class ThirdPartyRegistrationTestMixin(
         }
         self._verify_user_existence(user_exists=False, social_link_exists=False, user_is_active=False)
 
-    @patch.dict(settings.FEATURES, {'EMBARGO': False})
+    @override_settings(EMBARGO=False)
     def test_with_disabled_country_when_embargo_disabled(self):
         """
         Ensures that user registration proceeds normally even for restricted countries

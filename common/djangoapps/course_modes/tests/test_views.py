@@ -642,7 +642,7 @@ class TrackSelectionEmbargoTest(UrlResetMixin, ModuleStoreTestCase):
 
     URLCONF_MODULES = ['openedx.core.djangoapps.embargo']
 
-    @patch.dict(settings.FEATURES, {'EMBARGO': True})
+    @override_settings(EMBARGO=True)
     def setUp(self):
         super().setUp()
 
@@ -658,7 +658,7 @@ class TrackSelectionEmbargoTest(UrlResetMixin, ModuleStoreTestCase):
         # Construct the URL for the track selection page
         self.url = reverse('course_modes_choose', args=[str(self.course.id)])
 
-    @patch.dict(settings.FEATURES, {'EMBARGO': True})
+    @override_settings(EMBARGO=True)
     def test_embargo_restrict(self):
         with restrict_course(self.course.id) as redirect_url:
             response = self.client.get(self.url)
