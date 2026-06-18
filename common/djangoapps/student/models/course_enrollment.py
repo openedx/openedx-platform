@@ -833,9 +833,9 @@ class CourseEnrollment(models.Model):
         except User.DoesNotExist:
             err_msg = "Tried to enroll email {} into course {}, but user not found"
             if settings.FEATURES['SQUELCH_PII_IN_LOGS']:
-            log.error(err_msg.format('[PII_REDACTED]', course_id))
-        else:
-            log.error(err_msg.format(email, course_id))
+                log.error(err_msg.format('[PII_REDACTED]', course_id))
+            else:
+                log.error(err_msg.format(email, course_id))
             if ignore_errors:
                 return None
             raise

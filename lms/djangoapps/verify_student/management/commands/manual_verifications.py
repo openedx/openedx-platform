@@ -7,9 +7,9 @@ import logging
 import os
 from pprint import pformat
 
+from django.conf import settings
 from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.core.management.base import BaseCommand, CommandError
-from django.conf import settings
 
 from lms.djangoapps.verify_student.models import ManualVerification
 from lms.djangoapps.verify_student.utils import earliest_allowed_verification_date
