@@ -28,7 +28,7 @@ class CcxCourseTab(CourseTab):
         """
         Returns true if CCX has been enabled and the specified user is a coach
         """
-        if not settings.FEATURES.get('CUSTOM_COURSES_EDX', False) or not course.enable_ccx:
+        if not settings.CUSTOM_COURSES_EDX or not course.enable_ccx:
             # If ccx is not enable do not show ccx coach tab.
             return False
 

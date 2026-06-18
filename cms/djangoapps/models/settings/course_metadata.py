@@ -131,7 +131,7 @@ class CourseMetadata:
             exclude_list.append('video_bumper')
 
         # Do not show enable_ccx if feature is not enabled.
-        if not settings.FEATURES.get('CUSTOM_COURSES_EDX'):
+        if not settings.CUSTOM_COURSES_EDX:
             exclude_list.append('enable_ccx')
             exclude_list.append('ccx_connector')
 

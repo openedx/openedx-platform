@@ -1176,7 +1176,7 @@ class DiscussionTabTestCase(ModuleStoreTestCase):
         with override_settings(ENABLE_DISCUSSION_SERVICE=False):
             assert not self.discussion_tab_present(self.enrolled_user)
 
-        with self.settings(FEATURES={'CUSTOM_COURSES_EDX': True}):
+        with override_settings(CUSTOM_COURSES_EDX=True):
             assert not self.discussion_tab_present(self.enrolled_user)
 
 
