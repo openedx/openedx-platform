@@ -339,7 +339,7 @@ django-appconf==1.2.0
     # via
     #   -r requirements/edx/base.txt
     #   django-statici18n
-django-autocomplete-light==4.0.0
+django-autocomplete-light==4.0.3
     # via -r requirements/edx/base.txt
 django-cache-memoize==0.2.1
     # via

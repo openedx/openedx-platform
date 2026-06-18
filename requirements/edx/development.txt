@@ -423,7 +423,7 @@ django-appconf==1.2.0
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
     #   django-statici18n
-django-autocomplete-light==4.0.0
+django-autocomplete-light==4.0.3
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
