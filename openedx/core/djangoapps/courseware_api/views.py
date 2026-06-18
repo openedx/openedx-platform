@@ -291,14 +291,14 @@ class CoursewareMeta:
         """
         Django setting for the integrity signature feature.
         """
-        return settings.FEATURES.get('ENABLE_INTEGRITY_SIGNATURE', False)
+        return settings.ENABLE_INTEGRITY_SIGNATURE
 
     @property
     def user_needs_integrity_signature(self):
         """
         Boolean describing whether the user needs to sign the integrity agreement for a course.
         """
-        if not settings.FEATURES.get('ENABLE_INTEGRITY_SIGNATURE'):
+        if not settings.ENABLE_INTEGRITY_SIGNATURE:
             return False
 
         integrity_signature_required = (
