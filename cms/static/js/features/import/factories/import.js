@@ -13,7 +13,7 @@ define([
 
     return {
         Import: function(feedbackUrl) {
-            var dbError,
+            var dbError = gettext('There was an error while importing the new course to our database.'),
                 $bar = $('.progress-bar'),
                 $fill = $('.progress-fill'),
                 $submitBtn = $('.submit-button'),
@@ -51,8 +51,6 @@ define([
                         $('.error-block').text(msg).show();
                     }
                 };
-
-            dbError = gettext('There was an error while importing the new course to our database.');
 
             $(window).on('beforeunload', function() { unloading = true; });
 
