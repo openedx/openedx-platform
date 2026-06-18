@@ -909,7 +909,7 @@ urlpatterns += [
 ]
 
 # Custom courses on edX (CCX) URLs
-if settings.FEATURES.get('CUSTOM_COURSES_EDX'):
+if settings.CUSTOM_COURSES_EDX:
     urlpatterns += [
         re_path(fr'^courses/{settings.COURSE_ID_PATTERN}/', include('lms.djangoapps.ccx.urls')),
         path('api/ccx/', include(('lms.djangoapps.ccx.api.urls', 'lms.djangoapps.ccx'), namespace='ccx_api')),

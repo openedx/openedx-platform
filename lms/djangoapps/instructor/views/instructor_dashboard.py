@@ -519,7 +519,7 @@ def _section_course_info(course, access):
 def _section_membership(course, access):
     """ Provide data for the corresponding dashboard section """
     course_key = course.id
-    ccx_enabled = settings.FEATURES.get('CUSTOM_COURSES_EDX', False) and course.enable_ccx
+    ccx_enabled = settings.CUSTOM_COURSES_EDX and course.enable_ccx
 
     section_data = {
         'section_key': 'membership',

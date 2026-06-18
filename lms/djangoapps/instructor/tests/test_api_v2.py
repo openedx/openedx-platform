@@ -8,7 +8,6 @@ from urllib.parse import urlencode
 from uuid import uuid4
 
 import ddt
-from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.http import Http404
 from django.test import SimpleTestCase, override_settings
@@ -3051,7 +3050,7 @@ class CourseTeamRolesViewTest(SharedModuleStoreTestCase):
         for expected in ['Administrator', 'Moderator', 'Group Moderator', 'Community TA']:
             assert expected in returned_roles
 
-    @override_settings(FEATURES={**settings.FEATURES, 'CUSTOM_COURSES_EDX': True})
+    @override_settings(CUSTOM_COURSES_EDX=True)
     def test_list_roles_with_ccx_enabled(self):
         """Returns all roles including ccx_coach when CCX is enabled for the course."""
         ccx_course = CourseFactory.create(
@@ -3072,7 +3071,7 @@ class CourseTeamRolesViewTest(SharedModuleStoreTestCase):
         ccx_entry = next(r for r in response.data['results'] if r['role'] == 'ccx_coach')
         assert ccx_entry['display_name'] == 'CCX Coach'
 
-    @override_settings(FEATURES={**settings.FEATURES, 'CUSTOM_COURSES_EDX': True})
+    @override_settings(CUSTOM_COURSES_EDX=True)
     def test_roles_sort_order(self):
         """Roles are returned in the expected display order, with ccx_coach last."""
         ccx_course = CourseFactory.create(
