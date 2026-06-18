@@ -5,7 +5,7 @@ Models used by the block structure framework.
 
 import errno
 from contextlib import contextmanager
-from datetime import datetime
+from datetime import UTC, datetime
 from logging import getLogger
 
 from django.conf import settings
@@ -57,7 +57,7 @@ def _path_name(bs_model, _filename):
     Returns path name to use for the given
     BlockStructureModel instance.
     """
-    filename = datetime.utcnow().strftime('%Y-%m-%d-%H:%M:%S-%f')
+    filename = datetime.now(UTC).strftime('%Y-%m-%d-%H:%M:%S-%f')
     return _create_path(
         _directory_name(bs_model.data_usage_key),
         filename,

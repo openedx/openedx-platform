@@ -54,7 +54,7 @@ class SessionInactivityTimeoutTestCase(TestCase):
         # else: leave the session without the timestamp key (None case)
 
         mock_now = datetime(2025, 6, 16, 12, 0, 0)
-        mock_datetime.utcnow.return_value = mock_now
+        mock_datetime.now.return_value = mock_now
 
         response = self.middleware.process_request(self.request)  # pylint: disable=assignment-from-none
 
@@ -108,7 +108,7 @@ class SessionInactivityTimeoutTestCase(TestCase):
             last_touch = datetime(2025, 6, 16, 12, 0, 0)
             current_time = last_touch + timedelta(seconds=seconds_elapsed)
             self.request.session[LAST_TOUCH_KEYNAME] = last_touch.isoformat()
-            mock_datetime.utcnow.return_value = current_time
+            mock_datetime.now.return_value = current_time
             mock_datetime.fromisoformat = datetime.fromisoformat
 
             response = self.middleware.process_request(self.request)  # pylint: disable=assignment-from-none
@@ -151,7 +151,7 @@ class SessionInactivityTimeoutTestCase(TestCase):
             last_touch = datetime(2025, 6, 16, 12, 0, 0)
             current_time = last_touch + timedelta(seconds=seconds_elapsed)
             self.request.session[LAST_TOUCH_KEYNAME] = last_touch.isoformat()
-            mock_datetime.utcnow.return_value = current_time
+            mock_datetime.now.return_value = current_time
             mock_datetime.fromisoformat = datetime.fromisoformat
 
             response = self.middleware.process_request(self.request)  # pylint: disable=assignment-from-none
@@ -191,7 +191,7 @@ class SessionInactivityTimeoutTestCase(TestCase):
         last_touch = datetime(2025, 6, 16, 12, 0, 0)
         current_time = last_touch + timedelta(seconds=seconds_elapsed)
         self.request.session[LAST_TOUCH_KEYNAME] = last_touch.isoformat()
-        mock_datetime.utcnow.return_value = current_time
+        mock_datetime.now.return_value = current_time
         mock_datetime.fromisoformat = datetime.fromisoformat
 
         response = self.middleware.process_request(self.request)  # pylint: disable=assignment-from-none
