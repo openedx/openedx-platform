@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 from unittest.mock import patch
 
 from django.conf import settings
+from django.test import override_settings
 from django.urls import reverse
 from freezegun import freeze_time
 from rest_framework import status
@@ -27,7 +28,7 @@ from xmodule.modulestore.tests.factories import CourseFactory
 
 
 @skip_unless_lms
-@patch.dict(settings.FEATURES, {'ENABLE_INTEGRITY_SIGNATURE': True})
+@override_settings(ENABLE_INTEGRITY_SIGNATURE=True)
 class IntegritySignatureViewTests(APITestCase, ModuleStoreTestCase):
     """
     Tests for the Integrity Signature View
@@ -161,7 +162,7 @@ class IntegritySignatureViewTests(APITestCase, ModuleStoreTestCase):
         )
         self._assert_response(response, status.HTTP_200_OK, self.user, self.course_id)
 
-    @patch.dict(settings.FEATURES, {'ENABLE_INTEGRITY_SIGNATURE': False})
+    @override_settings(ENABLE_INTEGRITY_SIGNATURE=False)
     def test_404_for_no_waffle_flag(self):
         self._create_signature(self.user.username, self.course_id)
         response = self.client.get(
@@ -213,7 +214,7 @@ class IntegritySignatureViewTests(APITestCase, ModuleStoreTestCase):
             self.assertEqual(len(signatures), 1)  # noqa: PT009
             self.assertEqual(signatures[0].user.username, self.USERNAME)  # noqa: PT009
 
-    @patch.dict(settings.FEATURES, {'ENABLE_INTEGRITY_SIGNATURE': False})
+    @override_settings(ENABLE_INTEGRITY_SIGNATURE=False)
     def test_post_integrity_signature_no_waffle_flag(self):
         response = self.client.post(
             reverse(
