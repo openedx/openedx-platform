@@ -29,7 +29,7 @@ from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 
 
 @ddt.ddt
-@patch.dict('django.conf.settings.FEATURES', {'ENABLE_SPECIAL_EXAMS': True})
+@override_settings(ENABLE_SPECIAL_EXAMS=True)
 @skip_unless_lms
 class EnrollmentTest(OpenEdxEventsTestMixin, UrlResetMixin, ModuleStoreTestCase):
     """

@@ -451,7 +451,8 @@ class CourseMetadataViewTest(SharedModuleStoreTestCase, MasqueradeMixin):
 
         self.assertIn('open_responses', tab_ids)  # noqa: PT009
 
-    @patch('django.conf.settings.FEATURES', {'ENABLE_SPECIAL_EXAMS': True, 'MAX_ENROLLMENT_INSTR_BUTTONS': 200})
+    @override_settings(ENABLE_SPECIAL_EXAMS=True)
+    @patch.dict('django.conf.settings.FEATURES', {'MAX_ENROLLMENT_INSTR_BUTTONS': 200})
     def test_special_exams_tab_with_proctored_exams_enabled(self):
         """
         Test that special_exams tab appears when course has proctored exams enabled.
@@ -461,7 +462,8 @@ class CourseMetadataViewTest(SharedModuleStoreTestCase, MasqueradeMixin):
 
         self.assertIn('special_exams', tab_ids)  # noqa: PT009
 
-    @patch('django.conf.settings.FEATURES', {'ENABLE_SPECIAL_EXAMS': True, 'MAX_ENROLLMENT_INSTR_BUTTONS': 200})
+    @override_settings(ENABLE_SPECIAL_EXAMS=True)
+    @patch.dict('django.conf.settings.FEATURES', {'MAX_ENROLLMENT_INSTR_BUTTONS': 200})
     def test_special_exams_tab_with_timed_exams_enabled(self):
         """
         Test that special_exams tab appears when course has timed exams enabled.

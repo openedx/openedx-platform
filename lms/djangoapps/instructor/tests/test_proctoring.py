@@ -22,7 +22,7 @@ from xmodule.modulestore.tests.django_utils import (
 from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 
-@patch.dict(settings.FEATURES, {'ENABLE_SPECIAL_EXAMS': True})
+@override_settings(ENABLE_SPECIAL_EXAMS=True)
 @ddt.ddt
 # Tests for legacy views. When DEPR-38432 is picked up, these tests will require the following changes:
 # Either remove or leave the specific parts that reference the legacy instructor dashboard,
@@ -128,7 +128,7 @@ class TestProctoringDashboardViews(SharedModuleStoreTestCase):
         self.instructor.save()
         self._assert_proctoring_tab_available(False)
 
-    @patch.dict(settings.FEATURES, {'ENABLE_SPECIAL_EXAMS': False})
+    @override_settings(ENABLE_SPECIAL_EXAMS=False)
     @ddt.data(
         (True, False),
         (False, True)

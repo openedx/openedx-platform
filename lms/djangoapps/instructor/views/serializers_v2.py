@@ -291,8 +291,8 @@ class CourseInformationSerializerV2(serializers.Serializer):
             access['instructor'],
         ])
         course_has_special_exams = course.enable_proctored_exams or course.enable_timed_exams
-        can_see_special_exams = course_has_special_exams and user_has_access and settings.FEATURES.get(
-            'ENABLE_SPECIAL_EXAMS', False)
+        can_see_special_exams = course_has_special_exams and user_has_access and getattr(
+            settings, 'ENABLE_SPECIAL_EXAMS', False)
 
         if can_see_special_exams:
             tabs.append({

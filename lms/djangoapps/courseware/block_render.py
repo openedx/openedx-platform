@@ -260,7 +260,7 @@ def _add_timed_exam_info(user, course, section, section_context):
     """
     section_is_time_limited = (
         getattr(section, 'is_time_limited', False) and
-        settings.FEATURES.get('ENABLE_SPECIAL_EXAMS', False)
+        settings.ENABLE_SPECIAL_EXAMS
     )
     if section_is_time_limited:
         # call into edx_proctoring subsystem
