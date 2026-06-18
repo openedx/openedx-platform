@@ -723,6 +723,17 @@ class ImportTestCase(CourseTestCase):
             status_response = self.get_import_status(self.course.id, good_file)
             self.assertImportStatusResponse(status_response, self.UpdatingError, import_error.UNKNOWN_ERROR_IN_IMPORT)
 
+    def test_import_handler_rejects_legacy_library_key(self):
+        """
+        Passing a legacy (v1) LibraryLocator key to import_handler must return 404.
+        This guards against the early-reject added in import_handler from being
+        accidentally removed.
+        """
+        lib_key = LibraryLocator(org='TestOrg', library='TestLib')
+        url = reverse_course_url('import_handler', lib_key)
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 404)  # noqa: PT009
+
     @ddt.data('zip', 'tar')
     def test_import_status_response_is_not_cached(self, fmt):
         """To test import_status endpoint response is not cached"""
@@ -943,6 +954,16 @@ class ExportTestCase(CourseTestCase):
         Export failure if course does not exist
         """
         resp = self.client.get_html(url)
+        self.assertEqual(resp.status_code, 404)  # noqa: PT009
+
+    def test_export_handler_rejects_legacy_library_key(self):
+        """
+        Passing a legacy (v1) LibraryLocator key to export_handler must return 404
+        because modulestore().get_course() returns None for a library key.
+        """
+        lib_key = LibraryLocator(org='TestOrg', library='TestLib')
+        url = reverse_course_url('export_handler', lib_key)
+        resp = self.client.get(url)
         self.assertEqual(resp.status_code, 404)  # noqa: PT009
 
     def test_non_course_author(self):
