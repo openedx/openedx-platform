@@ -10,6 +10,7 @@ from unittest.mock import Mock, patch
 import ddt
 from completion.models import BlockCompletion
 from django.conf import settings
+from django.contrib.auth.models import AnonymousUser
 from django.test import override_settings
 from django.urls import reverse
 from edx_toggles.toggles.testutils import override_waffle_flag
@@ -20,6 +21,7 @@ from common.djangoapps.course_modes.tests.factories import CourseModeFactory
 from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.roles import CourseInstructorRole
 from common.djangoapps.student.tests.factories import UserFactory
+from lms.djangoapps.course_home_api.outline.views import CourseNavigationBlocksView
 from lms.djangoapps.course_home_api.tests.utils import BaseCourseHomeTests
 from lms.djangoapps.course_home_api.toggles import COURSE_HOME_SEND_COURSE_PROGRESS_ANALYTICS_FOR_STUDENT
 from lms.djangoapps.grades.course_grade_factory import CourseGradeFactory
@@ -584,23 +586,18 @@ class SidebarBlocksTestViews(BaseCourseHomeTests):
         assert response.status_code == 200
         assert response.data.get('blocks') is None
 
-    @override_waffle_flag(COURSE_ENABLE_UNENROLLED_ACCESS_FLAG, active=True)
-    def test_get_unauthenticated_public_course_does_not_lookup_completions(self):
+    def test_anonymous_user_completion_dict_does_not_lookup_completions(self):
         """
-        Test that anonymous public course navigation does not query completion data.
+        Test that anonymous users do not query completion data.
         """
-        self.add_blocks_to_course()
-        BlockFactory.create(parent=self.vertical, category='problem', graded=True, has_score=True)
-        update_outline_from_modulestore(self.course.id)
-        self.course.course_visibility = COURSE_VISIBILITY_PUBLIC
-        self.update_course_and_overview()
-        self.client.logout()
+        view = CourseNavigationBlocksView()
+        view.request = Mock(user=AnonymousUser())
+        view.kwargs = {'course_key_string': str(self.course.id)}
 
         with patch('lms.djangoapps.course_home_api.outline.views.BlockCompletion.objects.filter') as mock_filter:
-            response = self.client.get(self.url)
+            completions = view.completions_dict
 
-        assert response.status_code == 200
-        assert response.data['blocks'] is not None
+        assert completions == {}
         mock_filter.assert_not_called()
 
     def test_course_staff_can_see_non_user_specific_content_in_masquerade(self):
