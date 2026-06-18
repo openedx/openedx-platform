@@ -18,8 +18,7 @@ from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable
 
 
 @ddt.ddt
-@override_settings(ENABLE_PROCTORED_EXAMS=True)
-@patch.dict('django.conf.settings.FEATURES', {'ENABLE_SPECIAL_EXAMS': True})
+@override_settings(ENABLE_PROCTORED_EXAMS=True, ENABLE_SPECIAL_EXAMS=True)
 class PermissionTests(ModuleStoreTestCase):
     """
     Tests for permissions defined in courseware.rules

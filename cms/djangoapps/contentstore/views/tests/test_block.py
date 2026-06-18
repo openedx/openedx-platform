@@ -3705,7 +3705,7 @@ class TestGetMetadataWithProblemDefaults(ModuleStoreTestCase):
         assert 'weight' not in metadata_result
 
 
-@patch.dict("django.conf.settings.FEATURES", {"ENABLE_SPECIAL_EXAMS": True})
+@override_settings(ENABLE_SPECIAL_EXAMS=True)
 @ddt.ddt
 class TestSpecialExamXBlockInfo(ItemTest):
     """

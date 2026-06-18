@@ -218,8 +218,8 @@ def instructor_dashboard_2(request, course_id):  # pylint: disable=too-many-stat
         CourseInstructorRole(course_key).has_user(request.user)
     ])
     course_has_special_exams = course.enable_proctored_exams or course.enable_timed_exams
-    can_see_special_exams = course_has_special_exams and user_has_access and settings.FEATURES.get(
-        'ENABLE_SPECIAL_EXAMS', False)
+    can_see_special_exams = course_has_special_exams and user_has_access and getattr(
+        settings, 'ENABLE_SPECIAL_EXAMS', False)
 
     if can_see_special_exams:
         sections.append(_section_special_exams(course, access))
@@ -660,7 +660,7 @@ def _section_data_download(course, access):
     course_key = course.id
 
     show_proctored_report_button = (
-        settings.FEATURES.get('ENABLE_SPECIAL_EXAMS', False) and
+        settings.ENABLE_SPECIAL_EXAMS and
         course.enable_proctored_exams
     )
     section_key = 'data_download_2' if data_download_v2_is_enabled() else 'data_download'
