@@ -584,6 +584,25 @@ class SidebarBlocksTestViews(BaseCourseHomeTests):
         assert response.status_code == 200
         assert response.data.get('blocks') is None
 
+    @override_waffle_flag(COURSE_ENABLE_UNENROLLED_ACCESS_FLAG, active=True)
+    def test_get_unauthenticated_public_course_does_not_lookup_completions(self):
+        """
+        Test that anonymous public course navigation does not query completion data.
+        """
+        self.add_blocks_to_course()
+        BlockFactory.create(parent=self.vertical, category='problem', graded=True, has_score=True)
+        update_outline_from_modulestore(self.course.id)
+        self.course.course_visibility = COURSE_VISIBILITY_PUBLIC
+        self.update_course_and_overview()
+        self.client.logout()
+
+        with patch('lms.djangoapps.course_home_api.outline.views.BlockCompletion.objects.filter') as mock_filter:
+            response = self.client.get(self.url)
+
+        assert response.status_code == 200
+        assert response.data['blocks'] is not None
+        mock_filter.assert_not_called()
+
     def test_course_staff_can_see_non_user_specific_content_in_masquerade(self):
         """
         Test that course staff can see the outline and other non-user-specific content when masquerading as a learner
