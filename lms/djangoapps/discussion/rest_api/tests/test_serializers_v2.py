@@ -617,7 +617,7 @@ class SerializerTestMixin(UrlResetMixin, ForumMockUtilsMixin):
         assert actual_serialized_anonymous == expected_serialized_anonymous
 
     @ddt.data(
-        (FORUM_ROLE_ADMINISTRATOR, False, "Moderator"),
+        (FORUM_ROLE_ADMINISTRATOR, False, "Administrator"),
         (FORUM_ROLE_ADMINISTRATOR, True, None),
         (FORUM_ROLE_MODERATOR, False, "Moderator"),
         (FORUM_ROLE_MODERATOR, True, None),
@@ -631,19 +631,41 @@ class SerializerTestMixin(UrlResetMixin, ForumMockUtilsMixin):
         """
         Test correctness of the author_label field.
 
-        The label should be "Staff", "Moderator", or "Community TA" for the
-        Administrator, Moderator, and Community TA roles, respectively, but
-        the label should not be present if the content is anonymous.
+        The label should be "Administrator", "Moderator", or "Community TA" for
+        the respective roles, but None if the content is anonymous.
+        This field is a single string for backward compatibility.
 
         role_name is the name of the author's role.
         anonymous is the value of the anonymous field in the content.
-        expected_label is the expected value of the author_label field in the
-          API output.
+        expected_label is the expected string value of the author_label field.
         """
         self.register_get_user_response(self.user)
         self.create_role(role_name, [self.author])
         serialized = self.serialize(self.make_cs_content({"anonymous": anonymous}))
         assert serialized['author_label'] == expected_label
+
+    @ddt.data(
+        (FORUM_ROLE_ADMINISTRATOR, False, ["Administrator"]),
+        (FORUM_ROLE_ADMINISTRATOR, True, None),
+        (FORUM_ROLE_MODERATOR, False, ["Moderator"]),
+        (FORUM_ROLE_MODERATOR, True, None),
+        (FORUM_ROLE_COMMUNITY_TA, False, ["Community TA"]),
+        (FORUM_ROLE_COMMUNITY_TA, True, None),
+        (FORUM_ROLE_STUDENT, False, None),
+        (FORUM_ROLE_STUDENT, True, None),
+    )
+    @ddt.unpack
+    def test_author_labels_multi(self, role_name, anonymous, expected_labels):
+        """
+        Test correctness of the author_labels field (new multi-role array).
+
+        author_labels is a list of all roles the author holds, or None when
+        anonymous or when the user has no recognized roles.
+        """
+        self.register_get_user_response(self.user)
+        self.create_role(role_name, [self.author])
+        serialized = self.serialize(self.make_cs_content({"anonymous": anonymous}))
+        assert serialized['author_labels'] == expected_labels
 
     def test_abuse_flagged(self):
         self.register_get_user_response(self.user)
@@ -724,6 +746,7 @@ class CommentSerializerTest(SerializerTestMixin, SharedModuleStoreTestCase):
             "parent_id": None,
             "author": self.author.username,
             "author_label": None,
+            "author_labels": None,
             "created_at": "2015-04-28T00:00:00Z",
             "updated_at": "2015-04-28T11:11:11Z",
             "raw_body": "Test body",
@@ -737,6 +760,7 @@ class CommentSerializerTest(SerializerTestMixin, SharedModuleStoreTestCase):
             "voted": False,
             "vote_count": 4,
             "children": [],
+            "learner_status": "new",
             "editable_fields": ["abuse_flagged", "voted"],
             "child_count": 0,
             "can_delete": False,
@@ -786,7 +810,7 @@ class CommentSerializerTest(SerializerTestMixin, SharedModuleStoreTestCase):
         assert actual_endorser_anonymous == expected_endorser_anonymous
 
     @ddt.data(
-        (FORUM_ROLE_ADMINISTRATOR, "Moderator"),
+        (FORUM_ROLE_ADMINISTRATOR, "Administrator"),
         (FORUM_ROLE_MODERATOR, "Moderator"),
         (FORUM_ROLE_COMMUNITY_TA, "Community TA"),
         (FORUM_ROLE_STUDENT, None),
@@ -796,7 +820,7 @@ class CommentSerializerTest(SerializerTestMixin, SharedModuleStoreTestCase):
         """
         Test correctness of the endorsed_by_label field.
 
-        The label should be "Staff", "Moderator", or "Community TA" for the
+        The label should be "Administrator", "Moderator", or "Community TA" for the
         Administrator, Moderator, and Community TA roles, respectively.
 
         role_name is the name of the author's role.

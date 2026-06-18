@@ -374,6 +374,7 @@ class CommentViewSetPartialUpdateTest(
             "parent_id": None,
             "author": self.user.username,
             "author_label": None,
+            "author_labels": None,
             "created_at": "1970-01-01T00:00:00Z",
             "updated_at": "1970-01-01T00:00:00Z",
             "raw_body": "Original body",
@@ -401,6 +402,7 @@ class CommentViewSetPartialUpdateTest(
                 "image_url_medium": "http://testserver/static/default_50.png",
                 "image_url_small": "http://testserver/static/default_30.png",
             },
+            "learner_status": "new",
         }
         response_data.update(overrides or {})
         return response_data
@@ -1525,6 +1527,7 @@ class LearnerThreadViewAPITest(DiscussionAPIViewTestMixin, ModuleStoreTestCase):
             {"key": "author", "value": self.author.username},
             {"key": "abuse_flagged", "value": False},
             {"key": "author_label", "value": None},
+            {"key": "author_labels", "value": None},
             {"key": "can_delete", "value": True},
             {"key": "close_reason", "value": None},
             {
@@ -1546,7 +1549,6 @@ class LearnerThreadViewAPITest(DiscussionAPIViewTestMixin, ModuleStoreTestCase):
             {"key": "non_endorsed_comment_list_url", "value": None},
             {"key": "preview_body", "value": "Test body"},
             {"key": "raw_body", "value": "Test body"},
-
             {"key": "rendered_body", "value": "<p>Test body</p>"},
             {"key": "response_count", "value": 0},
             {"key": "topic_id", "value": "test_topic"},
@@ -1566,7 +1568,7 @@ class LearnerThreadViewAPITest(DiscussionAPIViewTestMixin, ModuleStoreTestCase):
             }},
             {"key": "vote_count", "value": 4},
             {"key": "voted", "value": False},
-
+            {"key": "learner_status", "value": "new"},
         ]
         self.url = reverse("discussion_learner_threads", kwargs={'course_id': str(self.course.id)})
 

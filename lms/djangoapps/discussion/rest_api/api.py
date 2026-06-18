@@ -2016,3 +2016,58 @@ def add_stats_for_users_with_null_values(course_stats, users_in_course):
         })
     updated_course_stats = sorted(updated_course_stats, key=lambda d: len(d['username']))
     return updated_course_stats
+
+def _get_user_label_function(course_id, course_staff_user_ids, moderator_user_ids, ta_user_ids):
+    """
+    Create and return a function that determines user labels based on role.
+
+    Args:
+        course_id: Course key/id used for discussion Role lookups
+        course_staff_user_ids: List of user IDs for course staff
+        moderator_user_ids: List of user IDs for moderators
+        ta_user_ids: List of user IDs for TAs
+
+    Returns:
+        A function that takes a user_id and returns the appropriate label or None
+    """
+
+    # Pre-fetch discussion role names for all relevant users to avoid per-user queries.
+    relevant_user_ids = set(moderator_user_ids) | set(ta_user_ids)
+    role_names_by_user_id = {}
+    if relevant_user_ids:
+        for user_id_val, role_name in Role.objects.filter(
+            course_id=course_id,
+            users__id__in=relevant_user_ids,
+            name__in=[
+                FORUM_ROLE_ADMINISTRATOR,
+                FORUM_ROLE_MODERATOR,
+                FORUM_ROLE_COMMUNITY_TA,
+                FORUM_ROLE_GROUP_MODERATOR,
+            ],
+        ).values_list('users__id', 'name'):
+            role_names_by_user_id.setdefault(int(user_id_val), set()).add(role_name)
+
+    def get_user_label(user_id):
+        """Get role label for a user ID."""
+        try:
+            user_id_int = int(user_id)
+            # Platform course roles (collapsed to "Course Staff" for deleted content lists)
+            if user_id_int in course_staff_user_ids:
+                return "Course Staff"
+
+            # Discussion-specific roles (distinguish admin vs moderator)
+            role_names = role_names_by_user_id.get(user_id_int, set())
+            if FORUM_ROLE_ADMINISTRATOR in role_names:
+                return "Discussion Administrator"
+            if FORUM_ROLE_MODERATOR in role_names:
+                return "Moderator"
+            if FORUM_ROLE_COMMUNITY_TA in role_names:
+                return "Community TA"
+            if FORUM_ROLE_GROUP_MODERATOR in role_names:
+                return "Group Moderator"
+        except (ValueError, TypeError):
+            # If user_id has any issues, there's no label to return
+            pass
+        return None
+
+    return get_user_label
