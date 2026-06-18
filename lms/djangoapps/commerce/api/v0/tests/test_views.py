@@ -9,7 +9,6 @@ from uuid import uuid4
 
 import ddt
 import pytz
-from django.conf import settings
 from django.test import TestCase
 from django.test.utils import override_settings
 from django.urls import reverse, reverse_lazy
@@ -88,7 +87,7 @@ class BasketsViewTests(UserMixin, ModuleStoreTestCase):
                 bulk_sku=f'BULK-{sku_string}'
             )
 
-    @mock.patch.dict(settings.FEATURES, {'EMBARGO': True})
+    @override_settings(EMBARGO=True)
     def test_embargo_restriction(self):
         """
         The view should return HTTP 403 status if the course is embargoed.

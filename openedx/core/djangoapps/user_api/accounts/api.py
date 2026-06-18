@@ -160,7 +160,7 @@ def update_account_settings(requesting_user, update, username=None):
     _validate_email_change(user, update, field_errors)
     _validate_secondary_email(user, update, field_errors)
     if (
-        settings.FEATURES.get('EMBARGO', False) and
+        settings.EMBARGO and
         GlobalRestrictedCountry.is_country_restricted(update.get('country', ''))
     ):
         field_errors['country'] = {

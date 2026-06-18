@@ -310,7 +310,7 @@ class AccountCreationForm(forms.Form):
         """
         country = self.cleaned_data.get("country")
         if (
-            settings.FEATURES.get('EMBARGO', False) and
+            settings.EMBARGO and
             country in GlobalRestrictedCountry.get_countries()
         ):
             raise ValidationError(_("Registration from this country is not allowed due to restrictions."))

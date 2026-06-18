@@ -37,6 +37,7 @@ from xmodule.modulestore.tests.django_utils import (
 
 @skip_unless_lms
 @ddt.ddt
+@override_settings(EMBARGO=True)
 class LoginAndRegistrationTest(ThirdPartyAuthTestMixin, UrlResetMixin, ModuleStoreTestCase):
     """ Tests for Login and Registration. """
     USERNAME = "bob"
@@ -45,7 +46,6 @@ class LoginAndRegistrationTest(ThirdPartyAuthTestMixin, UrlResetMixin, ModuleSto
 
     URLCONF_MODULES = ['openedx.core.djangoapps.embargo']
 
-    @mock.patch.dict(settings.FEATURES, {'EMBARGO': True})
     def setUp(self):  # pylint: disable=arguments-differ
         super().setUp()
 
