@@ -915,7 +915,7 @@ def activate_secondary_email(request, key):
 
 
 @ensure_csrf_cookie
-def confirm_email_change(request, key):
+def confirm_email_change(request, key):  # pylint: disable=too-many-statements
     """
     User requested a new e-mail. This is called when the activation
     link is clicked. We confirm with the old e-mail, and update
