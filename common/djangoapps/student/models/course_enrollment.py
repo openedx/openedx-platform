@@ -731,7 +731,7 @@ class CourseEnrollment(models.Model):
                 course_key=course.id,
                 display_name=course.display_name,
             )
-        except CourseOverview.DoesNotExist:
+        except CourseOverview.DoesNotExist as err:
             # This is here to preserve legacy behavior which allowed enrollment in courses
             # announced before the start of content creation.
             course_data = CourseData(
@@ -742,7 +742,7 @@ class CourseEnrollment(models.Model):
                     log.warning("User %s failed to enroll in non-existent course %s", user.id, str(course_key))
                 else:
                     log.warning("User %s failed to enroll in non-existent course %s", user.username, str(course_key))
-                raise NonExistentCourseError  # lint-amnesty, pylint: disable=raise-missing-from
+                raise NonExistentCourseError from err  # lint-amnesty, pylint: disable=raise-missing-from
 
         if check_access:
             if cls.is_enrollment_closed(user, course) and not can_upgrade:

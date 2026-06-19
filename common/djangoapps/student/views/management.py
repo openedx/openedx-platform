@@ -860,13 +860,13 @@ def do_email_change_request(user, new_email, activation_key=None, secondary_emai
             log.info("Email activation link sent for user ID: [%s].", user.id)
         else:
             log.info("Email activation link sent to user [%s].", new_email)
-    except Exception:
+    except Exception as err:
         from_address = configuration_helpers.get_value('email_from_address', settings.DEFAULT_FROM_EMAIL)
         if settings.FEATURES['SQUELCH_PII_IN_LOGS']:
             log.error('Unable to send email activation link from a redacted address', exc_info=True)
         else:
             log.error('Unable to send email activation link to user from "%s"', from_address, exc_info=True)
-        raise ValueError(_('Unable to send email activation link. Please try again later.'))  # lint-amnesty, pylint: disable=raise-missing-from
+        raise ValueError(_('Unable to send email activation link. Please try again later.')) from err  # lint-amnesty, pylint: disable=raise-missing-from
 
     if not secondary_email_change_request:
         # When the email address change is complete, a "edx.user.settings.changed" event will be emitted.

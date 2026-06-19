@@ -405,12 +405,12 @@ class UserStateCache:
                 self.user.username,
                 pending_updates
             )
-        except DatabaseError:
+        except DatabaseError as err:
             if settings.FEATURES['SQUELCH_PII_IN_LOGS']:
                 log.exception("Saving user state failed for user ID %s", self.user.id)
             else:
                 log.exception("Saving user state failed for %s", self.user.username)
-            raise KeyValueMultiSaveError([])  # lint-amnesty, pylint: disable=raise-missing-from
+            raise KeyValueMultiSaveError([]) from err # lint-amnesty, pylint: disable=raise-missing-from
         finally:
             self._cache.update(pending_updates)
 
