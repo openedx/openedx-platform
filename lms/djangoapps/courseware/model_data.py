@@ -27,8 +27,8 @@ import logging
 from abc import ABCMeta, abstractmethod
 from collections import defaultdict, namedtuple
 
-from django.db import DatabaseError, IntegrityError, transaction
 from django.conf import settings
+from django.db import DatabaseError, IntegrityError, transaction
 from opaque_keys.edx.asides import AsideUsageKeyV1, AsideUsageKeyV2
 from opaque_keys.edx.block_types import BlockTypeKeyV1
 from opaque_keys.edx.keys import LearningContextKey

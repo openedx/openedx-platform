@@ -87,10 +87,10 @@ def extract_email_features(email_task):
         try:
             task_output = json.loads(email_task.task_output)
         except ValueError:
-        if settings.FEATURES['SQUELCH_PII_IN_LOGS']:
-            log.error("Could not parse task output as valid json; task output: [REDACTED]")
-        else:
-            log.error("Could not parse task output as valid json; task output: %s", email_task.task_output)
+            if settings.FEATURES['SQUELCH_PII_IN_LOGS']:
+                log.error("Could not parse task output as valid json; task output: [REDACTED]")
+            else:
+                log.error("Could not parse task output as valid json; task output: %s", email_task.task_output)
         else:
             if 'succeeded' in task_output and task_output['succeeded'] > 0:
                 num_emails = task_output['succeeded']
