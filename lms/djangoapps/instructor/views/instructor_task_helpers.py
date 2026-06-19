@@ -7,10 +7,9 @@ tasks.
 import json
 import logging
 
+from django.conf import settings
 from django.utils.translation import gettext as _
 from django.utils.translation import ngettext
-
-from django.conf import settings
 
 from lms.djangoapps.bulk_email.models import CourseEmail
 from lms.djangoapps.instructor_task.models import InstructorTaskSchedule

@@ -60,8 +60,10 @@ class BulkUsersRetirementView(APIView):
                 if settings.FEATURES['SQUELCH_PII_IN_LOGS']:
                     log.info('A user has been added to the retirement pipeline')
                 else:
-                    log.info(f'The user "{username}" has been added to the retirement pipeline \')
-                         by "{request.user}"')
+                    log.info('The user "%s" has been added to the retirement pipeline by "%s"',
+                        username,
+                        request.user,
+                    )
 
             except User.DoesNotExist:
                 if settings.FEATURES['SQUELCH_PII_IN_LOGS']:
