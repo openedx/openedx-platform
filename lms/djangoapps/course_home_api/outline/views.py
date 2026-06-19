@@ -613,6 +613,11 @@ class CourseNavigationBlocksView(RetrieveAPIView):
         Dictionary keys are block keys and values are int values
         representing the completion status of the block.
         """
+        # Anonymous users have no completion rows; return empty data to avoid
+        # querying BlockCompletion with AnonymousUser for public course navigation.
+        if self.request.user.is_anonymous:
+            return {}
+
         course_key_string = self.kwargs.get('course_key_string')
         course_key = CourseKey.from_string(course_key_string)
         completions = BlockCompletion.objects.filter(user=self.request.user, context_key=course_key).values_list(
