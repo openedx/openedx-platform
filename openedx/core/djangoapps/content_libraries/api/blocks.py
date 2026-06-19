@@ -837,8 +837,10 @@ def import_staged_content_from_user_clipboard(library_key: LibraryLocatorV2, use
     Returns the newly created item metadata
     """
     from openedx.core.djangoapps.content_staging import api as content_staging_api
+    if user is None or user.id is None:
+        raise RuntimeError("A user is required.")  # Shouldn't happen - mostly here for type checker
 
-    user_clipboard = content_staging_api.get_user_clipboard(user)
+    user_clipboard = content_staging_api.get_user_clipboard(user.id)
     if not user_clipboard:
         raise ValidationError("The user's clipboard is empty")
 
