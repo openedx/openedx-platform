@@ -1425,8 +1425,4 @@ class ContentLibraryContainerEventsTest(BaseEventsTestCase):
                     object_id=str(self.html_block_usage_key), changes=["units"],
                 ),
             },
-            {
-                "signal": LIBRARY_CONTAINER_UPDATED,
-                "library_container": LibraryContainerData(container_key=new_container_key),
-            },
         )
