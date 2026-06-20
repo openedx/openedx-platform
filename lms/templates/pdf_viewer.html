@@ -1,5 +1,5 @@
 <%page expression_filter="h"/>
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <%namespace name='static' file='static_content.html'/>
 <%!
 from openedx.core.djangolib.js_utils import (
@@ -46,10 +46,44 @@ http://sourceforge.net/adobe/cmap/wiki/License/
         PDFJS.workerSrc = "${static.url('js/vendor/pdfjs/pdf.worker.js') | n, js_escaped_string}";
         PDFJS.disableWorker = true;
         PDFJS.cMapUrl = "${static.url('css/vendor/pdfjs/cmaps/') | n, js_escaped_string}";
-        PDF_URL = '${current_url | n, js_escaped_string}';
+
+        var PDF_URL = '${current_url | n, js_escaped_string}';
+
+        if (window.parent !== window) {
+          window.parent.postMessage({type: 'request_pdf_url'}, '*');
+
+          function handlePdfUrlResponse(event) {
+            if (event.data && event.data.type === 'pdf_url_response') {
+              PDF_URL = event.data.url;
+
+              if (PDFViewerApplication.open) {
+                PDFViewerApplication.open(PDF_URL);
+                PDFViewerApplication.mouseScroll(0);
+
+                setTimeout(function() {
+                  if (PDFViewerApplication.pdfDocument) {
+                    if (event.data.title) document.getElementById('titleField').textContent = event.data.title;
+                    if (event.data.author) document.getElementById('authorField').textContent = event.data.author;
+                    if (event.data.subject) document.getElementById('subjectField').textContent = event.data.subject;
+                    if (event.data.keywords) document.getElementById('keywordsField').textContent = event.data.keywords;
+                    document.getElementById('creatorField').textContent = 'edX Platform';
+                  }
+                }, 500);
+              }
+            } else if (event.data && event.data.type === 'chapter_change') {
+              window.parent.postMessage({type: 'request_pdf_url'}, '*');
+            }
+          }
+
+          window.addEventListener('message', handlePdfUrlResponse);
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+          PDFViewerApplication && PDFViewerApplication.open(PDF_URL);
+        });
     </script>
 
-    <script ${static.url('js/vendor/pdfjs/debugger.js')}></script>
+    <script type="text/javascript" src="${static.url('js/vendor/pdfjs/debugger.js')}"></script>
 
     <%static:js group='main_vendor'/>
     <%static:js group='application'/>
@@ -347,77 +381,77 @@ http://sourceforge.net/adobe/cmap/wiki/License/
 
     </div> <!-- outerContainer -->
     <div id="printContainer"></div>
-<div id="mozPrintCallback-shim" hidden>
-  <style scoped>
-#mozPrintCallback-shim {
-  position: fixed;
-  top: 0;
-  left: 0;
-  height: 100%;
-  width: 100%;
-  z-index: 9999999;
+    <div id="mozPrintCallback-shim" hidden>
+      <style scoped>
+        #mozPrintCallback-shim {
+          position: fixed;
+          top: 0;
+          left: 0;
+          height: 100%;
+          width: 100%;
+          z-index: 9999999;
 
-  display: block;
-  text-align: center;
-  background-color: rgba(0, 0, 0, 0.5);
-}
-#mozPrintCallback-shim[hidden] {
-  display: none;
-}
-@media print {
-  #mozPrintCallback-shim {
-    display: none;
-  }
-}
+          display: block;
+          text-align: center;
+          background-color: rgba(0, 0, 0, 0.5);
+        }
+        #mozPrintCallback-shim[hidden] {
+          display: none;
+        }
+        @media print {
+          #mozPrintCallback-shim {
+            display: none;
+          }
+        }
 
-#mozPrintCallback-shim .mozPrintCallback-dialog-box {
-  display: inline-block;
-  margin: -50px auto 0;
-  position: relative;
-  top: 45%;
-  left: 0;
-  min-width: 220px;
-  max-width: 400px;
+        #mozPrintCallback-shim .mozPrintCallback-dialog-box {
+          display: inline-block;
+          margin: -50px auto 0;
+          position: relative;
+          top: 45%;
+          left: 0;
+          min-width: 220px;
+          max-width: 400px;
 
-  padding: 9px;
+          padding: 9px;
 
-  border: 1px solid hsla(0, 0%, 0%, .5);
-  border-radius: 2px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+          border: 1px solid hsla(0, 0%, 0%, .5);
+          border-radius: 2px;
+          box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
 
-  background-color: #474747;
+          background-color: #474747;
 
-  color: hsl(0, 0%, 85%);
-  font-size: 16px;
-  line-height: 20px;
-}
-#mozPrintCallback-shim .progress-row {
-  clear: both;
-  padding: 1em 0;
-}
-#mozPrintCallback-shim progress {
-  width: 100%;
-}
-#mozPrintCallback-shim .relative-progress {
-  clear: both;
-  float: right;
-}
-#mozPrintCallback-shim .progress-actions {
-  clear: both;
-}
-  </style>
-  <div class="mozPrintCallback-dialog-box">
-    <!-- TODO: Localise the following strings -->
-    Preparing document for printing...
-    <div class="progress-row">
-      <progress value="0" max="100"></progress>
-      <span class="relative-progress">0%</span>
+          color: hsl(0, 0%, 85%);
+          font-size: 16px;
+          line-height: 20px;
+        }
+        #mozPrintCallback-shim .progress-row {
+          clear: both;
+          padding: 1em 0;
+        }
+        #mozPrintCallback-shim progress {
+          width: 100%;
+        }
+        #mozPrintCallback-shim .relative-progress {
+          clear: both;
+          float: right;
+        }
+        #mozPrintCallback-shim .progress-actions {
+          clear: both;
+        }
+      </style>
+      <div class="mozPrintCallback-dialog-box">
+        <!-- TODO: Localise the following strings -->
+        Preparing document for printing...
+        <div class="progress-row">
+          <progress value="0" max="100"></progress>
+          <span class="relative-progress">0%</span>
+        </div>
+        <div class="progress-actions">
+          <input type="button" value="Cancel" class="mozPrintCallback-cancel">
+        </div>
+      </div>
     </div>
-    <div class="progress-actions">
-      <input type="button" value="Cancel" class="mozPrintCallback-cancel">
-    </div>
-  </div>
-</div>
     <script type="text/javascript" src="${static.url('js/vendor/pdfjs/viewer.js')}"></script>
     <script type="text/javascript" src="${static.url('js/pdf-analytics.js')}"></script>
   </body>

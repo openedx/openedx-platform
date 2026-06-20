@@ -17,23 +17,8 @@ from openedx.core.djangolib.js_utils import (
 
 
 <%include file="/courseware/course_navigation.html" args="active_page='pdftextbook/{0}'.format(book_index)" />
-<script>
-$(function(){
-  $('.chapter').click(function(e){
-    e.preventDefault();
-    var url = $(this).attr('rel');
-    $('#viewer-frame').attr({
-        'src': '${request.path | n, js_escaped_string}?viewer=true&file=' + url + '#zoom=page-fit&disableRange=true',
-        'title': $(this).text()
-        });
-    $('#viewer-frame').focus();
-    Logger.log("textbook.pdf.chapter.navigated", {"name": "textbook.pdf.chapter.navigated", "chapter": url, "chapter_title": $(this).text()});
-    });
-});
-</script>
-
 <main id="main" aria-label="${_('Content')}" tabindex="-1">
-    <div class="book-wrapper">
+  <div class="book-wrapper">
     %if 'chapters' in textbook:
     <section class="book-sidebar" aria-label="${_('Textbook Navigation')}">
         <ul id="booknav">
@@ -47,15 +32,61 @@ $(function(){
     %endif
 
     <div class="book">
-    <iframe
-    title="${current_chapter['title']}"
-    id="viewer-frame"
-    src="${request.path}?viewer=true${viewer_params}"
-    width="856"
-    height="1108"
-    frameborder="0"
-    tabindex="-1"
-    seamless></iframe>
+      <iframe
+        title="${current_chapter.get('title')}"
+        id="viewer-frame"
+        src="${request.path}?viewer=true${viewer_params}"
+        width="856" height="1108" frameborder="0" tabindex="-1" seamless></iframe>
     </div>
-    </div>
+  </div>
 </main>
+<script type="text/javascript">
+  $(function(){
+    var currentChapterUrl = null;
+    var currentChapterTitle = null;
+
+    // Handle PDF URL requests from iframe (PostMessage API requires 'message' event type)
+    function handlePdfUrlRequest(event) {
+      // Verify this is a PDF URL request from our iframe
+      if (event.data && event.data.type === 'request_pdf_url') {
+        if (currentChapterUrl) {
+          // Send the selected chapter URL back to the PDF viewer iframe
+          event.source.postMessage({
+            type: 'pdf_url_response',
+            url: currentChapterUrl,
+            title: currentChapterTitle || '',
+            author: 'edX Course',
+            subject: 'Course Material',
+            keywords: 'education,textbook,course'
+          }, '*');
+        }
+      }
+    }
+
+    // Listen for PostMessage communication from PDF viewer iframe
+    window.addEventListener('message', handlePdfUrlRequest);
+
+    $('.chapter').click(function(e){
+      e.preventDefault();
+      var $this = $(this);
+      var url = $this.attr('rel');
+      var chapterTitle = $this.text();
+
+      // Store the current chapter URL for postMessage
+      currentChapterUrl = url;
+      currentChapterTitle = chapterTitle;
+
+      $('#viewer-frame')[0].contentWindow.postMessage({type: 'chapter_change'}, '*');
+      Logger.log("textbook.pdf.chapter.navigated", {
+        "name": "textbook.pdf.chapter.navigated",
+        "chapter": url,
+        "chapter_title": chapterTitle
+      });
+    });
+
+    // Load iframe without file parameter - secure approach (first time only)
+    $('#viewer-frame').attr({
+      'src': '${request.path | n, js_escaped_string}?viewer=true${viewer_params | n, js_escaped_string}'
+    }).focus();
+  });
+</script>
