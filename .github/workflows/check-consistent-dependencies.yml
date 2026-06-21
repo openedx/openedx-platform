@@ -20,7 +20,7 @@ jobs:
 
     steps:
       # Always checkout the code because we don't always have a PR url.
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       # Only run remaining steps if there are changes to requirements/**
       # We do this instead of using path based short-circuiting.
@@ -43,7 +43,7 @@ jobs:
             echo "RELEVANT=true" >> "$GITHUB_ENV"
           fi
 
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         if: ${{ env.RELEVANT == 'true' }}
         with:
           python-version: '3.12'
