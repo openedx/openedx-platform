@@ -10,7 +10,15 @@ from django.test import TestCase
 from edx_toggles.toggles.testutils import override_waffle_flag
 from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locator import LibraryLocator
-from openedx_authz.api.data import ContentLibraryData, CourseOverviewData, RoleAssignmentData, RoleData, UserData
+from openedx_authz.api.data import (
+    ContentLibraryData,
+    CourseOverviewData,
+    OrgCourseOverviewGlobData,
+    RoleAssignmentData,
+    RoleData,
+    ScopeData,
+    UserData,
+)
 from openedx_authz.constants.roles import COURSE_ADMIN, COURSE_STAFF
 from openedx_authz.engine.enforcer import AuthzEnforcer
 
@@ -39,6 +47,7 @@ from common.djangoapps.student.roles import (
     get_role_cache_key_for_course,
 )
 from common.djangoapps.student.tests.factories import AnonymousUserFactory, InstructorFactory, StaffFactory, UserFactory
+from lms.djangoapps.instructor import permissions as instructor_permissions
 from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory
 from openedx.core.toggles import AUTHZ_COURSE_AUTHORING_FLAG
 
@@ -297,6 +306,56 @@ class RolesTestCase(TestCase):
         ):
             result = get_authz_compat_course_access_roles_for_user(self.student)
         assert result == set()
+
+    def test_get_authz_compat_course_access_roles_for_user_org_scope(self):
+        """
+        Org-wide AuthZ assignments should map to legacy org-level course access roles.
+        """
+        assignment = RoleAssignmentData(
+            subject=UserData(external_key=self.student.username),
+            roles=[RoleData(external_key=COURSE_ADMIN.external_key)],
+            scope=ScopeData(
+                external_key=OrgCourseOverviewGlobData.build_external_key("OpenedX"),
+            ),
+        )
+        with patch("openedx_authz.api.users.get_user_role_assignments", return_value=[assignment]):
+            result = get_authz_compat_course_access_roles_for_user(self.student)
+
+        self.assertCountEqual(  # noqa: PT009
+            result,
+            {
+                AuthzCompatCourseAccessRole(
+                    user_id=self.student.id,
+                    username=self.student.username,
+                    org="OpenedX",
+                    course_id=None,
+                    role="instructor",
+                )
+            },
+        )
+
+    def test_org_scope_authz_role_grants_instructor_dashboard_permissions(self):
+        """
+        Org-wide AuthZ course_admin should grant legacy org instructor access used by the instructor dashboard.
+        """
+        # pylint: disable=protected-access
+        course_key = CourseKey.from_string("course-v1:OpenedX+DemoX+DemoCourse")
+        assignment = RoleAssignmentData(
+            subject=UserData(external_key=self.student.username),
+            roles=[RoleData(external_key=COURSE_ADMIN.external_key)],
+            scope=ScopeData(
+                external_key=OrgCourseOverviewGlobData.build_external_key("OpenedX"),
+            ),
+        )
+        with patch("openedx_authz.api.users.get_user_role_assignments", return_value=[assignment]):
+            if hasattr(self.student, "_roles"):
+                del self.student._roles
+            self.student._roles = RoleCache(self.student)
+
+        self.assertTrue(self.student._roles.has_role("instructor", None, "OpenedX"))  # noqa: PT009
+        self.assertTrue(OrgInstructorRole("OpenedX").has_user(self.student))  # noqa: PT009
+        self.assertTrue(self.student.has_perm(instructor_permissions.VIEW_DASHBOARD, course_key))  # noqa: PT009
+        self.assertTrue(self.student.has_perm(instructor_permissions.SHOW_TASKS, course_key))  # noqa: PT009
 
 
 @ddt.ddt

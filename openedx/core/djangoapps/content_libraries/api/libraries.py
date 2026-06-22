@@ -249,14 +249,13 @@ def user_can_create_library(user: AbstractUser) -> bool:
     """
     library_permission = permissions.CAN_CREATE_CONTENT_LIBRARY
     lib_permission_in_authz = _transform_legacy_lib_permission_to_authz_permission(library_permission)
-    # The authz_api.is_user_allowed check only validates permissions within a specific library context. Since
-    # creating a library is not tied to an existing one, we use user.has_perm (via Bridgekeeper) to check if the user
-    # can create libraries, meaning they have the course creator role. In the future, this should rely on a global (*)
-    # role defined in the Authorization Framework for instance-level resource creation.
+    # The authz_api.is_user_allowed check validates platform-wide library creation via
+    # PlatformContentLibraryGlobData. We also use user.has_perm (via Bridgekeeper) as a fallback
+    # for users with the course creator role until library creation is fully modeled in authz.
     has_perms = user.has_perm(library_permission) or authz_api.is_user_allowed(
         user,
         lib_permission_in_authz,
-        authz_api.data.GLOBAL_SCOPE_WILDCARD,
+        authz_api.PlatformContentLibraryGlobData.build_external_key(),
     )
     return has_perms
 

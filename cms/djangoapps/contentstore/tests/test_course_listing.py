@@ -10,7 +10,7 @@ import ddt
 from ccx_keys.locator import CCXLocator
 from django.test import RequestFactory
 from opaque_keys.edx.locations import CourseLocator
-from openedx_authz.api.data import OrgCourseOverviewGlobData
+from openedx_authz.api.data import OrgCourseOverviewGlobData, PlatformCourseOverviewGlobData
 from openedx_authz.api.users import assign_role_to_user_in_scope
 from openedx_authz.constants.roles import COURSE_DATA_RESEARCHER, COURSE_EDITOR, COURSE_STAFF
 
@@ -21,6 +21,7 @@ from cms.djangoapps.contentstore.views.course import (
     _accessible_courses_iter_for_tests,
     _accessible_courses_list_from_groups,
     _accessible_courses_summary_iter,
+    _get_course_keys_from_scopes,
     get_courses_accessible_to_user,
 )
 from common.djangoapps.course_action_state.models import CourseRerunState
@@ -434,8 +435,11 @@ class TestCourseListingAuthz(CourseAuthoringAuthzTestMixin, ModuleStoreTestCase)
 
         return CourseOverviewFactory.create(id=course.id, org=course_key.org)
 
-    def _mock_authz_toggle(self, enabled_keys):
+    def _mock_authz_toggle(self, enabled_keys, global_enabled=False):
+        """Return a mock is_enabled side effect for AUTHZ_COURSE_AUTHORING_FLAG."""
         def _is_enabled(course_key=None, **_):
+            if course_key is None:
+                return global_enabled
             return str(course_key) in enabled_keys
         return _is_enabled
 
@@ -724,11 +728,10 @@ class TestCourseListingAuthz(CourseAuthoringAuthzTestMixin, ModuleStoreTestCase)
         the AuthZ course authoring toggle is enabled.
         """
         _, _, authz_courses, legacy_courses = self._create_courses()
-        org_scope = OrgCourseOverviewGlobData(external_key='course-v1:Org1+*')
         assign_role_to_user_in_scope(
             self.authorized_user.username,
             COURSE_STAFF.external_key,
-            org_scope.external_key,
+            OrgCourseOverviewGlobData.build_external_key("Org1"),
         )
 
         request = self._make_request(self.authorized_user)
@@ -757,11 +760,10 @@ class TestCourseListingAuthz(CourseAuthoringAuthzTestMixin, ModuleStoreTestCase)
         authz_keys, _, _, _ = self._create_courses()
         # enable only the first and third course keys
         enabled_keys = {str(authz_keys[0]), str(authz_keys[2])}
-        org_scope = OrgCourseOverviewGlobData(external_key='course-v1:Org1+*')
         assign_role_to_user_in_scope(
             self.authorized_user.username,
             COURSE_STAFF.external_key,
-            org_scope.external_key,
+            OrgCourseOverviewGlobData.build_external_key("Org1"),
         )
 
         request = self._make_request(self.authorized_user)
@@ -784,11 +786,10 @@ class TestCourseListingAuthz(CourseAuthoringAuthzTestMixin, ModuleStoreTestCase)
         courses, `get_courses_accessible_to_user` should return an empty
         list.
         """
-        org_scope = OrgCourseOverviewGlobData(external_key='course-v1:Org2+*')
         assign_role_to_user_in_scope(
             self.authorized_user.username,
             COURSE_STAFF.external_key,
-            org_scope.external_key,
+            OrgCourseOverviewGlobData.build_external_key("Org2"),
         )
 
         request = self._make_request(self.authorized_user)
@@ -806,17 +807,15 @@ class TestCourseListingAuthz(CourseAuthoringAuthzTestMixin, ModuleStoreTestCase)
         """
         Verify that course overviews are fetched once with all authorized orgs.
         """
-        org_scope1 = OrgCourseOverviewGlobData(external_key='course-v1:Org1+*')
-        org_scope2 = OrgCourseOverviewGlobData(external_key='course-v1:Org2+*')
         assign_role_to_user_in_scope(
             self.authorized_user.username,
             COURSE_STAFF.external_key,
-            org_scope1.external_key,
+            OrgCourseOverviewGlobData.build_external_key("Org1"),
         )
         assign_role_to_user_in_scope(
             self.authorized_user.username,
             COURSE_STAFF.external_key,
-            org_scope2.external_key,
+            OrgCourseOverviewGlobData.build_external_key("Org2"),
         )
 
         request = self._make_request(self.authorized_user)
@@ -832,3 +831,150 @@ class TestCourseListingAuthz(CourseAuthoringAuthzTestMixin, ModuleStoreTestCase)
             courses, _ = get_courses_accessible_to_user(request)
 
         mock_get_all_courses.assert_called_once_with(orgs={"Org1", "Org2"})
+
+    def test_course_listing_with_platform_scope(self):
+        """
+        Verify that a platform-wide scope (`course-v1:*`) grants access to all
+        courses across orgs when the AuthZ course authoring toggle is enabled.
+        """
+        _, _, authz_courses, legacy_courses = self._create_courses()
+        org2_course_key = CourseLocator("Org2", "Course1", "AuthzRun")
+        org2_course = self._create_course(org2_course_key)
+        assign_role_to_user_in_scope(
+            self.authorized_user.username,
+            COURSE_STAFF.external_key,
+            PlatformCourseOverviewGlobData.build_external_key(),
+        )
+
+        request = self._make_request(self.authorized_user)
+
+        with patch.object(
+            core_toggles.AUTHZ_COURSE_AUTHORING_FLAG,
+            "is_enabled",
+            return_value=True,
+        ):
+            courses, _ = get_courses_accessible_to_user(request)
+
+            result_ids = {c.id for c in courses}
+            expected_ids = {
+                *(c.id for c in authz_courses),
+                *(c.id for c in legacy_courses),
+                org2_course.id
+            }
+
+            assert result_ids == expected_ids
+
+    def test_course_listing_with_platform_scope_with_toggle(self):
+        """
+        If the global authz toggle is disabled and only a subset of courses have
+        the per-course toggle enabled, only those course keys should appear when
+        resolving a platform-wide scope.
+        """
+        authz_keys, _, _, _ = self._create_courses()
+        org2_course_key = CourseLocator("Org2", "Course1", "AuthzRun")
+        self._create_course(org2_course_key)
+        enabled_keys = {str(authz_keys[0]), str(authz_keys[2])}
+        assign_role_to_user_in_scope(
+            self.authorized_user.username,
+            COURSE_STAFF.external_key,
+            PlatformCourseOverviewGlobData.build_external_key(),
+        )
+
+        request = self._make_request(self.authorized_user)
+
+        with patch.object(
+            core_toggles.AUTHZ_COURSE_AUTHORING_FLAG,
+            "is_enabled",
+            side_effect=self._mock_authz_toggle(enabled_keys),
+        ):
+            courses, _ = get_courses_accessible_to_user(request)
+
+            result_ids = {c.id for c in courses}
+            expected = {authz_keys[0], authz_keys[2]}
+
+            assert result_ids == expected
+
+    def test_course_listing_with_platform_scope_global_flag_enabled(self):
+        """
+        When the global AuthZ toggle is enabled, platform scope should return all
+        courses without validating the per-course toggle.
+        """
+        authz_keys, legacy_keys, authz_courses, legacy_courses = self._create_courses()
+        org2_course_key = CourseLocator("Org2", "Course1", "AuthzRun")
+        org2_course = self._create_course(org2_course_key)
+        enabled_keys = {str(authz_keys[0])}
+        assign_role_to_user_in_scope(
+            self.authorized_user.username,
+            COURSE_STAFF.external_key,
+            PlatformCourseOverviewGlobData.build_external_key(),
+        )
+
+        request = self._make_request(self.authorized_user)
+
+        with patch.object(
+            core_toggles.AUTHZ_COURSE_AUTHORING_FLAG,
+            "is_enabled",
+            side_effect=self._mock_authz_toggle(enabled_keys, global_enabled=True),
+        ):
+            courses, _ = get_courses_accessible_to_user(request)
+
+            result_ids = {c.id for c in courses}
+            expected_ids = {*(c.id for c in authz_courses), *(c.id for c in legacy_courses), org2_course.id}
+
+            assert result_ids == expected_ids
+
+    def test_get_course_keys_from_scopes_with_platform_scope(self):
+        """
+        Platform-wide scopes should resolve to all courses with AuthZ enabled
+        when the global toggle is disabled.
+        """
+        authz_keys, legacy_keys, _, _ = self._create_courses()
+        enabled_keys = {str(key) for key in authz_keys + legacy_keys}
+
+        with patch.object(
+            core_toggles.AUTHZ_COURSE_AUTHORING_FLAG,
+            "is_enabled",
+            side_effect=self._mock_authz_toggle(enabled_keys),
+        ):
+            course_keys = _get_course_keys_from_scopes([PlatformCourseOverviewGlobData(external_key="course-v1:*")])
+
+        assert course_keys == set(authz_keys) | set(legacy_keys)
+
+    def test_get_course_keys_from_scopes_with_platform_scope_global_flag_enabled(self):
+        """
+        Platform-wide scopes should return all courses when the global AuthZ toggle
+        is enabled, regardless of per-course toggle state.
+        """
+        authz_keys, legacy_keys, _, _ = self._create_courses()
+        enabled_keys = {str(authz_keys[0])}
+
+        with patch.object(
+            core_toggles.AUTHZ_COURSE_AUTHORING_FLAG,
+            "is_enabled",
+            side_effect=self._mock_authz_toggle(enabled_keys, global_enabled=True),
+        ):
+            course_keys = _get_course_keys_from_scopes([PlatformCourseOverviewGlobData(external_key="course-v1:*")])
+
+        assert course_keys == set(CourseOverview.get_all_courses().values_list("id", flat=True))
+
+    def test_get_course_keys_from_scopes_platform_scope_short_circuits(self):
+        """
+        When a platform-wide scope is present, org and course scopes should be
+        ignored and only the platform scope resolution should apply.
+        """
+        authz_keys, _, _, _ = self._create_courses()
+        enabled_keys = {str(authz_keys[0])}
+
+        with patch.object(
+            core_toggles.AUTHZ_COURSE_AUTHORING_FLAG,
+            "is_enabled",
+            side_effect=self._mock_authz_toggle(enabled_keys),
+        ):
+            course_keys = _get_course_keys_from_scopes(
+                [
+                    OrgCourseOverviewGlobData(external_key="course-v1:Org1+*"),
+                    PlatformCourseOverviewGlobData(external_key="course-v1:*"),
+                ]
+            )
+
+        assert course_keys == {authz_keys[0]}
