@@ -830,7 +830,7 @@ class ContentLibrariesTestCase(ContentLibrariesRestApiTest):
             # the the block in the clipboard
             self.assertDictContainsEntries(self._get_library_block(paste_data["id"]), {
                 **block_data,
-                "last_draft_created_by": None,
+                "last_draft_created_by": "Author",
                 "last_draft_created": paste_data["last_draft_created"],
                 "created": paste_data["created"],
                 "modified": paste_data["modified"],

@@ -749,6 +749,11 @@ class ContentLibraryContainersTest(ContentLibrariesRestApiTest):
 
 
     def test_copy_and_paste_container_same_library(self) -> None:
+        """
+        Test copying and then pasting a container (within the same library)
+        """
+        # Publish the library so we can track what happens from this point forward more easily
+        api.publish_changes(self.lib1.library_key, self.user.id)
         # Copy a section with children
         api.copy_container(self.section1.container_key, self.user.id)
         # Paste the container
@@ -768,7 +773,17 @@ class ContentLibraryContainersTest(ContentLibrariesRestApiTest):
         assert isinstance(subsections[1], api.ContainerMetadata)
         assert subsections[1].container_key == self.subsection2.container_key
 
+        # Verify that everything was pasted in a single draft change:
+        container_history = content_api.get_entity_draft_history(new_container.container_id)
+        assert len(container_history) == 1
+        # The subsections are re-used on paste into the same library, so they aren't modified at all since the publish:
+        child_history = content_api.get_entity_draft_history(subsections[0].container_id)
+        assert len(child_history) == 0
+
     def test_copy_and_paste_container_another_library(self) -> None:
+        """
+        Test copying and then pasting a container (into a different library)
+        """
         # Copy a section with children
         api.copy_container(self.section1.container_key, self.user.id)
 
@@ -823,6 +838,19 @@ class ContentLibraryContainersTest(ContentLibrariesRestApiTest):
 
         # This is the same unit, so it should not be duplicated
         assert units_subsection1[0].container_key == units_subsection2[0].container_key
+
+        # Verify that everything was pasted in a single draft change:
+        container_history = content_api.get_entity_draft_history(new_container.container_id)
+        assert len(container_history) == 1
+        subsection_history = content_api.get_entity_draft_history(subsections[0].container_id)
+        assert len(subsection_history) == 1
+        component_id = content_api.get_entities_in_container(
+            content_api.get_container(subsections[0].container_id), published=False
+        )[0].entity.id
+        component_history = content_api.get_entity_draft_history(component_id)
+        assert len(component_history) == 1
+        assert container_history[0].draft_change_log.id == subsection_history[0].draft_change_log.id
+        assert container_history[0].draft_change_log.id == component_history[0].draft_change_log.id
 
     def test_set_library_block_olx_no_signal_on_rollback(self) -> None:
         """
