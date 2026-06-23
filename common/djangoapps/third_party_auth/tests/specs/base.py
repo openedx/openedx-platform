@@ -149,12 +149,12 @@ class HelperMixin:
         partial_unicode_username = unicode_username + ascii_substring
         pipeline_kwargs = pipeline.get(request)["kwargs"]
 
-        assert settings.FEATURES["ENABLE_UNICODE_USERNAME"] is False
+        assert settings.ENABLE_UNICODE_USERNAME is False
 
         self._check_registration_form_username(pipeline_kwargs, unicode_username, "")
         self._check_registration_form_username(pipeline_kwargs, partial_unicode_username, ascii_substring)
 
-        with mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_UNICODE_USERNAME": True}):
+        with django_utils.override_settings(ENABLE_UNICODE_USERNAME=True):
             self._check_registration_form_username(pipeline_kwargs, unicode_username, unicode_username)
 
     def assert_exception_redirect_looks_correct(self, expected_uri, auth_entry=None):

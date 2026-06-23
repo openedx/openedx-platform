@@ -71,7 +71,7 @@ def validate_username(username):
     flags = None
     message = accounts.USERNAME_INVALID_CHARS_ASCII
 
-    if settings.FEATURES.get("ENABLE_UNICODE_USERNAME"):
+    if getattr(settings, 'ENABLE_UNICODE_USERNAME', False):
         username_re = fr"^{settings.USERNAME_REGEX_PARTIAL}$"
         flags = re.UNICODE
         message = accounts.USERNAME_INVALID_CHARS_UNICODE
