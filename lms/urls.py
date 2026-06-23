@@ -682,7 +682,7 @@ urlpatterns += [
     ),
 ]
 
-if settings.FEATURES.get('ENABLE_TEAMS'):
+if settings.ENABLE_TEAMS:
     # Teams endpoints
     urlpatterns += [
         path(

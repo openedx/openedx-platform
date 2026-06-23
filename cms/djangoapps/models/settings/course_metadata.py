@@ -124,7 +124,7 @@ class CourseMetadata:
             exclude_list.append('social_sharing_url')
 
         # Do not show teams configuration if feature is disabled.
-        if not settings.FEATURES.get('ENABLE_TEAMS'):
+        if not settings.ENABLE_TEAMS:
             exclude_list.append('teams_configuration')
 
         if not settings.FEATURES.get('ENABLE_VIDEO_BUMPER'):
