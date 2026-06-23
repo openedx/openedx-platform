@@ -186,7 +186,7 @@ class LoginAndRegistrationTest(ThirdPartyAuthTestMixin, UrlResetMixin, ModuleSto
         expected_url = f'/login?{self._finish_auth_url_param(params)}'
         self.assertNotContains(response, expected_url)
 
-    @mock.patch.dict(settings.FEATURES, {"ENABLE_THIRD_PARTY_AUTH": False})
+    @override_settings(ENABLE_THIRD_PARTY_AUTH=False)
     @ddt.data("signin_user", "register_user")
     def test_third_party_auth_disabled(self, url_name):
         response = self.client.get(reverse(url_name))
