@@ -2867,7 +2867,7 @@ class RegistrationValidationViewTests(OpenEdxEventsTestMixin, test_utils.ApiTest
             {'username': str(USERNAME_BAD_LENGTH_MSG)}
         )
 
-    @skipUnless(settings.FEATURES.get("ENABLE_UNICODE_USERNAME"), "Unicode usernames disabled.")
+    @skipUnless(getattr(settings, 'ENABLE_UNICODE_USERNAME', False), "Unicode usernames disabled.")
     @ddt.data(*testutils.INVALID_USERNAMES_UNICODE)
     def test_username_invalid_unicode_validation_decision(self, username):
         self.assertValidationDecision(
@@ -2875,7 +2875,7 @@ class RegistrationValidationViewTests(OpenEdxEventsTestMixin, test_utils.ApiTest
             {'username': str(USERNAME_INVALID_CHARS_UNICODE)}
         )
 
-    @skipIf(settings.FEATURES.get("ENABLE_UNICODE_USERNAME"), "Unicode usernames enabled.")
+    @skipIf(getattr(settings, 'ENABLE_UNICODE_USERNAME', False), "Unicode usernames enabled.")
     @ddt.data(*testutils.INVALID_USERNAMES_ASCII)
     def test_username_invalid_ascii_validation_decision(self, username):
         self.assertValidationDecision(
