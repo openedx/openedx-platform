@@ -337,7 +337,7 @@ def add_staff_markup(user, disable_staff_debug_info, block, view, frag, context)
         'element_id': sanitize_html_id(block.location.html_id()),
         'edit_link': edit_link,
         'user': user,
-        'xqa_server': settings.FEATURES.get('XQA_SERVER', "http://your_xqa_server.com"),
+        'xqa_server': settings.XQA_SERVER,
         'histogram': json.dumps(histogram),
         'render_histogram': render_histogram,
         'block_content': frag.content,

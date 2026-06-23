@@ -1075,6 +1075,14 @@ ENABLE_COURSE_OLX_VALIDATION = False
 # .. toggle_creation_date: 2015-07-24
 ENABLE_PROCTORED_EXAMS = False
 
+# .. setting_name: XQA_SERVER
+# .. setting_default: 'http://your_xqa_server.com'
+# .. setting_description: URL of the XQA staff debug/inspection server linked from the
+#   staff-only markup rendered by openedx.core.lib.xblock_utils.add_staff_markup. Set
+#   to a real endpoint if operating an XQA-compatible service; leave the placeholder
+#   default to effectively disable the link.
+XQA_SERVER = 'http://your_xqa_server.com'
+
 # .. toggle_name: AUTOMATIC_AUTH_FOR_TESTING
 # .. toggle_implementation: DjangoSetting
 # .. toggle_default: False
