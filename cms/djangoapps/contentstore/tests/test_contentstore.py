@@ -1363,20 +1363,20 @@ class ContentStoreTest(ContentStoreTestCase):
         auth.add_users(self.user, CourseCreatorRole(), self.user)
         self.assert_created_course()
 
+    @override_settings(ALLOW_UNICODE_COURSE_ID=False)
     def test_create_course_with_unicode_in_id_disabled(self):
         """
         Test new course creation with feature setting: ALLOW_UNICODE_COURSE_ID disabled.
         """
-        with mock.patch.dict('django.conf.settings.FEATURES', {'ALLOW_UNICODE_COURSE_ID': False}):
-            error_message = "Special characters not allowed in organization, course number, and course run."
-            self.course_data['org'] = '��������������'
-            self.assert_create_course_failed(error_message)
+        error_message = "Special characters not allowed in organization, course number, and course run."
+        self.course_data['org'] = '��������������'
+        self.assert_create_course_failed(error_message)
 
-            self.course_data['number'] = '��chantillon'
-            self.assert_create_course_failed(error_message)
+        self.course_data['number'] = '��chantillon'
+        self.assert_create_course_failed(error_message)
 
-            self.course_data['run'] = '����������'
-            self.assert_create_course_failed(error_message)
+        self.course_data['run'] = '����������'
+        self.assert_create_course_failed(error_message)
 
     def assert_course_permission_denied(self):
         """

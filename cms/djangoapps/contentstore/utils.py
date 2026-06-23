@@ -1587,7 +1587,7 @@ def get_library_context(request, request_is_json=False):
             'user': request.user,
             'request_course_creator_url': reverse('request_course_creator'),
             'course_creator_status': _get_course_creator_status(request.user),
-            'allow_unicode_course_id': settings.FEATURES.get('ALLOW_UNICODE_COURSE_ID', False),
+            'allow_unicode_course_id': settings.ALLOW_UNICODE_COURSE_ID,
             'archived_courses': True,
             'allow_course_reruns': settings.FEATURES.get('ALLOW_COURSE_RERUNS', True),
             'rerun_creator_status': GlobalStaff().has_user(request.user),
@@ -1718,7 +1718,7 @@ def get_home_context(request, no_course=False):
         'request_course_creator_url': reverse('request_course_creator'),
         'course_creator_status': _get_course_creator_status(user),
         'rerun_creator_status': GlobalStaff().has_user(user),
-        'allow_unicode_course_id': settings.FEATURES.get('ALLOW_UNICODE_COURSE_ID', False),
+        'allow_unicode_course_id': settings.ALLOW_UNICODE_COURSE_ID,
         'allow_course_reruns': settings.FEATURES.get('ALLOW_COURSE_RERUNS', True),
         'active_tab': 'courses',
         'allowed_organizations': get_allowed_organizations(user),
@@ -1743,7 +1743,7 @@ def get_course_rerun_context(course_key, course_block, user):
         'display_name': course_block.display_name,
         'user': user,
         'course_creator_status': _get_course_creator_status(user),
-        'allow_unicode_course_id': settings.FEATURES.get('ALLOW_UNICODE_COURSE_ID', False)
+        'allow_unicode_course_id': settings.ALLOW_UNICODE_COURSE_ID
     }
 
     return course_rerun_context
