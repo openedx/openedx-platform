@@ -38,7 +38,7 @@ def make_url_for_lib(key):
 
 
 @ddt.ddt
-@mock.patch.dict('django.conf.settings.FEATURES', {'DISABLE_COURSE_CREATION': False})
+@override_settings(DISABLE_COURSE_CREATION=False)
 class UnitTestLibraries(CourseTestCase):
     """
     Unit tests for library views
@@ -133,16 +133,14 @@ class UnitTestLibraries(CourseTestCase):
         """
         _, nostaff_user = self.create_non_staff_authed_user_client()
         with mock.patch("cms.djangoapps.contentstore.toggles.libraries_v1_enabled", True):
-            with mock.patch.dict(
-                "django.conf.settings.FEATURES",
-                {
-                    "DISABLE_COURSE_CREATION": disable_course,
-                    "DISABLE_LIBRARY_CREATION": disable_library
-                }
-            ):
-                self.assertEqual(user_can_create_library(nostaff_user, 'SomEOrg'), expected_status)  # noqa: PT009
+            with override_settings(DISABLE_COURSE_CREATION=disable_course):
+                with mock.patch.dict(
+                    "django.conf.settings.FEATURES",
+                    {"DISABLE_LIBRARY_CREATION": disable_library}
+                ):
+                    self.assertEqual(user_can_create_library(nostaff_user, 'SomEOrg'), expected_status)  # noqa: PT009
 
-    @mock.patch.dict('django.conf.settings.FEATURES', {'DISABLE_COURSE_CREATION': True})
+    @override_settings(DISABLE_COURSE_CREATION=True)
     @mock.patch("cms.djangoapps.contentstore.toggles.libraries_v1_enabled", True)
     def test_library_creator_status_with_no_course_creator_role_and_disabled_nonstaff_course_creation(self):
         """

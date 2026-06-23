@@ -76,44 +76,41 @@ class CreatorGroupTest(TestCase):
         remove_users(self.admin, CourseCreatorRole(), self.user)
         assert not user_has_role(self.user, CourseCreatorRole())
 
-    @override_settings(ENABLE_CREATOR_GROUP=True)
+    @override_settings(ENABLE_CREATOR_GROUP=True, DISABLE_COURSE_CREATION=True)
     def test_course_creation_disabled(self):
         """ Tests that the COURSE_CREATION_DISABLED flag overrides course creator group settings. """
-        with mock.patch.dict('django.conf.settings.FEATURES', {'DISABLE_COURSE_CREATION': True}):
-            # Add user to creator group.
-            add_users(self.admin, CourseCreatorRole(), self.user)
+        # Add user to creator group.
+        add_users(self.admin, CourseCreatorRole(), self.user)
 
-            # DISABLE_COURSE_CREATION overrides (user is not marked as staff).
-            assert not user_has_role(self.user, CourseCreatorRole())
+        # DISABLE_COURSE_CREATION overrides (user is not marked as staff).
+        assert not user_has_role(self.user, CourseCreatorRole())
 
-            # Mark as staff. Now CourseCreatorRole().has_user returns true.
-            self.user.is_staff = True
-            assert user_has_role(self.user, CourseCreatorRole())
+        # Mark as staff. Now CourseCreatorRole().has_user returns true.
+        self.user.is_staff = True
+        assert user_has_role(self.user, CourseCreatorRole())
 
-            # Remove user from creator group. CourseCreatorRole().has_user still returns true because is_staff=True
-            remove_users(self.admin, CourseCreatorRole(), self.user)
-            assert user_has_role(self.user, CourseCreatorRole())
+        # Remove user from creator group. CourseCreatorRole().has_user still returns true because is_staff=True
+        remove_users(self.admin, CourseCreatorRole(), self.user)
+        assert user_has_role(self.user, CourseCreatorRole())
 
-    @override_settings(ENABLE_CREATOR_GROUP=True)
+    @override_settings(ENABLE_CREATOR_GROUP=True, DISABLE_COURSE_CREATION=False)
     def test_add_user_not_authenticated(self):
         """
         Tests that adding to creator group fails if user is not authenticated
         """
-        with mock.patch.dict('django.conf.settings.FEATURES', {'DISABLE_COURSE_CREATION': False}):
-            anonymous_user = AnonymousUser()
-            role = CourseCreatorRole()
-            add_users(self.admin, role, anonymous_user)
-            assert not user_has_role(anonymous_user, role)
+        anonymous_user = AnonymousUser()
+        role = CourseCreatorRole()
+        add_users(self.admin, role, anonymous_user)
+        assert not user_has_role(anonymous_user, role)
 
-    @override_settings(ENABLE_CREATOR_GROUP=True)
+    @override_settings(ENABLE_CREATOR_GROUP=True, DISABLE_COURSE_CREATION=False)
     def test_add_user_not_active(self):
         """
         Tests that adding to creator group fails if user is not active
         """
-        with mock.patch.dict('django.conf.settings.FEATURES', {'DISABLE_COURSE_CREATION': False}):
-            self.user.is_active = False
-            add_users(self.admin, CourseCreatorRole(), self.user)
-            assert not user_has_role(self.user, CourseCreatorRole())
+        self.user.is_active = False
+        add_users(self.admin, CourseCreatorRole(), self.user)
+        assert not user_has_role(self.user, CourseCreatorRole())
 
     def test_add_user_to_group_requires_staff_access(self):
         with pytest.raises(PermissionDenied):  # noqa: PT012
