@@ -391,7 +391,7 @@ class CoursewareMeta:
             course_with_access = get_course_with_access(self.request.user, permission, self.course_key)
             return bool(
                 self.request.user.has_perm(VIEW_COURSEWARE, course_with_access)
-                or settings.FEATURES.get('ENABLE_LMS_MIGRATION')
+                or settings.ENABLE_LMS_MIGRATION
             )
 
     @property
