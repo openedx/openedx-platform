@@ -21,7 +21,7 @@ def xframe_allow_whitelisted(view_func):
         """ Modify the response with the correct X-Frame-Options. """
         resp = view_func(request, *args, **kwargs)
         x_frame_option = settings.X_FRAME_OPTIONS
-        if settings.FEATURES['ENABLE_THIRD_PARTY_AUTH']:
+        if settings.ENABLE_THIRD_PARTY_AUTH:
             referer = request.META.get('HTTP_REFERER')
             if referer is not None:
                 parsed_url = urlparse(referer)

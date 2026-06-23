@@ -872,7 +872,7 @@ urlpatterns += [
 ]
 
 # Third-party auth.
-if settings.FEATURES.get('ENABLE_THIRD_PARTY_AUTH'):
+if settings.ENABLE_THIRD_PARTY_AUTH:
     urlpatterns += [
         path('', include('common.djangoapps.third_party_auth.urls')),
         path('api/third_party_auth/', include('common.djangoapps.third_party_auth.api.urls')),

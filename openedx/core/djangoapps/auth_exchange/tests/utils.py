@@ -9,7 +9,7 @@ from social_django.models import Partial, UserSocialAuth
 from common.djangoapps.third_party_auth.tests.utils import ThirdPartyOAuthTestMixin
 
 TPA_FEATURES_KEY = 'ENABLE_THIRD_PARTY_AUTH'
-TPA_FEATURE_ENABLED = TPA_FEATURES_KEY in settings.FEATURES
+TPA_FEATURE_ENABLED = hasattr(settings, TPA_FEATURES_KEY)
 
 
 class AccessTokenExchangeTestMixin(ThirdPartyOAuthTestMixin):
