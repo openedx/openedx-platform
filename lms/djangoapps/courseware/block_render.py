@@ -556,7 +556,7 @@ def prepare_runtime_for_user(
         block_wrappers.append(filter_displayed_blocks)
 
     mako_service = MakoService()
-    if settings.FEATURES.get("LICENSING", False):
+    if settings.LICENSING:
         block_wrappers.append(partial(wrap_with_license, mako_service=mako_service))
 
     # Wrap the output display in a single div to allow for the XBlock
