@@ -1333,17 +1333,17 @@ class ContentStoreTest(ContentStoreTestCase):
         self.course_data['org'] = 'University of California, Berkeley'
         self.assert_course_creation_failed(r"(?s)Unable to create course 'Robot Super Course'.*")
 
+    @override_settings(DISABLE_COURSE_CREATION=True)
     def test_create_course_with_course_creation_disabled_staff(self):
         """Test new course creation -- course creation disabled, but staff access."""
-        with mock.patch.dict('django.conf.settings.FEATURES', {'DISABLE_COURSE_CREATION': True}):
-            self.assert_created_course()
+        self.assert_created_course()
 
+    @override_settings(DISABLE_COURSE_CREATION=True)
     def test_create_course_with_course_creation_disabled_not_staff(self):
         """Test new course creation -- error path for course creation disabled, not staff access."""
-        with mock.patch.dict('django.conf.settings.FEATURES', {'DISABLE_COURSE_CREATION': True}):
-            self.user.is_staff = False
-            self.user.save()
-            self.assert_course_permission_denied()
+        self.user.is_staff = False
+        self.user.save()
+        self.assert_course_permission_denied()
 
     @override_settings(ENABLE_CREATOR_GROUP=True)
     def test_create_course_no_course_creators_staff(self):

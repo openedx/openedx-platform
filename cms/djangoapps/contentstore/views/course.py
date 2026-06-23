@@ -2111,7 +2111,7 @@ def _get_course_creator_status(user):
 
     if user.is_staff:
         course_creator_status = 'granted'
-    elif settings.FEATURES.get('DISABLE_COURSE_CREATION', False):
+    elif getattr(settings, 'DISABLE_COURSE_CREATION', False):
         course_creator_status = 'disallowed_for_this_site'
     elif getattr(settings, 'ENABLE_CREATOR_GROUP', False):
         course_creator_status = get_course_creator_status(user)

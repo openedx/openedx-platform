@@ -427,7 +427,7 @@ class TestCourseHandlerAuthz(
     # ------------------------------------------------------------
     # CREATE COURSE -- Non-staff users and existing Organization
     # ------------------------------------------------------------
-    @override_settings(FEATURES={"DISABLE_COURSE_CREATION": False})
+    @override_settings(DISABLE_COURSE_CREATION=False)
     def test_create_course_unauthorized(self):
         """
         User without role cannot create course.
@@ -442,7 +442,7 @@ class TestCourseHandlerAuthz(
 
         assert response.status_code == 403
 
-    @override_settings(FEATURES={"DISABLE_COURSE_CREATION": False})
+    @override_settings(DISABLE_COURSE_CREATION=False)
     def test_create_course_unauthorized_with_role(self):
         """
         User with role but without required permission cannot create course.
@@ -484,7 +484,7 @@ class TestCourseHandlerAuthz(
     # ------------------------------------------------------------
     # FEATURE FLAG
     # ------------------------------------------------------------
-    @override_settings(FEATURES={"DISABLE_COURSE_CREATION": True})
+    @override_settings(DISABLE_COURSE_CREATION=True)
     def test_create_course_disabled_by_flag(self):
         """
         Even authorized users cannot create course if feature flag is off.
