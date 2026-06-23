@@ -307,7 +307,7 @@ class CourseEnrollment(models.Model):
     """
     MODEL_TAGS = ['course', 'is_active', 'mode']
 
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, db_constraint=False)
 
     course = models.ForeignKey(
         CourseOverview,
@@ -1611,6 +1611,7 @@ class CourseEnrollmentAllowed(DeletableByUserValue, models.Model):
         help_text="First user which enrolled in the specified course through the specified e-mail. "
                   "Once set, it won't change.",
         on_delete=models.CASCADE,
+        db_constraint=False,
     )
 
     created = models.DateTimeField(auto_now_add=True, null=True, db_index=True)
