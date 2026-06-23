@@ -100,14 +100,14 @@ bleach[css]==6.4.0
     #   ora2
     #   xblock-drag-and-drop-v2
     #   xblock-poll
-boto3==1.43.30
+boto3==1.43.36
     # via
     #   -r requirements/edx/base.txt
     #   django-ses
     #   fs-s3fs
     #   ora2
     #   snowflake-connector-python
-botocore==1.43.30
+botocore==1.43.36
     # via
     #   -r requirements/edx/base.txt
     #   boto3
@@ -147,7 +147,7 @@ celery==5.6.3
     #   enterprise-integrated-channels
     #   event-tracking
     #   openedx-core
-certifi==2026.5.20
+certifi==2026.6.17
     # via
     #   -r requirements/edx/base.txt
     #   elasticsearch
@@ -215,7 +215,7 @@ codejail-includes==2.0.0
     # via -r requirements/edx/base.txt
 colorama==0.4.6
     # via tox
-coverage[toml]==7.14.1
+coverage[toml]==7.14.3
     # via
     #   -r requirements/edx/coverage.txt
     #   pytest-cov
@@ -339,7 +339,7 @@ django-appconf==1.2.0
     # via
     #   -r requirements/edx/base.txt
     #   django-statici18n
-django-autocomplete-light==4.0.3
+django-autocomplete-light==5.0.0
     # via -r requirements/edx/base.txt
 django-cache-memoize==0.2.1
     # via
@@ -447,7 +447,7 @@ django-sekizai==4.1.0
     #   openedx-django-wiki
 django-ses==4.7.2
     # via -r requirements/edx/base.txt
-django-simple-history==3.11.0
+django-simple-history==3.12.0
     # via
     #   -r requirements/edx/base.txt
     #   edx-enterprise
@@ -647,7 +647,7 @@ edx-search==5.0.1
     # via
     #   -r requirements/edx/base.txt
     #   openedx-forum
-edx-sga==0.28.0
+edx-sga==0.29.0
     # via -r requirements/edx/base.txt
 edx-submissions==4.0.0
     # via
@@ -984,7 +984,7 @@ mccabe==0.7.0
     # via pylint
 mdurl==0.1.2
     # via markdown-it-py
-meilisearch==0.41.0
+meilisearch==0.41.1
     # via
     #   -r requirements/edx/base.txt
     #   edx-search
@@ -1004,7 +1004,7 @@ mpmath==1.3.0
     # via
     #   -r requirements/edx/base.txt
     #   sympy
-msgpack==1.2.0
+msgpack==1.2.1
     # via
     #   -r requirements/edx/base.txt
     #   cachecontrol
@@ -1017,7 +1017,7 @@ mysqlclient==2.2.8
     # via
     #   -r requirements/edx/base.txt
     #   openedx-forum
-nh3==0.3.5
+nh3==0.3.6
     # via
     #   -r requirements/edx/base.txt
     #   xblocks-contrib
@@ -1082,7 +1082,7 @@ openedx-events==11.2.0
     #   openedx-authz
     #   openedx-core
     #   ora2
-openedx-filters==3.4.1
+openedx-filters==3.6.0
     # via
     #   -r requirements/edx/base.txt
     #   edx-enterprise
@@ -1456,7 +1456,7 @@ rpds-py==2026.5.1
     #   -r requirements/edx/base.txt
     #   jsonschema
     #   referencing
-ruff==0.15.17
+ruff==0.15.18
     # via -r requirements/edx/testing.in
 rules==3.5
     # via
@@ -1464,7 +1464,7 @@ rules==3.5
     #   edx-enterprise
     #   edx-proctoring
     #   openedx-core
-s3transfer==0.18.0
+s3transfer==0.19.0
     # via
     #   -r requirements/edx/base.txt
     #   boto3
@@ -1571,7 +1571,7 @@ sympy==1.14.0
     # via
     #   -r requirements/edx/base.txt
     #   openedx-calc
-testfixtures==12.1.0
+testfixtures==12.2.0
     # via
     #   -r requirements/edx/base.txt
     #   -r requirements/edx/testing.in
@@ -1599,7 +1599,7 @@ tomlkit==0.15.0
     #   snowflake-connector-python
 tox==4.55.1
     # via -r requirements/edx/testing.in
-tqdm==4.68.2
+tqdm==4.68.3
     # via
     #   -r requirements/edx/base.txt
     #   nltk
@@ -1641,7 +1641,7 @@ tzdata==2026.2
     #   -r requirements/edx/base.txt
     #   icalendar
     #   kombu
-tzlocal==5.4
+tzlocal==5.4.3
     # via
     #   -r requirements/edx/base.txt
     #   celery
@@ -1671,7 +1671,7 @@ vine==5.1.0
     #   amqp
     #   celery
     #   kombu
-virtualenv==21.5.0
+virtualenv==21.5.1
     # via tox
 voluptuous==0.16.0
     # via
@@ -1692,7 +1692,6 @@ wcwidth==0.8.1
 web-fragments==4.0.0
     # via
     #   -r requirements/edx/base.txt
-    #   edx-sga
     #   xblock-utils
 webencodings==0.5.1
     # via
@@ -1709,7 +1708,7 @@ wheel==0.47.0
     # via
     #   -r requirements/edx/base.txt
     #   django-pipeline
-wrapt==2.2.1
+wrapt==2.2.2
     # via
     #   -r requirements/edx/base.txt
     #   xblocks-contrib
@@ -1738,7 +1737,6 @@ xblock-poll==1.15.1
 xblock-utils==4.0.0
     # via
     #   -r requirements/edx/base.txt
-    #   edx-sga
     #   xblock-poll
 xblocks-contrib==0.17.0
     # via -r requirements/edx/base.txt
