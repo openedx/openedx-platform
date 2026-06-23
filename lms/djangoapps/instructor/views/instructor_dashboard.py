@@ -278,7 +278,7 @@ def instructor_dashboard_2(request, course_id):  # pylint: disable=too-many-stat
         'generate_bulk_certificate_exceptions_url': generate_bulk_certificate_exceptions_url,
         'certificate_exception_view_url': certificate_exception_view_url,
         'certificate_invalidation_view_url': certificate_invalidation_view_url,
-        'xqa_server': settings.FEATURES.get('XQA_SERVER', "http://your_xqa_server.com"),
+        'xqa_server': settings.XQA_SERVER,
     }
 
     context_from_plugins = get_plugins_view_context(
