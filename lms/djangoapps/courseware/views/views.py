@@ -833,7 +833,7 @@ def course_about(request, course_id):  # pylint: disable=too-many-statements
         show_courseware_link = bool(
             (
                 request.user.has_perm(VIEW_COURSEWARE, course)
-            ) or settings.FEATURES.get('ENABLE_LMS_MIGRATION')
+            ) or settings.ENABLE_LMS_MIGRATION
         )
 
         # If the ecommerce checkout flow is enabled and the mode of the course is
