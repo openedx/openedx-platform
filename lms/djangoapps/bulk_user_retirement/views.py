@@ -58,8 +58,8 @@ class BulkUsersRetirementView(APIView):
                 with transaction.atomic():
                     create_retirement_request_and_deactivate_account(user_to_retire)
                 if settings.FEATURES['SQUELCH_PII_IN_LOGS']:
-                    log.info('User %s added to retirement pipeline by user %s', 
-                        user_to_retire.id, 
+                    log.info('User %s added to retirement pipeline by user %s',
+                        user_to_retire.id,
                         request.user.id
                     )
                 else:
