@@ -26,11 +26,11 @@ pluggy==1.6.0
     # via pytest
 pygments==2.20.0
     # via pytest
-pymongo==4.4.0
+pymongo==4.17.0
     # via
     #   -r scripts/structures_pruning/requirements/base.txt
     #   edx-opaque-keys
-pytest==9.1.0
+pytest==9.1.1
     # via -r scripts/structures_pruning/requirements/testing.in
 stevedore==5.8.0
     # via

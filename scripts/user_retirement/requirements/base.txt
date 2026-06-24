@@ -10,13 +10,13 @@ attrs==26.1.0
     # via zeep
 backoff==2.2.1
     # via -r scripts/user_retirement/requirements/base.in
-boto3==1.43.30
+boto3==1.43.36
     # via -r scripts/user_retirement/requirements/base.in
-botocore==1.43.30
+botocore==1.43.36
     # via
     #   boto3
     #   s3transfer
-certifi==2026.5.20
+certifi==2026.6.17
     # via requests
 cffi==2.0.0
     # via
@@ -108,9 +108,7 @@ pyparsing==3.3.2
 python-dateutil==2.9.0.post0
     # via botocore
 pytz==2026.2
-    # via
-    #   jenkinsapi
-    #   zeep
+    # via jenkinsapi
 pyyaml==6.0.3
     # via -r scripts/user_retirement/requirements/base.in
 requests==2.34.2
@@ -127,7 +125,7 @@ requests-file==3.0.1
     # via zeep
 requests-toolbelt==1.0.0
     # via zeep
-s3transfer==0.18.0
+s3transfer==0.19.0
     # via boto3
 simple-salesforce==1.12.9
     # via -r scripts/user_retirement/requirements/base.in
@@ -149,5 +147,5 @@ urllib3==2.7.0
     # via
     #   botocore
     #   requests
-zeep==4.3.2
+zeep==4.3.3
     # via simple-salesforce

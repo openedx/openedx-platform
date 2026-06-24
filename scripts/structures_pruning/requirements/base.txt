@@ -14,9 +14,8 @@ dnspython==2.8.0
     # via pymongo
 edx-opaque-keys==4.0.0
     # via -r scripts/structures_pruning/requirements/base.in
-pymongo==4.4.0
+pymongo==4.17.0
     # via
-    #   -c requirements/constraints.txt
     #   -r scripts/structures_pruning/requirements/base.in
     #   edx-opaque-keys
 stevedore==5.8.0

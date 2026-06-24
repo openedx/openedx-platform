@@ -85,11 +85,6 @@ path<16.12.0
 # Issue for unpinning: https://github.com/openedx/edx-platform/issues/35266
 py2neo<2022
 
-# Date: 2020-04-08
-# Adding pin to avoid any major upgrade
-# Issue for unpinning: https://github.com/openedx/edx-platform/issues/35265
-pymongo<4.4.1
-
 # Date: 2024-08-06
 # social-auth-app-django 5.4.2 introduces a new migration that will not play nicely with large installations. This will touch
 # user tables, which are quite large, especially on instances like edx.org.
