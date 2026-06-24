@@ -561,14 +561,14 @@ def disable_account_ajax(request):
             user_account.account_status = UserStanding.ACCOUNT_DISABLED
             context['message'] = _("Successfully disabled {}'s account").format(username)
             if settings.FEATURES['SQUELCH_PII_IN_LOGS']:
-                log.info("%s disabled user %s's account", request.user.id, '[PII_REDACTED]')
+                log.info("User %s disabled user %s's account", request.user.id, user.id)
             else:
                 log.info("%s disabled %s's account", request.user, username)
         elif account_action == 'reenable':
             user_account.account_status = UserStanding.ACCOUNT_ENABLED
             context['message'] = _("Successfully reenabled {}'s account").format(username)
             if settings.FEATURES['SQUELCH_PII_IN_LOGS']:
-                log.info("%s reenabled user %s's account", request.user.id, '[PII_REDACTED]')
+                log.info("User %s reenabled user %s's account", request.user.id, user.id)
             else:
                 log.info("%s reenabled %s's account", request.user, username)
         else:
@@ -863,7 +863,7 @@ def do_email_change_request(user, new_email, activation_key=None, secondary_emai
     except Exception as err:
         from_address = configuration_helpers.get_value('email_from_address', settings.DEFAULT_FROM_EMAIL)
         if settings.FEATURES['SQUELCH_PII_IN_LOGS']:
-            log.error('Unable to send email activation link from a redacted address', exc_info=True)
+            log.error('Unable to send email activation link for user %s from a redacted address', user.id, exc_info=True)
         else:
             log.error('Unable to send email activation link to user from "%s"', from_address, exc_info=True)
         raise ValueError(_('Unable to send email activation link. Please try again later.')) from err  # lint-amnesty, pylint: disable=raise-missing-from
@@ -976,7 +976,7 @@ def confirm_email_change(request, key):  # pylint: disable=too-many-statements
             ace.send(msg)
         except Exception:  # pylint: disable=broad-except
             if settings.FEATURES['SQUELCH_PII_IN_LOGS']:
-                log.warning('Unable to send confirmation email to old address [REDACTED]', exc_info=True)
+                log.warning('Unable to send confirmation email to old address for user %s', user.id, exc_info=True)
             else:
                 log.warning('Unable to send confirmation email to old address', exc_info=True)
             response = render_to_response("email_change_failed.html", {'email': user.email})
@@ -995,7 +995,7 @@ def confirm_email_change(request, key):  # pylint: disable=too-many-statements
             ace.send(msg)
         except Exception:  # pylint: disable=broad-except
             if settings.FEATURES['SQUELCH_PII_IN_LOGS']:
-                log.warning('Unable to send confirmation email to new address [REDACTED]', exc_info=True)
+                log.warning('Unable to send confirmation email to new address for user %s', user.id, exc_info=True)
             else:
                 log.warning('Unable to send confirmation email to new address', exc_info=True)
             response = render_to_response("email_change_failed.html", {'email': user.email})

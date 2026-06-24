@@ -57,7 +57,7 @@ def extract_email_features(email_task):
         task_input_information = json.loads(email_task.task_input)
     except ValueError:
         if settings.FEATURES['SQUELCH_PII_IN_LOGS']:
-            log.error("Could not parse task input as valid json; task input: [REDACTED]")
+            log.error("Could not parse task input as valid json; task input is redacted")
         else:
             log.error("Could not parse task input as valid json; task input: %s", email_task.task_input)
         return email_error_information()
@@ -87,7 +87,7 @@ def extract_email_features(email_task):
             task_output = json.loads(email_task.task_output)
         except ValueError:
             if settings.FEATURES['SQUELCH_PII_IN_LOGS']:
-                log.error("Could not parse task output as valid json; task output: [REDACTED]")
+                log.error("Could not parse task output as valid json; task output is redacted")
             else:
                 log.error("Could not parse task output as valid json; task output: %s", email_task.task_output)
         else:

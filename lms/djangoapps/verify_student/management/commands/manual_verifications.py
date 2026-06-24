@@ -55,7 +55,7 @@ class Command(BaseCommand):
             successfully_verified = self._add_user_to_manual_verification(single_email)
             if successfully_verified is False:
                 if settings.FEATURES['SQUELCH_PII_IN_LOGS']:
-                    log.error('Manual verification of [REDACTED_EMAIL] failed')
+                    log.error('Manual verification of a redacted email failed')
                 else:
                     log.error(f'Manual verification of {single_email} failed')
             return
@@ -75,7 +75,7 @@ class Command(BaseCommand):
                 total_emails
             ))
             if settings.FEATURES['SQUELCH_PII_IN_LOGS']:
-                log.error('Failed emails: [REDACTED]')
+                log.error('Failed emails are redacted')
             else:
                 log.error(f'Failed emails:{pformat(failed_emails)}')
         else:
@@ -158,7 +158,7 @@ class Command(BaseCommand):
             return True
         except User.DoesNotExist:
             if settings.FEATURES['SQUELCH_PII_IN_LOGS']:
-                log.error('Tried to verify email [REDACTED_EMAIL], but user not found')
+                log.error('Tried to verify a redacted email, but user not found')
             else:
                 log.error(f'Tried to verify email {email_id}, but user not found')
             return False

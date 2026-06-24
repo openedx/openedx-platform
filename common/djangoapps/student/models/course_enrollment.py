@@ -664,12 +664,20 @@ class CourseEnrollment(models.Model):
 
         except Exception:  # pylint: disable=broad-except
             if event_name and self.course_id:
-                log.exception(
-                    'Unable to emit event %s for user %s and course %s',
-                    event_name,
-                    self.user.username,
-                    self.course_id,
-                )
+                if settings.FEATURES['SQUELCH_PII_IN_LOGS']:
+                    log.exception(
+                        'Unable to emit event %s for user %s and course %s',
+                        event_name,
+                        self.user.id,
+                        self.course_id,
+                    )
+                else:
+                    log.exception(
+                        'Unable to emit event %s for user %s and course %s',
+                        event_name,
+                        self.user.username,
+                        self.course_id,
+                    )
 
     @classmethod
     def enroll(cls, user, course_key, mode=None, check_access=False, can_upgrade=False, enterprise_uuid=None):
@@ -746,28 +754,51 @@ class CourseEnrollment(models.Model):
 
         if check_access:
             if cls.is_enrollment_closed(user, course) and not can_upgrade:
-                log.warning(
-                    "User %s failed to enroll in course %s because enrollment is closed (can_upgrade=%s).",
-                    user.username,
-                    str(course_key),
-                    can_upgrade,
-                )
+                if settings.FEATURES['SQUELCH_PII_IN_LOGS']:
+                    log.warning(
+                        "User %s failed to enroll in course %s because enrollment is closed (can_upgrade=%s).",
+                        user.id,
+                        str(course_key),
+                        can_upgrade,
+                    )
+                else:
+                    log.warning(
+                        "User %s failed to enroll in course %s because enrollment is closed (can_upgrade=%s).",
+                        user.username,
+                        str(course_key),
+                        can_upgrade,
+                    )
                 raise EnrollmentClosedError
 
             if cls.objects.is_course_full(course):
-                log.warning(
-                    "Course %s has reached its maximum enrollment of %d learners. User %s failed to enroll.",
-                    str(course_key),
-                    course.max_student_enrollments_allowed,
-                    user.username,
-                )
+                if settings.FEATURES['SQUELCH_PII_IN_LOGS']:
+                    log.warning(
+                        "Course %s has reached its maximum enrollment of %d learners. User %s failed to enroll.",
+                        str(course_key),
+                        course.max_student_enrollments_allowed,
+                        user.id,
+                    )
+                else:
+                    log.warning(
+                        "Course %s has reached its maximum enrollment of %d learners. User %s failed to enroll.",
+                        str(course_key),
+                        course.max_student_enrollments_allowed,
+                        user.username,
+                    )
                 raise CourseFullError
         if cls.is_enrolled(user, course_key):
-            log.warning(
-                "User %s attempted to enroll in %s, but they were already enrolled",
-                user.username,
-                str(course_key)
-            )
+            if settings.FEATURES['SQUELCH_PII_IN_LOGS']:
+                log.warning(
+                    "User %s attempted to enroll in %s, but they were already enrolled",
+                    user.id,
+                    str(course_key)
+                )
+            else:
+                log.warning(
+                    "User %s attempted to enroll in %s, but they were already enrolled",
+                    user.username,
+                    str(course_key)
+                )
             if check_access:
                 raise AlreadyEnrolledError
 
@@ -833,7 +864,7 @@ class CourseEnrollment(models.Model):
         except User.DoesNotExist:
             err_msg = "Tried to enroll email {} into course {}, but user not found"
             if settings.FEATURES['SQUELCH_PII_IN_LOGS']:
-                log.error(err_msg.format('[PII_REDACTED]', course_id))
+                log.error("Tried to enroll a redacted email into course %s, but user not found", course_id)
             else:
                 log.error(err_msg.format(email, course_id))
             if ignore_errors:

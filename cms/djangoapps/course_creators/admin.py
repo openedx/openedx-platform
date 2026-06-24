@@ -172,6 +172,7 @@ def send_admin_notification_callback(sender, **kwargs):  # pylint: disable=unuse
     """
     user = kwargs['user']
 
+    # studio_request_email is a system email address, not PII, which can safely be logged.
     studio_request_email = settings.FEATURES.get('STUDIO_REQUEST_EMAIL', '')
     context = {'user_name': user.username, 'user_email': user.email}
 
@@ -189,7 +190,7 @@ def send_admin_notification_callback(sender, **kwargs):  # pylint: disable=unuse
         )
     except SMTPException:
         if settings.FEATURES['SQUELCH_PII_IN_LOGS']:
-            log.warning("Failure sending 'pending state' e-mail for user ID %s to [REDACTED]", user.id)
+            log.warning("Failure sending 'pending state' e-mail for user ID %s to %s", user.id, studio_request_email)
         else:
             log.warning("Failure sending 'pending state' e-mail for %s to %s", user.email, studio_request_email)
 
