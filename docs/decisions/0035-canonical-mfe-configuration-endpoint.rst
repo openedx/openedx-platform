@@ -1,7 +1,7 @@
 Canonical MFE Configuration Endpoint
 ====================================
 
-:Status: Proposed
+:Status: Accepted
 :Supersedes: ADR 0001 — MFE Config API (partial — the configuration-endpoint role only)
 :Date: 2026-04-09
 :Deciders: Open edX Platform / API Working Group

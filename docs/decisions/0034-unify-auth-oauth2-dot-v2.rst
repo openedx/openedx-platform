@@ -1,7 +1,7 @@
 Standardize Authentication Patterns and Security Schemes
 ========================================================
 
-:Status: Proposed
+:Status: Accepted
 :Date: 2026-04-07
 :Deciders: Open edX Platform / API Working Group
 :Technical Story: Open edX REST API Standards - Consistent authentication patterns and security scheme usage
