@@ -9,7 +9,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('student', '0046_alter_userprofile_phone_number'),
+        ('student', '0049_manualenrollmentaudit_statetransition_typo'),
     ]
 
     operations = [
