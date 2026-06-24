@@ -14,7 +14,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core import mail
 from django.core.cache import cache
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.test.client import RequestFactory
 from django.urls import reverse
 from freezegun import freeze_time
@@ -215,7 +215,7 @@ class TestPasswordChange(CreateAccountMixin, CacheIsolationTestCase):
             self._change_password()
             self.assertRaises(UserAPIInternalError)  # noqa: PT027
 
-    @patch.dict(settings.FEATURES, {'ENABLE_PASSWORD_RESET_FAILURE_EMAIL': True})
+    @override_settings(ENABLE_PASSWORD_RESET_FAILURE_EMAIL=True)
     def test_password_reset_failure_email(self):
         """Test that a password reset failure email notification is sent, when enabled."""
         # Log the user out
