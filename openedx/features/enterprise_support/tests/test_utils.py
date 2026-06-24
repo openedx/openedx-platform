@@ -447,6 +447,13 @@ class TestEnterpriseUtils(TestCase):
         portal = get_enterprise_learner_portal(request)
         assert portal is None
 
+    @override_waffle_flag(ENTERPRISE_HEADER_LINKS, True)
+    def test_get_enterprise_learner_portal_request_without_user(self):
+        request = mock.MagicMock(spec=[])
+        request.session = {}
+        portal = get_enterprise_learner_portal(request)
+        assert portal is None
+
     def test_get_enterprise_learner_generic_name_404_pages(self):
         request = mock.Mock(view_name='404')
         assert get_enterprise_learner_generic_name(request) is None
