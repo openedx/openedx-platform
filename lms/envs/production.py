@@ -132,10 +132,6 @@ if STATIC_URL_BASE:  # noqa: F405
 
 DATA_DIR = path(DATA_DIR)  # noqa: F405
 
-# TODO: This was for backwards compatibility back when installed django-cookie-samesite (not since 2022).
-#       The DCS_ version of the setting can be DEPR'd at this point.
-SESSION_COOKIE_SAMESITE = DCS_SESSION_COOKIE_SAMESITE  # noqa: F405
-
 for feature, value in _YAML_TOKENS.get('FEATURES', {}).items():
     FEATURES[feature] = value
 

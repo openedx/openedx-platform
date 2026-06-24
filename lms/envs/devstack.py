@@ -474,9 +474,8 @@ if ENABLE_ENTERPRISE_INTEGRATION:
 
 #####################################################################
 
-# django-session-cookie middleware
-DCS_SESSION_COOKIE_SAMESITE = 'Lax'
-DCS_SESSION_COOKIE_SAMESITE_FORCE_ALL = True
+# Browsers reject SameSite=None cookies on plain HTTP devstack hosts.
+SESSION_COOKIE_SAMESITE = 'Lax'
 
 ########################## THEMING  #######################
 # If you want to enable theming in devstack, uncomment this section and add any relevant
