@@ -16,9 +16,12 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.request import Request
 from rest_framework.test import APIRequestFactory
 
+from common.djangoapps.student.roles import CourseLimitedStaffRole
+from common.djangoapps.student.tests.factories import StaffFactory, UserFactory
 from lms.djangoapps.courseware.exceptions import CourseAccessRedirect
 from openedx.core.djangoapps.authz.tests.mixins import CourseAuthoringAuthzTestMixin
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
+from xmodule.course_block import CATALOG_VISIBILITY_ABOUT, CATALOG_VISIBILITY_NONE
 from xmodule.modulestore.exceptions import ItemNotFoundError  # pylint: disable=wrong-import-order
 from xmodule.modulestore.tests.django_utils import (  # pylint: disable=wrong-import-order
     ModuleStoreTestCase,
@@ -146,58 +149,69 @@ class TestGetCourseDetailAuthz(
 
         cls.course = cls.create_course()
         cls.hidden_course = cls.create_course(
-            course='hidden',
-            visible_to_staff_only=True
+            course="hidden",
+            visible_to_staff_only=True,
+            catalog_visibility=CATALOG_VISIBILITY_NONE,
+        )
+        cls.about_only_course = cls.create_course(
+            course="aboutonly",
+            catalog_visibility=CATALOG_VISIBILITY_ABOUT,
         )
 
     def test_get_existing_course_as_authorized_user(self):
         """User with COURSE_EDITOR role can access course."""
-        self.add_user_to_role_in_course(
-            self.authorized_user,
-            COURSE_EDITOR.external_key,
-            self.course.id
-        )
+        self.add_user_to_role_in_course(self.authorized_user, COURSE_EDITOR.external_key, self.course.id)
 
-        course = self._make_api_call(
-            self.authorized_user,
-            self.authorized_user,
-            self.course.id
-        )
+        course = self._make_api_call(self.authorized_user, self.authorized_user, self.course.id)
 
         self.verify_course(course)
 
-    def test_get_existing_course_as_unauthorized_user(self):
-        """User without role should be denied."""
+    def test_get_existing_course_without_authz_role_when_catalog_visible(self):
+        """User without AuthZ role can still access when catalog visibility allows."""
+        course = self._make_api_call(self.unauthorized_user, self.unauthorized_user, self.course.id)
+
+        self.verify_course(course)
+
+    def test_about_only_catalog_visibility_without_authz_role(self):
+        """User without AuthZ role can access when catalog visibility is about-only."""
+        course = self._make_api_call(self.unauthorized_user, self.unauthorized_user, self.about_only_course.id)
+
+        self.verify_course(course, course_id=str(self.about_only_course.id))
+
+    def test_hidden_course_denied_without_authz_role(self):
+        """User without AuthZ role is denied when catalog visibility is none."""
         with pytest.raises(CourseAccessRedirect):
-            self._make_api_call(
-                self.unauthorized_user,
-                self.unauthorized_user,
-                self.course.id
-            )
+            self._make_api_call(self.unauthorized_user, self.unauthorized_user, self.hidden_course.id)
 
     def test_get_nonexistent_course(self):
         """Nonexistent course should raise 404."""
-        course_key = CourseKey.from_string('edX/toy/nope')
+        course_key = CourseKey.from_string("edX/toy/nope")
 
         with pytest.raises(Http404):
-            self._make_api_call(
-                self.authorized_user,
-                self.authorized_user,
-                course_key
-            )
+            self._make_api_call(self.authorized_user, self.authorized_user, course_key)
+
+    def test_course_staff_bypasses_authz_on_hidden_course(self):
+        """Course staff can access a hidden course without an AuthZ role."""
+        course_staff = StaffFactory.create(course_key=self.hidden_course.id)
+
+        course = self._make_api_call(course_staff, course_staff, self.hidden_course.id)
+
+        self.verify_course(course, course_id=str(self.hidden_course.id))
+
+    def test_limited_staff_bypasses_authz_on_hidden_course(self):
+        """Limited course staff can access a hidden course without an AuthZ role."""
+        limited_staff = UserFactory(password=self.password)
+        CourseLimitedStaffRole(self.hidden_course.id).add_users(limited_staff)
+
+        course = self._make_api_call(limited_staff, limited_staff, self.hidden_course.id)
+
+        self.verify_course(course, course_id=str(self.hidden_course.id))
 
     def test_hidden_course_for_staff(self):
         """Staff can access hidden course."""
-        course = self._make_api_call(
-            self.staff_user,
-            self.staff_user,
-            self.hidden_course.id
-        )
+        course = self._make_api_call(self.staff_user, self.staff_user, self.hidden_course.id)
 
-        self.verify_course(
-            course,
-            course_id='course-v1:edX+hidden+2012_Fall'
-        )
+        self.verify_course(course, course_id=str(self.hidden_course.id))
 
     def test_hidden_course_for_staff_as_unauthorized_user(self):
         """
@@ -205,39 +219,22 @@ class TestGetCourseDetailAuthz(
         should not bypass visibility rules.
         """
         with pytest.raises(CourseAccessRedirect):
-            self._make_api_call(
-                self.staff_user,
-                self.unauthorized_user,
-                self.hidden_course.id
-            )
+            self._make_api_call(self.staff_user, self.unauthorized_user, self.hidden_course.id)
 
     def test_user_gains_access_after_role_assignment(self):
-        """User initially denied, then allowed after role assignment."""
+        """User denied when catalog is hidden, then allowed after role assignment."""
         with pytest.raises(CourseAccessRedirect):
-            self._make_api_call(
-                self.unauthorized_user,
-                self.unauthorized_user,
-                self.course.id
-            )
-        self.add_user_to_role_in_course(
-            self.unauthorized_user,
-            COURSE_EDITOR.external_key,
-            self.course.id
-        )
-        course = self._make_api_call(
-            self.unauthorized_user,
-            self.unauthorized_user,
-            self.course.id
-        )
-        self.verify_course(course)
+            self._make_api_call(self.unauthorized_user, self.unauthorized_user, self.hidden_course.id)
+
+        self.add_user_to_role_in_course(self.unauthorized_user, COURSE_EDITOR.external_key, self.hidden_course.id)
+
+        course = self._make_api_call(self.unauthorized_user, self.unauthorized_user, self.hidden_course.id)
+
+        self.verify_course(course, course_id=str(self.hidden_course.id))
 
     def test_staff_access_without_authz_role(self):
         """Staff bypasses AuthZ roles."""
-        course = self._make_api_call(
-            self.staff_user,
-            self.staff_user,
-            self.course.id
-        )
+        course = self._make_api_call(self.staff_user, self.staff_user, self.course.id)
 
         self.verify_course(course)
 

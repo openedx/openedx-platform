@@ -9,7 +9,7 @@ from .course_team import CourseTeamSerializer  # noqa: F401
 from .course_waffle_flags import CourseWaffleFlagsSerializer  # noqa: F401
 from .grading import CourseGradingModelSerializer, CourseGradingSerializer  # noqa: F401
 from .group_configurations import CourseGroupConfigurationsSerializer  # noqa: F401
-from .home import CourseHomeTabSerializer, LibraryTabSerializer, StudioHomeSerializer  # noqa: F401
+from .home import LibraryTabSerializer, StudioHomeSerializer  # noqa: F401
 from .proctoring import (
     LimitedProctoredExamSettingsSerializer,  # noqa: F401
     ProctoredExamConfigurationSerializer,  # noqa: F401

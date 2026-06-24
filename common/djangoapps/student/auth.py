@@ -253,16 +253,20 @@ def is_content_creator(user, org):
 def _has_content_creator_access(user, org):
     """
     Check if the user has content creator access based on AuthZ permissions.
-    """
-    if settings.FEATURES.get('DISABLE_COURSE_CREATION', False):
-        return False
-    # Using Org scope. e.g. "course-v1:{org}+*"
-    org_scope_key = authz_api.OrgCourseOverviewGlobData.build_external_key(org)
 
-    return authz_api.is_user_allowed(
-        user.username,
-        COURSES_CREATE_COURSE.identifier,
-        org_scope_key
+    Returns:
+        bool: True if the user has platform-wide or org-scoped course creation permission.
+    """
+    if settings.FEATURES.get("DISABLE_COURSE_CREATION", False):
+        return False
+
+    scope_keys = (
+        authz_api.PlatformCourseOverviewGlobData.build_external_key(),
+        authz_api.OrgCourseOverviewGlobData.build_external_key(org),
+    )
+    return any(
+        authz_api.is_user_allowed(user.username, COURSES_CREATE_COURSE.identifier, scope_key)
+        for scope_key in scope_keys
     )
 
 

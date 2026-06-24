@@ -43,6 +43,7 @@ from lms.djangoapps.ccx.models import CustomCourseForEdX
 from lms.djangoapps.courseware.masquerade import CourseMasquerade
 from lms.djangoapps.courseware.tests.helpers import LoginEnrollmentTestCase, masquerade_as_group_member
 from lms.djangoapps.courseware.toggles import course_is_invitation_only
+from openedx.core.djangoapps.authz.tests.mixins import CourseAuthoringAuthzTestMixin
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory
 from openedx.core.djangoapps.waffle_utils.testutils import WAFFLE_TABLES
@@ -1019,3 +1020,71 @@ class CourseOverviewAccessTestCase(ModuleStoreTestCase):
         course_overview = CourseOverview.get_from_id(course.id)
         with self.assertNumQueries(num_queries, table_ignorelist=QUERY_COUNT_TABLE_IGNORELIST):
             bool(access.has_access(user, 'see_exists', course_overview, course_key=course.id))
+
+
+class AuthzSeeAboutPageAccessTestCase(CourseAuthoringAuthzTestMixin, SharedModuleStoreTestCase):
+    """
+    AuthZ-specific see_about_page edge cases not covered elsewhere.
+
+    Catalog visibility grants, staff bypass, AuthZ role grants, and learner
+    denials are tested in test__catalog_visibility*, TestGetCourseDetailAuthz,
+    and AuthzAboutPageTestCase.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.course_public = CourseFactory.create(
+            catalog_visibility=CATALOG_VISIBILITY_CATALOG_AND_ABOUT,
+            course="authzpublic",
+        )
+        cls.course_about_only = CourseFactory.create(
+            catalog_visibility=CATALOG_VISIBILITY_ABOUT,
+            course="authzabout",
+        )
+        cls.course_hidden = CourseFactory.create(
+            catalog_visibility=CATALOG_VISIBILITY_NONE,
+            course="authzhidden",
+        )
+
+    def _see_about_page_response(self, user, course):
+        course_overview = CourseOverview.get_from_id(course.id)
+        return access.has_access(user, "see_about_page", course_overview, course_key=course.id)
+
+    def test_enrolled_learner_denied_when_catalog_hidden(self):
+        """Enrollment alone does not grant about-page access when catalog is hidden."""
+        CourseEnrollmentFactory(user=self.unauthorized_user, course_id=self.course_hidden.id)
+
+        response = self._see_about_page_response(self.unauthorized_user, self.course_hidden)
+
+        assert not response
+        assert isinstance(response, access_response.CatalogVisibilityError)
+
+    def test_beta_tester_granted_via_catalog_about(self):
+        """Beta testers rely on catalog visibility, not AuthZ authoring permissions."""
+        beta_tester = BetaTesterFactory.create(course_key=self.course_about_only.id)
+
+        response = self._see_about_page_response(beta_tester, self.course_about_only)
+
+        assert response
+
+    def test_anonymous_user_uses_legacy_path(self):
+        """
+        Anonymous users skip the AuthZ path even when course authoring AuthZ is enabled.
+
+        user_has_course_permission is only reached on the AuthZ path, so it must not
+        be called for anonymous users on a catalog-hidden course.
+        """
+        anonymous_user = AnonymousUserFactory.create()
+
+        with patch(
+            "lms.djangoapps.courseware.access.user_has_course_permission",
+        ) as mock_authz_permission:
+            hidden_response = self._see_about_page_response(anonymous_user, self.course_hidden)
+
+        mock_authz_permission.assert_not_called()
+        assert not hidden_response
+        assert isinstance(hidden_response, access_response.CatalogVisibilityError)
+
+        public_response = self._see_about_page_response(anonymous_user, self.course_public)
+        assert public_response

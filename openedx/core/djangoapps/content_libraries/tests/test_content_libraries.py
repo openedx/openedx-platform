@@ -830,7 +830,7 @@ class ContentLibrariesTestCase(ContentLibrariesRestApiTest):
             # the the block in the clipboard
             self.assertDictContainsEntries(self._get_library_block(paste_data["id"]), {
                 **block_data,
-                "last_draft_created_by": None,
+                "last_draft_created_by": "Author",
                 "last_draft_created": paste_data["last_draft_created"],
                 "created": paste_data["created"],
                 "modified": paste_data["modified"],
@@ -1935,9 +1935,10 @@ class ContentLibrariesAuthZTestCase(ContentLibrariesRestApiTest):
             'openedx_authz.api.get_scopes_for_user_and_permission'
         ) as mock_get_scopes:
             # Mock: User authorized for lib1 (org1:lib1) and lib2 (org2:lib2) only, NOT lib3
-            mock_scope1 = type('Scope', (), {'library_key': LibraryLocatorV2.from_string(lib1['id'])})()
-            mock_scope2 = type('Scope', (), {'library_key': LibraryLocatorV2.from_string(lib2['id'])})()
-            mock_get_scopes.return_value = [mock_scope1, mock_scope2]
+            mock_get_scopes.return_value = [
+                authz_api.ContentLibraryData(external_key=str(LibraryLocatorV2.from_string(lib1['id']))),
+                authz_api.ContentLibraryData(external_key=str(LibraryLocatorV2.from_string(lib2['id']))),
+            ]
 
             all_libs = ContentLibrary.objects.filter(slug__in=['lib1', 'lib2', 'lib3'])
             filtered = perms[CAN_VIEW_THIS_CONTENT_LIBRARY].filter(user, all_libs).distinct()
@@ -2061,6 +2062,59 @@ class ContentLibrariesAuthZTestCase(ContentLibrariesRestApiTest):
                 "Library should exist in database",
             )
 
+    def test_authz_scope_platform_glob_returns_all_libraries(self):
+        """
+        Test that PlatformContentLibraryGlobData grants access to all libraries.
+        """
+        user = UserFactory.create(username="platform_glob_user", is_staff=False)
+
+        Organization.objects.get_or_create(short_name="glob-org1", defaults={"name": "Glob Org 1"})
+        Organization.objects.get_or_create(short_name="glob-org2", defaults={"name": "Glob Org 2"})
+
+        with self.as_user(self.admin_user):
+            self._create_library(slug="glob-lib1", org="glob-org1", title="Glob Library 1")
+            self._create_library(slug="glob-lib2", org="glob-org2", title="Glob Library 2")
+
+        ContentLibraryPermission.objects.filter(user=user).delete()
+
+        with patch(
+            'openedx_authz.api.get_scopes_for_user_and_permission',
+            return_value=[authz_api.PlatformContentLibraryGlobData(external_key="lib:*")],
+        ):
+            all_libs = ContentLibrary.objects.filter(slug__in=["glob-lib1", "glob-lib2"])
+            filtered = perms[CAN_VIEW_THIS_CONTENT_LIBRARY].filter(user, all_libs).distinct()
+
+            assert filtered.count() == 2
+
+    def test_authz_scope_org_glob_filters_by_org(self):
+        """
+        Test that OrgContentLibraryGlobData grants access to all libraries in the org.
+        """
+        user = UserFactory.create(username="org_glob_user", is_staff=False)
+
+        Organization.objects.get_or_create(short_name="org-glob1", defaults={"name": "Org Glob 1"})
+        Organization.objects.get_or_create(short_name="org-glob2", defaults={"name": "Org Glob 2"})
+
+        with self.as_user(self.admin_user):
+            self._create_library(slug="org-glob-lib1", org="org-glob1", title="Org Glob Library 1")
+            self._create_library(slug="org-glob-lib2", org="org-glob1", title="Org Glob Library 2")
+            self._create_library(slug="org-glob-lib3", org="org-glob2", title="Org Glob Library 3")
+
+        ContentLibraryPermission.objects.filter(user=user).delete()
+
+        with patch(
+            'openedx_authz.api.get_scopes_for_user_and_permission',
+            return_value=[authz_api.OrgContentLibraryGlobData(external_key="lib:org-glob1:*")],
+        ):
+            all_libs = ContentLibrary.objects.filter(
+                slug__in=["org-glob-lib1", "org-glob-lib2", "org-glob-lib3"]
+            )
+            filtered = perms[CAN_VIEW_THIS_CONTENT_LIBRARY].filter(user, all_libs).distinct()
+
+            assert filtered.count() == 2
+            slugs = set(filtered.values_list("slug", flat=True))
+            assert slugs == {"org-glob-lib1", "org-glob-lib2"}
+
     def test_authz_scope_q_object_has_correct_structure(self):
         """
         Test that HasPermissionInContentLibraryScope.query() generates Q object
@@ -2078,14 +2132,10 @@ class ContentLibrariesAuthZTestCase(ContentLibrariesRestApiTest):
         with patch(
             "openedx_authz.api.get_scopes_for_user_and_permission"
         ) as mock_get_scopes:
-            # Create scopes with specific org/slug values we can verify
-            mock_scope1 = type("Scope", (), {
-                "library_key": type("Key", (), {"org": "specific-org1", "slug": "specific-slug1"})()
-            })()
-            mock_scope2 = type("Scope", (), {
-                "library_key": type("Key", (), {"org": "specific-org2", "slug": "specific-slug2"})()
-            })()
-            mock_get_scopes.return_value = [mock_scope1, mock_scope2]
+            mock_get_scopes.return_value = [
+                authz_api.ContentLibraryData(external_key="lib:specific-org1:specific-slug1"),
+                authz_api.ContentLibraryData(external_key="lib:specific-org2:specific-slug2"),
+            ]
 
             q_obj = rule.query(user)
 
@@ -2180,8 +2230,8 @@ class ContentLibrariesAuthZTestCase(ContentLibrariesRestApiTest):
             lib2_key = LibraryLocatorV2.from_string(lib2['id'])
 
             mock_get_scopes.return_value = [
-                type('Scope', (), {'library_key': lib1_key})(),
-                type('Scope', (), {'library_key': lib2_key})(),
+                authz_api.ContentLibraryData(external_key=str(lib1_key)),
+                authz_api.ContentLibraryData(external_key=str(lib2_key)),
             ]
 
             q_obj = rule.query(user)
@@ -2295,8 +2345,8 @@ class ContentLibrariesAuthZTestCase(ContentLibrariesRestApiTest):
             lib3_key = LibraryLocatorV2.from_string(lib3['id'])
 
             mock_get_scopes.return_value = [
-                type('Scope', (), {'library_key': lib1_key})(),
-                type('Scope', (), {'library_key': lib3_key})(),
+                authz_api.ContentLibraryData(external_key=str(lib1_key)),
+                authz_api.ContentLibraryData(external_key=str(lib3_key)),
             ]
 
             all_libs = ContentLibrary.objects.filter(slug__in=['comb-lib1', 'comb-lib2', 'comb-lib3', 'comb-lib4'])

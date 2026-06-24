@@ -1,11 +1,7 @@
 """
 Unit tests for home page view.
 """
-from collections import OrderedDict
-from datetime import datetime, timedelta
-
 import ddt
-import pytz
 from django.conf import settings
 from django.test import override_settings
 from django.urls import reverse
@@ -18,14 +14,13 @@ from cms.djangoapps.contentstore.tests.test_libraries import LibraryTestCase
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase
 from cms.djangoapps.modulestore_migrator import api as migrator_api
 from cms.djangoapps.modulestore_migrator.data import CompositionLevel, RepeatHandlingStrategy
-from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory
 from openedx.core.djangoapps.content_libraries import api as lib_api
 
 
 @ddt.ddt
 class HomePageViewTest(CourseTestCase):
     """
-    Tests for HomePageCoursesView.
+    Tests for HomePageView.
     """
 
     def setUp(self):
@@ -98,150 +93,6 @@ class HomePageViewTest(CourseTestCase):
             response.data['taxonomy_list_mfe_url'],
             f'{settings.COURSE_AUTHORING_MICROFRONTEND_URL}/taxonomies'
         )
-
-
-@ddt.ddt
-class HomePageCoursesViewTest(CourseTestCase):
-    """
-    Tests for HomePageView.
-    """
-
-    def setUp(self):
-        super().setUp()
-        self.url = reverse("cms.djangoapps.contentstore:v1:courses")
-        self.course_overview = CourseOverviewFactory.create(
-            id=self.course.id,
-            org=self.course.org,
-            display_name=self.course.display_name,
-            display_number_with_default=self.course.number,
-        )
-        self.non_staff_client, _ = self.create_non_staff_authed_user_client()
-
-    def test_home_page_response(self):
-        """Check successful response content"""
-        response = self.client.get(self.url)
-        course_id = str(self.course.id)
-
-        expected_response = {
-            "archived_courses": [],
-            "courses": [{
-                "course_key": course_id,
-                "display_name": self.course.display_name,
-                "lms_link": f'{settings.LMS_ROOT_URL}/courses/{course_id}/jump_to/{self.course.location}',
-                "number": self.course.number,
-                "org": self.course.org,
-                "rerun_link": f'/course_rerun/{course_id}',
-                "run": self.course.id.run,
-                "url": f'/course/{course_id}',
-            }],
-            "in_process_course_actions": [],
-        }
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
-        self.assertDictEqual(expected_response, response.data)  # noqa: PT009
-
-    def test_home_page_response_with_api_v2(self):
-        """Check successful response content with api v2 modifications.
-
-        When the feature flag is enabled, the courses are exclusively fetched from the CourseOverview model, so
-        the values in the courses' list are OrderedDicts instead of the default dictionaries.
-        """
-        course_id = str(self.course.id)
-        expected_response = {
-            "archived_courses": [],
-            "courses": [
-                OrderedDict([
-                    ("course_key", course_id),
-                    ("display_name", self.course.display_name),
-                    ("lms_link", f'{settings.LMS_ROOT_URL}/courses/{course_id}/jump_to/{self.course.location}'),
-                    ("number", self.course.number),
-                    ("org", self.course.org),
-                    ("rerun_link", f'/course_rerun/{course_id}'),
-                    ("run", self.course.id.run),
-                    ("url", f'/course/{course_id}'),
-                ]),
-            ],
-            "in_process_course_actions": [],
-        }
-
-        response = self.client.get(self.url)
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
-        self.assertDictEqual(expected_response, response.data)  # noqa: PT009
-
-    @ddt.data(
-        ("active_only", "true", 2, 0),
-        ("archived_only", "true", 0, 1),
-        ("search", "sample", 1, 0),
-        ("search", "demo", 0, 1),
-        ("order", "org", 2, 1),
-        ("order", "display_name", 2, 1),
-        ("order", "number", 2, 1),
-        ("order", "run", 2, 1)
-    )
-    @ddt.unpack
-    def test_filter_and_ordering_courses(
-        self,
-        filter_key,
-        filter_value,
-        expected_active_length,
-        expected_archived_length
-    ):
-        """Test home page with org filter and ordering for a staff user.
-
-        The test creates an active/archived course, and then filters/orders them using the query parameters.
-        """
-        archived_course_key = self.store.make_course_key("demo-org", "demo-number", "demo-run")
-        CourseOverviewFactory.create(
-            display_name="Course (Demo)",
-            id=archived_course_key,
-            org=archived_course_key.org,
-            end=(datetime.now() - timedelta(days=365)).replace(tzinfo=pytz.UTC),
-        )
-        active_course_key = self.store.make_course_key("sample-org", "sample-number", "sample-run")
-        CourseOverviewFactory.create(
-            display_name="Course (Sample)",
-            id=active_course_key,
-            org=active_course_key.org,
-        )
-
-        response = self.client.get(self.url, {filter_key: filter_value})
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
-        self.assertEqual(len(response.data["archived_courses"]), expected_archived_length)  # noqa: PT009
-        self.assertEqual(len(response.data["courses"]), expected_active_length)  # noqa: PT009
-
-    @ddt.data(
-        ("active_only", "true"),
-        ("archived_only", "true"),
-        ("search", "sample"),
-        ("order", "org"),
-    )
-    @ddt.unpack
-    def test_filter_and_ordering_no_courses_staff(self, filter_key, filter_value):
-        """Test home page with org filter and ordering when there are no courses for a staff user."""
-        self.course_overview.delete()
-
-        response = self.client.get(self.url, {filter_key: filter_value})
-
-        self.assertEqual(len(response.data["courses"]), 0)  # noqa: PT009
-        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
-
-    @ddt.data(
-        ("active_only", "true"),
-        ("archived_only", "true"),
-        ("search", "sample"),
-        ("order", "org"),
-    )
-    @ddt.unpack
-    def test_home_page_response_no_courses_non_staff(self, filter_key, filter_value):
-        """Test home page with org filter and ordering when there are no courses for a non-staff user."""
-        self.course_overview.delete()
-
-        response = self.non_staff_client.get(self.url, {filter_key: filter_value})
-
-        self.assertEqual(len(response.data["courses"]), 0)  # noqa: PT009
-        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
 
 
 @ddt.ddt

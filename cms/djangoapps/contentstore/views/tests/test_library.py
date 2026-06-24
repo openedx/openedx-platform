@@ -17,11 +17,10 @@ from organizations.api import get_organization_by_short_name
 from organizations.exceptions import InvalidOrganizationException
 
 from cms.djangoapps.contentstore.tests.utils import AjaxEnabledTestClient, CourseTestCase, parse_json
-from cms.djangoapps.contentstore.utils import reverse_course_url, reverse_library_url
 from cms.djangoapps.course_creators.models import CourseCreator
 from cms.djangoapps.course_creators.views import add_user_with_status_granted as grant_course_creator_status
 from common.djangoapps.student import auth
-from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRole, LibraryUserRole
+from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRole
 from xmodule.modulestore.tests.factories import LibraryFactory  # pylint: disable=wrong-import-order
 
 from ..component import get_component_templates
@@ -426,33 +425,6 @@ class UnitTestLibraries(CourseTestCase):
 
         for advance_problem_type in settings.ADVANCED_PROBLEM_TYPES:
             self.assertNotIn(advance_problem_type['component'], problem_type_categories)  # noqa: PT009
-
-    def test_manage_library_users(self):
-        """
-        Simple test that the Library "User Access" view works.
-        Also tests that we can use the REST API to assign a user to a library.
-        """
-        library = LibraryFactory.create()
-        extra_user, _ = self.create_non_staff_user()
-        manage_users_url = reverse_library_url('manage_library_users', str(library.location.library_key))
-
-        response = self.client.get(manage_users_url)
-        self.assertEqual(response.status_code, 200)  # noqa: PT009
-        # extra_user has not been assigned to the library so should not show up in the list:
-        self.assertNotContains(response, extra_user.username)
-
-        # Now add extra_user to the library:
-        user_details_url = reverse_course_url(
-            'course_team_handler',
-            library.location.library_key, kwargs={'email': extra_user.email}
-        )
-        edit_response = self.client.ajax_post(user_details_url, {"role": LibraryUserRole.ROLE})
-        self.assertIn(edit_response.status_code, (200, 204))  # noqa: PT009
-
-        # Now extra_user should apear in the list:
-        response = self.client.get(manage_users_url)
-        self.assertEqual(response.status_code, 200)  # noqa: PT009
-        self.assertContains(response, extra_user.username)
 
     def test_component_limits(self):
         """

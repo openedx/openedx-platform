@@ -24,7 +24,6 @@ class HomePageCoursesViewV2Test(CourseTestCase):
     def setUp(self):
         super().setUp()
         self.api_v2_url = reverse("cms.djangoapps.contentstore:v2:courses")
-        self.api_v1_url = reverse("cms.djangoapps.contentstore:v1:courses")
         self.active_course = CourseOverviewFactory.create(
             id=self.course.id,
             org=self.course.org,

@@ -5,7 +5,7 @@ Deprecated: The legacy permission rules and constants that rely on ContentLibrar
 are deprecated in favor of openedx-authz. See https://github.com/openedx/openedx-platform/issues/37409.
 """
 from bridgekeeper import perms, rules
-from bridgekeeper.rules import Attribute, ManyRelation, Relation, Rule, blanket_rule, in_current_groups
+from bridgekeeper.rules import UNIVERSAL, Attribute, ManyRelation, Relation, Rule, blanket_rule, in_current_groups
 from django.conf import settings
 from django.db.models import Q
 from openedx_authz import api as authz_api
@@ -159,6 +159,8 @@ class HasPermissionInContentLibraryScope(Rule):
             >>> rule = HasPermissionInContentLibraryScope('view', filter_keys=['org', 'slug'])
             >>> q = rule.query(user)
             >>> # Results in: Q(org__short_name='OrgA', slug='lib-a') | Q(org__short_name='OrgB', slug='lib-b')
+            >>> # Platform-wide scope 'lib:*' returns UNIVERSAL (all libraries)
+            >>> # Org scope 'lib:OrgA:*' returns Q(org__short_name__in=['OrgA'])
             >>>
             >>> # Apply to queryset
             >>> libraries = ContentLibrary.objects.filter(q)
@@ -171,15 +173,24 @@ class HasPermissionInContentLibraryScope(Rule):
             self.permission.identifier
         )
 
-        library_keys = [scope.library_key for scope in scopes]
+        if any(isinstance(access, authz_api.PlatformContentLibraryGlobData) for access in scopes):
+            return UNIVERSAL
 
-        if not library_keys:
-            return Q(pk__in=[])  # No access, return Q that matches nothing
-
-        # Build Q object: OR together (org AND slug) conditions for each library
+        org_keys = set()
         query = Q()
-        for library_key in library_keys:
-            query |= Q(org__short_name=library_key.org, slug=library_key.slug)
+
+        for access in scopes:
+            if isinstance(access, authz_api.ContentLibraryData):
+                library_key = access.library_key
+                query |= Q(org__short_name=library_key.org, slug=library_key.slug)
+            elif isinstance(access, authz_api.OrgContentLibraryGlobData) and access.org:
+                org_keys.add(access.org)
+
+        if org_keys:
+            query |= Q(org__short_name__in=org_keys)
+
+        if not query:
+            return Q(pk__in=[])  # No access, return Q that matches nothing
 
         return query
 

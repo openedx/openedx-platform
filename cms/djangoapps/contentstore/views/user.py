@@ -9,13 +9,12 @@ from django.utils.translation import gettext as _
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_http_methods, require_POST
 from opaque_keys.edx.keys import CourseKey
-from opaque_keys.edx.locator import LibraryLocator
 
 from cms.djangoapps.course_creators.views import user_requested_access
 from common.djangoapps.student import auth
 from common.djangoapps.student.auth import STUDIO_EDIT_ROLES, STUDIO_VIEW_USERS, get_user_permissions
 from common.djangoapps.student.models import CourseEnrollment
-from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRole, LibraryUserRole
+from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRole
 from common.djangoapps.util.json_request import JsonResponse, expect_json
 
 from ..utils import get_course_team_url
@@ -95,12 +94,8 @@ def _course_team_user(request, course_key, email):
         }
         return JsonResponse(msg, 404)
 
-    is_library = isinstance(course_key, LibraryLocator)
     # Ordered list of roles: can always move self to the right, but need STUDIO_EDIT_ROLES to move any user left
-    if is_library:
-        role_hierarchy = (CourseInstructorRole, CourseStaffRole, LibraryUserRole)
-    else:
-        role_hierarchy = (CourseInstructorRole, CourseStaffRole)
+    role_hierarchy = (CourseInstructorRole, CourseStaffRole)
 
     if request.method == "GET":
         # just return info about the user
@@ -164,7 +159,7 @@ def _course_team_user(request, course_key, email):
             return JsonResponse(msg, 400)
         auth.remove_users(request.user, role, user)
 
-    if new_role and not is_library:
+    if new_role:
         # The user may be newly added to this course.
         # auto-enroll the user in the course so that "View Live" will work.
         CourseEnrollment.enroll(user, course_key)

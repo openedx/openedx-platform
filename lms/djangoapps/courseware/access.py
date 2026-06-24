@@ -45,6 +45,7 @@ from common.djangoapps.util.milestones_helpers import (
 from lms.djangoapps.ccx.custom_exception import CCXLocatorValidationException
 from lms.djangoapps.ccx.models import CustomCourseForEdX
 from lms.djangoapps.courseware.access_response import (
+    AccessResponse,
     CatalogVisibilityError,
     IncorrectPartitionGroupError,
     MilestoneAccessError,
@@ -64,6 +65,7 @@ from lms.djangoapps.courseware.masquerade import get_masquerade_role, is_masquer
 from lms.djangoapps.courseware.toggles import course_is_invitation_only
 from lms.djangoapps.mobile_api.models import IgnoreMobileAvailableFlagConfig
 from openedx.core import toggles as core_toggles
+from openedx.core.djangoapps.authz.constants import LegacyAuthoringPermission
 from openedx.core.djangoapps.authz.decorators import user_has_course_permission
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from openedx.features.course_duration_limits.access import check_course_expired
@@ -434,30 +436,62 @@ def _has_access_course(user, action, courselike):
         # can provide a meaningful error message instead of a generic 404.
         return catalog_response
 
-    def legacy_can_see_about_page():
+    def _about_page_catalog_visibility_access() -> AccessResponse | None:
+        """
+        Shared catalog-visibility gate for about-page access.
+
+        Grants access when catalog_visibility is CATALOG_AND_ABOUT or ABOUT only.
+
+        Returns ACCESS_GRANTED when either applies, or None when catalog visibility
+        does not allow the about page (callers fall through to staff/AuthZ checks).
+        """
         both_response = _has_catalog_visibility(courselike, CATALOG_VISIBILITY_CATALOG_AND_ABOUT)
         if both_response:
             return ACCESS_GRANTED
         about_response = _has_catalog_visibility(courselike, CATALOG_VISIBILITY_ABOUT)
         if about_response:
             return ACCESS_GRANTED
+        return None
+
+    @function_trace("can_see_about_page")
+    def can_see_about_page() -> AccessResponse | CatalogVisibilityError:
+        """
+        Entry point for about-page visibility checks.
+
+        Grants access when any of the following is true:
+          - the course catalog_visibility allows the about page, or
+          - the user has course staff access (including limited staff via role inheritance), or
+          - the user is authenticated, AuthZ course authoring is enabled for the course,
+            and the user has COURSES_VIEW_COURSE (including legacy Studio read access
+            as a fallback during RBAC migration).
+
+        Learners, beta testers, and other course-team roles without staff access rely on
+        catalog visibility only; they are not checked explicitly here.
+
+        AuthZ must not replace catalog visibility or staff bypass; those checks run
+        first so enrolled learners and beta testers are not blocked by authoring
+        permissions they do not hold.
+
+        Returns CatalogVisibilityError when all checks fail.
+        """
+        catalog_visibility_access = _about_page_catalog_visibility_access()
+        if catalog_visibility_access:
+            return catalog_visibility_access
+
         if _has_staff_access_to_block(user, courselike, courselike.id):
             return ACCESS_GRANTED
-        # Return the typed CatalogVisibilityError so downstream handlers
-        # can provide a meaningful error message instead of a generic 404.
-        return both_response
 
-    @function_trace('can_see_about_page')
-    def can_see_about_page():
-        """
-        Implements the "can see course about page" logic if a course about page should be visible
-        In this case we use the catalog_visibility property on the course block
-        but also allow course staff to see this.
-        """
-        if user and not user.is_anonymous and core_toggles.enable_authz_course_authoring(courselike.id):
-            is_authz_allowed = user_has_course_permission(user, COURSES_VIEW_COURSE.identifier, courselike.id)
-            return ACCESS_GRANTED if is_authz_allowed else CatalogVisibilityError()
-        return legacy_can_see_about_page()
+        if (
+            user
+            and not user.is_anonymous
+            and core_toggles.enable_authz_course_authoring(courselike.id)
+            and user_has_course_permission(
+                user, COURSES_VIEW_COURSE.identifier, courselike.id, LegacyAuthoringPermission.READ
+            )
+        ):
+            return ACCESS_GRANTED
+
+        return CatalogVisibilityError()
 
     checkers = {
         'load': can_load,

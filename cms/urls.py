@@ -237,8 +237,6 @@ if toggles.ENABLE_CONTENT_LIBRARIES:
     urlpatterns += [
         re_path(fr'^library/{LIBRARY_KEY_PATTERN}?$',
                 contentstore_views.library_handler, name='library_handler'),
-        re_path(fr'^library/{LIBRARY_KEY_PATTERN}/team/$',
-                contentstore_views.manage_library_users, name='manage_library_users'),
     ]
 
 if toggles.EXPORT_GIT.is_enabled():

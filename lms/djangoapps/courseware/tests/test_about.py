@@ -9,6 +9,7 @@ from unittest.mock import patch
 
 import ddt
 import pytz
+from crum import set_current_request
 from django.conf import settings
 from django.test.utils import override_settings
 from django.urls import reverse
@@ -19,6 +20,7 @@ from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.student.tests.factories import CourseEnrollmentAllowedFactory, UserFactory
 from common.djangoapps.track.tests import EventTrackingTestCase
 from common.djangoapps.util.milestones_helpers import get_prerequisite_courses_display, set_prerequisite_courses
+from openedx.core.djangoapps.authz.tests.mixins import CourseAuthoringAuthzTestMixin
 from openedx.core.djangoapps.models.course_details import CourseDetails
 from openedx.features.course_experience import COURSE_ENABLE_UNENROLLED_ACCESS_FLAG, course_home_url
 from openedx.features.course_experience.waffle import ENABLE_COURSE_ABOUT_SIDEBAR_HTML
@@ -221,6 +223,41 @@ class AboutTestCase(LoginEnrollmentTestCase, SharedModuleStoreTestCase, EventTra
             self.assertContains(resp, "View Course")
         else:
             self.assertContains(resp, "Enroll Now")
+
+
+class AuthzAboutPageTestCase(
+    CourseAuthoringAuthzTestMixin,
+    LoginEnrollmentTestCase,
+    SharedModuleStoreTestCase,
+    EventTrackingTestCase,
+):
+    """
+    About page HTTP access when AuthZ course authoring is enabled.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.course_without_about = CourseFactory.create(catalog_visibility=CATALOG_VISIBILITY_NONE)
+        cls.course_with_about = CourseFactory.create(catalog_visibility=CATALOG_VISIBILITY_ABOUT)
+        CourseDetails.update_about_item(cls.course_without_about, "overview", "WITHOUT ABOUT", None)
+        CourseDetails.update_about_item(cls.course_with_about, "overview", "WITH ABOUT", None)
+
+    def setUp(self):
+        super().setUp()
+        self.addCleanup(set_current_request, None)
+        assert self.client.login(username=self.unauthorized_user.username, password=self.password)
+
+    @override_settings(COURSE_ABOUT_VISIBILITY_PERMISSION="see_about_page")
+    def test_about_page_honors_catalog_visibility_without_authz_role(self):
+        """A learner without AuthZ roles can view catalog-visible about pages."""
+        url = reverse("about_course", args=[str(self.course_with_about.id)])
+        resp = self.client.get(url)
+        self.assertContains(resp, "WITH ABOUT")
+
+        url = reverse("about_course", args=[str(self.course_without_about.id)])
+        resp = self.client.get(url)
+        self.assertRedirects(resp, reverse("dashboard"), fetch_redirect_response=False)
 
 
 class AboutTestCaseXML(LoginEnrollmentTestCase, ModuleStoreTestCase):

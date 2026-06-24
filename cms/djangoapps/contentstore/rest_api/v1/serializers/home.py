@@ -35,12 +35,6 @@ class LibraryViewSerializer(serializers.Serializer):
     migrated_to_collection_title = serializers.CharField(required=False)
 
 
-class CourseHomeTabSerializer(serializers.Serializer):
-    archived_courses = CourseCommonSerializer(required=False, many=True)
-    courses = CourseCommonSerializer(required=False, many=True)
-    in_process_course_actions = UnsucceededCourseSerializer(many=True, required=False, allow_null=True)
-
-
 class LibraryTabSerializer(serializers.Serializer):
     libraries = LibraryViewSerializer(many=True, required=False, allow_null=True)
 

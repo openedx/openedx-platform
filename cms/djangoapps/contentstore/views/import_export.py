@@ -33,7 +33,6 @@ from storages.backends.s3boto3 import S3Boto3Storage
 from user_tasks.conf import settings as user_tasks_settings
 from user_tasks.models import UserTaskArtifact, UserTaskStatus
 
-from common.djangoapps.edxmako.shortcuts import render_to_response
 from common.djangoapps.util.json_request import JsonResponse
 from common.djangoapps.util.monitoring import monitor_import_failure
 from common.djangoapps.util.views import ensure_valid_course_key
@@ -43,7 +42,7 @@ from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-impo
 
 from ..storage import course_import_export_storage
 from ..tasks import CourseExportTask, CourseImportTask, export_olx, import_olx
-from ..utils import IMPORTABLE_FILE_TYPES, get_export_url, get_import_url, reverse_course_url, reverse_library_url
+from ..utils import IMPORTABLE_FILE_TYPES, get_export_url, get_import_url, reverse_course_url
 
 __all__ = [
     'import_handler', 'import_status_handler',
@@ -74,15 +73,10 @@ def import_handler(request, course_key_string):
         json: import a course via the .tar.gz or .zip file specified in request.FILES
     """
     courselike_key = CourseKey.from_string(course_key_string)
-    library = isinstance(courselike_key, LibraryLocator)
-    if library:
-        successful_url = reverse_library_url('library_handler', courselike_key)
-        context_name = 'context_library'
-        courselike_block = modulestore().get_library(courselike_key)
-    else:
-        successful_url = reverse_course_url('course_handler', courselike_key)
-        context_name = 'context_course'
-        courselike_block = modulestore().get_course(courselike_key)
+    # Legacy (v1) libraries are no longer supported for import. Reject early
+    # to avoid an invalid redirect to the MFE with a library key.
+    if isinstance(courselike_key, LibraryLocator):
+        raise Http404
     if not user_has_course_permission(
         user=request.user,
         authz_permission=COURSES_IMPORT_COURSE.identifier,
@@ -98,17 +92,7 @@ def import_handler(request, course_key_string):
             return _write_chunk(request, courselike_key)
     elif request.method == 'GET':  # assume html
 
-        if not library:
-            return redirect(get_import_url(courselike_key))
-        status_url = reverse_course_url(
-            "import_status_handler", courselike_key, kwargs={'filename': "fillerName"}
-        )
-        return render_to_response('import.html', {
-            context_name: courselike_block,
-            'successful_import_redirect_url': successful_url,
-            'import_status_url': status_url,
-            'library': isinstance(courselike_key, LibraryLocator)
-        })
+        return redirect(get_import_url(courselike_key))
     else:
         return HttpResponseNotFound()
 
@@ -331,24 +315,8 @@ def export_handler(request, course_key_string):
         legacy_permission=LegacyAuthoringPermission.WRITE
     ):
         raise PermissionDenied()
-    library = isinstance(course_key, LibraryLocator)
-    if library:
-        courselike_block = modulestore().get_library(course_key)
-        context = {
-            'context_library': courselike_block,
-            'courselike_home_url': reverse_library_url("library_handler", course_key),
-            'library': True
-        }
-    else:
-        courselike_block = modulestore().get_course(course_key)
-        if courselike_block is None:
-            raise Http404
-        context = {
-            'context_course': courselike_block,
-            'courselike_home_url': reverse_course_url("course_handler", course_key),
-            'library': False
-        }
-    context['status_url'] = reverse_course_url('export_status_handler', course_key)
+    if modulestore().get_course(course_key) is None:
+        raise Http404
 
     # an _accept URL parameter will be preferred over HTTP_ACCEPT in the header.
     requested_format = request.GET.get('_accept', request.META.get('HTTP_ACCEPT', 'text/html'))
@@ -357,9 +325,7 @@ def export_handler(request, course_key_string):
         export_olx.delay(request.user.id, course_key_string, request.LANGUAGE_CODE)
         return JsonResponse({'ExportStatus': 1})
     elif 'text/html' in requested_format:
-        if not library:
-            return redirect(get_export_url(course_key))
-        return render_to_response('export.html', context)
+        return redirect(get_export_url(course_key))
     else:
         # Only HTML request format is supported (no JSON).
         return HttpResponse(status=406)

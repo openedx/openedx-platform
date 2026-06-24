@@ -174,9 +174,6 @@
        <%
             library_key = context_library.location.course_key
             index_url = reverse('library_handler', kwargs={'library_key_string': str(library_key)})
-            import_url = reverse('import_handler', kwargs={'course_key_string': str(library_key)})
-            lib_users_url = reverse('manage_library_users', kwargs={'library_key_string': str(library_key)})
-            export_url = reverse('export_handler', kwargs={'course_key_string': str(library_key)})
       %>
       <h2 class="info-course">
         <span class="sr">${_("Current Library:")}</span>
@@ -185,41 +182,6 @@
           <span class="course-title" title="${context_library.display_name_with_default}">${context_library.display_name_with_default}</span>
         </a>
       </h2>
-
-      <nav class="nav-course nav-dd ui-left" aria-label="${_('Course')}">
-        <h2 class="sr">${_("Course Navigation")}</h2>
-        <ol>
-
-          <li class="nav-item nav-library-settings">
-            <h3 class="title"><span class="label"><span class="label-prefix sr">${_("Library")} </span>${_("Settings")}</span> <span class="icon fa fa-caret-down ui-toggle-dd" aria-hidden="true"></span></h3>
-            <div class="wrapper wrapper-nav-sub">
-              <div class="nav-sub">
-                <ul>
-                  <li class="nav-item nav-library-settings-team">
-                    <a href="${lib_users_url}">${_("User Access")}</a>
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </li>
-          <li class="nav-item nav-course-tools">
-            <h3 class="title"><span class="label">${_("Tools")}</span> <span class="icon fa fa-caret-down ui-toggle-dd" aria-hidden="true"></span></h3>
-
-            <div class="wrapper wrapper-nav-sub">
-              <div class="nav-sub">
-                <ul>
-                  <li class="nav-item nav-course-tools-import">
-                    <a href="${import_url}">${_("Import")}</a>
-                  </li>
-                  <li class="nav-item nav-course-tools-export">
-                    <a href="${export_url}">${_("Export")}</a>
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </li>
-        </ol>
-      </nav>
       % endif
     </div>
 
