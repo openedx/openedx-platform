@@ -1091,7 +1091,7 @@ openedx-forum==0.4.3
     # via -r requirements/edx/base.txt
 optimizely-sdk==5.5.0
     # via -r requirements/edx/base.txt
-ora2==7.0.0
+ora2==7.1.0
     # via -r requirements/edx/base.txt
 packaging==26.2
     # via
