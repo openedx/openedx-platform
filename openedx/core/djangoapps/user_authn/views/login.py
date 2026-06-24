@@ -684,6 +684,8 @@ def login_user(request, api_version="v1"):  # pylint: disable=too-many-statement
         email_or_username_key = "email" if api_version == API_V1 else "email_or_username"
         email_or_username = request.POST.get(email_or_username_key, None)
         email_or_username = possibly_authenticated_user.email if possibly_authenticated_user else email_or_username
+        if error_code == "inactive-user" and user:
+            email_or_username = user.email
         response_content["email"] = email_or_username
     except VulnerablePasswordError as error:
         response_content = error.get_response()
