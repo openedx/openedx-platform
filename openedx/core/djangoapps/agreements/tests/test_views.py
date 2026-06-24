@@ -4,9 +4,7 @@ Tests for agreements views
 
 import json
 from datetime import datetime, timedelta
-from unittest.mock import patch
 
-from django.conf import settings
 from django.test import override_settings
 from django.urls import reverse
 from freezegun import freeze_time
@@ -226,7 +224,7 @@ class IntegritySignatureViewTests(APITestCase, ModuleStoreTestCase):
 
 
 @skip_unless_lms
-@patch.dict(settings.FEATURES, {'ENABLE_LTI_PII_ACKNOWLEDGEMENT': True})
+@override_settings(ENABLE_LTI_PII_ACKNOWLEDGEMENT=True)
 class LTIPIISignatureSignatureViewTests(APITestCase, ModuleStoreTestCase):
     """
         Tests for the LTI PII Signature View
@@ -268,7 +266,7 @@ class LTIPIISignatureSignatureViewTests(APITestCase, ModuleStoreTestCase):
             assert data['username'] == user.username
             assert data['course_id'] == course_id
 
-    @patch.dict(settings.FEATURES, {'ENABLE_LTI_PII_ACKNOWLEDGEMENT': False})
+    @override_settings(ENABLE_LTI_PII_ACKNOWLEDGEMENT=False)
     def test_enabled_lti_pii_signature(self):
         response = self.client.post(
             reverse(

@@ -155,7 +155,7 @@ class LTIPIISignatureView(AuthenticatedAPIView):
                 created_at: "2021-04-23T18:25:43.511Z"
             }
         """
-        if not settings.FEATURES.get('ENABLE_LTI_PII_ACKNOWLEDGEMENT'):
+        if not settings.ENABLE_LTI_PII_ACKNOWLEDGEMENT:
             return Response(
                 status=status.HTTP_404_NOT_FOUND,
             )
