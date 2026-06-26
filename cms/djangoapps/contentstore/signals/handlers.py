@@ -189,12 +189,15 @@ def listen_for_library_update(sender, library_key, **kwargs):  # pylint: disable
         update_library_index.delay(str(library_key), datetime.now(UTC).isoformat())
 
 
-@receiver(SignalHandler.item_deleted)
-def handle_item_deleted(**kwargs):
+@receiver(SignalHandler.pre_item_delete)
+def handle_item_deleted(**kwargs) -> None:
     """
-    Receives the item_deleted signal sent by Studio when an XBlock is removed from
-    the course structure and removes any gating milestone data associated with it or
-    its descendants.
+    Receives the pre_item_delete signal sent by Studio when an XBlock is removed
+    from the course structure and removes any gating milestone and upstream link
+    data associated with it or its descendants.
+
+    We use the "pre" signal because once the actual "item_deleted" signal is
+    sent, it's impossible to fetch the descendants of the item.
 
     Arguments:
         kwargs (dict): Contains the content usage key of the item deleted
@@ -211,14 +214,16 @@ def handle_item_deleted(**kwargs):
         try:
             deleted_block = modulestore().get_item(usage_key)
         except ItemNotFoundError:
+            log.warning("Unable to load XBlock %s to handle its pre_item_delete signal", str(usage_key), exc_info=True)
+            # There may be dangling ComponentLink / milestone data.
             return
-        id_list = {deleted_block.location}
+        id_list = {deleted_block.usage_key}
         for block in yield_dynamic_block_descendants(deleted_block, kwargs.get('user_id')):
             # Remove prerequisite milestone data
-            gating_api.remove_prerequisite(block.location)
+            gating_api.remove_prerequisite(block.usage_key)
             # Remove any 'requires' course content milestone relationships
-            gating_api.set_required_content(course_key, block.location, None, None, None)
-            id_list.add(block.location)
+            gating_api.set_required_content(course_key, block.usage_key, None, None, None)
+            id_list.add(block.usage_key)
 
         ComponentLink.objects.filter(downstream_usage_key__in=id_list).delete()
         ContainerLink.objects.filter(downstream_usage_key__in=id_list).delete()
