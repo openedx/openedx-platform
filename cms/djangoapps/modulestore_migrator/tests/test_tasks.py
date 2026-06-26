@@ -352,7 +352,10 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
         """
         Test _migrate_component successfully creates a new component
         """
-        source_key = self.course.id.make_usage_key("problem", "test_problem")
+        source_key = self.course.id.make_usage_key(
+            "problem",
+            "Test.Problem-With_Acceptable_Chars"  # ".", "-", and "_" are all legal.
+        )
         olx = '<problem display_name="Test Problem"><multiplechoiceresponse></multiplechoiceresponse></problem>'
         context = self._make_migration_context()
         result, reason = _migrate_component(
