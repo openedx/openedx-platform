@@ -59,6 +59,38 @@ class BaseUpstreamLinksHelpers(TestCase):
             upstream_version=num,
         )
 
+    def _create_container_with_linked_children(self, num_children: int = 3):
+        """
+        Create a unit (vertical) container that has an upstream link (ContainerLink)
+        and that contains child blocks which each have their own upstream link
+        (ComponentLink).
+
+        Returns the container block and the list of child blocks.
+        """
+        container_upstream = LibraryContainerLocator.from_string(
+            f"lct:OpenedX:CSPROB2:unit:{uuid4()}"
+        )
+        container = BlockFactory.create(
+            parent=self.sequence,
+            category='vertical',
+            display_name="A container with linked children",
+            upstream=str(container_upstream),
+            upstream_version=1,
+        )
+        children = []
+        for i in range(num_children):
+            child_upstream = LibraryUsageLocatorV2.from_string(
+                f"lb:OpenedX:CSPROB2:html:{uuid4()}"
+            )
+            children.append(BlockFactory.create(
+                parent=container,
+                category="html",
+                display_name=f"Child html block - {i}",
+                upstream=str(child_upstream),
+                upstream_version=i + 1,
+            ))
+        return container, children
+
     def _create_unit_and_expected_container_link(self, course_key: str | CourseKey, num_blocks: int = 3):
         """
         Create unit xblock with random upstream key and version number.
@@ -275,7 +307,11 @@ class TestUpstreamLinksEvents(
     Test signals related to managing upstream->downstream links.
     """
 
-    ENABLED_SIGNALS = ['course_deleted', 'course_published']
+    # 'pre_item_delete' is required so that handle_item_deleted runs and cascades
+    # link deletion to a deleted block's descendants. The xblock.deleted.v1 event
+    # only deletes the link for the single deleted block (see
+    # delete_upstream_downstream_link_handler).
+    ENABLED_SIGNALS = ['course_deleted', 'course_published', 'pre_item_delete']
     ENABLED_OPENEDX_EVENTS = [
         "org.openedx.content_authoring.xblock.created.v1",
         "org.openedx.content_authoring.xblock.updated.v1",
@@ -331,3 +367,24 @@ class TestUpstreamLinksEvents(
         assert ContainerLink.objects.filter(downstream_usage_key=usage_key).exists()
         self.store.delete_item(usage_key, self.user.id)
         assert not ContainerLink.objects.filter(downstream_usage_key=usage_key).exists()
+
+    def test_delete_container_deletes_child_component_links(self):
+        """
+        Deleting a container must delete its own ContainerLink *and* the
+        ComponentLinks of all of its descendant blocks.
+        """
+        with self.store.bulk_operations(self.course_key_1):
+            container, children = self._create_container_with_linked_children()
+
+        container_key = container.usage_key
+        child_keys = [child.usage_key for child in children]
+
+        # Sanity check: the container link and all child component links exist.
+        assert ContainerLink.objects.filter(downstream_usage_key=container_key).exists()
+        assert ComponentLink.objects.filter(downstream_usage_key__in=child_keys).count() == len(child_keys)
+
+        self.store.delete_item(container_key, self.user.id)
+
+        # The container's link and every child's component link must be gone.
+        assert not ContainerLink.objects.filter(downstream_usage_key=container_key).exists()
+        assert not ComponentLink.objects.filter(downstream_usage_key__in=child_keys).exists()

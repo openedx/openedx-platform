@@ -199,6 +199,12 @@ def handle_item_deleted(**kwargs) -> None:
     We use the "pre" signal because once the actual "item_deleted" signal is
     sent, it's impossible to fetch the descendants of the item.
 
+    NOTE: This partially overlaps with ``delete_upstream_downstream_link_handler``
+    (below), which also removes ComponentLink / ContainerLink rows on delete but
+    only for the single deleted block, not its descendants. This handler is the
+    one responsible for cascading the link deletion to the deleted block's
+    children. Keep the two in sync if you change either.
+
     Arguments:
         kwargs (dict): Contains the content usage key of the item deleted
 
@@ -280,6 +286,12 @@ def update_upstream_downstream_link_handler(**kwargs):
 def delete_upstream_downstream_link_handler(**kwargs):
     """
     Delete upstream->downstream link from database on xblock delete.
+
+    NOTE: This only removes the link for the single deleted block. Cascading the
+    deletion to the block's descendants (e.g. the child components of a deleted
+    container) is handled separately by ``handle_item_deleted`` (above), which
+    listens to the modulestore ``pre_item_delete`` signal. These two handlers
+    partially overlap; keep them in sync if you change either.
     """
     xblock_info = kwargs.get("xblock_info", None)
     if not xblock_info or not isinstance(xblock_info, XBlockData):
