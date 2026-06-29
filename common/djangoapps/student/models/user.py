@@ -1338,6 +1338,31 @@ def log_successful_logout(sender, request, user, **kwargs):  # pylint: disable=u
             segment.track(request.user.id, 'edx.bi.user.account.logout')
 
 
+def _is_single_login_exempt(user):
+    """
+    Return True if ``user`` is exempt from single-login enforcement.
+
+    ``PREVENT_CONCURRENT_LOGINS`` keeps a single active session per user and
+    deletes the previously registered session on each login. That is correct for
+    human accounts, but it breaks shared service/automation accounts (for
+    example the xqueue-watcher grader account) whose many concurrent workers all
+    authenticate as one user and would otherwise continually evict each other's
+    sessions.
+
+    Exemptions are opt-in and default to empty, so behaviour is unchanged unless
+    configured:
+
+    * ``SINGLE_LOGIN_EXEMPT_USERNAMES`` -- iterable of exact usernames.
+    * ``SINGLE_LOGIN_EXEMPT_GROUPS`` -- iterable of group names; a user in any of
+      these groups is exempt.
+    """
+    exempt_usernames = getattr(settings, 'SINGLE_LOGIN_EXEMPT_USERNAMES', None) or ()
+    if user.username in exempt_usernames:
+        return True
+    exempt_groups = getattr(settings, 'SINGLE_LOGIN_EXEMPT_GROUPS', None) or ()
+    return bool(exempt_groups) and user.groups.filter(name__in=exempt_groups).exists()
+
+
 @receiver(user_logged_in)
 @receiver(user_logged_out)
 def enforce_single_login(sender, request, user, signal, **kwargs):  # pylint: disable=unused-argument
@@ -1346,6 +1371,9 @@ def enforce_single_login(sender, request, user, signal, **kwargs):  # pylint: di
     to prevent concurrent logins.
     """
     if settings.FEATURES.get('PREVENT_CONCURRENT_LOGINS', False):
+        if user and _is_single_login_exempt(user):
+            # Shared service/automation accounts may hold concurrent sessions.
+            return
         if signal == user_logged_in:
             key = request.session.session_key
         else:
