@@ -29,3 +29,4 @@ jobs:
             tutor images build openedx
             tutor local restart
             tutor local do init
+            
