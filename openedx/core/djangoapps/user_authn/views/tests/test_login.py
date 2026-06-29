@@ -659,6 +659,30 @@ class LoginTest(OpenEdxEventsTestMixin, SiteMixin, CacheIsolationTestCase):
         assert response.status_code == 302
 
     @patch.dict("django.conf.settings.FEATURES", {'PREVENT_CONCURRENT_LOGINS': True})
+    def test_single_session_exempt_user(self):
+        """
+        A user whose username is in SINGLE_LOGIN_EXEMPT_USERNAMES is not subject
+        to single-login enforcement: a concurrent login does not record the
+        single-session slot and therefore does not evict the first session.
+        """
+        creds = {'email': self.user_email, 'password': self.password}
+        client1 = Client()
+        client2 = Client()
+
+        with override_settings(SINGLE_LOGIN_EXEMPT_USERNAMES=[self.user.username]):
+            response = client1.post(self.url, creds)
+            self._assert_response(response, success=True)
+
+            # A second login must NOT evict the exempt user's first session.
+            response = client2.post(self.url, creds)
+            self._assert_response(response, success=True)
+
+            self.user = User.objects.get(pk=self.user.pk)
+            # No single-session slot is recorded for exempt users, so neither
+            # session is ever deleted.
+            assert 'session_id' not in self.user.profile.get_meta()
+
+    @patch.dict("django.conf.settings.FEATURES", {'PREVENT_CONCURRENT_LOGINS': True})
     def test_single_session_with_no_user_profile(self):
         """
         Assert that user login with cas (Central Authentication Service) is
