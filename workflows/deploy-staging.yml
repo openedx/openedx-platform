@@ -1,0 +1,31 @@
+name: Deploy Open edX Staging
+
+on:
+  push:
+    branches: [dev]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy to staging LMS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.OPENEDX_STAGING_HOST }}
+          username: ${{ secrets.OPENEDX_STAGING_USER }}
+          key: ${{ secrets.OPENEDX_STAGING_SSH_KEY }}
+          script: |
+            set -e
+            cd /opt/performu-openedx
+            git fetch origin
+            git checkout dev
+            git pull origin dev
+            tutor config save
+            tutor images build openedx
+            tutor local restart
+            tutor local do init

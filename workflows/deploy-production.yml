@@ -1,0 +1,31 @@
+name: Deploy Open edX Production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy to production LMS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.OPENEDX_PROD_HOST }}
+          username: ${{ secrets.OPENEDX_PROD_USER }}
+          key: ${{ secrets.OPENEDX_PROD_SSH_KEY }}
+          script: |
+            set -e
+            cd /opt/performu-openedx
+            git fetch origin
+            git checkout main
+            git pull origin main
+            tutor config save
+            tutor images build openedx
+            tutor local restart
+            tutor local do init
