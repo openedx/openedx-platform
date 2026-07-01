@@ -16,7 +16,6 @@ from django.http import Http404
 from django.test.client import Client, RequestFactory  # noqa: F401
 from django.test.utils import override_settings
 from django.urls import reverse
-from django.utils import translation
 from edx_django_utils.cache import RequestCache  # noqa: F401
 from edx_toggles.toggles.testutils import override_waffle_flag
 
@@ -63,7 +62,6 @@ from openedx.core.djangoapps.util.testing import ContentGroupTestCase
 from openedx.core.djangoapps.waffle_utils.testutils import WAFFLE_TABLES
 from openedx.core.lib.teams_config import TeamsConfig
 from openedx.features.content_type_gating.models import ContentTypeGatingConfig  # noqa: F401
-from openedx.features.enterprise_support.tests.mixins.enterprise import EnterpriseTestConsentRequired
 from xmodule.modulestore import ModuleStoreEnum  # noqa: F401
 from xmodule.modulestore.django import modulestore  # noqa: F401
 from xmodule.modulestore.tests.django_utils import (
@@ -1046,75 +1044,6 @@ class ForumFormDiscussionUnicodeTestCase(
         response_data = json.loads(response.content.decode("utf-8"))
         assert response_data["discussion_data"][0]["title"] == text
         assert response_data["discussion_data"][0]["body"] == text
-
-
-class EnterpriseConsentTestCase(
-    EnterpriseTestConsentRequired,
-    UrlResetMixin,
-    ModuleStoreTestCase,
-    ForumViewsUtilsMixin,
-):
-    """
-    Ensure that the Enterprise Data Consent redirects are in place only when consent is required.
-    """
-
-    CREATE_USER = False
-
-    @patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
-    def setUp(self):
-        # Invoke UrlResetMixin setUp
-        super().setUp()
-        username = "foo"
-        password = "bar"
-
-        self.discussion_id = "dummy_discussion_id"
-        self.course = CourseFactory.create(
-            discussion_topics={"dummy discussion": {"id": self.discussion_id}}
-        )
-        self.student = UserFactory.create(username=username, password=password)
-        CourseEnrollmentFactory.create(user=self.student, course_id=self.course.id)
-        assert self.client.login(username=username, password=password)
-
-        self.addCleanup(translation.deactivate)
-
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        super().setUpClassAndForumMock()
-
-    @classmethod
-    def tearDownClass(cls):
-        super().tearDownClass()
-        super().disposeForumMocks()
-
-    @patch("openedx.features.enterprise_support.api.enterprise_customer_for_request")
-    def test_consent_required(self, mock_enterprise_customer_for_request):
-        """
-        Test that enterprise data sharing consent is required when enabled for the various discussion views.
-        """
-        # ENT-924: Temporary solution to replace sensitive SSO usernames.
-        mock_enterprise_customer_for_request.return_value = None
-
-        thread_id = "dummy"
-        course_id = str(self.course.id)
-        self._configure_mock_responses(
-            course=self.course, text="dummy", thread_id=thread_id
-        )
-
-        for url in (
-            reverse("forum_form_discussion", kwargs=dict(course_id=course_id)),
-            reverse(
-                "single_thread",
-                kwargs=dict(
-                    course_id=course_id,
-                    discussion_id=self.discussion_id,
-                    thread_id=thread_id,
-                ),
-            ),
-        ):
-            self.verify_consent_required(  # pylint: disable=no-value-for-parameter
-                self.client, url
-            )
 
 
 class InlineDiscussionGroupIdTestCase(  # pylint: disable=missing-class-docstring

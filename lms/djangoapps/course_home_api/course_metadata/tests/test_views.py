@@ -9,6 +9,7 @@ from django.db import transaction
 from django.test.utils import override_settings
 from django.urls import reverse
 from edx_toggles.toggles.testutils import override_waffle_flag
+from openedx_filters.learning.filters import CoursewareAccessChecksRequested
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.student.models import CourseEnrollment
@@ -26,10 +27,6 @@ from lms.djangoapps.courseware.toggles import (
     COURSEWARE_MICROFRONTEND_PROGRESS_MILESTONES_STREAK_CELEBRATION,
 )
 from openedx.core.djangoapps.discussions.models import DiscussionsConfiguration
-from openedx.features.enterprise_support.tests.factories import (
-    EnterpriseCourseEnrollmentFactory,
-    EnterpriseCustomerUserFactory,
-)
 
 
 @ddt.ddt
@@ -162,7 +159,7 @@ class CourseHomeMetadataTests(BaseCourseHomeTests):
             'enroll_user': True,
             'instructor_role': False,
             'masquerade_role': None,
-            'dsc_required': False,
+            'filter_denies_access': False,
             'expect_course_access': True,
             'error_code': None,
         },
@@ -171,7 +168,7 @@ class CourseHomeMetadataTests(BaseCourseHomeTests):
             'enroll_user': False,
             'instructor_role': False,
             'masquerade_role': None,
-            'dsc_required': False,
+            'filter_denies_access': False,
             'expect_course_access': False,
             'error_code': 'enrollment_required'
         },
@@ -180,7 +177,7 @@ class CourseHomeMetadataTests(BaseCourseHomeTests):
             'enroll_user': False,
             'instructor_role': True,
             'masquerade_role': None,
-            'dsc_required': False,
+            'filter_denies_access': False,
             'expect_course_access': True,
             'error_code': None
         },
@@ -189,32 +186,32 @@ class CourseHomeMetadataTests(BaseCourseHomeTests):
             'enroll_user': False,
             'instructor_role': True,
             'masquerade_role': 'student',
-            'dsc_required': False,
+            'filter_denies_access': False,
             'expect_course_access': True,
             'error_code': None
         },
         {
-            # Data sharing Consent required learners should Not have access.
+            # Learners denied by an access-checks pipeline step should NOT have access.
             'enroll_user': True,
             'instructor_role': False,
             'masquerade_role': None,
-            'dsc_required': True,
+            'filter_denies_access': True,
             'expect_course_access': False,
-            'error_code': 'data_sharing_access_required'
+            'error_code': 'access_denied_by_filter'
         },
         {
-            # Data sharing Consent required staff should Not have access.
+            # Staff denied by an access-checks pipeline step should NOT have access.
             'enroll_user': True,
             'instructor_role': True,
             'masquerade_role': None,
-            'dsc_required': True,
+            'filter_denies_access': True,
             'expect_course_access': False,
-            'error_code': 'data_sharing_access_required'
+            'error_code': 'access_denied_by_filter'
         }
     )
     @ddt.unpack
     def test_course_access(
-        self, enroll_user, instructor_role, masquerade_role, dsc_required, expect_course_access, error_code
+        self, enroll_user, instructor_role, masquerade_role, filter_denies_access, expect_course_access, error_code
     ):
         """
         Test that course_access is calculated correctly based on
@@ -227,50 +224,22 @@ class CourseHomeMetadataTests(BaseCourseHomeTests):
         if masquerade_role:
             self.update_masquerade(role=masquerade_role)
 
-        consent_url = 'dump/consent/url' if dsc_required else None
-        with patch('openedx.features.enterprise_support.api.get_enterprise_consent_url', return_value=consent_url):
+        if filter_denies_access:
+            mock_side_effect = CoursewareAccessChecksRequested.PreventCoursewareAccess(
+                message='Access denied by a courseware access-checks pipeline step',
+                error_code='access_denied_by_filter',
+                developer_message='https://example.com/redirect',
+                user_message='You are not allowed to access this course',
+            )
+            with patch(
+                'openedx_filters.learning.filters.CoursewareAccessChecksRequested.run_filter',
+                side_effect=mock_side_effect,
+            ):
+                response = self.client.get(self.url)
+        else:
             response = self.client.get(self.url)
 
         self._assert_course_access_response(response, expect_course_access, error_code)
-
-    @ddt.data(True, False)
-    def test_course_access_with_correct_active_enterprise(self, instructor_role):
-        """
-        Test that course_access is calculated correctly based on
-        access to MFE and access to the course itself.
-        """
-        if instructor_role:
-            CourseInstructorRole(self.course.id).add_users(self.user)
-
-        # Test with no EnterpriseCourseEnrollment
-        course_enrollment = CourseEnrollment.enroll(self.user, self.course.id, 'audit')
-        response = self.client.get(self.url)
-        self._assert_course_access_response(response, True, None)
-
-        # Test with EnterpriseCourseEnrollment and having correct active enterprise
-        course = course_enrollment.course
-        enterprise_customer_user = EnterpriseCustomerUserFactory(user_id=self.user.id)
-        EnterpriseCourseEnrollmentFactory(enterprise_customer_user=enterprise_customer_user, course_id=course.id)
-        response = self.client.get(self.url)
-        self._assert_course_access_response(response, True, None)
-
-        # Test with incorrect active enterprise
-        enterprise_customer_user_2 = EnterpriseCustomerUserFactory(user_id=self.user.id, active=True)
-        enterprise_customer_user.refresh_from_db()
-        assert not enterprise_customer_user.active
-        assert enterprise_customer_user_2.active
-        response = self.client.get(self.url)
-        self._assert_course_access_response(response, False, 'incorrect_active_enterprise')
-
-        # test when no active enterprise at all (ideally this should never happen)
-        enterprise_customer_user_2.active = False
-        enterprise_customer_user_2.save()
-        enterprise_customer_user.refresh_from_db()
-        enterprise_customer_user_2.refresh_from_db()
-        assert not enterprise_customer_user.active
-        assert not enterprise_customer_user_2.active
-        response = self.client.get(self.url)
-        self._assert_course_access_response(response, False, 'incorrect_active_enterprise')
 
     @patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
     @ddt.data(True, False)

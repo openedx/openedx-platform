@@ -573,7 +573,7 @@ edx-drf-extensions==10.6.0
     #   enterprise-integrated-channels
     #   openedx-authz
     #   openedx-core
-edx-enterprise==8.0.18
+edx-enterprise==8.3.0
     # via
     #   -c requirements/constraints.txt
     #   -r requirements/edx/base.txt
@@ -1042,7 +1042,7 @@ openedx-events==11.2.0
     #   openedx-authz
     #   openedx-core
     #   ora2
-openedx-filters==3.4.1
+openedx-filters==3.5.0
     # via
     #   -r requirements/edx/base.txt
     #   edx-enterprise
@@ -1052,7 +1052,7 @@ openedx-forum==0.4.3
     # via -r requirements/edx/base.txt
 optimizely-sdk==5.5.0
     # via -r requirements/edx/base.txt
-ora2==7.0.0
+ora2==7.1.0
     # via -r requirements/edx/base.txt
 packaging==26.2
     # via

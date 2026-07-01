@@ -275,6 +275,25 @@ _COURSE_NOTIFICATION_TYPES = {
 
         'filters': [FILTER_AUDIT_EXPIRED_USERS_WITH_NO_ROLE],
     },
+    'ora_reminder': {
+        'notification_app': 'grading',
+        'name': 'ora_reminder',
+
+        'info': 'Reminder notifications for learners who have pending self or peer review steps in an ORA.',
+        'web': True,
+        'email': True,
+        'push': False,
+        'email_cadence': EmailCadence.DAILY,
+        'non_editable': ['push'],
+        'content_template': _('<{p}>You have <{strong}>{pending_step}</{strong}> to complete for assessment '
+                              '<{strong}>{ora_name}</{strong}></{p}>'),
+        'content_context': {
+            'ora_name': 'Name of ORA in course',
+            'pending_step': 'Pending step description (e.g. "self review" or "peer reviews")',
+        },
+
+        'filters': [FILTER_AUDIT_EXPIRED_USERS_WITH_NO_ROLE],
+    },
     'new_instructor_all_learners_post': {
         'notification_app': 'discussion',
         'name': 'new_instructor_all_learners_post',

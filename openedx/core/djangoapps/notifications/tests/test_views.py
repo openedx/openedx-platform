@@ -643,11 +643,20 @@ class TestNotificationPreferencesViewV3(ModuleStoreTestCase):
                             "push": False,
                             "email_cadence": "Daily",
                             "info": ""
+                        },
+                        "ora_reminder": {
+                            "web": True,
+                            "email": True,
+                            "push": False,
+                            "email_cadence": "Daily",
+                            "info": "Reminder notifications for learners who have pending self or peer "
+                                    "review steps in an ORA."
                         }
 
                     },
                     "non_editable": {
                         "ora_grade_assigned": ["push"],
+                        "ora_reminder": ["push"],
                         "ora_staff_notifications": ["push"]
                     }
                 },
@@ -801,10 +810,19 @@ class TestNotificationPreferencesViewV3(ModuleStoreTestCase):
                             "email_cadence": "Daily",
                             "info": ""
                         },
+                        "ora_reminder": {
+                            "web": False,
+                            "email": False,
+                            "push": False,
+                            "email_cadence": "Daily",
+                            "info": "Reminder notifications for learners who have pending self or peer "
+                                    "review steps in an ORA."
+                        },
 
                     },
                     "non_editable": {
-                        "ora_grade_assigned": ["push"]
+                        "ora_grade_assigned": ["push"],
+                        "ora_reminder": ["push"]
                     }
                 },
             }

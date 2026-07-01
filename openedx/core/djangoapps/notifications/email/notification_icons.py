@@ -36,6 +36,7 @@ class NotificationTypeIcons:
             "course_updates": cls.NEWSPAPER,
             "ora_staff_notifications": cls.OPEN_RESPONSE_OUTLINE,
             "ora_grade_assigned": cls.OPEN_RESPONSE_OUTLINE,
+            "ora_reminder": cls.OPEN_RESPONSE_OUTLINE,
         }
         return notification_type_dict.get(notification_type, default)
 

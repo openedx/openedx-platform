@@ -952,7 +952,10 @@ def _update_and_import_block(  # pylint: disable=too-many-statements
                 # Update library content block's children on draft branch
                 with store.branch_setting(branch_setting=ModuleStoreEnum.Branch.draft_preferred):
                     try:
-                        block.sync_from_library()
+                        draft_block = store.get_item(
+                            block.location.for_branch(ModuleStoreEnum.BranchName.draft)
+                            )
+                        draft_block.sync_from_library(upgrade_to_latest=True)
                     except ObjectDoesNotExist:
                         # If the source library does not exist, that's OK, the library content will still kinda work.
                         # Unfortunately, any setting defaults that are set in the library will be missing.

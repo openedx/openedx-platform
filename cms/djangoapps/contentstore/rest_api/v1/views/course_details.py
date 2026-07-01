@@ -64,7 +64,10 @@ def _classify_update(payload: dict, course_key: CourseKey) -> tuple[bool, bool]:
         current_value = getattr(course_details, field, None)
 
         if field in date_fields:
-            # For date fields, we need to parse the payload value to compare it with the current value
+            # For date fields, we need to parse the payload value to compare it with the current value.
+            # Treat empty string as None since it represents "no date" in the MFE payload.
+            if payload_value == "":
+                payload_value = None
             try:
                 # Convert payload value to internal value for accurate comparison
                 # on date fields
