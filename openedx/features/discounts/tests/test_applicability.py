@@ -10,12 +10,13 @@ import pytest
 from django.contrib.sites.models import Site
 from django.utils.timezone import now
 from edx_toggles.toggles.testutils import override_waffle_flag
-from enterprise.models import EnterpriseCustomer, EnterpriseCustomerUser
+from openedx_filters.learning.filters import DiscountEligibilityCheckRequested
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.course_modes.tests.factories import CourseModeFactory
 from common.djangoapps.entitlements.tests.factories import CourseEntitlementFactory
 from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory
+from lms.djangoapps.courseware.toggles import COURSEWARE_MFE_MILESTONES_STREAK_DISCOUNT
 from lms.djangoapps.experiments.models import ExperimentData
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from openedx.features.discounts.models import DiscountRestrictionConfig
@@ -25,7 +26,12 @@ from xmodule.modulestore.tests.django_utils import (
 )
 from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
-from ..applicability import DISCOUNT_APPLICABILITY_FLAG, _is_in_holdback_and_bucket, can_receive_discount
+from ..applicability import (
+    DISCOUNT_APPLICABILITY_FLAG,
+    _is_in_holdback_and_bucket,
+    can_receive_discount,
+    can_show_streak_discount_coupon,
+)
 
 
 @ddt.ddt
@@ -51,6 +57,13 @@ class TestApplicability(ModuleStoreTestCase):
         )
         self.mock_holdback = holdback_patcher.start()
         self.addCleanup(holdback_patcher.stop)
+
+        # By default, the filter does not raise, meaning the user is eligible.
+        discount_filter_patcher = patch(
+            'openedx.features.discounts.applicability.DiscountEligibilityCheckRequested.run_filter',
+        )
+        self.mock_discount_filter = discount_filter_patcher.start()
+        self.addCleanup(discount_filter_patcher.stop)
 
     def test_can_receive_discount(self):
         # Right now, no one should be able to receive the discount
@@ -136,17 +149,13 @@ class TestApplicability(ModuleStoreTestCase):
         assert applicability == (entitlement_mode is None)
 
     @override_waffle_flag(DISCOUNT_APPLICABILITY_FLAG, active=True)
-    def test_can_receive_discount_false_enterprise(self):
+    def test_can_receive_discount_false_when_filter_marks_ineligible(self):
         """
-        Ensure that enterprise users do not receive the discount.
+        Ensure that when the eligibility filter raises DiscountIneligible,
+        no discount is received.
         """
-        enterprise_customer = EnterpriseCustomer.objects.create(
-            name='Test EnterpriseCustomer',
-            site=self.site
-        )
-        EnterpriseCustomerUser.objects.create(
-            user_id=self.user.id,
-            enterprise_customer=enterprise_customer
+        self.mock_discount_filter.side_effect = DiscountEligibilityCheckRequested.DiscountIneligible(
+            message="test: user is ineligible for discount"
         )
 
         applicability = can_receive_discount(user=self.user, course=self.course)
@@ -180,3 +189,17 @@ class TestApplicability(ModuleStoreTestCase):
                 Mock(now=Mock(return_value=datetime(2020, 8, 1, 0, 1, tzinfo=ZoneInfo("UTC"))), wraps=datetime),
             ):
                 assert not _is_in_holdback_and_bucket(self.user)
+
+    @override_waffle_flag(COURSEWARE_MFE_MILESTONES_STREAK_DISCOUNT, active=True)
+    def test_can_show_streak_discount_coupon_false_when_filter_marks_ineligible(self):
+        """
+        Ensure that when the eligibility filter raises DiscountIneligible,
+        the streak discount coupon is not shown.
+        """
+        CourseEnrollmentFactory(is_active=True, course_id=self.course.id, user=self.user)
+        self.mock_discount_filter.side_effect = DiscountEligibilityCheckRequested.DiscountIneligible(
+            message="test: user is ineligible for streak discount"
+        )
+
+        applicability = can_show_streak_discount_coupon(user=self.user, course=self.course)
+        assert applicability is False
