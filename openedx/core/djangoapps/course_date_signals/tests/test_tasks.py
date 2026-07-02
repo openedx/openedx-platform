@@ -1,3 +1,10 @@
+"""
+Tests for the ``update_assignment_dates_for_course`` Celery task.
+
+The task resolves graded assignments via ``get_course_assignments`` (returning
+``_Assignment`` namedtuples) and writes their due dates into edx-when. Tests use
+the real namedtuple shape to exercise the ``to_edx_when_assignments`` mapping.
+"""
 from unittest.mock import patch
 from datetime import datetime, timezone
 
@@ -5,15 +12,20 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from opaque_keys.edx.keys import CourseKey, UsageKey
 
-from edx_when.api import Assignment, update_or_create_assignments_due_dates
 from edx_when.models import ContentDate, DatePolicy
+from lms.djangoapps.courseware.courses import _Assignment
 
 from openedx.core.djangoapps.course_date_signals.tasks import update_assignment_dates_for_course
 
 User = get_user_model()
 
+_MISSING = object()
+
 
 class TestUpdateAssignmentDatesForCourse(TestCase):
+    """
+    Tests for update_assignment_dates_for_course, including the namedtuple -> edx-when mapping.
+    """
 
     def setUp(self):
         self.course_key = CourseKey.from_string('course-v1:edX+DemoX+Demo_Course')
@@ -28,15 +40,21 @@ class TestUpdateAssignmentDatesForCourse(TestCase):
         )
         self.due_date = datetime(2024, 12, 31, 23, 59, 59, tzinfo=timezone.utc)
 
-    def _assignment(self, title='Test Assignment', date=None, block_key=None, assignment_type='Homework',
-                    subsection_name=''):
-        """Build an Assignment DTO as accepted by edx_when.api.update_or_create_assignments_due_dates."""
-        return Assignment(
-            title=title,
-            date=date or self.due_date,
+    def _assignment(self, title='Test Assignment', date=_MISSING, block_key=None, assignment_type='Homework'):
+        """
+        Build an _Assignment namedtuple exactly as get_course_assignments returns it.
+        """
+        return _Assignment(
             block_key=block_key or self.block_key,
+            title=title,
+            url=None,
+            date=self.due_date if date is _MISSING else date,
+            contains_gated_content=False,
+            complete=False,
+            past_due=False,
             assignment_type=assignment_type,
-            subsection_name=subsection_name,
+            extra_info=None,
+            first_component_block_id=None,
         )
 
     @patch('openedx.core.djangoapps.course_date_signals.tasks.get_course_assignments')
@@ -53,7 +71,10 @@ class TestUpdateAssignmentDatesForCourse(TestCase):
             location=self.block_key
         )
         self.assertEqual(content_date.assignment_title, 'Test Assignment')
-        self.assertEqual(content_date.block_type, 'Homework')
+        # subsection_name is mapped from the assignment title (subsection-level assignments).
+        self.assertEqual(content_date.subsection_name, 'Test Assignment')
+        # block_type stores the structural XBlock type, taken from the block key.
+        self.assertEqual(content_date.block_type, 'sequential')
         self.assertEqual(content_date.policy.abs_date, self.due_date)
 
     @patch('openedx.core.djangoapps.course_date_signals.tasks.get_course_assignments')
@@ -68,16 +89,14 @@ class TestUpdateAssignmentDatesForCourse(TestCase):
             course_id=self.course_key,
             location=self.block_key,
             field='due',
-            block_type='Homework',
+            block_type='sequential',
             policy=existing_policy,
             assignment_title='Old Title',
             course_name=self.course_key.course,
             subsection_name='Old Title'
         )
 
-        mock_get_assignments.return_value = [
-            self._assignment(title='Updated Assignment', subsection_name='Updated Subsection')
-        ]
+        mock_get_assignments.return_value = [self._assignment(title='Updated Assignment')]
 
         update_assignment_dates_for_course(self.course_key_str)
 
@@ -87,6 +106,8 @@ class TestUpdateAssignmentDatesForCourse(TestCase):
         )
         self.assertEqual(content_date.assignment_title, 'Updated Assignment')
         self.assertEqual(content_date.policy.abs_date, self.due_date)
+        # No duplicate row created for the same (course, location, field).
+        self.assertEqual(ContentDate.objects.filter(location=self.block_key).count(), 1)
 
     @patch('openedx.core.djangoapps.course_date_signals.tasks.get_course_assignments')
     def test_missing_staff_user(self, mock_get_assignments):
@@ -187,14 +208,12 @@ class TestUpdateAssignmentDatesForCourse(TestCase):
         self.assertEqual(ContentDate.objects.count(), 0)
 
     @patch('openedx.core.djangoapps.course_date_signals.tasks.get_course_assignments')
-    @patch('edx_when.models.DatePolicy.objects.get_or_create')
+    @patch('edx_when.models.DatePolicy.objects.create')
     def test_date_policy_creation_exception(self, mock_policy_create, mock_get_assignments):
         """
         Test handling exception during DatePolicy creation.
         """
-        mock_get_assignments.return_value = [
-            self._assignment(assignment_type='problem')
-        ]
+        mock_get_assignments.return_value = [self._assignment(assignment_type='problem')]
         mock_policy_create.side_effect = Exception('Database Error')
 
         with self.assertRaises(Exception):
