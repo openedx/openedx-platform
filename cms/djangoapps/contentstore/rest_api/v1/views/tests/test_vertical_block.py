@@ -7,6 +7,8 @@ from urllib.parse import quote
 from django.urls import reverse
 from edx_toggles.toggles.testutils import override_waffle_flag
 from rest_framework import status
+from xblock.core import XBlock
+from xblock.utils.studio_editable import NestedXBlockSpec, StudioContainerWithNestedXBlocksMixin
 from xblock.validation import ValidationMessage
 
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase
@@ -16,6 +18,31 @@ from xmodule.modulestore import ModuleStoreEnum  # pylint: disable=wrong-import-
 from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 from xmodule.modulestore.tests.factories import BlockFactory  # pylint: disable=wrong-import-order
 from xmodule.partitions.partitions import ENROLLMENT_TRACK_PARTITION_ID, Group, UserPartition
+
+
+class TestNestedContainerBlock(StudioContainerWithNestedXBlocksMixin, XBlock):
+    """
+    Test-only XBlock that simulates a third-party container (e.g. Problem Builder)
+    which restricts and annotates its allowed child types via allowed_nested_blocks.
+
+    Third-party container XBlocks often declare child types that are not part of the
+    standard course-wide component_templates (e.g. "Ranged Value Slider"). If the
+    backend simply filtered the course-wide list, those custom types would be silently
+    dropped and authors would have no way to add them in Studio. This block lets us
+    verify that the API builds component_templates from the spec instead, and correctly
+    surfaces single_instance/disabled/disabled_reason so the MFE can disable buttons
+    and show tooltips.
+    """
+    CATEGORY = 'nested-container-test'
+    STUDIO_LABEL = 'Nested Container Test'
+
+    @property
+    def allowed_nested_blocks(self):
+        return [
+            NestedXBlockSpec(None, category='html', label='HTML', single_instance=True),
+            NestedXBlockSpec(None, category='video', label='Video', disabled=True, disabled_reason='Not available'),
+        ]
+
 
 
 class BaseXBlockContainer(CourseTestCase, ContentLibrariesRestApiTest):
@@ -199,6 +226,53 @@ class ContainerHandlerViewTest(BaseXBlockContainer):
         url = self.get_reverse_url(usage_key_string)
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)  # noqa: PT009
+
+    def _all_templates(self, response):
+        """Return a flat list of all template dicts from a component_templates response."""
+        return [
+            template
+            for group in response.json().get('component_templates', [])
+            for template in group.get('templates', [])
+        ]
+
+    @XBlock.register_temp_plugin(TestNestedContainerBlock, identifier='nested-container-test')
+    def test_component_templates_for_mixin_xblock(self):
+        """
+        Test for containers implementing StudioContainerWithNestedXBlocksMixin.
+        """
+        container = self.create_block(self.vertical.location, 'nested-container-test', 'Test Container')
+        response = self.client.get(self.get_reverse_url(container.location))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        component_templates = response.json().get('component_templates', [])
+
+        # Each spec maps to its own top-level group.
+        group_types = {group['type'] for group in component_templates}
+        self.assertEqual(group_types, {'html', 'video'})  # noqa: PT009
+        self.assertNotIn('advanced', group_types)  # noqa: PT009
+
+        # Each group carries exactly one template whose category matches the group type.
+        all_templates = self._all_templates(response)
+        self.assertEqual({t['category'] for t in all_templates}, {'html', 'video'})  # noqa: PT009
+
+        html_template = next(t for t in all_templates if t['category'] == 'html')
+        self.assertTrue(html_template.get('single_instance'))  # noqa: PT009
+
+        video_template = next(t for t in all_templates if t['category'] == 'video')
+        self.assertTrue(video_template.get('disabled'))  # noqa: PT009
+        self.assertEqual(video_template.get('disabled_reason'), 'Not available')  # noqa: PT009
+
+    def test_component_templates_for_non_mixin_xblock(self):
+        """
+        Test for containers do not implementing StudioContainerWithNestedXBlocksMixin.
+        """
+        response = self.client.get(self.get_reverse_url(self.vertical.location))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        group_types = {group['type'] for group in response.json().get('component_templates', [])}
+        self.assertIn('html', group_types)  # noqa: PT009
+        self.assertIn('problem', group_types)  # noqa: PT009
+        self.assertIn('video', group_types)  # noqa: PT009
 
 
 class ContainerVerticalViewTest(BaseXBlockContainer):
