@@ -971,7 +971,7 @@ def confirm_email_change(request, key):  # pylint: disable=too-many-statements
         # Send it to the old email...
         try:
             ace.send(msg)
-        except Exception:
+        except Exception:  # pylint: disable=broad-exception-caught
             log.warning('Unable to send confirmation email to old address', exc_info=True)
             response = render_to_response("email_change_failed.html", {'email': user.email})
             transaction.set_rollback(True)

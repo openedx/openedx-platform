@@ -226,4 +226,3 @@ class CourseCreatorAdminTest(TestCase):
                     self.user.email,
                     self.studio_request_email
                 )
-
