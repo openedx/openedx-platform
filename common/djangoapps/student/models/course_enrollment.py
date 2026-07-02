@@ -664,20 +664,13 @@ class CourseEnrollment(models.Model):
 
         except Exception:  # pylint: disable=broad-except
             if event_name and self.course_id:
-                if settings.FEATURES['SQUELCH_PII_IN_LOGS']:
-                    log.exception(
-                        'Unable to emit event %s for user %s and course %s',
-                        event_name,
-                        self.user.id,
-                        self.course_id,
-                    )
-                else:
-                    log.exception(
-                        'Unable to emit event %s for user %s and course %s',
-                        event_name,
-                        self.user.username,
-                        self.course_id,
-                    )
+                user_identifier_for_log = self.user.id if getattr(settings, 'SQUELCH_PII_IN_LOGS', False) else self.user.username
+                log.exception(
+                    'Unable to emit event %s for user %s and course %s',
+                    event_name,
+                    user_identifier_for_log,
+                    self.course_id,
+                )
 
     @classmethod
     def enroll(cls, user, course_key, mode=None, check_access=False, can_upgrade=False, enterprise_uuid=None):
@@ -746,59 +739,37 @@ class CourseEnrollment(models.Model):
                 course_key=course_key,
             )
             if check_access:
-                if settings.FEATURES['SQUELCH_PII_IN_LOGS']:
-                    log.warning("User %s failed to enroll in non-existent course %s", user.id, str(course_key))
-                else:
-                    log.warning("User %s failed to enroll in non-existent course %s", user.username, str(course_key))
-                raise NonExistentCourseError from err  # lint-amnesty, pylint: disable=raise-missing-from
+                user_identifier_for_log = user.id if getattr(settings, 'SQUELCH_PII_IN_LOGS', False) else user.username
+                log.warning("User %s failed to enroll in non-existent course %s", user_identifier_for_log, str(course_key))
+                raise NonExistentCourseError from err
 
         if check_access:
             if cls.is_enrollment_closed(user, course) and not can_upgrade:
-                if settings.FEATURES['SQUELCH_PII_IN_LOGS']:
-                    log.warning(
-                        "User %s failed to enroll in course %s because enrollment is closed (can_upgrade=%s).",
-                        user.id,
-                        str(course_key),
-                        can_upgrade,
-                    )
-                else:
-                    log.warning(
-                        "User %s failed to enroll in course %s because enrollment is closed (can_upgrade=%s).",
-                        user.username,
-                        str(course_key),
-                        can_upgrade,
-                    )
+                user_identifier_for_log = user.id if getattr(settings, 'SQUELCH_PII_IN_LOGS', False) else user.username
+                log.warning(
+                    "User %s failed to enroll in course %s because enrollment is closed (can_upgrade=%s).",
+                    user_identifier_for_log,
+                    str(course_key),
+                    can_upgrade,
+                )
                 raise EnrollmentClosedError
 
             if cls.objects.is_course_full(course):
-                if settings.FEATURES['SQUELCH_PII_IN_LOGS']:
-                    log.warning(
-                        "Course %s has reached its maximum enrollment of %d learners. User %s failed to enroll.",
-                        str(course_key),
-                        course.max_student_enrollments_allowed,
-                        user.id,
-                    )
-                else:
-                    log.warning(
-                        "Course %s has reached its maximum enrollment of %d learners. User %s failed to enroll.",
-                        str(course_key),
-                        course.max_student_enrollments_allowed,
-                        user.username,
-                    )
+                user_identifier_for_log = user.id if getattr(settings, 'SQUELCH_PII_IN_LOGS', False) else user.username
+                log.warning(
+                    "Course %s has reached its maximum enrollment of %d learners. User %s failed to enroll.",
+                    str(course_key),
+                    course.max_student_enrollments_allowed,
+                    user_identifier_for_log,
+                )
                 raise CourseFullError
         if cls.is_enrolled(user, course_key):
-            if settings.FEATURES['SQUELCH_PII_IN_LOGS']:
-                log.warning(
-                    "User %s attempted to enroll in %s, but they were already enrolled",
-                    user.id,
-                    str(course_key)
-                )
-            else:
-                log.warning(
-                    "User %s attempted to enroll in %s, but they were already enrolled",
-                    user.username,
-                    str(course_key)
-                )
+            user_identifier_for_log = user.id if getattr(settings, 'SQUELCH_PII_IN_LOGS', False) else user.username
+            log.warning(
+                "User %s attempted to enroll in %s, but they were already enrolled",
+                user_identifier_for_log,
+                str(course_key)
+            )
             if check_access:
                 raise AlreadyEnrolledError
 
@@ -862,11 +833,8 @@ class CourseEnrollment(models.Model):
             user = User.objects.get(email=email)
             return cls.enroll(user, course_id, mode)
         except User.DoesNotExist:
-            err_msg = "Tried to enroll email {} into course {}, but user not found"
-            if settings.FEATURES['SQUELCH_PII_IN_LOGS']:
-                log.error("Tried to enroll a redacted email into course %s, but user not found", course_id)
-            else:
-                log.error(err_msg.format(email, course_id))
+            email_for_log = "a redacted email" if getattr(settings, 'SQUELCH_PII_IN_LOGS', False) else f"email {email}"
+            log.error("Tried to enroll %s into course %s, but user not found", email_for_log, course_id)
             if ignore_errors:
                 return None
             raise

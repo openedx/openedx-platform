@@ -52,27 +52,29 @@ class BulkUsersRetirementView(APIView):
 
         successful_user_retirements, failed_user_retirements = [], []
 
-        for username in usernames_to_retire:
+        for index, username in enumerate(usernames_to_retire):
             try:
                 user_to_retire = User.objects.get(username=username)
                 with transaction.atomic():
                     create_retirement_request_and_deactivate_account(user_to_retire)
-                if settings.FEATURES['SQUELCH_PII_IN_LOGS']:
-                    log.info('User %s added to retirement pipeline by user %s',
+                if getattr(settings, 'SQUELCH_PII_IN_LOGS', False):
+                    log.info('User %s added to retirement pipeline by user %s at index %s',
                         user_to_retire.id,
-                        request.user.id
+                        request.user.id,
+                        index,
                     )
                 else:
-                    log.info('The user "%s" has been added to the retirement pipeline by "%s"',
+                    log.info('The user "%s" has been added to the retirement pipeline by "%s" at index %s',
                         username,
                         request.user,
+                        index,
                     )
 
             except User.DoesNotExist:
-                if settings.FEATURES['SQUELCH_PII_IN_LOGS']:
-                    log.exception('A user does not exist for bulk retirement.')
+                if getattr(settings, 'SQUELCH_PII_IN_LOGS', False):
+                    log.exception('Bulk retirement user at index %s does not exist.', index)
                 else:
-                    log.exception(f'The user "{username}" does not exist.')
+                    log.exception('The user "%s" does not exist.', username)
                 failed_user_retirements.append(username)
 
             except Exception as exc:  # pylint: disable=broad-except

@@ -168,11 +168,9 @@ def send_user_notification_callback(sender, **kwargs):  # pylint: disable=unused
 
     try:
         user.email_user(subject, message, studio_request_email)
-    except:  # lint-amnesty, pylint: disable=bare-except
-        if settings.FEATURES['SQUELCH_PII_IN_LOGS']:
-            log.warning("Unable to send course creator status e-mail to user ID %s", user.id)
-        else:
-            log.warning("Unable to send course creator status e-mail to %s", user.email)
+    except:  # pylint: disable=bare-except
+        user_identifier_for_log = f"user ID {user.id}" if getattr(settings, 'SQUELCH_PII_IN_LOGS', False) else user.email
+        log.warning("Unable to send course creator status e-mail to %s", user_identifier_for_log)
 
 
 @receiver(send_admin_notification, sender=CourseCreator)
@@ -199,10 +197,8 @@ def send_admin_notification_callback(sender, **kwargs):  # pylint: disable=unuse
             fail_silently=False
         )
     except SMTPException:
-        if settings.FEATURES['SQUELCH_PII_IN_LOGS']:
-            log.warning("Failure sending 'pending state' e-mail for user ID %s to %s", user.id, studio_request_email)
-        else:
-            log.warning("Failure sending 'pending state' e-mail for %s to %s", user.email, studio_request_email)
+        user_identifier_for_log = f"user ID {user.id}" if getattr(settings, 'SQUELCH_PII_IN_LOGS', False) else user.email
+        log.warning("Failure sending 'pending state' e-mail for %s to %s", user_identifier_for_log, studio_request_email)
 
 
 @receiver(m2m_changed, sender=CourseCreator.organizations.through)

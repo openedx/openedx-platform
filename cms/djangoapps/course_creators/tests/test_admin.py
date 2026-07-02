@@ -3,6 +3,7 @@ Tests course_creators.admin.py.
 """
 
 
+from smtplib import SMTPException
 from unittest import mock
 
 from django.contrib.admin.sites import AdminSite
@@ -169,3 +170,60 @@ class CourseCreatorAdminTest(TestCase):
 
         self.request.user = self.user
         self.assertFalse(self.creator_admin.has_change_permission(self.request))  # noqa: PT009
+
+    @mock.patch('cms.djangoapps.course_creators.admin.log')
+    @mock.patch('django.contrib.auth.models.User.email_user')
+    def test_send_user_notification_error_logging(self, mock_email_user, mock_log):
+        """
+        Test that email_user raising an exception logs the correct message based on SQUELCH_PII_IN_LOGS setting.
+        """
+        mock_email_user.side_effect = Exception("SMTP error")
+
+        with self.settings(SQUELCH_PII_IN_LOGS=True):
+            with mock.patch.dict('django.conf.settings.FEATURES', self.enable_creator_group_patch):
+                self._change_state(CourseCreator.GRANTED)
+                mock_log.warning.assert_any_call(
+                    "Unable to send course creator status e-mail to %s",
+                    f"user ID {self.user.id}"
+                )
+
+        mock_log.reset_mock()
+
+        with self.settings(SQUELCH_PII_IN_LOGS=False):
+            with mock.patch.dict('django.conf.settings.FEATURES', self.enable_creator_group_patch):
+                self._change_state(CourseCreator.DENIED)
+                self._change_state(CourseCreator.GRANTED)
+                mock_log.warning.assert_any_call(
+                    "Unable to send course creator status e-mail to %s",
+                    self.user.email
+                )
+
+    @mock.patch('cms.djangoapps.course_creators.admin.log')
+    @mock.patch('cms.djangoapps.course_creators.admin.send_mail')
+    def test_send_admin_notification_error_logging(self, mock_send_mail, mock_log):
+        """
+        Test that send_mail raising SMTPException logs the correct message based on SQUELCH_PII_IN_LOGS setting.
+        """
+        mock_send_mail.side_effect = SMTPException("SMTP error")
+
+        with self.settings(SQUELCH_PII_IN_LOGS=True):
+            with mock.patch.dict('django.conf.settings.FEATURES', self.enable_creator_group_patch):
+                self._change_state(CourseCreator.PENDING)
+                mock_log.warning.assert_any_call(
+                    "Failure sending 'pending state' e-mail for %s to %s",
+                    f"user ID {self.user.id}",
+                    self.studio_request_email
+                )
+
+        mock_log.reset_mock()
+
+        with self.settings(SQUELCH_PII_IN_LOGS=False):
+            with mock.patch.dict('django.conf.settings.FEATURES', self.enable_creator_group_patch):
+                self._change_state(CourseCreator.UNREQUESTED)
+                self._change_state(CourseCreator.PENDING)
+                mock_log.warning.assert_any_call(
+                    "Failure sending 'pending state' e-mail for %s to %s",
+                    self.user.email,
+                    self.studio_request_email
+                )
+
