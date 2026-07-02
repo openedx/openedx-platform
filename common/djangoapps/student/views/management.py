@@ -862,7 +862,7 @@ def do_email_change_request(user, new_email, activation_key=None, secondary_emai
     except Exception as err:
         from_address = configuration_helpers.get_value('email_from_address', settings.DEFAULT_FROM_EMAIL)
         log.error('Unable to send email activation link to user from "%s"', from_address, exc_info=True)
-        raise ValueError(_('Unable to send email activation link. Please try again later.')) from err  # lint-amnesty, pylint: disable=raise-missing-from
+        raise ValueError(_('Unable to send email activation link. Please try again later.')) from err
 
     if not secondary_email_change_request:
         # When the email address change is complete, a "edx.user.settings.changed" event will be emitted.
@@ -911,7 +911,7 @@ def activate_secondary_email(request, key):
 
 
 @ensure_csrf_cookie
-def confirm_email_change(request, key):  # pylint: disable=too-many-statements
+def confirm_email_change(request, key):
     """
     User requested a new e-mail. This is called when the activation
     link is clicked. We confirm with the old e-mail, and update
@@ -971,14 +971,7 @@ def confirm_email_change(request, key):  # pylint: disable=too-many-statements
         try:
             ace.send(msg)
         except Exception:  # pylint: disable=broad-except
-            if getattr(settings, 'SQUELCH_PII_IN_LOGS', False):
-                log.warning(
-                    'Unable to send confirmation email to old address for user %s',
-                    user.id,
-                    exc_info=True,
-                )
-            else:
-                log.warning('Unable to send confirmation email to old address', exc_info=True)
+            log.warning('Unable to send confirmation email to old address', exc_info=True)
             response = render_to_response("email_change_failed.html", {'email': user.email})
             transaction.set_rollback(True)
             return response
