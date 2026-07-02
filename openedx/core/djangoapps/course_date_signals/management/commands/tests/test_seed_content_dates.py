@@ -6,13 +6,15 @@ Tests for the seed_content_dates management command.
 
 from datetime import datetime, timezone
 from io import StringIO
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 from django.core.management import CommandError, call_command
 from django.test import TestCase
+from opaque_keys.edx.keys import UsageKey
 
 from common.djangoapps.student.tests.factories import UserFactory
+from edx_when.api import Assignment
 from lms.djangoapps.courseware.courses import _Assignment
 from openedx.core.djangoapps.course_date_signals.management.commands.seed_content_dates import (
     Command,
@@ -26,9 +28,16 @@ _PATCH = (
 COURSE_ID = 'course-v1:TestOrg+TestCourse+TestRun'
 
 
-def _make_assignment(block_key, title='Assignment', due=None):
+def _block_key(index=0):
+    return UsageKey.from_string(
+        f'block-v1:TestOrg+TestCourse+TestRun+type@sequential+block@hw{index}'
+    )
+
+
+def _make_assignment(block_key=None, title='Assignment', due=None):
+    """Build an _Assignment namedtuple exactly as get_course_assignments returns it."""
     return _Assignment(
-        block_key=block_key,
+        block_key=block_key or _block_key(),
         title=title,
         url='',
         date=due or datetime(2024, 6, 1, tzinfo=timezone.utc),
@@ -88,25 +97,20 @@ class TestSeedContentDatesCommand(TestCase):
 
     @patch(_PATCH + '.CourseOverview')
     def test_no_courses_for_org_raises(self, mock_overview):
-        mock_overview.objects.all.return_value.filter.return_value.__iter__ = lambda s: iter([])
-        mock_overview.objects.all.return_value.filter.return_value.__bool__ = lambda s: False
         # Empty list returned for the org
         mock_overview.objects.all.return_value.filter.return_value = []
         with pytest.raises(CommandError, match="No courses found for org 'UnknownOrg'"):
             self._call('--org', 'UnknownOrg')
 
     @patch(_PATCH + '.update_or_create_assignments_due_dates')
-    @patch(_PATCH + '.get_existing_due_locations')
+    @patch(_PATCH + '.get_locations_with_due_dates')
     @patch(_PATCH + '.get_course_assignments')
-    @patch(_PATCH + '.modulestore')
     @patch(_PATCH + '.CourseOverview')
     def test_dry_run_makes_no_db_writes(
-        self, mock_overview, mock_store, mock_assignments, mock_existing, mock_upsert
+        self, mock_overview, mock_assignments, mock_existing, mock_upsert
     ):
-        block_key = MagicMock()
         mock_overview.objects.filter.return_value.exists.return_value = True
-        mock_store.return_value.get_course.return_value = MagicMock()
-        mock_assignments.return_value = [_make_assignment(block_key)]
+        mock_assignments.return_value = [_make_assignment()]
         mock_existing.return_value = set()
 
         self._call('--course-id', COURSE_ID, '--dry-run')
@@ -117,38 +121,35 @@ class TestSeedContentDatesCommand(TestCase):
         assert 'Would process 1 assignments' in output
 
     @patch(_PATCH + '.update_or_create_assignments_due_dates')
-    @patch(_PATCH + '.get_existing_due_locations')
+    @patch(_PATCH + '.get_locations_with_due_dates')
     @patch(_PATCH + '.get_course_assignments')
-    @patch(_PATCH + '.modulestore')
     @patch(_PATCH + '.CourseOverview')
     def test_creates_new_content_dates(
-        self, mock_overview, mock_store, mock_assignments, mock_existing, mock_upsert
+        self, mock_overview, mock_assignments, mock_existing, mock_upsert
     ):
-        block_key = MagicMock()
         mock_overview.objects.filter.return_value.exists.return_value = True
-        mock_store.return_value.get_course.return_value = MagicMock()
-        mock_assignments.return_value = [_make_assignment(block_key, title='HW1')]
+        mock_assignments.return_value = [_make_assignment(_block_key(), title='HW1')]
         mock_existing.return_value = set()
 
         self._call('--course-id', COURSE_ID)
 
         mock_upsert.assert_called_once()
-        args = mock_upsert.call_args[0]
-        assert len(args[1]) == 1
+        passed = mock_upsert.call_args[0][1]
+        # Namedtuples are mapped to edx-when Assignment DTOs before the upsert.
+        assert len(passed) == 1
+        assert all(isinstance(a, Assignment) for a in passed)
         output = self.stdout.getvalue()
         assert '1 created' in output
 
     @patch(_PATCH + '.update_or_create_assignments_due_dates')
-    @patch(_PATCH + '.get_existing_due_locations')
+    @patch(_PATCH + '.get_locations_with_due_dates')
     @patch(_PATCH + '.get_course_assignments')
-    @patch(_PATCH + '.modulestore')
     @patch(_PATCH + '.CourseOverview')
     def test_skips_existing_without_force_update(
-        self, mock_overview, mock_store, mock_assignments, mock_existing, mock_upsert
+        self, mock_overview, mock_assignments, mock_existing, mock_upsert
     ):
-        block_key = MagicMock()
+        block_key = _block_key()
         mock_overview.objects.filter.return_value.exists.return_value = True
-        mock_store.return_value.get_course.return_value = MagicMock()
         mock_assignments.return_value = [_make_assignment(block_key)]
         mock_existing.return_value = {block_key}  # already exists
 
@@ -159,16 +160,14 @@ class TestSeedContentDatesCommand(TestCase):
         assert '1 skipped' in output
 
     @patch(_PATCH + '.update_or_create_assignments_due_dates')
-    @patch(_PATCH + '.get_existing_due_locations')
+    @patch(_PATCH + '.get_locations_with_due_dates')
     @patch(_PATCH + '.get_course_assignments')
-    @patch(_PATCH + '.modulestore')
     @patch(_PATCH + '.CourseOverview')
     def test_force_update_overwrites_existing(
-        self, mock_overview, mock_store, mock_assignments, mock_existing, mock_upsert
+        self, mock_overview, mock_assignments, mock_existing, mock_upsert
     ):
-        block_key = MagicMock()
+        block_key = _block_key()
         mock_overview.objects.filter.return_value.exists.return_value = True
-        mock_store.return_value.get_course.return_value = MagicMock()
         mock_assignments.return_value = [_make_assignment(block_key)]
         mock_existing.return_value = {block_key}  # already exists
 
@@ -179,16 +178,14 @@ class TestSeedContentDatesCommand(TestCase):
         assert '1 updated' in output
 
     @patch(_PATCH + '.update_or_create_assignments_due_dates')
-    @patch(_PATCH + '.get_existing_due_locations')
+    @patch(_PATCH + '.get_locations_with_due_dates')
     @patch(_PATCH + '.get_course_assignments')
-    @patch(_PATCH + '.modulestore')
     @patch(_PATCH + '.CourseOverview')
     def test_whole_batch_passed_to_upsert(
-        self, mock_overview, mock_store, mock_assignments, mock_existing, mock_upsert
+        self, mock_overview, mock_assignments, mock_existing, mock_upsert
     ):
-        block_keys = [MagicMock() for _ in range(3)]
+        block_keys = [_block_key(i) for i in range(3)]
         mock_overview.objects.filter.return_value.exists.return_value = True
-        mock_store.return_value.get_course.return_value = MagicMock()
         mock_assignments.return_value = [
             _make_assignment(k, title=f'HW{i}') for i, k in enumerate(block_keys)
         ]
@@ -202,16 +199,14 @@ class TestSeedContentDatesCommand(TestCase):
         assert len(passed_assignments) == 3
 
     @patch(_PATCH + '.update_or_create_assignments_due_dates')
-    @patch(_PATCH + '.get_existing_due_locations')
+    @patch(_PATCH + '.get_locations_with_due_dates')
     @patch(_PATCH + '.get_course_assignments')
-    @patch(_PATCH + '.modulestore')
     @patch(_PATCH + '.CourseOverview')
     def test_multiple_batches_each_called_once(
-        self, mock_overview, mock_store, mock_assignments, mock_existing, mock_upsert
+        self, mock_overview, mock_assignments, mock_existing, mock_upsert
     ):
-        block_keys = [MagicMock() for _ in range(5)]
+        block_keys = [_block_key(i) for i in range(5)]
         mock_overview.objects.filter.return_value.exists.return_value = True
-        mock_store.return_value.get_course.return_value = MagicMock()
         mock_assignments.return_value = [_make_assignment(k) for k in block_keys]
         mock_existing.return_value = set()
 
@@ -221,16 +216,14 @@ class TestSeedContentDatesCommand(TestCase):
         assert mock_upsert.call_count == 3
 
     @patch(_PATCH + '.update_or_create_assignments_due_dates')
-    @patch(_PATCH + '.get_existing_due_locations')
+    @patch(_PATCH + '.get_locations_with_due_dates')
     @patch(_PATCH + '.get_course_assignments')
-    @patch(_PATCH + '.modulestore')
     @patch(_PATCH + '.CourseOverview')
     def test_batch_failure_continues_processing(
-        self, mock_overview, mock_store, mock_assignments, mock_existing, mock_upsert
+        self, mock_overview, mock_assignments, mock_existing, mock_upsert
     ):
-        block_keys = [MagicMock() for _ in range(4)]
+        block_keys = [_block_key(i) for i in range(4)]
         mock_overview.objects.filter.return_value.exists.return_value = True
-        mock_store.return_value.get_course.return_value = MagicMock()
         mock_assignments.return_value = [_make_assignment(k) for k in block_keys]
         mock_existing.return_value = set()
 
@@ -242,34 +235,18 @@ class TestSeedContentDatesCommand(TestCase):
         assert mock_upsert.call_count == 2
 
     @patch(_PATCH + '.update_or_create_assignments_due_dates')
-    @patch(_PATCH + '.get_existing_due_locations')
+    @patch(_PATCH + '.get_locations_with_due_dates')
     @patch(_PATCH + '.get_course_assignments')
-    @patch(_PATCH + '.modulestore')
     @patch(_PATCH + '.CourseOverview')
-    def test_modulestore_called_once_for_multiple_courses(
-        self, mock_overview, mock_store_fn, mock_assignments, mock_existing, mock_upsert
+    def test_get_course_assignments_called_per_course(
+        self, mock_overview, mock_assignments, mock_existing, mock_upsert
     ):
-        course_overviews = [MagicMock(id=f'course-v1:Org+Course{i}+Run') for i in range(3)]
+        course_overviews = [type('CO', (), {'id': f'course-v1:Org+Course{i}+Run'})() for i in range(3)]
         mock_overview.objects.all.return_value.filter.return_value = course_overviews
-        mock_store_fn.return_value.get_course.return_value = MagicMock()
+        mock_overview.objects.filter.return_value.exists.return_value = True
         mock_assignments.return_value = []
         mock_existing.return_value = set()
 
         self._call('--org', 'Org')
 
-        mock_store_fn.assert_called_once()
-
-    @patch(_PATCH + '.get_course_assignments')
-    @patch(_PATCH + '.modulestore')
-    @patch(_PATCH + '.CourseOverview')
-    def test_course_not_in_modulestore_returns_zeros(
-        self, mock_overview, mock_store, mock_assignments
-    ):
-        mock_overview.objects.filter.return_value.exists.return_value = True
-        mock_store.return_value.get_course.return_value = None
-
-        self._call('--course-id', COURSE_ID)
-
-        mock_assignments.assert_not_called()
-        output = self.stdout.getvalue()
-        assert '0 assignments processed' in output
+        assert mock_assignments.call_count == 3
