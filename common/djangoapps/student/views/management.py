@@ -489,10 +489,8 @@ def change_enrollment(request, check_access=True):
         except UnenrollmentNotAllowed as exc:
             return HttpResponseBadRequest(str(exc))
 
-        if settings.FEATURES['SQUELCH_PII_IN_LOGS']:
-            log.info("User %s unenrolled from %s; sending REFUND_ORDER", user.id, course_id)
-        else:
-            log.info("User %s unenrolled from %s; sending REFUND_ORDER", user.username, course_id)
+        user_identifier_for_log = user.id if getattr(settings, 'SQUELCH_PII_IN_LOGS', False) else user.username
+        log.info("User %s unenrolled from %s; sending REFUND_ORDER", user_identifier_for_log, course_id)
         REFUND_ORDER.send(sender=None, course_enrollment=enrollment)
         return HttpResponse()
     else:
@@ -560,14 +558,14 @@ def disable_account_ajax(request):
         if account_action == 'disable':
             user_account.account_status = UserStanding.ACCOUNT_DISABLED
             context['message'] = _("Successfully disabled {}'s account").format(username)
-            if settings.FEATURES['SQUELCH_PII_IN_LOGS']:
+            if getattr(settings, 'SQUELCH_PII_IN_LOGS', False):
                 log.info("User %s disabled user %s's account", request.user.id, user.id)
             else:
                 log.info("%s disabled %s's account", request.user, username)
         elif account_action == 'reenable':
             user_account.account_status = UserStanding.ACCOUNT_ENABLED
             context['message'] = _("Successfully reenabled {}'s account").format(username)
-            if settings.FEATURES['SQUELCH_PII_IN_LOGS']:
+            if getattr(settings, 'SQUELCH_PII_IN_LOGS', False):
                 log.info("User %s reenabled user %s's account", request.user.id, user.id)
             else:
                 log.info("%s reenabled %s's account", request.user, username)
@@ -856,14 +854,15 @@ def do_email_change_request(user, new_email, activation_key=None, secondary_emai
 
     try:
         ace.send(msg)
-        if settings.FEATURES['SQUELCH_PII_IN_LOGS']:
-            log.info("Email activation link sent for user ID: [%s].", user.id)
-        else:
-            log.info("Email activation link sent to user [%s].", new_email)
+        user_identifier_for_log = (
+            f"for user ID: [{user.id}]" if getattr(settings, 'SQUELCH_PII_IN_LOGS', False)
+            else f"to user [{new_email}]"
+        )
+        log.info("Email activation link sent %s.", user_identifier_for_log)
     except Exception as err:
         from_address = configuration_helpers.get_value('email_from_address', settings.DEFAULT_FROM_EMAIL)
         log.error('Unable to send email activation link to user from "%s"', from_address, exc_info=True)
-        raise ValueError(_('Unable to send email activation link. Please try again later.')) from err
+        raise ValueError(_('Unable to send email activation link. Please try again later.')) from err  # lint-amnesty, pylint: disable=raise-missing-from
 
     if not secondary_email_change_request:
         # When the email address change is complete, a "edx.user.settings.changed" event will be emitted.
@@ -971,8 +970,15 @@ def confirm_email_change(request, key):  # pylint: disable=too-many-statements
         # Send it to the old email...
         try:
             ace.send(msg)
-        except Exception:  # pylint: disable=broad-exception-caught
-            log.warning('Unable to send confirmation email to old address', exc_info=True)
+        except Exception:  # pylint: disable=broad-except
+            if getattr(settings, 'SQUELCH_PII_IN_LOGS', False):
+                log.warning(
+                    'Unable to send confirmation email to old address for user %s',
+                    user.id,
+                    exc_info=True,
+                )
+            else:
+                log.warning('Unable to send confirmation email to old address', exc_info=True)
             response = render_to_response("email_change_failed.html", {'email': user.email})
             transaction.set_rollback(True)
             return response
@@ -988,10 +994,7 @@ def confirm_email_change(request, key):  # pylint: disable=too-many-statements
         try:
             ace.send(msg)
         except Exception:  # pylint: disable=broad-except
-            if settings.FEATURES['SQUELCH_PII_IN_LOGS']:
-                log.warning('Unable to send confirmation email to new address for user %s', user.id, exc_info=True)
-            else:
-                log.warning('Unable to send confirmation email to new address', exc_info=True)
+            log.warning('Unable to send confirmation email to new address', exc_info=True)
             response = render_to_response("email_change_failed.html", {'email': user.email})
             transaction.set_rollback(True)
             return response

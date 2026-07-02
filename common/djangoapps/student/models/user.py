@@ -887,7 +887,7 @@ class Registration(models.Model):  # noqa: DJ008
         self.activation_timestamp = datetime.utcnow()
         self.save()
         USER_ACCOUNT_ACTIVATED.send_robust(self.__class__, user=self.user)
-        if settings.FEATURES['SQUELCH_PII_IN_LOGS']:
+        if getattr(settings, 'SQUELCH_PII_IN_LOGS', False):
             log.info('User %s account is successfully activated.', self.user.id)
         else:
             log.info('User %s (%s) account is successfully activated.', self.user.username, self.user.email)
@@ -1316,10 +1316,11 @@ def log_successful_login(sender, request, user, **kwargs):  # pylint: disable=un
             'event_type': "login",
         }
     )
-    if settings.FEATURES['SQUELCH_PII_IN_LOGS']:
-        AUDIT_LOG.info(f"Login success - user.id: {user.id}")
-    else:
-        AUDIT_LOG.info(f"Login success - {user.username} ({user.email})")
+    user_identifier_for_log = (
+        f"user.id: {user.id}" if getattr(settings, 'SQUELCH_PII_IN_LOGS', False)
+        else f"{user.username} ({user.email})"
+    )
+    AUDIT_LOG.info(f"Login success - {user_identifier_for_log}")
 
 
 @receiver(user_logged_out)
@@ -1333,10 +1334,11 @@ def log_successful_logout(sender, request, user, **kwargs):  # pylint: disable=u
                 'event_type': "logout",
             }
         )
-        if settings.FEATURES['SQUELCH_PII_IN_LOGS']:
-            AUDIT_LOG.info(f'Logout - user.id: {request.user.id}')  # pylint: disable=logging-format-interpolation
-        else:
-            AUDIT_LOG.info(f'Logout - {request.user}')  # pylint: disable=logging-format-interpolation
+        user_identifier_for_log = (
+            f"user.id: {request.user.id}" if getattr(settings, 'SQUELCH_PII_IN_LOGS', False)
+            else f"{request.user}"
+        )
+        AUDIT_LOG.info(f'Logout - {user_identifier_for_log}')  # pylint: disable=logging-format-interpolation
         if request.user.id:
             segment.track(request.user.id, 'edx.bi.user.account.logout')
 

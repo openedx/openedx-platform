@@ -462,19 +462,16 @@ class RegisterAndEnrollStudents(APIView):
                             warnings.append({
                                 'username': username, 'email': email, 'response': warning_message
                             })
-                            if settings.FEATURES['SQUELCH_PII_IN_LOGS']:
+                            if getattr(settings, 'SQUELCH_PII_IN_LOGS', False):
                                 log.warning('email for user %s already exist', user.id)
                             else:
                                 log.warning('email %s already exist', email)
                         else:
-                            if settings.FEATURES['SQUELCH_PII_IN_LOGS']:
-                                log.info('user already exists with user ID %s', user.id)
-                            else:
-                                log.info(
-                                    "user already exists with username '%s' and email '%s'",
-                                    username,
-                                    email
-                                )
+                            user_identifier_for_log = (
+                                f"user ID {user.id}" if getattr(settings, 'SQUELCH_PII_IN_LOGS', False)
+                                else f"username '{username}' and email '{email}'"
+                            )
+                            log.info('user already exists with %s', user_identifier_for_log)
 
                         # enroll a user if it is not already enrolled.
                         if not is_user_enrolled_in_course(user, course_id):

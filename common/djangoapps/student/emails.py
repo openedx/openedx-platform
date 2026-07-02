@@ -27,14 +27,10 @@ def send_proctoring_requirements_email(context):
             user_context={'full_name': user.profile.name}
         )
         ace.send(msg)
-        if settings.FEATURES['SQUELCH_PII_IN_LOGS']:
-            log.info('Proctoring requirements email sent to user ID: %r', user.id)
-        else:
-            log.info('Proctoring requirements email sent to user: %r', user.username)
+        user_identifier_for_log = f"ID: {user.id}" if getattr(settings, 'SQUELCH_PII_IN_LOGS', False) else user.username
+        log.info('Proctoring requirements email sent to user %s', user_identifier_for_log)
         return True
     except Exception:  # pylint: disable=broad-except
-        if settings.FEATURES['SQUELCH_PII_IN_LOGS']:
-            log.exception('Could not send email for proctoring requirements to user ID %s', user.id)
-        else:
-            log.exception('Could not send email for proctoring requirements to user %s', user.username)
+        user_identifier_for_log = f"ID {user.id}" if getattr(settings, 'SQUELCH_PII_IN_LOGS', False) else user.username
+        log.exception('Could not send email for proctoring requirements to user %s', user_identifier_for_log)
         return False
