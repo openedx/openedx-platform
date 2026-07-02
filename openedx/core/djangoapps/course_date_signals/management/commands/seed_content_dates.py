@@ -9,14 +9,13 @@ from typing import List
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
-from edx_when.api import get_existing_due_locations, update_or_create_assignments_due_dates
+from edx_when.api import get_locations_with_due_dates, update_or_create_assignments_due_dates
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey
-from xmodule.modulestore.django import modulestore
-from xmodule.modulestore.exceptions import ItemNotFoundError
 
 from lms.djangoapps.courseware.courses import get_course_assignments
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
+from openedx.core.djangoapps.course_date_signals.utils import to_edx_when_assignments
 
 log = logging.getLogger(__name__)
 
@@ -103,7 +102,6 @@ class Command(BaseCommand):
 
         try:
             course_keys = self._get_course_keys(options)
-            store = modulestore()
 
             total_processed = 0
             total_created = 0
@@ -115,7 +113,7 @@ class Command(BaseCommand):
 
                 try:
                     processed, created, updated, skipped = self._process_course(
-                        course_key, store, staff_user
+                        course_key, staff_user
                     )
                     total_processed += processed
                     total_created += created
@@ -179,17 +177,13 @@ class Command(BaseCommand):
         return course_keys
 
     def _process_course(
-        self, course_key: CourseKey, store, staff_user
+        self, course_key: CourseKey, staff_user
     ) -> tuple[int, int, int, int]:
         """
         Process a single course and return (processed, created, updated, skipped) counts.
         """
-        try:
-            course = store.get_course(course_key)
-            if not course:
-                raise ItemNotFoundError(f"Course not found in modulestore: {course_key}")
-        except ItemNotFoundError:
-            log.warning("Course not found in modulestore: %s", course_key)
+        if not CourseOverview.objects.filter(id=course_key).exists():
+            log.warning("Course not found in CourseOverview: %s", course_key)
             return (0, 0, 0, 0)
 
         assignments = get_course_assignments(course_key, staff_user)
@@ -211,7 +205,7 @@ class Command(BaseCommand):
                 self.stdout.write(f"    ... and {len(assignments) - 5} more")
             return processed, 0, 0, 0
 
-        existing_due_locations = get_existing_due_locations(course_key)
+        existing_due_locations = get_locations_with_due_dates(course_key)
 
         for i in range(0, len(assignments), self.batch_size):
             batch = assignments[i : i + self.batch_size]
@@ -260,7 +254,9 @@ class Command(BaseCommand):
 
         if to_process:
             with transaction.atomic():
-                update_or_create_assignments_due_dates(course_key, to_process)
+                update_or_create_assignments_due_dates(
+                    course_key, to_edx_when_assignments(to_process)
+                )
             existing_due_locations.update(a.block_key for a in to_process)
 
         return created, updated, skipped
