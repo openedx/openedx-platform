@@ -1,6 +1,8 @@
 """HomeCoursesViewSet for getting courses available to the logged-in user (v4)."""
 
-from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
+from drf_spectacular.openapi import AutoSchema
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema, inline_serializer
+from rest_framework import serializers as _serializers
 from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
 from edx_rest_framework_extensions.auth.session.authentication import (
     SessionAuthenticationAllowInactiveUser,
@@ -16,6 +18,15 @@ from cms.djangoapps.contentstore.rest_api.v4.serializers.home import (
 )
 from cms.djangoapps.contentstore.utils import get_course_context_v2
 from openedx.core.lib.api.mixins import StandardizedErrorMixin
+
+
+class _HomeCoursesAutoSchema(AutoSchema):
+    """Custom AutoSchema that treats the 'list' action as a single-object response."""
+
+    def _is_list_view(self, serializer=None):
+        if self.view.action == 'list':
+            return False
+        return super()._is_list_view(serializer)
 
 
 class HomePageCoursesPaginator(DefaultPagination):
@@ -136,6 +147,7 @@ class HomeCoursesViewSet(StandardizedErrorMixin, viewsets.ViewSet):
           is used instead of the default ``SessionAuthentication``.
     """
 
+    schema = _HomeCoursesAutoSchema()
     authentication_classes = (JwtAuthentication, SessionAuthenticationAllowInactiveUser)
     permission_classes = (IsAuthenticated,)
     serializer_class = CourseHomeTabSerializerV4
@@ -154,7 +166,18 @@ class HomeCoursesViewSet(StandardizedErrorMixin, viewsets.ViewSet):
         parameters=_HOME_COURSES_QUERY_PARAMETERS,
         responses={
             200: OpenApiResponse(
-                response=CourseHomeTabSerializerV4,
+                response=inline_serializer(
+                    name="PaginatedV4HomeCoursesResponse",
+                    fields={
+                        "count": _serializers.IntegerField(help_text="Total number of courses."),
+                        "num_pages": _serializers.IntegerField(help_text="Total number of pages."),
+                        "current_page": _serializers.IntegerField(help_text="Current page number."),
+                        "start": _serializers.IntegerField(help_text="Zero-based index of the first item on this page."),
+                        "next": _serializers.CharField(allow_null=True, help_text="URL for the next page, or null."),
+                        "previous": _serializers.CharField(allow_null=True, help_text="URL for the previous page, or null."),
+                        "results": CourseHomeTabSerializerV4(),
+                    },
+                ),
                 description="Paginated course list retrieved successfully.",
             ),
             401: _UNAUTHENTICATED_RESPONSE,
