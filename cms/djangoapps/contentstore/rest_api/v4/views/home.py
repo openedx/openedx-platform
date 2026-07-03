@@ -172,9 +172,15 @@ class HomeCoursesViewSet(StandardizedErrorMixin, viewsets.ViewSet):
                         "count": _serializers.IntegerField(help_text="Total number of courses."),
                         "num_pages": _serializers.IntegerField(help_text="Total number of pages."),
                         "current_page": _serializers.IntegerField(help_text="Current page number."),
-                        "start": _serializers.IntegerField(help_text="Zero-based index of the first item on this page."),
-                        "next": _serializers.CharField(allow_null=True, help_text="URL for the next page, or null."),
-                        "previous": _serializers.CharField(allow_null=True, help_text="URL for the previous page, or null."),
+                        "start": _serializers.IntegerField(
+                            help_text="Zero-based index of the first item on this page."
+                        ),
+                        "next": _serializers.CharField(
+                            allow_null=True, help_text="URL for the next page, or null."
+                        ),
+                        "previous": _serializers.CharField(
+                            allow_null=True, help_text="URL for the previous page, or null."
+                        ),
                         "results": CourseHomeTabSerializerV4(),
                     },
                 ),
