@@ -23,6 +23,7 @@ from common.djangoapps.student.tests.factories import UserFactory
 from lms.djangoapps.course_home_api.tests.utils import BaseCourseHomeTests
 from lms.djangoapps.course_home_api.toggles import COURSE_HOME_SEND_COURSE_PROGRESS_ANALYTICS_FOR_STUDENT
 from lms.djangoapps.grades.course_grade_factory import CourseGradeFactory
+from openedx.core.djangoapps.content.block_structure.api import update_course_in_cache
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from openedx.core.djangoapps.content.learning_sequences.api import replace_course_outline
 from openedx.core.djangoapps.content.learning_sequences.data import CourseOutlineData, CourseVisibility
@@ -891,3 +892,55 @@ class SidebarBlocksTestViews(BaseCourseHomeTests):
         response = self.client.get(reverse('course-home:course-navigation', args=[self.course.id]))
         vertical_data = response.data['blocks'][str(self.vertical.location)]
         assert vertical_data['icon'] == 'video'
+
+    def test_navigation_does_not_cache_stale_data_after_publish(self):
+        """
+        Regression test: after the block structure rebuild task completes,
+        the navigation sidebar should serve fresh data.
+
+        This simulates a production scenario where:
+        1. A unit is deleted and the course is auto-published
+        2. The block structure rebuild Celery task is queued with a delay (30s by default)
+        3. A learner hits the navigation endpoint during that 30s window
+        4. The rebuild task completes (bumping block_structure_version)
+        5. Another request arrives
+
+        Without the fix, step 3 caches stale data under a key that step 5
+        also hits (because course_version changed eagerly). With the fix,
+        the cache key uses block_structure_version which only changes when
+        the rebuild completes, so step 5 gets a cache miss and fresh data.
+        """
+        self.add_blocks_to_course()
+        CourseEnrollment.enroll(self.user, self.course.id, CourseMode.VERIFIED)
+
+        # First request — populates both block structure and navigation cache
+        response = self.client.get(self.url)
+        assert response.status_code == 200
+        sequential_data = response.data['blocks'][str(self.sequential.location)]
+        assert str(self.vertical.location) in sequential_data['children']
+
+        # Delete the vertical directly in the modulestore. Signals are disabled
+        # in ModuleStoreTestCase, so the block structure cache is now stale —
+        # mirroring the 30s window in production before the rebuild task runs.
+        self.store.delete_item(self.vertical.location, self.user.id)
+        update_outline_from_modulestore(self.course.id)
+
+        # Request during the stale window — served from the pre-delete cache
+        # (block_structure_version hasn't changed yet, so same cache key).
+        response = self.client.get(self.url)
+        assert response.status_code == 200
+
+        # The vertical is still in the cache, even though it has been deleted
+        sequential_data = response.data['blocks'][str(self.sequential.location)]
+        assert str(self.vertical.location) in sequential_data['children']
+
+        # Now simulate the block structure rebuild task completing.
+        # This bumps block_structure_version → new cache key on next request.
+        update_course_in_cache(self.course.id)
+
+        # Next request has a new cache key (version bumped) → cache miss →
+        # fresh data built from updated block structure.
+        response = self.client.get(self.url)
+        assert response.status_code == 200
+        sequential_data = response.data['blocks'][str(self.sequential.location)]
+        assert str(self.vertical.location) not in sequential_data['children']

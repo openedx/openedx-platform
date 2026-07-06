@@ -51,6 +51,7 @@ from lms.djangoapps.courseware.toggles import courseware_disable_navigation_side
 from lms.djangoapps.courseware.views.views import get_cert_data
 from lms.djangoapps.grades.course_grade_factory import CourseGradeFactory
 from lms.djangoapps.utils import OptimizelyClient
+from openedx.core.djangoapps.content.block_structure.api import get_block_structure_version
 from openedx.core.djangoapps.content.course_overviews.api import get_course_overview_or_404
 from openedx.core.djangoapps.content.learning_sequences.api import get_user_course_outline
 from openedx.core.djangoapps.course_groups.cohorts import get_cohort
@@ -434,7 +435,7 @@ class CourseNavigationBlocksView(RetrieveAPIView):
 
     serializer_class = CourseBlockSerializer
     COURSE_BLOCKS_CACHE_KEY_TEMPLATE = (
-        'course_sidebar_blocks_{course_key_string}_{course_version}_{user_id}_{user_cohort_id}'
+        'course_sidebar_blocks_{course_key_string}_{block_structure_version}_{user_id}_{user_cohort_id}'
         '_{enrollment_mode}_{allow_public}_{allow_public_outline}_{is_masquerading}'
     )
     COURSE_BLOCKS_CACHE_TIMEOUT = 60 * 60  # 1 hour
@@ -469,7 +470,7 @@ class CourseNavigationBlocksView(RetrieveAPIView):
 
         cache_key = self.COURSE_BLOCKS_CACHE_KEY_TEMPLATE.format(
             course_key_string=course_key_string,
-            course_version=str(course.course_version),
+            block_structure_version=get_block_structure_version(course_key),
             user_id=request.user.id,
             enrollment_mode=getattr(enrollment, 'mode', ''),
             user_cohort_id=getattr(user_cohort, 'id', ''),
