@@ -12,9 +12,12 @@ def cms_api_filter(endpoints):
     CMS_PATH_PATTERN = re.compile(r"^/api/contentstore/v\d+/")
 
     for path, path_regex, method, callback in endpoints:
-        if CMS_PATH_PATTERN.match(path) or (
-            path.startswith("/api/courses/")
-            and "bulk_enable_disable_discussions" in path
+        if (
+            CMS_PATH_PATTERN.match(path)
+            or (
+                path.startswith("/api/courses/")
+                and "bulk_enable_disable_discussions" in path
+            )
         ):
             filtered.append((path, path_regex, method, callback))
 

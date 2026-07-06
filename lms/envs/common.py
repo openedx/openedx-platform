@@ -2040,6 +2040,7 @@ INSTALLED_APPS = [
 
     # API Documentation
     'drf_yasg',
+    'drf_spectacular',
 
     # edx-drf-extensions
     'csrf.apps.CsrfAppConfig',  # Enables frontend apps to retrieve CSRF tokens.
