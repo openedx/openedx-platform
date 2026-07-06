@@ -583,17 +583,9 @@ RETIREMENT_STATES = [
 ]
 
 ###################### drf-spectacular (LMS enrollment schema) ######################
-SPECTACULAR_SETTINGS = {
-    'TITLE': 'LMS Enrollment API',
-    'VERSION': '0.1.0',
-    'SERVE_INCLUDE_SCHEMA': False,
-    'PREPROCESSING_HOOKS': ['lms.lib.spectacular.lms_api_filter'],
-    'SCHEMA_PATH_PREFIX': '/api/enrollment',
-    'SCHEMA_PATH_PREFIX_TRIM': '/api/enrollment',
-    'SERVERS': [
-        {'url': LMS_ROOT_URL, 'description': 'Local'},  # noqa: F405
-    ],
-}
+SPECTACULAR_SETTINGS['SERVERS'] = [  # noqa: F405
+    {'url': LMS_ROOT_URL, 'description': 'Local'},  # noqa: F405
+]
 
 ################# New settings must go ABOVE this line #################
 ########################################################################

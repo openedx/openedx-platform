@@ -2126,6 +2126,18 @@ SWAGGER_SETTINGS = {
     'DEEP_LINKING': True,
 }
 
+###################### drf-spectacular (LMS enrollment schema) ######################
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'LMS Enrollment API',
+    'VERSION': '0.1.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'PREPROCESSING_HOOKS': ['lms.lib.spectacular.lms_api_filter'],
+    'SCHEMA_PATH_PREFIX': '/api/enrollment',
+    'SCHEMA_PATH_PREFIX_TRIM': '/api/enrollment',
+    # SERVERS is environment-specific (LMS_ROOT_URL differs per env) and is
+    # set in devstack.py / production.py.
+}
+
 ######################### MARKETING SITE ###############################
 
 MKTG_URL_LINK_MAP.update({  # noqa: F405
