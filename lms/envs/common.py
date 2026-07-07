@@ -989,10 +989,6 @@ PYTHON_LIB_FILENAME = 'python_lib.zip'
 
 ############################### DJANGO BUILT-INS ###############################
 
-# django-session-cookie middleware
-DCS_SESSION_COOKIE_SAMESITE = 'None'
-DCS_SESSION_COOKIE_SAMESITE_FORCE_ALL = True
-
 # LMS base
 LMS_BASE = 'localhost:18000'
 

@@ -132,9 +132,10 @@ if STATIC_URL_BASE:  # noqa: F405
 
 DATA_DIR = path(DATA_DIR)  # noqa: F405
 
-# TODO: This was for backwards compatibility back when installed django-cookie-samesite (not since 2022).
-#       The DCS_ version of the setting can be DEPR'd at this point.
-SESSION_COOKIE_SAMESITE = DCS_SESSION_COOKIE_SAMESITE  # noqa: F405
+# Required to be 'None' so the session cookie is sent on cross-site requests
+# (e.g. LMS <-> Studio SSO). Browsers reject SameSite=None unless the cookie
+# is also Secure, so production deployments must serve over HTTPS.
+SESSION_COOKIE_SAMESITE = 'None'
 
 for feature, value in _YAML_TOKENS.get('FEATURES', {}).items():
     FEATURES[feature] = value
