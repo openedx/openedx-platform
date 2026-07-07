@@ -858,7 +858,7 @@ def _get_course_keys_from_platform_scope() -> set[CourseKey]:
     if core_toggles.AUTHZ_COURSE_AUTHORING_FLAG.is_enabled():
         return set(course_keys)
 
-    return {course_key for course_key in course_keys if core_toggles.enable_authz_course_authoring(course_key)}
+    return {course_key for course_key in course_keys if enable_authz_course_authoring(course_key)}
 
 
 def _get_course_keys_from_scopes(authz_scopes: list[ScopeData]) -> set[CourseKey]:

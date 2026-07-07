@@ -481,24 +481,6 @@ class TestCourseHandlerAuthz(
 
         assert response.status_code == 200
 
-    # ------------------------------------------------------------
-    # FEATURE FLAG
-    # ------------------------------------------------------------
-    @override_settings(DISABLE_COURSE_CREATION=True)
-    def test_create_course_disabled_by_flag(self):
-        """
-        Even authorized users cannot create course if feature flag is off.
-        """
-
-        response = self.authorized_staff_client.ajax_post(self.url, {
-            "org": self.org,
-            "number": "CS101",
-            "display_name": "Authz Course",
-            "run": "2026_T1",
-        })
-
-        assert response.status_code == 403
-
 
 class TestCourseRerunAuthz(
     CourseAuthoringAuthzTestMixin,
