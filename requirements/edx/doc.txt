@@ -169,7 +169,7 @@ chardet==7.4.3
     #   -r requirements/edx/base.txt
     #   encutils
     #   pysrt
-charset-normalizer==3.4.8
+charset-normalizer==3.4.9
     # via
     #   -r requirements/edx/base.txt
     #   requests
@@ -237,7 +237,7 @@ defusedxml==0.7.1
     #   python3-openid
     #   social-auth-core
     #   xblocks-contrib
-django==5.2.15
+django==5.2.16
     # via
     #   -c requirements/common_constraints.txt
     #   -c requirements/constraints.txt
@@ -1012,7 +1012,7 @@ openedx-atlas==0.7.0
     #   enterprise-integrated-channels
     #   openedx-authz
     #   openedx-forum
-openedx-authz==1.20.0
+openedx-authz==1.20.1
     # via -r requirements/edx/base.txt
 openedx-calc==5.0.0
     # via
@@ -1522,7 +1522,7 @@ tomlkit==0.15.0
     #   -r requirements/edx/base.txt
     #   openedx-core
     #   snowflake-connector-python
-tqdm==4.68.3
+tqdm==4.68.4
     # via
     #   -r requirements/edx/base.txt
     #   nltk
@@ -1606,8 +1606,6 @@ wcwidth==0.8.2
     # via
     #   -r requirements/edx/base.txt
     #   prompt-toolkit
-web-fragments==4.0.0
-    # via -r requirements/edx/base.txt
 webencodings==0.5.1
     # via
     #   -r requirements/edx/base.txt

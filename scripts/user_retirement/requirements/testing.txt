@@ -33,7 +33,7 @@ cffi==2.1.0
     #   -r scripts/user_retirement/requirements/base.txt
     #   cryptography
     #   pynacl
-charset-normalizer==3.4.8
+charset-normalizer==3.4.9
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   requests
@@ -49,7 +49,7 @@ cryptography==49.0.0
     #   pyjwt
 ddt==1.7.2
     # via -r scripts/user_retirement/requirements/testing.in
-django==5.2.15
+django==5.2.16
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   django-crum
