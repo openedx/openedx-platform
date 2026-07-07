@@ -12,7 +12,7 @@ acid-xblock==0.4.1
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
-aiohappyeyeballs==2.6.2
+aiohappyeyeballs==2.7.1
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -51,7 +51,7 @@ annotated-types==0.7.0
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
     #   pydantic
-anyio==4.14.0
+anyio==4.14.1
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -134,7 +134,7 @@ bleach[css]==6.4.0
     #   ora2
     #   xblock-drag-and-drop-v2
     #   xblock-poll
-boto3==1.43.30
+boto3==1.43.41
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -142,14 +142,14 @@ boto3==1.43.30
     #   fs-s3fs
     #   ora2
     #   snowflake-connector-python
-botocore==1.43.30
+botocore==1.43.41
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
     #   boto3
     #   s3transfer
     #   snowflake-connector-python
-bracex==2.6
+bracex==3.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -195,7 +195,7 @@ celery==5.6.3
     #   enterprise-integrated-channels
     #   event-tracking
     #   openedx-core
-certifi==2026.5.20
+certifi==2026.6.17
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -204,7 +204,7 @@ certifi==2026.5.20
     #   httpx
     #   requests
     #   snowflake-connector-python
-cffi==2.0.0
+cffi==2.1.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -218,7 +218,7 @@ chardet==7.4.3
     #   diff-cover
     #   encutils
     #   pysrt
-charset-normalizer==3.4.7
+charset-normalizer==3.4.8
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -229,7 +229,7 @@ chem==2.0.0
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
     #   xblocks-contrib
-click==8.4.1
+click==8.4.2
     # via
     #   -r requirements/edx/assets.txt
     #   -r requirements/edx/development.in
@@ -281,7 +281,7 @@ colorama==0.4.6
     # via
     #   -r requirements/edx/testing.txt
     #   tox
-coverage[toml]==7.14.1
+coverage[toml]==7.15.0
     # via
     #   -r requirements/edx/testing.txt
     #   pytest-cov
@@ -314,7 +314,7 @@ cssutils==2.15.0
     #   pynliner
 ddt==1.7.2
     # via -r requirements/edx/testing.txt
-deepmerge==2.0
+deepmerge==2.1.0
     # via
     #   -r requirements/edx/doc.txt
     #   sphinxcontrib-openapi
@@ -423,7 +423,7 @@ django-appconf==1.2.0
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
     #   django-statici18n
-django-autocomplete-light==4.0.3
+django-autocomplete-light==5.0.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -567,7 +567,7 @@ django-ses==4.7.2
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
-django-simple-history==3.11.0
+django-simple-history==3.12.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -593,7 +593,7 @@ django-stubs[compatible-mypy]==5.2.9
     #   -c requirements/constraints.txt
     #   -r requirements/edx/development.in
     #   djangorestframework-stubs
-django-stubs-ext==6.0.5
+django-stubs-ext==6.0.6
     # via django-stubs
 django-user-tasks==4.0.0
     # via
@@ -662,7 +662,7 @@ drf-jwt==1.19.2
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
     #   edx-drf-extensions
-drf-spectacular==0.29.0
+drf-spectacular==0.30.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -824,12 +824,12 @@ edx-rest-api-client==7.0.0
     #   edx-enterprise
     #   edx-proctoring
     #   enterprise-integrated-channels
-edx-search==5.0.1
+edx-search==5.0.2
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
     #   openedx-forum
-edx-sga==0.28.0
+edx-sga==0.29.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -863,7 +863,7 @@ edx-when==4.0.0
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
     #   edx-proctoring
-edxval==4.0.1
+edxval==5.0.1
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -890,7 +890,7 @@ enmerkar-underscore==2.4.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
-enterprise-integrated-channels==0.1.60
+enterprise-integrated-channels==0.1.61
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -907,7 +907,7 @@ execnet==2.1.2
     #   pytest-xdist
 factory-boy==3.3.3
     # via -r requirements/edx/testing.txt
-faker==40.23.0
+faker==40.28.1
     # via
     #   -r requirements/edx/testing.txt
     #   factory-boy
@@ -916,7 +916,7 @@ fastavro==1.12.2
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
     #   openedx-events
-filelock==3.29.4
+filelock==3.29.6
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -924,7 +924,7 @@ filelock==3.29.4
     #   snowflake-connector-python
     #   tox
     #   virtualenv
-firebase-admin==7.4.0
+firebase-admin==7.5.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -972,7 +972,7 @@ google-api-core[grpc]==2.31.0
     #   google-cloud-core
     #   google-cloud-firestore
     #   google-cloud-storage
-google-auth==2.55.0
+google-auth==2.55.1
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -986,7 +986,7 @@ google-cloud-core==2.6.0
     #   -r requirements/edx/testing.txt
     #   google-cloud-firestore
     #   google-cloud-storage
-google-cloud-firestore==2.27.0
+google-cloud-firestore==2.28.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -1013,18 +1013,18 @@ googleapis-common-protos==1.75.0
     #   -r requirements/edx/testing.txt
     #   google-api-core
     #   grpcio-status
-grimp==3.14
+grimp==3.15
     # via
     #   -r requirements/edx/testing.txt
     #   import-linter
-grpcio==1.81.1
+grpcio==1.82.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
     #   google-api-core
     #   google-cloud-firestore
     #   grpcio-status
-grpcio-status==1.81.1
+grpcio-status==1.82.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -1047,7 +1047,7 @@ help-tokens==4.0.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
-hpack==4.1.0
+hpack==4.2.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -1076,7 +1076,7 @@ hyperframe==6.1.0
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
     #   h2
-icalendar==7.1.3
+icalendar==7.2.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -1094,7 +1094,7 @@ imagesize==2.0.0
     # via
     #   -r requirements/edx/doc.txt
     #   sphinx
-import-linter==2.11
+import-linter==2.13
     # via -r requirements/edx/testing.txt
 importlib-metadata==9.0.0
     # via
@@ -1175,7 +1175,7 @@ jsonschema-specifications==2025.9.1
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
     #   jsonschema
-jwcrypto==1.5.7
+jwcrypto==1.5.8
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -1190,7 +1190,7 @@ laboratory==1.0.2
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
-lazy==1.6
+lazy==2.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -1198,7 +1198,7 @@ lazy==1.6
     #   lti-consumer-xblock
     #   ora2
     #   xblock
-librt==0.11.0
+librt==0.12.0
     # via mypy
 libsass==0.10.0
     # via
@@ -1242,7 +1242,6 @@ mako==1.3.12
     #   acid-xblock
     #   lti-consumer-xblock
     #   xblock
-    #   xblock-utils
 markdown==3.10.2
     # via
     #   -r requirements/edx/doc.txt
@@ -1277,12 +1276,12 @@ mdurl==0.1.2
     # via
     #   -r requirements/edx/testing.txt
     #   markdown-it-py
-meilisearch==0.41.0
+meilisearch==0.42.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
     #   edx-search
-mistune==3.2.1
+mistune==3.3.2
     # via
     #   -r requirements/edx/doc.txt
     #   sphinx-mdinclude
@@ -1307,7 +1306,7 @@ mpmath==1.3.0
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
     #   sympy
-msgpack==1.2.0
+msgpack==1.2.1
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -1329,7 +1328,7 @@ mysqlclient==2.2.8
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
     #   openedx-forum
-nh3==0.3.5
+nh3==0.3.6
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -1375,7 +1374,7 @@ openedx-atlas==0.7.0
     #   enterprise-integrated-channels
     #   openedx-authz
     #   openedx-forum
-openedx-authz==1.19.0
+openedx-authz==1.20.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -1414,7 +1413,7 @@ openedx-events==11.2.0
     #   openedx-authz
     #   openedx-core
     #   ora2
-openedx-filters==3.5.0
+openedx-filters==3.7.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -1489,7 +1488,7 @@ piexif==1.1.3
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
-pillow==12.2.0
+pillow==12.3.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -1760,7 +1759,7 @@ python-dateutil==2.9.0.post0
     #   olxcleaner
     #   ora2
     #   xblock
-python-discovery==1.4.2
+python-discovery==1.4.3
     # via
     #   -r requirements/edx/testing.txt
     #   tox
@@ -1836,7 +1835,7 @@ recommender-xblock==5.0.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
-redis==8.0.0
+redis==8.0.1
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -1847,7 +1846,7 @@ referencing==0.37.0
     #   -r requirements/edx/testing.txt
     #   jsonschema
     #   jsonschema-specifications
-regex==2026.5.9
+regex==2026.6.28
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -1894,13 +1893,13 @@ roman-numerals==4.1.0
     # via
     #   -r requirements/edx/doc.txt
     #   sphinx
-rpds-py==2026.5.1
+rpds-py==2026.6.3
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
     #   jsonschema
     #   referencing
-ruff==0.15.17
+ruff==0.15.20
     # via -r requirements/edx/testing.txt
 rules==3.5
     # via
@@ -1909,7 +1908,7 @@ rules==3.5
     #   edx-enterprise
     #   edx-proctoring
     #   openedx-core
-s3transfer==0.18.0
+s3transfer==0.19.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -1946,7 +1945,6 @@ simplejson==4.1.1
     #   sailthru-client
     #   super-csv
     #   xblock
-    #   xblock-utils
     #   xblocks-contrib
 singledispatch==4.1.2
     # via -r requirements/edx/testing.txt
@@ -1998,7 +1996,7 @@ social-auth-app-django==5.4.1
     #   -r requirements/edx/testing.txt
     #   edx-auth-backends
     #   edx-enterprise
-social-auth-core==4.9.1
+social-auth-core==5.0.2
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -2087,7 +2085,7 @@ staff-graded-xblock==4.0.1
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
-stevedore==5.8.0
+stevedore==5.9.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -2106,7 +2104,7 @@ sympy==1.14.0
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
     #   openedx-calc
-testfixtures==12.1.0
+testfixtures==12.2.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -2138,9 +2136,9 @@ tomlkit==0.15.0
     #   openedx-core
     #   pylint
     #   snowflake-connector-python
-tox==4.55.1
+tox==4.56.2
     # via -r requirements/edx/testing.txt
-tqdm==4.68.2
+tqdm==4.68.3
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -2157,7 +2155,7 @@ typesense==2.0.0
     #   -r requirements/edx/testing.txt
     #   edx-search
     #   openedx-forum
-typing-extensions==4.15.0
+typing-extensions==4.16.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -2170,7 +2168,6 @@ typing-extensions==4.15.0
     #   django-stubs-ext
     #   djangorestframework-stubs
     #   edx-opaque-keys
-    #   grimp
     #   grpcio
     #   icalendar
     #   import-linter
@@ -2198,7 +2195,7 @@ tzdata==2026.2
     #   -r requirements/edx/testing.txt
     #   icalendar
     #   kombu
-tzlocal==5.4
+tzlocal==5.4.4
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -2236,7 +2233,7 @@ vine==5.1.0
     #   amqp
     #   celery
     #   kombu
-virtualenv==21.5.0
+virtualenv==21.6.0
     # via
     #   -r requirements/edx/testing.txt
     #   tox
@@ -2254,12 +2251,12 @@ walrus==0.9.8
     #   edx-event-bus-redis
 watchdog==6.0.0
     # via -r requirements/edx/development.in
-wcmatch==10.1
+wcmatch==10.2.1
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
     #   pycasbin
-wcwidth==0.8.1
+wcwidth==0.8.2
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -2268,8 +2265,6 @@ web-fragments==4.0.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
-    #   edx-sga
-    #   xblock-utils
 webencodings==0.5.1
     # via
     #   -r requirements/edx/doc.txt
@@ -2290,7 +2285,7 @@ wheel==0.47.0
     #   -r requirements/pip-tools.txt
     #   django-pipeline
     #   pip-tools
-wrapt==2.2.1
+wrapt==2.2.2
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -2310,7 +2305,7 @@ xblock[django]==6.3.0
     #   staff-graded-xblock
     #   xblock-drag-and-drop-v2
     #   xblock-google-drive
-    #   xblock-utils
+    #   xblock-poll
     #   xblocks-contrib
 xblock-drag-and-drop-v2==5.0.6
     # via
@@ -2320,16 +2315,10 @@ xblock-google-drive==0.8.2
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
-xblock-poll==1.15.1
+xblock-poll==1.16.1
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
-xblock-utils==4.0.0
-    # via
-    #   -r requirements/edx/doc.txt
-    #   -r requirements/edx/testing.txt
-    #   edx-sga
-    #   xblock-poll
 xblocks-contrib==0.17.0
     # via
     #   -r requirements/edx/doc.txt

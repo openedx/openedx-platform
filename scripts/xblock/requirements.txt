@@ -4,9 +4,9 @@
 #
 #    make upgrade
 #
-certifi==2026.5.20
+certifi==2026.6.17
     # via requests
-charset-normalizer==3.4.7
+charset-normalizer==3.4.8
     # via requests
 idna==3.18
     # via requests
