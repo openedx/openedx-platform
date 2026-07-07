@@ -1124,6 +1124,7 @@ class IntegrationTest(testutil.TestCase, test.TestCase, HelperMixin):
         calling actions.do_complete
         """
         strategy.storage.partial.store(partial_data)
+        strategy.session_set("partial_pipeline_token", partial_pipeline_token)
         if not user:
             user = request.user
         return actions.do_complete(
