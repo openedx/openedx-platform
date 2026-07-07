@@ -1319,8 +1319,9 @@ xblock-utils==4.0.0
     # via
     #   edx-sga
     #   xblock-poll
-xblocks-contrib==0.17.0
+xblocks-contrib @ git+https://github.com/irfanuddinahmad/xblocks-core.git@irfanuddinahmad/modernize-problem-block-js-438
     # via -r requirements/edx/bundled.in
+    # sandbox: testing PR #262 (modernize Problem Block JS to ES6+)
 xmlsec==1.3.14
     # via
     #   -c requirements/constraints.txt
