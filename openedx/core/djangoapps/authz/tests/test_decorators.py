@@ -57,7 +57,7 @@ class AuthzPermissionRequiredDecoratorTests(TestCase):
         mock_view = Mock(return_value="success")
 
         with patch(
-            "openedx.core.djangoapps.authz.decorators.core_toggles.enable_authz_course_authoring",
+            "openedx.core.djangoapps.authz.decorators.enable_authz_course_authoring",
             return_value=False,
         ), patch(
             "openedx.core.djangoapps.authz.decorators.authz_api.is_user_allowed",
@@ -83,7 +83,7 @@ class AuthzPermissionRequiredDecoratorTests(TestCase):
         mock_view = Mock(return_value="success")
 
         with patch(
-            "openedx.core.djangoapps.authz.decorators.core_toggles.enable_authz_course_authoring",
+            "openedx.core.djangoapps.authz.decorators.enable_authz_course_authoring",
             return_value=False,
         ), patch(
             "openedx.core.djangoapps.authz.decorators.authz_api.is_user_allowed",

@@ -9,12 +9,14 @@ from ccx_keys.locator import CCXLocator
 from django.contrib.auth.models import AnonymousUser
 from django.core.exceptions import PermissionDenied
 from django.test import TestCase, override_settings
+from edx_toggles.toggles.testutils import override_waffle_flag
 from opaque_keys.edx.locator import CourseLocator
 
 from common.djangoapps.student.auth import (
     add_users,
     has_studio_read_access,
     has_studio_write_access,
+    is_content_creator,
     remove_users,
     update_org_role,
     user_has_role,
@@ -28,6 +30,7 @@ from common.djangoapps.student.roles import (
     OrgContentCreatorRole,
 )
 from common.djangoapps.student.tests.factories import AdminFactory, UserFactory
+from openedx.core.toggles import AUTHZ_COURSE_AUTHORING_FLAG
 
 
 class CreatorGroupTest(TestCase):
@@ -75,6 +78,42 @@ class CreatorGroupTest(TestCase):
         # remove first user from the group and verify that CourseCreatorRole().has_user now returns false
         remove_users(self.admin, CourseCreatorRole(), self.user)
         assert not user_has_role(self.user, CourseCreatorRole())
+
+    @override_waffle_flag(AUTHZ_COURSE_AUTHORING_FLAG, active=True)
+    def test_is_content_creator_true_for_legacy_grant_with_authz_flag_enabled(self):
+        """
+        Tests that a legacy course creator grant still authorizes course creation when the
+        AuthZ course-authoring flag is enabled.
+        """
+        with mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_CREATOR_GROUP": True}):
+            add_users(self.admin, CourseCreatorRole(), self.user)
+
+            result = is_content_creator(self.user, "TestOrg")
+
+            assert result
+
+    @override_waffle_flag(AUTHZ_COURSE_AUTHORING_FLAG, active=True)
+    def test_creator_group_add_and_remove_users_bypass_authz_writes(self):
+        """
+        Tests that add_users/remove_users for course_creator_group write to the legacy table
+        and never call the AuthZ write API, even when the AuthZ flag is enabled.
+        """
+        role = CourseCreatorRole()
+
+        with mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_CREATOR_GROUP": True}):
+            with mock.patch("common.djangoapps.student.roles.authz_add_role") as mock_authz_add_role:
+                add_users(self.admin, role, self.user)
+
+            assert user_has_role(self.user, role)
+            mock_authz_add_role.assert_not_called()
+
+            with mock.patch(
+                "common.djangoapps.student.roles.authz_api.batch_unassign_role_from_users"
+            ) as mock_authz_unassign:
+                remove_users(self.admin, role, self.user)
+
+            assert not user_has_role(self.user, role)
+            mock_authz_unassign.assert_not_called()
 
     @override_settings(ENABLE_CREATOR_GROUP=True, DISABLE_COURSE_CREATION=True)
     def test_course_creation_disabled(self):
@@ -345,4 +384,16 @@ class CourseOrgGroupTest(TestCase):
         """
         assert not user_has_role(self.user, OrgContentCreatorRole(self.org))
         update_org_role(self.global_admin, OrgContentCreatorRole, self.user, [self.org])
+        assert user_has_role(self.user, OrgContentCreatorRole(self.org))
+
+    @override_waffle_flag(AUTHZ_COURSE_AUTHORING_FLAG, active=True)
+    def test_update_org_role_permission_survives_authz_flag(self):
+        """
+        Tests that granting org_course_creator_group still works through the legacy path
+        when the AuthZ course-authoring flag is enabled.
+        """
+        assert not user_has_role(self.user, OrgContentCreatorRole(self.org))
+
+        update_org_role(self.global_admin, OrgContentCreatorRole, self.user, [self.org])
+
         assert user_has_role(self.user, OrgContentCreatorRole(self.org))

@@ -26,6 +26,7 @@ from common.djangoapps.student.roles import (
     OrgInstructorRole,
     OrgLibraryUserRole,
     OrgStaffRole,
+    enable_authz_course_authoring,
     strict_role_checking,
 )
 from openedx.core import toggles as core_toggles
@@ -244,8 +245,11 @@ def is_content_creator(user, org):
         - When AuthZ is disabled, this falls back to legacy Django role checks.
         - Course creation may still be blocked by global feature flags (e.g.,
           DISABLE_COURSE_CREATION), which are enforced downstream.
+        - course_creator_group has no migrated AuthZ equivalent yet (see ADR 0027), so
+          role=CourseCreatorRole.ROLE keeps this on the legacy path even when the AuthZ flag
+          is enabled.
     """
-    if core_toggles.AUTHZ_COURSE_AUTHORING_FLAG.is_enabled():
+    if enable_authz_course_authoring(role=CourseCreatorRole.ROLE):
         return _has_content_creator_access(user, org)
     return _has_legacy_content_creator_access(user, org)
 

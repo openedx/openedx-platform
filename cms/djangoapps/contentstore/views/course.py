@@ -74,6 +74,7 @@ from common.djangoapps.student.roles import (
     GlobalStaff,
     OrgStaffRole,
     UserBasedRole,
+    enable_authz_course_authoring,
     strict_role_checking,
 )
 from common.djangoapps.util.json_request import JsonResponse, JsonResponseBadRequest, expect_json
@@ -888,7 +889,7 @@ def _get_course_keys_from_scopes(authz_scopes: list[ScopeData]) -> set[CourseKey
 
     for access in authz_scopes:
         if isinstance(access, CourseOverviewData) and access.course_key:
-            if core_toggles.enable_authz_course_authoring(access.course_key):
+            if enable_authz_course_authoring(access.course_key):
                 course_keys.add(access.course_key)
         elif isinstance(access, OrgCourseOverviewGlobData) and access.org:
             org_keys.add(access.org)
@@ -896,7 +897,7 @@ def _get_course_keys_from_scopes(authz_scopes: list[ScopeData]) -> set[CourseKey
     if org_keys:
         course_keys.update(
             key for key in _get_course_keys_for_org_scope(org_keys)
-            if core_toggles.enable_authz_course_authoring(key)
+            if enable_authz_course_authoring(key)
         )
 
     return course_keys
