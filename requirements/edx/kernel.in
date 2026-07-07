@@ -153,7 +153,6 @@ sortedcontainers                    # Provides SortedKeyList, used for lists of 
 stevedore                           # Support for runtime plugins, used for XBlocks and edx-platform Django app plugins
 unicodecsv                          # Easier support for CSV files with unicode text
 webob
-web-fragments                       # Provides the ability to render fragments of web pages
 wrapt                               # Better functools.wrapped. TODO: functools has since improved, maybe we can switch?
 XBlock[django]                      # Courseware component architecture
 xss-utils                           # https://github.com/openedx/edx-platform/pull/20633 Fix XSS via Translations
