@@ -416,6 +416,8 @@
         flex-direction: column;
         flex-grow: 1;
         padding: 0;
+        max-height: calc(100vh - 112px);
+        overflow: auto;
 
         div.xblock-editor {
           display: flex;
