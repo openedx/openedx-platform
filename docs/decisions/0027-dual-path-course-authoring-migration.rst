@@ -39,6 +39,8 @@ Consequences
 
 - This is meant as a stopgap, not a permanent shape for the code. Once every legacy role has an authz equivalent, the role check, and eventually the flag itself, can be removed.
 
+- Course creation itself (``is_content_creator``) skips this check entirely and always uses the course creator role directly, since neither role has an authz equivalent yet. It'll need updating once openedx-authz supports the role.
+
 References
 **********
 
