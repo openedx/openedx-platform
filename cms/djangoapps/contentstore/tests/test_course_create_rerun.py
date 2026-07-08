@@ -13,6 +13,7 @@ from django.http import HttpRequest
 from django.test import override_settings
 from django.test.client import RequestFactory
 from django.urls import reverse
+from edx_toggles.toggles.testutils import override_waffle_flag
 from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locator import CourseLocator
 from organizations.api import add_organization, get_course_organizations, get_organization_by_short_name
@@ -33,6 +34,7 @@ from common.djangoapps.student.models import CourseAccessRole
 from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRole, OrgContentCreatorRole
 from common.djangoapps.student.tests.factories import AdminFactory, UserFactory
 from openedx.core.djangoapps.authz.tests.mixins import CourseAuthoringAuthzTestMixin
+from openedx.core.toggles import AUTHZ_COURSE_AUTHORING_FLAG
 from xmodule.course_block import CourseFields
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory
@@ -385,6 +387,7 @@ class TestCourseListing(ModuleStoreTestCase):
             )
 
 
+@ddt.ddt
 class TestCourseHandlerStaffAccess(ModuleStoreTestCase):
     """
     Tests that global staff can create a course through course_handler with no
@@ -399,16 +402,19 @@ class TestCourseHandlerStaffAccess(ModuleStoreTestCase):
         self.staff_client = AjaxEnabledTestClient()
         self.staff_client.login(username=self.staff_user.username, password=self.TEST_PASSWORD)
 
-    def test_create_course_staff(self):
+    @ddt.data(True, False)
+    def test_create_course_staff(self, authz_enabled):
         """
-        Staff user can create a course with no prior course-specific role.
+        Staff user can create a course with no prior course-specific role, whether
+        the AuthZ course-authoring flag is on or off.
         """
-        response = self.staff_client.ajax_post(self.url, {
-            "org": "StaffOrg",
-            "number": "CS101",
-            "display_name": "Staff Course",
-            "run": "2026_T1",
-        })
+        with override_waffle_flag(AUTHZ_COURSE_AUTHORING_FLAG, active=authz_enabled):
+            response = self.staff_client.ajax_post(self.url, {
+                "org": "StaffOrg",
+                "number": "CS101",
+                "display_name": "Staff Course",
+                "run": "2026_T1",
+            })
 
         assert response.status_code == 200
 
