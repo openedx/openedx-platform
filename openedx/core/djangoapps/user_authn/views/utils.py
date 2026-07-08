@@ -93,8 +93,13 @@ def third_party_auth_context(request, redirect_to, tpa_hint=None):
                 context["finishAuthUrl"] = pipeline.get_complete_url(current_provider.backend_name)
                 context["syncLearnerProfileData"] = current_provider.sync_learner_profile_data
 
-                if current_provider.skip_registration_form:
-                    # As a reliable way of "skipping" the registration form, we just submit it automatically
+                if current_provider.skip_registration_form and (user_details or {}).get('email'):
+                    # As a reliable way of "skipping" the registration form, we just submit it automatically.
+                    # Only do this when the provider actually gave us an email: some providers (e.g. Facebook,
+                    # Microsoft Entra ID) can complete authentication without returning an email claim, and
+                    # auto-submitting in that case silently fails client-side validation, leaving the learner
+                    # stuck on a partially-filled form with no explanation. Falling back to the regular
+                    # registration form lets them fill in what's missing themselves.
                     context["autoSubmitRegForm"] = True
 
                 # Check if SAML provider wants to skip optional checkboxes
