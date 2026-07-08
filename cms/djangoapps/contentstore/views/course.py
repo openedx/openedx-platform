@@ -1345,7 +1345,7 @@ def rerun_course(user, source_course_key, org, number, run, fields, background=T
     # is implemented (pre-assigning roles without a CourseOverview). Once resolved,
     # add_instructor can be called unconditionally here and the created_user fallback
     # in get_in_process_course_actions can be removed.
-    if not core_toggles.enable_authz_course_authoring(destination_course_key):
+    if not enable_authz_course_authoring(destination_course_key):
         add_instructor(destination_course_key, user, user)
 
     # Mark the action as initiated
