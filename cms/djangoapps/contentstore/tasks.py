@@ -2340,12 +2340,21 @@ def _cancel_old_tasks(course_key: str, user: User, ignore_task_ids: list[str]):
 
 
 @shared_task(base=LegacyLibraryContentToItemBank, bind=True)
-def migrate_course_legacy_library_blocks_to_item_bank(self, user_id: int, course_key: str):
+def migrate_course_legacy_library_blocks_to_item_bank(
+    self, user_id: int, course_key: str, persist_publish_state: bool = False,
+):
     """
     Migrate legacy course library blocks to Item Bank.
 
     Depending on the number of blocks and its children blocks this operation can take a significant
     amount of time and this is why it is run as a celery task.
+
+    Arguments:
+        user_id: id of the user performing the migration.
+        course_key: the course whose legacy library content blocks should be migrated.
+        persist_publish_state: if True, blocks that were published before the migration
+            (and had no unpublished changes) are re-published afterward. Defaults to False,
+            leaving migrated blocks as drafts.
     """
     ensure_cms("Legacy library content references may only be executed in CMS")
     set_code_owner_attribute_from_module(__name__)
@@ -2363,7 +2372,9 @@ def migrate_course_legacy_library_blocks_to_item_bank(self, user_id: int, course
         with store.bulk_operations(key):
             for block in blocks:
                 self.status.set_state(f'Migrating block: {block.usage_key}')
-                block.v2_update_children_upstream_version(user_id)
+                block.v2_update_children_upstream_version(
+                    user_id, persist_publish_state=persist_publish_state
+                )
     except Exception as exc:  # pylint: disable=broad-except
         LOGGER.exception(f'Error while migrating blocks: {exc}')
         self.status.fail(str(exc))
