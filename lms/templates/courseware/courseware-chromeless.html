@@ -127,10 +127,22 @@ ${HTML(fragment.foot_html())}
       var lastWidth = window.offsetWidth;
       var contentElement = document.getElementById('content');
 
+        function getExpandedContentHeight() {
+        var baseElement = contentElement || document.body;
+        var maxHeight = baseElement.offsetHeight;
+        // Notes popups live in .annotator-widget; .annotator-outer itself has zero size.
+        // Include visible popup bounds so iframe resize does not clip the notes modal.
+        var visiblePopup = document.querySelector('.annotator-outer:not(.annotator-hide) .annotator-widget, .annotator-adder:not(.annotator-hide)');
+        if (visiblePopup) {
+          var popupBottom = visiblePopup.getBoundingClientRect().bottom;
+          maxHeight = Math.max(baseElement.offsetHeight, Math.ceil(popupBottom));
+        }
+        return maxHeight;
+      }
       function dispatchResizeMessage(event) {
         // Note: event is actually an Array of MutationRecord objects when fired from the MutationObserver
         var isLoadEvent = event.type === 'load';
-        var newHeight = contentElement.offsetHeight;
+        var newHeight = getExpandedContentHeight();
         var newWidth = contentElement.offsetWidth;
         if (!isLoadEvent && newWidth === lastWidth && newHeight === lastHeight) {
             // Monitor when any anchor tag is clicked, it is checked to make sure
