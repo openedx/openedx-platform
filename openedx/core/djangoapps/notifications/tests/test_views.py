@@ -11,6 +11,7 @@ from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.test.utils import override_settings
 from django.urls import reverse
+from edx_toggles.toggles.testutils import override_waffle_flag
 from rest_framework import status
 from rest_framework.test import APIClient, APITestCase
 
@@ -29,8 +30,6 @@ from openedx.core.djangoapps.notifications.models import Notification, Notificat
 from openedx.core.djangoapps.notifications.serializers import add_non_editable_in_preference
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory
-
-from edx_toggles.toggles.testutils import override_waffle_flag
 
 from ..base_notification import COURSE_NOTIFICATION_APPS, COURSE_NOTIFICATION_TYPES, get_default_values_of_preferences
 from ..config.waffle import DISABLE_EMAIL_NOTIFICATIONS
