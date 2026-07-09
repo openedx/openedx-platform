@@ -411,7 +411,7 @@ class UserStateCache:
                 else self.user.username
             )
             log.exception("Saving user state failed for %s", user_identifier_for_log)
-            raise KeyValueMultiSaveError([]) from err # lint-amnesty, pylint: disable=raise-missing-from
+            raise KeyValueMultiSaveError([]) from err
         finally:
             self._cache.update(pending_updates)
 
