@@ -457,22 +457,24 @@ class TestDecideEmailAction(ModuleStoreTestCase):
         assert decision == 'send_immediate'
 
     @freeze_time("2025-12-15 10:00:00")
-    def test_different_course_doesnt_affect_decision(self):
-        """Test that notifications from different courses are independent."""
+    @override_settings(NOTIFICATION_IMMEDIATE_EMAIL_BUFFER_MINUTES=15)
+    def test_recent_email_in_different_course_schedules_buffer(self):
+        """A recent email in another course counts toward the user-level buffer."""
         other_course = CourseFactory.create()
 
-        # Notification from different course
+        # Email recently sent for a different course
         self._create_notification(
             course_id=str(other_course.id),
             email_sent_on=timezone.now() - timedelta(minutes=5)
         )
 
-        # This course should still send immediate
+        # New notification in this course should join the shared (per-user) buffer,
+        # not send immediately, because the user already got a recent email.
         notification = self._create_notification()
 
         decision = decide_email_action(self.user, self.course_key, notification)
 
-        assert decision == 'send_immediate'
+        assert decision == 'schedule_buffer'
 
     @freeze_time("2025-12-15 10:00:00")
     def test_race_condition_protection(self):
@@ -759,6 +761,44 @@ class TestSendBufferedDigest(ModuleStoreTestCase):
         for notif in notifications:
             assert notif.email_sent_on is not None
             assert notif.email_scheduled is False
+
+    @freeze_time("2025-12-15 10:15:00")
+    @patch('openedx.core.djangoapps.notifications.email.tasks.ace.send')
+    def test_digest_collects_notifications_across_courses(self, mock_ace_send):
+        """Buffered digest pools scheduled notifications from all of the user's courses."""
+        course2 = CourseFactory.create(display_name='Second Course')
+        start_time = timezone.now() - timedelta(minutes=15)
+
+        for course_id in (self.course_key, str(course2.id)):
+            Notification.objects.create(
+                user=self.user,
+                course_id=course_id,
+                app_name='discussion',
+                notification_type='new_discussion_post',
+                content_url='http://example.com',
+                content_context=get_new_post_notification_content_context(),
+                email=True,
+                email_scheduled=True,
+                created=start_time + timedelta(minutes=5)
+            )
+
+        send_buffered_digest(  # pylint: disable=no-value-for-parameter
+            user_id=self.user.id,
+            course_key=self.course_key,
+            start_date=start_time,
+            user_language='en'
+        )
+
+        # A single digest email is sent...
+        assert mock_ace_send.call_count == 1
+        # ...covering the notifications from BOTH courses.
+        sent = Notification.objects.filter(
+            user=self.user,
+            email_sent_on__isnull=False,
+            email_scheduled=False,
+        )
+        assert sent.count() == 2
+        assert {str(n.course_id) for n in sent} == {self.course_key, str(course2.id)}
 
     @patch('openedx.core.djangoapps.notifications.email.tasks.ace.send')
     def test_digest_skips_non_scheduled_notifications(self, mock_ace_send):
@@ -1050,12 +1090,14 @@ class TestIntegrationScenarios(ModuleStoreTestCase):
             assert notif2.email_sent_on is not None
             assert notif2.email_scheduled is False
 
-    def test_multiple_courses_independent_buffers(self):
-        """Test that different courses maintain independent buffers."""
+    @freeze_time("2025-12-15 10:00:00")
+    @override_settings(NOTIFICATION_IMMEDIATE_EMAIL_BUFFER_MINUTES=15)
+    def test_multiple_courses_share_buffer(self):
+        """Notifications from different courses share a single per-user buffer."""
         course2 = CourseFactory.create()
 
-        # Notifications in course 1
-        notif1 = Notification.objects.create(  # noqa: F841
+        # Recent email sent for course 1
+        Notification.objects.create(
             user=self.user,
             course_id=self.course.id,
             app_name='discussion',
@@ -1065,7 +1107,7 @@ class TestIntegrationScenarios(ModuleStoreTestCase):
             email_sent_on=timezone.now() - timedelta(minutes=5)
         )
 
-        # Notification in course 2 should be independent
+        # Notification in course 2 should join the shared buffer (not send immediately)
         notif2 = Notification.objects.create(
             user=self.user,
             course_id=str(course2.id),
@@ -1076,7 +1118,7 @@ class TestIntegrationScenarios(ModuleStoreTestCase):
         )
 
         decision = decide_email_action(self.user, str(course2.id), notif2)
-        assert decision == 'send_immediate'
+        assert decision == 'schedule_buffer'
 
 
 def get_new_post_notification_content_context(**kwargs):
