@@ -30,7 +30,7 @@ def plugin_settings(settings):
     # .. toggle_tickets: https://github.com/openedx/edx-platform/pull/13196
     settings.ENABLE_CCX_ANALYTICS_DASHBOARD_URL = False
 
-    # .. setting_name: FEATURES['MAX_ENROLLMENT_INSTR_BUTTONS']
+    # .. setting_name: MAX_ENROLLMENT_INSTR_BUTTONS
     # .. setting_default: 200
     # .. setting_description: Disable instructor dashboard buttons for downloading course data
     #   when enrollment exceeds this number. The number indicates the maximum allowed enrollments

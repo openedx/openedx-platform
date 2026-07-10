@@ -450,8 +450,7 @@ class CourseMetadataViewTest(SharedModuleStoreTestCase, MasqueradeMixin):
 
         self.assertIn('open_responses', tab_ids)  # noqa: PT009
 
-    @override_settings(ENABLE_SPECIAL_EXAMS=True)
-    @patch.dict('django.conf.settings.FEATURES', {'MAX_ENROLLMENT_INSTR_BUTTONS': 200})
+    @override_settings(ENABLE_SPECIAL_EXAMS=True, MAX_ENROLLMENT_INSTR_BUTTONS=200)
     def test_special_exams_tab_with_proctored_exams_enabled(self):
         """
         Test that special_exams tab appears when course has proctored exams enabled.
@@ -461,8 +460,7 @@ class CourseMetadataViewTest(SharedModuleStoreTestCase, MasqueradeMixin):
 
         self.assertIn('special_exams', tab_ids)  # noqa: PT009
 
-    @override_settings(ENABLE_SPECIAL_EXAMS=True)
-    @patch.dict('django.conf.settings.FEATURES', {'MAX_ENROLLMENT_INSTR_BUTTONS': 200})
+    @override_settings(ENABLE_SPECIAL_EXAMS=True, MAX_ENROLLMENT_INSTR_BUTTONS=200)
     def test_special_exams_tab_with_timed_exams_enabled(self):
         """
         Test that special_exams tab appears when course has timed exams enabled.
@@ -479,9 +477,9 @@ class CourseMetadataViewTest(SharedModuleStoreTestCase, MasqueradeMixin):
         tab_ids = [tab['tab_id'] for tab in tabs]
         self.assertIn('special_exams', tab_ids)  # noqa: PT009
 
+    @override_settings(MAX_ENROLLMENT_INSTR_BUTTONS=200)
     @patch('lms.djangoapps.instructor.views.serializers_v2.CertificateGenerationConfiguration.current')
-    @patch('django.conf.settings.FEATURES', {'ENABLE_CERTIFICATES_INSTRUCTOR_MANAGE': True,
-                                             'MAX_ENROLLMENT_INSTR_BUTTONS': 200})
+    @patch.dict('django.conf.settings.FEATURES', {'ENABLE_CERTIFICATES_INSTRUCTOR_MANAGE': True})
     def test_certificates_tab_for_instructor_when_enabled(self, mock_cert_config):
         """
         Test that certificates tab appears for instructors when certificate management is enabled.
