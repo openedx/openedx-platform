@@ -51,9 +51,6 @@ from xmodule.data import CertificatesDisplayBehaviors
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory
 
-FEATURES_WITH_CUSTOM_CERTS_ENABLED = settings.FEATURES.copy()
-FEATURES_WITH_CUSTOM_CERTS_ENABLED['CUSTOM_CERTIFICATE_TEMPLATES_ENABLED'] = True
-
 name_affirmation_service = get_name_affirmation_service()
 
 
@@ -1081,7 +1078,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
         self.assertContains(response, "Invalid Certificate")
 
     # TEMPLATES WITHOUT LANGUAGE TESTS
-    @override_settings(FEATURES=FEATURES_WITH_CUSTOM_CERTS_ENABLED, CERTIFICATES_HTML_VIEW=True)
+    @override_settings(CUSTOM_CERTIFICATE_TEMPLATES_ENABLED=True, CERTIFICATES_HTML_VIEW=True)
     @override_settings(LANGUAGE_CODE='fr')
     @patch('lms.djangoapps.certificates.views.webview.get_course_run_details')
     def test_certificate_custom_template_with_org_mode_and_course_key(self, mock_get_course_run_details):
@@ -1116,7 +1113,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
             self.assertContains(response, 'lang: fr')
             self.assertContains(response, 'course name: test_template_3_course')
 
-    @override_settings(FEATURES=FEATURES_WITH_CUSTOM_CERTS_ENABLED, CERTIFICATES_HTML_VIEW=True)
+    @override_settings(CUSTOM_CERTIFICATE_TEMPLATES_ENABLED=True, CERTIFICATES_HTML_VIEW=True)
     @patch('lms.djangoapps.certificates.views.webview.get_course_run_details')
     def test_certificate_custom_template_with_org_and_mode(self, mock_get_course_run_details):
         """
@@ -1151,7 +1148,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
             assert response.status_code == 200
             self.assertContains(response, 'course name: test_template_1_course')
 
-    @override_settings(FEATURES=FEATURES_WITH_CUSTOM_CERTS_ENABLED, CERTIFICATES_HTML_VIEW=True)
+    @override_settings(CUSTOM_CERTIFICATE_TEMPLATES_ENABLED=True, CERTIFICATES_HTML_VIEW=True)
     @patch('lms.djangoapps.certificates.views.webview.get_course_run_details')
     def test_certificate_custom_template_with_org(self, mock_get_course_run_details):
         """
@@ -1175,7 +1172,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
             assert response.status_code == 200
             self.assertContains(response, 'course name: test_template_1_course')
 
-    @override_settings(FEATURES=FEATURES_WITH_CUSTOM_CERTS_ENABLED, CERTIFICATES_HTML_VIEW=True)
+    @override_settings(CUSTOM_CERTIFICATE_TEMPLATES_ENABLED=True, CERTIFICATES_HTML_VIEW=True)
     @patch('lms.djangoapps.certificates.views.webview.get_course_run_details')
     def test_certificate_custom_template_with_mode(self, mock_get_course_run_details):
         """
@@ -1203,7 +1200,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
 
     # Templates With Language tests
     # 1
-    @override_settings(FEATURES=FEATURES_WITH_CUSTOM_CERTS_ENABLED, CERTIFICATES_HTML_VIEW=True)
+    @override_settings(CUSTOM_CERTIFICATE_TEMPLATES_ENABLED=True, CERTIFICATES_HTML_VIEW=True)
     @override_settings(LANGUAGE_CODE='fr')
     @patch('lms.djangoapps.certificates.views.webview.get_course_run_details')
     @patch('lms.djangoapps.certificates.api.get_course_organization_id')
@@ -1288,7 +1285,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
         self.assertContains(response, 'course name: test_right_lang_template')
 
     # 2
-    @override_settings(FEATURES=FEATURES_WITH_CUSTOM_CERTS_ENABLED, CERTIFICATES_HTML_VIEW=True)
+    @override_settings(CUSTOM_CERTIFICATE_TEMPLATES_ENABLED=True, CERTIFICATES_HTML_VIEW=True)
     @patch('lms.djangoapps.certificates.views.webview.get_course_run_details')
     @patch('lms.djangoapps.certificates.api.get_course_organization_id')
     def test_certificate_custom_language_template_with_org_and_mode(self, mock_get_org_id, mock_get_course_run_details):
@@ -1348,7 +1345,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
         self.assertContains(response, 'course name: test_right_lang_template')
 
     # 3
-    @override_settings(FEATURES=FEATURES_WITH_CUSTOM_CERTS_ENABLED, CERTIFICATES_HTML_VIEW=True)
+    @override_settings(CUSTOM_CERTIFICATE_TEMPLATES_ENABLED=True, CERTIFICATES_HTML_VIEW=True)
     @patch('lms.djangoapps.certificates.views.webview.get_course_run_details')
     @patch('lms.djangoapps.certificates.api.get_course_organization_id')
     def test_certificate_custom_language_template_with_org(self, mock_get_org_id, mock_get_course_run_details):
@@ -1406,7 +1403,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
         self.assertContains(response, 'course name: test_right_lang_template')
 
     # 4
-    @override_settings(FEATURES=FEATURES_WITH_CUSTOM_CERTS_ENABLED, CERTIFICATES_HTML_VIEW=True)
+    @override_settings(CUSTOM_CERTIFICATE_TEMPLATES_ENABLED=True, CERTIFICATES_HTML_VIEW=True)
     @patch('lms.djangoapps.certificates.views.webview.get_course_run_details')
     @patch('lms.djangoapps.certificates.api.get_course_organization_id')
     def test_certificate_custom_language_template_with_mode(self, mock_get_org_id, mock_get_course_run_details):
@@ -1464,7 +1461,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
         assert response.status_code == 200
         self.assertContains(response, 'course name: test_right_lang_template')
 
-    @override_settings(FEATURES=FEATURES_WITH_CUSTOM_CERTS_ENABLED, CERTIFICATES_HTML_VIEW=True)
+    @override_settings(CUSTOM_CERTIFICATE_TEMPLATES_ENABLED=True, CERTIFICATES_HTML_VIEW=True)
     @patch('lms.djangoapps.certificates.views.webview.get_course_run_details')
     @patch('lms.djangoapps.certificates.api.get_course_organization_id')
     def test_certificate_custom_language_template_with_locale_language_from_catalogue(
@@ -1526,7 +1523,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
         assert response.status_code == 200
         self.assertContains(response, 'course name: test_right_lang_template')
 
-    @override_settings(FEATURES=FEATURES_WITH_CUSTOM_CERTS_ENABLED, CERTIFICATES_HTML_VIEW=True)
+    @override_settings(CUSTOM_CERTIFICATE_TEMPLATES_ENABLED=True, CERTIFICATES_HTML_VIEW=True)
     @ddt.data(True, False)
     @patch('lms.djangoapps.certificates.views.webview.get_course_run_details')
     @patch('lms.djangoapps.certificates.api.get_course_organization_id')
@@ -1572,10 +1569,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
         mode = 'honor'
         self._add_course_certificates(count=1, signatory_count=2)
         self._create_custom_template(mode=mode)
-        with override_settings(CERTIFICATES_HTML_VIEW=True), patch.dict(
-            "django.conf.settings.FEATURES",
-            {"CUSTOM_CERTIFICATE_TEMPLATES_ENABLED": custom_certs_enabled},
-        ):
+        with override_settings(CERTIFICATES_HTML_VIEW=True, CUSTOM_CERTIFICATE_TEMPLATES_ENABLED=custom_certs_enabled):
             test_url = get_certificate_url(
                 user_id=self.user.id,
                 course_id=str(self.course.id),
@@ -1597,7 +1591,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
                             self.assertContains(response, "Tweet this Accomplishment")
                         self.assertContains(response, 'https://twitter.com/intent/tweet')
 
-    @override_settings(FEATURES=FEATURES_WITH_CUSTOM_CERTS_ENABLED, CERTIFICATES_HTML_VIEW=True)
+    @override_settings(CUSTOM_CERTIFICATE_TEMPLATES_ENABLED=True, CERTIFICATES_HTML_VIEW=True)
     @patch('lms.djangoapps.certificates.views.webview.get_course_run_details')
     def test_certificate_asset_by_slug(self, mock_get_course_run_details):
         """
@@ -1673,7 +1667,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
             self.assertContains(response, self.user.profile.name)
             self.assertNotContains(response, verified_name)
 
-    @override_settings(FEATURES=FEATURES_WITH_CUSTOM_CERTS_ENABLED, CERTIFICATES_HTML_VIEW=True)
+    @override_settings(CUSTOM_CERTIFICATE_TEMPLATES_ENABLED=True, CERTIFICATES_HTML_VIEW=True)
     @ddt.data(
         True,
         False
