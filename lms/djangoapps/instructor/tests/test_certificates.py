@@ -207,7 +207,7 @@ class CertificatesInstructorDashTest(SharedModuleStoreTestCase):
         self.client.login(username=self.global_staff.username, password=self.TEST_PASSWORD)
         self._assert_certificates_visible(False)
 
-    @mock.patch.dict(settings.FEATURES, {'ENABLE_CERTIFICATES_INSTRUCTOR_MANAGE': True})
+    @override_settings(ENABLE_CERTIFICATES_INSTRUCTOR_MANAGE=True)
     def test_visible_for_instructors_when_feature_is_enabled(self):
         self.client.login(username=self.instructor.username, password=self.TEST_PASSWORD)
         self._assert_certificates_visible(True)

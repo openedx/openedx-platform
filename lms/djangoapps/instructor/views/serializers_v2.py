@@ -271,7 +271,7 @@ class CourseInformationSerializerV2(serializers.Serializer):
 
         # Note: This is hidden for all CCXs
         certs_enabled = CertificateGenerationConfiguration.current().enabled and not hasattr(course_key, 'ccx')
-        certs_instructor_enabled = settings.FEATURES.get('ENABLE_CERTIFICATES_INSTRUCTOR_MANAGE', False)
+        certs_instructor_enabled = settings.ENABLE_CERTIFICATES_INSTRUCTOR_MANAGE
 
         if certs_enabled and access['admin'] or (access['instructor'] and certs_instructor_enabled):
             tabs.append({

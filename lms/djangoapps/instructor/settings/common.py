@@ -91,11 +91,12 @@ def plugin_settings(settings):
     # .. toggle_use_cases: opt_in
     settings.CERTIFICATES_INSTRUCTOR_GENERATION = False
 
-    # .. toggle_name: FEATURES['ENABLE_CERTIFICATES_INSTRUCTOR_MANAGE]  # pylint: disable=annotation-missing-token
+    # .. toggle_name: ENABLE_CERTIFICATES_INSTRUCTOR_MANAGE
     # .. toggle_implementation: DjangoSetting
     # .. toggle_default: False
     # .. toggle_description: Allow course instructors to manage certificates from the instructor dashboard.
     # .. toggle_use_cases: opt_in
+    # .. toggle_creation_date: 2025-11-19
     settings.ENABLE_CERTIFICATES_INSTRUCTOR_MANAGE = False
 
     # .. toggle_name: FEATURES['BATCH_ENROLLMENT_NOTIFY_USERS_DEFAULT']

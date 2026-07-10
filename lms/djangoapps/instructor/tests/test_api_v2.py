@@ -477,9 +477,8 @@ class CourseMetadataViewTest(SharedModuleStoreTestCase, MasqueradeMixin):
         tab_ids = [tab['tab_id'] for tab in tabs]
         self.assertIn('special_exams', tab_ids)  # noqa: PT009
 
-    @override_settings(MAX_ENROLLMENT_INSTR_BUTTONS=200)
+    @override_settings(MAX_ENROLLMENT_INSTR_BUTTONS=200, ENABLE_CERTIFICATES_INSTRUCTOR_MANAGE=True)
     @patch('lms.djangoapps.instructor.views.serializers_v2.CertificateGenerationConfiguration.current')
-    @patch.dict('django.conf.settings.FEATURES', {'ENABLE_CERTIFICATES_INSTRUCTOR_MANAGE': True})
     def test_certificates_tab_for_instructor_when_enabled(self, mock_cert_config):
         """
         Test that certificates tab appears for instructors when certificate management is enabled.

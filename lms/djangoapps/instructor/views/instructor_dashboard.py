@@ -228,7 +228,7 @@ def instructor_dashboard_2(request, course_id):  # pylint: disable=too-many-stat
     # and enable self-generated certificates for a course.
     # Note: This is hidden for all CCXs
     certs_enabled = certs_api.is_certificate_generation_enabled() and not hasattr(course_key, 'ccx')
-    certs_instructor_enabled = settings.FEATURES.get('ENABLE_CERTIFICATES_INSTRUCTOR_MANAGE', False)
+    certs_instructor_enabled = settings.ENABLE_CERTIFICATES_INSTRUCTOR_MANAGE
 
     if certs_enabled and (access['admin'] or (access['instructor'] and certs_instructor_enabled)):
         sections.append(_section_certificates(course))
