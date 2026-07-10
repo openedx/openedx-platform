@@ -232,7 +232,7 @@ def _validate_email_change(user, data, field_errors):
     if "email" not in data:
         return
 
-    if not settings.FEATURES['ALLOW_EMAIL_ADDRESS_CHANGE']:
+    if not settings.ALLOW_EMAIL_ADDRESS_CHANGE:
         raise AccountUpdateError("Email address changes have been disabled by the site operators.")
 
     new_email = data["email"]
