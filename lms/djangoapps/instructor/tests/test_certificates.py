@@ -9,7 +9,6 @@ from unittest import mock
 import ddt
 import pytest
 from config_models.models import cache
-from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test.utils import override_settings
@@ -265,8 +264,7 @@ class CertificatesInstructorDashTest(SharedModuleStoreTestCase):
         self.assertContains(response, 'enable-certificates-submit')
         self.assertNotContains(response, 'Generate Example Certificates')
 
-    @override_settings(CERTIFICATES_HTML_VIEW=True)
-    @mock.patch.dict(settings.FEATURES, {'CERTIFICATES_INSTRUCTOR_GENERATION': False})
+    @override_settings(CERTIFICATES_HTML_VIEW=True, CERTIFICATES_INSTRUCTOR_GENERATION=False)
     def test_buttons_for_html_certs_in_self_paced_course(self):
         """
         Tests `Enable Student-Generated Certificates` button is enabled

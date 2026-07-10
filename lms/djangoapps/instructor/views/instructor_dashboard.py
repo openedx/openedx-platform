@@ -386,7 +386,7 @@ def _section_certificates(course):
                 for cert_status in example_cert_status
             )
         )
-    instructor_generation_enabled = settings.FEATURES.get('CERTIFICATES_INSTRUCTOR_GENERATION', False)
+    instructor_generation_enabled = settings.CERTIFICATES_INSTRUCTOR_GENERATION
     certificate_statuses_with_count = {
         certificate['status']: certificate['count']
         for certificate in certs_api.get_unique_certificate_statuses(course.id)
