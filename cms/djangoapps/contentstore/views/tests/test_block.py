@@ -2806,6 +2806,7 @@ class TestComponentTemplates(CourseTestCase):
             "Google Calendar",
             "Google Document",
             "LTI Consumer",
+            "PDF",
             "Poll",
             "Content Experiment",
             "Survey",
