@@ -209,9 +209,18 @@ class OutlineTabView(RetrieveAPIView):
         )
 
         user_is_masquerading = is_masquerading(request.user, course_key, course_masquerade=masquerade_object)
+        user = request.user
+        # Check if the user is masquerading as a student and get the masqueraded user object
+        if user_is_masquerading and masquerade_object.role == 'student':
+            try:
+                # If the masqueraded user does not exist, we will continue with the original user object.
+                username = masquerade_object.user_name or 'audit'
+                user = User.objects.get(username=username)
+            except User.DoesNotExist:
+                pass
 
         course_overview = get_course_overview_or_404(course_key)
-        enrollment = CourseEnrollment.get_enrollment(request.user, course_key)
+        enrollment = CourseEnrollment.get_enrollment(user, course_key)
         enrollment_mode = getattr(enrollment, 'mode', None)
         allow_anonymous = COURSE_ENABLE_UNENROLLED_ACCESS_FLAG.is_enabled(course_key)
         allow_public = allow_anonymous and course.course_visibility == COURSE_VISIBILITY_PUBLIC
@@ -254,27 +263,27 @@ class OutlineTabView(RetrieveAPIView):
         show_enrolled = is_enrolled or is_staff
         enable_proctored_exams = False
         if show_enrolled:
-            course_blocks = get_course_outline_block_tree(request, course_key_string, request.user)
-            date_blocks = get_course_date_blocks(course, request.user, request, num_assignments=1)
+            course_blocks = get_course_outline_block_tree(request, course_key_string, user)
+            date_blocks = get_course_date_blocks(course, user, request, num_assignments=1)
             course_date_blocks = (
                 [block for block in date_blocks if not isinstance(block, TodaysDate)]
-                if DatesTab.is_enabled(course, request.user)
+                if DatesTab.is_enabled(course, user)
                 else []
             )
             dates_widget['course_date_blocks'] = course_date_blocks
 
-            handouts_html = get_course_info_section(request, request.user, course, 'handouts')
+            handouts_html = get_course_info_section(request, user, course, 'handouts')
             welcome_message_html = get_current_update_for_user(request, course)
 
-            offer_data = generate_offer_data(request.user, course_overview)
-            access_expiration = get_access_expiration_data(request.user, course_overview)
-            cert_data = get_cert_data(request.user, course, enrollment.mode) if is_enrolled else None
+            offer_data = generate_offer_data(user, course_overview)
+            access_expiration = get_access_expiration_data(user, course_overview)
+            cert_data = get_cert_data(user, course, enrollment.mode) if is_enrolled else None
 
             enable_proctored_exams = course_overview.enable_proctored_exams
 
             if (is_enrolled and ENABLE_COURSE_GOALS.is_enabled(course_key)):
                 course_goals['weekly_learning_goal_enabled'] = True
-                selected_goal = get_course_goal(request.user, course_key)
+                selected_goal = get_course_goal(user, course_key)
                 if selected_goal:
                     course_goals['selected_goal'] = {
                         'days_per_week': selected_goal.days_per_week,
@@ -282,7 +291,7 @@ class OutlineTabView(RetrieveAPIView):
                     }
 
             try:
-                resume_block = get_key_to_last_completed_block(request.user, course.id)
+                resume_block = get_key_to_last_completed_block(user, course.id)
                 resume_course['has_visited_course'] = True
                 resume_path = reverse('jump_to', kwargs={
                     'course_id': course_key_string,
@@ -296,7 +305,7 @@ class OutlineTabView(RetrieveAPIView):
         elif allow_public_outline or allow_public or user_is_masquerading:
             course_blocks = get_course_outline_block_tree(request, course_key_string, None)
             if allow_public or user_is_masquerading:
-                handouts_html = get_course_info_section(request, request.user, course, 'handouts')
+                handouts_html = get_course_info_section(request, user, course, 'handouts')
 
         if not is_enrolled:
             if CourseMode.is_masters_only(course_key):
@@ -305,7 +314,7 @@ class OutlineTabView(RetrieveAPIView):
                     'Please contact your degree administrator or '
                     '{platform_name} Support if you have questions.'
                 ).format(platform_name=settings.PLATFORM_NAME)
-            elif CourseEnrollment.is_enrollment_closed(request.user, course_overview):
+            elif CourseEnrollment.is_enrollment_closed(user, course_overview):
                 enroll_alert['can_enroll'] = False
             elif CourseEnrollment.objects.is_course_full(course_overview):
                 enroll_alert['can_enroll'] = False
@@ -321,7 +330,7 @@ class OutlineTabView(RetrieveAPIView):
         # so this is a tiny first step in that migration.
         if course_blocks:
             user_course_outline = get_user_course_outline(
-                course_key, request.user, datetime.now(tz=timezone.utc)  # noqa: UP017
+                course_key, user, datetime.now(tz=timezone.utc)  # noqa: UP017
             )
             available_seq_ids = {str(usage_key) for usage_key in user_course_outline.sequences}
 
@@ -352,8 +361,8 @@ class OutlineTabView(RetrieveAPIView):
                 ] if 'children' in chapter_data else []
 
         user_has_passing_grade = False
-        if not request.user.is_anonymous:
-            user_grade = CourseGradeFactory().read(request.user, course)
+        if not user.is_anonymous:
+            user_grade = CourseGradeFactory().read(user, course)
             if user_grade:
                 user_has_passing_grade = user_grade.passed
 
