@@ -1263,6 +1263,10 @@ class ProctoringSettingsSerializer(serializers.Serializer):
     proctoring_escalation_email = serializers.CharField(allow_null=True, required=False)
     create_zendesk_tickets = serializers.BooleanField()
     enable_proctored_exams = serializers.BooleanField()
+    # Provider-capability flags used by the instructor dashboard to decide whether to
+    # show the Student Onboarding Status and Review Dashboard special-exam sections.
+    supports_onboarding = serializers.BooleanField()
+    review_dashboard_available = serializers.BooleanField()
 
 
 class ProctoringSettingsUpdateSerializer(serializers.Serializer):

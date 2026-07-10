@@ -322,6 +322,26 @@ class ProctoringSettingsViewTest(ModuleStoreTestCase):
         data = response.json()
         assert data['enable_proctored_exams'] is True
 
+    def test_get_settings_capability_flags_default_false(self):
+        """The 'null' backend supports neither onboarding nor a review dashboard."""
+        response = self.client.get(self._url())
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data['supports_onboarding'] is False
+        assert data['review_dashboard_available'] is False
+
+    @patch('lms.djangoapps.instructor.views.api_v2.is_backend_dashboard_available', return_value=True)
+    @patch('lms.djangoapps.instructor.views.api_v2.does_backend_support_onboarding', return_value=True)
+    def test_get_settings_capability_flags_supported(self, mock_onboarding, mock_dashboard):
+        """Capability flags surface the proctoring backend's onboarding/dashboard support."""
+        response = self.client.get(self._url())
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data['supports_onboarding'] is True
+        assert data['review_dashboard_available'] is True
+        assert mock_onboarding.called
+        assert mock_dashboard.called
+
     def test_patch_settings(self):
         response = self.client.patch(
             self._url(),

@@ -522,6 +522,16 @@ definitions:
         type: boolean
       enable_proctored_exams:
         type: boolean
+      supports_onboarding:
+        type: boolean
+        description: >-
+          Whether the course's proctoring backend supports onboarding exams.
+          Used by the instructor dashboard to gate the Student Onboarding Status section.
+      review_dashboard_available:
+        type: boolean
+        description: >-
+          Whether the course's proctoring backend exposes a review dashboard.
+          Used by the instructor dashboard to gate the Review Dashboard section.
 
   ProctoringSettingsUpdate:
     type: object

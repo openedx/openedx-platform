@@ -30,12 +30,14 @@ from django.views.decorators.cache import cache_control
 from django_filters.rest_framework import DjangoFilterBackend
 from edx_proctoring.api import (
     add_allowance_for_user,
+    does_backend_support_onboarding,
     get_all_exam_attempts,
     get_all_exams_for_course,
     get_allowances_for_course,
     get_exam_by_id,
     get_filtered_exam_attempts,
     get_user_attempts_by_exam_id,
+    is_backend_dashboard_available,
     remove_allowance_for_user,
     remove_exam_attempt,
 )
@@ -4282,6 +4284,26 @@ class SpecialExamAttemptsView(DeveloperErrorViewMixin, ListAPIView):
         ]
 
 
+def _build_proctoring_settings_data(course, course_id):
+    """
+    Assemble a course's proctoring settings along with the provider-capability flags
+    the instructor dashboard needs to decide which special-exam sections to show.
+
+    ``supports_onboarding`` mirrors whether the proctoring backend has onboarding exams,
+    and ``review_dashboard_available`` mirrors whether it exposes a review dashboard.
+    These gate the Student Onboarding Status and Review Dashboard sections respectively.
+    """
+    provider = getattr(course, 'proctoring_provider', None)
+    return {
+        'proctoring_provider': provider,
+        'proctoring_escalation_email': getattr(course, 'proctoring_escalation_email', None),
+        'create_zendesk_tickets': getattr(course, 'create_zendesk_tickets', False),
+        'enable_proctored_exams': getattr(course, 'enable_proctored_exams', False),
+        'supports_onboarding': does_backend_support_onboarding(provider),
+        'review_dashboard_available': is_backend_dashboard_available(course_id),
+    }
+
+
 class ProctoringSettingsView(DeveloperErrorViewMixin, APIView):
     """
     Retrieve or update proctoring configuration for a course.
@@ -4314,12 +4336,7 @@ class ProctoringSettingsView(DeveloperErrorViewMixin, APIView):
         """Retrieve proctoring configuration for the course."""
         course_key = CourseKey.from_string(course_id)
         course = get_course_by_id(course_key)
-        settings_data = {
-            'proctoring_provider': getattr(course, 'proctoring_provider', None),
-            'proctoring_escalation_email': getattr(course, 'proctoring_escalation_email', None),
-            'create_zendesk_tickets': getattr(course, 'create_zendesk_tickets', False),
-            'enable_proctored_exams': getattr(course, 'enable_proctored_exams', False),
-        }
+        settings_data = _build_proctoring_settings_data(course, course_id)
         serializer = ProctoringSettingsSerializer(settings_data)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -4358,12 +4375,7 @@ class ProctoringSettingsView(DeveloperErrorViewMixin, APIView):
         if updated:
             modulestore().update_item(course, request.user.id)
 
-        settings_data = {
-            'proctoring_provider': getattr(course, 'proctoring_provider', None),
-            'proctoring_escalation_email': getattr(course, 'proctoring_escalation_email', None),
-            'create_zendesk_tickets': getattr(course, 'create_zendesk_tickets', False),
-            'enable_proctored_exams': getattr(course, 'enable_proctored_exams', False),
-        }
+        settings_data = _build_proctoring_settings_data(course, course_id)
         serializer = ProctoringSettingsSerializer(settings_data)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
