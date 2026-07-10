@@ -107,9 +107,9 @@ class TestXblockUtils(SharedModuleStoreTestCase):
 
     def test_sanitize_html_id(self):
         """
-        Verify that colons and dashes are replaced.
+        Verify that colons, dashes, and periods are replaced.
         """
-        dirty_string = 'I:have-un:allowed_characters'
+        dirty_string = 'I:have-un:allowed.characters'
         clean_string = sanitize_html_id(dirty_string)
 
         assert clean_string == 'I_have_un_allowed_characters'
