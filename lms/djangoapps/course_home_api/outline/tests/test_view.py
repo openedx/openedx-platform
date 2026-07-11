@@ -144,6 +144,100 @@ class OutlineTabTestViews(BaseCourseHomeTests):
         assert response.data['course_blocks'] is not None
         assert response.data['handouts_html'] is not None
 
+    def test_unreleased_content_hidden_when_masquerading_as_learner(self):
+        """
+        Regression test: Verify that unreleased sections/units are excluded when masquerading as a specific learner.
+        This prevents staff from seeing hidden/future content while masquerading.
+        """
+        # Create an enrolled learner
+        learner = UserFactory()
+        CourseEnrollment.enroll(learner, self.course.id)
+
+        # Create an instructor
+        instructor = UserFactory(
+            username='instructor',
+            email='instructor@example.com',
+            password='foo',
+            is_staff=False
+        )
+        CourseInstructorRole(self.course.id).add_users(instructor)
+
+        # Create a chapter with a future start date (unreleased)
+        future_date = datetime.now(timezone.utc) + timedelta(days=30)
+        chapter = self.store.create_item(
+            instructor.id,
+            self.course.id,
+            'chapter',
+            'unreleased_chapter',
+            fields={
+                'display_name': 'Future Chapter',
+                'start': future_date.isoformat(),
+            }
+        )
+
+        # Create a sequential inside the unreleased chapter
+        sequential = self.store.create_item(
+            instructor.id,
+            chapter.location,
+            'sequential',
+            'unreleased_seq',
+            fields={'display_name': 'Future Sequential'}
+        )
+
+        # Create a vertical inside the sequential
+        vertical = self.store.create_item(
+            instructor.id,
+            sequential.location,
+            'vertical',
+            'unreleased_vert',
+            fields={'display_name': 'Future Vertical'}
+        )
+
+        # Create a problem inside the vertical
+        self.store.create_item(
+            instructor.id,
+            vertical.location,
+            'problem',
+            'unreleased_problem',
+            fields={
+                'display_name': 'Future Problem',
+                'data': '<problem></problem>',
+            }
+        )
+
+        # Login as instructor
+        self.client.login(username=instructor, password='foo')
+
+        # First, verify instructor can see the unreleased content
+        response = self.client.get(self.url)
+        assert response.status_code == 200
+        staff_course_blocks = response.data['course_blocks']
+        staff_block_ids = self._get_all_block_ids_recursive(staff_course_blocks)
+        assert str(chapter.location) in staff_block_ids, "Staff should see unreleased chapters"
+
+        # Now masquerade as the learner
+        self.update_masquerade(username=learner.username)
+        response = self.client.get(self.url)
+        assert response.status_code == 200
+        learner_course_blocks = response.data['course_blocks']
+        learner_block_ids = self._get_all_block_ids_recursive(learner_course_blocks)
+
+        # Verify unreleased content is hidden from the masqueraded learner view
+        assert str(chapter.location) not in learner_block_ids, "Learner should NOT see unreleased chapters"
+        assert str(sequential.location) not in learner_block_ids, "Learner should NOT see unreleased sequentials"
+        assert str(vertical.location) not in learner_block_ids, "Learner should NOT see unreleased verticals"
+        assert str(vertical.location.replace(name='unreleased_problem')) not in learner_block_ids, \
+            "Learner should NOT see unreleased problems"
+
+    def _get_all_block_ids_recursive(self, block):
+        """Helper to collect all block IDs from a course block tree"""
+        block_ids = set()
+        if block:
+            block_ids.add(block.get('id'))
+            for child in block.get('children', []):
+                block_ids.update(self._get_all_block_ids_recursive(child))
+        return block_ids
+
     @override_waffle_flag(COURSE_ENABLE_UNENROLLED_ACCESS_FLAG, active=True)
     def test_handouts(self):
         CourseEnrollment.enroll(self.user, self.course.id)
