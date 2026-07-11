@@ -9,6 +9,7 @@ from completion.models import BlockCompletion
 from completion.utilities import get_key_to_last_completed_block  # pylint: disable=wrong-import-order
 from django.conf import settings  # pylint: disable=wrong-import-order
 from django.core.cache import cache
+from django.contrib.auth.models import User  # lint-amnesty, pylint:
 from django.shortcuts import get_object_or_404  # pylint: disable=wrong-import-order
 from django.urls import reverse  # pylint: disable=wrong-import-order
 from django.utils.translation import gettext as _  # pylint: disable=wrong-import-order
@@ -193,23 +194,23 @@ class OutlineTabView(RetrieveAPIView):
     def get(self, request, *args, **kwargs):  # pylint: disable=too-many-statements
         course_key_string = kwargs.get('course_key_string')
         course_key = CourseKey.from_string(course_key_string)
+        user = request.user
 
         # Enable NR tracing for this view based on course
         monitoring_utils.set_custom_attribute('course_id', course_key_string)
         monitoring_utils.set_custom_attribute('user_id', request.user.id)
         monitoring_utils.set_custom_attribute('is_staff', request.user.is_staff)
 
-        course = get_course_or_403(request.user, 'load', course_key, check_if_enrolled=False)
+        course = get_course_or_403(user, 'load', course_key, check_if_enrolled=False)
 
-        masquerade_object, request.user = setup_masquerade(
+        masquerade_object, user = setup_masquerade(
             request,
             course_key,
-            staff_access=has_access(request.user, 'staff', course_key),
+            staff_access=has_access(user, 'staff', course_key),
             reset_masquerade_data=True,
         )
 
-        user_is_masquerading = is_masquerading(request.user, course_key, course_masquerade=masquerade_object)
-        user = request.user
+        user_is_masquerading = is_masquerading(user, course_key, course_masquerade=masquerade_object)
         # Check if the user is masquerading as a student and get the masqueraded user object
         if user_is_masquerading and masquerade_object.role == 'student':
             try:
