@@ -107,7 +107,7 @@ class CourseMetadata:
             exclude_list.append('edxnotes')
 
         # Do not show video auto advance if the feature is disabled
-        if not settings.FEATURES.get('ENABLE_OTHER_COURSE_SETTINGS'):
+        if not settings.ENABLE_OTHER_COURSE_SETTINGS:
             exclude_list.append('other_course_settings')
 
         # Do not show video_upload_pipeline if the feature is disabled.
