@@ -134,7 +134,7 @@ class TextbookTabs(TextbookTabsBase):
     @classmethod
     def is_enabled(cls, course, user=None):
         parent_is_enabled = super().is_enabled(course, user)
-        return settings.FEATURES.get('ENABLE_TEXTBOOK') and parent_is_enabled
+        return settings.ENABLE_TEXTBOOK and parent_is_enabled
 
     @classmethod
     def items(cls, course):
