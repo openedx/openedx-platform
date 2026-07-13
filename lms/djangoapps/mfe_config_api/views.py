@@ -85,7 +85,7 @@ def get_legacy_config() -> dict:
         "COURSE_ABOUT_TWITTER_ACCOUNT": configuration_helpers.get_value(
             "course_about_twitter_account", settings.PLATFORM_TWITTER_ACCOUNT
         ),
-        "NON_BROWSABLE_COURSES": not settings.FEATURES.get("COURSES_ARE_BROWSABLE"),
+        "NON_BROWSABLE_COURSES": not settings.COURSES_ARE_BROWSABLE,
         "ENABLE_COURSE_DISCOVERY": settings.ENABLE_COURSE_DISCOVERY,
     }
 
