@@ -12,4 +12,4 @@ def is_feature_enabled(course):
     """
     Returns True if the teams feature is enabled.
     """
-    return settings.FEATURES.get('ENABLE_TEAMS', False) and course.teams_enabled
+    return settings.ENABLE_TEAMS and course.teams_enabled

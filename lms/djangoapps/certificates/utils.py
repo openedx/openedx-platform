@@ -87,7 +87,7 @@ def has_html_certificates_enabled(course_overview):
     """
     Returns True if HTML certificates are enabled in a course run.
     """
-    if not settings.FEATURES.get('CERTIFICATES_HTML_VIEW', False):
+    if not settings.CERTIFICATES_HTML_VIEW:
         return False
     return course_overview.cert_html_view_enabled
 

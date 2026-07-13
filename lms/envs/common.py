@@ -138,6 +138,16 @@ ENABLE_UNICODE_USERNAME = False
 ENABLE_DJANGO_ADMIN_SITE = True
 ENABLE_LMS_MIGRATION = False
 
+# .. toggle_name: ENABLE_FORUM_DAILY_DIGEST
+# .. toggle_implementation: DjangoSetting
+# .. toggle_default: False
+# .. toggle_description: Settings for forums/discussions to on/off daily digest
+#   feature. Set this to True if you want to enable users to subscribe and unsubscribe
+#   for daily digest. This setting enables deprecation of daily digest.
+# .. toggle_use_cases: open_edx
+# .. toggle_creation_date: 2020-03-09
+ENABLE_FORUM_DAILY_DIGEST = False
+
 # .. toggle_name: settings.ENABLE_MASQUERADE
 # .. toggle_implementation: DjangoSetting
 # .. toggle_default: True

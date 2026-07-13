@@ -30,7 +30,7 @@ def plugin_settings(settings):
     # .. toggle_tickets: https://github.com/openedx/edx-platform/pull/13196
     settings.ENABLE_CCX_ANALYTICS_DASHBOARD_URL = False
 
-    # .. setting_name: FEATURES['MAX_ENROLLMENT_INSTR_BUTTONS']
+    # .. setting_name: MAX_ENROLLMENT_INSTR_BUTTONS
     # .. setting_default: 200
     # .. setting_description: Disable instructor dashboard buttons for downloading course data
     #   when enrollment exceeds this number. The number indicates the maximum allowed enrollments
@@ -82,20 +82,22 @@ def plugin_settings(settings):
     # .. toggle_tickets: https://github.com/openedx/edx-platform/pull/21260
     settings.ENABLE_AUTOMATED_SIGNUPS_EXTRA_FIELDS = False
 
-    # .. toggle_name: FEATURES['CERTIFICATES_INSTRUCTOR_GENERATION']  # pylint: disable=annotation-missing-token
+    # .. toggle_name: CERTIFICATES_INSTRUCTOR_GENERATION
     # .. toggle_implementation: DjangoSetting
     # .. toggle_default: False
     # .. toggle_description: Enable to allow batch generation of certificates from the instructor dashboard.
     #   In case of self-paced courses, the certificate generation button is hidden if certificate
     #   generation is not explicitly enabled globally or for the specific course.
     # .. toggle_use_cases: opt_in
+    # .. toggle_creation_date: 2017-06-16
     settings.CERTIFICATES_INSTRUCTOR_GENERATION = False
 
-    # .. toggle_name: FEATURES['ENABLE_CERTIFICATES_INSTRUCTOR_MANAGE]  # pylint: disable=annotation-missing-token
+    # .. toggle_name: ENABLE_CERTIFICATES_INSTRUCTOR_MANAGE
     # .. toggle_implementation: DjangoSetting
     # .. toggle_default: False
     # .. toggle_description: Allow course instructors to manage certificates from the instructor dashboard.
     # .. toggle_use_cases: opt_in
+    # .. toggle_creation_date: 2025-11-19
     settings.ENABLE_CERTIFICATES_INSTRUCTOR_MANAGE = False
 
     # .. toggle_name: FEATURES['BATCH_ENROLLMENT_NOTIFY_USERS_DEFAULT']

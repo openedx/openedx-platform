@@ -186,7 +186,7 @@ def _prepare_runtime_for_preview(request, block):
     ]
 
     mako_service = MakoService(namespace_prefix='lms.')
-    if settings.FEATURES.get("LICENSING", False):
+    if settings.LICENSING:
         # stick the license wrapper in front
         wrappers.insert(0, partial(wrap_with_license, mako_service=mako_service))
 

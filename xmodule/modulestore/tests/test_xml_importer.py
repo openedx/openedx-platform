@@ -9,6 +9,7 @@ import unittest
 from unittest import mock
 from uuid import uuid4
 
+from django.core.exceptions import ObjectDoesNotExist
 from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator
 from path import Path as path
@@ -18,7 +19,7 @@ from xblock.runtime import DictKeyValueStore, KvsFieldData, Runtime
 from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.inheritance import InheritanceMixin
 from xmodule.modulestore.tests.mongo_connection import MONGO_HOST, MONGO_PORT_NUM
-from xmodule.modulestore.xml_importer import StaticContentImporter, _update_block_location
+from xmodule.modulestore.xml_importer import StaticContentImporter, _update_and_import_block, _update_block_location
 from xmodule.tests import DATA_DIR
 from xmodule.x_module import XModuleMixin
 
@@ -257,3 +258,143 @@ class StaticContentImporterTest(unittest.TestCase):  # pylint: disable=missing-c
             )
             mock_file.assert_called_with(full_file_path, 'rb')
             self.mocked_content_store.generate_thumbnail.assert_called_once()
+
+
+class UpdateAndImportBlockLibraryContentTest(unittest.TestCase):
+    """
+    Tests for the library_content special-case handling inside _update_and_import_block.
+
+    Covers the bug where importing a course containing a library_content block into a
+    fresh environment (first import, library exists on dest) failed with:
+        KeyError: BlockKey(type='problem', id='...')
+    because sync_from_library was called on the published block (wrong branch) and with
+    a source-environment library version GUID that does not exist on the destination.
+    """
+
+    def _make_block(self, block_type='library_content', source_library_id='TestOrg+TestLib',
+                    source_library_version='aabbcc112233', has_children=True):
+        """Build a minimal mock block with the attributes _update_and_import_block needs."""
+        block = mock.MagicMock()
+        # block.location must be a MagicMock (not a real OpaqueKey) so its
+        # attributes can be freely set. Real OpaqueKeys are immutable.
+        block.location.block_type = block_type
+        block.location.block_id = 'test_lib_content'
+        block.source_library_id = source_library_id
+        block.source_library_version = source_library_version
+        block.source_library_key = mock.MagicMock()
+        block.fields = {}
+        block.get_asides.return_value = []
+        block.has_children = has_children
+        return block
+
+    def _make_store(self, branch_setting=ModuleStoreEnum.Branch.published_only,
+                    block_already_published=False, library_exists=True):
+        """Build a minimal mock store."""
+        store = mock.MagicMock()
+        store.get_branch_setting.return_value = branch_setting
+        store.branch_setting.return_value.__enter__ = mock.Mock(return_value=None)
+        store.branch_setting.return_value.__exit__ = mock.Mock(return_value=False)
+        store.has_item.return_value = block_already_published
+        store.get_library.return_value = mock.MagicMock() if library_exists else None
+
+        # import_xblock returns the published block (as split_draft does under published_only)
+        published_location = mock.MagicMock()
+        published_location.block_type = 'library_content'
+
+        published_block = mock.MagicMock()
+        published_block.location = published_location
+        published_block.location.block_type = 'library_content'
+        published_block.source_library_id = 'TestOrg+TestLib'
+        published_block.source_library_key = mock.MagicMock()
+        store.import_xblock.return_value = published_block
+
+        # get_item(draft_location) returns a draft block with sync_from_library available
+        draft_block = mock.MagicMock()
+        store.get_item.return_value = draft_block
+
+        return store, published_block, draft_block
+
+    def _call(self, source_block, store):
+        course_key = CourseLocator('TestOrg', 'TestCourse', '2026_T1')
+        return _update_and_import_block(
+            block=source_block,
+            store=store,
+            user_id=1,
+            source_course_id=course_key,
+            dest_course_id=course_key,
+            do_import_static=False,
+            runtime=mock.MagicMock(),
+        )
+
+    def test_first_import_syncs_draft_block_with_upgrade_to_latest(self):
+        """
+        On first import (block not yet published), sync_from_library must be called
+        on the DRAFT block with upgrade_to_latest=True so that copy_from_template
+        creates child blocks in the draft structure before publish() is called.
+        """
+        source_block = self._make_block()
+        store, published_block, draft_block = self._make_store(block_already_published=False)
+
+        self._call(source_block, store)
+
+        # Must fetch the draft block explicitly
+        store.get_item.assert_called_once_with(
+            published_block.location.for_branch(ModuleStoreEnum.BranchName.draft)
+        )
+        # Must call sync with upgrade_to_latest=True (not the source version GUID)
+        draft_block.sync_from_library.assert_called_once_with(upgrade_to_latest=True)
+
+    def test_first_import_publishes_after_sync(self):
+        """
+        After a successful sync on first import, the block must be published.
+        """
+        source_block = self._make_block()
+        store, published_block, _draft_block = self._make_store(block_already_published=False)
+
+        self._call(source_block, store)
+
+        store.publish.assert_called_once_with(published_block.location, 1)
+
+    def test_reimport_skips_sync_when_already_published(self):
+        """
+        When the library_content block already exists in the published branch
+        (re-import scenario), sync_from_library must NOT be called.
+        """
+        source_block = self._make_block()
+        store, _published_block, draft_block = self._make_store(block_already_published=True)
+
+        self._call(source_block, store)
+
+        draft_block.sync_from_library.assert_not_called()
+        store.publish.assert_not_called()
+
+    def test_no_sync_when_library_missing_on_destination(self):
+        """
+        If the library does not exist on the destination, neither sync_from_library
+        nor publish should be called.
+        """
+        source_block = self._make_block()
+        store, _published_block, draft_block = self._make_store(
+            block_already_published=False, library_exists=False
+        )
+
+        self._call(source_block, store)
+
+        draft_block.sync_from_library.assert_not_called()
+        store.publish.assert_not_called()
+
+    def test_object_does_not_exist_during_sync_is_handled(self):
+        """
+        If sync_from_library raises ObjectDoesNotExist, the inner except swallows it.
+        The outer try/except ValueError completes normally, so its else clause runs
+        and publish IS still called. The import must not raise.
+        """
+        source_block = self._make_block()
+        store, published_block, draft_block = self._make_store(block_already_published=False)
+        draft_block.sync_from_library.side_effect = ObjectDoesNotExist("library not found")
+
+        # Should not raise
+        self._call(source_block, store)
+
+        # Outer else runs even though inner sync failed → publish is called
+        store.publish.assert_called_once_with(published_block.location, 1)

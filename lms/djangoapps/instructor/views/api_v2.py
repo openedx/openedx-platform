@@ -3242,7 +3242,7 @@ class CourseTeamRolesView(DeveloperErrorViewMixin, APIView):
 
         roles = set(ROLES.keys()) | set(FORUM_ROLES)
 
-        ccx_enabled = settings.FEATURES.get('CUSTOM_COURSES_EDX', False) and course.enable_ccx
+        ccx_enabled = settings.CUSTOM_COURSES_EDX and course.enable_ccx
         if not ccx_enabled:
             roles.discard('ccx_coach')
 

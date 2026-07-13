@@ -682,7 +682,7 @@ urlpatterns += [
     ),
 ]
 
-if settings.FEATURES.get('ENABLE_TEAMS'):
+if settings.ENABLE_TEAMS:
     # Teams endpoints
     urlpatterns += [
         path(
@@ -721,7 +721,7 @@ urlpatterns += [
 ]
 
 # discussion forums live within courseware, so courseware must be enabled first
-if settings.FEATURES.get('ENABLE_DISCUSSION_SERVICE'):
+if settings.ENABLE_DISCUSSION_SERVICE:
     urlpatterns += [
         path(
             'api/discussion/',
@@ -825,7 +825,7 @@ if configuration_helpers.get_value('ENABLE_BULK_ENROLLMENT_VIEW', settings.FEATU
     ]
 
 # Embargo
-if settings.FEATURES.get('EMBARGO'):
+if settings.EMBARGO:
     urlpatterns += [
         path('embargo/', include(('openedx.core.djangoapps.embargo.urls', 'openedx.core.djangoapps.embargo'),
                                  namespace='embargo')),
@@ -872,7 +872,7 @@ urlpatterns += [
 ]
 
 # Third-party auth.
-if settings.FEATURES.get('ENABLE_THIRD_PARTY_AUTH'):
+if settings.ENABLE_THIRD_PARTY_AUTH:
     urlpatterns += [
         path('', include('common.djangoapps.third_party_auth.urls')),
         path('api/third_party_auth/', include('common.djangoapps.third_party_auth.api.urls')),
@@ -909,7 +909,7 @@ urlpatterns += [
 ]
 
 # Custom courses on edX (CCX) URLs
-if settings.FEATURES.get('CUSTOM_COURSES_EDX'):
+if settings.CUSTOM_COURSES_EDX:
     urlpatterns += [
         re_path(fr'^courses/{settings.COURSE_ID_PATTERN}/', include('lms.djangoapps.ccx.urls')),
         path('api/ccx/', include(('lms.djangoapps.ccx.api.urls', 'lms.djangoapps.ccx'), namespace='ccx_api')),

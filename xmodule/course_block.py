@@ -54,7 +54,7 @@ DEFAULT_COURSE_VISIBILITY_IN_CATALOG = getattr(
 DEFAULT_MOBILE_AVAILABLE = getattr(settings, 'DEFAULT_MOBILE_AVAILABLE', False)
 # Note: updating assets does not have settings defined, so using `getattr`.
 EXAM_SETTINGS_HTML_VIEW_ENABLED = getattr(settings, 'FEATURES', {}).get('ENABLE_EXAM_SETTINGS_HTML_VIEW', False)
-SPECIAL_EXAMS_ENABLED = getattr(settings, 'FEATURES', {}).get('ENABLE_SPECIAL_EXAMS', False)
+SPECIAL_EXAMS_ENABLED = getattr(settings, 'ENABLE_SPECIAL_EXAMS', False)
 
 COURSE_VISIBILITY_PRIVATE = 'private'
 COURSE_VISIBILITY_PUBLIC_OUTLINE = 'public_outline'
@@ -236,7 +236,7 @@ class ProctoringProvider(String):
         and include any inherited values from the platform default.
         """
         value = super().from_json(value)
-        if settings.FEATURES.get('ENABLE_PROCTORED_EXAMS'):
+        if getattr(settings, 'ENABLE_PROCTORED_EXAMS', False):
             # Only validate the provider value if ProctoredExams are enabled on the environment
             # Otherwise, the passed in provider does not matter. We should always return default
             if validate_providers:

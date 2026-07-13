@@ -8,6 +8,47 @@ from django.core.cache import cache
 from xmodule.modulestore.django import modulestore
 
 from .manager import BlockStructureManager
+from .models import BlockStructureModel
+
+BLOCK_STRUCTURE_VERSION_KEY = 'block_structure_version:{}'
+
+
+def get_block_structure_version(course_key):
+    """
+    Returns the current block structure version for the given course.
+    This version corresponds to the data_version stored in BlockStructureModel
+    and changes each time the block structure cache is rebuilt.
+
+    Reads from cache first; on a miss, falls back to the database
+    without populating the cache. The cache is populated exclusively by
+    _update_block_structure_version after a successful rebuild, which
+    prevents readers from accidentally caching a stale version during
+    a concurrent rebuild.
+    """
+    cache_key = BLOCK_STRUCTURE_VERSION_KEY.format(course_key)
+    version = cache.get(cache_key)
+    if version is None:
+        try:
+            course_usage_key = modulestore().make_course_usage_key(course_key)
+            block_structure_model = BlockStructureModel.objects.get(data_usage_key=course_usage_key)
+            version = str(block_structure_model.data_version or '')
+        except BlockStructureModel.DoesNotExist:
+            version = ''
+    return version
+
+
+def _update_block_structure_version(course_key):
+    """
+    Reads the current data_version from BlockStructureModel and updates
+    the cached block structure version key.
+    """
+    try:
+        course_usage_key = modulestore().make_course_usage_key(course_key)
+        block_structure_model = BlockStructureModel.objects.get(data_usage_key=course_usage_key)
+        version = str(block_structure_model.data_version or '')
+    except BlockStructureModel.DoesNotExist:
+        version = ''
+    cache.set(BLOCK_STRUCTURE_VERSION_KEY.format(course_key), version, timeout=None)
 
 
 def get_course_in_cache(course_key):
@@ -29,7 +70,8 @@ def update_course_in_cache(course_key):
     block_structure.updated_collected function that updates the block
     structure in the cache for the given course_key.
     """
-    return get_block_structure_manager(course_key).update_collected_if_needed()
+    get_block_structure_manager(course_key).update_collected_if_needed()
+    _update_block_structure_version(course_key)
 
 
 def clear_course_from_cache(course_key):

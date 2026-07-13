@@ -1333,50 +1333,50 @@ class ContentStoreTest(ContentStoreTestCase):
         self.course_data['org'] = 'University of California, Berkeley'
         self.assert_course_creation_failed(r"(?s)Unable to create course 'Robot Super Course'.*")
 
+    @override_settings(DISABLE_COURSE_CREATION=True)
     def test_create_course_with_course_creation_disabled_staff(self):
         """Test new course creation -- course creation disabled, but staff access."""
-        with mock.patch.dict('django.conf.settings.FEATURES', {'DISABLE_COURSE_CREATION': True}):
-            self.assert_created_course()
+        self.assert_created_course()
 
+    @override_settings(DISABLE_COURSE_CREATION=True)
     def test_create_course_with_course_creation_disabled_not_staff(self):
         """Test new course creation -- error path for course creation disabled, not staff access."""
-        with mock.patch.dict('django.conf.settings.FEATURES', {'DISABLE_COURSE_CREATION': True}):
-            self.user.is_staff = False
-            self.user.save()
-            self.assert_course_permission_denied()
+        self.user.is_staff = False
+        self.user.save()
+        self.assert_course_permission_denied()
 
+    @override_settings(ENABLE_CREATOR_GROUP=True)
     def test_create_course_no_course_creators_staff(self):
         """Test new course creation -- course creation group enabled, staff, group is empty."""
-        with mock.patch.dict('django.conf.settings.FEATURES', {'ENABLE_CREATOR_GROUP': True}):
-            self.assert_created_course()
+        self.assert_created_course()
 
+    @override_settings(ENABLE_CREATOR_GROUP=True)
     def test_create_course_no_course_creators_not_staff(self):
         """Test new course creation -- error path for course creator group enabled, not staff, group is empty."""
-        with mock.patch.dict('django.conf.settings.FEATURES', {"ENABLE_CREATOR_GROUP": True}):
-            self.user.is_staff = False
-            self.user.save()
-            self.assert_course_permission_denied()
+        self.user.is_staff = False
+        self.user.save()
+        self.assert_course_permission_denied()
 
+    @override_settings(ENABLE_CREATOR_GROUP=True)
     def test_create_course_with_course_creator(self):
         """Test new course creation -- use course creator group"""
-        with mock.patch.dict('django.conf.settings.FEATURES', {"ENABLE_CREATOR_GROUP": True}):
-            auth.add_users(self.user, CourseCreatorRole(), self.user)
-            self.assert_created_course()
+        auth.add_users(self.user, CourseCreatorRole(), self.user)
+        self.assert_created_course()
 
+    @override_settings(ALLOW_UNICODE_COURSE_ID=False)
     def test_create_course_with_unicode_in_id_disabled(self):
         """
         Test new course creation with feature setting: ALLOW_UNICODE_COURSE_ID disabled.
         """
-        with mock.patch.dict('django.conf.settings.FEATURES', {'ALLOW_UNICODE_COURSE_ID': False}):
-            error_message = "Special characters not allowed in organization, course number, and course run."
-            self.course_data['org'] = '��������������'
-            self.assert_create_course_failed(error_message)
+        error_message = "Special characters not allowed in organization, course number, and course run."
+        self.course_data['org'] = '��������������'
+        self.assert_create_course_failed(error_message)
 
-            self.course_data['number'] = '��chantillon'
-            self.assert_create_course_failed(error_message)
+        self.course_data['number'] = '��chantillon'
+        self.assert_create_course_failed(error_message)
 
-            self.course_data['run'] = '����������'
-            self.assert_create_course_failed(error_message)
+        self.course_data['run'] = '����������'
+        self.assert_create_course_failed(error_message)
 
     def assert_course_permission_denied(self):
         """
@@ -2014,13 +2014,13 @@ class RerunCourseTest(ContentStoreTestCase):
         # Verify that the existing course continues to be in the course listing
         self.assertInCourseListing(existent_course_key)
 
+    @override_settings(ENABLE_CREATOR_GROUP=True)
     def test_rerun_with_permission_denied(self):
-        with mock.patch.dict('django.conf.settings.FEATURES', {"ENABLE_CREATOR_GROUP": True}):
-            source_course = CourseFactory.create(default_store=ModuleStoreEnum.Type.split)
-            auth.add_users(self.user, CourseCreatorRole(), self.user)
-            self.user.is_staff = False
-            self.user.save()
-            self.post_rerun_request(source_course.id, response_code=403, expect_error=True)
+        source_course = CourseFactory.create(default_store=ModuleStoreEnum.Type.split)
+        auth.add_users(self.user, CourseCreatorRole(), self.user)
+        self.user.is_staff = False
+        self.user.save()
+        self.post_rerun_request(source_course.id, response_code=403, expect_error=True)
 
     def test_rerun_error(self):
         error_message = "Mock Error Message"
