@@ -70,7 +70,7 @@ def plugin_settings(settings):
     # .. toggle_tickets: https://github.com/openedx/edx-platform/pull/5670
     settings.ALLOW_AUTOMATED_SIGNUPS = False
 
-    # .. toggle_name: FEATURES['ENABLE_AUTOMATED_SIGNUPS_EXTRA_FIELDS']
+    # .. toggle_name: ENABLE_AUTOMATED_SIGNUPS_EXTRA_FIELDS
     # .. toggle_implementation: DjangoSetting
     # .. toggle_default: False
     # .. toggle_description: When True, the CSV file that contains a list of
