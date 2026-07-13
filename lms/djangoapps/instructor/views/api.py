@@ -284,7 +284,7 @@ class RegisterAndEnrollStudents(APIView):
         """
         if not configuration_helpers.get_value(
             'ALLOW_AUTOMATED_SIGNUPS',
-            settings.FEATURES.get('ALLOW_AUTOMATED_SIGNUPS', False),
+            settings.ALLOW_AUTOMATED_SIGNUPS,
         ):
             return HttpResponseForbidden()
 

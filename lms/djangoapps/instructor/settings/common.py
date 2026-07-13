@@ -59,7 +59,7 @@ def plugin_settings(settings):
     # .. toggle_tickets: https://github.com/openedx/edx-platform/pull/1750
     settings.ALLOW_COURSE_STAFF_GRADE_DOWNLOADS = False
 
-    # .. toggle_name: FEATURES['ALLOW_AUTOMATED_SIGNUPS']
+    # .. toggle_name: ALLOW_AUTOMATED_SIGNUPS
     # .. toggle_implementation: DjangoSetting
     # .. toggle_default: False
     # .. toggle_description: Enable to show a section in the membership tab of the instructor
