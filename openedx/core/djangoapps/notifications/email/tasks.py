@@ -650,6 +650,12 @@ def schedule_digest_buffer(
     """
     Schedule a buffer job for digest email.
     Called for the SECOND notification only.
+
+    The digest is scheduled ``buffer_minutes`` after the user's most recent
+    immediate email (``last_sent.email_sent_on``), not ``buffer_minutes`` after
+    this second notification. This keeps the delay between the immediate email
+    and its follow-up digest fixed at ``buffer_minutes``, no matter how long the
+    second notification takes to arrive.
     """
     buffer_minutes = get_buffer_minutes()
 
@@ -665,7 +671,15 @@ def schedule_digest_buffer(
         return
 
     start_date = last_sent.email_sent_on
-    scheduled_time = datetime.now() + timedelta(minutes=buffer_minutes)
+    # Anchor the digest to the immediate email that opened this buffer window, so the
+    # total wait before the digest is a consistent ``buffer_minutes`` regardless of how
+    # long after the immediate email the second notification arrives. If that window has
+    # already elapsed (the second notification came in more than ``buffer_minutes`` later),
+    # fall back to "now" so the digest fires promptly instead of being scheduled in the past.
+    scheduled_time = max(
+        start_date + timedelta(minutes=buffer_minutes),
+        django_timezone.now(),
+    )
 
     # Mark this notification as scheduled FIRST
     notification.email_scheduled = True

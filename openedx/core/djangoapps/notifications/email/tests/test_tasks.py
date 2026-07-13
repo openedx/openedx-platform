@@ -570,9 +570,10 @@ class TestScheduleDigestBuffer(ModuleStoreTestCase):
     @freeze_time("2025-12-15 10:00:00", tz_offset=0)
     @patch('openedx.core.djangoapps.notifications.email.tasks.send_buffered_digest.apply_async')
     @override_settings(NOTIFICATION_IMMEDIATE_EMAIL_BUFFER_MINUTES=15)
-    def test_buffer_scheduled_with_correct_delay(self, mock_apply_async):
-        """Test that buffer task is scheduled with correct countdown."""
-        # Create notification that was sent 5 minutes ago
+    def test_buffer_scheduled_relative_to_last_email(self, mock_apply_async):
+        """Digest is scheduled buffer_minutes after the last immediate email, not after 'now'."""
+        # Immediate email was sent 5 minutes ago
+        last_sent = timezone.now() - timedelta(minutes=5)
         Notification.objects.create(
             user=self.user,
             course_id=self.course_key,
@@ -580,7 +581,7 @@ class TestScheduleDigestBuffer(ModuleStoreTestCase):
             notification_type='new_discussion_post',
             content_url='http://example.com',
             email=True,
-            email_sent_on=timezone.now() - timedelta(minutes=5)
+            email_sent_on=last_sent
         )
 
         new_notification = Notification.objects.create(
@@ -606,16 +607,59 @@ class TestScheduleDigestBuffer(ModuleStoreTestCase):
         new_notification.refresh_from_db()
         assert new_notification.email_scheduled is True
 
-        # Verify scheduled time (should be 15 minutes from now)
+        # ETA should be 15 minutes after the last email (i.e. now + 10), NOT now + 15.
         call_kwargs = mock_apply_async.call_args[1]
         eta = call_kwargs['eta']
-        expected_eta = timezone.now() + timedelta(minutes=15)
+        expected_eta = last_sent + timedelta(minutes=15)
         if timezone.is_naive(eta) and timezone.is_aware(expected_eta):
             expected_eta = timezone.make_naive(expected_eta)
         elif timezone.is_aware(eta) and timezone.is_naive(expected_eta):
             expected_eta = timezone.make_aware(expected_eta)
-        # --- FIX END ---
         # Allow 1 second tolerance
+        assert abs((eta - expected_eta).total_seconds()) < 1
+
+    @freeze_time("2025-12-15 10:00:00", tz_offset=0)
+    @patch('openedx.core.djangoapps.notifications.email.tasks.send_buffered_digest.apply_async')
+    @override_settings(NOTIFICATION_IMMEDIATE_EMAIL_BUFFER_MINUTES=15)
+    def test_buffer_fires_now_when_window_already_elapsed(self, mock_apply_async):
+        """If the second notification arrives after the buffer window has passed, fire promptly."""
+        # Immediate email was sent 20 minutes ago — already past the 15 minute window
+        Notification.objects.create(
+            user=self.user,
+            course_id=self.course_key,
+            app_name='discussion',
+            notification_type='new_discussion_post',
+            content_url='http://example.com',
+            email=True,
+            email_sent_on=timezone.now() - timedelta(minutes=20)
+        )
+
+        new_notification = Notification.objects.create(
+            user=self.user,
+            course_id=self.course_key,
+            app_name='discussion',
+            notification_type='new_discussion_post',
+            content_url='http://example.com',
+            email=True,
+        )
+
+        schedule_digest_buffer(
+            user=self.user,
+            notification=new_notification,
+            course_key=self.course_key,
+            user_language='en'
+        )
+
+        assert mock_apply_async.called
+
+        # ETA is clamped to "now" instead of being scheduled 5 minutes in the past.
+        call_kwargs = mock_apply_async.call_args[1]
+        eta = call_kwargs['eta']
+        expected_eta = timezone.now()
+        if timezone.is_naive(eta) and timezone.is_aware(expected_eta):
+            expected_eta = timezone.make_naive(expected_eta)
+        elif timezone.is_aware(eta) and timezone.is_naive(expected_eta):
+            expected_eta = timezone.make_aware(expected_eta)
         assert abs((eta - expected_eta).total_seconds()) < 1
 
     @patch('openedx.core.djangoapps.notifications.email.tasks.send_buffered_digest.apply_async')
