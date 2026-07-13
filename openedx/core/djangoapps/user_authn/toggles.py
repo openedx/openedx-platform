@@ -22,7 +22,7 @@ def should_redirect_to_authn_microfrontend():
     if request and request.GET.get('skip_authn_mfe'):
         return False
     return configuration_helpers.get_value(
-        'ENABLE_AUTHN_MICROFRONTEND', settings.FEATURES.get('ENABLE_AUTHN_MICROFRONTEND')
+        'ENABLE_AUTHN_MICROFRONTEND', getattr(settings, 'ENABLE_AUTHN_MICROFRONTEND', False)
     )
 
 

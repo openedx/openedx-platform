@@ -3,12 +3,10 @@
 
 
 from datetime import datetime, timedelta
-from unittest.mock import patch
 
 import crum
 import ddt
-from django.conf import settings
-from django.test import RequestFactory
+from django.test import RequestFactory, override_settings
 from edx_toggles.toggles.testutils import override_waffle_flag, override_waffle_switch
 from freezegun import freeze_time
 from pytz import utc
@@ -570,7 +568,7 @@ class CourseDateSummaryTest(SharedModuleStoreTestCase):
         block = VerificationDeadlineDate(course, user)
         assert not block.is_allowed
 
-    @patch.dict(settings.FEATURES, {'ENABLE_INTEGRITY_SIGNATURE': True})
+    @override_settings(ENABLE_INTEGRITY_SIGNATURE=True)
     def test_verification_deadline_with_integrity_signature(self):
         course = create_course_run(days_till_start=-1)
         user = create_user()

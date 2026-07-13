@@ -11,6 +11,7 @@ import ddt
 import pytest
 from django.contrib.auth.models import User
 from django.core.management import call_command
+from django.test import override_settings
 from django.test.client import RequestFactory
 from django.urls import reverse
 from eventtracking.processors.exceptions import EventEmissionExit
@@ -369,6 +370,7 @@ class ViewsTestCaseMixin:
 @ddt.ddt
 @disable_signal(views, "comment_flagged")
 @disable_signal(views, "thread_flagged")
+@override_settings(ENABLE_DISCUSSION_SERVICE=True)
 class ViewsTestCase(
     MockForumApiMixin,
     UrlResetMixin,
@@ -404,11 +406,10 @@ class ViewsTestCase(
         # seed the forums permissions and roles
         call_command("seed_permissions_roles", str(cls.course_id))
 
-    @patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
     def setUp(self):
-        # Patching the ENABLE_DISCUSSION_SERVICE value affects the contents of urls.py,
-        # so we need to call super.setUp() which reloads urls.py (because
-        # of the UrlResetMixin)
+        # The class-level @override_settings(ENABLE_DISCUSSION_SERVICE=True) above
+        # affects the contents of urls.py, so we need to call super.setUp() which
+        # reloads urls.py (because of the UrlResetMixin).
         super().setUp()
         # Patch the comment client user save method so it does not try
         # to create a new cc user when creating a django user
@@ -995,6 +996,7 @@ class ViewsTestCase(
 
 
 @disable_signal(views, "comment_endorsed")
+@override_settings(ENABLE_DISCUSSION_SERVICE=True)
 class ViewPermissionsTestCase(
     UrlResetMixin,
     SharedModuleStoreTestCase,
@@ -1034,7 +1036,6 @@ class ViewPermissionsTestCase(
             Role.objects.get(name="Moderator", course_id=cls.course.id)
         )
 
-    @patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
     def setUp(self):
         """Set up the test case."""
         super().setUp()
@@ -1210,6 +1211,7 @@ class CommentActionTestCase(CohortedTestCase, MockForumApiMixin):
 @disable_signal(views, "comment_deleted")
 @disable_signal(views, "comment_flagged")
 @disable_signal(views, "thread_flagged")
+@override_settings(ENABLE_DISCUSSION_SERVICE=True)
 class TeamsPermissionsTestCase(
     UrlResetMixin, SharedModuleStoreTestCase, MockForumApiMixin
 ):
@@ -1328,9 +1330,6 @@ class TeamsPermissionsTestCase(
             users=[cls.group_moderator, cls.cohorted],
         )
 
-    @mock.patch.dict(
-        "django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True}
-    )
     def setUp(self):
         super().setUp()
 
@@ -2444,6 +2443,7 @@ def _create_and_transform_event(**kwargs):
 
 
 @ddt.ddt
+@override_settings(ENABLE_DISCUSSION_SERVICE=True)
 class ForumThreadViewedEventTransformerTestCase(UrlResetMixin, ModuleStoreTestCase):
     """
     Test that the ForumThreadViewedEventTransformer transforms events correctly
@@ -2466,7 +2466,6 @@ class ForumThreadViewedEventTransformerTestCase(UrlResetMixin, ModuleStoreTestCa
     DUMMY_CATEGORY_ID = 'i4x-edx-dummy-commentable-id'
     DUMMY_THREAD_ID = 'dummy_thread_id'
 
-    @mock.patch.dict("common.djangoapps.student.models.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
     def setUp(self):
         super().setUp()
         self.course = CourseFactory.create(

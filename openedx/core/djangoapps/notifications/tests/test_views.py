@@ -11,6 +11,7 @@ from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.test.utils import override_settings
 from django.urls import reverse
+from edx_toggles.toggles.testutils import override_waffle_flag
 from rest_framework import status
 from rest_framework.test import APIClient, APITestCase
 
@@ -31,6 +32,7 @@ from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory
 
 from ..base_notification import COURSE_NOTIFICATION_APPS, COURSE_NOTIFICATION_TYPES, get_default_values_of_preferences
+from ..config.waffle import DISABLE_EMAIL_NOTIFICATIONS
 from ..utils import exclude_inaccessible_preferences, get_notification_types_with_visibility_settings
 
 User = get_user_model()
@@ -742,6 +744,7 @@ class TestNotificationPreferencesViewV3(ModuleStoreTestCase):
         data = {
             "status": "success",
             "show_preferences": True,
+            "show_email_preferences": True,
             "message": "Notification preferences retrieved successfully.",
             "data": {
                 "discussion": {
@@ -887,6 +890,24 @@ class TestNotificationPreferencesViewV3(ModuleStoreTestCase):
             user__id=self.user.id
         )
         self.assertEqual(preference.web, True)  # noqa: PT009
+
+    def test_show_email_preferences_flag_disabled(self):
+        """
+        Test: show_email_preferences is True when DISABLE_EMAIL_NOTIFICATIONS flag is off.
+        """
+        with override_waffle_flag(DISABLE_EMAIL_NOTIFICATIONS, active=False):
+            response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertTrue(response.data['show_email_preferences'])  # noqa: PT009
+
+    def test_show_email_preferences_flag_enabled(self):
+        """
+        Test: show_email_preferences is False when DISABLE_EMAIL_NOTIFICATIONS flag is on.
+        """
+        with override_waffle_flag(DISABLE_EMAIL_NOTIFICATIONS, active=True):
+            response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertFalse(response.data['show_email_preferences'])  # noqa: PT009
 
     def test_update_preferences_non_grouped_email(self):
         """

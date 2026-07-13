@@ -7,6 +7,7 @@ from unittest.mock import patch
 
 import ddt
 from django.core.management import CommandError, call_command
+from django.test import override_settings
 from opaque_keys.edx.keys import CourseKey
 from search.search_engine_base import SearchEngine
 
@@ -50,7 +51,7 @@ class ReindexCourseTeamTest(SharedModuleStoreTestCase):
         with self.assertRaisesRegex(CommandError, '.*Course teams cannot be specified when --all is also specified.*'):  # noqa: PT027  # pylint: disable=line-too-long
             call_command('reindex_course_team', self.team1.team_id, all=True)
 
-    @patch.dict('django.conf.settings.FEATURES', {'ENABLE_TEAMS': False})
+    @override_settings(ENABLE_TEAMS=False)
     def test_teams_search_flag_disabled_raises_command_error(self):
         """
         Test that raises CommandError for disabled feature flag.

@@ -8,6 +8,7 @@ from unittest.mock import Mock, patch
 
 import ddt
 from django.conf import settings
+from django.test import override_settings
 from edx_proctoring.api import get_all_exams_for_course, get_review_policy_by_exam_id
 from pytz import UTC
 
@@ -19,7 +20,7 @@ from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 
 
 @ddt.ddt
-@patch.dict('django.conf.settings.FEATURES', {'ENABLE_SPECIAL_EXAMS': True})
+@override_settings(ENABLE_SPECIAL_EXAMS=True)
 @patch('cms.djangoapps.contentstore.signals.handlers.transaction.on_commit',
        new=Mock(side_effect=lambda func: func()),)  # run right away
 class TestProctoredExams(ModuleStoreTestCase):
@@ -220,7 +221,7 @@ class TestProctoredExams(ModuleStoreTestCase):
         exam = exams[0]
         self.assertEqual(exam['is_active'], False)  # noqa: PT009
 
-    @patch.dict('django.conf.settings.FEATURES', {'ENABLE_SPECIAL_EXAMS': False})
+    @override_settings(ENABLE_SPECIAL_EXAMS=False)
     def test_feature_flag_off(self):
         """
         Make sure the feature flag is honored

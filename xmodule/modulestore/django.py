@@ -355,7 +355,7 @@ def modulestore():
             settings.MODULESTORE['default'].get('OPTIONS', {})
         )
 
-        if settings.FEATURES.get('CUSTOM_COURSES_EDX'):
+        if getattr(settings, 'CUSTOM_COURSES_EDX', False):
             # TODO: This import prevents a circular import issue, but is
             # symptomatic of a lib having a dependency on code in lms.  This
             # should be updated to have a setting that enumerates modulestore

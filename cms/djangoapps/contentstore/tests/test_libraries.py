@@ -574,12 +574,12 @@ class TestLibraryAccess(LibraryTestCase):
 
         # Now check that logged-in users without CourseCreator role cannot create libraries
         self._login_as_non_staff_user(logout_first=False)
-        with patch.dict('django.conf.settings.FEATURES', {'ENABLE_CREATOR_GROUP': True}):
+        with override_settings(ENABLE_CREATOR_GROUP=True):
             self._assert_cannot_create_library(expected_code=403)  # 403 user is not CourseCreator
 
         # Now check that logged-in users with CourseCreator role can create libraries
         add_user_with_status_granted(self.user, self.non_staff_user)
-        with patch.dict('django.conf.settings.FEATURES', {'ENABLE_CREATOR_GROUP': True}):
+        with override_settings(ENABLE_CREATOR_GROUP=True):
             lib_key2 = self._create_library(library="lib2", display_name="Test Library 2")
             library2 = modulestore().get_library(lib_key2)
             self.assertIsNotNone(library2)  # noqa: PT009

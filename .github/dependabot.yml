@@ -1,9 +1,7 @@
 version: 2
 updates:
-    # Adding new check for github-actions
+  # Adding new check for github-actions
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-        interval: "weekly"
-    reviewers:
-      - "openedx/wg-maintenance-edx-platform"
+      interval: "weekly"

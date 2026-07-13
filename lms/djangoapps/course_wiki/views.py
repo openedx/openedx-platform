@@ -14,10 +14,10 @@ from wiki.core.exceptions import NoRootURL
 from wiki.models import Article, URLPath
 
 from lms.djangoapps.course_wiki.utils import course_wiki_slug
+from lms.djangoapps.courseware.decorators import courseware_view_hooks
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.core.djangolib.markup import Text
 from openedx.core.lib.courses import get_course_by_id
-from openedx.features.enterprise_support.api import data_sharing_consent_required
 
 log = logging.getLogger(__name__)
 
@@ -31,7 +31,7 @@ def root_create(request):
     return redirect('wiki:get', path=root.path)
 
 
-@data_sharing_consent_required
+@courseware_view_hooks
 def course_wiki_redirect(request, course_id, wiki_path=""):
     """
     This redirects to whatever page on the wiki that the course designates

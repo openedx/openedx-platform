@@ -4,7 +4,6 @@ Unit tests for Contentstore Proctored Exam Settings.
 from unittest.mock import patch
 
 import ddt
-from django.conf import settings
 from django.test.utils import override_settings
 from django.urls import reverse
 from edx_toggles.toggles.testutils import override_waffle_flag
@@ -272,9 +271,7 @@ class ProctoringExamSettingsPostTests(
     )
     def test_update_exam_settings_invalid_value(self):
         self.client.login(username=self.global_staff.username, password=self.password)
-        PROCTORED_EXAMS_ENABLED_FEATURES = settings.FEATURES
-        PROCTORED_EXAMS_ENABLED_FEATURES["ENABLE_PROCTORED_EXAMS"] = True
-        with override_settings(FEATURES=PROCTORED_EXAMS_ENABLED_FEATURES):
+        with override_settings(ENABLE_PROCTORED_EXAMS=True):
             data = self.get_request_data(
                 enable_proctored_exams=True,
                 proctoring_provider="notvalidprovider",
@@ -366,42 +363,38 @@ class ProctoringExamSettingsPostTests(
     @override_waffle_flag(EXAMS_IDA, active=True)
     def test_200_for_lti_provider(self):
         self.client.login(username=self.global_staff.username, password=self.password)
-        PROCTORED_EXAMS_ENABLED_FEATURES = settings.FEATURES
-        PROCTORED_EXAMS_ENABLED_FEATURES["ENABLE_PROCTORED_EXAMS"] = True
-        with override_settings(FEATURES=PROCTORED_EXAMS_ENABLED_FEATURES):
+        with override_settings(ENABLE_PROCTORED_EXAMS=True):
             data = self.get_request_data(
                 enable_proctored_exams=True,
                 proctoring_provider="lti_external",
             )
             response = self.make_request(data=data)
 
-        # response is correct
-        assert response.status_code == status.HTTP_200_OK
+            # response is correct
+            assert response.status_code == status.HTTP_200_OK
 
-        self.assertDictEqual(  # noqa: PT009
-            response.data,
-            {
-                "proctored_exam_settings": {
-                    "enable_proctored_exams": True,
-                    "allow_proctoring_opt_out": True,
-                    "proctoring_provider": "lti_external",
-                    "proctoring_escalation_email": None,
-                    "create_zendesk_tickets": True,
-                }
-            },
-        )
+            self.assertDictEqual(  # noqa: PT009
+                response.data,
+                {
+                    "proctored_exam_settings": {
+                        "enable_proctored_exams": True,
+                        "allow_proctoring_opt_out": True,
+                        "proctoring_provider": "lti_external",
+                        "proctoring_escalation_email": None,
+                        "create_zendesk_tickets": True,
+                    }
+                },
+            )
 
-        # course settings have been updated
-        updated = modulestore().get_item(self.course.location)
-        assert updated.enable_proctored_exams is True
-        assert updated.proctoring_provider == "lti_external"
+            # course settings have been updated
+            updated = modulestore().get_item(self.course.location)
+            assert updated.enable_proctored_exams is True
+            assert updated.proctoring_provider == "lti_external"
 
     @override_waffle_flag(EXAMS_IDA, active=False)
     def test_400_for_disabled_lti(self):
         self.client.login(username=self.global_staff.username, password=self.password)
-        PROCTORED_EXAMS_ENABLED_FEATURES = settings.FEATURES
-        PROCTORED_EXAMS_ENABLED_FEATURES["ENABLE_PROCTORED_EXAMS"] = True
-        with override_settings(FEATURES=PROCTORED_EXAMS_ENABLED_FEATURES):
+        with override_settings(ENABLE_PROCTORED_EXAMS=True):
             data = self.get_request_data(
                 enable_proctored_exams=True,
                 proctoring_provider="lti_external",

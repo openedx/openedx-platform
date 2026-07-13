@@ -13,7 +13,6 @@ from unittest import mock
 from unittest.mock import patch
 
 import ddt
-from django.conf import settings
 from django.test.utils import override_settings
 from django.urls import reverse
 from opaque_keys.edx.keys import CourseKey
@@ -171,7 +170,7 @@ class TestViews(TestDiscussionXBlock):
             'is_visible': True,
         }
 
-    @override_settings(FEATURES=dict(settings.FEATURES, ENABLE_DISCUSSION_SERVICE='True'))
+    @override_settings(ENABLE_DISCUSSION_SERVICE=True)
     @ddt.data(
         (False, False, False),
         (True, False, False),
@@ -242,7 +241,7 @@ class TestTemplates(TestDiscussionXBlock):
         fragment = self.block.author_view({})
         assert f'data-discussion-id="{self.discussion_id}"' in fragment.content
 
-    @override_settings(FEATURES=dict(settings.FEATURES, ENABLE_DISCUSSION_SERVICE='True'))
+    @override_settings(ENABLE_DISCUSSION_SERVICE=True)
     @ddt.data(
         (True, False, False),
         (False, True, False),

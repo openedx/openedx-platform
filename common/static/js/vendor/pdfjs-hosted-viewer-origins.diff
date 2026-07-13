@@ -1,0 +1,12 @@
+diff --git a/web/viewer.mjs b/web/viewer.mjs
+--- a/web/viewer.mjs
++++ b/web/viewer.mjs
+@@ -25194,7 +25194,7 @@ const PDFViewerApplication = {
+ initCom(PDFViewerApplication);
+ PDFPrintServiceFactory.initGlobals(PDFViewerApplication);
+ {
+-  const HOSTED_VIEWER_ORIGINS = new Set(["null", "http://mozilla.github.io", "https://mozilla.github.io"]);
++  const HOSTED_VIEWER_ORIGINS = new Set(["null", "http://mozilla.github.io", "https://mozilla.github.io", window.location.origin]);
+   var validateFileURL = function (file) {
+     if (!file) {
+       return;

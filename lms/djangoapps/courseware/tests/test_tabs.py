@@ -615,9 +615,9 @@ class CourseTabListTestCase(TabListTestCase):
         assert not self.has_tab(self.course.tabs, 'external_discussion')
         assert self.has_tab(self.course.tabs, 'discussion')
 
+    @override_settings(ENABLE_DISCUSSION_SERVICE=True)
     @patch.dict("django.conf.settings.FEATURES", {
         "ENABLE_TEXTBOOK": True,
-        "ENABLE_DISCUSSION_SERVICE": True,
         "ENABLE_EDXNOTES": True,
     })
     def test_iterate_displayable(self):
@@ -775,7 +775,7 @@ class DiscussionLinkTestCase(TabTestCase):
                     (discussion_tab.link_func(self.course, reverse)
                      == expected_discussion_link)) == expected_can_display_value
 
-    @patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": False})
+    @override_settings(ENABLE_DISCUSSION_SERVICE=False)
     def test_explicit_discussion_link(self):
         """Test that setting discussion_link overrides everything else"""
         self.check_discussion(
@@ -785,7 +785,7 @@ class DiscussionLinkTestCase(TabTestCase):
             expected_can_display_value=True,
         )
 
-    @patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": False})
+    @override_settings(ENABLE_DISCUSSION_SERVICE=False)
     def test_discussions_disabled(self):
         """Test that other cases return None with discussions disabled"""
         for tab_list in [[], self.tabs_with_discussion, self.tabs_without_discussion]:
@@ -795,7 +795,7 @@ class DiscussionLinkTestCase(TabTestCase):
                 expected_can_display_value=False,
             )
 
-    @patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+    @override_settings(ENABLE_DISCUSSION_SERVICE=True)
     def test_tabs_with_discussion(self):
         """Test a course with a discussion tab configured"""
         self.check_discussion(
@@ -804,7 +804,7 @@ class DiscussionLinkTestCase(TabTestCase):
             expected_can_display_value=True,
         )
 
-    @patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+    @override_settings(ENABLE_DISCUSSION_SERVICE=True)
     def test_tabs_without_discussion(self):
         """Test a course with tabs configured but without a discussion tab"""
         self.check_discussion(
@@ -813,7 +813,7 @@ class DiscussionLinkTestCase(TabTestCase):
             expected_can_display_value=False,
         )
 
-    @patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+    @override_settings(ENABLE_DISCUSSION_SERVICE=True)
     def test_tabs_enrolled_or_staff(self):
         for is_enrolled, is_staff in [(True, False), (False, True)]:
             self.check_discussion(
@@ -824,7 +824,7 @@ class DiscussionLinkTestCase(TabTestCase):
                 is_staff=is_staff
             )
 
-    @patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+    @override_settings(ENABLE_DISCUSSION_SERVICE=True)
     def test_tabs_not_enrolled_or_staff(self):
         is_enrolled = is_staff = False
         self.check_discussion(
@@ -842,7 +842,7 @@ class DiscussionLinkTestCase(TabTestCase):
         else:
             expected_link = reverse("forum_form_discussion", args=[str(self.course.id)])
 
-        with self.settings(FEATURES={'ENABLE_DISCUSSION_SERVICE': True}):
+        with override_settings(ENABLE_DISCUSSION_SERVICE=True):
             with override_waffle_flag(ENABLE_DISCUSSIONS_MFE, toggle_enabled):
                 self.check_discussion(
                     tab_list=self.tabs_with_discussion,

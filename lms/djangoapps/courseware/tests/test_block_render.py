@@ -1141,7 +1141,7 @@ class TestTOC(ModuleStoreTestCase):
 
 
 @ddt.ddt
-@patch.dict('django.conf.settings.FEATURES', {'ENABLE_SPECIAL_EXAMS': True})
+@override_settings(ENABLE_SPECIAL_EXAMS=True)
 class TestProctoringRendering(ModuleStoreTestCase):
     """Check the Table of Contents for a course"""
     def setUp(self):

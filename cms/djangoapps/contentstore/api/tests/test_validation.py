@@ -7,7 +7,6 @@ from uuid import uuid4
 
 import ddt
 import factory
-from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.test.utils import override_settings
 from django.urls import reverse
@@ -106,8 +105,7 @@ class CourseValidationViewTest(SharedModuleStoreTestCase, APITestCase):
     )
     @ddt.unpack
     def test_staff_succeeds(self, certs_html_view, with_modes):
-        features = dict(settings.FEATURES, CERTIFICATES_HTML_VIEW=certs_html_view)
-        with override_settings(FEATURES=features):
+        with override_settings(CERTIFICATES_HTML_VIEW=certs_html_view):
             if with_modes:
                 CourseModeFactory.create_batch(
                     2,

@@ -66,9 +66,9 @@ def safe_get_host(request):
         return configuration_helpers.get_value('site_domain', settings.SITE_NAME)
 
 
-def course_id_from_url(url):
+def course_id_from_url(url: str | None) -> CourseKey | None:
     """
-    Extracts the course_id from the given `url`.
+    Extracts and parses the course_id from the given `url` and returns a CourseKey.
     """
     if not url:
         return None

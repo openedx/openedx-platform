@@ -1,7 +1,7 @@
 """
 This file contains all the classes used by has_access for error handling
 """
-
+from datetime import datetime
 
 from django.utils.translation import gettext as _
 
@@ -124,12 +124,23 @@ class StartDateError(AccessError):
     Access denied because the course has not started yet and the user
     is not staff
     """
-    def __init__(self, start_date, display_error_to_user=True):
+    def __init__(
+        self,
+        start_date: datetime,
+        display_error_to_user=True,
+        error_code_override: str | None = None,
+        developer_message_override: str | None = None,
+        user_message_override: str | None = None,
+    ):
         """
         Arguments:
+            start_date: The future start date of the course, used for messaging.
             display_error_to_user: If True, display this error to users in the UI.
+            error_code_override: Optional override error_code.
+            developer_message_override: Optional override developer_message.
+            user_message_override: Optional override user_message.
         """
-        error_code = "course_not_started"
+        error_code = error_code_override or "course_not_started"
         if start_date == DEFAULT_START_DATE:
             developer_message = "Course has not started"
             user_message = _("Course has not started")
@@ -137,33 +148,11 @@ class StartDateError(AccessError):
             developer_message = f"Course does not start until {start_date}"
             user_message = _("Course does not start until {}"  # pylint: disable=translation-of-non-string
                              .format(f"{start_date:%B %d, %Y}"))
-        super().__init__(
-            error_code,
-            developer_message,
-            user_message if display_error_to_user else None
-        )
 
+        # Use override message if available.
+        developer_message = developer_message_override or developer_message
+        user_message = user_message_override or user_message
 
-class StartDateEnterpriseLearnerError(AccessError):
-    """
-    Access denied because the course has not started yet and the user is not staff.  Use this error when this user is
-    also an enterprise learner and enrolled in the requested course.
-    """
-    def __init__(self, start_date, display_error_to_user=True):
-        """
-        Arguments:
-            display_error_to_user: If True, display this error to users in the UI.
-        """
-        error_code = "course_not_started_enterprise_learner"
-        if start_date == DEFAULT_START_DATE:
-            developer_message = "Course has not started, and the learner is enrolled via an enterprise subsidy."
-            user_message = _("Course has not started")
-        else:
-            developer_message = (
-                f"Course does not start until {start_date}, and the learner is enrolled via an enterprise subsidy."
-            )
-            user_message = _("Course does not start until {}"  # pylint: disable=translation-of-non-string
-                             .format(f"{start_date:%B %d, %Y}"))
         super().__init__(
             error_code,
             developer_message,
@@ -270,31 +259,13 @@ class EnrollmentRequiredAccessError(AccessError):
         super().__init__(error_code, developer_message, user_message)
 
 
-class IncorrectActiveEnterpriseAccessError(AccessError):
+class PriorityAccessFiltersError(AccessError):
     """
-    Access denied because the user must login with correct enterprise.
-    """
-    def __init__(self, enrollment_enterprise_name, active_enterprise_name):
-        error_code = "incorrect_active_enterprise"
-        developer_message = "User active enterprise should be same as EnterpriseCourseEnrollment enterprise."
-        user_message = _("You are enrolled in this course with '{enrollment_enterprise_name}'. However, you are "
-                         "currently logged in as a '{active_enterprise_name}' user. Please log in with "
-                         "'{enrollment_enterprise_name}' to access this course.")
-        user_message = user_message.format(
-            enrollment_enterprise_name=enrollment_enterprise_name, active_enterprise_name=active_enterprise_name
-        )
-        super().__init__(error_code, developer_message, user_message)
+    Access denied by a plugin via the CoursewareAccessChecksRequested filter.
 
-
-class DataSharingConsentRequiredAccessError(AccessError):
+    Priority — non-bypassable by staff. The error_code, developer_message,
+    and user_message are supplied by the pipeline step that denied access.
     """
-    Access denied because the user must give Data sharing consent before access it.
-    """
-    def __init__(self, consent_url):
-        error_code = "data_sharing_access_required"
-        developer_message = consent_url
-        user_message = _("You must give Data Sharing Consent for the course")
-        super().__init__(error_code, developer_message, user_message)
 
 
 class AuthenticationRequiredAccessError(AccessError):

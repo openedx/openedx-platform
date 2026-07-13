@@ -11,7 +11,6 @@ import ddt
 import pytest
 import pytz
 from ccx_keys.locator import CCXLocator
-from crum import set_current_request
 from django.conf import settings
 from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.test import TestCase
@@ -19,7 +18,6 @@ from django.test.client import RequestFactory
 from django.test.utils import override_settings
 from django.urls import reverse
 from edx_toggles.toggles.testutils import override_waffle_flag
-from enterprise.api.v1.serializers import EnterpriseCustomerSerializer
 from milestones.tests.utils import MilestonesTestCaseMixin
 from opaque_keys.edx.locator import CourseLocator
 
@@ -50,12 +48,6 @@ from openedx.core.djangoapps.waffle_utils.testutils import WAFFLE_TABLES
 from openedx.core.djangolib.testing.utils import AUTHZ_TABLES
 from openedx.features.content_type_gating.models import ContentTypeGatingConfig
 from openedx.features.course_experience import ENFORCE_MASQUERADE_START_DATES
-from openedx.features.enterprise_support.api import add_enterprise_customer_to_session
-from openedx.features.enterprise_support.tests.factories import (
-    EnterpriseCourseEnrollmentFactory,
-    EnterpriseCustomerFactory,
-    EnterpriseCustomerUserFactory,
-)
 from xmodule.course_block import (  # pylint: disable=wrong-import-order
     CATALOG_VISIBILITY_ABOUT,
     CATALOG_VISIBILITY_CATALOG_AND_ABOUT,
@@ -913,7 +905,7 @@ class CourseOverviewAccessTestCase(ModuleStoreTestCase):
     )
     @ddt.unpack
     @patch.dict('django.conf.settings.FEATURES', {'DISABLE_START_DATES': False})
-    def test_course_catalog_access_num_queries_no_enterprise(self, user_attr_name, action, course_attr_name):
+    def test_course_catalog_access_num_queries(self, user_attr_name, action, course_attr_name):
         ContentTypeGatingConfig.objects.create(enabled=True, enabled_as_of=datetime.datetime(2018, 1, 1))
 
         course = getattr(self, course_attr_name)
@@ -952,74 +944,6 @@ class CourseOverviewAccessTestCase(ModuleStoreTestCase):
         course_overview = CourseOverview.get_from_id(course.id)
         with self.assertNumQueries(num_queries, table_ignorelist=QUERY_COUNT_TABLE_IGNORELIST):
             bool(access.has_access(user, action, course_overview, course_key=course.id))
-
-    @ddt.data(
-        *itertools.product(
-            ['user_normal', 'user_staff', 'user_anonymous'],
-            ['course_started', 'course_not_started'],
-        )
-    )
-    @ddt.unpack
-    @patch.dict('django.conf.settings.FEATURES', {'DISABLE_START_DATES': False, 'ENABLE_ENTERPRISE_INTEGRATION': True})
-    def test_course_catalog_access_num_queries_enterprise(self, user_attr_name, course_attr_name):
-        """
-        Similar to test_course_catalog_access_num_queries_no_enterprise, except enable enterprise features and make the
-        basic enrollment look like an enterprise-subsidized enrollment, setting up one of each:
-
-        * EnterpriseCustomer
-        * EnterpriseCustomerUser
-        * EnterpriseCourseEnrollment
-        * A mock request session to pre-cache the enterprise customer data.
-        """
-        ContentTypeGatingConfig.objects.create(enabled=True, enabled_as_of=datetime.datetime(2018, 1, 1))
-
-        course = getattr(self, course_attr_name)
-
-        request = RequestFactory().get('/')
-        request.session = {}
-
-        # get a fresh user object that won't have any cached role information
-        if user_attr_name == 'user_anonymous':
-            user = AnonymousUserFactory()
-            request.user = user
-        else:
-            user = getattr(self, user_attr_name)
-            user = User.objects.get(id=user.id)
-            request.user = user
-            course_enrollment = CourseEnrollmentFactory(user=user, course_id=course.id)  # noqa: F841
-            enterprise_customer = EnterpriseCustomerFactory(enable_learner_portal=True)
-            add_enterprise_customer_to_session(request, EnterpriseCustomerSerializer(enterprise_customer).data)
-            enterprise_customer_user = EnterpriseCustomerUserFactory(
-                user_id=user.id,
-                enterprise_customer=enterprise_customer,
-            )
-            EnterpriseCourseEnrollmentFactory(enterprise_customer_user=enterprise_customer_user, course_id=course.id)
-        set_current_request(request)
-
-        if user_attr_name == 'user_staff':
-            if course_attr_name == 'course_started':
-                # read: CourseAccessRole + django_comment_client.Role
-                num_queries = 4
-            else:
-                # read: CourseAccessRole + EnterpriseCourseEnrollment
-                num_queries = 4
-        elif user_attr_name == 'user_normal':
-            if course_attr_name == 'course_started':
-                # read: CourseAccessRole + django_comment_client.Role + FBEEnrollmentExclusion + CourseMode
-                num_queries = 6
-            else:
-                # read: CourseAccessRole + CourseEnrollmentAllowed + EnterpriseCourseEnrollment
-                num_queries = 5
-        elif user_attr_name == 'user_anonymous':
-            if course_attr_name == 'course_started':
-                # read: CourseMode
-                num_queries = 1
-            else:
-                num_queries = 0
-
-        course_overview = CourseOverview.get_from_id(course.id)
-        with self.assertNumQueries(num_queries, table_ignorelist=QUERY_COUNT_TABLE_IGNORELIST):
-            bool(access.has_access(user, 'see_exists', course_overview, course_key=course.id))
 
 
 class AuthzSeeAboutPageAccessTestCase(CourseAuthoringAuthzTestMixin, SharedModuleStoreTestCase):

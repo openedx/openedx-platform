@@ -62,7 +62,7 @@ class SettingsUnitTest(TestCase):
         assert 'social_django.context_processors.backends' in context_processors
         assert 'social_django.context_processors.login_redirect' in context_processors
 
-    @override_settings(FEATURES={'ENABLE_UNICODE_USERNAME': False})
+    @override_settings(ENABLE_UNICODE_USERNAME=False)
     def test_social_auth_clean_usernames_default(self):
         """Verify SOCIAL_AUTH_CLEAN_USERNAMES is True when unicode usernames disabled."""
         # Note: SOCIAL_AUTH_CLEAN_USERNAMES is a Derived setting, computed at settings load time.

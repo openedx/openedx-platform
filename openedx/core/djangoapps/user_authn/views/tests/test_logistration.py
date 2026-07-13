@@ -37,6 +37,7 @@ from xmodule.modulestore.tests.django_utils import (
 
 @skip_unless_lms
 @ddt.ddt
+@override_settings(EMBARGO=True)
 class LoginAndRegistrationTest(ThirdPartyAuthTestMixin, UrlResetMixin, ModuleStoreTestCase):
     """ Tests for Login and Registration. """
     USERNAME = "bob"
@@ -45,7 +46,6 @@ class LoginAndRegistrationTest(ThirdPartyAuthTestMixin, UrlResetMixin, ModuleSto
 
     URLCONF_MODULES = ['openedx.core.djangoapps.embargo']
 
-    @mock.patch.dict(settings.FEATURES, {'EMBARGO': True})
     def setUp(self):  # pylint: disable=arguments-differ
         super().setUp()
 
@@ -64,16 +64,13 @@ class LoginAndRegistrationTest(ThirdPartyAuthTestMixin, UrlResetMixin, ModuleSto
         )
         self.hidden_disabled_provider = self.configure_azure_ad_provider()
 
-    FEATURES_WITH_AUTHN_MFE_ENABLED = settings.FEATURES.copy()
-    FEATURES_WITH_AUTHN_MFE_ENABLED['ENABLE_AUTHN_MICROFRONTEND'] = True
-
     @ddt.data(
         ("signin_user", "/login"),
         ("register_user", "/register"),
         ("password_assistance", "/reset"),
     )
     @ddt.unpack
-    @override_settings(FEATURES=FEATURES_WITH_AUTHN_MFE_ENABLED)
+    @override_settings(ENABLE_AUTHN_MICROFRONTEND=True)
     def test_logistration_mfe_redirects(self, url_name, path):
         """
         Test that if Logistration MFE is enabled, then we redirect to
@@ -96,7 +93,7 @@ class LoginAndRegistrationTest(ThirdPartyAuthTestMixin, UrlResetMixin, ModuleSto
         )
     )
     @ddt.unpack
-    @override_settings(FEATURES=FEATURES_WITH_AUTHN_MFE_ENABLED)
+    @override_settings(ENABLE_AUTHN_MICROFRONTEND=True)
     def test_logistration_redirect_params(self, url_name, path, query_params):
         """
         Test that if request is redirected to logistration MFE,
@@ -189,7 +186,7 @@ class LoginAndRegistrationTest(ThirdPartyAuthTestMixin, UrlResetMixin, ModuleSto
         expected_url = f'/login?{self._finish_auth_url_param(params)}'
         self.assertNotContains(response, expected_url)
 
-    @mock.patch.dict(settings.FEATURES, {"ENABLE_THIRD_PARTY_AUTH": False})
+    @override_settings(ENABLE_THIRD_PARTY_AUTH=False)
     @ddt.data("signin_user", "register_user")
     def test_third_party_auth_disabled(self, url_name):
         response = self.client.get(reverse(url_name))

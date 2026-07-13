@@ -232,8 +232,7 @@ class ActivationEmailTests(EmailTemplateTagMixin, CacheIsolationTestCase):
 
 
 @ddt.ddt
-@patch.dict('django.conf.settings.FEATURES', {'ENABLE_SPECIAL_EXAMS': True})
-@override_settings(ACCOUNT_MICROFRONTEND_URL='http://account-mfe')
+@override_settings(ACCOUNT_MICROFRONTEND_URL='http://account-mfe', ENABLE_SPECIAL_EXAMS=True)
 @skip_unless_lms
 class ProctoringRequirementsEmailTests(EmailTemplateTagMixin, ModuleStoreTestCase):
     """

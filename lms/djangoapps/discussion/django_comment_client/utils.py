@@ -1016,7 +1016,7 @@ def is_discussion_enabled(course_id):
     """
     Return True if discussions are enabled; else False
     """
-    return settings.FEATURES.get('ENABLE_DISCUSSION_SERVICE')
+    return settings.ENABLE_DISCUSSION_SERVICE
 
 
 def is_content_authored_by(content, user):
