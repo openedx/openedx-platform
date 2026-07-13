@@ -476,7 +476,7 @@ def _skip_activation_email(user, running_pipeline, third_party_provider):
 
     return (
         settings.FEATURES.get('SKIP_EMAIL_VALIDATION', None) or
-        settings.FEATURES.get('AUTOMATIC_AUTH_FOR_TESTING') or
+        settings.AUTOMATIC_AUTH_FOR_TESTING or
         (third_party_provider and third_party_provider.skip_email_verification and valid_email)
     )
 

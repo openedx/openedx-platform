@@ -105,7 +105,7 @@ urlpatterns += [
 ]
 
 # enable automatic login
-if settings.FEATURES.get('AUTOMATIC_AUTH_FOR_TESTING'):
+if settings.AUTOMATIC_AUTH_FOR_TESTING:
     urlpatterns += [
         path('auto_auth', auto_auth.auto_auth),
     ]
