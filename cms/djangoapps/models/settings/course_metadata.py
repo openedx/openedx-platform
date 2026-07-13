@@ -103,7 +103,7 @@ class CourseMetadata:
             exclude_list.append('giturl')
 
         # Do not show edxnotes if the feature is disabled.
-        if not settings.FEATURES.get('ENABLE_EDXNOTES'):
+        if not settings.ENABLE_EDXNOTES:
             exclude_list.append('edxnotes')
 
         # Do not show video auto advance if the feature is disabled

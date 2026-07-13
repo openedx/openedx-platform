@@ -39,7 +39,7 @@ class EdxNotesTab(EnrolledTab):
         if not super().is_enabled(course, user=user):
             return False
 
-        if not settings.FEATURES.get("ENABLE_EDXNOTES"):
+        if not settings.ENABLE_EDXNOTES:
             return False
 
         if user and not user.is_authenticated:
@@ -65,7 +65,7 @@ class EdxNotesCourseApp(CourseApp):
         """
         EdX notes availability is currently globally controlled via a feature setting.
         """
-        return settings.FEATURES.get("ENABLE_EDXNOTES", False)
+        return settings.ENABLE_EDXNOTES
 
     @classmethod
     def is_enabled(cls, course_key: CourseKey) -> bool:  # pylint: disable=unused-argument

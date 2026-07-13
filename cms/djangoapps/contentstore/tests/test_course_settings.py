@@ -1072,7 +1072,7 @@ class CourseMetadataEditingTest(CourseTestCase):
         )
         self.assertNotIn('giturl', test_model)  # noqa: PT009
 
-    @patch.dict(settings.FEATURES, {'ENABLE_EDXNOTES': True})
+    @override_settings(ENABLE_EDXNOTES=True)
     def test_edxnotes_present(self):
         """
         If feature flag ENABLE_EDXNOTES is on, show the setting as a non-deprecated Advanced Setting.
@@ -1080,7 +1080,7 @@ class CourseMetadataEditingTest(CourseTestCase):
         test_model = CourseMetadata.fetch(self.fullcourse)
         self.assertIn('edxnotes', test_model)  # noqa: PT009
 
-    @patch.dict(settings.FEATURES, {'ENABLE_EDXNOTES': False})
+    @override_settings(ENABLE_EDXNOTES=False)
     def test_edxnotes_not_present(self):
         """
         If feature flag ENABLE_EDXNOTES is off, don't show the setting at all on the Advanced Settings page.
@@ -1088,7 +1088,7 @@ class CourseMetadataEditingTest(CourseTestCase):
         test_model = CourseMetadata.fetch(self.fullcourse)
         self.assertNotIn('edxnotes', test_model)  # noqa: PT009
 
-    @patch.dict(settings.FEATURES, {'ENABLE_EDXNOTES': False})
+    @override_settings(ENABLE_EDXNOTES=False)
     def test_validate_update_filtered_edxnotes_off(self):
         """
         If feature flag is off, then edxnotes must be filtered.
@@ -1103,7 +1103,7 @@ class CourseMetadataEditingTest(CourseTestCase):
         )
         self.assertNotIn('edxnotes', test_model)  # noqa: PT009
 
-    @patch.dict(settings.FEATURES, {'ENABLE_EDXNOTES': True})
+    @override_settings(ENABLE_EDXNOTES=True)
     def test_validate_update_filtered_edxnotes_on(self):
         """
         If feature flag is on, then edxnotes must not be filtered.
@@ -1118,7 +1118,7 @@ class CourseMetadataEditingTest(CourseTestCase):
         )
         self.assertIn('edxnotes', test_model)  # noqa: PT009
 
-    @patch.dict(settings.FEATURES, {'ENABLE_EDXNOTES': True})
+    @override_settings(ENABLE_EDXNOTES=True)
     def test_update_from_json_filtered_edxnotes_on(self):
         """
         If feature flag is on, then edxnotes must be updated.
@@ -1132,7 +1132,7 @@ class CourseMetadataEditingTest(CourseTestCase):
         )
         self.assertIn('edxnotes', test_model)  # noqa: PT009
 
-    @patch.dict(settings.FEATURES, {'ENABLE_EDXNOTES': False})
+    @override_settings(ENABLE_EDXNOTES=False)
     def test_update_from_json_filtered_edxnotes_off(self):
         """
         If feature flag is off, then edxnotes must not be updated.
@@ -1308,7 +1308,7 @@ class CourseMetadataEditingTest(CourseTestCase):
         self.assertIn('advertised_start', test_model, 'Missing revised advertised_start metadata field')  # noqa: PT009
         self.assertEqual(test_model['advertised_start']['value'], 'start B', "advertised_start not expected value")  # noqa: PT009  # pylint: disable=line-too-long
 
-    @patch.dict(settings.FEATURES, {'ENABLE_EDXNOTES': True})
+    @override_settings(ENABLE_EDXNOTES=True)
     @patch('xmodule.util.xmodule_django.get_current_request')
     def test_post_settings_with_staff_not_enrolled(self, mock_request):
         """
