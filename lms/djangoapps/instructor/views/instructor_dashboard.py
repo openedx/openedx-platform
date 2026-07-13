@@ -488,7 +488,7 @@ def _section_course_info(course, access):
         'list_instructor_tasks_url': reverse('list_instructor_tasks', kwargs={'course_id': str(course_key)}),
     }
 
-    if settings.FEATURES.get('DISPLAY_ANALYTICS_ENROLLMENTS'):
+    if settings.DISPLAY_ANALYTICS_ENROLLMENTS:
         section_data['enrollment_count'] = CourseEnrollment.objects.enrollment_counts(course_key)
 
     if show_analytics_dashboard_message(course_key):

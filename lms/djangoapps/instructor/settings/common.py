@@ -9,7 +9,7 @@ def plugin_settings(settings):
     ### Analytics Dashboard (Insights) settings
     settings.ANALYTICS_DASHBOARD_URL = ""
     settings.ANALYTICS_DASHBOARD_NAME = _('Your Platform Insights')
-    # .. toggle_name: FEATURES['DISPLAY_ANALYTICS_ENROLLMENTS']
+    # .. toggle_name: DISPLAY_ANALYTICS_ENROLLMENTS
     # .. toggle_implementation: DjangoSetting
     # .. toggle_default: True
     # .. toggle_description: Enable display of enrollment counts in instructor dashboard and
