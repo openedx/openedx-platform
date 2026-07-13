@@ -149,7 +149,7 @@ class TestGetBlocksVideoUrls(SharedModuleStoreTestCase):
         self.request = RequestFactory().get("/dummy")
         self.request.user = self.user
 
-    @patch('xmodule.video_block.VideoBlock.student_view_data')
+    @patch('xblocks_contrib.video.VideoBlock.student_view_data')
     def test_video_urls_rewrite(self, video_data_patch):
         """
         Verify the video blocks returned have their URL re-written for

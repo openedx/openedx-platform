@@ -6,6 +6,7 @@ from unittest.mock import Mock, call, patch
 
 from django.conf import settings
 from django.core import mail
+from xblocks_contrib.video import VideoBlock
 
 from common.djangoapps.student.models.course_enrollment import CourseEnrollment
 from common.djangoapps.student.roles import SupportStaffRole
@@ -17,7 +18,6 @@ from lms.djangoapps.support.tasks import reset_student_course
 from lms.djangoapps.support.tests.factories import CourseResetAuditFactory, CourseResetCourseOptInFactory
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from xmodule.modulestore.tests.factories import BlockFactory
-from xmodule.video_block import VideoBlock
 
 
 class ResetStudentCourse(TestSubmittingProblems):

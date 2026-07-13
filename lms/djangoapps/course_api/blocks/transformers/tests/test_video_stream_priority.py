@@ -68,7 +68,7 @@ class TestVideoBlockStreamPriorityTransformer(ModuleStoreTestCase):
 
     @mock.patch('lms.djangoapps.course_blocks.usage_info.CourseUsageInfo')
     @mock.patch('openedx.core.djangoapps.waffle_utils.CourseWaffleFlag.is_enabled')
-    @mock.patch('xmodule.video_block.VideoBlock.student_view_data')
+    @mock.patch('xblocks_contrib.video.VideoBlock.student_view_data')
     def test_write_for_deprecated_youtube_flag_on(self, mock_video_data, deprecate_youtube_flag, usage_info):
         """
         Test that video stream priority is written correctly with
@@ -129,7 +129,7 @@ class TestVideoBlockStreamPriorityTransformer(ModuleStoreTestCase):
 
     @mock.patch('lms.djangoapps.course_blocks.usage_info.CourseUsageInfo')
     @mock.patch('openedx.core.djangoapps.waffle_utils.CourseWaffleFlag.is_enabled')
-    @mock.patch('xmodule.video_block.VideoBlock.student_view_data')
+    @mock.patch('xblocks_contrib.video.VideoBlock.student_view_data')
     def test_write_for_deprecated_youtube_flag_off(self, mock_video_data, deprecate_youtube_flag, usage_info):
         """
         Test that video stream priority is written correctly with
@@ -188,7 +188,7 @@ class TestVideoBlockStreamPriorityTransformer(ModuleStoreTestCase):
             else:
                 assert post_transform_data[video_format] == fetched_stream_priority
 
-    @mock.patch('xmodule.video_block.VideoBlock.student_view_data')
+    @mock.patch('xblocks_contrib.video.VideoBlock.student_view_data')
     def test_no_priority_for_web_only_videos(self, mock_video_data):
         """
         Verify no write attempt is made for the videos
