@@ -134,6 +134,7 @@ class StartView(TestCase):
 
 
 @ddt.ddt
+@override_settings(EMBARGO=True)
 class TestPayAndVerifyView(UrlResetMixin, ModuleStoreTestCase, XssTestMixin, TestVerificationBase):
     """
     Tests for the payment and verification flow views.
@@ -151,7 +152,6 @@ class TestPayAndVerifyView(UrlResetMixin, ModuleStoreTestCase, XssTestMixin, Tes
 
     URLCONF_MODULES = ['openedx.core.djangoapps.embargo']
 
-    @mock.patch.dict(settings.FEATURES, {'EMBARGO': True})
     def setUp(self):
         super().setUp()
         self.user = UserFactory.create(username=self.USERNAME, password=self.PASSWORD)

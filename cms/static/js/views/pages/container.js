@@ -313,9 +313,10 @@ function($, _, Backbone, gettext, BasePage,
 
         renderAddXBlockComponents: function() {
             var self = this;
-            // If the container is the Unit element(aka Vertical), then we don't render the
-            // add buttons because those should get rendered by the authoring MFE
-            if (self.options.canEdit && (!self.options.isIframeEmbed || !self.model.isVertical())) {
+            // When rendered inside the authoring MFE iframe, add buttons are always rendered
+            // natively by the MFE (for every container type, not just verticals), so the
+            // legacy add-button widgets must never be initialised here.
+            if (self.options.canEdit && !self.options.isIframeEmbed) {
                 this.$('.add-xblock-component').each(function(index, element) {
                     var component = new AddXBlockComponent({
                         el: element,

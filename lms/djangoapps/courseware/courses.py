@@ -20,6 +20,7 @@ from django.utils.translation import gettext as _
 from edx_django_utils.monitoring import function_trace, set_custom_attribute
 from fs.errors import ResourceNotFound
 from opaque_keys.edx.keys import UsageKey
+from openedx_filters.learning.filters import CoursewareAccessChecksRequested
 from path import Path as path
 
 from common.djangoapps.edxmako.shortcuts import render_to_string
@@ -34,14 +35,12 @@ from lms.djangoapps.courseware.access_response import (
     EnrollmentRequiredAccessError,
     MilestoneAccessError,
     OldMongoAccessError,
+    PriorityAccessFiltersError,
     StartDateError,
 )
 from lms.djangoapps.courseware.access_utils import (
     check_authentication,
-    check_correct_active_enterprise_customer,
-    check_data_sharing_consent,
     check_enrollment,
-    is_priority_access_error,
 )
 from lms.djangoapps.courseware.block_render import get_block
 from lms.djangoapps.courseware.context_processor import get_user_timezone_or_last_seen_timezone_or_utc
@@ -168,7 +167,7 @@ def check_course_access(
     check_if_enrolled=False,
     check_survey_complete=True,
     check_if_authenticated=False,
-    apply_enterprise_checks=False,
+    apply_priority_access_checks=False,
 ):
     """
     Check that the user has the access to perform the specified action
@@ -176,6 +175,11 @@ def check_course_access(
 
     check_if_enrolled: If true, additionally verifies that the user is enrolled.
     check_survey_complete: If true, additionally verifies that the user has completed the survey.
+    apply_priority_access_checks: If true, run the CoursewareAccessChecksRequested
+        filter pipeline so plugins can deny access with priority (non-bypassable)
+        errors. Used by views that surface the access error directly to the
+        client (e.g. course-home metadata) rather than relying on the redirect
+        machinery in ``check_course_access_with_redirect``.
     """
     def _check_nonstaff_access():
         # Below is a series of checks that must all pass for a user to be granted access
@@ -195,14 +199,13 @@ def check_course_access(
             if not enrollment_access_response:
                 return enrollment_access_response
 
-        if apply_enterprise_checks:
-            correct_active_enterprise_response = check_correct_active_enterprise_customer(user, course.id)
-            if not correct_active_enterprise_response:
-                return correct_active_enterprise_response
-
-            data_sharing_consent_response = check_data_sharing_consent(course.id)
-            if not data_sharing_consent_response:
-                return data_sharing_consent_response
+        if apply_priority_access_checks:
+            try:
+                CoursewareAccessChecksRequested.run_filter(user=user, course_key=course.id)
+            except CoursewareAccessChecksRequested.PreventCoursewareAccess as exc:
+                return PriorityAccessFiltersError(
+                    exc.error_code, exc.developer_message, exc.user_message,
+                )
 
         # Redirect if the user must answer a survey before entering the course.
         if check_survey_complete and action == 'load':
@@ -216,7 +219,7 @@ def check_course_access(
     non_staff_access_response = _check_nonstaff_access()
 
     # User has course access OR access error is a priority error
-    if non_staff_access_response or is_priority_access_error(non_staff_access_response):
+    if non_staff_access_response or isinstance(non_staff_access_response, PriorityAccessFiltersError):
         return non_staff_access_response
 
     # Allow staff full access to the course even if other checks fail

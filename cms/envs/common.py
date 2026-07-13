@@ -938,7 +938,7 @@ ADVANCED_PROBLEM_TYPES = [
     {
         'component': 'staffgradedxblock',
         'boilerplate_name': None
-    }
+    },
 ]
 
 LIBRARY_BLOCK_TYPES = [

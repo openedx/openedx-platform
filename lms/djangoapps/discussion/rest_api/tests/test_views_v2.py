@@ -74,9 +74,6 @@ class DiscussionAPIViewTestMixin(ForumMockUtilsMixin, UrlResetMixin):
 
     client_class = APIClient
 
-    @mock.patch.dict(
-        "django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True}
-    )
     def setUp(self):
         super().setUp()
         self.maxDiff = None  # pylint: disable=invalid-name
@@ -169,7 +166,7 @@ class DiscussionAPIViewTestMixin(ForumMockUtilsMixin, UrlResetMixin):
 @ddt.ddt
 @httpretty.activate
 @disable_signal(api, "thread_edited")
-@mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+@override_settings(ENABLE_DISCUSSION_SERVICE=True)
 class ThreadViewSetPartialUpdateTest(
     DiscussionAPIViewTestMixin, ModuleStoreTestCase, PatchMediaTypeMixin
 ):
@@ -352,7 +349,7 @@ class ThreadViewSetPartialUpdateTest(
 
 @ddt.ddt
 @disable_signal(api, "comment_edited")
-@mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+@override_settings(ENABLE_DISCUSSION_SERVICE=True)
 class CommentViewSetPartialUpdateTest(
     DiscussionAPIViewTestMixin, ModuleStoreTestCase, PatchMediaTypeMixin
 ):
@@ -486,7 +483,7 @@ class CommentViewSetPartialUpdateTest(
 
 @ddt.ddt
 @httpretty.activate
-@mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+@override_settings(ENABLE_DISCUSSION_SERVICE=True)
 class ThreadViewSetListTest(
     DiscussionAPIViewTestMixin, ModuleStoreTestCase, ProfileImageTestMixin
 ):
@@ -883,7 +880,7 @@ class BulkDeleteUserPostsTest(DiscussionAPIViewTestMixin, ModuleStoreTestCase):
     Tests for the BulkDeleteUserPostsViewSet
     """
 
-    @mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+    @override_settings(ENABLE_DISCUSSION_SERVICE=True)
     def setUp(self) -> None:
         super().setUp()
         self.course = CourseFactory.create()
@@ -928,7 +925,7 @@ class BulkDeleteUserPostsTest(DiscussionAPIViewTestMixin, ModuleStoreTestCase):
         super().tearDownClass()
         super().disposeForumMocks()
 
-    @mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+    @override_settings(ENABLE_DISCUSSION_SERVICE=True)
     def test_regular_user(self):
         """
         Tests that for a regular user stats are returned without flag counts
@@ -938,7 +935,7 @@ class BulkDeleteUserPostsTest(DiscussionAPIViewTestMixin, ModuleStoreTestCase):
         data = response.json()
         assert data["results"] == self.stats_without_flags
 
-    @mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+    @override_settings(ENABLE_DISCUSSION_SERVICE=True)
     def test_moderator_user(self):
         """
         Tests that for a moderator user stats are returned with flag counts
@@ -958,7 +955,7 @@ class BulkDeleteUserPostsTest(DiscussionAPIViewTestMixin, ModuleStoreTestCase):
         ("user", "recency", "recency"),
     )
     @ddt.unpack
-    @mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+    @override_settings(ENABLE_DISCUSSION_SERVICE=True)
     def test_sorting(self, username, ordering_requested, ordering_performed):
         """
         Test valid sorting options and defaults
@@ -973,7 +970,7 @@ class BulkDeleteUserPostsTest(DiscussionAPIViewTestMixin, ModuleStoreTestCase):
         assert params["sort_key"] == ordering_performed
 
     @ddt.data("flagged", "xyz")
-    @mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+    @override_settings(ENABLE_DISCUSSION_SERVICE=True)
     def test_sorting_error_regular_user(self, order_by):
         """
         Test for invalid sorting options for regular users.
@@ -987,7 +984,7 @@ class BulkDeleteUserPostsTest(DiscussionAPIViewTestMixin, ModuleStoreTestCase):
         ('moderator', 'moderator'),
     )
     @ddt.unpack
-    @mock.patch.dict("django.conf.settings.FEATURES", {'ENABLE_DISCUSSION_SERVICE': True})
+    @override_settings(ENABLE_DISCUSSION_SERVICE=True)
     def test_with_username_param(self, username_search_string, comma_separated_usernames):
         """
         Test for endpoint with username param.
@@ -999,7 +996,7 @@ class BulkDeleteUserPostsTest(DiscussionAPIViewTestMixin, ModuleStoreTestCase):
         params = self.get_mock_func_calls("get_user_course_stats")[-1][1]
         assert params["usernames"] == comma_separated_usernames
 
-    @mock.patch.dict("django.conf.settings.FEATURES", {'ENABLE_DISCUSSION_SERVICE': True})
+    @override_settings(ENABLE_DISCUSSION_SERVICE=True)
     def test_with_username_param_with_no_matches(self):
         """
         Test for endpoint with username param with no matches.
@@ -1017,7 +1014,7 @@ class BulkDeleteUserPostsTest(DiscussionAPIViewTestMixin, ModuleStoreTestCase):
         'User-2',
         'UsEr-3'
     )
-    @mock.patch.dict("django.conf.settings.FEATURES", {'ENABLE_DISCUSSION_SERVICE': True})
+    @override_settings(ENABLE_DISCUSSION_SERVICE=True)
     def test_with_username_param_case(self, username_search_string):
         """
         Test user search function is case-insensitive.
@@ -1037,7 +1034,7 @@ class BulkDeleteUserPostsTest(DiscussionAPIViewTestMixin, ModuleStoreTestCase):
         self.client.login(username=self.user.username, password=self.TEST_PASSWORD)
 
 
-@mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+@override_settings(ENABLE_DISCUSSION_SERVICE=True)
 @override_settings(DISCUSSION_MODERATION_EDIT_REASON_CODES={"test-edit-reason": "Test Edit Reason"})
 @override_settings(DISCUSSION_MODERATION_CLOSE_REASON_CODES={"test-close-reason": "Test Close Reason"})
 class CourseViewTest(DiscussionAPIViewTestMixin, ModuleStoreTestCase):
@@ -1098,7 +1095,7 @@ class CourseViewTest(DiscussionAPIViewTestMixin, ModuleStoreTestCase):
 @ddt.ddt
 @httpretty.activate
 @mock.patch('django.conf.settings.USERNAME_REPLACEMENT_WORKER', 'test_replace_username_service_worker')
-@mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+@override_settings(ENABLE_DISCUSSION_SERVICE=True)
 class ReplaceUsernamesViewTest(DiscussionAPIViewTestMixin, ModuleStoreTestCase):
     """Tests for ReplaceUsernamesView"""
 
@@ -1192,7 +1189,7 @@ class ReplaceUsernamesViewTest(DiscussionAPIViewTestMixin, ModuleStoreTestCase):
 
 
 @ddt.ddt
-@mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+@override_settings(ENABLE_DISCUSSION_SERVICE=True)
 class CourseTopicsViewTest(DiscussionAPIViewTestMixin, CommentsServiceMockMixin, ModuleStoreTestCase):
     """
     Tests for CourseTopicsView
@@ -1402,7 +1399,7 @@ class CourseTopicsViewTest(DiscussionAPIViewTestMixin, CommentsServiceMockMixin,
 
 @ddt.ddt
 @mock.patch('lms.djangoapps.discussion.rest_api.api._get_course', mock.Mock())
-@mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+@override_settings(ENABLE_DISCUSSION_SERVICE=True)
 @override_waffle_flag(ENABLE_NEW_STRUCTURE_DISCUSSIONS, True)
 class CourseTopicsViewV3Test(DiscussionAPIViewTestMixin, ModuleStoreTestCase):
     """
@@ -1494,7 +1491,7 @@ class CourseTopicsViewV3Test(DiscussionAPIViewTestMixin, ModuleStoreTestCase):
 
 @ddt.ddt
 @httpretty.activate
-@mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+@override_settings(ENABLE_DISCUSSION_SERVICE=True)
 class LearnerThreadViewAPITest(DiscussionAPIViewTestMixin, ModuleStoreTestCase):
     """Tests for LearnerThreadView list"""
 
@@ -1806,13 +1803,13 @@ class LearnerThreadViewAPITest(DiscussionAPIViewTestMixin, ModuleStoreTestCase):
 @ddt.ddt
 @httpretty.activate
 @override_waffle_flag(ENABLE_DISCUSSIONS_MFE, True)
+@override_settings(ENABLE_DISCUSSION_SERVICE=True)
 class CourseActivityStatsTest(UrlResetMixin, ForumMockUtilsMixin, APITestCase,
                               SharedModuleStoreTestCase):
     """
     Tests for the course stats endpoint
     """
 
-    @mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
     def setUp(self) -> None:
         super().setUp()
         self.course = CourseFactory.create()
@@ -1857,7 +1854,7 @@ class CourseActivityStatsTest(UrlResetMixin, ForumMockUtilsMixin, APITestCase,
         super().tearDownClass()
         super().disposeForumMocks()
 
-    @mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+    @override_settings(ENABLE_DISCUSSION_SERVICE=True)
     def test_regular_user(self):
         """
         Tests that for a regular user stats are returned without flag counts
@@ -1867,7 +1864,7 @@ class CourseActivityStatsTest(UrlResetMixin, ForumMockUtilsMixin, APITestCase,
         data = response.json()
         assert data["results"] == self.stats_without_flags
 
-    @mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+    @override_settings(ENABLE_DISCUSSION_SERVICE=True)
     def test_moderator_user(self):
         """
         Tests that for a moderator user stats are returned with flag counts
@@ -1887,7 +1884,7 @@ class CourseActivityStatsTest(UrlResetMixin, ForumMockUtilsMixin, APITestCase,
         ("user", "recency", "recency"),
     )
     @ddt.unpack
-    @mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+    @override_settings(ENABLE_DISCUSSION_SERVICE=True)
     def test_sorting(self, username, ordering_requested, ordering_performed):
         """
         Test valid sorting options and defaults
@@ -1902,7 +1899,7 @@ class CourseActivityStatsTest(UrlResetMixin, ForumMockUtilsMixin, APITestCase,
         assert params["sort_key"] == ordering_performed
 
     @ddt.data("flagged", "xyz")
-    @mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+    @override_settings(ENABLE_DISCUSSION_SERVICE=True)
     def test_sorting_error_regular_user(self, order_by):
         """
         Test for invalid sorting options for regular users.
@@ -1916,7 +1913,7 @@ class CourseActivityStatsTest(UrlResetMixin, ForumMockUtilsMixin, APITestCase,
         ('moderator', 'moderator'),
     )
     @ddt.unpack
-    @mock.patch.dict("django.conf.settings.FEATURES", {'ENABLE_DISCUSSION_SERVICE': True})
+    @override_settings(ENABLE_DISCUSSION_SERVICE=True)
     def test_with_username_param(self, username_search_string, comma_separated_usernames):
         """
         Test for endpoint with username param.
@@ -1928,7 +1925,7 @@ class CourseActivityStatsTest(UrlResetMixin, ForumMockUtilsMixin, APITestCase,
         params = self.get_mock_func_calls("get_user_course_stats")[-1][1]
         assert params["usernames"] == comma_separated_usernames
 
-    @mock.patch.dict("django.conf.settings.FEATURES", {'ENABLE_DISCUSSION_SERVICE': True})
+    @override_settings(ENABLE_DISCUSSION_SERVICE=True)
     def test_with_username_param_with_no_matches(self):
         """
         Test for endpoint with username param with no matches.
@@ -1946,7 +1943,7 @@ class CourseActivityStatsTest(UrlResetMixin, ForumMockUtilsMixin, APITestCase,
         'User-2',
         'UsEr-3'
     )
-    @mock.patch.dict("django.conf.settings.FEATURES", {'ENABLE_DISCUSSION_SERVICE': True})
+    @override_settings(ENABLE_DISCUSSION_SERVICE=True)
     def test_with_username_param_case(self, username_search_string):
         """
         Test user search function is case-insensitive.
@@ -1956,7 +1953,7 @@ class CourseActivityStatsTest(UrlResetMixin, ForumMockUtilsMixin, APITestCase,
 
 
 @httpretty.activate
-@mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+@override_settings(ENABLE_DISCUSSION_SERVICE=True)
 class RetireViewTest(DiscussionAPIViewTestMixin, ModuleStoreTestCase):
     """Tests for CourseView"""
 
@@ -2019,13 +2016,13 @@ class RetireViewTest(DiscussionAPIViewTestMixin, ModuleStoreTestCase):
         pass  # pylint: disable=unnecessary-pass
 
 
-@mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+@override_settings(ENABLE_DISCUSSION_SERVICE=True)
 class UploadFileViewTest(ForumMockUtilsMixin, UrlResetMixin, ModuleStoreTestCase):
     """
     Tests for UploadFileView.
     """
 
-    @mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+    @override_settings(ENABLE_DISCUSSION_SERVICE=True)
     def setUp(self):
         super().setUp()
         self.valid_file = {
@@ -2181,7 +2178,7 @@ class CourseDiscussionSettingsAPIViewTest(APITestCase, UrlResetMixin, ModuleStor
     """
     Test the course discussion settings handler API endpoint.
     """
-    @mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+    @override_settings(ENABLE_DISCUSSION_SERVICE=True)
     def setUp(self):
         super().setUp()
         self.course = CourseFactory.create(
@@ -2480,7 +2477,7 @@ class CourseDiscussionRolesAPIViewTest(APITestCase, UrlResetMixin, ModuleStoreTe
     """
     Test the course discussion roles management endpoint.
     """
-    @mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+    @override_settings(ENABLE_DISCUSSION_SERVICE=True)
     def setUp(self):
         super().setUp()
         self.course = CourseFactory.create(
@@ -2494,7 +2491,7 @@ class CourseDiscussionRolesAPIViewTest(APITestCase, UrlResetMixin, ModuleStoreTe
         course_key = CourseKey.from_string('course-v1:x+y+z')
         seed_permissions_roles(course_key)
 
-    @mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+    @override_settings(ENABLE_DISCUSSION_SERVICE=True)
     def path(self, course_id=None, role=None):
         """Return the URL path to the endpoint based on the provided arguments."""
         course_id = str(self.course.id) if course_id is None else course_id

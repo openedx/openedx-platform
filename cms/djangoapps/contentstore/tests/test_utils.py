@@ -6,7 +6,6 @@ from unittest.mock import Mock, patch
 from uuid import uuid4
 
 import ddt
-from django.conf import settings
 from django.test import TestCase
 from django.test.utils import override_settings
 from opaque_keys.edx.keys import CourseKey
@@ -641,7 +640,7 @@ class GetUserPartitionInfoTest(ModuleStoreTestCase):
         return utils.get_user_partition_info(self.block, schemes=schemes)
 
 
-@patch.dict(settings.FEATURES, ENABLE_COURSE_OLX_VALIDATION=True)
+@override_settings(ENABLE_COURSE_OLX_VALIDATION=True)
 @mock.patch('olxcleaner.validate')
 @ddt.ddt
 class ValidateCourseOlxTests(CourseTestCase):
@@ -668,7 +667,7 @@ class ValidateCourseOlxTests(CourseTestCase):
         """
         Tests olx validation with config setting is disabled.
         """
-        with patch.dict(settings.FEATURES, ENABLE_COURSE_OLX_VALIDATION=False):
+        with override_settings(ENABLE_COURSE_OLX_VALIDATION=False):
             self.assertTrue(validate_course_olx(self.course.id, self.toy_course_path, self.status))  # noqa: PT009
             self.assertFalse(mock_olxcleaner_validate.called)  # noqa: PT009
 
@@ -676,7 +675,7 @@ class ValidateCourseOlxTests(CourseTestCase):
         """
         Tests olx validation with config setting is enabled.
         """
-        with patch.dict(settings.FEATURES, ENABLE_COURSE_OLX_VALIDATION=True):
+        with override_settings(ENABLE_COURSE_OLX_VALIDATION=True):
             self.assertTrue(validate_course_olx(self.course.id, self.toy_course_path, self.status))  # noqa: PT009
             self.assertTrue(mock_olxcleaner_validate.called)  # noqa: PT009
 

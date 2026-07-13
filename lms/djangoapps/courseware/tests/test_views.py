@@ -25,9 +25,9 @@ from django.test.client import Client
 from django.urls import reverse, reverse_lazy
 from edx_django_utils.cache.utils import RequestCache
 from edx_toggles.toggles.testutils import override_waffle_flag, override_waffle_switch
-from enterprise.api.v1.serializers import EnterpriseCustomerSerializer
 from freezegun import freeze_time
 from opaque_keys.edx.keys import CourseKey, UsageKey
+from openedx_filters.learning.filters import CourseStartDateValidationFailed, CoursewareViewStarted
 from pytz import UTC
 from rest_framework import status
 from rest_framework.test import APIClient
@@ -92,13 +92,6 @@ from openedx.features.content_type_gating.models import ContentTypeGatingConfig
 from openedx.features.course_duration_limits.models import CourseDurationLimitConfig
 from openedx.features.course_experience.tests.views.helpers import add_course_mode
 from openedx.features.course_experience.url_helpers import get_learning_mfe_home_url, make_learning_mfe_courseware_url
-from openedx.features.enterprise_support.api import add_enterprise_customer_to_session
-from openedx.features.enterprise_support.tests.factories import (
-    EnterpriseCourseEnrollmentFactory,
-    EnterpriseCustomerFactory,
-    EnterpriseCustomerUserFactory,
-)
-from openedx.features.enterprise_support.tests.mixins.enterprise import EnterpriseTestConsentRequired
 from xmodule.data import CertificatesDisplayBehaviors
 from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.django import modulestore
@@ -106,9 +99,6 @@ from xmodule.modulestore.tests.django_utils import CourseUserType, ModuleStoreTe
 from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory, check_mongo_calls
 
 QUERY_COUNT_TABLE_IGNORELIST = WAFFLE_TABLES + AUTHZ_TABLES
-
-FEATURES_WITH_DISABLE_HONOR_CERTIFICATE = settings.FEATURES.copy()
-FEATURES_WITH_DISABLE_HONOR_CERTIFICATE['DISABLE_HONOR_CERTIFICATES'] = True
 
 
 @ddt.ddt
@@ -1188,7 +1178,7 @@ class ProgressPageTests(ProgressPageBaseTests):
         resp = self._get_progress_page()
         self.assertNotContains(resp, 'Request Certificate')
 
-    @patch.dict('django.conf.settings.FEATURES', {'CERTIFICATES_HTML_VIEW': True})
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_view_certificate_for_unverified_student(self):
         """
         If user has already generated a certificate, it should be visible in case of user being
@@ -1219,7 +1209,7 @@ class ProgressPageTests(ProgressPageBaseTests):
             self.assertNotContains(resp, "Certificate unavailable")
             self.assertContains(resp, "Your certificate is available")
 
-    @patch.dict('django.conf.settings.FEATURES', {'CERTIFICATES_HTML_VIEW': True})
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_view_certificate_link(self):
         """
         If certificate web view is enabled then certificate web view button should appear for user who certificate is
@@ -1344,7 +1334,7 @@ class ProgressPageTests(ProgressPageBaseTests):
 
                 assert cert_button_hidden == ('Request Certificate' not in resp.content.decode('utf-8'))
 
-    @patch.dict('django.conf.settings.FEATURES', {'CERTIFICATES_HTML_VIEW': True})
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_page_with_invalidated_certificate_with_html_view(self):
         """
         Verify that for html certs if certificate is marked as invalidated than
@@ -1380,7 +1370,7 @@ class ProgressPageTests(ProgressPageBaseTests):
             self.assertContains(resp, "View Certificate")
             self.assert_invalidate_certificate(generated_certificate)
 
-    @patch.dict('django.conf.settings.FEATURES', {'CERTIFICATES_HTML_VIEW': True})
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_page_with_allowlisted_certificate_with_html_view(self):
         """
         Verify that view certificate appears for an allowlisted user
@@ -1484,7 +1474,7 @@ class ProgressPageTests(ProgressPageBaseTests):
         self.assertNotContains(response, bannerText, html=True)
 
     @patch('lms.djangoapps.courseware.views.views.is_course_passed', PropertyMock(return_value=True))
-    @override_settings(FEATURES=FEATURES_WITH_DISABLE_HONOR_CERTIFICATE)
+    @override_settings(DISABLE_HONOR_CERTIFICATES=True)
     @ddt.data(CourseMode.AUDIT, CourseMode.HONOR)
     def test_message_for_ineligible_mode(self, course_mode):
         """ Verify that message appears on progress page, if learner is enrolled
@@ -1521,7 +1511,7 @@ class ProgressPageTests(ProgressPageBaseTests):
         assert response.cert_status == 'invalidated'
         assert response.title == 'Your certificate has been invalidated'
 
-    @override_settings(FEATURES=FEATURES_WITH_DISABLE_HONOR_CERTIFICATE)
+    @override_settings(DISABLE_HONOR_CERTIFICATES=True)
     def test_downloadable_get_cert_data(self):
         """
         Verify that downloadable cert data is returned if cert is downloadable even
@@ -1645,6 +1635,19 @@ class ProgressPageTests(ProgressPageBaseTests):
             'uuid': uuid,
             'earned_but_not_available': earned_but_not_available,
         }
+
+    @patch('openedx_filters.learning.filters.CoursewareViewStarted.run_filter')
+    def test_redirects_when_courseware_view_filter_raises(self, mock_run_filter):
+        """
+        Redirects to the URL raised by the CoursewareViewStarted filter on progress page URLs.
+        """
+        redirect_url = 'http://example.com/redirect'
+        mock_run_filter.side_effect = CoursewareViewStarted.RedirectToUrl(message="redirect", redirect_to=redirect_url)
+
+        resp = self._get_progress_page(expected_status_code=302)
+        assert resp['Location'] == redirect_url
+        resp = self._get_student_progress_page(expected_status_code=302)
+        assert resp['Location'] == redirect_url
 
 
 @ddt.ddt
@@ -2499,7 +2502,7 @@ class TestRenderXBlock(RenderXBlockTestMixin, ModuleStoreTestCase, CompletionWaf
         }
     )
     @ddt.unpack
-    @patch.dict('django.conf.settings.FEATURES', {'ENABLE_PROCTORED_EXAMS': True})
+    @override_settings(ENABLE_PROCTORED_EXAMS=True)
     @patch('lms.djangoapps.courseware.views.views.unpack_jwt')
     def test_render_descendant_of_exam_gated_by_access_token(self, exam_access_token,
                                                              expected_response, _mock_unpack_jwt):  # noqa: PT019
@@ -2667,35 +2670,6 @@ class TestRenderXBlockSelfPaced(TestRenderXBlock):  # pylint: disable=test-inher
         return options
 
 
-class EnterpriseConsentTestCase(EnterpriseTestConsentRequired, ModuleStoreTestCase):
-    """
-    Ensure that the Enterprise Data Consent redirects are in place only when consent is required.
-    """
-
-    def setUp(self):
-        super().setUp()
-        self.user = UserFactory.create()
-        assert self.client.login(username=self.user.username, password=TEST_PASSWORD)
-        self.course = CourseFactory.create()
-        CourseOverview.load_from_module_store(self.course.id)
-        CourseEnrollmentFactory(user=self.user, course_id=self.course.id)
-
-    @patch('openedx.features.enterprise_support.api.enterprise_customer_for_request')
-    def test_consent_required(self, mock_enterprise_customer_for_request):
-        """
-        Test that enterprise data sharing consent is required when enabled for the various courseware views.
-        """
-        # ENT-924: Temporary solution to replace sensitive SSO usernames.
-        mock_enterprise_customer_for_request.return_value = None
-
-        course_id = str(self.course.id)
-        for url in (
-                reverse("progress", kwargs=dict(course_id=course_id)),
-                reverse("student_progress", kwargs=dict(course_id=course_id, student_id=str(self.user.id))),
-        ):
-            self.verify_consent_required(self.client, url)  # pylint: disable=no-value-for-parameter
-
-
 @ddt.ddt
 class AccessUtilsTestCase(ModuleStoreTestCase):
     """
@@ -2704,27 +2678,21 @@ class AccessUtilsTestCase(ModuleStoreTestCase):
     @ddt.data(
         {
             'start_date_modifier': 1,  # course starts in future
-            'setup_enterprise_enrollment': False,
+            'filter_raises_override': False,
             'expected_has_access': False,
             'expected_error_code': 'course_not_started',
         },
         {
             'start_date_modifier': -1,  # course already started
-            'setup_enterprise_enrollment': False,
+            'filter_raises_override': False,
             'expected_has_access': True,
             'expected_error_code': None,
         },
         {
-            'start_date_modifier': 1,  # course starts in future
-            'setup_enterprise_enrollment': True,
+            'start_date_modifier': 1,  # course starts in future, filter overrides error
+            'filter_raises_override': True,
             'expected_has_access': False,
             'expected_error_code': 'course_not_started_enterprise_learner',
-        },
-        {
-            'start_date_modifier': -1,  # course already started
-            'setup_enterprise_enrollment': True,
-            'expected_has_access': True,
-            'expected_error_code': None,
         },
     )
     @ddt.unpack
@@ -2732,38 +2700,33 @@ class AccessUtilsTestCase(ModuleStoreTestCase):
     def test_is_course_open_for_learner(
         self,
         start_date_modifier,
-        setup_enterprise_enrollment,
+        filter_raises_override,
         expected_has_access,
         expected_error_code,
     ):
-        """
-        Test is_course_open_for_learner().
-
-        When setup_enterprise_enrollment == True, make an enterprise-subsidized enrollment, setting up one of each:
-        * CourseEnrollment
-        * EnterpriseCustomer
-        * EnterpriseCustomerUser
-        * EnterpriseCourseEnrollment
-        * A mock request session to pre-cache the enterprise customer data.
-        """
+        """Test is_course_open_for_learner()."""
         staff_user = AdminFactory()
         start_date = datetime.now(UTC) + timedelta(days=start_date_modifier)
         course = CourseFactory.create(start=start_date)
         request = RequestFactory().get('/')
         request.user = staff_user
         request.session = {}
-        if setup_enterprise_enrollment:
-            course_enrollment = CourseEnrollmentFactory(mode=CourseMode.VERIFIED, user=staff_user, course_id=course.id)  # noqa: F841  # pylint: disable=line-too-long
-            enterprise_customer = EnterpriseCustomerFactory(enable_learner_portal=True)
-            add_enterprise_customer_to_session(request, EnterpriseCustomerSerializer(enterprise_customer).data)
-            enterprise_customer_user = EnterpriseCustomerUserFactory(
-                user_id=staff_user.id,
-                enterprise_customer=enterprise_customer,
-            )
-            EnterpriseCourseEnrollmentFactory(enterprise_customer_user=enterprise_customer_user, course_id=course.id)
         set_current_request(request)
 
-        access_response = check_course_open_for_learner(staff_user, course)
+        if filter_raises_override:
+            # Mock the filter to simulate a plugin substituting the start-date error payload.
+            with patch(
+                'openedx_filters.learning.filters.CourseStartDateValidationFailed.run_filter'
+            ) as mock_filter:
+                mock_filter.side_effect = CourseStartDateValidationFailed.OverrideStartDateError(
+                    message='message',
+                    error_code='course_not_started_enterprise_learner',
+                    developer_message='developer message',
+                    user_message='user message',
+                )
+                access_response = check_course_open_for_learner(staff_user, course)
+        else:
+            access_response = check_course_open_for_learner(staff_user, course)
         assert bool(access_response) == expected_has_access
         assert access_response.error_code == expected_error_code
 

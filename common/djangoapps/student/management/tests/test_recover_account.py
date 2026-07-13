@@ -18,8 +18,6 @@ from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 
 LOGGER_NAME = 'common.djangoapps.student.management.commands.recover_account'
-FEATURES_WITH_AUTHN_MFE_ENABLED = settings.FEATURES.copy()
-FEATURES_WITH_AUTHN_MFE_ENABLED['ENABLE_AUTHN_MICROFRONTEND'] = True
 
 
 class RecoverAccountTests(TestCase):
@@ -67,7 +65,7 @@ class RecoverAccountTests(TestCase):
         # try to login with previous password
         assert not self.client.login(username=self.user.username, password='password')
 
-    @override_settings(FEATURES=FEATURES_WITH_AUTHN_MFE_ENABLED)
+    @override_settings(ENABLE_AUTHN_MICROFRONTEND=True)
     @skip_unless_lms
     def test_authn_mfe_url_in_reset_link(self):
         """

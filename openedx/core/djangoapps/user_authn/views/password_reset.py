@@ -642,7 +642,7 @@ def password_change_request_handler(request):
             # If enabled, send an email saying that a password reset was attempted, but that there is
             # no user associated with the email
             if configuration_helpers.get_value('ENABLE_PASSWORD_RESET_FAILURE_EMAIL',
-                                               settings.FEATURES['ENABLE_PASSWORD_RESET_FAILURE_EMAIL']):
+                                               settings.ENABLE_PASSWORD_RESET_FAILURE_EMAIL):
                 site = get_current_site()
                 message_context = get_base_template_context(site)
 

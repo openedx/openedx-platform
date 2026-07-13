@@ -35,6 +35,7 @@ from .serializers import (
 from .utils import (
     create_account_notification_pref_if_not_exists,
     exclude_inaccessible_preferences,
+    get_show_email_preferences,
     get_show_notifications_tray,
 )
 
@@ -305,6 +306,7 @@ class NotificationPreferencesViewV3(APIView):
             'status': 'success',
             'message': 'Notification preferences retrieved successfully.',
             'show_preferences': get_show_notifications_tray(),
+            'show_email_preferences': get_show_email_preferences(),
             'data': structured_preferences
         }, status=status.HTTP_200_OK)
 

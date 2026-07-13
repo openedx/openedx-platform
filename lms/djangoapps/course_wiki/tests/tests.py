@@ -6,17 +6,17 @@ Tests for course wiki
 from unittest.mock import patch
 
 from django.urls import reverse
+from openedx_filters.learning.filters import CoursewareViewStarted
 
 from lms.djangoapps.courseware.tests.tests import LoginEnrollmentTestCase
 from openedx.features.course_experience.url_helpers import make_learning_mfe_courseware_url
-from openedx.features.enterprise_support.tests.mixins.enterprise import EnterpriseTestConsentRequired
 from xmodule.modulestore.tests.django_utils import (
     ModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
 from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 
-class WikiRedirectTestCase(EnterpriseTestConsentRequired, LoginEnrollmentTestCase, ModuleStoreTestCase):
+class WikiRedirectTestCase(LoginEnrollmentTestCase, ModuleStoreTestCase):
     """
     Tests for wiki course redirection.
     """
@@ -205,27 +205,33 @@ class WikiRedirectTestCase(EnterpriseTestConsentRequired, LoginEnrollmentTestCas
         assert resp.status_code == 200
 
     @patch.dict("django.conf.settings.FEATURES", {'ALLOW_WIKI_ROOT_ACCESS': True})
-    @patch('openedx.features.enterprise_support.api.enterprise_customer_for_request')
-    def test_consent_required(self, mock_enterprise_customer_for_request):
+    @patch('openedx_filters.learning.filters.CoursewareViewStarted.run_filter')
+    def test_filter_redirect(self, mock_run_filter):
         """
-        Test that enterprise data sharing consent is required when enabled for the various courseware views.
+        Test that wiki views redirect when the CoursewareViewStarted filter provides a URL.
         """
-        # ENT-924: Temporary solution to replace sensitive SSO usernames.
-        mock_enterprise_customer_for_request.return_value = None
+        redirect_url = 'http://example.com/redirect'
+        mock_run_filter.side_effect = CoursewareViewStarted.RedirectToUrl(message="redirect", redirect_to=redirect_url)
 
-        # Public wikis can be accessed by non-enrolled users, and so direct access is not gated by the consent page
+        # Public wikis can be accessed by non-enrolled users, and so direct access is not gated by the redirect
         course = CourseFactory.create()
         course.allow_public_wiki_access = False
         course.save()
 
-        # However, for private wikis, enrolled users must pass through the consent gate
+        # However, for private wikis, enrolled users must pass through the filter redirect gate
         # (Unenrolled users are redirected to course/about)
         course_id = str(course.id)
         self.login(self.student, self.password)
         self.enroll(course)
 
-        for (url, status_code) in (
-                (reverse('course_wiki', kwargs={'course_id': course_id}), 302),
-                (f'/courses/{course_id}/wiki/', 200),
-        ):
-            self.verify_consent_required(self.client, url, status_code=status_code)  # pylint: disable=no-value-for-parameter
+        # The course_wiki view is decorated with courseware_view_hooks which calls the filter
+        url = reverse('course_wiki', kwargs={'course_id': course_id})
+        response = self.client.get(url)
+        assert response.status_code == 302
+        assert response['Location'] == redirect_url
+
+        # The wiki middleware (/courses/.../wiki/) also calls the filter
+        url = f'/courses/{course_id}/wiki/'
+        response = self.client.get(url)
+        assert response.status_code == 302
+        assert response['Location'] == redirect_url

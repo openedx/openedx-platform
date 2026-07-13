@@ -67,7 +67,7 @@ def _user_can_create_library_for_org(user, org=None):
         return False
     elif user.is_staff:
         return True
-    elif settings.FEATURES.get('ENABLE_CREATOR_GROUP', False):
+    elif getattr(settings, 'ENABLE_CREATOR_GROUP', False):
         is_course_creator = get_course_creator_status(user) == 'granted'
         if is_course_creator:
             return True
@@ -88,7 +88,7 @@ def _user_can_create_library_for_org(user, org=None):
     else:
         # EDUCATOR-1924: DISABLE_LIBRARY_CREATION overrides DISABLE_COURSE_CREATION, if present.
         disable_library_creation = settings.FEATURES.get('DISABLE_LIBRARY_CREATION', None)
-        disable_course_creation = settings.FEATURES.get('DISABLE_COURSE_CREATION', False)
+        disable_course_creation = getattr(settings, 'DISABLE_COURSE_CREATION', False)
         if disable_library_creation is not None:
             return not disable_library_creation
         else:

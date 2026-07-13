@@ -56,6 +56,7 @@ from cms.djangoapps.contentstore.storage import course_import_export_storage
 from cms.djangoapps.contentstore.toggles import enable_course_optimizer_check_prev_run_links
 from cms.djangoapps.contentstore.utils import (
     IMPORTABLE_FILE_TYPES,
+    add_instructor,
     contains_course_reference,
     create_course_info_usage_key,
     create_or_update_xblock_upstream_link,
@@ -188,7 +189,14 @@ def rerun_course(source_course_key_string, destination_course_key_string, user_i
         update_unit_discussion_state_from_discussion_blocks(destination_course_key, user_id)
 
         # set initial permissions for the user to access the course.
-        initialize_permissions(destination_course_key, User.objects.get(id=user_id))
+        # NOTE: add_instructor is called here (after clone_course) because when
+        # authz.enable_course_authoring is enabled, it cannot be called pre-task
+        # (CourseOverview doesn't exist yet). This is a temporary workaround until
+        # openedx/openedx-authz#352 is implemented. Once resolved, add_instructor
+        # can move back to the pre-task call site unconditionally.
+        user = User.objects.get(id=user_id)
+        add_instructor(destination_course_key, user, user)
+        initialize_permissions(destination_course_key, user)
 
         # update state: Succeeded
         CourseRerunState.objects.succeeded(course_key=destination_course_key)

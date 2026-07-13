@@ -122,7 +122,7 @@ def check_verify_status_by_course(user, course_enrollments):
     status_by_course = {}
 
     # If integrity signature is enabled, this is a no-op because IDV is not required
-    if settings.FEATURES.get('ENABLE_INTEGRITY_SIGNATURE'):
+    if settings.ENABLE_INTEGRITY_SIGNATURE:
         return status_by_course
 
     # Retrieve all verifications for the user, sorted in descending

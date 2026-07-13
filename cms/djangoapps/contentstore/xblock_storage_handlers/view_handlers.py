@@ -1385,7 +1385,7 @@ def create_xblock_info(  # pylint: disable=too-many-statements
             )
 
         # update xblock_info with special exam information if the feature flag is enabled
-        if settings.FEATURES.get("ENABLE_SPECIAL_EXAMS"):
+        if settings.ENABLE_SPECIAL_EXAMS:
             if xblock.category == "course":
                 xblock_info.update(
                     {

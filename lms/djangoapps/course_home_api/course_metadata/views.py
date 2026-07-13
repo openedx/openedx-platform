@@ -102,7 +102,7 @@ class CourseHomeMetadataView(RetrieveAPIView):
             'load',
             check_if_enrolled=True,
             check_if_authenticated=True,
-            apply_enterprise_checks=True,
+            apply_priority_access_checks=True,
         )
 
         _, request.user = setup_masquerade(

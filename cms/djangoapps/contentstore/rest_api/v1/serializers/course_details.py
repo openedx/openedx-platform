@@ -29,7 +29,7 @@ class CourseDetailsSerializer(serializers.Serializer):
     about_sidebar_html = serializers.CharField(allow_null=True, allow_blank=True)
     banner_image_name = serializers.CharField(allow_blank=True)
     banner_image_asset_path = serializers.CharField()
-    certificate_available_date = serializers.DateTimeField()
+    certificate_available_date = serializers.DateTimeField(allow_null=True)
     certificates_display_behavior = serializers.CharField(allow_null=True)
     course_id = serializers.CharField()
     course_image_asset_path = serializers.CharField(allow_blank=True)

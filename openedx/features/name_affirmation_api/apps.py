@@ -20,7 +20,7 @@ class NameAffirmationApiConfig(AppConfig):
         """
         Connect services.
         """
-        if settings.FEATURES.get('ENABLE_SPECIAL_EXAMS'):
+        if settings.ENABLE_SPECIAL_EXAMS:
             name_affirmation_service = get_name_affirmation_service()
             if name_affirmation_service:
                 set_runtime_service('name_affirmation', name_affirmation_service)

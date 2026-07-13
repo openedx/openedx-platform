@@ -4,15 +4,10 @@ Mixins for the EnterpriseApiClient.
 
 
 import json
-from unittest import mock
 
 import httpretty
 from django.conf import settings
 from django.core.cache import cache
-from django.test import SimpleTestCase
-from django.urls import reverse
-
-from openedx.features.enterprise_support.tests import FAKE_ENTERPRISE_CUSTOMER
 
 
 class EnterpriseServiceMockMixin:
@@ -282,62 +277,3 @@ class EnterpriseServiceMockMixin:
             body=enterprise_learner_api_response_json,
             content_type='application/json'
         )
-
-
-class EnterpriseTestConsentRequired(SimpleTestCase):
-    """
-    Mixin to help test the data_sharing_consent_required decorator.
-    """
-
-    @mock.patch('openedx.features.enterprise_support.utils.get_enterprise_learner_generic_name')
-    @mock.patch('openedx.features.enterprise_support.api.enterprise_customer_from_api')
-    @mock.patch('openedx.features.enterprise_support.api.enterprise_customer_uuid_for_request')
-    @mock.patch('openedx.features.enterprise_support.api.reverse')
-    @mock.patch('openedx.features.enterprise_support.api.enterprise_enabled')
-    @mock.patch('openedx.features.enterprise_support.api.consent_needed_for_course')
-    def verify_consent_required(
-            self,
-            client,
-            url,
-            mock_consent_necessary,
-            mock_enterprise_enabled,
-            mock_reverse,
-            mock_enterprise_customer_uuid_for_request,
-            mock_enterprise_customer_from_api,
-            mock_get_enterprise_learner_generic_name,
-            status_code=200,
-    ):
-        """
-        Verify that the given URL redirects to the consent page when consent is required,
-        and doesn't redirect to the consent page when consent is not required.
-        """
-
-        def mock_consent_reverse(*args, **kwargs):
-            if args[0] == 'grant_data_sharing_permissions':
-                return '/enterprise/grant_data_sharing_permissions'
-            return reverse(*args, **kwargs)
-
-        # ENT-924: Temporary solution to replace sensitive SSO usernames.
-        mock_get_enterprise_learner_generic_name.return_value = ''
-
-        mock_reverse.side_effect = mock_consent_reverse
-        mock_enterprise_enabled.return_value = True
-        mock_enterprise_customer_uuid_for_request.return_value = 'fake-uuid'
-        mock_enterprise_customer_from_api.return_value = FAKE_ENTERPRISE_CUSTOMER
-        # Ensure that when consent is necessary, the user is redirected to the consent page.
-        mock_consent_necessary.return_value = True
-        response = client.get(url)
-        while(response.status_code == 302 and 'grant_data_sharing_permissions' not in response.url):
-            response = client.get(response.url)
-        assert response.status_code == 302
-        assert 'grant_data_sharing_permissions' in response.url
-
-        # Ensure that when consent is not necessary, the user continues through to the requested page.
-        mock_consent_necessary.return_value = False
-        response = client.get(url)
-        assert response.status_code == status_code
-
-        # If we were expecting a redirect, ensure it's not to the data sharing permission page
-        if status_code == 302:
-            assert 'grant_data_sharing_permissions' not in response.url
-        return response
