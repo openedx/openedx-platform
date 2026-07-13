@@ -217,7 +217,7 @@ urlpatterns = [
     path('500', handler500, name='render_500'),
 ]
 
-if settings.FEATURES.get('ENABLE_MOBILE_REST_API'):
+if settings.ENABLE_MOBILE_REST_API:
     urlpatterns += [
         re_path(r'^api/mobile/(?P<api_version>v(4|3|2|1|0.5))/', include('lms.djangoapps.mobile_api.urls')),
     ]
