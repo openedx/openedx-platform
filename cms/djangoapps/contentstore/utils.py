@@ -1377,7 +1377,7 @@ def get_course_settings(request, course_key, course_block):
 
     from .views.course import _process_courses_list, get_courses_accessible_to_user
 
-    credit_eligibility_enabled = settings.FEATURES.get('ENABLE_CREDIT_ELIGIBILITY', False)
+    credit_eligibility_enabled = settings.ENABLE_CREDIT_ELIGIBILITY
     upload_asset_url = reverse_course_url('assets_handler', course_key)
 
     # see if the ORG of this course can be attributed to a defined configuration . In that case, the

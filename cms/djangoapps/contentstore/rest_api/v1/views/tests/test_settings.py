@@ -5,6 +5,7 @@ from unittest.mock import patch
 
 import ddt
 from django.conf import settings
+from django.test.utils import override_settings
 from django.urls import reverse
 from openedx_authz.constants.roles import COURSE_EDITOR
 from rest_framework import status
@@ -62,7 +63,7 @@ class CourseSettingsViewTest(CourseTestCase, PermissionAccessMixin):
         self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
         self.assertDictEqual(expected_response, response.data)  # noqa: PT009
 
-    @patch.dict("django.conf.settings.FEATURES", {"ENABLE_CREDIT_ELIGIBILITY": True})
+    @override_settings(ENABLE_CREDIT_ELIGIBILITY=True)
     def test_credit_eligibility_setting(self):
         """
         Make sure if the feature flag is enabled we have updated the dict keys in response.
@@ -134,7 +135,7 @@ class CourseSettingsAuthzViewTest(CourseAuthoringAuthzTestMixin, CourseTestCase)
         response = self.unauthorized_client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
 
-    @patch.dict("django.conf.settings.FEATURES", {"ENABLE_CREDIT_ELIGIBILITY": True})
+    @override_settings(ENABLE_CREDIT_ELIGIBILITY=True)
     def test_credit_eligibility_setting_with_authz(self):
         """
         Ensure feature flags still affect response under AuthZ.

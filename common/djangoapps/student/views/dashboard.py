@@ -379,7 +379,7 @@ def credit_statuses(user, course_enrollments):
     from openedx.core.djangoapps.credit import api as credit_api
 
     # Feature flag off
-    if not settings.FEATURES.get("ENABLE_CREDIT_ELIGIBILITY"):
+    if not settings.ENABLE_CREDIT_ELIGIBILITY:
         return {}
 
     request_status_by_course = {

@@ -3,10 +3,8 @@ Tests for credit requirement display on the progress page.
 """
 
 
-from unittest.mock import patch
-
 import ddt
-from django.conf import settings
+from django.test.utils import override_settings
 from django.urls import reverse
 
 from common.djangoapps.course_modes.models import CourseMode
@@ -19,7 +17,7 @@ from xmodule.modulestore.tests.django_utils import (
 from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 
-@patch.dict(settings.FEATURES, {"ENABLE_CREDIT_ELIGIBILITY": True})
+@override_settings(ENABLE_CREDIT_ELIGIBILITY=True)
 @ddt.ddt
 class ProgressPageCreditRequirementsTest(SharedModuleStoreTestCase):
     """
