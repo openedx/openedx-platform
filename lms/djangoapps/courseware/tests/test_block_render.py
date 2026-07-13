@@ -1726,7 +1726,8 @@ class DetachedXBlock(XBlock):
         return frag
 
 
-@patch.dict('django.conf.settings.FEATURES', {'DISPLAY_DEBUG_INFO_TO_STAFF': True, 'DISPLAY_HISTOGRAMS_TO_STAFF': True})
+@patch.dict('django.conf.settings.FEATURES', {'DISPLAY_DEBUG_INFO_TO_STAFF': True})
+@override_settings(DISPLAY_HISTOGRAMS_TO_STAFF=True)
 @patch('lms.djangoapps.courseware.block_render.has_access', Mock(return_value=True, autospec=True))
 class TestStaffDebugInfo(SharedModuleStoreTestCase):
     """Tests to verify that Staff Debug Info panel and histograms are displayed to staff."""
@@ -1846,7 +1847,7 @@ class TestStaffDebugInfo(SharedModuleStoreTestCase):
         result_fragment = block.render(STUDENT_VIEW)
         assert 'Staff Debug' not in result_fragment.content
 
-    @patch.dict('django.conf.settings.FEATURES', {'DISPLAY_HISTOGRAMS_TO_STAFF': False})
+    @override_settings(DISPLAY_HISTOGRAMS_TO_STAFF=False)
     def test_histogram_disabled(self):
         block = render.get_block(
             self.user,
