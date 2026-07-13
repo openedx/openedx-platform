@@ -100,9 +100,6 @@ from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory, che
 
 QUERY_COUNT_TABLE_IGNORELIST = WAFFLE_TABLES + AUTHZ_TABLES
 
-FEATURES_WITH_DISABLE_HONOR_CERTIFICATE = settings.FEATURES.copy()
-FEATURES_WITH_DISABLE_HONOR_CERTIFICATE['DISABLE_HONOR_CERTIFICATES'] = True
-
 
 @ddt.ddt
 class TestJumpTo(ModuleStoreTestCase):
@@ -1477,7 +1474,7 @@ class ProgressPageTests(ProgressPageBaseTests):
         self.assertNotContains(response, bannerText, html=True)
 
     @patch('lms.djangoapps.courseware.views.views.is_course_passed', PropertyMock(return_value=True))
-    @override_settings(FEATURES=FEATURES_WITH_DISABLE_HONOR_CERTIFICATE)
+    @override_settings(DISABLE_HONOR_CERTIFICATES=True)
     @ddt.data(CourseMode.AUDIT, CourseMode.HONOR)
     def test_message_for_ineligible_mode(self, course_mode):
         """ Verify that message appears on progress page, if learner is enrolled
@@ -1514,7 +1511,7 @@ class ProgressPageTests(ProgressPageBaseTests):
         assert response.cert_status == 'invalidated'
         assert response.title == 'Your certificate has been invalidated'
 
-    @override_settings(FEATURES=FEATURES_WITH_DISABLE_HONOR_CERTIFICATE)
+    @override_settings(DISABLE_HONOR_CERTIFICATES=True)
     def test_downloadable_get_cert_data(self):
         """
         Verify that downloadable cert data is returned if cert is downloadable even

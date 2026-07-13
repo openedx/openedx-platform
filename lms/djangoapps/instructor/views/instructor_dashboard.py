@@ -105,7 +105,7 @@ def show_analytics_dashboard_message(course_key):
         course_key (CourseLocator): The course locator to display the analytics dashboard message on.
     """
     if hasattr(course_key, 'ccx'):
-        ccx_analytics_enabled = settings.FEATURES.get('ENABLE_CCX_ANALYTICS_DASHBOARD_URL', False)
+        ccx_analytics_enabled = settings.ENABLE_CCX_ANALYTICS_DASHBOARD_URL
         return settings.ANALYTICS_DASHBOARD_URL and ccx_analytics_enabled
 
     return settings.ANALYTICS_DASHBOARD_URL
@@ -488,7 +488,7 @@ def _section_course_info(course, access):
         'list_instructor_tasks_url': reverse('list_instructor_tasks', kwargs={'course_id': str(course_key)}),
     }
 
-    if settings.FEATURES.get('DISPLAY_ANALYTICS_ENROLLMENTS'):
+    if settings.DISPLAY_ANALYTICS_ENROLLMENTS:
         section_data['enrollment_count'] = CourseEnrollment.objects.enrollment_counts(course_key)
 
     if show_analytics_dashboard_message(course_key):
