@@ -100,7 +100,7 @@ def plugin_settings(settings):
     # .. toggle_creation_date: 2025-11-19
     settings.ENABLE_CERTIFICATES_INSTRUCTOR_MANAGE = False
 
-    # .. toggle_name: FEATURES['BATCH_ENROLLMENT_NOTIFY_USERS_DEFAULT']
+    # .. toggle_name: BATCH_ENROLLMENT_NOTIFY_USERS_DEFAULT
     # .. toggle_implementation: DjangoSetting
     # .. toggle_default: True
     # .. toggle_description: Controls if the "Notify users by email" checkbox in the batch
