@@ -352,11 +352,11 @@ class AllowlistTests(ModuleStoreTestCase):
         CertificateAllowlistFactory.create(course_id=course_run_key, user=self.user)
 
         # Enable Honor Certificates and verify we can generate an AllowList certificate
-        with override_settings(FEATURES={**settings.FEATURES, 'DISABLE_HONOR_CERTIFICATES': False}):
+        with override_settings(DISABLE_HONOR_CERTIFICATES=False):
             assert _can_generate_allowlist_certificate(self.user, course_run_key, enrollment_mode)
 
         # Disable Honor Certificates and verify we cannot generate an AllowList certificate
-        with override_settings(FEATURES={**settings.FEATURES, 'DISABLE_HONOR_CERTIFICATES': True}):
+        with override_settings(DISABLE_HONOR_CERTIFICATES=True):
             assert not _can_generate_allowlist_certificate(self.user, course_run_key, enrollment_mode)
 
 
@@ -794,11 +794,11 @@ class CertificateTests(ModuleStoreTestCase):
         # Enable Honor Certificates and verify we can generate a certificate
         with mock.patch(ID_VERIFIED_METHOD, return_value=False), \
                 mock.patch(PASSING_GRADE_METHOD, return_value=True), \
-                override_settings(FEATURES={**settings.FEATURES, 'DISABLE_HONOR_CERTIFICATES': False}):
+                override_settings(DISABLE_HONOR_CERTIFICATES=False):
             assert _can_generate_regular_certificate(self.user, course_run_key, enrollment_mode, grade)
 
         # Disable Honor Certificates and verify we cannot generate a certificate
         with mock.patch(ID_VERIFIED_METHOD, return_value=False), \
                 mock.patch(PASSING_GRADE_METHOD, return_value=True), \
-                override_settings(FEATURES={**settings.FEATURES, 'DISABLE_HONOR_CERTIFICATES': True}):
+                override_settings(DISABLE_HONOR_CERTIFICATES=True):
             assert not _can_generate_regular_certificate(self.user, course_run_key, enrollment_mode, grade)

@@ -699,7 +699,7 @@ if settings.ENABLE_TEAMS:
     ]
 
 # allow course staff to change to student view of courseware
-if settings.FEATURES.get('ENABLE_MASQUERADE'):
+if settings.ENABLE_MASQUERADE:
     urlpatterns += [
         re_path(
             r'^courses/{}/masquerade$'.format(  # noqa: UP032

@@ -9,7 +9,7 @@ def plugin_settings(settings):
     ### Analytics Dashboard (Insights) settings
     settings.ANALYTICS_DASHBOARD_URL = ""
     settings.ANALYTICS_DASHBOARD_NAME = _('Your Platform Insights')
-    # .. toggle_name: FEATURES['DISPLAY_ANALYTICS_ENROLLMENTS']
+    # .. toggle_name: DISPLAY_ANALYTICS_ENROLLMENTS
     # .. toggle_implementation: DjangoSetting
     # .. toggle_default: True
     # .. toggle_description: Enable display of enrollment counts in instructor dashboard and
@@ -19,7 +19,7 @@ def plugin_settings(settings):
     # .. toggle_tickets: https://github.com/openedx/edx-platform/pull/5838
     settings.DISPLAY_ANALYTICS_ENROLLMENTS = True
 
-    # .. toggle_name: FEATURES['ENABLE_CCX_ANALYTICS_DASHBOARD_URL']
+    # .. toggle_name: ENABLE_CCX_ANALYTICS_DASHBOARD_URL
     # .. toggle_implementation: DjangoSetting
     # .. toggle_default: False
     # .. toggle_description: Display the 'Analytics' tab in the instructor dashboard for CCX courses.
@@ -38,7 +38,7 @@ def plugin_settings(settings):
     #   courses will have disabled buttons at the instructor dashboard.
     settings.MAX_ENROLLMENT_INSTR_BUTTONS = 200
 
-    # .. toggle_name: FEATURES['ENABLE_GRADE_DOWNLOADS']
+    # .. toggle_name: ENABLE_GRADE_DOWNLOADS
     # .. toggle_implementation: DjangoSetting
     # .. toggle_default: False
     # .. toggle_description: Enable grade CSV downloads from the instructor dashboard. Grade
@@ -49,7 +49,7 @@ def plugin_settings(settings):
     # .. toggle_tickets: https://github.com/openedx/edx-platform/pull/11286
     settings.ENABLE_GRADE_DOWNLOADS = False
 
-    # .. toggle_name: FEATURES['ALLOW_COURSE_STAFF_GRADE_DOWNLOADS']
+    # .. toggle_name: ALLOW_COURSE_STAFF_GRADE_DOWNLOADS
     # .. toggle_implementation: DjangoSetting
     # .. toggle_default: False
     # .. toggle_description: Enable to give course staff unrestricted access to grade downloads;
@@ -59,7 +59,7 @@ def plugin_settings(settings):
     # .. toggle_tickets: https://github.com/openedx/edx-platform/pull/1750
     settings.ALLOW_COURSE_STAFF_GRADE_DOWNLOADS = False
 
-    # .. toggle_name: FEATURES['ALLOW_AUTOMATED_SIGNUPS']
+    # .. toggle_name: ALLOW_AUTOMATED_SIGNUPS
     # .. toggle_implementation: DjangoSetting
     # .. toggle_default: False
     # .. toggle_description: Enable to show a section in the membership tab of the instructor
@@ -70,7 +70,7 @@ def plugin_settings(settings):
     # .. toggle_tickets: https://github.com/openedx/edx-platform/pull/5670
     settings.ALLOW_AUTOMATED_SIGNUPS = False
 
-    # .. toggle_name: FEATURES['ENABLE_AUTOMATED_SIGNUPS_EXTRA_FIELDS']
+    # .. toggle_name: ENABLE_AUTOMATED_SIGNUPS_EXTRA_FIELDS
     # .. toggle_implementation: DjangoSetting
     # .. toggle_default: False
     # .. toggle_description: When True, the CSV file that contains a list of
@@ -100,7 +100,7 @@ def plugin_settings(settings):
     # .. toggle_creation_date: 2025-11-19
     settings.ENABLE_CERTIFICATES_INSTRUCTOR_MANAGE = False
 
-    # .. toggle_name: FEATURES['BATCH_ENROLLMENT_NOTIFY_USERS_DEFAULT']
+    # .. toggle_name: BATCH_ENROLLMENT_NOTIFY_USERS_DEFAULT
     # .. toggle_implementation: DjangoSetting
     # .. toggle_default: True
     # .. toggle_description: Controls if the "Notify users by email" checkbox in the batch
