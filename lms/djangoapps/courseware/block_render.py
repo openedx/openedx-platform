@@ -585,7 +585,7 @@ def prepare_runtime_for_user(
 
     user_is_staff = bool(has_access(user, 'staff', course_id))
 
-    if settings.FEATURES.get('DISPLAY_DEBUG_INFO_TO_STAFF'):
+    if settings.DISPLAY_DEBUG_INFO_TO_STAFF:
         if user_is_staff or is_masquerading_as_specific_student(user, course_id):
             # When masquerading as a specific student, we want to show the debug button
             # unconditionally to enable resetting the state of the student we are masquerading as.
