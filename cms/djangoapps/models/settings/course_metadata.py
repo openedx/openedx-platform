@@ -127,7 +127,7 @@ class CourseMetadata:
         if not settings.ENABLE_TEAMS:
             exclude_list.append('teams_configuration')
 
-        if not settings.FEATURES.get('ENABLE_VIDEO_BUMPER'):
+        if not settings.ENABLE_VIDEO_BUMPER:
             exclude_list.append('video_bumper')
 
         # Do not show enable_ccx if feature is not enabled.
