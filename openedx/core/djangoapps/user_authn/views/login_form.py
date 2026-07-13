@@ -257,7 +257,7 @@ def login_and_registration_form(request, initial_mode="login"):
             'registration_form_desc': json.loads(form_descriptions['registration']),
             'password_reset_form_desc': json.loads(form_descriptions['password_reset']),
             'account_creation_allowed': configuration_helpers.get_value(
-                'ALLOW_PUBLIC_ACCOUNT_CREATION', settings.FEATURES.get('ALLOW_PUBLIC_ACCOUNT_CREATION', True)),
+                'ALLOW_PUBLIC_ACCOUNT_CREATION', settings.ALLOW_PUBLIC_ACCOUNT_CREATION),
             'register_links_allowed': settings.FEATURES.get('SHOW_REGISTRATION_LINKS', True),
             'is_account_recovery_feature_enabled': is_secondary_email_feature_enabled(),
             'enterprise_slug_login_url': get_enterprise_slug_login_url(),

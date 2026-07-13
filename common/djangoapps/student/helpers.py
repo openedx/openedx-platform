@@ -676,7 +676,7 @@ def do_create_account(form, custom_form=None):
     # Check if ALLOW_PUBLIC_ACCOUNT_CREATION flag turned off to restrict user account creation
     if not configuration_helpers.get_value(
             'ALLOW_PUBLIC_ACCOUNT_CREATION',
-            settings.FEATURES.get('ALLOW_PUBLIC_ACCOUNT_CREATION', True)
+            settings.ALLOW_PUBLIC_ACCOUNT_CREATION
     ):
         raise PermissionDenied()
 
