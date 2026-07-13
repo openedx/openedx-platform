@@ -49,7 +49,7 @@ def plugin_settings(settings):
     # .. toggle_tickets: https://github.com/openedx/edx-platform/pull/11286
     settings.ENABLE_GRADE_DOWNLOADS = False
 
-    # .. toggle_name: FEATURES['ALLOW_COURSE_STAFF_GRADE_DOWNLOADS']
+    # .. toggle_name: ALLOW_COURSE_STAFF_GRADE_DOWNLOADS
     # .. toggle_implementation: DjangoSetting
     # .. toggle_default: False
     # .. toggle_description: Enable to give course staff unrestricted access to grade downloads;
