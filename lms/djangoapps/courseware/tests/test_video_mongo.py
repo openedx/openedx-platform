@@ -2325,8 +2325,6 @@ class TestVideoWithBumper(TestVideo):  # pylint: disable=test-inherits-tests
     """
     CATEGORY = "video"
     METADATA = {}
-    # Use temporary FEATURES in this test without affecting the original
-    FEATURES = dict(settings.FEATURES)
 
     @patch('xblocks_contrib.video.bumper_utils.get_bumper_settings')
     def test_is_bumper_enabled(self, get_bumper_settings):
@@ -2335,21 +2333,14 @@ class TestVideoWithBumper(TestVideo):  # pylint: disable=test-inherits-tests
 
         Assume that bumper settings are correct.
         """
-        self.FEATURES.update({
-            "SHOW_BUMPER_PERIODICITY": 1,
-            "ENABLE_VIDEO_BUMPER": True,
-        })
-
         get_bumper_settings.return_value = {
             "video_id": "edx_video_id",
             "transcripts": {},
         }
-        with override_settings(FEATURES=self.FEATURES):
+        with override_settings(SHOW_BUMPER_PERIODICITY=1, ENABLE_VIDEO_BUMPER=True):
             assert bumper_utils.is_bumper_enabled(self.block)
 
-        self.FEATURES.update({"ENABLE_VIDEO_BUMPER": False})
-
-        with override_settings(FEATURES=self.FEATURES):
+        with override_settings(SHOW_BUMPER_PERIODICITY=1, ENABLE_VIDEO_BUMPER=False):
             assert not bumper_utils.is_bumper_enabled(self.block)
 
     @patch('xblock.utils.resources.ResourceLoader.render_django_template', side_effect=mock_render_template)
