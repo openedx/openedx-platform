@@ -267,7 +267,7 @@ class ProctoringErrorsView(DeveloperErrorViewMixin, APIView):
 
         course_block = modulestore().get_course(course_key)
         advanced_dict = CourseMetadata.fetch(course_block)
-        if settings.FEATURES.get('DISABLE_MOBILE_COURSE_AVAILABLE', False):
+        if settings.DISABLE_MOBILE_COURSE_AVAILABLE:
             advanced_dict.get('mobile_available')['deprecated'] = True
 
         proctoring_errors = CourseMetadata.validate_proctoring_settings(course_block, advanced_dict, request.user)

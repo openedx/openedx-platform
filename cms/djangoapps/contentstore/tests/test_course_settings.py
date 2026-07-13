@@ -121,7 +121,7 @@ class CourseAdvanceSettingViewTest(CourseTestCase, MilestonesTestCaseMixin):
         # restricted.
         CourseStaffRole(self.course.id).add_users(self.nonstaff)
 
-    @override_settings(FEATURES={'DISABLE_MOBILE_COURSE_AVAILABLE': True})
+    @override_settings(DISABLE_MOBILE_COURSE_AVAILABLE=True)
     def test_mobile_field_available(self):
 
         """

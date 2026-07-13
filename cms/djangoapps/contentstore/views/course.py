@@ -1595,7 +1595,7 @@ def advanced_settings_handler(request, course_key_string):
         course_block = get_course_and_check_access(course_key, request.user)
 
         advanced_dict = CourseMetadata.fetch(course_block)
-        if settings.FEATURES.get('DISABLE_MOBILE_COURSE_AVAILABLE', False):
+        if settings.DISABLE_MOBILE_COURSE_AVAILABLE:
             advanced_dict.get('mobile_available')['deprecated'] = True
 
         if 'text/html' in request.META.get('HTTP_ACCEPT', '') and request.method == 'GET':
