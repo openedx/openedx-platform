@@ -3,7 +3,6 @@ Tests use cases related to LMS Entrance Exam behavior, such as gated content acc
 """
 
 
-
 from crum import set_current_request
 from django.test import override_settings
 from django.urls import reverse
