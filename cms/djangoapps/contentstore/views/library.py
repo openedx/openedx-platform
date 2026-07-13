@@ -87,7 +87,7 @@ def _user_can_create_library_for_org(user, org=None):
         return False
     else:
         # EDUCATOR-1924: DISABLE_LIBRARY_CREATION overrides DISABLE_COURSE_CREATION, if present.
-        disable_library_creation = settings.FEATURES.get('DISABLE_LIBRARY_CREATION', None)
+        disable_library_creation = settings.DISABLE_LIBRARY_CREATION
         disable_course_creation = getattr(settings, 'DISABLE_COURSE_CREATION', False)
         if disable_library_creation is not None:
             return not disable_library_creation

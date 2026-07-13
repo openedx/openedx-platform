@@ -182,6 +182,13 @@ DEPRECATE_OLD_COURSE_KEYS_IN_STUDIO = True
 # .. toggle_warning: Another toggle DISABLE_LIBRARY_CREATION overrides DISABLE_COURSE_CREATION, if present.
 DISABLE_COURSE_CREATION = False
 
+# .. setting_name: DISABLE_LIBRARY_CREATION
+# .. setting_default: None
+# .. setting_description: If set to True, disables library creation for users without a staff role and hides the
+#   "New Library" button in Studio. If set to False, enables library creation independently of DISABLE_COURSE_CREATION.
+#   If None (the default), DISABLE_COURSE_CREATION is used to decide whether library creation is disabled.
+DISABLE_LIBRARY_CREATION = None
+
 # .. toggle_name: settings.ENABLE_LTI_PII_ACKNOWLEDGEMENT
 # .. toggle_implementation: DjangoSetting
 # .. toggle_default: False

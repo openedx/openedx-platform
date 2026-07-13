@@ -133,12 +133,11 @@ class UnitTestLibraries(CourseTestCase):
         """
         _, nostaff_user = self.create_non_staff_authed_user_client()
         with mock.patch("cms.djangoapps.contentstore.toggles.libraries_v1_enabled", True):
-            with override_settings(DISABLE_COURSE_CREATION=disable_course):
-                with mock.patch.dict(
-                    "django.conf.settings.FEATURES",
-                    {"DISABLE_LIBRARY_CREATION": disable_library}
-                ):
-                    self.assertEqual(user_can_create_library(nostaff_user, 'SomEOrg'), expected_status)  # noqa: PT009
+            with override_settings(
+                DISABLE_COURSE_CREATION=disable_course,
+                DISABLE_LIBRARY_CREATION=disable_library,
+            ):
+                self.assertEqual(user_can_create_library(nostaff_user, 'SomEOrg'), expected_status)  # noqa: PT009
 
     @override_settings(DISABLE_COURSE_CREATION=True)
     @mock.patch("cms.djangoapps.contentstore.toggles.libraries_v1_enabled", True)
