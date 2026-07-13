@@ -384,7 +384,7 @@ class _BuiltInVideoBlock(
         # video will autoadvance or not.
         # For autoadvance controls to be shown, both the feature flag and the course setting must be true.
         # This allows to enable the feature for certain courses only.
-        autoadvance_enabled = settings.FEATURES.get('ENABLE_AUTOADVANCE_VIDEOS', False) and \
+        autoadvance_enabled = settings.ENABLE_AUTOADVANCE_VIDEOS and \
             getattr(self, 'video_auto_advance', False)
 
         # This is the current status of auto-advance (not the control visibility).
