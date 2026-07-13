@@ -111,7 +111,7 @@ class CourseMetadata:
             exclude_list.append('other_course_settings')
 
         # Do not show video_upload_pipeline if the feature is disabled.
-        if not settings.FEATURES.get('ENABLE_VIDEO_UPLOAD_PIPELINE'):
+        if not settings.ENABLE_VIDEO_UPLOAD_PIPELINE:
             exclude_list.append('video_upload_pipeline')
 
         # Do not show video auto advance if the feature is disabled
