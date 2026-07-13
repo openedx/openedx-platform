@@ -819,7 +819,7 @@ if settings.DEBUG or settings.FEATURES.get('ENABLE_DJANGO_ADMIN_SITE'):
         path('admin/', admin.site.urls),
     ]
 
-if configuration_helpers.get_value('ENABLE_BULK_ENROLLMENT_VIEW', settings.FEATURES.get('ENABLE_BULK_ENROLLMENT_VIEW')):
+if configuration_helpers.get_value('ENABLE_BULK_ENROLLMENT_VIEW', settings.ENABLE_BULK_ENROLLMENT_VIEW):
     urlpatterns += [
         path('api/bulk_enroll/v1/', include('lms.djangoapps.bulk_enroll.urls')),
     ]
