@@ -35,7 +35,8 @@ from common.djangoapps.util.testing import EventTestMixin
 from openedx.core.djangoapps.oauth_dispatch.tests import factories as dot_factories
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.core.djangoapps.user_api.accounts import EMAIL_MAX_LENGTH, EMAIL_MIN_LENGTH
-from openedx.core.djangoapps.user_api.models import UserRetirementRequest
+from openedx.core.djangoapps.user_api.accounts.utils import create_retirement_request_and_deactivate_account
+from openedx.core.djangoapps.user_api.models import RetirementState
 from openedx.core.djangoapps.user_api.tests.test_views import UserAPITestCase
 from openedx.core.djangoapps.user_authn.views.password_reset import (
     PASSWORD_RESET_INITIATED,
@@ -46,9 +47,6 @@ from openedx.core.djangoapps.user_authn.views.password_reset import (
     password_reset,
 )
 from openedx.core.djangolib.testing.utils import CacheIsolationTestCase, skip_unless_lms
-
-ENABLE_AUTHN_MICROFRONTEND = settings.FEATURES.copy()
-ENABLE_AUTHN_MICROFRONTEND['ENABLE_AUTHN_MICROFRONTEND'] = True
 
 
 def process_request(request):
@@ -78,6 +76,14 @@ class ResetPasswordTests(EventTestMixin, CacheIsolationTestCase):
         self.user_bad_passwd.is_active = False
         self.user_bad_passwd.password = UNUSABLE_PASSWORD_PREFIX
         self.user_bad_passwd.save()
+
+        # Create PENDING retirement state for tests that need it
+        RetirementState.objects.create(
+            state_name='PENDING',
+            state_execution_order=1,
+            is_dead_end_state=False,
+            required=True,
+        )
 
     def setup_request_session_with_token(self, request):
         """
@@ -318,6 +324,7 @@ class ResetPasswordTests(EventTestMixin, CacheIsolationTestCase):
         obj = json.loads(good_resp.content.decode('utf-8'))
         assert obj['success']
         assert 'e-mailed you instructions for setting your password' in obj['value']
+        assert len(mail.outbox) > 0
 
         from_email = configuration_helpers.get_value('email_from_address', settings.DEFAULT_FROM_EMAIL)
         sent_message = mail.outbox[0]
@@ -370,7 +377,7 @@ class ResetPasswordTests(EventTestMixin, CacheIsolationTestCase):
             SETTING_CHANGE_INITIATED, user_id=self.user.id, setting='password', old=None, new=None
         )
 
-    @override_settings(FEATURES=ENABLE_AUTHN_MICROFRONTEND)
+    @override_settings(ENABLE_AUTHN_MICROFRONTEND=True)
     @skip_unless_lms
     @ddt.data(('Crazy Awesome Site', 'Crazy Awesome Site'), ('edX', 'edX'))
     @ddt.unpack
@@ -536,23 +543,54 @@ class ResetPasswordTests(EventTestMixin, CacheIsolationTestCase):
         assert resp.status_code == 200
         assert not User.objects.get(pk=self.user.pk).is_active
 
-    def test_password_reset_retired_user_fail(self):
+    def test_password_reset_initiation_fails_for_retired_user(self):
         """
-        Tests that if a retired user attempts to reset their password, it fails.
+        Tests that a retired user cannot initiate a password reset.
         """
+        create_retirement_request_and_deactivate_account(self.user)
+        self.user.refresh_from_db()
+        assert not self.user.is_active
+        assert not self.user.has_usable_password()
+
+        reset_request = self.request_factory.post('/password_reset/', {'email': self.user.email})
+        reset_request.user = AnonymousUser()
+        response = password_reset(reset_request)
+
+        # Always return 200 OK to prevent user enumeration while leaving the password unchanged and unusable.
+        assert response.status_code == 200
+        response_data = json.loads(response.content.decode('utf-8'))
+        assert response_data['success'] is True
+        assert len(mail.outbox) == 0
+        self.user.refresh_from_db()
         assert not self.user.is_active
 
-        # Retire the user.
-        UserRetirementRequest.create_retirement_request(self.user)
+    def test_password_reset_completion_fails_for_retired_user(self):
+        """
+        Tests that password reset completion fails if retirement happens after reset initiation.
 
-        reset_req = self.request_factory.get(self.password_reset_confirm_url)
-        reset_req.user = self.user
-        resp = PasswordResetConfirmWrapper.as_view()(reset_req, uidb36=self.uidb36, token=self.token)
+        This simulates a user who initiated password reset before retirement
+        and then attempts to submit a completed reset form after retirement.
+        """
+        # Retire the user after they have initiated a reset (using the token set up in setUp).
+        create_retirement_request_and_deactivate_account(self.user)
+        self.user.refresh_from_db()
+        assert not self.user.is_active
+        assert not self.user.has_usable_password()
+        old_password_hash = self.user.password
 
-        # Verify the response status code is: 200 with password reset fail and also verify that
-        # the user is not marked as active.
-        assert resp.status_code == 200
-        assert not User.objects.get(pk=self.user.pk).is_active
+        request_params = {'new_password1': 'new_password1', 'new_password2': 'new_password1'}
+        confirm_request = self.request_factory.post(self.password_reset_confirm_url, data=request_params)
+        self.setup_request_session_with_token(confirm_request)
+        confirm_request.user = self.user
+
+        response = PasswordResetConfirmWrapper.as_view()(confirm_request, uidb36=self.uidb36, token=self.token)
+
+        # Always return 200 OK to prevent user enumeration while leaving the password unchanged and unusable.
+        assert response.status_code == 200
+        self.user.refresh_from_db()
+        assert not self.user.is_active
+        assert not self.user.has_usable_password()
+        assert self.user.password == old_password_hash
 
     def test_password_reset_normalize_password(self):
         # pylint: disable=anomalous-unicode-escape-in-string

@@ -263,7 +263,12 @@ def create_retirement_request_and_deactivate_account(user):
     user.set_unusable_password()
     user.save()
 
-    # TODO: Unlink social accounts & change password on each IDA.
+    # Do not unlink/redact social accounts during the initial retirement request.
+    # If the user cancels retirement during the cool-off period, they must
+    # still be able to authenticate using their existing social account.
+    # Deleting the social account at this stage would permanently break that
+    # login path. Therefore, social account unlinking should only occur
+    # when retirement is finalized after the cool-off period has elapsed.
     # Remove the activation keys sent by email to the user for account activation.
     Registration.objects.filter(user=user).delete()
 

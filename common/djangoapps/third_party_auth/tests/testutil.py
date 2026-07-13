@@ -27,7 +27,7 @@ from openedx.core.djangolib.testing.utils import CacheIsolationMixin
 from openedx.core.storage import OverwriteStorage
 
 AUTH_FEATURES_KEY = 'ENABLE_THIRD_PARTY_AUTH'
-AUTH_FEATURE_ENABLED = AUTH_FEATURES_KEY in settings.FEATURES
+AUTH_FEATURE_ENABLED = hasattr(settings, AUTH_FEATURES_KEY)
 
 
 def patch_mako_templates():

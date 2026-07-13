@@ -665,7 +665,7 @@ class ImportTestCase(CourseTestCase):
             Mock(), Mock(errors=errors, return_error=Mock(return_value=True)), Mock()
         ]
         expected_error_mesg = f'{self.log_prefix} CourseOlx validation failed.'
-        with patch.dict(settings.FEATURES, ENABLE_COURSE_OLX_VALIDATION=True):
+        with override_settings(ENABLE_COURSE_OLX_VALIDATION=True):
             response = self.import_file_in_course(good_file)
 
         self.assertEqual(response.status_code, 200)  # noqa: PT009

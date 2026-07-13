@@ -13,6 +13,6 @@ class LearningSequencesConfig(AppConfig):  # pylint: disable=missing-class-docst
         # Register celery workers
         # from .tasks import ls_listen_for_course_publish  # pylint: disable=unused-variable
 
-        if settings.FEATURES.get('ENABLE_SPECIAL_EXAMS'):
+        if settings.ENABLE_SPECIAL_EXAMS:
             from .services import LearningSequencesRuntimeService
             set_runtime_service('learning_sequences', LearningSequencesRuntimeService())

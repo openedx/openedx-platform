@@ -22,8 +22,16 @@ $(function(){
   $('.chapter').click(function(e){
     e.preventDefault();
     var url = $(this).attr('rel');
+    // Modern pdf.js parses the iframe's query string with URLSearchParams,
+    // which decodes `+` as a space. Asset-v1 opaque keys use `+` as a
+    // structural separator, so percent-encode the chapter URL before
+    // putting it in the `file` query value. The same encoding is applied
+    // server-side in lms/djangoapps/staticbook/views.py::pdf_index for the
+    // initial-load case. We keep the raw `url` for the analytics payload
+    // below so dashboards see human-readable chapter identifiers.
+    var encodedUrl = encodeURIComponent(url);
     $('#viewer-frame').attr({
-        'src': '${request.path | n, js_escaped_string}?viewer=true&file=' + url + '#zoom=page-fit&disableRange=true',
+        'src': '${request.path | n, js_escaped_string}?viewer=true&file=' + encodedUrl + '#zoom=page-fit&disableRange=true',
         'title': $(this).text()
         });
     $('#viewer-frame').focus();

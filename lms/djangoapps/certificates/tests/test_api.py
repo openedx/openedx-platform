@@ -76,10 +76,6 @@ CAN_GENERATE_METHOD = "lms.djangoapps.certificates.generation_handler._can_gener
 BETA_TESTER_METHOD = "lms.djangoapps.certificates.api.access.is_beta_tester"
 CERTS_VIEWABLE_METHOD = "lms.djangoapps.certificates.api.certificates_viewable_for_course"
 PASSED_OR_ALLOWLISTED_METHOD = "lms.djangoapps.certificates.api._has_passed_or_is_allowlisted"
-FEATURES_WITH_CERTS_ENABLED = settings.FEATURES.copy()
-FEATURES_WITH_CERTS_ENABLED["CERTIFICATES_HTML_VIEW"] = True
-
-
 class WebCertificateTestMixin:
     """
     Mixin with helpers for testing Web Certificates.
@@ -191,14 +187,14 @@ class CertificateDownloadableStatusTests(WebCertificateTestMixin, ModuleStoreTes
             "uuid": cert.verify_uuid,
         }
 
-    @patch.dict(settings.FEATURES, {"CERTIFICATES_HTML_VIEW": True})
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_pdf_cert_with_html_enabled(self):
         self.verify_downloadable_pdf_cert()
 
     def test_pdf_cert_with_html_disabled(self):
         self.verify_downloadable_pdf_cert()
 
-    @patch.dict(settings.FEATURES, {"CERTIFICATES_HTML_VIEW": True})
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_with_downloadable_web_cert(self):
         cert_status = certificate_status_for_student(self.student, self.course.id)
         assert certificate_downloadable_status(self.student, self.course.id) == {
@@ -221,7 +217,7 @@ class CertificateDownloadableStatusTests(WebCertificateTestMixin, ModuleStoreTes
         (False, timedelta(days=2), CertificatesDisplayBehaviors.END_WITH_DATE, False, None, True),
     )
     @ddt.unpack
-    @patch.dict(settings.FEATURES, {"CERTIFICATES_HTML_VIEW": True})
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_cert_api_return(
         self,
         self_paced,
@@ -476,7 +472,7 @@ class CertificateGetTests(SharedModuleStoreTestCase):
         """
         assert not get_certificates_for_user(self.student_no_cert.username)
 
-    @patch.dict(settings.FEATURES, {"CERTIFICATES_HTML_VIEW": True})
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_get_web_certificate_url(self):
         """
         Test the get_certificate_url with a web cert course
@@ -490,7 +486,7 @@ class CertificateGetTests(SharedModuleStoreTestCase):
         cert_url = get_certificate_url(user_id=self.student.id, course_id=self.web_cert_course.id, uuid=self.uuid)
         assert expected_url == cert_url
 
-    @patch.dict(settings.FEATURES, {"CERTIFICATES_HTML_VIEW": True})
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_get_pdf_certificate_url(self):
         """
         Test the get_certificate_url with a pdf cert course
@@ -522,7 +518,7 @@ class GenerateUserCertificatesTest(ModuleStoreTestCase):
             mode=CourseMode.VERIFIED,
         )
 
-    @patch.dict(settings.FEATURES, {"CERTIFICATES_HTML_VIEW": False})
+    @override_settings(CERTIFICATES_HTML_VIEW=False)
     def test_cert_url_empty_with_invalid_certificate(self):
         """
         Test certificate url is empty if html view is not enabled and certificate is not yet generated
@@ -530,7 +526,7 @@ class GenerateUserCertificatesTest(ModuleStoreTestCase):
         url = get_certificate_url(self.user.id, self.course_run_key)
         assert url == ""
 
-    @patch.dict(settings.FEATURES, {"CERTIFICATES_HTML_VIEW": True})
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_generation(self):
         """
         Test that a cert is successfully generated
@@ -546,7 +542,7 @@ class GenerateUserCertificatesTest(ModuleStoreTestCase):
                 assert cert.status == CertificateStatuses.downloadable
                 assert cert.mode == CourseMode.VERIFIED
 
-    @patch.dict(settings.FEATURES, {"CERTIFICATES_HTML_VIEW": True})
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     @ddt.data(True, False)
     def test_generation_unverified(self, enable_idv_requirement):
         """
@@ -567,7 +563,7 @@ class GenerateUserCertificatesTest(ModuleStoreTestCase):
                     else:
                         assert cert.status == CertificateStatuses.downloadable
 
-    @patch.dict(settings.FEATURES, {"CERTIFICATES_HTML_VIEW": True})
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_generation_notpassing(self):
         """
         Test that a cert is successfully generated with a status of notpassing
@@ -652,7 +648,7 @@ class CertificateGenerationEnabledTest(EventTestMixin, TestCase):
         assert expect_enabled == actual_enabled
 
 
-@override_settings(FEATURES=FEATURES_WITH_CERTS_ENABLED)
+@override_settings(CERTIFICATES_HTML_VIEW=True)
 class CertificatesBrandingTest(ModuleStoreTestCase):
     """Test certificates branding."""
 

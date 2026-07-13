@@ -12,7 +12,7 @@ from unittest.mock import patch
 import ddt
 import pytest
 from django.conf import settings
-from django.test import RequestFactory, TestCase
+from django.test import RequestFactory, TestCase, override_settings
 from django.urls import reverse
 from pytz import UTC
 from xblock.runtime import DictKeyValueStore
@@ -195,7 +195,7 @@ class TestMasqueradeLearnerOptions(StaffMasqueradeTestCase):
     """
 
     @ddt.data(True, False)
-    @patch.dict('django.conf.settings.FEATURES', {'ENABLE_MASQUERADE': True})
+    @override_settings(ENABLE_MASQUERADE=True)
     def test_masquerade_options_for_learner(self, partitions_enabled):
         """
         If there are partitions, then the View as Learner should NOT be available
@@ -234,7 +234,7 @@ class TestMasqueradeOptionsNoContentGroups(StaffMasqueradeTestCase):
 
     @ddt.data(['Cohort Group 1', True], ['Content Group 1', False])
     @ddt.unpack
-    @patch.dict('django.conf.settings.FEATURES', {'ENABLE_MASQUERADE': True})
+    @override_settings(ENABLE_MASQUERADE=True)
     def testMasqueradeCohortAvailable(self, target, expected):
         """
         Args:

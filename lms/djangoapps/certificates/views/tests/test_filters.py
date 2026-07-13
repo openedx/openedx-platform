@@ -1,7 +1,6 @@
 """
 Test that various filters are fired for views in the certificates app.
 """
-from django.conf import settings
 from django.http import HttpResponse
 from django.test import override_settings
 from openedx_filters import PipelineStep
@@ -14,9 +13,6 @@ from lms.djangoapps.certificates.utils import get_certificate_url
 from openedx.core.djangoapps.site_configuration.tests.test_util import with_site_configuration
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
-
-FEATURES_WITH_CERTS_ENABLED = settings.FEATURES.copy()
-FEATURES_WITH_CERTS_ENABLED['CERTIFICATES_HTML_VIEW'] = True
 
 
 class TestStopCertificateRenderStep(PipelineStep):
@@ -120,7 +116,7 @@ class CertificateFiltersTest(CommonCertificatesTestCase, SharedModuleStoreTestCa
                 "fail_silently": False,
             },
         },
-        FEATURES=FEATURES_WITH_CERTS_ENABLED,
+        CERTIFICATES_HTML_VIEW=True,
     )
     def test_certificate_render_filter_executed(self):
         """
@@ -154,7 +150,7 @@ class CertificateFiltersTest(CommonCertificatesTestCase, SharedModuleStoreTestCa
                 "fail_silently": False,
             },
         },
-        FEATURES=FEATURES_WITH_CERTS_ENABLED,
+        CERTIFICATES_HTML_VIEW=True,
     )
     def test_certificate_render_invalid(self):
         """
@@ -186,7 +182,7 @@ class CertificateFiltersTest(CommonCertificatesTestCase, SharedModuleStoreTestCa
                 "fail_silently": False,
             },
         },
-        FEATURES=FEATURES_WITH_CERTS_ENABLED,
+        CERTIFICATES_HTML_VIEW=True,
     )
     def test_certificate_redirect(self):
         """
@@ -217,7 +213,7 @@ class CertificateFiltersTest(CommonCertificatesTestCase, SharedModuleStoreTestCa
                 "fail_silently": False,
             },
         },
-        FEATURES=FEATURES_WITH_CERTS_ENABLED,
+        CERTIFICATES_HTML_VIEW=True,
     )
     def test_certificate_render_custom_response(self):
         """
@@ -240,7 +236,7 @@ class CertificateFiltersTest(CommonCertificatesTestCase, SharedModuleStoreTestCa
 
     @override_settings(
         OPEN_EDX_FILTERS_CONFIG={},
-        FEATURES=FEATURES_WITH_CERTS_ENABLED,
+        CERTIFICATES_HTML_VIEW=True,
     )
     @with_site_configuration(
         configuration={

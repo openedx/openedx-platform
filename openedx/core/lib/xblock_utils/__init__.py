@@ -289,7 +289,7 @@ def add_staff_markup(user, disable_staff_debug_info, block, view, frag, context)
         histogram = None
         render_histogram = False
 
-    if settings.FEATURES.get('ENABLE_LMS_MIGRATION') and hasattr(block.runtime, 'resources_fs'):
+    if getattr(settings, 'ENABLE_LMS_MIGRATION', False) and hasattr(block.runtime, 'resources_fs'):
         [filepath, filename] = getattr(block, 'xml_attributes', {}).get('filename', ['', None])
         osfs = block.runtime.resources_fs
         if filename is not None and osfs.exists(filename):
@@ -337,7 +337,7 @@ def add_staff_markup(user, disable_staff_debug_info, block, view, frag, context)
         'element_id': sanitize_html_id(block.location.html_id()),
         'edit_link': edit_link,
         'user': user,
-        'xqa_server': settings.FEATURES.get('XQA_SERVER', "http://your_xqa_server.com"),
+        'xqa_server': settings.XQA_SERVER,
         'histogram': json.dumps(histogram),
         'render_histogram': render_histogram,
         'block_content': frag.content,
