@@ -38,7 +38,7 @@ def plugin_settings(settings):
     #   courses will have disabled buttons at the instructor dashboard.
     settings.MAX_ENROLLMENT_INSTR_BUTTONS = 200
 
-    # .. toggle_name: FEATURES['ENABLE_GRADE_DOWNLOADS']
+    # .. toggle_name: ENABLE_GRADE_DOWNLOADS
     # .. toggle_implementation: DjangoSetting
     # .. toggle_default: False
     # .. toggle_description: Enable grade CSV downloads from the instructor dashboard. Grade
