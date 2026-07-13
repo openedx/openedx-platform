@@ -19,7 +19,7 @@ jobs:
           - "3.12"
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Fetch master to compare coverage
         run: git fetch --depth=1 origin master
 
