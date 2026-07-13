@@ -66,9 +66,6 @@ from openedx.core.djangoapps.user_api.tests.test_views import UserAPITestCase
 from openedx.core.djangolib.testing.utils import CacheIsolationTestCase, skip_unless_lms
 from openedx.core.lib.api import test_utils
 
-ENABLE_AUTO_GENERATED_USERNAME = settings.FEATURES.copy()
-ENABLE_AUTO_GENERATED_USERNAME['ENABLE_AUTO_GENERATED_USERNAME'] = True
-
 
 @ddt.ddt
 @skip_unless_lms
@@ -1834,7 +1831,7 @@ class RegistrationViewTestV1(
             response = self.client.post(self.url, {"email": self.EMAIL, "username": self.USERNAME})
             assert response.status_code == 403
 
-    @override_settings(FEATURES=ENABLE_AUTO_GENERATED_USERNAME)
+    @override_settings(ENABLE_AUTO_GENERATED_USERNAME=True)
     def test_register_with_auto_generated_username(self):
         """
         Test registration functionality with auto-generated username.
@@ -1866,7 +1863,7 @@ class RegistrationViewTestV1(
         response = self.client.get(reverse("dashboard"))
         self.assertHttpOK(response)
 
-    @override_settings(FEATURES=ENABLE_AUTO_GENERATED_USERNAME)
+    @override_settings(ENABLE_AUTO_GENERATED_USERNAME=True)
     def test_register_with_empty_name(self):
         """
         Test registration field validations when ENABLE_AUTO_GENERATED_USERNAME is enabled.
@@ -1890,7 +1887,7 @@ class RegistrationViewTestV1(
             }
         )
 
-    @override_settings(FEATURES=ENABLE_AUTO_GENERATED_USERNAME)
+    @override_settings(ENABLE_AUTO_GENERATED_USERNAME=True)
     @mock.patch('openedx.core.djangoapps.user_authn.views.utils._get_username_prefix')
     @mock.patch('openedx.core.djangoapps.user_authn.views.utils.random.choices')
     @mock.patch('openedx.core.djangoapps.user_authn.views.utils.datetime')

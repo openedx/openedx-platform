@@ -768,6 +768,15 @@ ENABLE_CROSS_DOMAIN_CSRF_COOKIE = False
 # .. toggle_warning: Requires configuration of third party auth
 ENABLE_REQUIRE_THIRD_PARTY_AUTH = False
 
+# .. toggle_name: ENABLE_AUTO_GENERATED_USERNAME
+# .. toggle_implementation: DjangoSetting
+# .. toggle_default: False
+# .. toggle_description: Set to True to enable auto-generation of usernames.
+# .. toggle_use_cases: open_edx
+# .. toggle_creation_date: 2024-02-20
+# .. toggle_warning: Changing this setting may affect user authentication, account management and discussions experience.
+ENABLE_AUTO_GENERATED_USERNAME = False
+
 # Specifies extra XBlock fields that should available when requested via the Course Blocks API
 # Should be a list of tuples of (block_type, field_name), where block_type can also be "*" for all block types.
 # e.g. COURSE_BLOCKS_API_EXTRA_FIELDS = [  ('course', 'other_course_settings'), ("problem", "weight")  ]
