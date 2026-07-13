@@ -77,6 +77,7 @@ DEFAULT_ADVANCED_MODULES = [
     'google-calendar',
     'google-document',
     'lti_consumer',
+    'pdf',
     'poll',
     'split_test',
     'survey',

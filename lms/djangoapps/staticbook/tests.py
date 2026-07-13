@@ -161,6 +161,19 @@ class StaticPdfBookTest(StaticBookTest):
         self.assertContains(response, "file={}".format(PDF_BOOK['chapters'][1]['url']))
         self.assertContains(response, "page=17")
 
+    def test_viewer_template_renders(self):
+        # The ?viewer=true path renders pdf_viewer.html (the embedded pdf.js
+        # viewer page). Confirm it parses, returns 200, and includes the
+        # vendored viewer's asset URLs.
+        self.make_course(pdf_textbooks=[PDF_BOOK])
+        url = self.make_url('pdf_book', book_index=0, chapter=1)
+        response = self.client.get(url + "?viewer=true")
+        assert response.status_code == 200
+        self.assertContains(response, "Chapter 1 for PDF")
+        self.assertContains(response, "/js/vendor/pdfjs/web/")
+        self.assertContains(response, "viewer.mjs")
+        self.assertContains(response, "pdf-analytics.js")
+
     def test_bad_book_id(self):
         # If the book id isn't an int, we'll get a 404.
         self.make_course(pdf_textbooks=[PDF_BOOK])
@@ -211,9 +224,14 @@ class StaticPdfBookTest(StaticBookTest):
         url = self.make_url('pdf_book', book_index=0, chapter=1)
         response = self.client.get(url)
         self.assertNotContains(response, 'file={}'.format(PORTABLE_PDF_BOOK['chapters'][0]['url']))
-        self.assertContains(response, 'file=/asset-v1:{0.org}+{0.course}+{0.run}+type@asset+block/{1}'.format(
-            self.course.location,
-            PORTABLE_PDF_BOOK['chapters'][0]['url'].replace('/static/', '')))
+        # The `+` separators in the asset-v1 opaque key are percent-encoded as
+        # %2B so pdf.js's URLSearchParams-based query parser doesn't decode
+        # them as spaces.
+        self.assertContains(
+            response,
+            'file=/asset-v1:{0.org}%2B{0.course}%2B{0.run}%2Btype@asset%2Bblock/{1}'.format(
+                self.course.location,
+                PORTABLE_PDF_BOOK['chapters'][0]['url'].replace('/static/', '')))
 
     def test_static_url_map_static_asset_path(self):
         """

@@ -1284,7 +1284,7 @@ def add_user_to_default_group(user, group):  # pylint: disable=missing-function-
 
 
 def create_comments_service_user(user):  # pylint: disable=missing-function-docstring
-    if not settings.FEATURES['ENABLE_DISCUSSION_SERVICE']:
+    if not settings.ENABLE_DISCUSSION_SERVICE:
         # Don't try--it won't work, and it will fill the logs with lots of errors
         return
     try:

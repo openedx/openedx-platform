@@ -18,7 +18,7 @@ def cache_programs(request):
     # checks that does site has configuration if not then
     # add a configuration with COURSE_CATALOG_API_URL parameter.
 
-    if settings.FEATURES.get('EXPOSE_CACHE_PROGRAMS_ENDPOINT'):
+    if settings.EXPOSE_CACHE_PROGRAMS_ENDPOINT:
         call_command('cache_programs')
 
         return HttpResponse('Programs cached.')

@@ -73,7 +73,7 @@ class MilestonesAndSpecialExamsTransformer(BlockStructureTransformer):
                 return True
             elif not self.include_gated_sections and self.has_pending_milestones_for_user(block_key, usage_info):
                 return True
-            elif (settings.FEATURES.get('ENABLE_SPECIAL_EXAMS', False) and
+            elif (settings.ENABLE_SPECIAL_EXAMS and
                   (self.is_special_exam(block_key, block_structure) and
                    not self.include_special_exams)):
                 return True

@@ -10,13 +10,12 @@ from zoneinfo import ZoneInfo
 
 import ddt
 import pytest
-from django.conf import settings
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.core.exceptions import ValidationError
 from django.db import DatabaseError, IntegrityError
 from django.http import HttpResponse
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.test.client import RequestFactory
 from django.urls import reverse
 
@@ -432,7 +431,7 @@ class TestAccountApi(UserSettingsEventTestMixin, EmailTemplateTagMixin, CreateAc
         account_settings = get_account_settings(self.default_request)[0]
         assert 'Mickey Mouse' == account_settings['name']
 
-    @patch.dict(settings.FEATURES, dict(ALLOW_EMAIL_ADDRESS_CHANGE=False))
+    @override_settings(ALLOW_EMAIL_ADDRESS_CHANGE=False)
     def test_email_changes_disabled(self):
         """
         Test that email address changes are rejected when ALLOW_EMAIL_ADDRESS_CHANGE is not set.
@@ -443,7 +442,7 @@ class TestAccountApi(UserSettingsEventTestMixin, EmailTemplateTagMixin, CreateAc
             update_account_settings(self.user, disabled_update)
         assert 'Email address changes have been disabled' in context_manager.value.developer_message
 
-    @patch.dict(settings.FEATURES, dict(ALLOW_EMAIL_ADDRESS_CHANGE=True))
+    @override_settings(ALLOW_EMAIL_ADDRESS_CHANGE=True)
     def test_email_changes_blocked_on_retired_email(self):
         """
         Test that email address changes are rejected when an email associated with a *partially* retired account is

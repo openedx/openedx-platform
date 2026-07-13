@@ -1,3 +1,0 @@
-Please keep this document up to date with any changes made to pdfjs in our repo so we can carry them forward if/when we update the package.
-
-2017-09-01 - Made a reference for zh-hans in locale.properties to the zh-cn translations in preparation for a Django upgrade from 1.8 - 1.11 that removes their use of zh-cn.

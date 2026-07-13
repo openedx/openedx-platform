@@ -8,7 +8,6 @@ from urllib.parse import urlencode
 from uuid import uuid4
 
 import ddt
-from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.http import Http404
 from django.test import SimpleTestCase, override_settings
@@ -451,7 +450,7 @@ class CourseMetadataViewTest(SharedModuleStoreTestCase, MasqueradeMixin):
 
         self.assertIn('open_responses', tab_ids)  # noqa: PT009
 
-    @patch('django.conf.settings.FEATURES', {'ENABLE_SPECIAL_EXAMS': True, 'MAX_ENROLLMENT_INSTR_BUTTONS': 200})
+    @override_settings(ENABLE_SPECIAL_EXAMS=True, MAX_ENROLLMENT_INSTR_BUTTONS=200)
     def test_special_exams_tab_with_proctored_exams_enabled(self):
         """
         Test that special_exams tab appears when course has proctored exams enabled.
@@ -461,7 +460,7 @@ class CourseMetadataViewTest(SharedModuleStoreTestCase, MasqueradeMixin):
 
         self.assertIn('special_exams', tab_ids)  # noqa: PT009
 
-    @patch('django.conf.settings.FEATURES', {'ENABLE_SPECIAL_EXAMS': True, 'MAX_ENROLLMENT_INSTR_BUTTONS': 200})
+    @override_settings(ENABLE_SPECIAL_EXAMS=True, MAX_ENROLLMENT_INSTR_BUTTONS=200)
     def test_special_exams_tab_with_timed_exams_enabled(self):
         """
         Test that special_exams tab appears when course has timed exams enabled.
@@ -478,9 +477,8 @@ class CourseMetadataViewTest(SharedModuleStoreTestCase, MasqueradeMixin):
         tab_ids = [tab['tab_id'] for tab in tabs]
         self.assertIn('special_exams', tab_ids)  # noqa: PT009
 
+    @override_settings(MAX_ENROLLMENT_INSTR_BUTTONS=200, ENABLE_CERTIFICATES_INSTRUCTOR_MANAGE=True)
     @patch('lms.djangoapps.instructor.views.serializers_v2.CertificateGenerationConfiguration.current')
-    @patch('django.conf.settings.FEATURES', {'ENABLE_CERTIFICATES_INSTRUCTOR_MANAGE': True,
-                                             'MAX_ENROLLMENT_INSTR_BUTTONS': 200})
     def test_certificates_tab_for_instructor_when_enabled(self, mock_cert_config):
         """
         Test that certificates tab appears for instructors when certificate management is enabled.
@@ -3049,7 +3047,7 @@ class CourseTeamRolesViewTest(SharedModuleStoreTestCase):
         for expected in ['Administrator', 'Moderator', 'Group Moderator', 'Community TA']:
             assert expected in returned_roles
 
-    @override_settings(FEATURES={**settings.FEATURES, 'CUSTOM_COURSES_EDX': True})
+    @override_settings(CUSTOM_COURSES_EDX=True)
     def test_list_roles_with_ccx_enabled(self):
         """Returns all roles including ccx_coach when CCX is enabled for the course."""
         ccx_course = CourseFactory.create(
@@ -3070,7 +3068,7 @@ class CourseTeamRolesViewTest(SharedModuleStoreTestCase):
         ccx_entry = next(r for r in response.data['results'] if r['role'] == 'ccx_coach')
         assert ccx_entry['display_name'] == 'CCX Coach'
 
-    @override_settings(FEATURES={**settings.FEATURES, 'CUSTOM_COURSES_EDX': True})
+    @override_settings(CUSTOM_COURSES_EDX=True)
     def test_roles_sort_order(self):
         """Roles are returned in the expected display order, with ccx_coach last."""
         ccx_course = CourseFactory.create(

@@ -13,8 +13,7 @@ from rest_framework.views import APIView
 
 from common.djangoapps.edxmako.shortcuts import render_to_response
 
-from . import messages
-from .api import check_course_access
+from . import api, messages
 
 
 class CheckCourseAccessView(APIView):  # pylint: disable=missing-class-docstring
@@ -48,7 +47,7 @@ class CheckCourseAccessView(APIView):  # pylint: disable=missing-class-docstring
                     course_key = CourseKey.from_string(course_id)
                 except InvalidKeyError as exc:
                     raise ValidationError('Invalid course_ids') from exc
-                if not check_course_access(course_key, user=user, ip_addresses=[user_ip_address]):
+                if not api.check_course_access(course_key, user=user, ip_addresses=[user_ip_address]):
                     response['access'] = False
                     break
         else:

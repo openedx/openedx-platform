@@ -61,10 +61,10 @@ def user_has_role(user, role):
     # CourseCreator is odd b/c it can be disabled via config
     if isinstance(role, CourseCreatorRole):
         # completely shut down course creation setting
-        if settings.FEATURES.get('DISABLE_COURSE_CREATION', False):
+        if getattr(settings, 'DISABLE_COURSE_CREATION', False):
             return False
         # wide open course creation setting
-        if not settings.FEATURES.get('ENABLE_CREATOR_GROUP', False):
+        if not getattr(settings, 'ENABLE_CREATOR_GROUP', False):
             return True
 
     if role.has_user(user):
@@ -257,7 +257,7 @@ def _has_content_creator_access(user, org):
     Returns:
         bool: True if the user has platform-wide or org-scoped course creation permission.
     """
-    if settings.FEATURES.get("DISABLE_COURSE_CREATION", False):
+    if getattr(settings, 'DISABLE_COURSE_CREATION', False):
         return False
 
     scope_keys = (

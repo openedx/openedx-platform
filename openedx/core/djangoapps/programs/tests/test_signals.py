@@ -142,7 +142,8 @@ class CertChangedReceiverTest(TestCase):
         assert mock_is_learner_issuance_enabled.call_count == 1
         assert mock_task.call_count == 0
 
-    def test_credentials_enabled(self, mock_is_learner_issuance_enabled, mock_task):
+    @mock.patch("django.db.transaction.on_commit", side_effect=lambda f: f())
+    def test_credentials_enabled(self, mock_on_commit, mock_is_learner_issuance_enabled, mock_task):
         """
         Ensures that the receiver function invokes the expected celery task
         when the credentials API configuration is enabled.
@@ -152,23 +153,28 @@ class CertChangedReceiverTest(TestCase):
         handle_course_cert_changed(**self.signal_kwargs)
 
         assert mock_is_learner_issuance_enabled.call_count == 1
+        assert mock_on_commit.call_count == 1
         assert mock_task.call_count == 1
         assert mock_task.call_args[0] == (TEST_USERNAME, str(TEST_COURSE_KEY))
 
-    def test_records_enabled(self, mock_is_learner_issuance_enabled, mock_task):
+    @mock.patch("django.db.transaction.on_commit", side_effect=lambda f: f())
+    def test_records_enabled(self, mock_on_commit, mock_is_learner_issuance_enabled, mock_task):
         mock_is_learner_issuance_enabled.return_value = True
 
         site_config = SiteConfigurationFactory.create(site_values={"course_org_filter": ["edX"]})
 
-        # Correctly sent
+        # Correctly sent (scheduled via transaction.on_commit)
         handle_course_cert_changed(**self.signal_kwargs)
+        assert mock_on_commit.called
         assert mock_task.called
+        mock_on_commit.reset_mock()
         mock_task.reset_mock()
 
         # Correctly not sent
         site_config.site_values["ENABLE_LEARNER_RECORDS"] = False
         site_config.save()
         handle_course_cert_changed(**self.signal_kwargs)
+        assert not mock_on_commit.called
         assert not mock_task.called
 
 

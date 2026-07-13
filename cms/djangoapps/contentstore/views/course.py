@@ -419,8 +419,19 @@ def get_in_process_course_actions(request):
             exclude_args={'state': CourseRerunUIStateManager.State.SUCCEEDED},
             should_display=True,
         )
-        if user_has_course_permission(
-            request.user, COURSES_VIEW_COURSE.identifier, course.course_key, LegacyAuthoringPermission.READ
+        if (
+            # The user who initiated the rerun can always see its status.
+            # This is needed because when the authz flag is enabled, permission
+            # checks require a CourseOverview which doesn't exist until the
+            # rerun task clones the course.
+            # TODO: This created_user fallback is a temporary workaround until
+            # openedx/openedx-authz#352 is implemented. Once authz supports
+            # pre-assigning roles without a CourseOverview, this check can be removed
+            # and the standard permission check will suffice.
+            course.created_user == request.user
+            or user_has_course_permission(
+                request.user, COURSES_VIEW_COURSE.identifier, course.course_key, LegacyAuthoringPermission.READ
+            )
         )
     ]
 
@@ -1173,7 +1184,7 @@ def _create_or_rerun_course(request):
             raise PermissionDenied()
 
         # allow/disable unicode characters in course_id according to settings
-        if not settings.FEATURES.get('ALLOW_UNICODE_COURSE_ID'):
+        if not settings.ALLOW_UNICODE_COURSE_ID:
             if _has_non_ascii_characters(org) or _has_non_ascii_characters(course) or _has_non_ascii_characters(run):
                 return JsonResponse(
                     {'error': _('Special characters not allowed in organization, course number, and course run.')},
@@ -1324,8 +1335,17 @@ def rerun_course(user, source_course_key, org, number, run, fields, background=T
             raise PermissionDenied()
 
     # Make sure user has instructor and staff access to the destination course
-    # so the user can see the updated status for that course
-    add_instructor(destination_course_key, user, user)
+    # so the user can see the updated status for that course.
+    # When authz is enabled, we skip this because the authz layer requires a
+    # CourseOverview (which doesn't exist until the course is cloned in the task).
+    # In that case, visibility of the rerun status is granted by checking
+    # created_user on CourseRerunState instead.
+    # TODO: This conditional is a temporary workaround until openedx/openedx-authz#352
+    # is implemented (pre-assigning roles without a CourseOverview). Once resolved,
+    # add_instructor can be called unconditionally here and the created_user fallback
+    # in get_in_process_course_actions can be removed.
+    if not core_toggles.enable_authz_course_authoring(destination_course_key):
+        add_instructor(destination_course_key, user, user)
 
     # Mark the action as initiated
     CourseRerunState.objects.initiated(source_course_key, destination_course_key, user, fields['display_name'])
@@ -2091,9 +2111,9 @@ def _get_course_creator_status(user):
 
     if user.is_staff:
         course_creator_status = 'granted'
-    elif settings.FEATURES.get('DISABLE_COURSE_CREATION', False):
+    elif getattr(settings, 'DISABLE_COURSE_CREATION', False):
         course_creator_status = 'disallowed_for_this_site'
-    elif settings.FEATURES.get('ENABLE_CREATOR_GROUP', False):
+    elif getattr(settings, 'ENABLE_CREATOR_GROUP', False):
         course_creator_status = get_course_creator_status(user)
         if course_creator_status is None:
             # User not grandfathered in as an existing user, has not previously visited the dashboard page.
@@ -2110,7 +2130,7 @@ def get_allowed_organizations(user):
     """
     Helper method for returning the list of organizations for which the user is allowed to create courses.
     """
-    if settings.FEATURES.get('ENABLE_CREATOR_GROUP', False):
+    if getattr(settings, 'ENABLE_CREATOR_GROUP', False):
         return get_organizations(user)
     else:
         return []
@@ -2130,7 +2150,7 @@ def get_allowed_organizations_for_libraries(user):
 
     # This allows people in the course creator group for an org to create
     # libraries, which mimics course behavior.
-    if settings.FEATURES.get('ENABLE_CREATOR_GROUP', False):
+    if getattr(settings, 'ENABLE_CREATOR_GROUP', False):
         organizations_set.update(get_organizations(user))
 
     return sorted(organizations_set)
@@ -2140,7 +2160,7 @@ def user_can_create_organizations(user):
     """
     Returns True if the user can create organizations.
     """
-    return user.is_staff or not settings.FEATURES.get('ENABLE_CREATOR_GROUP', False)
+    return user.is_staff or not getattr(settings, 'ENABLE_CREATOR_GROUP', False)
 
 
 def get_organizations_for_non_course_creators(user):

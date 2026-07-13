@@ -124,14 +124,14 @@ class CourseMetadata:
             exclude_list.append('social_sharing_url')
 
         # Do not show teams configuration if feature is disabled.
-        if not settings.FEATURES.get('ENABLE_TEAMS'):
+        if not settings.ENABLE_TEAMS:
             exclude_list.append('teams_configuration')
 
         if not settings.FEATURES.get('ENABLE_VIDEO_BUMPER'):
             exclude_list.append('video_bumper')
 
         # Do not show enable_ccx if feature is not enabled.
-        if not settings.FEATURES.get('CUSTOM_COURSES_EDX'):
+        if not settings.CUSTOM_COURSES_EDX:
             exclude_list.append('enable_ccx')
             exclude_list.append('ccx_connector')
 

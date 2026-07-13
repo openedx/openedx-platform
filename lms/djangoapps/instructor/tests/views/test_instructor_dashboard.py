@@ -516,7 +516,7 @@ class TestInstructorDashboard(ModuleStoreTestCase, LoginEnrollmentTestCase, XssT
         """
         Test whether the "CCX Coaches" option is visible or hidden depending on the value of course.enable_ccx.
         """
-        with patch.dict(settings.FEATURES, {'CUSTOM_COURSES_EDX': ccx_feature_flag}):
+        with override_settings(CUSTOM_COURSES_EDX=ccx_feature_flag):
             self.course.enable_ccx = enable_ccx
             self.store.update_item(self.course, self.instructor.id)
 

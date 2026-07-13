@@ -1329,7 +1329,7 @@ class EnrollmentEmbargoTest(EnrollmentTestMixin, UrlResetMixin, ModuleStoreTestC
 
     URLCONF_MODULES = ['openedx.core.djangoapps.embargo']
 
-    @patch.dict(settings.FEATURES, {'EMBARGO': True})
+    @override_settings(EMBARGO=True)
     def setUp(self):
         """ Create a course and user, then log in. """
         super().setUp()
@@ -1369,7 +1369,7 @@ class EnrollmentEmbargoTest(EnrollmentTestMixin, UrlResetMixin, ModuleStoreTestC
         # Verify that we were not enrolled
         assert self._get_enrollments() == []
 
-    @patch.dict(settings.FEATURES, {'EMBARGO': True})
+    @override_settings(EMBARGO=True)
     def test_embargo_change_enrollment_restrict_geoip(self):
         """ Validates that enrollment changes are blocked if the request originates from an embargoed country. """
 
@@ -1395,7 +1395,7 @@ class EnrollmentEmbargoTest(EnrollmentTestMixin, UrlResetMixin, ModuleStoreTestC
         return unrestricted_country, restricted_country
 
     @override_settings(EDX_API_KEY=EnrollmentTestMixin.API_KEY)
-    @patch.dict(settings.FEATURES, {'EMBARGO': True})
+    @override_settings(EMBARGO=True)
     def test_embargo_change_enrollment_restrict_user_profile(self):
         """ Validates that enrollment changes are blocked if the user's profile is linked to an embargoed country. """
 
@@ -1409,7 +1409,7 @@ class EnrollmentEmbargoTest(EnrollmentTestMixin, UrlResetMixin, ModuleStoreTestC
         self.assert_access_denied(path)
 
     @override_settings(EDX_API_KEY=EnrollmentTestMixin.API_KEY)
-    @patch.dict(settings.FEATURES, {'EMBARGO': True})
+    @override_settings(EMBARGO=True)
     def test_embargo_change_enrollment_allow_user_profile(self):
         """
         Validates that enrollment changes are allowed if the user's profile is NOT linked to an embargoed country.
@@ -1423,7 +1423,7 @@ class EnrollmentEmbargoTest(EnrollmentTestMixin, UrlResetMixin, ModuleStoreTestC
         self.user.profile.save()
         self.assert_enrollment_status()
 
-    @patch.dict(settings.FEATURES, {'EMBARGO': True})
+    @override_settings(EMBARGO=True)
     def test_embargo_change_enrollment_allow(self):
         self.assert_enrollment_status()
 

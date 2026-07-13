@@ -123,6 +123,65 @@ class CourseDetailsViewTest(CourseTestCase, PermissionAccessMixin):
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
 
+    def test_put_course_details_with_empty_certificate_available_date(self):
+        """
+        Saving certificate display behavior options that don't include a date
+        should succeed. The MFE sends certificate_available_date as "" for
+        'Immediately upon passing' and 'End date of course' options.
+        """
+        request_data = {
+            "about_sidebar_html": "",
+            "banner_image_name": "images_course_image.jpg",
+            "banner_image_asset_path": "/asset-v1:edX+E2E-101+course+type@asset+block@images_course_image.jpg",
+            "certificate_available_date": "",
+            "certificates_display_behavior": "early_no_info",
+            "course_id": "E2E-101",
+            "course_image_asset_path": "/static/studio/images/pencils.jpg",
+            "course_image_name": "bar_course_image_name",
+            "description": "foo_description",
+            "duration": "",
+            "effort": None,
+            "end_date": "2023-08-01T01:30:00Z",
+            "enrollment_end": "2023-05-30T01:00:00Z",
+            "enrollment_start": "2023-05-29T01:00:00Z",
+            "entrance_exam_enabled": "",
+            "entrance_exam_id": "",
+            "entrance_exam_minimum_score_pct": "50",
+            "intro_video": None,
+            "language": "creative-commons: ver=4.0 BY NC ND",
+            "learning_info": ["foo", "bar"],
+            "license": "creative-commons: ver=4.0 BY NC ND",
+            "org": "edX",
+            "overview": '<section class="about"></section>',
+            "pre_requisite_courses": [],
+            "run": "course",
+            "self_paced": None,
+            "short_description": "",
+            "start_date": "2023-06-01T01:30:00Z",
+            "subtitle": "",
+            "syllabus": None,
+            "title": "",
+            "video_thumbnail_image_asset_path": "/asset-v1:edX+E2E-101+course+type@asset+block@images_course_image.jpg",
+            "video_thumbnail_image_name": "images_course_image.jpg",
+            "instructor_info": {
+                "instructors": [
+                    {
+                        "name": "foo bar",
+                        "title": "title",
+                        "organization": "org",
+                        "image": "image",
+                        "bio": "",
+                    }
+                ]
+            },
+        }
+        response = self.client.put(
+            path=self.url,
+            data=json.dumps(request_data),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+
     def test_put_emits_course_published_signal_once(self):
         """
         Verify that a single PUT to the course details API emits the
@@ -283,6 +342,11 @@ class CourseDetailsAuthzViewTest(CourseAuthoringAuthzTestMixin, CourseTestCase):
         ({"end_date": "2023-02-01"}, (True, False)),
         ({"enrollment_start": "2023-01-01"}, (True, False)),
         ({"enrollment_end": "2023-01-10"}, (True, False)),
+
+        # certificate_available_date with empty string or null (no date selected)
+        ({"certificate_available_date": ""}, (False, False)),
+        ({"certificate_available_date": None}, (False, False)),
+        ({"certificate_available_date": "2029-06-01T00:00:00Z"}, (True, False)),
 
         # Details-only fields
         ({"title": "New Title"}, (False, True)),

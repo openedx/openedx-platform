@@ -2,11 +2,11 @@
 Tests for Discussion API internal interface
 """
 
-from unittest import mock
 
 import ddt
 import pytest
 from django.contrib.auth import get_user_model
+from django.test import override_settings
 from django.test.client import RequestFactory
 from opaque_keys.edx.keys import CourseKey
 
@@ -21,7 +21,7 @@ User = get_user_model()
 
 
 @ddt.ddt
-@mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+@override_settings(ENABLE_DISCUSSION_SERVICE=True)
 class GetUserCommentsTest(ForumMockUtilsMixin, SharedModuleStoreTestCase):
     """
     Tests for get_user_comments.
@@ -37,7 +37,6 @@ class GetUserCommentsTest(ForumMockUtilsMixin, SharedModuleStoreTestCase):
         super().tearDownClass()
         super().disposeForumMocks()
 
-    @mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
     def setUp(self):
         super().setUp()
 

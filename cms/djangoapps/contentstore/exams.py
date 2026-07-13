@@ -27,7 +27,7 @@ def register_exams(course_key):
     Likewise, if formerly registered exams are not included in the payload they will
     be marked inactive by the exam service.
     """
-    if not settings.FEATURES.get('ENABLE_SPECIAL_EXAMS') or not exams_ida_enabled(course_key):
+    if not settings.ENABLE_SPECIAL_EXAMS or not exams_ida_enabled(course_key):
         # if feature is not enabled then do a quick exit
         return
 

@@ -1,10 +1,7 @@
 """
 Tests for Instructor API v2 Special Exams endpoints.
 """
-from unittest.mock import patch
-
 import ddt
-from django.conf import settings
 from django.test.utils import override_settings
 from django.urls import reverse
 from django.utils import timezone
@@ -31,7 +28,7 @@ PROCTORING_SETTINGS = {
 
 
 @override_settings(**PROCTORING_SETTINGS)
-@patch.dict(settings.FEATURES, {'ENABLE_SPECIAL_EXAMS': True})
+@override_settings(ENABLE_SPECIAL_EXAMS=True)
 @ddt.ddt
 class SpecialExamsListViewTest(ModuleStoreTestCase):
     """Tests for GET /api/instructor/v2/courses/{course_key}/special_exams"""
@@ -129,7 +126,7 @@ class SpecialExamsListViewTest(ModuleStoreTestCase):
 
 
 @override_settings(**PROCTORING_SETTINGS)
-@patch.dict(settings.FEATURES, {'ENABLE_SPECIAL_EXAMS': True})
+@override_settings(ENABLE_SPECIAL_EXAMS=True)
 class SpecialExamDetailViewTest(ModuleStoreTestCase):
     """Tests for GET /api/instructor/v2/courses/{course_key}/special_exams/{exam_id}"""
 
@@ -177,7 +174,7 @@ class SpecialExamDetailViewTest(ModuleStoreTestCase):
 
 
 @override_settings(**PROCTORING_SETTINGS)
-@patch.dict(settings.FEATURES, {'ENABLE_SPECIAL_EXAMS': True})
+@override_settings(ENABLE_SPECIAL_EXAMS=True)
 class SpecialExamResetViewTest(ModuleStoreTestCase):
     """Tests for POST /api/instructor/v2/courses/{course_key}/special_exams/{exam_id}/reset/{username}"""
 
@@ -220,7 +217,7 @@ class SpecialExamResetViewTest(ModuleStoreTestCase):
 
 
 @override_settings(**PROCTORING_SETTINGS)
-@patch.dict(settings.FEATURES, {'ENABLE_SPECIAL_EXAMS': True})
+@override_settings(ENABLE_SPECIAL_EXAMS=True)
 @ddt.ddt
 class SpecialExamAttemptsViewTest(ModuleStoreTestCase):
     """Tests for GET /api/instructor/v2/courses/{course_key}/special_exams/{exam_id}/attempts"""
@@ -296,7 +293,7 @@ class SpecialExamAttemptsViewTest(ModuleStoreTestCase):
 
 
 @override_settings(**PROCTORING_SETTINGS)
-@patch.dict(settings.FEATURES, {'ENABLE_SPECIAL_EXAMS': True})
+@override_settings(ENABLE_SPECIAL_EXAMS=True)
 class ProctoringSettingsViewTest(ModuleStoreTestCase):
     """Tests for GET/PATCH /api/instructor/v2/courses/{course_key}/proctoring_settings"""
 
@@ -341,7 +338,7 @@ class ProctoringSettingsViewTest(ModuleStoreTestCase):
 
 
 @override_settings(**PROCTORING_SETTINGS)
-@patch.dict(settings.FEATURES, {'ENABLE_SPECIAL_EXAMS': True})
+@override_settings(ENABLE_SPECIAL_EXAMS=True)
 class ExamAllowanceViewTest(ModuleStoreTestCase):
     """Tests for POST /api/instructor/v2/courses/{course_key}/special_exams/{exam_id}/allowance"""
 
@@ -512,7 +509,7 @@ class ExamAllowanceViewTest(ModuleStoreTestCase):
 
 
 @override_settings(**PROCTORING_SETTINGS)
-@patch.dict(settings.FEATURES, {'ENABLE_SPECIAL_EXAMS': True})
+@override_settings(ENABLE_SPECIAL_EXAMS=True)
 @ddt.ddt
 class CourseAllowancesViewTest(ModuleStoreTestCase):
     """Tests for GET /api/instructor/v2/courses/{course_key}/special_exams/allowances"""
@@ -663,7 +660,7 @@ class CourseAllowancesViewTest(ModuleStoreTestCase):
 
 
 @override_settings(**PROCTORING_SETTINGS)
-@patch.dict(settings.FEATURES, {'ENABLE_SPECIAL_EXAMS': True})
+@override_settings(ENABLE_SPECIAL_EXAMS=True)
 @ddt.ddt
 class CourseExamAttemptsViewTest(ModuleStoreTestCase):
     """Tests for GET /api/instructor/v2/courses/{course_key}/special_exams/attempts"""

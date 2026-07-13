@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 import ddt
 import geoip2.database
 import maxminddb
-from django.conf import settings
+from django.test import override_settings
 from django.urls import reverse
 
 from common.djangoapps.student.tests.factories import UserFactory  # pylint: disable=wrong-import-order
@@ -32,6 +32,7 @@ from .factories import CountryAccessRuleFactory, RestrictedCourseFactory
 
 @skip_unless_lms
 @ddt.ddt
+@override_settings(EMBARGO=True)
 class CourseAccessMessageViewTest(CacheIsolationTestCase, UrlResetMixin):
     """Tests for the courseware access message view.
 
@@ -53,10 +54,6 @@ class CourseAccessMessageViewTest(CacheIsolationTestCase, UrlResetMixin):
     ENABLED_CACHES = ['default']
 
     URLCONF_MODULES = ['openedx.core.djangoapps.embargo']
-
-    @patch.dict(settings.FEATURES, {'EMBARGO': True})
-    def setUp(self):
-        super().setUp()
 
     @ddt.data(*list(messages.ENROLL_MESSAGES.keys()))
     def test_enrollment_messages(self, msg_key):
@@ -99,10 +96,10 @@ class CourseAccessMessageViewTest(CacheIsolationTestCase, UrlResetMixin):
 
 
 @skip_unless_lms
+@override_settings(EMBARGO=True)
 class CheckCourseAccessViewTest(CourseApiFactoryMixin, ModuleStoreTestCase):
     """ Tests the course access check endpoint. """
 
-    @patch.dict(settings.FEATURES, {'EMBARGO': True})
     def setUp(self):
         super().setUp()
         self.url = reverse('api_embargo:v1_course_access')
