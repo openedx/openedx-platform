@@ -19,7 +19,7 @@ def plugin_settings(settings):
     # .. toggle_tickets: https://github.com/openedx/edx-platform/pull/5838
     settings.DISPLAY_ANALYTICS_ENROLLMENTS = True
 
-    # .. toggle_name: FEATURES['ENABLE_CCX_ANALYTICS_DASHBOARD_URL']
+    # .. toggle_name: ENABLE_CCX_ANALYTICS_DASHBOARD_URL
     # .. toggle_implementation: DjangoSetting
     # .. toggle_default: False
     # .. toggle_description: Display the 'Analytics' tab in the instructor dashboard for CCX courses.
