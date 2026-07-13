@@ -408,7 +408,7 @@ class _BuiltInVideoBlock(
             # this option will have an effect if changed to "True". The code on
             # front-end exists.
             'autohideHtml5': False,
-            'autoplay': settings.FEATURES.get('AUTOPLAY_VIDEOS', False),
+            'autoplay': settings.AUTOPLAY_VIDEOS,
             # This won't work when we move to data that
             # isn't on the filesystem
             'captionDataDir': getattr(self, 'data_dir', None),

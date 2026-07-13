@@ -370,7 +370,7 @@ class TestGetHtmlMethod(BaseTestVideoXBlock):
             'autoAdvance': False,
             'saveStateEnabled': True,
             'saveStateUrl': '',
-            'autoplay': settings.FEATURES.get('AUTOPLAY_VIDEOS', True),
+            'autoplay': settings.AUTOPLAY_VIDEOS,
             'streams': '1.00:3_yD_cEKoCk',
             'sources': '[]',
             'duration': 111.0,
