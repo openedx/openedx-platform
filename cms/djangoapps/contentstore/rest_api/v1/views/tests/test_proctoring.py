@@ -439,9 +439,7 @@ class CourseProctoringErrorsViewTest(CourseTestCase, PermissionAccessMixin):
         If this feature is enabled, only Django Staff/Superuser should be able to see the proctoring errors.
         For non-staff users the proctoring errors should be unavailable.
         """
-        with override_settings(
-            FEATURES={"DISABLE_ADVANCED_SETTINGS": disable_advanced_settings}
-        ):
+        with override_settings(DISABLE_ADVANCED_SETTINGS=disable_advanced_settings):
             response = self.non_staff_client.get(self.url)
             self.assertEqual(  # noqa: PT009
                 response.status_code, 403 if disable_advanced_settings else 200
@@ -469,7 +467,7 @@ class CourseProctoringErrorsViewTest(CourseTestCase, PermissionAccessMixin):
     @patch('common.djangoapps.student.auth.authz_api.is_user_allowed')
     def test_authz_with_disable_advanced_settings_staff_allowed(self, mock_is_user_allowed, mock_flag):
         """Staff user can access when DISABLE_ADVANCED_SETTINGS is enabled, bypassing authz."""
-        with override_settings(FEATURES={"DISABLE_ADVANCED_SETTINGS": True}):
+        with override_settings(DISABLE_ADVANCED_SETTINGS=True):
             response = self.client.get(self.url)
             self.assertEqual(response.status_code, 200)  # noqa: PT009
             mock_is_user_allowed.assert_not_called()
@@ -478,7 +476,7 @@ class CourseProctoringErrorsViewTest(CourseTestCase, PermissionAccessMixin):
     @patch('common.djangoapps.student.auth.authz_api.is_user_allowed')
     def test_authz_with_disable_advanced_settings_non_staff_denied(self, mock_is_user_allowed, mock_flag):
         """Non-staff user is denied when DISABLE_ADVANCED_SETTINGS is enabled, bypassing authz."""
-        with override_settings(FEATURES={"DISABLE_ADVANCED_SETTINGS": True}):
+        with override_settings(DISABLE_ADVANCED_SETTINGS=True):
             response = self.non_staff_client.get(self.url)
             self.assertEqual(response.status_code, 403)  # noqa: PT009
             mock_is_user_allowed.assert_not_called()

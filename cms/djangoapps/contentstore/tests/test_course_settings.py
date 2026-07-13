@@ -164,9 +164,10 @@ class CourseAdvanceSettingViewTest(CourseTestCase, MilestonesTestCaseMixin):
         When DISABLE_ADVANCED_SETTINGS is enabled, non-staff users should receive
         a 403 on the advanced settings URL; staff users should always be redirected.
         """
-        with override_settings(FEATURES={
-            'DISABLE_ADVANCED_SETTINGS': disable_advanced_settings,
-        }, COURSE_AUTHORING_MICROFRONTEND_URL='https://mfe.example'):
+        with override_settings(
+            DISABLE_ADVANCED_SETTINGS=disable_advanced_settings,
+            COURSE_AUTHORING_MICROFRONTEND_URL='https://mfe.example',
+        ):
             response = self.non_staff_client.get_html(self.course_setting_url)
             self.assertEqual(response.status_code, 403 if disable_advanced_settings else 302)  # noqa: PT009
 

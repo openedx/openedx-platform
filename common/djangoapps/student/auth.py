@@ -163,7 +163,7 @@ def has_studio_advanced_settings_access(user):
     By default, this feature is disabled.
     """
     return (
-        not settings.FEATURES.get('DISABLE_ADVANCED_SETTINGS', False)
+        not getattr(settings, 'DISABLE_ADVANCED_SETTINGS', False)
         or user.is_staff
         or user.is_superuser
     )
@@ -205,7 +205,7 @@ def check_course_advanced_settings_access(user, course_key, access_type='read'):
         # For feature_restricted access type, check DISABLE_ADVANCED_SETTINGS feature
         if (
             access_type == 'feature_restricted'
-            and settings.FEATURES.get('DISABLE_ADVANCED_SETTINGS', False)
+            and getattr(settings, 'DISABLE_ADVANCED_SETTINGS', False)
         ):
             # When feature is disabled, only staff/superuser can access (bypass authz)
             return user.is_staff or user.is_superuser
