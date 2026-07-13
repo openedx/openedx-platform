@@ -27,7 +27,7 @@ def header_language_selector_is_enabled():
 
 def footer_language_selector_is_enabled():
     """Return true if the footer language selector has been enabled via settings or site-specific configuration."""
-    return get_value('SHOW_FOOTER_LANGUAGE_SELECTOR', settings.FEATURES.get('SHOW_FOOTER_LANGUAGE_SELECTOR', False))
+    return get_value('SHOW_FOOTER_LANGUAGE_SELECTOR', settings.SHOW_FOOTER_LANGUAGE_SELECTOR)
 
 
 def released_languages():
