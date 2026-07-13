@@ -166,7 +166,7 @@ def index(request, extra_context=None, user=AnonymousUser()):  # noqa: B008
 
     if configuration_helpers.get_value(
         "ENABLE_COURSE_SORTING_BY_START_DATE",
-        settings.FEATURES["ENABLE_COURSE_SORTING_BY_START_DATE"],
+        settings.ENABLE_COURSE_SORTING_BY_START_DATE,
     ):
         courses = sort_by_start_date(courses)
     else:

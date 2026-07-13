@@ -293,8 +293,7 @@ class IndexPageCourseCardsSortingTests(ModuleStoreTestCase):
 
     @patch('common.djangoapps.student.views.management.render_to_response', RENDER_MOCK)
     @patch('lms.djangoapps.courseware.views.views.render_to_response', RENDER_MOCK)
-    @patch.dict('django.conf.settings.FEATURES', {'ENABLE_COURSE_SORTING_BY_START_DATE': False})
-    @override_settings(ENABLE_COURSE_DISCOVERY=False)
+    @override_settings(ENABLE_COURSE_SORTING_BY_START_DATE=False, ENABLE_COURSE_DISCOVERY=False)
     def test_course_cards_sorted_by_start_date_disabled(self):
         response = self.client.get('/')
         assert response.status_code == 200

@@ -310,7 +310,7 @@ def courses(request):
         )
 
         if configuration_helpers.get_value("ENABLE_COURSE_SORTING_BY_START_DATE",
-                                           settings.FEATURES["ENABLE_COURSE_SORTING_BY_START_DATE"]):
+                                           settings.ENABLE_COURSE_SORTING_BY_START_DATE):
             courses_list = sort_by_start_date(courses_list)
         else:
             courses_list = sort_by_announcement(courses_list)

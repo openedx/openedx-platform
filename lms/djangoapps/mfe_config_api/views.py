@@ -74,7 +74,7 @@ def get_legacy_config() -> dict:
     return {
         "ENABLE_COURSE_SORTING_BY_START_DATE": configuration_helpers.get_value(
             "ENABLE_COURSE_SORTING_BY_START_DATE",
-            settings.FEATURES["ENABLE_COURSE_SORTING_BY_START_DATE"],
+            settings.ENABLE_COURSE_SORTING_BY_START_DATE,
         ),
         "HOMEPAGE_PROMO_VIDEO_YOUTUBE_ID": configuration_helpers.get_value(
             "homepage_promo_video_youtube_id", None
