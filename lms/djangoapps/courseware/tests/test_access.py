@@ -722,8 +722,7 @@ class AccessTestCase(LoginEnrollmentTestCase, ModuleStoreTestCase, MilestonesTes
         assert isinstance(see_in_catalog_response, access_response.CatalogVisibilityError)
         assert access._has_access_course(user, 'see_about_page', course_about)
 
-    @patch.dict("django.conf.settings.FEATURES", {'ENABLE_PREREQUISITE_COURSES': True})
-    @override_settings(MILESTONES_APP=True)
+    @override_settings(ENABLE_PREREQUISITE_COURSES=True, MILESTONES_APP=True)
     def test_access_on_course_with_pre_requisites(self):
         """
         Test course access when a course has pre-requisite course yet to be completed

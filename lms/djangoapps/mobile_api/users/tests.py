@@ -167,8 +167,8 @@ class TestUserEnrollmentApi(UrlResetMixin, MobileAPITestCase, MobileAuthUserTest
                    str(courses[((num_courses - course_index) - 1)].id)
 
     @ddt.data(API_V05, API_V1, API_V2)
+    @override_settings(ENABLE_PREREQUISITE_COURSES=True)
     @patch.dict(settings.FEATURES, {
-        'ENABLE_PREREQUISITE_COURSES': True,
         'DISABLE_START_DATES': False,
     })
     def test_courseware_access(self, api_version):

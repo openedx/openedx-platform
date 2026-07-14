@@ -318,7 +318,7 @@ class StudentDashboardTests(SharedModuleStoreTestCase, MilestonesTestCaseMixin, 
         assert ('Share on Twitter' in response.content.decode('utf-8')) == (set_marketing or set_social_sharing)
         assert ('Share on Facebook' in response.content.decode('utf-8')) == (set_marketing or set_social_sharing)
 
-    @patch.dict("django.conf.settings.FEATURES", {'ENABLE_PREREQUISITE_COURSES': True})
+    @override_settings(ENABLE_PREREQUISITE_COURSES=True)
     def test_pre_requisites_appear_on_dashboard(self):
         """
         When a course has a prerequisite, the dashboard should display the prerequisite.
