@@ -26,19 +26,10 @@ def should_redirect_to_authn_microfrontend():
     )
 
 
-# .. toggle_name: ENABLE_AUTO_GENERATED_USERNAME
-# .. toggle_implementation: DjangoSetting
-# .. toggle_default: False
-# .. toggle_description: Set to True to enable auto-generation of usernames.
-# .. toggle_use_cases: open_edx
-# .. toggle_creation_date: 2024-02-20
-# .. toggle_warning: Changing this setting may affect user authentication, account management and discussions experience.
-
-
 def is_auto_generated_username_enabled():
     """
     Checks if auto-generated username should be enabled.
     """
     return configuration_helpers.get_value(
-        'ENABLE_AUTO_GENERATED_USERNAME', settings.FEATURES.get('ENABLE_AUTO_GENERATED_USERNAME')
+        'ENABLE_AUTO_GENERATED_USERNAME', getattr(settings, 'ENABLE_AUTO_GENERATED_USERNAME', False)
     )

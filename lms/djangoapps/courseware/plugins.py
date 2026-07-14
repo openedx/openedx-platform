@@ -15,7 +15,7 @@ from xmodule.tabs import CourseTabList
 
 User = get_user_model()
 
-TEXTBOOK_ENABLED = settings.FEATURES.get("ENABLE_TEXTBOOK", False)
+TEXTBOOK_ENABLED = settings.ENABLE_TEXTBOOK
 
 
 class ProgressCourseApp(CourseApp):

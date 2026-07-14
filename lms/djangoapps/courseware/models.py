@@ -215,7 +215,7 @@ class BaseStudentModuleHistory(models.Model):
 
         history_entries = []
 
-        if settings.FEATURES.get('ENABLE_CSMH_EXTENDED'):
+        if settings.ENABLE_CSMH_EXTENDED:
             from lms.djangoapps.coursewarehistoryextended.models import StudentModuleHistoryExtended
             history_entries += StudentModuleHistoryExtended.objects.filter(
                 # Django will sometimes try to join to courseware_studentmodule
@@ -314,7 +314,7 @@ class StudentModuleHistory(BaseStudentModuleHistory):
     # When the extended studentmodulehistory table exists, don't save
     # duplicate history into courseware_studentmodulehistory, just retain
     # data for reading.
-    if not settings.FEATURES.get('ENABLE_CSMH_EXTENDED'):
+    if not settings.ENABLE_CSMH_EXTENDED:
         post_save.connect(save_history, sender=StudentModule)
 
 

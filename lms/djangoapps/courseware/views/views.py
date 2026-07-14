@@ -303,7 +303,7 @@ def courses(request):
     courses_list = []
     course_discovery_meanings = getattr(settings, 'COURSE_DISCOVERY_MEANINGS', {})
     set_default_filter = ENABLE_COURSE_DISCOVERY_DEFAULT_LANGUAGE_FILTER.is_enabled()
-    if not settings.FEATURES.get('ENABLE_COURSE_DISCOVERY'):
+    if not settings.ENABLE_COURSE_DISCOVERY:
         courses_list = get_courses(
             request.user,
             filter_={"catalog_visibility": CATALOG_VISIBILITY_CATALOG_AND_ABOUT},
