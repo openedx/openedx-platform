@@ -63,7 +63,7 @@ class EmbargoMiddleware(MiddlewareMixin):
 
     def __init__(self, *args, **kwargs):
         # If embargoing is turned off, make this middleware do nothing
-        if not settings.FEATURES.get('EMBARGO'):
+        if not settings.EMBARGO:
             raise MiddlewareNotUsed()
         super().__init__(*args, **kwargs)
 

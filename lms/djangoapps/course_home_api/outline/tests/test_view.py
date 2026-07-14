@@ -251,7 +251,7 @@ class OutlineTabTestViews(BaseCourseHomeTests):
         }
         assert course_goals == expected_course_goals
 
-    @patch.dict('django.conf.settings.FEATURES', {'ENABLE_SPECIAL_EXAMS': True})
+    @override_settings(ENABLE_SPECIAL_EXAMS=True)
     @patch('lms.djangoapps.course_api.blocks.transformers.milestones.get_attempt_status_summary')
     def test_proctored_exam(self, mock_summary):
         course = CourseFactory.create(
@@ -620,7 +620,7 @@ class SidebarBlocksTestViews(BaseCourseHomeTests):
         response = self.client.get(url)
         assert response.status_code == 404
 
-    @patch.dict('django.conf.settings.FEATURES', {'ENABLE_SPECIAL_EXAMS': True})
+    @override_settings(ENABLE_SPECIAL_EXAMS=True)
     @patch('lms.djangoapps.course_api.blocks.transformers.milestones.get_attempt_status_summary')
     def test_proctored_exam(self, mock_summary):
         """

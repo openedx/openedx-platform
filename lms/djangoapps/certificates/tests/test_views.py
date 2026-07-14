@@ -4,7 +4,6 @@
 import datetime
 from uuid import uuid4
 
-from django.conf import settings
 from django.test.client import Client
 from django.test.utils import override_settings
 
@@ -18,17 +17,6 @@ from xmodule.modulestore.tests.django_utils import (
     ModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
 from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
-
-FEATURES_WITH_CERTS_ENABLED = settings.FEATURES.copy()
-FEATURES_WITH_CERTS_ENABLED['CERTIFICATES_HTML_VIEW'] = True
-
-FEATURES_WITH_CERTS_DISABLED = settings.FEATURES.copy()
-FEATURES_WITH_CERTS_DISABLED['CERTIFICATES_HTML_VIEW'] = False
-
-FEATURES_WITH_CUSTOM_CERTS_ENABLED = {
-    "CUSTOM_CERTIFICATE_TEMPLATES_ENABLED": True
-}
-FEATURES_WITH_CUSTOM_CERTS_ENABLED.update(FEATURES_WITH_CERTS_ENABLED)
 
 
 class CertificatesViewsSiteTests(ModuleStoreTestCase):
@@ -129,7 +117,7 @@ class CertificatesViewsSiteTests(ModuleStoreTestCase):
         self.course.save()
         self.store.update_item(self.course, self.user.id)
 
-    @override_settings(FEATURES=FEATURES_WITH_CERTS_ENABLED)
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     @with_site_configuration(configuration={'platform_name': 'My Platform Site'})
     def test_html_view_for_site(self):
         test_url = get_certificate_url(
@@ -149,7 +137,7 @@ class CertificatesViewsSiteTests(ModuleStoreTestCase):
         )
         self.assertContains(response, 'About My Platform Site')
 
-    @override_settings(FEATURES=FEATURES_WITH_CERTS_ENABLED)
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_html_view_site_configuration_missing(self):
         test_url = get_certificate_url(
             user_id=self.user.id,
@@ -165,7 +153,7 @@ class CertificatesViewsSiteTests(ModuleStoreTestCase):
             'This should not survive being overwritten by static content',
         )
 
-    @override_settings(FEATURES=FEATURES_WITH_CERTS_ENABLED, GOOGLE_ANALYTICS_4_ID='GA-abc')
+    @override_settings(CERTIFICATES_HTML_VIEW=True, GOOGLE_ANALYTICS_4_ID='GA-abc')
     @with_site_configuration(configuration={'platform_name': 'My Platform Site'})
     def test_html_view_with_g4(self):
         test_url = get_certificate_url(

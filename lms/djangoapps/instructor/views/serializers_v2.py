@@ -271,7 +271,7 @@ class CourseInformationSerializerV2(serializers.Serializer):
 
         # Note: This is hidden for all CCXs
         certs_enabled = CertificateGenerationConfiguration.current().enabled and not hasattr(course_key, 'ccx')
-        certs_instructor_enabled = settings.FEATURES.get('ENABLE_CERTIFICATES_INSTRUCTOR_MANAGE', False)
+        certs_instructor_enabled = settings.ENABLE_CERTIFICATES_INSTRUCTOR_MANAGE
 
         if certs_enabled and access['admin'] or (access['instructor'] and certs_instructor_enabled):
             tabs.append({
@@ -291,8 +291,8 @@ class CourseInformationSerializerV2(serializers.Serializer):
             access['instructor'],
         ])
         course_has_special_exams = course.enable_proctored_exams or course.enable_timed_exams
-        can_see_special_exams = course_has_special_exams and user_has_access and settings.FEATURES.get(
-            'ENABLE_SPECIAL_EXAMS', False)
+        can_see_special_exams = course_has_special_exams and user_has_access and getattr(
+            settings, 'ENABLE_SPECIAL_EXAMS', False)
 
         if can_see_special_exams:
             tabs.append({

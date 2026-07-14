@@ -41,14 +41,14 @@ class TestSamlProviderConfigModel(TestCase, unittest.TestCase):
             bad_config.save()
         assert ctx.records[0].msg == f'Entity ID: {self.saml_provider_config.entity_id} already in use'
 
-    @override_settings(FEATURES={'ENABLE_UNICODE_USERNAME': False})
+    @override_settings(ENABLE_UNICODE_USERNAME=False)
     def test_clean_username_unicode_disabled(self):
         """
         Test the username cleaner function with unicode disabled
         """
         assert clean_username('ItJüstWòrks™') == 'ItJ_stW_rks'
 
-    @override_settings(FEATURES={'ENABLE_UNICODE_USERNAME': True})
+    @override_settings(ENABLE_UNICODE_USERNAME=True)
     def test_clean_username_unicode_enabled(self):
         """
         Test the username cleaner function with unicode enabled

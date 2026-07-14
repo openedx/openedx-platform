@@ -14,7 +14,7 @@ from uuid import UUID, uuid4
 
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
-from django.core.validators import validate_unicode_slug
+from django.core.validators import RegexValidator
 from django.db import transaction
 from django.db.models import F, QuerySet
 from django.urls import reverse
@@ -99,6 +99,14 @@ __all__ = [
     "get_library_component_publish_history_entries",
     "get_library_component_creation_entry",
 ]
+
+
+validate_block_id = RegexValidator(
+    r"^[\w.-]+\Z",
+    _(
+        "Block ID slugs can only have letters, numbers, underscores, hyphens, and periods."
+    )
+)
 
 
 def get_library_components(
@@ -523,7 +531,8 @@ def validate_can_add_block_to_library(
         )
 
     # Make sure the proposed ID will be valid:
-    validate_unicode_slug(block_id)
+    validate_block_id(block_id)
+
     # Ensure the XBlock type is valid and installed:
     block_class = XBlock.load_class(block_type)  # Will raise an exception if invalid
     if block_class.has_children:

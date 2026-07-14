@@ -199,7 +199,7 @@ def remove_disabled_country_from_list(countries: Dict) -> Dict:  # noqa: UP006
     Returns:
     - dict: Dict of countries with disabled countries removed.
     """
-    if not settings.FEATURES.get("EMBARGO", False):
+    if not settings.EMBARGO:
         return countries
 
     for country_code in GlobalRestrictedCountry.get_countries():

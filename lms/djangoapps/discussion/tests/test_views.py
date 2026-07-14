@@ -38,9 +38,9 @@ log = logging.getLogger(__name__)
 QUERY_COUNT_TABLE_IGNORELIST = WAFFLE_TABLES
 
 
+@override_settings(ENABLE_DISCUSSION_SERVICE=True)
 class ViewsExceptionTestCase(UrlResetMixin, ModuleStoreTestCase):  # pylint: disable=missing-class-docstring
 
-    @patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
     def setUp(self):
 
         # Patching the ENABLE_DISCUSSION_SERVICE value affects the contents of urls.py,
@@ -305,7 +305,7 @@ class CommentsServiceRequestHeadersTestCase(UrlResetMixin, ModuleStoreTestCase):
 
     CREATE_USER = False
 
-    @patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+    @override_settings(ENABLE_DISCUSSION_SERVICE=True)
     def setUp(self):
         super().setUp()
         patcher = mock.patch(
@@ -381,13 +381,13 @@ class EnrollmentTestCase(ModuleStoreTestCase):
     in the course
     """
 
-    @patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+    @override_settings(ENABLE_DISCUSSION_SERVICE=True)
     def setUp(self):
         super().setUp()
         self.course = CourseFactory.create()
         self.student = UserFactory.create()
 
-    @patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+    @override_settings(ENABLE_DISCUSSION_SERVICE=True)
     @patch('openedx.core.djangoapps.django_comment_common.comment_client.utils.requests.request', autospec=True)
     def test_unenrolled(self, mock_request):
         mock_request.side_effect = make_mock_request_impl(course=self.course, text='dummy')

@@ -202,7 +202,7 @@ class TestCourseListing(ModuleStoreTestCase):
             self.assertEqual(len(course_orgs), 1)  # noqa: PT009
             self.assertEqual(course_orgs[0]['short_name'], 'orgX')  # noqa: PT009
 
-    @override_settings(FEATURES={'ENABLE_CREATOR_GROUP': True})
+    @override_settings(ENABLE_CREATOR_GROUP=True)
     def test_course_creation_when_user_not_in_org(self):
         """
         Tests course creation when user doesn't have the required role.
@@ -215,7 +215,7 @@ class TestCourseListing(ModuleStoreTestCase):
         })
         self.assertEqual(response.status_code, 403)  # noqa: PT009
 
-    @override_settings(FEATURES={'ENABLE_CREATOR_GROUP': True})
+    @override_settings(ENABLE_CREATOR_GROUP=True)
     @mock.patch(
         'cms.djangoapps.course_creators.admin.render_to_string',
         mock.Mock(side_effect=mock_render_to_string, autospec=True)
@@ -242,7 +242,7 @@ class TestCourseListing(ModuleStoreTestCase):
         })
         self.assertEqual(response.status_code, 200)  # noqa: PT009
 
-    @override_settings(FEATURES={'ENABLE_CREATOR_GROUP': True})
+    @override_settings(ENABLE_CREATOR_GROUP=True)
     @mock.patch(
         'cms.djangoapps.course_creators.admin.render_to_string',
         mock.Mock(side_effect=mock_render_to_string, autospec=True)
@@ -269,7 +269,7 @@ class TestCourseListing(ModuleStoreTestCase):
         })
         self.assertEqual(response.status_code, 200)  # noqa: PT009
 
-    @override_settings(FEATURES={'ENABLE_CREATOR_GROUP': True})
+    @override_settings(ENABLE_CREATOR_GROUP=True)
     @mock.patch(
         'cms.djangoapps.course_creators.admin.render_to_string',
         mock.Mock(side_effect=mock_render_to_string, autospec=True)
@@ -298,7 +298,7 @@ class TestCourseListing(ModuleStoreTestCase):
         })
         self.assertEqual(response.status_code, 200)  # noqa: PT009
 
-    @override_settings(FEATURES={'ENABLE_CREATOR_GROUP': True})
+    @override_settings(ENABLE_CREATOR_GROUP=True)
     @mock.patch(
         'cms.djangoapps.course_creators.admin.render_to_string',
         mock.Mock(side_effect=mock_render_to_string, autospec=True)
@@ -427,7 +427,7 @@ class TestCourseHandlerAuthz(
     # ------------------------------------------------------------
     # CREATE COURSE -- Non-staff users and existing Organization
     # ------------------------------------------------------------
-    @override_settings(FEATURES={"DISABLE_COURSE_CREATION": False})
+    @override_settings(DISABLE_COURSE_CREATION=False)
     def test_create_course_unauthorized(self):
         """
         User without role cannot create course.
@@ -442,7 +442,7 @@ class TestCourseHandlerAuthz(
 
         assert response.status_code == 403
 
-    @override_settings(FEATURES={"DISABLE_COURSE_CREATION": False})
+    @override_settings(DISABLE_COURSE_CREATION=False)
     def test_create_course_unauthorized_with_role(self):
         """
         User with role but without required permission cannot create course.
@@ -484,7 +484,7 @@ class TestCourseHandlerAuthz(
     # ------------------------------------------------------------
     # FEATURE FLAG
     # ------------------------------------------------------------
-    @override_settings(FEATURES={"DISABLE_COURSE_CREATION": True})
+    @override_settings(DISABLE_COURSE_CREATION=True)
     def test_create_course_disabled_by_flag(self):
         """
         Even authorized users cannot create course if feature flag is off.

@@ -48,9 +48,6 @@ from openedx.core.djangoapps.user_authn.views.password_reset import (
 )
 from openedx.core.djangolib.testing.utils import CacheIsolationTestCase, skip_unless_lms
 
-ENABLE_AUTHN_MICROFRONTEND = settings.FEATURES.copy()
-ENABLE_AUTHN_MICROFRONTEND['ENABLE_AUTHN_MICROFRONTEND'] = True
-
 
 def process_request(request):
     middleware = SessionMiddleware(get_response=lambda request: None)
@@ -380,7 +377,7 @@ class ResetPasswordTests(EventTestMixin, CacheIsolationTestCase):
             SETTING_CHANGE_INITIATED, user_id=self.user.id, setting='password', old=None, new=None
         )
 
-    @override_settings(FEATURES=ENABLE_AUTHN_MICROFRONTEND)
+    @override_settings(ENABLE_AUTHN_MICROFRONTEND=True)
     @skip_unless_lms
     @ddt.data(('Crazy Awesome Site', 'Crazy Awesome Site'), ('edX', 'edX'))
     @ddt.unpack

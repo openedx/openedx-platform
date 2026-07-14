@@ -1184,7 +1184,7 @@ def _create_or_rerun_course(request):
             raise PermissionDenied()
 
         # allow/disable unicode characters in course_id according to settings
-        if not settings.FEATURES.get('ALLOW_UNICODE_COURSE_ID'):
+        if not settings.ALLOW_UNICODE_COURSE_ID:
             if _has_non_ascii_characters(org) or _has_non_ascii_characters(course) or _has_non_ascii_characters(run):
                 return JsonResponse(
                     {'error': _('Special characters not allowed in organization, course number, and course run.')},
@@ -2111,9 +2111,9 @@ def _get_course_creator_status(user):
 
     if user.is_staff:
         course_creator_status = 'granted'
-    elif settings.FEATURES.get('DISABLE_COURSE_CREATION', False):
+    elif getattr(settings, 'DISABLE_COURSE_CREATION', False):
         course_creator_status = 'disallowed_for_this_site'
-    elif settings.FEATURES.get('ENABLE_CREATOR_GROUP', False):
+    elif getattr(settings, 'ENABLE_CREATOR_GROUP', False):
         course_creator_status = get_course_creator_status(user)
         if course_creator_status is None:
             # User not grandfathered in as an existing user, has not previously visited the dashboard page.
@@ -2130,7 +2130,7 @@ def get_allowed_organizations(user):
     """
     Helper method for returning the list of organizations for which the user is allowed to create courses.
     """
-    if settings.FEATURES.get('ENABLE_CREATOR_GROUP', False):
+    if getattr(settings, 'ENABLE_CREATOR_GROUP', False):
         return get_organizations(user)
     else:
         return []
@@ -2150,7 +2150,7 @@ def get_allowed_organizations_for_libraries(user):
 
     # This allows people in the course creator group for an org to create
     # libraries, which mimics course behavior.
-    if settings.FEATURES.get('ENABLE_CREATOR_GROUP', False):
+    if getattr(settings, 'ENABLE_CREATOR_GROUP', False):
         organizations_set.update(get_organizations(user))
 
     return sorted(organizations_set)
@@ -2160,7 +2160,7 @@ def user_can_create_organizations(user):
     """
     Returns True if the user can create organizations.
     """
-    return user.is_staff or not settings.FEATURES.get('ENABLE_CREATOR_GROUP', False)
+    return user.is_staff or not getattr(settings, 'ENABLE_CREATOR_GROUP', False)
 
 
 def get_organizations_for_non_course_creators(user):

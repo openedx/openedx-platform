@@ -42,9 +42,8 @@ MODULESTORE_CONFIG = mixed_store_config(settings.COMMON_TEST_DATA_ROOT, {})
 
 
 @ddt.ddt
-@override_settings(MODULESTORE=MODULESTORE_CONFIG)
+@override_settings(MODULESTORE=MODULESTORE_CONFIG, EMBARGO=True)
 @skip_unless_lms
-@mock.patch.dict(settings.FEATURES, {'EMBARGO': True})
 class EmbargoCheckAccessApiTests(ModuleStoreTestCase):
     """Test the embargo API calls to determine whether a user has access. """
     ENABLED_CACHES = ['default', 'mongo_metadata_inheritance', 'loc_cache']
@@ -153,7 +152,6 @@ class EmbargoCheckAccessApiTests(ModuleStoreTestCase):
             result = embargo_api.check_course_access(self.course.id, user=self.user, ip_addresses=['0.0.0.0'])
             assert result
 
-    @mock.patch.dict(settings.FEATURES, {'EMBARGO': True})
     def test_profile_country_db_null(self):
         # Django country fields treat NULL values inconsistently.
         # When saving a profile with country set to None, Django saves an empty string to the database.
@@ -302,7 +300,7 @@ class EmbargoCheckAccessApiTests(ModuleStoreTestCase):
 
 
 @ddt.ddt
-@override_settings(MODULESTORE=MODULESTORE_CONFIG)
+@override_settings(MODULESTORE=MODULESTORE_CONFIG, EMBARGO=True)
 @skip_unless_lms
 class EmbargoMessageUrlApiTests(UrlResetMixin, ModuleStoreTestCase):
     """Test the embargo API calls for retrieving the blocking message URLs. """
@@ -310,7 +308,6 @@ class EmbargoMessageUrlApiTests(UrlResetMixin, ModuleStoreTestCase):
     URLCONF_MODULES = ['openedx.core.djangoapps.embargo']
     ENABLED_CACHES = ['default', 'mongo_metadata_inheritance', 'loc_cache']
 
-    @patch.dict(settings.FEATURES, {'EMBARGO': True})
     def setUp(self):
         super().setUp()
         self.course = CourseFactory.create()

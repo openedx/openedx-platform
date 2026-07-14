@@ -117,7 +117,7 @@ class CourseSettingsView(DeveloperErrorViewMixin, APIView):
                 'course_display_name': course_block.display_name,
                 'course_display_name_with_default': course_block.display_name_with_default,
                 'platform_name': settings.PLATFORM_NAME,
-                'licensing_enabled': settings.FEATURES.get("LICENSING", False),
+                'licensing_enabled': settings.LICENSING,
             })
 
             serializer = CourseSettingsSerializer(settings_context)

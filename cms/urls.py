@@ -265,7 +265,7 @@ if core_toggles.ENTRANCE_EXAMS.is_enabled():
                        contentstore_views.entrance_exam))
 
 # Enable Web/HTML Certificates
-if settings.FEATURES.get('CERTIFICATES_HTML_VIEW'):
+if settings.CERTIFICATES_HTML_VIEW:
     from cms.djangoapps.contentstore.views.certificates import (  # noqa: I001 - conditional import inside if block
         CertificateActivationAPIView,
         CertificateDetailAPIView,

@@ -427,10 +427,7 @@ class ProctoringProviderTestCase(unittest.TestCase):
         provider = 'invalid-provider'
         allowed_proctoring_providers = xmodule.course_block.get_available_providers()
 
-        FEATURES_WITH_PROCTORED_EXAMS = settings.FEATURES.copy()
-        FEATURES_WITH_PROCTORED_EXAMS['ENABLE_PROCTORED_EXAMS'] = proctored_exams_setting_enabled
-
-        with override_settings(FEATURES=FEATURES_WITH_PROCTORED_EXAMS):
+        with override_settings(ENABLE_PROCTORED_EXAMS=proctored_exams_setting_enabled):
             if proctored_exams_setting_enabled:
                 with pytest.raises(InvalidProctoringProvider) as context_manager:
                     self.proctoring_provider.from_json(provider, validate_providers=True)
@@ -447,10 +444,7 @@ class ProctoringProviderTestCase(unittest.TestCase):
         """
         provider = 'invalid-provider'
 
-        FEATURES_WITH_PROCTORED_EXAMS = settings.FEATURES.copy()
-        FEATURES_WITH_PROCTORED_EXAMS['ENABLE_PROCTORED_EXAMS'] = True
-
-        with override_settings(FEATURES=FEATURES_WITH_PROCTORED_EXAMS):
+        with override_settings(ENABLE_PROCTORED_EXAMS=True):
             provider_value = self.proctoring_provider.from_json(provider, validate_providers=False)
             assert provider_value == provider
 

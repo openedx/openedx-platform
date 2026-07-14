@@ -1,10 +1,9 @@
 """
 Tests for proctoring course app.
 """
-from unittest.mock import patch
-
 import ddt
 from django.conf import settings
+from django.test.utils import override_settings
 
 from lms.djangoapps.courseware.plugins import ProctoringCourseApp
 from openedx.core.djangolib.testing.utils import skip_unless_cms
@@ -16,7 +15,7 @@ from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable
 
 
 @skip_unless_cms
-@patch.dict(settings.FEATURES, {'ENABLE_PROCTORED_EXAMS': True})
+@override_settings(ENABLE_PROCTORED_EXAMS=True)
 @ddt.ddt
 class ProctoringCourseAppTestCase(ModuleStoreTestCase):
     """Test cases for proctoring CourseApp."""
@@ -39,7 +38,7 @@ class ProctoringCourseAppTestCase(ModuleStoreTestCase):
         """
         Test that proctoring card's availability can configured using feature flag.
         """
-        with patch.dict("django.conf.settings.FEATURES", {'ENABLE_PROCTORED_EXAMS': available_status}):
+        with override_settings(ENABLE_PROCTORED_EXAMS=available_status):
             assert self.course.enable_proctored_exams is True
             assert ProctoringCourseApp().is_available(self.course.id) == available_status
 

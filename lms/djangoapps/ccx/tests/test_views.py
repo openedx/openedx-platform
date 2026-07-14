@@ -230,7 +230,7 @@ class TestCCXProgressChanges(CcxTestCase, LoginEnrollmentTestCase):
 
     @patch('lms.djangoapps.ccx.views.render_to_response', intercept_renderer)
     @patch('lms.djangoapps.courseware.views.views.render_to_response', intercept_renderer)
-    @patch.dict('django.conf.settings.FEATURES', {'CUSTOM_COURSES_EDX': True})
+    @override_settings(CUSTOM_COURSES_EDX=True)
     def test_edit_schedule(self):
         """
         Get CCX schedule, modify it, save it.
@@ -1119,7 +1119,7 @@ class CCXCoachTabTestCase(CcxTestCase):
         """
         Test ccx coach tab state (visible or hidden) depending on the value of enable_ccx flag, ccx feature flag.
         """
-        with self.settings(FEATURES={'CUSTOM_COURSES_EDX': ccx_feature_flag}):
+        with override_settings(CUSTOM_COURSES_EDX=ccx_feature_flag):
             course = self.ccx_enabled_course if enable_ccx else self.ccx_disabled_course
             assert expected_result == self.check_ccx_tab(course, self.user)
 
