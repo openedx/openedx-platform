@@ -1214,7 +1214,7 @@ def _course_home_redirect_enabled():
     Return True if users should be redirected from the course about page to course home.
     """
     return bool(configuration_helpers.get_value(
-        'ENABLE_COURSE_HOME_REDIRECT', settings.FEATURES.get('ENABLE_COURSE_HOME_REDIRECT', False)
+        'ENABLE_COURSE_HOME_REDIRECT', settings.ENABLE_COURSE_HOME_REDIRECT
     ))
 
 
