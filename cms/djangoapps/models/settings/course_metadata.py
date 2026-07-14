@@ -115,7 +115,7 @@ class CourseMetadata:
             exclude_list.append('video_upload_pipeline')
 
         # Do not show video auto advance if the feature is disabled
-        if not settings.FEATURES.get('ENABLE_AUTOADVANCE_VIDEOS'):
+        if not settings.ENABLE_AUTOADVANCE_VIDEOS:
             exclude_list.append('video_auto_advance')
 
         # Do not show social sharing url field if the feature is disabled.

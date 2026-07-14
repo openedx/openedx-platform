@@ -67,7 +67,7 @@ jobs:
         #    os-version: "ubuntu-24.04"
     steps:
       - name: checkout repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: install system requirements
         run: |
@@ -162,7 +162,7 @@ jobs:
   collect-and-verify:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Setup Python
         uses: actions/setup-python@v6
         with:
@@ -238,7 +238,7 @@ jobs:
     runs-on: ubuntu-24.04
     needs: [run-tests]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: collect pytest warnings files
         uses: actions/download-artifact@v8
         with:
@@ -291,7 +291,7 @@ jobs:
           - 3.12
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup Python ${{ matrix.python-version }}
         uses: actions/setup-python@v6

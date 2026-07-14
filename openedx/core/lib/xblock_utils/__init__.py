@@ -282,7 +282,7 @@ def add_staff_markup(user, disable_staff_debug_info, block, view, frag, context)
         return frag
 
     block_id = block.location
-    if block.has_score and settings.FEATURES.get('DISPLAY_HISTOGRAMS_TO_STAFF'):
+    if block.has_score and getattr(settings, 'DISPLAY_HISTOGRAMS_TO_STAFF', False):
         histogram = grade_histogram(block_id)
         render_histogram = len(histogram) > 0
     else:

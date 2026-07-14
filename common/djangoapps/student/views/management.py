@@ -472,7 +472,7 @@ def change_enrollment(request, check_access=True):
     elif action == "unenroll":
         if configuration_helpers.get_value(
             "DISABLE_UNENROLLMENT",
-            settings.FEATURES.get("DISABLE_UNENROLLMENT")
+            settings.DISABLE_UNENROLLMENT
         ):
             return HttpResponseBadRequest(_("Unenrollment is currently disabled"))
 

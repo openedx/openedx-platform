@@ -217,7 +217,7 @@ class TextbooksTestCase(TabTestCase):
         ])
         self.num_textbooks = self.num_textbook_tabs * len(self.books)
 
-    @patch.dict("django.conf.settings.FEATURES", {"ENABLE_TEXTBOOK": True})
+    @override_settings(ENABLE_TEXTBOOK=True)
     def test_textbooks_enabled(self):
 
         type_to_reverse_name = {'textbook': 'book', 'pdftextbook': 'pdf_book', 'htmltextbook': 'html_book'}
@@ -486,7 +486,7 @@ class TextBookCourseViewsTestCase(LoginEnrollmentTestCase, SharedModuleStoreTest
                 num_of_textbooks_found += 1
         assert num_of_textbooks_found == self.num_textbooks
 
-    @patch.dict("django.conf.settings.FEATURES", {"ENABLE_TEXTBOOK": False})
+    @override_settings(ENABLE_TEXTBOOK=False)
     def test_textbooks_disabled(self):
         tab = xmodule_tabs.CourseTab.load('textbooks')
         assert not tab.is_enabled(self.course, self.user)

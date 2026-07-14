@@ -252,7 +252,7 @@ def create_account_with_params(request, params):  # pylint: disable=too-many-sta
         redirect_url = get_redirect_url_with_host(root_url, redirect_to)
         compose_and_send_activation_email(user, profile, registration, redirect_url, True)
 
-    if settings.FEATURES.get('ENABLE_DISCUSSION_EMAIL_DIGEST'):
+    if getattr(settings, 'ENABLE_DISCUSSION_EMAIL_DIGEST', False):
         try:
             enable_notifications(user)
         except Exception:  # pylint: disable=broad-except
