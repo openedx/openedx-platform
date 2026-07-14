@@ -1050,6 +1050,14 @@ AUTOPLAY_VIDEOS = False
 # auto-advance.
 ENABLE_AUTOADVANCE_VIDEOS = False
 
+# .. toggle_name: DISPLAY_COURSE_MODES_ON_DASHBOARD
+# .. toggle_implementation: DjangoSetting
+# .. toggle_default: True
+# .. toggle_description: When True, course modes (verified, honor, etc.) are shown as pills on the learner dashboard.
+# .. toggle_use_cases: open_edx
+# .. toggle_creation_date: 2017-09-13
+DISPLAY_COURSE_MODES_ON_DASHBOARD = True
+
 # .. toggle_name: CUSTOM_COURSES_EDX
 # .. toggle_implementation: DjangoSetting
 # .. toggle_default: False

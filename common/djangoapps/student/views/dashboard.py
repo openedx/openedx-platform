@@ -538,7 +538,7 @@ def student_dashboard(request):  # pylint: disable=too-many-statements
     )
     display_course_modes_on_dashboard = configuration_helpers.get_value(
         'DISPLAY_COURSE_MODES_ON_DASHBOARD',
-        settings.FEATURES.get('DISPLAY_COURSE_MODES_ON_DASHBOARD', True)
+        settings.DISPLAY_COURSE_MODES_ON_DASHBOARD
     )
     activation_email_support_link = configuration_helpers.get_value(
         'ACTIVATION_EMAIL_SUPPORT_LINK', settings.ACTIVATION_EMAIL_SUPPORT_LINK
