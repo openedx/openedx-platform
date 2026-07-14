@@ -245,6 +245,20 @@ Tutor-based deployments satisfy this requirement automatically. For bare-metal
 or custom deployments, verify that ``CACHES['default']`` points at a shared
 Redis or Memcached instance before enabling these features.
 
+Session Cookie SameSite
+=======================
+
+Open edX's LMS <-> Studio SSO flow relies on the session cookie being sent
+on cross-site requests, which requires ``SESSION_COOKIE_SAMESITE = 'None'``.
+This is set automatically when ``lms/envs/production.py`` is loaded.
+
+If you run an LMS *without* loading ``production.py`` (e.g. a stripped-down
+setup that loads only ``lms/envs/common.py``), set ``SESSION_COOKIE_SAMESITE
+= 'None'`` in your settings yourself. ``SameSite=None`` cookies also require
+``SESSION_COOKIE_SECURE = True`` and HTTPS, so over plain HTTP use ``'Lax'``
+instead — in that case some cross-site flows (notably Studio SSO) will not
+work.
+
 .. _lms/djangoapps/lti_provider/README.rst: lms/djangoapps/lti_provider/README.rst
 
 License
