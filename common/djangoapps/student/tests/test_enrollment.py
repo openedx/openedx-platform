@@ -346,7 +346,7 @@ class EnrollmentTest(OpenEdxEventsTestMixin, UrlResetMixin, ModuleStoreTestCase)
         resp = self._change_enrollment('unenroll', course_id="edx/")
         assert resp.status_code == 400
 
-    @patch.dict(settings.FEATURES, {'DISABLE_UNENROLLMENT': True})
+    @override_settings(DISABLE_UNENROLLMENT=True)
     def test_unenroll_when_unenrollment_disabled(self):
         """
         Tests that a user cannot unenroll when unenrollment has been disabled.
