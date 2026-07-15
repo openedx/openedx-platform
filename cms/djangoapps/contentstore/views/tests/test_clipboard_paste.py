@@ -256,16 +256,19 @@ class ClipboardPasteTestCase(ModuleStoreTestCase):
                 tags=["tag_1", "tag_2"],
             )
 
-        # Tag our blocks using a taxonomy that isn't enabled for any orgs -- these tags won't be pasted
+        # Tag our blocks using a taxonomy that isn't enabled for any orgs -- these tags won't be pasted.
         taxonomy_no_org = tagging_api.create_taxonomy("test_taxonomy_no_org", "Test Taxonomy No Org")
         Tag.objects.create(taxonomy=taxonomy_no_org, value="tag_1")
         Tag.objects.create(taxonomy=taxonomy_no_org, value="tag_2")
+        # We have to temporarily make it apply to "all orgs", then we can apply the tags then change back to "no orgs":
+        tagging_api.set_taxonomy_orgs(taxonomy_no_org, all_orgs=True)
         for object_key in all_block_keys.values():
             tagging_api.tag_object(
                 object_id=str(object_key),
                 taxonomy=taxonomy_no_org,
                 tags=["tag_1", "tag_2"],
             )
+        tagging_api.set_taxonomy_orgs(taxonomy_no_org, all_orgs=False, orgs=[])
 
         return all_block_keys
 

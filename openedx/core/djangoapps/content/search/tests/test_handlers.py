@@ -43,10 +43,6 @@ class TestUpdateIndexHandlers(ModuleStoreTestCase, LiveServerTestCase):
 
         self.orgA = OrganizationFactory.create(short_name="orgA")
 
-        self.patcher = patch("openedx.core.djangoapps.content_tagging.tasks.modulestore", return_value=self.store)
-        self.addCleanup(self.patcher.stop)
-        self.patcher.start()
-
         api.clear_meilisearch_client()  # Clear the Meilisearch client to avoid leaking state from other tests
 
     def test_create_delete_xblock(self, meilisearch_client):
