@@ -216,7 +216,7 @@ class OutlineTabView(RetrieveAPIView):
             try:
                 User = get_user_model()
                 # If the masqueraded user does not exist, we will continue with the original user object.
-                username = masquerade_object.user_name or 'audit'
+                username = masquerade_object.user_name
                 user = User.objects.get(username=username)
             except User.DoesNotExist:
                 pass
