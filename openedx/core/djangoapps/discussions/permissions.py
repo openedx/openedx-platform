@@ -9,9 +9,13 @@ from openedx_authz.constants.permissions import (
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import BasePermission
 
-from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRole, GlobalStaff
+from common.djangoapps.student.roles import (
+    CourseInstructorRole,
+    CourseStaffRole,
+    GlobalStaff,
+    enable_authz_course_authoring,
+)
 from lms.djangoapps.discussion.django_comment_client.utils import has_discussion_privileges
-from openedx.core import toggles as core_toggles
 from openedx.core.lib.api.view_utils import validate_course_key
 
 DEFAULT_MESSAGE = "You're not authorized to perform this operation."
@@ -47,7 +51,7 @@ class HasPagesAndResourcesAccess(BasePermission):
         course_key_string = view.kwargs.get('course_key_string')
         course_key = validate_course_key(course_key_string)
 
-        if core_toggles.enable_authz_course_authoring(course_key):
+        if enable_authz_course_authoring(course_key):
             if request.method == 'GET':
                 authz_perm = COURSES_VIEW_PAGES_AND_RESOURCES.identifier
             else:

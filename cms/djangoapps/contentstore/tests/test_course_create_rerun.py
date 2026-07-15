@@ -13,9 +13,9 @@ from django.http import HttpRequest
 from django.test import override_settings
 from django.test.client import RequestFactory
 from django.urls import reverse
+from edx_toggles.toggles.testutils import override_waffle_flag
 from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locator import CourseLocator
-from openedx_authz.constants.roles import COURSE_EDITOR
 from organizations.api import add_organization, get_course_organizations, get_organization_by_short_name
 from organizations.exceptions import InvalidOrganizationException
 from organizations.models import Organization
@@ -34,6 +34,7 @@ from common.djangoapps.student.models import CourseAccessRole
 from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRole, OrgContentCreatorRole
 from common.djangoapps.student.tests.factories import AdminFactory, UserFactory
 from openedx.core.djangoapps.authz.tests.mixins import CourseAuthoringAuthzTestMixin
+from openedx.core.toggles import AUTHZ_COURSE_AUTHORING_FLAG
 from xmodule.course_block import CourseFields
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory
@@ -386,118 +387,36 @@ class TestCourseListing(ModuleStoreTestCase):
             )
 
 
-class TestCourseHandlerAuthz(
-    CourseAuthoringAuthzTestMixin,
-    ModuleStoreTestCase,
-):
+@ddt.ddt
+class TestCourseHandlerStaffAccess(ModuleStoreTestCase):
     """
-    AuthZ integration tests for course_handler using real RBAC (no mocks).
+    Tests that global staff can create a course through course_handler with no
+    course-specific role, covering the GlobalStaff bypass in user_has_role. Course
+    creation doesn't check AuthZ (see ADR 0027), so this doesn't use the AuthZ mixin.
     """
 
     def setUp(self):
         super().setUp()
-
         self.url = reverse("course_handler")
+        self.staff_user = AdminFactory()
+        self.staff_client = AjaxEnabledTestClient()
+        self.staff_client.login(username=self.staff_user.username, password=self.TEST_PASSWORD)
 
-        # Create a base course to extract org
-        self.course = CourseFactory.create()
-        self.course_key = self.course.id
-        self.org = self.course_key.org
-
-        # If your policy expects this format, keep it
-        self.org_key = f"course-v1:{self.org}+*"
-
-        self.authorized_client = AjaxEnabledTestClient()
-        self.authorized_client.login(
-            username=self.authorized_user.username,
-            password=self.password,
-        )
-
-        self.unauthorized_client = AjaxEnabledTestClient()
-        self.unauthorized_client.login(
-            username=self.unauthorized_user.username,
-            password=self.password,
-        )
-        self.authorized_staff_client = AjaxEnabledTestClient()
-        self.authorized_staff_client.login(
-            username=self.staff_user.username,
-            password=self.password,
-        )
-
-    # ------------------------------------------------------------
-    # CREATE COURSE -- Non-staff users and existing Organization
-    # ------------------------------------------------------------
-    @override_settings(FEATURES={"DISABLE_COURSE_CREATION": False})
-    def test_create_course_unauthorized(self):
+    @ddt.data(True, False)
+    def test_create_course_staff(self, authz_enabled):
         """
-        User without role cannot create course.
+        Staff user can create a course with no prior course-specific role, whether
+        the AuthZ course-authoring flag is on or off.
         """
-
-        response = self.unauthorized_client.ajax_post(self.url, {
-            "org": self.org,
-            "number": "CS101",
-            "display_name": "Authz Course",
-            "run": "2026_T1",
-        })
-
-        assert response.status_code == 403
-
-    @override_settings(FEATURES={"DISABLE_COURSE_CREATION": False})
-    def test_create_course_unauthorized_with_role(self):
-        """
-        User with role but without required permission cannot create course.
-        """
-
-        self.add_user_to_role_in_course(
-            self.unauthorized_user,
-            COURSE_EDITOR.external_key,
-            "course-v1:someotherorg+*",
-        )
-
-        response = self.unauthorized_client.ajax_post(self.url, {
-            "org": self.org,
-            "number": "CS101",
-            "display_name": "Authz Course",
-            "run": "2026_T1",
-        })
-
-        assert response.status_code == 403
-
-    # ------------------------------------------------------------
-    # CREATE COURSE -- Staff users
-    # Only staff users can create course, and they can do it
-    # without an org role.
-    # ------------------------------------------------------------
-    def test_create_course_staff(self):
-        """
-        Staff user can create course.
-        """
-        response = self.authorized_staff_client.ajax_post(self.url, {
-            "org": self.org,
-            "number": "CS101",
-            "display_name": "Authz Course",
-            "run": "2026_T1",
-        })
+        with override_waffle_flag(AUTHZ_COURSE_AUTHORING_FLAG, active=authz_enabled):
+            response = self.staff_client.ajax_post(self.url, {
+                "org": "StaffOrg",
+                "number": "CS101",
+                "display_name": "Staff Course",
+                "run": "2026_T1",
+            })
 
         assert response.status_code == 200
-
-    # ------------------------------------------------------------
-    # FEATURE FLAG
-    # ------------------------------------------------------------
-    @override_settings(FEATURES={"DISABLE_COURSE_CREATION": True})
-    def test_create_course_disabled_by_flag(self):
-        """
-        Even authorized users cannot create course if feature flag is off.
-        """
-
-        response = self.authorized_staff_client.ajax_post(self.url, {
-            "org": self.org,
-            "number": "CS101",
-            "display_name": "Authz Course",
-            "run": "2026_T1",
-        })
-
-        assert response.status_code == 403
 
 
 class TestCourseRerunAuthz(

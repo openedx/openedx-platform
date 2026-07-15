@@ -30,6 +30,7 @@ from common.djangoapps.student.roles import (
     AuthzCompatCourseAccessRole,
     CourseAccessRole,
     CourseBetaTesterRole,
+    CourseCreatorRole,
     CourseDataResearcherRole,
     CourseFinanceAdminRole,
     CourseInstructorRole,
@@ -235,6 +236,28 @@ class RolesTestCase(TestCase):
             role.add_users(self.student)
             role.remove_users(self.student)
             assert not role.has_user(self.student)
+
+    @override_waffle_flag(AUTHZ_COURSE_AUTHORING_FLAG, active=True)
+    def test_add_and_remove_users_falls_back_to_legacy_for_unmigrated_role(self):
+        """
+        Tests that add_users/remove_users fall back to the legacy path for an unmigrated
+        role (course_creator_group), instead of writing to AuthZ, even with the flag enabled.
+        """
+        role = CourseCreatorRole()
+
+        with patch("common.djangoapps.student.roles.authz_add_role") as mock_authz_add_role:
+            role.add_users(self.student)
+
+        assert role.has_user(self.student)
+        mock_authz_add_role.assert_not_called()
+
+        with patch(
+            "common.djangoapps.student.roles.authz_api.batch_unassign_role_from_users"
+        ) as mock_authz_unassign:
+            role.remove_users(self.student)
+
+        assert not role.has_user(self.student)
+        mock_authz_unassign.assert_not_called()
 
     def test_get_orgs_for_user(self):
         """

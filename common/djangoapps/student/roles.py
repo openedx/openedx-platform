@@ -21,7 +21,7 @@ from openedx_authz.constants import roles as authz_roles
 from common.djangoapps.student.models import CourseAccessRole
 from common.djangoapps.student.signals.signals import emit_course_access_role_added, emit_course_access_role_removed
 from openedx.core.lib.cache_utils import get_cache
-from openedx.core.toggles import enable_authz_course_authoring
+from openedx.core.toggles import AUTHZ_COURSE_AUTHORING_FLAG
 
 log = logging.getLogger(__name__)
 
@@ -41,6 +41,24 @@ def get_authz_role_from_legacy_role(legacy_role: str) -> str:
 
 def get_legacy_role_from_authz_role(authz_role: str) -> str:
     return next((k for k, v in authz_roles.LEGACY_COURSE_ROLE_EQUIVALENCES.items() if v == authz_role), None)
+
+
+def enable_authz_course_authoring(course_key: CourseKey | None = None, role: str | None = None) -> bool:
+    """
+    True only if the authz.enable_course_authoring waffle flag is enabled and, when `role` is
+    given, that role has a migrated authz equivalent.
+
+    The migration only covers a subset of legacy roles (see LEGACY_COURSE_ROLE_EQUIVALENCES
+    and ADR 0027), so an unmigrated role must keep resolving to the legacy path even with the
+    flag on. Most callers have no specific role in scope and can omit `role`. Pass it when
+    acting on a specific legacy role, so a role like course_creator_group falls back to legacy
+    instead of crashing or being denied by authz (see openedx-authz#353, #354).
+    """
+    if not AUTHZ_COURSE_AUTHORING_FLAG.is_enabled(course_key):
+        return False
+    if role is not None and get_authz_role_from_legacy_role(role) is None:
+        return False
+    return True
 
 
 def authz_add_role(user: User, authz_role: str, course_key: str):
@@ -520,7 +538,7 @@ class RoleBase(AccessRole):
         """
         Add the supplied django users to this role.
         """
-        if enable_authz_course_authoring(self.course_key):
+        if enable_authz_course_authoring(self.course_key, role=self._role_name):
             self._authz_add_users(users)
         else:
             self._legacy_add_users(users)
@@ -561,7 +579,7 @@ class RoleBase(AccessRole):
         """
         Remove the supplied django users from this role.
         """
-        if enable_authz_course_authoring(self.course_key):
+        if enable_authz_course_authoring(self.course_key, role=self._role_name):
             self._authz_remove_users(users)
         else:
             self._legacy_remove_users(users)
@@ -599,7 +617,7 @@ class RoleBase(AccessRole):
         """
         Return a django QuerySet for all of the users with this role
         """
-        if enable_authz_course_authoring(self.course_key):
+        if enable_authz_course_authoring(self.course_key, role=self._role_name):
             return self._authz_users_with_role()
         else:
             return self._legacy_users_with_role()
@@ -628,7 +646,7 @@ class RoleBase(AccessRole):
         """
         Returns a list of org short names for the user with given role.
         """
-        if enable_authz_course_authoring(self.course_key):
+        if enable_authz_course_authoring(self.course_key, role=self._role_name):
             return self._authz_get_orgs_for_user(user)
         else:
             return self._legacy_get_orgs_for_user(user)
@@ -642,7 +660,7 @@ class RoleBase(AccessRole):
             org: optional org to check against access to role,
                 if not specified, will return True if the user has access to at least one org
         """
-        if enable_authz_course_authoring(self.course_key):
+        if enable_authz_course_authoring(self.course_key, role=self._role_name):
             orgs_with_role = self.get_orgs_for_user(user)
             if org:
                 return org in orgs_with_role

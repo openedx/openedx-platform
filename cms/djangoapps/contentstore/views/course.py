@@ -74,6 +74,7 @@ from common.djangoapps.student.roles import (
     GlobalStaff,
     OrgStaffRole,
     UserBasedRole,
+    enable_authz_course_authoring,
     strict_role_checking,
 )
 from common.djangoapps.util.json_request import JsonResponse, JsonResponseBadRequest, expect_json
@@ -866,7 +867,7 @@ def _get_course_keys_from_platform_scope() -> set[CourseKey]:
     if core_toggles.AUTHZ_COURSE_AUTHORING_FLAG.is_enabled():
         return set(course_keys)
 
-    return {course_key for course_key in course_keys if core_toggles.enable_authz_course_authoring(course_key)}
+    return {course_key for course_key in course_keys if enable_authz_course_authoring(course_key)}
 
 
 def _get_course_keys_from_scopes(authz_scopes: list[ScopeData]) -> set[CourseKey]:
@@ -897,7 +898,7 @@ def _get_course_keys_from_scopes(authz_scopes: list[ScopeData]) -> set[CourseKey
 
     for access in authz_scopes:
         if isinstance(access, CourseOverviewData) and access.course_key:
-            if core_toggles.enable_authz_course_authoring(access.course_key):
+            if enable_authz_course_authoring(access.course_key):
                 course_keys.add(access.course_key)
         elif isinstance(access, OrgCourseOverviewGlobData) and access.org:
             org_keys.add(access.org)
@@ -905,7 +906,7 @@ def _get_course_keys_from_scopes(authz_scopes: list[ScopeData]) -> set[CourseKey
     if org_keys:
         course_keys.update(
             key for key in _get_course_keys_for_org_scope(org_keys)
-            if core_toggles.enable_authz_course_authoring(key)
+            if enable_authz_course_authoring(key)
         )
 
     return course_keys
@@ -1353,7 +1354,7 @@ def rerun_course(user, source_course_key, org, number, run, fields, background=T
     # is implemented (pre-assigning roles without a CourseOverview). Once resolved,
     # add_instructor can be called unconditionally here and the created_user fallback
     # in get_in_process_course_actions can be removed.
-    if not core_toggles.enable_authz_course_authoring(destination_course_key):
+    if not enable_authz_course_authoring(destination_course_key):
         add_instructor(destination_course_key, user, user)
 
     # Mark the action as initiated
