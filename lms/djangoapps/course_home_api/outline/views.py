@@ -9,7 +9,7 @@ from completion.models import BlockCompletion
 from completion.utilities import get_key_to_last_completed_block  # pylint: disable=wrong-import-order
 from django.conf import settings  # pylint: disable=wrong-import-order
 from django.core.cache import cache
-from django.contrib.auth.models import User  # lint-amnesty, pylint:
+from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404  # pylint: disable=wrong-import-order
 from django.urls import reverse  # pylint: disable=wrong-import-order
 from django.utils.translation import gettext as _  # pylint: disable=wrong-import-order
@@ -203,7 +203,7 @@ class OutlineTabView(RetrieveAPIView):
 
         course = get_course_or_403(user, 'load', course_key, check_if_enrolled=False)
 
-        masquerade_object, user = setup_masquerade(
+        masquerade_object, request.user = setup_masquerade(
             request,
             course_key,
             staff_access=has_access(user, 'staff', course_key),
@@ -214,6 +214,7 @@ class OutlineTabView(RetrieveAPIView):
         # Check if the user is masquerading as a student and get the masqueraded user object
         if user_is_masquerading and masquerade_object.role == 'student':
             try:
+                User = get_user_model()
                 # If the masqueraded user does not exist, we will continue with the original user object.
                 username = masquerade_object.user_name or 'audit'
                 user = User.objects.get(username=username)
