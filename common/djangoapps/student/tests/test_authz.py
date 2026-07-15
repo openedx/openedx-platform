@@ -80,19 +80,20 @@ class CreatorGroupTest(TestCase):
         assert not user_has_role(self.user, CourseCreatorRole())
 
     @override_waffle_flag(AUTHZ_COURSE_AUTHORING_FLAG, active=True)
+    @override_settings(ENABLE_CREATOR_GROUP=True)
     def test_is_content_creator_true_for_legacy_grant_with_authz_flag_enabled(self):
         """
         Tests that a legacy course creator grant still authorizes course creation when the
         AuthZ course-authoring flag is enabled.
         """
-        with mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_CREATOR_GROUP": True}):
-            add_users(self.admin, CourseCreatorRole(), self.user)
+        add_users(self.admin, CourseCreatorRole(), self.user)
 
-            result = is_content_creator(self.user, "TestOrg")
+        result = is_content_creator(self.user, "TestOrg")
 
-            assert result
+        assert result
 
     @override_waffle_flag(AUTHZ_COURSE_AUTHORING_FLAG, active=True)
+    @override_settings(ENABLE_CREATOR_GROUP=True)
     def test_creator_group_add_and_remove_users_bypass_authz_writes(self):
         """
         Tests that add_users/remove_users for course_creator_group write to the legacy table
@@ -100,20 +101,19 @@ class CreatorGroupTest(TestCase):
         """
         role = CourseCreatorRole()
 
-        with mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_CREATOR_GROUP": True}):
-            with mock.patch("common.djangoapps.student.roles.authz_add_role") as mock_authz_add_role:
-                add_users(self.admin, role, self.user)
+        with mock.patch("common.djangoapps.student.roles.authz_add_role") as mock_authz_add_role:
+            add_users(self.admin, role, self.user)
 
-            assert user_has_role(self.user, role)
-            mock_authz_add_role.assert_not_called()
+        assert user_has_role(self.user, role)
+        mock_authz_add_role.assert_not_called()
 
-            with mock.patch(
-                "common.djangoapps.student.roles.authz_api.batch_unassign_role_from_users"
-            ) as mock_authz_unassign:
-                remove_users(self.admin, role, self.user)
+        with mock.patch(
+            "common.djangoapps.student.roles.authz_api.batch_unassign_role_from_users"
+        ) as mock_authz_unassign:
+            remove_users(self.admin, role, self.user)
 
-            assert not user_has_role(self.user, role)
-            mock_authz_unassign.assert_not_called()
+        assert not user_has_role(self.user, role)
+        mock_authz_unassign.assert_not_called()
 
     @override_settings(ENABLE_CREATOR_GROUP=True, DISABLE_COURSE_CREATION=True)
     def test_course_creation_disabled(self):
