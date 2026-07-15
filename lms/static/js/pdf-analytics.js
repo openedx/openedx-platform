@@ -1,103 +1,148 @@
-function sendLog(name, data, event_type) {
-    var message = data || {};
-    message.chapter = PDF_URL || '';
-    message.name = 'textbook.pdf.' + name;
-    Logger.log(event_type || message.name, message);
-}
+// Analytics shim for the embedded pdf.js viewer.
+//
+// Subscribes to the upstream viewer's eventBus and to the toolbar buttons
+// that still exist in the modern viewer chrome. The previous version of this
+// file used jQuery and bound to window-level events that the old vendored
+// pdf.js dispatched; modern pdf.js dispatches on `PDFViewerApplication.eventBus`
+// and ships its own (non-jQuery) toolbar.
+//
+// Dropped events vs. the previous shim — the modern viewer's "Views Manager"
+// replaces the older sidebar/thumbnail/outline buttons, so the following
+// analytics no longer fire and the corresponding dashboards will see them
+// disappear at the pdf.js bump:
+//     textbook.pdf.thumbnails.toggled
+//     textbook.pdf.thumbnail.navigated
+//     textbook.pdf.outline.toggled
+//     textbook.pdf.page.scrolled  (scroll-direction detection removed)
 
-// this event is loaded after the others to accurately represent the order of events:
-// click next -> pagechange
-$(function() {
-    var first_page = true;
-    var scroll = {timeStamp: 0, direction: null};
+(function () {
+    "use strict";
 
-    $(window).bind('pagechange', function(event) {
-    // log every page render
-        var page = PDFViewerApplication.page;
-        var old_page = event.originalEvent.previousPageNumber;
-        // pagechange is called many times per viewing.
-        if (old_page !== page || first_page) {
-            first_page = false;
-            if ((event.timeStamp - scroll.timeStamp) < 50) {
-                sendLog('page.scrolled', {page: page, direction: scroll.direction});
+    function sendLog(name, data, eventType) {
+        // The LMS Logger is loaded inside the iframe via the
+        // `<%static:js group='application'/>` directive in pdf_viewer.html.
+        // Guard defensively so that if the bundle is missing or hasn't
+        // finished loading, we drop the event rather than throw -- a throw
+        // inside an eventBus.dispatch() callback propagates and cancels the
+        // rest of pdf.js's init (which would also break navigation buttons).
+        if (!window.Logger || typeof window.Logger.log !== "function") {
+            return;
+        }
+        var message = data || {};
+        message.chapter = window.PDF_URL || "";
+        message.name = "textbook.pdf." + name;
+        window.Logger.log(eventType || message.name, message);
+    }
+
+    function bind(app) {
+        var bus = app.eventBus;
+        var currentPage = app.page || 1;
+
+        bus.on("pagechanging", function (evt) {
+            var oldPage = currentPage;
+            currentPage = evt.pageNumber;
+            sendLog(
+                "page.loaded",
+                {type: "gotopage", old: oldPage, new: currentPage},
+                "book"
+            );
+        });
+
+        var oldScale = null;
+        bus.on("scalechanging", function (evt) {
+            if (evt.scale !== oldScale) {
+                sendLog("display.scaled", {amount: evt.scale, page: currentPage});
+                oldScale = evt.scale;
             }
-            sendLog('page.loaded', {type: 'gotopage', old: old_page, new: page}, 'book');
-            scroll.timeStamp = 0;
+        });
+
+        // Find-bar events. Modern pdf.js dispatches a single `find` event
+        // with a `type` field on the payload (e.g. "", "again",
+        // "highlightallchange", "casesensitivitychange"). Old pdf.js used
+        // separate event names; we map back to the same analytics names.
+        var findSubEventToAnalyticsName = {
+            "": "search.executed",
+            again: "search.navigatednext",
+            highlightallchange: "search.highlight.toggled",
+            casesensitivitychange: "searchcasesensitivity.toggled"
+        };
+        var pendingSearch = null;
+        bus.on("find", function (evt) {
+            var analyticsName = findSubEventToAnalyticsName[evt && evt.type];
+            if (!analyticsName) {
+                return;
+            }
+            if (pendingSearch) {
+                clearTimeout(pendingSearch);
+            }
+            pendingSearch = setTimeout(function () {
+                var message = Object.assign({}, evt || {});
+                var findMsgEl = document.getElementById("findMsg");
+                message.status = findMsgEl ? findMsgEl.textContent : "";
+                message.page = currentPage;
+                sendLog(analyticsName, message);
+            }, 500);
+        });
+
+        // Toolbar buttons. IDs are stable from the upstream viewer.html; if a
+        // button is missing we just skip the binding rather than throw.
+        function onClick(id, fn) {
+            var el = document.getElementById(id);
+            if (el) {
+                el.addEventListener("click", fn);
+            }
         }
-    });
+        onClick("previous", function () {
+            sendLog(
+                "page.navigatednext",
+                {type: "prevpage", new: currentPage - 1},
+                "book"
+            );
+        });
+        onClick("next", function () {
+            sendLog(
+                "page.navigatednext",
+                {type: "nextpage", new: currentPage + 1},
+                "book"
+            );
+        });
+        onClick("zoomInButton", function () {
+            sendLog("zoom.buttons.changed", {direction: "in", page: currentPage});
+        });
+        onClick("zoomOutButton", function () {
+            sendLog("zoom.buttons.changed", {direction: "out", page: currentPage});
+        });
 
-    $('#viewerContainer').bind('DOMMouseScroll mousewheel', function(event) {
-        scroll.timeStamp = event.timeStamp;
-        scroll.direction = PDFViewerApplication.pdfViewer.scroll.down ? 'down' : 'up';
-    });
-});
-
-$('#viewThumbnail,#sidebarToggle').on('click', function() {
-    sendLog('thumbnails.toggled', {page: PDFViewerApplication.page});
-});
-
-$('#thumbnailView a').live('click', function() {
-    sendLog('thumbnail.navigated', {page: $('#thumbnailView a').index(this) + 1, thumbnail_title: $(this).attr('title')});
-});
-
-$('#viewOutline').on('click', function() {
-    sendLog('outline.toggled', {page: PDFViewerApplication.page});
-});
-
-$('#previous').on('click', function() {
-    sendLog('page.navigatednext', {type: 'prevpage', new: PDFViewerApplication.page - 1}, 'book');
-});
-
-$('#next').on('click', function() {
-    sendLog('page.navigatednext', {type: 'nextpage', new: PDFViewerApplication.page + 1}, 'book');
-});
-
-$('#zoomIn,#zoomOut').on('click', function() {
-    sendLog('zoom.buttons.changed', {direction: $(this).attr('id') == 'zoomIn' ? 'in' : 'out', page: PDFViewerApplication.page});
-});
-
-$('#pageNumber').on('change', function() {
-    sendLog('page.navigated', {page: $(this).val()});
-});
-
-var old_amount = 1;
-$(window).bind('scalechange', function(event) {
-    var amount = event.originalEvent.scale;
-    if (amount !== old_amount) {
-        sendLog('display.scaled', {amount: amount, page: PDFViewerApplication.page});
-        old_amount = amount;
-    }
-});
-
-$('#scaleSelect').on('change', function() {
-    sendLog('zoom.menu.changed', {amount: $('#scaleSelect').val(), page: PDFViewerApplication.page});
-});
-
-var search_event = null;
-$(window).bind('find findhighlightallchange findagain findcasesensitivitychange', function(event) {
-    if (search_event && event.type == 'find') {
-        clearTimeout(search_event);
-    }
-    search_event = setTimeout(function() {
-        var message = event.originalEvent.detail;
-        message.status = $('#findMsg').text();
-        message.page = PDFViewerApplication.page;
-        var event_name = 'search';
-        // eslint-disable-next-line default-case
-        switch (event.type) {
-        case 'find':
-            event_name += '.executed';
-            break;
-        case 'findhighlightallchange':
-            event_name += '.highlight.toggled';
-            break;
-        case 'findagain':
-            event_name += '.navigatednext';
-            break;
-        case 'findcasesensitivitychange':
-            event_name += 'casesensitivity.toggled';
-            break;
+        var pageNumberEl = document.getElementById("pageNumber");
+        if (pageNumberEl) {
+            pageNumberEl.addEventListener("change", function () {
+                sendLog("page.navigated", {page: pageNumberEl.value});
+            });
         }
-        sendLog(event_name, message);
-    }, 500);
-});
+        var scaleSelectEl = document.getElementById("scaleSelect");
+        if (scaleSelectEl) {
+            scaleSelectEl.addEventListener("change", function () {
+                sendLog(
+                    "zoom.menu.changed",
+                    {amount: scaleSelectEl.value, page: currentPage}
+                );
+            });
+        }
+    }
+
+    function attach() {
+        var app = window.PDFViewerApplication;
+        if (!app || !app.initializedPromise) {
+            // Viewer hasn't booted yet; try again after the next frame.
+            window.requestAnimationFrame(attach);
+            return;
+        }
+        app.initializedPromise.then(function () { bind(app); });
+    }
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", attach);
+    } else {
+        attach();
+    }
+})();
