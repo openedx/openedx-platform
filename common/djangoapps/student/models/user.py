@@ -1371,9 +1371,6 @@ def enforce_single_login(sender, request, user, signal, **kwargs):  # pylint: di
     to prevent concurrent logins.
     """
     if settings.FEATURES.get('PREVENT_CONCURRENT_LOGINS', False):
-        if user and _is_single_login_exempt(user):
-            # Shared service/automation accounts may hold concurrent sessions.
-            return
         if signal == user_logged_in:
             key = request.session.session_key
         else:
@@ -1383,7 +1380,8 @@ def enforce_single_login(sender, request, user, signal, **kwargs):  # pylint: di
                 user=user,
                 defaults={'name': user.username}
             )
-            if user_profile:
+            if user_profile and not _is_single_login_exempt(user):
+                # Shared service/automation accounts may hold concurrent sessions.
                 user.profile.set_login_session(key)
 
 
