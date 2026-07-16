@@ -210,7 +210,7 @@ class InheritanceMixin(XBlockMixin):
     edxnotes = Boolean(
         display_name=_("Enable Student Notes"),
         help=_("Enter true or false. If true, students can use the Student Notes feature."),
-        default=False,
+        default=True,
         scope=Scope.settings
     )
     edxnotes_visibility = Boolean(

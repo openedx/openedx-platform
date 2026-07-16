@@ -123,6 +123,7 @@ class SplitTestBlockTest(XModuleXmlImportTest, PartitionTestCase):
         self.split_test_block.runtime.modulestore = mocked_modulestore
 
 
+@patch.dict("django.conf.settings.FEATURES", {"ENABLE_EDXNOTES": False})
 @ddt.ddt
 class SplitTestBlockLMSTest(SplitTestBlockTest):
     """
@@ -186,6 +187,7 @@ class SplitTestBlockLMSTest(SplitTestBlockTest):
         assert len(children) == 2
 
 
+@patch.dict("django.conf.settings.FEATURES", {"ENABLE_EDXNOTES": False})
 class SplitTestBlockStudioTest(SplitTestBlockTest):
     """
     Unit tests for how split test interacts with Studio.

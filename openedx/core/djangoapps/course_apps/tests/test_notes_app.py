@@ -19,6 +19,12 @@ class NotesCourseAppTestCase(TabBasedCourseAppTestMixin, ModuleStoreTestCase):
     tab_type = 'edxnotes'
     course_app_class = EdxNotesCourseApp
 
+    def test_app_disabled_by_default(self):
+        """
+        Override base mixin behavior: Notes is enabled by default.
+        """
+        assert self.course_app_class.is_enabled(self.course.id)
+
     def _assert_app_enabled(self, app_tab):
         assert app_tab.is_enabled(self.course, self.user)
 
