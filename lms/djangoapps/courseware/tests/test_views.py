@@ -3180,7 +3180,7 @@ class TestCoursewareMFESearchAPI(SharedModuleStoreTestCase):
         (CourseMode.MASTERS, True),
     )
     @ddt.unpack
-    @patch.dict('django.conf.settings.FEATURES', {'ENABLE_COURSEWARE_SEARCH_VERIFIED_ENROLLMENT_REQUIRED': True})
+    @override_settings(ENABLE_COURSEWARE_SEARCH_VERIFIED_ENROLLMENT_REQUIRED=True)
     def test_courseware_mfe_search_verified_only(self, mode, expected_enabled):
         """
         Only verified enrollees may use Courseware Search if ENABLE_COURSEWARE_SEARCH_VERIFIED_ENROLLMENT_REQUIRED
@@ -3196,7 +3196,7 @@ class TestCoursewareMFESearchAPI(SharedModuleStoreTestCase):
         self.assertEqual(response.status_code, 200)  # noqa: PT009
         self.assertEqual(body, {'enabled': expected_enabled})  # noqa: PT009
 
-    @patch.dict('django.conf.settings.FEATURES', {'ENABLE_COURSEWARE_SEARCH_VERIFIED_ENROLLMENT_REQUIRED': True})
+    @override_settings(ENABLE_COURSEWARE_SEARCH_VERIFIED_ENROLLMENT_REQUIRED=True)
     def test_courseware_mfe_search_staff_access(self):
         """
         Staff users may use Courseware Search regardless of their enrollment status.

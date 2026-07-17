@@ -2353,7 +2353,7 @@ def courseware_mfe_search_enabled(request, course_id=None):
     user = request.user
 
     has_required_enrollment = False
-    if settings.FEATURES.get('ENABLE_COURSEWARE_SEARCH_VERIFIED_ENROLLMENT_REQUIRED'):
+    if settings.ENABLE_COURSEWARE_SEARCH_VERIFIED_ENROLLMENT_REQUIRED:
         enrollment_mode, _ = CourseEnrollment.enrollment_mode_for_user(user, course_key)
         if (
             auth.user_has_role(user, CourseStaffRole(CourseKey.from_string(course_id)))
