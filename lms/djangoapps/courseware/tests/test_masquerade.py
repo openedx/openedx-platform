@@ -200,8 +200,7 @@ class TestMasqueradeLearnerOptions(StaffMasqueradeTestCase):
         """
         If there are partitions, then the View as Learner should NOT be available
         """
-        with patch.dict('django.conf.settings.FEATURES',
-                        {'ENABLE_ENROLLMENT_TRACK_USER_PARTITION': partitions_enabled}):
+        with override_settings(ENABLE_ENROLLMENT_TRACK_USER_PARTITION=partitions_enabled):
             response = self.get_available_masquerade_identities()
             is_learner_available = 'Learner' in map(itemgetter('name'), response.json()['available'])
             assert partitions_enabled != is_learner_available
