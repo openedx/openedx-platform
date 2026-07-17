@@ -1630,7 +1630,7 @@ def get_course_context(request):
         }
 
     courses_iter, in_process_course_actions = get_courses_accessible_to_user(request)
-    split_archived = settings.FEATURES.get('ENABLE_SEPARATE_ARCHIVED_COURSES', False)
+    split_archived = settings.ENABLE_SEPARATE_ARCHIVED_COURSES
     active_courses, archived_courses = _process_courses_list(courses_iter, in_process_course_actions, split_archived)
     in_process_course_actions = [format_in_process_course_view(uca) for uca in in_process_course_actions]
     return active_courses, archived_courses, in_process_course_actions
