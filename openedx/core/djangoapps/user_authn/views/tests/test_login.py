@@ -611,7 +611,7 @@ class LoginTest(OpenEdxEventsTestMixin, SiteMixin, CacheIsolationTestCase):
             response, _audit_log = self._login_response(self.user_email, 'wrong_password')
         self._assert_response(response, success=False, value='Too many failed login attempts')
 
-    @patch.dict("django.conf.settings.FEATURES", {"DISABLE_SET_JWT_COOKIES_FOR_TESTS": False})
+    @override_settings(DISABLE_SET_JWT_COOKIES_FOR_TESTS=False)
     def test_login_refresh(self):
         def _assert_jwt_cookie_present(response):
             assert response.status_code == 200
@@ -624,7 +624,7 @@ class LoginTest(OpenEdxEventsTestMixin, SiteMixin, CacheIsolationTestCase):
         response = self.client.post(reverse('login_refresh'))
         _assert_jwt_cookie_present(response)
 
-    @patch.dict("django.conf.settings.FEATURES", {"DISABLE_SET_JWT_COOKIES_FOR_TESTS": False})
+    @override_settings(DISABLE_SET_JWT_COOKIES_FOR_TESTS=False)
     def test_login_refresh_anonymous_user(self):
         response = self.client.post(reverse('login_refresh'))
         assert response.status_code == 401

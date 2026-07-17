@@ -56,7 +56,7 @@ ALL_LOGGED_IN_COOKIE_NAMES = JWT_COOKIE_NAMES + DEPRECATED_LOGGED_IN_COOKIE_NAME
 
 def are_logged_in_cookies_set(request):
     """ Check whether the request has logged in cookies set. """
-    if settings.FEATURES.get('DISABLE_SET_JWT_COOKIES_FOR_TESTS', False):
+    if getattr(settings, 'DISABLE_SET_JWT_COOKIES_FOR_TESTS', False):
         cookies_that_should_exist = DEPRECATED_LOGGED_IN_COOKIE_NAMES
     else:
         cookies_that_should_exist = ALL_LOGGED_IN_COOKIE_NAMES
@@ -294,7 +294,7 @@ def _create_and_set_jwt_cookies(response, request, cookie_settings, user=None):
     # a login oauth client cannot be found in the database in ``_get_login_oauth_client``.
     # This solution is not ideal, but see https://github.com/openedx/edx-platform/pull/19180#issue-226706355
     # for a discussion of alternative solutions that did not work or were halted.
-    if settings.FEATURES.get('DISABLE_SET_JWT_COOKIES_FOR_TESTS', False):
+    if getattr(settings, 'DISABLE_SET_JWT_COOKIES_FOR_TESTS', False):
         return
 
     expires_in = settings.JWT_AUTH['JWT_IN_COOKIE_EXPIRATION']

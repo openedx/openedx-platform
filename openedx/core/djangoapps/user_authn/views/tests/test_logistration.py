@@ -114,7 +114,7 @@ class LoginAndRegistrationTest(ThirdPartyAuthTestMixin, UrlResetMixin, ModuleSto
         expected_data = f'"initial_mode": "{initial_mode}"'
         self.assertContains(response, expected_data)
 
-    @mock.patch.dict("django.conf.settings.FEATURES", {"DISABLE_SET_JWT_COOKIES_FOR_TESTS": False})
+    @override_settings(DISABLE_SET_JWT_COOKIES_FOR_TESTS=False)
     @ddt.data("signin_user", "register_user")
     def test_login_and_registration_form_already_authenticated(self, url_name):
         setup_login_oauth_client()

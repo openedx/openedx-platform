@@ -1029,7 +1029,7 @@ class TestEmailChangeMiddleware(TestSafeSessionsLogMixin, TestCase):
         # Verify that email is set in the session
         self.assertEqual(self.request.session.get('email'), self.user.email)  # noqa: PT009
 
-    @patch.dict("django.conf.settings.FEATURES", {"DISABLE_SET_JWT_COOKIES_FOR_TESTS": False})
+    @override_settings(DISABLE_SET_JWT_COOKIES_FOR_TESTS=False)
     def test_user_remain_authenticated_on_email_change_in_other_browser_with_toggle_disabled(self):
         """
         Integration Test: test that a user remains authenticated upon email change
@@ -1061,7 +1061,7 @@ class TestEmailChangeMiddleware(TestSafeSessionsLogMixin, TestCase):
         response = self.client.get(self.dashboard_url)
         assert response.status_code == 200
 
-    @patch.dict("django.conf.settings.FEATURES", {"DISABLE_SET_JWT_COOKIES_FOR_TESTS": False})
+    @override_settings(DISABLE_SET_JWT_COOKIES_FOR_TESTS=False)
     @override_settings(ENFORCE_SESSION_EMAIL_MATCH=True)
     def test_cookies_are_updated_with_new_email_on_email_change_with_toggle_enabled(self):
         """
@@ -1114,7 +1114,7 @@ class TestEmailChangeMiddleware(TestSafeSessionsLogMixin, TestCase):
             email_change_response.cookies[jwt_cookies.jwt_cookie_signature_name()].value
         )
 
-    @patch.dict("django.conf.settings.FEATURES", {"DISABLE_SET_JWT_COOKIES_FOR_TESTS": False})
+    @override_settings(DISABLE_SET_JWT_COOKIES_FOR_TESTS=False)
     @override_settings(ENFORCE_SESSION_EMAIL_MATCH=False)
     def test_cookies_are_updated_with_new_email_on_email_change_with_toggle_disabled(self):
         """
@@ -1167,7 +1167,7 @@ class TestEmailChangeMiddleware(TestSafeSessionsLogMixin, TestCase):
             email_change_response.cookies[jwt_cookies.jwt_cookie_signature_name()].value
         )
 
-    @patch.dict("django.conf.settings.FEATURES", {"DISABLE_SET_JWT_COOKIES_FOR_TESTS": False})
+    @override_settings(DISABLE_SET_JWT_COOKIES_FOR_TESTS=False)
     @override_settings(ENFORCE_SESSION_EMAIL_MATCH=True)
     def test_logged_in_user_unauthenticated_on_email_change_in_other_browser(self):
         """
@@ -1201,7 +1201,7 @@ class TestEmailChangeMiddleware(TestSafeSessionsLogMixin, TestCase):
         assert response.status_code == 302
         self._assert_logged_in_cookies_not_present(response)
 
-    @patch.dict("django.conf.settings.FEATURES", {"DISABLE_SET_JWT_COOKIES_FOR_TESTS": False})
+    @override_settings(DISABLE_SET_JWT_COOKIES_FOR_TESTS=False)
     @override_settings(ENFORCE_SESSION_EMAIL_MATCH=True)
     def test_logged_in_user_remains_authenticated_on_email_change_in_same_browser(self):
         """
@@ -1248,7 +1248,7 @@ class TestEmailChangeMiddleware(TestSafeSessionsLogMixin, TestCase):
         response = self.client.get(self.dashboard_url)
         assert response.status_code == 200
 
-    @patch.dict("django.conf.settings.FEATURES", {"DISABLE_SET_JWT_COOKIES_FOR_TESTS": False})
+    @override_settings(DISABLE_SET_JWT_COOKIES_FOR_TESTS=False)
     @override_settings(ENFORCE_SESSION_EMAIL_MATCH=True)
     def test_registered_user_unauthenticated_on_email_change_in_other_browser(self):
         """
@@ -1286,7 +1286,7 @@ class TestEmailChangeMiddleware(TestSafeSessionsLogMixin, TestCase):
         assert response.status_code == 302
         self._assert_logged_in_cookies_not_present(response)
 
-    @patch.dict("django.conf.settings.FEATURES", {"DISABLE_SET_JWT_COOKIES_FOR_TESTS": False})
+    @override_settings(DISABLE_SET_JWT_COOKIES_FOR_TESTS=False)
     @override_settings(ENFORCE_SESSION_EMAIL_MATCH=True)
     def test_registered_user_remain_authenticated_on_email_change_in_same_browser(self):
         """
