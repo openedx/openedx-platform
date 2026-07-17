@@ -97,8 +97,7 @@ class TestRetryFailedPhotoVerifications(MockS3Boto3Mixin, TestVerificationBase):
                 )
 
 
-@override_settings(VERIFY_STUDENT=FAKE_SETTINGS)
-@patch.dict(settings.FEATURES, {'AUTOMATIC_VERIFY_STUDENT_IDENTITY_FOR_TESTING': True})
+@override_settings(VERIFY_STUDENT=FAKE_SETTINGS, AUTOMATIC_VERIFY_STUDENT_IDENTITY_FOR_TESTING=True)
 class TestRetryFailedPhotoVerificationsBetweenDates(MockS3Boto3Mixin, TestVerificationBase):
     """
     Tests that the command selects specific objects within a date range

@@ -1230,7 +1230,7 @@ class TestCheckoutWithEcommerceService(ModuleStoreTestCase):
 
 
 @ddt.ddt
-@patch.dict(settings.FEATURES, {'AUTOMATIC_VERIFY_STUDENT_IDENTITY_FOR_TESTING': True})
+@override_settings(AUTOMATIC_VERIFY_STUDENT_IDENTITY_FOR_TESTING=True)
 class TestSubmitPhotosForVerification(MockS3Boto3Mixin, TestVerificationBase):
     """
     Tests for submitting photos for verification.
@@ -1289,7 +1289,7 @@ class TestSubmitPhotosForVerification(MockS3Boto3Mixin, TestVerificationBase):
 
     # Disable auto-auth since we will be intercepting POST requests
     # to the verification service ourselves in this test.
-    @patch.dict(settings.FEATURES, {'AUTOMATIC_VERIFY_STUDENT_IDENTITY_FOR_TESTING': False})
+    @override_settings(AUTOMATIC_VERIFY_STUDENT_IDENTITY_FOR_TESTING=False)
     @override_settings(VERIFY_STUDENT={
         "SOFTWARE_SECURE": {
             "API_URL": "https://verify.example.com/submit/",
