@@ -807,7 +807,7 @@ if settings.DEBUG or settings.ENABLE_DJANGO_ADMIN_SITE:
     # changes go through our user portal and follow complexity requirements.
     # The form to change another user's password is conditionally enabled
     # for backwards compatibility.
-    if not settings.FEATURES.get('ENABLE_CHANGE_USER_PASSWORD_ADMIN'):
+    if not settings.ENABLE_CHANGE_USER_PASSWORD_ADMIN:
         urlpatterns += [
             re_path(r'^admin/auth/user/\d+/password/$', handler404),
         ]
