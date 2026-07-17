@@ -32,7 +32,7 @@ class TestCorsMiddlewareProcessRequest(TestCase):
         request.is_secure = lambda: is_secure
         return request
 
-    @override_settings(FEATURES={'ENABLE_CORS_HEADERS': True})
+    @override_settings(ENABLE_CORS_HEADERS=True)
     def setUp(self):
         super().setUp()
         self.middleware = CorsCSRFMiddleware(get_response=lambda request: None)
@@ -78,8 +78,8 @@ class TestCorsMiddlewareProcessRequest(TestCase):
         self.check_enabled(request)
 
     @override_settings(
-        FEATURES={'ENABLE_CORS_HEADERS': False},
-        CORS_ORIGIN_WHITELIST=['https://foo.com']
+        ENABLE_CORS_HEADERS=False,
+        CORS_ORIGIN_WHITELIST=['https://foo.com'],
     )
     def test_disabled_no_cors_headers(self):
         with pytest.raises(MiddlewareNotUsed):

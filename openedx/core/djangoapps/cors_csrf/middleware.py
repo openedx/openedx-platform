@@ -62,7 +62,7 @@ class CorsCSRFMiddleware(CsrfViewMiddleware, MiddlewareMixin):
 
     def __init__(self, *args, **kwargs):
         """Disable the middleware if the feature flag is disabled. """
-        if not settings.FEATURES.get('ENABLE_CORS_HEADERS'):
+        if not settings.ENABLE_CORS_HEADERS:
             raise MiddlewareNotUsed()
         super().__init__(*args, **kwargs)
 
