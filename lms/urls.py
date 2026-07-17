@@ -789,7 +789,7 @@ urlpatterns += [
     ),
 ]
 
-if settings.FEATURES.get('ENABLE_STUDENT_HISTORY_VIEW'):
+if settings.ENABLE_STUDENT_HISTORY_VIEW:
     urlpatterns += [
         re_path(
             r'^courses/{}/submission_history/(?P<learner_identifier>[^/]*)/(?P<location>.*?)$'.format(  # noqa: UP032
