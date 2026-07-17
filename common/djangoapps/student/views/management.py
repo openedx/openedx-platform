@@ -422,7 +422,7 @@ def change_enrollment(request, check_access=True):
             return HttpResponseBadRequest(_("Course id is invalid"))
 
         # Record the user's email opt-in preference
-        if settings.FEATURES.get('ENABLE_MKTG_EMAIL_OPT_IN'):
+        if getattr(settings, 'ENABLE_MKTG_EMAIL_OPT_IN', False):
             _update_email_opt_in(request, course_id.org)
 
         available_modes = CourseMode.modes_for_course_dict(course_id)
