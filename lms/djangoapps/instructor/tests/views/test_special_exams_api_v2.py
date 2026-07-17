@@ -13,6 +13,7 @@ from edx_proctoring.api import (
     create_exam_attempt,
     get_allowances_for_course,
 )
+from edx_proctoring.exceptions import BackendProviderCannotRemoveAttempt
 from edx_proctoring.models import ProctoredExamStudentAttempt
 from rest_framework import status
 from rest_framework.test import APIClient
@@ -216,6 +217,25 @@ class SpecialExamResetViewTest(ModuleStoreTestCase):
     def test_reset_no_attempts(self):
         response = self.client.post(self._url())
         assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_reset_provider_unavailable_returns_descriptive_error(self):
+        """
+        When removing the attempt raises a ProctoredBaseException (e.g. the proctoring
+        provider is unavailable), the view surfaces the exception's HTTP status and
+        message so the instructor dashboard shows a descriptive error rather than a 500.
+        """
+        create_exam_attempt(self.exam_id, self.student.id)
+        message = (
+            'The proctoring provider is temporarily unavailable, so this attempt '
+            'could not be fully reset. Please try again in a few minutes.'
+        )
+        with patch(
+            'lms.djangoapps.instructor.views.api_v2.remove_exam_attempt',
+            side_effect=BackendProviderCannotRemoveAttempt(message),
+        ):
+            response = self.client.post(self._url())
+        assert response.status_code == status.HTTP_502_BAD_GATEWAY
+        assert response.json()['detail'] == message
 
 
 @override_settings(**PROCTORING_SETTINGS)
