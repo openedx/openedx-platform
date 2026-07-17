@@ -246,7 +246,7 @@ if toggles.EXPORT_GIT.is_enabled():
                 name='export_git')
     ]
 
-if settings.FEATURES.get('ENABLE_SERVICE_STATUS'):
+if settings.ENABLE_SERVICE_STATUS:
     urlpatterns.append(path('status/', include('openedx.core.djangoapps.service_status.urls')))
 
 # The password pages in the admin tool are disabled so that all password

@@ -848,7 +848,7 @@ urlpatterns += [
     path('_o/', include('oauth2_provider.urls', namespace='oauth2_provider')),
 ]
 
-if settings.FEATURES.get('ENABLE_SERVICE_STATUS'):
+if settings.ENABLE_SERVICE_STATUS:
     urlpatterns += [
         path('status/', include('openedx.core.djangoapps.service_status.urls')),
     ]
