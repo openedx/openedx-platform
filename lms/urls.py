@@ -58,7 +58,7 @@ RENDER_VIDEO_XBLOCK_NAME = 'render_public_video_xblock'
 RENDER_VIDEO_XBLOCK_EMBED_NAME = 'render_public_video_xblock_embed'
 COURSE_PROGRESS_NAME = 'progress'
 
-if settings.DEBUG or settings.FEATURES.get('ENABLE_DJANGO_ADMIN_SITE'):
+if settings.DEBUG or settings.ENABLE_DJANGO_ADMIN_SITE:
     django_autodiscover()
     admin.site.site_header = _('LMS Administration')
     admin.site.site_title = admin.site.site_header
@@ -800,7 +800,7 @@ if settings.FEATURES.get('ENABLE_STUDENT_HISTORY_VIEW'):
         ),
     ]
 
-if settings.DEBUG or settings.FEATURES.get('ENABLE_DJANGO_ADMIN_SITE'):
+if settings.DEBUG or settings.ENABLE_DJANGO_ADMIN_SITE:
     # Jasmine and admin
 
     # The password pages in the admin tool are disabled so that all password
