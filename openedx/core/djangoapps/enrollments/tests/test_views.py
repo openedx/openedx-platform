@@ -12,7 +12,6 @@ from zoneinfo import ZoneInfo
 
 import ddt
 import pytest
-from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.core.exceptions import ImproperlyConfigured
@@ -1397,22 +1396,16 @@ class EnrollmentEmbargoTest(EnrollmentTestMixin, UrlResetMixin, ModuleStoreTestC
 
 def cross_domain_config(func):
     """Decorator for configuring a cross-domain request. """
-    feature_flag_decorator = patch.dict(settings.FEATURES, {
-        'ENABLE_CORS_HEADERS': True,
-        'ENABLE_CROSS_DOMAIN_CSRF_COOKIE': True
-    })
     settings_decorator = override_settings(
+        ENABLE_CORS_HEADERS=True,
+        ENABLE_CROSS_DOMAIN_CSRF_COOKIE=True,
         CORS_ORIGIN_WHITELIST=["https://www.edx.org"],
         CROSS_DOMAIN_CSRF_COOKIE_NAME="prod-edx-csrftoken",
-        CROSS_DOMAIN_CSRF_COOKIE_DOMAIN=".edx.org"
+        CROSS_DOMAIN_CSRF_COOKIE_DOMAIN=".edx.org",
     )
     is_secure_decorator = patch.object(WSGIRequest, 'is_secure', return_value=True)
 
-    return feature_flag_decorator(
-        settings_decorator(
-            is_secure_decorator(func)
-        )
-    )
+    return settings_decorator(is_secure_decorator(func))
 
 
 @skip_unless_lms

@@ -116,15 +116,15 @@ class TestCsrfCrossDomainCookieMiddleware(TestCase):
     COOKIE_DOMAIN = '.edx.org'
 
     @override_settings(
-        FEATURES={'ENABLE_CROSS_DOMAIN_CSRF_COOKIE': True},
+        ENABLE_CROSS_DOMAIN_CSRF_COOKIE=True,
         CROSS_DOMAIN_CSRF_COOKIE_NAME=COOKIE_NAME,
-        CROSS_DOMAIN_CSRF_COOKIE_DOMAIN=COOKIE_DOMAIN
+        CROSS_DOMAIN_CSRF_COOKIE_DOMAIN=COOKIE_DOMAIN,
     )
     def setUp(self):
         super().setUp()
         self.middleware = CsrfCrossDomainCookieMiddleware(get_response=lambda request: None)
 
-    @override_settings(FEATURES={'ENABLE_CROSS_DOMAIN_CSRF_COOKIE': False})
+    @override_settings(ENABLE_CROSS_DOMAIN_CSRF_COOKIE=False)
     def test_disabled_by_feature_flag(self):
         with pytest.raises(MiddlewareNotUsed):
             CsrfCrossDomainCookieMiddleware(get_response=lambda request: None)
@@ -132,7 +132,7 @@ class TestCsrfCrossDomainCookieMiddleware(TestCase):
     @ddt.data('CROSS_DOMAIN_CSRF_COOKIE_NAME', 'CROSS_DOMAIN_CSRF_COOKIE_DOMAIN')
     def test_improperly_configured(self, missing_setting):
         settings = {
-            'FEATURES': {'ENABLE_CROSS_DOMAIN_CSRF_COOKIE': True},
+            'ENABLE_CROSS_DOMAIN_CSRF_COOKIE': True,
             'CROSS_DOMAIN_CSRF_COOKIE_NAME': self.COOKIE_NAME,
             'CROSS_DOMAIN_CSRF_COOKIE_DOMAIN': self.COOKIE_DOMAIN
         }
