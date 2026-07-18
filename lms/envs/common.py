@@ -267,6 +267,16 @@ SKIP_EMAIL_VALIDATION = False
 # .. toggle_warning: The use case of this feature toggle is uncertain.
 ENABLE_COSMETIC_DISPLAY_PRICE = False
 
+# .. toggle_name: settings.ENABLE_FINANCIAL_ASSISTANCE_FORM
+# .. toggle_implementation: DjangoSetting
+# .. toggle_default: False
+# .. toggle_description: When enabled, exposes the financial assistance application form and its URL route,
+#   and shows the "financial assistance" course tool link for eligible learners.
+# .. toggle_use_cases: open_edx
+# .. toggle_creation_date: 2015-12-04
+# .. toggle_tickets: ECOM-2824
+ENABLE_FINANCIAL_ASSISTANCE_FORM = False
+
 # Automatically approve student identity verification attempts
 # .. toggle_name: settings.AUTOMATIC_VERIFY_STUDENT_IDENTITY_FOR_TESTING
 # .. toggle_implementation: DjangoSetting
