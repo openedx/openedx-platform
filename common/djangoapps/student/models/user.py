@@ -1370,7 +1370,7 @@ def enforce_single_login(sender, request, user, signal, **kwargs):  # pylint: di
     Sets the current session id in the user profile,
     to prevent concurrent logins.
     """
-    if settings.FEATURES.get('PREVENT_CONCURRENT_LOGINS', False):
+    if settings.PREVENT_CONCURRENT_LOGINS:
         if signal == user_logged_in:
             key = request.session.session_key
         else:

@@ -630,7 +630,7 @@ class LoginTest(OpenEdxEventsTestMixin, SiteMixin, CacheIsolationTestCase):
         assert response.status_code == 401
         assert jwt_cookies.jwt_cookie_header_payload_name() not in self.client.cookies
 
-    @patch.dict("django.conf.settings.FEATURES", {'PREVENT_CONCURRENT_LOGINS': True})
+    @override_settings(PREVENT_CONCURRENT_LOGINS=True)
     def test_single_session(self):
         creds = {'email': self.user_email, 'password': self.password}
         client1 = Client()
@@ -659,7 +659,7 @@ class LoginTest(OpenEdxEventsTestMixin, SiteMixin, CacheIsolationTestCase):
         # client1 will be logged out
         assert response.status_code == 302
 
-    @patch.dict("django.conf.settings.FEATURES", {'PREVENT_CONCURRENT_LOGINS': True})
+    @override_settings(PREVENT_CONCURRENT_LOGINS=True)
     def test_single_session_exempt_user(self):
         """
         A user whose username is in SINGLE_LOGIN_EXEMPT_USERNAMES is not subject
@@ -688,7 +688,7 @@ class LoginTest(OpenEdxEventsTestMixin, SiteMixin, CacheIsolationTestCase):
             # so it stays valid independent of what profile meta records.
             assert Session.objects.filter(session_key=client1.session.session_key).exists()
 
-    @patch.dict("django.conf.settings.FEATURES", {'PREVENT_CONCURRENT_LOGINS': True})
+    @override_settings(PREVENT_CONCURRENT_LOGINS=True)
     def test_single_session_exempt_group(self):
         """
         A user in a group listed in SINGLE_LOGIN_EXEMPT_GROUPS is not subject
@@ -715,7 +715,7 @@ class LoginTest(OpenEdxEventsTestMixin, SiteMixin, CacheIsolationTestCase):
             # session is ever deleted.
             assert 'session_id' not in self.user.profile.get_meta()
 
-    @patch.dict("django.conf.settings.FEATURES", {'PREVENT_CONCURRENT_LOGINS': True})
+    @override_settings(PREVENT_CONCURRENT_LOGINS=True)
     def test_single_session_with_no_user_profile(self):
         """
         Assert that user login with cas (Central Authentication Service) is
@@ -757,7 +757,7 @@ class LoginTest(OpenEdxEventsTestMixin, SiteMixin, CacheIsolationTestCase):
         # client1 will be logged out
         assert response.status_code == 302
 
-    @patch.dict("django.conf.settings.FEATURES", {'PREVENT_CONCURRENT_LOGINS': True})
+    @override_settings(PREVENT_CONCURRENT_LOGINS=True)
     def test_single_session_with_url_not_having_login_required_decorator(self):
         # accessing logout url as it does not have login-required decorator it will avoid redirect
         # and go inside the enforce_single_login
