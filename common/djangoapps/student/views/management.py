@@ -247,7 +247,7 @@ def compose_activation_email(
     })
 
     if route_enabled:
-        dest_addr = settings.FEATURES['REROUTE_ACTIVATION_EMAIL']
+        dest_addr = getattr(settings, 'REROUTE_ACTIVATION_EMAIL', False)
     else:
         dest_addr = user.email
 
@@ -293,7 +293,7 @@ def compose_and_send_activation_email(
         redirect_url: The URL to redirect to after successful activation
         registration_flow: Is the request coming from registration workflow
     """
-    route_enabled = settings.FEATURES.get('REROUTE_ACTIVATION_EMAIL')
+    route_enabled = getattr(settings, 'REROUTE_ACTIVATION_EMAIL', False)
 
     msg = compose_activation_email(
         user, user_registration, route_enabled, profile.name, redirect_url, registration_flow
