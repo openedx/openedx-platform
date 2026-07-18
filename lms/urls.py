@@ -1028,7 +1028,7 @@ urlpatterns += [
 ]
 
 # Bulk User Retirement API urls
-if settings.FEATURES.get('ENABLE_BULK_USER_RETIREMENT'):
+if settings.ENABLE_BULK_USER_RETIREMENT:
     urlpatterns += [
         path('', include('lms.djangoapps.bulk_user_retirement.urls')),
     ]
