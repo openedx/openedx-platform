@@ -90,7 +90,7 @@ def auto_auth(request):  # pylint: disable=too-many-statements
     redirect_when_done = _str2bool(request.GET.get('redirect', '')) or redirect_to
     login_when_done = 'no_login' not in request.GET
 
-    restricted = settings.FEATURES.get('RESTRICT_AUTOMATIC_AUTH', True)
+    restricted = settings.RESTRICT_AUTOMATIC_AUTH
     if is_superuser and restricted:
         return HttpResponseForbidden(_('Superuser creation not allowed'))
 
