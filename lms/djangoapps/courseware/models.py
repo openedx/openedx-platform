@@ -225,7 +225,7 @@ class BaseStudentModuleHistory(models.Model):
 
         # If we turn off reading from multiple history tables, then we don't want to read from
         # StudentModuleHistory anymore, we believe that all history is in the Extended table.
-        if settings.FEATURES.get('ENABLE_READING_FROM_MULTIPLE_HISTORY_TABLES'):
+        if settings.ENABLE_READING_FROM_MULTIPLE_HISTORY_TABLES:
             # we want to save later SQL queries on the model which allows us to prefetch
             history_entries += StudentModuleHistory.objects.prefetch_related('student_module').filter(
                 student_module__in=student_modules
