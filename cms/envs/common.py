@@ -101,6 +101,17 @@ ENABLE_MAX_FAILED_LOGIN_ATTEMPTS = False
 # .. toggle_tickets: https://github.com/openedx/edx-platform/pull/2334
 EDITABLE_SHORT_DESCRIPTION = True
 
+# .. toggle_name: settings.ENABLE_EXTENDED_COURSE_DETAILS
+# .. toggle_implementation: DjangoSetting
+# .. toggle_default: False
+# .. toggle_description: When enabled, exposes the extended course detail fields (course background image,
+#   video thumbnail image, and related text fields) on the Schedule & Details page in Open edX Studio.
+#   Can also be overridden per-org via site configuration.
+# .. toggle_use_cases: open_edx
+# .. toggle_creation_date: 2016-04-30
+# .. toggle_tickets: WL-398
+ENABLE_EXTENDED_COURSE_DETAILS = False
+
 # Hide any Personally Identifiable Information from application logs
 SQUELCH_PII_IN_LOGS = False
 

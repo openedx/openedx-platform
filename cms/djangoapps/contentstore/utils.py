@@ -1395,7 +1395,7 @@ def get_course_settings(request, course_key, course_block):
     enable_extended_course_details = configuration_helpers.get_value_for_org(
         course_block.location.org,
         'ENABLE_EXTENDED_COURSE_DETAILS',
-        settings.FEATURES.get('ENABLE_EXTENDED_COURSE_DETAILS', False)
+        settings.ENABLE_EXTENDED_COURSE_DETAILS
     )
 
     about_page_editable = not publisher_enabled
