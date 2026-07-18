@@ -457,10 +457,7 @@ class UnitTestLibraries(CourseTestCase):
                 with patch('common.djangoapps.student.roles.OrgStaffRole.get_orgs_for_user') as get_user_orgs:
                     get_user_orgs.return_value = ['org3']
                     # Call the method under test
-                    with mock.patch.dict(
-                        'django.conf.settings.FEATURES',
-                        {"ENABLE_ORGANIZATION_STAFF_ACCESS_FOR_CONTENT_LIBRARIES": False}
-                    ):
+                    with override_settings(ENABLE_ORGANIZATION_STAFF_ACCESS_FOR_CONTENT_LIBRARIES=False):
                         with override_settings(ENABLE_CREATOR_GROUP=False):
                             organizations = get_allowed_organizations_for_libraries(self.user)
                             # Assert that the method returned the expected value
@@ -474,9 +471,6 @@ class UnitTestLibraries(CourseTestCase):
                                     self.assertEqual(organizations, [])  # noqa: PT009
                                 else:
                                     self.assertEqual(organizations, ['org1', 'org2'])  # noqa: PT009
-                    with mock.patch.dict(
-                        'django.conf.settings.FEATURES',
-                        {"ENABLE_ORGANIZATION_STAFF_ACCESS_FOR_CONTENT_LIBRARIES": True}
-                    ):
+                    with override_settings(ENABLE_ORGANIZATION_STAFF_ACCESS_FOR_CONTENT_LIBRARIES=True):
                         organizations = get_allowed_organizations_for_libraries(self.user)
                         self.assertEqual(organizations, ['org3'])  # noqa: PT009

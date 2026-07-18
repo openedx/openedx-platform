@@ -2150,7 +2150,7 @@ def get_allowed_organizations_for_libraries(user):
     # This allows org-level staff to create libraries. We should re-evaluate
     # whether this is necessary and try to normalize course and library creation
     # authorization behavior.
-    if settings.FEATURES.get('ENABLE_ORGANIZATION_STAFF_ACCESS_FOR_CONTENT_LIBRARIES', False):
+    if settings.ENABLE_ORGANIZATION_STAFF_ACCESS_FOR_CONTENT_LIBRARIES:
         organizations_set.update(get_organizations_for_non_course_creators(user))
 
     # This allows people in the course creator group for an org to create
