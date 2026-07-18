@@ -11,7 +11,6 @@ import ddt
 import pytest
 import pytz
 from ccx_keys.locator import CCXLocator
-from django.conf import settings
 from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.test import TestCase
 from django.test.client import RequestFactory
@@ -551,7 +550,7 @@ class AccessTestCase(LoginEnrollmentTestCase, ModuleStoreTestCase, MilestonesTes
         course.save()
         assert not access._has_access_course(user, 'enroll', course)
 
-    @override_settings(FEATURES={**settings.FEATURES, 'DISABLE_ALLOWED_ENROLLMENT_IF_ENROLLMENT_CLOSED': True})
+    @override_settings(DISABLE_ALLOWED_ENROLLMENT_IF_ENROLLMENT_CLOSED=True)
     def test__has_access_course_with_disable_allowed_enrollment_flag(self):
         yesterday = datetime.datetime.now(pytz.utc) - datetime.timedelta(days=1)
         tomorrow = datetime.datetime.now(pytz.utc) + datetime.timedelta(days=1)
