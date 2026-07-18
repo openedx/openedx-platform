@@ -892,7 +892,7 @@ def course_about(request, course_id):  # pylint: disable=too-many-statements
             'studio_url': studio_url,
             'registered': registered,
             'course_target': course_target,
-            'is_cosmetic_price_enabled': settings.FEATURES.get('ENABLE_COSMETIC_DISPLAY_PRICE'),
+            'is_cosmetic_price_enabled': settings.ENABLE_COSMETIC_DISPLAY_PRICE,
             'course_price': course_price,
             'ecommerce_checkout': ecommerce_checkout,
             'ecommerce_checkout_link': ecommerce_checkout_link,
