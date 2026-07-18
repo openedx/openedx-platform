@@ -204,7 +204,6 @@ class StudentDashboardTests(SharedModuleStoreTestCase, MilestonesTestCaseMixin, 
     }
     MOCK_SETTINGS_HIDE_COURSES = {
         'FEATURES': {
-            'HIDE_DASHBOARD_COURSES_UNTIL_ACTIVATED': True,
             'DISABLE_SET_JWT_COOKIES_FOR_TESTS': True,
         }
     }
@@ -599,6 +598,7 @@ class StudentDashboardTests(SharedModuleStoreTestCase, MilestonesTestCaseMixin, 
         response = self.client.get(self.path)
         assert pq(response.content)(self.EMAIL_SETTINGS_ELEMENT_ID).length == 0
 
+    @override_settings(HIDE_DASHBOARD_COURSES_UNTIL_ACTIVATED=True)
     @patch.multiple('django.conf.settings', **MOCK_SETTINGS_HIDE_COURSES)
     def test_hide_dashboard_courses_until_activated(self):
         """
