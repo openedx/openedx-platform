@@ -1403,7 +1403,7 @@ def get_course_settings(request, course_key, course_block):
     short_description_editable = configuration_helpers.get_value_for_org(
         course_block.location.org,
         'EDITABLE_SHORT_DESCRIPTION',
-        settings.FEATURES.get('EDITABLE_SHORT_DESCRIPTION', True)
+        settings.EDITABLE_SHORT_DESCRIPTION
     )
     sidebar_html_enabled = ENABLE_COURSE_ABOUT_SIDEBAR_HTML.is_enabled()
 
