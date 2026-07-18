@@ -5,7 +5,6 @@ import logging
 from unittest import mock
 
 import ddt
-from django.conf import settings
 from django.test import override_settings
 
 from common.djangoapps.course_modes.models import CourseMode
@@ -209,7 +208,7 @@ class AllowlistTests(ModuleStoreTestCase):
         Test handling when the user's id is not verified
         """
         with mock.patch(ID_VERIFIED_METHOD, return_value=False), \
-                mock.patch.dict(settings.FEATURES, ENABLE_CERTIFICATES_IDV_REQUIREMENT=enable_idv_requirement):
+                override_settings(ENABLE_CERTIFICATES_IDV_REQUIREMENT=enable_idv_requirement):
             self.assertNotEqual(  # noqa: PT009
                 enable_idv_requirement,
                 _can_generate_allowlist_certificate(self.user, self.course_run_key, self.enrollment_mode))
@@ -360,7 +359,7 @@ class AllowlistTests(ModuleStoreTestCase):
             assert not _can_generate_allowlist_certificate(self.user, course_run_key, enrollment_mode)
 
 
-@mock.patch.dict(settings.FEATURES, ENABLE_CERTIFICATES_IDV_REQUIREMENT=False)
+@override_settings(ENABLE_CERTIFICATES_IDV_REQUIREMENT=False)
 @mock.patch(ID_VERIFIED_METHOD, mock.Mock(return_value=True))
 @mock.patch(CCX_COURSE_METHOD, mock.Mock(return_value=False))
 @mock.patch(PASSING_GRADE_METHOD, mock.Mock(return_value=True))
@@ -537,7 +536,7 @@ class CertificateTests(ModuleStoreTestCase):
         )
 
         with mock.patch(ID_VERIFIED_METHOD, return_value=False), \
-                mock.patch.dict(settings.FEATURES, ENABLE_CERTIFICATES_IDV_REQUIREMENT=enable_idv_requirement):
+                override_settings(ENABLE_CERTIFICATES_IDV_REQUIREMENT=enable_idv_requirement):
             self.assertNotEqual(  # noqa: PT009
                 enable_idv_requirement,
                 _can_generate_regular_certificate(u, self.course_run_key, self.enrollment_mode, self.grade)
@@ -559,7 +558,7 @@ class CertificateTests(ModuleStoreTestCase):
         )
 
         with mock.patch(ID_VERIFIED_METHOD, return_value=False), \
-                mock.patch.dict(settings.FEATURES, ENABLE_CERTIFICATES_IDV_REQUIREMENT=enable_idv_requirement):
+                override_settings(ENABLE_CERTIFICATES_IDV_REQUIREMENT=enable_idv_requirement):
             self.assertNotEqual(  # noqa: PT009
                 enable_idv_requirement,
                 _can_generate_regular_certificate(u, self.course_run_key, self.enrollment_mode, self.grade)
@@ -587,7 +586,7 @@ class CertificateTests(ModuleStoreTestCase):
         )
 
         with mock.patch(ID_VERIFIED_METHOD, return_value=False), \
-                mock.patch.dict(settings.FEATURES, ENABLE_CERTIFICATES_IDV_REQUIREMENT=enable_idv_requirement), \
+                override_settings(ENABLE_CERTIFICATES_IDV_REQUIREMENT=enable_idv_requirement), \
                 mock.patch(PASSING_GRADE_METHOD, return_value=False):
             assert not _can_generate_regular_certificate(u, self.course_run_key, self.enrollment_mode, self.grade)
             if enable_idv_requirement:
@@ -617,7 +616,7 @@ class CertificateTests(ModuleStoreTestCase):
         CertificateAllowlistFactory(course_id=self.course_run_key, user=u)
 
         with mock.patch(ID_VERIFIED_METHOD, return_value=False), \
-                mock.patch.dict(settings.FEATURES, ENABLE_CERTIFICATES_IDV_REQUIREMENT=enable_idv_requirement), \
+                override_settings(ENABLE_CERTIFICATES_IDV_REQUIREMENT=enable_idv_requirement), \
                 mock.patch(PASSING_GRADE_METHOD, return_value=False):
             assert not _can_generate_regular_certificate(u, self.course_run_key, self.enrollment_mode, self.grade)
             if enable_idv_requirement:

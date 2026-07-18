@@ -81,7 +81,7 @@ def get_certificate_description(mode, certificate_type, platform_name, course_ke
                                          "{platform_name} and has completed all of the required tasks for this course "
                                          "under its guidelines. ").format(cert_type=certificate_type,
                                                                           platform_name=platform_name)
-        if settings.FEATURES.get('ENABLE_CERTIFICATES_IDV_REQUIREMENT'):
+        if settings.ENABLE_CERTIFICATES_IDV_REQUIREMENT:
             certificate_type_description += _("A {cert_type} certificate also indicates that the "
                                               "identity of the learner has been checked and "
                                               "is valid.").format(cert_type=certificate_type)
@@ -249,7 +249,7 @@ def _update_course_context(request, context, course, platform_name):
     context['accomplishment_copy_course_name'] = accomplishment_copy_course_name
     course_number = course.display_coursenumber if course.display_coursenumber else course.number
     context['course_number'] = course_number
-    context['idv_enabled_for_certificates'] = settings.FEATURES.get('ENABLE_CERTIFICATES_IDV_REQUIREMENT')
+    context['idv_enabled_for_certificates'] = settings.ENABLE_CERTIFICATES_IDV_REQUIREMENT
     if context['organization_long_name']:
         # Translators:  This text represents the description of course
         context['accomplishment_copy_course_description'] = _('a course of study offered by {partner_short_name}, '

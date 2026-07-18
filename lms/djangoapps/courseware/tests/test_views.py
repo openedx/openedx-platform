@@ -1296,7 +1296,7 @@ class ProgressPageTests(ProgressPageBaseTests):
             ), check_mongo_calls(2):
                 self._get_progress_page()
 
-    @patch.dict(settings.FEATURES, {'ENABLE_CERTIFICATES_IDV_REQUIREMENT': True})
+    @override_settings(ENABLE_CERTIFICATES_IDV_REQUIREMENT=True)
     @ddt.data(
         *itertools.product(
             (
@@ -1581,7 +1581,7 @@ class ProgressPageTests(ProgressPageBaseTests):
         """
         certs_api.set_certificate_generation_config(enabled=True)
         certs_api.set_cert_generation_enabled(self.course.id, True)
-        with patch.dict(settings.FEATURES, ENABLE_CERTIFICATES_IDV_REQUIREMENT=enable_cert_idv_requirement):
+        with override_settings(ENABLE_CERTIFICATES_IDV_REQUIREMENT=enable_cert_idv_requirement):
             with patch(
                 'lms.djangoapps.certificates.api.certificate_downloadable_status',
                 return_value=self.mock_certificate_downloadable_status()

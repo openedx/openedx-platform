@@ -1091,7 +1091,7 @@ def _downloadable_certificate_message(course, cert_downloadable_status):  # pyli
 
 
 def _missing_required_verification(student, enrollment_mode):
-    return settings.FEATURES.get('ENABLE_CERTIFICATES_IDV_REQUIREMENT') and (
+    return settings.ENABLE_CERTIFICATES_IDV_REQUIREMENT and (
         enrollment_mode in CourseMode.VERIFIED_MODES and not IDVerificationService.user_is_verified(student)
     )
 

@@ -5,8 +5,8 @@ Tests for the cert_generation command
 from unittest import mock
 
 import pytest
-from django.conf import settings
 from django.core.management import CommandError, call_command
+from django.test import override_settings
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory
@@ -25,7 +25,7 @@ WEB_CERTS_METHOD = 'lms.djangoapps.certificates.generation_handler.has_html_cert
 
 # base setup is unverified users, Enable certificates IDV requirements turned off,
 # and normal passing grade certificates for convenience
-@mock.patch.dict(settings.FEATURES, ENABLE_CERTIFICATES_IDV_REQUIREMENT=False)
+@override_settings(ENABLE_CERTIFICATES_IDV_REQUIREMENT=False)
 @mock.patch(ID_VERIFIED_METHOD, mock.Mock(return_value=False))
 @mock.patch(PASSING_GRADE_METHOD, mock.Mock(return_value=True))
 @mock.patch(WEB_CERTS_METHOD, mock.Mock(return_value=True))
