@@ -353,7 +353,7 @@ class LoginFailuresAdminTest(TestCase):
         assert str(LoginFailures.objects.get(user=self.user)) == f'§: 10 - {self.user_lockout_until.isoformat()}'
         assert str(LoginFailures.objects.get(user=self.user2)) == 'Zażółć gęślą jaźń: 2 - -'
 
-    @override_settings(FEATURES={'ENABLE_MAX_FAILED_LOGIN_ATTEMPTS': True})
+    @override_settings(ENABLE_MAX_FAILED_LOGIN_ATTEMPTS=True)
     def test_feature_enabled(self):
         url = reverse('admin:student_loginfailures_changelist')
         response = self.client.get(url)
@@ -372,7 +372,7 @@ class LoginFailuresAdminTest(TestCase):
         response = self.client.post(url)
         assert response.status_code == 403
 
-    @override_settings(FEATURES={'ENABLE_MAX_FAILED_LOGIN_ATTEMPTS': True})
+    @override_settings(ENABLE_MAX_FAILED_LOGIN_ATTEMPTS=True)
     def test_unlock_student_accounts(self):
         """Test batch unlock student accounts."""
         url = reverse('admin:student_loginfailures_changelist')
@@ -387,7 +387,7 @@ class LoginFailuresAdminTest(TestCase):
         count = LoginFailures.objects.count()
         assert count == 0
 
-    @override_settings(FEATURES={'ENABLE_MAX_FAILED_LOGIN_ATTEMPTS': True})
+    @override_settings(ENABLE_MAX_FAILED_LOGIN_ATTEMPTS=True)
     def test_unlock_account(self):
         """Test unlock single student account."""
         url = reverse('admin:student_loginfailures_change', args=(1, ))

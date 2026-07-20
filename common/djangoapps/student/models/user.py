@@ -1004,7 +1004,7 @@ class LoginFailures(models.Model):
         """
         Returns whether the feature flag around this functionality has been set
         """
-        return settings.FEATURES['ENABLE_MAX_FAILED_LOGIN_ATTEMPTS']
+        return settings.ENABLE_MAX_FAILED_LOGIN_ATTEMPTS
 
     @classmethod
     def is_user_locked_out(cls, user):
