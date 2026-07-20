@@ -381,7 +381,7 @@ class ChooseModeView(View):
 def create_mode(request, course_id):
     """Add a mode to the course corresponding to the given course ID.
 
-    Only available when settings.FEATURES['MODE_CREATION_FOR_TESTING'] is True.
+    Only available when settings.MODE_CREATION_FOR_TESTING is True.
 
     Attempts to use the following querystring parameters from the request:
         `mode_slug` (str): The mode to add, either 'honor', 'verified', or 'professional'
