@@ -13,10 +13,10 @@ Test utilities for mobile API tests:
 
 
 import datetime
-from unittest.mock import patch
 
 import ddt
 import pytz
+from django.test.utils import override_settings
 from django.urls import reverse
 from django.utils import timezone
 from opaque_keys.edx.keys import CourseKey
@@ -176,7 +176,7 @@ class MobileCourseAccessTestMixin(MobileAPIMilestonesMixin):
         response = self.api_response(expected_response_code=None, course_id=non_existent_course_id)
         self.verify_failure(response)  # allow subclasses to override verification
 
-    @patch.dict('django.conf.settings.FEATURES', {'DISABLE_START_DATES': False})
+    @override_settings(DISABLE_START_DATES=False)
     def test_unreleased_course(self):
         # ensure the course always starts in the future
         self.course = CourseFactory.create(mobile_available=True, static_asset_path="needed_for_split")

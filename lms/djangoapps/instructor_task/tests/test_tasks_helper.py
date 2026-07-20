@@ -1922,7 +1922,7 @@ class TestGradeReport(TestReportMixin, InstructorTaskModuleTestCase):
         )
         self.define_option_problem('Unreleased', parent=self.unreleased_section)
 
-    @patch.dict(settings.FEATURES, {'DISABLE_START_DATES': False})
+    @override_settings(DISABLE_START_DATES=False)
     def test_grade_report(self):
         self.submit_student_answer(self.student.username, 'Problem1', ['Option 1'])
 

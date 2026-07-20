@@ -322,14 +322,14 @@ class StaticTabDateTestCaseXML(LoginEnrollmentTestCase, ModuleStoreTestCase):
         self.xml_data = "static 463139"
         self.xml_url = "8e4cce2b4aaf4ba28b1220804619e41f"
 
-    @patch.dict('django.conf.settings.FEATURES', {'DISABLE_START_DATES': False})
+    @override_settings(DISABLE_START_DATES=False)
     def test_logged_in_xml(self):
         self.setup_user()
         url = reverse('static_tab', args=[str(self.xml_course_key), self.xml_url])
         resp = self.client.get(url)
         self.assertContains(resp, self.xml_data)
 
-    @patch.dict('django.conf.settings.FEATURES', {'DISABLE_START_DATES': False})
+    @override_settings(DISABLE_START_DATES=False)
     def test_anonymous_user_xml(self):
         url = reverse('static_tab', args=[str(self.xml_course_key), self.xml_url])
         resp = self.client.get(url)

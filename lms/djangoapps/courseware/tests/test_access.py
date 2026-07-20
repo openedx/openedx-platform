@@ -420,7 +420,7 @@ class AccessTestCase(LoginEnrollmentTestCase, ModuleStoreTestCase, MilestonesTes
         (False, TOMORROW, access_response.StartDateError)
     )
     @ddt.unpack
-    @patch.dict('django.conf.settings.FEATURES', {'DISABLE_START_DATES': False})
+    @override_settings(DISABLE_START_DATES=False)
     def test__has_access_to_block_staff_lock(self, visible_to_staff_only, start, expected_error_type=None):
         """
         Tests that "visible_to_staff_only" overrides start date.
@@ -450,7 +450,7 @@ class AccessTestCase(LoginEnrollmentTestCase, ModuleStoreTestCase, MilestonesTes
         (YESTERDAY, None)
     )  # ddt throws an error if I don't put the None argument there
     @ddt.unpack
-    @patch.dict('django.conf.settings.FEATURES', {'DISABLE_START_DATES': False})
+    @override_settings(DISABLE_START_DATES=False)
     def test__has_access_to_block_with_start_date(self, start, expected_error_type):
         """
         Tests that block access follows start date rules.
@@ -479,7 +479,7 @@ class AccessTestCase(LoginEnrollmentTestCase, ModuleStoreTestCase, MilestonesTes
         (True, True, TOMORROW, False),  # Masquerading, future start date - no access
     )
     @ddt.unpack
-    @patch.dict("django.conf.settings.FEATURES", {"DISABLE_START_DATES": False})
+    @override_settings(DISABLE_START_DATES=False)
     def test_enforce_masquerade_start_dates_flag(self, flag_active, is_masquerading, start, expected_access=True):
         """
         Test that the ENFORCE_MASQUERADE_START_DATES flag controls whether masquerading bypasses start date
@@ -862,7 +862,7 @@ class CourseOverviewAccessTestCase(ModuleStoreTestCase):
 
     @ddt.data(*(COURSE_TEST_DATA + LOAD_MOBILE_TEST_DATA + PREREQUISITES_TEST_DATA))
     @ddt.unpack
-    @patch.dict('django.conf.settings.FEATURES', {'DISABLE_START_DATES': False})
+    @override_settings(DISABLE_START_DATES=False)
     def test_course_overview_access(self, user_attr_name, action, course_attr_name):
         """
         Check that a user's access to a course is equal to the user's access to
@@ -902,7 +902,7 @@ class CourseOverviewAccessTestCase(ModuleStoreTestCase):
         )
     )
     @ddt.unpack
-    @patch.dict('django.conf.settings.FEATURES', {'DISABLE_START_DATES': False})
+    @override_settings(DISABLE_START_DATES=False)
     def test_course_catalog_access_num_queries(self, user_attr_name, action, course_attr_name):
         ContentTypeGatingConfig.objects.create(enabled=True, enabled_as_of=datetime.datetime(2018, 1, 1))
 

@@ -7,7 +7,6 @@ import pickle
 from datetime import datetime
 from importlib import import_module
 from operator import itemgetter  # pylint: disable=wrong-import-order
-from unittest.mock import patch
 
 import ddt
 import pytest
@@ -302,7 +301,7 @@ class TestStaffMasqueradeAsSpecificStudent(StaffMasqueradeTestCase, ProblemSubmi
         'john',  # Non-unicode username
         'fôô@bar',  # Unicode username with @, which is what the ENABLE_UNICODE_USERNAME feature allows
     )
-    @patch.dict('django.conf.settings.FEATURES', {'DISABLE_START_DATES': False})
+    @override_settings(DISABLE_START_DATES=False)
     def test_masquerade_as_specific_student(self, username):
         """
         Test masquerading as a specific user.
@@ -408,7 +407,7 @@ class TestGetMasqueradingGroupId(StaffMasqueradeTestCase):
         self.course.user_partitions.append(self.user_partition)
         modulestore().update_item(self.course, self.test_user.id)
 
-    @patch.dict('django.conf.settings.FEATURES', {'DISABLE_START_DATES': False})
+    @override_settings(DISABLE_START_DATES=False)
     def test_get_masquerade_group(self):
         """
         Tests that a staff member can masquerade as being in a group in a user partition

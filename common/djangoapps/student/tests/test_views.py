@@ -192,8 +192,8 @@ class StudentDashboardTests(SharedModuleStoreTestCase, MilestonesTestCaseMixin, 
     EMAIL_SETTINGS_ELEMENT_ID = "#actions-item-email-settings-0"
     ENABLED_SIGNALS = ['course_published']
     MOCK_SETTINGS = {
+        'DISABLE_START_DATES': False,
         'FEATURES': {
-            'DISABLE_START_DATES': False,
             'DISABLE_SET_JWT_COOKIES_FOR_TESTS': True,
         },
         'SOCIAL_SHARING_SETTINGS': {

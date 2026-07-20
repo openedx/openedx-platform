@@ -5,7 +5,6 @@ Test the about xblock
 
 import datetime
 from unittest import mock
-from unittest.mock import patch
 
 import ddt
 import pytz
@@ -273,14 +272,14 @@ class AboutTestCaseXML(LoginEnrollmentTestCase, ModuleStoreTestCase):
         # common/test/data/2014/about/overview.html
         self.xml_data = "about page 463139"
 
-    @patch.dict('django.conf.settings.FEATURES', {'DISABLE_START_DATES': False})
+    @override_settings(DISABLE_START_DATES=False)
     def test_logged_in_xml(self):
         self.setup_user()
         url = reverse('about_course', args=[str(self.xml_course_id)])
         resp = self.client.get(url)
         self.assertContains(resp, self.xml_data)
 
-    @patch.dict('django.conf.settings.FEATURES', {'DISABLE_START_DATES': False})
+    @override_settings(DISABLE_START_DATES=False)
     def test_anonymous_user_xml(self):
         url = reverse('about_course', args=[str(self.xml_course_id)])
         resp = self.client.get(url)
