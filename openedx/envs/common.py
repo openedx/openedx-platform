@@ -1167,6 +1167,12 @@ ENABLE_PREREQUISITE_COURSES = False
 # .. toggle_tickets: https://github.com/openedx/edx-platform/pull/7315
 LICENSING = False
 
+# .. setting_name: THIRD_PARTY_AUTH_HINT
+# .. setting_default: ''
+# .. setting_description: Default third-party auth provider hint (tpa_hint) to append to login/registration
+#   redirect URLs site-wide. Usually left empty and overridden per-site via site configuration.
+THIRD_PARTY_AUTH_HINT = ''
+
 # .. toggle_name: CERTIFICATES_HTML_VIEW
 # .. toggle_implementation: DjangoSetting
 # .. toggle_default: False
