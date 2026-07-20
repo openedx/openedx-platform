@@ -518,7 +518,7 @@ class TestProblemResponsesReport(TestReportMixin, InstructorTaskModuleTestCase):
         finally:
             ProblemBlock.generate_report_data = generate_report_data
 
-    @patch.dict('django.conf.settings.FEATURES', {'MAX_PROBLEM_RESPONSES_COUNT': 4})
+    @override_settings(MAX_PROBLEM_RESPONSES_COUNT=4)
     def test_build_student_data_limit(self):
         """
         Ensure that the _build_student_data method respects the global setting for
