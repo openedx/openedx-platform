@@ -320,6 +320,13 @@ FRONTEND_LOGIN_URL = LOGIN_URL
 FRONTEND_LOGOUT_URL = '/logout/'
 FRONTEND_REGISTER_URL = Derived(lambda settings: settings.LMS_ROOT_URL + '/register')
 
+# .. setting_name: FRONTEND_APP_PUBLISHER_URL
+# .. setting_default: None
+# .. setting_description: Base URL of the publisher frontend app. When set (globally here or per-org via
+#   site configuration), the course "settings" page in Studio links out to the publisher app. Left unset
+#   (None) by default, in which case no publisher link is shown.
+FRONTEND_APP_PUBLISHER_URL = None
+
 ENTERPRISE_API_URL = Derived(lambda settings: settings.LMS_INTERNAL_ROOT_URL + '/enterprise/api/v1/')
 ENTERPRISE_CONSENT_API_URL = Derived(lambda settings: settings.LMS_INTERNAL_ROOT_URL + '/consent/api/v1/')
 
