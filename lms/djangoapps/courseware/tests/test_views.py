@@ -2696,8 +2696,7 @@ class AccessUtilsTestCase(ModuleStoreTestCase):
         },
     )
     @ddt.unpack
-    @override_settings(DISABLE_START_DATES=False)
-    @patch.dict('django.conf.settings.FEATURES', {'ENABLE_ENTERPRISE_INTEGRATION': True})
+    @override_settings(DISABLE_START_DATES=False, ENABLE_ENTERPRISE_INTEGRATION=True)
     def test_is_course_open_for_learner(
         self,
         start_date_modifier,
