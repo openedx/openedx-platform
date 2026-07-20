@@ -1313,7 +1313,7 @@ def log_successful_login(sender, request, user, **kwargs):  # pylint: disable=un
             'event_type': "login",
         }
     )
-    if settings.FEATURES['SQUELCH_PII_IN_LOGS']:
+    if settings.SQUELCH_PII_IN_LOGS:
         AUDIT_LOG.info(f"Login success - user.id: {user.id}")
     else:
         AUDIT_LOG.info(f"Login success - {user.username} ({user.email})")
@@ -1330,7 +1330,7 @@ def log_successful_logout(sender, request, user, **kwargs):  # pylint: disable=u
                 'event_type': "logout",
             }
         )
-        if settings.FEATURES['SQUELCH_PII_IN_LOGS']:
+        if settings.SQUELCH_PII_IN_LOGS:
             AUDIT_LOG.info(f'Logout - user.id: {request.user.id}')  # pylint: disable=logging-format-interpolation
         else:
             AUDIT_LOG.info(f'Logout - {request.user}')  # pylint: disable=logging-format-interpolation
