@@ -810,9 +810,7 @@ class SidebarBlocksTestViews(BaseCourseHomeTests):
         self.create_completion(problem, int(problem_complete))
         self.create_completion(library, int(library_complete))
 
-        with override_settings(
-            FEATURES={**settings.FEATURES, 'MARK_LIBRARY_CONTENT_BLOCK_COMPLETE_ON_VIEW': library_complete_on_view}
-        ):
+        with override_settings(MARK_LIBRARY_CONTENT_BLOCK_COMPLETE_ON_VIEW=library_complete_on_view):
             response = self.client.get(reverse('course-home:course-navigation', args=[self.course.id]))
 
         sequence_data = response.data['blocks'][str(self.sequential.location)]
