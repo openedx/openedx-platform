@@ -11,7 +11,6 @@ from urllib.parse import quote
 from zoneinfo import ZoneInfo
 
 import ddt
-import httpretty
 import pytest
 from django.conf import settings
 from django.core.cache import cache
@@ -42,8 +41,6 @@ from openedx.core.djangoapps.oauth_dispatch.jwt import create_jwt_for_user
 from openedx.core.djangoapps.user_api.models import RetirementState, UserOrgTag, UserRetirementStatus
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 from openedx.core.lib.django_test_client_utils import get_absolute_url
-from openedx.features.enterprise_support.tests import FAKE_ENTERPRISE_CUSTOMER
-from openedx.features.enterprise_support.tests.mixins.enterprise import EnterpriseServiceMockMixin
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory, check_mongo_calls_range
 
@@ -155,7 +152,7 @@ class EnrollmentTestMixin:
 @override_settings(EDX_API_KEY="i am a key")
 @ddt.ddt
 @skip_unless_lms
-class EnrollmentTest(EnrollmentTestMixin, ModuleStoreTestCase, APITestCase, EnterpriseServiceMockMixin):
+class EnrollmentTest(EnrollmentTestMixin, ModuleStoreTestCase, APITestCase):
     """
     Test user enrollment, especially with different course modes.
     """
@@ -1234,40 +1231,6 @@ class EnrollmentTest(EnrollmentTestMixin, ModuleStoreTestCase, APITestCase, Ente
             assert is_active
             assert course_mode == CourseMode.VERIFIED
         self.client.logout()
-
-    @httpretty.activate
-    @override_settings(ENTERPRISE_SERVICE_WORKER_USERNAME='enterprise_worker',
-                       FEATURES=dict(ENABLE_ENTERPRISE_INTEGRATION=True))
-    @patch('openedx.features.enterprise_support.api.enterprise_customer_from_api')
-    def test_enterprise_course_enrollment_with_ec_uuid(self, mock_enterprise_customer_from_api):
-        """Verify that the enrollment completes when the EnterpriseCourseEnrollment creation succeeds. """
-        UserFactory.create(
-            username='enterprise_worker',
-            email=self.EMAIL,
-            password=self.PASSWORD,
-        )
-        CourseModeFactory.create(
-            course_id=self.course.id,
-            mode_slug=CourseMode.DEFAULT_MODE_SLUG,
-            mode_display_name=CourseMode.DEFAULT_MODE_SLUG,
-        )
-        consent_kwargs = {
-            'username': self.user.username,
-            'course_id': str(self.course.id),
-            'ec_uuid': 'this-is-a-real-uuid'
-        }
-        mock_enterprise_customer_from_api.return_value = FAKE_ENTERPRISE_CUSTOMER
-        self.mock_enterprise_course_enrollment_post_api()
-        self.mock_consent_missing(**consent_kwargs)
-        self.mock_consent_post(**consent_kwargs)
-        self.assert_enrollment_status(
-            expected_status=status.HTTP_200_OK,
-            as_server=True,
-            username='enterprise_worker',
-            linked_enterprise_customer='this-is-a-real-uuid',
-        )
-        assert httpretty.last_request().path == '/consent/api/v1/data_sharing_consent'  # pylint: disable=no-member
-        assert httpretty.last_request().method == httpretty.POST
 
     def test_enrollment_attributes_always_written(self):
         """ Enrollment attributes should always be written, regardless of whether

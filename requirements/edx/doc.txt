@@ -573,7 +573,7 @@ edx-drf-extensions==10.6.0
     #   enterprise-integrated-channels
     #   openedx-authz
     #   openedx-core
-edx-enterprise==8.3.0
+edx-enterprise==8.7.0
     # via
     #   -c requirements/constraints.txt
     #   -r requirements/edx/base.txt
@@ -1041,7 +1041,7 @@ openedx-events==11.2.0
     #   openedx-authz
     #   openedx-core
     #   ora2
-openedx-filters==3.7.0
+openedx-filters==3.8.0
     # via
     #   -r requirements/edx/base.txt
     #   edx-enterprise
