@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import logging
 from collections import OrderedDict
-from typing import TYPE_CHECKING, Optional, TypedDict
+from typing import TYPE_CHECKING, TypedDict
 
 from completion.exceptions import UnavailableCompletionData
 from completion.utilities import get_key_to_last_completed_block
@@ -201,7 +201,7 @@ class EnterpriseCustomerData(TypedDict):
     name: str
     uuid: str
     slug: str
-    auth_org_id: Optional[str]
+    auth_org_id: str | None
     enable_learner_portal: bool
 
 
@@ -211,7 +211,7 @@ def get_enterprise_customer(
     user: User,
     request: Request,
     is_masquerading: bool,
-) -> Optional[EnterpriseCustomerData]:
+) -> EnterpriseCustomerData | None:
     """
     Return the enterprise customer dict for the given user, or None.
 
