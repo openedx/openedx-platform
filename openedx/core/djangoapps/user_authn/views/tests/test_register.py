@@ -20,6 +20,7 @@ from social_django.models import Partial, UserSocialAuth
 from testfixtures import LogCapture
 
 from common.djangoapps.student.helpers import authenticate_new_user
+from common.djangoapps.student.models import UserAttribute
 from common.djangoapps.student.tests.factories import AccountRecoveryFactory, UserFactory
 from common.djangoapps.third_party_auth.tests.testutil import ThirdPartyAuthTestMixin, simulate_running_pipeline
 from common.djangoapps.third_party_auth.tests.utils import (
@@ -1559,6 +1560,43 @@ class RegistrationViewTestV1(
         assert sent_email.subject == \
                f'Action Required: Activate your {settings.PLATFORM_NAME} account'
         assert f'high-quality {settings.PLATFORM_NAME} courses' in sent_email.body
+
+    def test_trusted_registration_source_skips_activation_email(self):
+        # Registration through a trusted in-product flow should auto-activate the
+        # account and suppress the welcome/activation email.
+        response = self.client.post(self.url, {
+            "email": self.EMAIL,
+            "name": self.NAME,
+            "username": self.USERNAME,
+            "password": self.PASSWORD,
+            "honor_code": "true",
+            "registration_source": "enterprise_sponsor_checkout",
+        })
+        self.assertHttpOK(response)
+
+        assert mail.outbox == []
+        user = User.objects.get(username=self.USERNAME)
+        assert user.is_active
+        assert UserAttribute.get_user_attribute(user, 'registration_source') == \
+            'enterprise_sponsor_checkout'
+
+    def test_unknown_registration_source_does_not_skip_activation_email(self):
+        # Unknown registration_source values must not grant the skip. The activation
+        # email still goes out and the attribute is not recorded.
+        response = self.client.post(self.url, {
+            "email": self.EMAIL,
+            "name": self.NAME,
+            "username": self.USERNAME,
+            "password": self.PASSWORD,
+            "honor_code": "true",
+            "registration_source": "totally-made-up",
+        })
+        self.assertHttpOK(response)
+
+        assert len(mail.outbox) == 1
+        user = User.objects.get(username=self.USERNAME)
+        assert not user.is_active
+        assert UserAttribute.get_user_attribute(user, 'registration_source') is None
 
     @ddt.data(
         {"email": ""},

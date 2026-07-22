@@ -105,6 +105,15 @@ REGISTRATION_UTM_PARAMETERS = {
 }
 REGISTRATION_UTM_CREATED_AT = 'registration_utm_created_at'
 IS_MARKETABLE = 'is_marketable'
+
+# Name of the UserAttribute that records which flow originated a registration.
+REGISTRATION_SOURCE = 'registration_source'
+# Known registration sources that should NOT trigger the account activation email.
+# Learners registered through these flows are auto-activated because another trusted
+# system has already vouched for the email address.
+REGISTRATION_SOURCES_SKIP_ACTIVATION_EMAIL = frozenset({
+    'enterprise_sponsor_checkout',
+})
 # used to announce a registration
 # providing_args=["user", "registration"]
 REGISTER_USER = Signal()
@@ -240,9 +249,21 @@ def create_account_with_params(request, params):  # pylint: disable=too-many-sta
     if not preferences_api.has_user_preference(user, LANGUAGE_KEY):
         preferences_api.set_user_preference(user, LANGUAGE_KEY, get_language())
 
+    # Only accept a registration_source value from callers if it is on the
+    # allowlist. Arbitrary values supplied by clients are dropped so they
+    # cannot unilaterally suppress the activation email.
+    raw_registration_source = params.get('registration_source')
+    registration_source = (
+        raw_registration_source
+        if raw_registration_source in REGISTRATION_SOURCES_SKIP_ACTIVATION_EMAIL
+        else None
+    )
+    if registration_source:
+        UserAttribute.set_user_attribute(user, REGISTRATION_SOURCE, registration_source)
+
     # Check if system is configured to skip activation email for the current user.
     skip_email = _skip_activation_email(
-        user, running_pipeline, third_party_provider,
+        user, running_pipeline, third_party_provider, registration_source=registration_source,
     )
 
     if skip_email:
@@ -424,7 +445,7 @@ def _track_user_registration(user, profile, params, third_party_provider, regist
         )
 
 
-def _skip_activation_email(user, running_pipeline, third_party_provider):
+def _skip_activation_email(user, running_pipeline, third_party_provider, registration_source=None):
     """
     Return `True` if activation email should be skipped.
 
@@ -434,6 +455,8 @@ def _skip_activation_email(user, running_pipeline, third_party_provider):
         3. External auth bypassing activation.
         4. Have the platform configured to not require e-mail activation.
         5. Registering a new user using a trusted third party provider (with skip_email_verification=True)
+        6. Registering via a trusted in-product flow that has already vetted the email
+           (see REGISTRATION_SOURCES_SKIP_ACTIVATION_EMAIL).
 
     Note that this feature is only tested as a flag set one way or
     the other for *new* systems. we need to be careful about
@@ -444,6 +467,9 @@ def _skip_activation_email(user, running_pipeline, third_party_provider):
         user (User): Django User object for the current user.
         running_pipeline (dict): Dictionary containing user and pipeline data for third party authentication.
         third_party_provider (ProviderConfig): An instance of third party provider configuration.
+        registration_source (str|None): Identifier of the originating registration flow, if
+            supplied by the caller. Only values in REGISTRATION_SOURCES_SKIP_ACTIVATION_EMAIL
+            grant the skip.
 
     Returns:
         (bool): `True` if account activation email should be skipped, `False` if account activation email should be
@@ -474,10 +500,15 @@ def _skip_activation_email(user, running_pipeline, third_party_provider):
             getattr(third_party_provider, "identity_provider_type", None)
         )
 
+    trusted_registration_source = (
+        registration_source in REGISTRATION_SOURCES_SKIP_ACTIVATION_EMAIL
+    )
+
     return (
         settings.FEATURES.get('SKIP_EMAIL_VALIDATION', None) or
         settings.FEATURES.get('AUTOMATIC_AUTH_FOR_TESTING') or
-        (third_party_provider and third_party_provider.skip_email_verification and valid_email)
+        (third_party_provider and third_party_provider.skip_email_verification and valid_email) or
+        trusted_registration_source
     )
 
 
