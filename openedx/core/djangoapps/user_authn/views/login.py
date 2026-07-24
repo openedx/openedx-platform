@@ -228,7 +228,6 @@ def _log_and_raise_inactive_user_auth_error(unauthenticated_user):
         context={
             "platformName": configuration_helpers.get_value("PLATFORM_NAME", settings.PLATFORM_NAME),
             "supportLink": configuration_helpers.get_value("SUPPORT_SITE_LINK", settings.SUPPORT_SITE_LINK),
-            "email": unauthenticated_user.email,
         },
     )
 
@@ -684,12 +683,12 @@ def login_user(request, api_version="v1"):  # pylint: disable=too-many-statement
             set_custom_attribute("login_error_code", error_code)
         email_or_username_key = "email" if api_version == API_V1 else "email_or_username"
         email_or_username = request.POST.get(email_or_username_key, None)
+        # Login UI reads top-level `email` for inactive-user messages (LoginView.js).
+        # Prefer the known user email so username logins and SSO still populate it.
         if possibly_authenticated_user:
             email_or_username = possibly_authenticated_user.email
         elif response_content.get("error_code") == "inactive-user" and user is not None:
             email_or_username = user.email
-        elif response_content.get("context", {}).get("email"):
-            email_or_username = response_content["context"]["email"]
         response_content["email"] = email_or_username
     except VulnerablePasswordError as error:
         response_content = error.get_response()
