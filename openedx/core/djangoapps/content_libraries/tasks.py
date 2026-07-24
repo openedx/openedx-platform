@@ -122,6 +122,7 @@ def send_change_events_for_modified_entities(
     for entity in entities:
         change = changes_by_entity_id[entity.id]
         entity_opaque_key: LibraryUsageLocatorV2 | LibraryContainerLocator
+        event_data: LibraryBlockData | LibraryContainerData
         if hasattr(entity, "component"):
             # This is a library XBlock (component)
             entity_opaque_key = api.library_component_usage_key(library.library_key, entity.component)

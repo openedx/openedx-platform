@@ -231,7 +231,9 @@ class ObjectTagOrgView(ObjectTagView):
         """
         response = super().update(request, *args, **kwargs)
         if response.status_code == 200:
-            object_id = kwargs.get('object_id')
+            # object_id is the URL route parameter and is guaranteed present here,
+            # since a 200 response means the parent update resolved the object.
+            object_id: str = kwargs['object_id']
 
             # .. event_implemented_name: CONTENT_OBJECT_ASSOCIATIONS_CHANGED
             # .. event_type: org.openedx.content_authoring.content.object.associations.changed.v1

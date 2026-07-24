@@ -3,6 +3,7 @@ Handlers for notifications
 """
 import logging
 
+import attrs
 from django.contrib.auth import get_user_model
 from django.db import IntegrityError, ProgrammingError, transaction
 from django.db.models.signals import post_save
@@ -61,7 +62,9 @@ def generate_user_notifications(signal, sender, notification_data, metadata, **k
     """
 
     from openedx.core.djangoapps.notifications.tasks import send_notifications
-    notification_data = notification_data.__dict__
+    # openedx-events data classes are slotted attrs classes (no __dict__); asdict
+    # returns a fresh, mutable dict. recurse=False keeps nested values intact.
+    notification_data = attrs.asdict(notification_data, recurse=False)
     notification_data['course_key'] = str(notification_data['course_key'])
     send_notifications.delay(**notification_data)
 
@@ -98,7 +101,10 @@ def generate_course_notifications(signal, sender, course_notification_data, meta
     """
 
     from openedx.core.djangoapps.notifications.tasks import send_notifications
-    course_notification_data = course_notification_data.__dict__
+    # openedx-events data classes are slotted attrs classes (no __dict__), so
+    # convert to a shallow dict. recurse=False keeps nested values (e.g. the
+    # course_key object) intact, matching the previous __dict__ behavior.
+    course_notification_data = attrs.asdict(course_notification_data, recurse=False)
     user_ids = calculate_course_wide_notification_audience(
         str(course_notification_data['course_key']),
         course_notification_data['audience_filters']
