@@ -778,6 +778,20 @@ class ContentLibrariesTestCase(ContentLibrariesRestApiTest):
             # Second block should throw error
             self._add_block_to_library(lib_id, "problem", "problem1", expect_response=400)
 
+    def test_library_container_blocks_limit(self):
+        """
+        Test that container creation respects MAX_BLOCKS_PER_CONTENT_LIBRARY.
+        """
+        with self.settings(MAX_BLOCKS_PER_CONTENT_LIBRARY=1):
+            lib = self._create_library(
+                slug="test_lib_container_limits",
+                title="Container Limits Test Library",
+                description="Testing container limits in a library",
+            )
+            lib_id = lib["id"]
+            self._add_block_to_library(lib_id, "html", "html1")
+            self._create_container(lib_id, "unit", None, "Unit 1", expect_response=400)
+
     def test_library_paste_xblock(self):
         """
         Check the a new block is created in the library after pasting from clipboard.
