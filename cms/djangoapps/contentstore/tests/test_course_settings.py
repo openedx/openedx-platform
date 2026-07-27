@@ -121,7 +121,7 @@ class CourseAdvanceSettingViewTest(CourseTestCase, MilestonesTestCaseMixin):
         # restricted.
         CourseStaffRole(self.course.id).add_users(self.nonstaff)
 
-    @override_settings(FEATURES={'DISABLE_MOBILE_COURSE_AVAILABLE': True})
+    @override_settings(DISABLE_MOBILE_COURSE_AVAILABLE=True)
     def test_mobile_field_available(self):
 
         """
@@ -164,9 +164,10 @@ class CourseAdvanceSettingViewTest(CourseTestCase, MilestonesTestCaseMixin):
         When DISABLE_ADVANCED_SETTINGS is enabled, non-staff users should receive
         a 403 on the advanced settings URL; staff users should always be redirected.
         """
-        with override_settings(FEATURES={
-            'DISABLE_ADVANCED_SETTINGS': disable_advanced_settings,
-        }, COURSE_AUTHORING_MICROFRONTEND_URL='https://mfe.example'):
+        with override_settings(
+            DISABLE_ADVANCED_SETTINGS=disable_advanced_settings,
+            COURSE_AUTHORING_MICROFRONTEND_URL='https://mfe.example',
+        ):
             response = self.non_staff_client.get_html(self.course_setting_url)
             self.assertEqual(response.status_code, 403 if disable_advanced_settings else 302)  # noqa: PT009
 
@@ -337,7 +338,7 @@ class CourseDetailsViewTest(CourseTestCase, MilestonesTestCaseMixin):
         response = self.client.ajax_post(url, course_detail_json)
         self.assertEqual(400, response.status_code)  # noqa: PT009
 
-    @unittest.skipUnless(settings.FEATURES.get('ENTRANCE_EXAMS', False), True)
+    @unittest.skipUnless(settings.ENTRANCE_EXAMS, True)
     def test_entrance_exam_created_updated_and_deleted_successfully(self):
         """
         This tests both of the entrance exam settings and the `any_unfulfilled_milestones` helper.
@@ -396,7 +397,7 @@ class CourseDetailsViewTest(CourseTestCase, MilestonesTestCaseMixin):
         self.assertFalse(milestones_helpers.any_unfulfilled_milestones(self.course.id, self.user.id),  # noqa: PT009
                          msg='The entrance exam should not be required anymore')
 
-    @unittest.skipUnless(settings.FEATURES.get('ENTRANCE_EXAMS', False), True)
+    @unittest.skipUnless(settings.ENTRANCE_EXAMS, True)
     def test_entrance_exam_store_default_min_score(self):
         """
         test that creating an entrance exam should store the default value, if key missing in json request
@@ -435,7 +436,7 @@ class CourseDetailsViewTest(CourseTestCase, MilestonesTestCaseMixin):
         self.assertTrue(course.entrance_exam_enabled)  # noqa: PT009
         self.assertEqual(course.entrance_exam_minimum_score_pct, .5)  # noqa: PT009
 
-    @unittest.skipUnless(settings.FEATURES.get('ENTRANCE_EXAMS', False), True)
+    @unittest.skipUnless(settings.ENTRANCE_EXAMS, True)
     @mock.patch.dict("django.conf.settings.FEATURES", {'ENABLE_PREREQUISITE_COURSES': True})
     def test_entrance_after_changing_other_setting(self):
         """
@@ -1072,7 +1073,7 @@ class CourseMetadataEditingTest(CourseTestCase):
         )
         self.assertNotIn('giturl', test_model)  # noqa: PT009
 
-    @patch.dict(settings.FEATURES, {'ENABLE_EDXNOTES': True})
+    @override_settings(ENABLE_EDXNOTES=True)
     def test_edxnotes_present(self):
         """
         If feature flag ENABLE_EDXNOTES is on, show the setting as a non-deprecated Advanced Setting.
@@ -1080,7 +1081,7 @@ class CourseMetadataEditingTest(CourseTestCase):
         test_model = CourseMetadata.fetch(self.fullcourse)
         self.assertIn('edxnotes', test_model)  # noqa: PT009
 
-    @patch.dict(settings.FEATURES, {'ENABLE_EDXNOTES': False})
+    @override_settings(ENABLE_EDXNOTES=False)
     def test_edxnotes_not_present(self):
         """
         If feature flag ENABLE_EDXNOTES is off, don't show the setting at all on the Advanced Settings page.
@@ -1088,7 +1089,7 @@ class CourseMetadataEditingTest(CourseTestCase):
         test_model = CourseMetadata.fetch(self.fullcourse)
         self.assertNotIn('edxnotes', test_model)  # noqa: PT009
 
-    @patch.dict(settings.FEATURES, {'ENABLE_EDXNOTES': False})
+    @override_settings(ENABLE_EDXNOTES=False)
     def test_validate_update_filtered_edxnotes_off(self):
         """
         If feature flag is off, then edxnotes must be filtered.
@@ -1103,7 +1104,7 @@ class CourseMetadataEditingTest(CourseTestCase):
         )
         self.assertNotIn('edxnotes', test_model)  # noqa: PT009
 
-    @patch.dict(settings.FEATURES, {'ENABLE_EDXNOTES': True})
+    @override_settings(ENABLE_EDXNOTES=True)
     def test_validate_update_filtered_edxnotes_on(self):
         """
         If feature flag is on, then edxnotes must not be filtered.
@@ -1118,7 +1119,7 @@ class CourseMetadataEditingTest(CourseTestCase):
         )
         self.assertIn('edxnotes', test_model)  # noqa: PT009
 
-    @patch.dict(settings.FEATURES, {'ENABLE_EDXNOTES': True})
+    @override_settings(ENABLE_EDXNOTES=True)
     def test_update_from_json_filtered_edxnotes_on(self):
         """
         If feature flag is on, then edxnotes must be updated.
@@ -1132,7 +1133,7 @@ class CourseMetadataEditingTest(CourseTestCase):
         )
         self.assertIn('edxnotes', test_model)  # noqa: PT009
 
-    @patch.dict(settings.FEATURES, {'ENABLE_EDXNOTES': False})
+    @override_settings(ENABLE_EDXNOTES=False)
     def test_update_from_json_filtered_edxnotes_off(self):
         """
         If feature flag is off, then edxnotes must not be updated.
@@ -1146,7 +1147,7 @@ class CourseMetadataEditingTest(CourseTestCase):
         )
         self.assertNotIn('edxnotes', test_model)  # noqa: PT009
 
-    @patch.dict(settings.FEATURES, {'ENABLE_OTHER_COURSE_SETTINGS': True})
+    @override_settings(ENABLE_OTHER_COURSE_SETTINGS=True)
     def test_othercoursesettings_present(self):
         """
         If feature flag ENABLE_OTHER_COURSE_SETTINGS is on, show the setting in Advanced Settings.
@@ -1154,7 +1155,7 @@ class CourseMetadataEditingTest(CourseTestCase):
         test_model = CourseMetadata.fetch(self.fullcourse)
         self.assertIn('other_course_settings', test_model)  # noqa: PT009
 
-    @patch.dict(settings.FEATURES, {'ENABLE_OTHER_COURSE_SETTINGS': False})
+    @override_settings(ENABLE_OTHER_COURSE_SETTINGS=False)
     def test_othercoursesettings_not_present(self):
         """
         If feature flag ENABLE_OTHER_COURSE_SETTINGS is off, don't show the setting at all in Advanced Settings.
@@ -1308,7 +1309,7 @@ class CourseMetadataEditingTest(CourseTestCase):
         self.assertIn('advertised_start', test_model, 'Missing revised advertised_start metadata field')  # noqa: PT009
         self.assertEqual(test_model['advertised_start']['value'], 'start B', "advertised_start not expected value")  # noqa: PT009  # pylint: disable=line-too-long
 
-    @patch.dict(settings.FEATURES, {'ENABLE_EDXNOTES': True})
+    @override_settings(ENABLE_EDXNOTES=True)
     @patch('xmodule.util.xmodule_django.get_current_request')
     def test_post_settings_with_staff_not_enrolled(self, mock_request):
         """

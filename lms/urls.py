@@ -217,7 +217,7 @@ urlpatterns = [
     path('500', handler500, name='render_500'),
 ]
 
-if settings.FEATURES.get('ENABLE_MOBILE_REST_API'):
+if settings.ENABLE_MOBILE_REST_API:
     urlpatterns += [
         re_path(r'^api/mobile/(?P<api_version>v(4|3|2|1|0.5))/', include('lms.djangoapps.mobile_api.urls')),
     ]
@@ -682,7 +682,7 @@ urlpatterns += [
     ),
 ]
 
-if settings.FEATURES.get('ENABLE_TEAMS'):
+if settings.ENABLE_TEAMS:
     # Teams endpoints
     urlpatterns += [
         path(
@@ -699,7 +699,7 @@ if settings.FEATURES.get('ENABLE_TEAMS'):
     ]
 
 # allow course staff to change to student view of courseware
-if settings.FEATURES.get('ENABLE_MASQUERADE'):
+if settings.ENABLE_MASQUERADE:
     urlpatterns += [
         re_path(
             r'^courses/{}/masquerade$'.format(  # noqa: UP032
@@ -721,7 +721,7 @@ urlpatterns += [
 ]
 
 # discussion forums live within courseware, so courseware must be enabled first
-if settings.FEATURES.get('ENABLE_DISCUSSION_SERVICE'):
+if settings.ENABLE_DISCUSSION_SERVICE:
     urlpatterns += [
         path(
             'api/discussion/',
@@ -819,13 +819,13 @@ if settings.DEBUG or settings.FEATURES.get('ENABLE_DJANGO_ADMIN_SITE'):
         path('admin/', admin.site.urls),
     ]
 
-if configuration_helpers.get_value('ENABLE_BULK_ENROLLMENT_VIEW', settings.FEATURES.get('ENABLE_BULK_ENROLLMENT_VIEW')):
+if configuration_helpers.get_value('ENABLE_BULK_ENROLLMENT_VIEW', settings.ENABLE_BULK_ENROLLMENT_VIEW):
     urlpatterns += [
         path('api/bulk_enroll/v1/', include('lms.djangoapps.bulk_enroll.urls')),
     ]
 
 # Embargo
-if settings.FEATURES.get('EMBARGO'):
+if settings.EMBARGO:
     urlpatterns += [
         path('embargo/', include(('openedx.core.djangoapps.embargo.urls', 'openedx.core.djangoapps.embargo'),
                                  namespace='embargo')),
@@ -872,7 +872,7 @@ urlpatterns += [
 ]
 
 # Third-party auth.
-if settings.FEATURES.get('ENABLE_THIRD_PARTY_AUTH'):
+if settings.ENABLE_THIRD_PARTY_AUTH:
     urlpatterns += [
         path('', include('common.djangoapps.third_party_auth.urls')),
         path('api/third_party_auth/', include('common.djangoapps.third_party_auth.api.urls')),
@@ -909,14 +909,14 @@ urlpatterns += [
 ]
 
 # Custom courses on edX (CCX) URLs
-if settings.FEATURES.get('CUSTOM_COURSES_EDX'):
+if settings.CUSTOM_COURSES_EDX:
     urlpatterns += [
         re_path(fr'^courses/{settings.COURSE_ID_PATTERN}/', include('lms.djangoapps.ccx.urls')),
         path('api/ccx/', include(('lms.djangoapps.ccx.api.urls', 'lms.djangoapps.ccx'), namespace='ccx_api')),
     ]
 
 # Access to courseware as an LTI provider
-if settings.FEATURES.get('ENABLE_LTI_PROVIDER'):
+if settings.ENABLE_LTI_PROVIDER:
     urlpatterns += [
         path('lti_provider/', include('lms.djangoapps.lti_provider.urls')),
     ]

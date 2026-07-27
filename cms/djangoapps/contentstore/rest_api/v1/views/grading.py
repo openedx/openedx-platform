@@ -94,7 +94,7 @@ class CourseGradingView(DeveloperErrorViewMixin, APIView):
         ```
         """
         with modulestore().bulk_operations(course_key):
-            credit_eligibility_enabled = settings.FEATURES.get("ENABLE_CREDIT_ELIGIBILITY", False)
+            credit_eligibility_enabled = settings.ENABLE_CREDIT_ELIGIBILITY
             show_credit_eligibility = is_credit_course(course_key) and credit_eligibility_enabled
 
             grading_context = get_course_grading(course_key)

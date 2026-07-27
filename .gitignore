@@ -146,6 +146,9 @@ database.sqlite
 courseware/static/js/mathjax/*
 flushdb.sh
 build
+# Vendored pdf.js needs a build/ subdir whose name happens to collide with the
+# generic 'build' ignore above.
+!/common/static/js/vendor/pdfjs/build/
 /src/
 \#*\#
 .env/

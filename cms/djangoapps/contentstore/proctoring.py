@@ -35,7 +35,7 @@ def register_special_exams(course_key):
     subsystem. Likewise, if formerly registered exams are unmarked, then those
     registered exams are marked as inactive
     """
-    if not settings.FEATURES.get('ENABLE_SPECIAL_EXAMS'):
+    if not settings.ENABLE_SPECIAL_EXAMS:
         # if feature is not enabled then do a quick exit
         return
 

@@ -137,7 +137,7 @@ def update_creator_group_callback(sender, **kwargs):  # pylint: disable=unused-a
 
 def course_creator_notification_context(subject):
     return {
-        'studio_request_email': settings.FEATURES.get('STUDIO_REQUEST_EMAIL', ''),
+        'studio_request_email': settings.STUDIO_REQUEST_EMAIL,
         'is_secure': (settings.CMS_ROOT_URL or '').split(':')[0].lower() == 'https',
         'site': str(get_current_site() or settings.CMS_BASE),
         'user_name': subject.username,

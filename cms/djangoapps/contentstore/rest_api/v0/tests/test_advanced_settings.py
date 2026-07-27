@@ -70,7 +70,7 @@ class CourseAdvanceSettingViewTest(CourseTestCase, MilestonesTestCaseMixin):
         Test that the response contain all fields irrespective of exclusions.
         """
         for setting_value in (True, False):
-            with override_settings(FEATURES={setting: setting_value}):
+            with override_settings(**{setting: setting_value}):
                 response = self.client.get(self.url)
                 content = json.loads(response.content.decode("utf-8"))
                 assert excluded_field in content
@@ -98,7 +98,7 @@ class CourseAdvanceSettingViewTest(CourseTestCase, MilestonesTestCaseMixin):
     )
     @ddt.unpack
     def test_disabled_fetch_all_query_param(self, setting, excluded_field):
-        with override_settings(FEATURES={setting: False}):
+        with override_settings(**{setting: False}):
             resp = self.client.get(self.url, {"fetch_all": 0})
             assert excluded_field not in resp.data
 

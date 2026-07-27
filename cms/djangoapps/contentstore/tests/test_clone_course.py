@@ -14,6 +14,7 @@ from cms.djangoapps.contentstore.tests.utils import CourseTestCase
 from common.djangoapps.course_action_state.managers import CourseRerunUIStateManager
 from common.djangoapps.course_action_state.models import CourseRerunState
 from common.djangoapps.student.auth import has_course_author_access
+from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRole
 from xmodule.contentstore.content import StaticContent  # pylint: disable=wrong-import-order
 from xmodule.contentstore.django import contentstore  # pylint: disable=wrong-import-order
 from xmodule.modulestore import EdxJSONEncoder, ModuleStoreEnum  # pylint: disable=wrong-import-order
@@ -141,3 +142,49 @@ class CloneCourseTest(CourseTestCase):
                 course_key=split_course4_id,
                 state=CourseRerunUIStateManager.State.FAILED
             )
+
+
+    def test_rerun_course_grants_instructor_access(self):
+        """
+        Test that the rerun_course task grants instructor and staff access
+        to the user after cloning. This verifies add_instructor is called
+        inside the task (needed when authz.enable_course_authoring is enabled
+        and add_instructor cannot be called pre-task).
+
+        TODO: This test covers a temporary workaround until openedx/openedx-authz#352
+        is implemented. Once authz supports pre-assigning roles without a CourseOverview,
+        add_instructor can move back to the pre-task call site and this test can be
+        simplified.
+        """
+        org = 'edX'
+        course_number = 'CS101'
+        course_run = '2025_Q1'
+        display_name = 'rerun_instructor_test'
+        fields = {'display_name': display_name}
+
+        # Create a source course
+        source_course = CourseFactory.create(
+            org=org,
+            number=course_number,
+            run=course_run,
+            display_name=display_name,
+            default_store=ModuleStoreEnum.Type.split,
+        )
+
+        dest_course_id = CourseLocator(org=org, course=course_number, run="instructor_rerun")
+        CourseRerunState.objects.initiated(
+            source_course.id, dest_course_id, self.user, fields['display_name']
+        )
+
+        result = rerun_course.delay(
+            str(source_course.id),
+            str(dest_course_id),
+            self.user.id,
+            json.dumps(fields, cls=EdxJSONEncoder),
+        )
+        assert result.get() == "succeeded"
+
+        # Verify the user has instructor and staff access on the new course
+        assert has_course_author_access(self.user, dest_course_id)
+        assert CourseInstructorRole(dest_course_id).has_user(self.user)
+        assert CourseStaffRole(dest_course_id).has_user(self.user)

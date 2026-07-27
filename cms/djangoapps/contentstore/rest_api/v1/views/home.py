@@ -90,7 +90,7 @@ class HomePageView(APIView):
             ),
             'studio_name': settings.STUDIO_NAME,
             'studio_short_name': settings.STUDIO_SHORT_NAME,
-            'studio_request_email': settings.FEATURES.get('STUDIO_REQUEST_EMAIL', ''),
+            'studio_request_email': settings.STUDIO_REQUEST_EMAIL,
             'tech_support_email': settings.TECH_SUPPORT_EMAIL,
             'platform_name': settings.PLATFORM_NAME,
             'user_is_active': request.user.is_active,

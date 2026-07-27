@@ -12,7 +12,8 @@ from unittest.mock import Mock, patch
 
 import ddt
 from django.conf import settings
-from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
+from django.contrib.auth.models import Group, User  # pylint: disable=imported-auth-user
+from django.contrib.sessions.models import Session
 from django.core import mail
 from django.core.cache import cache
 from django.http import HttpResponse
@@ -92,9 +93,6 @@ class LoginTest(OpenEdxEventsTestMixin, SiteMixin, CacheIsolationTestCase):
         )
         self._assert_response(response, success=True)
         self._assert_audit_log(mock_audit_log, 'info', ['Login success', self.user_email])
-
-    FEATURES_WITH_AUTHN_MFE_ENABLED = settings.FEATURES.copy()
-    FEATURES_WITH_AUTHN_MFE_ENABLED['ENABLE_AUTHN_MICROFRONTEND'] = True
 
     @override_settings(MARKETING_EMAILS_OPT_IN=True)
     def test_login_success_with_opt_in_flag_enabled(self):
@@ -188,7 +186,7 @@ class LoginTest(OpenEdxEventsTestMixin, SiteMixin, CacheIsolationTestCase):
     )
     @ddt.unpack
     @override_settings(LOGIN_REDIRECT_WHITELIST=['openedx.service'])
-    @override_settings(FEATURES=FEATURES_WITH_AUTHN_MFE_ENABLED)
+    @override_settings(ENABLE_AUTHN_MICROFRONTEND=True)
     @skip_unless_lms
     def test_login_success_with_redirect(self, next_url, course_id, expected_redirect):
         post_params = {}
@@ -209,7 +207,7 @@ class LoginTest(OpenEdxEventsTestMixin, SiteMixin, CacheIsolationTestCase):
 
     @ddt.data(('/dashboard', False), ('/enterprise/select/active/?success_url=/dashboard', True))
     @ddt.unpack
-    @patch.dict(settings.FEATURES, {'ENABLE_AUTHN_MICROFRONTEND': True, 'ENABLE_ENTERPRISE_INTEGRATION': True})
+    @override_settings(ENABLE_AUTHN_MICROFRONTEND=True, ENABLE_ENTERPRISE_INTEGRATION=True)
     @override_settings(LOGIN_REDIRECT_WHITELIST=['openedx.service'])
     @patch('openedx.features.enterprise_support.api.EnterpriseApiClient')
     @patch('openedx.core.djangoapps.user_authn.views.login.reverse')
@@ -259,7 +257,7 @@ class LoginTest(OpenEdxEventsTestMixin, SiteMixin, CacheIsolationTestCase):
 
     @ddt.data(('', True), ('/enterprise/select/active/?success_url=', False))
     @ddt.unpack
-    @patch.dict(settings.FEATURES, {'ENABLE_AUTHN_MICROFRONTEND': True, 'ENABLE_ENTERPRISE_INTEGRATION': True})
+    @override_settings(ENABLE_AUTHN_MICROFRONTEND=True, ENABLE_ENTERPRISE_INTEGRATION=True)
     @patch('openedx.features.enterprise_support.api.EnterpriseApiClient')
     @patch('openedx.core.djangoapps.user_authn.views.login.activate_learner_enterprise')
     @patch('openedx.core.djangoapps.user_authn.views.login.reverse')
@@ -660,6 +658,62 @@ class LoginTest(OpenEdxEventsTestMixin, SiteMixin, CacheIsolationTestCase):
         response = client1.get(url)
         # client1 will be logged out
         assert response.status_code == 302
+
+    @patch.dict("django.conf.settings.FEATURES", {'PREVENT_CONCURRENT_LOGINS': True})
+    def test_single_session_exempt_user(self):
+        """
+        A user whose username is in SINGLE_LOGIN_EXEMPT_USERNAMES is not subject
+        to single-login enforcement: a concurrent login does not record the
+        single-session slot and therefore does not evict the first session.
+        """
+        creds = {'email': self.user_email, 'password': self.password}
+        client1 = Client()
+        client2 = Client()
+
+        with override_settings(SINGLE_LOGIN_EXEMPT_USERNAMES=[self.user.username]):
+            response = client1.post(self.url, creds)
+            self._assert_response(response, success=True)
+
+            # A second login must NOT evict the exempt user's first session.
+            response = client2.post(self.url, creds)
+            self._assert_response(response, success=True)
+
+            self.user = User.objects.get(pk=self.user.pk)
+            # No single-session slot is recorded for exempt users, so neither
+            # session is ever deleted.
+            assert 'session_id' not in self.user.profile.get_meta()
+
+            # client1's Django session itself was never evicted -- this is
+            # the actual mechanism set_login_session uses to end a session,
+            # so it stays valid independent of what profile meta records.
+            assert Session.objects.filter(session_key=client1.session.session_key).exists()
+
+    @patch.dict("django.conf.settings.FEATURES", {'PREVENT_CONCURRENT_LOGINS': True})
+    def test_single_session_exempt_group(self):
+        """
+        A user in a group listed in SINGLE_LOGIN_EXEMPT_GROUPS is not subject
+        to single-login enforcement: a concurrent login does not record the
+        single-session slot and therefore does not evict the first session.
+        """
+        group = Group.objects.create(name='exempt-service-accounts')
+        self.user.groups.add(group)
+
+        creds = {'email': self.user_email, 'password': self.password}
+        client1 = Client()
+        client2 = Client()
+
+        with override_settings(SINGLE_LOGIN_EXEMPT_GROUPS=[group.name]):
+            response = client1.post(self.url, creds)
+            self._assert_response(response, success=True)
+
+            # A second login must NOT evict the exempt user's first session.
+            response = client2.post(self.url, creds)
+            self._assert_response(response, success=True)
+
+            self.user = User.objects.get(pk=self.user.pk)
+            # No single-session slot is recorded for exempt users, so neither
+            # session is ever deleted.
+            assert 'session_id' not in self.user.profile.get_meta()
 
     @patch.dict("django.conf.settings.FEATURES", {'PREVENT_CONCURRENT_LOGINS': True})
     def test_single_session_with_no_user_profile(self):

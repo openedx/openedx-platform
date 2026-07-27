@@ -26,6 +26,7 @@ from openedx_authz.constants.permissions import (
 from openedx_filters.content_authoring.filters import LMSPageURLRequested
 from pymongo import ASCENDING, DESCENDING
 
+from common.djangoapps.student.roles import enable_authz_course_authoring
 from common.djangoapps.util.date_utils import get_default_time_display
 from common.djangoapps.util.json_request import JsonResponse
 from openedx.core.djangoapps.authz.constants import LegacyAuthoringPermission
@@ -33,7 +34,6 @@ from openedx.core.djangoapps.authz.decorators import user_has_course_permission
 from openedx.core.djangoapps.contentserver.caching import del_cached_content
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.core.djangoapps.user_api.models import UserPreference
-from openedx.core.toggles import enable_authz_course_authoring
 from xmodule.contentstore.content import StaticContent  # pylint: disable=wrong-import-order
 from xmodule.contentstore.django import contentstore  # pylint: disable=wrong-import-order
 from xmodule.exceptions import NotFoundError  # pylint: disable=wrong-import-order

@@ -34,6 +34,7 @@ from openedx_events.learning.signals import COURSE_NOTIFICATION_REQUESTED
 from pytz import UTC
 from rest_framework.fields import BooleanField
 from xblock.fields import Scope
+from xblock.utils.studio_editable import StudioContainerWithNestedXBlocksMixin
 
 from cms.djangoapps.contentstore.toggles import (
     enable_course_optimizer,
@@ -254,15 +255,14 @@ def get_pages_and_resources_url(course_locator):
 
 def get_proctored_exam_settings_url(course_locator) -> str:
     """
-    Gets course authoring microfrontend URL for links to proctored exam settings page
+    Gets the relative path for links to proctored exam settings page.
+    Returns a path without the MFE base URL, since React Router prepends the base path.
     """
-    proctored_exam_settings_url = ''
     if exam_setting_view_enabled(course_locator):
         mfe_base_url = get_course_authoring_url(course_locator)
-        course_mfe_url = f'{mfe_base_url}/course/{course_locator}'
         if mfe_base_url:
-            proctored_exam_settings_url = f'{course_mfe_url}/pages-and-resources/proctoring/settings'
-    return proctored_exam_settings_url
+            return f'/course/{course_locator}/pages-and-resources/proctoring/settings'
+    return ''
 
 
 def get_editor_page_base_url(course_locator) -> str:
@@ -538,7 +538,7 @@ def course_import_olx_validation_is_enabled():
     """
     Check if course olx validation is enabled on course import.
     """
-    return settings.FEATURES.get('ENABLE_COURSE_OLX_VALIDATION', False)
+    return settings.ENABLE_COURSE_OLX_VALIDATION
 
 
 # pylint: disable=invalid-name
@@ -1376,7 +1376,7 @@ def get_course_settings(request, course_key, course_block):
 
     from .views.course import _process_courses_list, get_courses_accessible_to_user
 
-    credit_eligibility_enabled = settings.FEATURES.get('ENABLE_CREDIT_ELIGIBILITY', False)
+    credit_eligibility_enabled = settings.ENABLE_CREDIT_ELIGIBILITY
     upload_asset_url = reverse_course_url('assets_handler', course_key)
 
     # see if the ORG of this course can be attributed to a defined configuration . In that case, the
@@ -1586,9 +1586,9 @@ def get_library_context(request, request_is_json=False):
             'user': request.user,
             'request_course_creator_url': reverse('request_course_creator'),
             'course_creator_status': _get_course_creator_status(request.user),
-            'allow_unicode_course_id': settings.FEATURES.get('ALLOW_UNICODE_COURSE_ID', False),
+            'allow_unicode_course_id': settings.ALLOW_UNICODE_COURSE_ID,
             'archived_courses': True,
-            'allow_course_reruns': settings.FEATURES.get('ALLOW_COURSE_RERUNS', True),
+            'allow_course_reruns': settings.ALLOW_COURSE_RERUNS,
             'rerun_creator_status': GlobalStaff().has_user(request.user),
             'split_studio_home': split_library_view_on_dashboard(),
             'active_tab': 'libraries',
@@ -1717,8 +1717,8 @@ def get_home_context(request, no_course=False):
         'request_course_creator_url': reverse('request_course_creator'),
         'course_creator_status': _get_course_creator_status(user),
         'rerun_creator_status': GlobalStaff().has_user(user),
-        'allow_unicode_course_id': settings.FEATURES.get('ALLOW_UNICODE_COURSE_ID', False),
-        'allow_course_reruns': settings.FEATURES.get('ALLOW_COURSE_RERUNS', True),
+        'allow_unicode_course_id': settings.ALLOW_UNICODE_COURSE_ID,
+        'allow_course_reruns': settings.ALLOW_COURSE_RERUNS,
         'active_tab': 'courses',
         'allowed_organizations': get_allowed_organizations(user),
         'allowed_organizations_for_libraries': get_allowed_organizations_for_libraries(user),
@@ -1742,7 +1742,7 @@ def get_course_rerun_context(course_key, course_block, user):
         'display_name': course_block.display_name,
         'user': user,
         'course_creator_status': _get_course_creator_status(user),
-        'allow_unicode_course_id': settings.FEATURES.get('ALLOW_UNICODE_COURSE_ID', False)
+        'allow_unicode_course_id': settings.ALLOW_UNICODE_COURSE_ID
     }
 
     return course_rerun_context
@@ -1934,6 +1934,47 @@ def _get_course_index_context(request, course_key, course_block):
     return course_index_context
 
 
+def _get_component_templates_for_xblock(component_templates, xblock):
+    """
+    Return the component templates to display for the given XBlock container.
+
+    If the XBlock implements ``StudioContainerWithNestedXBlocksMixin``, ``component_templates``
+    is ignored entirely and the list is built from ``get_nested_blocks_spec()`` alone.
+    This is necessary because the spec may contain custom child types (e.g. Problem Builder's
+    "Ranged Value Slider" or "Long Answer Recap") that are not part of the standard
+    course-wide ``component_templates``, so intersecting the two lists would silently drop them.
+
+    If the XBlock does not implement the mixin, ``component_templates`` is returned unchanged.
+    """
+    if not isinstance(xblock, StudioContainerWithNestedXBlocksMixin):
+        return component_templates
+
+    groups = []
+    for spec in xblock.get_nested_blocks_spec():
+        template = {
+            "display_name": spec.label,
+            "category": spec.category,
+            "boilerplate_name": spec.boilerplate,
+            "hinted": False,
+            "tab": "common",
+            "support_level": True,
+        }
+        if spec.single_instance:
+            template["single_instance"] = True
+        if spec.disabled:
+            template["disabled"] = True
+        if spec.disabled_reason:
+            template["disabled_reason"] = spec.disabled_reason
+        groups.append({
+            "type": spec.category,
+            "display_name": spec.label or spec.category,
+            "templates": [template],
+            "support_legend": {"show_legend": False},
+        })
+
+    return groups
+
+
 def get_container_handler_context(request, usage_key, course, xblock):  # pylint: disable=too-many-statements
     """
     Utils is used to get context for container xblock requests.
@@ -1955,6 +1996,9 @@ def get_container_handler_context(request, usage_key, course, xblock):  # pylint
 
     course_sequence_ids = get_sequence_usage_keys(course)
     component_templates = get_component_templates(course)
+
+    component_templates = _get_component_templates_for_xblock(component_templates, xblock)
+
     ancestor_xblocks = []
     parent = get_parent_xblock(xblock)
     action = request.GET.get('action', 'view')

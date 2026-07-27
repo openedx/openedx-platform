@@ -23,6 +23,7 @@ from common.djangoapps.util.course import get_encoded_course_sharing_utm_params
 from lms.djangoapps.bulk_email.models import Optout
 from lms.djangoapps.learner_home.test_utils import create_test_enrollment, random_string, random_url
 from lms.djangoapps.learner_home.views import (
+    EnterpriseCustomerData,
     get_course_overviews_for_pseudo_sessions,
     get_course_programs,
     get_course_share_urls,
@@ -412,26 +413,49 @@ class TestGetSuggestedCourses(SharedModuleStoreTestCase):
         self.assertDictEqual(return_data, self.EMPTY_SUGGESTED_COURSES)  # noqa: PT009
 
 
+FAKE_ENTERPRISE_CUSTOMER_DATA: EnterpriseCustomerData = {
+    "name": "Fake Enterprise",
+    "uuid": str(uuid4()),
+    "slug": "fake-enterprise",
+    "auth_org_id": None,
+    "enable_learner_portal": True,
+}
+
+
+def _fake_enterprise_customer_override(prev_fn, user, request, is_masquerading):
+    """Test double target for OVERRIDE_LEARNER_HOME_GET_ENTERPRISE_CUSTOMER"""
+    _fake_enterprise_customer_override.last_call = (prev_fn, user, request, is_masquerading)
+    return FAKE_ENTERPRISE_CUSTOMER_DATA
+
+
 @ddt.ddt
 class TestGetEnterpriseCustomer(TestCase):
     """Test for get_enterprise_customer"""
 
     @ddt.data(True, False)
-    @patch("lms.djangoapps.learner_home.views.get_enterprise_learner_data_from_db")
-    @patch(
-        "lms.djangoapps.learner_home.views.enterprise_customer_from_session_or_learner_data"
-    )
-    def test_get_enterprise_customer(
-        self, is_masquerading, mock_get_from_session, mock_get_from_db
-    ):
-        """Don't load the user from session if we're masquerading, load directly from db"""
+    def test_get_enterprise_customer_default(self, is_masquerading):
+        """With no plugin override configured, the base implementation returns None"""
         user, request = Mock(), Mock()
         result = get_enterprise_customer(user, request, is_masquerading)
-        if is_masquerading:
-            assert not mock_get_from_session.called
-            assert result is mock_get_from_db.return_value[0]["enterprise_customer"]
-        else:
-            assert result is mock_get_from_session.return_value
+        assert result is None
+
+    @override_settings(
+        OVERRIDE_LEARNER_HOME_GET_ENTERPRISE_CUSTOMER=(
+            f"{__name__}._fake_enterprise_customer_override"
+        )
+    )
+    def test_get_enterprise_customer_uses_plugin_override(self):
+        """When OVERRIDE_LEARNER_HOME_GET_ENTERPRISE_CUSTOMER is configured, it is used instead"""
+        user, request = Mock(), Mock()
+        result = get_enterprise_customer(user, request, is_masquerading=True)
+        assert result == FAKE_ENTERPRISE_CUSTOMER_DATA
+
+        _, received_user, received_request, received_is_masquerading = (
+            _fake_enterprise_customer_override.last_call
+        )
+        assert received_user is user
+        assert received_request is request
+        assert received_is_masquerading is True
 
 
 class TestGetSocialShareSettings(TestCase):

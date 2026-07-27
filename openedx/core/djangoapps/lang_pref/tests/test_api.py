@@ -1,6 +1,4 @@
 """ Tests for the language API. """
-from unittest.mock import patch
-
 import ddt
 from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.test.utils import override_settings
@@ -39,7 +37,7 @@ class LanguageApiTest(CacheIsolationTestCase):
         """
         Verify that the header language selector config is correct.
         """
-        with patch.dict('django.conf.settings.FEATURES', base_config):
+        with override_settings(**base_config):
             with with_site_configuration_context(configuration=site_config):
                 assert language_api.header_language_selector_is_enabled() == expected
 
@@ -56,7 +54,7 @@ class LanguageApiTest(CacheIsolationTestCase):
         """
         Verify that the footer language selector config is correct.
         """
-        with patch.dict('django.conf.settings.FEATURES', base_config):
+        with override_settings(**base_config):
             with with_site_configuration_context(configuration=site_config):
                 assert language_api.footer_language_selector_is_enabled() == expected
 

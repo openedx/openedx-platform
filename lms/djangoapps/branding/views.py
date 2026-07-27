@@ -104,7 +104,7 @@ def courses(request):
     if enable_mktg_site:
         return redirect(marketing_link('COURSES'), permanent=True)
 
-    if not settings.FEATURES.get('COURSES_ARE_BROWSABLE'):
+    if not settings.COURSES_ARE_BROWSABLE:
         raise Http404
 
     #  we do not expect this case to be reached in cases where

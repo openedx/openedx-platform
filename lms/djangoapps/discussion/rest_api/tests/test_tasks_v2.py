@@ -7,6 +7,7 @@ from unittest.mock import Mock
 import ddt
 import httpretty
 from django.conf import settings
+from django.test import override_settings
 from openedx_events.learning.signals import COURSE_NOTIFICATION_REQUESTED, USER_NOTIFICATION_REQUESTED
 
 from common.djangoapps.student.models import CourseEnrollment
@@ -492,7 +493,7 @@ class TestSendCommentNotification(DiscussionAPIViewTestMixin, ModuleStoreTestCas
 
 @ddt.ddt
 @httpretty.activate
-@mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+@override_settings(ENABLE_DISCUSSION_SERVICE=True)
 class TestNewThreadCreatedNotification(DiscussionAPIViewTestMixin, ModuleStoreTestCase):
     """
     Test cases related to new_discussion_post and new_question_post notification types

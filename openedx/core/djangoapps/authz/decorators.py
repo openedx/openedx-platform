@@ -9,7 +9,7 @@ from opaque_keys.edx.keys import CourseKey, UsageKey
 from openedx_authz import api as authz_api
 from rest_framework import status
 
-from openedx.core import toggles as core_toggles
+from common.djangoapps.student.roles import enable_authz_course_authoring
 from openedx.core.djangoapps.authz.constants import LEGACY_PERMISSION_HANDLER_MAP, LegacyAuthoringPermission
 from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin
 
@@ -66,7 +66,7 @@ def user_has_course_permission(
     Checks if the user has the specified AuthZ permission for the course,
     with optional fallback to legacy permissions.
     """
-    if core_toggles.enable_authz_course_authoring(course_key):
+    if enable_authz_course_authoring(course_key):
         # If AuthZ is enabled for this course, check the permission via AuthZ only.
         is_user_allowed = authz_api.is_user_allowed(user.username, authz_permission, str(course_key))
         log.info(

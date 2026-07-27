@@ -9,7 +9,6 @@ from unittest import mock
 import ddt
 import pytest
 from config_models.models import cache
-from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test.utils import override_settings
@@ -207,7 +206,7 @@ class CertificatesInstructorDashTest(SharedModuleStoreTestCase):
         self.client.login(username=self.global_staff.username, password=self.TEST_PASSWORD)
         self._assert_certificates_visible(False)
 
-    @mock.patch.dict(settings.FEATURES, {'ENABLE_CERTIFICATES_INSTRUCTOR_MANAGE': True})
+    @override_settings(ENABLE_CERTIFICATES_INSTRUCTOR_MANAGE=True)
     def test_visible_for_instructors_when_feature_is_enabled(self):
         self.client.login(username=self.instructor.username, password=self.TEST_PASSWORD)
         self._assert_certificates_visible(True)
@@ -249,7 +248,7 @@ class CertificatesInstructorDashTest(SharedModuleStoreTestCase):
             certs_api.set_cert_generation_enabled(self.course.id, True)
             self._assert_enable_certs_button(False)
 
-    @mock.patch.dict(settings.FEATURES, {'CERTIFICATES_HTML_VIEW': True})
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_show_enabled_button_for_html_certs(self):
         """
         Tests `Enable Student-Generated Certificates` button is enabled
@@ -265,11 +264,7 @@ class CertificatesInstructorDashTest(SharedModuleStoreTestCase):
         self.assertContains(response, 'enable-certificates-submit')
         self.assertNotContains(response, 'Generate Example Certificates')
 
-    @mock.patch.dict(settings.FEATURES, {
-        'CERTIFICATES_HTML_VIEW': True,
-        'CERTIFICATES_INSTRUCTOR_GENERATION': False
-    }
-    )
+    @override_settings(CERTIFICATES_HTML_VIEW=True, CERTIFICATES_INSTRUCTOR_GENERATION=False)
     def test_buttons_for_html_certs_in_self_paced_course(self):
         """
         Tests `Enable Student-Generated Certificates` button is enabled

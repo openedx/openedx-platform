@@ -1,0 +1,4 @@
+pdfjs 5.7.284 (legacy build)
+Source: https://github.com/mozilla/pdf.js/releases/download/v5.7.284/pdfjs-5.7.284-legacy-dist.zip
+SHA256: b1edded128a7e50e7818bfe16564eb4012dd3f13f2847f9f94100c96567afbcc
+Refreshed by scripts/refresh-pdfjs-vendor.sh

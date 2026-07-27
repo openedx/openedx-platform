@@ -7,7 +7,6 @@ import itertools
 import json
 
 import ddt
-from django.conf import settings
 from django.test.utils import override_settings
 from opaque_keys.edx.keys import AssetKey
 
@@ -23,9 +22,6 @@ from xmodule.contentstore.django import contentstore  # pylint: disable=wrong-im
 from xmodule.exceptions import NotFoundError  # pylint: disable=wrong-import-order
 
 from ..certificate_manager import CERTIFICATE_SCHEMA_VERSION, CertificateManager
-
-FEATURES_WITH_CERTS_ENABLED = settings.FEATURES.copy()
-FEATURES_WITH_CERTS_ENABLED['CERTIFICATES_HTML_VIEW'] = True
 
 CERTIFICATE_JSON = {
     'name': 'Test certificate',
@@ -195,7 +191,7 @@ class CertificatesBaseTestCase:
 
 
 @ddt.ddt
-@override_settings(FEATURES=FEATURES_WITH_CERTS_ENABLED)
+@override_settings(CERTIFICATES_HTML_VIEW=True)
 class CertificatesListHandlerTestCase(
         EventTestMixin, CourseTestCase, HelperMethods, UrlResetMixin
 ):
@@ -350,7 +346,7 @@ class CertificatesListHandlerTestCase(
 
 
 @ddt.ddt
-@override_settings(FEATURES=FEATURES_WITH_CERTS_ENABLED)
+@override_settings(CERTIFICATES_HTML_VIEW=True)
 class CertificatesDetailHandlerTestCase(
         EventTestMixin, CourseTestCase, CertificatesBaseTestCase, HelperMethods, UrlResetMixin
 ):
