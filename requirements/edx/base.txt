@@ -539,7 +539,7 @@ edx-search==5.0.0
     #   openedx-forum
 edx-sga==0.28.0
     # via -r requirements/edx/bundled.in
-edx-submissions==4.0.1
+edx-submissions==4.0.2
     # via
     #   -r requirements/edx/kernel.in
     #   ora2
