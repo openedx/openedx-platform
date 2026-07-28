@@ -2480,8 +2480,7 @@ MODULESTORE_FIELD_OVERRIDE_PROVIDERS = ('openedx.features.content_type_gating.'
 # .. toggle_use_cases: open_edx
 # .. toggle_creation_date: 2025-11-24
 # .. toggle_tickets: https://github.com/openedx/edx-platform/issues/37585
-# Sets the maximum number of courses listed on the homepage
-# If set to None, all courses will be listed on the homepage
+
 HOMEPAGE_COURSE_MAX = None
 
 # .. setting_name: COURSE_MEMBER_API_ENROLLMENT_LIMIT
