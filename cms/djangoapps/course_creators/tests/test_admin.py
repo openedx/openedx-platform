@@ -182,7 +182,7 @@ class CourseCreatorAdminTest(TestCase):
             self._change_state(CourseCreator.GRANTED)
             mock_log.warning.assert_any_call(
                 "Unable to send course creator status e-mail to %s",
-                f"user ID {self.user.id}"
+                self.user.id
             )
 
         mock_log.reset_mock()
@@ -211,7 +211,7 @@ class CourseCreatorAdminTest(TestCase):
             self._change_state(CourseCreator.PENDING)
             mock_log.warning.assert_any_call(
                 "Failure sending 'pending state' e-mail for %s to %s",
-                f"user ID {self.user.id}",
+                self.user.id,
                 self.studio_request_email
             )
 
