@@ -1,19 +1,19 @@
 """
 Registers the "edX Notes" feature for the edX platform.
 """
-from typing import Dict, Optional
+from typing import Dict, Optional  # noqa: UP035
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.utils.translation import gettext_noop as _
 from opaque_keys.edx.keys import CourseKey
-from xmodule.modulestore.django import modulestore
 
 from lms.djangoapps.courseware.tabs import EnrolledTab
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from openedx.core.djangoapps.course_apps.plugins import CourseApp
 from openedx.core.lib.courses import get_course_by_id
-from xmodule.tabs import CourseTab, CourseTabList  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore
+from xmodule.tabs import CourseTab, CourseTabList  # pylint: disable=wrong-import-order
 
 User = get_user_model()
 
@@ -39,7 +39,7 @@ class EdxNotesTab(EnrolledTab):
         if not super().is_enabled(course, user=user):
             return False
 
-        if not settings.FEATURES.get("ENABLE_EDXNOTES"):
+        if not settings.ENABLE_EDXNOTES:
             return False
 
         if user and not user.is_authenticated:
@@ -65,7 +65,7 @@ class EdxNotesCourseApp(CourseApp):
         """
         EdX notes availability is currently globally controlled via a feature setting.
         """
-        return settings.FEATURES.get("ENABLE_EDXNOTES", False)
+        return settings.ENABLE_EDXNOTES
 
     @classmethod
     def is_enabled(cls, course_key: CourseKey) -> bool:  # pylint: disable=unused-argument
@@ -91,7 +91,7 @@ class EdxNotesCourseApp(CourseApp):
         return enabled
 
     @classmethod
-    def get_allowed_operations(cls, course_key: CourseKey, user: Optional[User] = None) -> Dict[str, bool]:
+    def get_allowed_operations(cls, course_key: CourseKey, user: Optional[User] = None) -> Dict[str, bool]:  # noqa: UP006, UP045  # pylint: disable=line-too-long
         """
         Returns allowed operations for edxnotes app.
         """

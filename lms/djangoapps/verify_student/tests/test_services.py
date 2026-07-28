@@ -3,8 +3,10 @@ Tests for the service classes in verify_student.
 """
 
 import itertools
+from contextlib import nullcontext
 from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
+from urllib.parse import quote
 
 import ddt
 from django.conf import settings
@@ -20,13 +22,14 @@ from lms.djangoapps.verify_student.models import (
     ManualVerification,
     SoftwareSecurePhotoVerification,
     SSOVerification,
-    VerificationAttempt
+    VerificationAttempt,
 )
 from lms.djangoapps.verify_student.services import IDVerificationService
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
-from xmodule.modulestore.tests.django_utils import \
-    ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # pylint: disable=wrong-import-order
+)
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 FAKE_SETTINGS = {
     "DAYS_GOOD_FOR": 365,
@@ -204,10 +207,10 @@ class TestIDVerificationService(ModuleStoreTestCase):
         user_a = UserFactory.create()
 
         SSOVerification.objects.create(
-            user=user_a, status='approved', expiration_date=datetime(2021, 11, 12, 0, 0, tzinfo=timezone.utc)
+            user=user_a, status='approved', expiration_date=datetime(2021, 11, 12, 0, 0, tzinfo=timezone.utc)  # noqa: UP017  # pylint: disable=line-too-long
         )
         newer_record = SSOVerification.objects.create(
-            user=user_a, status='approved', expiration_date=datetime(2022, 1, 12, 0, 0, tzinfo=timezone.utc)
+            user=user_a, status='approved', expiration_date=datetime(2022, 1, 12, 0, 0, tzinfo=timezone.utc)  # noqa: UP017  # pylint: disable=line-too-long
         )
 
         expiration_datetime = IDVerificationService.get_expiration_datetime(user_a, ['approved'])
@@ -221,14 +224,97 @@ class TestIDVerificationService(ModuleStoreTestCase):
         user = UserFactory.create()
 
         SoftwareSecurePhotoVerification.objects.create(
-            user=user, status='approved', expiration_date=datetime(2021, 11, 12, 0, 0, tzinfo=timezone.utc)
+            user=user, status='approved', expiration_date=datetime(2021, 11, 12, 0, 0, tzinfo=timezone.utc)  # noqa: UP017  # pylint: disable=line-too-long
         )
         newest = VerificationAttempt.objects.create(
-            user=user, status='approved', expiration_datetime=datetime(2022, 1, 12, 0, 0, tzinfo=timezone.utc)
+            user=user, status='approved', expiration_datetime=datetime(2022, 1, 12, 0, 0, tzinfo=timezone.utc)  # noqa: UP017  # pylint: disable=line-too-long
         )
 
         expiration_datetime = IDVerificationService.get_expiration_datetime(user, ['approved'])
         assert expiration_datetime == newest.expiration_datetime
+
+    def _get_verify_url_with_config(
+        self,
+        *,
+        get_value_side_effect,
+        course_id=None,
+        settings_account_mfe=None,
+    ):
+        """
+        Build the IDV URL using a patched configuration helper and optional settings override.
+        Returns the final URL after the (stubbed) filter runs.
+        """
+        settings_ctx = (
+            override_settings(ACCOUNT_MICROFRONTEND_URL=settings_account_mfe)
+            if settings_account_mfe is not None
+            else nullcontext()
+        )
+
+        with settings_ctx:
+            with patch(
+                "lms.djangoapps.verify_student.services.configuration_helpers.get_value",
+                side_effect=get_value_side_effect,
+            ):
+                with patch(
+                    "lms.djangoapps.verify_student.services.IDVPageURLRequested.run_filter",
+                    side_effect=lambda url: url,
+                ):
+                    return IDVerificationService.get_verify_location(course_id)
+
+    def test_get_verify_location_uses_site_config_value(self):
+        """
+        If site config defines ACCOUNT_MICROFRONTEND_URL (with trailing slash),
+        the base should come from it and the slash should be stripped.
+        """
+        siteconf_url = "https://accounts.siteconf.example/"  # trailing slash on purpose
+
+        url = self._get_verify_url_with_config(
+            get_value_side_effect=lambda key, default=None, *a, **k:
+                siteconf_url if key == "ACCOUNT_MICROFRONTEND_URL" else default
+        )
+
+        assert url == "https://accounts.siteconf.example/id-verification"
+
+    def test_get_verify_location_uses_site_config_value_with_course_id(self):
+        """
+        Same as above, but with a course_id. Ensure proper quoting and base from site config.
+        """
+        course = CourseFactory.create(org='Robot', number='999', display_name='Test Course')
+        siteconf_url = "https://accounts.siteconf.example/"
+
+        url = self._get_verify_url_with_config(
+            get_value_side_effect=lambda key, default=None, *a, **k:
+                siteconf_url if key == "ACCOUNT_MICROFRONTEND_URL" else default,
+            course_id=course.id,
+        )
+
+        expected = f"https://accounts.siteconf.example/id-verification?course_id={quote(str(course.id), safe='')}"
+        assert url == expected
+
+    def test_get_verify_location_falls_back_to_settings(self):
+        """
+        If site config does not override, fall back to settings.ACCOUNT_MICROFRONTEND_URL
+        (and strip any trailing slash).
+        """
+        fallback = "https://accounts.settings.example/"  # trailing slash on purpose
+
+        url = self._get_verify_url_with_config(
+            get_value_side_effect=lambda key, default=None, *a, **k: default,
+            settings_account_mfe=fallback,
+        )
+
+        assert url == "https://accounts.settings.example/id-verification"
+
+    def test_get_verify_location_when_site_config_empty(self):
+        """
+        If site config explicitly returns an empty string, we should still produce a valid
+        absolute path under the LMS domain.
+        """
+        url = self._get_verify_url_with_config(
+            get_value_side_effect=lambda key, default=None, *a, **k: ""
+        )
+
+        assert url == "/id-verification"
 
 
 @patch.dict(settings.VERIFY_STUDENT, FAKE_SETTINGS)
@@ -249,7 +335,7 @@ class TestIDVerificationServiceUserStatus(TestCase):
             status = IDVerificationService.user_status(self.user)
             expected_status = {'status': 'none', 'error': '', 'should_display': True, 'verification_expiry': '',
                                'status_date': ''}
-            self.assertDictEqual(status, expected_status)
+            self.assertDictEqual(status, expected_status)  # noqa: PT009
 
     def test_approved_software_secure_verification(self):
         with freeze_time('2015-01-02'):
@@ -258,7 +344,7 @@ class TestIDVerificationServiceUserStatus(TestCase):
             status = IDVerificationService.user_status(self.user)
             expected_status = {'status': 'approved', 'error': '', 'should_display': True, 'verification_expiry': '',
                                'status_date': datetime.now(utc)}
-            self.assertDictEqual(status, expected_status)
+            self.assertDictEqual(status, expected_status)  # noqa: PT009
 
     def test_denied_software_secure_verification(self):
         with freeze_time('2015-2-02'):
@@ -272,7 +358,7 @@ class TestIDVerificationServiceUserStatus(TestCase):
                 'status': 'must_reverify', 'error': ['id_image_missing'],
                 'should_display': True, 'verification_expiry': '', 'status_date': '',
             }
-            self.assertDictEqual(status, expected_status)
+            self.assertDictEqual(status, expected_status)  # noqa: PT009
 
     def test_approved_verification_attempt_verification(self):
         with freeze_time('2015-01-02'):
@@ -281,7 +367,7 @@ class TestIDVerificationServiceUserStatus(TestCase):
             status = IDVerificationService.user_status(self.user)
             expected_status = {'status': 'approved', 'error': '', 'should_display': True, 'verification_expiry': '',
                                'status_date': datetime.now(utc)}
-            self.assertDictEqual(status, expected_status)
+            self.assertDictEqual(status, expected_status)  # noqa: PT009
 
     def test_denied_verification_attempt_verification(self):
         with freeze_time('2015-2-02'):
@@ -295,7 +381,7 @@ class TestIDVerificationServiceUserStatus(TestCase):
                 'status': 'must_reverify', 'error': '',
                 'should_display': True, 'verification_expiry': '', 'status_date': '',
             }
-            self.assertDictEqual(status, expected_status)
+            self.assertDictEqual(status, expected_status)  # noqa: PT009
 
     def test_approved_sso_verification(self):
         with freeze_time('2015-03-02'):
@@ -304,7 +390,7 @@ class TestIDVerificationServiceUserStatus(TestCase):
             status = IDVerificationService.user_status(self.user)
             expected_status = {'status': 'approved', 'error': '', 'should_display': False, 'verification_expiry': '',
                                'status_date': datetime.now(utc)}
-            self.assertDictEqual(status, expected_status)
+            self.assertDictEqual(status, expected_status)  # noqa: PT009
 
     def test_denied_sso_verification(self):
         with freeze_time('2015-04-02'):
@@ -316,7 +402,7 @@ class TestIDVerificationServiceUserStatus(TestCase):
                 'status': 'must_reverify', 'error': '', 'should_display': False,
                 'verification_expiry': '', 'status_date': ''
             }
-            self.assertDictEqual(status, expected_status)
+            self.assertDictEqual(status, expected_status)  # noqa: PT009
 
     def test_manual_verification(self):
         with freeze_time('2015-05-02'):
@@ -325,7 +411,7 @@ class TestIDVerificationServiceUserStatus(TestCase):
             status = IDVerificationService.user_status(self.user)
             expected_status = {'status': 'approved', 'error': '', 'should_display': False, 'verification_expiry': '',
                                'status_date': datetime.now(utc)}
-            self.assertDictEqual(status, expected_status)
+            self.assertDictEqual(status, expected_status)  # noqa: PT009
 
     @ddt.idata(itertools.product(
         [SoftwareSecurePhotoVerification, VerificationAttempt],
@@ -346,7 +432,7 @@ class TestIDVerificationServiceUserStatus(TestCase):
             expected_status = {'status': 'approved', 'error': '', 'should_display': True, 'verification_expiry': '',
                                'status_date': status_date}
             status = IDVerificationService.user_status(self.user)
-            self.assertDictEqual(status, expected_status)
+            self.assertDictEqual(status, expected_status)  # noqa: PT009
 
     @ddt.data(SoftwareSecurePhotoVerification, VerificationAttempt)
     def test_expired_verification(self, verification_model):
@@ -370,7 +456,7 @@ class TestIDVerificationServiceUserStatus(TestCase):
                 'status_date': ''
             }
             status = IDVerificationService.user_status(self.user)
-            self.assertDictEqual(status, expected_status)
+            self.assertDictEqual(status, expected_status)  # noqa: PT009
 
     @ddt.idata(itertools.product(
         [SoftwareSecurePhotoVerification, VerificationAttempt],
@@ -410,7 +496,7 @@ class TestIDVerificationServiceUserStatus(TestCase):
             expected_status = {'status': check_status, 'error': '', 'should_display': True, 'verification_expiry': '',
                                'status_date': status_date}
             status = IDVerificationService.user_status(self.user)
-            self.assertDictEqual(status, expected_status)
+            self.assertDictEqual(status, expected_status)  # noqa: PT009
 
     @ddt.data(
         SSOVerification,
@@ -439,7 +525,7 @@ class TestIDVerificationServiceUserStatus(TestCase):
                 'verification_expiry': '', 'status_date': now()
             }
             status = IDVerificationService.user_status(self.user)
-            self.assertDictEqual(status, expected_status)
+            self.assertDictEqual(status, expected_status)  # noqa: PT009
 
     @ddt.data(
         SSOVerification,
@@ -468,4 +554,4 @@ class TestIDVerificationServiceUserStatus(TestCase):
                 'verification_expiry': '', 'status_date': expected_date
             }
             status = IDVerificationService.user_status(self.user)
-            self.assertDictEqual(status, expected_status)
+            self.assertDictEqual(status, expected_status)  # noqa: PT009

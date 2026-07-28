@@ -9,10 +9,12 @@ from unittest.mock import patch
 import pytest
 from django.test import TestCase
 
-from openedx.core.djangoapps.user_api.partition_schemes import RandomUserPartitionScheme, UserPartitionError
 from common.djangoapps.student.tests.factories import UserFactory
-from xmodule.partitions.partitions import Group, UserPartition  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.partitions.tests.test_partitions import PartitionTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from openedx.core.djangoapps.user_api.partition_schemes import RandomUserPartitionScheme, UserPartitionError
+from xmodule.partitions.partitions import Group, UserPartition  # pylint: disable=wrong-import-order
+from xmodule.partitions.tests.test_partitions import (
+    PartitionTestCase,  # pylint: disable=wrong-import-order
+)
 
 
 class MemoryCourseTagAPI:
@@ -32,7 +34,7 @@ class MemoryCourseTagAPI:
 
     class BulkCourseTags:
         @classmethod
-        def is_prefetched(self, course_id):  # lint-amnesty, pylint: disable=bad-classmethod-argument, unused-argument
+        def is_prefetched(self, course_id):  # pylint: disable=bad-classmethod-argument, unused-argument
             return False
 
 
@@ -97,7 +99,7 @@ class TestRandomUserPartitionScheme(PartitionTestCase):
             scheme=RandomUserPartitionScheme
         )
         # get a group assigned to the user
-        with self.assertRaisesRegex(UserPartitionError, "Cannot assign user to an empty user partition"):
+        with self.assertRaisesRegex(UserPartitionError, "Cannot assign user to an empty user partition"):  # noqa: PT027
             RandomUserPartitionScheme.get_group_for_user(self.MOCK_COURSE_ID, self.user, empty_partition)
 
     def test_user_in_deleted_group(self):
@@ -141,10 +143,10 @@ class TestRandomUserPartitionScheme(PartitionTestCase):
 class TestExtension(TestCase):
     """
     Ensure that the scheme extension is correctly plugged in (via entry point
-    in setup.py)
+    in pyproject.toml)
     """
 
     def test_get_scheme(self):
         assert UserPartition.get_scheme('random') == RandomUserPartitionScheme
-        with self.assertRaisesRegex(UserPartitionError, 'Unrecognized scheme'):
+        with self.assertRaisesRegex(UserPartitionError, 'Unrecognized scheme'):  # noqa: PT027
             UserPartition.get_scheme('other')

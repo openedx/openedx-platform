@@ -2,7 +2,6 @@
 
 from common.djangoapps.student.tests.factories import UserFactory
 
-
 TEST_PASSWORD = "Password1234"
 
 

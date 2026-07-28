@@ -14,7 +14,6 @@ from subprocess import check_call
 import django
 import git
 from django.db.models.query import QuerySet
-
 from path import Path
 
 root = Path('..').abspath()
@@ -331,7 +330,7 @@ def update_settings_module(service='lms'):
     os.environ['DJANGO_SETTINGS_MODULE'] = settings_module
 
 
-def on_init(app):  # lint-amnesty, pylint: disable=redefined-outer-name, unused-argument
+def on_init(app):  # pylint: disable=redefined-outer-name, unused-argument
     """
     Run sphinx-apidoc after Sphinx initialization.
 
@@ -339,7 +338,10 @@ def on_init(app):  # lint-amnesty, pylint: disable=redefined-outer-name, unused-
     avoid checking in the generated reStructuredText files.
     """
     repo_docs_build_path = f'{root}/docs/references/docs'
-    RepositoryDocs(root, repo_docs_build_path).build_rst_docs()
+    repo_docs = RepositoryDocs(root, repo_docs_build_path)
+    repo_docs.build_rst_docs()
+    repo_docs.build_apps_index(root / 'docs' / 'apps' / 'index.rst')
+    repo_docs.build_decisions_index(root / 'docs' / 'decisions' / 'app_decisions.rst')
 
     docs_path = root / 'docs'
     apidoc_path = 'sphinx-apidoc'
@@ -387,7 +389,7 @@ def skip_querysets(app, what, name, obj, skip, options):
     return skip
 
 
-def setup(app):  # lint-amnesty, pylint: disable=redefined-outer-name
+def setup(app):  # pylint: disable=redefined-outer-name
     """Sphinx extension: run sphinx-apidoc."""
     app.connect('builder-inited', on_init)
     app.connect('autodoc-skip-member', skip_querysets)

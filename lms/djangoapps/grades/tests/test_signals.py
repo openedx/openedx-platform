@@ -30,7 +30,7 @@ from ..signals.handlers import (
     listen_for_passing_grade,
     problem_raw_score_changed_handler,
     submissions_score_reset_handler,
-    submissions_score_set_handler
+    submissions_score_set_handler,
 )
 from ..signals.signals import PROBLEM_RAW_SCORE_CHANGED
 
@@ -266,7 +266,7 @@ class ScoreChangedSignalRelayTest(TestCase):
         """
         Tests that the disconnect context manager errors when given an invalid signal.
         """
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             with disconnect_submissions_signal_receiver(PROBLEM_RAW_SCORE_CHANGED):
                 pass
 

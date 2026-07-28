@@ -1,8 +1,8 @@
 """
 Certificates utilities
 """
-from datetime import datetime
 import logging
+from datetime import datetime
 
 from django.conf import settings
 from django.urls import reverse
@@ -15,7 +15,7 @@ from lms.djangoapps.certificates.data import CertificateStatuses
 from lms.djangoapps.certificates.models import GeneratedCertificate
 from openedx.core.djangoapps.content.course_overviews.api import get_course_overview_or_none
 from openedx.features.name_affirmation_api.utils import get_name_affirmation_service
-from xmodule.data import CertificatesDisplayBehaviors  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.data import CertificatesDisplayBehaviors  # pylint: disable=wrong-import-order
 
 log = logging.getLogger(__name__)
 
@@ -87,7 +87,7 @@ def has_html_certificates_enabled(course_overview):
     """
     Returns True if HTML certificates are enabled in a course run.
     """
-    if not settings.FEATURES.get('CERTIFICATES_HTML_VIEW', False):
+    if not settings.CERTIFICATES_HTML_VIEW:
         return False
     return course_overview.cert_html_view_enabled
 

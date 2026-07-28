@@ -1,14 +1,13 @@
 """
-Tests for static asset files in Learning-Core-based Content Libraries
+Tests for static asset files in openedx_content-based Content Libraries
 """
 from uuid import UUID
 
+from django.test.utils import override_settings
 from opaque_keys.edx.keys import UsageKey
 
 from common.djangoapps.student.tests.factories import UserFactory
-from openedx.core.djangoapps.content_libraries.tests.base import (
-    ContentLibrariesRestApiTest,
-)
+from openedx.core.djangoapps.content_libraries.tests.base import ContentLibrariesRestApiTest
 from openedx.core.djangoapps.xblock.api import get_component_from_usage_key
 from openedx.core.djangolib.testing.utils import skip_unless_cms
 
@@ -31,7 +30,7 @@ I'm Anant Agarwal, I'm the president of edX,
 @skip_unless_cms
 class ContentLibrariesStaticAssetsTest(ContentLibrariesRestApiTest):
     """
-    Tests for static asset files in Learning-Core-based Content Libraries
+    Tests for static asset files in openedx_content-based Content Libraries
     """
 
     def test_asset_filenames(self):
@@ -72,7 +71,7 @@ class ContentLibrariesStaticAssetsTest(ContentLibrariesRestApiTest):
 
     def test_video_transcripts(self):
         """
-        Test that video blocks can read transcript files out of learning core.
+        Test that video blocks can read transcript files out of openedx_content.
         """
         library = self._create_library(slug="transcript-test-lib", title="Transcripts Test Library")
         block = self._add_block_to_library(library["id"], "video", "video1")
@@ -111,12 +110,13 @@ class ContentLibrariesStaticAssetsTest(ContentLibrariesRestApiTest):
         check_sjson()
         check_download()
         # Publish the OLX and the transcript file, since published data gets
-        # served differently by Learning Core and we should test that too.
+        # served differently by openedx_content and we should test that too.
         self._commit_library_changes(library["id"])
         check_sjson()
         check_download()
 
 
+@override_settings(CORS_ORIGIN_WHITELIST=["https://example.com/", "https://example2.com/"])
 @skip_unless_cms
 class ContentLibrariesComponentVersionAssetTest(ContentLibrariesRestApiTest):
     """
@@ -146,6 +146,11 @@ class ContentLibrariesComponentVersionAssetTest(ContentLibrariesRestApiTest):
             f"/library_assets/component_versions/{self.draft_component_version.uuid}/static/test.svg"
         )
         assert good_head_response.headers == get_response.headers
+        assert "Content-Security-Policy" in get_response.headers
+        assert get_response.headers["Content-Security-Policy"] == (
+            "frame-ancestors 'self' https://example.com/ https://example2.com/;"
+        )
+
 
     def test_missing(self):
         """Test asset requests that should 404."""
@@ -162,7 +167,7 @@ class ContentLibrariesComponentVersionAssetTest(ContentLibrariesRestApiTest):
         )
         assert response.status_code == 404
 
-        # File-like ComponenVersionContent entry that isn't an actually
+        # File-like ComponentVersionMedia entry that isn't an actually
         # downloadable file...
         response = self.client.get(
             f"/library_assets/component_versions/{self.draft_component_version.uuid}/block.xml"

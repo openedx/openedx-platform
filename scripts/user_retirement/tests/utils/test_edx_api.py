@@ -305,7 +305,7 @@ class TestLmsApi(OAuth2Mixin, unittest.TestCase):
         )
 
         mock_learners_to_retire.side_effect = HTTPError(response=response)
-        with self.assertRaises(BackoffTriedException):
+        with self.assertRaises(BackoffTriedException):  # noqa: PT027
             self.lms_api.learners_to_retire(
                 TEST_RETIREMENT_QUEUE_STATES, cool_off_days=365)
 
@@ -325,7 +325,7 @@ class TestLmsApi(OAuth2Mixin, unittest.TestCase):
         mock_retirement_partner_cleanup.retirement_partner_cleanup.side_effect = ConnectionError(
             response=response
         )
-        with self.assertRaises(BackoffTriedException):
+        with self.assertRaises(BackoffTriedException):  # noqa: PT027
             self.lms_api.retirement_partner_cleanup([{'original_username': 'test'}])
 
 
@@ -350,39 +350,6 @@ class TestEcommerceApi(OAuth2Mixin, unittest.TestCase):
     def tearDown(self):
         super().tearDown()
         responses.reset()
-
-    @patch.object(edx_api.EcommerceApi, 'retire_learner')
-    def test_retirement_partner_report(self, mock_method):
-        json_data = {
-            'username': FAKE_ORIGINAL_USERNAME,
-        }
-        responses.add(
-            POST,
-            urljoin(self.lms_base_url, 'api/v2/user/retire/'),
-            match=[matchers.json_params_matcher(json_data)]
-        )
-        self.ecommerce_api.retire_learner(
-            learner=get_fake_user_retirement(original_username=FAKE_ORIGINAL_USERNAME)
-        )
-        mock_method.assert_called_once_with(
-            learner=get_fake_user_retirement(original_username=FAKE_ORIGINAL_USERNAME)
-        )
-
-    @patch.object(edx_api.EcommerceApi, 'retire_learner')
-    def get_tracking_key(self, mock_method):
-        original_username = {
-            'original_username': get_fake_user_retirement(original_username=FAKE_ORIGINAL_USERNAME)
-        }
-        responses.add(
-            GET,
-            urljoin(self.lms_base_url, f"api/v2/retirement/tracking_id/{original_username}/"),
-        )
-        self.ecommerce_api.get_tracking_key(
-            learner=get_fake_user_retirement(original_username=FAKE_ORIGINAL_USERNAME)
-        )
-        mock_method.assert_called_once_with(
-            learner=get_fake_user_retirement(original_username=FAKE_ORIGINAL_USERNAME)
-        )
 
     @patch.object(edx_api.EcommerceApi, 'replace_usernames')
     def test_replace_usernames(self, mock_method):
@@ -423,23 +390,6 @@ class TestCredentialApi(OAuth2Mixin, unittest.TestCase):
     def tearDown(self):
         super().tearDown()
         responses.reset()
-
-    @patch.object(edx_api.CredentialsApi, 'retire_learner')
-    def test_retire_learner(self, mock_method):
-        json_data = {
-            'username': FAKE_ORIGINAL_USERNAME
-        }
-        responses.add(
-            POST,
-            urljoin(self.credentials_base_url, 'user/retire/'),
-            match=[matchers.json_params_matcher(json_data)]
-        )
-        self.credentials_api.retire_learner(
-            learner=get_fake_user_retirement(original_username=FAKE_ORIGINAL_USERNAME)
-        )
-        mock_method.assert_called_once_with(
-            learner=get_fake_user_retirement(original_username=FAKE_ORIGINAL_USERNAME)
-        )
 
     @patch.object(edx_api.CredentialsApi, 'replace_usernames')
     def test_replace_usernames(self, mock_method):

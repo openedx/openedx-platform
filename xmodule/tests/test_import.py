@@ -1,4 +1,4 @@
-# lint-amnesty, pylint: disable=missing-module-docstring
+# pylint: disable=missing-module-docstring
 
 
 import datetime
@@ -17,7 +17,7 @@ from xblock.fields import Date, Integer, Scope, String
 from xblock.runtime import DictKeyValueStore, KvsFieldData
 
 from xmodule.modulestore.inheritance import InheritanceMixin, compute_inherited_metadata
-from xmodule.modulestore.xml import XMLImportingModuleStoreRuntime, LibraryXMLModuleStore, XMLModuleStore
+from xmodule.modulestore.xml import LibraryXMLModuleStore, XMLImportingModuleStoreRuntime, XMLModuleStore
 from xmodule.tests import DATA_DIR
 from xmodule.x_module import XModuleMixin
 from xmodule.xml_block import is_pointer_tag
@@ -69,7 +69,7 @@ class BaseCourseTestCase(TestCase):
         modulestore = XMLModuleStore(
             DATA_DIR,
             source_dirs=[name],
-            xblock_mixins=(InheritanceMixin,),
+            xblock_mixins=(InheritanceMixin, XModuleMixin),
         )
         courses = modulestore.get_courses()
         assert len(courses) == 1
@@ -114,7 +114,7 @@ class PureXBlockImportTest(BaseCourseTestCase):
         assert not mock_location.called
 
 
-class ImportTestCase(BaseCourseTestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class ImportTestCase(BaseCourseTestCase):  # pylint: disable=missing-class-docstring
     date = Date()
 
     def test_fallback(self):
@@ -249,7 +249,7 @@ class ImportTestCase(BaseCourseTestCase):  # lint-amnesty, pylint: disable=missi
             <chapter url="hi" url_name="ch" display_name="CH">
                 <html url_name="h" display_name="H">Two houses, ...</html>
             </chapter>
-        </course>'''.format(
+        </course>'''.format(  # noqa: UP032
             due=from_date_string, org=ORG, course=COURSE, url_name=url_name, unicorn_color=unicorn_color
         )
         block = system.process_xml(start_xml)
@@ -273,7 +273,7 @@ class ImportTestCase(BaseCourseTestCase):  # lint-amnesty, pylint: disable=missi
                     <html url_name="h" display_name="H">Two houses, ...</html>
                 </chapter>
             </course>
-        </library>'''.format(
+        </library>'''.format(  # noqa: UP032
             due=from_date_string, org=ORG, course=COURSE, url_name=url_name, unicorn_color=unicorn_color
         )
         block = system.process_xml(start_xml)
@@ -296,7 +296,7 @@ class ImportTestCase(BaseCourseTestCase):  # lint-amnesty, pylint: disable=missi
             <chapter url="hi" url_name="ch" display_name="CH">
                 <html url_name="h" display_name="H">Two houses, ...</html>
             </chapter>
-        </course>'''.format(org=ORG, course=COURSE, url_name=url_name)
+        </course>'''.format(org=ORG, course=COURSE, url_name=url_name)  # noqa: UP032
         block = system.process_xml(start_xml)
         compute_inherited_metadata(block)
         self.course_block_no_inheritance_check(block)
@@ -316,7 +316,7 @@ class ImportTestCase(BaseCourseTestCase):  # lint-amnesty, pylint: disable=missi
                     <html url_name="h" display_name="H">Two houses, ...</html>
                 </chapter>
             </course>
-        </library>'''.format(org=ORG, course=COURSE, url_name=url_name)
+        </library>'''.format(org=ORG, course=COURSE, url_name=url_name)  # noqa: UP032
         block = system.process_xml(start_xml)
         compute_inherited_metadata(block)
         # Run the checks on the course node instead.
@@ -359,7 +359,7 @@ class ImportTestCase(BaseCourseTestCase):  # lint-amnesty, pylint: disable=missi
             <chapter url="hi" url_name="ch" display_name="CH">
                 <html url_name="h" display_name="H">Two houses, ...</html>
             </chapter>
-        </course>'''.format(due=course_due, org=ORG, course=COURSE, url_name=url_name)
+        </course>'''.format(due=course_due, org=ORG, course=COURSE, url_name=url_name)  # noqa: UP032
         block = system.process_xml(start_xml)
         child = block.get_children()[0]
         # pylint: disable=protected-access
@@ -383,7 +383,7 @@ class ImportTestCase(BaseCourseTestCase):  # lint-amnesty, pylint: disable=missi
                     <html url_name="h" display_name="H">Two houses, ...</html>
                 </chapter>
             </course>
-        </library>'''.format(due=course_due, org=ORG, course=COURSE, url_name=url_name)
+        </library>'''.format(due=course_due, org=ORG, course=COURSE, url_name=url_name)  # noqa: UP032
         block = system.process_xml(start_xml)
         # Chapter is two levels down here.
         child = block.get_children()[0].get_children()[0]
@@ -428,7 +428,7 @@ class ImportTestCase(BaseCourseTestCase):  # lint-amnesty, pylint: disable=missi
 
         def check_for_key(key, node, value):
             "recursive check for presence of key"
-            print(f"Checking {str(node.location)}")
+            print(f"Checking {str(node.usage_key)}")
             assert getattr(node, key) == value
             for c in node.get_children():
                 check_for_key(key, c, value)
@@ -442,8 +442,8 @@ class ImportTestCase(BaseCourseTestCase):  # lint-amnesty, pylint: disable=missi
         toy = self.get_course('toy')
         two_toys = self.get_course('two_toys')
 
-        assert toy.url_name == '2012_Fall'
-        assert two_toys.url_name == 'TT_2012_Fall'
+        assert toy.usage_key.block_id == '2012_Fall'
+        assert two_toys.usage_key.block_id == 'TT_2012_Fall'
 
         toy_ch = toy.get_children()[0]
         two_toys_ch = two_toys.get_children()[0]
@@ -461,7 +461,7 @@ class ImportTestCase(BaseCourseTestCase):  # lint-amnesty, pylint: disable=missi
     def test_static_tabs_import(self):
         """Make sure that the static tabs are imported correctly"""
 
-        modulestore = XMLModuleStore(DATA_DIR, source_dirs=['toy'])
+        modulestore = XMLModuleStore(DATA_DIR, source_dirs=['toy'], xblock_mixins=(XModuleMixin,))
 
         location_tab_syllabus = BlockUsageLocator(CourseLocator("edX", "toy", "2012_Fall", deprecated=True),
                                                   "static_tab", "syllabus", deprecated=True)
@@ -483,7 +483,7 @@ class ImportTestCase(BaseCourseTestCase):  # lint-amnesty, pylint: disable=missi
         happen--locations should uniquely name definitions.  But in
         our imperfect XML world, it can (and likely will) happen."""
 
-        modulestore = XMLModuleStore(DATA_DIR, source_dirs=['toy', 'two_toys'])
+        modulestore = XMLModuleStore(DATA_DIR, source_dirs=['toy', 'two_toys'], xblock_mixins=(XModuleMixin,))
 
         location = BlockUsageLocator(CourseLocator("edX", "toy", "2012_Fall", deprecated=True),
                                      "video", "Welcome", deprecated=True)
@@ -499,7 +499,7 @@ class ImportTestCase(BaseCourseTestCase):  # lint-amnesty, pylint: disable=missi
 
         print("Starting import")
         # Not using get_courses because we need the modulestore object too afterward
-        modulestore = XMLModuleStore(DATA_DIR, source_dirs=['toy'])
+        modulestore = XMLModuleStore(DATA_DIR, source_dirs=['toy'], xblock_mixins=(XModuleMixin,))
         courses = modulestore.get_courses()
         assert len(courses) == 1
         course = courses[0]
@@ -513,7 +513,7 @@ class ImportTestCase(BaseCourseTestCase):  # lint-amnesty, pylint: disable=missi
         assert len(chapters) == 5
 
         ch2 = chapters[1]
-        assert ch2.url_name == 'secret:magic'
+        assert ch2.usage_key.block_id == 'secret:magic'
 
         print("Ch2 location: ", ch2.location)
 
@@ -533,7 +533,7 @@ class ImportTestCase(BaseCourseTestCase):  # lint-amnesty, pylint: disable=missi
         exceptions/errors to that effect."""
 
         print("Starting import")
-        modulestore = XMLModuleStore(DATA_DIR, source_dirs=['test_unicode'])
+        modulestore = XMLModuleStore(DATA_DIR, source_dirs=['test_unicode'], xblock_mixins=(XModuleMixin,))
         courses = modulestore.get_courses()
         assert len(courses) == 1
         course = courses[0]
@@ -553,7 +553,7 @@ class ImportTestCase(BaseCourseTestCase):  # lint-amnesty, pylint: disable=missi
         Make sure that url_names are only mangled once.
         """
 
-        modulestore = XMLModuleStore(DATA_DIR, source_dirs=['toy'])
+        modulestore = XMLModuleStore(DATA_DIR, source_dirs=['toy'], xblock_mixins=(XModuleMixin,))
 
         toy_id = CourseKey.from_string('edX/toy/2012_Fall')
 
@@ -567,11 +567,11 @@ class ImportTestCase(BaseCourseTestCase):  # lint-amnesty, pylint: disable=missi
         for i in (2, 3):
             video = sections[i]
             # Name should be 'video_{hash}'
-            print(f"video {i} url_name: {video.url_name}")
-            assert len(video.url_name) == (len('video_') + 12)
+            print(f"video {i} url_name: {video.usage_key.block_id}")
+            assert len(video.usage_key.block_id) == (len('video_') + 12)
 
     def test_poll_and_conditional_import(self):
-        modulestore = XMLModuleStore(DATA_DIR, source_dirs=['conditional_and_poll'])
+        modulestore = XMLModuleStore(DATA_DIR, source_dirs=['conditional_and_poll'], xblock_mixins=(XModuleMixin,))
 
         course = modulestore.get_courses()[0]
         chapters = course.get_children()
@@ -599,7 +599,7 @@ class ImportTestCase(BaseCourseTestCase):  # lint-amnesty, pylint: disable=missi
         bad_xml = '''<sequential display_name="oops"><video url="hi"></sequential>'''
         system = self.get_system(False)
 
-        self.assertRaises(etree.XMLSyntaxError, system.process_xml, bad_xml)
+        self.assertRaises(etree.XMLSyntaxError, system.process_xml, bad_xml)  # noqa: PT027
 
     def test_word_cloud_import(self):
         modulestore = XMLModuleStore(DATA_DIR, source_dirs=['word_cloud'])
@@ -624,7 +624,7 @@ class ImportTestCase(BaseCourseTestCase):  # lint-amnesty, pylint: disable=missi
         Note: The cohort config on the CourseBlock is no longer used.
         See openedx.core.djangoapps.course_groups.models.CourseCohortSettings.
         """
-        modulestore = XMLModuleStore(DATA_DIR, source_dirs=['toy'])
+        modulestore = XMLModuleStore(DATA_DIR, source_dirs=['toy'], xblock_mixins=(XModuleMixin,))
 
         toy_id = CourseKey.from_string('edX/toy/2012_Fall')
 

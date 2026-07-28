@@ -11,7 +11,10 @@ from django.urls import reverse
 from freezegun import freeze_time
 from opaque_keys.edx.keys import ContainerKey, UsageKey
 from opaque_keys.edx.locator import LibraryLocatorV2, LibraryUsageLocatorV2
+from openedx_authz.constants.roles import COURSE_EDITOR
+from openedx_content import models_api as content_models
 from organizations.models import Organization
+from rest_framework import status
 
 from cms.djangoapps.contentstore.helpers import StaticFileNotices
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase
@@ -21,6 +24,7 @@ from cms.lib.xblock.upstream_sync import BadUpstream, UpstreamLink
 from common.djangoapps.student.auth import add_users
 from common.djangoapps.student.roles import CourseStaffRole
 from common.djangoapps.student.tests.factories import UserFactory
+from openedx.core.djangoapps.authz.tests.mixins import CourseAuthoringAuthzTestMixin
 from openedx.core.djangoapps.content_libraries import api as lib_api
 from xmodule.modulestore.django import modulestore
 from xmodule.modulestore.tests.django_utils import ImmediateOnCommitMixin, SharedModuleStoreTestCase
@@ -50,7 +54,7 @@ def _get_upstream_link_good_and_syncable(downstream):
         version_declined=downstream.upstream_version_declined,
         error_message=None,
         downstream_customized=[],
-        has_top_level_parent=False,
+        top_level_parent_key=None,
         upstream_name=downstream.upstream_display_name,
     )
 
@@ -69,7 +73,7 @@ class _BaseDownstreamViewTestMixin:
         """
         # pylint: disable=too-many-statements
         super().setUp()
-        self.now = datetime.now(timezone.utc)
+        self.now = datetime.now(timezone.utc)  # noqa: UP017
         freezer = freeze_time(self.now)
         self.addCleanup(freezer.stop)
         freezer.start()
@@ -220,6 +224,11 @@ class _BaseDownstreamViewTestMixin:
         self._publish_library_block(self.html_lib_id)
         self._publish_library_block(self.video_lib_id)
         self._publish_library_block(self.html_lib_id)
+
+    def tearDown(self):
+        # If we're working with Containers in test cases, we need this line:
+        content_models.Container.reset_cache()
+        return super().tearDown()
 
     def _api(self, method, url, data, expect_response):
         """
@@ -647,7 +656,7 @@ class GetUpstreamViewTest(
         assert data['ready_to_sync'] is True
         assert len(data['ready_to_sync_children']) == 1
         html_block = modulestore().get_item(self.top_level_downstream_html_key)
-        self.assertDictEqual(data['ready_to_sync_children'][0], {
+        self.assertDictEqual(data['ready_to_sync_children'][0], {  # noqa: PT009
             'name': html_block.display_name,
             'upstream': str(self.html_lib_id_2),
             'block_type': 'html',
@@ -864,8 +873,8 @@ class GetUpstreamViewTest(
                 'downstream_customized': [],
             },
         ]
-        self.assertListEqual(data["results"], expected)
-        self.assertEqual(data["count"], 11)
+        self.assertListEqual(data["results"], expected)  # noqa: PT009
+        self.assertEqual(data["count"], 11)  # noqa: PT009
 
     def test_permission_denied_with_course_filter(self):
         self.client.login(username="simple_user", password="password")
@@ -958,8 +967,8 @@ class GetUpstreamViewTest(
                 'downstream_customized': [],
             },
         ]
-        self.assertListEqual(data["results"], expected)
-        self.assertEqual(data["count"], 4)
+        self.assertListEqual(data["results"], expected)  # noqa: PT009
+        self.assertEqual(data["count"], 4)  # noqa: PT009
 
     def test_200_container_downstreams_for_a_course(self):
         """
@@ -1101,8 +1110,8 @@ class GetUpstreamViewTest(
                 'downstream_customized': [],
             },
         ]
-        self.assertListEqual(data["results"], expected)
-        self.assertEqual(data["count"], 7)
+        self.assertListEqual(data["results"], expected)  # noqa: PT009
+        self.assertEqual(data["count"], 7)  # noqa: PT009
 
     @ddt.data(
         ('all', 2),
@@ -1121,8 +1130,8 @@ class GetUpstreamViewTest(
         )
         assert response.status_code == 200
         data = response.json()
-        self.assertTrue(all(o["ready_to_sync"] for o in data["results"]))
-        self.assertEqual(data["count"], expected_count)
+        self.assertTrue(all(o["ready_to_sync"] for o in data["results"]))  # noqa: PT009
+        self.assertEqual(data["count"], expected_count)  # noqa: PT009
 
     def test_permission_denied_without_filter(self):
         self.client.login(username="simple_user", password="password")
@@ -1139,8 +1148,8 @@ class GetUpstreamViewTest(
         data = response.json()
         expected = [str(self.downstream_video_key)] + [str(key) for key in self.another_video_keys]
         got = [str(o["downstream_usage_key"]) for o in data["results"]]
-        self.assertListEqual(got, expected)
-        self.assertEqual(data["count"], 4)
+        self.assertListEqual(got, expected)  # noqa: PT009
+        self.assertEqual(data["count"], 4)  # noqa: PT009
 
     def test_200_container_downstream_context_list(self):
         """
@@ -1152,8 +1161,8 @@ class GetUpstreamViewTest(
         data = response.json()
         expected = [str(self.downstream_unit_key)]
         got = [str(o["downstream_usage_key"]) for o in data["results"]]
-        self.assertListEqual(got, expected)
-        self.assertEqual(data["count"], 1)
+        self.assertListEqual(got, expected)  # noqa: PT009
+        self.assertEqual(data["count"], 1)  # noqa: PT009
 
     def test_200_get_ready_to_sync_top_level_parents_with_components(self):
         """
@@ -1174,7 +1183,7 @@ class GetUpstreamViewTest(
         )
         assert response.status_code == 200
         data = response.json()
-        self.assertEqual(data["count"], 4)
+        self.assertEqual(data["count"], 4)  # noqa: PT009
         date_format = self.now.isoformat().split("+")[0] + 'Z'
 
         # The expected results are
@@ -1255,7 +1264,7 @@ class GetUpstreamViewTest(
                 'downstream_customized': [],
             },
         ]
-        self.assertListEqual(data["results"], expected)
+        self.assertListEqual(data["results"], expected)  # noqa: PT009
 
     def test_200_get_ready_to_sync_top_level_parents_with_containers(self):
         """
@@ -1274,7 +1283,7 @@ class GetUpstreamViewTest(
         )
         assert response.status_code == 200
         data = response.json()
-        self.assertEqual(data["count"], 3)
+        self.assertEqual(data["count"], 3)  # noqa: PT009
         date_format = self.now.isoformat().split("+")[0] + 'Z'
 
         # The expected results are
@@ -1336,7 +1345,7 @@ class GetUpstreamViewTest(
                 'downstream_customized': [],
             },
         ]
-        self.assertListEqual(data["results"], expected)
+        self.assertListEqual(data["results"], expected)  # noqa: PT009
 
     def test_200_get_ready_to_sync_duplicated_top_level_parents(self):
         """
@@ -1364,7 +1373,7 @@ class GetUpstreamViewTest(
         )
         assert response.status_code == 200
         data = response.json()
-        self.assertEqual(data["count"], 3)
+        self.assertEqual(data["count"], 3)  # noqa: PT009
         date_format = self.now.isoformat().split("+")[0] + 'Z'
 
         # The expected results are
@@ -1426,7 +1435,7 @@ class GetUpstreamViewTest(
                 'downstream_customized': [],
             },
         ]
-        self.assertListEqual(data["results"], expected)
+        self.assertListEqual(data["results"], expected)  # noqa: PT009
 
 
 class GetDownstreamSummaryViewTest(
@@ -1456,7 +1465,7 @@ class GetDownstreamSummaryViewTest(
             'total_count': 3,
             'last_published_at': self.now.strftime('%Y-%m-%dT%H:%M:%S.%fZ'),
         }]
-        self.assertListEqual(data, expected)
+        self.assertListEqual(data, expected)  # noqa: PT009
         response = self.call_api(str(self.course.id))
         assert response.status_code == 200
         data = response.json()
@@ -1476,7 +1485,7 @@ class GetDownstreamSummaryViewTest(
             'total_count': 7,
             'last_published_at': self.now.strftime('%Y-%m-%dT%H:%M:%S.%fZ'),
         }]
-        self.assertListEqual(data, expected)
+        self.assertListEqual(data, expected)  # noqa: PT009
 
         # Publish Subsection
         self._update_container(self.top_level_subsection_id, display_name="Subsection 3")
@@ -1492,7 +1501,7 @@ class GetDownstreamSummaryViewTest(
             'total_count': 7,
             'last_published_at': self.now.strftime('%Y-%m-%dT%H:%M:%S.%fZ'),
         }]
-        self.assertListEqual(data, expected)
+        self.assertListEqual(data, expected)  # noqa: PT009
 
         # Publish Section
         self._update_container(self.top_level_section_id, display_name="Section 3")
@@ -1508,7 +1517,69 @@ class GetDownstreamSummaryViewTest(
             'total_count': 7,
             'last_published_at': self.now.strftime('%Y-%m-%dT%H:%M:%S.%fZ'),
         }]
-        self.assertListEqual(data, expected)
+        self.assertListEqual(data, expected)  # noqa: PT009
+
+
+class GetDownstreamSummaryAuthzViewTest(
+    CourseAuthoringAuthzTestMixin,
+    _BaseDownstreamViewTestMixin,
+    ImmediateOnCommitMixin,
+    SharedModuleStoreTestCase,
+):
+    """
+    AuthZ tests for:
+    GET /api/contentstore/v2/downstreams/<course_id>/summary
+    """
+
+    def call_api(self, client, course_id): # pylint: disable=arguments-differ
+        return client.get(f"/api/contentstore/v2/downstreams/{course_id}/summary")
+
+    def test_authorized_user_can_access_summary(self):
+        """Authorized user with COURSE_EDITOR role can access summary."""
+        self.add_user_to_role_in_course(
+            self.authorized_user,
+            COURSE_EDITOR.external_key,
+            self.course.id
+        )
+
+        response = self.call_api(self.authorized_client, str(self.course.id))
+
+        assert response.status_code == status.HTTP_200_OK
+        assert isinstance(response.json(), list)
+
+    def test_unauthorized_user_cannot_access_summary(self):
+        """Unauthorized user should receive 403."""
+        response = self.call_api(self.unauthorized_client, str(self.course.id))
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_user_without_role_then_added_can_access(self):
+        """Validate dynamic role assignment works."""
+        response = self.call_api(self.unauthorized_client, str(self.course.id))
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+        self.add_user_to_role_in_course(
+            self.unauthorized_user,
+            COURSE_EDITOR.external_key,
+            self.course.id
+        )
+
+        response = self.call_api(self.unauthorized_client, str(self.course.id))
+        assert response.status_code == status.HTTP_200_OK
+
+    def test_staff_user_can_access_without_authz_role(self):
+        """Staff user should access without explicit AuthZ role."""
+        response = self.call_api(self.staff_client, str(self.course.id))
+
+        assert response.status_code == status.HTTP_200_OK
+        assert isinstance(response.json(), list)
+
+    def test_superuser_can_access_without_authz_role(self):
+        """Superuser should access without explicit AuthZ role."""
+        response = self.call_api(self.super_client, str(self.course.id))
+
+        assert response.status_code == status.HTTP_200_OK
+        assert isinstance(response.json(), list)
 
 
 class GetDownstreamDeletedUpstream(
@@ -1614,4 +1685,4 @@ class GetDownstreamDeletedUpstream(
             'version_synced': 2,
         }
 
-        self.assertDictEqual(data[0], expected_results)
+        self.assertDictEqual(data[0], expected_results)  # noqa: PT009

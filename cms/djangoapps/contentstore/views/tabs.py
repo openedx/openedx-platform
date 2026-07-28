@@ -1,7 +1,7 @@
 """
 Views related to course tabs
 """
-from typing import Dict, Iterable, List, Optional, Union
+from typing import Dict, Iterable, List, Optional, Union  # noqa: UP035
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
@@ -12,14 +12,15 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_http_methods
 from opaque_keys.edx.keys import CourseKey, UsageKey
 from rest_framework.exceptions import ValidationError
+
+from common.djangoapps.student.auth import has_course_author_access
+from common.djangoapps.util.json_request import JsonResponse, JsonResponseBadRequest, expect_json
 from xmodule.course_block import CourseBlock
 from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.django import modulestore
 from xmodule.tabs import CourseTab, CourseTabList, InvalidTabsException, StaticTab
 
-from common.djangoapps.student.auth import has_course_author_access
-from common.djangoapps.util.json_request import JsonResponse, JsonResponseBadRequest, expect_json
-from ..utils import get_pages_and_resources_url, get_custom_pages_url
+from ..utils import get_custom_pages_url, get_pages_and_resources_url
 
 __all__ = ["tabs_handler", "update_tabs_handler"]
 
@@ -51,7 +52,7 @@ def tabs_handler(request, course_key_string):
     course_item = modulestore().get_course(course_key)
 
     if "application/json" in request.META.get("HTTP_ACCEPT", "application/json"):
-        if request.method == "GET":  # lint-amnesty, pylint: disable=no-else-raise
+        if request.method == "GET":  # pylint: disable=no-else-raise
             raise NotImplementedError("coming soon")
         else:
             try:
@@ -91,7 +92,7 @@ def get_course_tabs(course_item: CourseBlock, user: User) -> Iterable[CourseTab]
             yield tab
 
 
-def update_tabs_handler(course_item: CourseBlock, tabs_data: Dict, user: User) -> None:
+def update_tabs_handler(course_item: CourseBlock, tabs_data: Dict, user: User) -> None:  # noqa: UP006
     """
     Helper to handle updates to course tabs based on API data.
 
@@ -154,7 +155,7 @@ def create_new_list(tab_locators, old_tab_list):
     return sorted(new_tab_list, key=lambda item: item.priority or float('inf'))
 
 
-def edit_tab_handler(course_item: CourseBlock, tabs_data: Dict, user: User):
+def edit_tab_handler(course_item: CourseBlock, tabs_data: Dict, user: User):  # noqa: UP006
     """
     Helper function for handling requests to edit settings of a single tab
     """
@@ -178,7 +179,7 @@ def edit_tab_handler(course_item: CourseBlock, tabs_data: Dict, user: User):
         raise NotImplementedError(f"Unsupported request to edit tab: {tabs_data}")
 
 
-def get_tab_by_tab_id_locator(tab_list: List[CourseTab], tab_id_locator: Dict[str, str]) -> Optional[CourseTab]:
+def get_tab_by_tab_id_locator(tab_list: List[CourseTab], tab_id_locator: Dict[str, str]) -> Optional[CourseTab]:  # noqa: UP006, UP045  # pylint: disable=line-too-long
     """
     Look for a tab with the specified tab_id or locator.  Returns the first matching tab.
     """
@@ -190,7 +191,7 @@ def get_tab_by_tab_id_locator(tab_list: List[CourseTab], tab_id_locator: Dict[st
     return tab
 
 
-def get_tab_by_locator(tab_list: List[CourseTab], tab_location: Union[str, UsageKey]) -> Optional[CourseTab]:
+def get_tab_by_locator(tab_list: List[CourseTab], tab_location: Union[str, UsageKey]) -> Optional[CourseTab]:  # noqa: UP006, UP007, UP045  # pylint: disable=line-too-long
     """
     Look for a tab with the specified locator.  Returns the first matching tab.
     """

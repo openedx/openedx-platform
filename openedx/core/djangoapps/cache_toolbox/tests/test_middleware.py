@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 from django.conf import settings
 from django.contrib.auth import SESSION_KEY
-from django.contrib.auth.models import AnonymousUser, User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import AnonymousUser, User  # pylint: disable=imported-auth-user
 from django.http import HttpResponse, SimpleCookie
 from django.test import TestCase
 from django.urls import reverse

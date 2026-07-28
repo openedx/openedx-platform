@@ -7,8 +7,8 @@ import logging
 
 from django.core.management.base import BaseCommand, CommandError
 
+from common.djangoapps.third_party_auth.models import SAMLConfiguration, SAMLProviderConfig
 from common.djangoapps.third_party_auth.tasks import fetch_saml_metadata
-from common.djangoapps.third_party_auth.models import SAMLProviderConfig, SAMLConfiguration
 
 
 class Command(BaseCommand):
@@ -49,7 +49,7 @@ class Command(BaseCommand):
         log.addHandler(log_handler)
         total, skipped, attempted, updated, failed, failure_messages = fetch_saml_metadata()
         self.stdout.write(
-            "\nDone."
+            "\nDone."  # noqa: UP032
             "\n{total} provider(s) found in database."
             "\n{skipped} skipped and {attempted} attempted."
             "\n{updated} updated and {failed} failed.\n".format(

@@ -3,6 +3,9 @@
      role="dialog">
     <div class="modal-window-overlay"></div>
     <div class="modal-window <%- viewSpecificClasses %> modal-<%- size %> modal-type-<%- type %>" tabindex="-1" aria-labelledby="modal-window-title">
+        <% if (showFullscreenButton) { %>
+            <button class="btn-default fullscreen-button" aria-label="<%- gettext("Toggle Fullscreen") %>"><span class="icon fa fa-expand"></span></button>
+        <% } %>
         <div class="<%- name %>-modal">
             <% if (title || modalSRTitle || showEditorModeButtons) { %>
                 <div class="modal-header">
@@ -29,3 +32,4 @@
         </div>
     </div>
 </div>
+

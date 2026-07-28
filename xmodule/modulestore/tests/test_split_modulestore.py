@@ -11,8 +11,8 @@ import unittest
 from importlib import import_module
 from unittest.mock import patch
 
-import pytest
 import ddt
+import pytest
 from ccx_keys.locator import CCXBlockUsageLocator
 from django.core.cache import InvalidCacheBackendError, caches
 from opaque_keys.edx.locator import BlockUsageLocator, CourseKey, CourseLocator, LocalId
@@ -29,7 +29,7 @@ from xmodule.modulestore.exceptions import (
     DuplicateItemError,
     InsufficientSpecificationError,
     ItemNotFoundError,
-    VersionConflictError
+    VersionConflictError,
 )
 from xmodule.modulestore.inheritance import InheritanceMixin
 from xmodule.modulestore.split_mongo import BlockKey
@@ -480,7 +480,7 @@ class SplitModuleTest(unittest.TestCase):
                     elif spec['parent'] == course.location.block_id:
                         parent = course
                     else:
-                        block_usage = BlockUsageLocator.make_relative(course.location, spec['parent_type'], spec['parent'])  # lint-amnesty, pylint: disable=line-too-long
+                        block_usage = BlockUsageLocator.make_relative(course.location, spec['parent_type'], spec['parent'])  # pylint: disable=line-too-long
                         parent = split_store.get_item(block_usage)
                     block_id = LocalId(spec['id'])
                     child = split_store.create_xblock(
@@ -534,7 +534,7 @@ class TestHasChildrenAtDepth(SplitModuleTest):
         )
         block = modulestore().get_item(block_locator)
 
-        self.assertRaises(
+        self.assertRaises(  # noqa: PT027
             ValueError, block.has_children_at_depth, -1,
         )
         assert block.has_children_at_depth(0)
@@ -578,7 +578,7 @@ class SplitModuleCourseTests(SplitModuleTest):
         assert len(course.children) == 4, 'children'
         # check dates and graders--forces loading of block
         assert course.edited_by == TEST_ASSISTANT_USER_ID
-        self.assertDictEqual(course.grade_cutoffs, {"Pass": 0.45})
+        self.assertDictEqual(course.grade_cutoffs, {"Pass": 0.45})  # noqa: PT009
 
     def test_get_courses_with_same_course_index(self):
         """
@@ -664,7 +664,7 @@ class SplitModuleCourseTests(SplitModuleTest):
         assert course.definition_locator.definition_id != head_course.definition_locator.definition_id
         # check dates and graders--forces loading of block
         assert course.edited_by == TEST_ASSISTANT_USER_ID
-        self.assertDictEqual(course.grade_cutoffs, {"Pass": 0.55})
+        self.assertDictEqual(course.grade_cutoffs, {"Pass": 0.55})  # noqa: PT009
 
         locator = CourseLocator(org='testx', course='GreekHero', run="run", branch=BRANCH_NAME_DRAFT)
         course = modulestore().get_course(locator)
@@ -678,7 +678,7 @@ class SplitModuleCourseTests(SplitModuleTest):
         assert len(course.children) == 4
         # check dates and graders--forces loading of block
         assert course.edited_by == TEST_ASSISTANT_USER_ID
-        self.assertDictEqual(course.grade_cutoffs, {"Pass": 0.45})
+        self.assertDictEqual(course.grade_cutoffs, {"Pass": 0.45})  # noqa: PT009
 
         locator = CourseLocator(org='testx', course='wonderful', run="run", branch=BRANCH_NAME_PUBLISHED)
         course = modulestore().get_course(locator)
@@ -693,9 +693,9 @@ class SplitModuleCourseTests(SplitModuleTest):
         with pytest.raises(InsufficientSpecificationError):
             modulestore().get_course(CourseLocator(org='edu', course='meh', run='blah'))
         with pytest.raises(ItemNotFoundError):
-            modulestore().get_course(CourseLocator(org='edu', course='nosuchthing', run="run", branch=BRANCH_NAME_DRAFT))  # lint-amnesty, pylint: disable=line-too-long
+            modulestore().get_course(CourseLocator(org='edu', course='nosuchthing', run="run", branch=BRANCH_NAME_DRAFT))  # pylint: disable=line-too-long
         with pytest.raises(ItemNotFoundError):
-            modulestore().get_course(CourseLocator(org='testx', course='GreekHero', run="run", branch=BRANCH_NAME_PUBLISHED))  # lint-amnesty, pylint: disable=line-too-long
+            modulestore().get_course(CourseLocator(org='testx', course='GreekHero', run="run", branch=BRANCH_NAME_PUBLISHED))  # pylint: disable=line-too-long
 
     def test_cache(self):
         """
@@ -899,7 +899,7 @@ class SplitModuleItemTests(SplitModuleTest):
         previous_version = course.previous_version
         # positive tests of various forms
         locator = course.location.map_into_course(CourseLocator(version_guid=previous_version))
-        assert modulestore().has_item(locator), ("couldn't find in %s" % previous_version)
+        assert modulestore().has_item(locator), ("couldn't find in %s" % previous_version)  # noqa: UP031
 
         locator = course.location.version_agnostic()
         assert modulestore().has_item(locator)
@@ -963,7 +963,7 @@ class SplitModuleItemTests(SplitModuleTest):
             assert len(block.children) == 4
             # check dates and graders--forces loading of block
             assert block.edited_by == TEST_ASSISTANT_USER_ID
-            self.assertDictEqual(
+            self.assertDictEqual(  # noqa: PT009
                 block.grade_cutoffs, {"Pass": 0.45},
             )
 
@@ -987,14 +987,14 @@ class SplitModuleItemTests(SplitModuleTest):
 
         # in published course
         locator = BlockUsageLocator(
-            CourseLocator(org='testx', course='wonderful', run="run", branch=BRANCH_NAME_PUBLISHED), 'course', 'head23456'  # lint-amnesty, pylint: disable=line-too-long
+            CourseLocator(org='testx', course='wonderful', run="run", branch=BRANCH_NAME_PUBLISHED), 'course', 'head23456'  # pylint: disable=line-too-long
         )
         assert isinstance(modulestore().get_item(locator), CourseBlock)
 
         # negative tests--not found
         # no such course or block
         locator = BlockUsageLocator(
-            CourseLocator(org='doesnotexist', course='doesnotexist', run="run", branch=BRANCH_NAME_DRAFT), 'course', 'head23456'  # lint-amnesty, pylint: disable=line-too-long
+            CourseLocator(org='doesnotexist', course='doesnotexist', run="run", branch=BRANCH_NAME_DRAFT), 'course', 'head23456'  # pylint: disable=line-too-long
         )
         with pytest.raises(ItemNotFoundError):
             modulestore().get_item(locator)
@@ -1161,7 +1161,7 @@ class TestItemCrud(SplitModuleTest):
         assert new_block.location.course == 'GreekHero'
         assert new_block.location.version_guid != premod_course.location.version_guid
         assert locator.version_guid is None,\
-            'Version inadvertently filled in'  # lint-amnesty, pylint: disable=no-member
+            'Version inadvertently filled in'  # pylint: disable=no-member
         current_course = modulestore().get_course(locator)
         assert new_block.location.version_guid == current_course.location.version_guid
 
@@ -1286,7 +1286,7 @@ class TestItemCrud(SplitModuleTest):
         user = random.getrandbits(32)
         course_key = CourseLocator('test_org', 'test_transaction', 'test_run')
         with modulestore().bulk_operations(course_key):
-            new_course = modulestore().create_course('test_org', 'test_transaction', 'test_run', user, BRANCH_NAME_DRAFT)  # lint-amnesty, pylint: disable=line-too-long
+            new_course = modulestore().create_course('test_org', 'test_transaction', 'test_run', user, BRANCH_NAME_DRAFT)  # pylint: disable=line-too-long
             new_course_locator = new_course.id
             index_history_info = modulestore().get_course_history_info(new_course.location.course_key)
             course_block_prev_version = new_course.previous_version
@@ -1515,7 +1515,7 @@ class TestItemCrud(SplitModuleTest):
 
     def test_delete_item(self):
         course = self.create_course_for_deletion()
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             modulestore().delete_item(course.location, self.user_id)
         reusable_location = course.id.version_agnostic().for_branch(BRANCH_NAME_DRAFT)
 
@@ -1527,7 +1527,7 @@ class TestItemCrud(SplitModuleTest):
         assert not modulestore().has_item(deleted)
         with pytest.raises(VersionConflictError):
             modulestore().has_item(locn_to_del)
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             modulestore().delete_item(deleted, self.user_id)
 
         assert modulestore().has_item(locn_to_del.course_agnostic())
@@ -1641,7 +1641,7 @@ class TestCourseCreation(SplitModuleTest):
         assert len(new_course.children) == 0
         assert new_course.edited_by == TEST_USER_ID
         assert len(new_course.grading_policy['GRADER']) == 4
-        self.assertDictEqual(new_course.grade_cutoffs, {"Pass": 0.5})
+        self.assertDictEqual(new_course.grade_cutoffs, {"Pass": 0.5})  # noqa: PT009
 
     def test_cloned_course(self):
         """
@@ -1653,7 +1653,7 @@ class TestCourseCreation(SplitModuleTest):
             'best', 'leech', 'leech_run', TEST_OTHER_USER_ID, BRANCH_NAME_DRAFT,
             versions_dict=original_index['versions'])
         new_draft_locator = new_draft.location
-        self.assertRegex(new_draft_locator.org, 'best')
+        self.assertRegex(new_draft_locator.org, 'best')  # noqa: PT009
         # the edited_by and other meta fields on the new course will be the original author not this one
         assert new_draft.edited_by == TEST_USER_ID
         assert new_draft_locator.version_guid == original_index['versions'][BRANCH_NAME_DRAFT]
@@ -1703,7 +1703,7 @@ class TestCourseCreation(SplitModuleTest):
             fields=fields
         )
         new_draft_locator = new_draft.location
-        self.assertRegex(new_draft_locator.org, 'counter')
+        self.assertRegex(new_draft_locator.org, 'counter')  # noqa: PT009
         # the edited_by and other meta fields on the new course will be the original author not this one
         assert new_draft.edited_by == TEST_OTHER_USER_ID
         assert new_draft_locator.version_guid != original_index['versions'][BRANCH_NAME_DRAFT]
@@ -1711,7 +1711,7 @@ class TestCourseCreation(SplitModuleTest):
         new_index = modulestore().get_course_index_info(new_draft_locator.course_key)
         assert new_index['edited_by'] == TEST_OTHER_USER_ID
         assert new_draft.display_name == fields['display_name']
-        self.assertDictEqual(
+        self.assertDictEqual(  # noqa: PT009
             new_draft.grading_policy['GRADE_CUTOFFS'],
             fields['grading_policy']['GRADE_CUTOFFS']
         )
@@ -1765,7 +1765,7 @@ class TestCourseCreation(SplitModuleTest):
         """
         user = random.getrandbits(32)
         courses = modulestore().get_courses(BRANCH_NAME_DRAFT)
-        with pytest.raises(DuplicateCourseError):
+        with pytest.raises(DuplicateCourseError):  # noqa: PT012
             dupe_course_key = courses[0].location.course_key
             modulestore().create_course(
                 dupe_course_key.org, dupe_course_key.course, dupe_course_key.run, user, BRANCH_NAME_DRAFT
@@ -1836,12 +1836,12 @@ class TestInheritance(SplitModuleTest):
         # set on parent, retrieve child, verify setting
         chapter = modulestore().get_item(
             BlockUsageLocator(
-                CourseLocator(org='testx', course='GreekHero', run="run", branch=BRANCH_NAME_DRAFT), 'chapter', 'chapter3'  # lint-amnesty, pylint: disable=line-too-long
+                CourseLocator(org='testx', course='GreekHero', run="run", branch=BRANCH_NAME_DRAFT), 'chapter', 'chapter3'  # pylint: disable=line-too-long
             )
         )
         problem = modulestore().get_item(
             BlockUsageLocator(
-                CourseLocator(org='testx', course='GreekHero', run="run", branch=BRANCH_NAME_DRAFT), 'problem', 'problem3_2'  # lint-amnesty, pylint: disable=line-too-long
+                CourseLocator(org='testx', course='GreekHero', run="run", branch=BRANCH_NAME_DRAFT), 'problem', 'problem3_2'  # pylint: disable=line-too-long
             )
         )
         assert not problem.visible_to_staff_only
@@ -1869,13 +1869,13 @@ class TestInheritance(SplitModuleTest):
         chapter.visible_to_staff_only = True
         orphan_problem = modulestore().create_item(self.user_id, course_key, 'problem')
         assert not orphan_problem.visible_to_staff_only
-        parented_problem = modulestore().create_child(self.user_id, chapter.location.version_agnostic(), 'problem')  # lint-amnesty, pylint: disable=unused-variable
+        parented_problem = modulestore().create_child(self.user_id, chapter.location.version_agnostic(), 'problem')  # pylint: disable=unused-variable
         # FIXME LMS-11376
 #         self.assertTrue(parented_problem.visible_to_staff_only)
 
         orphan_problem = modulestore().create_xblock(chapter.runtime, course_key, 'problem')
         assert not orphan_problem.visible_to_staff_only
-        parented_problem = modulestore().create_xblock(chapter.runtime, course_key, 'problem', parent_xblock=chapter)
+        parented_problem = modulestore().create_xblock(chapter.runtime, course_key, 'problem', parent_xblock=chapter)  # noqa: F841  # pylint: disable=line-too-long
         # FIXME LMS-11376
 #         self.assertTrue(parented_problem.visible_to_staff_only)
 
@@ -1982,7 +1982,7 @@ class TestPublish(SplitModuleTest):
             BlockKey("chapter", "chapter3"),
             BlockKey("problem", "problem1")
         ]
-        self._check_course(source_course, dest_course, expected, [BlockKey("chapter", "chapter2"), BlockKey("problem", "problem3_2")])  # lint-amnesty, pylint: disable=line-too-long
+        self._check_course(source_course, dest_course, expected, [BlockKey("chapter", "chapter2"), BlockKey("problem", "problem3_2")])  # pylint: disable=line-too-long
 
     def _check_course(self, source_course_loc, dest_course_loc, expected_blocks, unexpected_blocks):
         """
@@ -2010,7 +2010,7 @@ class TestPublish(SplitModuleTest):
             with pytest.raises(ItemNotFoundError):
                 modulestore().get_item(dest_course_loc.make_usage_key(unexp.type, unexp.id))
 
-    def assertReferenceEqual(self, expected, actual):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def assertReferenceEqual(self, expected, actual):  # pylint: disable=missing-function-docstring
         if isinstance(expected, BlockUsageLocator):
             expected = BlockKey.from_usage_key(expected)
             actual = BlockKey.from_usage_key(actual)
@@ -2075,7 +2075,7 @@ def modulestore():
         options.update(SplitModuleTest.MODULESTORE['OPTIONS'])
         options['render_template'] = render_to_template_mock
 
-        # lint-amnesty, pylint: disable=bad-option-value, star-args
+        # pylint: disable=bad-option-value, star-args
         SplitModuleTest.modulestore = class_(
             None,  # contentstore
             SplitModuleTest.MODULESTORE['DOC_STORE_CONFIG'],

@@ -7,7 +7,7 @@ import abc
 import re
 
 
-class MobilePlatform(metaclass=abc.ABCMeta):
+class MobilePlatform(metaclass=abc.ABCMeta):  # noqa: B024
     """
     MobilePlatform class creates an instance of platform based on user agent and supports platform
     related operations.
@@ -79,7 +79,7 @@ class IOS(MobilePlatform):
         sub_regex = r'(3172)(; OS Version [0-9.]+ \(Build [0-9a-zA-Z]*\)\))'
         user_agent = re.sub(sub_regex, r'2.26.3\2', user_agent)
 
-        return super(IOS, cls).get_user_app_platform(user_agent, user_agent_regex)
+        return super(IOS, cls).get_user_app_platform(user_agent, user_agent_regex)  # noqa: UP008
 
 
 class Android(MobilePlatform):

@@ -7,9 +7,8 @@ import logging
 from abc import ABCMeta
 
 from django.utils.module_loading import import_string
-from xblock.fields import List
-
 from edx_django_utils.plugins import PluginError
+from xblock.fields import List
 
 log = logging.getLogger("edx.courseware")
 
@@ -21,7 +20,7 @@ _ = lambda text: text
 READ_ONLY_COURSE_TAB_ATTRIBUTES = ['type']
 
 
-class CourseTab(metaclass=ABCMeta):
+class CourseTab(metaclass=ABCMeta):  # noqa: B024
     """
     The Course Tab class is a data abstraction for all tabs (i.e., course navigation links) within a course.
     It is an abstract class - to be inherited by various tab types.
@@ -527,7 +526,7 @@ class CourseTabList(List):
         """
         count = sum(1 for tab in tabs if tab.get('type') == tab_type)
         if count > max_num:
-            msg = (
+            msg = (  # noqa: UP032
                 "Tab of type '{type}' appears {count} time(s). "
                 "Expected maximum of {max} time(s)."
             ).format(
@@ -535,7 +534,7 @@ class CourseTabList(List):
             )
             raise InvalidTabsException(msg)
 
-    def to_json(self, values):  # lint-amnesty, pylint: disable=arguments-differ
+    def to_json(self, values):  # pylint: disable=arguments-differ
         """
         Overrides the to_json method to serialize all the CourseTab objects to a json-serializable representation.
         """
@@ -550,7 +549,7 @@ class CourseTabList(List):
                     continue
         return json_data
 
-    def from_json(self, values):  # lint-amnesty, pylint: disable=arguments-differ
+    def from_json(self, values):  # pylint: disable=arguments-differ
         """
         Overrides the from_json method to de-serialize the CourseTab objects from a json-like representation.
         """
@@ -579,7 +578,7 @@ def key_checker(expected_keys):
         missing = set(expected_keys) - set(actual_dict.keys())
         if not missing:
             return True
-        if raise_error:  # lint-amnesty, pylint: disable=no-else-raise
+        if raise_error:  # pylint: disable=no-else-raise
             raise InvalidTabsException(
                 f"Expected keys '{expected_keys}' are not present in the given dict: {actual_dict}"
             )
@@ -642,11 +641,11 @@ class InvalidTabsException(Exception):
     """
     A complaint about invalid tabs.
     """
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 class UnequalTabsException(Exception):
     """
     A complaint about tab lists being unequal
     """
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass

@@ -1,5 +1,5 @@
 """Module with the course app configuration for the Wiki."""
-from typing import Dict, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict, Optional  # noqa: UP035
 
 from django.conf import settings
 from django.utils.translation import gettext_noop as _
@@ -8,8 +8,8 @@ from opaque_keys.edx.keys import CourseKey
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview, CourseOverviewTab
 from openedx.core.djangoapps.course_apps.plugins import CourseApp
 from openedx.core.lib.courses import get_course_by_id
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.tabs import CourseTab, CourseTabList  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
+from xmodule.tabs import CourseTab, CourseTabList  # pylint: disable=wrong-import-order
 
 # Import the User model only for type checking since importing it at runtime
 # will prevent the app from starting since the model is imported before
@@ -72,7 +72,7 @@ class WikiCourseApp(CourseApp):
         return enabled
 
     @classmethod
-    def get_allowed_operations(cls, course_key: CourseKey, user: Optional['User'] = None) -> Dict[str, bool]:
+    def get_allowed_operations(cls, course_key: CourseKey, user: Optional['User'] = None) -> Dict[str, bool]:  # noqa: UP006  # pylint: disable=line-too-long
         """
         Returns the operations you can perform on the wiki.
         """

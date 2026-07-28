@@ -3,7 +3,7 @@ LegacyLibraryContent: The XBlock used to randomly select a subset of blocks from
 
 In Studio, it's called the "Randomized Content Module".
 
-In the long-term, this block is deprecated in favor of "v2" (learning core-backed) library references:
+In the long-term, this block is deprecated in favor of "v2" (openedx_content-backed) library references:
 https://github.com/openedx/edx-platform/issues/32457
 
 We need to retain backwards-compatibility, but please do not build any new features into this.
@@ -22,8 +22,8 @@ from web_fragments.fragment import Fragment
 from webob import Response
 from xblock.core import XBlock
 from xblock.fields import Boolean, Scope, String
+from xblocks_contrib.problem.capa.responsetypes import registry
 
-from xmodule.capa.responsetypes import registry
 from xmodule.item_bank_block import ItemBankMixin
 from xmodule.modulestore.django import modulestore
 from xmodule.modulestore.exceptions import ItemNotFoundError
@@ -141,6 +141,20 @@ class LegacyLibraryContentBlock(ItemBankMixin, XModuleToXBlockMixin, XBlock):
         Returns whether the block can be migrated to v2.
         """
         return self.is_source_lib_migrated_to_v2 and not self.is_migrated_to_v2
+
+    def get_context(self):
+        """
+        Extend context adding `show_deprecated_warning` flag
+        """
+        from cms.djangoapps.contentstore.utils import get_libraries_list_url
+
+        library_url = get_libraries_list_url()
+
+        context = super().get_context()
+        context["show_deprecated_warning"] = True
+        context["library_url"] = library_url
+
+        return context
 
     def author_view(self, context):
         """
@@ -315,14 +329,19 @@ class LegacyLibraryContentBlock(ItemBankMixin, XModuleToXBlockMixin, XBlock):
         self.sync_from_library(upgrade_to_latest=False)
         return True  # Children have been handled
 
-    def v2_update_children_upstream_version(self, user_id=None):
+    def v2_update_children_upstream_version(self, user_id=None, persist_publish_state=False):
         """
         Update the upstream and upstream version fields of all children to point to library v2 version of the legacy
         library blocks. This essentially converts this legacy block to new ItemBankBlock.
+
+        If `persist_publish_state` is True, and this block was published prior to the migration
+        (with no unpublished changes), it is re-published afterward so that the
+        upstream/upstream_version changes reach LMS.
         """
         from cms.djangoapps.modulestore_migrator import api as migrator_api
         store = modulestore()
         with store.bulk_operations(self.course_id):
+            was_published = persist_publish_state and not store.has_changes(self)
             children = self.get_children()
             # These are the v1 library item upstream UsageKeys
             child_old_upstream_keys = [
@@ -330,7 +349,7 @@ class LegacyLibraryContentBlock(ItemBankMixin, XModuleToXBlockMixin, XBlock):
                 for child in children
             ]
             child_migrations = migrator_api.get_forwarding_for_blocks(child_old_upstream_keys)
-            for child, old_upstream_key in zip(children, child_old_upstream_keys):
+            for child, old_upstream_key in zip(children, child_old_upstream_keys):  # noqa: B905
                 upstream_migration = child_migrations.get(old_upstream_key)
                 if upstream_migration and isinstance(upstream_migration.target_key, LibraryUsageLocatorV2):
                     child.upstream = str(upstream_migration.target_key)
@@ -344,6 +363,8 @@ class LegacyLibraryContentBlock(ItemBankMixin, XModuleToXBlockMixin, XBlock):
             self.is_migrated_to_v2 = True
             self.save()
             store.update_item(self, user_id)
+            if was_published:
+                store.publish(self.location, user_id)
 
     def _validate_library_version(self, validation, lib_tools, version, library_key):
         """

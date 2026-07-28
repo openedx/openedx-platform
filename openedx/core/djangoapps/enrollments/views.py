@@ -6,26 +6,27 @@ consist primarily of authentication, request validation, and serialization.
 
 import logging
 
-from django.core.exceptions import (  # lint-amnesty, pylint: disable=wrong-import-order
+from django.core.exceptions import (  # pylint: disable=wrong-import-order
     ObjectDoesNotExist,
     ValidationError,
 )
-from django.db import IntegrityError  # lint-amnesty, pylint: disable=wrong-import-order
-from django.db.models import Q  # lint-amnesty, pylint: disable=wrong-import-order
-from django.utils.decorators import method_decorator  # lint-amnesty, pylint: disable=wrong-import-order
-from edx_rest_framework_extensions.auth.jwt.authentication import (
+from django.db import IntegrityError  # pylint: disable=wrong-import-order
+from django.db.models import Q  # pylint: disable=wrong-import-order
+from django.utils.decorators import method_decorator  # pylint: disable=wrong-import-order
+from edx_rest_framework_extensions.auth.jwt.authentication import (  # pylint: disable=wrong-import-order
     JwtAuthentication,
-)  # lint-amnesty, pylint: disable=wrong-import-order
-from edx_rest_framework_extensions.auth.session.authentication import (
+)
+from edx_rest_framework_extensions.auth.session.authentication import (  # pylint: disable=wrong-import-order
     SessionAuthenticationAllowInactiveUser,
-)  # lint-amnesty, pylint: disable=wrong-import-order
-from opaque_keys import InvalidKeyError  # lint-amnesty, pylint: disable=wrong-import-order
-from opaque_keys.edx.keys import CourseKey  # lint-amnesty, pylint: disable=wrong-import-order
-from rest_framework import permissions, status  # lint-amnesty, pylint: disable=wrong-import-order
-from rest_framework.generics import ListAPIView  # lint-amnesty, pylint: disable=wrong-import-order
-from rest_framework.response import Response  # lint-amnesty, pylint: disable=wrong-import-order
-from rest_framework.throttling import UserRateThrottle  # lint-amnesty, pylint: disable=wrong-import-order
-from rest_framework.views import APIView  # lint-amnesty, pylint: disable=wrong-import-order
+)
+from opaque_keys import InvalidKeyError  # pylint: disable=wrong-import-order
+from opaque_keys.edx.keys import CourseKey  # pylint: disable=wrong-import-order
+from openedx_filters.learning.filters import CourseEnrollmentViewStarted
+from rest_framework import permissions, status  # pylint: disable=wrong-import-order
+from rest_framework.generics import ListAPIView  # pylint: disable=wrong-import-order
+from rest_framework.response import Response  # pylint: disable=wrong-import-order
+from rest_framework.throttling import UserRateThrottle  # pylint: disable=wrong-import-order
+from rest_framework.views import APIView  # pylint: disable=wrong-import-order
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.student.auth import user_has_role
@@ -57,12 +58,6 @@ from openedx.core.lib.api.permissions import ApiKeyHeaderPermission, ApiKeyHeade
 from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin
 from openedx.core.lib.exceptions import CourseNotFoundError
 from openedx.core.lib.log_utils import audit_log
-from openedx.features.enterprise_support.api import (
-    ConsentApiServiceClient,
-    EnterpriseApiException,
-    EnterpriseApiServiceClient,
-    enterprise_enabled,
-)
 
 log = logging.getLogger(__name__)
 REQUIRED_ATTRIBUTES = {
@@ -73,7 +68,7 @@ REQUIRED_ATTRIBUTES = {
 class EnrollmentCrossDomainSessionAuth(SessionAuthenticationAllowInactiveUser, SessionAuthenticationCrossDomainCsrf):
     """Session authentication that allows inactive users and cross-domain requests."""
 
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 class ApiKeyPermissionMixIn:
@@ -114,6 +109,14 @@ class EnrollmentUserThrottle(UserRateThrottle, ApiKeyPermissionMixIn):
             self.num_requests, self.duration = self.parse_rate(self.rate)
 
         return self.has_api_key_permissions(request) or super().allow_request(request, view)
+
+    def get_cache_key(self, request, view):
+        # Namespace this throttle's cache key so it does not share a rate-limit
+        # bucket with other throttles that use the same scope name.
+        cache_key = super().get_cache_key(request, view)
+        if cache_key:
+            cache_key = f"enrollment.{cache_key}"
+        return cache_key
 
 
 @can_disable_rate_limit
@@ -226,7 +229,7 @@ class EnrollmentView(APIView, ApiKeyPermissionMixIn):
             return Response(
                 status=status.HTTP_400_BAD_REQUEST,
                 data={
-                    "message": (
+                    "message": (  # noqa: UP032
                         "An error occurred while retrieving enrollments for user "
                         "'{username}' in course '{course_id}'"
                     ).format(username=username, course_id=course_id)
@@ -281,7 +284,7 @@ class EnrollmentUserRolesView(APIView):
             return Response(
                 status=status.HTTP_400_BAD_REQUEST,
                 data={
-                    "message": ("An error occurred while retrieving roles for user '{username}").format(
+                    "message": ("An error occurred while retrieving roles for user '{username}").format(  # noqa: UP032
                         username=request.user.username
                     )
                 },
@@ -384,7 +387,7 @@ class EnrollmentCourseDetailView(APIView):
         except CourseNotFoundError:
             return Response(
                 status=status.HTTP_400_BAD_REQUEST,
-                data={"message": ("No course found for course ID '{course_id}'").format(course_id=course_id)},
+                data={"message": ("No course found for course ID '{course_id}'").format(course_id=course_id)},  # noqa: UP032  # pylint: disable=line-too-long
             )
 
 
@@ -662,7 +665,7 @@ class EnrollmentListView(APIView, ApiKeyPermissionMixIn):
             return Response(
                 status=status.HTTP_400_BAD_REQUEST,
                 data={
-                    "message": ("An error occurred while retrieving enrollments for user '{username}'").format(
+                    "message": ("An error occurred while retrieving enrollments for user '{username}'").format(  # noqa: UP032  # pylint: disable=line-too-long
                         username=username
                     )
                 },
@@ -746,7 +749,7 @@ class EnrollmentListView(APIView, ApiKeyPermissionMixIn):
             return Response(
                 status=status.HTTP_403_FORBIDDEN,
                 data={
-                    "message": "User does not have permission to create enrollment with mode [{mode}].".format(
+                    "message": "User does not have permission to create enrollment with mode [{mode}].".format(  # noqa: UP032  # pylint: disable=line-too-long
                         mode=mode
                     )
                 },
@@ -771,29 +774,21 @@ class EnrollmentListView(APIView, ApiKeyPermissionMixIn):
             if is_active is not None and not isinstance(is_active, bool):
                 return Response(
                     status=status.HTTP_400_BAD_REQUEST,
-                    data={"message": ("'{value}' is an invalid enrollment activation status.").format(value=is_active)},
+                    data={"message": ("'{value}' is an invalid enrollment activation status.").format(value=is_active)},  # noqa: UP032  # pylint: disable=line-too-long
                 )
 
-            explicit_linked_enterprise = request.data.get("linked_enterprise_customer")
-            if explicit_linked_enterprise and has_api_key_permissions and enterprise_enabled():
-                enterprise_api_client = EnterpriseApiServiceClient()
-                consent_client = ConsentApiServiceClient()
-                try:
-                    enterprise_api_client.post_enterprise_course_enrollment(username, str(course_id))
-                except EnterpriseApiException as error:
-                    log.exception(
-                        "An unexpected error occurred while creating the new EnterpriseCourseEnrollment "
-                        "for user [%s] in course run [%s]",
-                        username,
-                        course_id,
-                    )
-                    raise CourseEnrollmentError(str(error))  # lint-amnesty, pylint: disable=raise-missing-from
-                kwargs = {
-                    "username": username,
-                    "course_id": str(course_id),
-                    "enterprise_customer_uuid": explicit_linked_enterprise,
-                }
-                consent_client.provide_consent(**kwargs)
+            # Filter hook that allows plugins (e.g., Enterprise) to run enrollment-related logic
+            # and optionally prevent enrollment via CourseEnrollmentViewStarted.PreventEnrollment.
+            try:
+                # .. filter_implemented_name: CourseEnrollmentViewStarted
+                # .. filter_type: org.openedx.learning.course.enrollment.view.started.v1
+                CourseEnrollmentViewStarted.run_filter(
+                    user=user,
+                    course_key=course_id,
+                    requester_is_backend_service=has_api_key_permissions,
+                )
+            except CourseEnrollmentViewStarted.PreventEnrollment as exc:
+                raise CourseEnrollmentError(str(exc)) from exc
 
             enrollment_attributes = request.data.get("enrollment_attributes")
             force_enrollment = request.data.get("force_enrollment")
@@ -802,7 +797,7 @@ class EnrollmentListView(APIView, ApiKeyPermissionMixIn):
                 return Response(
                     status=status.HTTP_400_BAD_REQUEST,
                     data={
-                        "message": ("'{value}' is an invalid force enrollment status.").format(value=force_enrollment)
+                        "message": ("'{value}' is an invalid force enrollment status.").format(value=force_enrollment)  # noqa: UP032  # pylint: disable=line-too-long
                     },
                 )
             # Only a staff user role can enroll a user forcefully
@@ -826,7 +821,7 @@ class EnrollmentListView(APIView, ApiKeyPermissionMixIn):
                     return Response(status=status.HTTP_400_BAD_REQUEST, data={"message": msg})
 
                 if missing_attrs:
-                    msg = "Missing enrollment attributes: requested mode={} required attributes={}".format(
+                    msg = "Missing enrollment attributes: requested mode={} required attributes={}".format(  # noqa: UP032  # pylint: disable=line-too-long
                         mode, REQUIRED_ATTRIBUTES.get(mode)
                     )
                     log.warning(msg)
@@ -891,7 +886,7 @@ class EnrollmentListView(APIView, ApiKeyPermissionMixIn):
             return Response(
                 status=status.HTTP_400_BAD_REQUEST,
                 data={
-                    "message": (
+                    "message": (  # noqa: UP032
                         "The [{mode}] course mode is expired or otherwise unavailable for course run [{course_id}]."
                     ).format(mode=mode, course_id=course_id),
                     "course_details": error.data,
@@ -913,7 +908,7 @@ class EnrollmentListView(APIView, ApiKeyPermissionMixIn):
             return Response(
                 status=status.HTTP_400_BAD_REQUEST,
                 data={
-                    "message": (
+                    "message": (  # noqa: UP032
                         "An error occurred while creating the new course enrollment for user "
                         "'{username}' in course '{course_id}'"
                     ).format(username=username, course_id=course_id)
@@ -924,7 +919,7 @@ class EnrollmentListView(APIView, ApiKeyPermissionMixIn):
             log.exception("Missing cohort [%s] in course run [%s]", cohort_name, course_id)
             return Response(
                 status=status.HTTP_400_BAD_REQUEST,
-                data={"message": "An error occured while adding to cohort [%s]" % cohort_name},
+                data={"message": "An error occured while adding to cohort [%s]" % cohort_name},  # noqa: UP031
             )
         finally:
             # Assumes that the ecommerce service uses an API key to authenticate.

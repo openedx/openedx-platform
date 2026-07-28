@@ -1,4 +1,4 @@
-<%page args="course_overview, enrollment, entitlement, entitlement_session, course_card_index, enrollments_fbe_is_on, is_unfulfilled_entitlement, is_fulfilled_entitlement, entitlement_available_sessions, entitlement_expiration_date, entitlement_expired_at, show_courseware_link, cert_status, can_refund_entitlement, can_unenroll, credit_status, show_email_settings, course_mode_info, is_paid_course, is_course_voucher_refundable, course_requirements, dashboard_index, share_settings, related_programs, display_course_modes_on_dashboard, show_consent_link, enterprise_customer_name, resume_button_url, partner_managed_enrollment" expression_filter="h"/>
+<%page args="course_overview, enrollment, entitlement, entitlement_session, course_card_index, enrollments_fbe_is_on, is_unfulfilled_entitlement, is_fulfilled_entitlement, entitlement_available_sessions, entitlement_expiration_date, entitlement_expired_at, show_courseware_link, cert_status, can_refund_entitlement, can_unenroll, credit_status, show_email_settings, course_mode_info, is_paid_course, is_course_voucher_refundable, course_requirements, dashboard_index, share_settings, related_programs, display_course_modes_on_dashboard, resume_button_url, partner_managed_enrollment" expression_filter="h"/>
 
 <%!
 import datetime
@@ -369,10 +369,6 @@ from lms.djangoapps.experiments.utils import UPSELL_TRACKING_FLAG
       % if credit_status is not None:
         <%include file="_dashboard_credit_info.html" args="credit_status=credit_status"/>
       % endif
-
-        % if show_consent_link:
-          <%include file="_dashboard_show_consent.html" args="course_overview=course_overview, course_target=course_target, enrollment=enrollment, enterprise_customer_name=enterprise_customer_name"/>
-        %endif
 
         % if display_course_upgrade:
           <div class="message message-upsell has-actions is-shown">

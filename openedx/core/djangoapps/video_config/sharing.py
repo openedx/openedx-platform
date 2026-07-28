@@ -41,7 +41,7 @@ def is_public_sharing_enabled(usage_key: UsageKey, public_access: bool) -> bool:
     try:
         # Video share feature must be enabled for sharing settings to take effect
         feature_enabled = PUBLIC_VIDEO_SHARE.is_enabled(usage_key.context_key)
-    except Exception as err:  # pylint: disable=broad-except
+    except Exception as err:  # pylint: disable=broad-except  # noqa: F841
         log.exception(f"Error retrieving course for course ID: {usage_key.context_key}")
         return False
 
@@ -76,6 +76,6 @@ def get_course_video_sharing_override(usage_key: UsageKey) -> str | None:
     try:
         course = get_course_by_id(usage_key.context_key)
         return getattr(course, 'video_sharing_options', None)
-    except Exception as err:  # pylint: disable=broad-except
+    except Exception as err:  # pylint: disable=broad-except  # noqa: F841
         log.exception(f"Error retrieving course for course ID: {usage_key.context_key}")
         return None

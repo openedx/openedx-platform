@@ -1,14 +1,14 @@
-"""  # lint-amnesty, pylint: disable=cyclic-import
+"""  # pylint: disable=cyclic-import
 Tests for django admin commands in the verify_student module
 
 """
-import ddt
 import logging
 import os
 import tempfile
 from unittest import skipUnless
 from unittest.mock import MagicMock, patch
 
+import ddt
 import pytest
 from django.core import mail
 from django.core.management import CommandError, call_command

@@ -7,12 +7,11 @@ http://stackoverflow.com/questions/10060069/safely-extract-zip-or-tar-using-pyth
 """
 
 import logging
-from os.path import abspath, dirname
+from os.path import abspath, commonpath, dirname, realpath
 from os.path import join as joinpath
-from os.path import realpath
-from typing import List, Union
-from zipfile import ZipFile, ZipInfo
 from tarfile import TarFile, TarInfo
+from typing import List, Union  # noqa: UP035
+from zipfile import ZipFile, ZipInfo
 
 from django.conf import settings
 from django.core.exceptions import SuspiciousOperation
@@ -30,8 +29,18 @@ def resolved(rpath):
 def _is_bad_path(path, base):
     """
     Is (the canonical absolute path of) `path` outside `base`?
+
+    Uses ``os.path.commonpath`` for a segment-aware containment check so that
+    sibling directories whose names happen to extend ``base`` as a string
+    prefix (e.g. ``<base>evil/...``) are correctly classified as outside.
     """
-    return not resolved(joinpath(base, path)).startswith(base)
+    target = resolved(joinpath(base, path))
+    try:
+        return commonpath([target, base]) != base
+    except ValueError:
+        # commonpath raises when paths are incomparable (e.g. mixed absolute
+        # and relative, or different drives on Windows). Treat as bad.
+        return True
 
 
 def _is_bad_link(info, base):
@@ -65,7 +74,7 @@ def _check_tarinfo(finfo: TarInfo, base: str):
         raise SuspiciousOperation("Dev file")
 
 
-def _checkmembers(members: Union[List[ZipInfo], List[TarInfo]], base: str):
+def _checkmembers(members: Union[List[ZipInfo], List[TarInfo]], base: str):  # noqa: UP006, UP007
     """
     Check that all elements of the archive file are safe.
     """

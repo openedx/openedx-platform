@@ -17,26 +17,36 @@ from django.urls import reverse
 from django.utils.translation import gettext as _
 from django.views.decorators.csrf import ensure_csrf_cookie
 from edx_django_utils import monitoring as monitoring_utils
-from edx_django_utils.plugins import get_plugins_view_context
+from edx_django_utils.plugins import get_plugins_view_context, pluggable_override
 from edx_toggles.toggles import WaffleFlag
 from opaque_keys.edx.keys import CourseKey
 from openedx_filters.learning.filters import DashboardRenderStarted
 
-from edx_django_utils.plugins import pluggable_override
-from lms.djangoapps.bulk_email.api import is_bulk_email_feature_enabled
-from lms.djangoapps.bulk_email.models import Optout
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.edxmako.shortcuts import render_to_response, render_to_string
 from common.djangoapps.entitlements.models import CourseEntitlement
+from common.djangoapps.student.api import COURSE_DASHBOARD_PLUGIN_VIEW_NAME
+from common.djangoapps.student.helpers import cert_info, check_verify_status_by_course, get_resume_urls_for_enrollments
+from common.djangoapps.student.models import (
+    AccountRecovery,
+    CourseEnrollment,
+    CourseEnrollmentAttribute,
+    DashboardConfiguration,
+    PendingSecondaryEmailChange,
+    UserProfile,
+)
+from common.djangoapps.util.milestones_helpers import get_pre_requisite_courses_not_completed
+from lms.djangoapps.bulk_email.api import is_bulk_email_feature_enabled
+from lms.djangoapps.bulk_email.models import Optout
 from lms.djangoapps.commerce.utils import EcommerceService
 from lms.djangoapps.courseware.access import has_access
-from lms.djangoapps.learner_home.waffle import learner_home_mfe_enabled
 from lms.djangoapps.experiments.utils import get_dashboard_course_info, get_experiment_user_metadata_context
+from lms.djangoapps.learner_home.waffle import learner_home_mfe_enabled
 from lms.djangoapps.verify_student.services import IDVerificationService
 from openedx.core.djangoapps.catalog.utils import (
     get_programs,
     get_pseudo_session_for_entitlement,
-    get_visible_sessions_for_entitlement
+    get_visible_sessions_for_entitlement,
 )
 from openedx.core.djangoapps.credit.email_utils import get_credit_provider_attribute_values, make_providers_strings
 from openedx.core.djangoapps.plugins.constants import ProjectType
@@ -48,24 +58,7 @@ from openedx.core.djangoapps.util.maintenance_banner import add_maintenance_bann
 from openedx.core.djangolib.markup import HTML, Text
 from openedx.features.content_type_gating.models import ContentTypeGatingConfig
 from openedx.features.course_duration_limits.access import get_user_course_duration, get_user_course_expiration_date
-from openedx.features.enterprise_support.api import (
-    get_dashboard_consent_notification,
-    get_enterprise_learner_portal_context,
-)
-from openedx.features.enterprise_support.utils import is_enterprise_learner
-
-from common.djangoapps.student.api import COURSE_DASHBOARD_PLUGIN_VIEW_NAME
-from common.djangoapps.student.helpers import cert_info, check_verify_status_by_course, get_resume_urls_for_enrollments
-from common.djangoapps.student.models import (
-    AccountRecovery,
-    CourseEnrollment,
-    CourseEnrollmentAttribute,
-    DashboardConfiguration,
-    PendingSecondaryEmailChange,
-    UserProfile
-)
-from common.djangoapps.util.milestones_helpers import get_pre_requisite_courses_not_completed
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 
 log = logging.getLogger("edx.student")
 
@@ -117,7 +110,7 @@ def _get_recently_enrolled_courses(course_enrollments):
     ]
 
 
-def _create_recent_enrollment_message(course_enrollments, course_modes):  # lint-amnesty, pylint: disable=unused-argument
+def _create_recent_enrollment_message(course_enrollments, course_modes):  # pylint: disable=unused-argument
     """
     Builds a recent course enrollment message.
 
@@ -386,7 +379,7 @@ def credit_statuses(user, course_enrollments):
     from openedx.core.djangoapps.credit import api as credit_api
 
     # Feature flag off
-    if not settings.FEATURES.get("ENABLE_CREDIT_ELIGIBILITY"):
+    if not settings.ENABLE_CREDIT_ELIGIBILITY:
         return {}
 
     request_status_by_course = {
@@ -511,7 +504,7 @@ def check_for_unacknowledged_notices(context):
 @login_required
 @ensure_csrf_cookie
 @add_maintenance_banner
-def student_dashboard(request):  # lint-amnesty, pylint: disable=too-many-statements
+def student_dashboard(request):  # pylint: disable=too-many-statements
     """
     Provides the LMS dashboard view
 
@@ -527,8 +520,12 @@ def student_dashboard(request):  # lint-amnesty, pylint: disable=too-many-statem
 
     """
     user = request.user
+    account_microfrontend_url = configuration_helpers.get_value(
+        'ACCOUNT_MICROFRONTEND_URL',
+        settings.ACCOUNT_MICROFRONTEND_URL,
+    )
     if not UserProfile.objects.filter(user=user).exists():
-        return redirect(settings.ACCOUNT_MICROFRONTEND_URL)
+        return redirect(account_microfrontend_url)
 
     if learner_home_mfe_enabled():
         return redirect(settings.LEARNER_HOME_MICROFRONTEND_URL)
@@ -555,7 +552,7 @@ def student_dashboard(request):  # lint-amnesty, pylint: disable=too-many-statem
     )
     disable_unenrollment = configuration_helpers.get_value(
         'DISABLE_UNENROLLMENT',
-        settings.FEATURES.get('DISABLE_UNENROLLMENT')
+        settings.DISABLE_UNENROLLMENT
     )
 
     disable_course_limit = request and 'course_limit' in request.GET
@@ -617,15 +614,13 @@ def student_dashboard(request):  # lint-amnesty, pylint: disable=too-many-statem
             link_end=HTML("</a>"),
         )
 
-    enterprise_message = get_dashboard_consent_notification(request, user, course_enrollments)
-
     recovery_email_message = recovery_email_activation_message = None
     if is_secondary_email_feature_enabled():
         try:
-            pending_email = PendingSecondaryEmailChange.objects.get(user=user)  # lint-amnesty, pylint: disable=unused-variable
+            pending_email = PendingSecondaryEmailChange.objects.get(user=user)  # pylint: disable=unused-variable  # noqa: F841
         except PendingSecondaryEmailChange.DoesNotExist:
             try:
-                account_recovery_obj = AccountRecovery.objects.get(user=user)  # lint-amnesty, pylint: disable=unused-variable
+                account_recovery_obj = AccountRecovery.objects.get(user=user)  # pylint: disable=unused-variable  # noqa: F841
             except AccountRecovery.DoesNotExist:
                 recovery_email_message = Text(
                     _(
@@ -633,7 +628,7 @@ def student_dashboard(request):  # lint-amnesty, pylint: disable=too-many-statem
                         "Go to {link_start}your Account Settings{link_end}.")
                 ).format(
                     link_start=HTML("<a href='{account_setting_page}'>").format(
-                        account_setting_page=settings.ACCOUNT_MICROFRONTEND_URL,
+                        account_setting_page=account_microfrontend_url,
                     ),
                     link_end=HTML("</a>")
                 )
@@ -644,10 +639,6 @@ def student_dashboard(request):  # lint-amnesty, pylint: disable=too-many-statem
                     "Kindly visit your email and follow the instructions to activate it."
                 )
             )
-
-    # Disable lookup of Enterprise consent_required_course due to ENT-727
-    # Will re-enable after fixing WL-1315
-    consent_required_courses = set()
 
     # Account activation message
     account_activation_messages = [
@@ -675,7 +666,7 @@ def student_dashboard(request):  # lint-amnesty, pylint: disable=too-many-statem
     inverted_programs = meter.invert_programs()
 
     urls, programs_data = {}, {}
-    bundles_on_dashboard_flag = WaffleFlag(f'{EXPERIMENTS_NAMESPACE}.bundles_on_dashboard', __name__)  # lint-amnesty, pylint: disable=toggle-missing-annotation
+    bundles_on_dashboard_flag = WaffleFlag(f'{EXPERIMENTS_NAMESPACE}.bundles_on_dashboard', __name__)  # pylint: disable=toggle-missing-annotation
 
     # TODO: Delete this code and the relevant HTML code after testing LEARNER-3072 is complete
     if bundles_on_dashboard_flag.is_enabled() and inverted_programs and list(inverted_programs.items()):
@@ -799,8 +790,6 @@ def student_dashboard(request):  # lint-amnesty, pylint: disable=too-many-statem
     context = {
         'urls': urls,
         'programs_data': programs_data,
-        'enterprise_message': enterprise_message,
-        'consent_required_courses': consent_required_courses,
         'enrollment_message': enrollment_message,
         'redirect_message': Text(redirect_message),
         'account_activation_messages': account_activation_messages,
@@ -850,13 +839,7 @@ def student_dashboard(request):  # lint-amnesty, pylint: disable=too-many-statem
         'course_info': get_dashboard_course_info(user, course_enrollments),
         # TODO START: clean up as part of REVEM-199 (END)
         'disable_unenrollment': disable_unenrollment,
-        # TODO: clean when experiment(Merchandise 2U LOBs - Dashboard) would be stop. [VAN-1097]
-        'is_enterprise_user': is_enterprise_learner(user),
     }
-
-    # Include enterprise learner portal metadata and messaging
-    enterprise_learner_portal_context = get_enterprise_learner_portal_context(request)
-    context.update(enterprise_learner_portal_context)
 
     context_from_plugins = get_plugins_view_context(
         ProjectType.LMS,
@@ -902,7 +885,10 @@ def student_dashboard(request):  # lint-amnesty, pylint: disable=too-many-statem
     except DashboardRenderStarted.RenderInvalidDashboard as exc:
         response = render_to_response(exc.dashboard_template, exc.template_context)
     except DashboardRenderStarted.RedirectToPage as exc:
-        response = HttpResponseRedirect(exc.redirect_to or settings.ACCOUNT_MICROFRONTEND_URL)
+        response = HttpResponseRedirect(
+            exc.redirect_to or
+            account_microfrontend_url
+        )
     except DashboardRenderStarted.RenderCustomResponse as exc:
         response = exc.response
     else:

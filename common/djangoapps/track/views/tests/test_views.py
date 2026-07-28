@@ -1,23 +1,23 @@
-# lint-amnesty, pylint: disable=missing-module-docstring
+# pylint: disable=missing-module-docstring
 
 from unittest.mock import patch, sentinel
 
 import ddt
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.test.client import RequestFactory
 from django.test.utils import override_settings
 
-from openedx.core.lib.tests.assertions.events import assert_event_matches
 from common.djangoapps.track import views
 from common.djangoapps.track.middleware import TrackMiddleware
 from common.djangoapps.track.tests import FROZEN_TIME, EventTrackingTestCase
+from openedx.core.lib.tests.assertions.events import assert_event_matches
 
 TEST_USERNAME = 'test-username'
 TEST_USER_ID = 1000
 
 
 @ddt.ddt
-class TestTrackViews(EventTrackingTestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class TestTrackViews(EventTrackingTestCase):  # pylint: disable=missing-class-docstring
 
     @classmethod
     def setUpTestData(cls):

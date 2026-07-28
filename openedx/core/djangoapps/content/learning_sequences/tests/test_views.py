@@ -17,7 +17,7 @@ from datetime import datetime, timezone
 
 import ddt
 from opaque_keys.edx.keys import CourseKey
-from rest_framework.test import APITestCase, APIClient
+from rest_framework.test import APIClient, APITestCase
 
 from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRole
@@ -38,7 +38,7 @@ class CourseOutlineViewTest(CacheIsolationTestCase, APITestCase):
     """
 
     @classmethod
-    def setUpTestData(cls):  # lint-amnesty, pylint: disable=super-method-not-called
+    def setUpTestData(cls):  # pylint: disable=super-method-not-called
         cls.staff = UserFactory.create(
             username='staff', email='staff@example.com', is_staff=True, password='staff_pass'
         )
@@ -50,7 +50,7 @@ class CourseOutlineViewTest(CacheIsolationTestCase, APITestCase):
         cls.outline = CourseOutlineData(
             course_key=cls.course_key,
             title="Views Test Course!",
-            published_at=datetime(2020, 5, 20, tzinfo=timezone.utc),
+            published_at=datetime(2020, 5, 20, tzinfo=timezone.utc),  # noqa: UP017
             published_version="5ebece4b69dd593d82fe2020",
             entrance_exam_id=None,
             days_early_for_beta=None,
@@ -110,7 +110,7 @@ class CourseOutlineViewTest(CacheIsolationTestCase, APITestCase):
         # the raw form for max compatibility (i.e. guard against serialization
         # of dates changing), or do the parsing for conveninece? Convenience for
         # now.
-        assert data['published_at'] == datetime(2020, 5, 20, tzinfo=timezone.utc)
+        assert data['published_at'] == datetime(2020, 5, 20, tzinfo=timezone.utc)  # noqa: UP017
         assert data['published_version'] == "5ebece4b69dd593d82fe2020"
 
         # Basic outline structure checks
@@ -127,7 +127,7 @@ class CourseOutlineViewTargetUserTest(CacheIsolationTestCase, APITestCase):
     Tests permissions of specifying a target user via url parameter.
     """
     @classmethod
-    def setUpTestData(cls):  # lint-amnesty, pylint: disable=super-method-not-called
+    def setUpTestData(cls):  # pylint: disable=super-method-not-called
         """Set up the basic course outline and our users."""
         # This is the course that we're creating staff for.
         cls.course_key = CourseKey.from_string("course-v1:OpenEdX+Masq+StaffAccess")
@@ -139,7 +139,7 @@ class CourseOutlineViewTargetUserTest(CacheIsolationTestCase, APITestCase):
             outline = CourseOutlineData(
                 course_key=course_key,
                 title="Views Test Course!",
-                published_at=datetime(2020, 5, 20, tzinfo=timezone.utc),
+                published_at=datetime(2020, 5, 20, tzinfo=timezone.utc),  # noqa: UP017
                 published_version="5ebece4b69dd593d82fe2020",
                 entrance_exam_id=None,
                 days_early_for_beta=None,
@@ -260,7 +260,7 @@ class CourseOutlineViewMasqueradingTest(MasqueradeMixin, CacheIsolationTestCase)
         outline = CourseOutlineData(
             course_key=cls.course_key,
             title="Views Test Course!",
-            published_at=datetime(2020, 5, 20, tzinfo=timezone.utc),
+            published_at=datetime(2020, 5, 20, tzinfo=timezone.utc),  # noqa: UP017
             published_version="5ebece4b69dd593d82fe2020",
             entrance_exam_id=None,
             days_early_for_beta=None,

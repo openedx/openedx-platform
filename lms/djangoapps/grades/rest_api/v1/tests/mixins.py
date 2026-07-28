@@ -6,13 +6,12 @@ Mixins classes being used by all test classes within this folder
 from datetime import datetime
 
 from pytz import UTC
-from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory
 
-from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory
-from common.djangoapps.student.tests.factories import GlobalStaffFactory
+from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, GlobalStaffFactory, UserFactory
 from lms.djangoapps.program_enrollments.tests.factories import ProgramCourseEnrollmentFactory, ProgramEnrollmentFactory
 from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory
+from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 
 
 class GradeViewTestMixin(SharedModuleStoreTestCase):
@@ -74,7 +73,7 @@ class GradeViewTestMixin(SharedModuleStoreTestCase):
                 created=self.date,
             )
 
-    def _create_user_program_enrollments(self, *users, **kwargs):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def _create_user_program_enrollments(self, *users, **kwargs):  # pylint: disable=missing-function-docstring
         # supply mode for enrollment. Use 'masters' to create a masters track enrollment
         for index, user in enumerate(users):
             course_enrollment = CourseEnrollmentFactory(

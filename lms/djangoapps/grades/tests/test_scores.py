@@ -5,9 +5,9 @@ Tests for grades.scores module.
 # pylint: disable=protected-access
 import itertools
 from collections import namedtuple
-import pytest
 
 import ddt
+import pytest
 from django.test import TestCase
 from django.utils.timezone import now
 from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator
@@ -16,7 +16,7 @@ import lms.djangoapps.grades.scores as scores
 from lms.djangoapps.grades.models import BlockRecord
 from lms.djangoapps.grades.transformer import GradesTransformer
 from openedx.core.djangoapps.content.block_structure.block_structure import BlockData
-from xmodule.graders import ProblemScore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.graders import ProblemScore  # pylint: disable=wrong-import-order
 
 NOW = now()
 

@@ -11,8 +11,8 @@ from django.test import TestCase
 from opaque_keys.edx.locations import BlockUsageLocator, CourseLocator
 from xblock.fields import ScopeIds
 
-from xmodule.x_module import ModuleStoreRuntime
 from lms.djangoapps.lms_xblock.runtime import handler_url
+from xmodule.x_module import ModuleStoreRuntime
 
 
 class BlockMock(Mock):
@@ -30,19 +30,19 @@ class BlockMock(Mock):
         """
         A test handler method.
         """
-        pass  # lint-amnesty, pylint: disable=unnecessary-pass
+        pass  # pylint: disable=unnecessary-pass
 
     def handler1(self, _context):
         """
         A test handler method.
         """
-        pass  # lint-amnesty, pylint: disable=unnecessary-pass
+        pass  # pylint: disable=unnecessary-pass
 
     def handler_a(self, _context):
         """
         A test handler method.
         """
-        pass  # lint-amnesty, pylint: disable=unnecessary-pass
+        pass  # pylint: disable=unnecessary-pass
 
 
 class TestHandlerUrl(TestCase):

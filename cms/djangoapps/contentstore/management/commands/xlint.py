@@ -27,7 +27,7 @@ class Command(BaseCommand):
         data_dir = options['data_dir']
         source_dirs = options['source_dirs']
 
-        print("Importing.  Data_dir={data}, source_dirs={courses}".format(
+        print("Importing.  Data_dir={data}, source_dirs={courses}".format(  # noqa: UP032
             data=data_dir,
             courses=source_dirs))
 

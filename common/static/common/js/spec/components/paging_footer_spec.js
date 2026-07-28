@@ -2,14 +2,17 @@ define([
     'jquery',
     'URI',
     'underscore',
+    'sinon',
     'edx-ui-toolkit/js/pagination/paging-collection',
     'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers',
     'common/js/components/views/paging_footer'
-], function($, URI, _, PagingCollection, AjaxHelpers, PagingFooter) {
+], function($, URI, _, sinon, PagingCollection, AjaxHelpers, PagingFooter) {
     'use strict';
 
     describe('PagingFooter', function() {
         var pagingFooter,
+            requests,
+            xhrFactory,
             mockPage = function(currentPage, numPages, collectionLength) {
                 if (_.isUndefined(collectionLength)) {
                     collectionLength = 1;
@@ -29,6 +32,11 @@ define([
             pageNumberInputCss = '.page-number-input';
 
         beforeEach(function() {
+            xhrFactory = sinon.useFakeXMLHttpRequest();
+            requests = [];
+            requests.currentIndex = 0;
+            requests.restore = function() { xhrFactory.restore(); };
+            xhrFactory.onCreate = function(req) { requests.push(req); };
             setFixtures('<div class="paging-footer"></div>');
             var collection = new PagingCollection(mockPage(1, 2), {parse: true});
             collection.url = '/test/url/';
@@ -37,6 +45,10 @@ define([
                 el: $('.paging-footer'),
                 collection: collection
             }).render();
+        });
+
+        afterEach(function() {
+            requests.restore();
         });
 
         describe('when hideWhenOnePage is true', function() {
@@ -69,14 +81,12 @@ define([
 
         describe('Next page button', function() {
             it('does not move forward if a server error occurs', function() {
-                var requests = AjaxHelpers.requests(this);
                 pagingFooter.$(nextPageCss).click();
                 requests[0].respond(500);
                 expect(pagingFooter.$(currentPageCss)).toHaveText('1');
             });
 
             it('can move to the next page', function() {
-                var requests = AjaxHelpers.requests(this);
                 pagingFooter.$(nextPageCss).click();
                 AjaxHelpers.respondWithJson(requests, mockPage(2, 2));
                 expect(pagingFooter.collection.getPageNumber()).toBe(2);
@@ -88,7 +98,6 @@ define([
             });
 
             it('should be disabled on the final page', function() {
-                var requests = AjaxHelpers.requests(this);
                 pagingFooter.$(nextPageCss).click();
                 AjaxHelpers.respondWithJson(requests, mockPage(2, 2));
                 expect(pagingFooter.$(nextPageCss)).toHaveClass('is-disabled');
@@ -97,7 +106,6 @@ define([
 
         describe('Previous page button', function() {
             it('does not move back if a server error occurs', function() {
-                var requests = AjaxHelpers.requests(this);
                 pagingFooter.collection.reset(mockPage(2, 2), {parse: true});
                 pagingFooter.$(previousPageCss).click();
                 requests[0].respond(500);
@@ -105,7 +113,6 @@ define([
             });
 
             it('can go back a page', function() {
-                var requests = AjaxHelpers.requests(this);
                 pagingFooter.$(nextPageCss).click();
                 AjaxHelpers.respondWithJson(requests, mockPage(2, 2));
                 pagingFooter.$(previousPageCss).click();
@@ -118,7 +125,6 @@ define([
             });
 
             it('should be enabled on the second page', function() {
-                var requests = AjaxHelpers.requests(this);
                 pagingFooter.$(nextPageCss).click();
                 AjaxHelpers.respondWithJson(requests, mockPage(2, 2));
                 expect(pagingFooter.$(previousPageCss)).not.toHaveClass('is-disabled');
@@ -131,7 +137,6 @@ define([
             });
 
             it('should show 2 on the second page', function() {
-                var requests = AjaxHelpers.requests(this);
                 pagingFooter.$(nextPageCss).click();
                 AjaxHelpers.respondWithJson(requests, mockPage(2, 2));
                 expect(pagingFooter.$(currentPageCss)).toHaveText('2');
@@ -154,7 +159,6 @@ define([
             });
 
             it('should handle invalid page requests', function() {
-                var requests = AjaxHelpers.requests(this);
                 pagingFooter.$(pageNumberInputCss).val('abc');
                 pagingFooter.$(pageNumberInputCss).trigger('change');
                 expect(pagingFooter.$(currentPageCss)).toHaveText('1');
@@ -162,7 +166,6 @@ define([
             });
 
             it('should switch pages via the input field', function() {
-                var requests = AjaxHelpers.requests(this);
                 pagingFooter.$(pageNumberInputCss).val('2');
                 pagingFooter.$(pageNumberInputCss).trigger('change');
                 AjaxHelpers.respondWithJson(requests, mockPage(2, 2));
@@ -171,7 +174,6 @@ define([
             });
 
             it('should handle AJAX failures when switching pages via the input field', function() {
-                var requests = AjaxHelpers.requests(this);
                 pagingFooter.$(pageNumberInputCss).val('2');
                 pagingFooter.$(pageNumberInputCss).trigger('change');
                 requests[0].respond(500);

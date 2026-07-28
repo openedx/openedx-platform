@@ -2,31 +2,28 @@
 This test file will test registration, login, activation, and session activity timeouts
 
 TODO: Rewrite several of these assertions so that they check the output of the REST or Python
-APIs rather than parsing HTML from the deprecated legacy frontend pages. In particular, any
-test case using override_waffle_flag(toggles.LEGACY_STUDIO_*, True) will need to be fixed.
-Part of https://github.com/openedx/edx-platform/issues/36275.
+APIs rather than parsing HTML from the deprecated legacy frontend pages.
 """
 
 
 import datetime
 import time
-from unittest import mock
-from urllib.parse import quote_plus, unquote
+from urllib.parse import unquote
 
 from ddt import data, ddt, unpack
 from django.conf import settings
 from django.core.cache import cache
 from django.test.utils import override_settings
 from django.urls import reverse
-from edx_toggles.toggles.testutils import override_waffle_flag
 from pytz import UTC
 
-from cms.djangoapps.contentstore import toggles
 from cms.djangoapps.contentstore.tests.test_course_settings import CourseTestCase
 from cms.djangoapps.contentstore.tests.utils import AjaxEnabledTestClient, parse_json, registration, user
 from cms.djangoapps.contentstore.utils import get_studio_home_url
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # pylint: disable=wrong-import-order
+)
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 
 class ContentStoreTestCase(ModuleStoreTestCase):
@@ -46,7 +43,7 @@ class ContentStoreTestCase(ModuleStoreTestCase):
     def login(self, email, password):
         """Login, check that it worked."""
         resp = self._login(email, password)
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
         return resp
 
     def _create_account(self, username, email, password):
@@ -67,12 +64,12 @@ class ContentStoreTestCase(ModuleStoreTestCase):
     def create_account(self, username, email, password):
         """Create the account and check that it worked"""
         resp = self._create_account(username, email, password)
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
         json_data = parse_json(resp)
-        self.assertEqual(json_data['success'], True)
+        self.assertEqual(json_data['success'], True)  # noqa: PT009
 
         # Check both that the user is created, and inactive
-        self.assertFalse(user(email).is_active)
+        self.assertFalse(user(email).is_active)  # noqa: PT009
 
         return resp
 
@@ -87,9 +84,9 @@ class ContentStoreTestCase(ModuleStoreTestCase):
 
     def activate_user(self, email):
         resp = self._activate_user(email)
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
         # Now make sure that the user is now actually activated
-        self.assertTrue(user(email).is_active)
+        self.assertTrue(user(email).is_active)  # noqa: PT009
 
 
 @ddt
@@ -177,32 +174,6 @@ class AuthTestCase(ContentStoreTestCase):
         # re-request, and we should get a redirect to login page
         self.assertRedirects(resp, settings.LOGIN_URL + '?next=/home/', target_status_code=302)
 
-    @data(
-        (True, 'assertContains'),
-        (False, 'assertNotContains'))
-    @unpack
-    @override_waffle_flag(toggles.LEGACY_STUDIO_LOGGED_OUT_HOME, True)
-    def test_signin_and_signup_buttons_index_page(self, allow_account_creation, assertion_method_name):
-        """
-        Navigate to the home page and check the Sign Up button is hidden when ALLOW_PUBLIC_ACCOUNT_CREATION flag
-        is turned off, and not when it is turned on.  The Sign In button should always appear.
-        """
-        with mock.patch.dict(settings.FEATURES, {"ALLOW_PUBLIC_ACCOUNT_CREATION": allow_account_creation}):
-            response = self.client.get(reverse('homepage'))
-            assertion_method = getattr(self, assertion_method_name)
-            login_url = quote_plus(f"http://testserver{settings.LOGIN_URL}")
-            assertion_method(
-                response,
-                f'<a class="action action-signup" href="{settings.LMS_ROOT_URL}/register'
-                f'?next={login_url}">Sign Up</a>'
-            )
-            self.assertContains(
-                response,
-                '<a class="action action-signin" href="/login/?next=http%3A%2F%2Ftestserver%2F">'
-                'Sign In</a>'
-            )
-
-
 class ForumTestCase(CourseTestCase):
     """Tests class to verify course to forum operations"""
 
@@ -224,31 +195,31 @@ class ForumTestCase(CourseTestCase):
             (now + datetime.timedelta(days=24), now + datetime.timedelta(days=30))
         ]
         self.set_blackout_dates(times1)
-        self.assertTrue(self.course.forum_posts_allowed)
+        self.assertTrue(self.course.forum_posts_allowed)  # noqa: PT009
         times2 = [
             (now - datetime.timedelta(days=14), now + datetime.timedelta(days=2)),
             (now + datetime.timedelta(days=24), now + datetime.timedelta(days=30))
         ]
         self.set_blackout_dates(times2)
-        self.assertFalse(self.course.forum_posts_allowed)
+        self.assertFalse(self.course.forum_posts_allowed)  # noqa: PT009
 
         # Single date set for allowed forum posts.
         self.course.discussion_blackouts = [
             now + datetime.timedelta(days=24),
             now + datetime.timedelta(days=30)
         ]
-        self.assertTrue(self.course.forum_posts_allowed)
+        self.assertTrue(self.course.forum_posts_allowed)  # noqa: PT009
 
         # Single date set for restricted forum posts.
         self.course.discussion_blackouts = [
             now - datetime.timedelta(days=24),
             now + datetime.timedelta(days=30)
         ]
-        self.assertFalse(self.course.forum_posts_allowed)
+        self.assertFalse(self.course.forum_posts_allowed)  # noqa: PT009
 
         # test if user gives empty blackout date it should return true for forum_posts_allowed
         self.course.discussion_blackouts = [[]]
-        self.assertTrue(self.course.forum_posts_allowed)
+        self.assertTrue(self.course.forum_posts_allowed)  # noqa: PT009
 
 
 @ddt
@@ -262,20 +233,19 @@ class CourseKeyVerificationTestCase(CourseTestCase):
         super().setUp()
         self.course = CourseFactory.create(org='edX', number='test_course_key', display_name='Test Course')
 
-    @data(('edX/test_course_key/Test_Course', 200), ('garbage:edX+test_course_key+Test_Course', 404))
+    @data(('edX/test_course_key/Test_Course', 302, 200), ('garbage:edX+test_course_key+Test_Course', 404, 404))
     @unpack
-    @override_waffle_flag(toggles.LEGACY_STUDIO_IMPORT, True)
-    def test_course_key_decorator(self, course_key, status_code):
+    def test_course_key_decorator(self, course_key, import_status_code, import_status_handler_code):
         """
         Tests for the ensure_valid_course_key decorator.
         """
         url = f'/import/{course_key}'
         resp = self.client.get_html(url)
-        self.assertEqual(resp.status_code, status_code)
+        self.assertEqual(resp.status_code, import_status_code)  # noqa: PT009
 
         url = '/import_status/{course_key}/{filename}'.format(
             course_key=course_key,
             filename='xyz.tar.gz'
         )
         resp = self.client.get_html(url)
-        self.assertEqual(resp.status_code, status_code)
+        self.assertEqual(resp.status_code, import_status_handler_code)  # noqa: PT009

@@ -69,7 +69,7 @@ def dump_js_escaped_json(obj, cls=EdxJSONEncoder):
         (string) Escaped encoded JSON.
 
     """
-    obj = list(obj) if isinstance(obj, type({}.values())) else obj  # lint-amnesty, pylint: disable=isinstance-second-argument-not-valid-type, line-too-long
+    obj = list(obj) if isinstance(obj, type({}.values())) else obj  # pylint: disable=isinstance-second-argument-not-valid-type, line-too-long
     json_string = json.dumps(obj, ensure_ascii=True, cls=cls)
     json_string = _escape_json_for_js(json_string)
     return json_string

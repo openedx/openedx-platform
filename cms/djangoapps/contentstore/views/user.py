@@ -2,26 +2,22 @@
 
 
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
-from django.core.exceptions import PermissionDenied
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.http import HttpResponseNotFound
 from django.shortcuts import redirect
 from django.utils.translation import gettext as _
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_http_methods, require_POST
 from opaque_keys.edx.keys import CourseKey
-from opaque_keys.edx.locator import LibraryLocator
 
 from cms.djangoapps.course_creators.views import user_requested_access
-from common.djangoapps.edxmako.shortcuts import render_to_response
 from common.djangoapps.student import auth
 from common.djangoapps.student.auth import STUDIO_EDIT_ROLES, STUDIO_VIEW_USERS, get_user_permissions
 from common.djangoapps.student.models import CourseEnrollment
-from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRole, LibraryUserRole
+from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRole
 from common.djangoapps.util.json_request import JsonResponse, expect_json
 
-from ..toggles import use_new_course_team_page
-from ..utils import get_course_team_url, get_course_team
+from ..utils import get_course_team_url
 
 __all__ = ['request_course_creator', 'course_team_handler']
 
@@ -58,9 +54,10 @@ def course_team_handler(request, course_key_string=None, email=None):
     if 'application/json' in request.META.get('HTTP_ACCEPT', 'application/json'):
         return _course_team_user(request, course_key, email)
     elif request.method == 'GET':  # assume html
-        if use_new_course_team_page(course_key):
-            return redirect(get_course_team_url(course_key))
-        return _manage_users(request, course_key)
+        course_team_url = get_course_team_url(course_key)
+        if course_team_url:
+            return redirect(course_team_url)
+        return HttpResponseNotFound()
     else:
         return HttpResponseNotFound()
 
@@ -73,20 +70,6 @@ def user_with_role(user, role):
         'email': user.email,
         'role': role
     }
-
-
-def _manage_users(request, course_key):
-    """
-    This view will return all CMS users who are editors for the specified course
-    """
-    # check that logged in user has permissions to this item
-    user_perms = get_user_permissions(request.user, course_key)
-    if not user_perms & STUDIO_VIEW_USERS:
-        raise PermissionDenied()
-
-    manage_users_context = get_course_team(request.user, course_key, user_perms)
-    return render_to_response('manage_users.html', manage_users_context)
-
 
 @expect_json
 def _course_team_user(request, course_key, email):
@@ -111,12 +94,8 @@ def _course_team_user(request, course_key, email):
         }
         return JsonResponse(msg, 404)
 
-    is_library = isinstance(course_key, LibraryLocator)
     # Ordered list of roles: can always move self to the right, but need STUDIO_EDIT_ROLES to move any user left
-    if is_library:
-        role_hierarchy = (CourseInstructorRole, CourseStaffRole, LibraryUserRole)
-    else:
-        role_hierarchy = (CourseInstructorRole, CourseStaffRole)
+    role_hierarchy = (CourseInstructorRole, CourseStaffRole)
 
     if request.method == "GET":
         # just return info about the user
@@ -180,7 +159,7 @@ def _course_team_user(request, course_key, email):
             return JsonResponse(msg, 400)
         auth.remove_users(request.user, role, user)
 
-    if new_role and not is_library:
+    if new_role:
         # The user may be newly added to this course.
         # auto-enroll the user in the course so that "View Live" will work.
         CourseEnrollment.enroll(user, course_key)

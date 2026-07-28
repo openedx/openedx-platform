@@ -9,8 +9,8 @@ from django.db import transaction
 from django.db.models import Q
 from social_django.models import UserSocialAuth
 
-from common.djangoapps.third_party_auth.models import AppleMigrationUserIdInfo
 from common.djangoapps.third_party_auth.appleid import AppleIdAuth
+from common.djangoapps.third_party_auth.models import AppleMigrationUserIdInfo
 
 log = logging.getLogger(__name__)
 

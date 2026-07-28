@@ -9,7 +9,6 @@ from collections import OrderedDict, defaultdict
 from datetime import datetime
 from itertools import chain
 from tempfile import TemporaryFile
-
 from time import time
 
 from django.conf import settings
@@ -24,11 +23,11 @@ from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.roles import BulkRoleCache
 from lms.djangoapps.certificates import api as certs_api
 from lms.djangoapps.certificates.api import get_certificates_for_course_and_users
-from lms.djangoapps.course_blocks.api import get_course_blocks
+from lms.djangoapps.course_blocks.api import get_course_block_access_transformers, get_course_blocks
+from lms.djangoapps.course_blocks.transformers import library_content
 from lms.djangoapps.courseware.user_state_client import DjangoXBlockUserStateClient
-from lms.djangoapps.grades.api import CourseGradeFactory
+from lms.djangoapps.grades.api import CourseGradeFactory, prefetch_course_and_subsection_grades
 from lms.djangoapps.grades.api import context as grades_context
-from lms.djangoapps.grades.api import prefetch_course_and_subsection_grades
 from lms.djangoapps.instructor_analytics.basic import list_problem_responses
 from lms.djangoapps.instructor_analytics.csvs import format_dictlist
 from lms.djangoapps.instructor_task.config.waffle import (
@@ -39,16 +38,18 @@ from lms.djangoapps.instructor_task.config.waffle import (
 from lms.djangoapps.teams.models import CourseTeamMembership
 from lms.djangoapps.verify_student.services import IDVerificationService
 from openedx.core.djangoapps.content.block_structure.api import get_course_in_cache
+from openedx.core.djangoapps.content.block_structure.transformers import BlockStructureTransformers
 from openedx.core.djangoapps.course_groups.cohorts import bulk_cache_cohorts, get_cohort, is_course_cohorted
 from openedx.core.djangoapps.user_api.course_tag.api import BulkCourseTags
 from openedx.core.lib.cache_utils import get_cache
 from openedx.core.lib.courses import get_course_by_id
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.partitions.partitions_service import PartitionService  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.split_test_block import get_split_user_partitions  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
+from xmodule.modulestore.exceptions import ItemNotFoundError
+from xmodule.partitions.partitions_service import PartitionService  # pylint: disable=wrong-import-order
+from xmodule.split_test_block import get_split_user_partitions  # pylint: disable=wrong-import-order
 
 from .runner import TaskProgress
-from .utils import upload_csv_to_report_store, upload_csv_file_to_report_store
+from .utils import upload_csv_file_to_report_store, upload_csv_to_report_store
 
 TASK_LOG = logging.getLogger('edx.celery.task')
 
@@ -131,7 +132,7 @@ class _CourseGradeReportContext:
             graded_subsections_map = OrderedDict()
             for subsection_index, subsection_info in enumerate(subsection_infos, start=1):
                 subsection = subsection_info['subsection_block']
-                header_name = "{assignment_type} {subsection_index}: {subsection_name}".format(
+                header_name = "{assignment_type} {subsection_index}: {subsection_name}".format(  # noqa: UP032
                     assignment_type=assignment_type_name,
                     subsection_index=subsection_index,
                     subsection_name=subsection.display_name,
@@ -173,7 +174,7 @@ class _ProblemGradeReportContext:
 
     def __init__(self, _xblock_instance_args, _entry_id, course_id, _task_input, action_name):
         task_id = _xblock_instance_args.get('task_id') if _xblock_instance_args is not None else None
-        self.task_info_string = (
+        self.task_info_string = (  # noqa: UP032
             'Task: {task_id}, '
             'InstructorTask ID: {entry_id}, '
             'Course: {course_id}, '
@@ -246,7 +247,7 @@ class _CertificateBulkContext:
         }
 
 
-class _TeamBulkContext:  # lint-amnesty, pylint: disable=missing-class-docstring
+class _TeamBulkContext:  # pylint: disable=missing-class-docstring
     def __init__(self, context, users):
         self.enabled = context.teams_enabled
         if self.enabled:
@@ -265,7 +266,7 @@ class _EnrollmentBulkContext:
         self.verified_users = set(IDVerificationService.get_verified_user_ids(users))
 
 
-class _CourseGradeBulkContext:  # lint-amnesty, pylint: disable=missing-class-docstring
+class _CourseGradeBulkContext:  # pylint: disable=missing-class-docstring
     def __init__(self, context, users):
         self.certs = _CertificateBulkContext(context, users)
         self.teams = _TeamBulkContext(context, users)
@@ -326,7 +327,7 @@ class InMemoryReportMixin:
         the given batched_rows.
         """
         # partition and chain successes and errors
-        success_rows, error_rows = zip(*batched_rows)
+        success_rows, error_rows = zip(*batched_rows)  # noqa: B905
         success_rows = list(chain(*success_rows))
         error_rows = list(chain(*error_rows))
 
@@ -834,13 +835,28 @@ class ProblemResponses:
         Arguments:
             course_blocks (BlockStructureBlockData): Block structure for a course.
             root (UsageKey): This block and its children will be used to generate
-                the problem list
+                the problem list.
             path (List[str]): The list of display names for the parent of root block
         Yields:
             Tuple[str, List[str], UsageKey]: tuple of a block's display name, path, and
-                usage key
+                usage key.
         """
-        name = course_blocks.get_xblock_field(root, 'display_name') or root.block_type
+        name = course_blocks.get_xblock_field(root, 'display_name')
+        if not name or name == 'problem':
+            # Fallback: CourseBlocks may not have display_name cached for all blocks,
+            # especially for dynamically generated content or library_content blocks.
+            # Loading the full block is necessary to get meaningful names for CSV reports
+            TASK_LOG.debug(
+                "ProblemResponses: display_name missing in course_blocks for %s, falling back to modulestore. "
+                "Occasional occurrences of this message are expected (e.g., library_content children); "
+                "frequent occurrences may indicate a cache or transformer issue.",
+                root,
+            )
+            try:
+                block = modulestore().get_item(root)
+                name = getattr(block, 'display_name', None) or root.block_type
+            except ItemNotFoundError:
+                name = root.block_type
         if path is None:
             path = [name]
 
@@ -874,7 +890,23 @@ class ProblemResponses:
             UsageKey.from_string(usage_key_str).map_into_course(course_key)
             for usage_key_str in usage_key_str_list
         ]
+
         user = get_user_model().objects.get(pk=user_id)
+
+        # For reporting, we want the full set of descendant blocks including all children
+        # of library_content blocks (randomized content). The default transformer list includes
+        # ContentLibraryTransformer which filters children based on per-user selections.
+        # For staff-generated reports, we bypass those library transformers to see all problems.
+        report_transformers = BlockStructureTransformers([
+            transformer for transformer in get_course_block_access_transformers(user)
+            if not isinstance(
+                transformer,
+                (
+                    library_content.ContentLibraryTransformer,
+                    library_content.ContentLibraryOrderTransformer,
+                )
+            )
+        ])
 
         student_data = []
         max_count = settings.FEATURES.get('MAX_PROBLEM_RESPONSES_COUNT')
@@ -887,15 +919,18 @@ class ProblemResponses:
         student_data_keys = OrderedDict()
 
         with store.bulk_operations(course_key):
-            for usage_key in usage_keys:  # lint-amnesty, pylint: disable=too-many-nested-blocks
+            for usage_key in usage_keys:  # pylint: disable=too-many-nested-blocks
                 if max_count is not None and max_count <= 0:
                     break
-                course_blocks = get_course_blocks(user, usage_key)
+                course_blocks = get_course_blocks(user, usage_key, transformers=report_transformers)
                 base_path = cls._build_block_base_path(store.get_item(usage_key))
                 for title, path, block_key in cls._build_problem_list(course_blocks, usage_key):
-                    # Chapter and sequential blocks are filtered out since they include state
-                    # which isn't useful for this report.
-                    if block_key.block_type in ('sequential', 'chapter'):
+                    # Chapter, sequential, library_content, and itembank blocks are filtered out
+                    # since they include state which isn't useful for this report.
+                    # library_content (V1) and itembank (V2) state contains internal selection
+                    # metadata (which problems were randomly assigned to each user), not actual
+                    # student responses.
+                    if block_key.block_type in ('sequential', 'chapter', 'library_content', 'itembank'):
                         continue
 
                     if filter_types is not None and block_key.block_type not in filter_types:

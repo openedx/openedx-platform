@@ -1,16 +1,18 @@
 /* global define, onCertificatesReady */
 define([
     'jquery',
+    'sinon',
     'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers',
     'js/instructor_dashboard/certificates'
 ],
-function($, AjaxHelpers) {
+function($, sinon, AjaxHelpers) {
     'use strict';
 
     describe('edx.instructor_dashboard.certificates.regenerate_certificates', function() {
         var $regenerate_certificates_button = null,
             $certificate_regeneration_status = null,
-            requests = null;
+            requests = null,
+            xhrFactory = null;
         var MESSAGES = {
             success_message: 'Certificate regeneration task has been started. '
                     + 'You can view the status of the generation task in the "Pending Tasks" section.',
@@ -62,7 +64,15 @@ function($, AjaxHelpers) {
             onCertificatesReady();
             $regenerate_certificates_button = $('#btn-start-regenerating-certificates');
             $certificate_regeneration_status = $('.certificate-regeneration-status');
-            requests = AjaxHelpers.requests(this);
+            xhrFactory = sinon.useFakeXMLHttpRequest();
+            requests = [];
+            requests.currentIndex = 0;
+            requests.restore = function() { xhrFactory.restore(); };
+            xhrFactory.onCreate = function(req) { requests.push(req); };
+        });
+
+        afterEach(function() {
+            requests.restore();
         });
 
         it('does not regenerate certificates if user cancels operation in confirm popup', function() {

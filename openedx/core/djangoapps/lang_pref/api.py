@@ -5,6 +5,7 @@ from collections import namedtuple
 
 from django.conf import settings
 from django.utils.translation import gettext as _
+
 from openedx.core.djangoapps.dark_lang.models import DarkLangConfig
 from openedx.core.djangoapps.site_configuration.helpers import get_value
 
@@ -16,17 +17,17 @@ Language = namedtuple('Language', 'code name')
 
 def header_language_selector_is_enabled():
     """Return true if the header language selector has been enabled via settings or site-specific configuration."""
-    setting = get_value('SHOW_HEADER_LANGUAGE_SELECTOR', settings.FEATURES.get('SHOW_HEADER_LANGUAGE_SELECTOR', False))
+    setting = get_value('SHOW_HEADER_LANGUAGE_SELECTOR', settings.SHOW_HEADER_LANGUAGE_SELECTOR)
 
     # The SHOW_LANGUAGE_SELECTOR setting is deprecated, but might still be in use on some installations.
-    deprecated_setting = get_value('SHOW_LANGUAGE_SELECTOR', settings.FEATURES.get('SHOW_LANGUAGE_SELECTOR', False))
+    deprecated_setting = get_value('SHOW_LANGUAGE_SELECTOR', getattr(settings, 'SHOW_LANGUAGE_SELECTOR', False))
 
     return setting or deprecated_setting
 
 
 def footer_language_selector_is_enabled():
     """Return true if the footer language selector has been enabled via settings or site-specific configuration."""
-    return get_value('SHOW_FOOTER_LANGUAGE_SELECTOR', settings.FEATURES.get('SHOW_FOOTER_LANGUAGE_SELECTOR', False))
+    return get_value('SHOW_FOOTER_LANGUAGE_SELECTOR', settings.SHOW_FOOTER_LANGUAGE_SELECTOR)
 
 
 def released_languages():
@@ -78,7 +79,7 @@ def all_languages():
         alphabetically.
 
     """
-    languages = [(lang[0], _(lang[1])) for lang in settings.ALL_LANGUAGES]  # lint-amnesty, pylint: disable=translation-of-non-string
+    languages = [(lang[0], _(lang[1])) for lang in settings.ALL_LANGUAGES]  # pylint: disable=translation-of-non-string
     return sorted(languages, key=lambda lang: lang[1])
 
 

@@ -6,11 +6,11 @@ from __future__ import annotations
 from django.db import models
 from django.db.models import Q, QuerySet
 from django.utils.translation import gettext as _
-from openedx_tagging.core.tagging.models import Taxonomy
+from openedx_tagging.models import Taxonomy
 from organizations.models import Organization
 
 
-class TaxonomyOrg(models.Model):
+class TaxonomyOrg(models.Model):  # noqa: DJ008
     """
     Represents the many-to-many relationship between Taxonomies and Organizations.
 

@@ -3,9 +3,9 @@ Test for the OLX REST API app.
 """
 from xml.etree import ElementTree
 
-from openedx.core.djangolib.testing.utils import skip_unless_cms
 from common.djangoapps.student.roles import CourseStaffRole
 from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory
+from openedx.core.djangolib.testing.utils import skip_unless_cms
 from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
 from xmodule.modulestore.tests.factories import ToyCourseFactory
@@ -41,7 +41,7 @@ class OlxRestApiTestCase(SharedModuleStoreTestCase):
 
     def assertXmlEqual(self, xml_str_a: str, xml_str_b: str) -> bool:
         """ Assert that the given XML strings are equal, ignoring attribute order and some whitespace variations. """
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             ElementTree.canonicalize(xml_str_a, strip_text=True),
             ElementTree.canonicalize(xml_str_b, strip_text=True),
         )

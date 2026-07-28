@@ -1,5 +1,5 @@
 This README was written back when the new runtime was backed by Blockstore.
-Now that the runtime is backed by Learning Core, this README is out of date.
+Now that the runtime is backed by openedx_content, this README is out of date.
 We need to audit and update it as part of
 `this task <https://github.com/openedx/edx-platform/issues/34283>`_.
 

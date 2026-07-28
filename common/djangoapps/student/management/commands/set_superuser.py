@@ -1,7 +1,7 @@
 """Management command to grant or revoke superuser access for one or more users"""
 
 
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.core.management.base import BaseCommand
 
 
@@ -41,7 +41,7 @@ class Command(BaseCommand):
                 print(f'Modified {user} sucessfully.')
 
             except Exception as err:  # pylint: disable=broad-except
-                print("Error modifying user with identifier {}: {}: {}".format(user, type(err).__name__,
+                print("Error modifying user with identifier {}: {}: {}".format(user, type(err).__name__,  # noqa: UP032
                                                                                str(err)))
 
         print('Complete!')

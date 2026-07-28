@@ -1,13 +1,14 @@
 """
 Tests for the Studio content search documents (what gets stored in the index)
 """
-import ddt
 from dataclasses import replace
 from datetime import datetime, timezone
 
+import ddt
 from freezegun import freeze_time
 from opaque_keys.edx.locator import LibraryCollectionLocator, LibraryContainerLocator
-from openedx_learning.api import authoring as authoring_api
+from openedx_content import api as content_api
+from openedx_content import models_api as content_models
 from organizations.models import Organization
 
 from openedx.core.djangoapps.content_libraries import api as library_api
@@ -53,7 +54,7 @@ class StudioDocumentsTest(SharedModuleStoreTestCase):
         super().setUpClass()
         cls.store = modulestore()
         # Create a library and collection with a block
-        cls.created_date = datetime(2023, 4, 5, 6, 7, 8, tzinfo=timezone.utc)
+        cls.created_date = datetime(2023, 4, 5, 6, 7, 8, tzinfo=timezone.utc)  # noqa: UP017
         with freeze_time(cls.created_date):
             # Get references to some blocks in the toy course
             cls.org = Organization.objects.create(name="edX", short_name="edX")
@@ -92,7 +93,7 @@ class StudioDocumentsTest(SharedModuleStoreTestCase):
             )
             cls.container = library_api.create_container(
                 cls.library.key,
-                container_type=library_api.ContainerType.Unit,
+                container_cls=content_models.Unit,
                 slug="unit1",
                 title="A Unit in the Search Index",
                 user_id=None,
@@ -102,7 +103,7 @@ class StudioDocumentsTest(SharedModuleStoreTestCase):
             )
             cls.subsection = library_api.create_container(
                 cls.library.key,
-                container_type=library_api.ContainerType.Subsection,
+                container_cls=content_models.Subsection,
                 slug="subsection1",
                 title="A Subsection in the Search Index",
                 user_id=None,
@@ -112,7 +113,7 @@ class StudioDocumentsTest(SharedModuleStoreTestCase):
             )
             cls.section = library_api.create_container(
                 cls.library.key,
-                container_type=library_api.ContainerType.Section,
+                container_cls=content_models.Section,
                 slug="section1",
                 title="A Section in the Search Index",
                 user_id=None,
@@ -152,6 +153,11 @@ class StudioDocumentsTest(SharedModuleStoreTestCase):
         tagging_api.tag_object(str(cls.container_key), cls.difficulty_tags, tags=["Normal"])
         tagging_api.tag_object(str(cls.subsection_key), cls.difficulty_tags, tags=["Normal"])
         tagging_api.tag_object(str(cls.section_key), cls.difficulty_tags, tags=["Normal"])
+
+    def tearDown(self):
+        # If we're working with Containers in test cases, we need this line:
+        content_models.Container.reset_cache()
+        return super().tearDown()
 
     @property
     def toy_course_access_id(self):
@@ -223,6 +229,9 @@ class StudioDocumentsTest(SharedModuleStoreTestCase):
             "tags": {
                 "taxonomy": ["Difficulty"],
                 "level0": ["Difficulty > Easy"],
+                "level1": [],
+                "level2": [],
+                "level3": [],
             },
         }
 
@@ -270,6 +279,7 @@ class StudioDocumentsTest(SharedModuleStoreTestCase):
                 "level0": ["Difficulty > Normal", "Subject > Hypertext", "Subject > Linguistics"],
                 "level1": ["Subject > Hypertext > Jump Links", "Subject > Linguistics > Asian Languages"],
                 "level2": ["Subject > Linguistics > Asian Languages > Chinese"],
+                "level3": [],
             },
         }
 
@@ -279,7 +289,9 @@ class StudioDocumentsTest(SharedModuleStoreTestCase):
         """
         block_usage_key = self.toy_course_key.make_usage_key("video", "Welcome")
         block = self.store.get_item(block_usage_key)
-        doc = searchable_doc_for_course_block(block)
+        doc = {}
+        doc.update(searchable_doc_for_course_block(block))
+        doc.update(searchable_doc_tags(block.usage_key))
         assert doc == {
             "id": "block-v1edxtoy2012_falltypevideoblockwelcome-0c9fd626",
             "type": "course_block",
@@ -301,7 +313,13 @@ class StudioDocumentsTest(SharedModuleStoreTestCase):
             ],
             "content": {},
             "modified": self.created_date.timestamp(),
-            # This video has no tags.
+            "tags": {
+                "taxonomy": [],
+                "level0": [],
+                "level1": [],
+                "level2": [],
+                "level3": [],
+            },
         }
 
     def test_html_library_block(self):
@@ -340,6 +358,9 @@ class StudioDocumentsTest(SharedModuleStoreTestCase):
             "tags": {
                 "taxonomy": ["Difficulty"],
                 "level0": ["Difficulty > Normal"],
+                "level1": [],
+                "level2": [],
+                "level3": [],
             },
             "publish_status": "never",
         }
@@ -379,6 +400,9 @@ class StudioDocumentsTest(SharedModuleStoreTestCase):
             "tags": {
                 "taxonomy": ["Difficulty"],
                 "level0": ["Difficulty > Normal"],
+                "level1": [],
+                "level2": [],
+                "level3": [],
             },
             'published': {'display_name': 'Text'},
             "publish_status": "published",
@@ -421,6 +445,9 @@ class StudioDocumentsTest(SharedModuleStoreTestCase):
             "tags": {
                 "taxonomy": ["Difficulty"],
                 "level0": ["Difficulty > Normal"],
+                "level1": [],
+                "level2": [],
+                "level3": [],
             },
             "published": {"display_name": "Text"},
             "publish_status": "published",
@@ -461,6 +488,9 @@ class StudioDocumentsTest(SharedModuleStoreTestCase):
             "tags": {
                 "taxonomy": ["Difficulty"],
                 "level0": ["Difficulty > Normal"],
+                "level1": [],
+                "level2": [],
+                "level3": [],
             },
             "published": {
                 "display_name": "Text 2",
@@ -472,8 +502,8 @@ class StudioDocumentsTest(SharedModuleStoreTestCase):
         # Verify publish status is set to modified
         library_block_modified = replace(
             self.library_block,
-            modified=datetime(2024, 4, 5, 6, 7, 8, tzinfo=timezone.utc),
-            last_published=datetime(2023, 4, 5, 6, 7, 8, tzinfo=timezone.utc),
+            modified=datetime(2024, 4, 5, 6, 7, 8, tzinfo=timezone.utc),  # noqa: UP017
+            last_published=datetime(2023, 4, 5, 6, 7, 8, tzinfo=timezone.utc),  # noqa: UP017
         )
         doc = searchable_doc_for_library_block(library_block_modified)
         doc.update(searchable_doc_tags(library_block_modified.usage_key))
@@ -486,7 +516,7 @@ class StudioDocumentsTest(SharedModuleStoreTestCase):
 
         assert doc == {
             "id": "lib-collectionedx2012_falltoy_collection-d1d907a4",
-            "block_id": self.collection.key,
+            "block_id": self.collection.collection_code,
             "usage_key": str(self.collection_key),
             "type": "collection",
             "org": "edX",
@@ -500,7 +530,10 @@ class StudioDocumentsTest(SharedModuleStoreTestCase):
             "modified": 1680674828.0,
             'tags': {
                 'taxonomy': ['Difficulty'],
-                'level0': ['Difficulty > Normal']
+                'level0': ['Difficulty > Normal'],
+                'level1': [],
+                'level2': [],
+                'level3': [],
             },
             "published": {
                 "num_children": 0
@@ -515,7 +548,7 @@ class StudioDocumentsTest(SharedModuleStoreTestCase):
 
         assert doc == {
             "id": "lib-collectionedx2012_falltoy_collection-d1d907a4",
-            "block_id": self.collection.key,
+            "block_id": self.collection.collection_code,
             "usage_key": str(self.collection_key),
             "type": "collection",
             "org": "edX",
@@ -529,7 +562,10 @@ class StudioDocumentsTest(SharedModuleStoreTestCase):
             "modified": 1680674828.0,
             'tags': {
                 'taxonomy': ['Difficulty'],
-                'level0': ['Difficulty > Normal']
+                'level0': ['Difficulty > Normal'],
+                'level1': [],
+                'level2': [],
+                'level3': [],
             },
             "published": {
                 "num_children": 1
@@ -573,7 +609,10 @@ class StudioDocumentsTest(SharedModuleStoreTestCase):
             "last_published": None,
             "tags": {
                 "taxonomy": ["Difficulty"],
-                "level0": ["Difficulty > Normal"]
+                "level0": ["Difficulty > Normal"],
+                "level1": [],
+                "level2": [],
+                "level3": [],
             },
             # "published" is not set since we haven't published it yet
         }
@@ -621,7 +660,10 @@ class StudioDocumentsTest(SharedModuleStoreTestCase):
             "last_published": 1680674828.0,
             "tags": {
                 "taxonomy": ["Difficulty"],
-                "level0": ["Difficulty > Normal"]
+                "level0": ["Difficulty > Normal"],
+                "level1": [],
+                "level2": [],
+                "level3": [],
             },
             "published": {
                 "num_children": 1,
@@ -660,7 +702,7 @@ class StudioDocumentsTest(SharedModuleStoreTestCase):
                 self.container.container_key,
                 [block_2.usage_key],
                 user_id=None,
-                entities_action=authoring_api.ChildrenEntitiesAction.APPEND,
+                entities_action=content_api.ChildrenEntitiesAction.APPEND,
             )
 
         doc = searchable_doc_for_container(self.container.container_key)
@@ -695,7 +737,10 @@ class StudioDocumentsTest(SharedModuleStoreTestCase):
             "last_published": 1680674828.0,
             "tags": {
                 "taxonomy": ["Difficulty"],
-                "level0": ["Difficulty > Normal"]
+                "level0": ["Difficulty > Normal"],
+                "level1": [],
+                "level2": [],
+                "level3": [],
             },
             "published": {
                 "num_children": 1,

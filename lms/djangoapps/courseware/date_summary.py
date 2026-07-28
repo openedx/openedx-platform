@@ -11,21 +11,20 @@ import crum
 from babel.dates import format_timedelta
 from django.conf import settings
 from django.utils.functional import cached_property
-from django.utils.translation import get_language, to_locale
+from django.utils.translation import get_language, gettext_lazy, to_locale
 from django.utils.translation import gettext as _
-from django.utils.translation import gettext_lazy
 from lazy import lazy
 from pytz import utc
 
 from common.djangoapps.course_modes.models import CourseMode
-from lms.djangoapps.certificates.api import get_active_web_certificate, can_show_certificate_available_date_field
-from lms.djangoapps.courseware.utils import verified_upgrade_deadline_link, can_show_verified_upgrade
+from common.djangoapps.student.models import CourseEnrollment
+from lms.djangoapps.certificates.api import can_show_certificate_available_date_field, get_active_web_certificate
+from lms.djangoapps.courseware.utils import can_show_verified_upgrade, verified_upgrade_deadline_link
 from lms.djangoapps.verify_student.models import VerificationDeadline
 from lms.djangoapps.verify_student.services import IDVerificationService
 from openedx.core.djangolib.markup import HTML
 from openedx.features.course_duration_limits.access import get_user_course_expiration_date
 from openedx.features.course_experience import RELATIVE_DATES_FLAG
-from common.djangoapps.student.models import CourseEnrollment
 
 from .context_processor import user_timezone_locale_prefs
 
@@ -129,7 +128,7 @@ class DateSummary:
         # 'absolute'. For example, 'absolute' might be "Jan 01, 2020",
         # and if today were December 5th, 2020, 'relative' would be "1
         # month".
-        date_format = _("{relative} ago - {absolute}") if date_has_passed else _("in {relative} - {absolute}")  # lint-amnesty, pylint: disable=redefined-outer-name
+        date_format = _("{relative} ago - {absolute}") if date_has_passed else _("in {relative} - {absolute}")  # pylint: disable=redefined-outer-name
         return date_format.format(
             relative=relative_date,
             absolute='{date}',
@@ -177,7 +176,7 @@ class DateSummary:
         locale = to_locale(get_language())
         return format_timedelta(self.date - self.current_time, locale=locale)
 
-    def date_html(self, date_format='shortDate'):  # lint-amnesty, pylint: disable=redefined-outer-name
+    def date_html(self, date_format='shortDate'):  # pylint: disable=redefined-outer-name
         """
         Returns a representation of the date as HTML.
 
@@ -214,7 +213,7 @@ class DateSummary:
         return self.date_html(date_format='shortTime')
 
     def __repr__(self):
-        return 'DateSummary: "{title}" {date} is_enabled={is_enabled}'.format(
+        return 'DateSummary: "{title}" {date} is_enabled={is_enabled}'.format(  # noqa: UP032
             title=self.title,
             date=self.date,
             is_enabled=self.is_enabled
@@ -230,7 +229,7 @@ class TodaysDate(DateSummary):
 
     # The date is shown in the title, no need to display it again.
     def get_context(self):
-        context = super().get_context()  # lint-amnesty, pylint: disable=no-member, super-with-arguments
+        context = super().get_context()  # pylint: disable=no-member, super-with-arguments
         context['date'] = ''
         return context
 
@@ -469,7 +468,7 @@ class VerifiedUpgradeDeadlineDate(DateSummary):
         return can_show_verified_upgrade(self.user, self.enrollment, self.course)
 
     @lazy
-    def date(self):  # lint-amnesty, pylint: disable=invalid-overridden-method
+    def date(self):  # pylint: disable=invalid-overridden-method
         if self.enrollment:
             return self.enrollment.upgrade_deadline
         else:
@@ -578,7 +577,7 @@ class VerificationDeadlineDate(DateSummary):
         )
 
     @lazy
-    def date(self):  # lint-amnesty, pylint: disable=invalid-overridden-method
+    def date(self):  # pylint: disable=invalid-overridden-method
         return VerificationDeadline.deadline_for_course(self.course_id)
 
     @property
@@ -592,7 +591,7 @@ class VerificationDeadlineDate(DateSummary):
             is_active and
             mode == 'verified' and
             self.verification_status in ('expired', 'none', 'must_reverify') and
-            not settings.FEATURES.get('ENABLE_INTEGRITY_SIGNATURE')
+            not settings.ENABLE_INTEGRITY_SIGNATURE
         )
 
     @lazy

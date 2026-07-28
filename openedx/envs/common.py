@@ -25,34 +25,30 @@ def center_with_hashes(text: str, width: int = 76):
     print(f"{f' {text} ':#^{width}}")
 ```
 """
-import os
 import importlib.util
-from path import Path as path
+import os
 
 from django.utils.translation import gettext_lazy as _
+from path import Path as path
 
-from openedx.core.lib.derived import Derived
-from openedx.core.release import doc_version
-from openedx.core.djangoapps.theming.helpers_dirs import (
-    get_themes_unchecked,
-    get_theme_base_dirs_from_settings
-)
+from lms.djangoapps.lms_xblock.mixin import LmsBlockMixin
 
 # We have legacy components that reference these constants via the settings module.
 # New code should import them directly from `openedx.core.constants` instead.
 from openedx.core.constants import (  # pylint: disable=unused-import
-    ASSET_KEY_PATTERN,
-    COURSE_KEY_REGEX,
-    COURSE_KEY_PATTERN,
-    COURSE_ID_PATTERN,
-    USAGE_KEY_PATTERN,
-    USAGE_ID_PATTERN,
+    ASSET_KEY_PATTERN,  # noqa: F401
+    COURSE_ID_PATTERN,  # noqa: F401
+    COURSE_KEY_PATTERN,  # noqa: F401
+    COURSE_KEY_REGEX,  # noqa: F401
+    USAGE_ID_PATTERN,  # noqa: F401
+    USAGE_KEY_PATTERN,  # noqa: F401
 )
-
+from openedx.core.djangoapps.theming.helpers_dirs import get_theme_base_dirs_from_settings, get_themes_unchecked
+from openedx.core.lib.derived import Derived
+from openedx.core.release import doc_version
 from xmodule.modulestore.edit_info import EditInfoMixin
 from xmodule.modulestore.inheritance import InheritanceMixin
 from xmodule.x_module import XModuleMixin
-from lms.djangoapps.lms_xblock.mixin import LmsBlockMixin
 
 ################ Shared Functions for Derived Configuration ################
 
@@ -455,7 +451,6 @@ TEMPLATES = [
         'DIRS': [
             Derived(lambda settings: settings.PROJECT_ROOT / "templates"),
             COMMON_ROOT / 'templates',
-            XMODULE_ROOT / 'capa' / 'templates',
             COMMON_ROOT / 'djangoapps' / 'pipeline_mako' / 'templates',
             COMMON_ROOT / 'static',  # required to statically include common Underscore templates
         ],
@@ -519,7 +514,7 @@ MAKO_TEMPLATE_DIRS_BASE = [
 # Since the CMS uses the LMS's list of mako template directories for the "preview"
 # template engine, we define the list here
 lms_mako_template_dirs_base = list(MAKO_TEMPLATE_DIRS_BASE)
-lms_mako_template_dirs_base.insert(2, XMODULE_ROOT / 'capa' / 'templates')
+lms_mako_template_dirs_base.append(REPO_ROOT / 'lms' / 'djangoapps' / 'teams' / 'templates')
 lms_mako_template_dirs_base.append(OPENEDX_ROOT / 'features' / 'course_experience' / 'templates')
 
 CONTEXT_PROCESSORS = [
@@ -745,6 +740,19 @@ ALL_LANGUAGES = [
 
 LANGUAGE_DICT = dict(LANGUAGES)
 
+# .. setting_name: COURSE_ACCESS_DURATION_MIN_WEEKS
+# .. setting_default: 4
+# .. setting_description: Minimum course duration in weeks when Discovery service data is unavailable or course has no
+# .. weeks_to_complete value. Used as fallback for course access duration calculations (e.g., audit access expiration
+# .. and discussion notification filtering).
+COURSE_ACCESS_DURATION_MIN_WEEKS = 4
+
+# .. setting_name: COURSE_ACCESS_DURATION_MAX_WEEKS
+# .. setting_default: 18
+# .. setting_description: Maximum course duration in weeks. Course access duration is bounded by this upper limit
+# .. regardless of Discovery service data.
+COURSE_ACCESS_DURATION_MAX_WEEKS = 18
+
 ############################## Optional Apps ###############################
 
 OPTIONAL_APPS = [
@@ -763,9 +771,8 @@ OPTIONAL_APPS = [
     # edxval
     ('edxval', 'openedx.core.djangoapps.content.course_overviews.apps.CourseOverviewsConfig'),
 
-    # Enterprise Apps (http://github.com/openedx/edx-enterprise)
-    ('enterprise', None),
-    ('consent', None),
+    # Deprecated apps from the edx-enterprise package. We're working on removing these as part of
+    # pluginifying edx-enterprise (<https://discuss.openedx.org/t/18316>)
     ('integrated_channels.integrated_channel', None),
     ('integrated_channels.degreed', None),
     ('integrated_channels.degreed2', None),
@@ -1057,6 +1064,24 @@ CUSTOM_COURSES_EDX = False
 
 # Settings for course import olx validation
 ENABLE_COURSE_OLX_VALIDATION = False
+
+# .. toggle_name: ENABLE_PROCTORED_EXAMS
+# .. toggle_implementation: DjangoSetting
+# .. toggle_default: False
+# .. toggle_description: Global gate on the proctoring app. When True, the proctoring
+#   app advertises itself as available for all courses; per-course opt-in is a
+#   separate check.
+# .. toggle_use_cases: open_edx
+# .. toggle_creation_date: 2015-07-24
+ENABLE_PROCTORED_EXAMS = False
+
+# .. setting_name: XQA_SERVER
+# .. setting_default: 'http://your_xqa_server.com'
+# .. setting_description: URL of the XQA staff debug/inspection server linked from the
+#   staff-only markup rendered by openedx.core.lib.xblock_utils.add_staff_markup. Set
+#   to a real endpoint if operating an XQA-compatible service; leave the placeholder
+#   default to effectively disable the link.
+XQA_SERVER = 'http://your_xqa_server.com'
 
 # .. toggle_name: AUTOMATIC_AUTH_FOR_TESTING
 # .. toggle_implementation: DjangoSetting
@@ -1898,6 +1923,16 @@ ENABLE_DYNAMIC_REGISTRATION_FIELDS = False
 # .. setting_description: Base URL of the micro-frontend-based learner home page.
 LEARNER_HOME_MICROFRONTEND_URL = None
 
+# .. setting_name: COURSE_AUTHORING_MICROFRONTEND_URL
+# .. setting_default: None
+# .. setting_description: Base URL of the micro-frontend-based course authoring (Studio) page.
+COURSE_AUTHORING_MICROFRONTEND_URL = None
+
+# .. setting_name: ADMIN_CONSOLE_MICROFRONTEND_URL
+# .. setting_default: None
+# .. setting_description: Base URL of the micro-frontend-based admin console page.
+ADMIN_CONSOLE_MICROFRONTEND_URL = None
+
 ################################## Swift ###################################
 
 SWIFT_USERNAME = None
@@ -1917,6 +1952,21 @@ SOCIAL_AUTH_SAML_SP_PRIVATE_KEY = ""
 SOCIAL_AUTH_SAML_SP_PUBLIC_CERT = ""
 SOCIAL_AUTH_SAML_SP_PRIVATE_KEY_DICT = {}
 SOCIAL_AUTH_SAML_SP_PUBLIC_CERT_DICT = {}
+
+# .. toggle_name: SAML_METADATA_URL_ALLOW_PRIVATE_IPS
+# .. toggle_default: False
+# .. toggle_description: When False (the default), fetching SAML metadata from
+#   private IP address ranges (RFC 1918: 10.x, 172.16.x, 192.168.x) is blocked
+#   as a defense against SSRF attacks. Set to True only in deployments where the
+#   SAML Identity Provider is hosted on the same private network as the Open edX
+#   server. Note: loopback (127.x) and link-local (169.254.x) addresses remain
+#   blocked regardless of this toggle. Operators are also encouraged to enforce
+#   network-level egress filtering as a complementary control, particularly to
+#   cover hostname-based URLs that are not subject to IP validation.
+# .. toggle_implementation: DjangoSetting
+# .. toggle_use_cases: open_edx
+# .. toggle_creation_date: 2026-04-24
+SAML_METADATA_URL_ALLOW_PRIVATE_IPS = False
 
 ########################### django-fernet-fields ###########################
 
@@ -2028,53 +2078,48 @@ XBLOCK_MIXINS = (
 # Ticket: https://github.com/openedx/edx-platform/issues/35308
 
 # .. toggle_name: USE_EXTRACTED_WORD_CLOUD_BLOCK
-# .. toggle_default: False
+# .. toggle_default: True
 # .. toggle_implementation: DjangoSetting
 # .. toggle_description: Enables the use of the extracted Word Cloud XBlock, which has been shifted to the 'openedx/xblocks-contrib' repo.
 # .. toggle_use_cases: temporary
-# .. toggle_warning: Not production-ready until https://github.com/openedx/edx-platform/issues/34840 is done.
 # .. toggle_creation_date: 2024-11-10
-# .. toggle_target_removal_date: 2025-06-01
+# .. toggle_target_removal_date: 2026-04-10
 USE_EXTRACTED_WORD_CLOUD_BLOCK = True
 
 # .. toggle_name: USE_EXTRACTED_ANNOTATABLE_BLOCK
-# .. toggle_default: False
+# .. toggle_default: True
 # .. toggle_implementation: DjangoSetting
 # .. toggle_description: Enables the use of the extracted annotatable XBlock, which has been shifted to the 'openedx/xblocks-contrib' repo.
 # .. toggle_use_cases: temporary
-# .. toggle_warning: Not production-ready until https://github.com/openedx/edx-platform/issues/34841 is done.
 # .. toggle_creation_date: 2024-11-10
-# .. toggle_target_removal_date: 2025-06-01
+# .. toggle_target_removal_date: 2026-04-10
 USE_EXTRACTED_ANNOTATABLE_BLOCK = True
 
 # .. toggle_name: USE_EXTRACTED_POLL_QUESTION_BLOCK
-# .. toggle_default: False
+# .. toggle_default: True
 # .. toggle_implementation: DjangoSetting
 # .. toggle_description: Enables the use of the extracted poll question XBlock, which has been shifted to the 'openedx/xblocks-contrib' repo.
 # .. toggle_use_cases: temporary
-# .. toggle_warning: Not production-ready until https://github.com/openedx/edx-platform/issues/34839 is done.
 # .. toggle_creation_date: 2024-11-10
-# .. toggle_target_removal_date: 2025-06-01
+# .. toggle_target_removal_date: 2026-04-10
 USE_EXTRACTED_POLL_QUESTION_BLOCK = True
 
 # .. toggle_name: USE_EXTRACTED_LTI_BLOCK
-# .. toggle_default: False
+# .. toggle_default: True
 # .. toggle_implementation: DjangoSetting
 # .. toggle_description: Enables the use of the extracted LTI XBlock, which has been shifted to the 'openedx/xblocks-contrib' repo.
 # .. toggle_use_cases: temporary
-# .. toggle_warning: Not production-ready until relevant subtask https://github.com/openedx/edx-platform/issues/34827 is done.
 # .. toggle_creation_date: 2024-11-10
-# .. toggle_target_removal_date: 2025-06-01
-USE_EXTRACTED_LTI_BLOCK = False
+# .. toggle_target_removal_date: 2026-04-10
+USE_EXTRACTED_LTI_BLOCK = True
 
 # .. toggle_name: USE_EXTRACTED_HTML_BLOCK
-# .. toggle_default: False
+# .. toggle_default: True
 # .. toggle_implementation: DjangoSetting
 # .. toggle_description: Enables the use of the extracted HTML XBlock, which has been shifted to the 'openedx/xblocks-contrib' repo.
 # .. toggle_use_cases: temporary
-# .. toggle_warning: Not production-ready until relevant subtask https://github.com/openedx/edx-platform/issues/34827 is done.
 # .. toggle_creation_date: 2024-11-10
-# .. toggle_target_removal_date: 2025-06-01
+# .. toggle_target_removal_date: 2026-04-10
 USE_EXTRACTED_HTML_BLOCK = True
 
 # .. toggle_name: USE_EXTRACTED_DISCUSSION_BLOCK
@@ -2084,8 +2129,8 @@ USE_EXTRACTED_HTML_BLOCK = True
 # .. toggle_use_cases: temporary
 # .. toggle_warning: Not production-ready until relevant subtask https://github.com/openedx/edx-platform/issues/34827 is done.
 # .. toggle_creation_date: 2024-11-10
-# .. toggle_target_removal_date: 2025-06-01
-USE_EXTRACTED_DISCUSSION_BLOCK = False
+# .. toggle_target_removal_date: 2026-04-10
+USE_EXTRACTED_DISCUSSION_BLOCK = True
 
 # .. toggle_name: USE_EXTRACTED_PROBLEM_BLOCK
 # .. toggle_default: False
@@ -2094,18 +2139,17 @@ USE_EXTRACTED_DISCUSSION_BLOCK = False
 # .. toggle_use_cases: temporary
 # .. toggle_warning: Not production-ready until relevant subtask https://github.com/openedx/edx-platform/issues/34827 is done.
 # .. toggle_creation_date: 2024-11-10
-# .. toggle_target_removal_date: 2025-06-01
-USE_EXTRACTED_PROBLEM_BLOCK = False
+# .. toggle_target_removal_date: 2026-04-10
+USE_EXTRACTED_PROBLEM_BLOCK = True
 
 # .. toggle_name: USE_EXTRACTED_VIDEO_BLOCK
-# .. toggle_default: False
+# .. toggle_default: True
 # .. toggle_implementation: DjangoSetting
 # .. toggle_description: Enables the use of the extracted Video XBlock, which has been shifted to the 'openedx/xblocks-contrib' repo.
 # .. toggle_use_cases: temporary
-# .. toggle_warning: Not production-ready until relevant subtask https://github.com/openedx/edx-platform/issues/34827 is done.
 # .. toggle_creation_date: 2024-11-10
-# .. toggle_target_removal_date: 2025-06-01
-USE_EXTRACTED_VIDEO_BLOCK = False
+# .. toggle_target_removal_date: 2026-04-10
+USE_EXTRACTED_VIDEO_BLOCK = True
 
 ############################## Marketing Site ##############################
 
@@ -2663,8 +2707,17 @@ NOTIFICATION_IMMEDIATE_EMAIL_BUFFER_MINUTES = 15  # in minutes
 NOTIFICATION_TYPE_ICONS = {}
 DEFAULT_NOTIFICATION_ICON_URL = ""
 
+# Digest email delivery schedule settings (all times in UTC).
+# Instance operators can override these to control when daily/weekly digest emails are sent.
+NOTIFICATION_DAILY_DIGEST_DELIVERY_HOUR = 17   # Hour of day (0-23) to send daily digest (default: 5 PM UTC)
+NOTIFICATION_DAILY_DIGEST_DELIVERY_MINUTE = 0  # Minute of hour (0-59) to send daily digest
+NOTIFICATION_WEEKLY_DIGEST_DELIVERY_DAY = 0    # Day of week (0=Monday, 6=Sunday) to send weekly digest
+NOTIFICATION_WEEKLY_DIGEST_DELIVERY_HOUR = 17  # Hour of day (0-23) to send weekly digest (default: 5 PM UTC)
+NOTIFICATION_WEEKLY_DIGEST_DELIVERY_MINUTE = 0 # Minute of hour (0-59) to send weekly digest
+
 # These settings are used to override the default notification preferences values for apps and types.
-# Here is complete documentation about how to use them: openedx/core/djangoapps/notifications/docs/settings.md
+# Here is complete documentation about how to use them:
+# https://docs.openedx.org/en/latest/site_ops/how-tos/enable_notifications.html#how-to-override-default-notification-preferences
 NOTIFICATION_APPS_OVERRIDE = {}
 NOTIFICATION_TYPES_OVERRIDE = {}
 

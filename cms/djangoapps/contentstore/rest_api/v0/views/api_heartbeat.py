@@ -1,9 +1,10 @@
 """ View For Getting the Status of The Authoring API """
 import edx_api_doc_tools as apidocs
-from rest_framework.views import APIView
+from rest_framework import status
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework.views import APIView
+
 from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin, view_auth_classes
 
 
@@ -32,13 +33,13 @@ class APIHeartBeatView(DeveloperErrorViewMixin, APIView):
         **Response Values**
 
         If the request is successful, an HTTP 200 "OK" response is returned.
-        The HTTP 200 response contains a single dict with the  "authoring_api_enabled" value "True".
+        The HTTP 200 response contains a single dict with the  "content_api_enabled" value "True".
 
         **Example Response**
 
         ```json
         {
-            "authoring_api_enabled": "True"
+            "content_api_enabled": "True"
         }
         ```
         """

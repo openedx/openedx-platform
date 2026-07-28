@@ -14,12 +14,12 @@ import simplejson as json
 from ddt import data, ddt
 from django.conf import settings
 from django.urls import reverse
-from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory
 
 from common.djangoapps.student.tests.factories import GlobalStaffFactory
 from lms.djangoapps.courseware.tests.helpers import LoginEnrollmentTestCase
 from openedx.core.lib.url_utils import quote_slashes
+from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 
 
 class TestRecommender(SharedModuleStoreTestCase, LoginEnrollmentTestCase):
@@ -211,7 +211,7 @@ class TestRecommenderCreateFromEmpty(TestRecommender):
                 for field in resource:
                     expected_result[field] = resource[field]
 
-                self.assertDictEqual(json.loads(result.content), expected_result)
+                self.assertDictEqual(json.loads(result.content), expected_result)  # noqa: PT009
                 self.assert_request_status_code(200, self.course_url)
 
 

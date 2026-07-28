@@ -1,19 +1,21 @@
 """
 Tests for proctoring course app.
 """
-from unittest.mock import patch
-
 import ddt
 from django.conf import settings
+from django.test.utils import override_settings
 
 from lms.djangoapps.courseware.plugins import ProctoringCourseApp
 from openedx.core.djangolib.testing.utils import skip_unless_cms
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase, CourseUserType  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (  # pylint: disable=wrong-import-order
+    CourseUserType,
+    ModuleStoreTestCase,
+)
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 
 @skip_unless_cms
-@patch.dict(settings.FEATURES, {'ENABLE_PROCTORED_EXAMS': True})
+@override_settings(ENABLE_PROCTORED_EXAMS=True)
 @ddt.ddt
 class ProctoringCourseAppTestCase(ModuleStoreTestCase):
     """Test cases for proctoring CourseApp."""
@@ -36,7 +38,7 @@ class ProctoringCourseAppTestCase(ModuleStoreTestCase):
         """
         Test that proctoring card's availability can configured using feature flag.
         """
-        with patch.dict("django.conf.settings.FEATURES", {'ENABLE_PROCTORED_EXAMS': available_status}):
+        with override_settings(ENABLE_PROCTORED_EXAMS=available_status):
             assert self.course.enable_proctored_exams is True
             assert ProctoringCourseApp().is_available(self.course.id) == available_status
 
@@ -56,7 +58,7 @@ class ProctoringCourseAppTestCase(ModuleStoreTestCase):
         """
         Test that setting enable status on proctoring app should raise exception.
         """
-        with self.assertRaisesRegex(ValueError, "Proctoring cannot be enabled/disabled via this API."):
+        with self.assertRaisesRegex(ValueError, "Proctoring cannot be enabled/disabled via this API."):  # noqa: PT027
             ProctoringCourseApp().set_enabled(
                 course_key=self.course.id,
                 enabled=True,

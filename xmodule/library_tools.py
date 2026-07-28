@@ -3,13 +3,13 @@ XBlock runtime services for LegacyLibraryContentBlock
 """
 from __future__ import annotations
 
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.core.exceptions import ObjectDoesNotExist
 from opaque_keys.edx.locator import LibraryLocator
 from user_tasks.models import UserTaskStatus
 
-from openedx.core.lib import ensure_cms
 from openedx.core.djangoapps.content_libraries import tasks as library_tasks
+from openedx.core.lib import ensure_cms
 from xmodule.library_content_block import LegacyLibraryContentBlock
 from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.exceptions import ItemNotFoundError
@@ -24,7 +24,7 @@ class LegacyLibraryToolsService:
     """
     Service for LegacyLibraryContentBlock.
 
-    Allows to interact with libraries in the modulestore and learning core.
+    Allows to interact with libraries in the modulestore and openedx_content.
 
     Should only be used in the CMS.
     """
@@ -157,7 +157,7 @@ class LegacyLibraryToolsService:
 
         Returns tuples of (library key, display_name).
         """
-        user = User.objects.get(id=self.user_id)
+        user = User.objects.get(id=self.user_id)  # noqa: F841
         return [
             (lib.location.library_key.replace(version_guid=None, branch=None), lib.display_name)
             for lib in self.store.get_library_summaries()

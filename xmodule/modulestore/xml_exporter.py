@@ -13,11 +13,8 @@ from edx_django_utils.monitoring import set_custom_attribute
 from fs.osfs import OSFS
 from opaque_keys.edx.locator import CourseLocator, LibraryLocator
 from xblock.fields import Reference, ReferenceList, ReferenceValueDict, Scope
-from openedx.core.djangoapps.content_tagging.api import (
-    export_tags_in_csv_file,
-    get_object_tag_counts
-)
 
+from openedx.core.djangoapps.content_tagging.api import export_tags_in_csv_file, get_object_tag_counts
 from xmodule.assetstore import AssetMetadata
 from xmodule.contentstore.content import StaticContent
 from xmodule.exceptions import NotFoundError
@@ -385,7 +382,7 @@ def adapt_references(subtree, destination_course_key, export_fs):
                     field.write_to(subtree, field.read_from(subtree).map_into_course(destination_course_key))
             elif field_name == 'children':
                 # don't change the children field but do recurse over the children
-                [adapt_references(child, destination_course_key, export_fs) for child in subtree.get_children()]  # lint-amnesty, pylint: disable=expression-not-assigned
+                [adapt_references(child, destination_course_key, export_fs) for child in subtree.get_children()]  # pylint: disable=expression-not-assigned
             elif isinstance(field, ReferenceList):
                 field.write_to(
                     subtree,
@@ -394,7 +391,7 @@ def adapt_references(subtree, destination_course_key, export_fs):
             elif isinstance(field, ReferenceValueDict):
                 field.write_to(
                     subtree, {
-                        key: ele.map_into_course(destination_course_key) for key, ele in field.read_from(subtree).items()  # lint-amnesty, pylint: disable=line-too-long
+                        key: ele.map_into_course(destination_course_key) for key, ele in field.read_from(subtree).items()  # pylint: disable=line-too-long
                     }
                 )
 
@@ -414,7 +411,7 @@ def _export_field_content(xblock_item, item_dir):
                                                    sort_keys=True, indent=4).encode('utf-8'))
 
 
-def export_extra_content(export_fs, modulestore, source_course_key, dest_course_key, category_type, dirname, file_suffix=''):  # lint-amnesty, pylint: disable=line-too-long, missing-function-docstring
+def export_extra_content(export_fs, modulestore, source_course_key, dest_course_key, category_type, dirname, file_suffix=''):  # pylint: disable=line-too-long, missing-function-docstring
     items = modulestore.get_items(source_course_key, qualifiers={'category': category_type})
 
     if len(items) > 0:

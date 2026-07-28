@@ -1,8 +1,8 @@
 """
 Various helpful utilities for ESG
 """
-from functools import wraps
 import json
+from functools import wraps
 
 from opaque_keys.edx.keys import UsageKey
 from rest_framework.request import clone_request

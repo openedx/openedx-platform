@@ -18,8 +18,8 @@ class OpenAssessmentDateTransformer(FilteringTransformerMixin, BlockStructureTra
     @classmethod
     def name(cls):
         """
-        Unique identifier for the transformer's class;
-        same identifier used in setup.py.
+        Unique identifier for the transformer's class.
+        This must match the entry point name in the package configuration.
         """
         return 'open_assessment_transformer'
 

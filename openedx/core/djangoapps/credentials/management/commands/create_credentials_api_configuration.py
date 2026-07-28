@@ -2,6 +2,7 @@
 Django management command used to enable Credentials functionality in this Open edX instance.
 """
 from django.core.management.base import BaseCommand, CommandError
+
 from openedx.core.djangoapps.credentials.models import CredentialsApiConfig
 
 

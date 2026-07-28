@@ -4,13 +4,10 @@ Definition of "Library" as a learning context.
 import logging
 
 from django.core.exceptions import PermissionDenied
-from rest_framework.exceptions import NotFound
-
-from openedx_events.content_authoring.data import LibraryBlockData, LibraryContainerData
-from openedx_events.content_authoring.signals import LIBRARY_BLOCK_UPDATED, LIBRARY_CONTAINER_UPDATED
 from opaque_keys.edx.keys import UsageKeyV2
-from opaque_keys.edx.locator import LibraryUsageLocatorV2, LibraryLocatorV2
-from openedx_learning.api import authoring as authoring_api
+from opaque_keys.edx.locator import LibraryLocatorV2, LibraryUsageLocatorV2
+from openedx_content import api as content_api
+from rest_framework.exceptions import NotFound
 
 from openedx.core.djangoapps.content_libraries import api, permissions
 from openedx.core.djangoapps.content_libraries.models import ContentLibrary
@@ -24,7 +21,7 @@ class LibraryContextImpl(LearningContext):
     """
     Implements content libraries as a learning context.
 
-    This is the *new* content libraries based on Learning Core, not the old content
+    This is the *new* content libraries based on openedx_content, not the old content
     libraries based on modulestore.
     """
 
@@ -96,40 +93,9 @@ class LibraryContextImpl(LearningContext):
         if learning_package is None:
             return False
 
-        return authoring_api.component_exists_by_key(
+        return content_api.component_exists_by_code(
             learning_package.id,
             namespace='xblock.v1',
             type_name=usage_key.block_type,
-            local_key=usage_key.block_id,
+            component_code=usage_key.block_id,
         )
-
-    def send_block_updated_event(self, usage_key: UsageKeyV2):
-        """
-        Send a "block updated" event for the library block with the given usage_key.
-        """
-        assert isinstance(usage_key, LibraryUsageLocatorV2)
-        # .. event_implemented_name: LIBRARY_BLOCK_UPDATED
-        # .. event_type: org.openedx.content_authoring.library_block.updated.v1
-        LIBRARY_BLOCK_UPDATED.send_event(
-            library_block=LibraryBlockData(
-                library_key=usage_key.lib_key,
-                usage_key=usage_key,
-            )
-        )
-
-    def send_container_updated_events(self, usage_key: UsageKeyV2):
-        """
-        Send "container updated" events for containers that contains the library block
-        with the given usage_key.
-        """
-        assert isinstance(usage_key, LibraryUsageLocatorV2)
-        affected_containers = api.get_containers_contains_item(usage_key)
-        for container in affected_containers:
-            # .. event_implemented_name: LIBRARY_CONTAINER_UPDATED
-            # .. event_type: org.openedx.content_authoring.content_library.container.updated.v1
-            LIBRARY_CONTAINER_UPDATED.send_event(
-                library_container=LibraryContainerData(
-                    container_key=container.container_key,
-                    background=True,
-                )
-            )

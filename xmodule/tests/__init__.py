@@ -3,37 +3,36 @@ unittests for xmodule
 """
 
 
-import inspect
-import json
-import os
-import sys
-import traceback
+import inspect  # noqa: F401
+import json  # noqa: F401
+import os  # noqa: F401
+import sys  # noqa: F401
+import traceback  # noqa: F401
 import unittest
-from contextlib import contextmanager
-from functools import wraps
+from contextlib import contextmanager  # noqa: F401
+from functools import wraps  # noqa: F401
 from unittest.mock import Mock
 
 from django.test import TransactionTestCase
-
 from opaque_keys.edx.keys import CourseKey
 from path import Path as path
 from xblock.core import XBlock
 from xblock.field_data import DictFieldData
-from xblock.fields import Reference, ReferenceList, ReferenceValueDict, ScopeIds
+from xblock.fields import Reference, ReferenceList, ReferenceValueDict, ScopeIds  # noqa: F401
 
-from xmodule.capa.xqueue_interface import XQueueService
+from openedx.core.djangoapps.discussions.services import DiscussionConfigService
+from openedx.core.djangoapps.video_config.services import VideoConfigService
+from openedx.core.lib.cache_utils import CacheService
 from xmodule.assetstore import AssetMetadata
 from xmodule.contentstore.django import contentstore
 from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.draft_and_published import ModuleStoreDraftAndPublished
 from xmodule.modulestore.inheritance import InheritanceMixin
 from xmodule.modulestore.xml import CourseLocationManager
-from xmodule.tests.helpers import StubReplaceURLService, mock_render_template, StubMakoService, StubUserService
+from xmodule.services import XQueueService
+from xmodule.tests.helpers import StubMakoService, StubReplaceURLService, StubUserService, mock_render_template
 from xmodule.util.sandboxing import SandboxService
-from xmodule.x_module import DoNothingCache, XModuleMixin, ModuleStoreRuntime
-from openedx.core.djangoapps.video_config.services import VideoConfigService
-from openedx.core.lib.cache_utils import CacheService
-
+from xmodule.x_module import DoNothingCache, ModuleStoreRuntime, XModuleMixin
 
 MODULE_DIR = path(__file__).dirname()
 # Location of common test DATA directory
@@ -41,8 +40,8 @@ MODULE_DIR = path(__file__).dirname()
 DATA_DIR = MODULE_DIR.parent.parent / "common" / "test" / "data"
 
 
-def handler_url(block, handler, suffix='', query='', thirdparty=False):  # lint-amnesty, pylint: disable=arguments-differ
-    return '{usage_id}/{handler}{suffix}?{query}'.format(
+def handler_url(block, handler, suffix='', query='', thirdparty=False):  # pylint: disable=arguments-differ
+    return '{usage_id}/{handler}{suffix}?{query}'.format(  # noqa: UP032
         usage_id=str(block.scope_ids.usage_id),
         handler=handler,
         suffix=suffix,
@@ -51,7 +50,7 @@ def handler_url(block, handler, suffix='', query='', thirdparty=False):  # lint-
 
 
 def local_resource_url(block, uri):
-    return 'resource/{usage_id}/{uri}'.format(
+    return 'resource/{usage_id}/{uri}'.format(  # noqa: UP032
         usage_id=str(block.scope_ids.usage_id),
         uri=uri,
     )
@@ -71,8 +70,8 @@ class TestModuleStoreRuntime(ModuleStoreRuntime):  # pylint: disable=abstract-me
     """
     ModuleStore-based XBlock Runtime for testing
     """
-    def handler_url(self, block, handler, suffix='', query='', thirdparty=False):  # lint-amnesty, pylint: disable=arguments-differ
-        return '{usage_id}/{handler}{suffix}?{query}'.format(
+    def handler_url(self, block, handler, suffix='', query='', thirdparty=False):  # pylint: disable=arguments-differ
+        return '{usage_id}/{handler}{suffix}?{query}'.format(  # noqa: UP032
             usage_id=str(block.scope_ids.usage_id),
             handler=handler,
             suffix=suffix,
@@ -80,7 +79,7 @@ class TestModuleStoreRuntime(ModuleStoreRuntime):  # pylint: disable=abstract-me
         )
 
     def local_resource_url(self, block, uri):
-        return 'resource/{usage_id}/{uri}'.format(
+        return 'resource/{usage_id}/{uri}'.format(  # noqa: UP032
             usage_id=str(block.scope_ids.usage_id),
             uri=uri,
         )
@@ -89,7 +88,7 @@ class TestModuleStoreRuntime(ModuleStoreRuntime):  # pylint: disable=abstract-me
     def get_asides(self, block):
         return []
 
-    def resources_fs(self):  # lint-amnesty, pylint: disable=method-hidden
+    def resources_fs(self):  # pylint: disable=method-hidden
         return Mock(name='TestModuleStoreRuntime.resources_fs', root_path='.')
 
     def __repr__(self):
@@ -109,7 +108,7 @@ class TestModuleStoreRuntime(ModuleStoreRuntime):  # pylint: disable=abstract-me
 
 
 def get_test_system(
-    course_id=CourseKey.from_string('/'.join(['org', 'course', 'run'])),
+    course_id=CourseKey.from_string('/'.join(['org', 'course', 'run'])),  # noqa: B008
     user=None,
     user_is_staff=False,
     user_location=None,
@@ -161,17 +160,19 @@ def get_test_system(
         'field-data': DictFieldData({}),
         'sandbox': SandboxService(contentstore, course_id),
         'video_config': VideoConfigService(),
+        'discussion_config_service': DiscussionConfigService(),
+        'xqueue': XQueueService,
     }
 
-    descriptor_system.get_block_for_descriptor = get_block  # lint-amnesty, pylint: disable=attribute-defined-outside-init
-    descriptor_system._services.update(services)  # lint-amnesty, pylint: disable=protected-access
+    descriptor_system.get_block_for_descriptor = get_block  # pylint: disable=attribute-defined-outside-init
+    descriptor_system._services.update(services)  # pylint: disable=protected-access
 
     return descriptor_system
 
 
 def prepare_block_runtime(
     runtime,
-    course_id=CourseKey.from_string('/'.join(['org', 'course', 'run'])),
+    course_id=CourseKey.from_string('/'.join(['org', 'course', 'run'])),  # noqa: B008
     user=None,
     user_is_staff=False,
     user_location=None,
@@ -217,6 +218,8 @@ def prepare_block_runtime(
         'field-data': DictFieldData({}),
         'sandbox': SandboxService(contentstore, course_id),
         'video_config': VideoConfigService(),
+        'discussion_config_service': DiscussionConfigService(),
+        'xqueue': XQueueService,
     }
 
     if add_overrides:
@@ -228,7 +231,7 @@ def prepare_block_runtime(
     if add_get_block:
         runtime.get_block_for_descriptor = get_block
 
-    runtime._services.update(services)  # lint-amnesty, pylint: disable=protected-access
+    runtime._services.update(services)  # pylint: disable=protected-access
 
     # runtime.load_item=Mock(name='get_test_descriptor_system.load_item')
     # runtime.resources_fs=Mock(name='get_test_descriptor_system.resources_fs')
@@ -259,7 +262,7 @@ def get_test_descriptor_system(render_template=None, **kwargs):
     return descriptor_system
 
 
-class ModelsTest(unittest.TestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class ModelsTest(unittest.TestCase):  # pylint: disable=missing-class-docstring
 
     def test_load_class(self):
         vc = XBlock.load_class('sequential')
@@ -403,8 +406,8 @@ class CourseComparisonTest(TransactionTestCase):
         # compare published
         with expected_store.branch_setting(ModuleStoreEnum.Branch.published_only, expected_course_key):
             with actual_store.branch_setting(ModuleStoreEnum.Branch.published_only, actual_course_key):
-                expected_items = expected_store.get_items(expected_course_key, revision=ModuleStoreEnum.RevisionOption.published_only)  # lint-amnesty, pylint: disable=line-too-long
-                actual_items = actual_store.get_items(actual_course_key, revision=ModuleStoreEnum.RevisionOption.published_only)  # lint-amnesty, pylint: disable=line-too-long
+                expected_items = expected_store.get_items(expected_course_key, revision=ModuleStoreEnum.RevisionOption.published_only)  # pylint: disable=line-too-long
+                actual_items = actual_store.get_items(actual_course_key, revision=ModuleStoreEnum.RevisionOption.published_only)  # pylint: disable=line-too-long
                 assert len(expected_items) > 0
                 self._assertCoursesEqual(expected_items, actual_items, actual_course_key)
 
@@ -425,7 +428,7 @@ class CourseComparisonTest(TransactionTestCase):
                     actual_items = actual_store.get_items(actual_course_key, revision=revision)
                     self._assertCoursesEqual(expected_items, actual_items, actual_course_key, expect_drafts=True)
 
-    def _assertCoursesEqual(self, expected_items, actual_items, actual_course_key, expect_drafts=False):  # lint-amnesty, pylint: disable=unused-argument
+    def _assertCoursesEqual(self, expected_items, actual_items, actual_course_key, expect_drafts=False):  # pylint: disable=unused-argument
         """
         Actual algorithm to compare courses.
         """
@@ -440,12 +443,12 @@ class CourseComparisonTest(TransactionTestCase):
         }
         # Split Mongo and Old-Mongo disagree about what the block_id of courses is, so skip those in
         # this comparison
-        self.assertCountEqual(
+        self.assertCountEqual(  # noqa: PT009
             [map_key(item.location) for item in expected_items if item.scope_ids.block_type != 'course'],
             [key for key in actual_item_map.keys() if key[0] != 'course'],
         )
         for expected_item in expected_items:
-            actual_item_location = actual_course_key.make_usage_key(expected_item.category, expected_item.location.block_id)  # lint-amnesty, pylint: disable=line-too-long
+            actual_item_location = actual_course_key.make_usage_key(expected_item.category, expected_item.location.block_id)  # pylint: disable=line-too-long
             # split and old mongo use different names for the course root but we don't know which
             # modulestore actual's come from here; so, assume old mongo and if that fails, assume split
             if expected_item.location.block_type == 'course':
@@ -532,7 +535,7 @@ class CourseComparisonTest(TransactionTestCase):
         actual_thumbs = actual_store.get_all_content_thumbnails_for_course(actual_course_key)
         self._assertAssetsEqual(expected_course_key, expected_thumbs, actual_course_key, actual_thumbs)
 
-    def assertAssetsMetadataEqual(self, expected_modulestore, expected_course_key, actual_modulestore, actual_course_key):  # lint-amnesty, pylint: disable=line-too-long
+    def assertAssetsMetadataEqual(self, expected_modulestore, expected_course_key, actual_modulestore, actual_course_key):  # pylint: disable=line-too-long
         """
         Assert that the modulestore asset metdata for the ``expected_course_key`` and the ``actual_course_key``
         are equivalent.

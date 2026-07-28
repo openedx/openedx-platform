@@ -14,14 +14,13 @@ from celery.result import AsyncResult
 from celery.states import FAILURE, READY_STATES, REVOKED, SUCCESS
 from django.utils.translation import gettext as _
 from opaque_keys.edx.keys import UsageKey
-from xmodule.modulestore.django import modulestore
 
 from common.djangoapps.util.db import outer_atomic
 from lms.djangoapps.courseware.courses import get_problems_in_section
 from lms.djangoapps.instructor_task.data import InstructorTaskTypes
 from lms.djangoapps.instructor_task.models import PROGRESS, SCHEDULED, InstructorTask, InstructorTaskSchedule
-
 from lms.djangoapps.instructor_task.tasks import send_bulk_course_email
+from xmodule.modulestore.django import modulestore
 
 log = logging.getLogger(__name__)
 
@@ -114,7 +113,8 @@ def generate_already_running_error_message(task_type):
         'proctored_exam_results_report': _('proctored exam results'),
         'export_ora2_data': _('ORA data'),
         'grade_course': _('grade'),
-        'inactive_enrolled_students_info_csv': _('inactive enrollment')
+        'inactive_enrolled_students_info_csv': _('inactive enrollment'),
+        'student_enrollment_batch': _('student enrollment batch'),
     }
 
     if report_types.get(task_type):
@@ -464,7 +464,7 @@ def submit_task(request, task_type, task_class, course_key, task_input, task_key
     try:
         task_class.apply_async(task_args, task_id=task_id)
 
-    except Exception as error:  # lint-amnesty, pylint: disable=broad-except
+    except Exception as error:  # pylint: disable=broad-except
         _handle_instructor_task_failure(instructor_task, error)
 
     return instructor_task

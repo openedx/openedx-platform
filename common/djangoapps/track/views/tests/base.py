@@ -5,8 +5,8 @@ Base class for tests related to emitted events to one of the tracking 'views'
 
 
 import json
-
 from unittest.mock import sentinel
+
 from django.test.client import RequestFactory
 from django.test.utils import override_settings
 

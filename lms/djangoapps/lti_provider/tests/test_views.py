@@ -9,12 +9,14 @@ from django.test.client import RequestFactory
 from django.test.utils import override_settings
 from django.urls import reverse
 from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator
-from openedx_events.learning.data import UserData, UserPersonalData, LtiProviderLaunchData, LtiProviderLaunchParamsData
+from openedx_events.learning.data import LtiProviderLaunchData, LtiProviderLaunchParamsData, UserData, UserPersonalData
 
 from common.djangoapps.student.tests.factories import UserFactory
 from lms.djangoapps.courseware.testutils import RenderXBlockTestMixin
 from lms.djangoapps.lti_provider import models, views
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # pylint: disable=wrong-import-order
+)
 
 LTI_DEFAULT_PARAMS = {
     'roles': 'Instructor,urn:lti:instrole:ims/lis/Administrator',
@@ -65,9 +67,9 @@ def build_launch_request(extra_post_data=None, param_to_delete=None):
 
 class LtiTestMixin:
     """
-    Mixin for LTI tests
+    Mixin for LTI tests. Apply ``@override_settings(ENABLE_LTI_PROVIDER=True)`` at the
+    concrete test class level; `override_settings` cannot decorate a mixin directly.
     """
-    @patch.dict('django.conf.settings.FEATURES', {'ENABLE_LTI_PROVIDER': True})
     def setUp(self):
         super().setUp()
         # Always accept the OAuth signature
@@ -92,6 +94,7 @@ class LtiTestMixin:
         self.auto_link_consumer.save()
 
 
+@override_settings(ENABLE_LTI_PROVIDER=True)
 class LtiLaunchTest(LtiTestMixin, TestCase):
     """
     Tests for the lti_launch view
@@ -99,7 +102,7 @@ class LtiLaunchTest(LtiTestMixin, TestCase):
     @patch('lms.djangoapps.lti_provider.views.LTI_PROVIDER_LAUNCH_SUCCESS.send_event')
     @patch('lms.djangoapps.lti_provider.views.render_courseware')
     @patch('lms.djangoapps.lti_provider.views.authenticate_lti_user')
-    def test_valid_launch(self, _authenticate, render, lti_launch_success_send_event):
+    def test_valid_launch(self, _authenticate, render, lti_launch_success_send_event):  # noqa: PT019
         """
         Verifies that the LTI launch succeeds when passed a valid request.
         """
@@ -130,7 +133,7 @@ class LtiLaunchTest(LtiTestMixin, TestCase):
     @patch('lms.djangoapps.lti_provider.views.render_courseware')
     @patch('lms.djangoapps.lti_provider.views.store_outcome_parameters')
     @patch('lms.djangoapps.lti_provider.views.authenticate_lti_user')
-    def test_valid_launch_with_optional_params(self, _authenticate, store_params, _render):
+    def test_valid_launch_with_optional_params(self, _authenticate, store_params, _render):  # noqa: PT019
         """
         Verifies that the LTI launch succeeds when passed a valid request.
         """
@@ -146,7 +149,7 @@ class LtiLaunchTest(LtiTestMixin, TestCase):
     @patch('lms.djangoapps.lti_provider.views.store_outcome_parameters')
     @patch('lms.djangoapps.lti_provider.views.authenticate_lti_user')
     @override_settings(LTI_CUSTOM_PARAMS=["extra_param1", "extra_param2"])
-    def test_valid_launch_with_extra_params(self, _authenticate, store_params, _render):
+    def test_valid_launch_with_extra_params(self, _authenticate, store_params, _render):  # noqa: PT019
         """
         Verifies that the LTI launch succeeds when passed a valid request.
         """
@@ -161,7 +164,7 @@ class LtiLaunchTest(LtiTestMixin, TestCase):
 
     @patch('lms.djangoapps.courseware.views.views.render_xblock')
     @patch('lms.djangoapps.lti_provider.views.authenticate_lti_user')
-    def test_render_xblock_params(self, _authenticate, render):
+    def test_render_xblock_params(self, _authenticate, render):  # noqa: PT019
         """
         Verifies that the LTI renders an XBlock without:
         1. Checking the enrollment.
@@ -174,7 +177,7 @@ class LtiLaunchTest(LtiTestMixin, TestCase):
     @patch('lms.djangoapps.lti_provider.views.render_courseware')
     @patch('lms.djangoapps.lti_provider.views.store_outcome_parameters')
     @patch('lms.djangoapps.lti_provider.views.authenticate_lti_user')
-    def test_outcome_service_registered(self, _authenticate, store_params, _render):
+    def test_outcome_service_registered(self, _authenticate, store_params, _render):  # noqa: PT019
         """
         Verifies that the LTI launch succeeds when passed a valid request.
         """
@@ -207,7 +210,7 @@ class LtiLaunchTest(LtiTestMixin, TestCase):
         Verifies that the LTI launch will fail if the ENABLE_LTI_PROVIDER flag
         is not set
         """
-        with patch.dict('django.conf.settings.FEATURES', {'ENABLE_LTI_PROVIDER': False}):
+        with override_settings(ENABLE_LTI_PROVIDER=False):
             request = build_launch_request()
             response = views.lti_launch(request, None, None)
             assert response.status_code == 403
@@ -225,7 +228,7 @@ class LtiLaunchTest(LtiTestMixin, TestCase):
         assert response.status_code == 403
 
     @patch('lms.djangoapps.lti_provider.views.render_courseware')
-    def test_lti_consumer_record_supplemented_with_guid(self, _render):
+    def test_lti_consumer_record_supplemented_with_guid(self, _render):  # noqa: PT019
         self.mock_verify.return_value = False
 
         request = build_launch_request(LTI_OPTIONAL_PARAMS)
@@ -267,6 +270,7 @@ class LtiLaunchTest(LtiTestMixin, TestCase):
         render_error.assert_called()
 
 
+@override_settings(ENABLE_LTI_PROVIDER=True)
 class LtiLaunchTestRender(LtiTestMixin, RenderXBlockTestMixin, ModuleStoreTestCase):
     """
     Tests for the rendering returned by lti_launch view.

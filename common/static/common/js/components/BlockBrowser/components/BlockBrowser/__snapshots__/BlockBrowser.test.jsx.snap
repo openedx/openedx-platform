@@ -19,7 +19,7 @@ exports[`BlockBrowser component render with basic parameters 1`] = `
         <span
           aria-hidden={true}
           className="fa fa-arrow-up"
-          id="Icon2"
+          id="Icon1"
         />
         <span
           className="sr-only"
@@ -71,7 +71,7 @@ exports[`BlockBrowser component render with basic parameters 1`] = `
           <span
             aria-hidden={true}
             className="fa fa-arrow-right"
-            id="Icon2"
+            id="Icon1"
           />
           <span
             className="sr-only"
@@ -104,7 +104,7 @@ exports[`BlockBrowser component render with basic parameters 1`] = `
           <span
             aria-hidden={true}
             className="fa fa-arrow-right"
-            id="Icon2"
+            id="Icon1"
           />
           <span
             className="sr-only"
@@ -137,7 +137,7 @@ exports[`BlockBrowser component render with basic parameters 1`] = `
           <span
             aria-hidden={true}
             className="fa fa-arrow-right"
-            id="Icon2"
+            id="Icon1"
           />
           <span
             className="sr-only"
@@ -170,7 +170,7 @@ exports[`BlockBrowser component render with basic parameters 1`] = `
           <span
             aria-hidden={true}
             className="fa fa-arrow-right"
-            id="Icon2"
+            id="Icon1"
           />
           <span
             className="sr-only"
@@ -203,7 +203,7 @@ exports[`BlockBrowser component render with basic parameters 1`] = `
           <span
             aria-hidden={true}
             className="fa fa-arrow-right"
-            id="Icon2"
+            id="Icon1"
           />
           <span
             className="sr-only"
@@ -236,7 +236,7 @@ exports[`BlockBrowser component render with basic parameters 1`] = `
           <span
             aria-hidden={true}
             className="fa fa-arrow-right"
-            id="Icon2"
+            id="Icon1"
           />
           <span
             className="sr-only"
@@ -269,7 +269,7 @@ exports[`BlockBrowser component render with custom classname 1`] = `
         <span
           aria-hidden={true}
           className="fa fa-arrow-up"
-          id="Icon2"
+          id="Icon1"
         />
         <span
           className="sr-only"
@@ -321,7 +321,7 @@ exports[`BlockBrowser component render with custom classname 1`] = `
           <span
             aria-hidden={true}
             className="fa fa-arrow-right"
-            id="Icon2"
+            id="Icon1"
           />
           <span
             className="sr-only"
@@ -354,7 +354,7 @@ exports[`BlockBrowser component render with custom classname 1`] = `
           <span
             aria-hidden={true}
             className="fa fa-arrow-right"
-            id="Icon2"
+            id="Icon1"
           />
           <span
             className="sr-only"
@@ -387,7 +387,7 @@ exports[`BlockBrowser component render with custom classname 1`] = `
           <span
             aria-hidden={true}
             className="fa fa-arrow-right"
-            id="Icon2"
+            id="Icon1"
           />
           <span
             className="sr-only"
@@ -420,7 +420,7 @@ exports[`BlockBrowser component render with custom classname 1`] = `
           <span
             aria-hidden={true}
             className="fa fa-arrow-right"
-            id="Icon2"
+            id="Icon1"
           />
           <span
             className="sr-only"
@@ -453,7 +453,7 @@ exports[`BlockBrowser component render with custom classname 1`] = `
           <span
             aria-hidden={true}
             className="fa fa-arrow-right"
-            id="Icon2"
+            id="Icon1"
           />
           <span
             className="sr-only"
@@ -486,7 +486,7 @@ exports[`BlockBrowser component render with custom classname 1`] = `
           <span
             aria-hidden={true}
             className="fa fa-arrow-right"
-            id="Icon2"
+            id="Icon1"
           />
           <span
             className="sr-only"
@@ -527,7 +527,7 @@ exports[`BlockList component render with basic parameters 1`] = `
         <span
           aria-hidden={true}
           className="fa fa-arrow-right"
-          id="Icon2"
+          id="Icon1"
         />
         <span
           className="sr-only"
@@ -560,7 +560,7 @@ exports[`BlockList component render with basic parameters 1`] = `
         <span
           aria-hidden={true}
           className="fa fa-arrow-right"
-          id="Icon2"
+          id="Icon1"
         />
         <span
           className="sr-only"
@@ -593,7 +593,7 @@ exports[`BlockList component render with basic parameters 1`] = `
         <span
           aria-hidden={true}
           className="fa fa-arrow-right"
-          id="Icon2"
+          id="Icon1"
         />
         <span
           className="sr-only"
@@ -626,7 +626,7 @@ exports[`BlockList component render with basic parameters 1`] = `
         <span
           aria-hidden={true}
           className="fa fa-arrow-right"
-          id="Icon2"
+          id="Icon1"
         />
         <span
           className="sr-only"
@@ -659,7 +659,7 @@ exports[`BlockList component render with basic parameters 1`] = `
         <span
           aria-hidden={true}
           className="fa fa-arrow-right"
-          id="Icon2"
+          id="Icon1"
         />
         <span
           className="sr-only"
@@ -692,7 +692,7 @@ exports[`BlockList component render with basic parameters 1`] = `
         <span
           aria-hidden={true}
           className="fa fa-arrow-right"
-          id="Icon2"
+          id="Icon1"
         />
         <span
           className="sr-only"

@@ -7,23 +7,23 @@ from datetime import datetime, timedelta
 from unittest.mock import Mock, PropertyMock, patch
 
 import ddt
+from bs4 import BeautifulSoup
 from django.conf import settings
 from django.http import Http404
 from django.test import TestCase
 from django.test.client import RequestFactory
-from django.urls import reverse
 from django.test.utils import override_settings
-from openedx.core.djangoapps.video_config.toggles import PUBLIC_VIDEO_SHARE
-from openedx_events.content_authoring.data import DuplicatedXBlockData
-from openedx_events.content_authoring.signals import XBLOCK_DUPLICATED
-from openedx_events.tests.utils import OpenEdxEventsTestMixin
+from django.urls import reverse
 from edx_proctoring.exceptions import ProctoredExamNotFoundException
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.asides import AsideUsageKeyV2
 from opaque_keys.edx.keys import CourseKey, UsageKey
 from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator
+from openedx_authz.constants.roles import COURSE_ADMIN, COURSE_AUDITOR, COURSE_EDITOR, COURSE_STAFF
+from openedx_events.content_authoring.data import DuplicatedXBlockData
+from openedx_events.content_authoring.signals import XBLOCK_DUPLICATED
+from openedx_events.testing import OpenEdxEventsTestMixin
 from pytz import UTC
-from bs4 import BeautifulSoup
 from web_fragments.fragment import Fragment
 from webob import Response
 from xblock.core import XBlockAside
@@ -32,20 +32,39 @@ from xblock.fields import Scope, ScopeIds, String
 from xblock.runtime import DictKeyValueStore, KvsFieldData
 from xblock.test.tools import TestRuntime
 from xblock.validation import ValidationMessage
+
+from cms.djangoapps.contentstore.tests.utils import CourseTestCase
+from cms.djangoapps.contentstore.utils import duplicate_block, reverse_course_url, reverse_usage_url, update_from_source
+from cms.djangoapps.contentstore.xblock_storage_handlers import view_handlers as item_module
+from cms.djangoapps.contentstore.xblock_storage_handlers.view_handlers import (
+    ALWAYS,
+    VisibilityState,
+    _get_metadata_with_problem_defaults,
+    _get_source_index,
+    _xblock_type_and_display_name,
+    add_container_page_publishing_info,
+    create_xblock_info,
+    get_block_info,
+)
+from common.djangoapps.student.tests.factories import StaffFactory, UserFactory
+from common.djangoapps.xblock_django.models import (
+    XBlockConfiguration,
+    XBlockStudioConfiguration,
+    XBlockStudioConfigurationFlag,
+)
+from common.djangoapps.xblock_django.user_service import DjangoXBlockUserService
+from common.test.utils import assert_dict_contains_subset
+from lms.djangoapps.lms_xblock.mixin import NONSENSICAL_ACCESS_RESTRICTION
+from openedx.core.djangoapps.authz.tests.mixins import CourseAuthoringAuthzTestMixin
+from openedx.core.djangoapps.content_tagging import api as tagging_api
+from openedx.core.djangoapps.discussions.models import DiscussionsConfiguration
+from openedx.core.djangoapps.video_config.toggles import PUBLIC_VIDEO_SHARE
 from xmodule.course_block import DEFAULT_START_DATE
 from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.django import modulestore
 from xmodule.modulestore.exceptions import ItemNotFoundError
-from xmodule.modulestore.tests.django_utils import (
-    TEST_DATA_SPLIT_MODULESTORE,
-    ModuleStoreTestCase,
-)
-from xmodule.modulestore.tests.factories import (
-    CourseFactory,
-    BlockFactory,
-    LibraryFactory,
-    check_mongo_calls,
-)
+from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, ModuleStoreTestCase
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory, LibraryFactory, check_mongo_calls
 from xmodule.partitions.partitions import (
     ENROLLMENT_TRACK_PARTITION_ID,
     MINIMUM_UNUSED_PARTITION_ID,
@@ -55,36 +74,7 @@ from xmodule.partitions.partitions import (
 from xmodule.partitions.tests.test_partitions import MockPartitionService
 from xmodule.x_module import STUDENT_VIEW, STUDIO_VIEW
 
-from cms.djangoapps.contentstore.tests.utils import CourseTestCase
-from cms.djangoapps.contentstore.utils import (
-    reverse_course_url,
-    reverse_usage_url,
-    duplicate_block,
-    update_from_source,
-)
-from cms.djangoapps.contentstore.xblock_storage_handlers import view_handlers as item_module
-from common.djangoapps.student.tests.factories import StaffFactory, UserFactory
-from common.djangoapps.xblock_django.models import (
-    XBlockConfiguration,
-    XBlockStudioConfiguration,
-    XBlockStudioConfigurationFlag,
-)
-from common.djangoapps.xblock_django.user_service import DjangoXBlockUserService
-from lms.djangoapps.lms_xblock.mixin import NONSENSICAL_ACCESS_RESTRICTION
-from openedx.core.djangoapps.discussions.models import DiscussionsConfiguration
-from openedx.core.djangoapps.content_tagging import api as tagging_api
-
-from ..component import component_handler, DEFAULT_ADVANCED_MODULES, get_component_templates
-from cms.djangoapps.contentstore.xblock_storage_handlers.view_handlers import (
-    ALWAYS,
-    VisibilityState,
-    get_block_info,
-    _get_source_index,
-    _xblock_type_and_display_name,
-    add_container_page_publishing_info,
-    create_xblock_info,
-)
-from common.test.utils import assert_dict_contains_subset
+from ..component import DEFAULT_ADVANCED_MODULES, component_handler, get_component_templates
 
 
 class AsideTest(XBlockAside):
@@ -126,7 +116,7 @@ class ItemTest(CourseTestCase):
         :param response:
         """
         parsed = json.loads(response.content.decode("utf-8"))
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
         key = UsageKey.from_string(parsed["locator"])
         if key.course_key.run is None:
             key = key.map_into_course(CourseKey.from_string(parsed["courseKey"]))
@@ -134,7 +124,7 @@ class ItemTest(CourseTestCase):
 
     def create_xblock(
         self, parent_usage_key=None, display_name=None, category=None, boilerplate=None
-    ):  # lint-amnesty, pylint: disable=missing-function-docstring
+    ):  # pylint: disable=missing-function-docstring
         data = {
             "parent_locator": str(self.usage_key)
             if parent_usage_key is None
@@ -154,7 +144,7 @@ class ItemTest(CourseTestCase):
         resp = self.create_xblock(
             category="vertical", parent_usage_key=parent_usage_key
         )
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
         return self.response_usage_key(resp)
 
 
@@ -176,12 +166,12 @@ class GetItemTest(ItemTest):
         Returns the HTML and resources required for the xblock at the specified UsageKey
         """
         resp = self._get_preview(usage_key, data)
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
         resp_content = json.loads(resp.content.decode("utf-8"))
         html = resp_content["html"]
-        self.assertTrue(html)
+        self.assertTrue(html)  # noqa: PT009
         resources = resp_content["resources"]
-        self.assertIsNotNone(resources)
+        self.assertIsNotNone(resources)  # noqa: PT009
         return html, resources
 
     def _get_container_preview_with_error(
@@ -189,7 +179,7 @@ class GetItemTest(ItemTest):
     ):
         """Make request and asserts on response code and response contents"""
         resp = self._get_preview(usage_key, data)
-        self.assertEqual(resp.status_code, expected_code)
+        self.assertEqual(resp.status_code, expected_code)  # noqa: PT009
         if content_contains:
             self.assertContains(resp, content_contains, status_code=expected_code)
         return resp
@@ -201,20 +191,20 @@ class GetItemTest(ItemTest):
 
         # Retrieve it
         resp = self.client.get(reverse_usage_url("xblock_handler", usage_key))
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
 
     def test_get_empty_container_fragment(self):
         root_usage_key = self._create_vertical()
         html, __ = self._get_container_preview(root_usage_key)
 
         # XBlock messages are added by the Studio wrapper.
-        self.assertIn("wrapper-xblock-message", html)
+        self.assertIn("wrapper-xblock-message", html)  # noqa: PT009
         # Make sure that "wrapper-xblock" does not appear by itself (without -message at end).
-        self.assertNotRegex(html, r"wrapper-xblock[^-]+")
+        self.assertNotRegex(html, r"wrapper-xblock[^-]+")  # noqa: PT009
 
         # Verify that the header and article tags are still added
-        self.assertIn('<header class="xblock-header xblock-header-vertical ">', html)
-        self.assertIn('<article class="xblock-render">', html)
+        self.assertIn('<header class="xblock-header xblock-header-vertical ">', html)  # noqa: PT009
+        self.assertIn('<article class="xblock-render">', html)  # noqa: PT009
 
     def test_get_container_fragment(self):
         root_usage_key = self._create_vertical()
@@ -227,18 +217,18 @@ class GetItemTest(ItemTest):
             parent_usage_key=child_vertical_usage_key,
             category="problem",
         )
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
 
         # Get the preview HTML
         html, __ = self._get_container_preview(root_usage_key)
 
         # Verify that the Studio nesting wrapper has been added
-        self.assertIn("level-nesting", html)
-        self.assertIn('<header class="xblock-header xblock-header-vertical ">', html)
-        self.assertIn('<article class="xblock-render">', html)
+        self.assertIn("level-nesting", html)  # noqa: PT009
+        self.assertIn('<header class="xblock-header xblock-header-vertical ">', html)  # noqa: PT009
+        self.assertIn('<article class="xblock-render">', html)  # noqa: PT009
 
         # Verify that the Studio element wrapper has been added
-        self.assertIn("level-element", html)
+        self.assertIn("level-element", html)  # noqa: PT009
 
     def test_get_container_nested_container_fragment(self):
         """
@@ -248,23 +238,23 @@ class GetItemTest(ItemTest):
         root_usage_key = self._create_vertical()
 
         resp = self.create_xblock(parent_usage_key=root_usage_key, category="wrapper")
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
         wrapper_usage_key = self.response_usage_key(resp)
 
         resp = self.create_xblock(
             parent_usage_key=wrapper_usage_key,
             category="problem",
         )
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
 
         # Get the preview HTML and verify the View -> link is present.
         html, __ = self._get_container_preview(root_usage_key)
-        self.assertIn("wrapper-xblock", html)
-        self.assertRegex(
+        self.assertIn("wrapper-xblock", html)  # noqa: PT009
+        self.assertRegex(  # noqa: PT009
             html,
             # The instance of the wrapper class will have an auto-generated ID. Allow any
             # characters after wrapper.
-            (
+            (  # noqa: UP032
                 '"/container/{}" class="action-button xblock-view-action-button">'
                 '\\s*<span class="action-button-text">View</span>'
             ).format(re.escape(str(wrapper_usage_key))),
@@ -282,7 +272,7 @@ class GetItemTest(ItemTest):
             parent_usage_key=child_vertical_usage_key,
             category="problem",
         )
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
         usage_key = self.response_usage_key(resp)
 
         # Get the preview HTML with tags
@@ -290,8 +280,8 @@ class GetItemTest(ItemTest):
             str(usage_key): 13,
         }
         html, __ = self._get_container_preview(root_usage_key)
-        self.assertIn("wrapper-xblock", html)
-        self.assertIn('data-testid="tag-count-button"', html)
+        self.assertIn("wrapper-xblock", html)  # noqa: PT009
+        self.assertIn('data-testid="tag-count-button"', html)  # noqa: PT009
 
     def test_split_test(self):
         """
@@ -306,12 +296,12 @@ class GetItemTest(ItemTest):
             parent_usage_key=split_test_usage_key,
             category="html",
         )
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
         resp = self.create_xblock(
             parent_usage_key=split_test_usage_key,
             category="html",
         )
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
 
     def test_split_test_edited(self):
         """
@@ -336,8 +326,8 @@ class GetItemTest(ItemTest):
             data={"metadata": {"user_partition_id": str(0)}},
         )
         html, __ = self._get_container_preview(split_test_usage_key)
-        self.assertIn("alpha", html)
-        self.assertIn("beta", html)
+        self.assertIn("alpha", html)  # noqa: PT009
+        self.assertIn("beta", html)  # noqa: PT009
 
         # Rename groups in group configuration
         GROUP_CONFIGURATION_JSON = {
@@ -363,12 +353,12 @@ class GetItemTest(ItemTest):
             HTTP_ACCEPT="application/json",
             HTTP_X_REQUESTED_WITH="XMLHttpRequest",
         )
-        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.status_code, 201)  # noqa: PT009
         html, __ = self._get_container_preview(split_test_usage_key)
-        self.assertNotIn("alpha", html)
-        self.assertNotIn("beta", html)
-        self.assertIn("New_NAME_A", html)
-        self.assertIn("New_NAME_B", html)
+        self.assertNotIn("alpha", html)  # noqa: PT009
+        self.assertNotIn("beta", html)  # noqa: PT009
+        self.assertIn("New_NAME_A", html)  # noqa: PT009
+        self.assertIn("New_NAME_B", html)  # noqa: PT009
 
     def test_valid_paging(self):
         """
@@ -389,8 +379,8 @@ class GetItemTest(ItemTest):
             )
             call_args = patched_get_preview_fragment.call_args[0]
             _, _, context = call_args
-            self.assertIn("paging", context)
-            self.assertEqual({"page_number": 0, "page_size": 2}, context["paging"])
+            self.assertIn("paging", context)  # noqa: PT009
+            self.assertEqual({"page_number": 0, "page_size": 2}, context["paging"])  # noqa: PT009
 
     @ddt.data([1, "invalid"], ["invalid", 2])
     @ddt.unpack
@@ -435,11 +425,11 @@ class GetItemTest(ItemTest):
         resp = self.create_xblock(category="vertical")
         usage_key = self.response_usage_key(resp)
         resp = self.client.get(reverse_usage_url("xblock_handler", usage_key))
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
 
         # Check that the partition and group information was returned
         result = json.loads(resp.content.decode("utf-8"))
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             result["user_partitions"],
             [
                 {
@@ -476,7 +466,7 @@ class GetItemTest(ItemTest):
                 },
             ],
         )
-        self.assertEqual(result["group_access"], {})
+        self.assertEqual(result["group_access"], {})  # noqa: PT009
 
     @ddt.data("ancestorInfo", "")
     def test_ancestor_info(self, field_type):
@@ -526,9 +516,9 @@ class GetItemTest(ItemTest):
                 xblock (XBlock): An XBlock item.
                 xblock_info (dict): A dict containing xblock information.
             """
-            self.assertEqual(str(xblock.location), xblock_info["id"])
-            self.assertEqual(xblock.display_name, xblock_info["display_name"])
-            self.assertEqual(xblock.category, xblock_info["category"])
+            self.assertEqual(str(xblock.location), xblock_info["id"])  # noqa: PT009
+            self.assertEqual(xblock.display_name, xblock_info["display_name"])  # noqa: PT009
+            self.assertEqual(xblock.category, xblock_info["category"])  # noqa: PT009
 
         for usage_key in (
             problem_usage_key,
@@ -541,18 +531,18 @@ class GetItemTest(ItemTest):
                 reverse_usage_url("xblock_handler", usage_key) + f"?fields={field_type}"
             )
             response = self.client.get(url)
-            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.status_code, 200)  # noqa: PT009
             response = json.loads(response.content.decode("utf-8"))
             if field_type == "ancestorInfo":
-                self.assertIn("ancestors", response)
+                self.assertIn("ancestors", response)  # noqa: PT009
                 for ancestor_info in response["ancestors"]:
                     parent_xblock = xblock.get_parent()
                     assert_xblock_info(parent_xblock, ancestor_info)
                     xblock = parent_xblock
             else:
-                self.assertNotIn("ancestors", response)
+                self.assertNotIn("ancestors", response)  # noqa: PT009
                 xblock_info = get_block_info(xblock)
-                self.assertEqual(xblock_info, response)
+                self.assertEqual(xblock_info, response)  # noqa: PT009
 
 
 @ddt.ddt
@@ -569,7 +559,7 @@ class DeleteItem(ItemTest):
 
         # Now delete it. There was a bug that the delete was failing (static tabs do not exist in draft modulestore).
         resp = self.client.delete(reverse_usage_url("xblock_handler", usage_key))
-        self.assertEqual(resp.status_code, 204)
+        self.assertEqual(resp.status_code, 204)  # noqa: PT009
 
 
 class TestCreateItem(ItemTest):
@@ -588,14 +578,14 @@ class TestCreateItem(ItemTest):
         # get the new item and check its category and display_name
         chap_usage_key = self.response_usage_key(resp)
         new_obj = self.get_item_from_modulestore(chap_usage_key)
-        self.assertEqual(new_obj.scope_ids.block_type, "chapter")
-        self.assertEqual(new_obj.display_name, display_name)
-        self.assertEqual(new_obj.location.org, self.course.location.org)
-        self.assertEqual(new_obj.location.course, self.course.location.course)
+        self.assertEqual(new_obj.scope_ids.block_type, "chapter")  # noqa: PT009
+        self.assertEqual(new_obj.display_name, display_name)  # noqa: PT009
+        self.assertEqual(new_obj.location.org, self.course.location.org)  # noqa: PT009
+        self.assertEqual(new_obj.location.course, self.course.location.course)  # noqa: PT009
 
         # get the course and ensure it now points to this one
         course = self.get_item_from_modulestore(self.usage_key)
-        self.assertIn(chap_usage_key, course.children)
+        self.assertIn(chap_usage_key, course.children)  # noqa: PT009
 
     def test_create_block_negative(self):
         """
@@ -603,14 +593,14 @@ class TestCreateItem(ItemTest):
         """
         # non-existent boilerplate: creates a default
         resp = self.create_xblock(category="problem")
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
 
     def test_create_with_future_date(self):
-        self.assertEqual(self.course.start, datetime(2030, 1, 1, tzinfo=UTC))
+        self.assertEqual(self.course.start, DEFAULT_START_DATE)  # noqa: PT009
         resp = self.create_xblock(category="chapter")
         usage_key = self.response_usage_key(resp)
         obj = self.get_item_from_modulestore(usage_key)
-        self.assertEqual(obj.start, datetime(2030, 1, 1, tzinfo=UTC))
+        self.assertEqual(obj.start, DEFAULT_START_DATE)  # noqa: PT009
 
     def test_static_tabs_initialization(self):
         """
@@ -622,7 +612,7 @@ class TestCreateItem(ItemTest):
 
         # Check that its name is not None
         new_tab = self.get_item_from_modulestore(usage_key)
-        self.assertEqual(new_tab.display_name, "Empty")
+        self.assertEqual(new_tab.display_name, "Empty")  # noqa: PT009
 
 
 class DuplicateHelper:
@@ -636,7 +626,7 @@ class DuplicateHelper:
         """Duplicates the source, parenting to supplied parent. Then does equality check."""
         usage_key = self._duplicate_item(parent_usage_key, source_usage_key)
         # pylint: disable=no-member
-        self.assertTrue(
+        self.assertTrue(  # noqa: PT009
             self._check_equality(
                 source_usage_key, usage_key, parent_usage_key, check_asides=check_asides
             ),
@@ -664,16 +654,16 @@ class DuplicateHelper:
         if check_asides:
             original_asides = original_item.runtime.get_asides(original_item)
             duplicated_asides = duplicated_item.runtime.get_asides(duplicated_item)
-            self.assertEqual(len(original_asides), 1)
-            self.assertEqual(len(duplicated_asides), 1)
-            self.assertEqual(original_asides[0].field11, duplicated_asides[0].field11)
-            self.assertEqual(original_asides[0].field12, duplicated_asides[0].field12)
-            self.assertNotEqual(
+            self.assertEqual(len(original_asides), 1)  # noqa: PT009
+            self.assertEqual(len(duplicated_asides), 1)  # noqa: PT009
+            self.assertEqual(original_asides[0].field11, duplicated_asides[0].field11)  # noqa: PT009
+            self.assertEqual(original_asides[0].field12, duplicated_asides[0].field12)  # noqa: PT009
+            self.assertNotEqual(  # noqa: PT009
                 original_asides[0].field13, duplicated_asides[0].field13
             )
-            self.assertEqual(duplicated_asides[0].field13, "aside1_default_value3")
+            self.assertEqual(duplicated_asides[0].field13, "aside1_default_value3")  # noqa: PT009
 
-        self.assertNotEqual(
+        self.assertNotEqual(  # noqa: PT009
             str(original_item.location),
             str(duplicated_item.location),
             "Location of duplicate should be different from original",
@@ -682,13 +672,13 @@ class DuplicateHelper:
         # Parent will only be equal for root of duplicated structure, in the case
         # where an item is duplicated in-place.
         if parent_usage_key and str(original_item.parent) == str(parent_usage_key):
-            self.assertEqual(
+            self.assertEqual(  # noqa: PT009
                 str(parent_usage_key),
                 str(duplicated_item.parent),
                 "Parent of duplicate should equal parent of source for root xblock when duplicated in-place",
             )
         else:
-            self.assertNotEqual(
+            self.assertNotEqual(  # noqa: PT009
                 str(original_item.parent),
                 str(duplicated_item.parent),
                 "Parent duplicate should be different from source",
@@ -702,7 +692,7 @@ class DuplicateHelper:
         # Children will also be duplicated, so for the purposes of testing equality, we will set
         # the children to the original after recursively checking the children.
         if original_item.has_children:
-            self.assertEqual(
+            self.assertEqual(  # noqa: PT009
                 len(original_item.children),
                 len(duplicated_item.children),
                 "Duplicated item differs in number of children",
@@ -732,11 +722,11 @@ class DuplicateHelper:
         if original_item.display_name is not None:
             return (
                 duplicated_item.display_name
-                == "Duplicate of '{display_name}'".format(
+                == "Duplicate of '{display_name}'".format(  # noqa: UP032
                     display_name=original_item.display_name
                 )
             )
-        return duplicated_item.display_name == "Duplicate of {display_name}".format(
+        return duplicated_item.display_name == "Duplicate of {display_name}".format(  # noqa: UP032
             display_name=original_item.category
         )
 
@@ -756,7 +746,7 @@ class DuplicateHelper:
         return self.response_usage_key(resp)
 
 
-class TestDuplicateItem(ItemTest, DuplicateHelper, OpenEdxEventsTestMixin):
+class TestDuplicateItem(OpenEdxEventsTestMixin, ItemTest, DuplicateHelper):
     """
     Test the duplicate method.
     """
@@ -764,22 +754,6 @@ class TestDuplicateItem(ItemTest, DuplicateHelper, OpenEdxEventsTestMixin):
     ENABLED_OPENEDX_EVENTS = [
         "org.openedx.content_authoring.xblock.duplicated.v1",
     ]
-
-    @classmethod
-    def setUpClass(cls):
-        """
-        Set up class method for the Test class.
-        This method starts manually events isolation. Explanation here:
-        openedx/core/djangoapps/user_authn/views/tests/test_events.py#L44
-        """
-        super().setUpClass()
-        cls.start_events_isolation()
-
-    @classmethod
-    def tearDownClass(cls):
-        """ Don't let our event isolation affect other test cases """
-        super().tearDownClass()
-        cls.enable_all_events()  # Re-enable events other than the ENABLED_OPENEDX_EVENTS subset we isolated.
 
     def setUp(self):
         """Creates the test course structure and a few components to 'duplicate'."""
@@ -858,21 +832,21 @@ class TestDuplicateItem(ItemTest, DuplicateHelper, OpenEdxEventsTestMixin):
             parent = self.get_item_from_modulestore(parent_usage_key)
             children = parent.children
             if source_position is None:
-                self.assertNotIn(
+                self.assertNotIn(  # noqa: PT009
                     source_usage_key,
                     children,
                     "source item not expected in children array",
                 )
-                self.assertEqual(
+                self.assertEqual(  # noqa: PT009
                     children[len(children) - 1], usage_key, "duplicated item not at end"
                 )
             else:
-                self.assertEqual(
+                self.assertEqual(  # noqa: PT009
                     children[source_position],
                     source_usage_key,
                     "source item at wrong position",
                 )
-                self.assertEqual(
+                self.assertEqual(  # noqa: PT009
                     children[source_position + 1],
                     usage_key,
                     "duplicated item not ordered after source item",
@@ -900,7 +874,7 @@ class TestDuplicateItem(ItemTest, DuplicateHelper, OpenEdxEventsTestMixin):
                 parent_usage_key, source_usage_key, display_name
             )
             duplicated_item = self.get_item_from_modulestore(usage_key)
-            self.assertEqual(duplicated_item.display_name, expected_name)
+            self.assertEqual(duplicated_item.display_name, expected_name)  # noqa: PT009
             return usage_key
 
         # Uses default display_name of 'Text' from HTML component.
@@ -931,7 +905,7 @@ class TestDuplicateItem(ItemTest, DuplicateHelper, OpenEdxEventsTestMixin):
         BlockFactory(parent=source_chapter, category="html", display_name="Child")
         # Refresh.
         source_chapter = self.store.get_item(source_chapter.location)
-        self.assertEqual(len(source_chapter.get_children()), 1)
+        self.assertEqual(len(source_chapter.get_children()), 1)  # noqa: PT009
         destination_course = CourseFactory()
         destination_location = duplicate_block(
             parent_usage_key=destination_course.location,
@@ -942,8 +916,8 @@ class TestDuplicateItem(ItemTest, DuplicateHelper, OpenEdxEventsTestMixin):
         )
         # Refresh here, too, just to be sure.
         destination_chapter = self.store.get_item(destination_location)
-        self.assertEqual(len(destination_chapter.get_children()), 0)
-        self.assertEqual(destination_chapter.display_name, "Source Chapter")
+        self.assertEqual(len(destination_chapter.get_children()), 0)  # noqa: PT009
+        self.assertEqual(destination_chapter.display_name, "Source Chapter")  # noqa: PT009
 
     def test_duplicate_library_content_block(self):  # pylint: disable=too-many-statements
         """
@@ -1109,7 +1083,7 @@ class TestDuplicateItem(ItemTest, DuplicateHelper, OpenEdxEventsTestMixin):
             user=user,
         )
         dupe_chapter = self.store.get_item(dupe_location)
-        self.assertEqual(len(dupe_chapter.get_children()), 1)
+        self.assertEqual(len(dupe_chapter.get_children()), 1)  # noqa: PT009
         dupe_block = dupe_chapter.get_children()[0]
 
         # Check that the duplicated blocks also duplicated tags
@@ -1237,8 +1211,8 @@ class TestMoveItem(ItemTest):
         split_test = self.get_item_from_modulestore(self.split_test_usage_key)
 
         # Initially, no user_partition_id is set, and the split_test has no children.
-        self.assertEqual(split_test.user_partition_id, -1)
-        self.assertEqual(len(split_test.children), 0)
+        self.assertEqual(split_test.user_partition_id, -1)  # noqa: PT009
+        self.assertEqual(len(split_test.children), 0)  # noqa: PT009
 
         # Set group configuration
         self.client.ajax_post(
@@ -1246,8 +1220,8 @@ class TestMoveItem(ItemTest):
             data={"metadata": {"user_partition_id": str(partition_id)}},
         )
         split_test = self.get_item_from_modulestore(self.split_test_usage_key)
-        self.assertEqual(split_test.user_partition_id, partition_id)
-        self.assertEqual(
+        self.assertEqual(split_test.user_partition_id, partition_id)  # noqa: PT009
+        self.assertEqual(  # noqa: PT009
             len(split_test.children),
             len(self.course.user_partitions[partition_id].groups),
         )
@@ -1292,24 +1266,24 @@ class TestMoveItem(ItemTest):
         response = self._move_component(
             source_usage_key, target_usage_key, target_index
         )
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
         response = json.loads(response.content.decode("utf-8"))
-        self.assertEqual(response["move_source_locator"], str(source_usage_key))
-        self.assertEqual(response["parent_locator"], str(target_usage_key))
-        self.assertEqual(response["source_index"], expected_index)
+        self.assertEqual(response["move_source_locator"], str(source_usage_key))  # noqa: PT009
+        self.assertEqual(response["parent_locator"], str(target_usage_key))  # noqa: PT009
+        self.assertEqual(response["source_index"], expected_index)  # noqa: PT009
 
         # Verify parent referance has been changed now.
         new_parent_loc = self.store.get_parent_location(source_usage_key)
         source_item = self.get_item_from_modulestore(source_usage_key)
-        self.assertEqual(source_item.parent, new_parent_loc)
-        self.assertEqual(new_parent_loc, target_usage_key)
-        self.assertNotEqual(parent_loc, new_parent_loc)
+        self.assertEqual(source_item.parent, new_parent_loc)  # noqa: PT009
+        self.assertEqual(new_parent_loc, target_usage_key)  # noqa: PT009
+        self.assertNotEqual(parent_loc, new_parent_loc)  # noqa: PT009
 
         # Assert item is present in children list of target parent and not source parent
         target_parent = self.get_item_from_modulestore(target_usage_key)
         source_parent = self.get_item_from_modulestore(parent_loc)
-        self.assertIn(source_usage_key, target_parent.children)
-        self.assertNotIn(source_usage_key, source_parent.children)
+        self.assertIn(source_usage_key, target_parent.children)  # noqa: PT009
+        self.assertNotIn(source_usage_key, source_parent.children)  # noqa: PT009
 
     def test_move_component(self):
         """
@@ -1329,7 +1303,7 @@ class TestMoveItem(ItemTest):
         """
         parent = self.get_item_from_modulestore(self.vert_usage_key)
         children = parent.get_children()
-        self.assertEqual(len(children), 3)
+        self.assertEqual(len(children), 3)  # noqa: PT009
 
         # Create a component within vert2.
         resp = self.create_xblock(
@@ -1341,8 +1315,8 @@ class TestMoveItem(ItemTest):
         self.assert_move_item(html2_usage_key, self.vert_usage_key, 1)
         parent = self.get_item_from_modulestore(self.vert_usage_key)
         children = parent.get_children()
-        self.assertEqual(len(children), 4)
-        self.assertEqual(children[1].location, html2_usage_key)
+        self.assertEqual(len(children), 4)  # noqa: PT009
+        self.assertEqual(children[1].location, html2_usage_key)  # noqa: PT009
 
     def test_move_undo(self):
         """
@@ -1355,22 +1329,22 @@ class TestMoveItem(ItemTest):
         # Move component and verify that response contains initial index
         response = self._move_component(self.html_usage_key, self.vert2_usage_key)
         response = json.loads(response.content.decode("utf-8"))
-        self.assertEqual(original_index, response["source_index"])
+        self.assertEqual(original_index, response["source_index"])  # noqa: PT009
 
         # Verify that new parent has the moved component at the last index.
         parent = self.get_item_from_modulestore(self.vert2_usage_key)
-        self.assertEqual(self.html_usage_key, parent.children[-1])
+        self.assertEqual(self.html_usage_key, parent.children[-1])  # noqa: PT009
 
         # Verify original and new index is different now.
         source_index = _get_source_index(self.html_usage_key, parent)
-        self.assertNotEqual(original_index, source_index)
+        self.assertNotEqual(original_index, source_index)  # noqa: PT009
 
         # Undo Move to the original index, use the source index fetched from the response.
         response = self._move_component(
             self.html_usage_key, self.vert_usage_key, response["source_index"]
         )
         response = json.loads(response.content.decode("utf-8"))
-        self.assertEqual(original_index, response["source_index"])
+        self.assertEqual(original_index, response["source_index"])  # noqa: PT009
 
     def test_move_large_target_index(self):
         """
@@ -1381,17 +1355,17 @@ class TestMoveItem(ItemTest):
         response = self._move_component(
             self.html_usage_key, self.vert2_usage_key, parent_children_length + 10
         )
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 400)  # noqa: PT009
         response = json.loads(response.content.decode("utf-8"))
 
         expected_error = (
-            "You can not move {usage_key} at an invalid index ({target_index}).".format(
+            "You can not move {usage_key} at an invalid index ({target_index}).".format(  # noqa: UP032
                 usage_key=self.html_usage_key, target_index=parent_children_length + 10
             )
         )
-        self.assertEqual(expected_error, response["error"])
+        self.assertEqual(expected_error, response["error"])  # noqa: PT009
         new_parent_loc = self.store.get_parent_location(self.html_usage_key)
-        self.assertEqual(new_parent_loc, self.vert_usage_key)
+        self.assertEqual(new_parent_loc, self.vert_usage_key)  # noqa: PT009
 
     def test_invalid_move(self):
         """
@@ -1399,31 +1373,31 @@ class TestMoveItem(ItemTest):
         """
         parent_loc = self.store.get_parent_location(self.html_usage_key)
         response = self._move_component(self.html_usage_key, self.seq_usage_key)
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 400)  # noqa: PT009
         response = json.loads(response.content.decode("utf-8"))
 
-        expected_error = "You can not move {source_type} into {target_type}.".format(
+        expected_error = "You can not move {source_type} into {target_type}.".format(  # noqa: UP032
             source_type=self.html_usage_key.block_type,
             target_type=self.seq_usage_key.block_type,
         )
-        self.assertEqual(expected_error, response["error"])
+        self.assertEqual(expected_error, response["error"])  # noqa: PT009
         new_parent_loc = self.store.get_parent_location(self.html_usage_key)
-        self.assertEqual(new_parent_loc, parent_loc)
+        self.assertEqual(new_parent_loc, parent_loc)  # noqa: PT009
 
     def test_move_current_parent(self):
         """
         Test that a component can not be moved to it's current parent.
         """
         parent_loc = self.store.get_parent_location(self.html_usage_key)
-        self.assertEqual(parent_loc, self.vert_usage_key)
+        self.assertEqual(parent_loc, self.vert_usage_key)  # noqa: PT009
         response = self._move_component(self.html_usage_key, self.vert_usage_key)
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 400)  # noqa: PT009
         response = json.loads(response.content.decode("utf-8"))
 
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             response["error"], "Item is already present in target location."
         )
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             self.store.get_parent_location(self.html_usage_key), parent_loc
         )
 
@@ -1438,15 +1412,15 @@ class TestMoveItem(ItemTest):
         )
         library_content_usage_key = self.response_usage_key(library_content)
         parent_loc = self.store.get_parent_location(library_content_usage_key)
-        self.assertEqual(parent_loc, self.vert_usage_key)
+        self.assertEqual(parent_loc, self.vert_usage_key)  # noqa: PT009
         response = self._move_component(
             library_content_usage_key, library_content_usage_key
         )
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 400)  # noqa: PT009
         response = json.loads(response.content.decode("utf-8"))
 
-        self.assertEqual(response["error"], "You can not move an item into itself.")
-        self.assertEqual(
+        self.assertEqual(response["error"], "You can not move an item into itself.")  # noqa: PT009
+        self.assertEqual(  # noqa: PT009
             self.store.get_parent_location(self.html_usage_key), parent_loc
         )
 
@@ -1461,7 +1435,7 @@ class TestMoveItem(ItemTest):
         )
         library_content_usage_key = self.response_usage_key(library_content)
         parent_loc = self.store.get_parent_location(library_content_usage_key)
-        self.assertEqual(parent_loc, self.vert_usage_key)
+        self.assertEqual(parent_loc, self.vert_usage_key)  # noqa: PT009
         self.assert_move_item(library_content_usage_key, self.vert2_usage_key)
 
     def test_move_into_library_content(self):
@@ -1515,14 +1489,14 @@ class TestMoveItem(ItemTest):
         """
         self.setup_and_verify_content_experiment(0)
         response = self._move_component(self.html_usage_key, self.split_test_usage_key)
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 400)  # noqa: PT009
         response = json.loads(response.content.decode("utf-8"))
 
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             response["error"],
             "You can not move an item directly into content experiment.",
         )
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             self.store.get_parent_location(self.html_usage_key), self.vert_usage_key
         )
 
@@ -1537,13 +1511,13 @@ class TestMoveItem(ItemTest):
             response = self._move_component(
                 self.split_test_usage_key, child_vert_usage_key
             )
-            self.assertEqual(response.status_code, 400)
+            self.assertEqual(response.status_code, 400)  # noqa: PT009
             response = json.loads(response.content.decode("utf-8"))
 
-            self.assertEqual(
+            self.assertEqual(  # noqa: PT009
                 response["error"], "You can not move an item into it's child."
             )
-            self.assertEqual(
+            self.assertEqual(  # noqa: PT009
                 self.store.get_parent_location(self.split_test_usage_key),
                 self.vert_usage_key,
             )
@@ -1563,11 +1537,11 @@ class TestMoveItem(ItemTest):
         response = self._move_component(
             self.split_test_usage_key, child_split_test.children[0]
         )
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 400)  # noqa: PT009
         response = json.loads(response.content.decode("utf-8"))
 
-        self.assertEqual(response["error"], "You can not move an item into it's child.")
-        self.assertEqual(
+        self.assertEqual(response["error"], "You can not move an item into it's child.")  # noqa: PT009
+        self.assertEqual(  # noqa: PT009
             self.store.get_parent_location(self.split_test_usage_key),
             self.vert_usage_key,
         )
@@ -1581,20 +1555,20 @@ class TestMoveItem(ItemTest):
         response = self._move_component(
             self.html_usage_key, self.vert2_usage_key, target_index
         )
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 400)  # noqa: PT009
         response = json.loads(response.content.decode("utf-8"))
 
         error = f"You must provide target_index ({target_index}) as an integer."
-        self.assertEqual(response["error"], error)
+        self.assertEqual(response["error"], error)  # noqa: PT009
         new_parent_loc = self.store.get_parent_location(self.html_usage_key)
-        self.assertEqual(new_parent_loc, parent_loc)
+        self.assertEqual(new_parent_loc, parent_loc)  # noqa: PT009
 
     def test_move_no_target_locator(self):
         """
         Test move an item without specifying the target location.
         """
         data = {"move_source_locator": str(self.html_usage_key)}
-        with self.assertRaises(InvalidKeyError):
+        with self.assertRaises(InvalidKeyError):  # noqa: PT027
             self.client.patch(
                 reverse("xblock_handler"),
                 json.dumps(data),
@@ -1606,9 +1580,9 @@ class TestMoveItem(ItemTest):
         Test patch request without providing a move source locator.
         """
         response = self.client.patch(reverse("xblock_handler"))
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 400)  # noqa: PT009
         response = json.loads(response.content.decode("utf-8"))
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             response["error"],
             "Patch request did not recognise any parameters to handle.",
         )
@@ -1619,8 +1593,8 @@ class TestMoveItem(ItemTest):
         """
         Verify that the validation message has the expected validation message and type.
         """
-        self.assertEqual(message.text, expected_message)
-        self.assertEqual(message.type, expected_message_type)
+        self.assertEqual(message.text, expected_message)  # noqa: PT009
+        self.assertEqual(message.type, expected_message_type)  # noqa: PT009
 
     def test_move_component_nonsensical_access_restriction_validation(self):
         """
@@ -1643,7 +1617,7 @@ class TestMoveItem(ItemTest):
             self.course,
             course_id=self.course.id,
         )
-        html.runtime._services["partitions"] = partitions_service  # lint-amnesty, pylint: disable=protected-access
+        html.runtime._services["partitions"] = partitions_service  # pylint: disable=protected-access
 
         # Set access settings so html will contradict vert2 when moved into that unit
         vert1.group_access = {self.course.user_partitions[0].id: [group2.id]}
@@ -1655,14 +1629,14 @@ class TestMoveItem(ItemTest):
 
         # Verify that there is no warning when html is in a non contradicting unit
         validation = html.validate()
-        self.assertEqual(len(validation.messages), 0)
+        self.assertEqual(len(validation.messages), 0)  # noqa: PT009
 
         # Now move it and confirm that the html component has been moved into vertical 2
         self.assert_move_item(self.html_usage_key, self.vert2_usage_key)
         html.parent = self.vert2_usage_key
         html = self.store.update_item(html, self.user.id)
         validation = html.validate()
-        self.assertEqual(len(validation.messages), 1)
+        self.assertEqual(len(validation.messages), 1)  # noqa: PT009
         self._verify_validation_message(
             validation.messages[0],
             NONSENSICAL_ACCESS_RESTRICTION,
@@ -1674,7 +1648,7 @@ class TestMoveItem(ItemTest):
         html.parent = self.vert_usage_key
         html = self.store.update_item(html, self.user.id)
         validation = html.validate()
-        self.assertEqual(len(validation.messages), 0)
+        self.assertEqual(len(validation.messages), 0)  # noqa: PT009
 
     @patch("cms.djangoapps.contentstore.xblock_storage_handlers.view_handlers.log")
     def test_move_logging(self, mock_logger):
@@ -1704,7 +1678,7 @@ class TestMoveItem(ItemTest):
         old_parent_loc = self.store.get_parent_location(self.html_usage_key)
 
         # Check that old_parent_loc is not yet published.
-        self.assertFalse(
+        self.assertFalse(  # noqa: PT009
             self.store.has_item(
                 old_parent_loc, revision=ModuleStoreEnum.RevisionOption.published_only
             )
@@ -1717,18 +1691,18 @@ class TestMoveItem(ItemTest):
         )
 
         # Check that old_parent_loc is now published.
-        self.assertTrue(
+        self.assertTrue(  # noqa: PT009
             self.store.has_item(
                 old_parent_loc, revision=ModuleStoreEnum.RevisionOption.published_only
             )
         )
-        self.assertFalse(self.store.has_changes(self.store.get_item(old_parent_loc)))
+        self.assertFalse(self.store.has_changes(self.store.get_item(old_parent_loc)))  # noqa: PT009
 
         # Move component html_usage_key in vert2_usage_key
         self.assert_move_item(self.html_usage_key, self.vert2_usage_key)
 
         # Check old_parent_loc becomes in draft mode now.
-        self.assertTrue(self.store.has_changes(self.store.get_item(old_parent_loc)))
+        self.assertTrue(self.store.has_changes(self.store.get_item(old_parent_loc)))  # noqa: PT009
 
         # Now discard changes in old_parent_loc
         self.client.ajax_post(
@@ -1737,25 +1711,25 @@ class TestMoveItem(ItemTest):
         )
 
         # Check that old_parent_loc now is reverted to publish. Changes discarded, html_usage_key moved back.
-        self.assertTrue(
+        self.assertTrue(  # noqa: PT009
             self.store.has_item(
                 old_parent_loc, revision=ModuleStoreEnum.RevisionOption.published_only
             )
         )
-        self.assertFalse(self.store.has_changes(self.store.get_item(old_parent_loc)))
+        self.assertFalse(self.store.has_changes(self.store.get_item(old_parent_loc)))  # noqa: PT009
 
         # Now source item should be back in the old parent.
         source_item = self.get_item_from_modulestore(self.html_usage_key)
-        self.assertEqual(source_item.parent, old_parent_loc)
-        self.assertEqual(
+        self.assertEqual(source_item.parent, old_parent_loc)  # noqa: PT009
+        self.assertEqual(  # noqa: PT009
             self.store.get_parent_location(self.html_usage_key), source_item.parent
         )
 
         # Also, check that item is not present in target parent but in source parent
         target_parent = self.get_item_from_modulestore(self.vert2_usage_key)
         source_parent = self.get_item_from_modulestore(old_parent_loc)
-        self.assertIn(self.html_usage_key, source_parent.children)
-        self.assertNotIn(self.html_usage_key, target_parent.children)
+        self.assertIn(self.html_usage_key, source_parent.children)  # noqa: PT009
+        self.assertNotIn(self.html_usage_key, target_parent.children)  # noqa: PT009
 
     def test_move_item_not_found(self):
         """
@@ -1769,7 +1743,7 @@ class TestMoveItem(ItemTest):
             ),
             "parent_locator": str(self.vert2_usage_key),
         }
-        with self.assertRaises(ItemNotFoundError):
+        with self.assertRaises(ItemNotFoundError):  # noqa: PT027
             self.client.patch(
                 reverse("xblock_handler"),
                 json.dumps(data),
@@ -1834,9 +1808,9 @@ class TestDuplicateItemWithAsides(ItemTest, DuplicateHelper):
                 scope_ids=ScopeIds("user", block_type, def_id, usage_id),
                 runtime=runtime,
             )
-            aside.field11 = "%s_new_value11" % block_type
-            aside.field12 = "%s_new_value12" % block_type
-            aside.field13 = "%s_new_value13" % block_type
+            aside.field11 = "%s_new_value11" % block_type  # noqa: UP031
+            aside.field12 = "%s_new_value12" % block_type  # noqa: UP031
+            aside.field13 = "%s_new_value13" % block_type  # noqa: UP031
 
             self.store.update_item(item, self.user.id, asides=[aside])
 
@@ -1909,30 +1883,30 @@ class TestEditItem(TestEditItemSetup):
             self.problem_update_url, data={"metadata": {"rerandomize": "onreset"}}
         )
         problem = self.get_item_from_modulestore(self.problem_usage_key)
-        self.assertEqual(problem.rerandomize, 'onreset')
+        self.assertEqual(problem.rerandomize, 'onreset')  # noqa: PT009
         self.client.ajax_post(
             self.problem_update_url, data={"metadata": {"rerandomize": None}}
         )
         problem = self.get_item_from_modulestore(self.problem_usage_key)
-        self.assertEqual(problem.rerandomize, 'never')
+        self.assertEqual(problem.rerandomize, 'never')  # noqa: PT009
 
     def test_date_fields(self):
         """
         Test setting due & start dates on sequential
         """
         sequential = self.get_item_from_modulestore(self.seq_usage_key)
-        self.assertIsNone(sequential.due)
+        self.assertIsNone(sequential.due)  # noqa: PT009
         self.client.ajax_post(
             self.seq_update_url, data={"metadata": {"due": "2010-11-22T04:00Z"}}
         )
         sequential = self.get_item_from_modulestore(self.seq_usage_key)
-        self.assertEqual(sequential.due, datetime(2010, 11, 22, 4, 0, tzinfo=UTC))
+        self.assertEqual(sequential.due, datetime(2010, 11, 22, 4, 0, tzinfo=UTC))  # noqa: PT009
         self.client.ajax_post(
             self.seq_update_url, data={"metadata": {"start": "2010-09-12T14:00Z"}}
         )
         sequential = self.get_item_from_modulestore(self.seq_usage_key)
-        self.assertEqual(sequential.due, datetime(2010, 11, 22, 4, 0, tzinfo=UTC))
-        self.assertEqual(sequential.start, datetime(2010, 9, 12, 14, 0, tzinfo=UTC))
+        self.assertEqual(sequential.due, datetime(2010, 11, 22, 4, 0, tzinfo=UTC))  # noqa: PT009
+        self.assertEqual(sequential.start, datetime(2010, 9, 12, 14, 0, tzinfo=UTC))  # noqa: PT009
 
     @ddt.data(
         "1000-01-01T00:00Z",
@@ -1954,8 +1928,8 @@ class TestEditItem(TestEditItemSetup):
             user=self.user,
         )
         # Both display and actual value should be None
-        self.assertEqual(xblock_info["due_date"], "")
-        self.assertIsNone(xblock_info["due"])
+        self.assertEqual(xblock_info["due_date"], "")  # noqa: PT009
+        self.assertIsNone(xblock_info["due"])  # noqa: PT009
 
     def test_update_generic_fields(self):
         new_display_name = "New Display Name"
@@ -1970,8 +1944,8 @@ class TestEditItem(TestEditItemSetup):
             },
         )
         problem = self.get_item_from_modulestore(self.problem_usage_key)
-        self.assertEqual(problem.display_name, new_display_name)
-        self.assertEqual(problem.max_attempts, new_max_attempts)
+        self.assertEqual(problem.display_name, new_display_name)  # noqa: PT009
+        self.assertEqual(problem.max_attempts, new_max_attempts)  # noqa: PT009
 
     def test_delete_child(self):
         """
@@ -1984,19 +1958,19 @@ class TestEditItem(TestEditItemSetup):
         chapter2_usage_key = self.response_usage_key(resp_2)
 
         course = self.get_item_from_modulestore(self.usage_key)
-        self.assertIn(chapter1_usage_key, course.children)
-        self.assertIn(chapter2_usage_key, course.children)
+        self.assertIn(chapter1_usage_key, course.children)  # noqa: PT009
+        self.assertIn(chapter2_usage_key, course.children)  # noqa: PT009
 
         # Remove one child from the course.
         resp = self.client.delete(
             reverse_usage_url("xblock_handler", chapter1_usage_key)
         )
-        self.assertEqual(resp.status_code, 204)
+        self.assertEqual(resp.status_code, 204)  # noqa: PT009
 
         # Verify that the child is removed.
         course = self.get_item_from_modulestore(self.usage_key)
-        self.assertNotIn(chapter1_usage_key, course.children)
-        self.assertIn(chapter2_usage_key, course.children)
+        self.assertNotIn(chapter1_usage_key, course.children)  # noqa: PT009
+        self.assertIn(chapter2_usage_key, course.children)  # noqa: PT009
 
     def test_reorder_children(self):
         """
@@ -2017,8 +1991,8 @@ class TestEditItem(TestEditItemSetup):
         # Children must be on the sequential to reproduce the original bug,
         # as it is important that the parent (sequential) NOT be in the draft store.
         children = self.get_item_from_modulestore(self.seq_usage_key).children
-        self.assertEqual(unit1_usage_key, children[1])
-        self.assertEqual(unit2_usage_key, children[2])
+        self.assertEqual(unit1_usage_key, children[1])  # noqa: PT009
+        self.assertEqual(unit2_usage_key, children[2])  # noqa: PT009
 
         resp = self.client.ajax_post(
             self.seq_update_url,
@@ -2030,12 +2004,12 @@ class TestEditItem(TestEditItemSetup):
                 ]
             },
         )
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
 
         children = self.get_item_from_modulestore(self.seq_usage_key).children
-        self.assertEqual(self.problem_usage_key, children[0])
-        self.assertEqual(unit1_usage_key, children[2])
-        self.assertEqual(unit2_usage_key, children[1])
+        self.assertEqual(self.problem_usage_key, children[0])  # noqa: PT009
+        self.assertEqual(unit1_usage_key, children[2])  # noqa: PT009
+        self.assertEqual(unit2_usage_key, children[1])  # noqa: PT009
 
     def test_move_parented_child(self):
         """
@@ -2060,14 +2034,14 @@ class TestEditItem(TestEditItemSetup):
         resp = self.client.ajax_post(
             self.seq2_update_url, data={"children": [str(unit_1_key), str(unit_2_key)]}
         )
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
 
         # verify children
-        self.assertListEqual(
+        self.assertListEqual(  # noqa: PT009
             self.get_item_from_modulestore(self.seq2_usage_key).children,
             [unit_1_key, unit_2_key],
         )
-        self.assertListEqual(
+        self.assertListEqual(  # noqa: PT009
             self.get_item_from_modulestore(self.seq_usage_key).children,
             [self.problem_usage_key],  # problem child created in setUp
         )
@@ -2089,7 +2063,7 @@ class TestEditItem(TestEditItemSetup):
         )
 
         # verify children
-        self.assertListEqual(
+        self.assertListEqual(  # noqa: PT009
             self.get_item_from_modulestore(self.seq2_usage_key).children, []
         )
 
@@ -2121,7 +2095,7 @@ class TestEditItem(TestEditItemSetup):
         )
 
         # verify children
-        self.assertListEqual(
+        self.assertListEqual(  # noqa: PT009
             self.get_item_from_modulestore(self.seq2_usage_key).children,
             [unit_1_key, unit_2_key],
         )
@@ -2138,20 +2112,20 @@ class TestEditItem(TestEditItemSetup):
         """
         Verifies the item with given location has a published version and no draft (unpublished changes).
         """
-        self.assertTrue(self._is_location_published(location))
-        self.assertFalse(modulestore().has_changes(modulestore().get_item(location)))
+        self.assertTrue(self._is_location_published(location))  # noqa: PT009
+        self.assertFalse(modulestore().has_changes(modulestore().get_item(location)))  # noqa: PT009
 
     def _verify_published_with_draft(self, location):
         """
         Verifies the item with given location has a published version and also a draft version (unpublished changes).
         """
-        self.assertTrue(self._is_location_published(location))
-        self.assertTrue(modulestore().has_changes(modulestore().get_item(location)))
+        self.assertTrue(self._is_location_published(location))  # noqa: PT009
+        self.assertTrue(modulestore().has_changes(modulestore().get_item(location)))  # noqa: PT009
 
     def test_make_public(self):
         """Test making a private problem public (publishing it)."""
         # When the problem is first created, it is only in draft (because of its category).
-        self.assertFalse(self._is_location_published(self.problem_usage_key))
+        self.assertFalse(self._is_location_published(self.problem_usage_key))  # noqa: PT009
         self.client.ajax_post(self.problem_update_url, data={"publish": "make_public"})
         self._verify_published_with_no_draft(self.problem_usage_key)
 
@@ -2170,14 +2144,14 @@ class TestEditItem(TestEditItemSetup):
             self.problem_usage_key,
             revision=ModuleStoreEnum.RevisionOption.published_only,
         )
-        self.assertIsNone(published.due)
+        self.assertIsNone(published.due)  # noqa: PT009
 
     def test_republish(self):
         """Test republishing an item."""
         new_display_name = "New Display Name"
 
         # When the problem is first created, it is only in draft (because of its category).
-        self.assertFalse(self._is_location_published(self.problem_usage_key))
+        self.assertFalse(self._is_location_published(self.problem_usage_key))  # noqa: PT009
 
         # Republishing when only in draft will update the draft but not cause a public item to be created.
         self.client.ajax_post(
@@ -2187,9 +2161,9 @@ class TestEditItem(TestEditItemSetup):
                 "metadata": {"display_name": new_display_name},
             },
         )
-        self.assertFalse(self._is_location_published(self.problem_usage_key))
+        self.assertFalse(self._is_location_published(self.problem_usage_key))  # noqa: PT009
         draft = self.get_item_from_modulestore(self.problem_usage_key)
-        self.assertEqual(draft.display_name, new_display_name)
+        self.assertEqual(draft.display_name, new_display_name)  # noqa: PT009
 
         # Publish the item
         self.client.ajax_post(self.problem_update_url, data={"publish": "make_public"})
@@ -2208,7 +2182,7 @@ class TestEditItem(TestEditItemSetup):
             self.problem_usage_key,
             revision=ModuleStoreEnum.RevisionOption.published_only,
         )
-        self.assertEqual(published.display_name, new_display_name_2)
+        self.assertEqual(published.display_name, new_display_name_2)  # noqa: PT009
 
     def test_direct_only_categories_not_republished(self):
         """Verify that republish is ignored for items in DIRECT_ONLY_CATEGORIES"""
@@ -2240,20 +2214,20 @@ class TestEditItem(TestEditItemSetup):
         published = modulestore().get_item(
             self.problem_usage_key,
             revision=ModuleStoreEnum.RevisionOption.published_only,
-        )  # lint-amnesty, pylint: disable=line-too-long
+        )  # pylint: disable=line-too-long
 
         # Update the draft version and check that published is different.
         self.client.ajax_post(
             self.problem_update_url, data={"metadata": {"due": "2077-10-10T04:00Z"}}
         )
         updated_draft = self.get_item_from_modulestore(self.problem_usage_key)
-        self.assertEqual(updated_draft.due, datetime(2077, 10, 10, 4, 0, tzinfo=UTC))
-        self.assertIsNone(published.due)
+        self.assertEqual(updated_draft.due, datetime(2077, 10, 10, 4, 0, tzinfo=UTC))  # noqa: PT009
+        self.assertIsNone(published.due)  # noqa: PT009
         # Fetch the published version again to make sure the due date is still unset.
         published = modulestore().get_item(
             published.location, revision=ModuleStoreEnum.RevisionOption.published_only
         )
-        self.assertIsNone(published.due)
+        self.assertIsNone(published.due)  # noqa: PT009
 
     def test_make_public_with_update(self):
         """Update a problem and make it public at the same time."""
@@ -2262,7 +2236,7 @@ class TestEditItem(TestEditItemSetup):
             data={"metadata": {"due": "2077-10-10T04:00Z"}, "publish": "make_public"},
         )
         published = self.get_item_from_modulestore(self.problem_usage_key)
-        self.assertEqual(published.due, datetime(2077, 10, 10, 4, 0, tzinfo=UTC))
+        self.assertEqual(published.due, datetime(2077, 10, 10, 4, 0, tzinfo=UTC))  # noqa: PT009
 
     def test_published_and_draft_contents_with_update(self):
         """Create a draft and publish it then modify the draft and check that published content is not modified"""
@@ -2287,30 +2261,30 @@ class TestEditItem(TestEditItemSetup):
 
         # Both published and draft content should be different
         draft = self.get_item_from_modulestore(self.problem_usage_key)
-        self.assertNotEqual(draft.data, published.data)
+        self.assertNotEqual(draft.data, published.data)  # noqa: PT009
 
         # Get problem by 'xblock_handler'
         view_url = reverse_usage_url(
             "xblock_view_handler", self.problem_usage_key, {"view_name": STUDENT_VIEW}
         )
         resp = self.client.get(view_url, HTTP_ACCEPT="application/json")
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
 
         # Activate the editing view
         view_url = reverse_usage_url(
             "xblock_view_handler", self.problem_usage_key, {"view_name": STUDIO_VIEW}
         )
         resp = self.client.get(view_url, HTTP_ACCEPT="application/json")
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
 
         # Both published and draft content should still be different
         draft = self.get_item_from_modulestore(self.problem_usage_key)
-        self.assertNotEqual(draft.data, published.data)
+        self.assertNotEqual(draft.data, published.data)  # noqa: PT009
         # Fetch the published version again to make sure the data is correct.
         published = modulestore().get_item(
             published.location, revision=ModuleStoreEnum.RevisionOption.published_only
         )
-        self.assertNotEqual(draft.data, published.data)
+        self.assertNotEqual(draft.data, published.data)  # noqa: PT009
 
     def test_publish_states_of_nested_xblocks(self):
         """Test publishing of a unit page containing a nested xblock"""
@@ -2328,12 +2302,12 @@ class TestEditItem(TestEditItemSetup):
 
         # The unit and its children should be private initially
         unit_update_url = reverse_usage_url("xblock_handler", unit_usage_key)
-        self.assertFalse(self._is_location_published(unit_usage_key))
-        self.assertFalse(self._is_location_published(html_usage_key))
+        self.assertFalse(self._is_location_published(unit_usage_key))  # noqa: PT009
+        self.assertFalse(self._is_location_published(html_usage_key))  # noqa: PT009
 
         # Make the unit public and verify that the problem is also made public
         resp = self.client.ajax_post(unit_update_url, data={"publish": "make_public"})
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
         self._verify_published_with_no_draft(unit_usage_key)
         self._verify_published_with_no_draft(html_usage_key)
 
@@ -2357,10 +2331,10 @@ class TestEditItem(TestEditItemSetup):
                 },
             },
         )
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 400)  # noqa: PT009
         parsed = json.loads(response.content.decode("utf-8"))
-        self.assertIn("error", parsed)
-        self.assertIn(
+        self.assertIn("error", parsed)  # noqa: PT009
+        self.assertIn(  # noqa: PT009
             "Incorrect RelativeTime value", parsed["error"]
         )  # See xmodule/fields.py
 
@@ -2441,7 +2415,7 @@ class TestEditSplitModule(ItemTest):
 
         # Verify the partition_id was saved.
         split_test = self.get_item_from_modulestore(self.split_test_usage_key)
-        self.assertEqual(partition_id, split_test.user_partition_id)
+        self.assertEqual(partition_id, split_test.user_partition_id)  # noqa: PT009
         return split_test
 
     def _assert_children(self, expected_number):
@@ -2449,7 +2423,7 @@ class TestEditSplitModule(ItemTest):
         Verifies the number of children of the split_test instance.
         """
         split_test = self.get_item_from_modulestore(self.split_test_usage_key)
-        self.assertEqual(expected_number, len(split_test.children))
+        self.assertEqual(expected_number, len(split_test.children))  # noqa: PT009
         return split_test
 
     def test_create_groups(self):
@@ -2459,32 +2433,32 @@ class TestEditSplitModule(ItemTest):
         """
         split_test = self.get_item_from_modulestore(self.split_test_usage_key)
         # Initially, no user_partition_id is set, and the split_test has no children.
-        self.assertEqual(-1, split_test.user_partition_id)
-        self.assertEqual(0, len(split_test.children))
+        self.assertEqual(-1, split_test.user_partition_id)  # noqa: PT009
+        self.assertEqual(0, len(split_test.children))  # noqa: PT009
 
         # Set the user_partition_id to match the first user_partition.
         split_test = self._update_partition_id(self.first_user_partition.id)
 
         # Verify that child verticals have been set to match the groups
-        self.assertEqual(2, len(split_test.children))
+        self.assertEqual(2, len(split_test.children))  # noqa: PT009
         vertical_0 = self.get_item_from_modulestore(split_test.children[0])
         vertical_1 = self.get_item_from_modulestore(split_test.children[1])
-        self.assertEqual("vertical", vertical_0.category)
-        self.assertEqual("vertical", vertical_1.category)
-        self.assertEqual(
+        self.assertEqual("vertical", vertical_0.category)  # noqa: PT009
+        self.assertEqual("vertical", vertical_1.category)  # noqa: PT009
+        self.assertEqual(  # noqa: PT009
             "Group ID " + str(MINIMUM_UNUSED_PARTITION_ID + 1), vertical_0.display_name
         )
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             "Group ID " + str(MINIMUM_UNUSED_PARTITION_ID + 2), vertical_1.display_name
         )
 
         # Verify that the group_id_to_child mapping is correct.
-        self.assertEqual(2, len(split_test.group_id_to_child))
-        self.assertEqual(
+        self.assertEqual(2, len(split_test.group_id_to_child))  # noqa: PT009
+        self.assertEqual(  # noqa: PT009
             vertical_0.location,
             split_test.group_id_to_child[str(self.first_user_partition_group_1.id)],
         )
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             vertical_1.location,
             split_test.group_id_to_child[str(self.first_user_partition_group_2.id)],
         )
@@ -2495,12 +2469,12 @@ class TestEditSplitModule(ItemTest):
         """
         split_test = self.get_item_from_modulestore(self.split_test_usage_key)
         # Initially, no user_partition_id is set, and the split_test has no children.
-        self.assertEqual(split_test.user_partition_id, -1)
-        self.assertEqual(len(split_test.children), 0)
+        self.assertEqual(split_test.user_partition_id, -1)  # noqa: PT009
+        self.assertEqual(len(split_test.children), 0)  # noqa: PT009
         # Set the user_partition_id to match the first user_partition.
         split_test = self._update_partition_id(self.first_user_partition.id)
         # Verify that child verticals have been set to match the groups
-        self.assertEqual(len(split_test.children), 2)
+        self.assertEqual(len(split_test.children), 2)  # noqa: PT009
 
         # Get xblock outline
         xblock_info = create_xblock_info(
@@ -2511,10 +2485,10 @@ class TestEditSplitModule(ItemTest):
             course=self.course,
             user=self.request.user,
         )
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             xblock_info["child_info"]["children"][0]["display_name"], "alpha"
         )
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             xblock_info["child_info"]["children"][1]["display_name"], "beta"
         )
 
@@ -2525,36 +2499,36 @@ class TestEditSplitModule(ItemTest):
         """
         # Set to first group configuration.
         split_test = self._update_partition_id(self.first_user_partition.id)
-        self.assertEqual(2, len(split_test.children))
+        self.assertEqual(2, len(split_test.children))  # noqa: PT009
         initial_vertical_0_location = split_test.children[0]
         initial_vertical_1_location = split_test.children[1]
 
         # Set to second group configuration
         split_test = self._update_partition_id(self.second_user_partition.id)
         # We don't remove existing children.
-        self.assertEqual(5, len(split_test.children))
-        self.assertEqual(initial_vertical_0_location, split_test.children[0])
-        self.assertEqual(initial_vertical_1_location, split_test.children[1])
+        self.assertEqual(5, len(split_test.children))  # noqa: PT009
+        self.assertEqual(initial_vertical_0_location, split_test.children[0])  # noqa: PT009
+        self.assertEqual(initial_vertical_1_location, split_test.children[1])  # noqa: PT009
         vertical_0 = self.get_item_from_modulestore(split_test.children[2])
         vertical_1 = self.get_item_from_modulestore(split_test.children[3])
         vertical_2 = self.get_item_from_modulestore(split_test.children[4])
 
         # Verify that the group_id_to child mapping is correct.
-        self.assertEqual(3, len(split_test.group_id_to_child))
-        self.assertEqual(
+        self.assertEqual(3, len(split_test.group_id_to_child))  # noqa: PT009
+        self.assertEqual(  # noqa: PT009
             vertical_0.location,
             split_test.group_id_to_child[str(self.second_user_partition_group_1.id)],
         )
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             vertical_1.location,
             split_test.group_id_to_child[str(self.second_user_partition_group_2.id)],
         )
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             vertical_2.location,
             split_test.group_id_to_child[str(self.second_user_partition_group_3.id)],
         )
-        self.assertNotEqual(initial_vertical_0_location, vertical_0.location)
-        self.assertNotEqual(initial_vertical_1_location, vertical_1.location)
+        self.assertNotEqual(initial_vertical_0_location, vertical_0.location)  # noqa: PT009
+        self.assertNotEqual(initial_vertical_1_location, vertical_1.location)  # noqa: PT009
 
     def test_change_same_user_partition_id(self):
         """
@@ -2562,13 +2536,13 @@ class TestEditSplitModule(ItemTest):
         """
         # Set to first group configuration.
         split_test = self._update_partition_id(self.first_user_partition.id)
-        self.assertEqual(2, len(split_test.children))
+        self.assertEqual(2, len(split_test.children))  # noqa: PT009
         initial_group_id_to_child = split_test.group_id_to_child
 
         # Set again to first group configuration.
         split_test = self._update_partition_id(self.first_user_partition.id)
-        self.assertEqual(2, len(split_test.children))
-        self.assertEqual(initial_group_id_to_child, split_test.group_id_to_child)
+        self.assertEqual(2, len(split_test.children))  # noqa: PT009
+        self.assertEqual(initial_group_id_to_child, split_test.group_id_to_child)  # noqa: PT009
 
     def test_change_non_existent_user_partition_id(self):
         """
@@ -2578,13 +2552,13 @@ class TestEditSplitModule(ItemTest):
         """
         # Set to first group configuration.
         split_test = self._update_partition_id(self.first_user_partition.id)
-        self.assertEqual(2, len(split_test.children))
+        self.assertEqual(2, len(split_test.children))  # noqa: PT009
         initial_group_id_to_child = split_test.group_id_to_child
 
         # Set to an group configuration that doesn't exist.
         split_test = self._update_partition_id(-50)
-        self.assertEqual(2, len(split_test.children))
-        self.assertEqual(initial_group_id_to_child, split_test.group_id_to_child)
+        self.assertEqual(2, len(split_test.children))  # noqa: PT009
+        self.assertEqual(initial_group_id_to_child, split_test.group_id_to_child)  # noqa: PT009
 
     def test_add_groups(self):
         """
@@ -2615,7 +2589,7 @@ class TestEditSplitModule(ItemTest):
         # group_id_to_child and children have not changed yet.
         split_test = self._assert_children(2)
         group_id_to_child = split_test.group_id_to_child.copy()
-        self.assertEqual(2, len(group_id_to_child))
+        self.assertEqual(2, len(group_id_to_child))  # noqa: PT009
 
         # SplitModuleStoreRuntime is used in tests.
         # SplitModuleStoreRuntime doesn't have user service, that's needed for
@@ -2627,14 +2601,14 @@ class TestEditSplitModule(ItemTest):
         # Call add_missing_groups method to add the missing group.
         split_test.add_missing_groups(self.request)
         split_test = self._assert_children(3)
-        self.assertNotEqual(group_id_to_child, split_test.group_id_to_child)
+        self.assertNotEqual(group_id_to_child, split_test.group_id_to_child)  # noqa: PT009
         group_id_to_child = split_test.group_id_to_child
-        self.assertEqual(split_test.children[2], group_id_to_child[new_group_id])
+        self.assertEqual(split_test.children[2], group_id_to_child[new_group_id])  # noqa: PT009
 
         # Call add_missing_groups again -- it should be a no-op.
         split_test.add_missing_groups(self.request)
         split_test = self._assert_children(3)
-        self.assertEqual(group_id_to_child, split_test.group_id_to_child)
+        self.assertEqual(group_id_to_child, split_test.group_id_to_child)  # noqa: PT009
 
 
 @ddt.ddt
@@ -2670,15 +2644,15 @@ class TestComponentHandler(TestCase):
     def test_invalid_handler(self):
         self.block.handle.side_effect = NoSuchHandlerError
 
-        with self.assertRaises(Http404):
+        with self.assertRaises(Http404):  # noqa: PT027
             component_handler(self.request, self.usage_key_string, "invalid_handler")
 
     @ddt.data("GET", "POST", "PUT", "DELETE")
     def test_request_method(self, method):
         def check_handler(
             handler, request, suffix
-        ):  # lint-amnesty, pylint: disable=unused-argument
-            self.assertEqual(request.method, method)
+        ):  # pylint: disable=unused-argument
+            self.assertEqual(request.method, method)  # noqa: PT009
             return Response()
 
         self.block.handle = check_handler
@@ -2693,12 +2667,12 @@ class TestComponentHandler(TestCase):
     def test_response_code(self, status_code):
         def create_response(
             handler, request, suffix
-        ):  # lint-amnesty, pylint: disable=unused-argument
+        ):  # pylint: disable=unused-argument
             return Response(status_code=status_code)
 
         self.block.handle = create_response
 
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             component_handler(
                 self.request, self.usage_key_string, "dummy_handler"
             ).status_code,
@@ -2716,7 +2690,7 @@ class TestComponentHandler(TestCase):
 
         def create_response(
             handler, request, suffix
-        ):  # lint-amnesty, pylint: disable=unused-argument
+        ):  # pylint: disable=unused-argument
             """create dummy response"""
             return Response(status_code=200)
 
@@ -2752,7 +2726,7 @@ class TestComponentHandler(TestCase):
 
         def create_response(
             handler, request, suffix
-        ):  # lint-amnesty, pylint: disable=unused-argument
+        ):  # pylint: disable=unused-argument
             """create dummy response"""
             return Response(status_code=200)
 
@@ -2832,6 +2806,7 @@ class TestComponentTemplates(CourseTestCase):
             "Google Calendar",
             "Google Document",
             "LTI Consumer",
+            "PDF",
             "Poll",
             "Content Experiment",
             "Survey",
@@ -2888,19 +2863,19 @@ class TestComponentTemplates(CourseTestCase):
         self._verify_basic_component_display_name("discussion", "Discussion")
         self._verify_basic_component_display_name("video", "Video")
         self._verify_basic_component_display_name("openassessment", "Open Response")
-        self.assertGreater(len(self.get_templates_of_type("library")), 0)
-        self.assertGreater(len(self.get_templates_of_type("html")), 0)
-        self.assertGreater(len(self.get_templates_of_type("problem")), 0)
+        self.assertGreater(len(self.get_templates_of_type("library")), 0)  # noqa: PT009
+        self.assertGreater(len(self.get_templates_of_type("html")), 0)  # noqa: PT009
+        self.assertGreater(len(self.get_templates_of_type("problem")), 0)  # noqa: PT009
 
         # Check for default advanced modules
         advanced_templates = self.get_templates_of_type("advanced")
         advanced_module_keys = [t['category'] for t in advanced_templates]
-        self.assertCountEqual(advanced_module_keys, DEFAULT_ADVANCED_MODULES)
+        self.assertCountEqual(advanced_module_keys, DEFAULT_ADVANCED_MODULES)  # noqa: PT009
 
         # Now fully disable video through XBlockConfiguration
         XBlockConfiguration.objects.create(name="video", enabled=False)
         self.templates = get_component_templates(self.course)
-        self.assertIsNone(self.get_templates_of_type("video"))
+        self.assertIsNone(self.get_templates_of_type("video"))  # noqa: PT009
 
     def test_basic_components_support_levels(self):
         """
@@ -2909,7 +2884,7 @@ class TestComponentTemplates(CourseTestCase):
         XBlockStudioConfigurationFlag.objects.create(enabled=True)
         self.templates = get_component_templates(self.course)
         self._verify_basic_component("discussion", "Discussion", "ps")
-        self.assertEqual([], self.get_templates_of_type("video"))
+        self.assertEqual([], self.get_templates_of_type("video"))  # noqa: PT009
         supported_problem_templates = [
             {
                 "boilerplate_name": None,
@@ -2920,7 +2895,7 @@ class TestComponentTemplates(CourseTestCase):
                 "tab": "advanced",
             }
         ]
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             supported_problem_templates, self.get_templates_of_type("problem")
         )
 
@@ -2931,7 +2906,7 @@ class TestComponentTemplates(CourseTestCase):
         # Now fully disable video through XBlockConfiguration
         XBlockConfiguration.objects.create(name="video", enabled=False)
         self.templates = get_component_templates(self.course)
-        self.assertIsNone(self.get_templates_of_type("video"))
+        self.assertIsNone(self.get_templates_of_type("video"))  # noqa: PT009
 
     def test_advanced_components(self):
         """
@@ -2941,11 +2916,11 @@ class TestComponentTemplates(CourseTestCase):
         EXPECTED_ADVANCED_MODULES_LENGTH = len(DEFAULT_ADVANCED_MODULES) + 1
         self.templates = get_component_templates(self.course)
         advanced_templates = self.get_templates_of_type("advanced")
-        self.assertEqual(len(advanced_templates), EXPECTED_ADVANCED_MODULES_LENGTH)
+        self.assertEqual(len(advanced_templates), EXPECTED_ADVANCED_MODULES_LENGTH)  # noqa: PT009
         done_template = advanced_templates[0]
-        self.assertEqual(done_template.get("category"), "done")
-        self.assertEqual(done_template.get("display_name"), "Completion")
-        self.assertIsNone(done_template.get("boilerplate_name", None))
+        self.assertEqual(done_template.get("category"), "done")  # noqa: PT009
+        self.assertEqual(done_template.get("display_name"), "Completion")  # noqa: PT009
+        self.assertIsNone(done_template.get("boilerplate_name", None))  # noqa: PT009
 
         # Verify that components are not added twice
         self.course.advanced_modules.append("video")
@@ -2957,18 +2932,18 @@ class TestComponentTemplates(CourseTestCase):
 
         self.templates = get_component_templates(self.course)
         advanced_templates = self.get_templates_of_type("advanced")
-        self.assertEqual(len(advanced_templates), EXPECTED_ADVANCED_MODULES_LENGTH)
+        self.assertEqual(len(advanced_templates), EXPECTED_ADVANCED_MODULES_LENGTH)  # noqa: PT009
         only_template = advanced_templates[0]
-        self.assertNotEqual(only_template.get("category"), "video")
-        self.assertNotEqual(only_template.get("category"), "drag-and-drop-v2")
-        self.assertNotEqual(only_template.get("category"), "poll")
-        self.assertNotEqual(only_template.get("category"), "google-document")
-        self.assertNotEqual(only_template.get("category"), "survey")
+        self.assertNotEqual(only_template.get("category"), "video")  # noqa: PT009
+        self.assertNotEqual(only_template.get("category"), "drag-and-drop-v2")  # noqa: PT009
+        self.assertNotEqual(only_template.get("category"), "poll")  # noqa: PT009
+        self.assertNotEqual(only_template.get("category"), "google-document")  # noqa: PT009
+        self.assertNotEqual(only_template.get("category"), "survey")  # noqa: PT009
 
         # Now fully disable done through XBlockConfiguration
         XBlockConfiguration.objects.create(name="done", enabled=False)
         self.templates = get_component_templates(self.course)
-        self.assertTrue((not any(item.get("category") == "done" for item in self.get_templates_of_type("advanced"))))
+        self.assertTrue((not any(item.get("category") == "done" for item in self.get_templates_of_type("advanced"))))  # noqa: PT009, UP034  # pylint: disable=line-too-long
 
     def test_deprecated_no_advance_component_button(self):
         """
@@ -2986,7 +2961,7 @@ class TestComponentTemplates(CourseTestCase):
         self.course.advanced_modules.extend(["poll", "survey"])
         templates = get_component_templates(self.course)
         button_names = [template["display_name"] for template in templates]
-        self.assertNotIn("Advanced", button_names)
+        self.assertNotIn("Advanced", button_names)  # noqa: PT009
 
     def test_cannot_create_deprecated_problems(self):
         """
@@ -3037,18 +3012,18 @@ class TestComponentTemplates(CourseTestCase):
             Helper method to verify that staffgradedxblock template is present
             """
             sgp = get_xblock_problem("Staff Graded Points")
-            self.assertIsNotNone(sgp)
-            self.assertEqual(sgp.get("category"), "staffgradedxblock")
-            self.assertEqual(sgp.get("support_level"), support_level)
+            self.assertIsNotNone(sgp)  # noqa: PT009
+            self.assertEqual(sgp.get("category"), "staffgradedxblock")  # noqa: PT009
+            self.assertEqual(sgp.get("support_level"), support_level)  # noqa: PT009
 
         def verify_dndv2_present(support_level):
             """
             Helper method to verify that DnDv2 template is present
             """
             dndv2 = get_xblock_problem("Drag and Drop")
-            self.assertIsNotNone(dndv2)
-            self.assertEqual(dndv2.get("category"), "drag-and-drop-v2")
-            self.assertEqual(dndv2.get("support_level"), support_level)
+            self.assertIsNotNone(dndv2)  # noqa: PT009
+            self.assertEqual(dndv2.get("category"), "drag-and-drop-v2")  # noqa: PT009
+            self.assertEqual(dndv2.get("support_level"), support_level)  # noqa: PT009
 
         verify_dndv2_present(True)
         verify_staffgradedxblock_present(True)
@@ -3056,8 +3031,8 @@ class TestComponentTemplates(CourseTestCase):
         # Now enable XBlockStudioConfigurationFlag. The staffgradedxblock block is marked
         # unsupported, so will no longer show up, but DnDv2 will continue to appear.
         XBlockStudioConfigurationFlag.objects.create(enabled=True)
-        self.assertIsNone(get_xblock_problem("Staff Graded Points"))
-        self.assertIsNotNone(get_xblock_problem("Drag and Drop"))
+        self.assertIsNone(get_xblock_problem("Staff Graded Points"))  # noqa: PT009
+        self.assertIsNotNone(get_xblock_problem("Drag and Drop"))  # noqa: PT009
 
         # Now allow unsupported components.
         self.course.allow_unsupported_xblocks = True
@@ -3067,8 +3042,8 @@ class TestComponentTemplates(CourseTestCase):
         # Now disable the blocks completely through XBlockConfiguration
         XBlockConfiguration.objects.create(name="staffgradedxblock", enabled=False)
         XBlockConfiguration.objects.create(name="drag-and-drop-v2", enabled=False)
-        self.assertIsNone(get_xblock_problem("Staff Graded Points"))
-        self.assertIsNone(get_xblock_problem("Drag and Drop"))
+        self.assertIsNone(get_xblock_problem("Staff Graded Points"))  # noqa: PT009
+        self.assertIsNone(get_xblock_problem("Drag and Drop"))  # noqa: PT009
 
     def test_discussion_button_present_no_provider(self):
         """
@@ -3114,16 +3089,16 @@ class TestComponentTemplates(CourseTestCase):
         """
         templates = get_component_templates(self.course)
         button_names = [template["display_name"] for template in templates]
-        self.assertIn("Advanced", button_names)
-        self.assertEqual(len(templates[-1]["templates"]), len(expected_xblocks))
+        self.assertIn("Advanced", button_names)  # noqa: PT009
+        self.assertEqual(len(templates[-1]["templates"]), len(expected_xblocks))  # noqa: PT009
         template_display_names = [
             template["display_name"] for template in templates[-1]["templates"]
         ]
-        self.assertEqual(template_display_names, expected_xblocks)
+        self.assertEqual(template_display_names, expected_xblocks)  # noqa: PT009
         template_support_levels = [
             template["support_level"] for template in templates[-1]["templates"]
         ]
-        self.assertEqual(template_support_levels, expected_support_levels)
+        self.assertEqual(template_support_levels, expected_support_levels)  # noqa: PT009
 
     def _verify_basic_component(
         self, component_type, display_name, support_level=True, no_of_templates=1
@@ -3132,16 +3107,16 @@ class TestComponentTemplates(CourseTestCase):
         Verify the display name and support level of basic components (that have no boilerplates).
         """
         templates = self.get_templates_of_type(component_type)
-        self.assertEqual(no_of_templates, len(templates))
-        self.assertEqual(display_name, templates[0]["display_name"])
-        self.assertEqual(support_level, templates[0]["support_level"])
+        self.assertEqual(no_of_templates, len(templates))  # noqa: PT009
+        self.assertEqual(display_name, templates[0]["display_name"])  # noqa: PT009
+        self.assertEqual(support_level, templates[0]["support_level"])  # noqa: PT009
 
     def _verify_basic_component_display_name(self, component_type, display_name):
         """
         Verify the display name of basic components.
         """
         component_display_name = self.get_display_name_of_type(component_type)
-        self.assertEqual(display_name, component_display_name)
+        self.assertEqual(display_name, component_display_name)  # noqa: PT009
 
 
 @ddt.ddt
@@ -3221,11 +3196,11 @@ class TestXBlockInfo(ItemTest):
         )
         # entrance exam chapter should not be deletable, draggable and childAddable.
         actions = xblock_info["actions"]
-        self.assertEqual(actions["deletable"], False)
-        self.assertEqual(actions["draggable"], False)
-        self.assertEqual(actions["childAddable"], False)
-        self.assertEqual(xblock_info["display_name"], "Entrance Exam")
-        self.assertIsNone(xblock_info.get("is_header_visible", None))
+        self.assertEqual(actions["deletable"], False)  # noqa: PT009
+        self.assertEqual(actions["draggable"], False)  # noqa: PT009
+        self.assertEqual(actions["childAddable"], False)  # noqa: PT009
+        self.assertEqual(xblock_info["display_name"], "Entrance Exam")  # noqa: PT009
+        self.assertIsNone(xblock_info.get("is_header_visible", None))  # noqa: PT009
 
     def test_none_entrance_exam_chapter_xblock_info(self):
         chapter = BlockFactory.create(
@@ -3243,11 +3218,11 @@ class TestXBlockInfo(ItemTest):
 
         # chapter should be deletable, draggable and childAddable if not an entrance exam.
         actions = xblock_info["actions"]
-        self.assertEqual(actions["deletable"], True)
-        self.assertEqual(actions["draggable"], True)
-        self.assertEqual(actions["childAddable"], True)
+        self.assertEqual(actions["deletable"], True)  # noqa: PT009
+        self.assertEqual(actions["draggable"], True)  # noqa: PT009
+        self.assertEqual(actions["childAddable"], True)  # noqa: PT009
         # chapter xblock info should not contains the key of 'is_header_visible'.
-        self.assertIsNone(xblock_info.get("is_header_visible", None))
+        self.assertIsNone(xblock_info.get("is_header_visible", None))  # noqa: PT009
 
     def test_entrance_exam_sequential_xblock_info(self):
         chapter = BlockFactory.create(
@@ -3271,8 +3246,8 @@ class TestXBlockInfo(ItemTest):
             subsection, include_child_info=True, include_children_predicate=ALWAYS
         )
         # in case of entrance exam subsection, header should be hidden.
-        self.assertEqual(xblock_info["is_header_visible"], False)
-        self.assertEqual(xblock_info["display_name"], "Subsection - Entrance Exam")
+        self.assertEqual(xblock_info["is_header_visible"], False)  # noqa: PT009
+        self.assertEqual(xblock_info["display_name"], "Subsection - Entrance Exam")  # noqa: PT009
 
     def test_none_entrance_exam_sequential_xblock_info(self):
         subsection = BlockFactory.create(
@@ -3289,7 +3264,7 @@ class TestXBlockInfo(ItemTest):
             parent_xblock=self.chapter,
         )
         # sequential xblock info should not contains the key of 'is_header_visible'.
-        self.assertIsNone(xblock_info.get("is_header_visible", None))
+        self.assertIsNone(xblock_info.get("is_header_visible", None))  # noqa: PT009
 
     def test_chapter_xblock_info(self):
         chapter = modulestore().get_item(self.chapter.location)
@@ -3348,13 +3323,13 @@ class TestXBlockInfo(ItemTest):
             user=self.user
         )
 
-        self.assertEqual(xblock_info['start'], DEFAULT_START_DATE.strftime('%Y-%m-%dT%H:%M:%SZ'))
+        self.assertEqual(xblock_info['start'], DEFAULT_START_DATE.strftime('%Y-%m-%dT%H:%M:%SZ'))  # noqa: PT009
 
     def test_highlights_enabled(self):
         self.course.highlights_enabled_for_messaging = True
         self.store.update_item(self.course, None)
         course_xblock_info = create_xblock_info(self.course)
-        self.assertTrue(course_xblock_info["highlights_enabled_for_messaging"])
+        self.assertTrue(course_xblock_info["highlights_enabled_for_messaging"])  # noqa: PT009
 
     def test_xblock_public_video_sharing_enabled(self):
         """
@@ -3364,8 +3339,8 @@ class TestXBlockInfo(ItemTest):
         with patch.object(PUBLIC_VIDEO_SHARE, "is_enabled", return_value=True):
             self.store.update_item(self.course, None)
             course_xblock_info = create_xblock_info(self.course)
-            self.assertTrue(course_xblock_info["video_sharing_enabled"])
-            self.assertEqual(course_xblock_info["video_sharing_options"], "all-on")
+            self.assertTrue(course_xblock_info["video_sharing_enabled"])  # noqa: PT009
+            self.assertEqual(course_xblock_info["video_sharing_options"], "all-on")  # noqa: PT009
 
     def test_xblock_public_video_sharing_disabled(self):
         """
@@ -3375,8 +3350,8 @@ class TestXBlockInfo(ItemTest):
         with patch.object(PUBLIC_VIDEO_SHARE, "is_enabled", return_value=False):
             self.store.update_item(self.course, None)
             course_xblock_info = create_xblock_info(self.course)
-            self.assertNotIn("video_sharing_enabled", course_xblock_info)
-            self.assertNotIn("video_sharing_options", course_xblock_info)
+            self.assertNotIn("video_sharing_enabled", course_xblock_info)  # noqa: PT009
+            self.assertNotIn("video_sharing_options", course_xblock_info)  # noqa: PT009
 
     def validate_course_xblock_info(
         self, xblock_info, has_child_info=True, course_outline=False
@@ -3384,11 +3359,11 @@ class TestXBlockInfo(ItemTest):
         """
         Validate that the xblock info is correct for the test course.
         """
-        self.assertEqual(xblock_info["category"], "course")
-        self.assertEqual(xblock_info["id"], str(self.course.location))
-        self.assertEqual(xblock_info["display_name"], self.course.display_name)
-        self.assertTrue(xblock_info["published"])
-        self.assertFalse(xblock_info["highlights_enabled_for_messaging"])
+        self.assertEqual(xblock_info["category"], "course")  # noqa: PT009
+        self.assertEqual(xblock_info["id"], str(self.course.location))  # noqa: PT009
+        self.assertEqual(xblock_info["display_name"], self.course.display_name)  # noqa: PT009
+        self.assertTrue(xblock_info["published"])  # noqa: PT009
+        self.assertFalse(xblock_info["highlights_enabled_for_messaging"])  # noqa: PT009
 
         # Finally, validate the entire response for consistency
         self.validate_xblock_info_consistency(
@@ -3399,21 +3374,21 @@ class TestXBlockInfo(ItemTest):
         """
         Validate that the xblock info is correct for the test chapter.
         """
-        self.assertEqual(xblock_info["category"], "chapter")
-        self.assertEqual(xblock_info["id"], str(self.chapter.location))
-        self.assertEqual(xblock_info["display_name"], "Week 1")
-        self.assertTrue(xblock_info["published"])
-        self.assertIsNone(xblock_info.get("edited_by", None))
-        self.assertEqual(
+        self.assertEqual(xblock_info["category"], "chapter")  # noqa: PT009
+        self.assertEqual(xblock_info["id"], str(self.chapter.location))  # noqa: PT009
+        self.assertEqual(xblock_info["display_name"], "Week 1")  # noqa: PT009
+        self.assertTrue(xblock_info["published"])  # noqa: PT009
+        self.assertIsNone(xblock_info.get("edited_by", None))  # noqa: PT009
+        self.assertEqual(  # noqa: PT009
             xblock_info["course_graders"],
             ["Homework", "Lab", "Midterm Exam", "Final Exam"],
         )
-        self.assertEqual(xblock_info["start"], "2030-01-01T00:00:00Z")
-        self.assertEqual(xblock_info["graded"], False)
-        self.assertEqual(xblock_info["due"], None)
-        self.assertEqual(xblock_info["format"], None)
-        self.assertEqual(xblock_info["highlights"], self.chapter.highlights)
-        self.assertTrue(xblock_info["highlights_enabled"])
+        self.assertEqual(xblock_info["start"], DEFAULT_START_DATE.strftime('%Y-%m-%dT%H:%M:%SZ'))  # noqa: PT009
+        self.assertEqual(xblock_info["graded"], False)  # noqa: PT009
+        self.assertEqual(xblock_info["due"], None)  # noqa: PT009
+        self.assertEqual(xblock_info["format"], None)  # noqa: PT009
+        self.assertEqual(xblock_info["highlights"], self.chapter.highlights)  # noqa: PT009
+        self.assertTrue(xblock_info["highlights_enabled"])  # noqa: PT009
 
         # Finally, validate the entire response for consistency
         self.validate_xblock_info_consistency(
@@ -3424,11 +3399,11 @@ class TestXBlockInfo(ItemTest):
         """
         Validate that the xblock info is correct for the test sequential.
         """
-        self.assertEqual(xblock_info["category"], "sequential")
-        self.assertEqual(xblock_info["id"], str(self.sequential.location))
-        self.assertEqual(xblock_info["display_name"], "Lesson 1")
-        self.assertTrue(xblock_info["published"])
-        self.assertIsNone(xblock_info.get("edited_by", None))
+        self.assertEqual(xblock_info["category"], "sequential")  # noqa: PT009
+        self.assertEqual(xblock_info["id"], str(self.sequential.location))  # noqa: PT009
+        self.assertEqual(xblock_info["display_name"], "Lesson 1")  # noqa: PT009
+        self.assertTrue(xblock_info["published"])  # noqa: PT009
+        self.assertIsNone(xblock_info.get("edited_by", None))  # noqa: PT009
 
         # Finally, validate the entire response for consistency
         self.validate_xblock_info_consistency(
@@ -3439,17 +3414,17 @@ class TestXBlockInfo(ItemTest):
         """
         Validate that the xblock info is correct for the test vertical.
         """
-        self.assertEqual(xblock_info["category"], "vertical")
-        self.assertEqual(xblock_info["id"], str(self.vertical.location))
-        self.assertEqual(xblock_info["display_name"], "Unit 1")
-        self.assertTrue(xblock_info["published"])
-        self.assertEqual(xblock_info["edited_by"], "testuser")
+        self.assertEqual(xblock_info["category"], "vertical")  # noqa: PT009
+        self.assertEqual(xblock_info["id"], str(self.vertical.location))  # noqa: PT009
+        self.assertEqual(xblock_info["display_name"], "Unit 1")  # noqa: PT009
+        self.assertTrue(xblock_info["published"])  # noqa: PT009
+        self.assertEqual(xblock_info["edited_by"], "testuser")  # noqa: PT009
 
         # Validate that the correct ancestor info has been included
         ancestor_info = xblock_info.get("ancestor_info", None)
-        self.assertIsNotNone(ancestor_info)
+        self.assertIsNotNone(ancestor_info)  # noqa: PT009
         ancestors = ancestor_info["ancestors"]
-        self.assertEqual(len(ancestors), 3)
+        self.assertEqual(len(ancestors), 3)  # noqa: PT009
         self.validate_sequential_xblock_info(ancestors[0], has_child_info=True)
         self.validate_chapter_xblock_info(ancestors[1], has_child_info=False)
         self.validate_course_xblock_info(ancestors[2], has_child_info=False)
@@ -3463,11 +3438,11 @@ class TestXBlockInfo(ItemTest):
         """
         Validate that the xblock info is correct for the test component.
         """
-        self.assertEqual(xblock_info["category"], "video")
-        self.assertEqual(xblock_info["id"], str(self.video.location))
-        self.assertEqual(xblock_info["display_name"], "My Video")
-        self.assertTrue(xblock_info["published"])
-        self.assertIsNone(xblock_info.get("edited_by", None))
+        self.assertEqual(xblock_info["category"], "video")  # noqa: PT009
+        self.assertEqual(xblock_info["id"], str(self.video.location))  # noqa: PT009
+        self.assertEqual(xblock_info["display_name"], "My Video")  # noqa: PT009
+        self.assertTrue(xblock_info["published"])  # noqa: PT009
+        self.assertIsNone(xblock_info.get("edited_by", None))  # noqa: PT009
 
         # Finally, validate the entire response for consistency
         self.validate_xblock_info_consistency(xblock_info)
@@ -3482,12 +3457,12 @@ class TestXBlockInfo(ItemTest):
         """
         Validate that the xblock info is internally consistent.
         """
-        self.assertIsNotNone(xblock_info["display_name"])
-        self.assertIsNotNone(xblock_info["id"])
-        self.assertIsNotNone(xblock_info["category"])
-        self.assertTrue(xblock_info["published"])
+        self.assertIsNotNone(xblock_info["display_name"])  # noqa: PT009
+        self.assertIsNotNone(xblock_info["id"])  # noqa: PT009
+        self.assertIsNotNone(xblock_info["category"])  # noqa: PT009
+        self.assertTrue(xblock_info["published"])  # noqa: PT009
         if has_ancestor_info:
-            self.assertIsNotNone(xblock_info.get("ancestor_info", None))
+            self.assertIsNotNone(xblock_info.get("ancestor_info", None))  # noqa: PT009
             ancestors = xblock_info["ancestor_info"]["ancestors"]
             for ancestor in xblock_info["ancestor_info"]["ancestors"]:
                 self.validate_xblock_info_consistency(
@@ -3498,23 +3473,239 @@ class TestXBlockInfo(ItemTest):
                     course_outline=course_outline,
                 )
         else:
-            self.assertIsNone(xblock_info.get("ancestor_info", None))
+            self.assertIsNone(xblock_info.get("ancestor_info", None))  # noqa: PT009
         if has_child_info:
-            self.assertIsNotNone(xblock_info.get("child_info", None))
+            self.assertIsNotNone(xblock_info.get("child_info", None))  # noqa: PT009
             if xblock_info["child_info"].get("children", None):
                 for child_response in xblock_info["child_info"]["children"]:
                     self.validate_xblock_info_consistency(
                         child_response,
                         has_child_info=(
-                            not child_response.get("child_info", None) is None
+                            child_response.get("child_info", None) is not None
                         ),
                         course_outline=course_outline,
                     )
         else:
-            self.assertIsNone(xblock_info.get("child_info", None))
+            self.assertIsNone(xblock_info.get("child_info", None))  # noqa: PT009
 
 
-@patch.dict("django.conf.settings.FEATURES", {"ENABLE_SPECIAL_EXAMS": True})
+@ddt.ddt
+class TestXBlockOutlineHandlerAuthz(CourseAuthoringAuthzTestMixin, ItemTest):
+    """
+    Unit tests for xblock_outline_handler authorization functionality.
+    """
+
+    def setUp(self):
+        super().setUp()
+        user_id = self.user.id
+        self.chapter = BlockFactory.create(
+            parent_location=self.course.location,
+            category="chapter",
+            display_name="Week 1",
+            user_id=user_id,
+        )
+        self.sequential = BlockFactory.create(
+            parent_location=self.chapter.location,
+            category="sequential",
+            display_name="Lesson 1",
+            user_id=user_id,
+        )
+        self.vertical = BlockFactory.create(
+            parent_location=self.sequential.location,
+            category="vertical",
+            display_name="Unit 1",
+            user_id=user_id,
+        )
+        # Assign COURSE_STAFF role to authorized_user for the course
+        self.add_user_to_role_in_course(
+            self.authorized_user,
+            COURSE_STAFF.external_key,
+            self.course.id
+        )
+
+    def test_authorized_user_gets_json_response(self):
+        """
+        Test that authorized user gets JSON response from xblock_outline_handler.
+        """
+        outline_url = reverse_usage_url("xblock_outline_handler", self.usage_key)
+
+        self.client.login(username=self.authorized_user.username, password=self.password)
+        resp = self.client.get(outline_url, HTTP_ACCEPT="application/json")
+
+        assert resp.status_code == 200
+        json_response = json.loads(resp.content.decode("utf-8"))
+        assert "id" in json_response
+        assert "display_name" in json_response
+        assert "child_info" in json_response
+
+    @ddt.data(
+        COURSE_ADMIN.external_key,
+        COURSE_AUDITOR.external_key,
+        COURSE_EDITOR.external_key,
+    )
+    def test_other_course_roles_can_view_outline(self, role_key):
+        """
+        Test that course_admin, course_auditor, and course_editor roles
+        can access the outline (all have COURSES_VIEW_COURSE).
+        """
+        role_user = UserFactory(password=self.password)
+        self.add_user_to_role_in_course(role_user, role_key, self.course.id)
+
+        outline_url = reverse_usage_url("xblock_outline_handler", self.usage_key)
+        self.client.login(username=role_user.username, password=self.password)
+        resp = self.client.get(outline_url, HTTP_ACCEPT="application/json")
+
+        assert resp.status_code == 200
+
+    def test_unauthorized_user_gets_permission_denied(self):
+        """
+        Test that unauthorized user gets 403 response from xblock_outline_handler.
+        """
+        outline_url = reverse_usage_url("xblock_outline_handler", self.usage_key)
+
+        self.client.login(username=self.unauthorized_user.username, password=self.password)
+        resp = self.client.get(outline_url, HTTP_ACCEPT="application/json")
+
+        assert resp.status_code == 403
+
+    def test_superuser_gets_json_response(self):
+        """
+        Test that superuser gets JSON response from xblock_outline_handler.
+        """
+        outline_url = reverse_usage_url("xblock_outline_handler", self.usage_key)
+
+        self.client.login(username=self.super_user.username, password=self.password)
+        resp = self.client.get(outline_url, HTTP_ACCEPT="application/json")
+
+        assert resp.status_code == 200
+        json_response = json.loads(resp.content.decode("utf-8"))
+        assert "id" in json_response
+        assert "display_name" in json_response
+        assert "child_info" in json_response
+
+    def test_staff_user_gets_json_response(self):
+        """
+        Test that staff user gets JSON response from xblock_outline_handler.
+        """
+        outline_url = reverse_usage_url("xblock_outline_handler", self.usage_key)
+
+        self.client.login(username=self.staff_user.username, password=self.password)
+        resp = self.client.get(outline_url, HTTP_ACCEPT="application/json")
+
+        assert resp.status_code == 200
+        json_response = json.loads(resp.content.decode("utf-8"))
+        assert "id" in json_response
+        assert "display_name" in json_response
+        assert "child_info" in json_response
+
+    def test_authorized_chapter_outline(self):
+        """
+        Test that authorized user can access chapter-level outline.
+        """
+        outline_url = reverse_usage_url("xblock_outline_handler", self.chapter.location)
+
+        self.client.login(username=self.authorized_user.username, password=self.password)
+        resp = self.client.get(outline_url, HTTP_ACCEPT="application/json")
+
+        assert resp.status_code == 200
+        json_response = json.loads(resp.content.decode("utf-8"))
+        assert json_response["display_name"] == "Week 1"
+        assert "child_info" in json_response
+        # Verify that children are included (should have the sequential)
+        children = json_response["child_info"]["children"]
+        assert len(children) > 0
+        assert children[0]["display_name"] == "Lesson 1"
+
+    def test_unauthorized_chapter_outline(self):
+        """
+        Test that unauthorized user cannot access chapter-level outline.
+        """
+        outline_url = reverse_usage_url("xblock_outline_handler", self.chapter.location)
+
+        self.client.login(username=self.unauthorized_user.username, password=self.password)
+        resp = self.client.get(outline_url, HTTP_ACCEPT="application/json")
+
+        assert resp.status_code == 403
+
+
+class TestGetMetadataWithProblemDefaults(ModuleStoreTestCase):
+    """
+    Unit tests for _get_metadata_with_problem_defaults.
+
+    The helper must inject a ``weight`` value (derived from ``max_score()``) for
+    problem xblocks that have never had ``weight`` explicitly saved, while leaving
+    every other combination untouched.
+    """
+
+    def _make_problem(self, **kwargs):
+        """Create and return a problem xblock from the modulestore."""
+        course = CourseFactory.create()
+        block = BlockFactory.create(
+            parent_location=course.location,
+            category='problem',
+            display_name='A Problem',
+            **kwargs,
+        )
+        return modulestore().get_item(block.location)
+
+    # ------------------------------------------------------------------
+    # Problem blocks – weight absent from stored metadata
+    # ------------------------------------------------------------------
+
+    def test_problem_without_weight_adds_weight_from_max_score(self):
+        """
+        When weight is absent and max_score() > 0, it is injected into metadata.
+        """
+        xblock = self._make_problem()
+        with patch.object(xblock, 'max_score', return_value=3.0):
+            metadata = _get_metadata_with_problem_defaults(xblock)
+        assert metadata.get('weight') == 3.0
+
+    def test_problem_without_weight_max_score_zero_does_not_inject(self):
+        """
+        A zero max_score will not inject a weight.
+        """
+        xblock = self._make_problem()
+        with patch.object(xblock, 'max_score', return_value=0):
+            metadata = _get_metadata_with_problem_defaults(xblock)
+        assert 'weight' not in metadata
+
+    # ------------------------------------------------------------------
+    # Problem blocks – weight already present in stored metadata
+    # ------------------------------------------------------------------
+
+    def test_problem_with_explicit_weight_is_preserved(self):
+        """
+        When weight is already explicitly set, it will not be overwritten.
+        """
+        xblock = self._make_problem(weight=5.0)
+        with patch.object(xblock, 'max_score', return_value=2.0):
+            metadata = _get_metadata_with_problem_defaults(xblock)
+        assert metadata.get('weight') == 5.0
+
+    # ------------------------------------------------------------------
+    # Non-problem blocks
+    # ------------------------------------------------------------------
+
+    def test_non_problem_block_is_unmodified(self):
+        """
+        Non-problem blocks must pass through untouched even if a max_score
+        method is available on them.
+        """
+        course = CourseFactory.create()
+        video = BlockFactory.create(
+            parent_location=course.location,
+            category='video',
+            display_name='A Video',
+        )
+        xblock = modulestore().get_item(video.location)
+        metadata_before = dict(get_block_info(xblock).get('metadata', {}))
+        metadata_result = _get_metadata_with_problem_defaults(xblock)
+        assert metadata_result == metadata_before
+        assert 'weight' not in metadata_result
+
+
+@override_settings(ENABLE_SPECIAL_EXAMS=True)
 @ddt.ddt
 class TestSpecialExamXBlockInfo(ItemTest):
     """
@@ -3570,7 +3761,7 @@ class TestSpecialExamXBlockInfo(ItemTest):
     def test_special_exam_xblock_info(
         self,
         mock_get_exam_by_content_id,
-        _mock_does_backend_support_onboarding,
+        _mock_does_backend_support_onboarding,  # noqa: PT019
         mock_get_exam_configuration_dashboard_url,
     ):
         sequential = BlockFactory.create(
@@ -3615,7 +3806,7 @@ class TestSpecialExamXBlockInfo(ItemTest):
     def test_show_review_rules_xblock_info(
         self,
         mock_get_exam_by_content_id,
-        _mock_does_backend_support_onboarding,
+        _mock_does_backend_support_onboarding,  # noqa: PT019
         mock_get_exam_configuration_dashboard_url,
     ):
         # Set course.proctoring_provider to test_proctoring_provider
@@ -3655,7 +3846,7 @@ class TestSpecialExamXBlockInfo(ItemTest):
         expected_proctoring_link,
         mock_get_exam_by_content_id,
         mock_does_backend_support_onboarding,
-        _mock_get_exam_configuration_dashboard_url,
+        _mock_get_exam_configuration_dashboard_url,  # noqa: PT019
     ):
         sequential = BlockFactory.create(
             parent_location=self.chapter.location,
@@ -3697,8 +3888,8 @@ class TestSpecialExamXBlockInfo(ItemTest):
         external_id,
         expected_value,
         mock_get_exam_by_content_id,
-        _mock_does_backend_support_onboarding_patch,
-        _mock_get_exam_configuration_dashboard_url,
+        _mock_does_backend_support_onboarding_patch,  # noqa: PT019
+        _mock_get_exam_configuration_dashboard_url,  # noqa: PT019
     ):
         sequential = BlockFactory.create(
             parent_location=self.chapter.location,
@@ -3725,8 +3916,8 @@ class TestSpecialExamXBlockInfo(ItemTest):
     def test_xblock_was_never_linked_to_external_exam(
         self,
         mock_get_exam_by_content_id,
-        _mock_does_backend_support_onboarding_patch,
-        _mock_get_exam_configuration_dashboard_url,
+        _mock_does_backend_support_onboarding_patch,  # noqa: PT019
+        _mock_get_exam_configuration_dashboard_url,  # noqa: PT019
     ):
         sequential = BlockFactory.create(
             parent_location=self.chapter.location,
@@ -3752,7 +3943,7 @@ class TestSpecialExamXBlockInfo(ItemTest):
     def test_special_exam_xblock_info_get_dashboard_error(
         self,
         mock_get_exam_by_content_id,
-        _mock_does_backend_support_onboarding,
+        _mock_does_backend_support_onboarding,  # noqa: PT019
         mock_get_exam_configuration_dashboard_url,
     ):
         sequential = BlockFactory.create(
@@ -3817,7 +4008,7 @@ class TestLibraryXBlockInfo(ModuleStoreTestCase):
         html_block = modulestore().get_item(self.top_level_html.location)
         xblock_info = create_xblock_info(html_block)
         self.validate_component_xblock_info(xblock_info, html_block)
-        self.assertIsNone(xblock_info.get("child_info", None))
+        self.assertIsNone(xblock_info.get("child_info", None))  # noqa: PT009
 
     def test_lib_child_xblock_info(self):
         html_block = modulestore().get_item(self.child_html.location)
@@ -3825,24 +4016,24 @@ class TestLibraryXBlockInfo(ModuleStoreTestCase):
             html_block, include_ancestor_info=True, include_child_info=True
         )
         self.validate_component_xblock_info(xblock_info, html_block)
-        self.assertIsNone(xblock_info.get("child_info", None))
+        self.assertIsNone(xblock_info.get("child_info", None))  # noqa: PT009
         ancestors = xblock_info["ancestor_info"]["ancestors"]
-        self.assertEqual(len(ancestors), 2)
-        self.assertEqual(ancestors[0]["category"], "vertical")
-        self.assertEqual(ancestors[0]["id"], str(self.vertical.location))
-        self.assertEqual(ancestors[1]["category"], "library")
+        self.assertEqual(len(ancestors), 2)  # noqa: PT009
+        self.assertEqual(ancestors[0]["category"], "vertical")  # noqa: PT009
+        self.assertEqual(ancestors[0]["id"], str(self.vertical.location))  # noqa: PT009
+        self.assertEqual(ancestors[1]["category"], "library")  # noqa: PT009
 
     def validate_component_xblock_info(self, xblock_info, original_block):
         """
         Validate that the xblock info is correct for the test component.
         """
-        self.assertEqual(xblock_info["category"], original_block.category)
-        self.assertEqual(xblock_info["id"], str(original_block.location))
-        self.assertEqual(xblock_info["display_name"], original_block.display_name)
-        self.assertIsNone(xblock_info.get("has_changes", None))
-        self.assertIsNone(xblock_info.get("published", None))
-        self.assertIsNone(xblock_info.get("published_on", None))
-        self.assertIsNone(xblock_info.get("graders", None))
+        self.assertEqual(xblock_info["category"], original_block.category)  # noqa: PT009
+        self.assertEqual(xblock_info["id"], str(original_block.location))  # noqa: PT009
+        self.assertEqual(xblock_info["display_name"], original_block.display_name)  # noqa: PT009
+        self.assertIsNone(xblock_info.get("has_changes", None))  # noqa: PT009
+        self.assertIsNone(xblock_info.get("published", None))  # noqa: PT009
+        self.assertIsNone(xblock_info.get("published_on", None))  # noqa: PT009
+        self.assertIsNone(xblock_info.get("graders", None))  # noqa: PT009
 
 
 class TestLibraryXBlockCreation(ItemTest):
@@ -3859,9 +4050,9 @@ class TestLibraryXBlockCreation(ItemTest):
             parent_usage_key=lib.location, display_name="Test", category="html"
         )
         lib = self.store.get_library(lib.location.library_key)
-        self.assertTrue(lib.children)
+        self.assertTrue(lib.children)  # noqa: PT009
         xblock_locator = lib.children[0]
-        self.assertEqual(self.store.get_item(xblock_locator).display_name, "Test")
+        self.assertEqual(self.store.get_item(xblock_locator).display_name, "Test")  # noqa: PT009
 
     def test_no_add_discussion(self):
         """
@@ -3871,9 +4062,9 @@ class TestLibraryXBlockCreation(ItemTest):
         response = self.create_xblock(
             parent_usage_key=lib.location, display_name="Test", category="discussion"
         )
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 400)  # noqa: PT009
         lib = self.store.get_library(lib.location.library_key)
-        self.assertFalse(lib.children)
+        self.assertFalse(lib.children)  # noqa: PT009
 
     def test_no_add_advanced(self):
         lib = LibraryFactory.create()
@@ -3882,9 +4073,9 @@ class TestLibraryXBlockCreation(ItemTest):
         response = self.create_xblock(
             parent_usage_key=lib.location, display_name="Test", category="lti"
         )
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 400)  # noqa: PT009
         lib = self.store.get_library(lib.location.library_key)
-        self.assertFalse(lib.children)
+        self.assertFalse(lib.children)  # noqa: PT009
 
 
 @ddt.ddt
@@ -3920,7 +4111,7 @@ class TestXBlockPublishingInfo(ItemTest):
         Returns the child xblock info at the specified index.
         """
         children = xblock_info["child_info"]["children"]
-        self.assertGreater(len(children), index)
+        self.assertGreater(len(children), index)  # noqa: PT009
         return children[index]
 
     def _get_xblock_info(self, location):
@@ -3993,9 +4184,9 @@ class TestXBlockPublishingInfo(ItemTest):
             )
         else:
             if should_equal:
-                self.assertEqual(xblock_info[xblock_info_field], expected_state)
+                self.assertEqual(xblock_info[xblock_info_field], expected_state)  # noqa: PT009
             else:
-                self.assertNotEqual(xblock_info[xblock_info_field], expected_state)
+                self.assertNotEqual(xblock_info[xblock_info_field], expected_state)  # noqa: PT009
 
     def _verify_has_staff_only_message(self, xblock_info, expected_state, path=None):
         """
@@ -4175,7 +4366,7 @@ class TestXBlockPublishingInfo(ItemTest):
 
         vertical_info = self._get_xblock_info(vertical.location)
         add_container_page_publishing_info(vertical, vertical_info)
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             _xblock_type_and_display_name(chapter), vertical_info["staff_lock_from"]
         )
 
@@ -4226,7 +4417,7 @@ class TestXBlockPublishingInfo(ItemTest):
 
         vertical_info = self._get_xblock_info(vertical.location)
         add_container_page_publishing_info(vertical, vertical_info)
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             _xblock_type_and_display_name(sequential), vertical_info["staff_lock_from"]
         )
 
@@ -4278,7 +4469,7 @@ class TestXBlockPublishingInfo(ItemTest):
 
         vertical_info = self._get_xblock_info(vertical.location)
         add_container_page_publishing_info(vertical, vertical_info)
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             _xblock_type_and_display_name(vertical), vertical_info["staff_lock_from"]
         )
 
@@ -4372,12 +4563,12 @@ class TestXBlockPublishingInfo(ItemTest):
         # Check that chapter has scheduled state
         xblock_info = self._get_xblock_info(chapter.location)
         self._verify_visibility_state(xblock_info, VisibilityState.ready)
-        self.assertFalse(course.self_paced)
+        self.assertFalse(course.self_paced)  # noqa: PT009
 
         # Change course pacing to self paced
         course.self_paced = True
         self.store.update_item(course, self.user.id)
-        self.assertTrue(course.self_paced)
+        self.assertTrue(course.self_paced)  # noqa: PT009
 
         # Check that in self paced course content has live state now
         xblock_info = self._get_xblock_info(chapter.location)
@@ -4430,13 +4621,13 @@ class TestUpdateFromSource(ModuleStoreTestCase):
 
         # quick sanity checks
         source_block = self.store.get_item(source_block.location)
-        self.assertEqual(source_block.due, datetime(2010, 11, 22, 4, 0, tzinfo=UTC))
-        self.assertEqual(source_block.display_name, "Source Block")
-        self.assertEqual(
+        self.assertEqual(source_block.due, datetime(2010, 11, 22, 4, 0, tzinfo=UTC))  # noqa: PT009
+        self.assertEqual(source_block.display_name, "Source Block")  # noqa: PT009
+        self.assertEqual(  # noqa: PT009
             source_block.runtime.get_asides(source_block)[0].field11, "html_new_value1"
         )
-        self.assertEqual(source_block.data, "<div>test</div>")
-        self.assertEqual(source_block.items, ["test", "beep"])
+        self.assertEqual(source_block.data, "<div>test</div>")  # noqa: PT009
+        self.assertEqual(source_block.items, ["test", "beep"])  # noqa: PT009
 
         return source_block
 
@@ -4445,12 +4636,12 @@ class TestUpdateFromSource(ModuleStoreTestCase):
         Check that the destination block has been updated to match our source block.
         """
         revised = self.store.get_item(destination_key)
-        self.assertEqual(source_block.display_name, revised.display_name)
-        self.assertEqual(source_block.due, revised.due)
-        self.assertEqual(revised.data, source_block.data)
-        self.assertEqual(revised.items, source_block.items)
+        self.assertEqual(source_block.display_name, revised.display_name)  # noqa: PT009
+        self.assertEqual(source_block.due, revised.due)  # noqa: PT009
+        self.assertEqual(revised.data, source_block.data)  # noqa: PT009
+        self.assertEqual(revised.items, source_block.items)  # noqa: PT009
 
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             revised.runtime.get_asides(revised)[0].field11,
             source_block.runtime.get_asides(source_block)[0].field11,
         )
@@ -4548,15 +4739,15 @@ class TestXblockEditView(CourseTestCase):
     def test_xblock_edit_view(self):
         url = reverse_usage_url("xblock_edit_handler", self.video.location)
         resp = self.client.get_html(url)
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
 
         html_content = resp.content.decode(resp.charset)
-        self.assertIn("var decodedActionName = 'edit';", html_content)
+        self.assertIn("var decodedActionName = 'edit';", html_content)  # noqa: PT009
 
     def test_xblock_edit_view_contains_resources(self):
         url = reverse_usage_url("xblock_edit_handler", self.video.location)
         resp = self.client.get(url)
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
 
         html_content = resp.content.decode(resp.charset)
         soup = BeautifulSoup(html_content, "html.parser")
@@ -4564,5 +4755,22 @@ class TestXblockEditView(CourseTestCase):
         resource_links = [link["href"] for link in soup.find_all("link", {"rel": "stylesheet"})]
         script_sources = [script["src"] for script in soup.find_all("script") if script.get("src")]
 
-        self.assertGreater(len(resource_links), 0, f"No CSS resources found in HTML. Found: {resource_links}")
-        self.assertGreater(len(script_sources), 0, f"No JS resources found in HTML. Found: {script_sources}")
+        self.assertGreater(len(resource_links), 0, f"No CSS resources found in HTML. Found: {resource_links}")  # noqa: PT009  # pylint: disable=line-too-long
+        self.assertGreater(len(script_sources), 0, f"No JS resources found in HTML. Found: {script_sources}")  # noqa: PT009  # pylint: disable=line-too-long
+
+    def test_xblock_edit_view_contains_page_notification(self):
+        """
+        The page-notification element is required for XBlock runtime error
+        notifications (e.g. ORA validation errors) to be visible to the user.
+        """
+        url = reverse_usage_url("xblock_edit_handler", self.video.location)
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
+
+        html_content = resp.content.decode(resp.charset)
+        soup = BeautifulSoup(html_content, "html.parser")
+        self.assertIsNotNone(  # noqa: PT009
+            soup.find(id="page-notification"),
+            "container_editor.html must include a #page-notification element "
+            "so that XBlock runtime error notifications are rendered.",
+        )

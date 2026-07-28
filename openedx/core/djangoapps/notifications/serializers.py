@@ -8,7 +8,7 @@ from rest_framework import serializers
 from openedx.core.djangoapps.notifications.models import (
     Notification,
     get_additional_notification_channel_settings,
-    get_notification_channels
+    get_notification_channels,
 )
 
 from .base_notification import COURSE_NOTIFICATION_APPS, COURSE_NOTIFICATION_TYPES, EmailCadence
@@ -138,17 +138,6 @@ def validate_notification_channel(notification_channel: str) -> str:
     return notification_channel
 
 
-def get_non_editable_channels(app_name):
-    """
-    Returns a dict of notification: [non-editable channels] for the given app name.
-    """
-    non_editable = {"core": COURSE_NOTIFICATION_APPS[app_name].get("non_editable", [])}
-    for type_name, type_dict in COURSE_NOTIFICATION_TYPES.items():
-        if type_dict.get("non_editable") and not type_dict["is_core"]:
-            non_editable[type_name] = type_dict["non_editable"]
-    return non_editable
-
-
 def add_non_editable_in_preference(preference):
     """
     Add non_editable preferences to the preference dict
@@ -191,7 +180,7 @@ class UserNotificationPreferenceUpdateAllSerializer(serializers.Serializer):
         """
         Cross-field validation for notification preference update.
         """
-        notification_app = attrs.get('notification_app')
+        notification_app = attrs.get('notification_app')  # noqa: F841
         notification_type = attrs.get('notification_type')
         notification_channel = attrs.get('notification_channel')
         email_cadence = attrs.get('email_cadence')
@@ -211,7 +200,6 @@ class UserNotificationPreferenceUpdateAllSerializer(serializers.Serializer):
         # Validate notification type
         if all([
             not COURSE_NOTIFICATION_TYPES.get(notification_type),
-            notification_type != "core",
             notification_type != "grouped_notification",
         ]):
             raise ValidationError(f'{notification_type} is not a valid notification type.')

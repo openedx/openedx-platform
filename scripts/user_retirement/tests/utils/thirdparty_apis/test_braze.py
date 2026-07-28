@@ -38,29 +38,29 @@ class TestBraze(unittest.TestCase):
         with mock.patch.object(logger, 'info') as mock_info:
             self.braze.delete_user(self.learner)
 
-        self.assertEqual(mock_info.call_args, [('Braze user deletion succeeded',)])
+        self.assertEqual(mock_info.call_args, [('Braze user deletion succeeded',)])  # noqa: PT009
 
-        self.assertEqual(len(req_mock.request_history), 1)
+        self.assertEqual(len(req_mock.request_history), 1)  # noqa: PT009
         request = req_mock.request_history[0]
-        self.assertEqual(request.json(), {'external_ids': [1234]})
+        self.assertEqual(request.json(), {'external_ids': [1234]})  # noqa: PT009
 
     def test_delete_fatal_error(self, req_mock):
         self._mock_delete(req_mock, 404, message='Test Error Message')
 
         logger = logging.getLogger('scripts.user_retirement.utils.thirdparty_apis.braze_api')
         with mock.patch.object(logger, 'error') as mock_error:
-            with self.assertRaises(BrazeException) as exc:
+            with self.assertRaises(BrazeException) as exc:  # noqa: PT027
                 self.braze.delete_user(self.learner)
 
         error = 'Braze user deletion failed due to Test Error Message'
-        self.assertEqual(mock_error.call_args, [(error,)])
-        self.assertEqual(str(exc.exception), error)
+        self.assertEqual(mock_error.call_args, [(error,)])  # noqa: PT009
+        self.assertEqual(str(exc.exception), error)  # noqa: PT009
 
     @ddt.data(429, 500)
     def test_delete_recoverable_error(self, status_code, req_mock):
         self._mock_delete(req_mock, status_code)
 
-        with self.assertRaises(BrazeRecoverableException):
+        with self.assertRaises(BrazeRecoverableException):  # noqa: PT027
             self.braze.delete_user(self.learner)
 
-        self.assertEqual(len(req_mock.request_history), 5)
+        self.assertEqual(len(req_mock.request_history), 5)  # noqa: PT009

@@ -8,22 +8,11 @@ BlockStructure.
 
 from datetime import datetime
 from logging import getLogger
-from markupsafe import Markup
 
 from dateutil.tz import tzlocal
+from markupsafe import Markup
 
 logger = getLogger(__name__)  # pylint: disable=invalid-name
-
-
-def url_name_for_block(block):
-    """
-    Given a block, returns the block's URL name.
-
-    Arguments:
-        block (XModuleMixin|CourseOverview|BlockStructureBlockData):
-            Block that is being accessed
-    """
-    return block.location.block_id
 
 
 def display_name_with_default(block):
@@ -50,7 +39,7 @@ def display_name_with_default(block):
     """
     return (
         block.display_name if block.display_name is not None
-        else url_name_for_block(block).replace('_', ' ')
+        else block.usage_key.block_id.replace('_', ' ')
     )
 
 

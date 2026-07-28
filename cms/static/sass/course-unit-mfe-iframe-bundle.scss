@@ -35,9 +35,18 @@ body,
       border-color: transparent;
     }
 
+    .studio-xblock-wrapper {
+      // STATE: selected
+      &.is-selected {
+        border-color: $primary;
+        box-shadow: 0 0 3px 3px $primary;
+      }
+    }
+
     .xblock-header-primary {
       padding: ($baseline * 1.2) ($baseline * 1.2) ($baseline / 1.67);
       border-bottom: none;
+      cursor: pointer;
 
       .header-details {
         .xblock-display-title {
@@ -443,11 +452,30 @@ body,
       line-height: 28px;
     }
 
+    .fullscreen-button {
+      color: $primary-base;
+      height: 44px;
+      width: 44px;
+      border-radius: 22px;
+
+      &:hover {
+        border-color: $primary-base;
+      }
+
+      &:focus {
+        border-color: $primary-base;
+      }
+    }
+
     .xblock-actions {
       border-top: 1px solid $border-color;
       background-color: $white;
       display: flex;
       justify-content: flex-end;
+
+      ul {
+        margin-left: auto;
+      }
 
       .action-button {
         background-color: $transparent;
@@ -1173,4 +1201,12 @@ select {
   .paste-component-button.button {
     @extend %button-primary-outline;
   }
+}
+
+.tooltip {
+  background: $primary-base;
+  white-space: normal;
+  max-width: 200px;
+  line-height: 1.5;
+  text-align: center;
 }

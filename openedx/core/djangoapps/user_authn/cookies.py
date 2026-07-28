@@ -9,23 +9,23 @@ import time
 from urllib.parse import urljoin
 
 from django.conf import settings
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.dispatch import Signal
 from django.urls import NoReverseMatch, reverse
 from django.utils.http import http_date, parse_http_date
 from edx_rest_framework_extensions.auth.jwt import cookies as jwt_cookies
 from edx_rest_framework_extensions.auth.jwt.constants import JWT_DELIMITER
 from oauth2_provider.models import Application
-from common.djangoapps.student.models import UserProfile
 
+from common.djangoapps.student.models import UserProfile
+from common.djangoapps.util.json_request import JsonResponse
 from openedx.core.djangoapps.oauth_dispatch.adapters import DOTAdapter
 from openedx.core.djangoapps.oauth_dispatch.api import create_dot_access_token
 from openedx.core.djangoapps.oauth_dispatch.jwt import create_jwt_from_token
+from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
+from openedx.core.djangoapps.user_api.accounts.image_helpers import get_profile_image_urls_for_user
 from openedx.core.djangoapps.user_api.accounts.utils import retrieve_last_sitewide_block_completed
 from openedx.core.djangoapps.user_authn.exceptions import AuthFailedError
-from common.djangoapps.util.json_request import JsonResponse
-from openedx.core.djangoapps.user_api.accounts.image_helpers import get_profile_image_urls_for_user
-
 
 log = logging.getLogger(__name__)
 
@@ -245,7 +245,10 @@ def _get_user_info_cookie_data(request, user):
     # External sites will need to have fallback mechanisms to handle this case
     # (most likely just hiding the links).
     try:
-        header_urls['account_settings'] = settings.ACCOUNT_MICROFRONTEND_URL
+        header_urls['account_settings'] = configuration_helpers.get_value(
+            'ACCOUNT_MICROFRONTEND_URL',
+            settings.ACCOUNT_MICROFRONTEND_URL,
+        )
         header_urls['learner_profile'] = urljoin(settings.PROFILE_MICROFRONTEND_URL, f'/u/{user.username}')
     except NoReverseMatch:
         pass
@@ -358,6 +361,6 @@ def _get_login_oauth_client():
     try:
         return Application.objects.get(client_id=login_client_id)
     except Application.DoesNotExist:
-        raise AuthFailedError(  # lint-amnesty, pylint: disable=raise-missing-from
+        raise AuthFailedError(  # pylint: disable=raise-missing-from  # noqa: B904
             f"OAuth Client for the Login service, '{login_client_id}', is not configured."
         )

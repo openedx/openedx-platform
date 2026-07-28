@@ -1,0 +1,4 @@
+{% load i18n %}
+{% autoescape off %}
+{% blocktrans %}Batch {{ action_name }} completed: {{ successful }}/{{ total_processed }} users processed for {{ course_name }}. CSV report available.{% endblocktrans %}
+{% endautoescape %}

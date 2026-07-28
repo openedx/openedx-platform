@@ -12,7 +12,7 @@ from .utils import mock_get_score
 
 
 @ddt
-class SubsectionGradeTest(GradeTestBase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class SubsectionGradeTest(GradeTestBase):  # pylint: disable=missing-class-docstring
 
     @data((50, 100, .5), (.5949, 100, .0059), (.5951, 100, .006), (.595, 100, .0059), (.605, 100, .006))
     @unpack
@@ -22,8 +22,8 @@ class SubsectionGradeTest(GradeTestBase):  # lint-amnesty, pylint: disable=missi
             created_grade = CreateSubsectionGrade(
                 self.sequence,
                 self.course_structure,
-                self.subsection_grade_factory._submissions_scores,  # lint-amnesty, pylint: disable=protected-access
-                self.subsection_grade_factory._csm_scores,  # lint-amnesty, pylint: disable=protected-access
+                self.subsection_grade_factory._submissions_scores,  # pylint: disable=protected-access
+                self.subsection_grade_factory._csm_scores,  # pylint: disable=protected-access
             )
             assert PersistentSubsectionGrade.objects.count() == 0
             assert created_grade.percent_graded == expected_result
@@ -53,7 +53,7 @@ class SubsectionGradeTest(GradeTestBase):  # lint-amnesty, pylint: disable=missi
             grade = CreateSubsectionGrade(
                 self.sequence,
                 self.course_structure,
-                self.subsection_grade_factory._submissions_scores,  # lint-amnesty, pylint: disable=protected-access
-                self.subsection_grade_factory._csm_scores,  # lint-amnesty, pylint: disable=protected-access
+                self.subsection_grade_factory._submissions_scores,  # pylint: disable=protected-access
+                self.subsection_grade_factory._csm_scores,  # pylint: disable=protected-access
             )
             assert grade.percent_graded == 0.0

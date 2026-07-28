@@ -9,17 +9,11 @@ from django.urls import reverse
 
 from common.djangoapps.course_modes.models import CourseMode
 from lms.djangoapps.bulk_email.data import BulkEmailTargetChoices
-from lms.djangoapps.bulk_email.models import (
-    CohortTarget,
-    CourseEmail,
-    CourseModeTarget,
-    Target
-)
-
+from lms.djangoapps.bulk_email.models import CohortTarget, CourseEmail, CourseModeTarget, Target
 from lms.djangoapps.bulk_email.models_api import (
     is_bulk_email_disabled_for_course,
     is_bulk_email_feature_enabled,
-    is_user_opted_out_for_course
+    is_user_opted_out_for_course,
 )
 from lms.djangoapps.discussion.notification_prefs.views import UsernameCipher
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers

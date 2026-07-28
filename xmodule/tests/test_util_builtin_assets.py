@@ -17,7 +17,7 @@ class AddCssToFragmentTests(TestCase):
 
     def test_absolute_path_raises_value_error(self):
         fragment = Fragment()
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError):  # noqa: PT027
             builtin_assets.add_css_to_fragment(
                 fragment,
                 "/openedx/edx-platform/xmodule/assets/VideoBlockEditor.css",
@@ -25,7 +25,7 @@ class AddCssToFragmentTests(TestCase):
 
     def test_not_css_raises_value_error(self):
         fragment = Fragment()
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError):  # noqa: PT027
             builtin_assets.add_css_to_fragment(
                 fragment,
                 "vertical/public/js/vertical_student_view.js"
@@ -33,7 +33,7 @@ class AddCssToFragmentTests(TestCase):
 
     def test_misspelled_path_raises_not_found(self):
         fragment = Fragment()
-        with self.assertRaises(FileNotFoundError):
+        with self.assertRaises(FileNotFoundError):  # noqa: PT027
             builtin_assets.add_css_to_fragment(
                 fragment,
                 "VideoBlockEditorrrrr.css",
@@ -42,7 +42,7 @@ class AddCssToFragmentTests(TestCase):
     def test_static_file_missing_raises_improperly_configured(self):
         fragment = Fragment()
         with patch.object(builtin_assets, 'get_static_file_url', lambda _path: None):
-            with self.assertRaises(ImproperlyConfigured):
+            with self.assertRaises(ImproperlyConfigured):  # noqa: PT027
                 builtin_assets.add_css_to_fragment(
                     fragment,
                     "VideoBlockEditor.css",

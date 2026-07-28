@@ -7,11 +7,10 @@ from datetime import datetime
 from uuid import uuid4
 
 import pytz
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.dispatch import receiver
-
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy
 from django_countries.fields import CountryField
@@ -32,14 +31,14 @@ from openedx.core.djangoapps.django_comment_common.signals import (
     thread_edited,
     thread_followed,
     thread_unfollowed,
-    thread_voted
+    thread_voted,
 )
 
 from .errors import (
     AddToIncompatibleTeamError,
     AlreadyOnTeamInTeamset,
     ImmutableMembershipFieldException,
-    NotEnrolledInCourseForTeam
+    NotEnrolledInCourseForTeam,
 )
 
 
@@ -114,7 +113,7 @@ class CourseTeam(models.Model):
         return f"{self.name} in {self.course_id}"
 
     def __repr__(self):
-        return (  # lint-amnesty, pylint: disable=missing-format-attribute
+        return (  # pylint: disable=missing-format-attribute  # noqa: UP032
             "<CourseTeam"
             " id={0.id}"
             " team_id={0.team_id}"
@@ -124,13 +123,13 @@ class CourseTeam(models.Model):
             ">"
         ).format(self)
 
-    class Meta:
+    class Meta:  # noqa: DJ012
         app_label = "teams"
 
-    team_id = models.SlugField(max_length=255, unique=True)
+    team_id = models.SlugField(max_length=255, unique=True)  # noqa: DJ012
     discussion_topic_id = models.SlugField(max_length=255, unique=True)
     name = models.CharField(max_length=255, db_index=True)
-    course_id = CourseKeyField(max_length=255, db_index=True)
+    course_id = CourseKeyField(db_index=True)
     topic_id = models.CharField(default='', max_length=255, db_index=True, blank=True)
     date_created = models.DateTimeField(auto_now_add=True)
     description = models.CharField(max_length=300)
@@ -234,7 +233,7 @@ class CourseTeamMembership(models.Model):
         return f"{self.user.username} is member of {self.team}"
 
     def __repr__(self):
-        return (  # lint-amnesty, pylint: disable=missing-format-attribute
+        return (  # pylint: disable=missing-format-attribute  # noqa: UP032
             "<CourseTeamMembership"
             " id={0.id}"
             " user_id={0.user.id}"
@@ -242,11 +241,11 @@ class CourseTeamMembership(models.Model):
             ">"
         ).format(self)
 
-    class Meta:
+    class Meta:  # noqa: DJ012
         app_label = "teams"
         unique_together = (('user', 'team'),)
 
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)  # noqa: DJ012
     team = models.ForeignKey(CourseTeam, related_name='membership', on_delete=models.CASCADE)
     date_joined = models.DateTimeField(auto_now_add=True)
     last_activity_at = models.DateTimeField()
@@ -277,7 +276,7 @@ class CourseTeamMembership(models.Model):
                     )
         super().__setattr__(name, value)
 
-    def save(self, *args, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ, signature-differs
+    def save(self, *args, **kwargs):  # pylint: disable=arguments-differ, signature-differs
         """Customize save method to set the last_activity_at if it does not
         currently exist. Also resets the team's size if this model is
         being created.
@@ -291,7 +290,7 @@ class CourseTeamMembership(models.Model):
         if should_reset_team_size:
             self.team.reset_team_size()
 
-    def delete(self, *args, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ, signature-differs
+    def delete(self, *args, **kwargs):  # pylint: disable=arguments-differ, signature-differs
         """Recompute the related team's team_size after deleting a membership"""
         team = self.team  # store reference before deleting
         super().delete(*args, **kwargs)

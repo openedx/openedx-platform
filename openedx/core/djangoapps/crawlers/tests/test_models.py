@@ -4,13 +4,14 @@ Tests that the request came from a crawler or not.
 
 
 import ddt
-from django.test import TestCase
 from django.http import HttpRequest
+from django.test import TestCase
+
 from ..models import CrawlersConfig
 
 
 @ddt.ddt
-class CrawlersConfigTest(TestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class CrawlersConfigTest(TestCase):  # pylint: disable=missing-class-docstring
 
     def setUp(self):
         super().setUp()

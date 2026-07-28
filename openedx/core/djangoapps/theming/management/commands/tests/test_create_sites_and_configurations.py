@@ -3,16 +3,17 @@ Test cases for create_sites_and_configurations command.
 """
 
 from unittest import mock
+
 import pytest
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.contrib.sites.models import Site
 from django.core.management import CommandError, call_command
 from django.test import TestCase
-
 from oauth2_provider.models import Application
+
+from common.djangoapps.student.models import UserProfile
 from openedx.core.djangoapps.oauth_dispatch.models import ApplicationAccess
 from openedx.core.djangoapps.theming.models import SiteTheme
-from common.djangoapps.student.models import UserProfile
 
 SITES = ["site_a", "site_b"]
 MANAGEMENT_COMMAND_PATH = "openedx.core.djangoapps.theming.management.commands.create_sites_and_configurations."
@@ -71,12 +72,12 @@ class TestCreateSiteAndConfiguration(TestCase):
 
                 assert site_theme.theme_dir_name == f'{site.name}_dir_name'
 
-                self.assertDictEqual(
+                self.assertDictEqual(  # noqa: PT009
                     dict(site.configuration.values),
                     _generate_site_config(self.dns_name, site.name)
                 )
 
-    def _assert_service_user_is_valid(self, username):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def _assert_service_user_is_valid(self, username):  # pylint: disable=missing-function-docstring
         service_user = User.objects.filter(username=username)
         assert len(service_user) == 1
         assert service_user[0].is_active

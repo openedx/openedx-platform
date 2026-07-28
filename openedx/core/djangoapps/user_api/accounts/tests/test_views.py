@@ -8,9 +8,9 @@ import json
 from copy import deepcopy
 from unittest import mock
 from urllib.parse import quote
+from zoneinfo import ZoneInfo
 
 import ddt
-from zoneinfo import ZoneInfo
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
 from django.test.testcases import TransactionTestCase
@@ -27,15 +27,15 @@ from common.djangoapps.student.tests.factories import (
     ContentTypeFactory,
     PermissionFactory,
     RegistrationFactory,
-    UserFactory
+    UserFactory,
 )
 from openedx.core.djangoapps.oauth_dispatch.jwt import create_jwt_for_user
 from openedx.core.djangoapps.user_api.accounts import ACCOUNT_VISIBILITY_PREF_KEY
+from openedx.core.djangoapps.user_api.accounts.image_helpers import get_profile_image_storage
 from openedx.core.djangoapps.user_api.accounts.tests.factories import (
     RetirementStateFactory,
-    UserRetirementStatusFactory
+    UserRetirementStatusFactory,
 )
-from openedx.core.djangoapps.user_api.accounts.image_helpers import get_profile_image_storage
 from openedx.core.djangoapps.user_api.models import UserPreference, UserRetirementStatus
 from openedx.core.djangoapps.user_api.preferences.api import set_user_preference
 from openedx.core.djangoapps.waffle_utils.testutils import WAFFLE_TABLES
@@ -361,8 +361,8 @@ class TestAccountsAPI(FilteredQueryCountMixin, CacheIsolationTestCase, UserAPITe
     """
 
     ENABLED_CACHES = ['default']
-    TOTAL_QUERY_COUNT = 26
-    FULL_RESPONSE_FIELD_COUNT = 29
+    TOTAL_QUERY_COUNT = 25
+    FULL_RESPONSE_FIELD_COUNT = 28
 
     def setUp(self):
         super().setUp()
@@ -492,19 +492,19 @@ class TestAccountsAPI(FilteredQueryCountMixin, CacheIsolationTestCase, UserAPITe
         ("client", "user"),
     )
     @ddt.unpack
-    def test_regsitration_activation_key(self, api_client, user):
+    def test_regsitration_activation_key_not_exposed(self, api_client, user):
         """
-        Test that registration activation key has a value.
+        Test that activation_key is NOT returned in the account API response.
 
-        UserFactory does not auto-generate registration object for the test users.
-        It is created only for users that signup via email/API.  Therefore, activation key has to be tested manually.
+        The activation_key is a secret used for email verification and must not be
+        exposed via the API, as doing so allows bypassing email verification.
         """
         self.create_user_registration(self.user)
 
         client = self.login_client(api_client, user)
         response = self.send_get(client)
 
-        assert response.data["activation_key"] is not None
+        assert "activation_key" not in response.data
 
     def test_successful_get_account_by_email(self):
         """
@@ -815,12 +815,12 @@ class TestAccountsAPI(FilteredQueryCountMixin, CacheIsolationTestCase, UserAPITe
             assert data['time_zone'] is None
 
         self.client.login(username=self.user.username, password=TEST_PASSWORD)
-        verify_get_own_information(self._get_num_queries(24))
+        verify_get_own_information(self._get_num_queries(23))
 
         # Now make sure that the user can get the same information, even if not active
         self.user.is_active = False
         self.user.save()
-        verify_get_own_information(self._get_num_queries(16))
+        verify_get_own_information(self._get_num_queries(15))
 
     def test_get_account_empty_string(self):
         """
@@ -835,7 +835,7 @@ class TestAccountsAPI(FilteredQueryCountMixin, CacheIsolationTestCase, UserAPITe
         legacy_profile.save()
 
         self.client.login(username=self.user.username, password=TEST_PASSWORD)
-        with self.assertNumQueries(self._get_num_queries(24), table_ignorelist=WAFFLE_TABLES):
+        with self.assertNumQueries(self._get_num_queries(23), table_ignorelist=WAFFLE_TABLES):
             response = self.send_get(self.client)
         for empty_field in ("level_of_education", "gender", "country", "state", "bio",):
             assert response.data[empty_field] is None
@@ -890,7 +890,7 @@ class TestAccountsAPI(FilteredQueryCountMixin, CacheIsolationTestCase, UserAPITe
         # Note that language_proficiencies is tested below as there are multiple error and success conditions.
     )
     @ddt.unpack
-    def test_patch_account(self, field, value, fails_validation_value=None, developer_validation_message=None):
+    def test_patch_account(self, field, value, fails_validation_value=None, developer_validation_message=None):  # noqa: PT028  # pylint: disable=line-too-long
         """
         Test the behavior of patch, when using the correct content_type.
         """
@@ -914,7 +914,7 @@ class TestAccountsAPI(FilteredQueryCountMixin, CacheIsolationTestCase, UserAPITe
 
             assert expected_user_message == error_response.data['field_errors'][field]['user_message']
 
-            assert "Value '{value}' is not valid for field '{field}': {messages}".format(
+            assert "Value '{value}' is not valid for field '{field}': {messages}".format(  # noqa: UP032
                 value=fails_validation_value,
                 field=field,
                 messages=[developer_validation_message]
@@ -946,7 +946,7 @@ class TestAccountsAPI(FilteredQueryCountMixin, CacheIsolationTestCase, UserAPITe
             Internal helper to check the error messages returned
             """
             assert 'This field is not editable via this API' == data['field_errors'][field_name]['developer_message']
-            assert "The '{}' field cannot be edited.".format(
+            assert "The '{}' field cannot be edited.".format(  # noqa: UP032
                 field_name
             ) == data['field_errors'][field_name]['user_message']
 
@@ -1171,7 +1171,7 @@ class TestAccountsAPI(FilteredQueryCountMixin, CacheIsolationTestCase, UserAPITe
         # than django model id.
         for proficiencies in ([{"code": "en"}, {"code": "fr"}, {"code": "es"}], [{"code": "fr"}], [{"code": "aa"}], []):
             response = self.send_patch(client, {"language_proficiencies": proficiencies})
-            self.assertCountEqual(response.data["language_proficiencies"], proficiencies)
+            self.assertCountEqual(response.data["language_proficiencies"], proficiencies)  # noqa: PT009
 
     @ddt.data(
         (
@@ -1224,11 +1224,11 @@ class TestAccountsAPI(FilteredQueryCountMixin, CacheIsolationTestCase, UserAPITe
         # so it returns the default storage.
         storage = get_profile_image_storage()
         storage_class = storage.__class__
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             settings.PROFILE_IMAGE_BACKEND['class'],
             f"{storage_class.__module__}.{storage_class.__name__}",
         )
-        self.assertEqual(storage.base_url, settings.PROFILE_IMAGE_BACKEND['options']['base_url'])
+        self.assertEqual(storage.base_url, settings.PROFILE_IMAGE_BACKEND['options']['base_url'])  # noqa: PT009
 
     @override_settings(PROFILE_IMAGE_BACKEND={
         'class': 'storages.backends.s3boto3.S3Boto3Storage',
@@ -1240,15 +1240,15 @@ class TestAccountsAPI(FilteredQueryCountMixin, CacheIsolationTestCase, UserAPITe
     })
     def test_profile_backend_with_params(self):
         storage = get_profile_image_storage()
-        self.assertIsInstance(storage, S3Boto3Storage)
-        self.assertEqual(storage.bucket_name, "test")
-        self.assertEqual(storage.default_acl, 'public')
-        self.assertEqual(storage.location, "abc/def")
+        self.assertIsInstance(storage, S3Boto3Storage)  # noqa: PT009
+        self.assertEqual(storage.bucket_name, "test")  # noqa: PT009
+        self.assertEqual(storage.default_acl, 'public')  # noqa: PT009
+        self.assertEqual(storage.location, "abc/def")  # noqa: PT009
 
     @override_settings(PROFILE_IMAGE_BACKEND={'class': None, 'options': {}})
     def test_profile_backend_without_backend(self):
         storage = get_profile_image_storage()
-        self.assertIsInstance(storage, FileSystemStorage)
+        self.assertIsInstance(storage, FileSystemStorage)  # noqa: PT009
 
     @override_settings(PROFILE_IMAGE_BACKEND=TEST_PROFILE_IMAGE_BACKEND)
     def test_convert_relative_profile_url(self):
@@ -1280,10 +1280,10 @@ class TestAccountsAPI(FilteredQueryCountMixin, CacheIsolationTestCase, UserAPITe
     def test_profile_backend_with_profile_image_settings(self):
         """ It will use the storages dict with profile_images backend"""
         storage = get_profile_image_storage()
-        self.assertIsInstance(storage, S3Boto3Storage)
-        self.assertEqual(storage.bucket_name, "profiles")
-        self.assertEqual(storage.default_acl, 'public')
-        self.assertEqual(storage.location, "profile/images")
+        self.assertIsInstance(storage, S3Boto3Storage)  # noqa: PT009
+        self.assertEqual(storage.bucket_name, "profiles")  # noqa: PT009
+        self.assertEqual(storage.default_acl, 'public')  # noqa: PT009
+        self.assertEqual(storage.location, "profile/images")  # noqa: PT009
 
     @override_settings(
         PROFILE_IMAGE_BACKEND={},
@@ -1292,7 +1292,7 @@ class TestAccountsAPI(FilteredQueryCountMixin, CacheIsolationTestCase, UserAPITe
         """ In case of empty storages scenario uses the hardcoded backend."""
         del settings.STORAGES
         storage = get_profile_image_storage()
-        self.assertIsInstance(storage, FileSystemStorage)
+        self.assertIsInstance(storage, FileSystemStorage)  # noqa: PT009
 
     @ddt.data(
         ("client", "user", True),
@@ -1372,6 +1372,130 @@ class TestAccountAPITransactions(TransactionTestCase):
         assert 'm' == data['gender']
 
 
+@skip_unless_lms
+class TestAccountsAPIExtendedProfile(UserAPITestCase):
+    """
+    Tests for extended profile validation in the Accounts API
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.url = reverse("accounts_api", kwargs={"username": self.user.username})
+        self.client.login(username=self.user.username, password=TEST_PASSWORD)
+
+    @mock.patch("openedx.core.djangoapps.user_api.accounts.api.validate_and_get_extended_profile_form")
+    def test_patch_account_with_valid_extended_profile(self, mock_validate_form: mock.Mock):
+        """
+        Test that PATCH with valid extended_profile data succeeds
+        """
+        mock_form = mock.Mock()
+        mock_validate_form.return_value = (mock_form, {})
+        extended_profile_data = [
+            {"field_name": "department", "field_value": "Engineering"},
+            {"field_name": "title", "field_value": "Software Engineer"},
+        ]
+        json_data = {"extended_profile": extended_profile_data, "bio": "Test bio"}
+
+        response = self.client.patch(self.url, data=json.dumps(json_data), content_type="application/merge-patch+json")
+
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
+        mock_validate_form.assert_called_once_with(extended_profile_data, self.user)
+
+    @mock.patch("openedx.core.djangoapps.user_api.accounts.api.validate_and_get_extended_profile_form")
+    def test_patch_account_with_invalid_extended_profile(self, mock_validate_form: mock.Mock):
+        """
+        Test that PATCH with invalid extended_profile data returns 400
+        """
+        field_errors = {
+            "department": {"developer_message": "This field is required", "user_message": "This field is required"}
+        }
+        mock_validate_form.return_value = (None, field_errors)
+        extended_profile_data = [{"field_name": "department", "field_value": ""}]
+        json_data = {"extended_profile": extended_profile_data}
+
+        response = self.client.patch(self.url, data=json.dumps(json_data), content_type="application/merge-patch+json")
+
+        self.assertEqual(response.status_code, 400)  # noqa: PT009
+        self.assertIn("field_errors", response.data)  # noqa: PT009
+        self.assertIn("department", response.data["field_errors"])  # noqa: PT009
+        mock_validate_form.assert_called_once_with(extended_profile_data, self.user)
+
+    def test_patch_account_without_extended_profile(self: UserAPITestCase):
+        """
+        Test that PATCH without extended_profile data works normally
+        """
+        json_data = {"bio": "Test bio without extended profile"}
+
+        response = self.client.patch(self.url, data=json.dumps(json_data), content_type="application/merge-patch+json")
+
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
+        self.assertEqual(response.data["bio"], "Test bio without extended profile")  # noqa: PT009
+
+    @mock.patch("openedx.core.djangoapps.user_api.accounts.api.validate_and_get_extended_profile_form")
+    def test_patch_account_extended_profile_with_empty_list(self, mock_validate_form: mock.Mock):
+        """
+        Test that PATCH with empty extended_profile list works
+        """
+        mock_validate_form.return_value = (None, {})
+        json_data = {"extended_profile": [], "bio": "Test bio"}
+
+        response = self.client.patch(self.url, data=json.dumps(json_data), content_type="application/merge-patch+json")
+
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
+        mock_validate_form.assert_called_once_with([], self.user)  # noqa: PT009
+
+    @mock.patch("openedx.core.djangoapps.user_api.accounts.api.validate_and_get_extended_profile_form")
+    def test_patch_account_extended_profile_form_exception(self, mock_validate_form: mock.Mock):
+        """
+        Test that exceptions in form validation return appropriate errors
+        """
+        field_errors = {
+            "extended_profile": {"developer_message": "Unexpected error", "user_message": "An error occurred"}
+        }
+        mock_validate_form.return_value = (None, field_errors)
+        extended_profile_data = [{"field_name": "department", "field_value": "Engineering"}]
+        json_data = {"extended_profile": extended_profile_data}
+
+        response = self.client.patch(self.url, data=json.dumps(json_data), content_type="application/merge-patch+json")
+
+        self.assertEqual(response.status_code, 400)  # noqa: PT009
+        self.assertIn("field_errors", response.data)  # noqa: PT009
+
+    @mock.patch("openedx.core.djangoapps.user_api.accounts.api.validate_and_get_extended_profile_form")
+    def test_patch_account_extended_profile_multiple_fields(self, mock_validate_form: mock.Mock):
+        """
+        Test PATCH with multiple extended_profile fields
+        """
+        mock_form = mock.Mock()
+        mock_validate_form.return_value = (mock_form, {})
+        extended_profile_data = [
+            {"field_name": "department", "field_value": "Engineering"},
+            {"field_name": "title", "field_value": "Software Engineer"},
+            {"field_name": "company", "field_value": "EdX"},
+            {"field_name": "location", "field_value": "Remote"},
+        ]
+        json_data = {"extended_profile": extended_profile_data}
+
+        response = self.client.patch(self.url, data=json.dumps(json_data), content_type="application/merge-patch+json")
+
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
+        mock_validate_form.assert_called_once_with(extended_profile_data, self.user)
+
+    def test_patch_account_extended_profile_unauthorized(self):
+        """
+        Test that unauthorized users cannot update extended_profile
+        """
+        self.different_client.login(username=self.different_user.username, password=TEST_PASSWORD)
+        extended_profile_data = [{"field_name": "department", "field_value": "Engineering"}]
+        json_data = {"extended_profile": extended_profile_data}
+
+        response = self.different_client.patch(
+            self.url, data=json.dumps(json_data), content_type="application/merge-patch+json"
+        )
+
+        self.assertIn(response.status_code, [403, 404])  # noqa: PT009
+
+
 @ddt.ddt
 class NameChangeViewTests(UserAPITestCase):
     """ NameChangeView tests """
@@ -1403,14 +1527,14 @@ class NameChangeViewTests(UserAPITestCase):
         """
         self.client.login(username=self.user.username, password=TEST_PASSWORD)
         response = self._send_create(self.client, {'name': 'New Name'})
-        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.status_code, 201)  # noqa: PT009
 
     def test_create_unauthenticated(self):
         """
         Test that a name change request fails for an unauthenticated user.
         """
         response = self._send_create(self.client, {'name': 'New Name'})
-        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.status_code, 401)  # noqa: PT009
 
     def test_create_empty_request(self):
         """
@@ -1418,7 +1542,7 @@ class NameChangeViewTests(UserAPITestCase):
         """
         self.client.login(username=self.user.username, password=TEST_PASSWORD)
         response = self._send_create(self.client, {})
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 400)  # noqa: PT009
 
     def test_create_blank_name(self):
         """
@@ -1426,7 +1550,7 @@ class NameChangeViewTests(UserAPITestCase):
         """
         self.client.login(username=self.user.username, password=TEST_PASSWORD)
         response = self._send_create(self.client, {'name': ''})
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 400)  # noqa: PT009
 
     @ddt.data('<html>invalid name</html>', 'https://invalid.com')
     def test_create_fails_validation(self, invalid_name):
@@ -1435,7 +1559,7 @@ class NameChangeViewTests(UserAPITestCase):
         """
         self.client.login(username=self.user.username, password=TEST_PASSWORD)
         response = self._send_create(self.client, {'name': invalid_name})
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 400)  # noqa: PT009
 
     def test_confirm_succeeds(self):
         """
@@ -1444,8 +1568,8 @@ class NameChangeViewTests(UserAPITestCase):
         self.staff_client.login(username=self.staff_user.username, password=TEST_PASSWORD)
         do_name_change_request(self.user, 'New Name', 'test')
         response = self._send_confirm(self.staff_client, self.user.username)
-        self.assertEqual(response.status_code, 204)
-        self.assertIsNone(get_pending_name_change(self.user))
+        self.assertEqual(response.status_code, 204)  # noqa: PT009
+        self.assertIsNone(get_pending_name_change(self.user))  # noqa: PT009
 
     def test_confirm_non_staff(self):
         """
@@ -1454,8 +1578,8 @@ class NameChangeViewTests(UserAPITestCase):
         self.client.login(username=self.user.username, password=TEST_PASSWORD)
         do_name_change_request(self.user, 'New Name', 'test')
         response = self._send_confirm(self.client, self.user.username)
-        self.assertEqual(response.status_code, 403)
-        self.assertEqual(get_pending_name_change(self.user).new_name, 'New Name')
+        self.assertEqual(response.status_code, 403)  # noqa: PT009
+        self.assertEqual(get_pending_name_change(self.user).new_name, 'New Name')  # noqa: PT009
 
     def test_confirm_no_pending_name_change(self):
         """
@@ -1463,7 +1587,7 @@ class NameChangeViewTests(UserAPITestCase):
         """
         self.staff_client.login(username=self.staff_user.username, password=TEST_PASSWORD)
         response = self._send_confirm(self.staff_client, self.user.username)
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 404)  # noqa: PT009
 
 
 @ddt.ddt

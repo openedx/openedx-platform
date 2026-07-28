@@ -5,12 +5,13 @@ import logging
 from uuid import uuid4
 
 from django.db import transaction
-
 from openedx_events.learning.data import CourseDiscussionConfigurationData
 from openedx_events.learning.signals import COURSE_DISCUSSIONS_CHANGED
+
+from openedx.core.djangoapps.course_apps.models import CourseAppStatus
 from openedx.core.djangoapps.discussions.models import (
-    DiscussionTopicLink,
     DiscussionsConfiguration,
+    DiscussionTopicLink,
     get_default_provider_type,
 )
 
@@ -96,12 +97,26 @@ def update_course_discussion_config(configuration: CourseDiscussionConfiguration
             log.info(f"Course {course_key} doesn't have discussion configuration model yet. Creating a new one.")
             DiscussionsConfiguration(
                 context_key=course_key,
+                enabled=configuration.enabled,
                 provider_type=provider_id,
                 plugin_configuration=configuration.plugin_configuration,
                 enable_in_context=configuration.enable_in_context,
                 enable_graded_units=configuration.enable_graded_units,
                 unit_level_visibility=configuration.unit_level_visibility,
             ).save()
+        else:
+            DiscussionsConfiguration.objects.filter(
+                context_key=course_key,
+            ).update(enabled=configuration.enabled)
+
+        # Also update CourseAppStatus to keep the Pages & Resources UI in sync.
+        # The update_course_apps_status task may run before this handler due to
+        # the COURSE_PUBLISH_TASK_DELAY countdown, caching a stale enabled value.
+        CourseAppStatus.update_status_for_course_app(
+            course_key=course_key,
+            app_id="discussion",
+            enabled=configuration.enabled,
+        )
 
 
 COURSE_DISCUSSIONS_CHANGED.connect(handle_course_discussion_config_update)

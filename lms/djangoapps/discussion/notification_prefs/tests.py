@@ -18,17 +18,15 @@ from lms.djangoapps.discussion.notification_prefs.views import (
     ajax_disable,
     ajax_enable,
     ajax_status,
-    set_subscription
+    set_subscription,
 )
 from openedx.core.djangoapps.user_api.models import UserPreference
 
 
-@override_settings(SECRET_KEY="test secret key")
-class NotificationPrefViewTest(UrlResetMixin, TestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+@override_settings(SECRET_KEY="test secret key", ENABLE_DISCUSSION_SERVICE=True, ENABLE_FORUM_DAILY_DIGEST=True)
+class NotificationPrefViewTest(UrlResetMixin, TestCase):  # pylint: disable=missing-class-docstring
     INITIALIZATION_VECTOR = b"\x00" * 16
 
-    @patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
-    @patch.dict("django.conf.settings.FEATURES", {"ENABLE_FORUM_DAILY_DIGEST": True})
     def setUp(self):
         super().setUp()
         self.user = UserFactory.create(username="testuser")
@@ -93,7 +91,7 @@ class NotificationPrefViewTest(UrlResetMixin, TestCase):  # lint-amnesty, pylint
     def test_ajax_status_anon_user(self):
         request = self.request_factory.get("dummy")
         request.user = AnonymousUser()
-        self.assertRaises(PermissionDenied, ajax_status, request)
+        self.assertRaises(PermissionDenied, ajax_status, request)  # noqa: PT027
 
     # AJAX enable view
 
@@ -107,7 +105,7 @@ class NotificationPrefViewTest(UrlResetMixin, TestCase):  # lint-amnesty, pylint
     def test_ajax_enable_anon_user(self):
         request = self.request_factory.post("dummy")
         request.user = AnonymousUser()
-        self.assertRaises(PermissionDenied, ajax_enable, request)
+        self.assertRaises(PermissionDenied, ajax_enable, request)  # noqa: PT027
         self.assertNotPrefExists(self.user)
 
     @patch("os.urandom")
@@ -159,7 +157,7 @@ class NotificationPrefViewTest(UrlResetMixin, TestCase):  # lint-amnesty, pylint
         self.create_prefs()
         request = self.request_factory.post("dummy")
         request.user = AnonymousUser()
-        self.assertRaises(PermissionDenied, ajax_disable, request)
+        self.assertRaises(PermissionDenied, ajax_disable, request)  # noqa: PT027
         self.assertPrefValid(self.user)
 
     def test_ajax_disable_success(self):
@@ -187,7 +185,7 @@ class NotificationPrefViewTest(UrlResetMixin, TestCase):  # lint-amnesty, pylint
     def test_unsubscribe_invalid_token(self):
         def test_invalid_token(token, message):
             request = self.request_factory.get("dummy")
-            self.assertRaisesRegex(Http404, f"^{message}$", set_subscription, request, token, False)
+            self.assertRaisesRegex(Http404, f"^{message}$", set_subscription, request, token, False)  # noqa: PT027
 
         # Invalid base64 encoding
         test_invalid_token("ZOMG INVALID BASE64 CHARS!!!", "base64url")

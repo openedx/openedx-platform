@@ -1,21 +1,19 @@
 """
 Discussion notifications sender util.
 """
-import re
 import html
+import re
 
 from bs4 import BeautifulSoup, Tag
 from django.conf import settings
 from django.utils.text import Truncator
+from django.utils.translation import gettext_lazy as _
+from openedx_events.learning.data import CourseNotificationData, UserNotificationData
+from openedx_events.learning.signals import COURSE_NOTIFICATION_REQUESTED, USER_NOTIFICATION_REQUESTED
 
 from lms.djangoapps.discussion.django_comment_client.permissions import get_team
-from openedx_events.learning.data import UserNotificationData, CourseNotificationData
-from openedx_events.learning.signals import USER_NOTIFICATION_REQUESTED, COURSE_NOTIFICATION_REQUESTED
-
 from openedx.core.djangoapps.course_groups.models import CourseCohortsSettings
 from openedx.core.djangoapps.discussions.utils import get_divided_discussions
-from django.utils.translation import gettext_lazy as _
-
 from openedx.core.djangoapps.django_comment_common.comment_client.comment import Comment
 from openedx.core.djangoapps.django_comment_common.comment_client.subscriptions import Subscription
 from openedx.core.djangoapps.django_comment_common.models import (
@@ -466,6 +464,14 @@ def clean_thread_html_body(html_body):
     truncated_body = Truncator(html_body).chars(500, html=True)
     truncated_body = html.unescape(truncated_body)
     html_body = BeautifulSoup(truncated_body, 'html.parser')
+
+    # Remove tags including their content (decompose, not unwrap)
+    tags_to_decompose = [
+        "style",  # CSS injection
+    ]
+    for tag in tags_to_decompose:
+        for match in html_body.find_all(tag):
+            match.decompose()
 
     tags_to_remove = [
         "a", "link",  # Link Tags

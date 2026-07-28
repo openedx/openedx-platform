@@ -4,8 +4,8 @@ Course API Serializers.  Representing course catalog data
 
 from rest_framework import serializers
 
-from lms.djangoapps.course_home_api.progress.serializers import CertificateDataSerializer
 from lms.djangoapps.course_home_api.outline.serializers import CourseGoalsSerializer
+from lms.djangoapps.course_home_api.progress.serializers import CertificateDataSerializer
 from openedx.core.lib.api.fields import AbsoluteURLField
 
 
@@ -57,7 +57,7 @@ class _CourseApiMediaCollectionSerializer(serializers.Serializer):  # pylint: di
         ref_name = 'courseware_api'
 
 
-class CourseProgramSerializer(serializers.Serializer):  # lint-amnesty, pylint: disable=abstract-method, missing-class-docstring
+class CourseProgramSerializer(serializers.Serializer):  # pylint: disable=abstract-method, missing-class-docstring
     progress = serializers.SerializerMethodField()
     slug = serializers.CharField()
     title = serializers.CharField()

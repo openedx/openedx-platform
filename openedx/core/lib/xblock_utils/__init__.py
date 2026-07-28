@@ -9,31 +9,31 @@ import json
 import logging
 import re
 import uuid
+from zoneinfo import ZoneInfo
 
 import markupsafe
 from django.conf import settings
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user  # noqa: F401
 from django.contrib.staticfiles.storage import staticfiles_storage
 from django.urls import reverse
 from django.utils.html import escape
 from edx_django_utils.plugins import pluggable_override
 from lxml import etree, html
 from opaque_keys.edx.asides import AsideUsageKeyV1, AsideUsageKeyV2
-from zoneinfo import ZoneInfo
 from web_fragments.fragment import Fragment
-from xblock.core import XBlock
+from xblock.core import XBlock  # noqa: F401
 from xblock.exceptions import InvalidScopeError
 from xblock.scorable import ScorableXBlockMixin
 
-from common.djangoapps import static_replace
+from common.djangoapps import static_replace  # noqa: F401
 from common.djangoapps.edxmako.shortcuts import render_to_string
-from xmodule.seq_block import SequenceBlock  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.vertical_block import VerticalBlock  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.x_module import (  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.seq_block import SequenceBlock  # pylint: disable=wrong-import-order
+from xmodule.vertical_block import VerticalBlock  # pylint: disable=wrong-import-order
+from xmodule.x_module import (  # pylint: disable=wrong-import-order
     PREVIEW_VIEWS,
     STUDENT_VIEW,
     STUDIO_VIEW,
-    shim_xmodule_js
+    shim_xmodule_js,  # noqa: F401
 )
 
 log = logging.getLogger(__name__)
@@ -105,7 +105,7 @@ def wrap_xblock(
     css_classes = [
         'xblock',
         f'xblock-{markupsafe.escape(view)}',
-        'xblock-{}-{}'.format(
+        'xblock-{}-{}'.format(  # noqa: UP032
             markupsafe.escape(view),
             markupsafe.escape(block.scope_ids.block_type),
         )
@@ -193,7 +193,7 @@ def wrap_xblock_aside(
 
     css_classes = [
         f'xblock-{markupsafe.escape(view)}',
-        'xblock-{}-{}'.format(
+        'xblock-{}-{}'.format(  # noqa: UP032
             markupsafe.escape(view),
             markupsafe.escape(aside.scope_ids.block_type),
         ),
@@ -282,14 +282,14 @@ def add_staff_markup(user, disable_staff_debug_info, block, view, frag, context)
         return frag
 
     block_id = block.location
-    if block.has_score and settings.FEATURES.get('DISPLAY_HISTOGRAMS_TO_STAFF'):
+    if block.has_score and getattr(settings, 'DISPLAY_HISTOGRAMS_TO_STAFF', False):
         histogram = grade_histogram(block_id)
         render_histogram = len(histogram) > 0
     else:
         histogram = None
         render_histogram = False
 
-    if settings.FEATURES.get('ENABLE_LMS_MIGRATION') and hasattr(block.runtime, 'resources_fs'):
+    if getattr(settings, 'ENABLE_LMS_MIGRATION', False) and hasattr(block.runtime, 'resources_fs'):
         [filepath, filename] = getattr(block, 'xml_attributes', {}).get('filename', ['', None])
         osfs = block.runtime.resources_fs
         if filename is not None and osfs.exists(filename):
@@ -337,7 +337,7 @@ def add_staff_markup(user, disable_staff_debug_info, block, view, frag, context)
         'element_id': sanitize_html_id(block.location.html_id()),
         'edit_link': edit_link,
         'user': user,
-        'xqa_server': settings.FEATURES.get('XQA_SERVER', "http://your_xqa_server.com"),
+        'xqa_server': settings.XQA_SERVER,
         'histogram': json.dumps(histogram),
         'render_histogram': render_histogram,
         'block_content': frag.content,
@@ -388,7 +388,7 @@ def get_course_update_items(course_updates, provided_index=0):
         try:
             course_html_parsed = html.fromstring(course_updates.data)
         except (etree.XMLSyntaxError, etree.ParserError):
-            log.error("Cannot parse: " + course_updates.data)  # lint-amnesty, pylint: disable=logging-not-lazy
+            log.error("Cannot parse: " + course_updates.data)  # pylint: disable=logging-not-lazy
             escaped = escape(course_updates.data)
             # xss-lint: disable=python-concat-html
             course_html_parsed = html.fromstring("<ol><li>" + escaped + "</li></ol>")
@@ -423,7 +423,7 @@ def xblock_local_resource_url(block, uri):
     """
     xblock_class = getattr(block.__class__, 'unmixed_class', block.__class__)
     if settings.PIPELINE['PIPELINE_ENABLED'] or not settings.REQUIRE_DEBUG:
-        return staticfiles_storage.url('xblock/resources/{package_name}/{path}'.format(
+        return staticfiles_storage.url('xblock/resources/{package_name}/{path}'.format(  # noqa: UP032
             package_name=xblock_resource_pkg(xblock_class),
             path=uri
         ))

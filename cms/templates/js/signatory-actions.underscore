@@ -1,6 +1,0 @@
-<div class="collection-edit">
-    <div class="actions custom-signatory-action">
-            <button class="signatory-panel-save action action-primary" type="submit"><%- gettext("Save") %></button>
-            <button class="signatory-panel-close action action-secondary action-cancel"><%- gettext("Cancel") %></button>
-    </div>
-</div>

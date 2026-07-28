@@ -4,6 +4,7 @@ Code to implement backwards compatibility
 # pylint: disable=no-member
 
 import warnings
+
 from django.conf import settings
 from django.core.cache import cache
 from django.template import TemplateDoesNotExist
@@ -102,7 +103,7 @@ class RuntimeShim:
 
         Only used for capa problems.
         """
-        # TODO: load the python code from Learning Core. Ensure it's not publicly accessible.
+        # TODO: load the python code from openedx_content. Ensure it's not publicly accessible.
         return None
 
     @property

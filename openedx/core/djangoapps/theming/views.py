@@ -12,14 +12,14 @@ from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
 from web_fragments.fragment import Fragment
 
+from common.djangoapps.student.roles import GlobalStaff
 from openedx.core.djangoapps.plugin_api.views import EdxFragmentView
 from openedx.core.djangoapps.user_api.preferences.api import (
     delete_user_preference,
     get_user_preference,
-    set_user_preference
+    set_user_preference,
 )
 from openedx.core.djangoapps.util.user_messages import PageLevelMessages
-from common.djangoapps.student.roles import GlobalStaff
 
 from .helpers import theme_exists
 from .helpers_static import get_static_file_url
@@ -92,7 +92,7 @@ class ThemingAdministrationFragmentView(EdxFragmentView):
     Fragment view to allow a user to administer theming.
     """
 
-    def render_to_fragment(self, request, course_id=None, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ, unused-argument
+    def render_to_fragment(self, request, course_id=None, **kwargs):  # pylint: disable=arguments-differ, unused-argument
         """
         Renders the theming administration view as a fragment.
         """
@@ -109,7 +109,7 @@ class ThemingAdministrationFragmentView(EdxFragmentView):
         return super().get(request, *args, **kwargs)
 
     @method_decorator(login_required)
-    def post(self, request, **kwargs):  # lint-amnesty, pylint: disable=unused-argument
+    def post(self, request, **kwargs):  # pylint: disable=unused-argument
         """
         Accept requests to update the theme preview.
         """

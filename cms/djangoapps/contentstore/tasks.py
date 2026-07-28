@@ -29,13 +29,13 @@ from edx_django_utils.monitoring import (
     set_code_owner_attribute,
     set_code_owner_attribute_from_module,
     set_custom_attribute,
-    set_custom_attributes_for_course_key
+    set_custom_attributes_for_course_key,
 )
 from olxcleaner.exceptions import ErrorLevel
 from olxcleaner.reporting import report_error_summary, report_errors
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey, UsageKey
-from opaque_keys.edx.locator import LibraryContainerLocator, LibraryLocator, BlockUsageLocator
+from opaque_keys.edx.locator import LibraryContainerLocator, LibraryLocator
 from openedx_events.content_authoring.data import CourseData
 from openedx_events.content_authoring.signals import COURSE_RERUN_COMPLETED
 from organizations.api import add_organization_course, ensure_organization
@@ -50,12 +50,13 @@ import cms.djangoapps.contentstore.errors as UserErrors
 from cms.djangoapps.contentstore.courseware_index import (
     CoursewareSearchIndexer,
     LibrarySearchIndexer,
-    SearchIndexingError
+    SearchIndexingError,
 )
 from cms.djangoapps.contentstore.storage import course_import_export_storage
 from cms.djangoapps.contentstore.toggles import enable_course_optimizer_check_prev_run_links
 from cms.djangoapps.contentstore.utils import (
     IMPORTABLE_FILE_TYPES,
+    add_instructor,
     contains_course_reference,
     create_course_info_usage_key,
     create_or_update_xblock_upstream_link,
@@ -63,7 +64,7 @@ from cms.djangoapps.contentstore.utils import (
     get_previous_run_course_key,
     initialize_permissions,
     reverse_usage_url,
-    translation_language
+    translation_language,
 )
 from cms.djangoapps.contentstore.xblock_storage_handlers.view_handlers import get_block_info
 from cms.djangoapps.models.settings.course_metadata import CourseMetadata
@@ -94,12 +95,12 @@ from xmodule.modulestore.xml_importer import CourseImportException, import_cours
 from xmodule.tabs import StaticTab
 from xmodule.util.keys import BlockKey
 
+from .api import get_ready_to_migrate_legacy_library_content_blocks
 from .models import ComponentLink, ContainerLink, LearningContextLinksStatus, LearningContextLinksStatusChoices
 from .outlines import update_outline_from_modulestore
 from .outlines_regenerate import CourseOutlineRegenerate
 from .toggles import bypass_olx_failure_enabled
 from .utils import course_import_olx_validation_is_enabled
-from .api import get_ready_to_migrate_legacy_library_content_blocks
 
 User = get_user_model()
 
@@ -188,13 +189,20 @@ def rerun_course(source_course_key_string, destination_course_key_string, user_i
         update_unit_discussion_state_from_discussion_blocks(destination_course_key, user_id)
 
         # set initial permissions for the user to access the course.
-        initialize_permissions(destination_course_key, User.objects.get(id=user_id))
+        # NOTE: add_instructor is called here (after clone_course) because when
+        # authz.enable_course_authoring is enabled, it cannot be called pre-task
+        # (CourseOverview doesn't exist yet). This is a temporary workaround until
+        # openedx/openedx-authz#352 is implemented. Once resolved, add_instructor
+        # can move back to the pre-task call site unconditionally.
+        user = User.objects.get(id=user_id)
+        add_instructor(destination_course_key, user, user)
+        initialize_permissions(destination_course_key, user)
 
         # update state: Succeeded
         CourseRerunState.objects.succeeded(course_key=destination_course_key)
 
         COURSE_RERUN_COMPLETED.send_event(
-            time=datetime.now(timezone.utc),
+            time=datetime.now(timezone.utc),  # noqa: UP017
             course=CourseData(
                 course_key=destination_course_key
             )
@@ -409,7 +417,7 @@ def create_export_tarball(course_block, course_key, context, status=None):
     """
     name = course_block.url_name
     export_file = NamedTemporaryFile(prefix=name + '.',
-                                     suffix=".tar.gz")  # lint-amnesty, pylint: disable=consider-using-with
+                                     suffix=".tar.gz")  # pylint: disable=consider-using-with
     root_dir = path(mkdtemp())
 
     try:
@@ -523,8 +531,14 @@ def sync_discussion_settings(course_key, user):
 
             discussion_config.provider_type = Provider.OPEN_EDX
 
-        discussion_config.enable_graded_units = discussion_settings['enable_graded_units']
-        discussion_config.unit_level_visibility = discussion_settings['unit_level_visibility']
+        fields = ["enable_graded_units", "unit_level_visibility", "enable_in_context", "posting_restrictions"]
+        # Plugin configuration is stored in the course settings under the provider name.
+        field_mappings = dict(zip(fields, fields)) | {"plugin_configuration": discussion_config.provider_type}  # noqa: B905  # pylint: disable=line-too-long
+
+        for attr_name, settings_key in field_mappings.items():
+            if settings_key in discussion_settings:
+                setattr(discussion_config, attr_name, discussion_settings[settings_key])
+
         discussion_config.save()
         LOGGER.info(f'Course import {course.id}: DiscussionsConfiguration synced as per course')
     except Exception as exc:  # pylint: disable=broad-except
@@ -534,7 +548,7 @@ def sync_discussion_settings(course_key, user):
 @shared_task(base=CourseImportTask, bind=True)
 # Note: The decorator @set_code_owner_attribute cannot be used here because the UserTaskMixin
 #   does stack inspection and can't handle additional decorators.
-# lint-amnesty, pylint: disable=too-many-statements
+# pylint: disable=too-many-statements
 def import_olx(self, user_id, course_key_string, archive_path, archive_name, language):
     """
     Import a course or library from a provided OLX .tar.gz or .zip archive.
@@ -941,7 +955,7 @@ def copy_v1_user_roles_into_v2_library(v2_library_key, v1_library_key):
         return permissions
 
     permissions = _get_users_by_access_level(v1_library_key)
-    for access_level in permissions.keys():  # lint-amnesty, pylint: disable=consider-iterating-dictionary
+    for access_level in permissions.keys():  # pylint: disable=consider-iterating-dictionary
         for user in permissions[access_level]:
             v2contentlib_api.set_library_user_permissions(v2_library_key, user, access_level)
 
@@ -958,7 +972,7 @@ def delete_v1_library(v1_library_key_string):
     try:
         delete_course(v1_library_key, ModuleStoreEnum.UserID.mgmt_command, True)
         LOGGER.info(f"Deleted course {v1_library_key}")
-    except Exception as error:  # lint-amnesty, pylint: disable=broad-except
+    except Exception as error:  # pylint: disable=broad-except
         return {
             "v1_library_id": v1_library_key_string,
             "status": "FAILED",
@@ -990,7 +1004,7 @@ def validate_all_library_source_blocks_ids_for_course(course_key_string, v1_to_v
             )
             for xblock in blocks:
                 if xblock.source_library_id not in v1_to_v2_lib_map.values():
-                    # lint-amnesty, pylint: disable=broad-except
+                    # pylint: disable=broad-except
                     raise Exception(
                         f'{xblock.source_library_id} in {course_id} is not found in mapping. Validation failed'
                     )
@@ -1001,7 +1015,7 @@ def validate_all_library_source_blocks_ids_for_course(course_key_string, v1_to_v
 
 @shared_task(time_limit=30)
 @set_code_owner_attribute
-def replace_all_library_source_blocks_ids_for_course(course_key_string, v1_to_v2_lib_map):  # lint-amnesty, pylint: disable=useless-return
+def replace_all_library_source_blocks_ids_for_course(course_key_string, v1_to_v2_lib_map):  # pylint: disable=useless-return
     """Search a Modulestore for all library source blocks in a course by querying mongo.
         replace all source_library_ids with the corresponding v2 value from the map.
 
@@ -1060,7 +1074,7 @@ def replace_all_library_source_blocks_ids_for_course(course_key_string, v1_to_v2
 
 @shared_task(time_limit=30)
 @set_code_owner_attribute
-def undo_all_library_source_blocks_ids_for_course(course_key_string, v1_to_v2_lib_map):  # lint-amnesty, pylint: disable=useless-return
+def undo_all_library_source_blocks_ids_for_course(course_key_string, v1_to_v2_lib_map):  # pylint: disable=useless-return
     """Search a Modulestore for all library source blocks in a course by querying mongo.
         replace all source_library_ids with the corresponding v1 value from the inverted map.
         This is exists to undo changes made previously.
@@ -1165,7 +1179,7 @@ def _check_broken_links(task_instance, user_id, course_key_string, language):
     Checks for broken links in a course and stores the results in a file.
     Also checks for previous run links if the feature is enabled.
     """
-    user = _validate_user(task_instance, user_id, language)
+    user = _validate_user(task_instance, user_id, language)  # noqa: F841
 
     task_instance.status.set_state(UserTaskStatus.IN_PROGRESS)
     course_key = CourseKey.from_string(course_key_string)
@@ -1220,7 +1234,7 @@ def _validate_user(task, user_id, language):
     """Validate if the user exists. Otherwise log an unknown user id error."""
     try:
         return User.objects.get(pk=user_id)
-    except User.DoesNotExist as exc:
+    except User.DoesNotExist as exc:  # noqa: F841
         with translation_language(language):
             task.status.fail(UserErrors.UNKNOWN_USER_ID.format(user_id))
         return
@@ -1477,14 +1491,14 @@ async def _validate_url_access(session, url_data, course_key):
         parsed = urlparse(url)
         domain = parsed.netloc.lower()
         headers = DOMAIN_HEADERS.get(domain, DEFAULT_HEADERS)
-    except Exception as e:  # lint-amnesty, pylint: disable=broad-except
+    except Exception as e:  # pylint: disable=broad-except
         LOGGER.debug(f'[Link Check] Error parsing URL {url}: {str(e)}')
         headers = DEFAULT_HEADERS
 
     try:
         async with session.get(standardized_url, headers=headers, timeout=5) as response:
             result.update({'status': response.status})
-    except Exception as e:  # lint-amnesty, pylint: disable=broad-except
+    except Exception as e:  # pylint: disable=broad-except
         result.update({'status': None})
         LOGGER.debug(f'[Link Check] Request error when validating {url}: {str(e)}')
     return result
@@ -1641,11 +1655,7 @@ def handle_create_xblock_upstream_link(usage_key):
         return
     if xblock.top_level_downstream_parent_key is not None:
         block_key = BlockKey.from_string(xblock.top_level_downstream_parent_key)
-        top_level_parent_usage_key = BlockUsageLocator(
-            xblock.course_id,
-            block_key.type,
-            block_key.id,
-        )
+        top_level_parent_usage_key = block_key.to_usage_key(xblock.course_id)
         try:
             ContainerLink.get_by_downstream_usage_key(top_level_parent_usage_key)
         except ContainerLink.DoesNotExist:
@@ -1686,7 +1696,7 @@ def create_or_update_upstream_links(
     ensure_cms("create_or_update_upstream_links may only be executed in a CMS context")
 
     if not created:
-        created = datetime.now(timezone.utc)
+        created = datetime.now(timezone.utc)  # noqa: UP017
     course_status = LearningContextLinksStatus.get_or_create(course_key_str, created)
     if course_status.status in [
         LearningContextLinksStatusChoices.COMPLETED,
@@ -2165,7 +2175,7 @@ def _update_broken_links_file_with_updated_links(course_key, updated_links):
         try:
             with latest_artifact.file.open("r") as file:
                 existing_broken_links = json.load(file)
-        except (json.JSONDecodeError, IOError) as e:
+        except (json.JSONDecodeError, IOError) as e:  # noqa: UP024
             LOGGER.error(
                 f"Failed to read broken links file for course {course_key}: {e}"
             )
@@ -2330,12 +2340,21 @@ def _cancel_old_tasks(course_key: str, user: User, ignore_task_ids: list[str]):
 
 
 @shared_task(base=LegacyLibraryContentToItemBank, bind=True)
-def migrate_course_legacy_library_blocks_to_item_bank(self, user_id: int, course_key: str):
+def migrate_course_legacy_library_blocks_to_item_bank(
+    self, user_id: int, course_key: str, persist_publish_state: bool = False,
+):
     """
     Migrate legacy course library blocks to Item Bank.
 
     Depending on the number of blocks and its children blocks this operation can take a significant
     amount of time and this is why it is run as a celery task.
+
+    Arguments:
+        user_id: id of the user performing the migration.
+        course_key: the course whose legacy library content blocks should be migrated.
+        persist_publish_state: if True, blocks that were published before the migration
+            (and had no unpublished changes) are re-published afterward. Defaults to False,
+            leaving migrated blocks as drafts.
     """
     ensure_cms("Legacy library content references may only be executed in CMS")
     set_code_owner_attribute_from_module(__name__)
@@ -2353,7 +2372,9 @@ def migrate_course_legacy_library_blocks_to_item_bank(self, user_id: int, course
         with store.bulk_operations(key):
             for block in blocks:
                 self.status.set_state(f'Migrating block: {block.usage_key}')
-                block.v2_update_children_upstream_version(user_id)
+                block.v2_update_children_upstream_version(
+                    user_id, persist_publish_state=persist_publish_state
+                )
     except Exception as exc:  # pylint: disable=broad-except
         LOGGER.exception(f'Error while migrating blocks: {exc}')
         self.status.fail(str(exc))

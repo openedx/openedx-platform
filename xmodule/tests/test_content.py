@@ -97,7 +97,7 @@ class MockImage(Mock):
 
 
 @ddt.ddt
-class ContentTest(unittest.TestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class ContentTest(unittest.TestCase):  # pylint: disable=missing-class-docstring
 
     def test_thumbnail_none(self):
         # We had a bug where a thumbnail location of None was getting transformed into a Location tuple, with

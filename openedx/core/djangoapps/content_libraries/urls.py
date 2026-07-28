@@ -2,7 +2,7 @@
 URL configuration for Studio's Content Libraries REST API
 """
 
-from django.urls import include, path, re_path, register_converter
+from django.urls import include, path, register_converter
 from rest_framework import routers
 
 from .rest_api import blocks, collections, containers, libraries, url_converters
@@ -14,11 +14,6 @@ app_name = 'openedx.core.djangoapps.content_libraries'
 # URL converters
 
 register_converter(url_converters.LibraryContainerLocatorConverter, "lib_container_key")
-
-# Router for importing blocks from courseware.
-
-import_blocks_router = routers.DefaultRouter()
-import_blocks_router.register(r'tasks', libraries.LibraryImportTaskViewSet, basename='import-block-task')
 
 library_collections_router = routers.DefaultRouter()
 library_collections_router.register(
@@ -51,8 +46,8 @@ urlpatterns = [
             path('team/user/<str:username>/', libraries.LibraryTeamUserView.as_view()),
             # Add/Edit (PUT) or remove (DELETE) a group's permission to use this library
             path('team/group/<str:group_name>/', libraries.LibraryTeamGroupView.as_view()),
-            # Import blocks into this library.
-            path('import_blocks/', include(import_blocks_router.urls)),
+            # Get draft change entries for a specific publish event (component or container)
+            path('publish_history_entries/', blocks.LibraryPublishHistoryEntriesView.as_view()),
             # Paste contents of clipboard into library
             path('paste_clipboard/', libraries.LibraryPasteClipboardView.as_view()),
             # Start a backup task for this library
@@ -69,14 +64,18 @@ urlpatterns = [
             path('collections/', blocks.LibraryBlockCollectionsView.as_view(), name='update-collections'),
             # Get the full hierarchy that the block belongs to
             path('hierarchy/', blocks.LibraryBlockHierarchy.as_view()),
-            # Get the LTI URL of a specific XBlock
-            path('lti/', blocks.LibraryBlockLtiUrlView.as_view(), name='lti-url'),
             # Get the OLX source code of the specified block:
             path('olx/', blocks.LibraryBlockOlxView.as_view()),
             # CRUD for static asset files associated with a block in the library:
             path('assets/', blocks.LibraryBlockAssetListView.as_view()),
             path('assets/<path:file_path>', blocks.LibraryBlockAssetView.as_view()),
             path('publish/', blocks.LibraryBlockPublishView.as_view()),
+            # Get the draft change history for this block
+            path('draft_history/', blocks.LibraryComponentDraftHistoryView.as_view()),
+            # Get the publish history for this block (list of publish events)
+            path('publish_history/', blocks.LibraryComponentPublishHistoryView.as_view()),
+            # Get the creation entry for this block
+            path('creation_entry/', blocks.LibraryComponentCreationEntryView.as_view()),
             # Future: discard changes for just this one block
         ])),
         # Containers are Sections, Subsections, and Units
@@ -94,11 +93,12 @@ urlpatterns = [
             # Publish a container (or reset to last published)
             path('publish/', containers.LibraryContainerPublishView.as_view()),
             path('copy/', containers.LibraryContainerCopyView.as_view()),
-        ])),
-        re_path(r'^lti/1.3/', include([
-            path('login/', libraries.LtiToolLoginView.as_view(), name='lti-login'),
-            path('launch/', libraries.LtiToolLaunchView.as_view(), name='lti-launch'),
-            path('pub/jwks/', libraries.LtiToolJwksView.as_view(), name='lti-pub-jwks'),
+            # Get the draft change history for this container
+            path('draft_history/', containers.LibraryContainerDraftHistoryView.as_view()),
+            # Get the publish history for this container (list of publish events)
+            path('publish_history/', containers.LibraryContainerPublishHistoryView.as_view()),
+            # Get the creation entry for this container
+            path('creation_entry/', containers.LibraryContainerCreationEntryView.as_view()),
         ])),
     ])),
     path('library_assets/', include([

@@ -5,17 +5,16 @@ Models used by the block structure framework.
 
 import errno
 from contextlib import contextmanager
-from datetime import datetime
+from datetime import UTC, datetime
 from logging import getLogger
 
 from django.conf import settings
 from django.core.exceptions import SuspiciousOperation
 from django.core.files.base import ContentFile
 from django.db import models, transaction
-
-from common.djangoapps.util.storage import resolve_storage_backend
 from model_utils.models import TimeStampedModel
 
+from common.djangoapps.util.storage import resolve_storage_backend
 from openedx.core.djangoapps.xmodule_django.models import UsageKeyWithRunField
 
 from . import config
@@ -47,7 +46,7 @@ def _directory_name(data_usage_key):
     # replace any '/' in the usage key so they aren't interpreted
     # as folder separators.
     encoded_usage_key = str(data_usage_key).replace('/', '_')
-    return '{}{}'.format(
+    return '{}{}'.format(  # noqa: UP032
         directory_prefix,
         encoded_usage_key,
     )
@@ -58,7 +57,7 @@ def _path_name(bs_model, _filename):
     Returns path name to use for the given
     BlockStructureModel instance.
     """
-    filename = datetime.utcnow().strftime('%Y-%m-%d-%H:%M:%S-%f')
+    filename = datetime.now(UTC).strftime('%Y-%m-%d-%H:%M:%S-%f')
     return _create_path(
         _directory_name(bs_model.data_usage_key),
         filename,
@@ -107,7 +106,7 @@ class CustomizableFileField(models.FileField):
         ))
         super().__init__(*args, **kwargs)
 
-    def deconstruct(self):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def deconstruct(self):  # pylint: disable=missing-function-docstring
         name, path, args, kwargs = super().deconstruct()
         del kwargs['upload_to']
         del kwargs['storage']
@@ -139,13 +138,13 @@ def _storage_error_handling(bs_model, operation, is_read_operation=False):
         yield
     except Exception as error:  # pylint: disable=broad-except
         log.exception('BlockStructure: Exception %s on store %s; %s.', error.__class__, operation, bs_model)
-        if isinstance(error, OSError) and error.errno in (errno.EACCES, errno.EPERM):  # lint-amnesty, pylint: disable=no-else-raise, no-member
+        if isinstance(error, OSError) and error.errno in (errno.EACCES, errno.EPERM):  # pylint: disable=no-else-raise, no-member
             raise
         elif is_read_operation and isinstance(error, (IOError, SuspiciousOperation)):
             # May have been caused by one of the possible error
             # situations listed above.  Raise BlockStructureNotFound
             # so the block structure can be regenerated and restored.
-            raise BlockStructureNotFound(bs_model.data_usage_key)  # lint-amnesty, pylint: disable=raise-missing-from
+            raise BlockStructureNotFound(bs_model.data_usage_key)  # pylint: disable=raise-missing-from  # noqa: B904
         else:
             raise
 
@@ -173,7 +172,7 @@ class BlockStructureModel(TimeStampedModel):
         max_length=255,
         unique=True,
     )
-    data_version = models.CharField(
+    data_version = models.CharField(  # noqa: DJ001
         'Version of the data at the time of collection.',
         blank=True,
         null=True,
@@ -218,7 +217,7 @@ class BlockStructureModel(TimeStampedModel):
             return cls.objects.get(data_usage_key=data_usage_key)
         except cls.DoesNotExist:
             log.info('BlockStructure: Not found in table; %s.', data_usage_key)
-            raise BlockStructureNotFound(data_usage_key)  # lint-amnesty, pylint: disable=raise-missing-from
+            raise BlockStructureNotFound(data_usage_key)  # pylint: disable=raise-missing-from  # noqa: B904
 
     @classmethod
     def update_or_create(cls, serialized_data, data_usage_key, **kwargs):
@@ -260,7 +259,7 @@ class BlockStructureModel(TimeStampedModel):
 
         try:
             all_files_by_date = sorted(cls._get_all_files(data_usage_key))
-            files_to_delete = all_files_by_date[:-num_to_keep] if num_to_keep > 0 else all_files_by_date  # lint-amnesty, pylint: disable=invalid-unary-operand-type
+            files_to_delete = all_files_by_date[:-num_to_keep] if num_to_keep > 0 else all_files_by_date  # pylint: disable=invalid-unary-operand-type
             cls._delete_files(files_to_delete)
             log.info(
                 'BlockStructure: Deleted %d out of total %d files in store; data_usage_key: %s, num_to_keep: %d.',

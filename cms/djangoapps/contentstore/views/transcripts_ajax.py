@@ -21,16 +21,13 @@ from edxval.api import create_external_video, create_or_update_video_transcript
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import UsageKey, UsageKeyV2
 from opaque_keys.edx.locator import LibraryLocatorV2
+from xblocks_contrib.video.exceptions import TranscriptsGenerationException
 
 from cms.djangoapps.contentstore.video_storage_handlers import TranscriptProvider
 from common.djangoapps.student.auth import has_course_author_access
 from common.djangoapps.util.json_request import JsonResponse
-from xmodule.contentstore.content import StaticContent  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.contentstore.django import contentstore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.exceptions import NotFoundError  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.exceptions import ItemNotFoundError  # lint-amnesty, pylint: disable=wrong-import-order
-from openedx.core.djangoapps.video_config.transcripts_utils import (  # lint-amnesty, pylint: disable=wrong-import-order
+from openedx.core.djangoapps.content_libraries import api as lib_api
+from openedx.core.djangoapps.video_config.transcripts_utils import (  # pylint: disable=wrong-import-order
     GetTranscriptsFromYouTubeException,
     Transcript,
     TranscriptsRequestValidationException,
@@ -43,10 +40,13 @@ from openedx.core.djangoapps.video_config.transcripts_utils import (  # lint-amn
     get_transcript_link_from_youtube,
     get_transcript_links_from_youtube,
 )
-from xblocks_contrib.video.exceptions import TranscriptsGenerationException
-from openedx.core.djangoapps.content_libraries import api as lib_api
 from openedx.core.djangoapps.xblock import api as xblock_api
 from openedx.core.djangoapps.xblock.data import CheckPerm
+from xmodule.contentstore.content import StaticContent  # pylint: disable=wrong-import-order
+from xmodule.contentstore.django import contentstore  # pylint: disable=wrong-import-order
+from xmodule.exceptions import NotFoundError  # pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
+from xmodule.modulestore.exceptions import ItemNotFoundError  # pylint: disable=wrong-import-order
 
 __all__ = [
     'upload_transcripts',
@@ -91,18 +91,18 @@ def link_video_to_component(video_component, user):
     return edx_video_id
 
 
-def save_video_transcript_in_learning_core(
+def save_video_transcript_in_openedx_content(
     usage_key,
     input_format,
     transcript_content,
     language_code
 ):
     """
-    Saves a video transcript to the learning core.
+    Saves a video transcript with the openedx_content API.
 
-    Learning Core uses the standard `.srt` format for subtitles.
+    openedx_content uses the standard `.srt` format for subtitles.
     Note: SJSON is an edx-specific format that we're trying to move away from,
-    so for all new stuff related to Learning Core should only use `.srt`.
+    so for all new stuff related to openedx_content should only use `.srt`.
 
     Arguments:
         usage_key: UsageKey of the block
@@ -191,7 +191,7 @@ def validate_video_block(request, locator):
     error, item = None, None
     try:
         item = _get_item(request, {'locator': locator})
-        if item.category != 'video':
+        if item.usage_key.block_type != 'video':
             error = _('Transcripts are supported only for "video" blocks.')
 
     except (InvalidKeyError, ItemNotFoundError):
@@ -309,7 +309,7 @@ def download_transcripts(request):
     try:
         content, filename, mimetype = get_transcript(video, lang='en')
     except NotFoundError:
-        raise Http404  # lint-amnesty, pylint: disable=raise-missing-from
+        raise Http404  # pylint: disable=raise-missing-from  # noqa: B904
 
     # Construct an HTTP response
     response = HttpResponse(content, content_type=mimetype)
@@ -318,7 +318,7 @@ def download_transcripts(request):
 
 
 @login_required
-def check_transcripts(request):  # lint-amnesty, pylint: disable=too-many-statements
+def check_transcripts(request):  # pylint: disable=too-many-statements
     """
     Check state of transcripts availability.
 
@@ -521,9 +521,9 @@ def _validate_transcripts_data(request):
     try:
         item = _get_item(request, data)
     except (InvalidKeyError, ItemNotFoundError):
-        raise TranscriptsRequestValidationException(_("Can't find item by locator."))  # lint-amnesty, pylint: disable=raise-missing-from
+        raise TranscriptsRequestValidationException(_("Can't find item by locator."))  # pylint: disable=raise-missing-from  # noqa: B904
 
-    if item.category != 'video':
+    if item.usage_key.block_type != 'video':
         raise TranscriptsRequestValidationException(_('Transcripts are supported only for "video" blocks.'))
 
     # parse data form request.GET.['data']['video'] to useful format
@@ -615,7 +615,7 @@ def choose_transcripts(request):
 
         # 3. Upload the retrieved transcript to DS for the linked video ID.
         if isinstance(video.usage_key.context_key, LibraryLocatorV2):
-            success = save_video_transcript_in_learning_core(
+            success = save_video_transcript_in_openedx_content(
                 video.usage_key,
                 input_format,
                 transcript_content,
@@ -669,7 +669,7 @@ def rename_transcripts(request):
 
         # 3. Upload the retrieved transcript to DS for the linked video ID.
         if isinstance(video.usage_key.context_key, LibraryLocatorV2):
-            success = save_video_transcript_in_learning_core(
+            success = save_video_transcript_in_openedx_content(
                 video.usage_key,
                 input_format,
                 transcript_content,
@@ -725,7 +725,7 @@ def replace_transcripts(request):
         for transcript in transcript_content:
             [language_code, json_content] = transcript
             if isinstance(video.usage_key.context_key, LibraryLocatorV2):
-                success = save_video_transcript_in_learning_core(
+                success = save_video_transcript_in_openedx_content(
                     video.usage_key,
                     Transcript.SJSON,
                     json_content,

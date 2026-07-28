@@ -1,58 +1,47 @@
 # pylint: skip-file
 """Tests for django comment client views."""
 
-import pytest
 import json
-import logging
+import logging  # noqa: F401
 from contextlib import contextmanager
 from unittest import mock
 from unittest.mock import ANY, Mock, patch
 
 import ddt
+import pytest
 from django.contrib.auth.models import User
 from django.core.management import call_command
+from django.test import override_settings
 from django.test.client import RequestFactory
 from django.urls import reverse
 from eventtracking.processors.exceptions import EventEmissionExit
 from opaque_keys.edx.keys import CourseKey
 from openedx_events.learning.signals import (
-    FORUM_THREAD_CREATED,
-    FORUM_THREAD_RESPONSE_CREATED,
     FORUM_RESPONSE_COMMENT_CREATED,
+    FORUM_THREAD_CREATED,  # noqa: F401
+    FORUM_THREAD_RESPONSE_CREATED,
 )
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.course_modes.tests.factories import CourseModeFactory
 from common.djangoapps.student.roles import CourseStaffRole, UserBasedRole
-from common.djangoapps.student.tests.factories import (
-    CourseAccessRoleFactory,
-    CourseEnrollmentFactory,
-    UserFactory,
-)
+from common.djangoapps.student.tests.factories import CourseAccessRoleFactory, CourseEnrollmentFactory, UserFactory
 from common.djangoapps.track.middleware import TrackMiddleware
 from common.djangoapps.track.views import segmentio
-from common.djangoapps.track.views.tests.base import (
-    SEGMENTIO_TEST_USER_ID,
-    SegmentIOTrackingTestCaseBase,
-)
+from common.djangoapps.track.views.tests.base import SEGMENTIO_TEST_USER_ID, SegmentIOTrackingTestCaseBase
 from common.djangoapps.util.testing import UrlResetMixin
-from common.test.utils import MockSignalHandlerMixin, disable_signal, assert_dict_contains_subset
+from common.test.utils import MockSignalHandlerMixin, assert_dict_contains_subset, disable_signal
 from lms.djangoapps.discussion.django_comment_client.base import views
 from lms.djangoapps.discussion.django_comment_client.tests.group_id import (
     CohortedTopicGroupIdTestMixinV2,
     GroupIdAssertionMixinV2,
     NonCohortedTopicGroupIdTestMixinV2,
 )
-from lms.djangoapps.discussion.django_comment_client.tests.unicode import (
-    UnicodeTestMixin,
-)
-from lms.djangoapps.discussion.django_comment_client.tests.utils import (
-    CohortedTestCase,
-)
-from lms.djangoapps.teams.tests.factories import (
-    CourseTeamFactory,
-    CourseTeamMembershipFactory,
-)
+from lms.djangoapps.discussion.django_comment_client.tests.mixins import MockForumApiMixin
+from lms.djangoapps.discussion.django_comment_client.tests.unicode import UnicodeTestMixin
+from lms.djangoapps.discussion.django_comment_client.tests.utils import CohortedTestCase
+from lms.djangoapps.discussion.tests.utils import make_minimal_cs_comment, make_minimal_cs_thread
+from lms.djangoapps.teams.tests.factories import CourseTeamFactory, CourseTeamMembershipFactory
 from openedx.core.djangoapps.course_groups.cohorts import set_course_cohorted
 from openedx.core.djangoapps.course_groups.tests.helpers import CohortFactory
 from openedx.core.djangoapps.django_comment_common.comment_client import Thread
@@ -62,34 +51,19 @@ from openedx.core.djangoapps.django_comment_common.models import (
     Role,
     assign_role,
 )
-from openedx.core.djangoapps.django_comment_common.utils import (
-    ThreadContext,
-    seed_permissions_roles,
-)
+from openedx.core.djangoapps.django_comment_common.utils import ThreadContext, seed_permissions_roles
 from openedx.core.djangoapps.waffle_utils.testutils import WAFFLE_TABLES
 from openedx.core.lib.teams_config import TeamsConfig
 from xmodule.modulestore import ModuleStoreEnum
-from xmodule.modulestore.django import modulestore
+from xmodule.modulestore.django import modulestore  # noqa: F401
 from xmodule.modulestore.tests.django_utils import (
     TEST_DATA_SPLIT_MODULESTORE,
     ModuleStoreTestCase,
     SharedModuleStoreTestCase,
 )
-from xmodule.modulestore.tests.factories import (
-    CourseFactory,
-    BlockFactory,
-    check_mongo_calls,
-)
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory, check_mongo_calls  # noqa: F401
 
 from .event_transformers import ForumThreadViewedEventTransformer
-from lms.djangoapps.discussion.django_comment_client.tests.mixins import (
-    MockForumApiMixin,
-)
-
-from lms.djangoapps.discussion.tests.utils import (
-    make_minimal_cs_thread,
-    make_minimal_cs_comment,
-)
 
 QUERY_COUNT_TABLE_IGNORELIST = WAFFLE_TABLES
 
@@ -183,7 +157,7 @@ class ThreadActionGroupIdTestCase(
             with self.captureOnCommitCallbacks(execute=True):
                 response = self.call_view("flag_abuse_for_thread", "update_thread_flag")
             self._assert_json_response_contains_group_info(response)
-            self.assertEqual(signal_mock.call_count, 1)
+            self.assertEqual(signal_mock.call_count, 1)  # noqa: PT009
         response = self.call_view("un_flag_abuse_for_thread", "update_thread_flag")
         self._assert_json_response_contains_group_info(response)
 
@@ -396,6 +370,7 @@ class ViewsTestCaseMixin:
 @ddt.ddt
 @disable_signal(views, "comment_flagged")
 @disable_signal(views, "thread_flagged")
+@override_settings(ENABLE_DISCUSSION_SERVICE=True)
 class ViewsTestCase(
     MockForumApiMixin,
     UrlResetMixin,
@@ -431,11 +406,10 @@ class ViewsTestCase(
         # seed the forums permissions and roles
         call_command("seed_permissions_roles", str(cls.course_id))
 
-    @patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
     def setUp(self):
-        # Patching the ENABLE_DISCUSSION_SERVICE value affects the contents of urls.py,
-        # so we need to call super.setUp() which reloads urls.py (because
-        # of the UrlResetMixin)
+        # The class-level @override_settings(ENABLE_DISCUSSION_SERVICE=True) above
+        # affects the contents of urls.py, so we need to call super.setUp() which
+        # reloads urls.py (because of the UrlResetMixin).
         super().setUp()
         # Patch the comment client user save method so it does not try
         # to create a new cc user when creating a django user
@@ -1022,6 +996,7 @@ class ViewsTestCase(
 
 
 @disable_signal(views, "comment_endorsed")
+@override_settings(ENABLE_DISCUSSION_SERVICE=True)
 class ViewPermissionsTestCase(
     UrlResetMixin,
     SharedModuleStoreTestCase,
@@ -1061,7 +1036,6 @@ class ViewPermissionsTestCase(
             Role.objects.get(name="Moderator", course_id=cls.course.id)
         )
 
-    @patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
     def setUp(self):
         """Set up the test case."""
         super().setUp()
@@ -1226,7 +1200,7 @@ class CommentActionTestCase(CohortedTestCase, MockForumApiMixin):
         ) as signal_mock:
             with self.captureOnCommitCallbacks(execute=True):
                 self.call_view("flag_abuse_for_comment", "update_comment_flag")
-            self.assertEqual(signal_mock.call_count, 1)
+            self.assertEqual(signal_mock.call_count, 1)  # noqa: PT009
 
 
 @ddt.ddt
@@ -1237,6 +1211,7 @@ class CommentActionTestCase(CohortedTestCase, MockForumApiMixin):
 @disable_signal(views, "comment_deleted")
 @disable_signal(views, "comment_flagged")
 @disable_signal(views, "thread_flagged")
+@override_settings(ENABLE_DISCUSSION_SERVICE=True)
 class TeamsPermissionsTestCase(
     UrlResetMixin, SharedModuleStoreTestCase, MockForumApiMixin
 ):
@@ -1355,13 +1330,10 @@ class TeamsPermissionsTestCase(
             users=[cls.group_moderator, cls.cohorted],
         )
 
-    @mock.patch.dict(
-        "django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True}
-    )
     def setUp(self):
         super().setUp()
 
-    def _setup_mock(self, user, mock_functions=[], data=None):
+    def _setup_mock(self, user, mock_functions=[], data=None):  # noqa: B006
         user = getattr(self, user)
         mock_functions = mock_functions or []
         for mock_func in mock_functions:
@@ -1886,7 +1858,7 @@ class ForumEventTestCase(
             event_receiver.call_args.kwargs,
         )
 
-        self.assertIn("thread", event_receiver.call_args.kwargs)
+        self.assertIn("thread", event_receiver.call_args.kwargs)  # noqa: PT009
 
     @ddt.data(
         "follow_thread",
@@ -1973,7 +1945,7 @@ class ForumEventTestCase(
             event_receiver.call_args.kwargs,
         )
 
-        self.assertIn("thread", event_receiver.call_args.kwargs)
+        self.assertIn("thread", event_receiver.call_args.kwargs)  # noqa: PT009
 
     @patch("eventtracking.tracker.emit")
     def test_comment_event(self, mock_emit):
@@ -2017,7 +1989,7 @@ class ForumEventTestCase(
             event_receiver.call_args.kwargs,
         )
 
-        self.assertIn("thread", event_receiver.call_args.kwargs)
+        self.assertIn("thread", event_receiver.call_args.kwargs)  # noqa: PT009
 
 
 @disable_signal(views, "thread_edited")
@@ -2471,6 +2443,7 @@ def _create_and_transform_event(**kwargs):
 
 
 @ddt.ddt
+@override_settings(ENABLE_DISCUSSION_SERVICE=True)
 class ForumThreadViewedEventTransformerTestCase(UrlResetMixin, ModuleStoreTestCase):
     """
     Test that the ForumThreadViewedEventTransformer transforms events correctly
@@ -2493,7 +2466,6 @@ class ForumThreadViewedEventTransformerTestCase(UrlResetMixin, ModuleStoreTestCa
     DUMMY_CATEGORY_ID = 'i4x-edx-dummy-commentable-id'
     DUMMY_THREAD_ID = 'dummy_thread_id'
 
-    @mock.patch.dict("common.djangoapps.student.models.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
     def setUp(self):
         super().setUp()
         self.course = CourseFactory.create(
@@ -2537,7 +2509,7 @@ class ForumThreadViewedEventTransformerTestCase(UrlResetMixin, ModuleStoreTestCa
         event['name'] = 'edx.forum.thread.viewed'
         event['event_type'] = event['name']
         event['event'] = {}
-        self.assertDictEqual(event_trans, event)
+        self.assertDictEqual(event_trans, event)  # noqa: PT009
 
     def test_inner_context(self):
         _, event_trans = _create_and_transform_event(inner_context={})
@@ -2562,7 +2534,7 @@ class ForumThreadViewedEventTransformerTestCase(UrlResetMixin, ModuleStoreTestCa
         )
         event['name'] = 'edx.forum.thread.viewed'
         event['event_type'] = event['name']
-        self.assertDictEqual(event_trans, event)
+        self.assertDictEqual(event_trans, event)  # noqa: PT009
 
     def test_bad_course_id(self):
         event, event_trans = _create_and_transform_event(course_id='non-existent-course-id')
@@ -2632,7 +2604,7 @@ class ForumThreadViewedEventTransformerTestCase(UrlResetMixin, ModuleStoreTestCa
             topic_id=commentable_id,
             thread_id=thread_id,
         )
-        expected_path = '/courses/{}/discussion/forum/{}/threads/{}'.format(
+        expected_path = '/courses/{}/discussion/forum/{}/threads/{}'.format(  # noqa: UP032
             self.course.id, commentable_id, thread_id
         )
         assert event_trans['event'].get('url').endswith(expected_path)

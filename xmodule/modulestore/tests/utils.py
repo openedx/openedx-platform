@@ -2,7 +2,7 @@
 Helper classes and methods for running modulestore tests without Django.
 """
 import os
-from contextlib import contextmanager, ExitStack
+from contextlib import ExitStack, contextmanager
 from importlib import import_module
 from shutil import rmtree
 from tempfile import mkdtemp
@@ -17,7 +17,7 @@ from xmodule.modulestore.mixed import MixedModuleStore
 from xmodule.modulestore.mongo.base import ModuleStoreEnum
 from xmodule.modulestore.mongo.draft import DraftModuleStore
 from xmodule.modulestore.split_mongo.split_draft import DraftVersioningModuleStore
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase, TEST_DATA_ONLY_SPLIT_MODULESTORE_DRAFT_PREFERRED
+from xmodule.modulestore.tests.django_utils import TEST_DATA_ONLY_SPLIT_MODULESTORE_DRAFT_PREFERRED, ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import BlockFactory
 from xmodule.modulestore.tests.mongo_connection import MONGO_HOST, MONGO_PORT_NUM
 from xmodule.modulestore.xml import XMLModuleStore
@@ -25,7 +25,7 @@ from xmodule.tests import DATA_DIR
 from xmodule.x_module import XModuleMixin
 
 
-def load_function(path):  # lint-amnesty, pylint: disable=redefined-outer-name
+def load_function(path):  # pylint: disable=redefined-outer-name
     """
     Load a function by name.
 
@@ -63,7 +63,7 @@ def create_modulestore_instance(
     )
 
 
-def add_temp_files_from_dict(file_dict, dir):  # lint-amnesty, pylint: disable=redefined-builtin
+def add_temp_files_from_dict(file_dict, dir):  # pylint: disable=redefined-builtin
     """
     Takes in a dict formatted as: { file_name: content }, and adds files to directory
     """
@@ -74,7 +74,7 @@ def add_temp_files_from_dict(file_dict, dir):  # lint-amnesty, pylint: disable=r
                 opened_file.write(str(content))
 
 
-def remove_temp_files_from_list(file_list, dir):  # lint-amnesty, pylint: disable=redefined-builtin
+def remove_temp_files_from_list(file_list, dir):  # pylint: disable=redefined-builtin
     """
     Takes in a list of file names and removes them from dir if they exist
     """
@@ -373,10 +373,10 @@ class MixedModulestoreBuilder(StoreBuilderBase):
             contentstore: The contentstore that this modulestore should use to store
                 all of its assets.
         """
-        names, generators = list(zip(*self.store_builders))
+        names, generators = list(zip(*self.store_builders))  # noqa: B905
 
         with ExitStack() as stack:
-            modulestores = [stack.enter_context(gen.build_with_contentstore(contentstore, **kwargs)) for gen in generators]  # lint-amnesty, pylint: disable=line-too-long
+            modulestores = [stack.enter_context(gen.build_with_contentstore(contentstore, **kwargs)) for gen in generators]  # pylint: disable=line-too-long
             # Make the modulestore creation function just return the already-created modulestores
             store_iterator = iter(modulestores)
             next_modulestore = lambda *args, **kwargs: next(store_iterator)
@@ -422,7 +422,7 @@ COMMON_DOCSTORE_CONFIG = {
     'host': MONGO_HOST,
     'port': MONGO_PORT_NUM,
 }
-DATA_DIR = path(__file__).dirname().parent.parent / "tests" / "data" / "xml-course-root"
+DATA_DIR = path(__file__).dirname().parent.parent / "tests" / "data" / "xml-course-root"  # noqa: F811
 TEST_DATA_DIR = 'common/test/data/'
 
 XBLOCK_MIXINS = (InheritanceMixin, XModuleMixin)
@@ -452,7 +452,7 @@ DIRECT_MS_SETUPS_SHORT = (
 )
 MODULESTORE_SETUPS = DIRECT_MODULESTORE_SETUPS + MIXED_MODULESTORE_SETUPS
 MODULESTORE_SHORTNAMES = DIRECT_MS_SETUPS_SHORT + MIXED_MS_SETUPS_SHORT
-SHORT_NAME_MAP = dict(list(zip(MODULESTORE_SETUPS, MODULESTORE_SHORTNAMES)))
+SHORT_NAME_MAP = dict(list(zip(MODULESTORE_SETUPS, MODULESTORE_SHORTNAMES)))  # noqa: B905
 
 CONTENTSTORE_SETUPS = (MongoContentstoreBuilder(),)
 

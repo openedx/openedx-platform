@@ -2,14 +2,16 @@ define([
     'jquery',
     'underscore',
     'backbone',
+    'sinon',
     'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers',
     'common/js/spec_helpers/template_helpers',
     'js/verify_student/views/make_payment_step_view'
 ],
-function($, _, Backbone, AjaxHelpers, TemplateHelpers, MakePaymentStepView) {
+function($, _, Backbone, sinon, AjaxHelpers, TemplateHelpers, MakePaymentStepView) {
     'use strict';
 
     describe('edx.verify_student.MakePaymentStepView', function() {
+        var requests, xhrFactory;
         var PAYMENT_PARAMS = {
             orderId: 'test-order',
             signature: 'abcd1234'
@@ -124,11 +126,19 @@ function($, _, Backbone, AjaxHelpers, TemplateHelpers, MakePaymentStepView) {
 
             setFixtures('<div id="current-step-container"></div>');
             TemplateHelpers.installTemplate('templates/verify_student/make_payment_step');
+            xhrFactory = sinon.useFakeXMLHttpRequest();
+            requests = [];
+            requests.currentIndex = 0;
+            requests.restore = function() { xhrFactory.restore(); };
+            xhrFactory.onCreate = function(req) { requests.push(req); };
+        });
+
+        afterEach(function() {
+            requests.restore();
         });
 
         it('shows users only minimum price', function() {
-            var view = createView({}),
-                requests = AjaxHelpers.requests(this);
+            var view = createView({});
 
             expectPriceSelected(STEP_DATA.minPrice);
             expectPaymentButtonEnabled(true);
@@ -184,12 +194,12 @@ function($, _, Backbone, AjaxHelpers, TemplateHelpers, MakePaymentStepView) {
 
         it('provides working payment buttons for a single processor', function() {
             createView({processors: ['cybersource']});
-            checkPaymentButtons(AjaxHelpers.requests(this), {cybersource: 'Checkout'});
+            checkPaymentButtons(requests, {cybersource: 'Checkout'});
         });
 
         it('provides working payment buttons for multiple processors', function() {
             createView({processors: ['cybersource', 'paypal', 'other']});
-            checkPaymentButtons(AjaxHelpers.requests(this), {
+            checkPaymentButtons(requests, {
                 cybersource: 'Checkout',
                 paypal: 'Checkout with PayPal',
                 other: 'Checkout with other'
@@ -197,8 +207,7 @@ function($, _, Backbone, AjaxHelpers, TemplateHelpers, MakePaymentStepView) {
         });
 
         it('by default minimum price is selected if no suggested prices are given', function() {
-            var view = createView(),
-                requests = AjaxHelpers.requests(this);
+            var view = createView();
 
             expectPriceSelected(STEP_DATA.minPrice);
             expectPaymentButtonEnabled(true);
@@ -228,8 +237,7 @@ function($, _, Backbone, AjaxHelpers, TemplateHelpers, MakePaymentStepView) {
         });
 
         it('displays an error if the order could not be created', function() {
-            var requests = AjaxHelpers.requests(this),
-                view = createView({});
+            var view = createView({});
 
             goToPayment(requests, {
                 amount: STEP_DATA.minPrice,

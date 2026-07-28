@@ -5,10 +5,7 @@ API Serializers for unit page
 from django.urls import reverse
 from rest_framework import serializers
 
-from cms.djangoapps.contentstore.helpers import (
-    xblock_studio_url,
-    xblock_type_display_name,
-)
+from cms.djangoapps.contentstore.helpers import xblock_studio_url, xblock_type_display_name
 from openedx.core.djangoapps.content_tagging.toggles import is_tagging_feature_disabled
 
 
@@ -125,7 +122,7 @@ class UpstreamLinkSerializer(serializers.Serializer):
     error_message = serializers.CharField(allow_null=True)
     ready_to_sync = serializers.BooleanField()
     downstream_customized = serializers.ListField(child=serializers.CharField(), allow_empty=True)
-    has_top_level_parent = serializers.BooleanField()
+    top_level_parent_key = serializers.CharField(allow_null=True)
     ready_to_sync_children = UpstreamChildrenInfoSerializer(many=True, required=False)
 
 

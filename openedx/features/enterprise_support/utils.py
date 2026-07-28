@@ -25,7 +25,7 @@ from openedx.core.djangoapps.site_configuration import helpers as configuration_
 from openedx.core.djangoapps.user_authn.cookies import standard_cookie_settings
 from openedx.core.djangolib.markup import HTML, Text
 
-ENTERPRISE_HEADER_LINKS = WaffleFlag('enterprise.enterprise_header_links', __name__)  # lint-amnesty, pylint: disable=toggle-missing-annotation
+ENTERPRISE_HEADER_LINKS = WaffleFlag('enterprise.enterprise_header_links', __name__)  # pylint: disable=toggle-missing-annotation
 
 
 def get_data_consent_share_cache_key(user_id, course_id, enterprise_customer_uuid=None):
@@ -326,7 +326,7 @@ def get_enterprise_learner_portal(request):
     Caches and returns result in/from the user's request session if provided.
     """
     # Prevent a circular import.
-    from openedx.features.enterprise_support.api import enterprise_enabled, enterprise_customer_uuid_for_request
+    from openedx.features.enterprise_support.api import enterprise_customer_uuid_for_request, enterprise_enabled
 
     user = request.user
     # Only cache this if a learner is authenticated (AnonymousUser exists and should not be tracked)

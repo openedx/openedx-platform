@@ -5,7 +5,7 @@ Models for External User Ids that are sent out of Open edX
 import uuid as uuid_tools
 from logging import getLogger
 
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.db import models
 from model_utils.models import TimeStampedModel
 from simple_history.models import HistoricalRecords
@@ -87,7 +87,7 @@ class ExternalId(TimeStampedModel):
             type_obj = ExternalIdType.objects.get(name=type_name)
         except ExternalIdType.DoesNotExist:
             LOGGER.info(
-                'External ID Creation failed for user {user}, no external id type of {type}'.format(
+                'External ID Creation failed for user {user}, no external id type of {type}'.format(  # noqa: UP032
                     user=user.id,
                     type=type_name
                 )
@@ -99,7 +99,7 @@ class ExternalId(TimeStampedModel):
         )
         if created:
             LOGGER.info(
-                'External ID Created for user {user}, of type {type}'.format(
+                'External ID Created for user {user}, of type {type}'.format(  # noqa: UP032
                     user=user.id,
                     type=type_name
                 )
@@ -128,7 +128,7 @@ class ExternalId(TimeStampedModel):
             type_obj = ExternalIdType.objects.get(name=type_name)
         except ExternalIdType.DoesNotExist:
             LOGGER.info(
-                'Batch ID Creation failed, no external id type of {type!r}'.format(
+                'Batch ID Creation failed, no external id type of {type!r}'.format(  # noqa: UP032
                     type=type_name
                 )
             )

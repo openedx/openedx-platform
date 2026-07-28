@@ -11,14 +11,14 @@ from unittest.mock import patch
 import ddt
 from django.conf import settings
 from django.utils import timezone
-from pytest import mark
+from pytest import mark  # noqa: PT013
 
 from common.djangoapps.student.tests.factories import UserFactory
 from lms.djangoapps.verify_student.models import ManualVerification, SoftwareSecurePhotoVerification, SSOVerification
 from lms.djangoapps.verify_student.utils import (
     most_recent_verification,
     submit_request_to_ss,
-    verification_for_datetime
+    verification_for_datetime,
 )
 
 FAKE_SETTINGS = {
@@ -152,7 +152,7 @@ class TestVerifyStudentUtils(unittest.TestCase):
 
     @mock.patch('lms.djangoapps.verify_student.utils.log')
     @mock.patch(
-        'lms.djangoapps.verify_student.tasks.send_request_to_ss_for_user.delay', mock.Mock(side_effect=Exception('error'))  # lint-amnesty, pylint: disable=line-too-long
+        'lms.djangoapps.verify_student.tasks.send_request_to_ss_for_user.delay', mock.Mock(side_effect=Exception('error'))  # pylint: disable=line-too-long
     )
     def test_submit_request_to_ss(self, mock_log):
         """Tests that we log appropriate information when celery task creation fails."""

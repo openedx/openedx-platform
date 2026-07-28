@@ -12,7 +12,7 @@ changes. To do that,
 
 import logging
 
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.db import models
 from django.utils.translation import gettext as _
 from opaque_keys.edx.django.models import CourseKeyField, UsageKeyField
@@ -23,7 +23,7 @@ from openedx.core.lib.hash_utils import short_token
 log = logging.getLogger("edx.lti_provider")
 
 
-class LtiConsumer(models.Model):
+class LtiConsumer(models.Model):  # noqa: DJ008
     """
     Database model representing an LTI consumer. This model stores the consumer
     specific settings, such as the OAuth key/secret pair and any LTI fields
@@ -88,7 +88,7 @@ class LtiConsumer(models.Model):
         return consumer
 
 
-class OutcomeService(models.Model):
+class OutcomeService(models.Model):  # noqa: DJ008
     """
     Model for a single outcome service associated with an LTI consumer. Note
     that a given consumer may have more than one outcome service URL over its
@@ -112,7 +112,7 @@ class OutcomeService(models.Model):
     lti_consumer = models.ForeignKey(LtiConsumer, on_delete=models.CASCADE)
 
 
-class GradedAssignment(models.Model):
+class GradedAssignment(models.Model):  # noqa: DJ008
     """
     Model representing a single launch of a graded assignment by an individual
     user. There will be a row created here only if the LTI consumer may require
@@ -129,8 +129,8 @@ class GradedAssignment(models.Model):
     .. no_pii:
     """
     user = models.ForeignKey(User, db_index=True, on_delete=models.CASCADE)
-    course_key = CourseKeyField(max_length=255, db_index=True)
-    usage_key = UsageKeyField(max_length=255, db_index=True)
+    course_key = CourseKeyField(db_index=True)
+    usage_key = UsageKeyField(db_index=True)
     outcome_service = models.ForeignKey(OutcomeService, on_delete=models.CASCADE)
     lis_result_sourcedid = models.CharField(max_length=255, db_index=True)
     version_number = models.IntegerField(default=0)
@@ -139,7 +139,7 @@ class GradedAssignment(models.Model):
         unique_together = ('outcome_service', 'lis_result_sourcedid')
 
 
-class LtiUser(models.Model):
+class LtiUser(models.Model):  # noqa: DJ008
     """
     Model mapping the identity of an LTI user to an account on the edX platform.
     The LTI user_id field is guaranteed to be unique per LTI consumer (per

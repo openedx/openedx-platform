@@ -15,37 +15,35 @@ import json
 import logging
 import os.path
 import uuid
-
 from datetime import timedelta
 from email.utils import formatdate
-
 
 import requests
 from config_models.models import ConfigurationModel
 from django.conf import settings
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.core.files.base import ContentFile
 from django.db import models, transaction
 from django.urls import reverse
-
 from django.utils.functional import cached_property
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy
 from model_utils import Choices
 from model_utils.models import StatusModel, TimeStampedModel
-from lms.djangoapps.verify_student.statuses import VerificationAttemptStatus
 from opaque_keys.edx.django.models import CourseKeyField
 
+from common.djangoapps.util.storage import resolve_storage_backend
 from lms.djangoapps.verify_student.ssencrypt import (
     decode_and_decrypt,
     encrypt_and_encode,
     generate_signed_message,
     random_aes_key,
     rsa_decrypt,
-    rsa_encrypt
+    rsa_encrypt,
 )
-from common.djangoapps.util.storage import resolve_storage_backend
+from lms.djangoapps.verify_student.statuses import VerificationAttemptStatus
 from openedx.core.djangoapps.signals.signals import LEARNER_SSO_VERIFIED, PHOTO_VERIFICATION_APPROVED
+from openedx.core.djangolib.model_mixins import DeletableByUserValue
 
 from .utils import auto_verify_for_testing_enabled, earliest_allowed_verification_date, submit_request_to_ss
 
@@ -83,7 +81,7 @@ def status_before_must_be(*valid_start_statuses):
         @functools.wraps(func)
         def with_status_check(obj, *args, **kwargs):
             if obj.status not in valid_start_statuses:
-                exception_msg = (
+                exception_msg = (  # noqa: UP032
                     "Error calling {} {}: status is '{}', must be one of: {}"
                 ).format(func, obj, obj.status, valid_start_statuses)
                 raise VerificationException(exception_msg)
@@ -100,9 +98,9 @@ class IDVerificationAttempt(StatusModel):
     their identity through one of several methods that inherit from this Model,
     including PhotoVerification and SSOVerification.
 
-    .. pii: The User's name is stored in this and sub-models
+    .. pii: The User's name is stored in this and sub-models.
     .. pii_types: name
-    .. pii_retirement: retained
+    .. pii_retirement: local_api
     """
     STATUS = Choices('created', 'ready', 'submitted', 'must_retry', 'approved', 'denied')
     user = models.ForeignKey(User, db_index=True, on_delete=models.CASCADE)
@@ -116,7 +114,7 @@ class IDVerificationAttempt(StatusModel):
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     updated_at = models.DateTimeField(auto_now=True, db_index=True)
 
-    def expiration_default():  # lint-amnesty, pylint: disable=no-method-argument
+    def expiration_default():  # pylint: disable=no-method-argument
         return now() + timedelta(days=settings.VERIFY_STUDENT["DAYS_GOOD_FOR"])
 
     # Datetime that the verification will expire.
@@ -161,10 +159,13 @@ class IDVerificationAttempt(StatusModel):
         )
 
 
-class ManualVerification(IDVerificationAttempt):
+class ManualVerification(IDVerificationAttempt, DeletableByUserValue):
     """
     Each ManualVerification represents a user's verification that bypasses the need for
     any other verification.
+
+    The PII is retained by default, but can be redacted during retirement
+    by enabling ``REDACT_MANUAL_VERIFICATION_HISTORICAL_PII``.
 
     .. pii: The User's name is stored in the parent model
     .. pii_types: name
@@ -183,7 +184,7 @@ class ManualVerification(IDVerificationAttempt):
         app_label = 'verify_student'
 
     def __str__(self):
-        return 'ManualIDVerification for {name}, status: {status}'.format(
+        return 'ManualIDVerification for {name}, status: {status}'.format(  # noqa: UP032
             name=self.name,
             status=self.status,
         )
@@ -193,6 +194,13 @@ class ManualVerification(IDVerificationAttempt):
         Whether or not the status should be displayed to the user.
         """
         return False
+
+    @classmethod
+    def redact_before_delete_fields(cls):
+        """
+        Clear PII fields before delete in downstream soft-delete systems.
+        """
+        return {'name': ''}
 
 
 class SSOVerification(IDVerificationAttempt):
@@ -233,7 +241,7 @@ class SSOVerification(IDVerificationAttempt):
         app_label = "verify_student"
 
     def __str__(self):
-        return 'SSOIDVerification for {name}, status: {status}'.format(
+        return 'SSOIDVerification for {name}, status: {status}'.format(  # noqa: UP032
             name=self.name,
             status=self.status,
         )
@@ -246,7 +254,7 @@ class SSOVerification(IDVerificationAttempt):
         """
         Send a signal indicating that this verification was approved.
         """
-        log.info("Verification for user '{user_id}' approved by '{reviewer}' SSO.".format(
+        log.info("Verification for user '{user_id}' approved by '{reviewer}' SSO.".format(  # noqa: UP032
             user_id=self.user, reviewer=approved_by
         ))
 
@@ -303,7 +311,7 @@ class PhotoVerification(IDVerificationAttempt):
 
     .. pii: The User's name is stored in the parent model, this one stores links to face and photo ID images
     .. pii_types: name, image
-    .. pii_retirement: retained
+    .. pii_retirement: local_api
     """
     ######################## Fields Set During Creation ########################
     # See class docstring for description of status states
@@ -441,7 +449,7 @@ class PhotoVerification(IDVerificationAttempt):
         if self.status == self.STATUS.approved:
             return
 
-        log.info("Verification for user '{user_id}' approved by '{reviewer}'.".format(
+        log.info("Verification for user '{user_id}' approved by '{reviewer}'.".format(  # noqa: UP032
             user_id=self.user, reviewer=user_id
         ))
         self.error_msg = ""  # reset, in case this attempt was denied before
@@ -544,7 +552,7 @@ class PhotoVerification(IDVerificationAttempt):
             lets you amend the error message in case there were additional
             details to be made.
         """
-        log.info("Verification for user '{user_id}' denied by '{reviewer}'.".format(
+        log.info("Verification for user '{user_id}' denied by '{reviewer}'.".format(  # noqa: UP032
             user_id=self.user, reviewer=reviewing_user
         ))
         self.error_msg = error_msg
@@ -631,7 +639,7 @@ class SoftwareSecurePhotoVerification(PhotoVerification):
 
     .. pii: The User's name is stored in the parent model, this one stores links to face and photo ID images
     .. pii_types: name, image
-    .. pii_retirement: retained
+    .. pii_retirement: local_api
     """
     # This is a base64.urlsafe_encode(rsa_encrypt(photo_id_aes_key), ss_pub_key)
     # So first we generate a random AES-256 key to encrypt our photo ID with.
@@ -1064,7 +1072,7 @@ class SoftwareSecurePhotoVerification(PhotoVerification):
 
         verification = SoftwareSecurePhotoVerification.get_recent_verification(user)
 
-        if verification and verification.expiration_datetime < recently_expired_date and not verification.expiry_email_date:  # lint-amnesty, pylint: disable=line-too-long
+        if verification and verification.expiration_datetime < recently_expired_date and not verification.expiry_email_date:  # pylint: disable=line-too-long
             expiry_email_date = today - timedelta(days=email_config['RESEND_DAYS'])
             SoftwareSecurePhotoVerification.objects.filter(pk=verification.pk).update(
                 expiry_email_date=expiry_email_date)
@@ -1091,7 +1099,6 @@ class VerificationDeadline(TimeStampedModel):
         app_label = "verify_student"
 
     course_key = CourseKeyField(
-        max_length=255,
         db_index=True,
         unique=True,
         help_text=gettext_lazy("The course for which this deadline applies"),

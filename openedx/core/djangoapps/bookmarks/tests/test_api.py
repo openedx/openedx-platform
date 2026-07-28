@@ -3,15 +3,15 @@ Tests for bookmarks api.
 """
 from unittest.mock import Mock, patch
 
-import pytest
 import ddt
+import pytest
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from opaque_keys.edx.keys import UsageKey
 
 from openedx.core.djangoapps.bookmarks.api import BookmarksLimitReachedError
 from openedx.core.djangolib.testing.utils import skip_unless_lms
-from xmodule.modulestore.exceptions import ItemNotFoundError  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.exceptions import ItemNotFoundError  # pylint: disable=wrong-import-order
 
 from .. import api
 from ..models import Bookmark

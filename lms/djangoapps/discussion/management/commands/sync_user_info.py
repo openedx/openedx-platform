@@ -4,7 +4,7 @@ discussion service (later info will be synced automatically)
 """
 
 
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.core.management.base import BaseCommand
 
 import openedx.core.djangoapps.django_comment_common.comment_client as cc

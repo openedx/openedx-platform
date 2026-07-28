@@ -32,6 +32,8 @@ security:
   - JWTAuth: []
 
 tags:
+  - name: Course
+    description: Course-level configuration and metadata
   - name: Learners
     description: Learner information and enrollment data
   - name: Problems
@@ -83,6 +85,9 @@ paths:
         Retrieve problem metadata including display name, location in course hierarchy,
         and usage key.
 
+        When a `learner` query parameter is provided, the response also includes the
+        learner's current score and attempt count for the problem.
+
         **Note:** Requires exact problem location - no search or partial matching.
       operationId: getProblem
       produces:
@@ -95,6 +100,7 @@ paths:
           required: true
           type: string
           x-example: "block-v1:edX+DemoX+Demo_Course+type@problem+block@sample_problem"
+        - $ref: '#/parameters/EmailOrUsernameQuery'
       responses:
         200:
           description: Problem information retrieved successfully
@@ -108,6 +114,33 @@ paths:
           $ref: '#/responses/Forbidden'
         404:
           $ref: '#/responses/NotFound'
+
+  # ==================== COURSE CONFIG ENDPOINTS ====================
+
+  /api/instructor/v2/courses/{course_key}/grading-config:
+    get:
+      tags:
+        - Course
+      summary: Get course grading configuration
+      description: |
+        Retrieve the grading policy for a course, including assignment type weights
+        and letter grade cutoff thresholds.
+      operationId: getGradingConfig
+      produces:
+        - application/json
+      parameters:
+        - $ref: '#/parameters/CourseKey'
+      responses:
+        200:
+          description: Grading configuration retrieved successfully
+          schema:
+            $ref: '#/definitions/GradingConfig'
+        400:
+          $ref: '#/responses/BadRequest'
+        401:
+          $ref: '#/responses/Unauthorized'
+        403:
+          $ref: '#/responses/Forbidden'
 
   # ==================== GRADING ENDPOINTS ====================
 
@@ -378,6 +411,14 @@ parameters:
     type: string
     x-example: "john_harvard"
 
+  EmailOrUsernameQuery:
+    name: email_or_username
+    in: query
+    required: false
+    description: Learner's username or email address.
+    type: string
+    x-example: "john_harvard"
+
   ProblemLocationPath:
     name: problem
     in: path
@@ -548,8 +589,7 @@ definitions:
     required:
       - username
       - email
-      - first_name
-      - last_name
+      - full_name
     properties:
       username:
         type: string
@@ -558,44 +598,64 @@ definitions:
         type: string
         format: email
         example: "john@example.com"
-      first_name:
+      full_name:
         type: string
-        example: "John"
-      last_name:
-        type: string
-        example: "Harvard"
+        description: Learner's full name from their Open edX profile
+        example: "John Harvard"
       progress_url:
         type: string
         format: uri
         description: URL to learner's progress page
         x-nullable: true
-      gradebook_url:
-        type: string
-        format: uri
-        description: URL to learner's gradebook view
-        x-nullable: true
-      current_score:
+
+  GradingConfig:
+    type: object
+    description: Course grading policy configuration
+    required:
+      - graders
+      - grade_cutoffs
+    properties:
+      graders:
+        type: array
+        description: List of grader configurations by assignment type
+        items:
+          type: object
+          required:
+            - type
+            - min_count
+            - drop_count
+            - weight
+          properties:
+            type:
+              type: string
+              description: Assignment type name
+              example: "Homework"
+            short_label:
+              type: string
+              x-nullable: true
+              description: Short label used when displaying assignment names
+              example: "HW"
+            min_count:
+              type: integer
+              minimum: 0
+              description: Minimum number of assignments counted in this category
+            drop_count:
+              type: integer
+              minimum: 0
+              description: Number of lowest scores dropped from this category
+            weight:
+              type: number
+              format: float
+              minimum: 0
+              maximum: 1
+              description: Weight of this assignment type in the final grade (0.0 to 1.0)
+      grade_cutoffs:
         type: object
-        x-nullable: true
-        properties:
-          score:
-            type: number
-            format: float
-            minimum: 0
-          total:
-            type: number
-            format: float
-            minimum: 0
-      attempts:
-        type: object
-        x-nullable: true
-        properties:
-          current:
-            type: integer
-            minimum: 0
-          total:
-            type: integer
-            minimum: 0
+        description: Grade cutoffs mapping letter grades to minimum score thresholds (0.0 to 1.0)
+        example:
+          A: 0.9
+          B: 0.8
+          C: 0.7
 
   Problem:
     type: object
@@ -626,6 +686,37 @@ definitions:
             usage_key:
               type: string
               description: Block usage key (omitted for course level)
+      current_score:
+        type: object
+        x-nullable: true
+        description: Learner's current score (present when learner query param is provided and has a submission)
+        properties:
+          score:
+            type: number
+            format: float
+            x-nullable: true
+            minimum: 0
+          total:
+            type: number
+            format: float
+            x-nullable: true
+            minimum: 0
+      attempts:
+        type: object
+        x-nullable: true
+        description: Learner's attempt data (present when learner query param is provided and has a submission)
+        properties:
+          current:
+            type: integer
+            minimum: 0
+            description: Number of times the learner has attempted this problem
+          total:
+            type: integer
+            x-nullable: true
+            minimum: 0
+            description: >
+              Maximum number of attempts allowed for this problem.
+              A null value means the problem allows unlimited attempts.
 
   Error:
     type: object

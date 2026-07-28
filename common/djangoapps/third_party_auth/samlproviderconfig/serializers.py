@@ -3,14 +3,15 @@ Serializer for SAMLProviderConfig
 """
 
 import logging
+
 from rest_framework import serializers
 
-from common.djangoapps.third_party_auth.models import SAMLProviderConfig, SAMLConfiguration
+from common.djangoapps.third_party_auth.models import SAMLConfiguration, SAMLProviderConfig
 
 log = logging.getLogger(__name__)
 
 
-class SAMLProviderConfigSerializer(serializers.ModelSerializer):  # lint-amnesty, pylint: disable=missing-class-docstring
+class SAMLProviderConfigSerializer(serializers.ModelSerializer):  # pylint: disable=missing-class-docstring
     saml_config_id = serializers.IntegerField(required=False)
 
     class Meta:

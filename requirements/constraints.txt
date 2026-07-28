@@ -44,7 +44,7 @@ django-stubs<6
 # The team that owns this package will manually bump this package rather than having it pulled in automatically.
 # This is to allow them to better control its deployment and to do it in a process that works better
 # for them.
-edx-enterprise==6.6.2
+edx-enterprise==8.7.2
 
 # Date: 2023-07-26
 # Our legacy Sass code is incompatible with anything except this ancient libsass version.
@@ -54,16 +54,17 @@ edx-enterprise==6.6.2
 libsass==0.10.0
 
 # Date: 2024-07-16
-# We need to upgrade the version of elasticsearch to atleast 7.15 before we can upgrade to Numpy 2.0.0
+# We need to upgrade the version of elasticsearch to at least 7.15 before we can upgrade to Numpy 2.0.0
 # Otherwise we see a failure while running the following command:
 # export DJANGO_SETTINGS_MODULE=cms.envs.test; python manage.py cms check_reserved_keywords --override_file db_keyword_overrides.yml --report_path reports/reserved_keywords --report_file cms_reserved_keyword_report.csv
 # Issue for unpinning: https://github.com/openedx/edx-platform/issues/35126
 numpy<2.0.0
 
 # Date: 2023-09-18
-# pinning this version to avoid updates while the library is being developed
+# Library is still in active development. Major versions require review
+# from openedx-maintainers. Minor and patch versions can roll out automatically.
 # Issue for unpinning: https://github.com/openedx/edx-platform/issues/35269
-openedx-learning==0.30.2
+openedx-core<2
 
 # Date: 2023-11-29
 # Open AI version 1.0.0 dropped support for openai.ChatCompletion which is currently in use in enterprise.
@@ -75,11 +76,6 @@ openai<=0.28.1
 # needs to be investigated and fixed separately
 # Issue for unpinning: https://github.com/openedx/edx-platform/issues/35267
 path<16.12.0
-
-# Date: 2022-08-03
-# pycodestyle==2.9.0 generates false positive error E275.
-# Constraint can be removed once the issue https://github.com/PyCQA/pycodestyle/issues/1090 is fixed.
-pycodestyle<2.9.0
 
 # Date: 2021-08-25
 # At the time of writing this comment, we do not know whether py2neo>=2022
@@ -128,17 +124,6 @@ xmlsec==1.3.14
 # Pin this back to the previous version until that bug is fixed.
 django-debug-toolbar<6.0.0
 
-# Date 2025-10-07
-# Cryptography 46.0.0 conflicts with system dependencies needed for snowflake-connector-python
-# snowflake-connector-python comes as a dependency of edx-enterprise so it can not be directly pinned here.
-# See issue https://github.com/openedx/edx-platform/issues/37417 for details on this.
-# This can be unpinned once snowflake-connector-python==4.0.0 is available (contains the fix).
-# pact-python==3.0.0 also removes cffi dependency and is causing the upgrade build to fail
-# This should also be removed together with cryptography constraint.
-# Issue: https://github.com/openedx/edx-platform/issues/37435
-cryptography<46.0.0
-pact-python<3.0.0
-
 # Date 2026-01-13
 # Sphinx-autoapi changed the version of astroid it needs
 # but the newer version is not compatible with the current pylint version
@@ -147,3 +132,21 @@ pact-python<3.0.0
 # https://github.com/openedx/edx-platform/issues/37880
 sphinx-autoapi<3.6.1
 
+# Date 2026-03-02
+# setuptools 82.0.0 removed pkg_resources from its distribution, but fs (pyfilesystem2)
+# still uses pkg_resources for namespace package declarations. This constraint can be
+# removed once pyfilesystem2 drops its pkg_resources usage.
+# https://github.com/PyFilesystem/pyfilesystem2/issues/577
+# Issue for unpinning: https://github.com/openedx/openedx-platform/issues/38068
+setuptools<82
+
+# Date 2026-03-02
+# The latest version of pylint pins back astroid to an older version.
+# This holdback is not caught in the docs requirements file and since both the docs
+# and testing file are required in the development.in file, we fail to compile
+# development.txt because of conflicting dependencies.
+#
+# Holding astroid back until pylint releases a new version that works with the latest
+# version of astroid.
+# https://github.com/openedx/openedx-platform/issues/38066
+astroid==4.0.4

@@ -3,18 +3,21 @@ Tests for the Credit xBlock service
 """
 
 
-from unittest.mock import patch
 from datetime import datetime
+from unittest.mock import patch
+
 import ddt
 
 from common.djangoapps.course_modes.models import CourseMode
+from common.djangoapps.student.models import CourseEnrollment, UserProfile
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from openedx.core.djangoapps.credit.api.eligibility import set_credit_requirements
 from openedx.core.djangoapps.credit.models import CreditCourse
 from openedx.core.djangoapps.credit.services import CreditService
-from common.djangoapps.student.models import CourseEnrollment, UserProfile
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # pylint: disable=wrong-import-order
+)
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 
 @ddt.ddt
@@ -205,7 +208,7 @@ class CreditServiceTests(ModuleStoreTestCase):
         )
 
         # mark the grade as satisfied
-        retval = self.service.set_credit_requirement_status(  # lint-amnesty, pylint: disable=assignment-from-none
+        retval = self.service.set_credit_requirement_status(  # pylint: disable=assignment-from-none
             self.user.id,
             self.course.id,
             'grade',
@@ -214,7 +217,7 @@ class CreditServiceTests(ModuleStoreTestCase):
         assert retval is None
 
         # remove the requirement status with the invalid user id
-        retval = self.service.remove_credit_requirement_status(  # lint-amnesty, pylint: disable=assignment-from-none
+        retval = self.service.remove_credit_requirement_status(  # pylint: disable=assignment-from-none
             0,
             self.course.id,
             'grade',
@@ -373,7 +376,7 @@ class CreditServiceTests(ModuleStoreTestCase):
         )
 
         # mark the grade as satisfied
-        retval = self.service.set_credit_requirement_status(  # lint-amnesty, pylint: disable=assignment-from-none
+        retval = self.service.set_credit_requirement_status(  # pylint: disable=assignment-from-none
             0,
             self.course.id,
             'grade',

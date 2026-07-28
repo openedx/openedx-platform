@@ -1,16 +1,12 @@
 """ Factories for course reset models """
 import factory
 from factory.django import DjangoModelFactory
+
 from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory
+from lms.djangoapps.support.models import CourseResetAudit, CourseResetCourseOptIn
 
 
-from lms.djangoapps.support.models import (
-    CourseResetCourseOptIn,
-    CourseResetAudit
-)
-
-
-class CourseResetCourseOptInFactory(DjangoModelFactory):  # lint-amnesty, pylint: disable=missing-class-docstring
+class CourseResetCourseOptInFactory(DjangoModelFactory):  # pylint: disable=missing-class-docstring
     class Meta:
         model = CourseResetCourseOptIn
 
@@ -18,7 +14,7 @@ class CourseResetCourseOptInFactory(DjangoModelFactory):  # lint-amnesty, pylint
     active = True
 
 
-class CourseResetAuditFactory(DjangoModelFactory):  # lint-amnesty, pylint: disable=missing-class-docstring
+class CourseResetAuditFactory(DjangoModelFactory):  # pylint: disable=missing-class-docstring
     class Meta:
         model = CourseResetAudit
 

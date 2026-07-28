@@ -100,6 +100,7 @@ from openedx.core.release import RELEASE_LINE
 </head>
 
 <body class="${static.dir_rtl()} <%block name='bodyclass'></%block> lang_${LANGUAGE_CODE} view-container">
+    <div id="page-notification"></div>
     <%static:js group='base_vendor' />
     <%static:webpack entry='commons' />
 

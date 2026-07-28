@@ -1,10 +1,11 @@
-define(['edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers', 'js/shoppingcart/shoppingcart'],
-    function(AjaxHelpers) {
+define(['sinon', 'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers', 'js/shoppingcart/shoppingcart'],
+    function(sinon, AjaxHelpers) {
         'use strict';
 
         describe('edx.shoppingcart.showcart.CartView', function() {
             var view = null;
             var requests = null;
+            var xhrFactory = null;
 
             beforeEach(function() {
                 setFixtures('<section class="wrapper confirm-enrollment shopping-cart cart-view"><form action="" method="post"><input type="hidden" name="" value="" /><span class="icon fa fa-caret-right"></span><input type="submit" value="Payment"/></form></section>'); // eslint-disable-line max-len
@@ -15,8 +16,11 @@ define(['edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers', 'js/shoppingcart/sh
 
                 spyOn(view, 'responseFromServer').and.callFake(function() {});
 
-                // Spy on AJAX requests
-                requests = AjaxHelpers.requests(this);
+                xhrFactory = sinon.useFakeXMLHttpRequest();
+                requests = [];
+                requests.currentIndex = 0;
+                requests.restore = function() { xhrFactory.restore(); };
+                xhrFactory.onCreate = function(req) { requests.push(req); };
 
                 view.submit();
 
@@ -25,6 +29,10 @@ define(['edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers', 'js/shoppingcart/sh
                 AjaxHelpers.expectRequest(
                     requests, 'GET', '/shoppingcart/verify_cart/'
                 );
+            });
+
+            afterEach(function() {
+                requests.restore();
             });
 
             it('cart has invalid items, course enrollment has been closed', function() {

@@ -4,27 +4,22 @@ Tests for the instructor_task app's REST API v1 views.
 import datetime
 import json
 from uuid import uuid4
-import pytz
 
-from celery.states import REVOKED
 import ddt
+import pytz
+from celery.states import REVOKED
 from django.contrib.auth import get_user_model
 from rest_framework.test import APITestCase
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory
 
-from common.djangoapps.student.tests.factories import (
-    GlobalStaffFactory,
-    InstructorFactory,
-    StaffFactory,
-    UserFactory,
-)
+from common.djangoapps.student.tests.factories import GlobalStaffFactory, InstructorFactory, StaffFactory, UserFactory
 from lms.djangoapps.bulk_email.api import create_course_email, get_course_email
 from lms.djangoapps.bulk_email.data import BulkEmailTargetChoices
 from lms.djangoapps.instructor_task.data import InstructorTaskTypes
-from lms.djangoapps.instructor_task.models import InstructorTask, InstructorTaskSchedule, PROGRESS, SCHEDULED
+from lms.djangoapps.instructor_task.models import PROGRESS, SCHEDULED, InstructorTask, InstructorTaskSchedule
 from lms.djangoapps.instructor_task.tests.factories import InstructorTaskFactory, InstructorTaskScheduleFactory
 from openedx.core.lib.html_to_text import html_to_text
+from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
+from xmodule.modulestore.tests.factories import CourseFactory
 
 User = get_user_model()
 

@@ -16,12 +16,12 @@ from django.views.decorators.cache import cache_control
 from django.views.decorators.csrf import ensure_csrf_cookie
 
 import lms.djangoapps.branding.api as branding_api
-from lms.djangoapps.branding.toggles import use_catalog_mfe
 import lms.djangoapps.courseware.views.views as courseware_views
 from common.djangoapps.edxmako.shortcuts import marketing_link, render_to_response
 from common.djangoapps.student import views as student_views
 from common.djangoapps.util.cache import cache_if_anonymous
 from common.djangoapps.util.json_request import JsonResponse
+from lms.djangoapps.branding.toggles import use_catalog_mfe
 from openedx.core.djangoapps.lang_pref.api import released_languages
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 
@@ -104,7 +104,7 @@ def courses(request):
     if enable_mktg_site:
         return redirect(marketing_link('COURSES'), permanent=True)
 
-    if not settings.FEATURES.get('COURSES_ARE_BROWSABLE'):
+    if not settings.COURSES_ARE_BROWSABLE:
         raise Http404
 
     #  we do not expect this case to be reached in cases where
@@ -317,7 +317,7 @@ def footer(request):
             with translation.override(language):
                 footer_dict = branding_api.get_footer(is_secure=request.is_secure())
                 cache.set(cache_key, footer_dict, settings.FOOTER_CACHE_TIMEOUT)
-        return JsonResponse(footer_dict, 200, content_type="application/json; charset=utf-8")  # lint-amnesty, pylint: disable=redundant-content-type-for-json-response
+        return JsonResponse(footer_dict, 200, content_type="application/json; charset=utf-8")  # pylint: disable=redundant-content-type-for-json-response
 
     else:
         return HttpResponse(status=406)

@@ -2,15 +2,11 @@
 
 
 import logging
-import time
 
 from eventtracking import tracker
-
 from forum import api as forum_api
-from forum.backends.mongodb.threads import CommentThread as ForumThread
 
 from . import models, settings, utils
-
 
 log = logging.getLogger(__name__)
 
@@ -102,7 +98,7 @@ class Thread(models.Model):
                 }
             )
             log.info(
-                'forum_text_search query="{search_query}" corrected_text="{corrected_text}" course_id={course_id} '
+                'forum_text_search query="{search_query}" corrected_text="{corrected_text}" course_id={course_id} '  # noqa: UP032  # pylint: disable=line-too-long
                 'group_id={group_id} page={requested_page} total_results={total_results}'.format(
                     search_query=search_query,
                     corrected_text=corrected_text,
@@ -218,43 +214,6 @@ class Thread(models.Model):
         )
         self._update_from_response(response)
 
-    @classmethod
-    def get_user_threads_count(cls, user_id, course_ids):
-        """
-        Returns threads count of user in the given course_ids.
-        TODO: Add support for MySQL backend as well
-        """
-        query_params = {
-            "course_id": {"$in": course_ids},
-            "author_id": str(user_id),
-            "_type": "CommentThread"
-        }
-        return ForumThread()._collection.count_documents(query_params)  # pylint: disable=protected-access
-
-    @classmethod
-    def delete_user_threads(cls, user_id, course_ids):
-        """
-        Deletes threads of user in the given course_ids.
-        TODO: Add support for MySQL backend as well
-        """
-        start_time = time.time()
-        query_params = {
-            "course_id": {"$in": course_ids},
-            "author_id": str(user_id),
-        }
-        threads_deleted = 0
-        threads = ForumThread().get_list(**query_params)
-        log.info(f"<<Bulk Delete>> Fetched threads for user {user_id} in {time.time() - start_time} seconds")
-        for thread in threads:
-            start_time = time.time()
-            thread_id = thread.get("_id")
-            course_id = thread.get("course_id")
-            if thread_id:
-                forum_api.delete_thread(thread_id, course_id=course_id)
-                threads_deleted += 1
-            log.info(f"<<Bulk Delete>> Deleted thread {thread_id} in {time.time() - start_time} seconds."
-                     f" Thread Found: {thread_id is not None}")
-        return threads_deleted
 
 
 def _clean_forum_params(params):

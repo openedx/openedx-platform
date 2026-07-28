@@ -5,6 +5,7 @@ Tests for derived.py
 
 import sys
 from unittest import TestCase
+
 from openedx.core.lib.derived import Derived, derive_settings
 
 

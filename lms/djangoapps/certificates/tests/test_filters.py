@@ -9,8 +9,6 @@ from django.urls import reverse
 from openedx_filters import PipelineStep
 from openedx_filters.learning.filters import CertificateCreationRequested
 from rest_framework import status as status_code
-from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.student.roles import SupportStaffRole
@@ -18,17 +16,19 @@ from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, U
 from lms.djangoapps.certificates.generation_handler import (
     CertificateGenerationNotAllowed,
     generate_allowlist_certificate_task,
-    generate_certificate_task
+    generate_certificate_task,
 )
 from lms.djangoapps.certificates.models import GeneratedCertificate
 from lms.djangoapps.certificates.signals import (
-    _listen_for_enrollment_mode_change,
     _handle_id_verification_approved,
-    listen_for_passing_grade
+    _listen_for_enrollment_mode_change,
+    listen_for_passing_grade,
 )
 from lms.djangoapps.certificates.tests.factories import CertificateAllowlistFactory
 from lms.djangoapps.grades.course_grade_factory import CourseGradeFactory
 from openedx.core.djangolib.testing.utils import skip_unless_lms
+from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
+from xmodule.modulestore.tests.factories import CourseFactory
 
 
 class TestCertificatePipelineStep(PipelineStep):
@@ -71,9 +71,13 @@ class CertificateFiltersTest(SharedModuleStoreTestCase):
     - CertificateCreationRequested
     """
 
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.course_run = CourseFactory()
+
     def setUp(self):  # pylint: disable=arguments-differ
         super().setUp()
-        self.course_run = CourseFactory()
         self.user = UserFactory.create(
             username="somestudent",
             first_name="Student",
@@ -119,8 +123,8 @@ class CertificateFiltersTest(SharedModuleStoreTestCase):
             course_id=self.course_run.id,
         )
 
-        self.assertTrue(cert_gen_task_created)
-        self.assertEqual(CourseMode.NO_ID_PROFESSIONAL_MODE, certificate.mode)
+        self.assertTrue(cert_gen_task_created)  # noqa: PT009
+        self.assertEqual(CourseMode.NO_ID_PROFESSIONAL_MODE, certificate.mode)  # noqa: PT009
 
     @override_settings(
         OPEN_EDX_FILTERS_CONFIG={
@@ -140,12 +144,12 @@ class CertificateFiltersTest(SharedModuleStoreTestCase):
             - CertificateCreationRequested is triggered and executes TestStopCertificateGenerationStep.
             - The certificate is not generated.
         """
-        with self.assertRaises(CertificateGenerationNotAllowed):
+        with self.assertRaises(CertificateGenerationNotAllowed):  # noqa: PT027
             generate_certificate_task(
                 self.user, self.course_run.id, generation_mode=CourseMode.HONOR,
             )
 
-        self.assertFalse(
+        self.assertFalse(  # noqa: PT009
             GeneratedCertificate.objects.filter(
                 user=self.user, course_id=self.course_run.id, mode=CourseMode.HONOR,
             )
@@ -169,8 +173,8 @@ class CertificateFiltersTest(SharedModuleStoreTestCase):
             course_id=self.course_run.id,
         )
 
-        self.assertTrue(cert_gen_task_created)
-        self.assertEqual(CourseMode.HONOR, certificate.mode)
+        self.assertTrue(cert_gen_task_created)  # noqa: PT009
+        self.assertEqual(CourseMode.HONOR, certificate.mode)  # noqa: PT009
 
     @override_settings(
         OPEN_EDX_FILTERS_CONFIG={
@@ -195,8 +199,8 @@ class CertificateFiltersTest(SharedModuleStoreTestCase):
 
         certificate_generated = generate_allowlist_certificate_task(self.user, self.course_run.id)
 
-        self.assertFalse(certificate_generated)
-        self.assertFalse(
+        self.assertFalse(certificate_generated)  # noqa: PT009
+        self.assertFalse(  # noqa: PT009
             GeneratedCertificate.objects.filter(
                 user=self.user, course_id=self.course_run.id, mode=CourseMode.HONOR,
             )
@@ -223,7 +227,7 @@ class CertificateFiltersTest(SharedModuleStoreTestCase):
         with self.assertLogs(level="ERROR"):
             call_command("cert_generation", "--u", self.user.id, "--c", self.course_run.id)
 
-        self.assertFalse(
+        self.assertFalse(  # noqa: PT009
             GeneratedCertificate.objects.filter(
                 user=self.user, course_id=self.course_run.id, mode=CourseMode.HONOR,
             )
@@ -250,8 +254,8 @@ class CertificateFiltersTest(SharedModuleStoreTestCase):
         """
         signal_result = listen_for_passing_grade(None, self.user, self.course_run.id)
 
-        self.assertFalse(signal_result)
-        self.assertFalse(
+        self.assertFalse(signal_result)  # noqa: PT009
+        self.assertFalse(  # noqa: PT009
             GeneratedCertificate.objects.filter(
                 user=self.user, course_id=self.course_run.id, mode=CourseMode.HONOR,
             )
@@ -282,7 +286,7 @@ class CertificateFiltersTest(SharedModuleStoreTestCase):
         """
         _handle_id_verification_approved(self.user)
 
-        self.assertFalse(
+        self.assertFalse(  # noqa: PT009
             GeneratedCertificate.objects.filter(
                 user=self.user, course_id=self.course_run.id, mode=CourseMode.HONOR,
             )
@@ -308,8 +312,8 @@ class CertificateFiltersTest(SharedModuleStoreTestCase):
         """
         signal_result = _listen_for_enrollment_mode_change(None, self.user, self.course_run.id, CourseMode.HONOR)
 
-        self.assertFalse(signal_result)
-        self.assertFalse(
+        self.assertFalse(signal_result)  # noqa: PT009
+        self.assertFalse(  # noqa: PT009
             GeneratedCertificate.objects.filter(
                 user=self.user, course_id=self.course_run.id, mode=CourseMode.HONOR,
             )
@@ -348,7 +352,7 @@ class CertificateFiltersTest(SharedModuleStoreTestCase):
 
         response = self.client.post(url, body)
 
-        self.assertEqual(status_code.HTTP_400_BAD_REQUEST, response.status_code)
+        self.assertEqual(status_code.HTTP_400_BAD_REQUEST, response.status_code)  # noqa: PT009
 
     @override_settings(
         OPEN_EDX_FILTERS_CONFIG={

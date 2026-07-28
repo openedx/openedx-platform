@@ -1,4 +1,4 @@
-#   Copyright (c) 2008 Mikeal Rogers  # lint-amnesty, pylint: disable=missing-module-docstring
+#   Copyright (c) 2008 Mikeal Rogers  # pylint: disable=missing-module-docstring
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -13,7 +13,12 @@
 #   limitations under the License.
 LOOKUP = {}
 
-from .paths import add_lookup, clear_lookups, lookup_template, save_lookups  # lint-amnesty, pylint: disable=wrong-import-position
+from .paths import (  # pylint: disable=wrong-import-position
+    add_lookup,  # noqa: F401
+    clear_lookups,  # noqa: F401
+    lookup_template,  # noqa: F401
+    save_lookups,  # noqa: F401
+)
 
 
 class Engines:

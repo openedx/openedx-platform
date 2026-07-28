@@ -4,8 +4,8 @@ Tests for system wide roles' django models.
 
 
 from django.test import TestCase
-from common.djangoapps.student.tests.factories import UserFactory
 
+from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.system_wide_roles.models import SystemWideRole, SystemWideRoleAssignment
 
 

@@ -1,24 +1,23 @@
 """Tests for display of certificates on the student dashboard. """
 
 import datetime
-from unittest.mock import patch
 from zoneinfo import ZoneInfo
 
 import ddt
 from django.conf import settings
 from django.test.utils import override_settings
 from django.urls import reverse
-from xmodule.modulestore import ModuleStoreEnum
-from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, SharedModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory
-from xmodule.data import CertificatesDisplayBehaviors
 
 from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory
-from openedx.core.djangolib.testing.utils import skip_unless_lms
 from lms.djangoapps.certificates.api import get_certificate_url
 from lms.djangoapps.certificates.data import CertificateStatuses
 from lms.djangoapps.certificates.tests.factories import GeneratedCertificateFactory
 from openedx.core.djangoapps.site_configuration.tests.test_util import with_site_configuration_context
+from openedx.core.djangolib.testing.utils import skip_unless_lms
+from xmodule.data import CertificatesDisplayBehaviors
+from xmodule.modulestore import ModuleStoreEnum
+from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, SharedModuleStoreTestCase
+from xmodule.modulestore.tests.factories import CourseFactory
 
 # pylint: disable=no-member
 
@@ -89,7 +88,7 @@ class CertificateDashboardMessageDisplayTest(CertificateDisplayTestBase):
         cls.course.save()
         cls.store.update_item(cls.course, cls.USERNAME)
 
-    def _check_message(self, visible_date):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def _check_message(self, visible_date):  # pylint: disable=missing-function-docstring
         response = self.client.get(reverse('dashboard'))
 
         is_past = visible_date < datetime.datetime.now(ZoneInfo("UTC"))
@@ -150,7 +149,7 @@ class CertificateDisplayTest(CertificateDisplayTestBase):
         response = self.client.get(reverse('dashboard'))
         self.assertContains(
             response,
-            'do not have a current verified identity with {platform_name}'
+            'do not have a current verified identity with {platform_name}'  # noqa: UP032
             .format(platform_name=settings.PLATFORM_NAME))
 
     @ddt.data(
@@ -206,8 +205,7 @@ class CertificateDisplayTestLinkedHtmlView(CertificateDisplayTestBase):
         cls.store.update_item(cls.course, cls.USERNAME)
 
     @ddt.data('verified')
-    @override_settings(CERT_NAME_SHORT='Test_Certificate')
-    @patch.dict('django.conf.settings.FEATURES', {'CERTIFICATES_HTML_VIEW': True})
+    @override_settings(CERT_NAME_SHORT='Test_Certificate', CERTIFICATES_HTML_VIEW=True)
     def test_linked_student_to_web_view_credential(self, enrollment_mode):
 
         cert = self._create_certificate(enrollment_mode)

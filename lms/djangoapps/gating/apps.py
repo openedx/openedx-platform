@@ -14,4 +14,4 @@ class GatingConfig(AppConfig):
 
     def ready(self):
         # Import signals to wire up the signal handlers contained within
-        from lms.djangoapps.gating import signals  # pylint: disable=unused-import
+        from lms.djangoapps.gating import signals  # pylint: disable=unused-import  # noqa: F401

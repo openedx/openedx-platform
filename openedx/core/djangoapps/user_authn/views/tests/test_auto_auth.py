@@ -6,22 +6,24 @@ from unittest.mock import Mock, patch
 
 import ddt
 from django.conf import settings
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
-from django.test import TestCase
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
+from django.test import TestCase, override_settings
 from django.test.client import Client
 from opaque_keys.edx.locator import CourseLocator
 
 from common.djangoapps.student.models import CourseAccessRole, CourseEnrollment, UserProfile, anonymous_id_for_user
 from common.djangoapps.util.testing import UrlResetMixin
+from common.test.utils import assert_dict_contains_subset
 from openedx.core.djangoapps.django_comment_common.models import (
     FORUM_ROLE_ADMINISTRATOR,
     FORUM_ROLE_MODERATOR,
     FORUM_ROLE_STUDENT,
-    Role
+    Role,
 )
 from openedx.core.djangoapps.django_comment_common.utils import seed_permissions_roles
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
-from common.test.utils import assert_dict_contains_subset
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # pylint: disable=wrong-import-order
+)
 
 
 class AutoAuthTestCase(UrlResetMixin, TestCase):
@@ -43,7 +45,7 @@ class AutoAuthEnabledTestCase(AutoAuthTestCase, ModuleStoreTestCase):
         (COURSE_ID_SPLIT, CourseLocator.from_string(COURSE_ID_SPLIT)),
     )
 
-    @patch.dict("django.conf.settings.FEATURES", {"AUTOMATIC_AUTH_FOR_TESTING": True})
+    @override_settings(AUTOMATIC_AUTH_FOR_TESTING=True)
     def setUp(self):
         # Patching the settings.FEATURES['AUTOMATIC_AUTH_FOR_TESTING']
         # value affects the contents of urls.py,
@@ -301,7 +303,7 @@ class AutoAuthDisabledTestCase(AutoAuthTestCase):
     Test that the page is inaccessible with default settings
     """
 
-    @patch.dict("django.conf.settings.FEATURES", {"AUTOMATIC_AUTH_FOR_TESTING": False})
+    @override_settings(AUTOMATIC_AUTH_FOR_TESTING=False)
     def setUp(self):
         # Patching the settings.FEATURES['AUTOMATIC_AUTH_FOR_TESTING']
         # value affects the contents of urls.py,
@@ -325,7 +327,7 @@ class AutoAuthRestrictedTestCase(AutoAuthTestCase):
     work as intended.  These restrictions are in place for load tests.
     """
 
-    @patch.dict('django.conf.settings.FEATURES', {'AUTOMATIC_AUTH_FOR_TESTING': True})
+    @override_settings(AUTOMATIC_AUTH_FOR_TESTING=True)
     def setUp(self):
         # Patching the settings.FEATURES['AUTOMATIC_AUTH_FOR_TESTING']
         # value affects the contents of urls.py,

@@ -10,35 +10,32 @@ import logging
 from typing import Any
 
 from django.conf import settings
-from opaque_keys.edx.keys import CourseKey, UsageKey
-from opaque_keys.edx.locator import LibraryLocatorV2
-from xblocks_contrib.video.exceptions import TranscriptNotFoundError
-
-from openedx.core.djangoapps.video_config import sharing
 from django.core.files import File
 from django.core.files.base import ContentFile
 from edxval.api import create_external_video, create_or_update_video_transcript, delete_video_transcript
+from opaque_keys.edx.keys import CourseKey, UsageKey
+from opaque_keys.edx.locator import LibraryLocatorV2
 from organizations.api import get_course_organization
-from openedx.core.djangoapps.video_config.models import (
-    CourseYoutubeBlockedFlag,
-    HLSPlaybackEnabledFlag,
-)
-from openedx.core.djangoapps.video_config.toggles import TRANSCRIPT_FEEDBACK
-from openedx.core.djangoapps.video_pipeline.config.waffle import DEPRECATE_YOUTUBE
+from xblocks_contrib.video.exceptions import TranscriptNotFoundError
+
 from openedx.core.djangoapps.content_libraries.api import (
     add_library_block_static_asset_file,
     delete_library_block_static_asset_file,
 )
+from openedx.core.djangoapps.video_config import sharing
+from openedx.core.djangoapps.video_config.models import CourseYoutubeBlockedFlag, HLSPlaybackEnabledFlag
+from openedx.core.djangoapps.video_config.sharing_sites import sharing_sites_info_for_video
+from openedx.core.djangoapps.video_config.toggles import TRANSCRIPT_FEEDBACK
 from openedx.core.djangoapps.video_config.transcripts_utils import (
     Transcript,
     clean_video_id,
     get_html5_ids,
+    get_transcript,
+    get_transcript_for_video,
     manage_video_subtitles_save,
     remove_subs_from_store,
-    get_transcript_for_video,
-    get_transcript,
 )
-
+from openedx.core.djangoapps.video_pipeline.config.waffle import DEPRECATE_YOUTUBE
 from xmodule.exceptions import NotFoundError
 from xmodule.modulestore.inheritance import own_metadata
 
@@ -93,7 +90,6 @@ class VideoConfigService:
 
         organization = get_course_organization(course_key)
 
-        from openedx.core.djangoapps.video_config.sharing_sites import sharing_sites_info_for_video
         sharing_sites_info = sharing_sites_info_for_video(
             public_video_url,
             organization=organization
@@ -231,7 +227,7 @@ class VideoConfigService:
         is_library = isinstance(video_block.usage_key.context_key, LibraryLocatorV2)
         content: bytes = transcript_file.read()
         if is_library:
-            # Save transcript as static asset in Learning Core if is a library component
+            # Save transcript as static asset in openedx_content if is a library component
             filename = f'static/transcript-{new_language_code}.srt'
             add_library_block_static_asset_file(video_block.usage_key, filename, content)
         else:
@@ -355,7 +351,7 @@ class VideoConfigService:
 
 def _save_transcript_field(video_block):
     """
-    Hacky workaround to ensure that transcript field is saved for Learning Core video blocks.
+    Hacky workaround to ensure that transcript field is saved for openedx_content video blocks.
 
     It's not clear why this is necessary.
     """

@@ -9,7 +9,7 @@ from datetime import datetime
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.db.models import Q
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
@@ -20,18 +20,20 @@ from web_fragments.fragment import Fragment
 from xblock.runtime import KeyValueStore
 
 from common.djangoapps.course_modes.models import CourseMode
-from openedx.core.djangoapps.util.user_messages import PageLevelMessages
-from openedx.core.djangolib.markup import HTML
-from openedx.features.content_type_gating.helpers import CONTENT_GATING_PARTITION_ID
-from openedx.features.content_type_gating.helpers import FULL_ACCESS
-from openedx.features.content_type_gating.helpers import LIMITED_ACCESS
 from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.role_helpers import has_staff_roles
 from common.djangoapps.util.json_request import JsonResponse, expect_json
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.partitions.partitions import ENROLLMENT_TRACK_PARTITION_ID  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.partitions.partitions import NoSuchUserPartitionGroupError  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.partitions.partitions_service import get_all_partitions_for_course  # lint-amnesty, pylint: disable=wrong-import-order
+from openedx.core.djangoapps.util.user_messages import PageLevelMessages
+from openedx.core.djangolib.markup import HTML
+from openedx.features.content_type_gating.helpers import CONTENT_GATING_PARTITION_ID, FULL_ACCESS, LIMITED_ACCESS
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
+from xmodule.partitions.partitions import (
+    ENROLLMENT_TRACK_PARTITION_ID,  # pylint: disable=wrong-import-order
+    NoSuchUserPartitionGroupError,  # pylint: disable=wrong-import-order
+)
+from xmodule.partitions.partitions_service import (
+    get_all_partitions_for_course,  # pylint: disable=wrong-import-order
+)
 
 log = logging.getLogger(__name__)
 
@@ -214,7 +216,7 @@ def setup_masquerade(request, course_key, staff_access=False, reset_masquerade_d
     """
     if (
         request.user is None or
-        not settings.FEATURES.get('ENABLE_MASQUERADE', False) or
+        not settings.ENABLE_MASQUERADE or
         not staff_access
     ):
         return None, request.user
@@ -417,7 +419,7 @@ class MasqueradingKeyValueStore(KeyValueStore):
     store, but writes go to a Django session (or other dictionary-like object).
     """
 
-    def __init__(self, kvs, session):  # lint-amnesty, pylint: disable=super-init-not-called
+    def __init__(self, kvs, session):  # pylint: disable=super-init-not-called
         """
         Arguments:
           kvs: The KeyValueStore to wrap.
@@ -466,7 +468,7 @@ class MasqueradingKeyValueStore(KeyValueStore):
             return value != _DELETED_SENTINEL
 
 
-def filter_displayed_blocks(block, unused_view, frag, unused_context):  # lint-amnesty, pylint: disable=unused-argument
+def filter_displayed_blocks(block, unused_view, frag, unused_context):  # pylint: disable=unused-argument
     """
     A wrapper to only show XBlocks that set `show_in_read_only_mode` when masquerading as a specific user.
 

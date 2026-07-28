@@ -4,7 +4,6 @@ Unit tests for Contentstore Proctored Exam Settings.
 from unittest.mock import patch
 
 import ddt
-from django.conf import settings
 from django.test.utils import override_settings
 from django.urls import reverse
 from edx_toggles.toggles.testutils import override_waffle_flag
@@ -13,13 +12,13 @@ from rest_framework.test import APITestCase
 
 from cms.djangoapps.contentstore.tests.test_utils import AuthorizeStaffTestCase
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase
+from openedx.core import toggles as core_toggles
 from openedx.core.djangoapps.course_apps.toggles import EXAMS_IDA
-from xmodule.modulestore.django import (
-    modulestore,
-)  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.django_utils import (
+from xmodule.course_metadata_utils import DEFAULT_START_DATE
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (  # pylint: disable=wrong-import-order
     ModuleStoreTestCase,
-)  # lint-amnesty, pylint: disable=wrong-import-order
+)
 
 from ...mixins import PermissionAccessMixin
 
@@ -60,7 +59,7 @@ class ProctoringExamSettingsGetTests(
                 "proctoring_escalation_email": course.proctoring_escalation_email,
                 "create_zendesk_tickets": course.create_zendesk_tickets,
             },
-            "course_start_date": "2030-01-01T00:00:00Z",
+            "course_start_date": DEFAULT_START_DATE.strftime('%Y-%m-%dT%H:%M:%SZ'),
             "available_proctoring_providers": ["null"],
             "requires_escalation_email_providers": [],
         }
@@ -99,7 +98,7 @@ class ProctoringExamSettingsGetTests(
                 "proctoring_escalation_email": self.course.proctoring_escalation_email,
                 "create_zendesk_tickets": self.course.create_zendesk_tickets,
             },
-            "course_start_date": "2030-01-01T00:00:00Z",
+            "course_start_date": DEFAULT_START_DATE.strftime('%Y-%m-%dT%H:%M:%SZ'),
             "available_proctoring_providers": ["null"],
             "requires_escalation_email_providers": [],
         }
@@ -122,7 +121,7 @@ class ProctoringExamSettingsGetTests(
                 "proctoring_escalation_email": self.course.proctoring_escalation_email,
                 "create_zendesk_tickets": self.course.create_zendesk_tickets,
             },
-            "course_start_date": "2030-01-01T00:00:00Z",
+            "course_start_date": DEFAULT_START_DATE.strftime('%Y-%m-%dT%H:%M:%SZ'),
             "available_proctoring_providers": ["lti_external", "null"],
             "requires_escalation_email_providers": ["lti_external"],
         }
@@ -182,7 +181,7 @@ class ProctoringExamSettingsPostTests(
 
         # response is correct
         assert response.status_code == status.HTTP_200_OK
-        self.assertDictEqual(
+        self.assertDictEqual(  # noqa: PT009
             response.data,
             {
                 "proctored_exam_settings": {
@@ -219,7 +218,7 @@ class ProctoringExamSettingsPostTests(
 
         # response is correct
         assert response.status_code == status.HTTP_200_OK
-        self.assertDictEqual(
+        self.assertDictEqual(  # noqa: PT009
             response.data,
             {
                 "proctored_exam_settings": {
@@ -250,7 +249,7 @@ class ProctoringExamSettingsPostTests(
 
         # response is correct
         assert response.status_code == status.HTTP_200_OK
-        self.assertDictEqual(
+        self.assertDictEqual(  # noqa: PT009
             response.data,
             {
                 "proctored_exam_settings": {
@@ -272,9 +271,7 @@ class ProctoringExamSettingsPostTests(
     )
     def test_update_exam_settings_invalid_value(self):
         self.client.login(username=self.global_staff.username, password=self.password)
-        PROCTORED_EXAMS_ENABLED_FEATURES = settings.FEATURES
-        PROCTORED_EXAMS_ENABLED_FEATURES["ENABLE_PROCTORED_EXAMS"] = True
-        with override_settings(FEATURES=PROCTORED_EXAMS_ENABLED_FEATURES):
+        with override_settings(ENABLE_PROCTORED_EXAMS=True):
             data = self.get_request_data(
                 enable_proctored_exams=True,
                 proctoring_provider="notvalidprovider",
@@ -283,7 +280,7 @@ class ProctoringExamSettingsPostTests(
 
         # response is correct
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        self.assertIn(
+        self.assertIn(  # noqa: PT009
             {
                 "proctoring_provider": (
                     "The selected proctoring provider, notvalidprovider, is not a valid provider. "
@@ -350,7 +347,7 @@ class ProctoringExamSettingsPostTests(
         assert response.status_code == status.HTTP_200_OK
         if expect_log:
             logger_string = (
-                "create_zendesk_tickets set to {ticket_value} but proctoring "
+                "create_zendesk_tickets set to {ticket_value} but proctoring "  # noqa: UP032
                 "provider is {provider} for course {course_id}. create_zendesk_tickets "
                 "should be updated for this course.".format(
                     ticket_value=create_zendesk_tickets,
@@ -366,42 +363,38 @@ class ProctoringExamSettingsPostTests(
     @override_waffle_flag(EXAMS_IDA, active=True)
     def test_200_for_lti_provider(self):
         self.client.login(username=self.global_staff.username, password=self.password)
-        PROCTORED_EXAMS_ENABLED_FEATURES = settings.FEATURES
-        PROCTORED_EXAMS_ENABLED_FEATURES["ENABLE_PROCTORED_EXAMS"] = True
-        with override_settings(FEATURES=PROCTORED_EXAMS_ENABLED_FEATURES):
+        with override_settings(ENABLE_PROCTORED_EXAMS=True):
             data = self.get_request_data(
                 enable_proctored_exams=True,
                 proctoring_provider="lti_external",
             )
             response = self.make_request(data=data)
 
-        # response is correct
-        assert response.status_code == status.HTTP_200_OK
+            # response is correct
+            assert response.status_code == status.HTTP_200_OK
 
-        self.assertDictEqual(
-            response.data,
-            {
-                "proctored_exam_settings": {
-                    "enable_proctored_exams": True,
-                    "allow_proctoring_opt_out": True,
-                    "proctoring_provider": "lti_external",
-                    "proctoring_escalation_email": None,
-                    "create_zendesk_tickets": True,
-                }
-            },
-        )
+            self.assertDictEqual(  # noqa: PT009
+                response.data,
+                {
+                    "proctored_exam_settings": {
+                        "enable_proctored_exams": True,
+                        "allow_proctoring_opt_out": True,
+                        "proctoring_provider": "lti_external",
+                        "proctoring_escalation_email": None,
+                        "create_zendesk_tickets": True,
+                    }
+                },
+            )
 
-        # course settings have been updated
-        updated = modulestore().get_item(self.course.location)
-        assert updated.enable_proctored_exams is True
-        assert updated.proctoring_provider == "lti_external"
+            # course settings have been updated
+            updated = modulestore().get_item(self.course.location)
+            assert updated.enable_proctored_exams is True
+            assert updated.proctoring_provider == "lti_external"
 
     @override_waffle_flag(EXAMS_IDA, active=False)
     def test_400_for_disabled_lti(self):
         self.client.login(username=self.global_staff.username, password=self.password)
-        PROCTORED_EXAMS_ENABLED_FEATURES = settings.FEATURES
-        PROCTORED_EXAMS_ENABLED_FEATURES["ENABLE_PROCTORED_EXAMS"] = True
-        with override_settings(FEATURES=PROCTORED_EXAMS_ENABLED_FEATURES):
+        with override_settings(ENABLE_PROCTORED_EXAMS=True):
             data = self.get_request_data(
                 enable_proctored_exams=True,
                 proctoring_provider="lti_external",
@@ -410,7 +403,7 @@ class ProctoringExamSettingsPostTests(
 
         # response is correct
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        self.assertIn(
+        self.assertIn(  # noqa: PT009
             {
                 "proctoring_provider": (
                     "The selected proctoring provider, lti_external, is not a valid provider. "
@@ -446,10 +439,44 @@ class CourseProctoringErrorsViewTest(CourseTestCase, PermissionAccessMixin):
         If this feature is enabled, only Django Staff/Superuser should be able to see the proctoring errors.
         For non-staff users the proctoring errors should be unavailable.
         """
-        with override_settings(
-            FEATURES={"DISABLE_ADVANCED_SETTINGS": disable_advanced_settings}
-        ):
+        with override_settings(DISABLE_ADVANCED_SETTINGS=disable_advanced_settings):
             response = self.non_staff_client.get(self.url)
-            self.assertEqual(
+            self.assertEqual(  # noqa: PT009
                 response.status_code, 403 if disable_advanced_settings else 200
             )
+
+    @patch.object(core_toggles.AUTHZ_COURSE_AUTHORING_FLAG, 'is_enabled', return_value=True)
+    @patch('common.djangoapps.student.auth.authz_api.is_user_allowed')
+    def test_authz_user_allowed(self, mock_is_user_allowed, mock_flag):
+        """User with authz permission can access proctoring errors."""
+        mock_is_user_allowed.return_value = True
+        response = self.non_staff_client.get(self.url)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
+        mock_is_user_allowed.assert_called_once()
+
+    @patch.object(core_toggles.AUTHZ_COURSE_AUTHORING_FLAG, 'is_enabled', return_value=True)
+    @patch('common.djangoapps.student.auth.authz_api.is_user_allowed')
+    def test_authz_user_not_allowed(self, mock_is_user_allowed, mock_flag):
+        """User without authz permission cannot access proctoring errors."""
+        mock_is_user_allowed.return_value = False
+        response = self.non_staff_client.get(self.url)
+        self.assertEqual(response.status_code, 403)  # noqa: PT009
+        mock_is_user_allowed.assert_called_once()
+
+    @patch.object(core_toggles.AUTHZ_COURSE_AUTHORING_FLAG, 'is_enabled', return_value=True)
+    @patch('common.djangoapps.student.auth.authz_api.is_user_allowed')
+    def test_authz_with_disable_advanced_settings_staff_allowed(self, mock_is_user_allowed, mock_flag):
+        """Staff user can access when DISABLE_ADVANCED_SETTINGS is enabled, bypassing authz."""
+        with override_settings(DISABLE_ADVANCED_SETTINGS=True):
+            response = self.client.get(self.url)
+            self.assertEqual(response.status_code, 200)  # noqa: PT009
+            mock_is_user_allowed.assert_not_called()
+
+    @patch.object(core_toggles.AUTHZ_COURSE_AUTHORING_FLAG, 'is_enabled', return_value=True)
+    @patch('common.djangoapps.student.auth.authz_api.is_user_allowed')
+    def test_authz_with_disable_advanced_settings_non_staff_denied(self, mock_is_user_allowed, mock_flag):
+        """Non-staff user is denied when DISABLE_ADVANCED_SETTINGS is enabled, bypassing authz."""
+        with override_settings(DISABLE_ADVANCED_SETTINGS=True):
+            response = self.non_staff_client.get(self.url)
+            self.assertEqual(response.status_code, 403)  # noqa: PT009
+            mock_is_user_allowed.assert_not_called()

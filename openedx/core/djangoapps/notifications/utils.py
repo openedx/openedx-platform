@@ -1,12 +1,12 @@
 """
 Utils function for notifications app
 """
-from typing import Dict, List
+from typing import Dict, List  # noqa: UP035
 
 from common.djangoapps.student.models import CourseAccessRole
 from openedx.core.djangoapps.django_comment_common.models import Role
-from openedx.core.djangoapps.notifications.config.waffle import ENABLE_NOTIFICATIONS
-from openedx.core.djangoapps.notifications.models import create_notification_preference, NotificationPreference
+from openedx.core.djangoapps.notifications.config.waffle import DISABLE_EMAIL_NOTIFICATIONS, DISABLE_NOTIFICATIONS
+from openedx.core.djangoapps.notifications.models import NotificationPreference, create_notification_preference
 from openedx.core.lib.cache_utils import request_cached
 
 
@@ -14,7 +14,14 @@ def get_show_notifications_tray():
     """
     Returns whether notifications tray is enabled via waffle flag
     """
-    return ENABLE_NOTIFICATIONS.is_enabled()
+    return not DISABLE_NOTIFICATIONS.is_enabled()
+
+
+def get_show_email_preferences():
+    """
+    Returns whether email notification preferences are enabled via waffle flag
+    """
+    return not DISABLE_EMAIL_NOTIFICATIONS.is_enabled()
 
 
 def get_list_in_batches(input_list, batch_size):
@@ -27,7 +34,7 @@ def get_list_in_batches(input_list, batch_size):
 
 
 @request_cached()
-def get_notification_types_with_visibility_settings() -> Dict[str, List[str]]:
+def get_notification_types_with_visibility_settings() -> Dict[str, List[str]]:  # noqa: UP006
     """
     Get notification types with their visibility settings.
 
@@ -45,9 +52,9 @@ def get_notification_types_with_visibility_settings() -> Dict[str, List[str]]:
 
 def filter_out_visible_notifications(
     user_preferences: dict,
-    notifications_with_visibility: Dict[str, List[str]],
-    user_forum_roles: List[str],
-    user_course_roles: List[str]
+    notifications_with_visibility: Dict[str, List[str]],  # noqa: UP006
+    user_forum_roles: List[str],  # noqa: UP006
+    user_course_roles: List[str]  # noqa: UP006
 ) -> dict:
     """
     Filter out notifications visible to forum roles from user preferences.
@@ -88,7 +95,7 @@ def clean_arguments(kwargs):
     return clean_kwargs
 
 
-def get_user_forum_access_roles(user_id: int) -> List[str]:
+def get_user_forum_access_roles(user_id: int) -> List[str]:  # noqa: UP006
     """
     Get forum roles for the given user in all course.
 

@@ -59,7 +59,6 @@ from openedx.core.djangoapps.user_authn.views.password_reset import send_passwor
 from openedx.core.djangoapps.user_authn.views.utils import API_V1, ENTERPRISE_ENROLLMENT_URL_REGEX, UUID4_REGEX
 from openedx.core.djangoapps.util.user_messages import PageLevelMessages
 from openedx.core.djangolib.markup import HTML, Text
-from openedx.core.lib.api.view_utils import require_post_params  # lint-amnesty, pylint: disable=unused-import
 from openedx.features.enterprise_support.api import activate_learner_enterprise, get_enterprise_learner_data_from_api
 
 log = logging.getLogger("edx.student")
@@ -83,7 +82,7 @@ def _do_third_party_auth(request):
         return pipeline.get_authenticated_user(requested_provider, username, third_party_uid)
     except USER_MODEL.DoesNotExist:
         AUDIT_LOG.info(
-            "Login failed - user with username {username} has no social auth "
+            "Login failed - user with username {username} has no social auth "  # noqa: UP032
             "with backend_name {backend_name}".format(username=username, backend_name=backend_name)
         )
         message = Text(
@@ -102,7 +101,7 @@ def _do_third_party_auth(request):
             register_label_strong=HTML("<strong>{register_text}</strong>").format(register_text=_("Register")),
         )
 
-        raise AuthFailedError(message, error_code="third-party-auth-with-no-linked-account")  # lint-amnesty, pylint: disable=raise-missing-from
+        raise AuthFailedError(message, error_code="third-party-auth-with-no-linked-account")  # pylint: disable=raise-missing-from  # noqa: B904
 
 
 def _get_user_by_email(email):
@@ -188,7 +187,7 @@ def _generate_locked_out_error_message():
     )
 
 
-def _enforce_password_policy_compliance(request, user):  # lint-amnesty, pylint: disable=missing-function-docstring
+def _enforce_password_policy_compliance(request, user):  # pylint: disable=missing-function-docstring
     try:
         password_policy_compliance.enforce_compliance_on_login(user, request.POST.get("password"))
     except password_policy_compliance.NonCompliantPasswordWarning as e:
@@ -211,7 +210,7 @@ def _enforce_password_policy_compliance(request, user):  # lint-amnesty, pylint:
         send_password_reset_email_for_user(user, request)
 
         # Prevent the login attempt.
-        raise AuthFailedError(HTML(str(e)), error_code=e.__class__.__name__)  # lint-amnesty, pylint: disable=raise-missing-from
+        raise AuthFailedError(HTML(str(e)), error_code=e.__class__.__name__)  # pylint: disable=raise-missing-from  # noqa: B904
 
 
 def _log_and_raise_inactive_user_auth_error(unauthenticated_user):
@@ -241,7 +240,7 @@ def _authenticate_first_party(request, unauthenticated_user, third_party_auth_re
     if should_be_rate_limited:
         raise AuthFailedError(
             _("Too many failed login attempts. Try again later.")
-        )  # lint-amnesty, pylint: disable=raise-missing-from
+        )  # pylint: disable=raise-missing-from
 
     # If the user doesn't exist, we want to set the username to an invalid username so that authentication is guaranteed
     # to fail and we can take advantage of the ratelimited backend
@@ -514,13 +513,13 @@ def enterprise_selection_page(request, user, next_url):
     rate=settings.LOGISTRATION_PER_EMAIL_RATELIMIT_RATE,
     method="POST",
     block=False,
-)  # lint-amnesty, pylint: disable=too-many-statements
+)  # pylint: disable=too-many-statements
 @ratelimit(
     key="openedx.core.djangoapps.util.ratelimit.real_ip",
     rate=settings.LOGISTRATION_RATELIMIT_RATE,
     method="POST",
     block=False,
-)  # lint-amnesty, pylint: disable=too-many-statements
+)  # pylint: disable=too-many-statements
 def login_user(request, api_version="v1"):  # pylint: disable=too-many-statements
     """
     AJAX request to log in the user.
@@ -702,7 +701,7 @@ def login_user(request, api_version="v1"):  # pylint: disable=too-many-statement
 # complexity.
 @csrf_exempt
 @require_http_methods(["POST"])
-def login_refresh(request):  # lint-amnesty, pylint: disable=missing-function-docstring
+def login_refresh(request):  # pylint: disable=missing-function-docstring
     if not request.user.is_authenticated or request.user.is_anonymous:
         return JsonResponse("Unauthorized", status=401)
 
@@ -754,7 +753,7 @@ class LoginSessionView(APIView):
 
     @method_decorator(ensure_csrf_cookie)
     def get(self, request, *args, **kwargs):
-        return HttpResponse(get_login_session_form(request).to_json(), content_type="application/json")  # lint-amnesty, pylint: disable=http-response-with-content-type-json
+        return HttpResponse(get_login_session_form(request).to_json(), content_type="application/json")  # pylint: disable=http-response-with-content-type-json
 
     @swagger_auto_schema(
         request_body=login_user_schema,
@@ -801,4 +800,4 @@ def _parse_analytics_param_for_course_id(request):
                 modified_request["course_id"] = analytics.get("enroll_course_id")
         except (ValueError, TypeError):
             set_custom_attribute("shim_analytics_course_id", "parse-error")
-            log.error("Could not parse analytics object sent to user API: {analytics}".format(analytics=analytics))
+            log.error("Could not parse analytics object sent to user API: {analytics}".format(analytics=analytics))  # noqa: UP032  # pylint: disable=line-too-long

@@ -3,7 +3,7 @@ Utils for use in enrollment codebase such as views.
 """
 import logging
 
-from django.core.exceptions import ObjectDoesNotExist  # lint-amnesty, pylint: disable=wrong-import-order
+from django.core.exceptions import ObjectDoesNotExist  # pylint: disable=wrong-import-order
 from django.db import transaction
 
 from common.djangoapps.student.models import User
@@ -16,7 +16,7 @@ from openedx.core.djangoapps.enrollments.errors import (
 from openedx.core.lib.log_utils import audit_log
 from openedx.features.enterprise_support.enrollments.exceptions import (
     CourseIdMissingException,
-    UserDoesNotExistException
+    UserDoesNotExistException,
 )
 
 log = logging.getLogger(__name__)

@@ -2,8 +2,8 @@
 The views.py for this app is intentionally thin, and only exists to translate
 user input/output to and from the business logic in the `api` package.
 """
-from datetime import datetime, timezone
 import logging
+from datetime import datetime, timezone
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -35,7 +35,7 @@ class CourseOutlineView(APIView):
     # We want to eventually allow unauthenticated users to use this as well...
     authentication_classes = (JwtAuthentication, SessionAuthenticationAllowInactiveUser)
 
-    class UserCourseOutlineDataSerializer(serializers.BaseSerializer):  # lint-amnesty, pylint: disable=abstract-method
+    class UserCourseOutlineDataSerializer(serializers.BaseSerializer):  # pylint: disable=abstract-method
         """
         Read-only serializer for CourseOutlineData for this endpoint.
 
@@ -55,7 +55,7 @@ class CourseOutlineView(APIView):
         are a critical part of the internals of edx-platform, so the in-process
         API uses them, but we translate them to "ids" for REST API clients.
         """
-        def to_representation(self, user_course_outline_details):  # lint-amnesty, pylint: disable=arguments-differ
+        def to_representation(self, user_course_outline_details):  # pylint: disable=arguments-differ
             """
             Convert to something DRF knows how to serialize (so no custom types)
 
@@ -122,7 +122,7 @@ class CourseOutlineView(APIView):
             }
 
             # Only include this data if special exams are on
-            if settings.FEATURES.get('ENABLE_SPECIAL_EXAMS', False):
+            if settings.ENABLE_SPECIAL_EXAMS:
                 sequence_representation["exam"] = sequence_exam
 
             return sequence_representation
@@ -151,7 +151,7 @@ class CourseOutlineView(APIView):
                 **schedule_item_dict,
             }
 
-    def get(self, request, course_key_str, format=None):  # lint-amnesty, pylint: disable=redefined-builtin, unused-argument
+    def get(self, request, course_key_str, format=None):  # pylint: disable=redefined-builtin, unused-argument
         """
         The CourseOutline, customized for a given user.
 
@@ -161,7 +161,7 @@ class CourseOutlineView(APIView):
         # Translate input params and do course key validation (will cause HTTP
         # 400 error if an invalid CourseKey was entered, instead of 404).
         course_key = validate_course_key(course_key_str)
-        at_time = datetime.now(timezone.utc)
+        at_time = datetime.now(timezone.utc)  # noqa: UP017
 
         # Get target user (and override request user for the benefit of any waffle checks)
         request.user = self._determine_user(request, course_key)

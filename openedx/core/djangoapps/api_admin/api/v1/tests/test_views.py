@@ -4,14 +4,13 @@ Tests for the `api_admin` api module.
 
 import json
 
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
+from django.test import TestCase
 from rest_framework.reverse import reverse
 
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
-from django.test import TestCase
-
+from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.api_admin.tests import factories
 from openedx.core.djangolib.testing.utils import skip_unless_lms
-from common.djangoapps.student.tests.factories import UserFactory
 
 
 @skip_unless_lms
@@ -21,7 +20,7 @@ class ApiAccessRequestViewTests(TestCase):
     """
     password = 'test'
 
-    def setUp(self):  # lint-amnesty, pylint: disable=super-method-not-called
+    def setUp(self):  # pylint: disable=super-method-not-called
         """
         Perform operations common to all test cases.
         """

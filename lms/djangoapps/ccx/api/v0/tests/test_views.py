@@ -6,11 +6,12 @@ Tests for the CCX REST APIs.
 import json
 import math
 import string
+import urllib
 from datetime import timedelta
 from unittest import mock
-import urllib
-import pytest
+
 import ddt
+import pytest
 from ccx_keys.locator import CCXLocator
 from django.conf import settings
 from django.urls import Resolver404, resolve, reverse
@@ -676,7 +677,7 @@ class CcxListTest(CcxRestApiTest):
         # Make sure the "Coach" on the parent course is "Staff" on the CCX
         assert self.coach in list_staff_ccx_course
         assert len(list_instructor_master_course) == len(list_instructor_ccx_course)
-        for course_user, ccx_user in zip(sorted(list_instructor_master_course), sorted(list_instructor_ccx_course)):
+        for course_user, ccx_user in zip(sorted(list_instructor_master_course), sorted(list_instructor_ccx_course)):  # noqa: B905  # pylint: disable=line-too-long
             assert course_user == ccx_user
 
 

@@ -9,7 +9,7 @@ backends.
 
 import abc
 
-import six
+import six  # noqa: F401
 
 
 class BaseBackend(metaclass=abc.ABCMeta):
@@ -18,10 +18,10 @@ class BaseBackend(metaclass=abc.ABCMeta):
 
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs):  # noqa: B027
         pass
 
     @abc.abstractmethod
     def send(self, event):
         """Send event to tracker."""
-        pass  # lint-amnesty, pylint: disable=unnecessary-pass
+        pass  # pylint: disable=unnecessary-pass

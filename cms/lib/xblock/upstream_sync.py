@@ -3,7 +3,7 @@ Synchronize content and settings from upstream content to their downstream
 usages.
 
 At the time of writing, we assume that for any upstream-downstream linkage:
-* The upstream is a Component or Container from a Learning Core-backed Content
+* The upstream is a Component or Container from a openedx_content-backed Content
   Library.
 * The downstream is a block of compatible type in a SplitModuleStore-backed
   Course.
@@ -31,7 +31,7 @@ from xblock.fields import Integer, List, Scope, String
 from xmodule.util.keys import BlockKey
 
 if t.TYPE_CHECKING:
-    from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
+    from django.contrib.auth.models import User  # pylint: disable=imported-auth-user  # noqa: F401
 
 
 logger = logging.getLogger(__name__)
@@ -86,7 +86,7 @@ class UpstreamLink:
     version_declined: int | None  # Latest version which the user has declined to sync with, if any.
     error_message: str | None  # If link is valid, None. Otherwise, a localized, human-friendly error message.
     downstream_customized: list[str] | None  # List of fields modified in downstream
-    has_top_level_parent: bool  # True if this Upstream link has a top-level parent
+    top_level_parent_key: str | None  # key of top-level parent if Upstream link has a one.
 
     @property
     def is_upstream_deleted(self) -> bool:
@@ -153,7 +153,7 @@ class UpstreamLink:
         from xmodule.modulestore.django import modulestore
 
         # If this component/container has top-level parent, so we need to sync the parent
-        if self.has_top_level_parent:
+        if self.top_level_parent_key:
             return False
 
         if isinstance(self.upstream_key, LibraryUsageLocatorV2):
@@ -222,6 +222,10 @@ class UpstreamLink:
                     downstream.usage_key,
                     downstream.upstream,
                 )
+            if top_level_parent_key := getattr(downstream, "top_level_downstream_parent_key", None):
+                top_level_parent_key = str(
+                    BlockKey.from_string(top_level_parent_key).to_usage_key(downstream.usage_key.context_key)
+                )
             return cls(
                 upstream_ref=getattr(downstream, "upstream", None),
                 upstream_name=getattr(downstream, "upstream_display_name", None),
@@ -232,7 +236,7 @@ class UpstreamLink:
                 version_declined=None,
                 error_message=str(exc),
                 downstream_customized=getattr(downstream, "downstream_customized", []),
-                has_top_level_parent=getattr(downstream, "top_level_downstream_parent_key", None) is not None,
+                top_level_parent_key=top_level_parent_key,
             )
 
     @classmethod
@@ -241,14 +245,16 @@ class UpstreamLink:
         Get info on a downstream block's relationship with its linked upstream
         content (without actually loading the content).
 
-        Currently, the only supported upstreams are LC-backed Library Components
+        Currently, the only supported upstreams are openedx_content-backed Components
         (XBlocks) or Containers. This may change in the future (see module
         docstring).
 
         If link exists, is supported, and is followable, returns UpstreamLink.
         Otherwise, raises an UpstreamLinkException.
         """
-        # We import this here b/c UpstreamSyncMixin is used by cms/envs, which loads before the djangoapps are ready.
+        # We import these here b/c UpstreamSyncMixin is used by cms/envs, which loads before the djangoapps are ready.
+        from openedx_content import api as content_api
+
         from openedx.core.djangoapps.content_libraries import api as lib_api
 
         if not isinstance(downstream, UpstreamSyncMixin):
@@ -286,7 +292,8 @@ class UpstreamLink:
                 container_meta = lib_api.get_container(upstream_key)
             except lib_api.ContentLibraryContainerNotFound as exc:
                 raise BadUpstream(_("Linked upstream library container was not found in the system")) from exc
-            expected_downstream_block_type = container_meta.container_type.olx_tag
+            container_cls = content_api.get_container_subclass(container_meta.container_type_code)
+            expected_downstream_block_type = container_cls.olx_tag_name
             version_available = container_meta.published_version_num
         else:
             raise BadUpstream(_("Linked `upstream_key` is not a valid key"))
@@ -306,6 +313,10 @@ class UpstreamLink:
                 )
             )
 
+        if top_level_parent_key := getattr(downstream, "top_level_downstream_parent_key", None):
+            top_level_parent_key = str(
+                BlockKey.from_string(top_level_parent_key).to_usage_key(downstream.usage_key.context_key)
+            )
         result = cls(
             upstream_ref=downstream.upstream,
             upstream_key=upstream_key,
@@ -316,7 +327,7 @@ class UpstreamLink:
             version_declined=downstream.upstream_version_declined,
             error_message=None,
             downstream_customized=getattr(downstream, "downstream_customized", []),
-            has_top_level_parent=downstream.top_level_downstream_parent_key is not None,
+            top_level_parent_key=top_level_parent_key,
         )
 
         return result
@@ -400,7 +411,7 @@ def sever_upstream_link(downstream: XBlock) -> list[XBlock]:
     downstream.upstream = None
     downstream.upstream_version = None
     downstream.downstream_customized = []
-    for _, fetched_upstream_field in downstream.get_customizable_fields().items():
+    for _, fetched_upstream_field in downstream.get_customizable_fields().items():  # noqa: F402
         # Downstream-only fields don't have an upstream fetch field
         if fetched_upstream_field is None:
             continue

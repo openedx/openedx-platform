@@ -12,7 +12,7 @@ from django.contrib.auth import get_user_model
 from edx_django_utils.monitoring import set_code_owner_attribute
 from opaque_keys.edx.keys import CourseKey, UsageKey
 from opaque_keys.edx.locator import LibraryUsageLocatorV2
-from openedx_tagging.core.tagging.models import Taxonomy
+from openedx_tagging.models import Taxonomy
 
 from xmodule.modulestore.django import modulestore
 

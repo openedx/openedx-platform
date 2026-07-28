@@ -8,7 +8,7 @@ from datetime import datetime
 from pytz import utc
 
 from openedx.core.djangoapps.content.block_structure.transformer import BlockStructureTransformer
-from xmodule.seq_block import SequenceBlock  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.seq_block import SequenceBlock  # pylint: disable=wrong-import-order
 
 from .utils import collect_merged_boolean_field, collect_merged_date_field
 
@@ -39,8 +39,8 @@ class HiddenContentTransformer(BlockStructureTransformer):
     @classmethod
     def name(cls):
         """
-        Unique identifier for the transformer's class;
-        same identifier used in setup.py.
+        Unique identifier for the transformer's class.
+        This must match the entry point name in the package configuration.
         """
         return "hidden_content"
 

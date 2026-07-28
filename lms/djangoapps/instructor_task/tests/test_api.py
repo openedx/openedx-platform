@@ -3,23 +3,26 @@ Test for LMS instructor background task queue management
 """
 
 import datetime
+import hashlib
 import json
+from unittest import mock
 from unittest.mock import MagicMock, Mock, patch
 from uuid import uuid4
 
+import ddt
 import pytest
 import pytz
-import ddt
-from testfixtures import LogCapture
 from celery.states import FAILURE, SUCCESS
-from xmodule.modulestore.exceptions import ItemNotFoundError
+from django.http import HttpRequest
+from opaque_keys.edx.keys import CourseKey
+from testfixtures import LogCapture
 
 from common.djangoapps.student.tests.factories import UserFactory
 from common.test.utils import normalize_repr
 from lms.djangoapps.bulk_email.api import create_course_email
 from lms.djangoapps.bulk_email.data import BulkEmailTargetChoices
-from lms.djangoapps.certificates.data import CertificateStatuses
 from lms.djangoapps.certificates.api import get_certificate_generation_history
+from lms.djangoapps.certificates.data import CertificateStatuses
 from lms.djangoapps.instructor_task.api import (
     SpecificStudentIdMissingError,
     generate_anonymous_ids,
@@ -44,6 +47,7 @@ from lms.djangoapps.instructor_task.api import (
     submit_rescore_problem_for_student,
     submit_reset_problem_attempts_for_all_students,
     submit_reset_problem_attempts_in_entrance_exam,
+    submit_student_enrollment_batch,
 )
 from lms.djangoapps.instructor_task.api_helper import AlreadyRunningError, QueueConnectionError
 from lms.djangoapps.instructor_task.data import InstructorTaskTypes
@@ -52,6 +56,7 @@ from lms.djangoapps.instructor_task.tasks import (
     export_ora2_data,
     export_ora2_submission_files,
     generate_anonymous_ids_for_course,
+    student_enrollment_batch,
 )
 from lms.djangoapps.instructor_task.tests.factories import InstructorTaskFactory, InstructorTaskScheduleFactory
 from lms.djangoapps.instructor_task.tests.test_base import (
@@ -59,8 +64,9 @@ from lms.djangoapps.instructor_task.tests.test_base import (
     InstructorTaskCourseTestCase,
     InstructorTaskModuleTestCase,
     InstructorTaskTestCase,
-    TestReportMixin
+    TestReportMixin,
 )
+from xmodule.modulestore.exceptions import ItemNotFoundError
 
 LOG_PATH = 'lms.djangoapps.instructor_task.api'
 
@@ -222,7 +228,7 @@ class InstructorTaskModuleSubmitTest(InstructorTaskModuleTestCase):
             task_function(self.create_task_request(self.instructor), location, **params)
 
 
-@patch('lms.djangoapps.bulk_email.models.html_to_text', Mock(return_value='Mocking CourseEmail.text_message', autospec=True))  # lint-amnesty, pylint: disable=line-too-long
+@patch('lms.djangoapps.bulk_email.models.html_to_text', Mock(return_value='Mocking CourseEmail.text_message', autospec=True))  # pylint: disable=line-too-long
 class InstructorTaskCourseSubmitTest(TestReportMixin, InstructorTaskCourseTestCase):
     """Tests API methods that involve the submission of course-based background tasks."""
 
@@ -486,7 +492,7 @@ class InstructorTaskCourseSubmitTest(TestReportMixin, InstructorTaskCourseTestCa
         This test generates three scheduled tasks; one that has been processed, one that is due for processing, and one
         that is due in the future. In this test, one only of these tasks should be eligible for processing.
         """
-        base_date = datetime.datetime.now().replace(tzinfo=datetime.timezone.utc)
+        base_date = datetime.datetime.now().replace(tzinfo=datetime.timezone.utc)  # noqa: UP017
         executed_instructor_task = self._generate_scheduled_task(task_state=SUCCESS)
         executed_instructor_task_due_date = base_date - datetime.timedelta(days=5)
         self._generate_scheduled_task_schedule(executed_instructor_task, executed_instructor_task_due_date)
@@ -518,7 +524,7 @@ class InstructorTaskCourseSubmitTest(TestReportMixin, InstructorTaskCourseTestCa
         A test that verifies the behavior of the `process_scheduled_tasks` function when there is an error processing
         the request.
         """
-        base_date = datetime.datetime.now().replace(tzinfo=datetime.timezone.utc)
+        base_date = datetime.datetime.now().replace(tzinfo=datetime.timezone.utc)  # noqa: UP017
         due_instructor_task = self._generate_scheduled_task()
         due_instructor_task_due_date = base_date - datetime.timedelta(days=1)
         self._generate_scheduled_task_schedule(due_instructor_task, due_instructor_task_due_date)
@@ -530,3 +536,116 @@ class InstructorTaskCourseSubmitTest(TestReportMixin, InstructorTaskCourseTestCa
             process_scheduled_instructor_tasks()
 
         log.check_present((LOG_PATH, "ERROR", expected_messages[0]),)
+
+
+class SubmitStudentEnrollmentBatchTests(InstructorTaskCourseTestCase):
+    """
+    Tests for the submit_student_enrollment_batch API function.
+    """
+
+    def setUp(self):
+        self.request = HttpRequest()
+        self.course_key = CourseKey.from_string("course-v1:edX+DemoX+2025")
+
+    @mock.patch("lms.djangoapps.instructor_task.api.submit_task")
+    def test_basic_submission(self, mock_submit_task):
+        """
+        Basic test with <= 5 identifiers.
+        Verifies: task_input, task_type, task_class, task_key.
+        """
+        identifiers = ["u1", "u2", "username3@example.com"]
+        action = "enroll"
+        mock_submit_task.return_value = "task-result"
+        expected_input = {
+            "action": action,
+            "identifiers": identifiers,
+            "auto_enroll": True,
+            "email_students": False,
+            "reason": "test",
+            "secure": True,
+            "site_id": None,
+        }
+
+        result = submit_student_enrollment_batch(
+            request=self.request,
+            course_key=self.course_key,
+            action=action,
+            identifiers=identifiers,
+            auto_enroll=True,
+            email_students=False,
+            reason="test",
+            secure=True,
+        )
+
+        self.assertEqual(result, "task-result")  # noqa: PT009
+        key_stub = f'{self.course_key}_{action}_{json.dumps(identifiers)}'
+        expected_key = hashlib.md5(key_stub.encode("utf-8")).hexdigest()
+        mock_submit_task.assert_called_once_with(
+            self.request,
+            InstructorTaskTypes.STUDENT_ENROLLMENT_BATCH,
+            student_enrollment_batch,
+            self.course_key,
+            expected_input,
+            expected_key,
+        )
+
+    @mock.patch("lms.djangoapps.instructor_task.api.submit_task")
+    def test_task_key_differs_when_tail_identifiers_differ(self, mock_submit_task):
+        """
+        Task key must incorporate the full list so batches that share the same first IDs
+        are not incorrectly treated as duplicates of different work.
+        """
+        prefix = ["u1", "u2", "u3", "u4", "u5"]
+        batch_a = prefix + ["tail-a"]
+        batch_b = prefix + ["tail-b"]
+
+        submit_student_enrollment_batch(
+            request=self.request,
+            course_key=self.course_key,
+            action="unenroll",
+            identifiers=batch_a,
+            auto_enroll=False,
+            email_students=True,
+            reason=None,
+            secure=False,
+        )
+        key_a = mock_submit_task.call_args[0][5]
+
+        submit_student_enrollment_batch(
+            request=self.request,
+            course_key=self.course_key,
+            action="unenroll",
+            identifiers=batch_b,
+            auto_enroll=False,
+            email_students=True,
+            reason=None,
+            secure=False,
+        )
+        key_b = mock_submit_task.call_args[0][5]
+
+        key_stub_a = f"{self.course_key}_unenroll_{json.dumps(sorted(batch_a))}"
+        key_stub_b = f"{self.course_key}_unenroll_{json.dumps(sorted(batch_b))}"
+        expected_a = hashlib.md5(key_stub_a.encode("utf-8")).hexdigest()
+        expected_b = hashlib.md5(key_stub_b.encode("utf-8")).hexdigest()
+        self.assertEqual(key_a, expected_a)  # noqa: PT009
+        self.assertEqual(key_b, expected_b)  # noqa: PT009
+        self.assertNotEqual(key_a, key_b)  # noqa: PT009
+
+    @mock.patch("lms.djangoapps.instructor_task.api.submit_task")
+    def test_already_running_error_is_propagated(self, mock_submit_task):
+        """
+        submit_task may raise AlreadyRunningError; our function should not swallow it.
+        """
+        mock_submit_task.side_effect = AlreadyRunningError("Task already running")
+
+        with pytest.raises(AlreadyRunningError):
+            submit_student_enrollment_batch(
+                request=self.request,
+                course_key=self.course_key,
+                action="enroll",
+                identifiers=["john"],
+                auto_enroll=False,
+                email_students=False,
+                reason=None,
+                secure=False,
+            )

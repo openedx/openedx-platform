@@ -1,4 +1,4 @@
-# lint-amnesty, pylint: disable=missing-module-docstring
+# pylint: disable=missing-module-docstring
 
 import json
 from string import capwords
@@ -7,7 +7,7 @@ from unittest.mock import Mock, patch
 import ddt
 import pytest
 from django.conf import settings
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.core import mail
 from django.db import transaction
 from django.http import HttpResponse
@@ -26,23 +26,25 @@ from common.djangoapps.student.views import (
     SETTING_CHANGE_INITIATED,
     confirm_email_change,
     do_email_change_request,
-    validate_new_email
+    validate_new_email,
 )
 from common.djangoapps.third_party_auth.views import inactive_user_view
 from common.djangoapps.util.testing import EventTestMixin
 from openedx.core.djangoapps.ace_common.tests.mixins import EmailTemplateTagMixin
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.core.djangolib.testing.utils import CacheIsolationMixin, CacheIsolationTestCase, skip_unless_lms
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # pylint: disable=wrong-import-order
+)
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 
 class TestException(Exception):
     """
     Exception used for testing that nothing will catch explicitly
     """
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 def mock_render_to_string(template_name, context):
@@ -104,7 +106,7 @@ class ActivationEmailTests(EmailTemplateTagMixin, CacheIsolationTestCase):
     # sent from an OpenEdX installation.
     OPENEDX_FRAGMENTS = [
         (
-            "Use the link below to activate your account to access engaging, "
+            "Use the link below to activate your account to access engaging, "  # noqa: UP032
             "high-quality {platform_name} courses. Note that you will not be able to log back into your "
             "account until you have activated it.".format(
                 platform_name=settings.PLATFORM_NAME
@@ -117,7 +119,7 @@ class ActivationEmailTests(EmailTemplateTagMixin, CacheIsolationTestCase):
         settings.CONTACT_EMAIL,
         "This email message was automatically sent by ",
         settings.LMS_ROOT_URL,
-        " because someone attempted to create an account on {platform_name}".format(
+        " because someone attempted to create an account on {platform_name}".format(  # noqa: UP032
             platform_name=settings.PLATFORM_NAME
         ),
         " using this email address."
@@ -143,7 +145,7 @@ class ActivationEmailTests(EmailTemplateTagMixin, CacheIsolationTestCase):
         }
         resp = self.client.post(url, params)
         assert resp.status_code == 200, "Could not create account (status {status}). The response was {response}"\
-            .format(status=resp.status_code, response=resp.content)
+            .format(status=resp.status_code, response=resp.content)  # noqa: UP032
 
     def _assert_activation_email(self, subject, body_fragments, test_body_type):
         """
@@ -230,8 +232,7 @@ class ActivationEmailTests(EmailTemplateTagMixin, CacheIsolationTestCase):
 
 
 @ddt.ddt
-@patch.dict('django.conf.settings.FEATURES', {'ENABLE_SPECIAL_EXAMS': True})
-@override_settings(ACCOUNT_MICROFRONTEND_URL='http://account-mfe')
+@override_settings(ACCOUNT_MICROFRONTEND_URL='http://account-mfe', ENABLE_SPECIAL_EXAMS=True)
 @skip_unless_lms
 class ProctoringRequirementsEmailTests(EmailTemplateTagMixin, ModuleStoreTestCase):
     """
@@ -277,8 +278,8 @@ class ProctoringRequirementsEmailTests(EmailTemplateTagMixin, ModuleStoreTestCas
 
         appears = self._get_fragments()
         for fragment in appears:
-            self.assertIn(fragment, text)
-            self.assertIn(fragment, html)
+            self.assertIn(fragment, text)  # noqa: PT009
+            self.assertIn(fragment, html)  # noqa: PT009
 
     def _get_fragments(self):
         """
@@ -288,7 +289,7 @@ class ProctoringRequirementsEmailTests(EmailTemplateTagMixin, ModuleStoreTestCas
         proctoring_provider = capwords(course_block.proctoring_provider.replace('_', ' '))
         fragments = [
             (
-                "You are enrolled in {} at {}. This course contains proctored exams.".format(
+                "You are enrolled in {} at {}. This course contains proctored exams.".format(  # noqa: UP032
                     self.course.display_name,
                     settings.PLATFORM_NAME
                 )
@@ -350,7 +351,7 @@ class EmailChangeRequestTests(EventTestMixin, EmailTemplateTagMixin, CacheIsolat
         assert self.user.email_user.called is False
 
     @patch('common.djangoapps.student.views.management.render_to_string',
-           Mock(side_effect=mock_render_to_string, autospec=True))  # lint-amnesty, pylint: disable=line-too-long
+           Mock(side_effect=mock_render_to_string, autospec=True))  # pylint: disable=line-too-long
     def test_duplicate_activation_key(self):
         """
         Assert that if two users change Email address simultaneously, no error is thrown
@@ -387,7 +388,7 @@ class EmailChangeRequestTests(EventTestMixin, EmailTemplateTagMixin, CacheIsolat
         Test the return value if sending the email for the user to click fails.
         """
         send_mail.side_effect = [Exception, None]
-        with self.assertRaisesRegex(ValueError, 'Unable to send email activation link. Please try again later.'):
+        with self.assertRaisesRegex(ValueError, 'Unable to send email activation link. Please try again later.'):  # noqa: PT027  # pylint: disable=line-too-long
             self.do_email_change(self.user, "valid@email.com")
 
         self.assert_no_events_were_emitted()
@@ -406,7 +407,7 @@ class EmailChangeRequestTests(EventTestMixin, EmailTemplateTagMixin, CacheIsolat
             subject='Request to change édX account e-mail',
             body_fragments=[
                 'We received a request to change the e-mail associated with',
-                'your édX account from {old_email} to {new_email}.'.format(
+                'your édX account from {old_email} to {new_email}.'.format(  # noqa: UP032
                     old_email=old_email,
                     new_email=new_email,
                 ),
@@ -440,9 +441,9 @@ class EmailChangeRequestTests(EventTestMixin, EmailTemplateTagMixin, CacheIsolat
 
 @ddt.ddt
 @patch('common.djangoapps.student.views.management.render_to_response',
-       Mock(side_effect=mock_render_to_response, autospec=True))  # lint-amnesty, pylint: disable=line-too-long
+       Mock(side_effect=mock_render_to_response, autospec=True))  # pylint: disable=line-too-long
 @patch('common.djangoapps.student.views.management.render_to_string',
-       Mock(side_effect=mock_render_to_string, autospec=True))  # lint-amnesty, pylint: disable=line-too-long
+       Mock(side_effect=mock_render_to_string, autospec=True))  # pylint: disable=line-too-long
 class EmailChangeConfirmationTests(EmailTestMixin, EmailTemplateTagMixin, CacheIsolationMixin, TransactionTestCase):
     """
     Test that confirmation of email change requests function even in the face of exceptions thrown while sending email
@@ -461,13 +462,13 @@ class EmailChangeConfirmationTests(EmailTestMixin, EmailTemplateTagMixin, CacheI
         self.key = self.pending_change_request.activation_key
 
         # Expected subject of the email
-        self.email_subject = "Email Change Confirmation for {platform_name}".format(
+        self.email_subject = "Email Change Confirmation for {platform_name}".format(  # noqa: UP032
             platform_name=settings.PLATFORM_NAME
         )
 
         # Text fragments we expect in the body of the confirmation email
         self.email_fragments = [
-            "This is to confirm that you changed the e-mail associated with {platform_name}"
+            "This is to confirm that you changed the e-mail associated with {platform_name}"  # noqa: UP032
             " from {old_email} to {new_email}. If you did not make this request, please contact us immediately."
             " Contact information is listed at:".format(
                 platform_name=settings.PLATFORM_NAME,
@@ -677,7 +678,7 @@ class SecondaryEmailChangeRequestTests(EventTestMixin, EmailTemplateTagMixin, Ca
         Test the return value if sending the email for the user to click fails.
         """
         send_mail.side_effect = [Exception, None]
-        with self.assertRaisesRegex(ValueError, 'Unable to send email activation link. Please try again later.'):
+        with self.assertRaisesRegex(ValueError, 'Unable to send email activation link. Please try again later.'):  # noqa: PT027  # pylint: disable=line-too-long
             self.do_secondary_email_change(self.user, "valid@email.com")
 
         self.assert_no_events_were_emitted()

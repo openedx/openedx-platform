@@ -8,21 +8,18 @@ import logging
 from django.core.validators import validate_unicode_slug
 from opaque_keys import InvalidKeyError, OpaqueKey
 from opaque_keys.edx.locator import LibraryContainerLocator, LibraryUsageLocatorV2
-from openedx_learning.api.authoring_models import Collection, LearningPackage
+from openedx_content.models_api import Collection, LearningPackage
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from user_tasks.models import UserTaskStatus
 
-from openedx.core.djangoapps.content_libraries.tasks import LibraryRestoreTask
 from openedx.core.djangoapps.content_libraries import api
-from openedx.core.djangoapps.content_libraries.api.containers import ContainerType
 from openedx.core.djangoapps.content_libraries.constants import ALL_RIGHTS_RESERVED, LICENSE_OPTIONS
 from openedx.core.djangoapps.content_libraries.models import (
     ContentLibrary,
-    ContentLibraryBlockImportTask,
-    ContentLibraryPermission
+    ContentLibraryPermission,
 )
-from openedx.core.lib.api.serializers import CourseKeyField
+from openedx.core.djangoapps.content_libraries.tasks import LibraryRestoreTask
 
 from .. import permissions
 
@@ -51,7 +48,6 @@ class ContentLibraryMetadataSerializer(serializers.Serializer):
     published_by = serializers.CharField(read_only=True)
     last_draft_created = serializers.DateTimeField(format=DATETIME_FORMAT, read_only=True)
     last_draft_created_by = serializers.CharField(read_only=True)
-    allow_lti = serializers.BooleanField(default=False, read_only=True)
     allow_public_learning = serializers.BooleanField(default=False)
     allow_public_read = serializers.BooleanField(default=False)
     has_unpublished_changes = serializers.BooleanField(read_only=True)
@@ -151,6 +147,7 @@ class PublishableItemSerializer(serializers.Serializer):
     last_draft_created_by = serializers.CharField(read_only=True)
     has_unpublished_changes = serializers.BooleanField(read_only=True)
     created = serializers.DateTimeField(format=DATETIME_FORMAT, read_only=True)
+    created_by = serializers.CharField(read_only=True, allow_null=True)
     modified = serializers.DateTimeField(format=DATETIME_FORMAT, read_only=True)
 
     # When creating a new XBlock in a library, the slug becomes the ID part of
@@ -180,6 +177,98 @@ class LibraryXBlockMetadataSerializer(PublishableItemSerializer):
     block_type = serializers.CharField(source="usage_key.block_type")
 
 
+class LibraryHistoryContributorSerializer(serializers.Serializer):
+    """
+    Serializer for a contributor in a publish history group.
+    """
+    username = serializers.CharField(read_only=True)
+    profile_image_urls = serializers.DictField(child=serializers.CharField(), read_only=True)
+
+
+class LibraryHistoryEntrySerializer(serializers.Serializer):
+    """
+    Serializer for a single entry in the history of a library item.
+    """
+    contributor = LibraryHistoryContributorSerializer(allow_null=True, read_only=True)
+    changed_at = serializers.DateTimeField(format=DATETIME_FORMAT, read_only=True)
+    title = serializers.CharField(read_only=True)
+    item_type = serializers.CharField(read_only=True)
+    action = serializers.CharField(read_only=True)
+    old_version = serializers.IntegerField(read_only=True)
+    new_version = serializers.IntegerField(read_only=True, allow_null=True)
+
+
+class UsageKeyV2Serializer(serializers.BaseSerializer):
+    """
+    Serializes a library Component (XBlock) key.
+    """
+    def to_representation(self, value: LibraryUsageLocatorV2) -> str:
+        """
+        Returns the LibraryUsageLocatorV2 value as a string.
+        """
+        return str(value)
+
+    def to_internal_value(self, value: str) -> LibraryUsageLocatorV2:
+        """
+        Returns a LibraryUsageLocatorV2 from the string value.
+
+        Raises ValidationError if invalid LibraryUsageLocatorV2.
+        """
+        try:
+            return LibraryUsageLocatorV2.from_string(value)
+        except InvalidKeyError as err:
+            raise ValidationError from err
+
+
+class OpaqueKeySerializer(serializers.BaseSerializer):
+    """
+    Serializes a OpaqueKey with the correct class.
+    """
+    def to_representation(self, value: OpaqueKey) -> str:
+        """
+        Returns the OpaqueKey value as a string.
+        """
+        return str(value)
+
+    def to_internal_value(self, value: str) -> OpaqueKey:
+        """
+        Returns a LibraryUsageLocatorV2 or a LibraryContainerLocator from the string value.
+
+        Raises ValidationError if invalid UsageKeyV2 or LibraryContainerLocator.
+        """
+        try:
+            return LibraryUsageLocatorV2.from_string(value)
+        except InvalidKeyError:
+            try:
+                return LibraryContainerLocator.from_string(value)
+            except InvalidKeyError as err:
+                raise ValidationError from err
+
+
+class DirectPublishedEntitySerializer(serializers.Serializer):
+    """
+    Serializer for one entity the user directly requested to publish (direct=True).
+    """
+    entity_key = OpaqueKeySerializer(read_only=True)
+    title = serializers.CharField(read_only=True)
+    entity_type = serializers.CharField(read_only=True)
+
+
+class LibraryPublishHistoryGroupSerializer(serializers.Serializer):
+    """
+    Serializer for a publish event summary in the publish history of a library item.
+    """
+    publish_log_uuid = serializers.UUIDField(read_only=True)
+    published_by = serializers.SerializerMethodField()
+    published_at = serializers.DateTimeField(format=DATETIME_FORMAT, read_only=True)
+    contributors = LibraryHistoryContributorSerializer(many=True, read_only=True)
+    direct_published_entities = DirectPublishedEntitySerializer(many=True, read_only=True)
+    scope_entity_key = OpaqueKeySerializer(read_only=True, allow_null=True)
+
+    def get_published_by(self, obj) -> str | None:
+        return obj.published_by.username if obj.published_by else None
+
+
 class LibraryXBlockTypeSerializer(serializers.Serializer):
     """
     Serializer for LibraryXBlockType
@@ -198,7 +287,7 @@ class LibraryXBlockCreationSerializer(serializers.Serializer):
 
     block_type = serializers.CharField()
 
-    # TODO: Rename to ``block_id`` or ``slug``. The Learning Core XBlock runtime
+    # TODO: Rename to ``block_id`` or ``slug``. The openedx_content XBlock runtime
     # doesn't use definition_ids, but this field is really just about requesting
     # a specific block_id, e.g. the "best_tropical_vacation_spots" portion of a
     # problem with UsageKey:
@@ -252,21 +341,28 @@ class LibraryContainerMetadataSerializer(PublishableItemSerializer):
 
     Converts from ContainerMetadata to JSON-compatible data
     """
-    # Use 'source' to get this as a string, not an enum value instance which the container_type field has.
-    container_type = serializers.CharField(source="container_key.container_type")
+    container_type_code = serializers.CharField(source="container_key.container_type")
+    # Deprecated (ambiguously named). Identical to container_type_code.
+    container_type = serializers.CharField(source="container_key.container_type", required=False)
 
     # When creating a new container in a library, the slug becomes the ID part of
     # the definition key and usage key:
     slug = serializers.CharField(write_only=True, required=False)
 
-    def to_internal_value(self, data):
+    def to_internal_value(self, data: dict):
         """
         Convert JSON-ish data back to native python types.
         Returns a dictionary, not a ContainerMetadata instance.
         """
-        result = super().to_internal_value(data)
-        result["container_type"] = ContainerType(data["container_type"])
-        return result
+        if "container_type_code" not in data:
+            data["container_type_code"] = data.get("container_type")  # Support deprecated field name
+        validated_data = super().to_internal_value(data)
+        # If creating a new container, the above function results in:
+        # {'display_name': '...', 'container_key': {'container_type': 'unit'}}
+        # Fix that:
+        validated_data["container_type_code"] = validated_data["container_key"]["container_type"]
+        del validated_data["container_key"]
+        return validated_data
 
 
 class LibraryContainerUpdateSerializer(serializers.Serializer):
@@ -276,41 +372,18 @@ class LibraryContainerUpdateSerializer(serializers.Serializer):
     display_name = serializers.CharField()
 
 
-class ContentLibraryBlockImportTaskSerializer(serializers.ModelSerializer):
-    """
-    Serializer for a Content Library block import task.
-    """
-
-    org = serializers.SerializerMethodField()
-
-    def get_org(self, obj):
-        return obj.course_id.org
-
-    class Meta:
-        model = ContentLibraryBlockImportTask
-        fields = '__all__'
-
-
-class ContentLibraryBlockImportTaskCreateSerializer(serializers.Serializer):
-    """
-    Serializer to create a new block import task.
-
-    The serializer accepts the following parameter:
-
-    - The courseware course key to import blocks from.
-    """
-
-    course_key = CourseKeyField()
-
 
 class ContentLibraryCollectionSerializer(serializers.ModelSerializer):
     """
     Serializer for a Content Library Collection
     """
+    # Expose Collection.collection_code as "key" to preserve the REST API field name.
+    # https://github.com/openedx/openedx-platform/issues/38406
+    key = serializers.CharField(source='collection_code')
 
     class Meta:
         model = Collection
-        fields = '__all__'
+        exclude = ['collection_code']
 
 
 class ContentLibraryCollectionUpdateSerializer(serializers.Serializer):
@@ -320,53 +393,6 @@ class ContentLibraryCollectionUpdateSerializer(serializers.Serializer):
 
     title = serializers.CharField()
     description = serializers.CharField(allow_blank=True)
-
-
-class UsageKeyV2Serializer(serializers.BaseSerializer):
-    """
-    Serializes a library Component (XBlock) key.
-    """
-    def to_representation(self, value: LibraryUsageLocatorV2) -> str:
-        """
-        Returns the LibraryUsageLocatorV2 value as a string.
-        """
-        return str(value)
-
-    def to_internal_value(self, value: str) -> LibraryUsageLocatorV2:
-        """
-        Returns a LibraryUsageLocatorV2 from the string value.
-
-        Raises ValidationError if invalid LibraryUsageLocatorV2.
-        """
-        try:
-            return LibraryUsageLocatorV2.from_string(value)
-        except InvalidKeyError as err:
-            raise ValidationError from err
-
-
-class OpaqueKeySerializer(serializers.BaseSerializer):
-    """
-    Serializes a OpaqueKey with the correct class.
-    """
-    def to_representation(self, value: OpaqueKey) -> str:
-        """
-        Returns the OpaqueKey value as a string.
-        """
-        return str(value)
-
-    def to_internal_value(self, value: str) -> OpaqueKey:
-        """
-        Returns a LibraryUsageLocatorV2 or a LibraryContainerLocator from the string value.
-
-        Raises ValidationError if invalid UsageKeyV2 or LibraryContainerLocator.
-        """
-        try:
-            return LibraryUsageLocatorV2.from_string(value)
-        except InvalidKeyError:
-            try:
-                return LibraryContainerLocator.from_string(value)
-            except InvalidKeyError as err:
-                raise ValidationError from err
 
 
 class ContentLibraryItemContainerKeysSerializer(serializers.Serializer):
@@ -470,14 +496,16 @@ class RestoreSuccessDataSerializer(serializers.Serializer):
     """
     learning_package_id = serializers.IntegerField(source="lp_restored_data.id")
     title = serializers.CharField(source="lp_restored_data.title")
-    org = serializers.CharField(source="lp_restored_data.archive_org_key")
-    slug = serializers.CharField(source="lp_restored_data.archive_slug")
+    org = serializers.SerializerMethodField()
+    slug = serializers.SerializerMethodField()
 
-    # The `key` is a unique temporary key assigned to the learning package during the restore process,
-    # whereas the `archive_key` is the original key of the learning package from the backup.
-    # The temporary learning package key is replaced with a standard key once it is added to a content library.
-    key = serializers.CharField(source="lp_restored_data.key")
-    archive_key = serializers.CharField(source="lp_restored_data.archive_lp_key")
+    # The `package_ref` is a unique temporary key assigned to the learning
+    # package during the restore process, whereas the `archive_package_ref` is
+    # the original key of the learning package from the backup.  The temporary
+    # learning package_ref is replaced with a standard key once it is added to a
+    # content library.
+    key = serializers.CharField(source="lp_restored_data.package_ref")
+    archive_key = serializers.CharField(source="lp_restored_data.archive_package_ref")
 
     containers = serializers.IntegerField(source="lp_restored_data.num_containers")
     components = serializers.IntegerField(source="lp_restored_data.num_components")
@@ -489,6 +517,18 @@ class RestoreSuccessDataSerializer(serializers.Serializer):
     created_on_server = serializers.CharField(source="backup_metadata.original_server", required=False)
     created_at = serializers.DateTimeField(source="backup_metadata.created_at", format=DATETIME_FORMAT)
     created_by = serializers.SerializerMethodField()
+
+    def get_org(self, obj) -> str:
+        """
+        The org code/slug, as parsed from archive_package_ref, or "unknown" if unparseable.
+        """
+        return obj["lp_restored_data"]["archive_org_code"] or "unknown"
+
+    def get_slug(self, obj) -> str:
+        """
+        The library code/slug, as parsed from archive_package_ref, or "unknown" if unparseable.
+        """
+        return obj["lp_restored_data"]["archive_package_code"] or "unknown"
 
     def get_created_by(self, obj):
         """

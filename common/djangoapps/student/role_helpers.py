@@ -5,16 +5,8 @@ from __future__ import annotations
 
 from django.contrib.auth import get_user_model
 
-from openedx.core.djangoapps.django_comment_common.models import (
-    FORUM_ROLE_ADMINISTRATOR,
-    FORUM_ROLE_COMMUNITY_TA,
-    FORUM_ROLE_GROUP_MODERATOR,
-    FORUM_ROLE_MODERATOR,
-    Role
-)
-from openedx.core.lib.cache_utils import request_cached
 from common.djangoapps.student.roles import (
-    CourseAccessRole,
+    AuthzCompatCourseAccessRole,
     CourseBetaTesterRole,
     CourseInstructorRole,
     CourseStaffRole,
@@ -23,7 +15,14 @@ from common.djangoapps.student.roles import (
     OrgStaffRole,
     RoleCache,
 )
-
+from openedx.core.djangoapps.django_comment_common.models import (
+    FORUM_ROLE_ADMINISTRATOR,
+    FORUM_ROLE_COMMUNITY_TA,
+    FORUM_ROLE_GROUP_MODERATOR,
+    FORUM_ROLE_MODERATOR,
+    Role,
+)
+from openedx.core.lib.cache_utils import request_cached
 
 User = get_user_model()
 
@@ -66,7 +65,7 @@ def get_role_cache(user: User) -> RoleCache:
 
 
 @request_cached()
-def get_course_roles(user: User) -> list[CourseAccessRole]:
+def get_course_roles(user: User) -> list[AuthzCompatCourseAccessRole]:
     """
     Returns a list of all course-level roles that this user has.
 

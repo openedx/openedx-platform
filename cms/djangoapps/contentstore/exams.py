@@ -27,13 +27,13 @@ def register_exams(course_key):
     Likewise, if formerly registered exams are not included in the payload they will
     be marked inactive by the exam service.
     """
-    if not settings.FEATURES.get('ENABLE_SPECIAL_EXAMS') or not exams_ida_enabled(course_key):
+    if not settings.ENABLE_SPECIAL_EXAMS or not exams_ida_enabled(course_key):
         # if feature is not enabled then do a quick exit
         return
 
     course = modulestore().get_course(course_key)
     if course is None:
-        raise ItemNotFoundError("Course {} does not exist", str(course_key))  # lint-amnesty, pylint: disable=raising-format-tuple
+        raise ItemNotFoundError("Course {} does not exist", str(course_key))  # pylint: disable=raising-format-tuple
 
     # get all sequences, since they can be marked as timed/proctored exams
     _timed_exams = modulestore().get_items(
@@ -58,7 +58,7 @@ def register_exams(course_key):
     for timed_exam in timed_exams:
         location = str(timed_exam.location)
         msg = (
-            'Found {location} as an exam in course structure.'.format(
+            'Found {location} as an exam in course structure.'.format(  # noqa: UP032
                 location=location
             )
         )

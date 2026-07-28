@@ -20,7 +20,6 @@ from .views import (
     CourseVideosView,
     CourseWaffleFlagsView,
     HelpUrlsView,
-    HomePageCoursesView,
     HomePageLibrariesView,
     HomePageView,
     ProctoredExamSettingsView,
@@ -40,10 +39,6 @@ urlpatterns = [
         HomePageView.as_view(),
         name="home"
     ),
-    path(
-        'home/courses',
-        HomePageCoursesView.as_view(),
-        name="courses"),
     path(
         'home/libraries',
         HomePageLibrariesView.as_view(),

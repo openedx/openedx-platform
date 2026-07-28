@@ -1,28 +1,28 @@
 """
 Command to trigger sending reminder emails for learners to achieve their Course Goals
 """
+import logging
 import time
+import uuid
 from datetime import date, datetime, timedelta
 
 import boto3
-from edx_ace.channel.django_email import DjangoEmailChannel
-from edx_ace.channel.mixins import EmailChannelMixin
-from eventtracking import tracker
-import logging
-import uuid
-
 from django.conf import settings
 from django.contrib.sites.models import Site
 from django.core.management.base import BaseCommand
 from edx_ace import ace, presentation
+from edx_ace.channel.django_email import DjangoEmailChannel
+from edx_ace.channel.mixins import EmailChannelMixin
 from edx_ace.message import Message
 from edx_ace.recipient import Recipient
 from edx_ace.utils.signals import send_ace_message_sent_signal
+from eventtracking import tracker
+
 from common.djangoapps.student.models import CourseEnrollment
 from lms.djangoapps.certificates.api import get_certificate_for_user_id
 from lms.djangoapps.certificates.data import CertificateStatuses
-from lms.djangoapps.courseware.context_processor import get_user_timezone_or_last_seen_timezone_or_utc
 from lms.djangoapps.course_goals.models import CourseGoal, CourseGoalReminderStatus, UserActivity
+from lms.djangoapps.courseware.context_processor import get_user_timezone_or_last_seen_timezone_or_utc
 from openedx.core.djangoapps.ace_common.template_context import get_base_template_context
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from openedx.core.djangoapps.lang_pref import LANGUAGE_KEY
@@ -234,7 +234,7 @@ class Command(BaseCommand):
                 'goal_count': total_goals,
             }
         )
-        log.info('Processing course goals, total goal count {}, timestamp: {}, uuid: {}'.format(
+        log.info('Processing course goals, total goal count {}, timestamp: {}, uuid: {}'.format(  # noqa: UP032
             total_goals,
             datetime.now(),
             session_id
@@ -247,7 +247,7 @@ class Command(BaseCommand):
                 else:
                     filtered_count += 1
             if (sent_count + filtered_count) % 10000 == 0:
-                log.info('Processing course goals: sent {} filtered {} out of {}, timestamp: {}, uuid: {}'.format(
+                log.info('Processing course goals: sent {} filtered {} out of {}, timestamp: {}, uuid: {}'.format(  # noqa: UP032  # pylint: disable=line-too-long
                     sent_count,
                     filtered_count,
                     total_goals,
@@ -265,7 +265,7 @@ class Command(BaseCommand):
                 'emails_filtered': filtered_count,
             }
         )
-        log.info('Processing course goals complete: sent {} emails, '
+        log.info('Processing course goals complete: sent {} emails, '  # noqa: UP032
                  'filtered out {} emails, timestamp: {}, '
                  'uuid: {}'.format(sent_count, filtered_count, datetime.now(), session_id)
                  )

@@ -17,24 +17,32 @@ import unicodedata
 import yaml
 from six import text_type
 
-from scripts.user_retirement.utils.edx_api import LmsApi  # pylint: disable=wrong-import-position
-from scripts.user_retirement.utils.edx_api import CredentialsApi, EcommerceApi, LicenseManagerApi
-from scripts.user_retirement.utils.thirdparty_apis.amplitude_api import \
-    AmplitudeApi  # pylint: disable=wrong-import-position
+from scripts.user_retirement.utils.edx_api import (
+    CredentialsApi,
+    EcommerceApi,
+    LicenseManagerApi,
+    LmsApi,  # pylint: disable=wrong-import-position
+)
+from scripts.user_retirement.utils.thirdparty_apis.amplitude_api import (
+    AmplitudeApi,  # pylint: disable=wrong-import-position
+)
 from scripts.user_retirement.utils.thirdparty_apis.braze_api import BrazeApi  # pylint: disable=wrong-import-position
-from scripts.user_retirement.utils.thirdparty_apis.hubspot_api import \
-    HubspotAPI  # pylint: disable=wrong-import-position
-from scripts.user_retirement.utils.thirdparty_apis.salesforce_api import \
-    SalesforceApi  # pylint: disable=wrong-import-position
-from scripts.user_retirement.utils.thirdparty_apis.segment_api import \
-    SegmentApi  # pylint: disable=wrong-import-position
+from scripts.user_retirement.utils.thirdparty_apis.hubspot_api import (
+    HubspotAPI,  # pylint: disable=wrong-import-position
+)
+from scripts.user_retirement.utils.thirdparty_apis.salesforce_api import (
+    SalesforceApi,  # pylint: disable=wrong-import-position
+)
+from scripts.user_retirement.utils.thirdparty_apis.segment_api import (
+    SegmentApi,  # pylint: disable=wrong-import-position
+)
 
 
 def _log(kind, message):
     """
     Convenience method to log text. Prepended "kind" text makes finding log entries easier.
     """
-    print(u'{}: {}'.format(kind, message).encode('utf-8'))  # See note at the top of this file.
+    print(u'{}: {}'.format(kind, message).encode('utf-8'))  # See note at the top of this file.  # noqa: UP025, UP032
 
 
 def _fail(kind, code, message):
@@ -80,12 +88,12 @@ def _config_or_exit(fail_func, fail_code, config_file):
     Returns the config values from the given file, allows overriding of passed in values.
     """
     try:
-        with io.open(config_file, 'r') as config:
+        with io.open(config_file, 'r') as config:  # noqa: UP020
             config = yaml.safe_load(config)
 
         return config
     except Exception as exc:  # pylint: disable=broad-except
-        fail_func(fail_code, 'Failed to read config file {}'.format(config_file), exc)
+        fail_func(fail_code, 'Failed to read config file {}'.format(config_file), exc)  # noqa: UP032
 
 
 def _config_with_drive_or_exit(fail_func, config_fail_code, google_fail_code, config_file, google_secrets_file):
@@ -93,33 +101,33 @@ def _config_with_drive_or_exit(fail_func, config_fail_code, google_fail_code, co
     Returns the config values from the given file, allows overriding of passed in values.
     """
     try:
-        with io.open(config_file, 'r') as config:
+        with io.open(config_file, 'r') as config:  # noqa: UP020
             config = yaml.safe_load(config)
 
         # Check required values
         for var in ('org_partner_mapping', 'drive_partners_folder'):
             if var not in config or not config[var]:
-                fail_func(config_fail_code, 'No {} in config, or it is empty!'.format(var), ValueError())
+                fail_func(config_fail_code, 'No {} in config, or it is empty!'.format(var), ValueError())  # noqa: UP032
 
         # Force the partner names into NFKC here and when we get the folders to ensure
         # they are using the same characters. Otherwise accented characters will not match.
         for org in config['org_partner_mapping']:
-            partner = config['org_partner_mapping'][org]
+            partner = config['org_partner_mapping'][org]  # noqa: F841
             config['org_partner_mapping'][org] = [unicodedata.normalize('NFKC', text_type(partner)) for partner in
                                                   config['org_partner_mapping'][org]]
     except Exception as exc:  # pylint: disable=broad-except
-        fail_func(config_fail_code, 'Failed to read config file {}'.format(config_file), exc)
+        fail_func(config_fail_code, 'Failed to read config file {}'.format(config_file), exc)  # noqa: UP032
 
     try:
         # Just load and parse the file to make sure it's legit JSON before doing
         # all of the work to get the users.
-        with open(google_secrets_file, 'r') as secrets_f:
+        with open(google_secrets_file, 'r') as secrets_f:  # noqa: UP015
             json.load(secrets_f)
 
         config['google_secrets_file'] = google_secrets_file
         return config
     except Exception as exc:  # pylint: disable=broad-except
-        fail_func(google_fail_code, 'Failed to read secrets file {}'.format(google_secrets_file), exc)
+        fail_func(google_fail_code, 'Failed to read secrets file {}'.format(google_secrets_file), exc)  # noqa: UP032
 
 
 def _setup_lms_api_or_exit(fail_func, fail_code, config):
@@ -177,7 +185,7 @@ def _setup_all_apis_or_exit(fail_func, fail_code, config):
                 ('HUBSPOT', hubspot_api_key),
             ):
                 if state[2] == service and service_url is None:
-                    fail_func(fail_code, 'Service URL is not configured, but required for state {}'.format(state))
+                    fail_func(fail_code, 'Service URL is not configured, but required for state {}'.format(state))  # noqa: UP032
 
         config['LMS'] = LmsApi(lms_base_url, lms_base_url, client_id, client_secret)
 

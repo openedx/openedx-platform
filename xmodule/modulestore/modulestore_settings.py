@@ -1,5 +1,5 @@
 """
-This file contains helper functions for configuring module_store_setting settings and support for backward compatibility with older formats.  # lint-amnesty, pylint: disable=line-too-long
+This file contains helper functions for configuring module_store_setting settings and support for backward compatibility with older formats.  # pylint: disable=line-too-long
 """
 
 
@@ -27,7 +27,7 @@ def convert_module_store_setting_if_needed(module_store_setting):
 
             # migrate request for the old 'direct' Mongo store to the Draft store
             if store_settings['ENGINE'] == 'xmodule.modulestore.mongo.MongoModuleStore':
-                warnings.warn("MongoModuleStore is deprecated! Please use DraftModuleStore.", DeprecationWarning)
+                warnings.warn("MongoModuleStore is deprecated! Please use DraftModuleStore.", DeprecationWarning)  # noqa: B028  # pylint: disable=line-too-long
                 store_settings['ENGINE'] = 'xmodule.modulestore.mongo.draft.DraftModuleStore'
 
         return new_store_list
@@ -37,7 +37,7 @@ def convert_module_store_setting_if_needed(module_store_setting):
 
     # Convert to Mixed, if needed
     if module_store_setting['default']['ENGINE'] != 'xmodule.modulestore.mixed.MixedModuleStore':
-        warnings.warn("Direct access to a modulestore is deprecated. Please use MixedModuleStore.", DeprecationWarning)
+        warnings.warn("Direct access to a modulestore is deprecated. Please use MixedModuleStore.", DeprecationWarning)  # noqa: B028  # pylint: disable=line-too-long
 
         # convert to using mixed module_store
         new_module_store_setting = {
@@ -58,7 +58,7 @@ def convert_module_store_setting_if_needed(module_store_setting):
 
     # Convert from dict, if needed
     elif isinstance(get_mixed_stores(module_store_setting), dict):
-        warnings.warn(
+        warnings.warn(  # noqa: B028
             "Using a dict for the Stores option in the MixedModuleStore is deprecated.  Please use a list instead.",
             DeprecationWarning
         )
@@ -110,10 +110,10 @@ def update_module_store_settings(
     """
     for store in module_store_setting['default']['OPTIONS']['stores']:
         if store['NAME'] == 'xml':
-            xml_store_options and store['OPTIONS'].update(xml_store_options)  # lint-amnesty, pylint: disable=expression-not-assigned
+            xml_store_options and store['OPTIONS'].update(xml_store_options)  # pylint: disable=expression-not-assigned
         else:
-            module_store_options and store['OPTIONS'].update(module_store_options)  # lint-amnesty, pylint: disable=expression-not-assigned
-            doc_store_settings and store['DOC_STORE_CONFIG'].update(doc_store_settings)  # lint-amnesty, pylint: disable=expression-not-assigned
+            module_store_options and store['OPTIONS'].update(module_store_options)  # pylint: disable=expression-not-assigned
+            doc_store_settings and store['DOC_STORE_CONFIG'].update(doc_store_settings)  # pylint: disable=expression-not-assigned
 
     if default_store:
         mixed_stores = get_mixed_stores(module_store_setting)

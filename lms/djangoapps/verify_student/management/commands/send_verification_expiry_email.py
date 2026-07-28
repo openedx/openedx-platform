@@ -8,20 +8,22 @@ import time
 from datetime import timedelta
 
 from django.conf import settings
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user, wrong-import-order
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user, wrong-import-order
+from django.contrib.sites.models import Site  # pylint: disable=wrong-import-order
+from django.core.management.base import BaseCommand, CommandError  # pylint: disable=wrong-import-order
+from django.db.models import Q  # pylint: disable=wrong-import-order
+from django.utils.timezone import now  # pylint: disable=wrong-import-order
+from edx_ace import ace  # pylint: disable=wrong-import-order
+from edx_ace.recipient import Recipient  # pylint: disable=wrong-import-order
+
 from common.djangoapps.course_modes.models import CourseMode
-from django.contrib.sites.models import Site  # lint-amnesty, pylint: disable=wrong-import-order
-from django.core.management.base import BaseCommand, CommandError  # lint-amnesty, pylint: disable=wrong-import-order
-from django.db.models import Q  # lint-amnesty, pylint: disable=wrong-import-order
-from django.utils.timezone import now  # lint-amnesty, pylint: disable=wrong-import-order
-from edx_ace import ace  # lint-amnesty, pylint: disable=wrong-import-order
-from edx_ace.recipient import Recipient  # lint-amnesty, pylint: disable=wrong-import-order
 from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.util.query import use_read_replica_if_available
 from lms.djangoapps.verify_student.message_types import VerificationExpiry
 from lms.djangoapps.verify_student.models import ManualVerification, SoftwareSecurePhotoVerification, SSOVerification
 from openedx.core.djangoapps.ace_common.template_context import get_base_template_context
 from openedx.core.djangoapps.lang_pref import LANGUAGE_KEY
+from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.core.djangoapps.user_api.preferences.api import get_user_preference
 from openedx.core.lib.celery.task_utils import emulate_http_request
 
@@ -112,11 +114,11 @@ class Command(BaseCommand):
 
         total_verification = sspv.count()
         if not total_verification:
-            logger.info("No approved expired entries found in SoftwareSecurePhotoVerification for the "
+            logger.info("No approved expired entries found in SoftwareSecurePhotoVerification for the "  # noqa: UP032
                         "date range {} - {}".format(start_date.date(), now().date()))
             return
 
-        logger.info("For the date range {} - {}, total Software Secure Photo verification filtered are {}"
+        logger.info("For the date range {} - {}, total Software Secure Photo verification filtered are {}"  # noqa: UP032  # pylint: disable=line-too-long
                     .format(start_date.date(), now().date(), total_verification))
 
         batch_verifications = []
@@ -182,13 +184,19 @@ class Command(BaseCommand):
         """
         if email_config['dry_run']:
             logger.info(
-                "This was a dry run, no email was sent. For the actual run email would have been sent "
+                "This was a dry run, no email was sent. For the actual run email would have been sent "  # noqa: UP032
                 "to {} learner(s)".format(len(batch_verifications))
             )
             return True
 
         site = Site.objects.get_current()
-        account_base_url = (settings.ACCOUNT_MICROFRONTEND_URL or "").rstrip('/')
+        account_base_url = (
+            configuration_helpers.get_value(
+                'ACCOUNT_MICROFRONTEND_URL',
+                settings.ACCOUNT_MICROFRONTEND_URL,
+            ) or
+            ""
+        ).rstrip('/')
         message_context = get_base_template_context(site)
         message_context.update({
             'platform_name': settings.PLATFORM_NAME,

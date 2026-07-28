@@ -5,7 +5,8 @@ from django.apps import AppConfig, apps
 from django.conf import settings
 
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
-from .data import StudentDataMode, AuthoredDataMode
+
+from .data import AuthoredDataMode, StudentDataMode
 
 
 class XBlockAppConfig(AppConfig):
@@ -18,7 +19,7 @@ class XBlockAppConfig(AppConfig):
 
     def get_runtime_params(self):
         """
-        Get the LearningCoreXBlockRuntime parameters appropriate for viewing and/or
+        Get the OpenedXContentRuntime parameters appropriate for viewing and/or
         editing XBlock content.
         """
         raise NotImplementedError
@@ -45,7 +46,7 @@ class LmsXBlockAppConfig(XBlockAppConfig):
 
     def get_runtime_params(self):
         """
-        Get the LearningCoreXBlockRuntime parameters appropriate for viewing and/or
+        Get the OpenedXContentRuntime parameters appropriate for viewing and/or
         editing XBlock content in the LMS
         """
         return dict(
@@ -68,7 +69,7 @@ class StudioXBlockAppConfig(XBlockAppConfig):
 
     def get_runtime_params(self):
         """
-        Get the LearningCoreXBlockRuntime parameters appropriate for viewing and/or
+        Get the OpenedXContentRuntime parameters appropriate for viewing and/or
         editing XBlock content in Studio
         """
         return dict(

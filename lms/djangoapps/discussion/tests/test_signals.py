@@ -5,20 +5,17 @@ from unittest import mock
 
 from django.test import TestCase
 from edx_django_utils.cache import RequestCache
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
-from xmodule.modulestore.tests.factories import (
-    CourseFactory,
-    BlockFactory
-)
 
 from lms.djangoapps.discussion.signals.handlers import ENABLE_FORUM_NOTIFICATIONS_FOR_SITE_KEY
 from openedx.core.djangoapps.django_comment_common import models, signals
 from openedx.core.djangoapps.site_configuration.tests.factories import SiteConfigurationFactory, SiteFactory
+from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 
 
-class SendMessageHandlerTestCase(TestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class SendMessageHandlerTestCase(TestCase):  # pylint: disable=missing-class-docstring
 
-    def setUp(self):  # lint-amnesty, pylint: disable=super-method-not-called
+    def setUp(self):  # pylint: disable=super-method-not-called
         self.sender = mock.Mock()
         self.user = mock.Mock()
         self.post = mock.MagicMock()
@@ -47,7 +44,7 @@ class SendMessageHandlerTestCase(TestCase):  # lint-amnesty, pylint: disable=mis
 
     @mock.patch('lms.djangoapps.discussion.signals.handlers.get_current_site', return_value=None)
     @mock.patch('lms.djangoapps.discussion.signals.handlers.send_message')
-    def test_comment_created_signal_message_not_sent_without_site(self, mock_send_message, mock_get_current_site):  # lint-amnesty, pylint: disable=unused-argument
+    def test_comment_created_signal_message_not_sent_without_site(self, mock_send_message, mock_get_current_site):  # pylint: disable=unused-argument
         with mock.patch('lms.djangoapps.discussion.rest_api.tasks.send_response_notifications.apply_async'):
             signals.comment_created.send(sender=self.sender, user=self.user, post=self.post)
 
@@ -108,4 +105,4 @@ class CoursePublishHandlerTestCase(ModuleStoreTestCase):
         Verifies the discussion ID map for the given course matches the expected value.
         """
         mapping_entry = models.DiscussionsIdMapping.objects.get(course_id=course_key)
-        self.assertDictEqual(mapping_entry.mapping, expected_map)
+        self.assertDictEqual(mapping_entry.mapping, expected_map)  # noqa: PT009

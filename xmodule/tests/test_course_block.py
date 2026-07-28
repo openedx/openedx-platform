@@ -2,27 +2,27 @@
 
 
 import itertools
+import sys
 import unittest
 from datetime import datetime, timedelta
-import sys
 from unittest.mock import Mock, patch
 from zoneinfo import ZoneInfo
 
 import ddt
+import pytest
 from dateutil import parser
 from django.conf import settings
 from django.test import override_settings
 from fs.memoryfs import MemoryFS
 from opaque_keys.edx.keys import CourseKey
-import pytest
 from xblock.runtime import DictKeyValueStore, KvsFieldData
 
-from openedx.core.lib.teams_config import TeamsConfig, DEFAULT_COURSE_RUN_MAX_TEAM_SIZE
 import xmodule.course_block
+from openedx.core.lib.teams_config import DEFAULT_COURSE_RUN_MAX_TEAM_SIZE, TeamsConfig
 from xmodule.course_metadata_utils import DEFAULT_START_DATE
 from xmodule.data import CertificatesDisplayBehaviors
-from xmodule.modulestore.xml import XMLImportingModuleStoreRuntime, XMLModuleStore
 from xmodule.modulestore.exceptions import InvalidProctoringProvider
+from xmodule.modulestore.xml import XMLImportingModuleStoreRuntime, XMLModuleStore
 
 ORG = 'test_org'
 COURSE = 'test_course'
@@ -35,7 +35,7 @@ _NEXT_WEEK = _TODAY + timedelta(days=7)
 
 
 @ddt.ddt()
-class CourseFieldsTestCase(unittest.TestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class CourseFieldsTestCase(unittest.TestCase):  # pylint: disable=missing-class-docstring
 
     def test_default_start_date(self):
         assert xmodule.course_block.CourseFields.start.default == DEFAULT_START_DATE
@@ -45,7 +45,7 @@ class CourseFieldsTestCase(unittest.TestCase):  # lint-amnesty, pylint: disable=
         with override_settings(CREATE_COURSE_WITH_DEFAULT_ENROLLMENT_START_DATE=should_have_default_enroll_start):
             # reimport, so settings override could take effect
             del sys.modules['xmodule.course_block']
-            import xmodule.course_block  # lint-amnesty, pylint: disable=redefined-outer-name, reimported
+            import xmodule.course_block  # pylint: disable=redefined-outer-name, reimported
             expected = DEFAULT_START_DATE if should_have_default_enroll_start else None
             assert xmodule.course_block.CourseFields.enrollment_start.default == expected
 
@@ -77,7 +77,6 @@ class DummyModuleStoreRuntime(XMLImportingModuleStoreRuntime):  # pylint: disabl
 def get_dummy_course(
     start,
     announcement=None,
-    is_new=None,
     advertised_start=None,
     end=None,
     certs='end',
@@ -89,7 +88,6 @@ def get_dummy_course(
     def to_attrb(n, v):
         return '' if v is None else f'{n}="{v}"'.lower()
 
-    is_new = to_attrb('is_new', is_new)
     announcement = to_attrb('announcement', announcement)
     advertised_start = to_attrb('advertised_start', advertised_start)
     end = to_attrb('end', end)
@@ -99,7 +97,6 @@ def get_dummy_course(
                 graceperiod="1 day" url_name="test"
                 start="{start}"
                 {announcement}
-                {is_new}
                 {advertised_start}
                 {end}
                 certificates_display_behavior="{certs}">
@@ -107,11 +104,10 @@ def get_dummy_course(
                 <html url_name="h" display_name="H">Two houses, ...</html>
             </chapter>
          </course>
-     '''.format(
+     '''.format(  # noqa: UP032
         org=ORG,
         course=COURSE,
         start=start,
-        is_new=is_new,
         announcement=announcement,
         advertised_start=advertised_start,
         end=end,
@@ -127,7 +123,7 @@ class HasEndedMayCertifyTestCase(unittest.TestCase):
     def setUp(self):
         super().setUp()
 
-        system = DummyModuleStoreRuntime(load_error_blocks=True)  # lint-amnesty, pylint: disable=unused-variable
+        system = DummyModuleStoreRuntime(load_error_blocks=True)  # pylint: disable=unused-variable  # noqa: F841
 
         past_end = (datetime.now() - timedelta(days=12)).strftime("%Y-%m-%dT%H:%M:00")
         future_end = (datetime.now() + timedelta(days=12)).strftime("%Y-%m-%dT%H:%M:00")
@@ -175,112 +171,6 @@ class CourseSummaryHasEnded(unittest.TestCase):
         bad_end_date = parser.parse("2012-02-21 10:28:45")
         summary = xmodule.course_block.CourseSummary(test_course.id, end=bad_end_date)
         assert summary.has_ended()
-
-
-@ddt.ddt
-class IsNewCourseTestCase(unittest.TestCase):
-    """Make sure the property is_new works on courses"""
-
-    def setUp(self):
-        super().setUp()
-
-        # Needed for test_is_newish
-        datetime_patcher = patch.object(
-            xmodule.course_metadata_utils, 'datetime',
-            Mock(wraps=datetime)
-        )
-        mocked_datetime = datetime_patcher.start()
-        mocked_datetime.now.return_value = NOW
-        self.addCleanup(datetime_patcher.stop)
-
-    @patch('xmodule.course_metadata_utils.datetime.now')
-    def test_sorting_score(self, gmtime_mock):
-        gmtime_mock.return_value = NOW
-
-        day1 = '2012-01-01T12:00'
-        day2 = '2012-01-02T12:00'
-
-        dates = [
-            # Announce date takes priority over actual start
-            # and courses announced on a later date are newer
-            # than courses announced for an earlier date
-            ((day1, day2, None), (day1, day1, None), self.assertLess),
-            ((day1, day1, None), (day2, day1, None), self.assertEqual),
-
-            # Announce dates take priority over advertised starts
-            ((day1, day2, day1), (day1, day1, day1), self.assertLess),
-            ((day1, day1, day2), (day2, day1, day2), self.assertEqual),
-
-            # Later start == newer course
-            ((day2, None, None), (day1, None, None), self.assertLess),
-            ((day1, None, None), (day1, None, None), self.assertEqual),
-
-            # Non-parseable advertised starts are ignored in preference to actual starts
-            ((day2, None, "Spring"), (day1, None, "Fall"), self.assertLess),
-            ((day1, None, "Spring"), (day1, None, "Fall"), self.assertEqual),
-
-            # Partially parsable advertised starts should take priority over start dates
-            ((day2, None, "October 2013"), (day2, None, "October 2012"), self.assertLess),
-            ((day2, None, "October 2013"), (day1, None, "October 2013"), self.assertEqual),
-
-            # Parseable advertised starts take priority over start dates
-            ((day1, None, day2), (day1, None, day1), self.assertLess),
-            ((day2, None, day2), (day1, None, day2), self.assertEqual),
-        ]
-
-        for a, b, assertion in dates:
-            a_score = get_dummy_course(start=a[0], announcement=a[1], advertised_start=a[2]).sorting_score
-            b_score = get_dummy_course(start=b[0], announcement=b[1], advertised_start=b[2]).sorting_score
-            print(f"Comparing {a} to {b}")
-            assertion(a_score, b_score)
-
-    start_advertised_settings = [
-        # start, advertised, result, is_still_default, date_time_result
-        ('2012-12-02T12:00', None, 'Dec 02, 2012', False, 'Dec 02, 2012 at 12:00 UTC'),
-        ('2012-12-02T12:00', '2011-11-01T12:00', 'Nov 01, 2011', False, 'Nov 01, 2011 at 12:00 UTC'),
-        ('2012-12-02T12:00', 'Spring 2012', 'Spring 2012', False, 'Spring 2012'),
-        ('2012-12-02T12:00', 'November, 2011', 'November, 2011', False, 'November, 2011'),
-        (xmodule.course_block.CourseFields.start.default, None, 'TBD', True, 'TBD'),
-        (xmodule.course_block.CourseFields.start.default, 'January 2014', 'January 2014', False, 'January 2014'),
-    ]
-
-    def test_start_date_is_default(self):
-        for s in self.start_advertised_settings:
-            d = get_dummy_course(start=s[0], advertised_start=s[1])
-            assert d.start_date_is_still_default == s[3]
-
-    def test_display_organization(self):
-        block = get_dummy_course(start='2012-12-02T12:00', is_new=True)
-        assert block.location.org != block.display_org_with_default
-        assert block.display_org_with_default == f'{ORG}_display'
-
-    def test_display_coursenumber(self):
-        block = get_dummy_course(start='2012-12-02T12:00', is_new=True)
-        assert block.location.course != block.display_number_with_default
-        assert block.display_number_with_default == f'{COURSE}_display'
-
-    def test_is_newish(self):
-        block = get_dummy_course(start='2012-12-02T12:00', is_new=True)
-        assert block.is_newish is True
-
-        block = get_dummy_course(start='2013-02-02T12:00', is_new=False)
-        assert block.is_newish is False
-
-        block = get_dummy_course(start='2013-02-02T12:00', is_new=True)
-        assert block.is_newish is True
-
-        block = get_dummy_course(start='2013-01-15T12:00')
-        assert block.is_newish is True
-
-        block = get_dummy_course(start='2013-03-01T12:00')
-        assert block.is_newish is True
-
-        block = get_dummy_course(start='2012-10-15T12:00')
-        assert block.is_newish is False
-
-        block = get_dummy_course(start='2012-12-31T12:00')
-        assert block.is_newish is True
-
 
 class DiscussionTopicsTestCase(unittest.TestCase):
 
@@ -537,10 +427,7 @@ class ProctoringProviderTestCase(unittest.TestCase):
         provider = 'invalid-provider'
         allowed_proctoring_providers = xmodule.course_block.get_available_providers()
 
-        FEATURES_WITH_PROCTORED_EXAMS = settings.FEATURES.copy()
-        FEATURES_WITH_PROCTORED_EXAMS['ENABLE_PROCTORED_EXAMS'] = proctored_exams_setting_enabled
-
-        with override_settings(FEATURES=FEATURES_WITH_PROCTORED_EXAMS):
+        with override_settings(ENABLE_PROCTORED_EXAMS=proctored_exams_setting_enabled):
             if proctored_exams_setting_enabled:
                 with pytest.raises(InvalidProctoringProvider) as context_manager:
                     self.proctoring_provider.from_json(provider, validate_providers=True)
@@ -557,10 +444,7 @@ class ProctoringProviderTestCase(unittest.TestCase):
         """
         provider = 'invalid-provider'
 
-        FEATURES_WITH_PROCTORED_EXAMS = settings.FEATURES.copy()
-        FEATURES_WITH_PROCTORED_EXAMS['ENABLE_PROCTORED_EXAMS'] = True
-
-        with override_settings(FEATURES=FEATURES_WITH_PROCTORED_EXAMS):
+        with override_settings(ENABLE_PROCTORED_EXAMS=True):
             provider_value = self.proctoring_provider.from_json(provider, validate_providers=False)
             assert provider_value == provider
 

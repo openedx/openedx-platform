@@ -1,0 +1,56 @@
+{% extends 'ace_common/edx_ace/common/base_body.html' %}
+
+{% load i18n %}
+{% load static %}
+{% block content %}
+<table width="100%" align="left" border="0" cellpadding="0" cellspacing="0" role="presentation">
+    <tr>
+        <td>
+            <h1>
+                {% autoescape off %}
+                {# xss-lint: disable=django-blocktrans-missing-escape-filter #}
+                {% blocktrans %}Batch {{ action_name }} completed for {{ course_name }}{% endblocktrans %}
+                {% endautoescape %}
+            </h1>
+
+            <p style="color: rgba(0,0,0,.75);">
+                {% autoescape off %}
+                {# xss-lint: disable=django-blocktrans-missing-escape-filter #}
+                {% blocktrans  %}The batch {{ action_name }} process for {{ course_name }} is complete.{% endblocktrans %}
+                {% endautoescape %}
+                <br />
+            </p>
+
+            <p style="color: rgba(0,0,0,.75);">
+                {% autoescape off %}
+                {# xss-lint: disable=django-blocktrans-missing-escape-filter #}
+                {% blocktrans %}Out of {{ total_processed }} users:{% endblocktrans %}
+                {% endautoescape %}
+                <br />
+            </p>
+
+            <div style="background-color: #f8f9fa; padding: 15px; margin: 20px 0;">
+                <ul style="margin: 10px 0; padding-left: 20px; list-style: none;">
+                    <li style="margin: 8px 0; color: #28a745; font-weight: bold;">
+                        <span style="margin-right: 8px; font-size: 16px;">✓</span>
+                        {% filter force_escape %}
+                        {% blocktrans %}{{ successful }} successfully processed{% endblocktrans %}
+                        {% endfilter %}
+                    </li>
+                    <li style="margin: 8px 0; color: #dc3545; font-weight: bold;">
+                        <span style="margin-right: 8px; font-size: 16px;">✗</span>
+                        {% filter force_escape %}
+                        {% blocktrans %}{{ failed }} failed to process{% endblocktrans %}
+                        {% endfilter %}
+                    </li>
+                </ul>
+            </div>
+
+            {% filter force_escape %}
+                {% blocktrans asvar course_cta_text %}Download the CSV report{% endblocktrans %}
+            {% endfilter %}
+            {% include "ace_common/edx_ace/common/return_to_course_cta.html" with course_cta_text=course_cta_text course_cta_url=course_url|add:"instructor#view-data_download" %}
+        </td>
+    </tr>
+</table>
+{% endblock %}

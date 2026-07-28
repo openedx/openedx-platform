@@ -2,6 +2,7 @@
 
 import factory
 from factory.django import DjangoModelFactory
+
 from xmodule.modulestore.tests.factories import CourseFactory
 
 from ..models import Country, CountryAccessRule, RestrictedCourse
@@ -14,16 +15,16 @@ class CountryFactory(DjangoModelFactory):
     country = 'US'
 
 
-class RestrictedCourseFactory(DjangoModelFactory):  # lint-amnesty, pylint: disable=missing-class-docstring
+class RestrictedCourseFactory(DjangoModelFactory):  # pylint: disable=missing-class-docstring
     class Meta:
         model = RestrictedCourse
 
     @factory.lazy_attribute
     def course_key(self):
-        return CourseFactory().id  # lint-amnesty, pylint: disable=no-member
+        return CourseFactory().id  # pylint: disable=no-member
 
 
-class CountryAccessRuleFactory(DjangoModelFactory):  # lint-amnesty, pylint: disable=missing-class-docstring
+class CountryAccessRuleFactory(DjangoModelFactory):  # pylint: disable=missing-class-docstring
     class Meta:
         model = CountryAccessRule
 

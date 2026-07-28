@@ -10,13 +10,15 @@ import subprocess
 from urllib.parse import urlparse
 
 from django.conf import settings
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
+from opaque_keys.edx.locator import LibraryLocator, LibraryLocatorV2
 
+from openedx.core.djangoapps.content_libraries.api import extract_library_v2_zip_to_dir
 from xmodule.contentstore.django import contentstore
 from xmodule.modulestore.django import modulestore
-from xmodule.modulestore.xml_exporter import export_course_to_xml
+from xmodule.modulestore.xml_exporter import CourseLocator, export_course_to_xml, export_library_to_xml
 
 log = logging.getLogger(__name__)
 
@@ -66,9 +68,27 @@ def cmd_log(cmd, cwd):
     return output
 
 
-def export_to_git(course_id, repo, user='', rdir=None):
-    """Export a course to git."""
+def export_to_git(context_key, repo, user='', rdir=None):
+    """
+    Export a course or library to git.
+
+    Args:
+        context_key: LearningContextKey for the content to export
+        repo (str): Git repository URL
+        user (str): Optional username for git commit identity
+        rdir (str): Optional custom directory name for the repository
+
+    Raises:
+        GitExportError: For various git operation failures
+    """
     # pylint: disable=too-many-statements
+
+    # Validate context_key type and determine export function and content type label
+    if not isinstance(context_key, (LibraryLocatorV2, LibraryLocator, CourseLocator)):
+        raise TypeError(
+            f"{context_key!r} for git export must be LibraryLocatorV2, LibraryLocator, "
+            f"or CourseLocator, not {type(context_key)}"
+        )
 
     if not GIT_REPO_EXPORT_DIR:
         raise GitExportError(GitExportError.NO_EXPORT_DIR)
@@ -128,15 +148,31 @@ def export_to_git(course_id, repo, user='', rdir=None):
             log.exception('Failed to pull git repository: %r', ex.output)
             raise GitExportError(GitExportError.CANNOT_PULL) from ex
 
-    # export course as xml before commiting and pushing
+    # export content as xml (or zip for v2 libraries) before commiting and pushing
     root_dir = os.path.dirname(rdirp)
-    course_dir = os.path.basename(rdirp).rsplit('.git', 1)[0]
+    content_dir = os.path.basename(rdirp).rsplit('.git', 1)[0]
+
+    content_type_label = "course" if context_key.is_course else "library"
+
+    is_library_v2 = isinstance(context_key, LibraryLocatorV2)
+    if is_library_v2:
+        # V2 libraries use backup API with zip extraction
+        content_export_func = extract_library_v2_zip_to_dir
+    elif isinstance(context_key, LibraryLocator):
+        content_export_func = export_library_to_xml
+    else:
+        content_export_func = export_course_to_xml
+
     try:
-        export_course_to_xml(modulestore(), contentstore(), course_id,
-                             root_dir, course_dir)
-    except (OSError, AttributeError):
-        log.exception('Failed export to xml')
-        raise GitExportError(GitExportError.XML_EXPORT_FAIL)  # lint-amnesty, pylint: disable=raise-missing-from
+        if is_library_v2:
+            content_export_func(context_key, root_dir, content_dir, user)
+        else:
+            # V1 libraries and courses: use XML export (no user parameter)
+            content_export_func(modulestore(), contentstore(), context_key,
+                            root_dir, content_dir)
+    except (OSError, AttributeError) as ex:
+        log.exception('Failed to export %s', content_type_label)
+        raise GitExportError(GitExportError.XML_EXPORT_FAIL) from ex
 
     # Get current branch if not already set
     if not branch:
@@ -160,9 +196,7 @@ def export_to_git(course_id, repo, user='', rdir=None):
         ident = GIT_EXPORT_DEFAULT_IDENT
     time_stamp = timezone.now()
     cwd = os.path.abspath(rdirp)
-    commit_msg = "Export from Studio at {time_stamp}".format(
-        time_stamp=time_stamp,
-    )
+    commit_msg = f"Export {content_type_label} from Studio at {time_stamp}"
     try:
         cmd_log(['git', 'config', 'user.email', ident['email']], cwd)
         cmd_log(['git', 'config', 'user.name', ident['name']], cwd)
@@ -180,3 +214,10 @@ def export_to_git(course_id, repo, user='', rdir=None):
     except subprocess.CalledProcessError as ex:
         log.exception('Error running git push command: %r', ex.output)
         raise GitExportError(GitExportError.CANNOT_PUSH) from ex
+
+    log.info(
+        '%s %s exported to git repository %s successfully',
+        content_type_label.capitalize(),
+        context_key,
+        repo,
+    )

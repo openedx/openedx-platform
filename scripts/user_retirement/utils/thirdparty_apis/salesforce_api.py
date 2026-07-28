@@ -70,7 +70,7 @@ class SalesforceApi:
         else:
             ids = [record['Id'] for record in id_query['records']]
             if len(ids) > 1:
-                LOG.warning("Multiple Ids returned for Lead with email {}".format(email))
+                LOG.warning("Multiple Ids returned for Lead with email {}".format(email))  # noqa: UP032
             return ids
 
     @backoff.on_exception(
@@ -110,7 +110,7 @@ class SalesforceApi:
         if len(lead_ids) > 1:
             note = "\nNotice: Multiple leads were identified with the same email. Please retire all following leads:"
             for lead_id in lead_ids:
-                note += "\n{}".format(lead_id)
+                note += "\n{}".format(lead_id)  # noqa: UP032
             task_params['Description'] += note
         created_task = self._sf.Task.create(task_params)
         if created_task['success']:

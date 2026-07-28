@@ -26,7 +26,6 @@ from opaque_keys.edx.keys import CourseKey
 from requests.exceptions import RequestException
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.edxmako.shortcuts import render_to_response
@@ -46,6 +45,7 @@ from openedx.core.djangoapps.commerce.utils import get_ecommerce_api_base_url, g
 from openedx.core.djangoapps.embargo import api as embargo_api
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.core.lib.log_utils import audit_log
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 
 from .services import IDVerificationService
 
@@ -195,7 +195,7 @@ class PayAndVerifyView(View):
         return user.is_active or is_account_activation_requirement_disabled()
 
     @method_decorator(login_required)
-    def get(  # lint-amnesty, pylint: disable=too-many-statements
+    def get(  # pylint: disable=too-many-statements
         self, request, course_id,
         always_show_payment=False,
         current_step=None,
@@ -421,7 +421,7 @@ class PayAndVerifyView(View):
 
         return render_to_response("verify_student/pay_and_verify.html", context)
 
-    def add_utm_params_to_url(self, url):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def add_utm_params_to_url(self, url):  # pylint: disable=missing-function-docstring
         # utm_params is [(u'utm_content', u'course-v1:IDBx IDB20.1x 1T2017'),...
         utm_params = [item for item in self.request.GET.items() if 'utm_' in item[0]]
         # utm_params is utm_content=course-v1%3AIDBx+IDB20.1x+1T2017&...
@@ -916,7 +916,7 @@ class SubmitPhotosView(View):
         # The face image is always required.
         if "face_image" not in params:
             msg = _("Missing required parameter face_image")
-            log.error(("User {user_id} missing required parameter face_image").format(user_id=request.user.id))
+            log.error(("User {user_id} missing required parameter face_image").format(user_id=request.user.id))  # noqa: UP032  # pylint: disable=line-too-long
             return None, HttpResponseBadRequest(msg)
 
         return params, None
@@ -942,12 +942,12 @@ class SubmitPhotosView(View):
                 data_type = image_data.split(',')[0]
                 if data_type:
                     log.error(
-                        "Image data for user_id={user_id} was uploaded in an unsupported "
+                        "Image data for user_id={user_id} was uploaded in an unsupported "  # noqa: UP032
                         "format: {data_type}".format(user_id=request.user.id, data_type=data_type)
                     )
                 else:
                     log.error(
-                        "Image data type for user_id={user_id} could not be identified.".format(
+                        "Image data type for user_id={user_id} could not be identified.".format(  # noqa: UP032
                             user_id=request.user.id
                         )
                     )
@@ -967,7 +967,7 @@ class SubmitPhotosView(View):
 
         except InvalidImageData:
             msg = _("Image data is not valid.")
-            log.error(("Image data for user {user_id} is not valid").format(user_id=request.user.id))
+            log.error(("Image data for user {user_id} is not valid").format(user_id=request.user.id))  # noqa: UP032
             return None, None, HttpResponseBadRequest(msg)
 
     def _submit_attempt(self, user, face_image, photo_id_image=None, initial_verification=None, provided_name=None):
@@ -1036,7 +1036,7 @@ class SubmitPhotosView(View):
 
 @require_POST
 @csrf_exempt  # SS does its own message signing, and their API won't have a cookie value
-def results_callback(request):  # lint-amnesty, pylint: disable=too-many-statements
+def results_callback(request):  # pylint: disable=too-many-statements
     """
     Software Secure will call this callback to tell us whether a user is
     verified to be who they said they are.
@@ -1077,7 +1077,7 @@ def results_callback(request):  # lint-amnesty, pylint: disable=too-many-stateme
     # TODO: These logs must be removed once the investigation in COSMO-184 is complete.
     #       COSMO-196 was created to track the cleanup of these logs.
     log.info(
-        "[COSMO-184] Software Secure review received for receipt_id={receipt_id}, "
+        "[COSMO-184] Software Secure review received for receipt_id={receipt_id}, "  # noqa: UP032
         "with result={result} and reason={reason}."
         .format(
             receipt_id=receipt_id,
@@ -1097,13 +1097,13 @@ def results_callback(request):  # lint-amnesty, pylint: disable=too-many-stateme
         'platform_name': settings.PLATFORM_NAME,
     }
     if result == "PASS":
-        # If this verification is not an outdated version then make expiry email date of previous approved verification NULL  # lint-amnesty, pylint: disable=line-too-long
+        # If this verification is not an outdated version then make expiry email date of previous approved verification NULL  # pylint: disable=line-too-long
         # Setting expiry email date to NULL is important so that it does not get filtered in the management command
         # that sends email when verification expires : verify_student/send_verification_expiry_email
         if attempt.status != 'approved':
             verification = SoftwareSecurePhotoVerification.objects.filter(status='approved', user_id=attempt.user_id)
             if verification:
-                log.info(f'Making expiry email date of previous approved verification NULL for {attempt.user_id}')  # lint-amnesty, pylint: disable=line-too-long
+                log.info(f'Making expiry email date of previous approved verification NULL for {attempt.user_id}')  # pylint: disable=line-too-long
                 # The updated_at field in sspv model has auto_now set to True, which means any time save() is called on
                 # the model instance, `updated_at` will change. Some of the existing functionality of verification
                 # (showing your verification has expired on dashboard) relies on updated_at.
@@ -1116,7 +1116,7 @@ def results_callback(request):  # lint-amnesty, pylint: disable=too-many-stateme
 
         # TODO: These logs must be removed once the investigation in COSMO-184 is complete.
         #       COSMO-196 was created to track the cleanup of these logs.
-        log.info("[COSMO-184] Approved verification for receipt_id={receipt_id}.".format(receipt_id=receipt_id))
+        log.info("[COSMO-184] Approved verification for receipt_id={receipt_id}.".format(receipt_id=receipt_id))  # noqa: UP032
         attempt.approve()
 
         send_approval_email(attempt)
@@ -1125,10 +1125,16 @@ def results_callback(request):  # lint-amnesty, pylint: disable=too-many-stateme
 
         # TODO: These logs must be removed once the investigation in COSMO-184 is complete.
         #       COSMO-196 was created to track the cleanup of these logs.
-        log.info("[COSMO-184] Denied verification for receipt_id={receipt_id}.".format(receipt_id=receipt_id))
+        log.info("[COSMO-184] Denied verification for receipt_id={receipt_id}.".format(receipt_id=receipt_id))  # noqa: UP032
 
         attempt.deny(json.dumps(reason), error_code=error_code)
-        account_base_url = (settings.ACCOUNT_MICROFRONTEND_URL or "").rstrip('/')
+        account_base_url = (
+            configuration_helpers.get_value(
+                'ACCOUNT_MICROFRONTEND_URL',
+                settings.ACCOUNT_MICROFRONTEND_URL,
+            ) or
+            ""
+        ).rstrip('/')
         reverify_url = f'{account_base_url}/id-verification'
         verification_status_email_vars['reasons'] = reason
         verification_status_email_vars['reverify_url'] = reverify_url

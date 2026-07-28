@@ -67,8 +67,8 @@ class OverrideDataTransformer(BlockStructureTransformer):
     @classmethod
     def name(cls):
         """
-        Unique identifier for the transformer's class;
-        same identifier used in setup.py.
+        Unique identifier for the transformer's class.
+        This must match the entry point name in the package configuration.
         """
         return "load_override_data"
 

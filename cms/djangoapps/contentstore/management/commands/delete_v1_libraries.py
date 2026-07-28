@@ -3,16 +3,13 @@
 import logging
 from textwrap import dedent
 
+from celery import group
 from django.core.management import BaseCommand, CommandError
-
 from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locator import LibraryLocator
 
-from xmodule.modulestore.django import modulestore
-
-from celery import group
-
 from cms.djangoapps.contentstore.tasks import delete_v1_library
+from xmodule.modulestore.django import modulestore
 
 from .prompt import query_yes_no
 
@@ -65,7 +62,7 @@ class Command(BaseCommand):
             raise CommandError(f"Argument {raw_value} is not a library key")
         return result
 
-    def handle(self, *args, **options):  # lint-amnesty, pylint: disable=unused-argument
+    def handle(self, *args, **options):  # pylint: disable=unused-argument
         """Parse args and generate tasks for deleting content."""
 
         if (not options['library_ids'] and not options['all']) or (options['library_ids'] and options['all']):

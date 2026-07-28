@@ -8,16 +8,15 @@ to the templates without having to append every view file.
 import string
 
 from django.utils.translation import get_language
+from edx_django_utils.cache import TieredCache
 from pytz import timezone
 from pytz.exceptions import UnknownTimeZoneError
 
-from edx_django_utils.cache import TieredCache
 from lms.djangoapps.courseware.models import LastSeenCoursewareTimezone
 from openedx.core.djangoapps.site_configuration.helpers import get_value
 from openedx.core.djangoapps.user_api.errors import UserAPIInternalError, UserNotFound
 from openedx.core.djangoapps.user_api.preferences.api import get_user_preference, get_user_preferences
 from openedx.core.lib.cache_utils import get_cache
-
 
 RETRIEVABLE_PREFERENCES = {
     'user_timezone': 'time_zone',
@@ -67,7 +66,7 @@ def get_last_seen_courseware_timezone(user):
     That timezone is often not set, so this field retrieves the browser timezone
     from a recent courseware visit (updated daily)
     """
-    cache_key = 'browser_timezone_{}'.format(str(user.id))
+    cache_key = 'browser_timezone_{}'.format(str(user.id))  # noqa: UP032
     cached_value = TieredCache.get_cached_response(cache_key)
     if not cached_value.is_found:
         try:
@@ -98,5 +97,5 @@ def get_user_timezone_or_last_seen_timezone_or_utc(user):
     user_timezone = ''.join(user_timezone)
     try:
         return timezone(user_timezone)
-    except UnknownTimeZoneError as err:
+    except UnknownTimeZoneError as err:  # noqa: F841
         return timezone('UTC')

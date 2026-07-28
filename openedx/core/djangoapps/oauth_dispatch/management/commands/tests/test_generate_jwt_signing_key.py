@@ -55,7 +55,7 @@ class TestGenerateJwtSigningKey(TestCase):
         for expected in expected_in_output:
             assert expected in output_stream.getvalue()
 
-        with open(filename) as file_obj:  # lint-amnesty, pylint: disable=bad-option-value, open-builtin
+        with open(filename) as file_obj:  # pylint: disable=bad-option-value, open-builtin
             output_from_yaml = yaml.safe_load(file_obj)
             for expected in expected_in_output:
                 assert expected in output_from_yaml['JWT_AUTH']

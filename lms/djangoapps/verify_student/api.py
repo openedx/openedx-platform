@@ -2,13 +2,12 @@
 API module.
 """
 import logging
+from datetime import datetime
+from typing import Optional
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.utils.translation import gettext as _
-
-from datetime import datetime
-from typing import Optional
 
 from lms.djangoapps.verify_student.emails import send_verification_approved_email
 from lms.djangoapps.verify_student.exceptions import VerificationAttemptInvalidStatus
@@ -58,8 +57,8 @@ def create_verification_attempt(
     user: User,
     name: str,
     status: str,
-    expiration_datetime: Optional[datetime] = None,
-    hide_status_from_user: Optional[bool] = False,
+    expiration_datetime: Optional[datetime] = None,  # noqa: UP045
+    hide_status_from_user: Optional[bool] = False,  # noqa: UP045
 ):
     """
     Create a verification attempt.
@@ -96,9 +95,9 @@ def create_verification_attempt(
 
 def update_verification_attempt(
     attempt_id: int,
-    name: Optional[str] = None,
-    status: Optional[str] = None,
-    expiration_datetime: Optional[datetime] = None,
+    name: Optional[str] = None,  # noqa: UP045
+    status: Optional[str] = None,  # noqa: UP045
+    expiration_datetime: Optional[datetime] = None,  # noqa: UP045
 ):
     """
     Update a verification attempt.

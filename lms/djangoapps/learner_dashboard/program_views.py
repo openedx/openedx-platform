@@ -7,13 +7,15 @@ from rest_framework import permissions, status
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from lms.djangoapps.learner_dashboard.utils import masters_program_tab_view_is_enabled, is_enrolled_or_staff
+
 from common.djangoapps.edxmako.shortcuts import render_to_response
 from lms.djangoapps.learner_dashboard.programs import (
     ProgramDetailsFragmentView,
     ProgramDiscussionLTI,
-    ProgramsFragmentView, ProgramLiveLTI
+    ProgramLiveLTI,
+    ProgramsFragmentView,
 )
+from lms.djangoapps.learner_dashboard.utils import is_enrolled_or_staff, masters_program_tab_view_is_enabled
 from lms.djangoapps.program_enrollments.rest_api.v1.utils import ProgramSpecificViewMixin
 from openedx.core.djangoapps.programs.models import ProgramsApiConfig
 from openedx.core.lib.api.authentication import BearerAuthentication

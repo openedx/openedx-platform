@@ -58,7 +58,7 @@ class HLSPlaybackEnabledFlag(ConfigurationModel):
 
     def __str__(self):
         current_model = HLSPlaybackEnabledFlag.current()
-        return "HLSPlaybackEnabledFlag: enabled {is_enabled}".format(
+        return "HLSPlaybackEnabledFlag: enabled {is_enabled}".format(  # noqa: UP032
             is_enabled=current_model.is_enabled()
         )
 
@@ -87,7 +87,7 @@ class CourseHLSPlaybackEnabledFlag(ConfigurationModel):
         if self.enabled:
             not_en = ""
 
-        return "Course '{course_key}': HLS Playback {not_enabled}Enabled".format(
+        return "Course '{course_key}': HLS Playback {not_enabled}Enabled".format(  # noqa: UP032
             course_key=str(self.course_id),
             not_enabled=not_en
         )
@@ -123,7 +123,7 @@ class CourseYoutubeBlockedFlag(ConfigurationModel):
         if self.enabled:
             not_en = ""
 
-        return "Course '{course_key}': Youtube Block {not_enabled}Enabled".format(
+        return "Course '{course_key}': Youtube Block {not_enabled}Enabled".format(  # noqa: UP032
             course_key=str(self.course_id),
             not_enabled=not_en
         )
@@ -169,7 +169,7 @@ class VideoTranscriptEnabledFlag(ConfigurationModel):
 
     def __str__(self):
         current_model = VideoTranscriptEnabledFlag.current()
-        return "VideoTranscriptEnabledFlag: enabled {is_enabled}".format(
+        return "VideoTranscriptEnabledFlag: enabled {is_enabled}".format(  # noqa: UP032
             is_enabled=current_model.is_enabled()
         )
 
@@ -192,7 +192,7 @@ class CourseVideoTranscriptEnabledFlag(ConfigurationModel):
         if self.enabled:
             not_en = ""
 
-        return "Course '{course_key}': Video Transcript {not_enabled}Enabled".format(
+        return "Course '{course_key}': Video Transcript {not_enabled}Enabled".format(  # noqa: UP032
             course_key=str(self.course_id),
             not_enabled=not_en
         )
@@ -251,7 +251,7 @@ class MigrationEnqueuedCourse(TimeStampedModel):
     command_run = PositiveIntegerField(default=0)
 
     def __str__(self):
-        return 'MigrationEnqueuedCourse: ID={course_id}, Run={command_run}'.format(
+        return 'MigrationEnqueuedCourse: ID={course_id}, Run={command_run}'.format(  # noqa: UP032
             course_id=self.course_id, command_run=self.command_run
         )
 
@@ -312,6 +312,6 @@ class UpdatedCourseVideos(TimeStampedModel):
         unique_together = ('course_id', 'edx_video_id')
 
     def __str__(self):
-        return 'UpdatedCourseVideos: CourseID={course_id}, VideoID={video_id}, Run={command_run}'.format(
+        return 'UpdatedCourseVideos: CourseID={course_id}, VideoID={video_id}, Run={command_run}'.format(  # noqa: UP032
             course_id=self.course_id, video_id=self.edx_video_id, command_run=self.command_run
         )

@@ -55,8 +55,8 @@ class GradesTransformer(BlockStructureTransformer):
     @classmethod
     def name(cls):
         """
-        Unique identifier for the transformer's class;
-        same identifier used in setup.py.
+        Unique identifier for the transformer's class.
+        This must match the entry point name in the package configuration.
         """
         return 'grades'
 
@@ -77,11 +77,11 @@ class GradesTransformer(BlockStructureTransformer):
         cls._collect_explicit_graded(block_structure)
         cls._collect_grading_policy_hash(block_structure)
 
-    def transform(self, block_structure, usage_context):  # lint-amnesty, pylint: disable=arguments-differ
+    def transform(self, block_structure, usage_context):  # pylint: disable=arguments-differ
         """
         Perform no transformations.
         """
-        pass  # lint-amnesty, pylint: disable=unnecessary-pass
+        pass  # pylint: disable=unnecessary-pass
 
     @classmethod
     def grading_policy_hash(cls, course):

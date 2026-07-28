@@ -14,11 +14,10 @@ from django.utils.translation import gettext_lazy as _
 
 from xmodule.util.misc import get_short_labeler
 
-
 log = logging.getLogger("edx.courseware")
 
 
-class ScoreBase(metaclass=abc.ABCMeta):
+class ScoreBase(metaclass=abc.ABCMeta):  # noqa: B024
     """
     Abstract base class for encapsulating fields of values scores.
     """
@@ -184,7 +183,7 @@ def grader_from_conf(conf):
             msg = ("Unable to parse grader configuration:\n    " +
                    str(subgraderconf) +
                    "\n    Error was:\n    " + str(error))
-            raise ValueError(msg).with_traceback(sys.exc_info()[2])
+            raise ValueError(msg).with_traceback(sys.exc_info()[2])  # noqa: B904
 
     return WeightedSubsectionsGrader(subgraders)
 
@@ -256,9 +255,9 @@ class WeightedSubsectionsGrader(CourseGrader):
         self.subgraders = subgraders
 
     @property
-    def sum_of_weights(self):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def sum_of_weights(self):  # pylint: disable=missing-function-docstring
         result = 0
-        for _, _, weight in self.subgraders:
+        for _, _, weight in self.subgraders:  # noqa: F402
             result += weight
         return result
 
@@ -325,7 +324,7 @@ class AssignmentFormatGrader(CourseGrader):
     min_count = 2 would produce the labels "Assignment 3", "Assignment 4"
 
     """
-    def __init__(  # lint-amnesty, pylint: disable=super-init-not-called
+    def __init__(  # pylint: disable=super-init-not-called
             self,
             type,  # pylint: disable=redefined-builtin
             min_count,
@@ -421,7 +420,7 @@ class AssignmentFormatGrader(CourseGrader):
         if len(breakdown) == 1:
             # if there is only one entry in a section, suppress the existing individual entry and the average,
             # and just display a single entry for the section.
-            total_detail = "{section_type} = {percent:.2%}".format(
+            total_detail = "{section_type} = {percent:.2%}".format(  # noqa: UP032
                 percent=total_percent,
                 section_type=self.section_type,
             )

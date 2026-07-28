@@ -11,14 +11,14 @@ from django.conf import settings
 from django.http import HttpRequest
 from django.test.client import Client
 
+from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.dark_lang.middleware import DarkLangMiddleware
 from openedx.core.djangoapps.dark_lang.models import DarkLangConfig
 from openedx.core.djangoapps.site_configuration.tests.test_util import (
     with_site_configuration,
     with_site_configuration_context,
 )
-from openedx.core.djangolib.testing.utils import CacheIsolationTestCase
-from common.djangoapps.student.tests.factories import UserFactory
+from openedx.core.djangolib.testing.utils import CacheIsolationTestCase, skip_unless_lms
 
 UNSET = object()
 
@@ -251,7 +251,7 @@ class DarkLangMiddlewareTests(CacheIsolationTestCase):
         """
         Sends a post request to set the preview language
         """
-        return self.client.post('/update_lang/', {'preview_language': preview_language, 'action': 'set_preview_language'})  # lint-amnesty, pylint: disable=line-too-long
+        return self.client.post('/update_lang/', {'preview_language': preview_language, 'action': 'set_preview_language'})  # pylint: disable=line-too-long
 
     def _post_clear_preview_lang(self):
         """
@@ -259,6 +259,7 @@ class DarkLangMiddlewareTests(CacheIsolationTestCase):
         """
         return self.client.post('/update_lang/', {'action': 'reset_preview_language'})
 
+    @skip_unless_lms
     def test_preview_lang_with_released_language(self):
         # Preview lang should always override selection
         self._post_set_preview_lang('rel')
@@ -272,6 +273,7 @@ class DarkLangMiddlewareTests(CacheIsolationTestCase):
         self.client.get('/home')
         self.assert_cookie_lang_equals('rel')
 
+    @skip_unless_lms
     def test_preview_lang_with_dark_language(self):
         self._post_set_preview_lang('unrel')
         self.client.get('/home')
@@ -290,6 +292,7 @@ class DarkLangMiddlewareTests(CacheIsolationTestCase):
         self.client.get('/home')
         self.assert_cookie_lang_equals('rel')
 
+    @skip_unless_lms
     def test_clear_lang(self):
         # Clear a language when no language was set
         self._post_clear_preview_lang()
@@ -335,6 +338,7 @@ class DarkLangMiddlewareTests(CacheIsolationTestCase):
             self.process_middleware_request(accept='zh-Hans;q=1.0, zh-Hant-TW;q=0.5, zh-HK;q=0.3')
         )
 
+    @skip_unless_lms
     def test_language_cookie_is_set(self):
         site_lang = settings.LANGUAGE_CODE
         url = '/dashboard'
@@ -370,6 +374,7 @@ class DarkLangMiddlewareTests(CacheIsolationTestCase):
         assert response.cookies.get(settings.LANGUAGE_COOKIE_NAME).value == ''
         assert response['Content-Language'] == site_lang
 
+    @skip_unless_lms
     @with_site_configuration(configuration={'LANGUAGE_CODE': 'es'})
     def test_preview_language_ignores_site_configuration(self):
         """

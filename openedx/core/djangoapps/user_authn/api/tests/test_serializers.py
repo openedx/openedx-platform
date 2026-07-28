@@ -27,7 +27,7 @@ class TestMFEContextSerializer(TestCase):
             MFE_CONTEXT_WITH_TPA_DATA
         ).data
 
-        self.assertDictEqual(
+        self.assertDictEqual(  # noqa: PT009
             output_data,
             SERIALIZED_MFE_CONTEXT_WITH_TPA_DATA
         )
@@ -40,7 +40,7 @@ class TestMFEContextSerializer(TestCase):
             MFE_CONTEXT_WITHOUT_TPA_DATA
         ).data
 
-        self.assertDictEqual(
+        self.assertDictEqual(  # noqa: PT009
             serialized_data,
             SERIALIZED_MFE_CONTEXT_WITHOUT_TPA_DATA
         )

@@ -1,10 +1,9 @@
 """
 Tests delete_notifications management command
 """
-import ddt
-
 from unittest import mock
 
+import ddt
 from django.core.management import call_command
 
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
@@ -29,7 +28,7 @@ class TestDeleteNotifications(ModuleStoreTestCase):
         default_dict.pop(param)
         try:
             call_command('delete_notifications', **default_dict)
-            assert False
+            assert False  # noqa: B011, PT015
         except Exception:    # pylint: disable=broad-except
             pass
 

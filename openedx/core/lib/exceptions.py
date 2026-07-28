@@ -9,18 +9,18 @@ class CourseNotFoundError(ObjectDoesNotExist):
     """
     Course was not found.
     """
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 class PageNotFoundError(ObjectDoesNotExist):
     """
     Page was not found. Used for paginated endpoint.
     """
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 class DiscussionNotFoundError(ObjectDoesNotExist):
     """
     Discussion Block was not found.
     """
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass

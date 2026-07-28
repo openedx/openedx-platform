@@ -21,14 +21,15 @@ from scripts.user_retirement.retirement_archive_and_cleanup import (
     ERR_NO_CONFIG,
     ERR_SETUP_FAILED,
     _upload_to_s3,
-    archive_and_cleanup
+    archive_and_cleanup,
 )
 from scripts.user_retirement.tests.retirement_helpers import fake_config_file, get_fake_user_retirement
 
 FAKE_BUCKET_NAME = "fake_test_bucket"
 
 
-def _call_script(cool_off_days=37, batch_size=None, dry_run=None, start_date=None, end_date=None):
+def _call_script(cool_off_days=37, batch_size=None, dry_run=None, start_date=None, end_date=None,
+                 redacted_username=None, redacted_email=None, redacted_name=None):
     """
     Call the archive script with the given params and a generic config file.
     Returns the CliRunner.invoke results
@@ -50,6 +51,12 @@ def _call_script(cool_off_days=37, batch_size=None, dry_run=None, start_date=Non
             base_args += ['--start_date', start_date]
         if end_date:
             base_args += ['--end_date', end_date]
+        if redacted_username:
+            base_args += ['--redacted_username', redacted_username]
+        if redacted_email:
+            base_args += ['--redacted_email', redacted_email]
+        if redacted_name:
+            base_args += ['--redacted_name', redacted_name]
 
         result = runner.invoke(archive_and_cleanup, args=base_args)
     print(result)
@@ -63,11 +70,11 @@ def _fake_learner(ordinal):
     """
     return get_fake_user_retirement(
         user_id=ordinal,
-        original_username='test{}'.format(ordinal),
-        original_email='test{}@edx.invalid'.format(ordinal),
-        original_name='test {}'.format(ordinal),
-        retired_username='retired_{}'.format(ordinal),
-        retired_email='retired_test{}@edx.invalid'.format(ordinal),
+        original_username='test{}'.format(ordinal),  # noqa: UP032
+        original_email='test{}@edx.invalid'.format(ordinal),  # noqa: UP032
+        original_name='test {}'.format(ordinal),  # noqa: UP032
+        retired_username='retired_{}'.format(ordinal),  # noqa: UP032
+        retired_email='retired_test{}@edx.invalid'.format(ordinal),  # noqa: UP032
         last_state_name='COMPLETE'
     )
 
@@ -106,7 +113,7 @@ def test_successful(*args, **kwargs):
     assert mock_get_access_token.call_count == 1
     mock_get_learners.assert_called_once()
     mock_bulk_cleanup_retirements.assert_called_once_with(
-        ['test1', 'test2', 'test3'])
+        ['test1', 'test2', 'test3'], 'redacted', 'redacted', 'redacted')
 
     assert result.exit_code == 0
     assert 'Archive and cleanup complete' in result.output
@@ -134,12 +141,46 @@ def test_successful_with_batching(*args, **kwargs):
     # Called once to get the LMS token
     assert mock_get_access_token.call_count == 1
     mock_get_learners.assert_called_once()
-    get_learner_calls = [call(['test1', 'test2']), call(['test3'])]
+    get_learner_calls = [call(['test1', 'test2'], 'redacted', 'redacted', 'redacted'),
+                         call(['test3'], 'redacted', 'redacted', 'redacted')]
     mock_bulk_cleanup_retirements.assert_has_calls(get_learner_calls)
 
     assert result.exit_code == 0
     assert 'Archive and cleanup complete for batch #1' in result.output
     assert 'Archive and cleanup complete for batch #2' in result.output
+
+
+@patch('scripts.user_retirement.utils.edx_api.BaseApiClient.get_access_token', return_value=('THIS_IS_A_JWT', None))
+@patch.multiple(
+    'scripts.user_retirement.utils.edx_api.LmsApi',
+    get_learners_by_date_and_status=DEFAULT,
+    bulk_cleanup_retirements=DEFAULT
+)
+@mock_aws
+def test_successful_with_custom_redaction_values(*args, **kwargs):
+    conn = boto3.resource('s3')
+    conn.create_bucket(Bucket=FAKE_BUCKET_NAME)
+
+    mock_get_access_token = args[0]
+    mock_get_learners = kwargs['get_learners_by_date_and_status']
+    mock_bulk_cleanup_retirements = kwargs['bulk_cleanup_retirements']
+
+    mock_get_learners.return_value = fake_learners_to_retire()
+
+    result = _call_script(
+        redacted_username='custom_user',
+        redacted_email='custom@example.com',
+        redacted_name='Custom Name'
+    )
+
+    # Called once to get the LMS token
+    assert mock_get_access_token.call_count == 1
+    mock_get_learners.assert_called_once()
+    mock_bulk_cleanup_retirements.assert_called_once_with(
+        ['test1', 'test2', 'test3'], 'custom_user', 'custom@example.com', 'Custom Name')
+
+    assert result.exit_code == 0
+    assert 'Archive and cleanup complete' in result.output
 
 
 @patch('scripts.user_retirement.utils.edx_api.BaseApiClient.get_access_token', return_value=('THIS_IS_A_JWT', None))
@@ -216,7 +257,7 @@ def test_bad_fetch(*_):
 def test_bad_lms_deletion(*_):
     result = _call_script()
     assert result.exit_code == ERR_DELETING
-    assert 'Unexpected error occurred deleting retirements!' in result.output
+    assert 'Unexpected error occurred redacting/deleting retirements!' in result.output
 
 
 @patch('scripts.user_retirement.utils.edx_api.BaseApiClient.get_access_token', return_value=('THIS_IS_A_JWT', None))
@@ -264,7 +305,7 @@ def test_s3_upload_data():
     key = 'raw/' + datetime.datetime.now().strftime('%Y/%m/') + filename
 
     # first try dry run without uploading. Try to get object should raise error
-    with pytest.raises(ClientError) as exc_info:
+    with pytest.raises(ClientError) as exc_info:  # noqa: PT012
         _upload_to_s3(config, filename, True)
         s3.get_object(Bucket=FAKE_BUCKET_NAME, Key=key)
         assert exc_info.value.response['Error']['Code'] == 'NoSuchKey'

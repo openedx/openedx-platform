@@ -3,14 +3,15 @@ Utilities for enforcing and tracking compliance with password policy rules.
 """
 
 from datetime import datetime
-
 from zoneinfo import ZoneInfo
+
 from django.conf import settings
 from django.utils.translation import gettext as _
 
-from openedx.core.djangolib.markup import HTML
 from common.djangoapps.util.date_utils import DEFAULT_SHORT_DATE_FORMAT, strftime_localized
 from common.djangoapps.util.password_policy_validators import validate_password
+from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
+from openedx.core.djangolib.markup import HTML
 
 
 class NonCompliantPasswordException(Exception):
@@ -18,7 +19,7 @@ class NonCompliantPasswordException(Exception):
     Exception that should be raised when a user who is required to be compliant with password policy requirements
     is found to have a non-compliant password.
     """
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 class NonCompliantPasswordWarning(Exception):
@@ -26,7 +27,7 @@ class NonCompliantPasswordWarning(Exception):
     Exception that should be raised when a user who will soon be required to be compliant with password policy
     requirements is found to have a non-compliant password.
     """
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 def should_enforce_compliance_on_login():
@@ -70,7 +71,7 @@ def enforce_compliance_on_login(user, password):
         return
 
     now = datetime.now(ZoneInfo("UTC"))
-    if now >= deadline:  # lint-amnesty, pylint: disable=no-else-raise
+    if now >= deadline:  # pylint: disable=no-else-raise
         raise NonCompliantPasswordException(
             HTML(_(
                 '{strong_tag_open}We recently changed our password requirements{strong_tag_close}{break_line_tag}'
@@ -97,7 +98,10 @@ def enforce_compliance_on_login(user, password):
                 platform_name=settings.PLATFORM_NAME,
                 deadline=strftime_localized(deadline, DEFAULT_SHORT_DATE_FORMAT),
                 anchor_tag_open=HTML('<a href="{account_settings_url}">').format(
-                    account_settings_url=settings.ACCOUNT_MICROFRONTEND_URL
+                    account_settings_url=configuration_helpers.get_value(
+                        'ACCOUNT_MICROFRONTEND_URL',
+                        settings.ACCOUNT_MICROFRONTEND_URL,
+                    ),
                 ),
                 anchor_tag_close=HTML('</a>')
             )

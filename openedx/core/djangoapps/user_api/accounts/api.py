@@ -4,15 +4,19 @@ Programmatic integration point for User API Accounts sub-application
 """
 
 import datetime
+import logging
 import re
+from zoneinfo import ZoneInfo
 
+from django import forms
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.validators import ValidationError, validate_email
+from django.db import DatabaseError, IntegrityError, transaction
 from django.utils.translation import gettext as _
 from django.utils.translation import override as override_language
 from eventtracking import tracker
-from zoneinfo import ZoneInfo
+from openedx_filters.learning.filters import AccountSettingsReadOnlyFieldsRequested
 
 from common.djangoapps.student import views as student_views
 from common.djangoapps.student.models import (
@@ -20,7 +24,7 @@ from common.djangoapps.student.models import (
     User,
     UserProfile,
     email_exists_or_retired,
-    username_exists_or_retired
+    username_exists_or_retired,
 )
 from common.djangoapps.util.model_utils import emit_settings_changed_event
 from common.djangoapps.util.password_policy_validators import validate_password
@@ -32,21 +36,23 @@ from openedx.core.djangoapps.user_api import accounts, errors, helpers
 from openedx.core.djangoapps.user_api.errors import (
     AccountUpdateError,
     AccountValidationError,
-    PreferenceValidationError
+    PreferenceValidationError,
 )
 from openedx.core.djangoapps.user_api.preferences.api import update_user_preferences
 from openedx.core.djangoapps.user_authn.utils import check_pwned_password
 from openedx.core.djangoapps.user_authn.views.registration_form import validate_name, validate_username
 from openedx.core.lib.api.view_utils import add_serializer_errors
-from openedx.features.enterprise_support.utils import get_enterprise_readonly_account_fields
 from openedx.features.name_affirmation_api.utils import is_name_affirmation_installed
 
+from .forms import validate_and_get_extended_profile_form
 from .serializers import AccountLegacyProfileSerializer, AccountUserSerializer, UserReadOnlySerializer, _visible_fields
 
 name_affirmation_installed = is_name_affirmation_installed()
 if name_affirmation_installed:
     # pylint: disable=import-error
     from edx_name_affirmation.name_change_validator import NameChangeValidator
+
+logger = logging.getLogger(__name__)
 
 # Public access point for this function.
 visible_fields = _visible_fields
@@ -154,7 +160,7 @@ def update_account_settings(requesting_user, update, username=None):
     _validate_email_change(user, update, field_errors)
     _validate_secondary_email(user, update, field_errors)
     if (
-        settings.FEATURES.get('EMBARGO', False) and
+        settings.EMBARGO and
         GlobalRestrictedCountry.is_country_restricted(update.get('country', ''))
     ):
         field_errors['country'] = {
@@ -164,6 +170,12 @@ def update_account_settings(requesting_user, update, username=None):
 
     old_name = _validate_name_change(user_profile, update, field_errors)
     old_language_proficiencies = _get_old_language_proficiencies_if_updating(user_profile, update)
+
+    extended_profile_data = update.get("extended_profile") if "extended_profile" in update else None
+    extended_profile_form = None
+    if extended_profile_data is not None:
+        extended_profile_form, ext_profile_errors = validate_and_get_extended_profile_form(extended_profile_data, user)
+        field_errors.update(ext_profile_errors)
 
     if field_errors:
         raise errors.AccountValidationError(field_errors)
@@ -176,15 +188,15 @@ def update_account_settings(requesting_user, update, username=None):
         _update_preferences_if_needed(update, requesting_user, user)
         _notify_language_proficiencies_update_if_needed(update, user, user_profile, old_language_proficiencies)
         _store_old_name_if_needed(old_name, user_profile, requesting_user)
-        _update_extended_profile_if_needed(update, user_profile)
+        _update_extended_profile_if_needed(update, user_profile, extended_profile_form)
         _update_state_if_needed(update, user_profile)
 
     except PreferenceValidationError as err:
-        raise AccountValidationError(err.preference_errors)  # lint-amnesty, pylint: disable=raise-missing-from
+        raise AccountValidationError(err.preference_errors)  # pylint: disable=raise-missing-from  # noqa: B904
     except (AccountUpdateError, AccountValidationError) as err:
         raise err
     except Exception as err:
-        raise AccountUpdateError(  # lint-amnesty, pylint: disable=raise-missing-from
+        raise AccountUpdateError(  # pylint: disable=raise-missing-from  # noqa: B904
             f"Error thrown when saving account updates: '{str(err)}'"
         )
 
@@ -193,11 +205,17 @@ def update_account_settings(requesting_user, update, username=None):
 
 def _validate_read_only_fields(user, data, field_errors):
     # Check for fields that are not editable. Marking them read-only causes them to be ignored, but we wish to 400.
+    plugin_readonly_fields, __ = AccountSettingsReadOnlyFieldsRequested.run_filter(
+        readonly_fields=set(),
+        user=user,
+    )
+    plugin_readonly_fields = plugin_readonly_fields or set()
+
     read_only_fields = set(data.keys()).intersection(
         # Remove email since it is handled separately below when checking for changing_email.
         (set(AccountUserSerializer.get_read_only_fields()) - {"email"}) |
         set(AccountLegacyProfileSerializer.get_read_only_fields() or set()) |
-        get_enterprise_readonly_account_fields(user)
+        plugin_readonly_fields
     )
 
     for read_only_field in read_only_fields:
@@ -214,7 +232,7 @@ def _validate_email_change(user, data, field_errors):
     if "email" not in data:
         return
 
-    if not settings.FEATURES['ALLOW_EMAIL_ADDRESS_CHANGE']:
+    if not settings.ALLOW_EMAIL_ADDRESS_CHANGE:
         raise AccountUpdateError("Email address changes have been disabled by the site operators.")
 
     new_email = data["email"]
@@ -346,17 +364,81 @@ def _notify_language_proficiencies_update_if_needed(data, user, user_profile, ol
         )
 
 
-def _update_extended_profile_if_needed(data, user_profile):
-    if 'extended_profile' in data:
-        meta = user_profile.get_meta()
-        new_extended_profile = data['extended_profile']
-        for field in new_extended_profile:
-            field_name = field['field_name']
-            new_value = field['field_value']
-            meta[field_name] = new_value
-        user_profile.set_meta(meta)
-        user_profile.save()
+def _update_extended_profile_if_needed(
+    data: dict, user_profile: UserProfile, extended_profile_form: forms.Form | None
+) -> None:
+    """
+    Update the extended profile information if present in the data.
 
+    This function handles two types of extended profile updates:
+    1. Updates the user profile meta fields with extended_profile data
+    2. Saves the extended profile form data to the extended profile model if a validated form is provided
+
+    Args:
+        data (dict): Dictionary containing the update data, may include 'extended_profile' key
+        user_profile (UserProfile): The UserProfile instance to update
+        extended_profile_form (forms.Form | None): The validated extended profile form
+            containing extended profile data, or None if no extended profile form is provided
+
+    Note:
+        If `extended_profile` is present in data, the function will:
+        - Extract `field_name` and `field_value` pairs from extended_profile list
+        - Update the `user_profile.meta` dictionary with new values and save the profile
+
+        If `extended_profile_form` is provided and valid, the function will:
+        - Save the form data to the extended profile model
+        - Associate the model instance with the user if it's a new instance
+
+        Both the meta update and the extended profile model save (when present) are performed
+        within a single database transaction. If either operation fails, the transaction is
+        rolled back so that no partial updates are persisted. The error is logged and an
+        AccountUpdateError is raised to the caller.
+    """
+    has_extended_profile_data = "extended_profile" in data
+    has_extended_profile_form = extended_profile_form is not None
+
+    if not has_extended_profile_data and not has_extended_profile_form:
+        return
+
+    try:
+        with transaction.atomic():
+            if has_extended_profile_data:
+                meta = user_profile.get_meta()
+                new_extended_profile = data["extended_profile"]
+                for field in new_extended_profile:
+                    field_name = field["field_name"]
+                    new_value = field["field_value"]
+                    meta[field_name] = new_value
+                user_profile.set_meta(meta)
+                user_profile.save()
+
+            if has_extended_profile_form:
+                # Use commit=False to create the model instance in memory without saving to DB yet.
+                # This allows us to set the user field before persisting, which is necessary because:
+                # 1. The form validates and creates the instance with form data
+                # 2. For new profiles, the user field isn't in the form data
+                # 3. We need to assign the user programmatically before the database save
+                # 4. If we called save() directly, it would fail with integrity errors for new profiles
+                extended_profile = extended_profile_form.save(commit=False)
+                if not hasattr(extended_profile, "user") or extended_profile.user is None:
+                    extended_profile.user = user_profile.user
+                # Now persist the instance with the user field properly set
+                extended_profile.save()
+    except ValidationError as exc:
+        raise AccountUpdateError(
+            developer_message=f"Extended profile validation failed: {str(exc)}",
+            user_message=_("The extended profile information could not be saved due to validation errors."),
+        ) from exc
+    except IntegrityError as exc:
+        raise AccountUpdateError(
+            developer_message=f"Extended profile integrity error: {str(exc)}",
+            user_message=_("The extended profile information could not be saved. Please check for duplicate values."),
+        ) from exc
+    except DatabaseError as exc:
+        raise AccountUpdateError(
+            developer_message=f"Database error saving extended profile: {str(exc)}",
+            user_message=_("The extended profile information could not be saved due to a system error."),
+        ) from exc
 
 def _update_state_if_needed(data, user_profile):
     # If the country was changed to something other than US, remove the state.
@@ -387,7 +469,7 @@ def _send_email_change_requests_if_needed(data, user):
         try:
             student_views.do_email_change_request(user, new_email)
         except ValueError as err:
-            raise AccountUpdateError(  # lint-amnesty, pylint: disable=raise-missing-from
+            raise AccountUpdateError(  # pylint: disable=raise-missing-from  # noqa: B904
                 f"Error thrown from do_email_change_request: '{str(err)}'",
                 user_message=str(err)
             )
@@ -401,7 +483,7 @@ def _send_email_change_requests_if_needed(data, user):
                 secondary_email_change_request=True,
             )
         except ValueError as err:
-            raise AccountUpdateError(  # lint-amnesty, pylint: disable=raise-missing-from
+            raise AccountUpdateError(  # pylint: disable=raise-missing-from  # noqa: B904
                 f"Error thrown from do_email_change_request: '{str(err)}'",
                 user_message=str(err)
             )
@@ -563,7 +645,7 @@ def _get_user_and_profile(username):
     try:
         existing_user = User.objects.get(username=username)
     except ObjectDoesNotExist:
-        raise errors.UserNotFound()  # lint-amnesty, pylint: disable=raise-missing-from
+        raise errors.UserNotFound()  # pylint: disable=raise-missing-from  # noqa: B904
 
     existing_user_profile, _ = UserProfile.objects.get_or_create(user=existing_user)
 
@@ -615,9 +697,9 @@ def _validate_username(username):
             # message by convention.
             validate_username(username)
     except (UnicodeError, errors.AccountDataBadType, errors.AccountDataBadLength) as username_err:
-        raise errors.AccountUsernameInvalid(str(username_err))
+        raise errors.AccountUsernameInvalid(str(username_err))  # noqa: B904
     except ValidationError as validation_err:
-        raise errors.AccountUsernameInvalid(validation_err.message)
+        raise errors.AccountUsernameInvalid(validation_err.message)  # noqa: B904
 
 
 def _validate_email(email):
@@ -640,9 +722,9 @@ def _validate_email(email):
         validate_email.message = accounts.AUTHN_EMAIL_INVALID_MSG
         validate_email(email)
     except (UnicodeError, errors.AccountDataBadType, errors.AccountDataBadLength) as invalid_email_err:
-        raise errors.AccountEmailInvalid(str(invalid_email_err))
+        raise errors.AccountEmailInvalid(str(invalid_email_err))  # noqa: B904
     except ValidationError as validation_err:
-        raise errors.AccountEmailInvalid(validation_err.message)
+        raise errors.AccountEmailInvalid(validation_err.message)  # noqa: B904
 
 
 def _validate_confirm_email(confirm_email, email):
@@ -682,9 +764,9 @@ def _validate_password(password, username=None, email=None, reset_password_page=
         temp_user = User(username=username, email=email) if username else None
         validate_password(password, user=temp_user)
     except errors.AccountDataBadType as invalid_password_err:
-        raise errors.AccountPasswordInvalid(str(invalid_password_err))
+        raise errors.AccountPasswordInvalid(str(invalid_password_err))  # noqa: B904
     except ValidationError as validation_err:
-        raise errors.AccountPasswordInvalid(' '.join(validation_err.messages))
+        raise errors.AccountPasswordInvalid(' '.join(validation_err.messages))  # noqa: B904
 
     if (
         (settings.ENABLE_AUTHN_RESET_PASSWORD_HIBP_POLICY and reset_password_page) or
@@ -709,7 +791,7 @@ def _validate_country(country):
     :return: None
 
     """
-    if country == '' or country == '--':  # lint-amnesty, pylint: disable=consider-using-in
+    if country == '' or country == '--':  # pylint: disable=consider-using-in
         raise errors.AccountCountryInvalid(accounts.REQUIRED_FIELD_COUNTRY_MSG)
 
 
@@ -721,7 +803,7 @@ def _validate_username_doesnt_exist(username):
     :raises: errors.AccountUsernameAlreadyExists
     """
     if username is not None and username_exists_or_retired(username):
-        # lint-amnesty, pylint: disable=translation-of-non-string
+        # pylint: disable=translation-of-non-string
         raise errors.AccountUsernameAlreadyExists(_(accounts.AUTHN_USERNAME_CONFLICT_MSG))
 
 
@@ -735,7 +817,7 @@ def _validate_email_doesnt_exist(email):
     error_message = accounts.AUTHN_EMAIL_CONFLICT_MSG
 
     if email is not None and email_exists_or_retired(email):
-        raise errors.AccountEmailAlreadyExists(_(error_message))  # lint-amnesty, pylint: disable=translation-of-non-string
+        raise errors.AccountEmailAlreadyExists(_(error_message))  # pylint: disable=translation-of-non-string
 
 
 def _validate_secondary_email_doesnt_exist(email):
@@ -769,10 +851,10 @@ def _validate_password_works_with_username(password, username=None):
     :raises: errors.AccountPasswordInvalid
     """
     if password == username:
-        raise errors.AccountPasswordInvalid(accounts.PASSWORD_CANT_EQUAL_USERNAME_MSG)  # lint-amnesty, pylint: disable=no-member
+        raise errors.AccountPasswordInvalid(accounts.PASSWORD_CANT_EQUAL_USERNAME_MSG)  # pylint: disable=no-member
 
 
-def _validate_type(data, type, err):  # lint-amnesty, pylint: disable=redefined-builtin
+def _validate_type(data, type, err):  # pylint: disable=redefined-builtin
     """Checks whether the input data is of type. If not,
     throws a generic error message.
 
@@ -787,7 +869,7 @@ def _validate_type(data, type, err):  # lint-amnesty, pylint: disable=redefined-
         raise errors.AccountDataBadType(err)
 
 
-def _validate_length(data, min, max, err):  # lint-amnesty, pylint: disable=redefined-builtin
+def _validate_length(data, min, max, err):  # pylint: disable=redefined-builtin
     """Validate that the data's length is less than or equal to max,
     and greater than or equal to min.
 
@@ -818,4 +900,4 @@ def _validate_unicode(data, err="Input not valid unicode"):
         # In some cases we pass the above, but it's still inappropriate utf-8.
         str(data)
     except UnicodeError:
-        raise UnicodeError(err)  # lint-amnesty, pylint: disable=raise-missing-from
+        raise UnicodeError(err)  # pylint: disable=raise-missing-from  # noqa: B904

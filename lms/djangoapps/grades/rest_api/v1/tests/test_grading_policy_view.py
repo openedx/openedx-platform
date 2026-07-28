@@ -8,14 +8,13 @@ from datetime import datetime
 import ddt
 from django.urls import reverse
 from pytz import UTC
+from xblocks_contrib.problem.capa.tests.response_xml_factory import MultipleChoiceResponseXMLFactory
+
+from common.djangoapps.student.tests.factories import GlobalStaffFactory, StaffFactory, UserFactory
+from openedx.core.djangoapps.oauth_dispatch.tests.factories import AccessTokenFactory, ApplicationFactory
 from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, SharedModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory
-from xmodule.capa.tests.response_xml_factory import MultipleChoiceResponseXMLFactory
-from common.djangoapps.student.tests.factories import GlobalStaffFactory
-from common.djangoapps.student.tests.factories import StaffFactory
-from common.djangoapps.student.tests.factories import UserFactory
-from openedx.core.djangoapps.oauth_dispatch.tests.factories import AccessTokenFactory, ApplicationFactory
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 
 
 @ddt.ddt
@@ -35,7 +34,7 @@ class GradingPolicyTestMixin:
         self.access_token = AccessTokenFactory.create(user=self.user, application=self.oauth_client).token
 
     @classmethod
-    def create_course_data(cls):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def create_course_data(cls):  # pylint: disable=missing-function-docstring
         cls.invalid_course_id = 'course-v1:foo+bar+baz'
         cls.course = CourseFactory.create(
             display_name='An Introduction to API Testing', grading_policy=cls.grading_policy
@@ -208,7 +207,7 @@ class CourseGradingPolicyTests(GradingPolicyTestMixin, SharedModuleStoreTestCase
                 "dropped": 0
             }
         ]
-        self.assertListEqual(response.data, expected)
+        self.assertListEqual(response.data, expected)  # noqa: PT009
 
 
 class CourseGradingPolicyMissingFieldsTests(GradingPolicyTestMixin, SharedModuleStoreTestCase):
@@ -263,4 +262,4 @@ class CourseGradingPolicyMissingFieldsTests(GradingPolicyTestMixin, SharedModule
                 "dropped": 0
             }
         ]
-        self.assertListEqual(response.data, expected)
+        self.assertListEqual(response.data, expected)  # noqa: PT009

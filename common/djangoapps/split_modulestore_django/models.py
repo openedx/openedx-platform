@@ -4,8 +4,8 @@ Django model to store the "course index" data
 from bson.objectid import ObjectId
 from django.contrib.auth import get_user_model
 from django.db import models
-from opaque_keys.edx.locator import CourseLocator, LibraryLocator
 from opaque_keys.edx.django.models import LearningContextKeyField
+from opaque_keys.edx.locator import CourseLocator, LibraryLocator
 from simple_history.models import HistoricalRecords
 
 from xmodule.modulestore import ModuleStoreEnum
@@ -34,8 +34,13 @@ class SplitModulestoreCourseIndex(models.Model):
     # For compatibility with MongoDB, each course index must have an ObjectId. We still have an integer primary key too.
     objectid = models.CharField(max_length=24, null=False, blank=False, unique=True)
 
-    # The ID of this course (or library). Must start with "course-v1:" or "library-v1:"
-    course_id = LearningContextKeyField(max_length=255, db_index=True, unique=True, null=False)
+    # course_id: The ID of this course (or library). Must start with "course-v1:" or "library-v1:"
+    # This is case-sensitive; however, many other parts of the system aren't case sensitive, so we add an explicit index
+    # on Lower(course_id) to make this case-insensitively unique as well.
+    # So: (1) queries of course_id by default are case-sensitive. (2) queries that want to be case-insensitive need to
+    # explicitly compare Lower(course_id) with the lowercase key in question. (3) Course IDs that differ only in case
+    # are prohibited.
+    course_id = LearningContextKeyField(case_sensitive=True, unique=True, null=False)
     # Extract the "org" value from the course_id key so that we can search by org.
     # This gets set automatically by clean()
     org = models.CharField(max_length=255, db_index=True)
@@ -78,9 +83,16 @@ class SplitModulestoreCourseIndex(models.Model):
     def __str__(self):
         return f"Course Index ({self.course_id})"
 
-    class Meta:
+    class Meta:  # noqa: DJ012
         ordering = ["course_id"]
         verbose_name_plural = "Split modulestore course indexes"
+        constraints = [
+            # Explicitly force "course_id" to be case-insensitively unique
+            models.UniqueConstraint(
+                models.functions.Lower("course_id"),
+                name="splitmodulestorecourseindex_courseid_unique_ci",
+            ),
+        ]
 
     def as_v1_schema(self):
         """ Return in the same format as was stored in MongoDB """
@@ -157,9 +169,9 @@ class SplitModulestoreCourseIndex(models.Model):
         # Set the "org" field automatically - ensure it always matches the "org" in the course_id
         self.org = self.course_id.org
 
-    def save(self, *args, **kwargs):
+    def save(self, *args, **kwargs):  # noqa: DJ012
         """ Save this model """
         # Override to ensure that full_clean()/clean() is always called, so that the checks in clean() above are run.
-        # But don't validate_unique(), it just runs extra queries and the database enforces it anyways.
-        self.full_clean(validate_unique=False)
+        # But don't run validations; they just run extra queries and the database enforces them anyways.
+        self.full_clean(validate_unique=False, validate_constraints=False)
         return super().save(*args, **kwargs)

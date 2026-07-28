@@ -2,14 +2,17 @@
 Test that various filters are fired for models/views in the instructor app.
 """
 import re
+
 from django.http import HttpResponse
 from django.test import override_settings
 from django.urls import reverse
+from edx_toggles.toggles.testutils import override_waffle_flag
 from openedx_filters import PipelineStep
 from openedx_filters.learning.filters import InstructorDashboardRenderStarted
 from rest_framework import status
 
 from common.djangoapps.student.tests.factories import AdminFactory, CourseAccessRoleFactory
+from lms.djangoapps.instructor.toggles import LEGACY_INSTRUCTOR_DASHBOARD
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory
@@ -85,6 +88,10 @@ class TestRenderCustomResponse(PipelineStep):
 
 
 @skip_unless_lms
+# Tests for legacy views. When DEPR-38432 is picked up, these tests will require the following changes:
+# Either remove or leave the specific parts that reference the legacy instructor dashboard,
+# and remove the override_waffle_flag for LEGACY_INSTRUCTOR_DASHBOARD.
+@override_waffle_flag(LEGACY_INSTRUCTOR_DASHBOARD, active=True)
 class InstructorDashboardFiltersTest(ModuleStoreTestCase):
     """
     Tests for the Open edX Filters associated with the instructor dashboard rendering process.
@@ -137,7 +144,7 @@ class InstructorDashboardFiltersTest(ModuleStoreTestCase):
             response.content
         )
 
-        self.assertFalse(matches)
+        self.assertFalse(matches)  # noqa: PT009
 
     @override_settings(
         OPEN_EDX_FILTERS_CONFIG={
@@ -183,8 +190,8 @@ class InstructorDashboardFiltersTest(ModuleStoreTestCase):
         """
         response = self.client.get(self.dashboard_url)
 
-        self.assertEqual(status.HTTP_302_FOUND, response.status_code)
-        self.assertEqual("https://custom-dashboard.com", response.url)
+        self.assertEqual(status.HTTP_302_FOUND, response.status_code)  # noqa: PT009
+        self.assertEqual("https://custom-dashboard.com", response.url)  # noqa: PT009
 
     @override_settings(
         OPEN_EDX_FILTERS_CONFIG={
@@ -206,7 +213,7 @@ class InstructorDashboardFiltersTest(ModuleStoreTestCase):
         """
         response = self.client.get(self.dashboard_url)
 
-        self.assertEqual("This is a custom response.", response.content.decode("utf-8"))
+        self.assertEqual("This is a custom response.", response.content.decode("utf-8"))  # noqa: PT009
 
     @override_settings(OPEN_EDX_FILTERS_CONFIG={})
     def test_dashboard_render_without_filter_config(self):
@@ -226,5 +233,5 @@ class InstructorDashboardFiltersTest(ModuleStoreTestCase):
             response.content
         )
 
-        self.assertEqual(status.HTTP_200_OK, response.status_code)
-        self.assertTrue(matches)
+        self.assertEqual(status.HTTP_200_OK, response.status_code)  # noqa: PT009
+        self.assertTrue(matches)  # noqa: PT009

@@ -9,7 +9,7 @@ from tempfile import mkdtemp
 from unittest import skip
 
 import ddt
-from django.test import TestCase  # lint-amnesty, pylint: disable=reimported
+from django.test import TestCase  # pylint: disable=reimported
 
 from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.tests.factories import check_mongo_calls
@@ -17,7 +17,7 @@ from xmodule.modulestore.tests.utils import (
     TEST_DATA_DIR,
     MemoryCache,
     MixedModulestoreBuilder,
-    VersioningModulestoreBuilder
+    VersioningModulestoreBuilder,
 )
 from xmodule.modulestore.xml_exporter import export_course_to_xml
 from xmodule.modulestore.xml_importer import import_course_from_xml

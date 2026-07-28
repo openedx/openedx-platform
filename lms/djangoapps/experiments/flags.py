@@ -75,7 +75,7 @@ class ExperimentWaffleFlag(CourseWaffleFlag):
         self.num_buckets = num_buckets
         self.experiment_id = experiment_id
         self.bucket_flags = [
-            CourseWaffleFlag(f'{flag_name}.{bucket}', module_name)  # lint-amnesty, pylint: disable=toggle-missing-annotation
+            CourseWaffleFlag(f'{flag_name}.{bucket}', module_name)  # pylint: disable=toggle-missing-annotation
             for bucket in range(num_buckets)
         ]
         self.use_course_aware_bucketing = use_course_aware_bucketing
@@ -183,8 +183,8 @@ class ExperimentWaffleFlag(CourseWaffleFlag):
         """
         # Keep some imports in here, because this class is commonly used at a module level, and we want to avoid
         # circular imports for any models.
-        from lms.djangoapps.experiments.models import ExperimentKeyValue
         from lms.djangoapps.courseware.masquerade import get_specific_masquerading_user
+        from lms.djangoapps.experiments.models import ExperimentKeyValue
 
         request = get_current_request()
         if not request:

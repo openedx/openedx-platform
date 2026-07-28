@@ -7,7 +7,6 @@ from unittest.mock import patch
 from zoneinfo import ZoneInfo
 
 import ddt
-from django.conf import settings
 from django.test.utils import override_settings
 from django.urls import reverse
 
@@ -16,8 +15,10 @@ from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, U
 from openedx.core.djangoapps.credit import api as credit_api
 from openedx.core.djangoapps.credit.models import CreditCourse, CreditEligibility, CreditProvider
 from openedx.core.djangolib.testing.utils import skip_unless_lms
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # pylint: disable=wrong-import-order
+)
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 TEST_CREDIT_PROVIDER_SECRET_KEY = "931433d583c84ca7ba41784bad3232e6"
 
@@ -26,7 +27,7 @@ TEST_CREDIT_PROVIDER_SECRET_KEY = "931433d583c84ca7ba41784bad3232e6"
 @override_settings(CREDIT_PROVIDER_SECRET_KEYS={
     "hogwarts": TEST_CREDIT_PROVIDER_SECRET_KEY,
 })
-@patch.dict(settings.FEATURES, {"ENABLE_CREDIT_ELIGIBILITY": True})
+@override_settings(ENABLE_CREDIT_ELIGIBILITY=True)
 @ddt.ddt
 class CreditCourseDashboardTest(ModuleStoreTestCase):
     """

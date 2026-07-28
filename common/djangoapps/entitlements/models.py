@@ -8,7 +8,6 @@ from datetime import timedelta
 from django.conf import settings
 from django.contrib.sites.models import Site
 from django.db import IntegrityError, models, transaction
-
 from django.utils.timezone import now
 from model_utils import Choices
 from model_utils.models import TimeStampedModel
@@ -57,7 +56,7 @@ class CourseEntitlementPolicy(models.Model):
         null=False
     )
     site = models.ForeignKey(Site, null=True, on_delete=models.CASCADE)
-    mode = models.CharField(max_length=32, choices=MODES, null=True)
+    mode = models.CharField(max_length=32, choices=MODES, null=True)  # noqa: DJ001
 
     def get_days_until_expiration(self, entitlement):
         """
@@ -142,9 +141,9 @@ class CourseEntitlementPolicy(models.Model):
                 and not entitlement.enrollment_course_run
                 and not entitlement.expired_at)
 
-    def __str__(self):
+    def __str__(self):  # noqa: DJ012
         return 'Course Entitlement Policy: expiration_period: {}, refund_period: {}, regain_period: {}, mode: {}'\
-            .format(
+            .format(  # noqa: UP032
                 self.expiration_period,
                 self.refund_period,
                 self.regain_period,
@@ -174,7 +173,7 @@ class CourseEntitlement(TimeStampedModel):
         blank=True,
         on_delete=models.CASCADE,
     )
-    order_number = models.CharField(max_length=128, default=None, null=True)
+    order_number = models.CharField(max_length=128, default=None, null=True)  # noqa: DJ001
     refund_locked = models.BooleanField(default=False)
     _policy = models.ForeignKey(CourseEntitlementPolicy, null=True, blank=True, on_delete=models.CASCADE)
 
@@ -497,7 +496,7 @@ class CourseEntitlementSupportDetail(TimeStampedModel):
     reason = models.CharField(max_length=15, choices=ENTITLEMENT_SUPPORT_REASONS)
     action = models.CharField(max_length=15, choices=ENTITLEMENT_SUPPORT_ACTIONS)
 
-    comments = models.TextField(null=True)
+    comments = models.TextField(null=True)  # noqa: DJ001
 
     unenrolled_run = models.ForeignKey(
         CourseOverview,
@@ -511,7 +510,7 @@ class CourseEntitlementSupportDetail(TimeStampedModel):
 
     def __str__(self):
         """Unicode representation of an Entitlement"""
-        return 'Course Entitlement Support Detail: entitlement: {}, support_user: {}, reason: {}'.format(
+        return 'Course Entitlement Support Detail: entitlement: {}, support_user: {}, reason: {}'.format(  # noqa: UP032
             self.entitlement,
             self.support_user,
             self.reason,

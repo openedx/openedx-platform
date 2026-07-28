@@ -1,0 +1,23 @@
+<%page expression_filter="h"/>
+<%namespace name='static' file='../static_content.html'/>
+<%
+from openedx.core.djangolib.js_utils import dump_js_escaped_json, js_escaped_string
+enable_discussion_home_panel = settings.FEATURES.get('ENABLE_DISCUSSION_HOME_PANEL', False)
+%>
+
+<script type="text/javascript">
+  window.PLATFORM_NAME = "${settings.PLATFORM_NAME | n, js_escaped_string}";
+  % if enable_discussion_home_panel:
+    window.ENABLE_DISCUSSION_HOME_PANEL = true;
+  % else:
+    window.ENABLE_DISCUSSION_HOME_PANEL = false;
+  % endif
+
+  % if enable_daily_digest:
+    window.ENABLE_FORUM_DAILY_DIGEST = true;
+  % else:
+    window.ENABLE_FORUM_DAILY_DIGEST = false;
+  % endif
+
+</script>
+<%static:include path="common/templates/discussion/templates.underscore" />

@@ -7,7 +7,7 @@ from urllib.parse import urlunsplit
 
 from config_models.models import ConfigurationModel
 from django.conf import settings
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.contrib.sites.models import Site
 from django.core.mail import send_mail
 from django.db import models
@@ -16,8 +16,6 @@ from django.dispatch import receiver
 from django.urls import reverse
 from django.utils.translation import gettext as _u
 from django.utils.translation import gettext_lazy as _
-
-
 from model_utils.models import TimeStampedModel
 
 from common.djangoapps.edxmako.shortcuts import render_to_string
@@ -251,7 +249,7 @@ class Catalog(models.Model):
         else:
             super().__init__(*args, **kwargs)
 
-    def save(self, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ, unused-argument
+    def save(self, **kwargs):  # pylint: disable=arguments-differ, unused-argument
         return None
 
     @property
@@ -264,5 +262,5 @@ class Catalog(models.Model):
             'viewers': self.viewers,
         }
 
-    def __str__(self):
+    def __str__(self):  # noqa: DJ012
         return f'Catalog {self.name} [{self.query}]'

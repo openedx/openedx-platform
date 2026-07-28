@@ -3,13 +3,12 @@ Togglable settings for Course Grading behavior
 """
 from openedx.core.djangoapps.waffle_utils import CourseWaffleFlag
 
-
 WAFFLE_NAMESPACE = 'grades'
 
 # edx/edx-platform feature
 MATERIAL_RECOMPUTE_ONLY = 'MATERIAL_RECOMPUTE_ONLY'
 
-MATERIAL_RECOMPUTE_ONLY_FLAG = CourseWaffleFlag(  # lint-amnesty, pylint: disable=toggle-missing-annotation
+MATERIAL_RECOMPUTE_ONLY_FLAG = CourseWaffleFlag(  # pylint: disable=toggle-missing-annotation
     f'{WAFFLE_NAMESPACE}.{MATERIAL_RECOMPUTE_ONLY}', __name__
 )
 

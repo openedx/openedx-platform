@@ -7,18 +7,19 @@ from abc import ABCMeta
 from collections import OrderedDict
 from datetime import datetime, timezone
 from logging import getLogger
+
 from lazy import lazy
 from xblock.scorable import ShowCorrectness
 
 from lms.djangoapps.grades.models import BlockRecord, PersistentSubsectionGrade
 from lms.djangoapps.grades.scores import compute_percent, get_score, possibly_scored
-from xmodule import block_metadata_utils, graders  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.graders import AggregatedScore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule import block_metadata_utils, graders  # pylint: disable=wrong-import-order
+from xmodule.graders import AggregatedScore  # pylint: disable=wrong-import-order
 
 log = getLogger(__name__)
 
 
-class SubsectionGradeBase(metaclass=ABCMeta):
+class SubsectionGradeBase(metaclass=ABCMeta):  # noqa: B024
     """
     Abstract base class for Subsection Grades.
     """
@@ -26,7 +27,7 @@ class SubsectionGradeBase(metaclass=ABCMeta):
     def __init__(self, subsection):
         self.location = subsection.location
         self.display_name = block_metadata_utils.display_name_with_default(subsection)
-        self.url_name = block_metadata_utils.url_name_for_block(subsection)
+        self.url_name = subsection.usage_key.block_id
 
         self.due = block_metadata_utils.get_datetime_field(subsection, 'due', None)
         self.end = getattr(subsection, 'end', None)
@@ -66,7 +67,7 @@ class SubsectionGradeBase(metaclass=ABCMeta):
             # but correctness_available always returns False as we do not want to show correctness
             # of problems to the users.
             return (self.due is None or
-                    self.due < datetime.now(timezone.utc))
+                    self.due < datetime.now(timezone.utc))  # noqa: UP017
         return ShowCorrectness.correctness_available(self.show_correctness, self.due, has_staff_access)
 
     @property
@@ -171,7 +172,7 @@ class NonZeroSubsectionGrade(SubsectionGradeBase, metaclass=ABCMeta):
         return compute_percent(self.graded_total.earned, self.graded_total.possible)
 
     @staticmethod
-    def _compute_block_score(  # lint-amnesty, pylint: disable=missing-function-docstring
+    def _compute_block_score(  # pylint: disable=missing-function-docstring
             block_key,
             course_structure,
             submissions_scores,

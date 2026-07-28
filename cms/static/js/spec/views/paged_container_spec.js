@@ -1,7 +1,8 @@
-define(['jquery', 'underscore', 'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers', 'URI', 'js/models/xblock_info',
+define(['jquery', 'underscore', 'sinon', 'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers', 'URI', 'js/models/xblock_info',
     'js/views/paged_container', 'js/views/paging_header',
     'common/js/components/views/paging_footer', 'js/views/xblock'],
-function($, _, AjaxHelpers, URI, XBlockInfo, PagedContainer, PagingHeader, PagingFooter, XBlockView) {
+function($, _, sinon, AjaxHelpers, URI, XBlockInfo, PagedContainer, PagingHeader, PagingFooter, XBlockView) {
+    var requests, xhrFactory;
     var htmlResponseTpl = _.template(''
             + '<div class="xblock-container-paging-parameters" '
                 + 'data-start="<%= start %>" '
@@ -73,16 +74,24 @@ function($, _, AjaxHelpers, URI, XBlockInfo, PagedContainer, PagingHeader, Pagin
         var pagingContainer;
 
         beforeEach(function() {
+            xhrFactory = sinon.useFakeXMLHttpRequest();
+            requests = [];
+            requests.currentIndex = 0;
+            requests.restore = function() { xhrFactory.restore(); };
+            xhrFactory.onCreate = function(req) { requests.push(req); };
             pagingContainer = new MockPagingView({
                 page_size: PAGE_SIZE,
                 page: jasmine.createSpyObj('page', ['updatePreviewButton', 'renderAddXBlockComponents'])
             });
         });
 
+        afterEach(function() {
+            requests.restore();
+        });
+
         describe('Container', function() {
             describe('rendering', function() {
                 it('should set show_previews', function() {
-                    var requests = AjaxHelpers.requests(this);
                     expect(pagingContainer.collection.showChildrenPreviews).toBe(true); // precondition check
 
                     pagingContainer.setPage(0);
@@ -97,7 +106,6 @@ function($, _, AjaxHelpers, URI, XBlockInfo, PagedContainer, PagingHeader, Pagin
 
             describe('setPage', function() {
                 it('can set the current page', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingContainer.setPage(0);
                     respondWithMockPage(requests);
                     expect(pagingContainer.collection.currentPage).toBe(0);
@@ -107,7 +115,6 @@ function($, _, AjaxHelpers, URI, XBlockInfo, PagedContainer, PagingHeader, Pagin
                 });
 
                 it('should not change page after a server error', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingContainer.setPage(0);
                     respondWithMockPage(requests);
                     pagingContainer.setPage(1);
@@ -118,7 +125,6 @@ function($, _, AjaxHelpers, URI, XBlockInfo, PagedContainer, PagingHeader, Pagin
 
             describe('nextPage', function() {
                 it('does not move forward after a server error', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingContainer.setPage(0);
                     respondWithMockPage(requests);
                     pagingContainer.nextPage();
@@ -127,7 +133,6 @@ function($, _, AjaxHelpers, URI, XBlockInfo, PagedContainer, PagingHeader, Pagin
                 });
 
                 it('can move to the next page', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingContainer.setPage(0);
                     respondWithMockPage(requests);
                     pagingContainer.nextPage();
@@ -136,7 +141,6 @@ function($, _, AjaxHelpers, URI, XBlockInfo, PagedContainer, PagingHeader, Pagin
                 });
 
                 it('can not move forward from the final page', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingContainer.setPage(1);
                     respondWithMockPage(requests);
                     pagingContainer.nextPage();
@@ -146,7 +150,6 @@ function($, _, AjaxHelpers, URI, XBlockInfo, PagedContainer, PagingHeader, Pagin
 
             describe('previousPage', function() {
                 it('can move back a page', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingContainer.setPage(1);
                     respondWithMockPage(requests);
                     pagingContainer.previousPage();
@@ -155,7 +158,6 @@ function($, _, AjaxHelpers, URI, XBlockInfo, PagedContainer, PagingHeader, Pagin
                 });
 
                 it('can not move back from the first page', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingContainer.setPage(0);
                     respondWithMockPage(requests);
                     pagingContainer.previousPage();
@@ -163,7 +165,6 @@ function($, _, AjaxHelpers, URI, XBlockInfo, PagedContainer, PagingHeader, Pagin
                 });
 
                 it('does not move back after a server error', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingContainer.setPage(1);
                     respondWithMockPage(requests);
                     pagingContainer.previousPage();
@@ -177,19 +178,18 @@ function($, _, AjaxHelpers, URI, XBlockInfo, PagedContainer, PagingHeader, Pagin
             describe('Next page button', function() {
                 beforeEach(function() {
                     pagingContainer.render();
+                    respondWithMockPage(requests);
                 });
 
                 it('does not move forward if a server error occurs', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingContainer.setPage(0);
                     respondWithMockPage(requests);
                     pagingContainer.pagingHeader.$('.next-page-link').click();
-                    requests[1].respond(500);
+                    requests[2].respond(500);
                     expect(pagingContainer.collection.currentPage).toBe(0);
                 });
 
                 it('can move to the next page', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingContainer.setPage(0);
                     respondWithMockPage(requests);
                     pagingContainer.pagingHeader.$('.next-page-link').click();
@@ -198,21 +198,18 @@ function($, _, AjaxHelpers, URI, XBlockInfo, PagedContainer, PagingHeader, Pagin
                 });
 
                 it('should be enabled when there is at least one more page', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingContainer.setPage(0);
                     respondWithMockPage(requests);
                     expect(pagingContainer.pagingHeader.$('.next-page-link')).not.toHaveClass('is-disabled');
                 });
 
                 it('should be disabled on the final page', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingContainer.setPage(1);
                     respondWithMockPage(requests);
                     expect(pagingContainer.pagingHeader.$('.next-page-link')).toHaveClass('is-disabled');
                 });
 
                 it('should be disabled on an empty page', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingContainer.setPage(0);
                     AjaxHelpers.respondWithJson(requests, mockEmptyPage);
                     expect(pagingContainer.pagingHeader.$('.next-page-link')).toHaveClass('is-disabled');
@@ -222,19 +219,18 @@ function($, _, AjaxHelpers, URI, XBlockInfo, PagedContainer, PagingHeader, Pagin
             describe('Previous page button', function() {
                 beforeEach(function() {
                     pagingContainer.render();
+                    respondWithMockPage(requests);
                 });
 
                 it('does not move back if a server error occurs', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingContainer.setPage(1);
                     respondWithMockPage(requests);
                     pagingContainer.pagingHeader.$('.previous-page-link').click();
-                    requests[1].respond(500);
+                    requests[2].respond(500);
                     expect(pagingContainer.collection.currentPage).toBe(1);
                 });
 
                 it('can go back a page', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingContainer.setPage(1);
                     respondWithMockPage(requests);
                     pagingContainer.pagingHeader.$('.previous-page-link').click();
@@ -243,21 +239,18 @@ function($, _, AjaxHelpers, URI, XBlockInfo, PagedContainer, PagingHeader, Pagin
                 });
 
                 it('should be disabled on the first page', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingContainer.setPage(0);
                     respondWithMockPage(requests);
                     expect(pagingContainer.pagingHeader.$('.previous-page-link')).toHaveClass('is-disabled');
                 });
 
                 it('should be enabled on the second page', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingContainer.setPage(1);
                     respondWithMockPage(requests);
                     expect(pagingContainer.pagingHeader.$('.previous-page-link')).not.toHaveClass('is-disabled');
                 });
 
                 it('should be disabled for an empty page', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingContainer.setPage(0);
                     AjaxHelpers.respondWithJson(requests, mockEmptyPage);
                     expect(pagingContainer.pagingHeader.$('.previous-page-link')).toHaveClass('is-disabled');
@@ -266,8 +259,7 @@ function($, _, AjaxHelpers, URI, XBlockInfo, PagedContainer, PagingHeader, Pagin
 
             describe('Page metadata section', function() {
                 it('shows the correct metadata for the current page', function() {
-                    var requests = AjaxHelpers.requests(this),
-                        message;
+                    var message;
                     pagingContainer.setPage(0);
                     respondWithMockPage(requests);
                     message = pagingContainer.pagingHeader.$('.meta').html().trim();
@@ -279,21 +271,18 @@ function($, _, AjaxHelpers, URI, XBlockInfo, PagedContainer, PagingHeader, Pagin
 
             describe('Children count label', function() {
                 it('should show correct count on first page', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingContainer.setPage(0);
                     respondWithMockPage(requests);
                     expect(pagingContainer.pagingHeader.$('.count-current-shown')).toHaveHtml('1-3');
                 });
 
                 it('should show correct count on second page', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingContainer.setPage(1);
                     respondWithMockPage(requests);
                     expect(pagingContainer.pagingHeader.$('.count-current-shown')).toHaveHtml('4-4');
                 });
 
                 it('should show correct count for an empty collection', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingContainer.setPage(0);
                     AjaxHelpers.respondWithJson(requests, mockEmptyPage);
                     expect(pagingContainer.pagingHeader.$('.count-current-shown')).toHaveHtml('0-0');
@@ -302,21 +291,18 @@ function($, _, AjaxHelpers, URI, XBlockInfo, PagedContainer, PagingHeader, Pagin
 
             describe('Children total label', function() {
                 it('should show correct total on the first page', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingContainer.setPage(0);
                     respondWithMockPage(requests);
                     expect(pagingContainer.pagingHeader.$('.count-total')).toHaveText('4 total');
                 });
 
                 it('should show correct total on the second page', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingContainer.setPage(1);
                     respondWithMockPage(requests);
                     expect(pagingContainer.pagingHeader.$('.count-total')).toHaveText('4 total');
                 });
 
                 it('should show zero total for an empty collection', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingContainer.setPage(0);
                     AjaxHelpers.respondWithJson(requests, mockEmptyPage);
                     expect(pagingContainer.pagingHeader.$('.count-total')).toHaveText('0 total');
@@ -329,19 +315,18 @@ function($, _, AjaxHelpers, URI, XBlockInfo, PagedContainer, PagingHeader, Pagin
                 beforeEach(function() {
                     // Render the page and header so that they can react to events
                     pagingContainer.render();
+                    respondWithMockPage(requests);
                 });
 
                 it('does not move forward if a server error occurs', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingContainer.setPage(0);
                     respondWithMockPage(requests);
                     pagingContainer.pagingFooter.$('.next-page-link').click();
-                    requests[1].respond(500);
+                    requests[2].respond(500);
                     expect(pagingContainer.collection.currentPage).toBe(0);
                 });
 
                 it('can move to the next page', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingContainer.setPage(0);
                     respondWithMockPage(requests);
                     pagingContainer.pagingFooter.$('.next-page-link').click();
@@ -350,21 +335,18 @@ function($, _, AjaxHelpers, URI, XBlockInfo, PagedContainer, PagingHeader, Pagin
                 });
 
                 it('should be enabled when there is at least one more page', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingContainer.setPage(0);
                     respondWithMockPage(requests);
                     expect(pagingContainer.pagingFooter.$('.next-page-link')).not.toHaveClass('is-disabled');
                 });
 
                 it('should be disabled on the final page', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingContainer.setPage(1);
                     respondWithMockPage(requests);
                     expect(pagingContainer.pagingFooter.$('.next-page-link')).toHaveClass('is-disabled');
                 });
 
                 it('should be disabled on an empty page', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingContainer.setPage(0);
                     AjaxHelpers.respondWithJson(requests, mockEmptyPage);
                     expect(pagingContainer.pagingFooter.$('.next-page-link')).toHaveClass('is-disabled');
@@ -375,19 +357,18 @@ function($, _, AjaxHelpers, URI, XBlockInfo, PagedContainer, PagingHeader, Pagin
                 beforeEach(function() {
                     // Render the page and header so that they can react to events
                     pagingContainer.render();
+                    respondWithMockPage(requests);
                 });
 
                 it('does not move back if a server error occurs', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingContainer.setPage(1);
                     respondWithMockPage(requests);
                     pagingContainer.pagingFooter.$('.previous-page-link').click();
-                    requests[1].respond(500);
+                    requests[2].respond(500);
                     expect(pagingContainer.collection.currentPage).toBe(1);
                 });
 
                 it('can go back a page', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingContainer.setPage(1);
                     respondWithMockPage(requests);
                     pagingContainer.pagingFooter.$('.previous-page-link').click();
@@ -396,21 +377,18 @@ function($, _, AjaxHelpers, URI, XBlockInfo, PagedContainer, PagingHeader, Pagin
                 });
 
                 it('should be disabled on the first page', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingContainer.setPage(0);
                     respondWithMockPage(requests);
                     expect(pagingContainer.pagingFooter.$('.previous-page-link')).toHaveClass('is-disabled');
                 });
 
                 it('should be enabled on the second page', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingContainer.setPage(1);
                     respondWithMockPage(requests);
                     expect(pagingContainer.pagingFooter.$('.previous-page-link')).not.toHaveClass('is-disabled');
                 });
 
                 it('should be disabled for an empty page', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingContainer.setPage(0);
                     AjaxHelpers.respondWithJson(requests, mockEmptyPage);
                     expect(pagingContainer.pagingFooter.$('.previous-page-link')).toHaveClass('is-disabled');
@@ -419,21 +397,18 @@ function($, _, AjaxHelpers, URI, XBlockInfo, PagedContainer, PagingHeader, Pagin
 
             describe('Current page label', function() {
                 it('should show 1 on the first page', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingContainer.setPage(0);
                     respondWithMockPage(requests);
                     expect(pagingContainer.pagingFooter.$('.current-page')).toHaveText('1');
                 });
 
                 it('should show 2 on the second page', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingContainer.setPage(1);
                     respondWithMockPage(requests);
                     expect(pagingContainer.pagingFooter.$('.current-page')).toHaveText('2');
                 });
 
                 it('should show 1 for an empty collection', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingContainer.setPage(0);
                     AjaxHelpers.respondWithJson(requests, mockEmptyPage);
                     expect(pagingContainer.pagingFooter.$('.current-page')).toHaveText('1');
@@ -442,14 +417,12 @@ function($, _, AjaxHelpers, URI, XBlockInfo, PagedContainer, PagingHeader, Pagin
 
             describe('Page total label', function() {
                 it('should show the correct value with more than one page', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingContainer.setPage(0);
                     respondWithMockPage(requests);
                     expect(pagingContainer.pagingFooter.$('.total-pages')).toHaveText('2');
                 });
 
                 it('should show page 1 when there are no assets', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingContainer.setPage(0);
                     AjaxHelpers.respondWithJson(requests, mockEmptyPage);
                     expect(pagingContainer.pagingFooter.$('.total-pages')).toHaveText('1');
@@ -460,14 +433,12 @@ function($, _, AjaxHelpers, URI, XBlockInfo, PagedContainer, PagingHeader, Pagin
                 var input;
 
                 it('should initially have a blank page input', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingContainer.setPage(0);
                     respondWithMockPage(requests);
                     expect(pagingContainer.pagingFooter.$('.page-number-input')).toHaveValue('');
                 });
 
                 it('should handle invalid page requests', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingContainer.setPage(0);
                     respondWithMockPage(requests);
                     pagingContainer.pagingFooter.$('.page-number-input').val('abc');
@@ -477,7 +448,6 @@ function($, _, AjaxHelpers, URI, XBlockInfo, PagedContainer, PagingHeader, Pagin
                 });
 
                 it('should switch pages via the input field', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingContainer.setPage(0);
                     respondWithMockPage(requests);
                     pagingContainer.pagingFooter.$('.page-number-input').val('2');
@@ -488,7 +458,6 @@ function($, _, AjaxHelpers, URI, XBlockInfo, PagedContainer, PagingHeader, Pagin
                 });
 
                 it('should handle AJAX failures when switching pages via the input field', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingContainer.setPage(0);
                     respondWithMockPage(requests);
                     pagingContainer.pagingFooter.$('.page-number-input').val('2');
@@ -507,7 +476,6 @@ function($, _, AjaxHelpers, URI, XBlockInfo, PagedContainer, PagingHeader, Pagin
 
                 testSendsAjax = function(show_previews) {
                     it('should send ' + (!show_previews) + ' when showChildrenPreviews was ' + show_previews, function() {
-                        var requests = AjaxHelpers.requests(this);
                         pagingContainer.collection.showChildrenPreviews = show_previews;
                         pagingContainer.togglePreviews();
                         AjaxHelpers.expectJsonRequest(requests, 'POST', defaultUrl, {showChildrenPreviews: !show_previews});
@@ -519,7 +487,6 @@ function($, _, AjaxHelpers, URI, XBlockInfo, PagedContainer, PagingHeader, Pagin
 
                 it('should trigger render on success', function() {
                     spyOn(pagingContainer, 'render');
-                    var requests = AjaxHelpers.requests(this);
 
                     pagingContainer.togglePreviews();
                     AjaxHelpers.respondWithJson(requests, {showChildrenPreviews: true});
@@ -529,7 +496,6 @@ function($, _, AjaxHelpers, URI, XBlockInfo, PagedContainer, PagingHeader, Pagin
 
                 it('should not trigger render on failure', function() {
                     spyOn(pagingContainer, 'render');
-                    var requests = AjaxHelpers.requests(this);
 
                     pagingContainer.togglePreviews();
                     AjaxHelpers.respondWithError(requests);
@@ -538,7 +504,6 @@ function($, _, AjaxHelpers, URI, XBlockInfo, PagedContainer, PagingHeader, Pagin
                 });
 
                 it('should send force_render when new block causes page change', function() {
-                    var requests = AjaxHelpers.requests(this);
                     pagingContainer.setPage(0);
                     respondWithMockPage(requests);
                     spyOn(pagingContainer, 'render');

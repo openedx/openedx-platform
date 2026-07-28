@@ -3,9 +3,9 @@ Tests for courseware API
 """
 
 from datetime import datetime, timedelta
-from urllib.parse import urlencode
 from typing import Optional
 from unittest import mock
+from urllib.parse import urlencode
 
 import ddt
 from completion.test_utils import CompletionWaffleTestMixin, submit_completions_for_testing
@@ -13,39 +13,37 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.test import override_settings
 from django.test.client import RequestFactory
-
 from edx_django_utils.cache import TieredCache
 from edx_toggles.toggles.testutils import override_waffle_flag, override_waffle_switch
-from xmodule.data import CertificatesDisplayBehaviors
-from xmodule.modulestore.django import modulestore
-from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
-from xmodule.modulestore.tests.factories import BlockFactory, ToyCourseFactory
-from xmodule.partitions.partitions import ENROLLMENT_TRACK_PARTITION_ID
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.course_modes.tests.factories import CourseModeFactory
+from common.djangoapps.student.models import CourseEnrollment, CourseEnrollmentCelebration
+from common.djangoapps.student.roles import CourseInstructorRole
+from common.djangoapps.student.tests.factories import CourseEnrollmentCelebrationFactory, UserFactory
 from lms.djangoapps.certificates.api import get_certificate_url
 from lms.djangoapps.certificates.tests.factories import (
-    GeneratedCertificateFactory, LinkedInAddToProfileConfigurationFactory
+    GeneratedCertificateFactory,
+    LinkedInAddToProfileConfigurationFactory,
 )
 from lms.djangoapps.courseware.access_utils import ACCESS_DENIED, ACCESS_GRANTED
 from lms.djangoapps.courseware.models import LastSeenCoursewareTimezone
 from lms.djangoapps.courseware.tabs import ExternalLinkCourseTab
 from lms.djangoapps.courseware.tests.helpers import MasqueradeMixin
 from lms.djangoapps.courseware.toggles import (
+    COURSEWARE_MFE_MILESTONES_STREAK_DISCOUNT,
     COURSEWARE_MICROFRONTEND_PROGRESS_MILESTONES,
     COURSEWARE_MICROFRONTEND_PROGRESS_MILESTONES_STREAK_CELEBRATION,
 )
-from lms.djangoapps.courseware.toggles import COURSEWARE_MFE_MILESTONES_STREAK_DISCOUNT
 from lms.djangoapps.verify_student.services import IDVerificationService
-from common.djangoapps.student.models import (
-    CourseEnrollment, CourseEnrollmentCelebration
-)
-from common.djangoapps.student.roles import CourseInstructorRole
-from common.djangoapps.student.tests.factories import CourseEnrollmentCelebrationFactory, UserFactory
 from openedx.core.djangoapps.agreements.api import create_integrity_signature
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 from openedx.features.course_experience.waffle import ENABLE_COURSE_ABOUT_SIDEBAR_HTML
+from xmodule.data import CertificatesDisplayBehaviors
+from xmodule.modulestore.django import modulestore
+from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
+from xmodule.modulestore.tests.factories import BlockFactory, ToyCourseFactory
+from xmodule.partitions.partitions import ENROLLMENT_TRACK_PARTITION_ID
 
 User = get_user_model()
 
@@ -130,7 +128,7 @@ class CourseApiTestViews(BaseCoursewareTests, MasqueradeMixin):
         (True, 'verified'),
     )
     @ddt.unpack
-    @mock.patch.dict('django.conf.settings.FEATURES', {'CERTIFICATES_HTML_VIEW': True})
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_enrolled_course_metadata(self, logged_in, enrollment_mode):
         check_public_access = mock.Mock()
         check_public_access.return_value = ACCESS_DENIED
@@ -183,7 +181,7 @@ class CourseApiTestViews(BaseCoursewareTests, MasqueradeMixin):
                 request = RequestFactory().request()
                 cert_url = get_certificate_url(course_id=self.course.id, uuid=cert.verify_uuid)
                 linkedin_url_params = {
-                    'name': '{platform_name} Verified Certificate for {course_name}'.format(
+                    'name': '{platform_name} Verified Certificate for {course_name}'.format(  # noqa: UP032
                         platform_name=settings.PLATFORM_NAME, course_name=self.course.display_name,
                     ),
                     'certUrl': request.build_absolute_uri(cert_url),
@@ -194,7 +192,7 @@ class CourseApiTestViews(BaseCoursewareTests, MasqueradeMixin):
                     'issueMonth': cert.created_date.month,
                 }
                 expected_linkedin_url = (
-                    'https://www.linkedin.com/profile/add?startTask=CERTIFICATION_NAME&{params}'.format(
+                    'https://www.linkedin.com/profile/add?startTask=CERTIFICATION_NAME&{params}'.format(  # noqa: UP032
                         params=urlencode(linkedin_url_params)
                     )
                 )
@@ -206,7 +204,7 @@ class CourseApiTestViews(BaseCoursewareTests, MasqueradeMixin):
         (False, ACCESS_GRANTED),
     )
     @ddt.unpack
-    @mock.patch.dict('django.conf.settings.FEATURES', {'CERTIFICATES_HTML_VIEW': True})
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_unenrolled_course_metadata(self, logged_in, enable_anonymous):
         check_public_access = mock.Mock()
         check_public_access.return_value = enable_anonymous
@@ -281,7 +279,7 @@ class CourseApiTestViews(BaseCoursewareTests, MasqueradeMixin):
             mfe_is_visible: bool,
             username: str,
             enroll_user: bool,
-            masquerade_role: Optional[str],
+            masquerade_role: Optional[str],  # noqa: UP045
     ):
         """
         Test that course_access is calculated correctly based on
@@ -332,7 +330,7 @@ class CourseApiTestViews(BaseCoursewareTests, MasqueradeMixin):
         ('audit', True, False, False),
     )
     @ddt.unpack
-    @mock.patch.dict(settings.FEATURES, {'ENABLE_INTEGRITY_SIGNATURE': True})
+    @override_settings(ENABLE_INTEGRITY_SIGNATURE=True)
     def test_user_needs_integrity_signature(
         self, enrollment_mode, is_staff, has_integrity_signature, needs_integrity_signature,
     ):
@@ -368,7 +366,7 @@ class CourseApiTestViews(BaseCoursewareTests, MasqueradeMixin):
         (3, True),
     )
     @ddt.unpack
-    @mock.patch.dict(settings.FEATURES, {'ENABLE_INTEGRITY_SIGNATURE': True})
+    @override_settings(ENABLE_INTEGRITY_SIGNATURE=True)
     def test_course_staff_masquerade(self, masquerade_group_id, needs_signature):
         self.user.is_staff = True
         self.user.save()
@@ -398,7 +396,7 @@ class CourseApiTestViews(BaseCoursewareTests, MasqueradeMixin):
         ('credit', True),
     )
     @ddt.unpack
-    @mock.patch.dict('django.conf.settings.FEATURES', {'DISABLE_HONOR_CERTIFICATES': True})
+    @override_settings(DISABLE_HONOR_CERTIFICATES=True)
     def test_can_access_proctored_exams(self, mode, result):
         CourseEnrollment.enroll(self.user, self.course.id, mode)
         response = self.client.get(self.url)
@@ -413,7 +411,7 @@ class CourseApiTestViews(BaseCoursewareTests, MasqueradeMixin):
         (3, True),
     )
     @ddt.unpack
-    @mock.patch.dict('django.conf.settings.FEATURES', {'DISABLE_HONOR_CERTIFICATES': True})
+    @override_settings(DISABLE_HONOR_CERTIFICATES=True)
     def test_can_access_proctored_exams_masquerading(self, masquerade_group_id, result):
         self.user.is_staff = True
         self.user.save()
@@ -439,7 +437,7 @@ class CourseApiTestViews(BaseCoursewareTests, MasqueradeMixin):
             response = self.client.get(self.url)
 
         learning_assistant_enabled = response.json()['learning_assistant_enabled']
-        self.assertEqual(learning_assistant_enabled, setting_enabled)
+        self.assertEqual(learning_assistant_enabled, setting_enabled)  # noqa: PT009
 
 
 @ddt.ddt

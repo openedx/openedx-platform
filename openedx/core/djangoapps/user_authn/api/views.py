@@ -3,13 +3,12 @@ Authn API Views
 """
 
 from django.conf import settings
-
+from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
 from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
-from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
 
 from common.djangoapps.student.helpers import get_next_url_for_login_page
 from common.djangoapps.student.views import compose_and_send_activation_email
@@ -48,7 +47,7 @@ class MFEContextView(APIView):
 
         return optional_fields_context
 
-    def get(self, request, **kwargs):  # lint-amnesty, pylint: disable=unused-argument
+    def get(self, request, **kwargs):  # pylint: disable=unused-argument
         """
         Returns
         - dynamic registration fields
@@ -122,7 +121,7 @@ class SendAccountActivationEmail(APIView):
     authentication_classes = (SessionAuthenticationAllowInactiveUser,)
     permission_classes = (IsAuthenticated,)
 
-    def post(self, request, **kwargs):  # lint-amnesty, pylint: disable=unused-argument
+    def post(self, request, **kwargs):  # pylint: disable=unused-argument
         """
         Returns status code.
         Arguments:

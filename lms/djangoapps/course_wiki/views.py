@@ -14,10 +14,10 @@ from wiki.core.exceptions import NoRootURL
 from wiki.models import Article, URLPath
 
 from lms.djangoapps.course_wiki.utils import course_wiki_slug
+from lms.djangoapps.courseware.decorators import courseware_view_hooks
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.core.djangolib.markup import Text
 from openedx.core.lib.courses import get_course_by_id
-from openedx.features.enterprise_support.api import data_sharing_consent_required
 
 log = logging.getLogger(__name__)
 
@@ -31,7 +31,7 @@ def root_create(request):
     return redirect('wiki:get', path=root.path)
 
 
-@data_sharing_consent_required
+@courseware_view_hooks
 def course_wiki_redirect(request, course_id, wiki_path=""):
     """
     This redirects to whatever page on the wiki that the course designates
@@ -46,7 +46,7 @@ def course_wiki_redirect(request, course_id, wiki_path=""):
         log.exception("This course is improperly configured. The slug cannot be empty.")
         valid_slug = False
     if re.match(r'^[-\w\.]+$', course_slug) is None:
-        log.exception("This course is improperly configured. The slug can only contain letters, numbers, periods or hyphens.")  # lint-amnesty, pylint: disable=line-too-long
+        log.exception("This course is improperly configured. The slug can only contain letters, numbers, periods or hyphens.")  # pylint: disable=line-too-long
         valid_slug = False
 
     if not valid_slug:

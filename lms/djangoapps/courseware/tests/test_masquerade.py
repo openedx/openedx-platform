@@ -6,17 +6,20 @@ import json
 import pickle
 from datetime import datetime
 from importlib import import_module
+from operator import itemgetter  # pylint: disable=wrong-import-order
 from unittest.mock import patch
-import pytest
+
 import ddt
-from operator import itemgetter  # lint-amnesty, pylint: disable=wrong-import-order
+import pytest
 from django.conf import settings
-from django.test import TestCase, RequestFactory
+from django.test import RequestFactory, TestCase, override_settings
 from django.urls import reverse
 from pytz import UTC
 from xblock.runtime import DictKeyValueStore
+from xblocks_contrib.problem.capa.tests.response_xml_factory import OptionResponseXMLFactory
 
-from xmodule.capa.tests.response_xml_factory import OptionResponseXMLFactory
+from common.djangoapps.student.models import CourseEnrollment
+from common.djangoapps.student.tests.factories import StaffFactory, UserFactory
 from lms.djangoapps.courseware.masquerade import (
     MASQUERADE_SETTINGS_KEY,
     CourseMasquerade,
@@ -24,20 +27,19 @@ from lms.djangoapps.courseware.masquerade import (
     get_masquerading_user_group,
     setup_masquerade,
 )
-
-from lms.djangoapps.courseware.tests.helpers import (
-    LoginEnrollmentTestCase, MasqueradeMixin, masquerade_as_group_member
-)
+from lms.djangoapps.courseware.tests.helpers import LoginEnrollmentTestCase, MasqueradeMixin, masquerade_as_group_member
 from lms.djangoapps.courseware.tests.test_submitting_problems import ProblemSubmissionTestMixin
 from openedx.core.djangoapps.lang_pref import LANGUAGE_KEY
 from openedx.core.djangoapps.user_api.preferences.api import get_user_preference, set_user_preference
-from common.djangoapps.student.models import CourseEnrollment
-from common.djangoapps.student.tests.factories import StaffFactory
-from common.djangoapps.student.tests.factories import UserFactory
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.partitions.partitions import Group, UserPartition  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    SharedModuleStoreTestCase,  # pylint: disable=wrong-import-order
+)
+from xmodule.modulestore.tests.factories import (  # pylint: disable=wrong-import-order
+    BlockFactory,
+    CourseFactory,
+)
+from xmodule.partitions.partitions import Group, UserPartition  # pylint: disable=wrong-import-order
 
 
 class MasqueradeTestCase(SharedModuleStoreTestCase, LoginEnrollmentTestCase, MasqueradeMixin):
@@ -193,7 +195,7 @@ class TestMasqueradeLearnerOptions(StaffMasqueradeTestCase):
     """
 
     @ddt.data(True, False)
-    @patch.dict('django.conf.settings.FEATURES', {'ENABLE_MASQUERADE': True})
+    @override_settings(ENABLE_MASQUERADE=True)
     def test_masquerade_options_for_learner(self, partitions_enabled):
         """
         If there are partitions, then the View as Learner should NOT be available
@@ -232,7 +234,7 @@ class TestMasqueradeOptionsNoContentGroups(StaffMasqueradeTestCase):
 
     @ddt.data(['Cohort Group 1', True], ['Content Group 1', False])
     @ddt.unpack
-    @patch.dict('django.conf.settings.FEATURES', {'ENABLE_MASQUERADE': True})
+    @override_settings(ENABLE_MASQUERADE=True)
     def testMasqueradeCohortAvailable(self, target, expected):
         """
         Args:
@@ -432,13 +434,13 @@ class ReadOnlyKeyValueStore(DictKeyValueStore):
     """
 
     def set(self, key, value):
-        assert False, "ReadOnlyKeyValueStore may not be modified."
+        assert False, "ReadOnlyKeyValueStore may not be modified."  # noqa: B011, PT015
 
     def delete(self, key):
-        assert False, "ReadOnlyKeyValueStore may not be modified."
+        assert False, "ReadOnlyKeyValueStore may not be modified."  # noqa: B011, PT015
 
-    def set_many(self, update_dict):  # lint-amnesty, pylint: disable=arguments-differ, unused-argument
-        assert False, "ReadOnlyKeyValueStore may not be modified."
+    def set_many(self, update_dict):  # pylint: disable=arguments-differ, unused-argument
+        assert False, "ReadOnlyKeyValueStore may not be modified."  # noqa: B011, PT015
 
 
 class FakeSession(dict):

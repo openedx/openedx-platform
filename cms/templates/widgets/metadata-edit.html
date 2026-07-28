@@ -36,4 +36,32 @@
     <%include file="source-edit.html" />
 % endif
 
+## It is used to display a warning if a block (i.e. a LibraryContentBlock) uses the deprecated
+## legacy libraries feature.
+% if show_deprecated_warning:
+    <div class="wrapper wrapper-alert wrapper-alert-warning is-shown" role="alert">
+      <div class="alert announcement">
+        <span class="feedback-symbol fa fa-warning" aria-hidden="true"></span>
+        <span class="sr">${_("Warning")}</span>
+        <div class="copy">
+          <h2 class="title deprecated-title title-3 warning-heading-text">
+            ${_("You are creating content in a deprecated format.")}
+          </h2>
+          <p>
+            ${_(
+              "Legacy libraries will be unsupported in Willow. Any content you create in a"
+              " legacy library will soon need to be migrated. Consider using the "
+            )}
+            % if libraries_list_url:
+                <a href="${library_url}" target="_blank">${_("Libraries feature")}</a>
+            % else:
+                ${_("Libraries feature")}
+            % endif
+            ${_(" instead.")}
+          </p>
+        </div>
+      </div>
+    </div>
+% endif
+
 <div class="wrapper-comp-settings metadata_edit" id="settings-tab" data-metadata='${json.dumps(metadata_field_copy, cls=EdxJSONEncoder) | h}'></div>

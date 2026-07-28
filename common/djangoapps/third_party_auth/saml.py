@@ -8,15 +8,15 @@ from copy import deepcopy
 import requests
 from django.contrib.sites.models import Site
 from django.http import Http404
-from django.utils.functional import cached_property
 from django.utils.datastructures import MultiValueDictKeyError
+from django.utils.functional import cached_property
 from django_countries import countries
 from onelogin.saml2.settings import OneLogin_Saml2_Settings
 from social_core.backends.saml import OID_EDU_PERSON_ENTITLEMENT, SAMLAuth, SAMLIdentityProvider
-from social_core.exceptions import AuthForbidden, AuthMissingParameter, AuthInvalidParameter
+from social_core.exceptions import AuthForbidden, AuthInvalidParameter, AuthMissingParameter
 
-from openedx.core.djangoapps.theming.helpers import get_current_request
 from common.djangoapps.third_party_auth.exceptions import IncorrectConfigurationException
+from openedx.core.djangoapps.theming.helpers import get_current_request
 
 STANDARD_SAML_PROVIDER_KEY = 'standard_saml_provider'
 SAP_SUCCESSFACTORS_SAML_KEY = 'sap_success_factors'
@@ -141,11 +141,22 @@ class SAMLAuthBackend(SAMLAuth):  # pylint: disable=abstract-method
 
     def disconnect(self, *args, **kwargs):
         """
-        Override of SAMLAuth.disconnect to unlink the learner from enterprise customer if associated.
+        Override of SAMLAuth.disconnect to emit a signal when a user disconnects their SAML account.
         """
-        from openedx.features.enterprise_support.api import unlink_enterprise_user_from_idp
-        user = kwargs.get('user', None)
-        unlink_enterprise_user_from_idp(self.strategy.request, user, self.name)
+        from common.djangoapps.third_party_auth.signals import SAMLAccountDisconnected
+        # Emit the signal before super().disconnect() so that handlers (e.g. enterprise
+        # user unlinking) run while the social auth record still exists.
+        user = kwargs['user']  # Upstream social_core always passes a non-None user.
+        log.info(
+            '[THIRD_PARTY_AUTH] Emitting SAMLAccountDisconnected signal for user_id=%s, backend=%s',
+            user.id, self.name,
+        )
+        SAMLAccountDisconnected.send(
+            sender=self.__class__,
+            request=self.strategy.request,
+            user=user,
+            saml_backend=self,
+        )
         return super().disconnect(*args, **kwargs)
 
     def _check_entitlements(self, idp, attributes):
@@ -160,7 +171,7 @@ class SAMLAuthBackend(SAMLAuth):  # pylint: disable=abstract-method
             for expected in idp.conf['requiredEntitlements']:
                 if expected not in entitlements:
                     log.warning(
-                        '[THIRD_PARTY_AUTH] SAML user rejected due to missing eduPersonEntitlement. '
+                        '[THIRD_PARTY_AUTH] SAML user rejected due to missing eduPersonEntitlement. '  # noqa: UP032
                         'Provider: {provider}, Entitlement: {entitlement}'.format(
                             provider=idp.name,
                             entitlement=expected)
@@ -413,14 +424,14 @@ class SapSuccessFactorsIdentityProvider(EdXSAMLIdentityProvider):
         if not all(var in self.conf for var in self.required_variables):
             missing = [var for var in self.required_variables if var not in self.conf]
             log.warning(
-                '[THIRD_PARTY_AUTH] To retrieve rich user data for a SAP SuccessFactors identity provider, '
+                '[THIRD_PARTY_AUTH] To retrieve rich user data for a SAP SuccessFactors identity provider, '  # noqa: UP032  # pylint: disable=line-too-long
                 'the following keys in other_settings are required, but were missing. MissingKeys: {keys}'.format(
                     keys=missing
                 )
             )
             return missing
 
-    def log_bizx_api_exception(self, transaction_data, err):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def log_bizx_api_exception(self, transaction_data, err):  # pylint: disable=missing-function-docstring
         try:
             sys_msg = err.response.content
         except AttributeError:
@@ -514,7 +525,7 @@ class SapSuccessFactorsIdentityProvider(EdXSAMLIdentityProvider):
             return None
         return token_response.json()
 
-    def get_bizx_odata_api_client(self, user_id):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def get_bizx_odata_api_client(self, user_id):  # pylint: disable=missing-function-docstring
         session = requests.Session()
         access_token_data = self.generate_bizx_oauth_api_access_token(user_id)
         if not access_token_data:
@@ -537,7 +548,7 @@ class SapSuccessFactorsIdentityProvider(EdXSAMLIdentityProvider):
         # endpoint_url is constructed from field_mappings setting of SAML Provider config.
         # We convert field_mappings to make comma separated list of the fields which needs to be pulled from BizX
         fields = ','.join(self.field_mappings)
-        endpoint_url = '{root_url}User(userId=\'{user_id}\')?$select={fields}'.format(
+        endpoint_url = '{root_url}User(userId=\'{user_id}\')?$select={fields}'.format(  # noqa: UP032
             root_url=self.odata_api_root_url,
             user_id=user_id,
             fields=fields,
@@ -590,7 +601,7 @@ def get_saml_idp_class(idp_identifier_string):
     }
     if idp_identifier_string not in choices:
         log.error(
-            '[THIRD_PARTY_AUTH] Invalid EdXSAMLIdentityProvider subclass--'
+            '[THIRD_PARTY_AUTH] Invalid EdXSAMLIdentityProvider subclass--'  # noqa: UP032
             'using EdXSAMLIdentityProvider base class. Provider: {provider}'.format(provider=idp_identifier_string)
         )
     return choices.get(idp_identifier_string, EdXSAMLIdentityProvider)

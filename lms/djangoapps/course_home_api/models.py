@@ -22,6 +22,6 @@ class DisableProgressPageStackedConfig(StackedConfigurationModel):
     disabled = models.BooleanField(default=None, verbose_name=_("Disabled"), null=True)
 
     def __str__(self):
-        return "DisableProgressPageStackedConfig(disabled={!r})".format(
+        return "DisableProgressPageStackedConfig(disabled={!r})".format(  # noqa: UP032
             self.disabled
         )

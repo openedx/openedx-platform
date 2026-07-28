@@ -9,7 +9,7 @@ from enterprise.models import LicensedEnterpriseCourseEnrollment
 from openedx.features.enterprise_support.serializers import EnterpriseCourseEnrollmentSerializer
 from openedx.features.enterprise_support.tests.factories import (
     EnterpriseCourseEnrollmentFactory,
-    EnterpriseCustomerUserFactory
+    EnterpriseCustomerUserFactory,
 )
 
 
@@ -19,7 +19,7 @@ class EnterpriseCourseEnrollmentSerializerTests(TestCase):
     """
 
     @classmethod
-    def setUpTestData(cls):  # lint-amnesty, pylint: disable=super-method-not-called
+    def setUpTestData(cls):  # pylint: disable=super-method-not-called
         enterprise_customer_user = EnterpriseCustomerUserFactory()
         enterprise_course_enrollment = EnterpriseCourseEnrollmentFactory(
             enterprise_customer_user=enterprise_customer_user
@@ -49,7 +49,7 @@ class EnterpriseCourseEnrollmentSerializerTests(TestCase):
                 'is_revoked': licensed_ece.is_revoked,
             }
         }
-        self.assertDictEqual(serializer.data, expected)
+        self.assertDictEqual(serializer.data, expected)  # noqa: PT009
 
     def test_data_without_license(self):
         """ Verify the correct fields are serialized when the enrollment is not licensed. """
@@ -63,4 +63,4 @@ class EnterpriseCourseEnrollmentSerializerTests(TestCase):
             'saved_for_later': self.enterprise_course_enrollment.saved_for_later,
             'license': None
         }
-        self.assertDictEqual(serializer.data, expected)
+        self.assertDictEqual(serializer.data, expected)  # noqa: PT009

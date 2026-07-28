@@ -9,29 +9,28 @@ from unittest import mock
 
 import pytest
 from django import test
-from django.conf import settings
+from django.conf import settings  # pylint: disable=reimported
+from django.conf import settings as django_settings  # pylint: disable=reimported
 from django.contrib import auth, messages
 from django.contrib.auth import models as auth_models
 from django.contrib.messages.storage import fallback
 from django.contrib.sessions.backends import cache
-from django.urls import reverse
 from django.test import utils as django_utils
-from django.conf import settings as django_settings  # lint-amnesty, pylint: disable=reimported
+from django.urls import reverse
 from social_core import actions, exceptions
 from social_django import utils as social_utils
 from social_django import views as social_views
 
+from common.djangoapps.student import models as student_models
+from common.djangoapps.student.tests.factories import UserFactory
+from common.djangoapps.third_party_auth import middleware, pipeline
+from common.djangoapps.third_party_auth.tests import testutil
 from lms.djangoapps.commerce.tests import TEST_API_URL
+from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
+from openedx.core.djangoapps.site_configuration.tests.factories import SiteFactory
 from openedx.core.djangoapps.user_authn.views.login import login_user
 from openedx.core.djangoapps.user_authn.views.login_form import login_and_registration_form
 from openedx.core.djangoapps.user_authn.views.register import RegistrationView
-from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
-from openedx.core.djangoapps.site_configuration.tests.factories import SiteFactory
-from common.djangoapps.student import models as student_models
-from common.djangoapps.student.tests.factories import UserFactory
-
-from common.djangoapps.third_party_auth import middleware, pipeline
-from common.djangoapps.third_party_auth.tests import testutil
 
 
 def create_account(request):
@@ -72,7 +71,7 @@ class HelperMixin:
 
     def assert_register_response_in_pipeline_looks_correct(
         self, response, pipeline_kwargs, required_fields
-    ):  # lint-amnesty, pylint: disable=invalid-name
+    ):  # pylint: disable=invalid-name
         """Performs spot checks of the rendered register.html page.
 
         When we display the new account registration form after the user signs
@@ -139,7 +138,7 @@ class HelperMixin:
 
     def assert_register_form_populates_unicode_username_correctly(
         self, request
-    ):  # lint-amnesty, pylint: disable=invalid-name
+    ):  # pylint: disable=invalid-name
         """
         Check the registration form username field behaviour with unicode values.
 
@@ -150,12 +149,12 @@ class HelperMixin:
         partial_unicode_username = unicode_username + ascii_substring
         pipeline_kwargs = pipeline.get(request)["kwargs"]
 
-        assert settings.FEATURES["ENABLE_UNICODE_USERNAME"] is False
+        assert settings.ENABLE_UNICODE_USERNAME is False
 
         self._check_registration_form_username(pipeline_kwargs, unicode_username, "")
         self._check_registration_form_username(pipeline_kwargs, partial_unicode_username, ascii_substring)
 
-        with mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_UNICODE_USERNAME": True}):
+        with django_utils.override_settings(ENABLE_UNICODE_USERNAME=True):
             self._check_registration_form_username(pipeline_kwargs, unicode_username, unicode_username)
 
     def assert_exception_redirect_looks_correct(self, expected_uri, auth_entry=None):
@@ -604,7 +603,7 @@ class IntegrationTest(testutil.TestCase, test.TestCase, HelperMixin):
         self.assert_exception_redirect_looks_correct("/")
 
     @mock.patch("common.djangoapps.third_party_auth.pipeline.segment.track")
-    def test_full_pipeline_succeeds_for_linking_account(self, _mock_segment_track):
+    def test_full_pipeline_succeeds_for_linking_account(self, _mock_segment_track):  # noqa: PT019
         # First, create, the GET request and strategy that store pipeline state,
         # configure the backend, and mock out wire traffic.
         get_request, strategy = self.get_request_and_strategy(
@@ -772,7 +771,7 @@ class IntegrationTest(testutil.TestCase, test.TestCase, HelperMixin):
         self.assert_third_party_accounts_state(post_request, duplicate=True, linked=True)
 
     @mock.patch("common.djangoapps.third_party_auth.pipeline.segment.track")
-    def test_full_pipeline_succeeds_for_signing_in_to_existing_active_account(self, _mock_segment_track):
+    def test_full_pipeline_succeeds_for_signing_in_to_existing_active_account(self, _mock_segment_track):  # noqa: PT019
         # First, create, the GET request and strategy that store pipeline state,
         # configure the backend, and mock out wire traffic.
         get_request, strategy = self.get_request_and_strategy(
@@ -1125,6 +1124,7 @@ class IntegrationTest(testutil.TestCase, test.TestCase, HelperMixin):
         calling actions.do_complete
         """
         strategy.storage.partial.store(partial_data)
+        strategy.session_set("partial_pipeline_token", partial_pipeline_token)
         if not user:
             user = request.user
         return actions.do_complete(
@@ -1140,7 +1140,7 @@ class IntegrationTest(testutil.TestCase, test.TestCase, HelperMixin):
 
 # pylint: disable=abstract-method
 @django_utils.override_settings(ECOMMERCE_API_URL=TEST_API_URL)
-class Oauth2IntegrationTest(IntegrationTest):  # lint-amnesty, pylint: disable=test-inherits-tests
+class Oauth2IntegrationTest(IntegrationTest):  # pylint: disable=test-inherits-tests
     """Base test case for integration tests of Oauth2 providers."""
 
     # Dict of string -> object. Information about the token granted to the

@@ -5,27 +5,35 @@ Test the Data Aggregation Layer for Course Enrollments.
 
 import datetime
 from unittest.mock import patch
+from zoneinfo import ZoneInfo
 
 import ddt
 import pytest
-from zoneinfo import ZoneInfo
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.course_modes.tests.factories import CourseModeFactory
+from common.djangoapps.student.models import (  # pylint: disable=line-too-long
+    AlreadyEnrolledError,
+    CourseEnrollment,
+    CourseFullError,
+    EnrollmentClosedError,
+)
+from common.djangoapps.student.roles import AuthzCompatCourseAccessRole
+from common.djangoapps.student.tests.factories import CourseAccessRoleFactory, CourseEnrollmentFactory, UserFactory
 from openedx.core.djangoapps.enrollments import data
 from openedx.core.djangoapps.enrollments.errors import (
     CourseEnrollmentClosedError,
     CourseEnrollmentExistsError,
     CourseEnrollmentFullError,
-    UserNotFoundError
+    UserNotFoundError,
 )
 from openedx.core.djangoapps.enrollments.serializers import CourseEnrollmentSerializer
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 from openedx.core.lib.exceptions import CourseNotFoundError
-from common.djangoapps.student.models import AlreadyEnrolledError, CourseEnrollment, CourseFullError, EnrollmentClosedError  # lint-amnesty, pylint: disable=line-too-long
-from common.djangoapps.student.tests.factories import CourseAccessRoleFactory, UserFactory, CourseEnrollmentFactory
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # pylint: disable=wrong-import-order
+)
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 
 @ddt.ddt
@@ -387,8 +395,15 @@ class EnrollmentDataTest(ModuleStoreTestCase):
         expected_role = CourseAccessRoleFactory.create(
             course_id=self.course.id, user=self.user, role="SuperCoolTestRole",
         )
+        expected_role_compat = AuthzCompatCourseAccessRole(
+            user_id=expected_role.user.id,
+            username=expected_role.user.username,
+            org=expected_role.org,
+            course_id=expected_role.course_id,
+            role=expected_role.role,
+        )
         roles = data.get_user_roles(self.user.username)
-        assert roles == {expected_role}
+        assert roles == {expected_role_compat}
 
     def test_get_roles_no_roles(self):
         """Get roles for a user who has no roles"""

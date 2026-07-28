@@ -2,30 +2,31 @@
 Tests for agreements views
 """
 
-from datetime import datetime, timedelta
-from unittest.mock import patch
-
-from django.conf import settings
-from django.urls import reverse
-from rest_framework.test import APITestCase
-from rest_framework import status
-from freezegun import freeze_time
 import json
+from datetime import datetime, timedelta
 
-from common.djangoapps.student.tests.factories import UserFactory, AdminFactory
+from django.test import override_settings
+from django.urls import reverse
+from freezegun import freeze_time
+from rest_framework import status
+from rest_framework.test import APITestCase
+
 from common.djangoapps.student.roles import CourseStaffRole
+from common.djangoapps.student.tests.factories import AdminFactory, UserFactory
 from openedx.core.djangoapps.agreements.api import (
     create_integrity_signature,
+    create_user_agreement_record,
     get_integrity_signatures_for_course,
-    get_lti_pii_signature
+    get_lti_pii_signature,
 )
+from openedx.core.djangoapps.agreements.models import UserAgreement
 from openedx.core.djangolib.testing.utils import skip_unless_lms
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
+from xmodule.modulestore.tests.factories import CourseFactory
 
 
 @skip_unless_lms
-@patch.dict(settings.FEATURES, {'ENABLE_INTEGRITY_SIGNATURE': True})
+@override_settings(ENABLE_INTEGRITY_SIGNATURE=True)
 class IntegritySignatureViewTests(APITestCase, ModuleStoreTestCase):
     """
     Tests for the Integrity Signature View
@@ -100,7 +101,7 @@ class IntegritySignatureViewTests(APITestCase, ModuleStoreTestCase):
                 'integrity_signature',
                 kwargs={'course_id': self.course_id},
             )
-            + '?username={}'.format(self.other_user.username)
+            + '?username={}'.format(self.other_user.username)  # noqa: UP032
         )
         self._assert_response(response, status.HTTP_403_FORBIDDEN)
 
@@ -118,7 +119,7 @@ class IntegritySignatureViewTests(APITestCase, ModuleStoreTestCase):
                 'integrity_signature',
                 kwargs={'course_id': self.course_id},
             )
-            + '?username={}'.format(self.user.username)
+            + '?username={}'.format(self.user.username)  # noqa: UP032
         )
         self._assert_response(response, status.HTTP_200_OK, self.user, self.course_id)
 
@@ -138,7 +139,7 @@ class IntegritySignatureViewTests(APITestCase, ModuleStoreTestCase):
                 'integrity_signature',
                 kwargs={'course_id': self.course_id},
             )
-            + '?username={}'.format(self.user.username)
+            + '?username={}'.format(self.user.username)  # noqa: UP032
         )
         self._assert_response(response, status.HTTP_403_FORBIDDEN)
 
@@ -155,11 +156,11 @@ class IntegritySignatureViewTests(APITestCase, ModuleStoreTestCase):
                 'integrity_signature',
                 kwargs={'course_id': self.course_id},
             )
-            + '?username={}'.format(self.user.username)
+            + '?username={}'.format(self.user.username)  # noqa: UP032
         )
         self._assert_response(response, status.HTTP_200_OK, self.user, self.course_id)
 
-    @patch.dict(settings.FEATURES, {'ENABLE_INTEGRITY_SIGNATURE': False})
+    @override_settings(ENABLE_INTEGRITY_SIGNATURE=False)
     def test_404_for_no_waffle_flag(self):
         self._create_signature(self.user.username, self.course_id)
         response = self.client.get(
@@ -178,8 +179,8 @@ class IntegritySignatureViewTests(APITestCase, ModuleStoreTestCase):
 
         # Check that the course has a signature created
         signatures = get_integrity_signatures_for_course(self.course_id)
-        self.assertEqual(len(signatures), 1)
-        self.assertEqual(signatures[0].user.username, self.USERNAME)
+        self.assertEqual(len(signatures), 1)  # noqa: PT009
+        self.assertEqual(signatures[0].user.username, self.USERNAME)  # noqa: PT009
 
     def test_post_duplicate_integrity_signature(self):
         # Create a signature
@@ -188,7 +189,7 @@ class IntegritySignatureViewTests(APITestCase, ModuleStoreTestCase):
                 'integrity_signature',
                 kwargs={'course_id': self.course_id},
             )
-            + '?username={}'.format(self.other_user.username)
+            + '?username={}'.format(self.other_user.username)  # noqa: UP032
         )
 
         # Attempt to create a new signature in the future
@@ -201,17 +202,17 @@ class IntegritySignatureViewTests(APITestCase, ModuleStoreTestCase):
             )
 
             # The created_at field in the response should equal the original time created
-            self.assertEqual(
+            self.assertEqual(  # noqa: PT009
                 original_response.data['created_at'],
                 new_response.data['created_at'],
             )
 
             # The course should not have a second signature
             signatures = get_integrity_signatures_for_course(self.course_id)
-            self.assertEqual(len(signatures), 1)
-            self.assertEqual(signatures[0].user.username, self.USERNAME)
+            self.assertEqual(len(signatures), 1)  # noqa: PT009
+            self.assertEqual(signatures[0].user.username, self.USERNAME)  # noqa: PT009
 
-    @patch.dict(settings.FEATURES, {'ENABLE_INTEGRITY_SIGNATURE': False})
+    @override_settings(ENABLE_INTEGRITY_SIGNATURE=False)
     def test_post_integrity_signature_no_waffle_flag(self):
         response = self.client.post(
             reverse(
@@ -223,7 +224,7 @@ class IntegritySignatureViewTests(APITestCase, ModuleStoreTestCase):
 
 
 @skip_unless_lms
-@patch.dict(settings.FEATURES, {'ENABLE_LTI_PII_ACKNOWLEDGEMENT': True})
+@override_settings(ENABLE_LTI_PII_ACKNOWLEDGEMENT=True)
 class LTIPIISignatureSignatureViewTests(APITestCase, ModuleStoreTestCase):
     """
         Tests for the LTI PII Signature View
@@ -265,7 +266,7 @@ class LTIPIISignatureSignatureViewTests(APITestCase, ModuleStoreTestCase):
             assert data['username'] == user.username
             assert data['course_id'] == course_id
 
-    @patch.dict(settings.FEATURES, {'ENABLE_LTI_PII_ACKNOWLEDGEMENT': False})
+    @override_settings(ENABLE_LTI_PII_ACKNOWLEDGEMENT=False)
     def test_enabled_lti_pii_signature(self):
         response = self.client.post(
             reverse(
@@ -287,5 +288,84 @@ class LTIPIISignatureSignatureViewTests(APITestCase, ModuleStoreTestCase):
                                      "lti_tools": self.lti_tools, "created_at": self.time_created})
         self._assert_response(response, status.HTTP_200_OK, self.user, self.course_id)
         signature = get_lti_pii_signature(self.user.username, self.course_id)
-        self.assertEqual(signature.user.username, self.user.username)
-        self.assertEqual(signature.lti_tools, self.lti_tools)
+        self.assertEqual(signature.user.username, self.user.username)  # noqa: PT009
+        self.assertEqual(signature.lti_tools, self.lti_tools)  # noqa: PT009
+
+
+@skip_unless_lms
+class UserAgreementsViewTests(APITestCase):
+    """
+    Tests for the UserAgreementsView
+    """
+
+    def setUp(self):
+        self.user = UserFactory(username="testuser", password="password")
+        self.agreement = UserAgreement.objects.create(
+            type="sample_agreement",
+            name="sample agreement",
+            summary="sample summary",
+            text="sample text",
+            updated="2024-11-21 11:00:00",
+        )
+        self.url = reverse("user_agreement_record", kwargs={"agreement_type": "sample_agreement"})
+        self.login()
+
+    def login(self):
+        self.client.login(username="testuser", password="password")
+
+    def test_get_user_agreement_record_for_missing_agreement(self):
+        """
+        Tests that the view returns a non-acceptance record for a missing agreement
+        """
+        response = self.client.get(reverse("user_agreement_record", kwargs={"agreement_type": "missing_agreement"}))
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["is_current"] is False
+        assert response.data["accepted_at"] is None
+
+    def test_get_user_agreement_record_missing_record(self):
+        """
+        Tests that the view returns a non-acceptance record for a missing user agreement record
+        """
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["is_current"] is False
+        assert response.data["accepted_at"] is None
+
+    def test_get_user_agreement_record(self):
+        """
+        Tests that the view returns a user agreement record for a valid agreement.
+        """
+        create_user_agreement_record(self.user, "sample_agreement")
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_200_OK
+        assert "accepted_at" in response.data
+
+    def test_post_user_agreement(self):
+        """
+        Tests that the view creates a new user agreement record and returns it
+        and marks the agreement record as non-current if the agreement is newer
+        than the agreement record.
+        """
+        with freeze_time("2024-11-21 12:00:00"):
+            response = self.client.post(self.url)
+        assert response.status_code == status.HTTP_201_CREATED
+
+        self.login()
+
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["is_current"] is True
+
+        self.agreement.updated = datetime.now()
+        self.agreement.save()
+
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["is_current"] is False
+
+        response = self.client.post(self.url)
+        assert response.status_code == status.HTTP_201_CREATED
+
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["is_current"] is True

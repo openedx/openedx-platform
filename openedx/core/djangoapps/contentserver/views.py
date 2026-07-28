@@ -14,7 +14,7 @@ from django.http import (
     HttpResponseForbidden,
     HttpResponseNotFound,
     HttpResponseNotModified,
-    HttpResponsePermanentRedirect
+    HttpResponsePermanentRedirect,
 )
 from django.views.decorators.http import require_safe
 from edx_django_utils.monitoring import set_custom_attribute
@@ -169,7 +169,7 @@ def process_request(request):
                     if 0 <= first <= last < content.length:
                         # If the byte range is satisfiable
                         response = HttpResponse(content.stream_data_in_range(first, last))
-                        response['Content-Range'] = 'bytes {first}-{last}/{length}'.format(
+                        response['Content-Range'] = 'bytes {first}-{last}/{length}'.format(  # noqa: UP032
                             first=first, last=last, length=content.length
                         )
                         response['Content-Length'] = str(last - first + 1)
@@ -226,7 +226,7 @@ def set_caching_headers(content, location, response):
         set_custom_attribute('contentserver.cacheable', True)
 
         response['Expires'] = get_expiration_value(datetime.datetime.utcnow(), cache_ttl)
-        response['Cache-Control'] = "public, max-age={ttl}, s-maxage={ttl}".format(ttl=cache_ttl)
+        response['Cache-Control'] = "public, max-age={ttl}, s-maxage={ttl}".format(ttl=cache_ttl)  # noqa: UP032
     elif is_restricted:
         set_custom_attribute('contentserver.cacheable', False)
 
@@ -365,7 +365,7 @@ def parse_range_header(header_value, content_length):
         for byte_range_string in byte_ranges_string.split(','):
             byte_range_string = byte_range_string.strip()
             # Case 0:
-            if '-' not in byte_range_string:  # Invalid syntax of header value.  # lint-amnesty, pylint: disable=no-else-raise
+            if '-' not in byte_range_string:  # Invalid syntax of header value.  # pylint: disable=no-else-raise
                 raise ValueError('Invalid syntax.')
             # Case 1: -500
             elif byte_range_string.startswith('-'):

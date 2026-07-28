@@ -6,7 +6,7 @@ Decorators that can be used to interact with third_party_auth.
 from functools import wraps
 
 from django.conf import settings
-from six.moves.urllib.parse import urlparse  # lint-amnesty, pylint: disable=unused-import
+from six.moves.urllib.parse import urlparse  # pylint: disable=unused-import
 
 from common.djangoapps.third_party_auth.models import LTIProviderConfig
 
@@ -21,7 +21,7 @@ def xframe_allow_whitelisted(view_func):
         """ Modify the response with the correct X-Frame-Options. """
         resp = view_func(request, *args, **kwargs)
         x_frame_option = settings.X_FRAME_OPTIONS
-        if settings.FEATURES['ENABLE_THIRD_PARTY_AUTH']:
+        if getattr(settings, 'ENABLE_THIRD_PARTY_AUTH', False):
             referer = request.META.get('HTTP_REFERER')
             if referer is not None:
                 parsed_url = urlparse(referer)

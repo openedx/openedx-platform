@@ -4,14 +4,15 @@ Python APIs exposed for the progress tracking functionality of the course home A
 
 from __future__ import annotations
 
-from django.contrib.auth import get_user_model
-from opaque_keys.edx.keys import CourseKey
-from openedx.core.lib.grade_utils import round_away_from_zero
-from xblock.scorable import ShowCorrectness
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
+from django.contrib.auth import get_user_model
+from opaque_keys.edx.keys import CourseKey
+from xblock.scorable import ShowCorrectness
+
 from lms.djangoapps.courseware.courses import get_course_blocks_completion_summary
-from dataclasses import dataclass, field
+from openedx.core.lib.grade_utils import round_away_from_zero
 
 User = get_user_model()
 
@@ -40,7 +41,7 @@ class _AssignmentBucket:
     """
     assignment_type: str
     num_total: int
-    last_grade_publish_date: datetime
+    last_grade_publish_date: datetime | None
     scores: list[float] = field(default_factory=list)
     visibilities: list[bool | None] = field(default_factory=list)
     included: list[bool | None] = field(default_factory=list)
@@ -52,7 +53,7 @@ class _AssignmentBucket:
         return cls(
             assignment_type=assignment_type,
             num_total=num_total,
-            last_grade_publish_date=now,
+            last_grade_publish_date=None,
             scores=[0] * num_total,
             visibilities=[None] * num_total,
             included=[None] * num_total,
@@ -120,7 +121,7 @@ class _AssignmentTypeGradeAggregator:
         self.course_grade = course_grade
         self.grading_policy = grading_policy
         self.has_staff_access = has_staff_access
-        self.now = datetime.now(timezone.utc)
+        self.now = datetime.now(timezone.utc)  # noqa: UP017
         self.policy_map = self._build_policy_map()
         self.buckets: dict[str, _AssignmentBucket] = {}
 
@@ -168,8 +169,13 @@ class _AssignmentTypeGradeAggregator:
                 bucket.add_subsection(score, is_visible, is_included)
                 visibilities_with_due_dates = [ShowCorrectness.PAST_DUE, ShowCorrectness.NEVER_BUT_INCLUDE_GRADE]
                 if subsection_grade.show_correctness in visibilities_with_due_dates:
-                    if subsection_grade.due and subsection_grade.due > bucket.last_grade_publish_date:
-                        bucket.last_grade_publish_date = subsection_grade.due
+                    if subsection_grade.due:
+                        should_update = (
+                            bucket.last_grade_publish_date is None or
+                            subsection_grade.due > bucket.last_grade_publish_date
+                        )
+                        if should_update:
+                            bucket.last_grade_publish_date = subsection_grade.due
 
     def build_results(self) -> dict:
         """Apply drops, compute averages, and return aggregated results and total grade."""

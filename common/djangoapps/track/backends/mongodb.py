@@ -33,7 +33,7 @@ class MongoBackend(BaseBackend):
 
         """
 
-        super().__init__(**kwargs)  # lint-amnesty, pylint: disable=super-with-arguments
+        super().__init__(**kwargs)  # pylint: disable=super-with-arguments
 
         # Extract connection parameters from kwargs
 

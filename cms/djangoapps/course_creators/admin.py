@@ -18,10 +18,11 @@ from cms.djangoapps.course_creators.models import (
     CourseCreator,
     send_admin_notification,
     send_user_notification,
-    update_creator_state
+    update_creator_state,
 )
 from cms.djangoapps.course_creators.views import update_course_creator_group, update_org_content_creator_role
 from common.djangoapps.edxmako.shortcuts import render_to_string
+from openedx.core.djangoapps.theming.helpers import get_current_site
 
 log = logging.getLogger("studio.coursecreatoradmin")
 
@@ -39,7 +40,7 @@ class CourseCreatorForm(forms.ModelForm):
     """
     class Meta:
         model = CourseCreator
-        fields = '__all__'
+        fields = '__all__'  # noqa: DJ007
 
     def clean(self):
         """
@@ -134,6 +135,16 @@ def update_creator_group_callback(sender, **kwargs):  # pylint: disable=unused-a
     update_course_creator_group(kwargs['caller'], user, create_role)
 
 
+def course_creator_notification_context(subject):
+    return {
+        'studio_request_email': settings.STUDIO_REQUEST_EMAIL,
+        'is_secure': (settings.CMS_ROOT_URL or '').split(':')[0].lower() == 'https',
+        'site': str(get_current_site() or settings.CMS_BASE),
+        'user_name': subject.username,
+        'user_email': subject.email,
+    }
+
+
 @receiver(send_user_notification, sender=CourseCreator)
 def send_user_notification_callback(sender, **kwargs):  # pylint: disable=unused-argument
     """
@@ -142,9 +153,8 @@ def send_user_notification_callback(sender, **kwargs):  # pylint: disable=unused
     user = kwargs['user']
     updated_state = kwargs['state']
 
-    studio_request_email = settings.FEATURES.get('STUDIO_REQUEST_EMAIL', '')
-    context = {'studio_request_email': studio_request_email}
-
+    context = course_creator_notification_context(user)
+    studio_request_email = context['studio_request_email']
     subject = render_to_string('emails/course_creator_subject.txt', context)
     subject = ''.join(subject.splitlines())
     if updated_state == CourseCreator.GRANTED:
@@ -158,7 +168,7 @@ def send_user_notification_callback(sender, **kwargs):  # pylint: disable=unused
 
     try:
         user.email_user(subject, message, studio_request_email)
-    except:  # lint-amnesty, pylint: disable=bare-except
+    except:  # pylint: disable=bare-except
         log.warning("Unable to send course creator status e-mail to %s", user.email)
 
 
@@ -169,8 +179,8 @@ def send_admin_notification_callback(sender, **kwargs):  # pylint: disable=unuse
     """
     user = kwargs['user']
 
-    studio_request_email = settings.FEATURES.get('STUDIO_REQUEST_EMAIL', '')
-    context = {'user_name': user.username, 'user_email': user.email}
+    context = course_creator_notification_context(user)
+    studio_request_email = context['studio_request_email']
 
     subject = render_to_string('emails/course_creator_admin_subject.txt', context)
     subject = ''.join(subject.splitlines())

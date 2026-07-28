@@ -8,8 +8,8 @@ import logging
 
 from celery import shared_task
 from celery_utils.logged_task import LoggedTask
-from django.conf import settings  # lint-amnesty, pylint: disable=unused-import
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.conf import settings  # pylint: disable=unused-import
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.contrib.sites.models import Site
 from edx_ace import ace
 from edx_ace.channel import ChannelType
@@ -20,23 +20,19 @@ from eventtracking import tracker
 from opaque_keys.edx.keys import CourseKey
 from six.moves.urllib.parse import urljoin
 
-from lms.djangoapps.discussion.toggles import ENABLE_DISCUSSIONS_MFE
-from lms.djangoapps.discussion.toggles_utils import reported_content_email_notification_enabled
-from openedx.core.djangoapps.discussions.url_helpers import get_discussions_mfe_url
-from xmodule.modulestore.django import modulestore
-
 import openedx.core.djangoapps.django_comment_common.comment_client as cc
 from common.djangoapps.track import segment
-from lms.djangoapps.discussion.django_comment_client.utils import (
-    permalink,
-    get_users_with_moderator_roles,
-)
-from openedx.core.djangoapps.discussions.utils import get_accessible_discussion_xblocks_by_course_id
+from lms.djangoapps.discussion.django_comment_client.utils import get_users_with_moderator_roles, permalink
+from lms.djangoapps.discussion.toggles import ENABLE_DISCUSSIONS_MFE
+from lms.djangoapps.discussion.toggles_utils import reported_content_email_notification_enabled
 from openedx.core.djangoapps.ace_common.message import BaseMessageType
 from openedx.core.djangoapps.ace_common.template_context import get_base_template_context
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
+from openedx.core.djangoapps.discussions.url_helpers import get_discussions_mfe_url
+from openedx.core.djangoapps.discussions.utils import get_accessible_discussion_xblocks_by_course_id
 from openedx.core.djangoapps.django_comment_common.models import DiscussionsIdMapping
 from openedx.core.lib.celery.task_utils import emulate_http_request
+from xmodule.modulestore.django import modulestore
 
 log = logging.getLogger(__name__)
 
@@ -83,7 +79,7 @@ class CommentNotification(BaseMessageType):
 
 @shared_task(base=LoggedTask)
 @set_code_owner_attribute
-def send_ace_message(context):  # lint-amnesty, pylint: disable=missing-function-docstring
+def send_ace_message(context):  # pylint: disable=missing-function-docstring
     context['course_id'] = CourseKey.from_string(context['course_id'])
 
     if _should_send_message(context):
@@ -124,7 +120,7 @@ def send_ace_message(context):  # lint-amnesty, pylint: disable=missing-function
 
 @shared_task(base=LoggedTask)
 @set_code_owner_attribute
-def send_ace_message_for_reported_content(context):  # lint-amnesty, pylint: disable=missing-function-docstring
+def send_ace_message_for_reported_content(context):  # pylint: disable=missing-function-docstring
     context['course_id'] = CourseKey.from_string(context['course_id'])
     context['course_name'] = modulestore().get_course(context['course_id']).display_name
     if not reported_content_email_notification_enabled(context['course_id']):
@@ -214,7 +210,7 @@ def _is_not_subcomment(comment_id):
     return not _is_subcomment(comment_id)
 
 
-def _is_first_comment(comment_id, thread_id):  # lint-amnesty, pylint: disable=missing-function-docstring
+def _is_first_comment(comment_id, thread_id):  # pylint: disable=missing-function-docstring
     thread = cc.Thread.find(id=thread_id).retrieve(with_responses=True)
 
     if thread.get('thread_type') == 'question':
@@ -231,7 +227,7 @@ def _is_first_comment(comment_id, thread_id):  # lint-amnesty, pylint: disable=m
         return False
 
 
-def _is_user_subscribed_to_thread(cc_user, thread_id):  # lint-amnesty, pylint: disable=missing-function-docstring
+def _is_user_subscribed_to_thread(cc_user, thread_id):  # pylint: disable=missing-function-docstring
     paginated_result = cc_user.subscribed_threads()
     thread_ids = {thread['id'] for thread in paginated_result.collection}
 
@@ -249,7 +245,7 @@ def _get_course_language(course_id):
     return language
 
 
-def _build_message_context(context, notification_type='forum_comment'):  # lint-amnesty, pylint: disable=missing-function-docstring
+def _build_message_context(context, notification_type='forum_comment'):  # pylint: disable=missing-function-docstring
     message_context = get_base_template_context(context['site'])
     message_context.update(context)
     thread_author = User.objects.get(id=context['thread_author_id'])
@@ -277,7 +273,7 @@ def _build_message_context(context, notification_type='forum_comment'):  # lint-
     return message_context
 
 
-def _build_message_context_for_reported_content(context, moderator):  # lint-amnesty, pylint: disable=missing-function-docstring
+def _build_message_context_for_reported_content(context, moderator):  # pylint: disable=missing-function-docstring
     message_context = get_base_template_context(context['site'])
     message_context.update(context)
     use_mfe_url = ENABLE_DISCUSSIONS_MFE.is_enabled(context['course_id'])
@@ -298,11 +294,11 @@ def _get_mfe_thread_url(context):
     return urljoin(forum_url, mfe_post_link)
 
 
-def _get_thread_url(context, domain_url=None):  # lint-amnesty, pylint: disable=missing-function-docstring
+def _get_thread_url(context, domain_url=None):  # pylint: disable=missing-function-docstring
     scheme = 'https' if settings.HTTPS == 'on' else 'http'
     if domain_url is None:
         domain_url = context['site'].domain
-    base_url = '{}://{}'.format(scheme, domain_url)
+    base_url = '{}://{}'.format(scheme, domain_url)  # noqa: UP032
     thread_content = {
         'type': 'thread',
         'course_id': context['course_id'],

@@ -46,8 +46,8 @@ from lms.djangoapps.certificates.api import (
     get_certificate_invalidation_entry,
     get_certificate_url,
     get_certificates_for_user,
-    get_course_ids_from_certs_for_user,
     get_certificates_for_user_by_course_keys,
+    get_course_ids_from_certs_for_user,
     has_self_generated_certificates_enabled,
     is_certificate_invalidated,
     is_on_allowlist,
@@ -76,10 +76,6 @@ CAN_GENERATE_METHOD = "lms.djangoapps.certificates.generation_handler._can_gener
 BETA_TESTER_METHOD = "lms.djangoapps.certificates.api.access.is_beta_tester"
 CERTS_VIEWABLE_METHOD = "lms.djangoapps.certificates.api.certificates_viewable_for_course"
 PASSED_OR_ALLOWLISTED_METHOD = "lms.djangoapps.certificates.api._has_passed_or_is_allowlisted"
-FEATURES_WITH_CERTS_ENABLED = settings.FEATURES.copy()
-FEATURES_WITH_CERTS_ENABLED["CERTIFICATES_HTML_VIEW"] = True
-
-
 class WebCertificateTestMixin:
     """
     Mixin with helpers for testing Web Certificates.
@@ -191,14 +187,14 @@ class CertificateDownloadableStatusTests(WebCertificateTestMixin, ModuleStoreTes
             "uuid": cert.verify_uuid,
         }
 
-    @patch.dict(settings.FEATURES, {"CERTIFICATES_HTML_VIEW": True})
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_pdf_cert_with_html_enabled(self):
         self.verify_downloadable_pdf_cert()
 
     def test_pdf_cert_with_html_disabled(self):
         self.verify_downloadable_pdf_cert()
 
-    @patch.dict(settings.FEATURES, {"CERTIFICATES_HTML_VIEW": True})
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_with_downloadable_web_cert(self):
         cert_status = certificate_status_for_student(self.student, self.course.id)
         assert certificate_downloadable_status(self.student, self.course.id) == {
@@ -221,7 +217,7 @@ class CertificateDownloadableStatusTests(WebCertificateTestMixin, ModuleStoreTes
         (False, timedelta(days=2), CertificatesDisplayBehaviors.END_WITH_DATE, False, None, True),
     )
     @ddt.unpack
-    @patch.dict(settings.FEATURES, {"CERTIFICATES_HTML_VIEW": True})
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_cert_api_return(
         self,
         self_paced,
@@ -476,7 +472,7 @@ class CertificateGetTests(SharedModuleStoreTestCase):
         """
         assert not get_certificates_for_user(self.student_no_cert.username)
 
-    @patch.dict(settings.FEATURES, {"CERTIFICATES_HTML_VIEW": True})
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_get_web_certificate_url(self):
         """
         Test the get_certificate_url with a web cert course
@@ -490,7 +486,7 @@ class CertificateGetTests(SharedModuleStoreTestCase):
         cert_url = get_certificate_url(user_id=self.student.id, course_id=self.web_cert_course.id, uuid=self.uuid)
         assert expected_url == cert_url
 
-    @patch.dict(settings.FEATURES, {"CERTIFICATES_HTML_VIEW": True})
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_get_pdf_certificate_url(self):
         """
         Test the get_certificate_url with a pdf cert course
@@ -522,7 +518,7 @@ class GenerateUserCertificatesTest(ModuleStoreTestCase):
             mode=CourseMode.VERIFIED,
         )
 
-    @patch.dict(settings.FEATURES, {"CERTIFICATES_HTML_VIEW": False})
+    @override_settings(CERTIFICATES_HTML_VIEW=False)
     def test_cert_url_empty_with_invalid_certificate(self):
         """
         Test certificate url is empty if html view is not enabled and certificate is not yet generated
@@ -530,7 +526,7 @@ class GenerateUserCertificatesTest(ModuleStoreTestCase):
         url = get_certificate_url(self.user.id, self.course_run_key)
         assert url == ""
 
-    @patch.dict(settings.FEATURES, {"CERTIFICATES_HTML_VIEW": True})
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_generation(self):
         """
         Test that a cert is successfully generated
@@ -546,7 +542,7 @@ class GenerateUserCertificatesTest(ModuleStoreTestCase):
                 assert cert.status == CertificateStatuses.downloadable
                 assert cert.mode == CourseMode.VERIFIED
 
-    @patch.dict(settings.FEATURES, {"CERTIFICATES_HTML_VIEW": True})
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     @ddt.data(True, False)
     def test_generation_unverified(self, enable_idv_requirement):
         """
@@ -567,7 +563,7 @@ class GenerateUserCertificatesTest(ModuleStoreTestCase):
                     else:
                         assert cert.status == CertificateStatuses.downloadable
 
-    @patch.dict(settings.FEATURES, {"CERTIFICATES_HTML_VIEW": True})
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_generation_notpassing(self):
         """
         Test that a cert is successfully generated with a status of notpassing
@@ -652,7 +648,7 @@ class CertificateGenerationEnabledTest(EventTestMixin, TestCase):
         assert expect_enabled == actual_enabled
 
 
-@override_settings(FEATURES=FEATURES_WITH_CERTS_ENABLED)
+@override_settings(CERTIFICATES_HTML_VIEW=True)
 class CertificatesBrandingTest(ModuleStoreTestCase):
     """Test certificates branding."""
 
@@ -678,7 +674,7 @@ class CertificatesBrandingTest(ModuleStoreTestCase):
         data = get_certificate_header_context(is_secure=True)
 
         # Make sure there are not unexpected keys in dict returned by 'get_certificate_header_context'
-        self.assertCountEqual(list(data.keys()), ["logo_src", "logo_url"])
+        self.assertCountEqual(list(data.keys()), ["logo_src", "logo_url"])  # noqa: PT009
         assert self.configuration["logo_image_url"] in data["logo_src"]
 
         assert self.configuration["SITE_NAME"] in data["logo_url"]
@@ -694,7 +690,7 @@ class CertificatesBrandingTest(ModuleStoreTestCase):
         data = get_certificate_footer_context()
 
         # Make sure there are not unexpected keys in dict returned by 'get_certificate_footer_context'
-        self.assertCountEqual(list(data.keys()), ["company_about_url", "company_privacy_url", "company_tos_url"])
+        self.assertCountEqual(list(data.keys()), ["company_about_url", "company_privacy_url", "company_tos_url"])  # noqa: PT009  # pylint: disable=line-too-long
         assert self.configuration["urls"]["ABOUT"] in data["company_about_url"]
         assert self.configuration["urls"]["PRIVACY"] in data["company_privacy_url"]
         assert self.configuration["urls"]["TOS_AND_HONOR"] in data["company_tos_url"]
@@ -1277,6 +1273,32 @@ class CertificatesLearnerRetirementFunctionality(ModuleStoreTestCase):
         assert cert_course1.name == ""
         assert cert_course2.name == ""
 
+    def test_clear_pii_from_certificate_records_clears_history_table(self):
+        """
+        Verify that `clear_pii_from_certificate_records_for_user` blanks `name` in the
+        django-simple-history audit table only when the ``REDACT_CERTIFICATES_HISTORICAL_PII``
+        setting toggle is enabled, and leaves it untouched when the toggle is disabled.
+        """
+        with override_settings(REDACT_CERTIFICATES_HISTORICAL_PII=False):
+            clear_pii_from_certificate_records_for_user(self.user)
+
+        history_names = list(
+            GeneratedCertificate.history.filter(user=self.user).values_list("name", flat=True)
+        )
+        assert all(n == self.user_full_name for n in history_names), (
+            "History rows should be untouched when the waffle flag is disabled."
+        )
+
+        with override_settings(REDACT_CERTIFICATES_HISTORICAL_PII=True):
+            clear_pii_from_certificate_records_for_user(self.user)
+
+        history_names_after = list(
+            GeneratedCertificate.history.filter(user=self.user).values_list("name", flat=True)
+        )
+        assert all(n == "" for n in history_names_after), (
+            "Expected all history rows to have name blanked after retirement."
+        )
+
 
 class GetCourseIdsForUsernameTests(TestCase):
     """
@@ -1306,9 +1328,9 @@ class GetCourseIdsForUsernameTests(TestCase):
         """
         course_ids = get_course_ids_from_certs_for_user(self.user)
 
-        self.assertIn(self.course_key_1, course_ids)
-        self.assertIn(self.course_key_2, course_ids)
-        self.assertEqual(len(course_ids), 2)
+        self.assertIn(self.course_key_1, course_ids)  # noqa: PT009
+        self.assertIn(self.course_key_2, course_ids)  # noqa: PT009
+        self.assertEqual(len(course_ids), 2)  # noqa: PT009
 
     def test_returns_empty_for_unknown_user(self):
         """
@@ -1318,4 +1340,4 @@ class GetCourseIdsForUsernameTests(TestCase):
         errors and returns an empty list as expected.
         """
         course_ids = get_course_ids_from_certs_for_user("nonexistentuser")
-        self.assertEqual(course_ids, [])
+        self.assertEqual(course_ids, [])  # noqa: PT009

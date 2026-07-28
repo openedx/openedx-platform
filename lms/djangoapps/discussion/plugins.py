@@ -7,15 +7,13 @@ from django.conf import settings
 from django.urls import reverse
 from django.utils.translation import gettext_noop
 
-
+import lms.djangoapps.discussion.django_comment_client.utils as utils
+from lms.djangoapps.courseware.tabs import EnrolledTab
 from lms.djangoapps.discussion.toggles import ENABLE_DISCUSSIONS_MFE
 from openedx.core.djangoapps.discussions.models import DiscussionsConfiguration
 from openedx.core.djangoapps.discussions.url_helpers import get_discussions_mfe_url
-from xmodule.tabs import TabFragmentViewMixin
-
-import lms.djangoapps.discussion.django_comment_client.utils as utils
-from lms.djangoapps.courseware.tabs import EnrolledTab
 from openedx.features.lti_course_tab.tab import DiscussionLtiCourseTab
+from xmodule.tabs import TabFragmentViewMixin
 
 
 class DiscussionTab(TabFragmentViewMixin, EnrolledTab):
@@ -28,7 +26,7 @@ class DiscussionTab(TabFragmentViewMixin, EnrolledTab):
     priority = 40
     view_name = 'forum_form_discussion'
     fragment_view_name = 'lms.djangoapps.discussion.views.DiscussionBoardFragmentView'
-    is_hideable = settings.FEATURES.get('ALLOW_HIDING_DISCUSSION_TAB', False)
+    is_hideable = settings.ALLOW_HIDING_DISCUSSION_TAB
     is_default = False
     body_class = 'discussion'
     online_help_token = 'discussions'

@@ -6,14 +6,13 @@ access control rules.
 
 import ddt
 from stevedore.extension import Extension, ExtensionManager
+
+import lms.djangoapps.courseware.access as access
+from common.djangoapps.student.tests.factories import StaffFactory, UserFactory
 from xmodule.modulestore.django import modulestore
 from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, ModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 from xmodule.partitions.partitions import USER_PARTITION_SCHEME_NAMESPACE, Group, UserPartition
-
-from common.djangoapps.student.tests.factories import StaffFactory
-from common.djangoapps.student.tests.factories import UserFactory
-import lms.djangoapps.courseware.access as access
 
 
 class MemoryUserPartitionScheme:

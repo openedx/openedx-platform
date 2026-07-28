@@ -39,7 +39,7 @@ class TestCourseRerunStateManager(TestCase):
         """
         found_rerun = CourseRerunState.objects.find_first(course_key=self.course_key)
         found_rerun_state = {key: getattr(found_rerun, key) for key in self.expected_rerun_state}
-        self.assertDictEqual(found_rerun_state, self.expected_rerun_state)
+        self.assertDictEqual(found_rerun_state, self.expected_rerun_state)  # noqa: PT009
         return found_rerun
 
     def dismiss_ui_and_verify(self, rerun):
@@ -96,7 +96,7 @@ class TestCourseRerunStateManager(TestCase):
         exception = Exception("failure in rerunning")
         try:
             raise exception
-        except:  # lint-amnesty, pylint: disable=bare-except
+        except:  # pylint: disable=bare-except
             CourseRerunState.objects.failed(course_key=self.course_key)
 
         self.expected_rerun_state.update(

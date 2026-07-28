@@ -5,7 +5,7 @@ Instructor API endpoint urls.
 
 from django.urls import path, re_path
 
-from lms.djangoapps.instructor.views import api, gradebook_api, api_v2
+from lms.djangoapps.instructor.views import api, api_v2, gradebook_api
 from openedx.core.constants import COURSE_ID_PATTERN
 
 # These endpoints are exposing existing views in a way that can be used by MFEs
@@ -52,9 +52,171 @@ v2_api_urls = [
         name='ora_assessments'
     ),
     re_path(
+        rf'^courses/{COURSE_ID_PATTERN}/reports$',
+        api_v2.ReportDownloadsView.as_view(),
+        name='report_downloads'
+    ),
+    re_path(
+        rf'^courses/{COURSE_ID_PATTERN}/reports/(?P<report_type>[^/]+)/generate$',
+        api_v2.GenerateReportView.as_view(),
+        name='generate_report'
+    ),
+    re_path(
         rf'^courses/{COURSE_ID_PATTERN}/ora_summary$',
         api_v2.ORASummaryView.as_view(),
         name='ora_summary'
+    ),
+    re_path(
+        rf'^courses/{COURSE_ID_PATTERN}/certificates/issued$',
+        api_v2.IssuedCertificatesView.as_view(),
+        name='issued_certificates'
+    ),
+    re_path(
+        rf'^courses/{COURSE_ID_PATTERN}/certificates/generation_history$',
+        api_v2.CertificateGenerationHistoryView.as_view(),
+        name='certificate_generation_history'
+    ),
+    re_path(
+        rf'^courses/{COURSE_ID_PATTERN}/certificates/regenerate$',
+        api_v2.RegenerateCertificatesView.as_view(),
+        name='regenerate_certificates'
+    ),
+    re_path(
+        rf'^courses/{COURSE_ID_PATTERN}/certificates/config$',
+        api_v2.CertificateConfigView.as_view(),
+        name='certificate_config'
+    ),
+    re_path(
+        rf'^courses/{COURSE_ID_PATTERN}/certificates/toggle_generation$',
+        api_v2.ToggleCertificateGenerationView.as_view(),
+        name='toggle_certificate_generation'
+    ),
+    re_path(
+        rf'^courses/{COURSE_ID_PATTERN}/certificates/exceptions$',
+        api_v2.CertificateExceptionsView.as_view(),
+        name='certificate_exceptions'
+    ),
+    re_path(
+        rf'^courses/{COURSE_ID_PATTERN}/certificates/exceptions/bulk$',
+        api_v2.BulkCertificateExceptionsView.as_view(),
+        name='bulk_certificate_exceptions'
+    ),
+    re_path(
+        rf'^courses/{COURSE_ID_PATTERN}/certificates/invalidations$',
+        api_v2.CertificateInvalidationsView.as_view(),
+        name='certificate_invalidations'
+    ),
+    re_path(
+        rf'^courses/{COURSE_ID_PATTERN}/enrollments$',
+        api_v2.CourseEnrollmentsView.as_view(),
+        name='course_enrollments'
+    ),
+    re_path(
+        rf'^courses/{COURSE_ID_PATTERN}/learners/(?P<email_or_username>[^/]+)$',
+        api_v2.LearnerView.as_view(),
+        name='learner_detail'
+    ),
+    re_path(
+        rf'^courses/{COURSE_ID_PATTERN}/problems/(?P<location>.+)$',
+        api_v2.ProblemView.as_view(),
+        name='problem_detail'
+    ),
+    re_path(
+        rf'^courses/{COURSE_ID_PATTERN}/tasks/(?P<task_id>[^/]+)$',
+        api_v2.TaskStatusView.as_view(),
+        name='task_status'
+    ),
+    re_path(
+        rf'^courses/{COURSE_ID_PATTERN}/grading-config$',
+        api_v2.GradingConfigView.as_view(),
+        name='grading_config'
+    ),
+    re_path(
+        rf'^courses/{COURSE_ID_PATTERN}/enrollments/modify$',
+        api_v2.EnrollmentModifyView.as_view(),
+        name='enrollment_modify'
+    ),
+    re_path(
+        rf'^courses/{COURSE_ID_PATTERN}/beta_testers/modify$',
+        api_v2.BetaTesterModifyView.as_view(),
+        name='beta_tester_modify'
+    ),
+    re_path(
+        rf'^courses/{COURSE_ID_PATTERN}/team/roles$',
+        api_v2.CourseTeamRolesView.as_view(),
+        name='course_team_roles'
+    ),
+    re_path(
+        rf'^courses/{COURSE_ID_PATTERN}/team/(?P<email_or_username>[^/]+)$',
+        api_v2.CourseTeamMemberView.as_view(),
+        name='course_team_member'
+    ),
+    re_path(
+        rf'^courses/{COURSE_ID_PATTERN}/team$',
+        api_v2.CourseTeamView.as_view(),
+        name='course_team'
+    ),
+    # Grading endpoints
+    re_path(
+        rf'^courses/{COURSE_ID_PATTERN}/(?P<problem>.+)/grading/attempts/reset$',
+        api_v2.ResetAttemptsView.as_view(),
+        name='reset_attempts'
+    ),
+    re_path(
+        rf'^courses/{COURSE_ID_PATTERN}/(?P<problem>.+)/grading/state$',
+        api_v2.DeleteStateView.as_view(),
+        name='delete_state'
+    ),
+    re_path(
+        rf'^courses/{COURSE_ID_PATTERN}/(?P<problem>.+)/grading/scores/rescore$',
+        api_v2.RescoreView.as_view(),
+        name='rescore'
+    ),
+    re_path(
+        rf'^courses/{COURSE_ID_PATTERN}/(?P<problem>.+)/grading/scores$',
+        api_v2.ScoreOverrideView.as_view(),
+        name='score_override'
+    ),
+    # Special Exams endpoints
+    re_path(
+        rf'^courses/{COURSE_ID_PATTERN}/special_exams$',
+        api_v2.SpecialExamsListView.as_view(),
+        name='special_exams_list'
+    ),
+    re_path(
+        rf'^courses/{COURSE_ID_PATTERN}/special_exams/allowances$',
+        api_v2.CourseAllowancesView.as_view(),
+        name='course_allowances'
+    ),
+    re_path(
+        rf'^courses/{COURSE_ID_PATTERN}/special_exams/attempts$',
+        api_v2.CourseExamAttemptsView.as_view(),
+        name='course_exam_attempts'
+    ),
+    re_path(
+        rf'^courses/{COURSE_ID_PATTERN}/special_exams/(?P<exam_id>\d+)$',
+        api_v2.SpecialExamDetailView.as_view(),
+        name='special_exam_detail'
+    ),
+    re_path(
+        rf'^courses/{COURSE_ID_PATTERN}/special_exams/(?P<exam_id>\d+)/reset/(?P<username>[^/]+)$',
+        api_v2.SpecialExamResetView.as_view(),
+        name='special_exam_reset'
+    ),
+    re_path(
+        rf'^courses/{COURSE_ID_PATTERN}/special_exams/(?P<exam_id>\d+)/attempts$',
+        api_v2.SpecialExamAttemptsView.as_view(),
+        name='special_exam_attempts'
+    ),
+    re_path(
+        rf'^courses/{COURSE_ID_PATTERN}/special_exams/(?P<exam_id>\d+)/allowance$',
+        api_v2.ExamAllowanceView.as_view(),
+        name='exam_allowance'
+    ),
+    re_path(
+        rf'^courses/{COURSE_ID_PATTERN}/proctoring_settings$',
+        api_v2.ProctoringSettingsView.as_view(),
+        name='proctoring_settings'
     ),
 ]
 
@@ -62,6 +224,7 @@ urlpatterns = [
     path('students_update_enrollment', api.StudentsUpdateEnrollmentView.as_view(), name='students_update_enrollment'),
     path('register_and_enroll_students', api.RegisterAndEnrollStudents.as_view(), name='register_and_enroll_students'),
     path('list_course_role_members', api.ListCourseRoleMembersView.as_view(), name='list_course_role_members'),
+    path('list_course_enrollments', api.ListCourseEnrollmentsView.as_view(), name='list_course_enrollments'),
     path('modify_access', api.ModifyAccess.as_view(), name='modify_access'),
     path('bulk_beta_modify_access', api.BulkBetaModifyAccess.as_view(), name='bulk_beta_modify_access'),
     path('get_problem_responses', api.GetProblemResponses.as_view(), name='get_problem_responses'),

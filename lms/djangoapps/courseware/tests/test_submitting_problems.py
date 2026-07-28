@@ -14,23 +14,24 @@ from unittest.mock import patch
 import ddt
 import pytz
 from django.conf import settings
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.db import connections
 from django.test import TestCase
 from django.test.client import RequestFactory
 from django.urls import reverse
 from django.utils.timezone import now
 from submissions import api as submissions_api
-
-from xmodule.capa.tests.response_xml_factory import (
+from xblocks_contrib.problem.capa.tests.response_xml_factory import (
     CodeResponseXMLFactory,
     CustomResponseXMLFactory,
     OptionResponseXMLFactory,
-    SchematicResponseXMLFactory
+    SchematicResponseXMLFactory,
 )
-from xmodule.capa.tests.test_util import UseUnsafeCodejail
-from xmodule.capa.xqueue_interface import XQueueInterface
+from xblocks_contrib.problem.capa.tests.test_util import UseUnsafeCodejail
+from xblocks_contrib.problem.capa.xqueue_interface import XQueueInterface
+
 from common.djangoapps.course_modes.models import CourseMode
+from common.djangoapps.student.models import CourseEnrollment, anonymous_id_for_user
 from lms.djangoapps.courseware.models import BaseStudentModuleHistory, StudentModule
 from lms.djangoapps.courseware.tests.helpers import LoginEnrollmentTestCase
 from lms.djangoapps.grades.api import CourseGradeFactory, task_compute_all_grades_for_course
@@ -38,10 +39,14 @@ from openedx.core.djangoapps.credit.api import get_credit_requirement_status, se
 from openedx.core.djangoapps.credit.models import CreditCourse, CreditProvider
 from openedx.core.djangoapps.user_api.tests.factories import UserCourseTagFactory
 from openedx.core.lib.url_utils import quote_slashes
-from common.djangoapps.student.models import CourseEnrollment, anonymous_id_for_user
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.partitions.partitions import Group, UserPartition  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # pylint: disable=wrong-import-order
+)
+from xmodule.modulestore.tests.factories import (  # pylint: disable=wrong-import-order
+    BlockFactory,
+    CourseFactory,
+)
+from xmodule.partitions.partitions import Group, UserPartition  # pylint: disable=wrong-import-order
 
 
 class ProblemSubmissionTestMixin(TestCase):
@@ -808,7 +813,7 @@ class ProblemWithUploadedFilesTest(TestSubmittingProblems):
         args, kwargs = mock_xqueue_post.call_args
         assert len(args) == 2
         assert args[0].endswith('/submit/')
-        self.assertEqual(list(kwargs['files'].keys()), filenames.split())
+        self.assertEqual(list(kwargs['files'].keys()), filenames.split())  # noqa: PT009
 
 
 @UseUnsafeCodejail()

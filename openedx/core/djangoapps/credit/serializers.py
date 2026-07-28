@@ -3,16 +3,16 @@
 
 import datetime
 import logging
-
 from zoneinfo import ZoneInfo
+
 from django.conf import settings
 from rest_framework import serializers
 from rest_framework.exceptions import PermissionDenied
 
+from common.djangoapps.util.date_utils import from_timestamp
 from openedx.core.djangoapps.credit.models import CreditCourse, CreditEligibility, CreditProvider, CreditRequest
 from openedx.core.djangoapps.credit.signature import get_shared_secret_key, signature
 from openedx.core.lib.api.serializers import CourseKeyField
-from common.djangoapps.util.date_utils import from_timestamp
 
 log = logging.getLogger(__name__)
 
@@ -97,7 +97,7 @@ class CreditProviderCallbackSerializer(serializers.Serializer):  # pylint:disabl
         # Accounts for old way of storing provider key
         if secret_key is None:
             msg = 'Could not retrieve secret key for credit provider [{}]. ' \
-                  'Unable to validate requests from provider.'.format(provider_id)
+                  'Unable to validate requests from provider.'.format(provider_id)  # noqa: UP032
             log.error(msg)
             raise PermissionDenied(msg)
 
@@ -105,7 +105,7 @@ class CreditProviderCallbackSerializer(serializers.Serializer):  # pylint:disabl
         # We need at least 1 key here that we can use to validate the signature
         if isinstance(secret_key, list) and not any(secret_key):
             msg = 'Could not retrieve secret key for credit provider [{}]. ' \
-                  'Unable to validate requests from provider.'.format(provider_id)
+                  'Unable to validate requests from provider.'.format(provider_id)  # noqa: UP032
             log.error(msg)
             raise PermissionDenied(msg)
 

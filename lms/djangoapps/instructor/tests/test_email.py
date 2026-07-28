@@ -7,18 +7,28 @@ that the view is conditionally available when Course Auth is turned on.
 
 
 from django.urls import reverse
+from edx_toggles.toggles.testutils import override_waffle_flag
 from opaque_keys.edx.keys import CourseKey
 
 from common.djangoapps.student.tests.factories import AdminFactory
-from lms.djangoapps.bulk_email.models_api import is_bulk_email_enabled_for_course, is_bulk_email_feature_enabled
-
 from lms.djangoapps.bulk_email.models import BulkEmailFlag, CourseAuthorization, DisabledCourse
-from xmodule.modulestore.tests.django_utils import TEST_DATA_MIXED_MODULESTORE, SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from lms.djangoapps.bulk_email.models_api import (
+    is_bulk_email_disabled_for_course,
+    is_bulk_email_enabled_for_course,
+    is_bulk_email_feature_enabled,
+)
+from lms.djangoapps.instructor.toggles import LEGACY_INSTRUCTOR_DASHBOARD
+from xmodule.modulestore.tests.django_utils import (  # pylint: disable=wrong-import-order
+    TEST_DATA_MIXED_MODULESTORE,
+    SharedModuleStoreTestCase,
+)
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
-from lms.djangoapps.bulk_email.models_api import is_bulk_email_disabled_for_course
 
-
+# Tests for legacy views. When DEPR-38432 is picked up, these tests will require the following changes:
+# Either remove or leave the specific parts that reference the legacy instructor dashboard,
+# and remove the override_waffle_flag for LEGACY_INSTRUCTOR_DASHBOARD.
+@override_waffle_flag(LEGACY_INSTRUCTOR_DASHBOARD, active=True)
 class TestNewInstructorDashboardEmailViewMongoBacked(SharedModuleStoreTestCase):
     """
     Check for email view on the new instructor dashboard

@@ -3,6 +3,8 @@ Permissions for the instructor dashboard and associated actions
 """
 from bridgekeeper import perms
 from bridgekeeper.rules import is_staff
+from django.http import Http404
+from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import BasePermission
@@ -83,9 +85,33 @@ perms[VIEW_FORUM_MEMBERS] = HasAccessRule('staff')
 class InstructorPermission(BasePermission):
     """Generic permissions"""
     def has_permission(self, request, view):
-        course = get_course_by_id(CourseKey.from_string(view.kwargs.get('course_id')))
+        try:
+            course_key = CourseKey.from_string(view.kwargs.get('course_id'))
+        except InvalidKeyError as exc:
+            raise Http404('Invalid course key') from exc
+        course = get_course_by_id(course_key)
         permission = getattr(view, 'permission_name', None)
         return request.user.has_perm(permission, course)
+
+
+class CourseTeamPermission(BasePermission):
+    """
+    Allow access to course team management endpoints for users with
+    instructor (Admin) access or the Discussion Admin (staff + forum Administrator) role.
+    """
+    def has_permission(self, request, view):
+        try:
+            course_key = CourseKey.from_string(view.kwargs.get('course_id'))
+        except InvalidKeyError as exc:
+            raise Http404('Invalid course key') from exc
+        course = get_course_by_id(course_key)
+        if has_access(request.user, 'instructor', course):
+            return True
+        if has_access(request.user, 'staff', course) and has_forum_access(
+            request.user, course_key, FORUM_ROLE_ADMINISTRATOR
+        ):
+            return True
+        return False
 
 
 class ForumAdminRequiresInstructorAccess(BasePermission):

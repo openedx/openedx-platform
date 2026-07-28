@@ -1,5 +1,0 @@
-<div class="field text" id="fields-course-learning-info-<%- index %>">
-  <label for= "course-learning-info-<%- index %>"><%- gettext("Learning Outcome") %> <%- index + 1 %></label>
-  <input type="text" class="input-learning-info" id="course-learning-info-<%- index %>" value="<%- info %>" data-index="<%- index %>" placeholder="<%- gettext('Add a learning outcome here') %>">
-  <button type="button" class="button delete-button standard remove-item delete-course-learning-info" data-index="<%- index %>"><%- gettext("Delete") %></button>
-</div>

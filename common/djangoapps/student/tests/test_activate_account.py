@@ -6,7 +6,7 @@ from unittest.mock import patch
 from uuid import uuid4
 
 from django.conf import settings
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils.http import urlencode
@@ -16,9 +16,6 @@ from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 from openedx.features.enterprise_support.tests.factories import EnterpriseCustomerUserFactory
-
-FEATURES_WITH_AUTHN_MFE_ENABLED = settings.FEATURES.copy()
-FEATURES_WITH_AUTHN_MFE_ENABLED['ENABLE_AUTHN_MICROFRONTEND'] = True
 
 
 @skip_unless_lms
@@ -114,7 +111,7 @@ class TestActivateAccount(TestCase):
             email_start="<strong>",
             email_end="</strong>",
             email=self.user.email,
-            link_start="<a target='_blank' href='{activation_email_support_link}'>".format(
+            link_start="<a target='_blank' href='{activation_email_support_link}'>".format(  # noqa: UP032
                 activation_email_support_link=self.activation_email_support_link,
             ),
             link_end="</a>",
@@ -180,7 +177,7 @@ class TestActivateAccount(TestCase):
         self.assertContains(response, 'Your email could not be confirmed')
 
     @override_settings(LOGIN_REDIRECT_WHITELIST=['localhost:1991'])
-    @override_settings(FEATURES={**FEATURES_WITH_AUTHN_MFE_ENABLED, 'ENABLE_ENTERPRISE_INTEGRATION': True})
+    @override_settings(ENABLE_AUTHN_MICROFRONTEND=True, ENABLE_ENTERPRISE_INTEGRATION=True)
     def test_authenticated_account_activation_with_valid_next_url(self):
         """
         Verify that an activation link with a valid next URL will redirect
@@ -234,13 +231,13 @@ class TestActivateAccount(TestCase):
         self.assertRedirects(response, expected_destination)
         self._assert_user_active_state(expected_active_state=True)
 
-    @override_settings(FEATURES=FEATURES_WITH_AUTHN_MFE_ENABLED)
+    @override_settings(ENABLE_AUTHN_MICROFRONTEND=True)
     def test_unauthenticated_user_redirects_to_mfe(self):
         """
         Verify that if Authn MFE is enabled then authenticated user redirects to
         login page with correct query param.
         """
-        login_page_url = "{authn_mfe}/login?account_activation_status=".format(
+        login_page_url = "{authn_mfe}/login?account_activation_status=".format(  # noqa: UP032
             authn_mfe=settings.AUTHN_MICROFRONTEND_URL
         )
 
@@ -259,7 +256,7 @@ class TestActivateAccount(TestCase):
         assert response.url == (login_page_url + 'error')
 
     @override_settings(LOGIN_REDIRECT_WHITELIST=['localhost:1991'])
-    @override_settings(FEATURES=FEATURES_WITH_AUTHN_MFE_ENABLED)
+    @override_settings(ENABLE_AUTHN_MICROFRONTEND=True)
     def test_unauthenticated_user_redirects_to_mfe_with_valid_next_url(self):
         """
         Verify that if Authn MFE is enabled then authenticated user redirects to
@@ -267,7 +264,7 @@ class TestActivateAccount(TestCase):
         `next` redirect URL is provided to the activation URL, it should be included
         as a parameter in the login page the requesting user is redirected to.
         """
-        login_page_url = "{authn_mfe}/login?account_activation_status=".format(
+        login_page_url = "{authn_mfe}/login?account_activation_status=".format(  # noqa: UP032
             authn_mfe=settings.AUTHN_MICROFRONTEND_URL
         )
 

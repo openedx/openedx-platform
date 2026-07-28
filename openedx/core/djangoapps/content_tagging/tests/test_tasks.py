@@ -5,21 +5,24 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-from django.test import override_settings, LiveServerTestCase
 from django.http import HttpRequest
+from django.test import LiveServerTestCase, override_settings
 from edx_toggles.toggles.testutils import override_waffle_flag
-from openedx_tagging.core.tagging.models import Tag, Taxonomy, ObjectTag
+from openedx_tagging.models import ObjectTag, Tag, Taxonomy
 from organizations.models import Organization
 
 from common.djangoapps.student.tests.factories import UserFactory
+from openedx.core.djangoapps.content_libraries.api import (
+    create_library,
+    create_library_block,
+    delete_library_block,
+    restore_library_block,
+)
 from openedx.core.djangolib.testing.utils import skip_unless_cms
 from xmodule.modulestore.tests.django_utils import (
     TEST_DATA_SPLIT_MODULESTORE,
-    ModuleStoreTestCase,
     ImmediateOnCommitMixin,
-)
-from openedx.core.djangoapps.content_libraries.api import (
-    create_library, create_library_block, delete_library_block, restore_library_block
+    ModuleStoreTestCase,
 )
 
 from .. import api
@@ -41,9 +44,9 @@ class LanguageTaxonomyTestMixin:
         running migrations. So data created by our migrations is not present.
         In particular, the Language Taxonomy is not present. So this mixin will
         create the taxonomy, simulating the effect of the following migrations:
-            1. openedx_tagging.core.tagging.migrations.0012_language_taxonomy
+            1. openedx_tagging.migrations.0012_language_taxonomy
             2. content_tagging.migrations.0007_system_defined_org_2
-            3. openedx_tagging.core.tagging.migrations.0015_taxonomy_export_id
+            3. openedx_tagging.migrations.0015_taxonomy_export_id
         """
         super().setUp()
         Taxonomy.objects.get_or_create(id=-1, defaults={
@@ -54,7 +57,7 @@ class LanguageTaxonomyTestMixin:
             "allow_free_text": False,
             "visible_to_authors": True,
             "export_id": "-1_languages",
-            "_taxonomy_class": "openedx_tagging.core.tagging.models.system_defined.LanguageTaxonomy",
+            "_taxonomy_class": "openedx_tagging.models.system_defined.LanguageTaxonomy",
         })
         TaxonomyOrg.objects.get_or_create(taxonomy_id=-1, defaults={"org": None})
 
@@ -285,7 +288,8 @@ class TestAutoTagging(  # type: ignore[misc]
 
         fake_request = HttpRequest()
         fake_request.LANGUAGE_CODE = "pt-br"
-        with patch('crum.get_current_request', return_value=fake_request):
+        # Note: self.captureOnCommitCallbacks(execute=True) is required for the library events to fire here.
+        with patch('crum.get_current_request', return_value=fake_request), self.captureOnCommitCallbacks(execute=True):
             # Create Library Block
             library_block = create_library_block(library.key, "problem", "Problem1")
 

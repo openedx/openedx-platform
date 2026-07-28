@@ -9,7 +9,7 @@ from lms.djangoapps.verify_student.models import (
     SoftwareSecurePhotoVerification,
     SSOVerification,
     SSPVerificationRetryConfig,
-    VerificationAttempt
+    VerificationAttempt,
 )
 
 
@@ -49,7 +49,7 @@ class SSPVerificationRetryAdmin(admin.ModelAdmin):
     """
     Admin for the SSPVerificationRetryConfig table.
     """
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 @admin.register(VerificationAttempt)

@@ -7,50 +7,47 @@ the older runtime.
 Note that these views are only for interacting with existing blocks. Other
 Studio APIs cover use cases like adding/deleting/editing blocks.
 """
-# pylint: disable=unused-import
-from enum import Enum
-from datetime import datetime
 import logging
-import threading
+import threading  # pylint: disable=unused-import  # noqa: F401
+from datetime import datetime  # pylint: disable=unused-import  # noqa: F401
+
+# pylint: disable=unused-import
+from enum import Enum  # noqa: F401
 
 from django.core.exceptions import PermissionDenied
 from django.urls import reverse
 from django.utils.translation import gettext as _
-from openedx_learning.api import authoring as authoring_api
-from openedx_learning.api.authoring_models import Component, ComponentVersion
 from opaque_keys.edx.keys import UsageKeyV2
-from opaque_keys.edx.locator import LibraryUsageLocatorV2
+from opaque_keys.edx.locator import LibraryUsageLocatorV2  # noqa: F401
+from openedx_content import api as content_api
+from openedx_content.models_api import Component, ComponentVersion
 from rest_framework.exceptions import NotFound
 from xblock.core import XBlock
 from xblock.exceptions import NoSuchUsage, NoSuchViewError
 from xblock.plugin import PluginMissingError
 
-from openedx.core.types import User as UserType
 from openedx.core.djangoapps.xblock.apps import get_xblock_app_config
-from openedx.core.djangoapps.xblock.learning_context.manager import get_learning_context_impl
-from openedx.core.djangoapps.xblock.runtime.learning_core_runtime import (
-    LearningCoreFieldData,
-    LearningCoreXBlockRuntime,
-)
-from .data import CheckPerm, LatestVersion
-from .rest_api.url_converters import VersionConverter
-from .utils import (
-    get_secure_token_for_xblock_handler,
-    get_xblock_id_for_anonymous_user,
-    get_auto_latest_version,
-)
-
-from .runtime.learning_core_runtime import LearningCoreXBlockRuntime
 
 # Made available as part of this package's public API:
-from openedx.core.djangoapps.xblock.learning_context import LearningContext
+from openedx.core.djangoapps.xblock.learning_context import LearningContext  # noqa: F401
+from openedx.core.djangoapps.xblock.learning_context.manager import get_learning_context_impl
+from openedx.core.djangoapps.xblock.runtime.openedx_content_runtime import (
+    OpenedXContentFieldData,
+    OpenedXContentRuntime,
+)
+from openedx.core.types import User as UserType
+
+from .data import CheckPerm, LatestVersion
+from .rest_api.url_converters import VersionConverter  # noqa: F401
+from .runtime.openedx_content_runtime import OpenedXContentRuntime  # noqa: F811
+from .utils import get_auto_latest_version, get_secure_token_for_xblock_handler, get_xblock_id_for_anonymous_user
 
 # Implementation:
 
 log = logging.getLogger(__name__)
 
 
-def get_runtime(user: UserType | None) -> LearningCoreXBlockRuntime:
+def get_runtime(user: UserType | None) -> OpenedXContentRuntime:
     """
     Return a new XBlockRuntime.
 
@@ -62,9 +59,9 @@ def get_runtime(user: UserType | None) -> LearningCoreXBlockRuntime:
     params = get_xblock_app_config().get_runtime_params()
     params.update(
         handler_url=get_handler_url,
-        authored_data_store=LearningCoreFieldData(),
+        authored_data_store=OpenedXContentFieldData(),
     )
-    runtime = LearningCoreXBlockRuntime(user, **params)
+    runtime = OpenedXContentRuntime(user, **params)
 
     return runtime
 
@@ -202,14 +199,14 @@ def get_component_from_usage_key(usage_key: UsageKeyV2) -> Component:
     This is a lower-level function that will return a Component even if there is
     no current draft version of that Component (because it's been soft-deleted).
     """
-    learning_package = authoring_api.get_learning_package_by_key(
+    learning_package = content_api.get_learning_package_by_ref(
         str(usage_key.context_key)
     )
-    return authoring_api.get_component_by_key(
+    return content_api.get_component_by_code(
         learning_package.id,
         namespace='xblock.v1',
         type_name=usage_key.block_type,
-        local_key=usage_key.block_id,
+        component_code=usage_key.block_id,
     )
 
 
@@ -219,7 +216,7 @@ def get_block_olx(
     version: int | LatestVersion = LatestVersion.AUTO
 ) -> str:
     """
-    Get the OLX source of the of the given Learning-Core-backed XBlock and a version.
+    Get the OLX source of the of the given openedx_content-backed XBlock and a version.
     """
     component = get_component_from_usage_key(usage_key)
     version = get_auto_latest_version(version)
@@ -235,9 +232,9 @@ def get_block_olx(
         raise NoSuchUsage(usage_key)
 
     # TODO: we should probably make a method on ComponentVersion that returns
-    # a content based on the name. Accessing by componentversioncontent__key is
+    # a content based on the name. Accessing by componentversionmedia__path is
     # awkward.
-    content = component_version.contents.get(componentversioncontent__key="block.xml")
+    content = component_version.media.get(componentversionmedia__path="block.xml")
 
     return content.text
 

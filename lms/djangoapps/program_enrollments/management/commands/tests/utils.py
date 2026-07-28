@@ -16,7 +16,7 @@ class UserSocialAuthFactory(DjangoModelFactory):
     class Meta:
         model = UserSocialAuth
     user = SubFactory(UserFactory)
-    uid = LazyAttributeSequence(lambda o, n: '%s:%d' % (o.slug, n))
+    uid = LazyAttributeSequence(lambda o, n: '%s:%d' % (o.slug, n))  # noqa: UP031
 
     class Params:
         slug = 'gatech'

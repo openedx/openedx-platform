@@ -1,16 +1,19 @@
 """
 Content Library REST APIs related to XBlocks/Components and their static assets
 """
+from uuid import UUID
+
 import edx_api_doc_tools as apidocs
+from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.transaction import non_atomic_requests
 from django.http import Http404, HttpResponse, StreamingHttpResponse
-from django.urls import reverse
 from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
-from opaque_keys.edx.locator import LibraryLocatorV2, LibraryUsageLocatorV2
+from opaque_keys import InvalidKeyError
+from opaque_keys.edx.locator import LibraryContainerLocator, LibraryLocatorV2, LibraryUsageLocatorV2
 from openedx_authz.constants import permissions as authz_permissions
-from openedx_learning.api import authoring as authoring_api
+from openedx_content import api as content_api
 from rest_framework import status
 from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.generics import GenericAPIView
@@ -18,6 +21,7 @@ from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+import openedx.core.djangoapps.site_configuration.helpers as configuration_helpers
 from openedx.core.djangoapps.content_libraries import api, permissions
 from openedx.core.djangoapps.content_libraries.rest_api import serializers
 from openedx.core.djangoapps.xblock import api as xblock_api
@@ -89,7 +93,7 @@ class LibraryBlocksView(GenericAPIView):
         try:
             result = api.create_library_block(library_key, user_id=request.user.id, **serializer.validated_data)
         except api.IncompatibleTypesError as err:
-            raise ValidationError(  # lint-amnesty, pylint: disable=raise-missing-from
+            raise ValidationError(  # pylint: disable=raise-missing-from  # noqa: B904
                 detail={'block_type': str(err)},
             )
 
@@ -138,6 +142,120 @@ class LibraryBlockView(APIView):
         api.require_permission_for_library_key(key.lib_key, request.user, permissions.CAN_EDIT_THIS_CONTENT_LIBRARY)
         api.delete_library_block(key, user_id=request.user.id)
         return Response({})
+
+
+@method_decorator(non_atomic_requests, name="dispatch")
+@view_auth_classes()
+class LibraryComponentDraftHistoryView(APIView):
+    """
+    View to get the draft change history of a library component.
+    """
+    serializer_class = serializers.LibraryHistoryEntrySerializer
+
+    @convert_exceptions
+    def get(self, request, usage_key_str):
+        """
+        Get the draft change history for a library component since its last publication.
+        """
+        key = LibraryUsageLocatorV2.from_string(usage_key_str)
+        api.require_permission_for_library_key(key.lib_key, request.user, permissions.CAN_VIEW_THIS_CONTENT_LIBRARY)
+        history = api.get_library_component_draft_history(key, request=request)
+        return Response(self.serializer_class(history, many=True).data)
+
+
+@method_decorator(non_atomic_requests, name="dispatch")
+@view_auth_classes()
+class LibraryComponentPublishHistoryView(APIView):
+    """
+    View to get the publish history of a library component as a list of publish events.
+    """
+    serializer_class = serializers.LibraryPublishHistoryGroupSerializer
+
+    @convert_exceptions
+    def get(self, request, usage_key_str):
+        """
+        Get the publish history for a library component, ordered most-recent-first.
+        """
+        key = LibraryUsageLocatorV2.from_string(usage_key_str)
+        api.require_permission_for_library_key(key.lib_key, request.user, permissions.CAN_VIEW_THIS_CONTENT_LIBRARY)
+        history = api.get_library_component_publish_history(key, request=request)
+        return Response(self.serializer_class(history, many=True).data)
+
+
+@method_decorator(non_atomic_requests, name="dispatch")
+@view_auth_classes()
+class LibraryPublishHistoryEntriesView(APIView):
+    """
+    Unified view to get individual draft change entries for a specific publish event.
+
+    Accepts any library entity key (component usage_key or container key) via the
+    scope_entity_key query parameter and routes to the appropriate API function.
+
+    For containers, scope_entity_key identifies the container being viewed — not
+    necessarily the entity that was directly published. In Post-Verawood a parent
+    container may have been directly published, but scope_entity_key is the child
+    Unit the user is currently browsing.
+    """
+    serializer_class = serializers.LibraryHistoryEntrySerializer
+
+    @convert_exceptions
+    def get(self, request, lib_key_str):
+        """
+        Get the draft change entries for a specific publish event, ordered most-recent-first.
+
+        Query parameters:
+          - scope_entity_key: the usage_key (component) or container_key (scope container)
+          - publish_log_uuid: UUID of the publish event
+        """
+        lib_key = LibraryLocatorV2.from_string(lib_key_str)
+        api.require_permission_for_library_key(lib_key, request.user, permissions.CAN_VIEW_THIS_CONTENT_LIBRARY)
+        scope_entity_key_str = request.query_params.get("scope_entity_key", "")
+        publish_log_uuid_str = request.query_params.get("publish_log_uuid", "")
+        if not scope_entity_key_str or not publish_log_uuid_str:
+            return Response({"error": "scope_entity_key and publish_log_uuid are required."}, status=400)
+        try:
+            publish_log_uuid = UUID(publish_log_uuid_str)
+        except ValueError:
+            return Response({"error": f"Invalid publish_log_uuid: {publish_log_uuid_str!r}"}, status=400)
+
+        try:
+            usage_key = LibraryUsageLocatorV2.from_string(scope_entity_key_str)
+            entries = api.get_library_component_publish_history_entries(
+                usage_key, publish_log_uuid, request=request
+            )
+        except ObjectDoesNotExist:
+            entries = []
+        except (InvalidKeyError, AttributeError):
+            try:
+                container_key = LibraryContainerLocator.from_string(scope_entity_key_str)
+                entries = api.get_library_container_publish_history_entries(
+                    container_key, publish_log_uuid, request=request
+                )
+            except (InvalidKeyError, AttributeError):
+                return Response({"error": f"Invalid scope_entity_key: {scope_entity_key_str!r}"}, status=400)
+
+        return Response(self.serializer_class(entries, many=True).data)
+
+
+@method_decorator(non_atomic_requests, name="dispatch")
+@view_auth_classes()
+class LibraryComponentCreationEntryView(APIView):
+    """
+    View to get the creation entry for a library component.
+    """
+    serializer_class = serializers.LibraryHistoryEntrySerializer
+
+    @convert_exceptions
+    def get(self, request, usage_key_str):
+        """
+        Get the creation entry for a library component (the moment it was first saved).
+        """
+        key = LibraryUsageLocatorV2.from_string(usage_key_str)
+        api.require_permission_for_library_key(key.lib_key, request.user, permissions.CAN_VIEW_THIS_CONTENT_LIBRARY)
+        entry = api.get_library_component_creation_entry(key, request=request)
+        if entry is None:
+            return Response(None)
+        return Response(self.serializer_class(entry).data)
 
 
 @method_decorator(non_atomic_requests, name="dispatch")
@@ -194,7 +312,7 @@ class LibraryBlockAssetView(APIView):
         file_wrapper = request.data['content']
         if file_wrapper.size > 20 * 1024 * 1024:  # > 20 MiB
             # TODO: This check was written when V2 Libraries were backed by the Blockstore micro-service.
-            #       Now that we're on Learning Core, do we still need it? Here's the original comment:
+            #       Now that we're on openedx_content, do we still need it? Here's the original comment:
             #         In the future, we need a way to use file_wrapper.chunks() to read
             #         the file in chunks and stream that to Blockstore, but Blockstore
             #         currently lacks an API for streaming file uploads.
@@ -204,7 +322,7 @@ class LibraryBlockAssetView(APIView):
         try:
             result = api.add_library_block_static_asset_file(usage_key, file_path, file_content, request.user)
         except ValueError:
-            raise ValidationError("Invalid file path")  # lint-amnesty, pylint: disable=raise-missing-from
+            raise ValidationError("Invalid file path")  # pylint: disable=raise-missing-from  # noqa: B904
         return Response(self.serializer_class(result).data)
 
     @convert_exceptions
@@ -219,7 +337,7 @@ class LibraryBlockAssetView(APIView):
         try:
             api.delete_library_block_static_asset_file(usage_key, file_path, request.user)
         except ValueError:
-            raise ValidationError("Invalid file path")  # lint-amnesty, pylint: disable=raise-missing-from
+            raise ValidationError("Invalid file path")  # pylint: disable=raise-missing-from  # noqa: B904
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -271,35 +389,13 @@ class LibraryBlockCollectionsView(APIView):
         collection_keys = serializer.validated_data['collection_keys']
         api.set_library_item_collections(
             library_key=key.lib_key,
-            entity_key=component.publishable_entity.key,
+            entity_ref=component.publishable_entity.entity_ref,
             collection_keys=collection_keys,
             created_by=request.user.id,
             content_library=content_library,
         )
 
         return Response({'count': len(collection_keys)})
-
-
-@method_decorator(non_atomic_requests, name="dispatch")
-@view_auth_classes()
-class LibraryBlockLtiUrlView(APIView):
-    """
-    Views to generate LTI URL for existing XBlocks in a content library.
-
-    Returns 404 in case the block not found by the given key.
-    """
-    @convert_exceptions
-    def get(self, request, usage_key_str):
-        """
-        Get the LTI launch URL for the XBlock.
-        """
-        key = LibraryUsageLocatorV2.from_string(usage_key_str)
-        api.require_permission_for_library_key(key.lib_key, request.user, permissions.CAN_VIEW_THIS_CONTENT_LIBRARY)
-
-        # Get the block to validate its existence
-        api.get_library_block(key)
-        lti_login_url = f"{reverse('content_libraries:lti-launch')}?id={key}"
-        return Response({"lti_url": lti_login_url})
 
 
 @method_decorator(non_atomic_requests, name="dispatch")
@@ -337,9 +433,9 @@ class LibraryBlockOlxView(APIView):
         serializer.is_valid(raise_exception=True)
         new_olx_str = serializer.validated_data["olx"]
         try:
-            version_num = api.set_library_block_olx(key, new_olx_str).version_num
+            version_num = api.set_library_block_olx(key, new_olx_str, created_by=request.user.id).version_num
         except ValueError as err:
-            raise ValidationError(detail=str(err))  # lint-amnesty, pylint: disable=raise-missing-from
+            raise ValidationError(detail=str(err))  # pylint: disable=raise-missing-from  # noqa: B904
         return Response(self.serializer_class({"olx": new_olx_str, "version_num": version_num}).data)
 
 
@@ -392,7 +488,7 @@ def get_component_version_asset(request, component_version_uuid, asset_path):
       eventually).
     """
     try:
-        component_version = authoring_api.get_component_version_by_uuid(
+        component_version = content_api.get_component_version_by_uuid(
             component_version_uuid
         )
     except ObjectDoesNotExist as exc:
@@ -400,18 +496,18 @@ def get_component_version_asset(request, component_version_uuid, asset_path):
 
     # Permissions check...
     learning_package = component_version.component.learning_package
-    library_key = LibraryLocatorV2.from_string(learning_package.key)
+    library_key = LibraryLocatorV2.from_string(learning_package.package_ref)
     api.require_permission_for_library_key(
         library_key, request.user, permissions.CAN_VIEW_THIS_CONTENT_LIBRARY,
     )
 
     # We already have logic for getting the correct content and generating the
-    # proper headers in Learning Core, but the response generated here is an
+    # proper headers in openedx_content, but the response generated here is an
     # X-Accel-Redirect and lacks the actual content. We eventually want to use
     # this response in conjunction with a media reverse proxy (Caddy or Nginx),
     # but in the short term we're just going to remove the redirect and stream
     # the content directly.
-    redirect_response = authoring_api.get_redirect_response_for_component_asset(
+    redirect_response = content_api.get_redirect_response_for_component_asset(
         component_version_uuid,
         asset_path,
         public=False,
@@ -423,8 +519,8 @@ def get_component_version_asset(request, component_version_uuid, asset_path):
         return redirect_response
 
     # If we got here, we know that the asset exists and it's okay to download.
-    cv_content = component_version.componentversioncontent_set.get(key=asset_path)
-    content = cv_content.content
+    cv_media = component_version.componentversionmedia_set.get(path=asset_path)
+    media = cv_media.media
 
     # Delete the re-direct part of the response headers. We'll copy the rest.
     headers = redirect_response.headers
@@ -433,7 +529,14 @@ def get_component_version_asset(request, component_version_uuid, asset_path):
     # We need to set the content size header manually because this is a
     # streaming response. It's not included in the redirect headers because it's
     # not needed there (the reverse-proxy would have direct access to the file).
-    headers['Content-Length'] = content.size
+    headers['Content-Length'] = media.size
+
+    # Some assets, such as PDFs, need to be embedded in an iFrame in the MFE
+    # studio. Permit this, so long as the file is in the cors_origin_whitelist.
+    cors_origin_whitelist = configuration_helpers.get_value(
+        'CORS_ORIGIN_WHITELIST', getattr(settings, 'CORS_ORIGIN_WHITELIST', []),
+    )
+    headers["Content-Security-Policy"] = f"frame-ancestors 'self' {' '.join(cors_origin_whitelist)};"
 
     if request.method == "HEAD":
         return HttpResponse(headers=headers)
@@ -442,7 +545,7 @@ def get_component_version_asset(request, component_version_uuid, asset_path):
     # offsets or anything fancy, because we don't expect to run this view at
     # LMS-scale.
     return StreamingHttpResponse(
-        content.read_file().chunks(),
+        media.read_file().chunks(),
         headers=redirect_response.headers,
     )
 

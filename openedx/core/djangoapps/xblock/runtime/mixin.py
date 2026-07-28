@@ -5,9 +5,9 @@ the new XBlock runtime.
 
 
 from django.utils.translation import gettext as _
+from web_fragments.fragment import Fragment
 from xblock.core import XBlock, XBlockMixin
 from xblock.exceptions import JsonHandlerError
-from web_fragments.fragment import Fragment
 
 from openedx.core.djangolib.markup import HTML
 
@@ -36,7 +36,7 @@ class LmsBlockMixin(XBlockMixin):
         Copied from lms.djangoapps.lms_xblock.mixin.LmsBlockMixin
         """
         completion_service = self.runtime.service(self, 'completion')
-        if completion_service is None:  # lint-amnesty, pylint: disable=no-else-raise
+        if completion_service is None:  # pylint: disable=no-else-raise
             raise JsonHandlerError(500, "No completion service found")
         elif not completion_service.completion_tracking_enabled():
             raise JsonHandlerError(404, "Completion tracking is not enabled and API calls are unexpected")

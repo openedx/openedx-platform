@@ -6,8 +6,10 @@ Tests for VideoBlockURLTransformer.
 from unittest import mock
 
 from openedx.core.djangoapps.content.block_structure.factory import BlockStructureFactory
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import ToyCourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # pylint: disable=wrong-import-order
+)
+from xmodule.modulestore.tests.factories import ToyCourseFactory  # pylint: disable=wrong-import-order
 
 from ..student_view import StudentViewTransformer
 from ..video_urls import VideoBlockURLTransformer
@@ -136,4 +138,4 @@ class TestVideoBlockURLTransformer(ModuleStoreTestCase):
         pre_transform_data = self.get_pre_transform_data(video_block_key)
         self.collect_and_transform()
         post_transform_data = self.get_post_transform_data(video_block_key)
-        self.assertDictEqual(pre_transform_data, post_transform_data)
+        self.assertDictEqual(pre_transform_data, post_transform_data)  # noqa: PT009

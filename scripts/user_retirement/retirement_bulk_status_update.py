@@ -50,7 +50,7 @@ def validate_dates(_, __, value):
             raise ValueError()
         return date
     except ValueError:
-        raise click.BadParameter('Dates need to be in the format of YYYY-MM-DD and today or earlier.')
+        raise click.BadParameter('Dates need to be in the format of YYYY-MM-DD and today or earlier.')  # noqa: B904
 
 
 def _fetch_learners_to_update_or_exit(config, start_date, end_date, initial_state):
@@ -58,7 +58,7 @@ def _fetch_learners_to_update_or_exit(config, start_date, end_date, initial_stat
     Makes the call to fetch learners to be bulk updated, returns the list of learners
     or exits.
     """
-    LOG('Fetching users in state {} created from {} to {}'.format(initial_state, start_date, end_date))
+    LOG('Fetching users in state {} created from {} to {}'.format(initial_state, start_date, end_date))  # noqa: UP032
     try:
         return config['LMS'].get_learners_by_date_and_status(initial_state, start_date, end_date)
     except Exception as exc:  # pylint: disable=broad-except
@@ -73,7 +73,7 @@ def _update_learners_or_exit(config, learners, new_state=None, rewind_state=Fals
     """
     if (not new_state and not rewind_state) or (rewind_state and new_state):
         FAIL(ERR_BAD_CONFIG, "You must specify either the boolean rewind_state or a new state to set learners to.")
-    LOG('Updating {} learners to {}'.format(len(learners), new_state))
+    LOG('Updating {} learners to {}'.format(len(learners), new_state))  # noqa: UP032
     try:
         for learner in learners:
             if rewind_state:
@@ -124,7 +124,7 @@ def update_statuses(config_file, initial_state, new_state, start_date, end_date,
     requested between a start date and end date.
     """
     try:
-        LOG('Starting bulk update script: Config: {}'.format(config_file))
+        LOG('Starting bulk update script: Config: {}'.format(config_file))  # noqa: UP032
 
         if not config_file:
             FAIL(ERR_NO_CONFIG, 'No config file passed in.')

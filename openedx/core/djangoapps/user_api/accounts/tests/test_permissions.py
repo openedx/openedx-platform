@@ -5,17 +5,17 @@ Tests for User deactivation API permissions
 
 from django.test import RequestFactory, TestCase
 
-from common.djangoapps.student.tests.factories import (  # lint-amnesty, pylint: disable=line-too-long
+from common.djangoapps.student.tests.factories import (  # pylint: disable=line-too-long
     AdminFactory,
     ContentTypeFactory,
     PermissionFactory,
     SuperuserFactory,
-    UserFactory
+    UserFactory,
 )
 from openedx.core.djangoapps.user_api.accounts.permissions import (
     CanCancelUserRetirement,
     CanDeactivateUser,
-    CanRetireUser
+    CanRetireUser,
 )
 
 

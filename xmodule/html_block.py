@@ -1,4 +1,4 @@
-# lint-amnesty, pylint: disable=missing-module-docstring
+# pylint: disable=missing-module-docstring
 
 import copy
 import logging
@@ -6,6 +6,7 @@ import os
 import re
 import sys
 import textwrap
+import warnings
 from datetime import datetime
 
 from django.conf import settings
@@ -24,14 +25,9 @@ from xmodule.editing_block import EditingMixin
 from xmodule.edxnotes_utils import edxnotes
 from xmodule.html_checker import check_html
 from xmodule.stringify import stringify_children
-from xmodule.util.builtin_assets import add_webpack_js_to_fragment, add_css_to_fragment
+from xmodule.util.builtin_assets import add_css_to_fragment, add_webpack_js_to_fragment
 from xmodule.util.misc import escape_html_characters
-from xmodule.x_module import (
-    ResourceTemplates,
-    shim_xmodule_js,
-    XModuleMixin,
-    XModuleToXBlockMixin,
-)
+from xmodule.x_module import ResourceTemplates, XModuleMixin, XModuleToXBlockMixin, shim_xmodule_js
 from xmodule.xml_block import XmlMixin, name_to_pathname
 
 log = logging.getLogger("edx.courseware")
@@ -44,13 +40,17 @@ _ = lambda text: text
 @XBlock.needs("i18n")
 @XBlock.needs("mako")
 @XBlock.needs("user")
-class _BuiltinHtmlBlockMixin(  # lint-amnesty, pylint: disable=abstract-method
+class _BuiltinHtmlBlockMixin(  # pylint: disable=abstract-method
     XmlMixin, EditingMixin,
     XModuleToXBlockMixin, XModuleMixin,
 ):
     """
     The HTML XBlock mixin.
     This provides the base class for all Html-ish blocks (including the HTML XBlock).
+
+    .. deprecated:: 2026-03
+       This built-in HTML block mixin is deprecated. Please use the extracted ``HtmlBlockMixin``
+       from ``xblocks_contrib.html`` instead.
     """
 
     display_name = String(
@@ -221,7 +221,7 @@ class _BuiltinHtmlBlockMixin(  # lint-amnesty, pylint: disable=abstract-method
     # snippets that will be included in the middle of pages.
 
     @classmethod
-    def load_definition(cls, xml_object, system, location, id_generator):  # lint-amnesty, pylint: disable=arguments-differ
+    def load_definition(cls, xml_object, system, location, id_generator):  # pylint: disable=arguments-differ
         '''Load a descriptor from the specified xml_object:
 
         If there is a filename attribute, load it as a string, and
@@ -289,15 +289,15 @@ class _BuiltinHtmlBlockMixin(  # lint-amnesty, pylint: disable=abstract-method
                     return definition, []
 
             except ResourceNotFound as err:
-                msg = 'Unable to load file contents at path {}: {} '.format(
+                msg = 'Unable to load file contents at path {}: {} '.format(  # noqa: UP032
                     filepath, err)
                 # add more info and re-raise
-                raise Exception(msg).with_traceback(sys.exc_info()[2])
+                raise Exception(msg).with_traceback(sys.exc_info()[2])  # noqa: B904
 
     @classmethod
     def parse_xml_new_runtime(cls, node, runtime, keys):
         """
-        Parse XML in the new learning-core-based runtime. Since it doesn't yet
+        Parse XML in the new openedx_content-based runtime. Since it doesn't yet
         support loading separate .html files, the HTML data is assumed to be in
         a CDATA child or otherwise just inline in the OLX.
         """
@@ -317,7 +317,7 @@ class _BuiltinHtmlBlockMixin(  # lint-amnesty, pylint: disable=abstract-method
 
         # Write html to file, return an empty tag
         pathname = name_to_pathname(self.url_name)
-        filepath = '{category}/{pathname}.html'.format(
+        filepath = '{category}/{pathname}.html'.format(  # noqa: UP032
             category=self.category,
             pathname=pathname
         )
@@ -371,10 +371,14 @@ class _BuiltinHtmlBlockMixin(  # lint-amnesty, pylint: disable=abstract-method
 
 
 @edxnotes
-class _BuiltInHtmlBlock(_BuiltinHtmlBlockMixin):  # lint-amnesty, pylint: disable=abstract-method
+class _BuiltInHtmlBlock(_BuiltinHtmlBlockMixin):  # pylint: disable=abstract-method
     """
     This is the actual HTML XBlock.
     Nothing extra is required; this is just a wrapper to include edxnotes support.
+
+    .. deprecated:: 2026-03
+       This built-in HTML block is deprecated. Please use the extracted ``HtmlBlock``
+       from ``xblocks_contrib.html`` instead.
     """
     is_extracted = False
 
@@ -394,7 +398,7 @@ def reset_Mixin():
 reset_Mixin()
 
 
-class AboutFields:  # lint-amnesty, pylint: disable=missing-class-docstring
+class AboutFields:  # pylint: disable=missing-class-docstring
     display_name = String(
         help=_("The display name for this component."),
         scope=Scope.settings,
@@ -410,7 +414,7 @@ class AboutFields:  # lint-amnesty, pylint: disable=missing-class-docstring
 @XBlock.tag("detached")
 # ResourceTemplates is required on the LMS side to load template resources for this AboutBlock.
 # On the CMS side, it is already included via XBLOCK_MIXINS.
-class AboutBlock(AboutFields, ResourceTemplates, HtmlBlockMixin):  # lint-amnesty, pylint: disable=abstract-method
+class AboutBlock(AboutFields, ResourceTemplates, HtmlBlockMixin):  # pylint: disable=abstract-method
     """
     These pieces of course content are treated as HtmlBlocks but we need to overload where the templates are located
     in order to be able to create new ones
@@ -445,7 +449,7 @@ class StaticTabFields:
 
 
 @XBlock.tag("detached")
-class StaticTabBlock(StaticTabFields, HtmlBlockMixin):  # lint-amnesty, pylint: disable=abstract-method
+class StaticTabBlock(StaticTabFields, HtmlBlockMixin):  # pylint: disable=abstract-method
     """
     These pieces of course content are treated as HtmlBlocks but we need to overload where the templates are located
     in order to be able to create new ones
@@ -472,7 +476,7 @@ class CourseInfoFields:
 @XBlock.tag("detached")
 @XBlock.needs('replace_urls')
 @XBlock.needs('mako')
-class CourseInfoBlock(CourseInfoFields, HtmlBlockMixin):  # lint-amnesty, pylint: disable=abstract-method
+class CourseInfoBlock(CourseInfoFields, HtmlBlockMixin):  # pylint: disable=abstract-method
     """
     These pieces of course content are treated as HtmlBlock but we need to overload where the templates are located
     in order to be able to create new ones
@@ -506,7 +510,7 @@ class CourseInfoBlock(CourseInfoFields, HtmlBlockMixin):  # lint-amnesty, pylint
             )
 
     @classmethod
-    def order_updates(self, updates):  # lint-amnesty, pylint: disable=bad-classmethod-argument
+    def order_updates(self, updates):  # pylint: disable=bad-classmethod-argument
         """
         Returns any course updates in reverse chronological order.
         """
@@ -542,3 +546,14 @@ def reset_class():
 
 reset_class()
 HtmlBlock.__name__ = "HtmlBlock"
+
+if not settings.USE_EXTRACTED_HTML_BLOCK:
+    warnings.warn(
+        "The built-in `xmodule.html_block` HtmlBlock implementation is deprecated. "
+        "To fix this warning, enable `USE_EXTRACTED_HTML_BLOCK` (set it to True) to use "
+        "`xblocks_contrib.html.HtmlBlock` instead. "
+        "Support for the built-in implementation, and the `USE_EXTRACTED_HTML_BLOCK` setting, "
+        "will be removed in Willow.",
+        DeprecationWarning,
+        stacklevel=2,
+    )

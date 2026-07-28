@@ -3,7 +3,9 @@ Test that various events are fired for models in the grades app.
 """
 
 from unittest import mock
+from unittest.mock import patch
 
+import pytest
 from ccx_keys.locator import CCXLocator
 from django.utils.timezone import now
 from openedx_events.learning.data import (
@@ -13,28 +15,28 @@ from openedx_events.learning.data import (
     CoursePassingStatusData,
     PersistentCourseGradeData,
     UserData,
-    UserPersonalData
+    UserPersonalData,
 )
 from openedx_events.learning.signals import (
     CCX_COURSE_PASSING_STATUS_UPDATED,
     COURSE_PASSING_STATUS_UPDATED,
-    PERSISTENT_GRADE_SUMMARY_CHANGED
+    PERSISTENT_GRADE_SUMMARY_CHANGED,
 )
-from openedx_events.tests.utils import OpenEdxEventsTestMixin
+from openedx_events.testing import OpenEdxEventsTestMixin
 
 from common.djangoapps.student.tests.factories import AdminFactory, UserFactory
+from common.test.utils import assert_dict_contains_subset
 from lms.djangoapps.ccx.models import CustomCourseForEdX
 from lms.djangoapps.grades.course_grade_factory import CourseGradeFactory
 from lms.djangoapps.grades.models import PersistentCourseGrade
 from lms.djangoapps.grades.tests.utils import mock_passing_grade
 from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory
-from common.test.utils import assert_dict_contains_subset
 
 
-class PersistentGradeEventsTest(SharedModuleStoreTestCase, OpenEdxEventsTestMixin):
+class PersistentGradeEventsTest(OpenEdxEventsTestMixin, SharedModuleStoreTestCase):
     """
-    Tests for the Open edX Events associated with the persistant grade process through the update_or_create method.
+    Tests for the Open edX Events associated with the persistent grade process through the update_or_create method.
 
     This class guarantees that the following events are sent during the user updates their grade, with
     the exact Data Attributes as the event definition stated:
@@ -44,17 +46,6 @@ class PersistentGradeEventsTest(SharedModuleStoreTestCase, OpenEdxEventsTestMixi
     ENABLED_OPENEDX_EVENTS = [
         "org.openedx.learning.course.persistent_grade_summary.changed.v1",
     ]
-
-    @classmethod
-    def setUpClass(cls):
-        """
-        Set up class method for the Test class.
-
-        This method starts manually events isolation. Explanation here:
-        openedx/core/djangoapps/user_authn/views/tests/test_events.py#L44
-        """
-        super().setUpClass()
-        cls.start_events_isolation()
 
     def setUp(self):  # pylint: disable=arguments-differ
         super().setUp()
@@ -90,7 +81,7 @@ class PersistentGradeEventsTest(SharedModuleStoreTestCase, OpenEdxEventsTestMixi
 
         PERSISTENT_GRADE_SUMMARY_CHANGED.connect(event_receiver)
         grade = PersistentCourseGrade.update_or_create(**self.params)
-        self.assertTrue(self.receiver_called)
+        self.assertTrue(self.receiver_called)  # noqa: PT009
         assert_dict_contains_subset(
             self,
             {
@@ -113,21 +104,13 @@ class PersistentGradeEventsTest(SharedModuleStoreTestCase, OpenEdxEventsTestMixi
         )
 
 
-class CoursePassingStatusEventsTest(SharedModuleStoreTestCase, OpenEdxEventsTestMixin):
+class CoursePassingStatusEventsTest(OpenEdxEventsTestMixin, SharedModuleStoreTestCase):
     """
     Tests for Open edX passing status update event.
     """
     ENABLED_OPENEDX_EVENTS = [
         "org.openedx.learning.course.passing.status.updated.v1",
     ]
-
-    @classmethod
-    def setUpClass(cls):
-        """
-        Set up class method for the Test class.
-        """
-        super().setUpClass()
-        cls.start_events_isolation()
 
     def setUp(self):
         super().setUp()
@@ -152,7 +135,7 @@ class CoursePassingStatusEventsTest(SharedModuleStoreTestCase, OpenEdxEventsTest
         with mock_passing_grade():
             grade_factory.update(self.user, self.course)
 
-        self.assertTrue(self.receiver_called)
+        self.assertTrue(self.receiver_called)  # noqa: PT009
         assert_dict_contains_subset(
             self,
             {
@@ -179,7 +162,7 @@ class CoursePassingStatusEventsTest(SharedModuleStoreTestCase, OpenEdxEventsTest
 
 
 class CCXCoursePassingStatusEventsTest(
-    SharedModuleStoreTestCase, OpenEdxEventsTestMixin
+    OpenEdxEventsTestMixin, SharedModuleStoreTestCase
 ):
     """
     Tests for Open edX passing status update event in a CCX course.
@@ -187,14 +170,6 @@ class CCXCoursePassingStatusEventsTest(
     ENABLED_OPENEDX_EVENTS = [
         "org.openedx.learning.ccx.course.passing.status.updated.v1",
     ]
-
-    @classmethod
-    def setUpClass(cls):
-        """
-        Set up class method for the Test class.
-        """
-        super().setUpClass()
-        cls.start_events_isolation()
 
     def setUp(self):
         super().setUp()
@@ -226,7 +201,7 @@ class CCXCoursePassingStatusEventsTest(
         with mock_passing_grade():
             grade_factory.update(self.user, self.store.get_course(self.ccx_locator))
 
-        self.assertTrue(self.receiver_called)
+        self.assertTrue(self.receiver_called)  # noqa: PT009
         assert_dict_contains_subset(
             self,
             {
@@ -256,3 +231,81 @@ class CCXCoursePassingStatusEventsTest(
             },
             event_receiver.call_args.kwargs,
         )
+
+
+class GradeEventContextFilterTest(SharedModuleStoreTestCase):
+    """
+    Tests that course_grade_passed_first_time invokes the GradeEventContextRequested
+    filter and uses the returned context directly.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.user = UserFactory.create()
+        self.course = CourseFactory.create()
+
+    @patch('lms.djangoapps.grades.events.tracker')
+    @patch('lms.djangoapps.grades.events.contexts.course_context_from_course_id')
+    @patch('lms.djangoapps.grades.events.GradeEventContextRequested.run_filter')
+    def test_filter_called_with_context(
+        self,
+        mock_run_filter,
+        mock_course_context_from_course_id,
+        mock_tracker,
+    ):
+        """
+        course_grade_passed_first_time should call
+        GradeEventContextRequested.run_filter and use the returned context.
+        """
+        original_context = {"course_id": str(self.course.id)}
+        filtered_context = {
+            "course_id": str(self.course.id),
+            "org": "test_org",
+            "enterprise_uuid": "abc-123",
+        }
+        mock_course_context_from_course_id.return_value = original_context
+        mock_run_filter.return_value = (filtered_context, self.user.id, self.course.id)
+
+        from lms.djangoapps.grades.events import course_grade_passed_first_time
+
+        course_grade_passed_first_time(self.user.id, self.course.id)
+
+        mock_run_filter.assert_called_once_with(
+            context=original_context,
+            user_id=self.user.id,
+            course_id=self.course.id,
+        )
+        mock_tracker.get_tracker.return_value.context.assert_called_once_with(
+            'edx.course.grade.passed.first_time',
+            filtered_context,
+        )
+
+    @patch('lms.djangoapps.grades.events.log')
+    @patch('lms.djangoapps.grades.events.tracker')
+    @patch('lms.djangoapps.grades.events.contexts.course_context_from_course_id')
+    @patch('lms.djangoapps.grades.events.GradeEventContextRequested.run_filter')
+    def test_filter_exception_is_logged_and_raised(
+        self,
+        mock_run_filter,
+        mock_course_context_from_course_id,
+        mock_tracker,
+        mock_log,
+    ):
+        """
+        If run_filter raises an exception, it should be logged and re-raised.
+        """
+        original_context = {"course_id": str(self.course.id)}
+        mock_course_context_from_course_id.return_value = original_context
+        mock_run_filter.side_effect = Exception("boom")
+
+        from lms.djangoapps.grades.events import course_grade_passed_first_time
+
+        with pytest.raises(Exception, match="boom"):
+            course_grade_passed_first_time(self.user.id, self.course.id)
+
+        mock_log.exception.assert_called_once_with(
+            'GradeEventContextRequested failed for user_id=%s course_id=%s',
+            self.user.id,
+            self.course.id,
+        )
+        mock_tracker.get_tracker.return_value.context.assert_not_called()

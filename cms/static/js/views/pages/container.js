@@ -43,6 +43,7 @@ function($, _, Backbone, gettext, BasePage,
             'click .collapse-button': 'collapseXBlock',
             'click .xblock-view-action-button': 'viewXBlockContent',
             'click .xblock-view-group-link': 'viewXBlockContent',
+            'click .xblock-header-primary': 'selectXBlock',
         },
 
         options: {
@@ -182,6 +183,13 @@ function($, _, Backbone, gettext, BasePage,
                             offset: document.getElementById(data.payload.locator).offsetTop
                         }, document.referrer);
                         break;
+                    case 'clearSelection':
+                        this.$('.studio-xblock-wrapper.is-selected').removeClass('is-selected');
+                        break;
+                    case 'selectXBlock':
+                        this.$('.studio-xblock-wrapper.is-selected').removeClass('is-selected');
+                        xblockWrapper.addClass('is-selected');
+                        break;
                     default:
                         console.warn('Unhandled message type:', data.type);
                     }
@@ -305,9 +313,10 @@ function($, _, Backbone, gettext, BasePage,
 
         renderAddXBlockComponents: function() {
             var self = this;
-            // If the container is the Unit element(aka Vertical), then we don't render the
-            // add buttons because those should get rendered by the authoring MFE
-            if (self.options.canEdit && (!self.options.isIframeEmbed || !self.model.isVertical())) {
+            // When rendered inside the authoring MFE iframe, add buttons are always rendered
+            // natively by the MFE (for every container type, not just verticals), so the
+            // legacy add-button widgets must never be initialised here.
+            if (self.options.canEdit && !self.options.isIframeEmbed) {
                 this.$('.add-xblock-component').each(function(index, element) {
                     var component = new AddXBlockComponent({
                         el: element,
@@ -476,6 +485,30 @@ function($, _, Backbone, gettext, BasePage,
             });
         },
 
+        selectXBlock: function(event) {
+            // Only select when clicking on the header's white space, not on
+            // buttons, links, inputs, or other interactive elements within it.
+            var $target = $(event.target);
+            if ($target.closest('button, a, input, label, .actions-list').length) {
+                return;
+            }
+
+            var $wrapper = $target.closest('.studio-xblock-wrapper');
+
+            // Deselect all other xblocks
+            this.$('.studio-xblock-wrapper.is-selected').not($wrapper).removeClass('is-selected');
+
+            $wrapper.toggleClass('is-selected');
+
+            if (this.options.isIframeEmbed) {
+                const contentId = this.findXBlockElement(event.target).data('locator');
+                this.postMessageToParent({
+                    type: 'xblockSelected',
+                    payload: { contentId },
+                });
+            }
+        },
+
         editXBlock: function(event, options) {
             event.preventDefault();
             const isAccessButton = event.currentTarget.className === 'access-button';
@@ -506,12 +539,13 @@ function($, _, Backbone, gettext, BasePage,
             if (!options || options.view !== 'visibility_view') {
                 const primaryHeader = $(event.target).closest('.xblock-header-primary, .nav-actions');
 
-                var useNewVideoEditor = primaryHeader.attr('use-new-editor-video'),
-                    blockType = primaryHeader.attr('data-block-type');
+                var blockType = primaryHeader.attr('data-block-type'),
+                    useNewPdfEditor = primaryHeader.attr('use-new-editor-pdf');
 
                 if((blockType === 'html')
-                        || (useNewVideoEditor === 'True' && blockType === 'video')
+                        || (blockType === 'video')
                         || (blockType === 'problem')
+                        || (useNewPdfEditor === 'True' && blockType === 'pdf')
                 ) {
                     var destinationUrl = primaryHeader.attr('authoring_MFE_base_url')
                         + '/' + blockType
@@ -1170,8 +1204,7 @@ function($, _, Backbone, gettext, BasePage,
         },
 
         onNewXBlock: function(xblockElement, scrollOffset, is_duplicate, data) {
-            var useNewVideoEditor = this.$('.xblock-header-primary').attr('use-new-editor-video'),
-                useVideoGalleryFlow = this.$('.xblock-header-primary').attr("use-video-gallery-flow");
+            var useVideoGalleryFlow = this.$('.xblock-header-primary').attr("use-video-gallery-flow");
 
             // find the block type in the locator if availible
             if(data.hasOwnProperty('locator')) {
@@ -1180,7 +1213,7 @@ function($, _, Backbone, gettext, BasePage,
             }
             // open mfe editors for new blocks only and not for content imported from libraries
             if(!data.hasOwnProperty('upstreamRef') && (blockType.includes('html')
-                    || (useNewVideoEditor === 'True' && blockType.includes('video'))
+                    || (blockType.includes('video'))
                     || (blockType.includes('problem')))
             ){
                 if (this.options.isIframeEmbed && (this.isSplitTestContentPage || this.isVerticalContentPage)) {

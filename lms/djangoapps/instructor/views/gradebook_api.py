@@ -6,7 +6,7 @@ which is currently use by ccx and instructor apps.
 
 import math
 
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.db import transaction
 from django.urls import reverse
 from django.views.decorators.cache import cache_control
@@ -16,7 +16,7 @@ from common.djangoapps.edxmako.shortcuts import render_to_response
 from lms.djangoapps.courseware.courses import get_course_with_access
 from lms.djangoapps.grades.api import CourseGradeFactory
 from lms.djangoapps.instructor.views.api import require_course_permission
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 
 from .. import permissions
 
@@ -106,7 +106,7 @@ def get_grade_book_page(request, course, course_key):
 def spoc_gradebook(request, course_id):
     """
     Show the gradebook for this course:
-    - Only shown for courses with enrollment < settings.FEATURES.get("MAX_ENROLLMENT_INSTR_BUTTONS")
+    - Only shown for courses with enrollment < settings.MAX_ENROLLMENT_INSTR_BUTTONS
     - Only displayed to course staff
     """
     course_key = CourseKey.from_string(course_id)

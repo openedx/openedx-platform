@@ -2,8 +2,8 @@
 Tests for block_structure/cache.py
 """
 
-import pytest
 import ddt
+import pytest
 
 from openedx.core.djangolib.testing.utils import CacheIsolationTestCase
 

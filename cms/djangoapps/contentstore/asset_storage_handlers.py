@@ -17,24 +17,31 @@ from django.utils.translation import gettext as _
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_http_methods, require_POST
 from opaque_keys.edx.keys import AssetKey, CourseKey
+from openedx_authz.constants.permissions import (
+    COURSES_CREATE_FILES,
+    COURSES_DELETE_FILES,
+    COURSES_EDIT_FILES,
+    COURSES_VIEW_FILES,
+)
+from openedx_filters.content_authoring.filters import LMSPageURLRequested
 from pymongo import ASCENDING, DESCENDING
 
-from common.djangoapps.student.auth import has_course_author_access
+from common.djangoapps.student.roles import enable_authz_course_authoring
 from common.djangoapps.util.date_utils import get_default_time_display
 from common.djangoapps.util.json_request import JsonResponse
+from openedx.core.djangoapps.authz.constants import LegacyAuthoringPermission
+from openedx.core.djangoapps.authz.decorators import user_has_course_permission
 from openedx.core.djangoapps.contentserver.caching import del_cached_content
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.core.djangoapps.user_api.models import UserPreference
-from openedx_filters.content_authoring.filters import LMSPageURLRequested
-from xmodule.contentstore.content import StaticContent  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.contentstore.django import contentstore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.exceptions import NotFoundError  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.exceptions import ItemNotFoundError  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.contentstore.content import StaticContent  # pylint: disable=wrong-import-order
+from xmodule.contentstore.django import contentstore  # pylint: disable=wrong-import-order
+from xmodule.exceptions import NotFoundError  # pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
+from xmodule.modulestore.exceptions import ItemNotFoundError  # pylint: disable=wrong-import-order
 
 from .exceptions import AssetNotFoundException, AssetSizeTooLargeException
 from .utils import get_files_uploads_url, get_response_format, request_response_format_is_json
-
 
 REQUEST_DEFAULTS = {
     'page': 0,
@@ -73,8 +80,8 @@ def handle_assets(request, course_key_string=None, asset_key_string=None):
         json: delete an asset
     '''
     course_key = CourseKey.from_string(course_key_string)
-    if not has_course_author_access(request.user, course_key):
-        raise PermissionDenied()
+    # Enforce file permissions.
+    _authz_enforce_file_permissions(request, course_key)
 
     response_format = get_response_format(request)
     if request_response_format_is_json(request, response_format):
@@ -91,12 +98,60 @@ def handle_assets(request, course_key_string=None, asset_key_string=None):
     return HttpResponseNotFound()
 
 
+def _authz_enforce_file_permissions(request, course_key):
+    """
+    Enforce permissions for file operations in asset handler.
+    When the authz.enable_course_authoring flag is enabled for the specified course,
+    This function enforces the appropriate file permission depending on request content.
+    When the flag is disabled, it enforces the legacy has_studio_write_access permission.
+    """
+    # Enforce permission to view files.
+    # This is the minimum permission needed for handling assets.
+    if not user_has_course_permission(
+        request.user,
+        COURSES_VIEW_FILES.identifier,
+        course_key,
+        LegacyAuthoringPermission.WRITE
+    ):
+        raise PermissionDenied()
+
+    if enable_authz_course_authoring(course_key):
+        # Check create, edit and delete permissions for AuthZ-enabled courses.
+        if request.method in ('PUT', 'POST'):
+            permission = (
+                COURSES_CREATE_FILES.identifier
+                if 'file' in request.FILES
+                else COURSES_EDIT_FILES.identifier
+            )
+
+            if not user_has_course_permission(
+                request.user,
+                permission,
+                course_key,
+                LegacyAuthoringPermission.WRITE
+            ):
+                raise PermissionDenied()
+
+        if request.method == 'DELETE' and not user_has_course_permission(
+            request.user,
+            COURSES_DELETE_FILES.identifier,
+            course_key,
+            LegacyAuthoringPermission.WRITE
+        ):
+            raise PermissionDenied()
+
+
 def get_asset_usage_path_json(request, course_key, asset_key_string):
     """
     Get a list of units with ancestors that use given asset.
     """
     course_key = CourseKey.from_string(course_key)
-    if not has_course_author_access(request.user, course_key):
+    if not user_has_course_permission(
+        request.user,
+        COURSES_VIEW_FILES.identifier,
+        course_key,
+        LegacyAuthoringPermission.WRITE
+    ):
         raise PermissionDenied()
     asset_location = AssetKey.from_string(asset_key_string) if asset_key_string else None
     usage_locations = _get_asset_usage_path(course_key, [{'asset_key': asset_location}])
@@ -214,7 +269,7 @@ def _assets_json(request, course_key):
 
     assets_usage_locations_map = _get_asset_usage_path(course_key, assets)
 
-    if request_options['requested_page'] > 0 and first_asset_to_display_index >= total_count and total_count > 0:  # lint-amnesty, pylint: disable=chained-comparison
+    if request_options['requested_page'] > 0 and first_asset_to_display_index >= total_count and total_count > 0:  # pylint: disable=chained-comparison
         _update_options_to_requery_final_page(query_options, total_count)
         current_page = query_options['current_page']
         first_asset_to_display_index = _get_first_asset_index(current_page, requested_page_size)
@@ -275,7 +330,7 @@ def _get_error_if_invalid_parameters(requested_filter):
     if invalid_filters:
         error_message = {
             'error_code': 'invalid_asset_type_filter',
-            'developer_message': 'The asset_type parameter to the request is invalid. '
+            'developer_message': 'The asset_type parameter to the request is invalid. '  # noqa: UP032
                                  'The {} filters are not described in the settings.FILES_AND_UPLOAD_TYPE_FILTERS '
                                  'dictionary.'.format(invalid_filters)
         }
@@ -536,7 +591,7 @@ def _upload_asset(request, course_key):
     })
 
 
-def _get_error_if_course_does_not_exist(course_key):  # lint-amnesty, pylint: disable=missing-function-docstring
+def _get_error_if_course_does_not_exist(course_key):  # pylint: disable=missing-function-docstring
     try:
         modulestore().get_course(course_key)
     except ItemNotFoundError:
@@ -544,7 +599,7 @@ def _get_error_if_course_does_not_exist(course_key):  # lint-amnesty, pylint: di
         return HttpResponseBadRequest()
 
 
-def _get_file_metadata_as_dictionary(upload_file):  # lint-amnesty, pylint: disable=missing-function-docstring
+def _get_file_metadata_as_dictionary(upload_file):  # pylint: disable=missing-function-docstring
     # compute a 'filename' which is similar to the location formatting; we're
     # using the 'filename' nomenclature since we're using a FileSystem paradigm
     # here; we're just imposing the Location string formatting expectations to
@@ -672,15 +727,15 @@ def delete_asset(course_key, asset_key):
     del_cached_content(content.location)
 
 
-def _check_existence_and_get_asset_content(asset_key):  # lint-amnesty, pylint: disable=missing-function-docstring
+def _check_existence_and_get_asset_content(asset_key):  # pylint: disable=missing-function-docstring
     try:
         content = contentstore().find(asset_key)
         return content
     except NotFoundError:
-        raise AssetNotFoundException  # lint-amnesty, pylint: disable=raise-missing-from
+        raise AssetNotFoundException  # pylint: disable=raise-missing-from  # noqa: B904
 
 
-def _delete_thumbnail(thumbnail_location, course_key, asset_key):  # lint-amnesty, pylint: disable=missing-function-docstring
+def _delete_thumbnail(thumbnail_location, course_key, asset_key):  # pylint: disable=missing-function-docstring
     if thumbnail_location is not None:
 
         # We are ignoring the value of the thumbnail_location-- we only care whether

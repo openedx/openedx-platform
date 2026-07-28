@@ -8,18 +8,20 @@ import tempfile
 from collections import defaultdict
 
 import ddt
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.core.management import call_command
 from django.core.management.base import CommandError
 
+from common.djangoapps.student.models import CourseEnrollment
+from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory
 from openedx.core.djangoapps.user_api.management.commands import email_opt_in_list
 from openedx.core.djangoapps.user_api.models import UserOrgTag
 from openedx.core.djangoapps.user_api.preferences.api import update_email_opt_in
 from openedx.core.djangolib.testing.utils import skip_unless_lms
-from common.djangoapps.student.models import CourseEnrollment
-from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # pylint: disable=wrong-import-order
+)
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 
 @ddt.ddt
@@ -68,7 +70,7 @@ class EmailOptInListTest(ModuleStoreTestCase):
         output = self._run_command(self.TEST_ORG)
 
         # By default, if no preference is set by the user is enrolled, opt in
-        self._assert_output(output, (self.user, self.courses[0].id, True))
+        self._assert_output(output, (self.user, self.courses[0].id, ""))
 
     def test_enrolled_pref_opted_in(self):
         self._create_courses_and_enrollments((self.TEST_ORG, True))
@@ -105,7 +107,7 @@ class EmailOptInListTest(ModuleStoreTestCase):
         output = self._run_command(self.TEST_ORG)
         self._assert_output(
             output,
-            (self.user, self.courses[0].id, True),
+            (self.user, self.courses[0].id, ""),
             expect_pref_datetime=False
         )
 
@@ -185,7 +187,7 @@ class EmailOptInListTest(ModuleStoreTestCase):
         self._set_opt_in_pref(self.user, self.TEST_ORG, True)
 
         # No course available for this particular org
-        with self.assertRaisesRegex(CommandError, "^No courses found for orgs:"):
+        with self.assertRaisesRegex(CommandError, "^No courses found for orgs:"):  # noqa: PT027
             self._run_command("other_org")
 
     def test_specify_subset_of_courses(self):
@@ -270,16 +272,16 @@ class EmailOptInListTest(ModuleStoreTestCase):
             expected_msg_regex = (
                 "^Error: the following arguments are required: OUTPUT_FILENAME, ORG_ALIASES$"
             )
-        with self.assertRaisesRegex(CommandError, expected_msg_regex):
+        with self.assertRaisesRegex(CommandError, expected_msg_regex):  # noqa: PT027
             call_command('email_opt_in_list', *args)
 
     def test_file_already_exists(self):
-        temp_file = tempfile.NamedTemporaryFile(delete=True)  # lint-amnesty, pylint: disable=consider-using-with
+        temp_file = tempfile.NamedTemporaryFile(delete=True)  # pylint: disable=consider-using-with
 
         def _cleanup():
             temp_file.close()
 
-        with self.assertRaisesRegex(CommandError, "^File already exists"):
+        with self.assertRaisesRegex(CommandError, "^File already exists"):  # noqa: PT027
             call_command('email_opt_in_list', temp_file.name, self.TEST_ORG)
 
     def test_no_user_profile(self):
@@ -353,7 +355,7 @@ class EmailOptInListTest(ModuleStoreTestCase):
 
         """
         pref = UserOrgTag.objects.filter(user=user).order_by("-modified")
-        return pref[0].modified.isoformat(' ') if len(pref) > 0 else self.DEFAULT_DATETIME_STR
+        return pref[0].modified.isoformat(' ') if len(pref) > 0 else ""
 
     def _run_command(self, org, other_names=None, only_courses=None, query_interval=None, chunk_size=None):
         """Execute the management command to generate the email opt-in list.
@@ -437,7 +439,7 @@ class EmailOptInListTest(ModuleStoreTestCase):
             assert {'user_id': str(user.id), 'username': user.username, 'email': user.email,
                     'full_name': (user.profile.name if hasattr(user, 'profile') else ''),
                     'course_id': str(course_id),
-                    'is_opted_in_for_email': str(opt_in_pref),
+                    'is_opted_in_for_email': str(opt_in_pref) if isinstance(opt_in_pref, bool) else opt_in_pref,
                     'preference_set_datetime':
                         (self._latest_pref_set_datetime(self.user) if kwargs.get('expect_pref_datetime', True) else
-                         self.DEFAULT_DATETIME_STR)} in output[1:]
+                         "")} in output[1:]

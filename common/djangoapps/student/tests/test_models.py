@@ -1,4 +1,4 @@
-# lint-amnesty, pylint: disable=missing-module-docstring
+# pylint: disable=missing-module-docstring
 import datetime
 import hashlib
 from unittest import mock
@@ -7,11 +7,13 @@ from zoneinfo import ZoneInfo
 
 import ddt
 from crum import set_current_request
-from django.contrib.auth.models import AnonymousUser, User  # lint-amnesty, pylint: disable=imported-auth-user
-from django.core.cache import cache
 from django.conf import settings
+from django.contrib.auth.models import AnonymousUser, User  # pylint: disable=imported-auth-user
+from django.core.cache import cache
+from django.db import connection
 from django.db.models.functions import Lower
 from django.test import TestCase, override_settings
+from django.test.utils import CaptureQueriesContext
 from edx_toggles.toggles.testutils import override_waffle_flag
 from freezegun import freeze_time
 from opaque_keys.edx.keys import CourseKey
@@ -21,15 +23,17 @@ from common.djangoapps.course_modes.tests.factories import CourseModeFactory
 from common.djangoapps.student.models import (
     ALLOWEDTOENROLL_TO_ENROLLED,
     IS_MARKETABLE,
+    PENDING_SECONDARY_EMAIL_REDACTED_VALUE,
     AccountRecovery,
     CourseEnrollment,
     CourseEnrollmentAllowed,
     ManualEnrollmentAudit,
     PendingEmailChange,
     PendingNameChange,
+    PendingSecondaryEmailChange,
     UserAttribute,
     UserCelebration,
-    UserProfile
+    UserProfile,
 )
 from common.djangoapps.student.models_api import confirm_name_change, do_name_change_request, get_name
 from common.djangoapps.student.tests.factories import AccountRecoveryFactory, CourseEnrollmentFactory, UserFactory
@@ -42,14 +46,17 @@ from openedx.core.djangoapps.content.course_overviews.models import CourseOvervi
 from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory
 from openedx.core.djangoapps.schedules.models import Schedule
 from openedx.core.djangoapps.user_api.preferences.api import set_user_preference
-from openedx.core.djangolib.testing.utils import skip_unless_lms
-from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase, SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from openedx.core.djangolib.testing.utils import assert_redact_before_delete, skip_unless_lms
+from xmodule.modulestore import ModuleStoreEnum  # pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (  # pylint: disable=wrong-import-order
+    ModuleStoreTestCase,
+    SharedModuleStoreTestCase,
+)
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 
 @ddt.ddt
-class CourseEnrollmentTests(SharedModuleStoreTestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class CourseEnrollmentTests(SharedModuleStoreTestCase):  # pylint: disable=missing-class-docstring
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -75,7 +82,7 @@ class CourseEnrollmentTests(SharedModuleStoreTestCase):  # lint-amnesty, pylint:
         assert CourseEnrollment.generate_enrollment_status_hash(AnonymousUser()) is None
 
         # No enrollments
-        expected = hashlib.md5(self.user.username.encode('utf-8')).hexdigest()  # lint-amnesty, pylint: disable=no-member
+        expected = hashlib.md5(self.user.username.encode('utf-8')).hexdigest()  # pylint: disable=no-member
         assert CourseEnrollment.generate_enrollment_status_hash(self.user) == expected
         self.assert_enrollment_status_hash_cached(self.user, expected)
 
@@ -90,7 +97,7 @@ class CourseEnrollmentTests(SharedModuleStoreTestCase):  # lint-amnesty, pylint:
         # One active enrollment
         enrollment.is_active = True
         enrollment.save()
-        expected = '{username}&{course_id}={mode}'.format(
+        expected = '{username}&{course_id}={mode}'.format(  # noqa: UP032
             username=self.user.username, course_id=str(course_id).lower(), mode=enrollment_mode.lower()
         )
         expected = hashlib.md5(expected.encode('utf-8')).hexdigest()
@@ -124,22 +131,22 @@ class CourseEnrollmentTests(SharedModuleStoreTestCase):  # lint-amnesty, pylint:
     def test_users_enrolled_in_active_only(self):
         """CourseEnrollment.users_enrolled_in should return only Users with active enrollments when
         `include_inactive` has its default value (False)."""
-        CourseEnrollmentFactory.create(user=self.user, course_id=self.course.id, is_active=True)  # lint-amnesty, pylint: disable=no-member
-        CourseEnrollmentFactory.create(user=self.user_2, course_id=self.course.id, is_active=False)  # lint-amnesty, pylint: disable=no-member
+        CourseEnrollmentFactory.create(user=self.user, course_id=self.course.id, is_active=True)  # pylint: disable=no-member
+        CourseEnrollmentFactory.create(user=self.user_2, course_id=self.course.id, is_active=False)  # pylint: disable=no-member
 
-        active_enrolled_users = list(CourseEnrollment.objects.users_enrolled_in(self.course.id))  # lint-amnesty, pylint: disable=no-member
+        active_enrolled_users = list(CourseEnrollment.objects.users_enrolled_in(self.course.id))  # pylint: disable=no-member
         assert [self.user] == active_enrolled_users
 
     def test_users_enrolled_in_all(self):
         """CourseEnrollment.users_enrolled_in should return active and inactive users when
         `include_inactive` is True."""
-        CourseEnrollmentFactory.create(user=self.user, course_id=self.course.id, is_active=True)  # lint-amnesty, pylint: disable=no-member
-        CourseEnrollmentFactory.create(user=self.user_2, course_id=self.course.id, is_active=False)  # lint-amnesty, pylint: disable=no-member
+        CourseEnrollmentFactory.create(user=self.user, course_id=self.course.id, is_active=True)  # pylint: disable=no-member
+        CourseEnrollmentFactory.create(user=self.user_2, course_id=self.course.id, is_active=False)  # pylint: disable=no-member
 
         all_enrolled_users = list(
-            CourseEnrollment.objects.users_enrolled_in(self.course.id, include_inactive=True)  # lint-amnesty, pylint: disable=no-member
+            CourseEnrollment.objects.users_enrolled_in(self.course.id, include_inactive=True)  # pylint: disable=no-member
         )
-        self.assertListEqual([self.user, self.user_2], all_enrolled_users)
+        self.assertListEqual([self.user, self.user_2], all_enrolled_users)  # noqa: PT009
 
     @skip_unless_lms
     def test_upgrade_deadline(self):
@@ -182,7 +189,7 @@ class CourseEnrollmentTests(SharedModuleStoreTestCase):  # lint-amnesty, pylint:
     @ddt.data(*(set(CourseMode.ALL_MODES) - set(CourseMode.AUDIT_MODES)))
     def test_upgrade_deadline_for_non_upgradeable_enrollment(self, mode):
         """ The property should return None if an upgrade cannot be upgraded. """
-        enrollment = CourseEnrollmentFactory(course_id=self.course.id, mode=mode)  # lint-amnesty, pylint: disable=no-member
+        enrollment = CourseEnrollmentFactory(course_id=self.course.id, mode=mode)  # pylint: disable=no-member
         assert enrollment.upgrade_deadline is None
 
     @skip_unless_lms
@@ -525,7 +532,7 @@ class PendingNameChangeTests(SharedModuleStoreTestCase):
         Test basic name change request functionality.
         """
         do_name_change_request(self.user, self.new_name, self.rationale)
-        self.assertEqual(PendingNameChange.objects.count(), 1)
+        self.assertEqual(PendingNameChange.objects.count(), 1)  # noqa: PT009
 
     def test_same_name(self):
         """
@@ -533,7 +540,7 @@ class PendingNameChangeTests(SharedModuleStoreTestCase):
         name will not result in a new pending name change request.
         """
         pending_name_change = do_name_change_request(self.user, self.name, self.rationale)[0]
-        self.assertIsNone(pending_name_change)
+        self.assertIsNone(pending_name_change)  # noqa: PT009
 
     def test_update_name_change(self):
         """
@@ -542,9 +549,9 @@ class PendingNameChangeTests(SharedModuleStoreTestCase):
         """
         do_name_change_request(self.user, self.new_name, self.rationale)
         do_name_change_request(self.user, self.updated_name, self.rationale)
-        self.assertEqual(PendingNameChange.objects.count(), 1)
+        self.assertEqual(PendingNameChange.objects.count(), 1)  # noqa: PT009
         pending_name_change = PendingNameChange.objects.get(user=self.user)
-        self.assertEqual(pending_name_change.new_name, self.updated_name)
+        self.assertEqual(pending_name_change.new_name, self.updated_name)  # noqa: PT009
 
     def test_confirm_name_change(self):
         """
@@ -554,8 +561,8 @@ class PendingNameChangeTests(SharedModuleStoreTestCase):
         pending_name_change = do_name_change_request(self.user, self.new_name, self.rationale)[0]
         confirm_name_change(self.user, pending_name_change)
         user_profile = UserProfile.objects.get(user=self.user)
-        self.assertEqual(user_profile.name, self.new_name)
-        self.assertEqual(PendingNameChange.objects.count(), 0)
+        self.assertEqual(user_profile.name, self.new_name)  # noqa: PT009
+        self.assertEqual(PendingNameChange.objects.count(), 0)  # noqa: PT009
 
     def test_delete_by_user_removes_pending_name_change(self):
         do_name_change_request(self.user, self.new_name, self.rationale)
@@ -580,7 +587,7 @@ class PendingEmailChangeTests(SharedModuleStoreTestCase):
         cls.user = UserFactory()
         cls.user2 = UserFactory()
 
-    def setUp(self):  # lint-amnesty, pylint: disable=super-method-not-called
+    def setUp(self):  # pylint: disable=super-method-not-called
         self.email_change, _ = PendingEmailChange.objects.get_or_create(
             user=self.user,
             new_email='new@example.com',
@@ -597,8 +604,24 @@ class PendingEmailChangeTests(SharedModuleStoreTestCase):
         assert not record_was_deleted
         assert 1 == len(PendingEmailChange.objects.all())
 
+    def test_delete_by_user_value_redacts_pending_email_before_deletion(self):
+        """
+        Verify that delete_by_user_value redacts new_email before deletion.
+        """
+        table = PendingEmailChange._meta.db_table
+        with CaptureQueriesContext(connection) as ctx:
+            record_was_deleted = PendingEmailChange.delete_by_user_value(self.user, field='user')
 
-class TestCourseEnrollmentAllowed(ModuleStoreTestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+        assert_redact_before_delete(
+            [q['sql'] for q in ctx],
+            table=table,
+            expected_redacted_value_list=['redacted-before-delete@safe.com'],
+        )
+        assert record_was_deleted
+        assert not PendingEmailChange.objects.filter(user=self.user).exists()
+
+
+class TestCourseEnrollmentAllowed(ModuleStoreTestCase):  # pylint: disable=missing-class-docstring
 
     def setUp(self):
         super().setUp()
@@ -612,11 +635,18 @@ class TestCourseEnrollmentAllowed(ModuleStoreTestCase):  # lint-amnesty, pylint:
         )
 
     def test_retiring_user_deletes_record(self):
-        is_successful = CourseEnrollmentAllowed.delete_by_user_value(
-            value=self.email,
-            field='email'
-        )
+        with CaptureQueriesContext(connection) as ctx:
+            is_successful = CourseEnrollmentAllowed.delete_by_user_value(
+                value=self.email,
+                field='email'
+            )
+
         assert is_successful
+        assert_redact_before_delete(
+            [q['sql'] for q in ctx],
+            table=CourseEnrollmentAllowed._meta.db_table,
+            expected_redacted_value_list=['redacted-before-delete@safe.com'],
+        )
         user_search_results = CourseEnrollmentAllowed.objects.filter(
             email=self.email
         )
@@ -697,8 +727,8 @@ class TestManualEnrollmentAudit(SharedModuleStoreTestCase):
         the enrolled_email and reason columns of each row associated with that
         enrollment.
         """
-        enrollment = CourseEnrollment.enroll(self.user, self.course.id)  # lint-amnesty, pylint: disable=no-member
-        other_enrollment = CourseEnrollment.enroll(self.user, self.other_course.id)  # lint-amnesty, pylint: disable=no-member
+        enrollment = CourseEnrollment.enroll(self.user, self.course.id)  # pylint: disable=no-member
+        other_enrollment = CourseEnrollment.enroll(self.user, self.other_course.id)  # pylint: disable=no-member
         ManualEnrollmentAudit.create_manual_enrollment_audit(
             self.instructor, self.user.email, ALLOWEDTOENROLL_TO_ENROLLED,
             'manually enrolling unenrolled user', enrollment
@@ -730,18 +760,65 @@ class TestAccountRecovery(TestCase):
 
     def test_retire_recovery_email(self):
         """
-        Assert that Account Record for a given user is deleted when `retire_recovery_email` is called
+        Assert that AccountRecovery secondary_email is redacted before the record is deleted.
         """
-        # Create user and associated recovery email record
         user = UserFactory()
-        AccountRecoveryFactory(user=user)
+        AccountRecoveryFactory(user=user, secondary_email='recovery@example.com')
         assert len(AccountRecovery.objects.filter(user_id=user.id)) == 1
 
-        # Retire recovery email
-        AccountRecovery.retire_recovery_email(user_id=user.id)
+        with CaptureQueriesContext(connection) as ctx:
+            AccountRecovery.retire_recovery_email(user_id=user.id)
 
-        # Assert that there is no longer an AccountRecovery record for this user
+        assert_redact_before_delete(
+            [q['sql'] for q in ctx],
+            table=AccountRecovery._meta.db_table,
+            expected_redacted_value_list=[f'redact-before-delete+{user.id}@redacted.com'],
+        )
+
         assert len(AccountRecovery.objects.filter(user_id=user.id)) == 0
+
+    def test_retire_recovery_email_when_no_record(self):
+        """
+        Assert retirement cleanup returns False when no account recovery row exists.
+        """
+        user = UserFactory()
+        assert AccountRecovery.retire_recovery_email(user_id=user.id) is False
+
+
+class TestPendingSecondaryEmailChange(TestCase):
+    """
+    Tests for retiring PendingSecondaryEmailChange records.
+    """
+
+    def test_redact_and_delete_pending_secondary_email(self):
+        """
+        Assert that the pending secondary email is redacted before the record is deleted.
+        """
+        user = UserFactory()
+        PendingSecondaryEmailChange.objects.create(
+            user=user,
+            new_secondary_email='new-secondary@example.com',
+            activation_key='a' * 32,
+        )
+        assert len(PendingSecondaryEmailChange.objects.filter(user_id=user.id)) == 1
+
+        with CaptureQueriesContext(connection) as ctx:
+            PendingSecondaryEmailChange.redact_and_delete_pending_secondary_email(user_id=user.id)
+
+        assert_redact_before_delete(
+            [query['sql'] for query in ctx],
+            table=PendingSecondaryEmailChange._meta.db_table,
+            expected_redacted_value_list=[PENDING_SECONDARY_EMAIL_REDACTED_VALUE],
+        )
+
+        assert len(PendingSecondaryEmailChange.objects.filter(user_id=user.id)) == 0
+
+    def test_redact_and_delete_pending_secondary_email_when_no_record(self):
+        """
+        Assert retirement cleanup returns False when no pending secondary row exists.
+        """
+        user = UserFactory()
+        assert PendingSecondaryEmailChange.redact_and_delete_pending_secondary_email(user_id=user.id) is False
 
 
 @ddt.ddt

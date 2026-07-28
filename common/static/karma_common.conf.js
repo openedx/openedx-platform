@@ -55,7 +55,6 @@ var options = {
         {pattern: 'common/js/xblock/core.js', included: true},
         {pattern: 'common/js/xblock/runtime.v1.js', included: true},
         {pattern: 'common/js/discussion/**/*.js', included: true},
-        {pattern: 'js/capa/src/**/*.js', included: true},
         {pattern: 'js/src/**/*.js', included: true}
     ],
 
@@ -67,7 +66,6 @@ var options = {
 
     fixtureFiles: [
         {pattern: 'js/fixtures/**/*.html'},
-        {pattern: 'js/capa/fixtures/**/*.html'},
         {pattern: 'common/templates/**/*.underscore'}
     ]
 };

@@ -7,9 +7,8 @@ from contextlib import contextmanager
 from unittest.mock import Mock, patch
 
 import pytest
-from path import Path
-
 from django.test.utils import override_settings
+from path import Path
 
 from xmodule.modulestore.api import get_python_locale_root
 

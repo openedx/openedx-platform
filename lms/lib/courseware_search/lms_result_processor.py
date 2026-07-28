@@ -11,7 +11,7 @@ from search.result_processor import SearchResultProcessor
 
 from lms.djangoapps.course_blocks.api import get_course_blocks
 from lms.djangoapps.courseware.access import has_access
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 
 
 class LmsSearchResultProcessor(SearchResultProcessor):

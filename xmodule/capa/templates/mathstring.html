@@ -1,8 +1,0 @@
-<section class="math-string">
-    {% if isinline %}
-        <span>[mathjaxinline]{{ mathstr }}[/mathjaxinline]</span>
-    {% else %}
-        <span>[mathjax]{{ mathstr }}[/mathjax]</span>
-    {% endif %}
-    <span>{{ tail|safe }}</span>
-</section>

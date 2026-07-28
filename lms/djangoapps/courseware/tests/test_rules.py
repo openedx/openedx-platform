@@ -4,23 +4,21 @@ Tests for permissions defined in courseware.rules
 
 
 from unittest.mock import patch
+
 import ddt
+from django.test.utils import override_settings
 
 from common.djangoapps.course_modes.tests.factories import CourseModeFactory
 from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.tests.factories import UserFactory
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # pylint: disable=wrong-import-order
+)
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 
 @ddt.ddt
-@patch.dict(
-    'django.conf.settings.FEATURES',
-    {
-        'ENABLE_SPECIAL_EXAMS': True,
-        'ENABLE_PROCTORED_EXAMS': True,
-    }
-)
+@override_settings(ENABLE_PROCTORED_EXAMS=True, ENABLE_SPECIAL_EXAMS=True)
 class PermissionTests(ModuleStoreTestCase):
     """
     Tests for permissions defined in courseware.rules

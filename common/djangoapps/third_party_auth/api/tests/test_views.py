@@ -3,6 +3,7 @@ Tests for the Third Party Auth REST API
 """
 
 import urllib
+from types import SimpleNamespace
 from unittest.mock import patch
 
 import ddt
@@ -19,7 +20,7 @@ from common.djangoapps.student.tests.factories import UserFactory
 from common.djangoapps.third_party_auth.api.permissions import (
     JwtHasScope,
     JwtHasTpaProviderFilterForRequestedProvider,
-    JwtRestrictedApplication
+    JwtRestrictedApplication,
 )
 from common.djangoapps.third_party_auth.tests.testutil import ThirdPartyAuthTestMixin
 from openedx.core.djangolib.testing.utils import skip_unless_lms
@@ -137,7 +138,7 @@ class UserViewsMixin:
         assert response.status_code == expect_result
         if expect_result == 200:
             assert 'active' in response.data
-            self.assertCountEqual(response.data["active"], self.expected_active(target_user))
+            self.assertCountEqual(response.data["active"], self.expected_active(target_user))  # noqa: PT009
 
     @ddt.data(
         # A server with a valid API key can query any user's list of providers
@@ -153,7 +154,7 @@ class UserViewsMixin:
         assert response.status_code == expect_result
         if expect_result == 200:
             assert 'active' in response.data
-            self.assertCountEqual(response.data["active"], self.expected_active(target_user))
+            self.assertCountEqual(response.data["active"], self.expected_active(target_user))  # noqa: PT009
 
     @ddt.data(
         (True, ALICE_USERNAME, 200, True),
@@ -417,7 +418,7 @@ class UserMappingViewAPITests(TpaAPITestCase):
         if expect_code == 200:
             for item in ['results', 'count', 'num_pages']:
                 assert item in response.data
-            self.assertCountEqual(response.data['results'], expect_result)
+            self.assertCountEqual(response.data['results'], expect_result)  # noqa: PT009
 
 
 @skip_unless_lms
@@ -447,3 +448,24 @@ class TestThirdPartyAuthUserStatusView(ThirdPartyAuthTestMixin, APITestCase):
                    'connect_url': f'/auth/login/google-oauth2/?auth_entry=account_settings&next={next_url}',
                    'connected': False, 'id': 'oa2-google-oauth2'
                }])
+
+    def test_get_uses_site_config_account_mfe_url(self):
+        """
+        The providers API uses site-configured ACCOUNT_MICROFRONTEND_URL in the next link.
+        """
+        self.client.login(username=self.user.username, password=PASSWORD)
+        siteconf_url = "https://accounts.siteconf.example"
+
+        helpers_stub = SimpleNamespace(
+            get_value=lambda key, default=None, *args, **kwargs:
+                siteconf_url if key == "ACCOUNT_MICROFRONTEND_URL" else default
+        )
+
+        with patch("common.djangoapps.third_party_auth.api.views.configuration_helpers", new=helpers_stub):
+            response = self.client.get(self.url)
+
+        assert response.status_code == 200
+        providers = response.data
+        google = next(p for p in providers if p["id"].endswith("google-oauth2"))
+        qs = urllib.parse.parse_qs(urllib.parse.urlparse(google["connect_url"]).query)
+        assert qs.get("next") == [siteconf_url]

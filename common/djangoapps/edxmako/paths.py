@@ -3,8 +3,8 @@ Set up lookup paths for mako templates.
 """
 import contextlib
 import hashlib
-import os
 import importlib.resources as resources
+import os
 
 from django.conf import settings
 from mako.exceptions import TopLevelLookupException
@@ -22,7 +22,7 @@ class TopLevelTemplateURI(str):
     to the URI should be looked up straight in the standard edx-platform location instead of trying to locate an
     overridding template in the current theme first.
     """
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 class DynamicTemplateLookup(TemplateLookup):
@@ -35,7 +35,7 @@ class DynamicTemplateLookup(TemplateLookup):
         self.__original_module_directory = self.template_args['module_directory']
 
     def __repr__(self):
-        return "<{0.__class__.__name__} {0.directories}>".format(self)
+        return "<{0.__class__.__name__} {0.directories}>".format(self)  # noqa: UP032
 
     def add_directory(self, directory, prepend=False):
         """

@@ -21,12 +21,14 @@ from common.djangoapps.course_modes.models import (
     CourseMode,
     Mode,
     get_cosmetic_display_price,
-    invalidate_course_mode_cache
+    invalidate_course_mode_cache,
 )
 from common.djangoapps.course_modes.tests.factories import CourseModeFactory
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # pylint: disable=wrong-import-order
+)
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 
 @ddt.ddt
@@ -345,7 +347,7 @@ class CourseModeModelTest(TestCase):
             assert not is_error_expected, 'Expected a ValidationError to be thrown.'
         except ValidationError as exc:
             assert is_error_expected, 'Did not expect a ValidationError to be thrown.'
-            assert exc.messages == ['Professional education modes are not allowed to have expiration_datetime set.']
+            assert exc.messages == ['Professional education modes are not allowed to have expiration_datetime set.']  # noqa: PT017  # pylint: disable=line-too-long
 
     @ddt.data(
         "verified",
@@ -374,11 +376,11 @@ class CourseModeModelTest(TestCase):
 
         # Check the selectable modes, which should exclude credit
         selectable_modes = CourseMode.modes_for_course_dict(self.course_key)
-        self.assertCountEqual(list(selectable_modes.keys()), expected_selectable_modes)
+        self.assertCountEqual(list(selectable_modes.keys()), expected_selectable_modes)  # noqa: PT009
 
         # When we get all unexpired modes, we should see credit as well
         all_modes = CourseMode.modes_for_course_dict(self.course_key, only_selectable=False)
-        self.assertCountEqual(list(all_modes.keys()), available_modes)
+        self.assertCountEqual(list(all_modes.keys()), available_modes)  # noqa: PT009
 
     def _enrollment_display_modes_dicts(self, mode):
         """
@@ -396,7 +398,7 @@ class CourseModeModelTest(TestCase):
                                    'professional'],
         }
 
-        return dict(list(zip(dict_keys, display_values.get(mode))))
+        return dict(list(zip(dict_keys, display_values.get(mode))))  # noqa: B905
 
     def test_expiration_datetime_explicitly_set(self):
         """ Verify that setting the expiration_date property sets the explicit flag. """
@@ -442,7 +444,7 @@ class CourseModeModelTest(TestCase):
     @ddt.unpack
     def test_eligible_for_cert(self, disable_honor_cert, mode_slug, expected_eligibility):
         """Verify that non-audit modes are eligible for a cert."""
-        with override_settings(FEATURES={'DISABLE_HONOR_CERTIFICATES': disable_honor_cert}):
+        with override_settings(DISABLE_HONOR_CERTIFICATES=disable_honor_cert):
             assert CourseMode.is_eligible_for_certificate(mode_slug) == expected_eligibility
 
     @ddt.data(
@@ -492,7 +494,7 @@ class CourseModeModelTest(TestCase):
         assert CourseMode.is_masters_only(self.course_key) == expected_is_masters_only
 
 
-class TestCourseOverviewIntegration(ModuleStoreTestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class TestCourseOverviewIntegration(ModuleStoreTestCase):  # pylint: disable=missing-class-docstring
     def test_course_overview_version_update(self):
         course = CourseFactory.create()
         course_overview = CourseOverview.get_from_id(course.id)
@@ -505,7 +507,7 @@ class TestCourseOverviewIntegration(ModuleStoreTestCase):  # lint-amnesty, pylin
         assert CourseMode.objects.filter(pk=course_mode.pk).exists()
 
 
-class TestDisplayPrices(ModuleStoreTestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class TestDisplayPrices(ModuleStoreTestCase):  # pylint: disable=missing-class-docstring
     @override_settings(PAID_COURSE_REGISTRATION_CURRENCY=["USD", "$"])
     def test_get_cosmetic_display_price(self):
         """

@@ -8,25 +8,29 @@ import logging
 import re
 
 from django.conf import settings
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.core.exceptions import ObjectDoesNotExist
+from django.forms.models import model_to_dict
 from django.urls import reverse
 from rest_framework import serializers
-
 
 from common.djangoapps.student.models import (
     LanguageProficiency,
     PendingNameChange,
     SocialLink,
     UserPasswordToggleHistory,
-    UserProfile
+    UserProfile,
 )
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.core.djangoapps.user_api import errors
 from openedx.core.djangoapps.user_api.accounts.utils import is_secondary_email_feature_enabled
 from openedx.core.djangoapps.user_api.models import RetirementState, UserPreference, UserRetirementStatus
 from openedx.core.djangoapps.user_api.serializers import ReadOnlyFieldsSerializerMixin
-from openedx.core.djangoapps.user_authn.views.registration_form import contains_html, contains_url
+from openedx.core.djangoapps.user_authn.views.registration_form import (
+    contains_html,
+    contains_url,
+    get_extended_profile_model,
+)
 from openedx.features.name_affirmation_api.utils import get_name_affirmation_service
 
 from . import (
@@ -36,7 +40,7 @@ from . import (
     CUSTOM_VISIBILITY,
     NAME_MIN_LENGTH,
     PRIVATE_VISIBILITY,
-    VISIBILITY_PREFIX
+    VISIBILITY_PREFIX,
 )
 from .image_helpers import get_profile_image_urls_for_user
 from .utils import format_social_link, validate_social_link
@@ -45,7 +49,7 @@ PROFILE_IMAGE_KEY_PREFIX = 'image_url'
 LOGGER = logging.getLogger(__name__)
 
 
-class PhoneNumberSerializer(serializers.BaseSerializer):  # lint-amnesty, pylint: disable=abstract-method
+class PhoneNumberSerializer(serializers.BaseSerializer):  # pylint: disable=abstract-method
     """
     Class to serialize phone number into a digit only representation.
 
@@ -109,7 +113,7 @@ class SocialLinkSerializer(serializers.ModelSerializer):
         return platform
 
 
-class UserReadOnlySerializer(serializers.Serializer):  # lint-amnesty, pylint: disable=abstract-method
+class UserReadOnlySerializer(serializers.Serializer):  # pylint: disable=abstract-method
     """
     Class that serializes the User model and UserProfile model together.
     """
@@ -125,7 +129,7 @@ class UserReadOnlySerializer(serializers.Serializer):  # lint-amnesty, pylint: d
 
         super().__init__(*args, **kwargs)
 
-    def to_representation(self, user):  # lint-amnesty, pylint: disable=arguments-differ
+    def to_representation(self, user):  # pylint: disable=arguments-differ
         """
         Overwrite to_native to handle custom logic since we are serializing three models as one here
         :param user: User object
@@ -142,11 +146,6 @@ class UserReadOnlySerializer(serializers.Serializer):  # lint-amnesty, pylint: d
         except ObjectDoesNotExist:
             account_recovery = None
 
-        try:
-            activation_key = user.registration.activation_key
-        except ObjectDoesNotExist:
-            activation_key = None
-
         data = {
             "username": user.username,
             "url": self.context.get('request').build_absolute_uri(
@@ -161,7 +160,6 @@ class UserReadOnlySerializer(serializers.Serializer):  # lint-amnesty, pylint: d
             "date_joined": user.date_joined.replace(microsecond=0),
             "last_login": user.last_login,
             "is_active": user.is_active,
-            "activation_key": activation_key,
             "bio": None,
             "country": None,
             "state": None,
@@ -186,7 +184,9 @@ class UserReadOnlySerializer(serializers.Serializer):  # lint-amnesty, pylint: d
             data.update(
                 {
                     "bio": AccountLegacyProfileSerializer.convert_empty_to_None(user_profile.bio),
-                    "country": AccountLegacyProfileSerializer.convert_empty_to_None(user_profile.country.code),
+                    "country": AccountLegacyProfileSerializer.convert_empty_to_None(
+                        user_profile.country.code if user_profile.country else ""
+                    ),
                     "state": AccountLegacyProfileSerializer.convert_empty_to_None(user_profile.state),
                     "profile_image": AccountLegacyProfileSerializer.get_profile_image(
                         user_profile, user, self.context.get('request')
@@ -442,7 +442,7 @@ class AccountLegacyProfileSerializer(serializers.HyperlinkedModelSerializer, Rea
 
         except ValueError as err:
             # If we have encountered any validation errors, return them to the user.
-            raise errors.AccountValidationError({
+            raise errors.AccountValidationError({  # noqa: B904
                 'social_links': {
                     "developer_message": f"Error when adding new social link: '{str(err)}'",
                     "user_message": str(err)
@@ -476,7 +476,7 @@ class AccountLegacyProfileSerializer(serializers.HyperlinkedModelSerializer, Rea
             ])
 
         # Update the user's social links
-        requested_social_links = self._kwargs['data'].get('social_links')  # lint-amnesty, pylint: disable=no-member
+        requested_social_links = self._kwargs['data'].get('social_links')  # pylint: disable=no-member
         if requested_social_links:
             self._update_social_links(instance, requested_social_links)
 
@@ -556,7 +556,7 @@ class UserRetirementPartnerReportSerializer(serializers.Serializer):
         pass
 
 
-class PendingNameChangeSerializer(serializers.Serializer):  # lint-amnesty, pylint: disable=abstract-method
+class PendingNameChangeSerializer(serializers.Serializer):  # pylint: disable=abstract-method
     """
     Serialize the PendingNameChange model
     """
@@ -573,26 +573,52 @@ class PendingNameChangeSerializer(serializers.Serializer):  # lint-amnesty, pyli
             raise serializers.ValidationError('Name cannot contain a URL')
 
 
-def get_extended_profile(user_profile):
+def get_extended_profile(user_profile: UserProfile) -> list[dict[str, str]]:
     """
-    Returns the extended user profile fields stored in user_profile.meta
+    Retrieve extended user profile fields for API serialization.
+
+    This function extracts custom profile fields that extend beyond the standard
+    UserProfile model. It prefers data from a custom extended profile model
+    (when configured), and only uses the `user_profile.meta` JSON field when
+    no such model is configured. The returned data is filtered to include only
+    fields specified in the `extended_profile_fields` site configuration.
+
+    The function supports two data sources:
+    1. Custom model: If the `PROFILE_EXTENSION_FORM` setting points to a form with a
+        `Meta.model`, data is retrieved from that model using `model_to_dict()`. If a
+        model is configured but the user does not yet have a corresponding record,
+        this function returns an empty mapping for extended profile fields (it does
+        not fall back to `user_profile.meta` in that case).
+    2. Fallback: JSON data stored in `UserProfile.meta` field, used only when no
+        custom extended profile model is configured.
+
+    Args:
+        user_profile (UserProfile): The user profile instance to get extended fields from.
+
+    Returns:
+        list[dict[str, str]]: A list of dictionaries, each containing:
+            - field_name: The name of the extended profile field
+            - field_value: The value of the field (converted to string)
     """
 
-    # pick the keys from the site configuration
-    extended_profile_field_names = configuration_helpers.get_value('extended_profile_fields', [])
+    def get_extended_profile_data():
+        extended_profile_model = get_extended_profile_model()
 
-    try:
-        extended_profile_fields_data = json.loads(user_profile.meta)
-    except ValueError:
-        extended_profile_fields_data = {}
+        if extended_profile_model:
+            try:
+                profile_obj = extended_profile_model.objects.get(user=user_profile.user)
+                return model_to_dict(profile_obj)
+            except extended_profile_model.DoesNotExist:
+                return {}
 
-    extended_profile = []
-    for field_name in extended_profile_field_names:
-        extended_profile.append({
-            "field_name": field_name,
-            "field_value": extended_profile_fields_data.get(field_name, "")
-        })
-    return extended_profile
+        try:
+            return json.loads(user_profile.meta or "{}")
+        except (ValueError, TypeError, AttributeError):
+            return {}
+
+    data = get_extended_profile_data()
+    field_names = configuration_helpers.get_value("extended_profile_fields", [])
+    return [{"field_name": name, "field_value": data.get(name, "")} for name in field_names]
 
 
 def get_profile_visibility(user_profile, user, configuration):

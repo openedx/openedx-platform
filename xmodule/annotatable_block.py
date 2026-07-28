@@ -1,7 +1,8 @@
-# lint-amnesty, pylint: disable=missing-module-docstring
+# pylint: disable=missing-module-docstring
 
 import logging
 import textwrap
+import warnings
 
 from django.conf import settings
 from lxml import etree
@@ -13,13 +14,8 @@ from xblocks_contrib.annotatable import AnnotatableBlock as _ExtractedAnnotatabl
 from openedx.core.djangolib.markup import HTML, Text
 from xmodule.editing_block import EditingMixin
 from xmodule.raw_block import RawMixin
-from xmodule.util.builtin_assets import add_webpack_js_to_fragment, add_css_to_fragment
-from xmodule.x_module import (
-    ResourceTemplates,
-    shim_xmodule_js,
-    XModuleMixin,
-    XModuleToXBlockMixin,
-)
+from xmodule.util.builtin_assets import add_css_to_fragment, add_webpack_js_to_fragment
+from xmodule.x_module import ResourceTemplates, XModuleMixin, XModuleToXBlockMixin, shim_xmodule_js
 from xmodule.xml_block import XmlMixin
 
 log = logging.getLogger(__name__)
@@ -40,6 +36,10 @@ class _BuiltInAnnotatableBlock(
 ):
     """
     Annotatable XBlock.
+
+    .. deprecated:: 2026-03
+       This built-in annotatable block is deprecated. Please use the extracted ``AnnotatableBlock``
+       from ``xblocks_contrib.annotatable`` instead.
     """
 
     is_extracted = False
@@ -82,7 +82,7 @@ class _BuiltInAnnotatableBlock(
 
     HIGHLIGHT_COLORS = ['yellow', 'orange', 'purple', 'blue', 'green']
 
-    def _get_annotation_class_attr(self, index, el):  # lint-amnesty, pylint: disable=unused-argument
+    def _get_annotation_class_attr(self, index, el):  # pylint: disable=unused-argument
         """ Returns a dict with the CSS class attribute to set on the annotation
             and an XML key to delete from the element.
          """
@@ -100,7 +100,7 @@ class _BuiltInAnnotatableBlock(
 
         return {'class': attr}
 
-    def _get_annotation_data_attr(self, index, el):  # lint-amnesty, pylint: disable=unused-argument
+    def _get_annotation_data_attr(self, index, el):  # pylint: disable=unused-argument
         """ Returns a dict in which the keys are the HTML data attributes
             to set on the annotation element. Each data attribute has a
             corresponding 'value' and (optional) '_delete' key to specify
@@ -114,7 +114,7 @@ class _BuiltInAnnotatableBlock(
             'problem': 'data-problem-id'
         }
 
-        for xml_key in attrs_map.keys():  # lint-amnesty, pylint: disable=consider-iterating-dictionary
+        for xml_key in attrs_map.keys():  # pylint: disable=consider-iterating-dictionary
             if xml_key in el.attrib:
                 value = el.get(xml_key, '')
                 html_key = attrs_map[xml_key]
@@ -130,7 +130,7 @@ class _BuiltInAnnotatableBlock(
 
         el.tag = 'span'
 
-        for key in attr.keys():  # lint-amnesty, pylint: disable=consider-iterating-dictionary
+        for key in attr.keys():  # pylint: disable=consider-iterating-dictionary
             el.set(key, attr[key]['value'])
             if '_delete' in attr[key] and attr[key]['_delete'] is not None:
                 delete_key = attr[key]['_delete']
@@ -177,7 +177,7 @@ class _BuiltInAnnotatableBlock(
 
         return self.runtime.service(self, 'mako').render_lms_template('annotatable.html', context)
 
-    def student_view(self, context):  # lint-amnesty, pylint: disable=unused-argument
+    def student_view(self, context):  # pylint: disable=unused-argument
         """
         Renders the output that a student will see.
         """
@@ -216,3 +216,14 @@ def reset_class():
 
 reset_class()
 AnnotatableBlock.__name__ = "AnnotatableBlock"
+
+if not settings.USE_EXTRACTED_ANNOTATABLE_BLOCK:
+    warnings.warn(
+        "The built-in `xmodule.annotatable_block` AnnotatableBlock implementation is deprecated. "
+        "To fix this warning, enable `USE_EXTRACTED_ANNOTATABLE_BLOCK` (set it to True) to use "
+        "`xblocks_contrib.annotatable.AnnotatableBlock` instead. "
+        "Support for the built-in implementation, and the `USE_EXTRACTED_ANNOTATABLE_BLOCK` setting, "
+        "will be removed in Willow.",
+        DeprecationWarning,
+        stacklevel=2,
+    )

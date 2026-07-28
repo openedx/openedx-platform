@@ -2,8 +2,11 @@
 Views for Learner Home
 """
 
+from __future__ import annotations
+
 import logging
 from collections import OrderedDict
+from typing import TYPE_CHECKING, TypedDict
 
 from completion.exceptions import UnavailableCompletionData
 from completion.utilities import get_key_to_last_completed_block
@@ -11,22 +14,19 @@ from django.conf import settings
 from django.urls import reverse
 from edx_django_utils import monitoring as monitoring_utils
 from edx_django_utils.monitoring import function_trace
+from edx_django_utils.plugins import pluggable_override
 from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
-from edx_rest_framework_extensions.auth.session.authentication import (
-    SessionAuthenticationAllowInactiveUser,
-)
+from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
 from edx_rest_framework_extensions.permissions import NotJwtRestrictedApplication
 from opaque_keys.edx.keys import CourseKey
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.edxmako.shortcuts import marketing_link
-from common.djangoapps.student.helpers import (
-    cert_info,
-    user_has_passing_grade_in_course,
-)
+from common.djangoapps.student.helpers import cert_info, user_has_passing_grade_in_course
 from common.djangoapps.student.views.dashboard import (
     complete_course_mode_info,
     credit_statuses,
@@ -34,36 +34,24 @@ from common.djangoapps.student.views.dashboard import (
     get_filtered_course_entitlements,
     get_org_black_and_whitelist_for_site,
 )
-from common.djangoapps.util.course import (
-    get_encoded_course_sharing_utm_params,
-    get_link_for_about_page,
-)
-from common.djangoapps.util.milestones_helpers import (
-    get_pre_requisite_courses_not_completed,
-)
+from common.djangoapps.util.course import get_encoded_course_sharing_utm_params, get_link_for_about_page
+from common.djangoapps.util.milestones_helpers import get_pre_requisite_courses_not_completed
 from lms.djangoapps.branding import toggles
 from lms.djangoapps.bulk_email.models import Optout
 from lms.djangoapps.bulk_email.models_api import is_bulk_email_feature_enabled
 from lms.djangoapps.commerce.utils import EcommerceService
 from lms.djangoapps.courseware.access import administrative_accesses_to_course_for_user
 from lms.djangoapps.courseware.access_utils import check_course_open_for_learner
-from lms.djangoapps.learner_home.serializers import (
-    LearnerDashboardSerializer,
-)
-from lms.djangoapps.learner_home.utils import (
-    get_masquerade_user,
-)
+from lms.djangoapps.learner_home.serializers import LearnerDashboardSerializer
+from lms.djangoapps.learner_home.utils import get_masquerade_user
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from openedx.core.djangoapps.programs.utils import ProgramProgressMeter
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.core.lib.api.authentication import BearerAuthenticationAllowInactiveUser
-from openedx.features.course_duration_limits.access import (
-    get_user_course_expiration_date,
-)
-from openedx.features.enterprise_support.api import (
-    enterprise_customer_from_session_or_learner_data,
-    get_enterprise_learner_data_from_db,
-)
+from openedx.features.course_duration_limits.access import get_user_course_expiration_date
+
+if TYPE_CHECKING:
+    from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
 
 logger = logging.getLogger(__name__)
 
@@ -208,17 +196,29 @@ def get_email_settings_info(user, course_enrollments):
     return show_email_settings_for, course_optouts
 
 
+class EnterpriseCustomerData(TypedDict):
+    """Contract for the OVERRIDE_LEARNER_HOME_GET_ENTERPRISE_CUSTOMER return value."""
+    name: str
+    uuid: str
+    slug: str
+    auth_org_id: str | None
+    enable_learner_portal: bool
+
+
 @function_trace("get_enterprise_customer")
-def get_enterprise_customer(user, request, is_masquerading):
+@pluggable_override('OVERRIDE_LEARNER_HOME_GET_ENTERPRISE_CUSTOMER')
+def get_enterprise_customer(
+    user: User,
+    request: Request,
+    is_masquerading: bool,
+) -> EnterpriseCustomerData | None:
     """
-    If we are not masquerading, try to load the enterprise learner from session data, falling back to the db.
-    If we are masquerading, don't read or write to/from session data, go directly to db.
+    Return the enterprise customer dict for the given user, or None.
+
+    This function can be overridden by an installed plugin via the
+    OVERRIDE_LEARNER_HOME_GET_ENTERPRISE_CUSTOMER setting.
     """
-    if is_masquerading:
-        learner_data = get_enterprise_learner_data_from_db(user)
-        return learner_data[0]["enterprise_customer"] if learner_data else None
-    else:
-        return enterprise_customer_from_session_or_learner_data(request)
+    return None
 
 
 @function_trace("get_ecommerce_payment_page")

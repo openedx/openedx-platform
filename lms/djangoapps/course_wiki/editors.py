@@ -51,10 +51,10 @@ class CodeMirror(BaseEditor):
     """
     editor_id = 'codemirror'
 
-    def get_admin_widget(self, instance=None):  # lint-amnesty, pylint: disable=arguments-differ, unused-argument
+    def get_admin_widget(self, instance=None):  # pylint: disable=arguments-differ, unused-argument
         return MarkItUpAdminWidget()
 
-    def get_widget(self, instance=None):  # lint-amnesty, pylint: disable=unused-argument
+    def get_widget(self, instance=None):  # pylint: disable=unused-argument
         return CodeMirrorWidget()
 
     class AdminMedia:  # pylint: disable=missing-class-docstring

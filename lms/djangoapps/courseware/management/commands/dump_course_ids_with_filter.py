@@ -7,15 +7,15 @@ The output format is one course_id per line.
 """
 
 import datetime
-
 from textwrap import dedent
 
 from django.core.management.base import BaseCommand
 from django.db.models import Q
+
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 
 
-class Command(BaseCommand):  # lint-amnesty, pylint: disable=missing-class-docstring
+class Command(BaseCommand):  # pylint: disable=missing-class-docstring
     help = dedent(__doc__).strip()
 
     def add_arguments(self, parser):

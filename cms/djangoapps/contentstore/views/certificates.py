@@ -29,35 +29,27 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.http import HttpResponse
 from django.shortcuts import redirect
-from django.utils.translation import gettext as _
 from django.utils.decorators import method_decorator
+from django.utils.translation import gettext as _
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_http_methods
-from rest_framework.views import APIView
+from opaque_keys.edx.keys import CourseKey
+from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework import status
-from opaque_keys.edx.keys import CourseKey
+from rest_framework.views import APIView
 
-from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin
-from common.djangoapps.edxmako.shortcuts import render_to_response
+from cms.djangoapps.contentstore.views.permissions import HasStudioWriteAccess
+from cms.djangoapps.contentstore.views.serializers import CertificateActivationSerializer, CertificateSerializer
 from common.djangoapps.student.auth import has_studio_write_access
 from common.djangoapps.student.roles import GlobalStaff
-
 from common.djangoapps.util.json_request import JsonResponse
-from xmodule.modulestore import EdxJSONEncoder  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin
+from xmodule.modulestore import EdxJSONEncoder  # pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 
-from cms.djangoapps.contentstore.views.serializers import CertificateActivationSerializer, CertificateSerializer
-from cms.djangoapps.contentstore.views.permissions import HasStudioWriteAccess
-
+from ..utils import get_certificates_url, reverse_course_url
 from .certificate_manager import CertificateManager, CertificateValidationError
-from ..toggles import use_new_certificates_page
-from ..utils import (
-    get_certificates_context,
-    get_certificates_url,
-    reverse_course_url,
-)
 
 CERTIFICATE_MINIMUM_ID = 100
 
@@ -149,10 +141,7 @@ def certificates_list_handler(request, course_key_string):
             return JsonResponse({"error": msg}, status=403)
 
         if 'text/html' in request.META.get('HTTP_ACCEPT', 'text/html'):
-            if use_new_certificates_page(course_key):
-                return redirect(get_certificates_url(course_key))
-            certificates_context = get_certificates_context(course, request.user)
-            return render_to_response('certificates.html', certificates_context)
+            return redirect(get_certificates_url(course_key))
         elif "application/json" in request.META.get('HTTP_ACCEPT'):
             # Retrieve the list of certificates for the specified course
             if request.method == 'GET':
@@ -298,7 +287,7 @@ def signatory_detail_handler(request, course_key_string, certificate_id, signato
 
         match_cert = None
         # pylint: disable=unused-variable
-        for index, cert in enumerate(certificates_list):
+        for index, cert in enumerate(certificates_list):  # noqa: B007
             if certificate_id is not None:
                 if int(cert['id']) == int(certificate_id):
                     match_cert = cert

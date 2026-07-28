@@ -9,7 +9,7 @@ from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthenticat
 from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey
-from opaque_keys.edx.locator import LibraryLocatorV2, CourseLocator, LibraryLocator
+from opaque_keys.edx.locator import CourseLocator, LibraryLocator, LibraryLocatorV2
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.exceptions import ParseError, PermissionDenied, ValidationError
@@ -31,8 +31,11 @@ from openedx.core.lib.api.authentication import BearerAuthenticationAllowInactiv
 
 from ... import models
 from ...data import (
-    SourceContextKey, ModulestoreMigration, ModulestoreBlockMigrationResult,
-    CompositionLevel, RepeatHandlingStrategy,
+    CompositionLevel,
+    ModulestoreBlockMigrationResult,
+    ModulestoreMigration,
+    RepeatHandlingStrategy,
+    SourceContextKey,
 )
 from .serializers import (
     BlockMigrationInfoSerializer,
@@ -40,8 +43,8 @@ from .serializers import (
     LibraryMigrationCourseSerializer,
     MigrationInfoResponseSerializer,
     ModulestoreMigrationSerializer,
-    StatusWithModulestoreMigrationsSerializer,
     PreviewMigrationSerializer,
+    StatusWithModulestoreMigrationsSerializer,
 )
 
 log = logging.getLogger(__name__)
@@ -75,7 +78,7 @@ _error_responses = {
 )
 class MigrationViewSet(StatusViewSet):
     """
-    JSON HTTP API to create and check on ModuleStore-to-Learning-Core migration tasks.
+    JSON HTTP API to create and check on ModuleStore-to-openedx_content migration tasks.
     """
 
     authentication_classes = (
@@ -257,7 +260,7 @@ class MigrationViewSet(StatusViewSet):
 
 class BulkMigrationViewSet(StatusViewSet):
     """
-    JSON HTTP API to bulk-create ModuleStore-to-Learning-Core migration tasks.
+    JSON HTTP API to bulk-create ModuleStore-to-openedx_content migration tasks.
     """
 
     authentication_classes = (
@@ -537,7 +540,7 @@ class LibraryCourseMigrationViewSet(GenericViewSet, ListModelMixin):
             self.request.user,
             lib_api.permissions.CAN_VIEW_THIS_CONTENT_LIBRARY
         )
-        queryset = queryset.filter(target__key=library_key, source__key__startswith='course-v1')
+        queryset = queryset.filter(target__package_ref=str(library_key), source__key__startswith='course-v1')
 
         return queryset
 

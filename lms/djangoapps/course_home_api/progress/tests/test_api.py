@@ -2,32 +2,32 @@
 Tests for the Python APIs exposed by the Progress API of the Course Home API app.
 """
 
+from datetime import datetime, timedelta, timezone
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from django.test import TestCase
 from xblock.scorable import ShowCorrectness
 
 from lms.djangoapps.course_home_api.progress.api import (
-    calculate_progress_for_learner_in_course,
     aggregate_assignment_type_grade_summary,
+    calculate_progress_for_learner_in_course,
 )
-from datetime import datetime, timedelta, timezone
-from types import SimpleNamespace
 
 
-def _make_subsection(fmt, earned, possible, show_corr, *, due_delta_days=None):
+def _make_subsection(fmt, earned, possible, show_corr, *, due_delta_days=None, is_included=True):
     """Build a lightweight subsection object for testing aggregation scenarios."""
     graded_total = SimpleNamespace(earned=earned, possible=possible)
     due = None
     if due_delta_days is not None:
-        due = datetime.now(timezone.utc) + timedelta(days=due_delta_days)
+        due = datetime.now(timezone.utc) + timedelta(days=due_delta_days)  # noqa: UP017
     return SimpleNamespace(
         graded=True,
         format=fmt,
         graded_total=graded_total,
         show_correctness=show_corr,
         due=due,
-        show_grades=lambda staff: True,
+        show_grades=lambda staff: is_included,
     )
 
 
@@ -63,10 +63,10 @@ _AGGREGATION_SCENARIOS = [
         'past_due_mixed_visibility',
         {'type': 'Lab', 'weight': 1.0, 'drop_count': 0, 'min_count': 2, 'short_label': 'LB'},
         [
-            _make_subsection('Lab', 0.8, 1, ShowCorrectness.PAST_DUE, due_delta_days=-1),
-            _make_subsection('Lab', 0.2, 1, ShowCorrectness.PAST_DUE, due_delta_days=+3),
+            _make_subsection('Lab', 0.8, 1, ShowCorrectness.PAST_DUE, due_delta_days=-1, is_included=True),
+            _make_subsection('Lab', 0.2, 1, ShowCorrectness.PAST_DUE, due_delta_days=+3, is_included=True),
         ],
-        {'avg': 0.4, 'weighted': 0.4, 'hidden': 'some', 'final': 0.5},
+        {'avg': 0.4, 'weighted': 0.4, 'hidden': 'some', 'final': 0.5, 'last_grade_publish_date_days': 3},
     ),
     (
         'drop_lowest_keeps_high_scores',
@@ -78,6 +78,14 @@ _AGGREGATION_SCENARIOS = [
             _make_subsection('Project', 0, 1, ShowCorrectness.ALWAYS),
         ],
         {'avg': 1.0, 'weighted': 1.0, 'hidden': 'none', 'final': 1.0},
+    ),
+    (
+        'unreleased_with_future_due_date',
+        {'type': 'Midterm', 'weight': 1.0, 'drop_count': 0, 'min_count': 1, 'short_label': 'MT'},
+        [
+            _make_subsection('Midterm', 0.5, 1, ShowCorrectness.PAST_DUE, due_delta_days=7, is_included=False),
+        ],
+        {'avg': 0.0, 'weighted': 0.0, 'hidden': 'all', 'final': 0.0, 'last_grade_publish_date_days': 7},
     ),
 ]
 
@@ -170,7 +178,7 @@ class ProgressApiTests(TestCase):
                     has_staff_access=False,
                 )
 
-                assert 'results' in result and 'final_grades' in result
+                assert 'results' in result and 'final_grades' in result  # noqa: PT018
                 assert result['final_grades'] == expected['final']
                 assert len(result['results']) == 1
 
@@ -180,3 +188,6 @@ class ProgressApiTests(TestCase):
                 assert row['weighted_grade'] == expected['weighted']
                 assert row['has_hidden_contribution'] == expected['hidden']
                 assert row['num_droppable'] == policy['drop_count']
+                assert (row['last_grade_publish_date'] is not None) == (
+                    'last_grade_publish_date_days' in expected
+                )

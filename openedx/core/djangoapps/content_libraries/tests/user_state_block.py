@@ -5,8 +5,8 @@ Block for testing variously scoped XBlock fields.
 import json
 
 from webob import Response
-from xblock.core import XBlock, Scope
 from xblock import fields
+from xblock.core import Scope, XBlock
 
 
 class UserStateTestBlock(XBlock):

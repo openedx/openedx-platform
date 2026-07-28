@@ -16,16 +16,13 @@ from MySQLdb import OperationalError
 from opaque_keys.edx.keys import CourseKey
 
 from common.djangoapps.course_modes.models import CourseMode
-from lms.djangoapps.certificates.api import (
-    get_generated_certificate,
-    get_recently_modified_certificates
-)
+from lms.djangoapps.certificates.api import get_generated_certificate, get_recently_modified_certificates
 from lms.djangoapps.certificates.data import CertificateStatuses
 from lms.djangoapps.grades.api import CourseGradeFactory, get_recently_modified_grades
 from openedx.core.djangoapps.catalog.utils import get_programs
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
-from openedx.core.djangoapps.credentials.helpers import is_learner_records_enabled_for_org
 from openedx.core.djangoapps.credentials.api import is_credentials_enabled
+from openedx.core.djangoapps.credentials.helpers import is_learner_records_enabled_for_org
 from openedx.core.djangoapps.credentials.utils import get_credentials_api_base_url, get_credentials_api_client
 from openedx.core.djangoapps.programs.signals import (
     handle_course_cert_awarded,

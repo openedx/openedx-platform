@@ -13,21 +13,25 @@ from contextlib import contextmanager
 from time import time
 from zoneinfo import ZoneInfo
 
-from ccx_keys.locator import CCXLocator
-from django.core.cache import caches, InvalidCacheBackendError
-from django.db.transaction import TransactionManagementError
 import pymongo
-# Import this just to export it
-from pymongo.errors import DuplicateKeyError  # pylint: disable=unused-import
+from ccx_keys.locator import CCXLocator
+from django.core.cache import InvalidCacheBackendError, caches
+from django.db.models import F
+from django.db.models.functions import Lower
+from django.db.models.lookups import Exact
+from django.db.transaction import TransactionManagementError
 from edx_django_utils import monitoring
 from edx_django_utils.cache import RequestCache
 
+# Import this just to export it
+from pymongo.errors import DuplicateKeyError  # pylint: disable=unused-import  # noqa: F401
+
 from common.djangoapps.split_modulestore_django.models import SplitModulestoreCourseIndex
+from openedx.core.lib.cache_utils import request_cached
 from xmodule.exceptions import HeartbeatFailure
 from xmodule.modulestore import BlockData
 from xmodule.modulestore.split_mongo import BlockKey
 from xmodule.mongo_utils import connect_to_mongodb, create_collection_index
-from openedx.core.lib.cache_utils import request_cached
 
 log = logging.getLogger(__name__)
 
@@ -90,7 +94,7 @@ class Tagger:
         and also all of the added measurements, bucketed into powers of 2).
         """
         return [
-            '{}:{}'.format(name, round_power_2(size))
+            '{}:{}'.format(name, round_power_2(size))  # noqa: UP032
             for name, size in self.measures
         ] + [
             f'{name}:{value}'
@@ -129,11 +133,11 @@ class QueryTimer:
         tagger = Tagger(self._sample_rate)
         metric_name = f"{self._metric_base}.{metric_name}"
 
-        start = time()  # lint-amnesty, pylint: disable=unused-variable
+        start = time()  # pylint: disable=unused-variable  # noqa: F841
         try:
             yield tagger
         finally:
-            end = time()  # lint-amnesty, pylint: disable=unused-variable
+            end = time()  # pylint: disable=unused-variable  # noqa: F841
             tags = tagger.tags
             tags.append(f'course:{course_context}')
 
@@ -228,7 +232,7 @@ class CourseStructureCache:
                 tagger.measure('uncompressed_size', len(pickled_data))
 
                 return pickle.loads(pickled_data, encoding='latin-1')
-            except Exception:  # lint-amnesty, pylint: disable=broad-except
+            except Exception:  # pylint: disable=broad-except
                 # The cached data is corrupt in some way, get rid of it.
                 log.warning("CourseStructureCache: Bad data in cache for %s", course_context)
                 self.cache.delete(key)
@@ -269,7 +273,7 @@ class MongoPersistenceBackend:
 
     def __init__(
         self, db, collection, host, port=27017, tz_aware=True, user=None, password=None,
-        asset_collection=None, with_mysql_subclass=False, **kwargs  # lint-amnesty, pylint: disable=unused-argument
+        asset_collection=None, with_mysql_subclass=False, **kwargs  # pylint: disable=unused-argument
     ):
         """
         Create & open the connection, authenticate, and provide pointers to the collections
@@ -313,7 +317,7 @@ class MongoPersistenceBackend:
             self.database.client.admin.command('ismaster')
             return True
         except pymongo.errors.ConnectionFailure:
-            raise HeartbeatFailure(f"Can't connect to {self.database.name}", 'mongo')  # lint-amnesty, pylint: disable=raise-missing-from
+            raise HeartbeatFailure(f"Can't connect to {self.database.name}", 'mongo')  # pylint: disable=raise-missing-from  # noqa: B904
 
     def check_connection(self):
         """
@@ -415,7 +419,7 @@ class MongoPersistenceBackend:
         with TIMER.timer("get_course_index", key):
             if ignore_case:
                 query = {
-                    key_attr: re.compile('^{}$'.format(re.escape(getattr(key, key_attr))), re.IGNORECASE)
+                    key_attr: re.compile('^{}$'.format(re.escape(getattr(key, key_attr))), re.IGNORECASE)  # noqa: UP032
                     for key_attr in ('org', 'course', 'run')
                 }
             else:
@@ -659,13 +663,15 @@ class DjangoFlexPersistenceBackend(MongoPersistenceBackend):
         # We never include the branch or the version in the course key in the SplitModulestoreCourseIndex table:
         key = key.for_branch(None).version_agnostic()
         if not ignore_case:
-            query = {"course_id": key}
+            query_expr = Exact(F("course_id"), str(key))
         else:
             # Case insensitive search is important when creating courses to reject course IDs that differ only by
             # capitalization.
-            query = {"course_id__iexact": key}
+            # WARNING: 'course_id__iexact=key' does not work on this table as it uses a case-sensitive collation.
+            # We need to use the following explicit lowercase comparison in order to correctly query:
+            query_expr = Exact(Lower("course_id"), str(key).lower())
         try:
-            return SplitModulestoreCourseIndex.objects.get(**query).as_v1_schema()
+            return SplitModulestoreCourseIndex.objects.get(query_expr).as_v1_schema()
         except SplitModulestoreCourseIndex.DoesNotExist:
             # The mongo implementation does not retrieve by string key; it retrieves by (org, course, run) tuple.
             # As a result, it will handle read requests for a CCX key like

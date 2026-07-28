@@ -10,8 +10,8 @@ import threading
 import traceback
 from collections import defaultdict
 from contextlib import contextmanager
-from uuid import uuid4
 from unittest.mock import patch
+from uuid import uuid4
 from zoneinfo import ZoneInfo
 
 import pymongo.message
@@ -26,7 +26,6 @@ from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.mixed import strip_key
 from xmodule.modulestore.tests.sample_courses import TOY_BLOCK_INFO_TREE, default_block_info_tree
 from xmodule.tabs import CourseTab
-
 
 LOG = logging.getLogger(__name__)
 
@@ -86,7 +85,7 @@ class XModuleFactory(Factory):
         model = Dummy
 
     @lazy_attribute
-    def modulestore(self):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def modulestore(self):  # pylint: disable=missing-function-docstring
         msg = "XMODULE_FACTORY_LOCK not enabled. Please use ModuleStoreTestCase as your test baseclass."
         assert XMODULE_FACTORY_LOCK.is_enabled(), msg
 
@@ -107,7 +106,7 @@ class CourseFactory(XModuleFactory):
 
     # pylint: disable=unused-argument
     @classmethod
-    def _create(cls, target_class, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ
+    def _create(cls, target_class, **kwargs):  # pylint: disable=arguments-differ
         """
         Create and return a new course. For performance reasons, we do not emit
         signals during this process, but if you need signals to run, you can
@@ -266,7 +265,7 @@ class LibraryFactory(XModuleFactory):
 
     # pylint: disable=unused-argument
     @classmethod
-    def _create(cls, target_class, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ
+    def _create(cls, target_class, **kwargs):  # pylint: disable=arguments-differ
         """
         Create a library with a unique name and key.
         All class attributes (from this class and base classes) are automagically
@@ -297,14 +296,14 @@ class BlockFactory(XModuleFactory):
     descriptive_tag = None
 
     @lazy_attribute_sequence
-    def display_name(self, n):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def display_name(self, n):  # pylint: disable=missing-function-docstring
         if self.descriptive_tag:
             return f"{self.category} {n} - {self.descriptive_tag}"
         else:
             return f"{self.category} {n}"
 
     @lazy_attribute
-    def location(self):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def location(self):  # pylint: disable=missing-function-docstring
         if self.display_name is None:
             dest_name = uuid4().hex
         else:
@@ -317,7 +316,7 @@ class BlockFactory(XModuleFactory):
         return new_location
 
     @lazy_attribute
-    def parent_location(self):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def parent_location(self):  # pylint: disable=missing-function-docstring
         default_location = getattr(last_course, 'loc', None)
         try:
             parent = self.parent
@@ -333,7 +332,7 @@ class BlockFactory(XModuleFactory):
 
     @classmethod
     @strip_key
-    def _create(cls, target_class, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ, too-many-statements, unused-argument
+    def _create(cls, target_class, **kwargs):  # pylint: disable=arguments-differ, too-many-statements, unused-argument
         """
         Uses ``**kwargs``:
 
@@ -437,7 +436,7 @@ class BlockFactory(XModuleFactory):
                 store.update_item(course, user_id)
 
             # parent and publish the item, so it can be accessed
-            if 'detached' not in block._class_tags:  # lint-amnesty, pylint: disable=protected-access
+            if 'detached' not in block._class_tags:  # pylint: disable=protected-access
                 parent.children.append(location)
                 store.update_item(parent, user_id)
                 if publish_item:
@@ -608,26 +607,26 @@ def check_sum_of_calls(object_, methods, maximum_calls, minimum_calls=1, include
     messages = []
     # Assertion errors don't handle multi-line values, so pretty-print to std-out instead
     if not minimum_calls <= call_count <= maximum_calls:
-        messages = ["Expected between {} and {} calls, {} were made.\n\n".format(
+        messages = ["Expected between {} and {} calls, {} were made.\n\n".format(  # noqa: UP032
             minimum_calls,
             maximum_calls,
             call_count,
         )]
         for method_name, capture_fn in mocks.items():
             stack_counter = capture_fn.stack_counter
-            messages.append("{!r} was called {} times:\n".format(
+            messages.append("{!r} was called {} times:\n".format(  # noqa: UP032
                 method_name,
                 stack_counter.total_calls
             ))
             for stack in stack_counter:
-                messages.append("  called {} times:\n\n".format(stack_counter.stack_calls(stack)))
+                messages.append("  called {} times:\n\n".format(stack_counter.stack_calls(stack)))  # noqa: UP032
                 messages.append("    " + "    ".join(traceback.format_list(stack)))
                 messages.append("\n\n")
                 if include_arguments:
                     for (args, kwargs), count in stack_counter[stack].items():
                         messages.append(f"      called {count} times with:\n")
                         messages.append(f"      args: {args}\n")
-                        messages.append("      kwargs: {}\n\n".format(dict(kwargs)))
+                        messages.append("      kwargs: {}\n\n".format(dict(kwargs)))  # noqa: UP032
 
     # verify that we called the methods within the desired range
     assert minimum_calls <= call_count <= maximum_calls, "".join(messages)
@@ -712,7 +711,7 @@ class CourseAboutFactory(XModuleFactory):
     """
 
     @classmethod
-    def _create(cls, target_class, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ, unused-argument
+    def _create(cls, target_class, **kwargs):  # pylint: disable=arguments-differ, unused-argument
         """
         Uses **kwargs:
 

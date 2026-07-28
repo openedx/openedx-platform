@@ -8,10 +8,10 @@ from urllib.parse import urlencode
 
 from django.conf import settings
 from opaque_keys.edx.keys import CourseKey, UsageKey
+from openedx_filters.learning.filters import CourseAboutPageURLRequested
 
 from lms.djangoapps.branding.toggles import use_catalog_mfe
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
-from openedx_filters.learning.filters import CourseAboutPageURLRequested
 
 log = logging.getLogger(__name__)
 
@@ -80,7 +80,7 @@ def has_certificates_enabled(course):
         course: This can be either a course overview object or a course block.
     Returns a boolean if the course has enabled certificates
     """
-    if not settings.FEATURES.get('CERTIFICATES_HTML_VIEW', False):
+    if not settings.CERTIFICATES_HTML_VIEW:
         return False
     return course.cert_html_view_enabled
 

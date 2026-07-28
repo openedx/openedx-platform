@@ -26,9 +26,7 @@ def view_survey(request, survey_name):
     """
     View to render the survey to the end user
     """
-    redirect_url = request.GET.get('redirect_url')
-
-    return view_student_survey(request.user, survey_name, redirect_url=redirect_url)
+    return view_student_survey(request.user, survey_name)
 
 
 def view_student_survey(user, survey_name, course=None, redirect_url=None, is_required=False, skip_redirect_url=None):
@@ -88,9 +86,7 @@ def submit_answers(request, survey_name):
         array_val = request.POST.getlist(key)
         answers[key] = request.POST[key] if len(array_val) == 0 else ','.join(array_val)
 
-    # the URL we are supposed to redirect to is
-    # in a hidden form field
-    redirect_url = answers['_redirect_url'] if '_redirect_url' in answers else reverse('dashboard')
+    redirect_url = reverse('dashboard')
 
     course_key = CourseKey.from_string(answers['course_id']) if 'course_id' in answers else None
 
@@ -99,7 +95,7 @@ def submit_answers(request, survey_name):
     # scrub the answers to make sure nothing malicious from the user gets stored in
     # our database, e.g. JavaScript
     filtered_answers = {}
-    for answer_key in answers.keys():  # lint-amnesty, pylint: disable=consider-iterating-dictionary
+    for answer_key in answers.keys():  # pylint: disable=consider-iterating-dictionary
         # only allow known input fields
         if answer_key in allowed_field_names:
             filtered_answers[answer_key] = escape(answers[answer_key])

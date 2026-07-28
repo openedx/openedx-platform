@@ -105,56 +105,8 @@ enterprise.HistoricalEnterpriseCustomerCatalog:
 enterprise.HistoricalEnterpriseCustomerEntitlement:
   ".. no_pii:": "No PII"
 
-# Via edx-ora2, these can be removed once the models are annotated for real
-assessment.Assessment:
-  ".. no_pii:": "No PII"
-assessment.AssessmentFeedback:
-  ".. no_pii:": "No PII"
-assessment.AssessmentFeedbackOption:
-  ".. no_pii:": "No PII"
-assessment.AssessmentPart:
-  ".. no_pii:": "No PII"
-assessment.Criterion:
-  ".. no_pii:": "No PII"
-assessment.CriterionOption:
-  ".. no_pii:": "No PII"
-assessment.PeerWorkflow:
-  ".. no_pii:": "No PII"
-assessment.PeerWorkflowItem:
-  ".. no_pii:": "No PII"
-assessment.Rubric:
-  ".. no_pii:": "No PII"
-assessment.StaffWorkflow:
-  ".. no_pii:": "No PII"
-assessment.StudentTrainingWorkflow:
-  ".. no_pii:": "No PII"
-assessment.StudentTrainingWorkflowItem:
-  ".. no_pii:": "No PII"
-assessment.TrainingExample:
-  ".. no_pii:": "No PII"
-workflow.AssessmentWorkflow:
-  ".. no_pii:": "No PII"
-workflow.AssessmentWorkflowCancellation:
-  ".. no_pii:": "No PII"
-workflow.AssessmentWorkflowStep:
-  ".. no_pii:": "No PII"
-
 # Via edx-celeryutils
 celery_utils.ChordData:
-  ".. no_pii:": "No PII"
-
-# Via completion XBlock
-completion.BlockCompletion:
-  ".. no_pii:": "No PII"
-
-# Via django_notify (required / installed by wiki)
-django_notify.Notification:
-  ".. no_pii:": "No PII"
-django_notify.NotificationType:
-  ".. no_pii:": "No PII"
-django_notify.Settings:
-  ".. no_pii:": "No PII"
-django_notify.Subscription:
   ".. no_pii:": "No PII"
 
 # Via django-openid-auth https://github.com/edx/django-openid-auth
@@ -203,40 +155,10 @@ edx_name_affirmation.HistoricalVerifiedName:
   ".. pii_types:": "name"
   ".. pii_retirement:": "local_api"
 
-# Via VAL
-edxval.CourseVideo:
-  ".. no_pii:": "No PII"
-edxval.EncodedVideo:
-  ".. no_pii:": "No PII"
-edxval.Profile:
-  ".. no_pii:": "No PII"
-edxval.ThirdPartyTranscriptCredentialsState:
-  ".. no_pii:": "No PII"
-edxval.TranscriptPreference:
-  ".. no_pii:": "No PII"
-edxval.Video:
-  ".. no_pii:": "No PII"
-edxval.VideoImage:
-  ".. no_pii:": "No PII"
-edxval.VideoTranscript:
-  ".. no_pii:": "No PII"
-
 # Via PyLTI1p3
 lti1p3_tool_config.LtiTool:
   ".. no_pii:": "No PII"
 lti1p3_tool_config.LtiToolKey:
-  ".. no_pii:": "No PII"
-
-# Via Milestones
-milestones.CourseContentMilestone:
-  ".. no_pii:": "No PII"
-milestones.CourseMilestone:
-  ".. no_pii:": "No PII"
-milestones.Milestone:
-  ".. no_pii:": "No PII"
-milestones.MilestoneRelationshipType:
-  ".. no_pii:": "No PII"
-milestones.UserMilestone:
   ".. no_pii:": "No PII"
 
 # Via Django OAuth2 Provider https://github.com/edx/django-oauth2-provider
@@ -289,12 +211,6 @@ oauth_provider.Token:
   ".. pii_types:": external_service, password
   ".. pii_retirement:": retained
 
-# Via edx-organizations
-organizations.Organization:
-  ".. no_pii:": "No PII"
-organizations.OrganizationCourse:
-  ".. no_pii:": "No PII"
-
 # Via Problem Builder XBlock
 problem_builder.Answer:
   ".. no_pii:": "No PII"
@@ -321,28 +237,8 @@ social_django.UserSocialAuth:
 splash.SplashConfig:
   ".. no_pii:": "No PII"
 
-# Via edx-submissions
-submissions.Score:
-  ".. no_pii:": "No PII"
-submissions.ScoreAnnotation:
-  ".. no_pii:": "No PII"
-submissions.ScoreSummary:
-  ".. no_pii:": "No PII"
-submissions.StudentItem:
-  ".. no_pii:": "No PII"
-submissions.Submission:
-  ".. no_pii:": "No PII"
-submissions.TeamSubmission:
-  ".. no_pii:": "No PII"
-
 # Via sorl-thumbnail https://github.com/jazzband/sorl-thumbnail
 thumbnail.KVStore:
-  ".. no_pii:": "No PII"
-
-# Via django-user-tasks
-user_tasks.UserTaskArtifact:
-  ".. no_pii:": "No PII"
-user_tasks.UserTaskStatus:
   ".. no_pii:": "No PII"
 
 # Via waffle
@@ -353,22 +249,198 @@ waffle.Sample:
 waffle.Switch:
   ".. no_pii:": "No PII"
 
-# Via django-wiki https://github.com/openedx/django-wiki
-wiki.Article:
+# Additional non-local or generated models requiring safelist coverage
+agreements.HistoricalUserAgreement:
   ".. no_pii:": "No PII"
-wiki.ArticleForObject:
+assessment.HistoricalSharedFileUpload:
   ".. no_pii:": "No PII"
-wiki.ArticlePlugin:
+casbin_adapter.CasbinRule:
   ".. no_pii:": "No PII"
-wiki.ArticleRevision:
+channel_integration.ApiResponseRecord:
   ".. no_pii:": "No PII"
-wiki.ReusablePlugin:
+channel_integration.GenericEnterpriseCustomerPluginConfiguration:
   ".. no_pii:": "No PII"
-wiki.RevisionPlugin:
+channel_integration.IntegratedChannelAPIRequestLogs:
   ".. no_pii:": "No PII"
-wiki.RevisionPluginRevision:
+channel_integration.OrphanedContentTransmissions:
   ".. no_pii:": "No PII"
-wiki.SimplePlugin:
+edx_proctoring.HistoricalProctoredExam:
   ".. no_pii:": "No PII"
-wiki.URLPath:
+edx_proctoring.HistoricalProctoredExamStudentAttempt:
   ".. no_pii:": "No PII"
+enterprise.HistoricalDefaultEnterpriseEnrollmentIntention:
+  ".. no_pii:": "No PII"
+enterprise.HistoricalDefaultEnterpriseEnrollmentRealization:
+  ".. no_pii:": "No PII"
+enterprise.HistoricalEnterpriseCourseEntitlement:
+  ".. no_pii:": "No PII"
+enterprise.HistoricalEnterpriseCustomerInviteKey:
+  ".. no_pii:": "No PII"
+enterprise.HistoricalEnterpriseCustomerSsoConfiguration:
+  ".. no_pii:": "No PII"
+enterprise.HistoricalEnterpriseCustomerUser:
+  ".. no_pii:": "No PII"
+enterprise.HistoricalEnterpriseGroup:
+  ".. no_pii:": "No PII"
+enterprise.HistoricalEnterpriseGroupMembership:
+  ".. no_pii:": "No PII"
+enterprise.HistoricalLearnerCreditEnterpriseCourseEnrollment:
+  ".. no_pii:": "No PII"
+enterprise.HistoricalLicensedEnterpriseCourseEnrollment:
+  ".. no_pii:": "No PII"
+enterprise.HistoricalPendingEnrollment:
+  ".. no_pii:": "No PII"
+enterprise.HistoricalPendingEnterpriseCustomerAdminUser:
+  ".. pii:": "Contains pending enterprise admin email address."
+  ".. pii_types:": "email_address"
+  ".. pii_retirement:": "consumer_api"
+enterprise.HistoricalPendingEnterpriseCustomerUser:
+  ".. pii:": "Contains pending enterprise learner email address."
+  ".. pii_types:": "email_address"
+  ".. pii_retirement:": "consumer_api"
+enterprise.HistoricalSystemWideEnterpriseUserRoleAssignment:
+  ".. no_pii:": "No PII"
+forum.AbuseFlagger:
+  ".. no_pii:": "No PII"
+forum.Comment:
+  ".. pii:": "Forum comments may contain user-generated content and usernames."
+  ".. pii_types:": "username, biography"
+  ".. pii_retirement:": "local_api"
+forum.CommentThread:
+  ".. pii:": "Forum thread content may include user-generated text and usernames."
+  ".. pii_types:": "username, biography"
+  ".. pii_retirement:": "local_api"
+forum.CourseStat:
+  ".. no_pii:": "No PII"
+forum.EditHistory:
+  ".. pii:": "Forum edit history stores user-generated text and author identifiers."
+  ".. pii_types:": "username, biography"
+  ".. pii_retirement:": "local_api"
+forum.ForumUser:
+  ".. pii:": "Forum profile links and username data."
+  ".. pii_types:": "username"
+  ".. pii_retirement:": "local_api"
+forum.HistoricalAbuseFlagger:
+  ".. no_pii:": "No PII"
+forum.LastReadTime:
+  ".. no_pii:": "No PII"
+forum.MongoContent:
+  ".. no_pii:": "No PII"
+forum.ReadState:
+  ".. no_pii:": "No PII"
+forum.Subscription:
+  ".. no_pii:": "No PII"
+forum.UserVote:
+  ".. no_pii:": "No PII"
+lti_consumer.Lti1p3Passport:
+  ".. pii:": "Stores third-party LTI service credentials and identifiers."
+  ".. pii_types:": "password, external_service"
+  ".. pii_retirement:": "retained"
+oel_collections.Collection:
+  ".. no_pii:": "No PII"
+oel_components.Component:
+  ".. no_pii:": "No PII"
+oel_publishing.Container:
+  ".. no_pii:": "No PII"
+oel_publishing.DraftChangeLog:
+  ".. no_pii:": "No PII"
+oel_publishing.DraftChangeLogRecord:
+  ".. no_pii:": "No PII"
+oel_publishing.LearningPackage:
+  ".. no_pii:": "No PII"
+oel_publishing.PublishableEntity:
+  ".. no_pii:": "No PII"
+oel_tagging.ObjectTag:
+  ".. no_pii:": "No PII"
+oel_tagging.Tag:
+  ".. no_pii:": "No PII"
+oel_tagging.TagImportTask:
+  ".. no_pii:": "No PII"
+oel_tagging.Taxonomy:
+  ".. no_pii:": "No PII"
+openedx_catalog.CatalogCourse:
+  ".. no_pii:": "No PII"
+openedx_catalog.CourseRun:
+  ".. no_pii:": "No PII"
+openedx_content.Collection:
+  ".. no_pii:": "No PII"
+openedx_content.CollectionPublishableEntity:
+  ".. no_pii:": "No PII"
+openedx_content.Component:
+  ".. no_pii:": "No PII"
+openedx_content.ComponentType:
+  ".. no_pii:": "No PII"
+openedx_content.ComponentVersion:
+  ".. no_pii:": "No PII"
+openedx_content.ComponentVersionMedia:
+  ".. no_pii:": "No PII"
+openedx_content.Container:
+  ".. no_pii:": "No PII"
+openedx_content.ContainerType:
+  ".. no_pii:": "No PII"
+openedx_content.ContainerVersion:
+  ".. no_pii:": "No PII"
+openedx_content.Draft:
+  ".. no_pii:": "No PII"
+openedx_content.EntityList:
+  ".. no_pii:": "No PII"
+openedx_content.EntityListRow:
+  ".. no_pii:": "No PII"
+openedx_content.LearningPackage:
+  ".. no_pii:": "No PII"
+openedx_content.Media:
+  ".. no_pii:": "No PII"
+openedx_content.MediaType:
+  ".. no_pii:": "No PII"
+openedx_content.PublishLog:
+  ".. no_pii:": "No PII"
+openedx_content.PublishLogRecord:
+  ".. no_pii:": "No PII"
+openedx_content.PublishableEntity:
+  ".. no_pii:": "No PII"
+openedx_content.PublishableEntityVersion:
+  ".. no_pii:": "No PII"
+openedx_content.PublishableEntityVersionDependency:
+  ".. no_pii:": "No PII"
+openedx_content.Published:
+  ".. no_pii:": "No PII"
+openedx_content.Section:
+  ".. no_pii:": "No PII"
+openedx_content.SectionVersion:
+  ".. no_pii:": "No PII"
+openedx_content.Subsection:
+  ".. no_pii:": "No PII"
+openedx_content.SubsectionVersion:
+  ".. no_pii:": "No PII"
+openedx_content.Unit:
+  ".. no_pii:": "No PII"
+openedx_content.UnitVersion:
+  ".. no_pii:": "No PII"
+organizations.HistoricalOrganization:
+  ".. no_pii:": "No PII"
+organizations.HistoricalOrganizationCourse:
+  ".. no_pii:": "No PII"
+push_notifications.APNSDevice:
+  ".. pii:": "Contains mobile push tokens tied to users/devices."
+  ".. pii_types:": "external_service"
+  ".. pii_retirement:": "local_api"
+push_notifications.GCMDevice:
+  ".. pii:": "Contains mobile push tokens tied to users/devices."
+  ".. pii_types:": "external_service"
+  ".. pii_retirement:": "local_api"
+push_notifications.WNSDevice:
+  ".. pii:": "Contains mobile push tokens tied to users/devices."
+  ".. pii_types:": "external_service"
+  ".. pii_retirement:": "local_api"
+push_notifications.WebPushDevice:
+  ".. pii:": "Contains web push endpoint/subscription data tied to users/devices."
+  ".. pii_types:": "external_service"
+  ".. pii_retirement:": "local_api"
+submissions.ExternalGraderDetail:
+  ".. no_pii:": "No PII"
+submissions.SubmissionFile:
+  ".. no_pii:": "No PII"
+support.HistoricalUserSocialAuth:
+  ".. pii:": "Historical social auth linkage to third-party identity providers."
+  ".. pii_types:": "external_service"
+  ".. pii_retirement:": "local_api"

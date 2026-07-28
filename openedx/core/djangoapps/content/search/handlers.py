@@ -47,7 +47,9 @@ from openedx.core.djangoapps.content_libraries import api as lib_api
 from xmodule.modulestore.django import SignalHandler
 
 from .api import (
+    is_meilisearch_enabled,
     only_if_meilisearch_enabled,
+    reconcile_index,
     upsert_content_object_tags_index_doc,
     upsert_item_collections_index_docs,
     upsert_item_containers_index_docs,
@@ -66,6 +68,37 @@ from .tasks import (
 )
 
 log = logging.getLogger(__name__)
+
+
+def handle_post_migrate(sender, **kwargs):
+    """
+    Reconcile Meilisearch index state after Django migrations run.
+
+    Filters on sender.label to only execute for the search app's post_migrate signal.
+    Tolerant of Meilisearch unavailability — logs a warning and continues.
+    """
+    from .apps import ContentSearchConfig  # pylint: disable=import-outside-toplevel
+
+    if sender.label != ContentSearchConfig.label:
+        return
+
+    if not is_meilisearch_enabled():
+        return
+
+    try:
+        reconcile_index(status_cb=log.info, warn_cb=log.warning)
+    except ConnectionError as exc:
+        log.warning(
+            "Meilisearch reconciliation skipped during post_migrate: %s. "
+            "Will retry on next migrate run.",
+            exc,
+        )
+    except Exception as exc:  # pylint: disable=broad-except
+        log.warning(
+            "Meilisearch reconciliation failed during post_migrate: %s. "
+            "Will retry on next migrate run.",
+            exc,
+        )
 
 
 # Using post_delete here because there is no COURSE_DELETED event defined.
@@ -192,7 +225,7 @@ def library_block_deleted(**kwargs) -> None:
 @only_if_meilisearch_enabled
 def content_library_created_handler(**kwargs) -> None:
     """
-    Create the index for the content library
+    Create the index and SearchAccess for the content library
     """
     content_library_data = kwargs.get("content_library", None)
     if not content_library_data or not isinstance(content_library_data, ContentLibraryData):  # pragma: no cover
@@ -200,6 +233,10 @@ def content_library_created_handler(**kwargs) -> None:
         return
     library_key = content_library_data.library_key
 
+    # Create SearchAccess record immediately so course creators can search this library
+    # right after creation. Without this, the JWT token won't include the new library's
+    # access_id until it's added by the document indexing process or the page is refreshed.
+    SearchAccess.objects.get_or_create(context_key=library_key)
     update_content_library_index_docs.apply(args=[str(library_key), True])
 
 

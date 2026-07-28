@@ -37,7 +37,7 @@ class Command(BaseCommand):
         try:
             result = CourseTeam.objects.get(team_id=team_id)
         except ObjectDoesNotExist:
-            raise CommandError(f'Argument {team_id} is not a course_team team_id')  # lint-amnesty, pylint: disable=raise-missing-from
+            raise CommandError(f'Argument {team_id} is not a course_team team_id')  # pylint: disable=raise-missing-from  # noqa: B904
 
         return result
 
@@ -57,7 +57,7 @@ class Command(BaseCommand):
             if not options['course_team_ids']:
                 raise CommandError('At least one course_team_id or --all needs to be specified')
 
-        if not settings.FEATURES.get('ENABLE_TEAMS', False):
+        if not settings.ENABLE_TEAMS:
             raise CommandError('ENABLE_TEAMS must be enabled to use course team indexing')
 
         if options['all']:

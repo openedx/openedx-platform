@@ -25,7 +25,7 @@ def course_context_from_url(url, course_id_string=None):
             course_id_string = match.group('course_id')
     if not course_id_string:
         log.debug(
-            'no course_id found in "{url}"'.format(
+            'no course_id found in "{url}"'.format(  # noqa: UP032
                 url=str(url)[0:256]
             ),
             exc_info=True
@@ -35,7 +35,7 @@ def course_context_from_url(url, course_id_string=None):
             course_id = CourseKey.from_string(course_id_string)
         except InvalidKeyError:
             log.warning(
-                'unable to parse course_id "{course_id}"'.format(
+                'unable to parse course_id "{course_id}"'.format(  # noqa: UP032
                     course_id=str(course_id_string)[0:256]
                 ),
                 exc_info=True
@@ -48,7 +48,7 @@ def course_context_from_course_id(course_id):
     """
     Creates a course context from a `course_id`.
 
-    For newer parts of the system (i.e. Learning-Core-based libraries/courses/etc.)
+    For newer parts of the system (i.e. openedx_content-based libraries/courses/etc.)
     use context_dict_for_learning_context instead of this method.
 
     Example Returned Context::

@@ -16,6 +16,7 @@ Examples of html5 videos for manual testing:
 import copy
 import json
 import logging
+import warnings
 from collections import OrderedDict, defaultdict
 from operator import itemgetter
 
@@ -29,10 +30,21 @@ from xblock.completable import XBlockCompletionMode
 from xblock.core import XBlock
 from xblock.fields import ScopeIds
 from xblock.runtime import KvsFieldData
-from xblocks_contrib.video import VideoBlock as _ExtractedVideoBlock
 from xblock.utils.resources import ResourceLoader
+from xblocks_contrib.video import VideoBlock as _ExtractedVideoBlock
+from xblocks_contrib.video.bumper_utils import bumperize
+from xblocks_contrib.video.exceptions import TranscriptNotFoundError
+from xblocks_contrib.video.video_handlers import VideoStudentViewHandlers, VideoStudioViewHandlers
 
 from common.djangoapps.xblock_django.constants import ATTR_KEY_REQUEST_COUNTRY_CODE, ATTR_KEY_USER_ID
+from openedx.core.djangoapps.video_config.transcripts_utils import (
+    Transcript,
+    VideoTranscriptsMixin,
+    clean_video_id,
+    get_endonym_or_label,
+    get_html5_ids,
+    subs_filename,
+)
 from openedx.core.lib.cache_utils import request_cached
 from openedx.core.lib.license import LicenseMixin
 from xmodule.contentstore.content import StaticContent
@@ -42,26 +54,11 @@ from xmodule.modulestore.inheritance import InheritanceKeyValueStore
 from xmodule.raw_block import EmptyDataRawMixin
 from xmodule.util.builtin_assets import add_css_to_fragment, add_webpack_js_to_fragment
 from xmodule.validation import StudioValidation, StudioValidationMessage
-from xmodule.x_module import (
-    PUBLIC_VIEW, STUDENT_VIEW,
-    ResourceTemplates,
-    XModuleMixin, XModuleToXBlockMixin,
-)
+from xmodule.x_module import PUBLIC_VIEW, STUDENT_VIEW, ResourceTemplates, XModuleMixin, XModuleToXBlockMixin
 from xmodule.xml_block import XmlMixin, deserialize_field, is_pointer_tag, name_to_pathname
-from .bumper_utils import bumperize
-from openedx.core.djangoapps.video_config.transcripts_utils import (
-    Transcript,
-    VideoTranscriptsMixin,
-    clean_video_id,
-    get_endonym_or_label,
-    get_html5_ids,
-    subs_filename
-)
-from .video_handlers import VideoStudentViewHandlers, VideoStudioViewHandlers
+
 from .video_utils import create_youtube_string, format_xml_exception_message, get_poster, rewrite_video_url
 from .video_xfields import VideoFields
-
-from xblocks_contrib.video.exceptions import TranscriptNotFoundError
 
 # The following import/except block for edxval is temporary measure until
 # edxval is a proper XBlock Runtime Service.
@@ -105,8 +102,8 @@ EXPORT_IMPORT_COURSE_DIR = 'course'
 EXPORT_IMPORT_STATIC_DIR = 'static'
 
 
-@XBlock.wants('settings', 'completion', 'i18n', 'request_cache', 'video_config')
-@XBlock.needs('mako', 'user')
+@XBlock.wants('settings', 'completion', 'request_cache', 'video_config')
+@XBlock.needs('mako', 'user', 'i18n')
 class _BuiltInVideoBlock(
         VideoFields, VideoTranscriptsMixin, VideoStudioViewHandlers, VideoStudentViewHandlers,
         EmptyDataRawMixin, XmlMixin, EditingMixin, XModuleToXBlockMixin,
@@ -121,6 +118,10 @@ class _BuiltInVideoBlock(
             <source src=".../mit-3091x/M-3091X-FA12-L21-3_100.webm"/>
             <source src=".../mit-3091x/M-3091X-FA12-L21-3_100.ogv"/>
         </video>
+
+    .. deprecated:: 2026-03
+       This built-in video block is deprecated. Please use the extracted ``VideoBlock``
+       from ``xblocks_contrib.video`` instead.
     """
     is_extracted = False
     has_custom_completion = True
@@ -208,7 +209,7 @@ class _BuiltInVideoBlock(
         # is enabled for this course
         return video_config_service.is_youtube_deprecated(self.location.course_key) if video_config_service else False
 
-    def youtube_disabled_for_course(self):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def youtube_disabled_for_course(self):  # pylint: disable=missing-function-docstring
         if not self.location.context_key.is_course:
             return False  # Only courses have this flag
         request_cache = RequestCache('youtube_disabled_for_course')
@@ -265,11 +266,11 @@ class _BuiltInVideoBlock(
 
         fragment = Fragment(self.get_html(view=PUBLIC_VIEW, context=context))
         add_css_to_fragment(fragment, 'VideoBlockDisplay.css')
-        add_webpack_js_to_fragment(fragment, 'VideoBlockMain')
+        add_webpack_js_to_fragment(fragment, 'VideoBlockDisplay')
         fragment.initialize_js('Video')
         return fragment
 
-    def get_html(self, view=STUDENT_VIEW, context=None):  # lint-amnesty, pylint: disable=arguments-differ, too-many-statements
+    def get_html(self, view=STUDENT_VIEW, context=None):  # pylint: disable=arguments-differ, too-many-statements
         """
         Return html for a given view of this block.
         """
@@ -293,7 +294,7 @@ class _BuiltInVideoBlock(
         # If we have an edx_video_id, we prefer its values over what we store
         # internally for download links (source, html5_sources) and the youtube
         # stream.
-        if self.edx_video_id and edxval_api:  # lint-amnesty, pylint: disable=too-many-nested-blocks
+        if self.edx_video_id and edxval_api:  # pylint: disable=too-many-nested-blocks
             try:
                 val_profiles = ["youtube", "desktop_webm", "desktop_mp4"]
 
@@ -366,11 +367,11 @@ class _BuiltInVideoBlock(
         cdn_exp_group = None
 
         if self.youtube_disabled_for_course():
-            self.youtube_streams = ''  # lint-amnesty, pylint: disable=attribute-defined-outside-init
+            self.youtube_streams = ''  # pylint: disable=attribute-defined-outside-init
         else:
             self.youtube_streams = youtube_streams or create_youtube_string(self)  # pylint: disable=W0201
 
-        settings_service = self.runtime.service(self, 'settings')  # lint-amnesty, pylint: disable=unused-variable
+        settings_service = self.runtime.service(self, 'settings')  # pylint: disable=unused-variable  # noqa: F841
 
         poster = self._poster()
         completion_service = self.runtime.service(self, 'completion')
@@ -383,7 +384,7 @@ class _BuiltInVideoBlock(
         # video will autoadvance or not.
         # For autoadvance controls to be shown, both the feature flag and the course setting must be true.
         # This allows to enable the feature for certain courses only.
-        autoadvance_enabled = settings.FEATURES.get('ENABLE_AUTOADVANCE_VIDEOS', False) and \
+        autoadvance_enabled = settings.ENABLE_AUTOADVANCE_VIDEOS and \
             getattr(self, 'video_auto_advance', False)
 
         # This is the current status of auto-advance (not the control visibility).
@@ -407,7 +408,7 @@ class _BuiltInVideoBlock(
             # this option will have an effect if changed to "True". The code on
             # front-end exists.
             'autohideHtml5': False,
-            'autoplay': settings.FEATURES.get('AUTOPLAY_VIDEOS', False),
+            'autoplay': settings.AUTOPLAY_VIDEOS,
             # This won't work when we move to data that
             # isn't on the filesystem
             'captionDataDir': getattr(self, 'data_dir', None),
@@ -479,7 +480,7 @@ class _BuiltInVideoBlock(
             'poster': json.dumps(get_poster(self)),
             'track': track_url,
             'transcript_download_format': transcript_download_format,
-            'transcript_download_formats_list': self.fields['transcript_download_format'].values,  # lint-amnesty, pylint: disable=unsubscriptable-object
+            'transcript_download_formats_list': self.fields['transcript_download_format'].values,  # pylint: disable=unsubscriptable-object
             'transcript_feedback_enabled': self.is_transcript_feedback_enabled(),
         }
         video_config_service = self.runtime.service(self, 'video_config')
@@ -499,7 +500,7 @@ class _BuiltInVideoBlock(
             video_config_service = self.runtime.service(self, 'video_config')
             feature_enabled = video_config_service.is_transcript_feedback_enabled(
                 self.context_key) if video_config_service else False
-        except Exception as err:  # pylint: disable=broad-except
+        except Exception as err:  # pylint: disable=broad-except  # noqa: F841
             log.exception(f"Error retrieving course for course ID: {self.context_key}")
             return False
         return feature_enabled
@@ -543,7 +544,7 @@ class _BuiltInVideoBlock(
             )
         return validation
 
-    def editor_saved(self, user, old_metadata, old_content):  # lint-amnesty, pylint: disable=unused-argument
+    def editor_saved(self, user, old_metadata, old_content):  # pylint: disable=unused-argument
         """
         Used to update video values during `self`:save method from CMS.
         old_metadata: dict, values of fields of `self` with scope=settings which were explicitly set by user.
@@ -636,9 +637,9 @@ class _BuiltInVideoBlock(
         video_block = runtime.construct_xblock_from_class(cls, keys)
         field_data = cls.parse_video_xml(node)
         for key, val in field_data.items():
-            if key not in cls.fields:  # lint-amnesty, pylint: disable=unsupported-membership-test
+            if key not in cls.fields:  # pylint: disable=unsupported-membership-test
                 continue  # parse_video_xml returns some old non-fields like 'source'
-            setattr(video_block, key, cls.fields[key].from_json(val))  # lint-amnesty, pylint: disable=unsubscriptable-object
+            setattr(video_block, key, cls.fields[key].from_json(val))  # pylint: disable=unsubscriptable-object
         # Don't use VAL in the new runtime:
         video_block.edx_video_id = None
         return video_block
@@ -683,7 +684,7 @@ class _BuiltInVideoBlock(
 
         return video
 
-    def definition_to_xml(self, resource_fs):  # lint-amnesty, pylint: disable=too-many-statements
+    def definition_to_xml(self, resource_fs):  # pylint: disable=too-many-statements
         """
         Returns an xml string representing this block.
         """
@@ -705,7 +706,7 @@ class _BuiltInVideoBlock(
             # Mild workaround to ensure that tests pass -- if a field
             # is set to its default value, we don't write it out.
             if value:
-                if key in self.fields and self.fields[key].is_set_on(self):  # lint-amnesty, pylint: disable=unsubscriptable-object, unsupported-membership-test
+                if key in self.fields and self.fields[key].is_set_on(self):  # pylint: disable=unsubscriptable-object, unsupported-membership-test
                     try:
                         xml.set(key, str(value))
                     except UnicodeDecodeError:
@@ -896,7 +897,7 @@ class _BuiltInVideoBlock(
         for video in videos:
             pieces = video.split(':')
             try:
-                speed = '%.2f' % float(pieces[0])  # normalize speed
+                speed = '%.2f' % float(pieces[0])  # normalize speed  # noqa: UP031
 
                 # Handle the fact that youtube IDs got double-quoted for a period of time.
                 # Note: we pass in "VideoFields.youtube_id_1_0" so we deserialize as a String--
@@ -950,7 +951,7 @@ class _BuiltInVideoBlock(
             field_data['transcripts'] = {tr.get('language'): tr.get('src') for tr in transcripts}
 
         for attr, value in xml.items():
-            if attr in compat_keys:  # lint-amnesty, pylint: disable=consider-using-get
+            if attr in compat_keys:  # pylint: disable=consider-using-get
                 attr = compat_keys[attr]
             if attr in cls.metadata_to_strip + ('url_name', 'name'):
                 continue
@@ -965,12 +966,12 @@ class _BuiltInVideoBlock(
                         field_data['youtube_id_{}'.format(normalized_speed.replace('.', '_'))] = youtube_id
             elif attr in conversions:
                 field_data[attr] = conversions[attr](value)
-            elif attr not in cls.fields:  # lint-amnesty, pylint: disable=unsupported-membership-test
+            elif attr not in cls.fields:  # pylint: disable=unsupported-membership-test
                 field_data.setdefault('xml_attributes', {})[attr] = value
             else:
                 # We export values with json.dumps (well, except for Strings, but
                 # for about a month we did it for Strings also).
-                field_data[attr] = deserialize_field(cls.fields[attr], value)  # lint-amnesty, pylint: disable=unsubscriptable-object
+                field_data[attr] = deserialize_field(cls.fields[attr], value)  # pylint: disable=unsubscriptable-object
 
         course_id = getattr(id_generator, 'target_course_id', None)
         # Update the handout location with current course_id
@@ -1086,7 +1087,7 @@ class _BuiltInVideoBlock(
     @request_cached(
         request_cache_getter=lambda args, kwargs: args[1],
     )
-    def get_cached_val_data_for_course(cls, request_cache, video_profile_names, course_id):  # lint-amnesty, pylint: disable=unused-argument
+    def get_cached_val_data_for_course(cls, request_cache, video_profile_names, course_id):  # pylint: disable=unused-argument
         """
         Returns the VAL data for the requested video profiles for the given course.
         """
@@ -1196,3 +1197,14 @@ VideoBlock = (
     else _BuiltInVideoBlock
 )
 VideoBlock.__name__ = "VideoBlock"
+
+if not settings.USE_EXTRACTED_VIDEO_BLOCK:
+    warnings.warn(
+        "The built-in `xmodule.video_block` VideoBlock implementation is deprecated. "
+        "To fix this warning, enable `USE_EXTRACTED_VIDEO_BLOCK` (set it to True) to use "
+        "`xblocks_contrib.video.VideoBlock` instead. "
+        "Support for the built-in implementation, and the `USE_EXTRACTED_VIDEO_BLOCK` setting, "
+        "will be removed in Willow.",
+        DeprecationWarning,
+        stacklevel=2,
+    )

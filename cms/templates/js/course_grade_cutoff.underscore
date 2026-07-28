@@ -1,5 +1,0 @@
-<li class="grade-specific-bar" style="width:<%- width %>%">
-    <span class="letter-grade" contenteditable="<%- contenteditable %>"><%- descriptor %></span>
-    <span class="range"></span>
-  <% if (removable) {%><a href="#" class="remove-button">remove</a><% ;} %>
-</li>

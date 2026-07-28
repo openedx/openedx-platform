@@ -6,7 +6,7 @@ Tests for Course Teams configuration.
 import ddt
 from django.test import TestCase
 
-from ..teams_config import TeamsConfig, TeamsetConfig, MANAGED_TEAM_MAX_TEAM_SIZE, DEFAULT_COURSE_RUN_MAX_TEAM_SIZE
+from ..teams_config import DEFAULT_COURSE_RUN_MAX_TEAM_SIZE, MANAGED_TEAM_MAX_TEAM_SIZE, TeamsConfig, TeamsetConfig
 
 
 @ddt.ddt
@@ -185,7 +185,7 @@ class TeamsConfigTests(TestCase):
         """
         teams_config = TeamsConfig(input_data)
         actual_output_data = teams_config.cleaned_data
-        self.assertDictEqual(actual_output_data, expected_output_data)
+        self.assertDictEqual(actual_output_data, expected_output_data)  # noqa: PT009
 
     @ddt.data(
         (None, None, "open", DEFAULT_COURSE_RUN_MAX_TEAM_SIZE),

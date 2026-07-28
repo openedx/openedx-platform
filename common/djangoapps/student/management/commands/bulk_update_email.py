@@ -7,9 +7,8 @@ import csv
 import logging
 from os import path
 
-from django.core.management.base import BaseCommand, CommandError
-
 from django.contrib.auth import get_user_model
+from django.core.management.base import BaseCommand, CommandError
 
 logger = logging.getLogger('common.djangoapps.student.management.commands.bulk_update_email')
 
@@ -67,5 +66,5 @@ class Command(BaseCommand):
             len(failed_updates)
         )
 
-        if (failed_updates):  # lint-amnesty, pylint: disable=superfluous-parens
-            exit(-1)  # lint-amnesty, pylint: disable=consider-using-sys-exit
+        if (failed_updates):  # pylint: disable=superfluous-parens
+            exit(-1)  # pylint: disable=consider-using-sys-exit

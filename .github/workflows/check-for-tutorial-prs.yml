@@ -23,7 +23,7 @@ jobs:
     name: provide helpful bot comment
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Comment PR
         uses: thollander/actions-comment-pull-request@v3

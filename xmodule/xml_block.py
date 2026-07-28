@@ -322,9 +322,7 @@ class XmlMixin:
 
         """
 
-        from xmodule.modulestore.xml import (  # pylint: disable=import-outside-toplevel
-            XMLImportingModuleStoreRuntime,
-        )
+        from xmodule.modulestore.xml import XMLImportingModuleStoreRuntime  # pylint: disable=import-outside-toplevel
 
         if keys is None:
             # Passing keys=None is against the XBlock API but some platform tests do it.
@@ -422,7 +420,7 @@ class XmlMixin:
     @classmethod
     def parse_xml_new_runtime(cls, node, runtime, keys):
         """
-        This XML lives within Learning Core and the new runtime doesn't need this
+        This XML lives within openedx-core and the new runtime doesn't need this
         legacy XModule code. Use the "normal" XBlock parsing code.
         """
         try:

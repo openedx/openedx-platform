@@ -1,26 +1,30 @@
 """
 Tests for the Agreements API
 """
-import logging
 
+import logging
+from datetime import datetime, timedelta
+
+from django.test import TestCase
+from opaque_keys.edx.keys import CourseKey
 from testfixtures import LogCapture
 
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.agreements.api import (
     create_integrity_signature,
+    create_lti_pii_signature,
+    create_user_agreement_record,
     get_integrity_signature,
     get_integrity_signatures_for_course,
+    get_latest_user_agreement_record,
+    get_lti_pii_signature,
     get_pii_receiving_lti_tools,
-    create_lti_pii_signature,
-    get_lti_pii_signature
+    get_user_agreement_records,
 )
+from openedx.core.djangoapps.agreements.models import LTIPIITool, UserAgreement
 from openedx.core.djangolib.testing.utils import skip_unless_lms
-from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
-from ..models import (
-    LTIPIITool,
-)
-from opaque_keys.edx.keys import CourseKey
+from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
+from xmodule.modulestore.tests.factories import CourseFactory
 
 LOGGER_NAME = "openedx.core.djangoapps.agreements.api"
 
@@ -57,7 +61,7 @@ class TestIntegritySignatureApi(SharedModuleStoreTestCase):
                 LOGGER_NAME,
                 'WARNING',
                 (
-                    'Integrity signature already exists for user_id={user_id} and '
+                    'Integrity signature already exists for user_id={user_id} and '  # noqa: UP032
                     'course_id={course_id}'.format(
                         user_id=self.user.id, course_id=str(self.course_id)
                     )
@@ -77,7 +81,7 @@ class TestIntegritySignatureApi(SharedModuleStoreTestCase):
         Test that None is returned if an integrity signature does not exist
         """
         signature = get_integrity_signature(self.user.username, self.course_id)
-        self.assertIsNone(signature)
+        self.assertIsNone(signature)  # noqa: PT009
 
     def test_get_integrity_signatures_for_course(self):
         """
@@ -88,23 +92,23 @@ class TestIntegritySignatureApi(SharedModuleStoreTestCase):
         create_integrity_signature(second_user.username, self.course_id)
         signatures = get_integrity_signatures_for_course(self.course_id)
         self._assert_integrity_signature(signatures[0])
-        self.assertEqual(signatures[1].user, second_user)
-        self.assertEqual(signatures[1].course_key, self.course.id)
+        self.assertEqual(signatures[1].user, second_user)  # noqa: PT009
+        self.assertEqual(signatures[1].course_key, self.course.id)  # noqa: PT009
 
     def test_get_integrity_signatures_for_course_empty(self):
         """
         Test that a course with no integrity signatures returns an empty queryset
         """
         signatures = get_integrity_signatures_for_course(self.course_id)
-        self.assertEqual(len(signatures), 0)
+        self.assertEqual(len(signatures), 0)  # noqa: PT009
 
     def _assert_integrity_signature(self, signature):
         """
         Helper function to assert the returned integrity signature has the correct
         user and course key
         """
-        self.assertEqual(signature.user, self.user)
-        self.assertEqual(signature.course_key, self.course.id)
+        self.assertEqual(signature.user, self.user)  # noqa: PT009
+        self.assertEqual(signature.course_key, self.course.id)  # noqa: PT009
 
 
 @skip_unless_lms
@@ -145,15 +149,15 @@ class TestLTIPIISignatureApi(SharedModuleStoreTestCase):
         s1 = get_lti_pii_signature(self.user.username, self.course_id)  # retrieve the database entry
         create_lti_pii_signature(self.user.username, self.course_id, self.lti_tools_2)  # signature with updated tools
         s2 = get_lti_pii_signature(self.user.username, self.course_id)  # retrieve the updated database entry
-        self.assertNotEqual(s1, s2)  # the signatue retrieved from the database should be the updated version
+        self.assertNotEqual(s1, s2)  # the signatue retrieved from the database should be the updated version  # noqa: PT009  # pylint: disable=line-too-long
 
     def _assert_lti_pii_signature(self, signature):
         """
         Helper function to assert the returned lti pii signature has the correct
         user and course key
         """
-        self.assertEqual(signature.user, self.user)
-        self.assertEqual(signature.course_key, self.course.id)
+        self.assertEqual(signature.user, self.user)  # noqa: PT009
+        self.assertEqual(signature.course_key, self.course.id)  # noqa: PT009
 
 
 @skip_unless_lms
@@ -185,4 +189,57 @@ class TestLTIPIIToolsApi(SharedModuleStoreTestCase):
         """
         Helper function to assert the returned list has the correct tools
         """
-        self.assertEqual(self.lti_tools, lti_list)
+        self.assertEqual(self.lti_tools, lti_list)  # noqa: PT009
+
+
+@skip_unless_lms
+class UserAgreementsTests(TestCase):
+    """
+    Tests for the python APIs related to user agreements.
+    """
+
+    def setUp(self):
+        self.user = UserFactory()
+        self.agreement = UserAgreement.objects.create(
+            type="test_type",
+            name="test agreement",
+            summary="test summary",
+            url="https://example.com",
+            text="test text",
+            updated=datetime.now(),
+        )
+
+    def test_get_user_agreements(self):
+        """
+        Tests the functionality of retrieving user agreement records
+        """
+        result = list(get_user_agreement_records(self.user))
+        assert len(result) == 0
+
+        record = create_user_agreement_record(self.user, "test_type")
+        result = list(get_user_agreement_records(self.user))
+
+        assert len(result) == 1
+        assert result[0].agreement_type == "test_type"
+        assert result[0].username == self.user.username
+        assert result[0].accepted_at == record.accepted_at
+
+    def test_get_user_agreement_record(self):
+        """
+        Tests the functionality of retrieving the latest user agreement record.
+        """
+        record = create_user_agreement_record(self.user, "test_type")
+        result = get_latest_user_agreement_record(self.user, "test_type")
+
+        assert result == record
+
+        self.agreement.updated = datetime.now() + timedelta(days=1)
+        self.agreement.save()
+
+        result = get_latest_user_agreement_record(self.user, "test_type")
+
+        assert result.is_current is False
+
+    def tearDown(self):
+        self.user.delete()
+        self.agreement.delete()

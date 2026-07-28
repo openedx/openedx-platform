@@ -8,8 +8,8 @@ from xblock.core import XBlock, XBlockAside
 from xblock.fields import Dict, Scope
 
 from common.djangoapps.edxmako.shortcuts import render_to_string
-from xmodule.capa_block import ProblemBlock  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.x_module import AUTHOR_VIEW  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.capa_block import ProblemBlock  # pylint: disable=wrong-import-order
+from xmodule.x_module import AUTHOR_VIEW  # pylint: disable=wrong-import-order
 
 _ = lambda text: text
 
@@ -73,7 +73,7 @@ class StructuredTagsAside(XBlockAside):
             return Fragment('')
 
     @XBlock.handler
-    def save_tags(self, request=None, suffix=None):  # lint-amnesty, pylint: disable=unused-argument
+    def save_tags(self, request=None, suffix=None):  # pylint: disable=unused-argument
         """
         Handler to save choosen tags with connected XBlock
         """
@@ -95,7 +95,7 @@ class StructuredTagsAside(XBlockAside):
 
                 for posted_tag_value in posted_data[av_tag.name]:
                     if posted_tag_value not in tag_available_values and posted_tag_value not in tag_current_values:
-                        return Response("Invalid tag value was passed: %s" % posted_tag_value, status=400)
+                        return Response("Invalid tag value was passed: %s" % posted_tag_value, status=400)  # noqa: UP031  # pylint: disable=line-too-long
 
                 saved_tags[av_tag.name] = posted_data[av_tag.name]
                 need_update = True

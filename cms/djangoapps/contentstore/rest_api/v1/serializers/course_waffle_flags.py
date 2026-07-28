@@ -5,6 +5,7 @@ API Serializers for course waffle flags
 from rest_framework import serializers
 
 from cms.djangoapps.contentstore import toggles
+from common.djangoapps.student.roles import enable_authz_course_authoring
 
 
 class CourseWaffleFlagsSerializer(serializers.Serializer):
@@ -20,6 +21,7 @@ class CourseWaffleFlagsSerializer(serializers.Serializer):
     use_new_import_page = serializers.SerializerMethodField()
     use_new_export_page = serializers.SerializerMethodField()
     use_new_files_uploads_page = serializers.SerializerMethodField()
+    use_new_pdf_editor = serializers.SerializerMethodField()
     use_new_video_uploads_page = serializers.SerializerMethodField()
     use_new_course_outline_page = serializers.SerializerMethodField()
     use_new_unit_page = serializers.SerializerMethodField()
@@ -31,6 +33,7 @@ class CourseWaffleFlagsSerializer(serializers.Serializer):
     use_react_markdown_editor = serializers.SerializerMethodField()
     use_video_gallery_flow = serializers.SerializerMethodField()
     enable_course_optimizer_check_prev_run_links = serializers.SerializerMethodField()
+    enable_authz_course_authoring = serializers.SerializerMethodField()
 
     def get_course_key(self):
         """
@@ -64,24 +67,33 @@ class CourseWaffleFlagsSerializer(serializers.Serializer):
 
     def get_use_new_schedule_details_page(self, obj):
         """
-        Method to get the use_new_schedule_details_page switch
+        Method to indicate whether we should use the new schedule details page.
+
+        This used to be based on a waffle flag but the flag is being removed so we
+        default it to true for now until we can remove the need for it from the consumers
+        of this serializer and the related APIs.
+
+        See https://github.com/openedx/edx-platform/issues/36275
         """
-        course_key = self.get_course_key()
-        return toggles.use_new_schedule_details_page(course_key)
+        return True
 
     def get_use_new_advanced_settings_page(self, obj):
         """
         Method to get the use_new_advanced_settings_page switch
         """
-        course_key = self.get_course_key()
-        return toggles.use_new_advanced_settings_page(course_key)
+        return True
 
     def get_use_new_grading_page(self, obj):
         """
-        Method to get the use_new_grading_page switch
+        Method to indicate whether we should use the new grading page.
+
+        This used to be based on a waffle flag but the flag is being removed so we
+        default it to true for now until we can remove the need for it from the consumers
+        of this serializer and the related APIs.
+
+        See https://github.com/openedx/edx-platform/issues/36275
         """
-        course_key = self.get_course_key()
-        return toggles.use_new_grading_page(course_key)
+        return True
 
     def get_use_new_updates_page(self, obj):
         """
@@ -99,15 +111,13 @@ class CourseWaffleFlagsSerializer(serializers.Serializer):
         """
         Method to get the use_new_import_page switch
         """
-        course_key = self.get_course_key()
-        return toggles.use_new_import_page(course_key)
+        return True
 
     def get_use_new_export_page(self, obj):
         """
         Method to get the use_new_export_page switch
         """
-        course_key = self.get_course_key()
-        return toggles.use_new_export_page(course_key)
+        return True
 
     def get_use_new_files_uploads_page(self, obj):
         """
@@ -118,9 +128,20 @@ class CourseWaffleFlagsSerializer(serializers.Serializer):
         """
         return True
 
+    def get_use_new_pdf_editor(self, obj):
+        """
+        Method to get the use_new_pdf_editor switch
+        """
+        return toggles.use_new_pdf_editor()
+
     def get_use_new_video_uploads_page(self, obj):
         """
-        Method to get the use_new_video_uploads_page switch
+        Method to get the use_new_video_uploads_page switch.
+
+        This is off by default because the video uploads page requires the edX
+        video pipeline which is not available to the open source community.
+
+        See https://github.com/openedx/openedx-platform/issues/37972
         """
         course_key = self.get_course_key()
         return toggles.use_new_video_uploads_page(course_key)
@@ -146,15 +167,13 @@ class CourseWaffleFlagsSerializer(serializers.Serializer):
         """
         Method to get the use_new_course_team_page switch
         """
-        course_key = self.get_course_key()
-        return toggles.use_new_course_team_page(course_key)
+        return True
 
     def get_use_new_certificates_page(self, obj):
         """
         Method to get the use_new_certificates_page switch
         """
-        course_key = self.get_course_key()
-        return toggles.use_new_certificates_page(course_key)
+        return True
 
     def get_use_new_textbooks_page(self, obj):
         """
@@ -172,8 +191,7 @@ class CourseWaffleFlagsSerializer(serializers.Serializer):
         """
         Method to get the use_new_group_configurations_page switch
         """
-        course_key = self.get_course_key()
-        return toggles.use_new_group_configurations_page(course_key)
+        return True
 
     def get_enable_course_optimizer(self, obj):
         """
@@ -201,3 +219,10 @@ class CourseWaffleFlagsSerializer(serializers.Serializer):
         """
         course_key = self.get_course_key()
         return toggles.enable_course_optimizer_check_prev_run_links(course_key)
+
+    def get_enable_authz_course_authoring(self, obj):
+        """
+        Method to get the authz.enable_course_authoring waffle flag
+        """
+        course_key = self.get_course_key()
+        return enable_authz_course_authoring(course_key)

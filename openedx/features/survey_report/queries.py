@@ -5,11 +5,11 @@ Queries to get data from database.
 import logging
 from datetime import datetime, timedelta
 
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.db.models import Count, OuterRef, Q, Subquery
 
-from common.djangoapps.util.query import read_replica_or_default
 from common.djangoapps.student.models import CourseEnrollment
+from common.djangoapps.util.query import read_replica_or_default
 from lms.djangoapps.grades.models import PersistentCourseGrade
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 

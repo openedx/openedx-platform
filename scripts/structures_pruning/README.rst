@@ -1,7 +1,7 @@
 Structures Pruning Scripts
 ==========================
 
-`This <https://github.com/openedx/edx-platform/tree/master/scripts/structures_pruning>`_ directory contains mongo db structures pruning script that is migrated from the 
+`This <https://github.com/openedx/edx-platform/tree/master/scripts/structures_pruning>`_ directory contains mongo db structures pruning script that is migrated from the
 `tubular <https://github.com/openedx/tubular>`_ repository.
 
 
@@ -29,11 +29,11 @@ To download the scripts, you can perform a partial clone of the edx-platform rep
 Create Python Virtual Environment
 ---------------------------------
 
-Create a Python virtual environment using Python 3.11:
+Create a Python virtual environment using Python 3.12:
 
 .. code-block:: bash
 
-    python3.11 -m venv ../venv
+    python3.12 -m venv ../venv
     source ../venv/bin/activate
 
 Install Pip Packages

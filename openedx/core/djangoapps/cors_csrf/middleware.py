@@ -52,7 +52,6 @@ from django.utils.deprecation import MiddlewareMixin
 
 from .helpers import is_cross_domain_request_allowed, skip_cross_domain_referer_check
 
-
 log = logging.getLogger(__name__)
 
 

@@ -7,7 +7,7 @@ import logging
 import os
 from pprint import pformat
 
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.core.management.base import BaseCommand, CommandError
 
 from lms.djangoapps.verify_student.models import ManualVerification
@@ -66,7 +66,7 @@ class Command(BaseCommand):
         total_emails, failed_emails = self._generate_manual_verification_from_file(email_ids_file, batch_size)
 
         if failed_emails:
-            log.error('Completed manual verification. {} of {} failed.'.format(
+            log.error('Completed manual verification. {} of {} failed.'.format(  # noqa: UP032
                 len(failed_emails),
                 total_emails
             ))

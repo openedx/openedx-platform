@@ -4,18 +4,20 @@ Test for LMS courseware app.
 
 
 from textwrap import dedent
-from unittest import TestCase
+from unittest import TestCase, mock
 
-from unittest import mock
 from django.urls import reverse
 from opaque_keys.edx.keys import CourseKey
 
 from lms.djangoapps.courseware.tests.helpers import LoginEnrollmentTestCase
 from lms.djangoapps.lms_xblock.field_data import LmsFieldData
-from xmodule.error_block import ErrorBlock  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import ToyCourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.error_block import ErrorBlock  # pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (  # pylint: disable=wrong-import-order
+    TEST_DATA_SPLIT_MODULESTORE,
+    ModuleStoreTestCase,
+)
+from xmodule.modulestore.tests.factories import ToyCourseFactory  # pylint: disable=wrong-import-order
 
 
 class ActivateLoginTest(LoginEnrollmentTestCase):
@@ -30,7 +32,7 @@ class ActivateLoginTest(LoginEnrollmentTestCase):
         """
         Test login -- the setup function does all the work.
         """
-        pass  # lint-amnesty, pylint: disable=unnecessary-pass
+        pass  # pylint: disable=unnecessary-pass
 
     def test_logout(self):
         """
@@ -102,7 +104,7 @@ class PageLoaderTestCase(LoginEnrollmentTestCase):
         response = self.client.get(url, follow=True)
 
         if response.status_code != 200:
-            self.fail('Status %d for page %s' %
+            self.fail('Status %d for page %s' %  # noqa: UP031
                       (response.status_code, block.location))
 
         if expect_redirect:
@@ -136,7 +138,7 @@ class TestMongoCoursesLoad(ModuleStoreTestCase, PageLoaderTestCase):
         assert len(course.textbooks) > 0
 
 
-class TestDraftModuleStore(ModuleStoreTestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class TestDraftModuleStore(ModuleStoreTestCase):  # pylint: disable=missing-class-docstring
     def test_get_items_with_course_items(self):
         store = modulestore()
 

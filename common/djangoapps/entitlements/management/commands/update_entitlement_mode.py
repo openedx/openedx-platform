@@ -1,4 +1,4 @@
-# lint-amnesty, pylint: disable=django-not-configured
+# pylint: disable=django-not-configured
 """
 Management command for updating entitlements modes.
 """
@@ -57,11 +57,11 @@ class Command(BaseCommand):
                 )
                 entitlement_to_update.mode = entitlement_mode
                 entitlement_to_update.save()
-                logger.info('entitlement_mode updated to {} for '
+                logger.info('entitlement_mode updated to {} for '  # noqa: UP032
                             'order_number {} for course with UUID {}'.format(entitlement_mode, order_number,
                                                                              course_uuid))
             except CourseEntitlement.DoesNotExist:
-                logger.info('entitlement with order_number {} and course_uuid {} does not exists'.format(
+                logger.info('entitlement with order_number {} and course_uuid {} does not exists'.format(  # noqa: UP032
                     order_number, course_uuid))
 
         logger.info('Successfully updated entitlement_mode for Entitlements.')

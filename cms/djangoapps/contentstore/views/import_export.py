@@ -27,28 +27,24 @@ from django.views.decorators.http import require_GET, require_http_methods
 from edx_django_utils.monitoring import set_custom_attribute, set_custom_attributes_for_course_key
 from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locator import LibraryLocator
+from openedx_authz.constants.permissions import COURSES_EXPORT_COURSE, COURSES_IMPORT_COURSE
 from path import Path as path
 from storages.backends.s3boto3 import S3Boto3Storage
 from user_tasks.conf import settings as user_tasks_settings
 from user_tasks.models import UserTaskArtifact, UserTaskStatus
 
-from common.djangoapps.edxmako.shortcuts import render_to_response
-from common.djangoapps.student.auth import has_course_author_access
+from common.djangoapps.student.auth import has_studio_read_access
 from common.djangoapps.util.json_request import JsonResponse
 from common.djangoapps.util.monitoring import monitor_import_failure
 from common.djangoapps.util.views import ensure_valid_course_key
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from openedx.core.djangoapps.authz.constants import LegacyAuthoringPermission
+from openedx.core.djangoapps.authz.decorators import user_has_course_permission
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 
 from ..storage import course_import_export_storage
-from ..tasks import CourseExportTask, CourseImportTask, export_olx, import_olx
-from ..toggles import use_new_export_page, use_new_import_page
-from ..utils import (
-    reverse_course_url,
-    reverse_library_url,
-    get_export_url,
-    get_import_url,
-    IMPORTABLE_FILE_TYPES,
-)
+from ..tasks import CourseExportTask, CourseImportTask, create_export_tarball, export_olx, import_olx
+from ..utils import IMPORTABLE_FILE_TYPES, get_export_url, get_import_url, reverse_course_url
+
 __all__ = [
     'import_handler', 'import_status_handler',
     'export_handler', 'export_output_handler', 'export_status_handler',
@@ -78,36 +74,26 @@ def import_handler(request, course_key_string):
         json: import a course via the .tar.gz or .zip file specified in request.FILES
     """
     courselike_key = CourseKey.from_string(course_key_string)
-    library = isinstance(courselike_key, LibraryLocator)
-    if library:
-        successful_url = reverse_library_url('library_handler', courselike_key)
-        context_name = 'context_library'
-        courselike_block = modulestore().get_library(courselike_key)
-    else:
-        successful_url = reverse_course_url('course_handler', courselike_key)
-        context_name = 'context_course'
-        courselike_block = modulestore().get_course(courselike_key)
-    if not has_course_author_access(request.user, courselike_key):
+    # Legacy (v1) libraries are no longer supported for import. Reject early
+    # to avoid an invalid redirect to the MFE with a library key.
+    if isinstance(courselike_key, LibraryLocator):
+        raise Http404
+    if not user_has_course_permission(
+        user=request.user,
+        authz_permission=COURSES_IMPORT_COURSE.identifier,
+        course_key=courselike_key,
+        legacy_permission=LegacyAuthoringPermission.WRITE
+    ):
         raise PermissionDenied()
 
     if 'application/json' in request.META.get('HTTP_ACCEPT', 'application/json'):
-        if request.method == 'GET':  # lint-amnesty, pylint: disable=no-else-raise
+        if request.method == 'GET':  # pylint: disable=no-else-raise
             raise NotImplementedError('coming soon')
         else:
             return _write_chunk(request, courselike_key)
     elif request.method == 'GET':  # assume html
 
-        if use_new_import_page(courselike_key) and not library:
-            return redirect(get_import_url(courselike_key))
-        status_url = reverse_course_url(
-            "import_status_handler", courselike_key, kwargs={'filename': "fillerName"}
-        )
-        return render_to_response('import.html', {
-            context_name: courselike_block,
-            'successful_import_redirect_url': successful_url,
-            'import_status_url': status_url,
-            'library': isinstance(courselike_key, LibraryLocator)
-        })
+        return redirect(get_import_url(courselike_key))
     else:
         return HttpResponseNotFound()
 
@@ -124,7 +110,7 @@ def _save_request_status(request, key, status):
     request.session.save()
 
 
-def _write_chunk(request, courselike_key):  # lint-amnesty, pylint: disable=too-many-statements
+def _write_chunk(request, courselike_key):  # pylint: disable=too-many-statements
     """
     Write the OLX file data chunk from the given request to the local filesystem.
     """
@@ -257,7 +243,12 @@ def import_status_handler(request, course_key_string, filename=None):
 
     """
     course_key = CourseKey.from_string(course_key_string)
-    if not has_course_author_access(request.user, course_key):
+    if not user_has_course_permission(
+        user=request.user,
+        authz_permission=COURSES_IMPORT_COURSE.identifier,
+        course_key=course_key,
+        legacy_permission=LegacyAuthoringPermission.WRITE
+    ):
         raise PermissionDenied()
 
     # The task status record is authoritative once it's been created
@@ -294,7 +285,7 @@ def send_tarball(tarball, size):
     """
     wrapper = FileWrapper(tarball, settings.COURSE_EXPORT_DOWNLOAD_CHUNK_SIZE)
     response = StreamingHttpResponse(wrapper, content_type='application/x-tgz')
-    response['Content-Disposition'] = 'attachment; filename=%s' % os.path.basename(tarball.name)
+    response['Content-Disposition'] = 'attachment; filename=%s' % os.path.basename(tarball.name)  # noqa: UP031
     response['Content-Length'] = size
     return response
 
@@ -318,26 +309,29 @@ def export_handler(request, course_key_string):
     a link appearing on the page once it's ready.
     """
     course_key = CourseKey.from_string(course_key_string)
-    if not has_course_author_access(request.user, course_key):
-        raise PermissionDenied()
-    library = isinstance(course_key, LibraryLocator)
-    if library:
-        courselike_block = modulestore().get_library(course_key)
-        context = {
-            'context_library': courselike_block,
-            'courselike_home_url': reverse_library_url("library_handler", course_key),
-            'library': True
-        }
-    else:
-        courselike_block = modulestore().get_course(course_key)
-        if courselike_block is None:
+
+    if isinstance(course_key, LibraryLocator):
+        # Legacy (v1) libraries use a synchronous export instead of the async Celery
+        # flow used for courses. When a user clicks the Export button in the Authoring
+        # MFE migration wizard, the browser navigates directly to this URL and we
+        # immediately generate and stream back the OLX .tar.gz file.
+        if not has_studio_read_access(request.user, course_key):
+            raise PermissionDenied()
+        library = modulestore().get_library(course_key)
+        if library is None:
             raise Http404
-        context = {
-            'context_course': courselike_block,
-            'courselike_home_url': reverse_course_url("course_handler", course_key),
-            'library': False
-        }
-    context['status_url'] = reverse_course_url('export_status_handler', course_key)
+        tarball = create_export_tarball(library, course_key, {}, None)
+        return send_tarball(tarball, os.path.getsize(tarball.name))
+
+    if not user_has_course_permission(
+        user=request.user,
+        authz_permission=COURSES_EXPORT_COURSE.identifier,
+        course_key=course_key,
+        legacy_permission=LegacyAuthoringPermission.WRITE
+    ):
+        raise PermissionDenied()
+    if modulestore().get_course(course_key) is None:
+        raise Http404
 
     # an _accept URL parameter will be preferred over HTTP_ACCEPT in the header.
     requested_format = request.GET.get('_accept', request.META.get('HTTP_ACCEPT', 'text/html'))
@@ -346,9 +340,7 @@ def export_handler(request, course_key_string):
         export_olx.delay(request.user.id, course_key_string, request.LANGUAGE_CODE)
         return JsonResponse({'ExportStatus': 1})
     elif 'text/html' in requested_format:
-        if use_new_export_page(course_key) and not library:
-            return redirect(get_export_url(course_key))
-        return render_to_response('export.html', context)
+        return redirect(get_export_url(course_key))
     else:
         # Only HTML request format is supported (no JSON).
         return HttpResponse(status=406)
@@ -373,7 +365,12 @@ def export_status_handler(request, course_key_string):
     returned.
     """
     course_key = CourseKey.from_string(course_key_string)
-    if not has_course_author_access(request.user, course_key):
+    if not user_has_course_permission(
+        user=request.user,
+        authz_permission=COURSES_EXPORT_COURSE.identifier,
+        course_key=course_key,
+        legacy_permission=LegacyAuthoringPermission.WRITE
+    ):
         raise PermissionDenied()
 
     # The task status record is authoritative once it's been created
@@ -435,7 +432,12 @@ def export_output_handler(request, course_key_string):
     filesystem instead of an external service like S3.
     """
     course_key = CourseKey.from_string(course_key_string)
-    if not has_course_author_access(request.user, course_key):
+    if not user_has_course_permission(
+        user=request.user,
+        authz_permission=COURSES_EXPORT_COURSE.identifier,
+        course_key=course_key,
+        legacy_permission=LegacyAuthoringPermission.WRITE
+    ):
         raise PermissionDenied()
 
     task_status = _latest_task_status(request, course_key_string, export_output_handler)
@@ -446,7 +448,7 @@ def export_output_handler(request, course_key_string):
             tarball = course_import_export_storage.open(artifact.file.name)
             return send_tarball(tarball, artifact.file.storage.size(artifact.file.name))
         except UserTaskArtifact.DoesNotExist:
-            raise Http404  # lint-amnesty, pylint: disable=raise-missing-from
+            raise Http404  # pylint: disable=raise-missing-from  # noqa: B904
         finally:
             if artifact:
                 artifact.file.close()

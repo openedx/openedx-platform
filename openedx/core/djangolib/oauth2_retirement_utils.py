@@ -3,12 +3,10 @@ Removes user PII from OAuth2 models.
 """
 
 
-from oauth2_provider.models import (
-    AccessToken as DOTAccessToken,
-    Application as DOTApplication,
-    Grant as DOTGrant,
-    RefreshToken as DOTRefreshToken,
-)
+from oauth2_provider.models import AccessToken as DOTAccessToken
+from oauth2_provider.models import Application as DOTApplication
+from oauth2_provider.models import Grant as DOTGrant
+from oauth2_provider.models import RefreshToken as DOTRefreshToken
 
 
 class ModelRetirer:

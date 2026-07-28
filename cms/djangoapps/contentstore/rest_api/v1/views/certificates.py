@@ -2,20 +2,16 @@
 
 import edx_api_doc_tools as apidocs
 from opaque_keys.edx.keys import CourseKey
+from openedx_authz.constants.permissions import COURSES_MANAGE_CERTIFICATES
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from cms.djangoapps.contentstore.rest_api.v1.serializers import CourseCertificatesSerializer
 from cms.djangoapps.contentstore.utils import get_certificates_context
-from cms.djangoapps.contentstore.rest_api.v1.serializers import (
-    CourseCertificatesSerializer,
-)
-from common.djangoapps.student.auth import has_studio_write_access
-from openedx.core.lib.api.view_utils import (
-    DeveloperErrorViewMixin,
-    verify_course_exists,
-    view_auth_classes,
-)
+from openedx.core.djangoapps.authz.constants import LegacyAuthoringPermission
+from openedx.core.djangoapps.authz.decorators import user_has_course_permission
+from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin, verify_course_exists, view_auth_classes
 from xmodule.modulestore.django import modulestore
 
 
@@ -96,7 +92,12 @@ class CourseCertificatesView(DeveloperErrorViewMixin, APIView):
         course_key = CourseKey.from_string(course_id)
         store = modulestore()
 
-        if not has_studio_write_access(request.user, course_key):
+        if not user_has_course_permission(
+            request.user,
+            COURSES_MANAGE_CERTIFICATES.identifier,
+            course_key,
+            LegacyAuthoringPermission.WRITE
+        ):
             self.permission_denied(request)
 
         with store.bulk_operations(course_key):

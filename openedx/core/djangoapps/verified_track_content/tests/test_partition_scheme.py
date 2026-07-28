@@ -4,15 +4,22 @@ Tests for verified_track_content/partition_scheme.py.
 
 
 from datetime import datetime, timedelta
-
 from zoneinfo import ZoneInfo
+
 import pytest
+
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.tests.factories import UserFactory
-from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.partitions.partitions import MINIMUM_UNUSED_PARTITION_ID, UserPartition, ReadOnlyUserPartitionError  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    SharedModuleStoreTestCase,  # pylint: disable=wrong-import-order
+)
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
+from xmodule.partitions.partitions import (  # pylint: disable=wrong-import-order
+    MINIMUM_UNUSED_PARTITION_ID,
+    ReadOnlyUserPartitionError,
+    UserPartition,
+)
 
 from ..partition_scheme import ENROLLMENT_GROUP_IDS, EnrollmentTrackPartitionScheme, EnrollmentTrackUserPartition
 
@@ -94,7 +101,7 @@ class EnrollmentTrackPartitionSchemeTest(SharedModuleStoreTestCase):
 
     def test_get_scheme(self):
         """
-        Ensure that the scheme extension is correctly plugged in (via entry point in setup.py)
+        Ensure that the scheme extension is correctly plugged in (via entry point in pyproject.toml)
         """
         assert UserPartition.get_scheme('enrollment_track') == EnrollmentTrackPartitionScheme
 

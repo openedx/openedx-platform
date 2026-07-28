@@ -1,4 +1,4 @@
-# lint-amnesty, pylint: disable=missing-module-docstring
+# pylint: disable=missing-module-docstring
 
 import decimal
 import json
@@ -83,7 +83,7 @@ class JsonResponse(HttpResponse):
     Django HttpResponse subclass that has sensible defaults for outputting JSON.
     """
 
-    def __init__(  # lint-amnesty, pylint: disable=keyword-arg-before-vararg
+    def __init__(  # pylint: disable=keyword-arg-before-vararg
         self,
         resp_obj=None,
         status=None,
@@ -117,7 +117,7 @@ class JsonResponseBadRequest(HttpResponseBadRequest):
 
     def __init__(
         self, obj=None, status=400, encoder=DjangoJSONEncoder, *args, **kwargs
-    ):  # lint-amnesty, pylint: disable=keyword-arg-before-vararg
+    ):  # pylint: disable=keyword-arg-before-vararg
         if obj in (None, ""):
             content = ""
         else:

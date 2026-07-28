@@ -8,8 +8,8 @@ import pickle
 from collections import defaultdict, namedtuple
 from datetime import datetime
 
-import six
 import pytz
+import six
 from crum import get_current_request
 from dateutil.parser import parse as parse_date
 from django.conf import settings
@@ -20,6 +20,7 @@ from django.utils.translation import gettext as _
 from edx_django_utils.monitoring import function_trace, set_custom_attribute
 from fs.errors import ResourceNotFound
 from opaque_keys.edx.keys import UsageKey
+from openedx_filters.learning.filters import CoursewareAccessChecksRequested
 from path import Path as path
 
 from common.djangoapps.edxmako.shortcuts import render_to_string
@@ -30,13 +31,18 @@ from lms.djangoapps.course_blocks.api import get_course_blocks
 from lms.djangoapps.courseware.access import has_access
 from lms.djangoapps.courseware.access_response import (
     AuthenticationRequiredAccessError,
+    CatalogVisibilityError,
     EnrollmentRequiredAccessError,
     MilestoneAccessError,
     OldMongoAccessError,
-    StartDateError
+    PriorityAccessFiltersError,
+    StartDateError,
 )
-from lms.djangoapps.courseware.access_utils import check_authentication, check_data_sharing_consent, check_enrollment, \
-    check_correct_active_enterprise_customer, is_priority_access_error
+from lms.djangoapps.courseware.access_utils import (
+    check_authentication,
+    check_enrollment,
+)
+from lms.djangoapps.courseware.block_render import get_block
 from lms.djangoapps.courseware.context_processor import get_user_timezone_or_last_seen_timezone_or_utc
 from lms.djangoapps.courseware.courseware_access_exception import CoursewareAccessException
 from lms.djangoapps.courseware.date_summary import (
@@ -47,12 +53,11 @@ from lms.djangoapps.courseware.date_summary import (
     CourseStartDate,
     TodaysDate,
     VerificationDeadlineDate,
-    VerifiedUpgradeDeadlineDate
+    VerifiedUpgradeDeadlineDate,
 )
 from lms.djangoapps.courseware.exceptions import CourseAccessRedirect, CourseRunNotFound
 from lms.djangoapps.courseware.masquerade import check_content_start_date_for_masquerade_user
 from lms.djangoapps.courseware.model_data import FieldDataCache
-from lms.djangoapps.courseware.block_render import get_block
 from lms.djangoapps.courseware.utils import is_empty_html
 from lms.djangoapps.grades.api import CourseGradeFactory
 from lms.djangoapps.survey.utils import SurveyRequiredAccessError, check_survey_required_and_unanswered
@@ -66,9 +71,9 @@ from openedx.core.lib.courses import get_course_by_id
 from openedx.features.course_duration_limits.access import AuditExpiredError
 from openedx.features.course_experience import RELATIVE_DATES_FLAG
 from openedx.features.course_experience.utils import is_block_structure_complete_for_assignments
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.exceptions import ItemNotFoundError  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.x_module import STUDENT_VIEW  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
+from xmodule.modulestore.exceptions import ItemNotFoundError  # pylint: disable=wrong-import-order
+from xmodule.x_module import STUDENT_VIEW  # pylint: disable=wrong-import-order
 
 log = logging.getLogger(__name__)
 
@@ -150,7 +155,7 @@ def get_course_overview_with_access(user, action, course_key, check_if_enrolled=
     try:
         course_overview = CourseOverview.get_from_id(course_key)
     except CourseOverview.DoesNotExist:
-        raise Http404("Course not found.")  # lint-amnesty, pylint: disable=raise-missing-from
+        raise Http404("Course not found.")  # pylint: disable=raise-missing-from  # noqa: B904
     check_course_access_with_redirect(course_overview, user, action, check_if_enrolled)
     return course_overview
 
@@ -162,7 +167,7 @@ def check_course_access(
     check_if_enrolled=False,
     check_survey_complete=True,
     check_if_authenticated=False,
-    apply_enterprise_checks=False,
+    apply_priority_access_checks=False,
 ):
     """
     Check that the user has the access to perform the specified action
@@ -170,6 +175,11 @@ def check_course_access(
 
     check_if_enrolled: If true, additionally verifies that the user is enrolled.
     check_survey_complete: If true, additionally verifies that the user has completed the survey.
+    apply_priority_access_checks: If true, run the CoursewareAccessChecksRequested
+        filter pipeline so plugins can deny access with priority (non-bypassable)
+        errors. Used by views that surface the access error directly to the
+        client (e.g. course-home metadata) rather than relying on the redirect
+        machinery in ``check_course_access_with_redirect``.
     """
     def _check_nonstaff_access():
         # Below is a series of checks that must all pass for a user to be granted access
@@ -189,14 +199,13 @@ def check_course_access(
             if not enrollment_access_response:
                 return enrollment_access_response
 
-        if apply_enterprise_checks:
-            correct_active_enterprise_response = check_correct_active_enterprise_customer(user, course.id)
-            if not correct_active_enterprise_response:
-                return correct_active_enterprise_response
-
-            data_sharing_consent_response = check_data_sharing_consent(course.id)
-            if not data_sharing_consent_response:
-                return data_sharing_consent_response
+        if apply_priority_access_checks:
+            try:
+                CoursewareAccessChecksRequested.run_filter(user=user, course_key=course.id)
+            except CoursewareAccessChecksRequested.PreventCoursewareAccess as exc:
+                return PriorityAccessFiltersError(
+                    exc.error_code, exc.developer_message, exc.user_message,
+                )
 
         # Redirect if the user must answer a survey before entering the course.
         if check_survey_complete and action == 'load':
@@ -210,7 +219,7 @@ def check_course_access(
     non_staff_access_response = _check_nonstaff_access()
 
     # User has course access OR access error is a priority error
-    if non_staff_access_response or is_priority_access_error(non_staff_access_response):
+    if non_staff_access_response or isinstance(non_staff_access_response, PriorityAccessFiltersError):
         return non_staff_access_response
 
     # Allow staff full access to the course even if other checks fail
@@ -240,7 +249,7 @@ def check_course_access_with_redirect(
     request = get_current_request()
     check_content_start_date_for_masquerade_user(course.id, user, request, course.start)
 
-    access_response = check_course_access(course, user, action, check_if_enrolled, check_survey_complete, check_if_authenticated)  # lint-amnesty, pylint: disable=line-too-long
+    access_response = check_course_access(course, user, action, check_if_enrolled, check_survey_complete, check_if_authenticated)  # pylint: disable=line-too-long
 
     if not access_response:
         # StartDateError should be ignored
@@ -287,6 +296,12 @@ def check_course_access_with_redirect(
         # Redirect if user must be authenticated to view the content
         if isinstance(access_response, AuthenticationRequiredAccessError):
             raise CourseAccessRedirect(reverse('about_course', args=[str(course.id)]))
+
+        # Redirect if the course catalog visibility prevents access
+        if isinstance(access_response, CatalogVisibilityError):
+            raise CourseAccessRedirect('{dashboard_url}'.format(
+                dashboard_url=reverse('dashboard'),
+            ), access_response)
 
         # Redirect if the user must answer a survey before entering the course.
         if isinstance(access_response, SurveyRequiredAccessError):
@@ -624,7 +639,7 @@ def get_course_blocks_completion_summary(course_key, user):
 
 
 @request_cached()
-def get_course_assignments(course_key, user, include_access=False, include_without_due=False,):  # lint-amnesty, pylint: disable=too-many-statements
+def get_course_assignments(course_key, user, include_access=False, include_without_due=False,):  # pylint: disable=too-many-statements
     """
     Returns a list of assignment (at the subsection/sequential level) due dates for the given course.
 
@@ -640,7 +655,7 @@ def get_course_assignments(course_key, user, include_access=False, include_witho
 
     now = datetime.now(pytz.UTC)
     assignments = []
-    for section_key in block_data.get_children(course_usage_key):  # lint-amnesty, pylint: disable=too-many-nested-blocks
+    for section_key in block_data.get_children(course_usage_key):  # pylint: disable=too-many-nested-blocks
         for subsection_key in block_data.get_children(section_key):
             due = block_data.get_xblock_field(subsection_key, 'due')
             graded = block_data.get_xblock_field(subsection_key, 'graded', False)

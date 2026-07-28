@@ -7,11 +7,11 @@ import itertools
 
 import ddt
 
+from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory
 from openedx.core.djangoapps.site_configuration.tests.factories import SiteConfigurationFactory
 from openedx.core.djangolib.testing.utils import CacheIsolationTestCase
 from openedx.features.discounts.models import DiscountRestrictionConfig
-from common.djangoapps.student.tests.factories import UserFactory
 
 
 @ddt.ddt

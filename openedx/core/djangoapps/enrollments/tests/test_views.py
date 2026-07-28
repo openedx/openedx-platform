@@ -8,19 +8,18 @@ import itertools
 import json
 from unittest.mock import patch
 from urllib.parse import quote
+from zoneinfo import ZoneInfo
 
 import ddt
-import httpretty
 import pytest
-from zoneinfo import ZoneInfo
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.core.exceptions import ImproperlyConfigured
 from django.core.handlers.wsgi import WSGIRequest
-from django.test import Client
+from django.test import Client, RequestFactory, SimpleTestCase
 from django.test.utils import override_settings
 from django.urls import reverse
-from edx_toggles.toggles.testutils import override_waffle_flag
 from freezegun import freeze_time
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -39,13 +38,10 @@ from openedx.core.djangoapps.embargo.test_utils import restrict_course
 from openedx.core.djangoapps.enrollments import api, data
 from openedx.core.djangoapps.enrollments.errors import CourseEnrollmentError
 from openedx.core.djangoapps.enrollments.views import EnrollmentUserThrottle
-from openedx.core.djangoapps.notifications.config.waffle import ENABLE_NOTIFICATIONS
 from openedx.core.djangoapps.oauth_dispatch.jwt import create_jwt_for_user
 from openedx.core.djangoapps.user_api.models import RetirementState, UserOrgTag, UserRetirementStatus
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 from openedx.core.lib.django_test_client_utils import get_absolute_url
-from openedx.features.enterprise_support.tests import FAKE_ENTERPRISE_CUSTOMER
-from openedx.features.enterprise_support.tests.mixins.enterprise import EnterpriseServiceMockMixin
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory, check_mongo_calls_range
 
@@ -155,10 +151,9 @@ class EnrollmentTestMixin:
 
 
 @override_settings(EDX_API_KEY="i am a key")
-@override_waffle_flag(ENABLE_NOTIFICATIONS, True)
 @ddt.ddt
 @skip_unless_lms
-class EnrollmentTest(EnrollmentTestMixin, ModuleStoreTestCase, APITestCase, EnterpriseServiceMockMixin):
+class EnrollmentTest(EnrollmentTestMixin, ModuleStoreTestCase, APITestCase):
     """
     Test user enrollment, especially with different course modes.
     """
@@ -541,7 +536,7 @@ class EnrollmentTest(EnrollmentTestMixin, ModuleStoreTestCase, APITestCase, Ente
         response = self.client.get(reverse('courseenrollments'), {'user': self.user.username}, **kwargs)
         assert response.status_code == status.HTTP_200_OK
         data = json.loads(response.content.decode('utf-8'))
-        self.assertCountEqual(
+        self.assertCountEqual(  # noqa: PT009
             [(datum['course_details']['course_id'], datum['course_details']['course_name']) for datum in data],
             [(str(course.id), course.display_name_with_default) for course in courses]
         )
@@ -1150,7 +1145,7 @@ class EnrollmentTest(EnrollmentTestMixin, ModuleStoreTestCase, APITestCase, Ente
             assert is_active == old_is_active
             assert course_mode == old_mode
             # error message should contain specific text.  Otto checks for this text in the message.
-            self.assertRegex(
+            self.assertRegex(  # noqa: PT009
                 json.loads(response.content.decode('utf-8'))['message'],
                 'Enrollment mode mismatch'
             )
@@ -1238,40 +1233,6 @@ class EnrollmentTest(EnrollmentTestMixin, ModuleStoreTestCase, APITestCase, Ente
             assert course_mode == CourseMode.VERIFIED
         self.client.logout()
 
-    @httpretty.activate
-    @override_settings(ENTERPRISE_SERVICE_WORKER_USERNAME='enterprise_worker',
-                       FEATURES=dict(ENABLE_ENTERPRISE_INTEGRATION=True))
-    @patch('openedx.features.enterprise_support.api.enterprise_customer_from_api')
-    def test_enterprise_course_enrollment_with_ec_uuid(self, mock_enterprise_customer_from_api):
-        """Verify that the enrollment completes when the EnterpriseCourseEnrollment creation succeeds. """
-        UserFactory.create(
-            username='enterprise_worker',
-            email=self.EMAIL,
-            password=self.PASSWORD,
-        )
-        CourseModeFactory.create(
-            course_id=self.course.id,
-            mode_slug=CourseMode.DEFAULT_MODE_SLUG,
-            mode_display_name=CourseMode.DEFAULT_MODE_SLUG,
-        )
-        consent_kwargs = {
-            'username': self.user.username,
-            'course_id': str(self.course.id),
-            'ec_uuid': 'this-is-a-real-uuid'
-        }
-        mock_enterprise_customer_from_api.return_value = FAKE_ENTERPRISE_CUSTOMER
-        self.mock_enterprise_course_enrollment_post_api()
-        self.mock_consent_missing(**consent_kwargs)
-        self.mock_consent_post(**consent_kwargs)
-        self.assert_enrollment_status(
-            expected_status=status.HTTP_200_OK,
-            as_server=True,
-            username='enterprise_worker',
-            linked_enterprise_customer='this-is-a-real-uuid',
-        )
-        assert httpretty.last_request().path == '/consent/api/v1/data_sharing_consent'  # pylint: disable=no-member
-        assert httpretty.last_request().method == httpretty.POST
-
     def test_enrollment_attributes_always_written(self):
         """ Enrollment attributes should always be written, regardless of whether
         the enrollment is being created or updated.
@@ -1332,7 +1293,7 @@ class EnrollmentEmbargoTest(EnrollmentTestMixin, UrlResetMixin, ModuleStoreTestC
 
     URLCONF_MODULES = ['openedx.core.djangoapps.embargo']
 
-    @patch.dict(settings.FEATURES, {'EMBARGO': True})
+    @override_settings(EMBARGO=True)
     def setUp(self):
         """ Create a course and user, then log in. """
         super().setUp()
@@ -1372,7 +1333,7 @@ class EnrollmentEmbargoTest(EnrollmentTestMixin, UrlResetMixin, ModuleStoreTestC
         # Verify that we were not enrolled
         assert self._get_enrollments() == []
 
-    @patch.dict(settings.FEATURES, {'EMBARGO': True})
+    @override_settings(EMBARGO=True)
     def test_embargo_change_enrollment_restrict_geoip(self):
         """ Validates that enrollment changes are blocked if the request originates from an embargoed country. """
 
@@ -1398,7 +1359,7 @@ class EnrollmentEmbargoTest(EnrollmentTestMixin, UrlResetMixin, ModuleStoreTestC
         return unrestricted_country, restricted_country
 
     @override_settings(EDX_API_KEY=EnrollmentTestMixin.API_KEY)
-    @patch.dict(settings.FEATURES, {'EMBARGO': True})
+    @override_settings(EMBARGO=True)
     def test_embargo_change_enrollment_restrict_user_profile(self):
         """ Validates that enrollment changes are blocked if the user's profile is linked to an embargoed country. """
 
@@ -1412,7 +1373,7 @@ class EnrollmentEmbargoTest(EnrollmentTestMixin, UrlResetMixin, ModuleStoreTestC
         self.assert_access_denied(path)
 
     @override_settings(EDX_API_KEY=EnrollmentTestMixin.API_KEY)
-    @patch.dict(settings.FEATURES, {'EMBARGO': True})
+    @override_settings(EMBARGO=True)
     def test_embargo_change_enrollment_allow_user_profile(self):
         """
         Validates that enrollment changes are allowed if the user's profile is NOT linked to an embargoed country.
@@ -1426,7 +1387,7 @@ class EnrollmentEmbargoTest(EnrollmentTestMixin, UrlResetMixin, ModuleStoreTestC
         self.user.profile.save()
         self.assert_enrollment_status()
 
-    @patch.dict(settings.FEATURES, {'EMBARGO': True})
+    @override_settings(EMBARGO=True)
     def test_embargo_change_enrollment_allow(self):
         self.assert_enrollment_status()
 
@@ -1765,7 +1726,7 @@ class UserRoleTest(ModuleStoreTestCase):
             response = self.client.get(reverse('roles'))
             assert response.status_code == status.HTTP_400_BAD_REQUEST
             expected_response = {
-                "message": (
+                "message": (  # noqa: UP032
                     "An error occurred while retrieving roles for user '{username}"
                 ).format(username=self.user.username)
             }
@@ -1928,7 +1889,7 @@ class CourseEnrollmentsApiListTest(APITestCase, ModuleStoreTestCase):
         content = self._assert_list_of_enrollments(query_params, status.HTTP_200_OK)
         results = content['results']
 
-        self.assertCountEqual(results, expected_results)
+        self.assertCountEqual(results, expected_results)  # noqa: PT009
 
 
 @ddt.ddt
@@ -2031,3 +1992,42 @@ class EnrollmentAllowedViewTest(APITestCase):
         self.client.post(self.url, self.data)
         response = self.client.delete(self.url, delete_data)
         assert response.status_code == expected_result
+
+
+class EnrollmentUserThrottleCacheKeyTests(SimpleTestCase):
+    """
+    Regression tests ensuring ``EnrollmentUserThrottle`` stores its rate-limit
+    counter in an isolated cache bucket.
+
+    DRF's default cache key is ``throttle_{scope}_{ident}``. Several endpoints
+    (e.g. the course list / id APIs) also use a ``staff`` scope, so without a
+    per-throttle prefix a single service user's traffic to one endpoint would
+    consume the rate-limit allowance of the others. See
+    ``EnrollmentUserThrottle.get_cache_key``.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.factory = RequestFactory()
+        # Unsaved instance is enough: get_cache_key only reads ``pk`` and
+        # ``is_authenticated``, so no database access is required.
+        self.user = get_user_model()(pk=42, username="service_worker", is_staff=True)
+
+    def _staff_request(self):
+        request = self.factory.get("/")
+        request.user = self.user
+        return request
+
+    def test_cache_key_is_prefixed_with_enrollment(self):
+        throttle = EnrollmentUserThrottle()
+        throttle.scope = "staff"
+        cache_key = throttle.get_cache_key(self._staff_request(), view=None)
+        assert cache_key.startswith("enrollment.")
+
+    def test_cache_key_differs_from_unprefixed_same_scope_bucket(self):
+        throttle = EnrollmentUserThrottle()
+        throttle.scope = "staff"
+        cache_key = throttle.get_cache_key(self._staff_request(), view=None)
+        shared_bucket = throttle.cache_format % {"scope": "staff", "ident": self.user.pk}
+        assert cache_key != shared_bucket
+        assert cache_key == f"enrollment.{shared_bucket}"

@@ -13,10 +13,10 @@ import ddt
 from django.test import RequestFactory
 from django.test.utils import override_settings
 from django.utils.timezone import now
+from edx_toggles.toggles.testutils import override_waffle_flag
 from freezegun import freeze_time
 from web_fragments.fragment import Fragment
 
-from edx_toggles.toggles.testutils import override_waffle_flag
 from openedx.features.content_type_gating.models import ContentTypeGatingConfig
 from xmodule.seq_block import TIMED_EXAM_GATING_WAFFLE_FLAG, SequenceBlock
 from xmodule.tests import get_test_system, prepare_block_runtime
@@ -437,7 +437,7 @@ class SequenceBlockTestCase(XModuleXmlImportTest):
         """Test that the sequence metadata is returned correctly"""
         # rather than dealing with json serialization of the Mock object,
         # let's just disable the bookmarks service
-        self.sequence_3_1.runtime._services['bookmarks'] = None  # lint-amnesty, pylint: disable=protected-access
+        self.sequence_3_1.runtime._services['bookmarks'] = None  # pylint: disable=protected-access
         metadata = self.sequence_3_1.get_metadata()
         assert len(metadata['items']) == 3
         assert metadata['tag'] == 'sequential'

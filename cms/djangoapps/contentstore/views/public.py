@@ -8,13 +8,10 @@ from django.conf import settings
 from django.http.response import Http404
 from django.shortcuts import redirect
 
-from common.djangoapps.edxmako.shortcuts import render_to_response
-
 from ..config.waffle import ENABLE_ACCESSIBILITY_POLICY_PAGE
-from ..toggles import use_legacy_logged_out_home
 
 __all__ = [
-    'register_redirect_to_lms', 'login_redirect_to_lms', 'howitworks', 'accessibility',
+    'register_redirect_to_lms', 'login_redirect_to_lms', 'accessibility',
     'redirect_to_lms_login_for_admin',
 ]
 
@@ -24,7 +21,7 @@ def register_redirect_to_lms(request):
     This view redirects to the LMS register view. It is used to temporarily keep the old
     Studio signup url alive.
     """
-    register_url = '{register_url}{params}'.format(
+    register_url = '{register_url}{params}'.format(  # noqa: UP032
         register_url=settings.FRONTEND_REGISTER_URL,
         params=_build_next_param(request),
     )
@@ -36,7 +33,7 @@ def login_redirect_to_lms(request):
     This view redirects to the LMS login view. It is used for Django's LOGIN_URL
     setting, which is where unauthenticated requests to protected endpoints are redirected.
     """
-    login_url = '{login_url}{params}'.format(
+    login_url = '{login_url}{params}'.format(  # noqa: UP032
         login_url=settings.FRONTEND_LOGIN_URL,
         params=_build_next_param(request),
     )
@@ -60,15 +57,6 @@ def _build_next_param(request):
         absolute_next_url = request.build_absolute_uri(next_url)
         return '?next=' + quote_plus(absolute_next_url)
     return ''
-
-
-def howitworks(request):
-    """
-    Deprecated logged-out home page. New behavior is just login w/ redirect to studio course list.
-    """
-    if use_legacy_logged_out_home() and not request.user.is_authenticated:
-        return render_to_response('howitworks.html', {})
-    return redirect('/home/')
 
 
 def accessibility(request):

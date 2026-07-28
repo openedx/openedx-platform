@@ -4,6 +4,7 @@ Tests for the CCXCon celery tasks
 
 
 from unittest import mock
+
 from django.test import TestCase
 from opaque_keys.edx.keys import CourseKey
 

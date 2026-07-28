@@ -6,11 +6,11 @@ import json
 import logging
 from datetime import datetime, timedelta
 from unittest import mock
+from zoneinfo import ZoneInfo
 
 import ddt
 import httpretty
 import pytest
-from zoneinfo import ZoneInfo
 import requests
 from celery.exceptions import MaxRetriesExceededError
 from django.conf import settings
@@ -461,7 +461,7 @@ class PostCourseCertificateTestCase(TestCase):
     Test the award_program_certificate function
     """
 
-    def setUp(self):  # lint-amnesty, pylint: disable=super-method-not-called
+    def setUp(self):  # pylint: disable=super-method-not-called
         self.student = UserFactory.create(username="test-student")
         self.course = CourseOverviewFactory.create(
             self_paced=True  # Any option to allow the certificate to be viewable for the course

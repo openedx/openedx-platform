@@ -28,7 +28,7 @@
       padding: 5%;
     }
 
-    .title {
+    .title:not(.deprecated-title) {
       @extend %t-title5;
       @extend %t-demi-strong;
 
@@ -308,6 +308,14 @@
         bottom: 30px;
       }
     }
+
+    .fullscreen-button {
+      height: 44px;
+      width: 44px;
+      position: absolute;
+      right: 30px;
+      z-index: 10;
+    }
   }
 
 
@@ -391,7 +399,52 @@
     }
   }
 
+  // fullscreen modals - component editors
+  .modal-fullscreen {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
 
+    div.edit-xblock-modal {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      flex-grow: 1;
+
+      div.modal-content {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-height: 0;
+        padding: 0;
+        overflow: auto;
+
+        div.xblock-editor {
+          display: flex;
+          flex-direction: column;
+          flex-grow: 1;
+
+          div.xblock-studio_view {
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+          }
+
+          div.editor-with-buttons {
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+            margin-bottom: 0;
+
+            ul.settings-list {
+              flex-grow: 1;
+            }
+          }
+        }
+      }
+    }
+  }
 
   // specific modal overrides
   // ------------------------

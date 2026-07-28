@@ -1,7 +1,7 @@
 """Views served by the embargo app. """
 
 
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.http import Http404
 from django.views.generic.base import View
 from opaque_keys import InvalidKeyError
@@ -13,11 +13,10 @@ from rest_framework.views import APIView
 
 from common.djangoapps.edxmako.shortcuts import render_to_response
 
-from . import messages
-from .api import check_course_access
+from . import api, messages
 
 
-class CheckCourseAccessView(APIView):  # lint-amnesty, pylint: disable=missing-class-docstring
+class CheckCourseAccessView(APIView):  # pylint: disable=missing-class-docstring
     permission_classes = (permissions.IsAuthenticated, permissions.IsAdminUser)
 
     def get(self, request):
@@ -48,7 +47,7 @@ class CheckCourseAccessView(APIView):  # lint-amnesty, pylint: disable=missing-c
                     course_key = CourseKey.from_string(course_id)
                 except InvalidKeyError as exc:
                     raise ValidationError('Invalid course_ids') from exc
-                if not check_course_access(course_key, user=user, ip_addresses=[user_ip_address]):
+                if not api.check_course_access(course_key, user=user, ip_addresses=[user_ip_address]):
                     response['access'] = False
                     break
         else:

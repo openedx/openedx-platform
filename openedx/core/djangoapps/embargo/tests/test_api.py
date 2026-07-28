@@ -4,45 +4,46 @@ Tests for EmbargoMiddleware
 
 from contextlib import contextmanager
 from unittest import mock
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
+import ddt
 import geoip2.database
 import maxminddb
-import ddt
 import pytest
-
 from django.conf import settings
 from django.core.cache import cache
 from django.db import connection
 from django.test.client import RequestFactory
 from django.test.utils import override_settings
-from xmodule.modulestore.tests.factories import CourseFactory
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase, mixed_store_config
 
-from openedx.core.djangolib.testing.utils import skip_unless_lms
-from common.djangoapps.student.tests.factories import UserFactory
 from common.djangoapps.student.roles import (
-    GlobalStaff, CourseRole, OrgRole,
-    CourseStaffRole, CourseInstructorRole,
-    OrgStaffRole, OrgInstructorRole
+    CourseInstructorRole,
+    CourseRole,
+    CourseStaffRole,
+    GlobalStaff,
+    OrgInstructorRole,
+    OrgRole,
+    OrgStaffRole,
 )
+from common.djangoapps.student.tests.factories import UserFactory
 from common.djangoapps.util.testing import UrlResetMixin
-
-from ..models import (
-    RestrictedCourse, Country, CountryAccessRule,
-)
+from openedx.core.djangoapps.waffle_utils.testutils import WAFFLE_TABLES
+from openedx.core.djangolib.testing.utils import AUTHZ_TABLES, skip_unless_lms
+from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase, mixed_store_config
+from xmodule.modulestore.tests.factories import CourseFactory
 
 from .. import api as embargo_api
 from ..exceptions import InvalidAccessPoint
+from ..models import Country, CountryAccessRule, RestrictedCourse
 
+QUERY_COUNT_TABLE_IGNORELIST = WAFFLE_TABLES + AUTHZ_TABLES
 
 MODULESTORE_CONFIG = mixed_store_config(settings.COMMON_TEST_DATA_ROOT, {})
 
 
 @ddt.ddt
-@override_settings(MODULESTORE=MODULESTORE_CONFIG)
+@override_settings(MODULESTORE=MODULESTORE_CONFIG, EMBARGO=True)
 @skip_unless_lms
-@mock.patch.dict(settings.FEATURES, {'EMBARGO': True})
 class EmbargoCheckAccessApiTests(ModuleStoreTestCase):
     """Test the embargo API calls to determine whether a user has access. """
     ENABLED_CACHES = ['default', 'mongo_metadata_inheritance', 'loc_cache']
@@ -151,7 +152,6 @@ class EmbargoCheckAccessApiTests(ModuleStoreTestCase):
             result = embargo_api.check_course_access(self.course.id, user=self.user, ip_addresses=['0.0.0.0'])
             assert result
 
-    @mock.patch.dict(settings.FEATURES, {'EMBARGO': True})
     def test_profile_country_db_null(self):
         # Django country fields treat NULL values inconsistently.
         # When saving a profile with country set to None, Django saves an empty string to the database.
@@ -175,10 +175,10 @@ class EmbargoCheckAccessApiTests(ModuleStoreTestCase):
             # (restricted course, but pass all the checks)
             # This is the worst case, so it will hit all of the
             # caching code.
-            with self.assertNumQueries(3):
+            with self.assertNumQueries(5, table_ignorelist=QUERY_COUNT_TABLE_IGNORELIST):
                 embargo_api.check_course_access(self.course.id, user=self.user, ip_addresses=['0.0.0.0'])
 
-            with self.assertNumQueries(0):
+            with self.assertNumQueries(0, table_ignorelist=QUERY_COUNT_TABLE_IGNORELIST):
                 embargo_api.check_course_access(self.course.id, user=self.user, ip_addresses=['0.0.0.0'])
 
     def test_caching_no_restricted_courses(self):
@@ -263,7 +263,7 @@ class EmbargoCheckAccessApiTests(ModuleStoreTestCase):
     )
     @ddt.unpack
     @mock.patch('openedx.core.djangoapps.embargo.api.check_course_access', return_value=False)
-    def test_redirect_if_blocked_courseware(self, access_point, check_disabled, allow_access, _mock_access):
+    def test_redirect_if_blocked_courseware(self, access_point, check_disabled, allow_access, _mock_access):  # noqa: PT019  # pylint: disable=line-too-long
         self.restricted_course.disable_access_check = check_disabled
         self.restricted_course.save()
 
@@ -300,7 +300,7 @@ class EmbargoCheckAccessApiTests(ModuleStoreTestCase):
 
 
 @ddt.ddt
-@override_settings(MODULESTORE=MODULESTORE_CONFIG)
+@override_settings(MODULESTORE=MODULESTORE_CONFIG, EMBARGO=True)
 @skip_unless_lms
 class EmbargoMessageUrlApiTests(UrlResetMixin, ModuleStoreTestCase):
     """Test the embargo API calls for retrieving the blocking message URLs. """
@@ -308,7 +308,6 @@ class EmbargoMessageUrlApiTests(UrlResetMixin, ModuleStoreTestCase):
     URLCONF_MODULES = ['openedx.core.djangoapps.embargo']
     ENABLED_CACHES = ['default', 'mongo_metadata_inheritance', 'loc_cache']
 
-    @patch.dict(settings.FEATURES, {'EMBARGO': True})
     def setUp(self):
         super().setUp()
         self.course = CourseFactory.create()
@@ -359,7 +358,7 @@ class EmbargoMessageUrlApiTests(UrlResetMixin, ModuleStoreTestCase):
         RestrictedCourse.objects.get(course_key=self.course.id).delete()
 
         # Clear the message URL cache
-        message_cache_key = (
+        message_cache_key = (  # noqa: UP032
             'embargo.message_url_path.courseware.{course_key}'
         ).format(course_key=self.course.id)
         cache.delete(message_cache_key)

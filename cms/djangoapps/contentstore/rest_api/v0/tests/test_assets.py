@@ -5,17 +5,16 @@ Tests for the xblock view of the CMS API. This tests only the view itself,
 not the underlying Xblock service.
 It checks that the assets_handler method of the Xblock service is called with the expected parameters.
 """
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 from django.core.files import File
 from django.http import JsonResponse
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 
 from cms.djangoapps.contentstore.tests.test_utils import AuthorizeStaffTestCase
-
+from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 
 ASSET_KEY_STRING = "asset-v1:dede+aba+weagi+type@asset+block@_0e37192a-42c4-441e-a3e1-8e40ec304e2e.jpg"
 mock_image = MagicMock(file=File)
@@ -161,7 +160,7 @@ class AssetsViewPostTest(AssetsViewTestCase, ModuleStoreTestCase, APITestCase):
         mock_handle_assets.assert_called_once()
         passed_args = mock_handle_assets.call_args[0][0]
 
-        course_id = self.get_course_key_string()
+        course_id = self.get_course_key_string()  # noqa: F841
 
         assert passed_args.data.get("file").name == mock_image.name
         assert passed_args.method == "POST"
@@ -204,7 +203,7 @@ class AssetsViewPutTest(AssetsViewTestCase, ModuleStoreTestCase, APITestCase):
         mock_handle_assets.assert_called_once()
         passed_args = mock_handle_assets.call_args[0][0]
 
-        course_id = self.get_course_key_string()
+        course_id = self.get_course_key_string()  # noqa: F841
 
         assert passed_args.data.get("locked") is True
         assert passed_args.method == "PUT"

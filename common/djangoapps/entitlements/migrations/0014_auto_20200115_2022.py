@@ -5,7 +5,7 @@ import django.db.models.deletion
 from django.db import migrations, models
 
 
-class Migration(migrations.Migration):  # lint-amnesty, pylint: disable=missing-class-docstring
+class Migration(migrations.Migration):  # pylint: disable=missing-class-docstring
 
     dependencies = [
         ('entitlements', '0013_historicalcourseentitlementsupportdetail'),
@@ -15,6 +15,6 @@ class Migration(migrations.Migration):  # lint-amnesty, pylint: disable=missing-
         migrations.AlterField(
             model_name='courseentitlementsupportdetail',
             name='unenrolled_run',
-            field=models.ForeignKey(blank=True, db_constraint=False, null=True, on_delete=django.db.models.deletion.DO_NOTHING, to='course_overviews.CourseOverview'),  # lint-amnesty, pylint: disable=line-too-long
+            field=models.ForeignKey(blank=True, db_constraint=False, null=True, on_delete=django.db.models.deletion.DO_NOTHING, to='course_overviews.CourseOverview'),  # pylint: disable=line-too-long
         ),
     ]

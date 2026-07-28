@@ -7,15 +7,15 @@ perform some LMS-specific tab display gymnastics for the Entrance Exams feature
 from django.conf import settings
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_noop
-from xmodule.tabs import CourseTab, CourseTabList, key_checker
 
+from common.djangoapps.student.models import CourseEnrollment
+from lms.djangoapps.course_home_api.toggles import course_home_mfe_progress_tab_is_active
 from lms.djangoapps.courseware.access import has_access
 from lms.djangoapps.courseware.entrance_exams import user_can_skip_entrance_exam
-from lms.djangoapps.course_home_api.toggles import course_home_mfe_progress_tab_is_active
 from openedx.core.lib.course_tabs import CourseTabPluginManager
 from openedx.features.course_experience import default_course_url
 from openedx.features.course_experience.url_helpers import get_learning_mfe_home_url
-from common.djangoapps.student.models import CourseEnrollment
+from xmodule.tabs import CourseTab, CourseTabList, key_checker
 
 
 class EnrolledTab(CourseTab):
@@ -134,7 +134,7 @@ class TextbookTabs(TextbookTabsBase):
     @classmethod
     def is_enabled(cls, course, user=None):
         parent_is_enabled = super().is_enabled(course, user)
-        return settings.FEATURES.get('ENABLE_TEXTBOOK') and parent_is_enabled
+        return settings.ENABLE_TEXTBOOK and parent_is_enabled
 
     @classmethod
     def items(cls, course):
@@ -307,6 +307,7 @@ class DatesTab(EnrolledTab):
     title = gettext_noop("Dates")
     priority = 30
     view_name = "dates"
+    is_hideable = True
 
     def __init__(self, tab_dict):
         def link_func(course, _reverse_func):
@@ -314,6 +315,13 @@ class DatesTab(EnrolledTab):
 
         tab_dict['link_func'] = link_func
         super().__init__(tab_dict)
+
+    @classmethod
+    def is_enabled(cls, course, user=None):
+        if not super().is_enabled(course, user=user):
+            return False
+        dates_tab = CourseTabList.get_tab_by_id(course.tabs, 'dates')
+        return bool(dates_tab and not dates_tab.is_hidden)
 
 
 def get_course_tab_list(user, course):

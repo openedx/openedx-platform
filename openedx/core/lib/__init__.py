@@ -9,7 +9,6 @@ This particular module contains a small handful of broadly useful utility functi
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 
-
 _LMS_URLCONF = 'lms.urls'
 _CMS_URLCONF = 'cms.urls'
 

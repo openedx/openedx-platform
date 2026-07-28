@@ -18,11 +18,11 @@ import json
 import shutil
 import unittest
 from tempfile import mkdtemp
-from uuid import uuid4
 from unittest.mock import ANY, MagicMock, Mock, patch
+from uuid import uuid4
 
-import pytest
 import ddt
+import pytest
 from django.conf import settings
 from django.test import TestCase
 from django.test.utils import override_settings
@@ -30,15 +30,16 @@ from fs.osfs import OSFS
 from lxml import etree
 from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locator import CourseLocator
+from xblock.core import XBlockAside
 from xblock.field_data import DictFieldData
 from xblock.fields import ScopeIds
 
+from openedx.core.djangoapps.video_config.transcripts_utils import save_to_store
+from xmodule.modulestore.tests.test_asides import AsideTestType
 from xmodule.tests import get_test_descriptor_system
 from xmodule.validation import StudioValidationMessage
-from xmodule.video_block import EXPORT_IMPORT_STATIC_DIR, VideoBlock, create_youtube_string
-from openedx.core.djangoapps.video_config.transcripts_utils import save_to_store
-from xblock.core import XBlockAside
-from xmodule.modulestore.tests.test_asides import AsideTestType
+from xmodule.video_block import EXPORT_IMPORT_STATIC_DIR, create_youtube_string
+from xmodule.video_block.video_block import _BuiltInVideoBlock as VideoBlock
 
 from .test_import import DummyModuleStoreRuntime
 
@@ -104,12 +105,12 @@ def instantiate_block(**field_data):
 
 class _MockValVideoNotFoundError(Exception):
     """Mock ValVideoNotFoundError exception"""
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 class _MockValCannotCreateError(Exception):
     """Mock ValCannotCreateError exception"""
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 class VideoBlockTest(unittest.TestCase):
@@ -190,7 +191,7 @@ class VideoBlockTestBase(unittest.TestCase):
             assert expected_attr == actual_attr
 
         assert get_child_tags(expected) == get_child_tags(xml)
-        for left, right in zip(expected, xml):
+        for left, right in zip(expected, xml):  # noqa: B905
             self.assertXmlEqual(left, right)
 
 
@@ -319,7 +320,7 @@ class VideoBlockImportTestCase(TestCase):
         })
 
     @XBlockAside.register_temp_plugin(AsideTestType, "test_aside")
-    @patch('xmodule.video_block.video_block.VideoBlock.load_file')
+    @patch('xmodule.video_block.video_block._BuiltInVideoBlock.load_file')
     @patch('xmodule.video_block.video_block.is_pointer_tag')
     @ddt.data(True, False)
     def test_parse_xml_with_asides(self, video_xml_has_aside, mock_is_pointer_tag, mock_load_file):
@@ -670,7 +671,7 @@ class VideoBlockImportTestCase(TestCase):
             <video edx_video_id="{edx_video_id}">
                 <video_asset mock_attr=""/>
             </video>
-        """.format(
+        """.format(  # noqa: UP032
             edx_video_id=edx_video_id
         )
         xml_object = etree.fromstring(xml_data)
@@ -982,7 +983,7 @@ class VideoBlockStudentViewDataTestCase(unittest.TestCase):
         block.runtime.handler_url = MagicMock()
         student_view_data = block.student_view_data()
         expected_video_data = {'hls': {'url': 'http://www.meowmix.com', 'file_size': 25556}}
-        self.assertDictEqual(student_view_data.get('encoded_videos'), expected_video_data)
+        self.assertDictEqual(student_view_data.get('encoded_videos'), expected_video_data)  # noqa: PT009
 
 
 @ddt.ddt
@@ -1013,7 +1014,7 @@ class VideoBlockStudentViewDataTestCase(unittest.TestCase):
     'ENGINE': 'xmodule.contentstore.mongo.MongoContentStore',
     'DOC_STORE_CONFIG': {
         'host': 'localhost',
-        'db': 'test_xcontent_%s' % uuid4().hex,
+        'db': 'test_xcontent_%s' % uuid4().hex,  # noqa: UP031
     },
     # allow for additional options that can be keyed on a name, e.g. 'trashcan'
     'ADDITIONAL_OPTIONS': {
@@ -1079,49 +1080,6 @@ class VideoBlockIndexingTestCase(unittest.TestCase):
                {'content': {'display_name': 'Test Video',
                             'transcript_ge': 'sprechen sie deutsch? Ja, ich spreche Deutsch',
                             'transcript_hr': 'Dobar dan! Kako ste danas?'}, 'content_type': 'Video'}
-
-    def test_video_with_multiple_transcripts_translation_retrieval(self):
-        """
-        Test translation retrieval of a video block with
-        multiple transcripts uploaded by a user.
-        """
-        xml_data_transcripts = '''
-            <video display_name="Test Video"
-                   youtube="1.0:p2Q6BrNhdh8,0.75:izygArpw-Qo,1.25:1EeWXzPdhSA,1.5:rABDYkeK0x8"
-                   show_captions="false"
-                   download_track="false"
-                   start_time="00:00:01"
-                   download_video="false"
-                   end_time="00:01:00">
-              <source src="http://www.example.com/source.mp4"/>
-              <track src="http://www.example.com/track"/>
-              <handout src="http://www.example.com/handout"/>
-              <transcript language="ge" src="subs_grmtran1.srt" />
-              <transcript language="hr" src="subs_croatian1.srt" />
-            </video>
-        '''
-
-        block = instantiate_block(data=xml_data_transcripts)
-        video_config_service = block.runtime.service(block, 'video_config')
-        translations = video_config_service.available_translations(block, block.get_transcripts_info())
-        assert sorted(translations) == sorted(['hr', 'ge'])
-
-    def test_video_with_no_transcripts_translation_retrieval(self):
-        """
-        Test translation retrieval of a video block with
-        no transcripts uploaded by a user- ie, that retrieval
-        does not throw an exception.
-        """
-        block = instantiate_block(data=None)
-        video_config_service = block.runtime.service(block, 'video_config')
-        translations_with_fallback = video_config_service.available_translations(block, block.get_transcripts_info())
-        assert translations_with_fallback == ['en']
-
-        with patch.dict(settings.FEATURES, FALLBACK_TO_ENGLISH_TRANSCRIPTS=False):
-            # Some organizations don't have English transcripts for all videos
-            # This feature makes it configurable
-            translations_no_fallback = video_config_service.available_translations(block, block.get_transcripts_info())
-            assert translations_no_fallback == []
 
     @override_settings(ALL_LANGUAGES=ALL_LANGUAGES)
     def test_video_with_language_do_not_have_transcripts_translation(self):
@@ -1195,7 +1153,7 @@ class VideoBlockIndexingTestCase(unittest.TestCase):
               <handout src="http://www.example.com/handout"/>
               {xml_transcripts}
             </video>
-        '''.format(xml_transcripts=xml_transcripts)
+        '''.format(xml_transcripts=xml_transcripts)  # noqa: UP032
         block = instantiate_block(data=xml_data_transcripts)
         validation = block.validate()
         self.assert_validation_message(validation, expected_validation_msg)

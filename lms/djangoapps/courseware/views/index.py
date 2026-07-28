@@ -9,21 +9,20 @@ import logging
 
 from django.contrib.auth.views import redirect_to_login
 from django.utils.decorators import method_decorator
+from django.utils.functional import cached_property
 from django.views.decorators.cache import cache_control
 from django.views.decorators.csrf import ensure_csrf_cookie
-from django.utils.functional import cached_property
 from django.views.generic import View
-
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey, UsageKey
-from xmodule.modulestore.django import modulestore
 
 from common.djangoapps.util.views import ensure_valid_course_key
+from lms.djangoapps.courseware.decorators import courseware_view_hooks
 from lms.djangoapps.courseware.exceptions import Redirect
 from lms.djangoapps.courseware.masquerade import setup_masquerade
-from openedx.features.course_experience.url_helpers import make_learning_mfe_courseware_url
 from openedx.features.course_experience import COURSE_ENABLE_UNENROLLED_ACCESS_FLAG
-from openedx.features.enterprise_support.api import data_sharing_consent_required
+from openedx.features.course_experience.url_helpers import make_learning_mfe_courseware_url
+from xmodule.modulestore.django import modulestore
 
 from ..block_render import get_block_for_descriptor
 from ..courses import get_course_with_access
@@ -44,7 +43,7 @@ class CoursewareIndex(View):
     @method_decorator(ensure_csrf_cookie)
     @method_decorator(cache_control(no_cache=True, no_store=True, must_revalidate=True))
     @method_decorator(ensure_valid_course_key)
-    @method_decorator(data_sharing_consent_required)
+    @method_decorator(courseware_view_hooks)
     def get(self, request, course_id, section=None, subsection=None, position=None):
         """
         Instead of loading the legacy courseware sequences pages, load the equivalent URL

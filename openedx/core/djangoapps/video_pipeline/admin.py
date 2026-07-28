@@ -2,18 +2,18 @@
 Django admin for Video Pipeline models.
 """
 
+from config_models.admin import ConfigurationModelAdmin
 from django.contrib import admin
 
-from config_models.admin import ConfigurationModelAdmin
 from openedx.core.djangoapps.video_config.admin import CourseSpecificEnabledFlagBaseAdmin
 from openedx.core.djangoapps.video_pipeline.forms import (
     CourseVideoUploadsEnabledByDefaultAdminForm,
-    VEMPipelineIntegrationAdminForm
+    VEMPipelineIntegrationAdminForm,
 )
 from openedx.core.djangoapps.video_pipeline.models import (
     CourseVideoUploadsEnabledByDefault,
     VEMPipelineIntegration,
-    VideoUploadsEnabledByDefault
+    VideoUploadsEnabledByDefault,
 )
 
 

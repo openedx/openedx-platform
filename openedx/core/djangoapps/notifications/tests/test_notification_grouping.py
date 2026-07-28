@@ -2,18 +2,22 @@
 Tests for notification grouping module
 """
 
-import ddt
 import unittest
-from unittest.mock import MagicMock, patch
 from datetime import datetime
+from unittest.mock import MagicMock, patch
 from zoneinfo import ZoneInfo
+
+import ddt
 
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.notifications.grouping_notifications import (
     BaseNotificationGrouper,
+    NewPostGrouper,
+    NewResponseGrouper,
+    NewResponseOnFollowedPostGrouper,
     NotificationRegistry,
+    get_user_existing_notifications,
     group_user_notifications,
-    get_user_existing_notifications, NewPostGrouper, NewResponseGrouper, NewResponseOnFollowedPostGrouper
 )
 from openedx.core.djangoapps.notifications.models import Notification
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
@@ -40,14 +44,14 @@ class TestNotificationRegistry(unittest.TestCase):
 
         NotificationRegistry.register('test_notification')(TestGrouper)
         grouper = NotificationRegistry.get_grouper('test_notification')
-        self.assertIsInstance(grouper, TestGrouper)
+        self.assertIsInstance(grouper, TestGrouper)  # noqa: PT009
 
     def test_get_grouper_returns_none_for_unregistered_type(self):
         """
         Test that get_grouper returns None for an unregistered notification type
         """
         grouper = NotificationRegistry.get_grouper('non_existent')
-        self.assertIsNone(grouper)
+        self.assertIsNone(grouper)  # noqa: PT009
 
 
 class TestNewPostGrouper(unittest.TestCase):
@@ -68,8 +72,8 @@ class TestNewPostGrouper(unittest.TestCase):
 
         updated_context = NewPostGrouper().group(new_notification, old_notification)
 
-        self.assertTrue(updated_context['grouped'])
-        self.assertEqual(updated_context['replier_name'], new_notification.content_context['replier_name'])
+        self.assertTrue(updated_context['grouped'])  # noqa: PT009
+        self.assertEqual(updated_context['replier_name'], new_notification.content_context['replier_name'])  # noqa: PT009  # pylint: disable=line-too-long
 
     def test_new_post_with_same_user(self):
         """
@@ -88,7 +92,7 @@ class TestNewPostGrouper(unittest.TestCase):
 
         updated_context = NewPostGrouper().group(new_notification, old_notification)
 
-        self.assertFalse(updated_context.get('grouped', False))
+        self.assertFalse(updated_context.get('grouped', False))  # noqa: PT009
 
 
 @ddt.ddt
@@ -113,10 +117,10 @@ class TestGroupUserNotifications(ModuleStoreTestCase):
         group_user_notifications(new_notification, old_notification)
 
         mock_grouper.group.assert_called_once_with(new_notification, old_notification)
-        self.assertTrue(old_notification.save.called)
-        self.assertIsNone(old_notification.last_read)
-        self.assertIsNone(old_notification.last_seen)
-        self.assertIsNotNone(old_notification.created)
+        self.assertTrue(old_notification.save.called)  # noqa: PT009
+        self.assertIsNone(old_notification.last_read)  # noqa: PT009
+        self.assertIsNone(old_notification.last_seen)  # noqa: PT009
+        self.assertIsNotNone(old_notification.created)  # noqa: PT009
 
     def test_group_user_notifications_no_grouper(self):
         """
@@ -127,7 +131,7 @@ class TestGroupUserNotifications(ModuleStoreTestCase):
 
         group_user_notifications(new_notification, old_notification)
 
-        self.assertFalse(old_notification.save.called)
+        self.assertFalse(old_notification.save.called)  # noqa: PT009
 
     @ddt.data(datetime(2023, 1, 1, tzinfo=ZoneInfo("UTC")), None)
     def test_not_grouped_when_notification_is_seen(self, last_seen):
@@ -189,5 +193,5 @@ class TestGetUserExistingNotifications(unittest.TestCase):
         result = get_user_existing_notifications(user_ids, notification_type, group_by_id, course_id)
 
         # Verify the results
-        self.assertEqual(result[1], mock_notification2)
-        self.assertIsNone(result[2])  # user 2 has no notifications
+        self.assertEqual(result[1], mock_notification2)  # noqa: PT009
+        self.assertIsNone(result[2])  # user 2 has no notifications  # noqa: PT009

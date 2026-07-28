@@ -4,15 +4,14 @@ Test CRUD for authorization.
 
 import copy
 
-from edx_toggles.toggles.testutils import override_waffle_flag
-
-from cms.djangoapps.contentstore import toggles
 from cms.djangoapps.contentstore.tests.utils import AjaxEnabledTestClient
-from cms.djangoapps.contentstore.utils import reverse_course_url, reverse_url
+from cms.djangoapps.contentstore.utils import reverse_url
 from common.djangoapps.student import auth
 from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRole, OrgInstructorRole, OrgStaffRole
 from common.djangoapps.student.tests.factories import UserFactory
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # pylint: disable=wrong-import-order
+)
 
 
 class TestCourseAccess(ModuleStoreTestCase):
@@ -66,19 +65,14 @@ class TestCourseAccess(ModuleStoreTestCase):
         self.client.logout()
         ModuleStoreTestCase.tearDown(self)  # pylint: disable=non-parent-method-called
 
-    @override_waffle_flag(toggles.LEGACY_STUDIO_COURSE_TEAM, True)
     def test_get_all_users(self):
         """
         Test getting all authors for a course where their permissions run the gamut of allowed group
         types.
-
-        TODO: Replace the call to the legacy course_team_handler with a call to the course team REST API.
-        The legacy page will be removed, but we still want to the test these behaviors.
-        Part of https://github.com/openedx/edx-platform/issues/36275.
         """
         # first check the course creator.has explicit access (don't use has_access as is_staff
         # will trump the actual test)
-        self.assertTrue(
+        self.assertTrue(  # noqa: PT009
             CourseInstructorRole(self.course_key).has_user(self.user),
             "Didn't add creator as instructor."
         )
@@ -99,13 +93,7 @@ class TestCourseAccess(ModuleStoreTestCase):
             user = users.pop()
             group.add_users(user)
             user_by_role[role].append(user)
-            self.assertTrue(auth.has_course_author_access(user, self.course_key), f"{user} does not have access")  # lint-amnesty, pylint: disable=line-too-long
-
-        course_team_url = reverse_course_url('course_team_handler', self.course_key)
-        response = self.client.get_html(course_team_url)
-        for role in [CourseInstructorRole, CourseStaffRole]:  # Global and org-based roles don't appear on this page
-            for user in user_by_role[role]:
-                self.assertContains(response, user.email)
+            self.assertTrue(auth.has_course_author_access(user, self.course_key), f"{user} does not have access")  # pylint: disable=line-too-long  # noqa: PT009
 
         # test copying course permissions
         copy_course_key = self.store.make_course_key('copyu', 'copydept.mycourse', 'myrun')
@@ -132,9 +120,9 @@ class TestCourseAccess(ModuleStoreTestCase):
                 if hasattr(user, '_roles'):
                     del user._roles
 
-                self.assertTrue(auth.has_course_author_access(user, copy_course_key), f"{user} no copy access")
+                self.assertTrue(auth.has_course_author_access(user, copy_course_key), f"{user} no copy access")  # noqa: PT009  # pylint: disable=line-too-long
                 if (role is OrgStaffRole) or (role is OrgInstructorRole):
                     auth.remove_users(self.user, role(self.course_key.org), user)
                 else:
                     auth.remove_users(self.user, role(self.course_key), user)
-                self.assertFalse(auth.has_course_author_access(user, self.course_key), f"{user} remove didn't work")  # lint-amnesty, pylint: disable=line-too-long
+                self.assertFalse(auth.has_course_author_access(user, self.course_key), f"{user} remove didn't work")  # pylint: disable=line-too-long  # noqa: PT009

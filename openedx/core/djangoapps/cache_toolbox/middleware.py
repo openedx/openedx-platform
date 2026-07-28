@@ -92,7 +92,7 @@ from logging import getLogger
 from django.conf import settings
 from django.contrib.auth import HASH_SESSION_KEY
 from django.contrib.auth.middleware import AuthenticationMiddleware
-from django.contrib.auth.models import AnonymousUser, User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import AnonymousUser, User  # pylint: disable=imported-auth-user
 from django.utils.crypto import constant_time_compare
 from django.utils.deprecation import MiddlewareMixin
 from edx_django_utils.monitoring import set_custom_attribute
@@ -116,7 +116,7 @@ class CacheBackedAuthenticationMiddleware(AuthenticationMiddleware, MiddlewareMi
         try:
             # Try and construct a User instance from data stored in the cache
             session_user_id = SafeSessionMiddleware.get_user_id_from_session(request)
-            request.user = User.get_cached(session_user_id)  # lint-amnesty, pylint: disable=no-member
+            request.user = User.get_cached(session_user_id)  # pylint: disable=no-member
             if request.user.id != session_user_id:
                 log.error(
                     "CacheBackedAuthenticationMiddleware cached user '%s' does not match requested user '%s'.",
@@ -138,7 +138,7 @@ class CacheBackedAuthenticationMiddleware(AuthenticationMiddleware, MiddlewareMi
         # security feature, we can turn it off when auto-auth is
         # enabled since auto-auth is highly insecure and only for
         # tests.
-        auto_auth_enabled = settings.FEATURES.get('AUTOMATIC_AUTH_FOR_TESTING', False)
+        auto_auth_enabled = settings.AUTOMATIC_AUTH_FOR_TESTING
         if not auto_auth_enabled and hasattr(request.user, 'get_session_auth_hash'):
             session_hash = request.session.get(HASH_SESSION_KEY)
             session_hash_verified = session_hash and constant_time_compare(

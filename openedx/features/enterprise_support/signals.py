@@ -6,13 +6,13 @@ This module contains signals related to enterprise.
 import logging
 
 from django.conf import settings
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from enterprise.models import EnterpriseCourseEnrollment, EnterpriseCustomer
 from integrated_channels.integrated_channel.tasks import (
     transmit_single_learner_data,
-    transmit_single_subsection_learner_data
+    transmit_single_subsection_learner_data,
 )
 from slumber.exceptions import HttpClientError
 
@@ -49,7 +49,7 @@ def update_dsc_cache_on_enterprise_customer_update(sender, instance, **kwargs):
         if new_value != old_value:
             kwargs = {'enterprise_customer_uuid': str(instance.uuid)}
             result = clear_enterprise_customer_data_consent_share_cache.apply_async(kwargs=kwargs)
-            log.info("DSC: Created {task_name}[{task_id}] with arguments {kwargs}".format(
+            log.info("DSC: Created {task_name}[{task_id}] with arguments {kwargs}".format(  # noqa: UP032
                 task_name=clear_enterprise_customer_data_consent_share_cache.name,
                 task_id=result.task_id,
                 kwargs=kwargs,

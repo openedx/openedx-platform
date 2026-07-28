@@ -3,26 +3,27 @@ Django storage backends for Open edX.
 """
 
 
+from functools import lru_cache
+
 from django.conf import settings
 from django.contrib.staticfiles.storage import StaticFilesStorage
 from django.core.files.storage import FileSystemStorage
 from django.utils.deconstruct import deconstructible
 from django.utils.module_loading import import_string
-from functools import lru_cache
 from pipeline.storage import NonPackagingMixin
 from require.storage import OptimizedFilesMixin
 from storages.backends.s3boto3 import S3Boto3Storage
 
-from openedx.core.djangoapps.theming.storage import ThemeManifestFilesMixin, ThemePipelineMixin, ThemeMixin
+from openedx.core.djangoapps.theming.storage import ThemeManifestFilesMixin, ThemeMixin, ThemePipelineMixin
 
 
 class PipelineForgivingMixin:
     """
     An extension of the django-pipeline storage backend which forgives missing files.
     """
-    def hashed_name(self, name, content=None, **kwargs):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def hashed_name(self, name, content=None, **kwargs):  # pylint: disable=missing-function-docstring
         try:
-            out = super().hashed_name(name, content, **kwargs)  # lint-amnesty, pylint: disable=super-with-arguments
+            out = super().hashed_name(name, content, **kwargs)  # pylint: disable=super-with-arguments
         except ValueError:
             # This means that a file could not be found, and normally this would
             # cause a fatal error, which seems rather excessive given that
@@ -30,9 +31,9 @@ class PipelineForgivingMixin:
             out = name
         return out
 
-    def stored_name(self, name):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def stored_name(self, name):  # pylint: disable=missing-function-docstring
         try:
-            out = super().stored_name(name)  # lint-amnesty, pylint: disable=super-with-arguments
+            out = super().stored_name(name)  # pylint: disable=super-with-arguments
         except ValueError:
             # This means that a file could not be found, and normally this would
             # cause a fatal error, which seems rather excessive given that
@@ -55,7 +56,7 @@ class ProductionMixin(
     """
     def __init__(self, *args, **kwargs):
         kwargs.update(settings.STATICFILES_STORAGE_KWARGS.get(settings.STORAGES['staticfiles']['BACKEND'], {}))
-        super().__init__(*args, **kwargs)  # lint-amnesty, pylint: disable=super-with-arguments
+        super().__init__(*args, **kwargs)  # pylint: disable=super-with-arguments
 
 
 class ProductionStorage(ProductionMixin, StaticFilesStorage):
@@ -77,7 +78,7 @@ class DevelopmentStorage(
     that provide additional functionality. We use this version for development,
     so that we can skip packaging and optimization.
     """
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 @deconstructible
@@ -102,7 +103,7 @@ class OverwriteStorage(FileSystemStorage):
         return name
 
 
-@lru_cache()
+@lru_cache()  # noqa: UP011
 def get_storage(storage_class=None, **kwargs):
     """
     Returns a storage instance with the given class name and kwargs. If the

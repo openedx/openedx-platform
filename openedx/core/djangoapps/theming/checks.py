@@ -11,7 +11,7 @@ from edx_toggles.toggles import SettingToggle
 
 
 @register(Tags.compatibility)
-def check_comprehensive_theme_settings(app_configs, **kwargs):  # lint-amnesty, pylint: disable=unused-argument
+def check_comprehensive_theme_settings(app_configs, **kwargs):  # pylint: disable=unused-argument
     """
     Checks the comprehensive theming theme directory settings.
 

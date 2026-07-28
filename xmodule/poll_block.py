@@ -9,26 +9,22 @@ If student have answered - Question with statistics for each answers.
 import html
 import json
 import logging
+import warnings
+from collections import OrderedDict
 from copy import deepcopy
 
-from collections import OrderedDict
 from django.conf import settings
 from lxml import etree
 from web_fragments.fragment import Fragment
 from xblock.core import XBlock
-from xblock.fields import Boolean, Dict, List, Scope, String  # lint-amnesty, pylint: disable=wrong-import-order
+from xblock.fields import Boolean, Dict, List, Scope, String  # pylint: disable=wrong-import-order
 from xblocks_contrib.poll import PollBlock as _ExtractedPollBlock
 
-from openedx.core.djangolib.markup import Text, HTML
+from openedx.core.djangolib.markup import HTML, Text
 from xmodule.mako_block import MakoTemplateBlockBase
 from xmodule.stringify import stringify_children
-from xmodule.util.builtin_assets import add_webpack_js_to_fragment, add_css_to_fragment
-from xmodule.x_module import (
-    ResourceTemplates,
-    shim_xmodule_js,
-    XModuleMixin,
-    XModuleToXBlockMixin,
-)
+from xmodule.util.builtin_assets import add_css_to_fragment, add_webpack_js_to_fragment
+from xmodule.x_module import ResourceTemplates, XModuleMixin, XModuleToXBlockMixin, shim_xmodule_js
 from xmodule.xml_block import XmlMixin
 
 log = logging.getLogger(__name__)
@@ -43,7 +39,13 @@ class _BuiltInPollBlock(
     ResourceTemplates,
     XModuleMixin,
 ):  # pylint: disable=abstract-method
-    """Poll Block"""
+    """
+    Poll Block.
+
+    .. deprecated:: 2026-03
+       This built-in poll block is deprecated. Please use the extracted ``PollBlock``
+       from ``xblocks_contrib.poll`` instead.
+    """
 
     is_extracted = False
 
@@ -84,7 +86,7 @@ class _BuiltInPollBlock(
     resources_dir = None
     uses_xmodule_styles_setup = True
 
-    def handle_ajax(self, dispatch, data):  # lint-amnesty, pylint: disable=unused-argument
+    def handle_ajax(self, dispatch, data):  # pylint: disable=unused-argument
         """Ajax handler.
 
         Args:
@@ -230,7 +232,7 @@ class _BuiltInPollBlock(
         xml_object = etree.fromstring(poll_str)
         xml_object.set('display_name', self.display_name)
 
-        def add_child(xml_obj, answer):  # lint-amnesty, pylint: disable=unused-argument
+        def add_child(xml_obj, answer):  # pylint: disable=unused-argument
             # Escape answer text before adding to xml tree.
             answer_text = str(answer['text'])
             child_str = Text('{tag_begin}{text}{tag_end}').format(
@@ -263,3 +265,14 @@ def reset_class():
 
 reset_class()
 PollBlock.__name__ = "PollBlock"
+
+if not settings.USE_EXTRACTED_POLL_QUESTION_BLOCK:
+    warnings.warn(
+        "The built-in `xmodule.poll_block` PollBlock implementation is deprecated. "
+        "To fix this warning, enable `USE_EXTRACTED_POLL_QUESTION_BLOCK` (set it to True) to use "
+        "`xblocks_contrib.poll.PollBlock` instead. "
+        "Support for the built-in implementation, and the `USE_EXTRACTED_POLL_QUESTION_BLOCK` setting, "
+        "will be removed in Willow.",
+        DeprecationWarning,
+        stacklevel=2,
+    )

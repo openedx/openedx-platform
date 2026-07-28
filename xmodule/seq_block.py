@@ -10,10 +10,11 @@ import json
 import logging
 from datetime import datetime
 from functools import reduce
-from django.conf import settings
 from zoneinfo import ZoneInfo
 
+from django.conf import settings
 from edx_django_utils.monitoring import set_custom_attribute
+from edx_toggles.toggles import SettingToggle, WaffleFlag
 from lxml import etree
 from opaque_keys.edx.keys import UsageKey
 from web_fragments.fragment import Fragment
@@ -23,17 +24,9 @@ from xblock.exceptions import NoSuchServiceError
 from xblock.fields import Boolean, Date, Integer, List, Scope, String
 from xblock.progress import Progress
 
-from edx_toggles.toggles import WaffleFlag, SettingToggle
-from xmodule.util.builtin_assets import add_webpack_js_to_fragment, add_css_to_fragment
-from xmodule.x_module import (
-    ResourceTemplates,
-    shim_xmodule_js,
-    STUDENT_VIEW,
-    XModuleMixin,
-    XModuleToXBlockMixin,
-)
-
 from common.djangoapps.xblock_django.constants import ATTR_KEY_USER_ID, ATTR_KEY_USER_IS_STAFF
+from xmodule.util.builtin_assets import add_css_to_fragment, add_webpack_js_to_fragment
+from xmodule.x_module import STUDENT_VIEW, ResourceTemplates, XModuleMixin, XModuleToXBlockMixin, shim_xmodule_js
 
 from .exceptions import NotFoundError
 from .mako_block import MakoTemplateBlockBase
@@ -50,7 +43,7 @@ class_priority = ['video', 'problem']
 #  `django.utils.translation.ugettext_noop` because Django cannot be imported in this file
 _ = lambda text: text
 
-TIMED_EXAM_GATING_WAFFLE_FLAG = WaffleFlag(  # lint-amnesty, pylint: disable=toggle-missing-annotation
+TIMED_EXAM_GATING_WAFFLE_FLAG = WaffleFlag(  # pylint: disable=toggle-missing-annotation
     'xmodule.rev_1377_rollout', __name__
 )
 
@@ -64,7 +57,7 @@ TIMED_EXAM_GATING_WAFFLE_FLAG = WaffleFlag(  # lint-amnesty, pylint: disable=tog
 SHOW_PROGRESS_BAR = SettingToggle("SHOW_PROGRESS_BAR", default=False, module_name=__name__)
 
 
-class SequenceFields:  # lint-amnesty, pylint: disable=missing-class-docstring
+class SequenceFields:  # pylint: disable=missing-class-docstring
     has_children = True
     completion_mode = XBlockCompletionMode.AGGREGATOR
 
@@ -475,7 +468,7 @@ class SequenceBlock(
             prereq_met, prereq_meta_info = self._compute_is_prereq_met(True)
         return self._student_or_public_view(context or {}, prereq_met, prereq_meta_info, None, PUBLIC_VIEW)
 
-    def author_view(self, context):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def author_view(self, context):  # pylint: disable=missing-function-docstring
         context = context or {}
         context['exclude_units'] = True
         if 'position' in context:
@@ -601,7 +594,7 @@ class SequenceBlock(
         self._update_position(context, len(children))
 
         fragment = Fragment()
-        params = self._get_render_metadata(context, children, prereq_met, prereq_meta_info, banner_text, view, fragment)  # lint-amnesty, pylint: disable=line-too-long
+        params = self._get_render_metadata(context, children, prereq_met, prereq_meta_info, banner_text, view, fragment)  # pylint: disable=line-too-long
         if SHOW_PROGRESS_BAR.is_enabled() and getattr(settings, 'COMPLETION_AGGREGATOR_URL', ''):
             parent_block_id = self.get_parent().scope_ids.usage_id.block_id
             params['chapter_completion_aggregator_url'] = '/'.join(
@@ -935,7 +928,7 @@ class SequenceBlock(
                 'is_practice_exam': self.is_practice_exam,
                 'allow_proctoring_opt_out': self.allow_proctoring_opt_out,
                 'due_date': self.due,
-                'grace_period': self.graceperiod,  # lint-amnesty, pylint: disable=no-member
+                'grace_period': self.graceperiod,  # pylint: disable=no-member
             }
 
             # inject the user's credit requirements and fulfillments

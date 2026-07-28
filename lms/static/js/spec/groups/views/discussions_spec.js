@@ -1,14 +1,14 @@
-define(['backbone', 'jquery', 'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers',
+define(['backbone', 'jquery', 'sinon', 'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers',
     'common/js/spec_helpers/template_helpers',
     'js/discussions_management/views/discussions', 'js/discussions_management/models/course_discussions_detail',
     'js/discussions_management/models/course_discussions_settings'
 ],
-function(Backbone, $, AjaxHelpers, TemplateHelpers, DiscussionsView, CourseDiscussionTopicDetailsModel,
+function(Backbone, $, sinon, AjaxHelpers, TemplateHelpers, DiscussionsView, CourseDiscussionTopicDetailsModel,
     CourseDiscussionsSettingsModel) {
     'use strict';
 
     describe('Discussions View', function() {
-        var createMockDiscussionsSettingsJson, createDiscussionsView, discussionsView, requests, verifyMessage,
+        var createMockDiscussionsSettingsJson, createDiscussionsView, discussionsView, requests, xhrFactory, verifyMessage,
             createMockDiscussionsSettings, createMockDiscussionsJson, createMockDiscussions,
             showAndAssertDiscussionTopics;
 
@@ -111,7 +111,6 @@ function(Backbone, $, AjaxHelpers, TemplateHelpers, DiscussionsView, CourseDiscu
             dividedDiscussions = discussionOptions.dividedDiscussions || createMockDiscussions();
             dividedDiscussions.url = '/mock_service/discussion/topics';
 
-            requests = AjaxHelpers.requests(test);
             discussionsView = new DiscussionsView({
                 el: $('.discussions-management'),
                 discussionSettings: discussionSettings,
@@ -147,6 +146,11 @@ function(Backbone, $, AjaxHelpers, TemplateHelpers, DiscussionsView, CourseDiscu
         };
 
         beforeEach(function() {
+            xhrFactory = sinon.useFakeXMLHttpRequest();
+            requests = [];
+            requests.currentIndex = 0;
+            requests.restore = function() { xhrFactory.restore(); };
+            xhrFactory.onCreate = function(req) { requests.push(req); };
             setFixtures('<ul class="instructor-nav">'
                     + '<li class="nav-item"><button type="button" data-section="discussion_management" '
                     + 'class="active-section">Discussions</button></li></ul><div></div>'
@@ -165,6 +169,10 @@ function(Backbone, $, AjaxHelpers, TemplateHelpers, DiscussionsView, CourseDiscu
                 'templates/instructor/instructor_dashboard_2/cohort-discussions-subcategory'
             );
             TemplateHelpers.installTemplate('templates/instructor/instructor_dashboard_2/notification');
+        });
+
+        afterEach(function() {
+            requests.restore();
         });
 
         describe('Discussion Topics', function() {

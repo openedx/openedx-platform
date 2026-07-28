@@ -25,12 +25,7 @@ from xmodule.mako_block import MakoTemplateBlockBase
 from xmodule.studio_editable import StudioEditableBlock
 from xmodule.util.builtin_assets import add_webpack_js_to_fragment
 from xmodule.validation import StudioValidation, StudioValidationMessage
-from xmodule.x_module import (
-    STUDENT_VIEW,
-    ResourceTemplates,
-    XModuleMixin,
-    shim_xmodule_js,
-)
+from xmodule.x_module import STUDENT_VIEW, ResourceTemplates, XModuleMixin, shim_xmodule_js
 from xmodule.xml_block import XmlMixin
 
 _ = lambda text: text
@@ -298,7 +293,7 @@ class ItemBankMixin(
         for block_type, block_id in self.selected_children():
             yield self.runtime.get_block(self.context_key.make_usage_key(block_type, block_id))
 
-    def student_view(self, context):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def student_view(self, context):  # pylint: disable=missing-function-docstring
         fragment = Fragment()
         contents = []
         child_context = {} if not context else copy(context)
@@ -439,7 +434,7 @@ class ItemBankMixin(
             # Show a summary message and instructions.
             summary_html = loader.render_django_template('templates/item_bank/author_view.html', {
                 # Due to template interpolation limitations, we have to pass some HTML for the link here:
-                "view_link": f'<a target="_top" href="/container/{self.usage_key}">',
+                "view_link": f'<a href="/container/{self.usage_key}" class="xblock-view-action-button">',
                 "blocks": [
                     {"display_name": display_name_with_default(child)}
                     for child in self.get_children()

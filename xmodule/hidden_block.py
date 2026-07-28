@@ -4,12 +4,10 @@ The Hidden XBlock.
 
 from web_fragments.fragment import Fragment
 from xblock.core import XBlock
+
 from xmodule.raw_block import RawMixin
+from xmodule.x_module import XModuleMixin, XModuleToXBlockMixin
 from xmodule.xml_block import XmlMixin
-from xmodule.x_module import (
-    XModuleMixin,
-    XModuleToXBlockMixin,
-)
 
 
 @XBlock.needs("i18n")

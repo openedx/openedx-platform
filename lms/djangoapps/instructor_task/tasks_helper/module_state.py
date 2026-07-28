@@ -10,19 +10,19 @@ from time import time
 from django.utils.translation import gettext_noop
 from opaque_keys.edx.keys import UsageKey
 from xblock.scorable import Score
+from xblocks_contrib.problem.capa.responsetypes import LoncapaProblemError, ResponseError, StudentInputError
 
-from xmodule.capa.responsetypes import LoncapaProblemError, ResponseError, StudentInputError
 from common.djangoapps.student.models import get_user_by_username_or_email
 from common.djangoapps.track.event_transaction_utils import create_new_event_transaction_id, set_event_transaction_type
 from common.djangoapps.track.views import task_track
 from common.djangoapps.util.db import outer_atomic
+from lms.djangoapps.courseware.block_render import get_block_for_descriptor
 from lms.djangoapps.courseware.courses import get_problems_in_section
 from lms.djangoapps.courseware.model_data import FieldDataCache
 from lms.djangoapps.courseware.models import StudentModule
-from lms.djangoapps.courseware.block_render import get_block_for_descriptor
 from lms.djangoapps.grades.api import events as grades_events
 from openedx.core.lib.courses import get_course_by_id
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 
 from ..exceptions import UpdateProblemModuleStateError
 from .runner import TaskProgress
@@ -143,7 +143,7 @@ def rescore_problem_module_state(xblock_instance_args, block, student_module, ta
         if instance is None:
             # Either permissions just changed, or someone is trying to be clever
             # and load something they shouldn't have access to.
-            msg = "No module {location} for student {student}--access denied?".format(
+            msg = "No module {location} for student {student}--access denied?".format(  # noqa: UP032
                 location=usage_key,
                 student=student
             )
@@ -239,7 +239,7 @@ def override_score_module_state(xblock_instance_args, block, student_module, tas
         if instance is None:
             # Either permissions just changed, or someone is trying to be clever
             # and load something they shouldn't have access to.
-            msg = "No module {location} for student {student}--access denied?".format(
+            msg = "No module {location} for student {student}--access denied?".format(  # noqa: UP032
                 location=usage_key,
                 student=student
             )
@@ -251,7 +251,7 @@ def override_score_module_state(xblock_instance_args, block, student_module, tas
             raise UpdateProblemModuleStateError(msg)
 
         weighted_override_score = float(task_input['score'])
-        if not (0 <= weighted_override_score <= instance.max_score()):  # lint-amnesty, pylint: disable=superfluous-parens
+        if not (0 <= weighted_override_score <= instance.max_score()):  # pylint: disable=superfluous-parens
             msg = "Score must be between 0 and the maximum points available for the problem."
             raise UpdateProblemModuleStateError(msg)
 
@@ -262,7 +262,7 @@ def override_score_module_state(xblock_instance_args, block, student_module, tas
         set_event_transaction_type(grades_events.GRADES_OVERRIDE_EVENT_TYPE)
 
         problem_weight = instance.weight if instance.weight is not None else 1
-        if problem_weight == 0:  # lint-amnesty, pylint: disable=no-else-raise
+        if problem_weight == 0:  # pylint: disable=no-else-raise
             msg = "Scores cannot be overridden for a problem that has a weight of zero."
             raise UpdateProblemModuleStateError(msg)
         else:

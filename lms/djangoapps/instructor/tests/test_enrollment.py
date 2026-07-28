@@ -12,14 +12,13 @@ import pytest
 from ccx_keys.locator import CCXLocator
 from crum import set_current_request
 from django.conf import settings
+from django.test import override_settings
 from django.utils.translation import get_language
 from django.utils.translation import override as override_language
 from opaque_keys.edx.locator import CourseLocator
 from submissions import api as sub_api
+from xblocks_contrib.problem.capa.tests.response_xml_factory import MultipleChoiceResponseXMLFactory
 
-from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, SharedModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory
-from xmodule.capa.tests.response_xml_factory import MultipleChoiceResponseXMLFactory
 from common.djangoapps.student.models import CourseEnrollment, CourseEnrollmentAllowed, anonymous_id_for_user
 from common.djangoapps.student.roles import CourseCcxCoachRole
 from common.djangoapps.student.tests.factories import AdminFactory, UserFactory
@@ -36,12 +35,14 @@ from lms.djangoapps.instructor.enrollment import (
     render_message_to_string,
     reset_student_attempts,
     send_beta_role_email,
-    unenroll_email
+    unenroll_email,
 )
 from lms.djangoapps.teams.models import CourseTeamMembership
 from lms.djangoapps.teams.tests.factories import CourseTeamFactory
 from openedx.core.djangoapps.ace_common.tests.mixins import EmailTemplateTagMixin
 from openedx.core.djangolib.testing.utils import CacheIsolationTestCase, get_mock_request
+from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, SharedModuleStoreTestCase
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 
 
 class TestSettableEnrollmentState(CacheIsolationTestCase):
@@ -379,8 +380,8 @@ class TestInstructorEnrollmentStudentModule(SharedModuleStoreTestCase):
             org='course',
             run='id',
         )
-        cls.course_key = cls.course.location.course_key  # lint-amnesty, pylint: disable=no-member
-        with cls.store.bulk_operations(cls.course.id, emit_signals=False):  # lint-amnesty, pylint: disable=no-member
+        cls.course_key = cls.course.location.course_key  # pylint: disable=no-member
+        with cls.store.bulk_operations(cls.course.id, emit_signals=False):  # pylint: disable=no-member
             cls.chapter = BlockFactory.create(
                 category='chapter',
                 parent=cls.course,
@@ -453,7 +454,7 @@ class TestInstructorEnrollmentStudentModule(SharedModuleStoreTestCase):
         assert json.loads(module().state)['attempts'] == 0
 
     @patch('lms.djangoapps.grades.signals.handlers.PROBLEM_WEIGHTED_SCORE_CHANGED.send')
-    def test_delete_student_attempts(self, _mock_signal):
+    def test_delete_student_attempts(self, _mock_signal):  # noqa: PT019
         msk = self.course_key.make_usage_key('dummy', 'module')
         original_state = json.dumps({'attempts': 32, 'otherstuff': 'alsorobots'})
         StudentModule.objects.create(
@@ -589,7 +590,7 @@ class TestInstructorEnrollmentStudentModule(SharedModuleStoreTestCase):
             student_module = self.get_student_module(user, team_ora_location)
             assert student_module is not None
             student_state = json.loads(student_module.state)
-            self.assertDictEqual(student_state, attempt_reset_team_state_dict)
+            self.assertDictEqual(student_state, attempt_reset_team_state_dict)  # noqa: PT009
 
         _assert_student_module(self.user)
         _assert_student_module(self.teammate_a)
@@ -598,7 +599,7 @@ class TestInstructorEnrollmentStudentModule(SharedModuleStoreTestCase):
         self.assert_no_student_module(self.lazy_teammate, team_ora_location)
 
     @patch('lms.djangoapps.grades.signals.handlers.PROBLEM_WEIGHTED_SCORE_CHANGED.send')
-    def test_delete_team_attempts(self, _mock_signal):
+    def test_delete_team_attempts(self, _mock_signal):  # noqa: PT019
         self.setup_team()
         team_ora_location = self.team_enabled_ora.location
         # All teammates should have a student module (except lazy_teammate)
@@ -618,7 +619,7 @@ class TestInstructorEnrollmentStudentModule(SharedModuleStoreTestCase):
         self.assert_no_student_module(self.lazy_teammate, team_ora_location)
 
     @patch('lms.djangoapps.grades.signals.handlers.PROBLEM_WEIGHTED_SCORE_CHANGED.send')
-    def test_delete_team_attempts_no_team_fallthrough(self, _mock_signal):
+    def test_delete_team_attempts_no_team_fallthrough(self, _mock_signal):  # noqa: PT019
         self.setup_team()
         team_ora_location = self.team_enabled_ora.location
 
@@ -704,8 +705,8 @@ class TestInstructorEnrollmentStudentModule(SharedModuleStoreTestCase):
             delete_module=True,
         )
 
-        self.assertRaises(StudentModule.DoesNotExist, self.get_state, self.parent.location)
-        self.assertRaises(StudentModule.DoesNotExist, self.get_state, self.child.location)
+        self.assertRaises(StudentModule.DoesNotExist, self.get_state, self.parent.location)  # noqa: PT027
+        self.assertRaises(StudentModule.DoesNotExist, self.get_state, self.child.location)  # noqa: PT027
 
         unrelated_state = json.loads(self.get_state(self.unrelated.location))
         assert unrelated_state['attempts'] == 12
@@ -774,7 +775,7 @@ class TestStudentModuleGrading(SharedModuleStoreTestCase):
         assert grade.graded_total.possible == graded_possible
 
     @patch('crum.get_current_request')
-    def test_delete_student_state(self, _crum_mock):
+    def test_delete_student_state(self, _crum_mock):  # noqa: PT019
         problem_location = self.problem.location
         self._get_subsection_grade_and_verify(0, 1, 0, 1)
         answer_problem(course=self.course, request=self.request, problem=self.problem, score=1, max_value=1)
@@ -874,7 +875,7 @@ class TestSendBetaRoleEmail(CacheIsolationTestCase):
     def test_bad_action(self):
         bad_action = 'beta_tester'
         error_msg = f"Unexpected action received '{bad_action}' - expected 'add' or 'remove'"
-        with self.assertRaisesRegex(ValueError, error_msg):
+        with self.assertRaisesRegex(ValueError, error_msg):  # noqa: PT027
             send_beta_role_email(bad_action, self.user, self.email_params)
 
 
@@ -887,7 +888,7 @@ class TestGetEmailParamsCCX(SharedModuleStoreTestCase):
         super().setUpClass()
         cls.course = CourseFactory.create()
 
-    @patch.dict('django.conf.settings.FEATURES', {'CUSTOM_COURSES_EDX': True})
+    @override_settings(CUSTOM_COURSES_EDX=True)
     def setUp(self):
         super().setUp()
         self.coach = AdminFactory.create()
@@ -898,14 +899,14 @@ class TestGetEmailParamsCCX(SharedModuleStoreTestCase):
 
         # Explicitly construct what we expect the course URLs to be
         site = settings.SITE_NAME
-        self.course_url = 'https://{}/courses/{}/'.format(
+        self.course_url = 'https://{}/courses/{}/'.format(  # noqa: UP032
             site,
             self.course_key
         )
         self.course_about_url = self.course_url + 'about'
         self.registration_url = f'https://{site}/register'
 
-    @patch.dict('django.conf.settings.FEATURES', {'CUSTOM_COURSES_EDX': True})
+    @override_settings(CUSTOM_COURSES_EDX=True)
     def test_ccx_enrollment_email_params(self):
         # For a CCX, what do we expect to get for the URLs?
         # Also make sure `auto_enroll` is properly passed through.
@@ -935,7 +936,7 @@ class TestGetEmailParams(SharedModuleStoreTestCase):
 
         # Explicitly construct what we expect the course URLs to be
         site = settings.SITE_NAME
-        cls.course_url = 'https://{}/courses/{}/'.format(
+        cls.course_url = 'https://{}/courses/{}/'.format(  # noqa: UP032
             site,
             str(cls.course.id)
         )
@@ -993,7 +994,7 @@ class TestRenderMessageToString(EmailTemplateTagMixin, SharedModuleStoreTestCase
         cls.subject_template = 'instructor/edx_ace/allowedenroll/email/subject.txt'
         cls.message_template = 'instructor/edx_ace/allowedenroll/email/body.txt'
 
-    @patch.dict('django.conf.settings.FEATURES', {'CUSTOM_COURSES_EDX': True})
+    @override_settings(CUSTOM_COURSES_EDX=True)
     def setUp(self):
         super().setUp()
         coach = AdminFactory.create()
@@ -1066,7 +1067,7 @@ class TestRenderMessageToString(EmailTemplateTagMixin, SharedModuleStoreTestCase
             assert 'You have been' in subject
             assert 'You have been' in message
 
-    @patch.dict('django.conf.settings.FEATURES', {'CUSTOM_COURSES_EDX': True})
+    @override_settings(CUSTOM_COURSES_EDX=True)
     @ddt.data('body.txt', 'body.html')
     def test_render_enrollment_message_ccx_members(self, body_file_name):
         """
@@ -1074,7 +1075,7 @@ class TestRenderMessageToString(EmailTemplateTagMixin, SharedModuleStoreTestCase
         For EDX members.
         """
         subject_template = 'instructor/edx_ace/enrollenrolled/email/subject.txt'
-        body_template = 'instructor/edx_ace/enrollenrolled/email/{body_file_name}'.format(
+        body_template = 'instructor/edx_ace/enrollenrolled/email/{body_file_name}'.format(  # noqa: UP032
             body_file_name=body_file_name,
         )
 
@@ -1083,13 +1084,13 @@ class TestRenderMessageToString(EmailTemplateTagMixin, SharedModuleStoreTestCase
         assert self.ccx.display_name in subject
         assert self.ccx.display_name in message
         site = settings.SITE_NAME
-        course_url = 'https://{}/courses/{}/'.format(
+        course_url = 'https://{}/courses/{}/'.format(  # noqa: UP032
             site,
             self.course_key
         )
         assert course_url in message
 
-    @patch.dict('django.conf.settings.FEATURES', {'CUSTOM_COURSES_EDX': True})
+    @override_settings(CUSTOM_COURSES_EDX=True)
     @ddt.data('body.txt', 'body.html')
     def test_render_unenrollment_message_ccx_members(self, body_file_name):
         """
@@ -1097,7 +1098,7 @@ class TestRenderMessageToString(EmailTemplateTagMixin, SharedModuleStoreTestCase
         For EDX members.
         """
         subject_template = 'instructor/edx_ace/enrolledunenroll/email/subject.txt'
-        body_template = 'instructor/edx_ace/enrolledunenroll/email/{body_file_name}'.format(
+        body_template = 'instructor/edx_ace/enrolledunenroll/email/{body_file_name}'.format(  # noqa: UP032
             body_file_name=body_file_name,
         )
 
@@ -1105,7 +1106,7 @@ class TestRenderMessageToString(EmailTemplateTagMixin, SharedModuleStoreTestCase
         assert self.ccx.display_name in subject
         assert self.ccx.display_name in message
 
-    @patch.dict('django.conf.settings.FEATURES', {'CUSTOM_COURSES_EDX': True})
+    @override_settings(CUSTOM_COURSES_EDX=True)
     @ddt.data('body.txt', 'body.html')
     def test_render_enrollment_message_ccx_non_members(self, body_file_name):
         """
@@ -1113,7 +1114,7 @@ class TestRenderMessageToString(EmailTemplateTagMixin, SharedModuleStoreTestCase
         For non EDX members.
         """
         subject_template = 'instructor/edx_ace/allowedenroll/email/subject.txt'
-        body_template = 'instructor/edx_ace/allowedenroll/email/{body_file_name}'.format(
+        body_template = 'instructor/edx_ace/allowedenroll/email/{body_file_name}'.format(  # noqa: UP032
             body_file_name=body_file_name,
         )
 
@@ -1124,7 +1125,7 @@ class TestRenderMessageToString(EmailTemplateTagMixin, SharedModuleStoreTestCase
         registration_url = f'https://{site}/register'
         assert registration_url in message
 
-    @patch.dict('django.conf.settings.FEATURES', {'CUSTOM_COURSES_EDX': True})
+    @override_settings(CUSTOM_COURSES_EDX=True)
     @ddt.data('body.txt', 'body.html')
     def test_render_unenrollment_message_ccx_non_members(self, body_file_name):
         """
@@ -1132,7 +1133,7 @@ class TestRenderMessageToString(EmailTemplateTagMixin, SharedModuleStoreTestCase
         For non EDX members.
         """
         subject_template = 'instructor/edx_ace/allowedunenroll/email/subject.txt'
-        body_template = 'instructor/edx_ace/allowedunenroll/email/{body_file_name}'.format(
+        body_template = 'instructor/edx_ace/allowedunenroll/email/{body_file_name}'.format(  # noqa: UP032
             body_file_name=body_file_name,
         )
 

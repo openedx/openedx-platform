@@ -7,19 +7,27 @@ from unittest.mock import patch
 import ddt
 from django.apps import apps
 from django.conf import settings
+from django.test.utils import override_settings
 from django.urls import reverse
 from edx_proctoring.api import create_exam
 from edx_proctoring.backends.tests.test_backend import TestBackendProvider
-from edx_toggles.toggles.testutils import override_waffle_flag  # lint-amnesty, pylint: disable=unused-import
+from edx_toggles.toggles.testutils import override_waffle_flag
 
 from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRole
 from common.djangoapps.student.tests.factories import AdminFactory
-from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from lms.djangoapps.instructor.toggles import LEGACY_INSTRUCTOR_DASHBOARD
+from xmodule.modulestore.tests.django_utils import (
+    SharedModuleStoreTestCase,  # pylint: disable=wrong-import-order
+)
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 
-@patch.dict(settings.FEATURES, {'ENABLE_SPECIAL_EXAMS': True})
+@override_settings(ENABLE_SPECIAL_EXAMS=True)
 @ddt.ddt
+# Tests for legacy views. When DEPR-38432 is picked up, these tests will require the following changes:
+# Either remove or leave the specific parts that reference the legacy instructor dashboard,
+# and remove the override_waffle_flag for LEGACY_INSTRUCTOR_DASHBOARD.
+@override_waffle_flag(LEGACY_INSTRUCTOR_DASHBOARD, active=True)
 class TestProctoringDashboardViews(SharedModuleStoreTestCase):
     """
     Check for Proctoring view on the new instructor dashboard
@@ -28,7 +36,7 @@ class TestProctoringDashboardViews(SharedModuleStoreTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        button = '<button type="button" class="btn-link special_exams" data-section="special_exams">Special Exams</button>'  # lint-amnesty, pylint: disable=line-too-long
+        button = '<button type="button" class="btn-link special_exams" data-section="special_exams">Special Exams</button>'  # pylint: disable=line-too-long
         cls.proctoring_link = button
 
     def setUp(self):
@@ -42,13 +50,13 @@ class TestProctoringDashboardViews(SharedModuleStoreTestCase):
         """
         Create URL for instructor dashboard
         """
-        self.url = reverse('instructor_dashboard', kwargs={'course_id': str(course.id)})  # lint-amnesty, pylint: disable=attribute-defined-outside-init
+        self.url = reverse('instructor_dashboard', kwargs={'course_id': str(course.id)})  # pylint: disable=attribute-defined-outside-init
 
     def setup_course(self, enable_proctored_exams, enable_timed_exams):
         """
         Create course based on proctored exams and timed exams values
         """
-        self.course = CourseFactory.create(enable_proctored_exams=enable_proctored_exams,  # lint-amnesty, pylint: disable=attribute-defined-outside-init
+        self.course = CourseFactory.create(enable_proctored_exams=enable_proctored_exams,  # pylint: disable=attribute-defined-outside-init
                                            enable_timed_exams=enable_timed_exams)
         self.setup_course_url(self.course)
 
@@ -120,7 +128,7 @@ class TestProctoringDashboardViews(SharedModuleStoreTestCase):
         self.instructor.save()
         self._assert_proctoring_tab_available(False)
 
-    @patch.dict(settings.FEATURES, {'ENABLE_SPECIAL_EXAMS': False})
+    @override_settings(ENABLE_SPECIAL_EXAMS=False)
     @ddt.data(
         (True, False),
         (False, True)
@@ -166,7 +174,7 @@ class TestProctoringDashboardViews(SharedModuleStoreTestCase):
             'test_proctoring_provider': {"requires_escalation_email": True},
         },
     )
-    @patch.dict(settings.FEATURES, {'ENABLE_PROCTORED_EXAMS': True})
+    @override_settings(ENABLE_PROCTORED_EXAMS=True)
     def test_requires_escalation_email_set_with_email(self):
         """
         Escalation email will be visible if 'requires_escalation_email' is set, and there
@@ -186,7 +194,7 @@ class TestProctoringDashboardViews(SharedModuleStoreTestCase):
             'lti_external': {}
         },
     )
-    @patch.dict(settings.FEATURES, {'ENABLE_PROCTORED_EXAMS': True})
+    @override_settings(ENABLE_PROCTORED_EXAMS=True)
     def test_lti_proctoring_dashboard(self):
         """
         The exams dasboard MFE will be shown instead of the default special exams tab content
@@ -196,8 +204,8 @@ class TestProctoringDashboardViews(SharedModuleStoreTestCase):
         self.instructor.is_staff = True
         self.instructor.save()
         response = self.client.get(self.url)
-        self.assertIn('proctoring-mfe-view', response.content.decode('utf-8'))
-        self.assertNotIn('proctoring-accordion', response.content.decode('utf-8'))
+        self.assertIn('proctoring-mfe-view', response.content.decode('utf-8'))  # noqa: PT009
+        self.assertNotIn('proctoring-accordion', response.content.decode('utf-8'))  # noqa: PT009
 
     def test_review_dashboard(self):
         """

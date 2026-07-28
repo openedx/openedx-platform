@@ -3,11 +3,11 @@ Python APIs for Course Apps.
 """
 from django.contrib.auth import get_user_model
 from opaque_keys.edx.keys import CourseKey
+
 from openedx.core.djangoapps.course_apps.models import CourseAppStatus
 
 from .plugins import CourseAppsPluginManager
 from .signals import COURSE_APP_STATUS_INIT
-
 
 User = get_user_model()
 

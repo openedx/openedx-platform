@@ -8,12 +8,12 @@ from zoneinfo import ZoneInfo
 
 import pytest
 from opaque_keys.edx.keys import CourseKey
+
+from common.djangoapps.student.tests.factories import AdminFactory
+from openedx.core.djangoapps.ccxcon import api as ccxconapi
 from xmodule.modulestore.django import modulestore
 from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory
-
-from openedx.core.djangoapps.ccxcon import api as ccxconapi
-from common.djangoapps.student.tests.factories import AdminFactory
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 
 from .factories import CcxConFactory
 
@@ -69,7 +69,7 @@ class APIsTestCase(SharedModuleStoreTestCase):
         # Trying to wrap the whole thing in a bulk operation fails because it
         # doesn't find the parents. But we can at least wrap this part...
         with cls.store.bulk_operations(course.id, emit_signals=False):
-            blocks = flatten([  # pylint: disable=unused-variable
+            blocks = flatten([  # pylint: disable=unused-variable  # noqa: F841
                 [
                     BlockFactory.create(parent=vertical) for _ in range(2)
                 ] for vertical in cls.verticals

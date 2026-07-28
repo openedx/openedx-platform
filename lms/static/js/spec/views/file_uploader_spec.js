@@ -1,10 +1,10 @@
-define(['backbone', 'jquery', 'js/views/file_uploader', 'common/js/spec_helpers/template_helpers',
+define(['backbone', 'jquery', 'sinon', 'js/views/file_uploader', 'common/js/spec_helpers/template_helpers',
     'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers', 'js/models/notification', 'string_utils'],
-function(Backbone, $, FileUploaderView, TemplateHelpers, AjaxHelpers, NotificationModel) {
+function(Backbone, $, sinon, FileUploaderView, TemplateHelpers, AjaxHelpers, NotificationModel) {
     describe('FileUploaderView', function() {
         var verifyTitle, verifyInputLabel, verifyInputTip, verifySubmitButton, verifyExtensions, verifyText,
             verifyFileUploadOption, verifyNotificationMessage, verifySubmitButtonEnabled, mimicUpload,
-            respondWithSuccess, respondWithError, fileUploaderView,
+            respondWithSuccess, respondWithError, fileUploaderView, requests, xhrFactory,
             url = 'http://test_url/';
 
         verifyText = function(css, expectedText) {
@@ -45,9 +45,7 @@ function(Backbone, $, FileUploaderView, TemplateHelpers, AjaxHelpers, Notificati
             verifyText('.file-upload-form-result .message-' + type + ' .message-title', expectedMessage);
         };
 
-        mimicUpload = function(test) {
-            var requests = AjaxHelpers.requests(test);
-
+        mimicUpload = function() {
             var param = {files: [{name: 'upload_file.txt'}]};
             fileUploaderView.$('#file-upload-form').fileupload('add', param);
             verifySubmitButtonEnabled(true);
@@ -55,7 +53,6 @@ function(Backbone, $, FileUploaderView, TemplateHelpers, AjaxHelpers, Notificati
 
             // No file will actually be uploaded because "uploaded_file.txt" doesn't actually exist.
             AjaxHelpers.expectRequest(requests, 'POST', url, new FormData());
-            return requests;
         };
 
         respondWithSuccess = function(requests) {
@@ -75,6 +72,15 @@ function(Backbone, $, FileUploaderView, TemplateHelpers, AjaxHelpers, Notificati
             TemplateHelpers.installTemplate('templates/file-upload');
             TemplateHelpers.installTemplate('templates/instructor/instructor_dashboard_2/notification');
             fileUploaderView = new FileUploaderView({url: url}).render();
+            xhrFactory = sinon.useFakeXMLHttpRequest();
+            requests = [];
+            requests.currentIndex = 0;
+            requests.restore = function() { xhrFactory.restore(); };
+            xhrFactory.onCreate = function(req) { requests.push(req); };
+        });
+
+        afterEach(function() {
+            requests.restore();
         });
 
         it('has default values', function() {
@@ -115,7 +121,7 @@ function(Backbone, $, FileUploaderView, TemplateHelpers, AjaxHelpers, Notificati
         });
 
         it('handles errors with default message', function() {
-            var requests = mimicUpload(this);
+            mimicUpload();
             respondWithError(requests);
             verifyNotificationMessage("Your upload of 'upload_file.txt' failed.", 'error');
         });
@@ -131,19 +137,19 @@ function(Backbone, $, FileUploaderView, TemplateHelpers, AjaxHelpers, Notificati
                     });
                 }
             }).render();
-            var requests = mimicUpload(this);
+            mimicUpload();
             respondWithError(requests, 'server error');
             verifyNotificationMessage("Custom error for 'upload_file.txt'", 'customized');
         });
 
         it('handles server error message', function() {
-            var requests = mimicUpload(this);
+            mimicUpload();
             respondWithError(requests, 'server error');
             verifyNotificationMessage('server error', 'error');
         });
 
         it('handles success with default message', function() {
-            var requests = mimicUpload(this);
+            mimicUpload();
             respondWithSuccess(requests);
             verifyNotificationMessage("Your upload of 'upload_file.txt' succeeded.", 'confirmation');
         });
@@ -159,7 +165,7 @@ function(Backbone, $, FileUploaderView, TemplateHelpers, AjaxHelpers, Notificati
                     });
                 }
             }).render();
-            var requests = mimicUpload(this);
+            mimicUpload();
             respondWithSuccess(requests);
             verifyNotificationMessage("Custom success message for 'upload_file.txt'", 'customized');
         });

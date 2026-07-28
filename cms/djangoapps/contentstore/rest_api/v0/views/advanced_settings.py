@@ -1,20 +1,21 @@
 """ API Views for course advanced settings """
 
-from django import forms
 import edx_api_doc_tools as apidocs
+from django import forms
 from opaque_keys.edx.keys import CourseKey
 from rest_framework.exceptions import ValidationError
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
+from cms.djangoapps.contentstore.api.views.utils import get_bool_param
+from cms.djangoapps.models.settings.course_metadata import CourseMetadata
+from common.djangoapps.student.auth import check_course_advanced_settings_access
+from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin, verify_course_exists, view_auth_classes
 from xmodule.modulestore.django import modulestore
 
-from cms.djangoapps.models.settings.course_metadata import CourseMetadata
-from cms.djangoapps.contentstore.api.views.utils import get_bool_param
-from common.djangoapps.student.auth import has_studio_read_access, has_studio_write_access
-from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin, verify_course_exists, view_auth_classes
-from ..serializers import CourseAdvancedSettingsSerializer
 from ....views.course import update_course_advanced_settings
+from ..serializers import CourseAdvancedSettingsSerializer
 
 
 @view_auth_classes(is_authenticated=True)
@@ -115,7 +116,7 @@ class AdvancedCourseSettingsView(DeveloperErrorViewMixin, APIView):
         if not filter_query_data.is_valid():
             raise ValidationError(filter_query_data.errors)
         course_key = CourseKey.from_string(course_id)
-        if not has_studio_read_access(request.user, course_key):
+        if not check_course_advanced_settings_access(request.user, course_key, access_type='read'):
             self.permission_denied(request)
         course_block = modulestore().get_course(course_key)
         fetch_all = get_bool_param(request, 'fetch_all', True)
@@ -184,7 +185,7 @@ class AdvancedCourseSettingsView(DeveloperErrorViewMixin, APIView):
         along with all the course's settings similar to a ``GET`` request.
         """
         course_key = CourseKey.from_string(course_id)
-        if not has_studio_write_access(request.user, course_key):
+        if not check_course_advanced_settings_access(request.user, course_key, access_type='write'):
             self.permission_denied(request)
         course_block = modulestore().get_course(course_key)
         updated_data = update_course_advanced_settings(course_block, request.data, request.user)

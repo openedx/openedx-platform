@@ -2,14 +2,11 @@
 Python API for library collections
 ==================================
 """
-from django.db import IntegrityError
 from opaque_keys import OpaqueKey
 from opaque_keys.edx.keys import BlockTypeKey, UsageKeyV2
 from opaque_keys.edx.locator import LibraryCollectionLocator, LibraryContainerLocator, LibraryLocatorV2
-from openedx_events.content_authoring.data import LibraryCollectionData
-from openedx_events.content_authoring.signals import LIBRARY_COLLECTION_UPDATED
-from openedx_learning.api import authoring as authoring_api
-from openedx_learning.api.authoring_models import Collection, Component, PublishableEntity
+from openedx_content import api as content_api
+from openedx_content.models_api import Collection, Component, PublishableEntity
 
 from ..models import ContentLibrary
 from .exceptions import (
@@ -51,18 +48,18 @@ def create_library_collection(
     assert content_library.learning_package_id
     assert content_library.library_key == library_key
 
-    try:
-        collection = authoring_api.create_collection(
-            learning_package_id=content_library.learning_package_id,
-            key=collection_key,
-            title=title,
-            description=description,
-            created_by=created_by,
-        )
-    except IntegrityError as err:
-        raise LibraryCollectionAlreadyExists from err
-
-    return collection
+    if Collection.objects.filter(
+        learning_package_id=content_library.learning_package_id,
+        collection_code=collection_key,
+    ).exists():
+        raise LibraryCollectionAlreadyExists(f"Collection {collection_key} already exists in {library_key}")
+    return content_api.create_collection(
+        learning_package_id=content_library.learning_package_id,
+        collection_code=collection_key,
+        title=title,
+        description=description,
+        created_by=created_by,
+    )
 
 
 def update_library_collection(
@@ -84,9 +81,9 @@ def update_library_collection(
     assert content_library.library_key == library_key
 
     try:
-        collection = authoring_api.update_collection(
+        collection = content_api.update_collection(
             learning_package_id=content_library.learning_package_id,
-            key=collection_key,
+            collection_code=collection_key,
             title=title,
             description=description,
         )
@@ -127,49 +124,47 @@ def update_library_collection_items(
     assert content_library.learning_package_id
     assert content_library.library_key == library_key
 
-    # Fetch the Component.key values for the provided UsageKeys.
-    item_keys = []
+    # Fetch the Component.entity_ref values for the provided UsageKeys.
+    entity_ids: list[PublishableEntity.ID] = []
     for opaque_key in opaque_keys:
         if isinstance(opaque_key, LibraryContainerLocator):
             try:
-                container = authoring_api.get_container_by_key(
+                container = content_api.get_container_by_code(
                     content_library.learning_package_id,
-                    key=opaque_key.container_id,
+                    container_code=opaque_key.container_id,
                 )
             except Collection.DoesNotExist as exc:
                 raise ContentLibraryContainerNotFound(opaque_key) from exc
 
-            item_keys.append(container.key)
+            entity_ids.append(container.id)
         elif isinstance(opaque_key, UsageKeyV2):
             # Parse the block_family from the key to use as namespace.
             block_type = BlockTypeKey.from_string(str(opaque_key))
             try:
-                component = authoring_api.get_component_by_key(
+                component = content_api.get_component_by_code(
                     content_library.learning_package_id,
                     namespace=block_type.block_family,
                     type_name=opaque_key.block_type,
-                    local_key=opaque_key.block_id,
+                    component_code=opaque_key.block_id,
                 )
             except Component.DoesNotExist as exc:
                 raise ContentLibraryBlockNotFound(opaque_key) from exc
 
-            item_keys.append(component.key)
+            entity_ids.append(component.id)
         else:
             # This should never happen, but just in case.
             raise ValueError(f"Invalid opaque_key: {opaque_key}")
 
-    entities_qset = PublishableEntity.objects.filter(
-        key__in=item_keys,
-    )
+    entities_qset = content_api.get_publishable_entities(content_library.learning_package_id).filter(id__in=entity_ids)
 
     if remove:
-        collection = authoring_api.remove_from_collection(
+        collection = content_api.remove_from_collection(
             content_library.learning_package_id,
             collection_key,
             entities_qset,
         )
     else:
-        collection = authoring_api.add_to_collection(
+        collection = content_api.add_to_collection(
             content_library.learning_package_id,
             collection_key,
             entities_qset,
@@ -181,7 +176,7 @@ def update_library_collection_items(
 
 def set_library_item_collections(
     library_key: LibraryLocatorV2,
-    entity_key: str,
+    entity_ref: str,
     *,
     collection_keys: list[str],
     created_by: int | None = None,
@@ -207,36 +202,21 @@ def set_library_item_collections(
     assert content_library.learning_package_id
     assert content_library.library_key == library_key
 
-    publishable_entity = authoring_api.get_publishable_entity_by_key(
+    publishable_entity = content_api.get_publishable_entity_by_ref(
         content_library.learning_package_id,
-        key=entity_key,
+        entity_ref=entity_ref,
     )
 
-    # Note: Component.key matches its PublishableEntity.key
-    collection_qs = authoring_api.get_collections(content_library.learning_package_id).filter(
-        key__in=collection_keys
+    # Note: Component.entity_ref matches its PublishableEntity.entity_ref
+    collection_qs = content_api.get_collections(content_library.learning_package_id).filter(
+        collection_code__in=collection_keys
     )
 
-    affected_collections = authoring_api.set_collections(
+    content_api.set_collections(
         publishable_entity,
         collection_qs,
         created_by=created_by,
     )
-
-    # For each collection, trigger LIBRARY_COLLECTION_UPDATED signal and set background=True to trigger
-    # collection indexing asynchronously.
-    for collection in affected_collections:
-        # .. event_implemented_name: LIBRARY_COLLECTION_UPDATED
-        # .. event_type: org.openedx.content_authoring.content_library.collection.updated.v1
-        LIBRARY_COLLECTION_UPDATED.send_event(
-            library_collection=LibraryCollectionData(
-                collection_key=library_collection_locator(
-                    library_key=library_key,
-                    collection_key=collection.key,
-                ),
-                background=True,
-            )
-        )
 
     return publishable_entity
 
@@ -263,7 +243,7 @@ def get_library_collection_from_locator(
     content_library = ContentLibrary.objects.get_by_key(library_key)  # type: ignore[attr-defined]
     assert content_library.learning_package_id is not None  # shouldn't happen but it's technically possible.
     try:
-        return authoring_api.get_collection(
+        return content_api.get_collection(
             content_library.learning_package_id,
             collection_key,
         )

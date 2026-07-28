@@ -1,4 +1,4 @@
-# lint-amnesty, pylint: disable=missing-module-docstring
+# pylint: disable=missing-module-docstring
 
 from config_models.models import ConfigurationModel
 from django.contrib.sites.models import Site
@@ -38,7 +38,7 @@ class Schedule(TimeStampedModel):
 
     def get_experience_type(self):
         try:
-            return self.experience.experience_type  # lint-amnesty, pylint: disable=no-member
+            return self.experience.experience_type  # pylint: disable=no-member
         except ScheduleExperience.DoesNotExist:
             return ScheduleExperience.EXPERIENCES.default
 
@@ -62,7 +62,7 @@ class ScheduleConfig(ConfigurationModel):
     deliver_course_update = models.BooleanField(default=False)
 
 
-class ScheduleExperience(models.Model):
+class ScheduleExperience(models.Model):  # noqa: DJ008
     """
     .. no_pii:
     """

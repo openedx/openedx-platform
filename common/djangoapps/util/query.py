@@ -3,7 +3,6 @@
 
 from django.conf import settings
 
-
 _READ_REPLICA_DB_ALIAS = "read_replica"
 
 

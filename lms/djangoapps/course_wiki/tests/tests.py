@@ -4,16 +4,20 @@ Tests for course wiki
 
 
 from unittest.mock import patch
+
+from django.test.utils import override_settings
 from django.urls import reverse
+from openedx_filters.learning.filters import CoursewareViewStarted
 
 from lms.djangoapps.courseware.tests.tests import LoginEnrollmentTestCase
 from openedx.features.course_experience.url_helpers import make_learning_mfe_courseware_url
-from openedx.features.enterprise_support.tests.mixins.enterprise import EnterpriseTestConsentRequired
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # pylint: disable=wrong-import-order
+)
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 
-class WikiRedirectTestCase(EnterpriseTestConsentRequired, LoginEnrollmentTestCase, ModuleStoreTestCase):
+class WikiRedirectTestCase(LoginEnrollmentTestCase, ModuleStoreTestCase):
     """
     Tests for wiki course redirection.
     """
@@ -31,7 +35,7 @@ class WikiRedirectTestCase(EnterpriseTestConsentRequired, LoginEnrollmentTestCas
             self.activate_user(email)
             self.logout()
 
-    @patch.dict("django.conf.settings.FEATURES", {'ALLOW_WIKI_ROOT_ACCESS': True})
+    @override_settings(ALLOW_WIKI_ROOT_ACCESS=True)
     def test_wiki_redirect(self):
         """
         Test that requesting wiki URLs redirect properly to or out of classes.
@@ -67,7 +71,7 @@ class WikiRedirectTestCase(EnterpriseTestConsentRequired, LoginEnrollmentTestCas
         assert resp.status_code == 302
         assert resp['Location'] == destination
 
-    @patch.dict("django.conf.settings.FEATURES", {'ALLOW_WIKI_ROOT_ACCESS': False})
+    @override_settings(ALLOW_WIKI_ROOT_ACCESS=False)
     def test_wiki_no_root_access(self):
         """
         Test to verify that normally Wiki's cannot be browsed from the /wiki/xxxx/yyy/zz URLs
@@ -111,7 +115,7 @@ class WikiRedirectTestCase(EnterpriseTestConsentRequired, LoginEnrollmentTestCas
         self.assertContains(resp, "Home")
         self.assertContains(resp, "Course")
 
-    @patch.dict("django.conf.settings.FEATURES", {'ALLOW_WIKI_ROOT_ACCESS': True})
+    @override_settings(ALLOW_WIKI_ROOT_ACCESS=True)
     def test_course_navigator(self):
         """"
         Test that going from a course page to a wiki page contains the course navigator.
@@ -128,7 +132,7 @@ class WikiRedirectTestCase(EnterpriseTestConsentRequired, LoginEnrollmentTestCas
 
         self.has_course_navigator(resp)
 
-    @patch.dict("django.conf.settings.FEATURES", {'ALLOW_WIKI_ROOT_ACCESS': True})
+    @override_settings(ALLOW_WIKI_ROOT_ACCESS=True)
     def test_wiki_not_accessible_when_not_enrolled(self):
         """
         Test that going from a course page to a wiki page when not enrolled
@@ -153,7 +157,7 @@ class WikiRedirectTestCase(EnterpriseTestConsentRequired, LoginEnrollmentTestCas
         target_url, __ = resp.redirect_chain[-1]
         assert target_url.endswith(reverse('about_course', args=[str(self.toy.id)]))
 
-    @patch.dict("django.conf.settings.FEATURES", {'ALLOW_WIKI_ROOT_ACCESS': True})
+    @override_settings(ALLOW_WIKI_ROOT_ACCESS=True)
     def test_redirect_when_not_logged_in(self):
         """
         Test that attempting to reach a course wiki page when not logged in
@@ -171,7 +175,7 @@ class WikiRedirectTestCase(EnterpriseTestConsentRequired, LoginEnrollmentTestCas
         target_url, __ = resp.redirect_chain[-1]
         assert reverse('signin_user') in target_url
 
-    @patch.dict("django.conf.settings.FEATURES", {'ALLOW_WIKI_ROOT_ACCESS': True})
+    @override_settings(ALLOW_WIKI_ROOT_ACCESS=True)
     def test_create_wiki_with_long_course_id(self):
         """
         Tests that the wiki is successfully created for courses that have
@@ -201,28 +205,34 @@ class WikiRedirectTestCase(EnterpriseTestConsentRequired, LoginEnrollmentTestCas
         resp = self.client.get(course_wiki_page, follow=True, HTTP_REFERER=referer)
         assert resp.status_code == 200
 
-    @patch.dict("django.conf.settings.FEATURES", {'ALLOW_WIKI_ROOT_ACCESS': True})
-    @patch('openedx.features.enterprise_support.api.enterprise_customer_for_request')
-    def test_consent_required(self, mock_enterprise_customer_for_request):
+    @override_settings(ALLOW_WIKI_ROOT_ACCESS=True)
+    @patch('openedx_filters.learning.filters.CoursewareViewStarted.run_filter')
+    def test_filter_redirect(self, mock_run_filter):
         """
-        Test that enterprise data sharing consent is required when enabled for the various courseware views.
+        Test that wiki views redirect when the CoursewareViewStarted filter provides a URL.
         """
-        # ENT-924: Temporary solution to replace sensitive SSO usernames.
-        mock_enterprise_customer_for_request.return_value = None
+        redirect_url = 'http://example.com/redirect'
+        mock_run_filter.side_effect = CoursewareViewStarted.RedirectToUrl(message="redirect", redirect_to=redirect_url)
 
-        # Public wikis can be accessed by non-enrolled users, and so direct access is not gated by the consent page
+        # Public wikis can be accessed by non-enrolled users, and so direct access is not gated by the redirect
         course = CourseFactory.create()
         course.allow_public_wiki_access = False
         course.save()
 
-        # However, for private wikis, enrolled users must pass through the consent gate
+        # However, for private wikis, enrolled users must pass through the filter redirect gate
         # (Unenrolled users are redirected to course/about)
         course_id = str(course.id)
         self.login(self.student, self.password)
         self.enroll(course)
 
-        for (url, status_code) in (
-                (reverse('course_wiki', kwargs={'course_id': course_id}), 302),
-                (f'/courses/{course_id}/wiki/', 200),
-        ):
-            self.verify_consent_required(self.client, url, status_code=status_code)  # lint-amnesty, pylint: disable=no-value-for-parameter
+        # The course_wiki view is decorated with courseware_view_hooks which calls the filter
+        url = reverse('course_wiki', kwargs={'course_id': course_id})
+        response = self.client.get(url)
+        assert response.status_code == 302
+        assert response['Location'] == redirect_url
+
+        # The wiki middleware (/courses/.../wiki/) also calls the filter
+        url = f'/courses/{course_id}/wiki/'
+        response = self.client.get(url)
+        assert response.status_code == 302
+        assert response['Location'] == redirect_url

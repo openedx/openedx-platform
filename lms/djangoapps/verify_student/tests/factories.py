@@ -17,7 +17,7 @@ class SoftwareSecurePhotoVerificationFactory(DjangoModelFactory):
 
 
 class SSOVerificationFactory(DjangoModelFactory):
-    class Meta():
+    class Meta():  # noqa: UP039
         model = SSOVerification
 
 

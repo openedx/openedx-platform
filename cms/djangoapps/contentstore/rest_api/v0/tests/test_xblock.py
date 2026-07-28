@@ -4,15 +4,14 @@ not the underlying Xblock service.
 It checks that the xblock_handler method of the Xblock service is called with the expected parameters.
 """
 from unittest.mock import patch
-from django.http import JsonResponse
 
+from django.http import JsonResponse
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 
 from cms.djangoapps.contentstore.tests.test_utils import AuthorizeStaffTestCase
-
+from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 
 TEST_LOCATOR = "block-v1:dede+aba+weagi+type@problem+block@ba6327f840da49289fb27a9243913478"
 VERSION = "v0"

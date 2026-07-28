@@ -20,9 +20,9 @@ from openedx.core.djangoapps.course_apps.toggles import exams_ida_enabled
 from openedx.core.djangoapps.discussions.config.waffle_utils import legacy_discussion_experience_enabled
 from openedx.core.lib.teams_config import CONTENT_GROUPS_FOR_TEAMS, TeamsConfig, TeamsetType
 from openedx.features.course_experience import COURSE_ENABLE_UNENROLLED_ACCESS_FLAG
-from xmodule.course_block import get_available_providers  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.exceptions import InvalidProctoringProvider  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.course_block import get_available_providers  # pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
+from xmodule.modulestore.exceptions import InvalidProctoringProvider  # pylint: disable=wrong-import-order
 from xmodule.partitions.partitions import MINIMUM_UNUSED_PARTITION_ID
 from xmodule.partitions.partitions_service import get_all_partitions_for_course
 
@@ -103,19 +103,19 @@ class CourseMetadata:
             exclude_list.append('giturl')
 
         # Do not show edxnotes if the feature is disabled.
-        if not settings.FEATURES.get('ENABLE_EDXNOTES'):
+        if not settings.ENABLE_EDXNOTES:
             exclude_list.append('edxnotes')
 
         # Do not show video auto advance if the feature is disabled
-        if not settings.FEATURES.get('ENABLE_OTHER_COURSE_SETTINGS'):
+        if not settings.ENABLE_OTHER_COURSE_SETTINGS:
             exclude_list.append('other_course_settings')
 
         # Do not show video_upload_pipeline if the feature is disabled.
-        if not settings.FEATURES.get('ENABLE_VIDEO_UPLOAD_PIPELINE'):
+        if not settings.ENABLE_VIDEO_UPLOAD_PIPELINE:
             exclude_list.append('video_upload_pipeline')
 
         # Do not show video auto advance if the feature is disabled
-        if not settings.FEATURES.get('ENABLE_AUTOADVANCE_VIDEOS'):
+        if not settings.ENABLE_AUTOADVANCE_VIDEOS:
             exclude_list.append('video_auto_advance')
 
         # Do not show social sharing url field if the feature is disabled.
@@ -124,14 +124,14 @@ class CourseMetadata:
             exclude_list.append('social_sharing_url')
 
         # Do not show teams configuration if feature is disabled.
-        if not settings.FEATURES.get('ENABLE_TEAMS'):
+        if not settings.ENABLE_TEAMS:
             exclude_list.append('teams_configuration')
 
-        if not settings.FEATURES.get('ENABLE_VIDEO_BUMPER'):
+        if not settings.ENABLE_VIDEO_BUMPER:
             exclude_list.append('video_bumper')
 
         # Do not show enable_ccx if feature is not enabled.
-        if not settings.FEATURES.get('CUSTOM_COURSES_EDX'):
+        if not settings.CUSTOM_COURSES_EDX:
             exclude_list.append('enable_ccx')
             exclude_list.append('ccx_connector')
 
@@ -191,14 +191,14 @@ class CourseMetadata:
             if filter_fields and field.name not in filter_fields:
                 continue
 
-            field_help = _(field.help)  # lint-amnesty, pylint: disable=translation-of-non-string
+            field_help = _(field.help)  # pylint: disable=translation-of-non-string
             help_args = field.runtime_options.get('help_format_args')
             if help_args is not None:
                 field_help = field_help.format(**help_args)
 
             result[field.name] = {
                 'value': field.read_json(block),
-                'display_name': _(field.display_name),  # lint-amnesty, pylint: disable=translation-of-non-string
+                'display_name': _(field.display_name),  # pylint: disable=translation-of-non-string
                 'help': field_help,
                 'deprecated': field.runtime_options.get('deprecated', False),
                 'hide_on_enabled_publisher': field.runtime_options.get('hide_on_enabled_publisher', False)
@@ -232,7 +232,7 @@ class CourseMetadata:
                     else:
                         key_values[key] = block.fields[key].from_json(val)
             except (TypeError, ValueError) as err:
-                raise ValueError(_("Incorrect format for field '{name}'. {detailed_message}").format(  # lint-amnesty, pylint: disable=raise-missing-from
+                raise ValueError(_("Incorrect format for field '{name}'. {detailed_message}").format(  # pylint: disable=raise-missing-from  # noqa: B904
                     name=model['display_name'], detailed_message=str(err)))
 
         return cls.update_from_dict(key_values, block, user)
@@ -556,7 +556,7 @@ class CourseMetadata:
 
             if proctoring_provider == 'software_secure' and not create_zendesk_tickets:
                 LOGGER.info(
-                    'create_zendesk_tickets set to {ticket_value} but proctoring '
+                    'create_zendesk_tickets set to {ticket_value} but proctoring '  # noqa: UP032
                     'provider is {provider} for course {course_id}. create_zendesk_tickets '
                     'should be updated for this course.'.format(
                         ticket_value=create_zendesk_tickets,

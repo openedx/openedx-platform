@@ -17,7 +17,7 @@ from lms.djangoapps.courseware.courses import has_access
 from lms.djangoapps.discussion.django_comment_client.utils import has_discussion_privileges
 from lms.djangoapps.teams.models import CourseTeam, CourseTeamMembership
 from openedx.core.lib.teams_config import TeamsetType
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 
 logger = logging.getLogger(__name__)
 
@@ -185,7 +185,7 @@ def user_organization_protection_status(user, course_key):
         else:
             return OrganizationProtectionStatus.unprotected
     else:
-        raise ValueError(  # lint-amnesty, pylint: disable=raising-format-tuple
+        raise ValueError(  # pylint: disable=raising-format-tuple
             'Cannot check the org_protection status on a student [%s] not enrolled in course [%s]',
             user.id,
             course_key
@@ -349,7 +349,7 @@ def get_team_for_user_course_topic(user, course_id, topic_id):
     try:
         course_key = CourseKey.from_string(course_id)
     except InvalidKeyError:
-        raise ValueError("The supplied course id {course_id} is not valid.".format(  # lint-amnesty, pylint: disable=raise-missing-from
+        raise ValueError("The supplied course id {course_id} is not valid.".format(  # pylint: disable=raise-missing-from  # noqa: B904, UP032
             course_id=course_id
         ))
     try:
@@ -382,7 +382,7 @@ def get_teams_in_teamset(course_id, topic_id):
     try:
         course_key = CourseKey.from_string(course_id)
     except InvalidKeyError as exc:
-        raise ValueError("The supplied course id {course_id} is not valid.".format(
+        raise ValueError("The supplied course id {course_id} is not valid.".format(  # noqa: UP032
             course_id=course_id
         )) from exc
     return CourseTeam.objects.filter(
@@ -402,7 +402,7 @@ def anonymous_user_ids_for_team(user, team):
         raise Exception("User and team must be provided for ID lookup")
 
     if not has_course_staff_privileges(user, team.course_id) and not user_is_a_team_member(user, team):
-        raise Exception("User {user} is not permitted to access team info for {team}".format(
+        raise Exception("User {user} is not permitted to access team info for {team}".format(  # noqa: UP032
             user=user.username,
             team=team.team_id
         ))
@@ -417,7 +417,7 @@ def get_assignments_for_team(user, team):
     """ Get openassessment XBlocks configured for the current teamset """
     # Confirm access
     if not has_specific_team_access(user, team):
-        raise Exception("User {user} is not permitted to access team info for {team}".format(
+        raise Exception("User {user} is not permitted to access team info for {team}".format(  # noqa: UP032
             user=user.username,
             team=team.team_id
         ))

@@ -20,9 +20,11 @@ from common.djangoapps.util.milestones_helpers import set_prerequisite_courses
 from lms.djangoapps.branding.views import index
 from lms.djangoapps.courseware.tests.helpers import LoginEnrollmentTestCase
 from openedx.core.djangoapps.site_configuration.tests.mixins import SiteMixin
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.course_block import CATALOG_VISIBILITY_ABOUT, CATALOG_VISIBILITY_NONE
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # pylint: disable=wrong-import-order
+)
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 FEATURES_WITH_STARTDATE = settings.FEATURES.copy()
 FEATURES_WITH_STARTDATE['DISABLE_START_DATES'] = False
@@ -220,7 +222,7 @@ class IndexPageCourseCardsSortingTests(ModuleStoreTestCase):
 
     @patch('common.djangoapps.student.views.management.render_to_response', RENDER_MOCK)
     @patch('lms.djangoapps.courseware.views.views.render_to_response', RENDER_MOCK)
-    @patch.dict('django.conf.settings.FEATURES', {'ENABLE_COURSE_DISCOVERY': False})
+    @override_settings(ENABLE_COURSE_DISCOVERY=False)
     def test_course_discovery_off(self):
         """
         Asserts that the Course Discovery UI elements follow the
@@ -244,7 +246,7 @@ class IndexPageCourseCardsSortingTests(ModuleStoreTestCase):
 
     @patch('common.djangoapps.student.views.management.render_to_response', RENDER_MOCK)
     @patch('lms.djangoapps.courseware.views.views.render_to_response', RENDER_MOCK)
-    @patch.dict('django.conf.settings.FEATURES', {'ENABLE_COURSE_DISCOVERY': True})
+    @override_settings(ENABLE_COURSE_DISCOVERY=True)
     def test_course_discovery_on(self):
         """
         Asserts that the Course Discovery UI elements follow the
@@ -266,7 +268,7 @@ class IndexPageCourseCardsSortingTests(ModuleStoreTestCase):
 
     @patch('common.djangoapps.student.views.management.render_to_response', RENDER_MOCK)
     @patch('lms.djangoapps.courseware.views.views.render_to_response', RENDER_MOCK)
-    @patch.dict('django.conf.settings.FEATURES', {'ENABLE_COURSE_DISCOVERY': False})
+    @override_settings(ENABLE_COURSE_DISCOVERY=False)
     def test_course_cards_sorted_by_default_sorting(self):
         response = self.client.get('/')
         assert response.status_code == 200
@@ -291,8 +293,7 @@ class IndexPageCourseCardsSortingTests(ModuleStoreTestCase):
 
     @patch('common.djangoapps.student.views.management.render_to_response', RENDER_MOCK)
     @patch('lms.djangoapps.courseware.views.views.render_to_response', RENDER_MOCK)
-    @patch.dict('django.conf.settings.FEATURES', {'ENABLE_COURSE_SORTING_BY_START_DATE': False})
-    @patch.dict('django.conf.settings.FEATURES', {'ENABLE_COURSE_DISCOVERY': False})
+    @override_settings(ENABLE_COURSE_SORTING_BY_START_DATE=False, ENABLE_COURSE_DISCOVERY=False)
     def test_course_cards_sorted_by_start_date_disabled(self):
         response = self.client.get('/')
         assert response.status_code == 200
@@ -317,7 +318,7 @@ class IndexPageCourseCardsSortingTests(ModuleStoreTestCase):
 
     @patch('lms.djangoapps.courseware.views.views.render_to_response', RENDER_MOCK)
     def test_invisible_courses_are_not_displayed(self):
-        response = self.client.get(reverse('courses'))
+        response = self.client.get(reverse('courses'))  # noqa: F841
         ((_template, context), _) = RENDER_MOCK.call_args  # pylint: disable=unpacking-non-sequence
 
         rendered_ids = [course.id for course in context["courses"]]

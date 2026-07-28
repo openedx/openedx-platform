@@ -3,6 +3,7 @@ Tests for toggles, where there is logic beyond enable/disable.
 """
 
 from unittest.mock import patch
+
 import ddt
 
 from common.djangoapps.student.tests.factories import UserFactory
@@ -34,4 +35,4 @@ class TestLearnerHomeWaffle(SharedModuleStoreTestCase):
         is_learner_home_enabled = learner_home_mfe_enabled()
 
         # Then I respects waffle setting.
-        self.assertEqual(is_learner_home_enabled, is_waffle_enabled)
+        self.assertEqual(is_learner_home_enabled, is_waffle_enabled)  # noqa: PT009

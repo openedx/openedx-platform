@@ -52,7 +52,7 @@ class InstructorServiceTests(SharedModuleStoreTestCase):
 
     @mock.patch('lms.djangoapps.grades.signals.handlers.PROBLEM_WEIGHTED_SCORE_CHANGED.send')
     @mock.patch('lms.djangoapps.instructor.tasks.update_exam_completion_task.apply_async', autospec=True)
-    def test_reset_student_attempts_delete(self, mock_completion_task, _mock_signal):
+    def test_reset_student_attempts_delete(self, mock_completion_task, _mock_signal):  # noqa: PT019
         """
         Test delete student state.
         """
@@ -80,7 +80,7 @@ class InstructorServiceTests(SharedModuleStoreTestCase):
         Negative test of trying to reset attempts with bad content_id
         """
 
-        result = self.service.delete_student_attempt(  # lint-amnesty, pylint: disable=assignment-from-none
+        result = self.service.delete_student_attempt(  # pylint: disable=assignment-from-none
             self.student.username,
             str(self.course.id),
             'foo/bar/baz',
@@ -93,7 +93,7 @@ class InstructorServiceTests(SharedModuleStoreTestCase):
         Negative test of trying to reset attempts with bad user identifier
         """
 
-        result = self.service.delete_student_attempt(  # lint-amnesty, pylint: disable=assignment-from-none
+        result = self.service.delete_student_attempt(  # pylint: disable=assignment-from-none
             'bad_student',
             str(self.course.id),
             'foo/bar/baz',
@@ -106,7 +106,7 @@ class InstructorServiceTests(SharedModuleStoreTestCase):
         Negative test of trying to reset attempts with bad user identifier
         """
 
-        result = self.service.delete_student_attempt(  # lint-amnesty, pylint: disable=assignment-from-none
+        result = self.service.delete_student_attempt(  # pylint: disable=assignment-from-none
             self.student.username,
             str(self.course.id),
             str(self.problem_2.location),

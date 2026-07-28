@@ -3,7 +3,7 @@ Course API Forms
 """
 
 
-from django.contrib.auth.models import AnonymousUser, User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import AnonymousUser, User  # pylint: disable=imported-auth-user
 from django.core.exceptions import ValidationError
 from django.forms import CharField, ChoiceField, Form, IntegerField
 from django.http import Http404
@@ -12,7 +12,7 @@ from opaque_keys.edx.keys import UsageKey
 from rest_framework.exceptions import PermissionDenied
 
 from openedx.core.djangoapps.util.forms import ExtendedNullBooleanField, MultiValueField
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 
 from . import permissions
 
@@ -48,7 +48,7 @@ class BlockListGetForm(Form):
         try:
             return int(value)
         except ValueError:
-            raise ValidationError(f"'{value}' is not a valid depth value.")  # lint-amnesty, pylint: disable=raise-missing-from
+            raise ValidationError(f"'{value}' is not a valid depth value.")  # pylint: disable=raise-missing-from  # noqa: B904
 
     def clean_requested_fields(self):
         """
@@ -75,7 +75,7 @@ class BlockListGetForm(Form):
         try:
             usage_key = UsageKey.from_string(usage_key)
         except InvalidKeyError:
-            raise ValidationError(f"'{str(usage_key)}' is not a valid usage key.")  # lint-amnesty, pylint: disable=raise-missing-from
+            raise ValidationError(f"'{str(usage_key)}' is not a valid usage key.")  # pylint: disable=raise-missing-from  # noqa: B904
 
         return usage_key.replace(course_key=modulestore().fill_in_run(usage_key.course_key))
 
@@ -154,7 +154,7 @@ class BlockListGetForm(Form):
         """
         if all_blocks:
             raise PermissionDenied(
-                "Anonymous users do not have permission to access all blocks in '{course_key}'.".format(
+                "Anonymous users do not have permission to access all blocks in '{course_key}'.".format(  # noqa: UP032
                     course_key=str(course_key),
                 )
             )
@@ -166,7 +166,7 @@ class BlockListGetForm(Form):
 
         if not permissions.is_course_public(course_key):
             raise PermissionDenied(
-                "Course blocks for '{course_key}' cannot be accessed anonymously.".format(
+                "Course blocks for '{course_key}' cannot be accessed anonymously.".format(  # noqa: UP032
                     course_key=course_key,
                 )
             )
@@ -181,7 +181,7 @@ class BlockListGetForm(Form):
         # Verify all blocks can be accessed for the course.
         if not permissions.can_access_all_blocks(requesting_user, course_key):
             raise PermissionDenied(
-                "'{requesting_username}' does not have permission to access all blocks in '{course_key}'.".format(
+                "'{requesting_username}' does not have permission to access all blocks in '{course_key}'.".format(  # noqa: UP032  # pylint: disable=line-too-long
                     requesting_username=requesting_user.username,
                     course_key=str(course_key),
                 )
@@ -196,7 +196,7 @@ class BlockListGetForm(Form):
         """
         if not permissions.can_access_self_blocks(requesting_user, course_key):
             raise PermissionDenied(
-                "Course blocks for '{requesting_username}' cannot be accessed.".format(
+                "Course blocks for '{requesting_username}' cannot be accessed.".format(  # noqa: UP032
                     requesting_username=requesting_user.username,
                 )
             )
@@ -216,7 +216,7 @@ class BlockListGetForm(Form):
         # Verify requesting user can access the user's blocks.
         if not permissions.can_access_others_blocks(requesting_user, course_key):
             raise PermissionDenied(
-                "'{requesting_username}' does not have permission to access view for '{requested_username}'.".format(
+                "'{requesting_username}' does not have permission to access view for '{requested_username}'.".format(  # noqa: UP032  # pylint: disable=line-too-long
                     requesting_username=requesting_user.username,
                     requested_username=requested_username,
                 )
@@ -226,8 +226,8 @@ class BlockListGetForm(Form):
         try:
             return User.objects.get(username=requested_username)
         except User.DoesNotExist:
-            raise Http404(  # lint-amnesty, pylint: disable=raise-missing-from
-                "Requested user '{requested_username}' does not exist.".format(
+            raise Http404(  # pylint: disable=raise-missing-from  # noqa: B904
+                "Requested user '{requested_username}' does not exist.".format(  # noqa: UP032
                     requested_username=requested_username,
                 )
             )

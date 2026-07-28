@@ -9,7 +9,7 @@ from numpy import around
 from xblock.core import XBlock
 
 from openedx.core.lib.cache_utils import process_cached
-from xmodule.graders import ProblemScore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.graders import ProblemScore  # pylint: disable=wrong-import-order
 
 from .transformer import GradesTransformer
 
@@ -167,7 +167,7 @@ def _get_score_from_submissions(submissions_scores, block):
             first_attempted = submission_value['created_at']
             weighted_earned = submission_value['points_earned']
             weighted_possible = submission_value['points_possible']
-            assert weighted_earned >= 0.0 and weighted_possible > 0.0  # per contract from submissions API
+            assert weighted_earned >= 0.0 and weighted_possible > 0.0  # per contract from submissions API  # noqa: PT018  # pylint: disable=line-too-long
             return (None, None) + (weighted_earned, weighted_possible) + (first_attempted,)
 
 

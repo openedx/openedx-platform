@@ -13,14 +13,6 @@ from django.test.utils import override_settings
 from django.urls import reverse
 from django.utils import translation
 from edx_django_utils.cache import RequestCache
-from xmodule.modulestore.tests.django_utils import (
-    TEST_DATA_SPLIT_MODULESTORE,
-    ModuleStoreTestCase,
-)
-from xmodule.modulestore.tests.factories import (
-    CourseFactory,
-    BlockFactory,
-)
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.course_modes.tests.factories import CourseModeFactory
@@ -30,28 +22,25 @@ from lms.djangoapps.courseware.exceptions import CourseAccessRedirect
 from lms.djangoapps.discussion import views
 from lms.djangoapps.discussion.django_comment_client.constants import TYPE_ENTRY, TYPE_SUBCATEGORY
 from lms.djangoapps.discussion.django_comment_client.permissions import get_team
-from lms.djangoapps.discussion.django_comment_client.tests.utils import (
-    config_course_discussions,
-    topic_name_to_id
-)
+from lms.djangoapps.discussion.django_comment_client.tests.utils import config_course_discussions, topic_name_to_id
 from lms.djangoapps.discussion.views import _get_discussion_default_topic_id, course_discussions_settings_handler
 from openedx.core.djangoapps.course_groups.tests.helpers import config_course_cohorts
 from openedx.core.djangoapps.course_groups.tests.test_views import CohortViewsTestCase
 from openedx.core.djangoapps.django_comment_common.comment_client.utils import CommentClientPaginatedResult
-from openedx.core.djangoapps.django_comment_common.models import (
-    CourseDiscussionSettings,
-)
+from openedx.core.djangoapps.django_comment_common.models import CourseDiscussionSettings
 from openedx.core.djangoapps.django_comment_common.utils import ThreadContext
 from openedx.core.djangoapps.waffle_utils.testutils import WAFFLE_TABLES
+from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, ModuleStoreTestCase
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 
 log = logging.getLogger(__name__)
 
 QUERY_COUNT_TABLE_IGNORELIST = WAFFLE_TABLES
 
 
-class ViewsExceptionTestCase(UrlResetMixin, ModuleStoreTestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+@override_settings(ENABLE_DISCUSSION_SERVICE=True)
+class ViewsExceptionTestCase(UrlResetMixin, ModuleStoreTestCase):  # pylint: disable=missing-class-docstring
 
-    @patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
     def setUp(self):
 
         # Patching the ENABLE_DISCUSSION_SERVICE value affects the contents of urls.py,
@@ -121,7 +110,7 @@ class ViewsExceptionTestCase(UrlResetMixin, ModuleStoreTestCase):  # lint-amnest
         assert response.status_code == 404
 
 
-def make_mock_thread_data(  # lint-amnesty, pylint: disable=missing-function-docstring
+def make_mock_thread_data(  # pylint: disable=missing-function-docstring
         course,
         text,
         thread_id,
@@ -165,7 +154,7 @@ def make_mock_thread_data(  # lint-amnesty, pylint: disable=missing-function-doc
     return thread_data
 
 
-def make_mock_collection_data(  # lint-amnesty, pylint: disable=missing-function-docstring
+def make_mock_collection_data(  # pylint: disable=missing-function-docstring
     course,
     text,
     thread_id,
@@ -192,7 +181,7 @@ def make_mock_collection_data(  # lint-amnesty, pylint: disable=missing-function
         ]
 
 
-def make_mock_perform_request_impl(  # lint-amnesty, pylint: disable=missing-function-docstring
+def make_mock_perform_request_impl(  # pylint: disable=missing-function-docstring
         course,
         text,
         thread_id="dummy_thread_id",
@@ -241,7 +230,7 @@ def make_mock_perform_request_impl(  # lint-amnesty, pylint: disable=missing-fun
     return mock_perform_request_impl
 
 
-def make_mock_request_impl(  # lint-amnesty, pylint: disable=missing-function-docstring
+def make_mock_request_impl(  # pylint: disable=missing-function-docstring
         course,
         text,
         thread_id="dummy_thread_id",
@@ -273,7 +262,7 @@ def make_mock_request_impl(  # lint-amnesty, pylint: disable=missing-function-do
     return mock_request_impl
 
 
-class StringEndsWithMatcher:  # lint-amnesty, pylint: disable=missing-class-docstring
+class StringEndsWithMatcher:  # pylint: disable=missing-class-docstring
     def __init__(self, suffix):
         self.suffix = suffix
 
@@ -281,7 +270,7 @@ class StringEndsWithMatcher:  # lint-amnesty, pylint: disable=missing-class-docs
         return other.endswith(self.suffix)
 
 
-class PartialDictMatcher:  # lint-amnesty, pylint: disable=missing-class-docstring
+class PartialDictMatcher:  # pylint: disable=missing-class-docstring
     def __init__(self, expected_values):
         self.expected_values = expected_values
 
@@ -312,11 +301,11 @@ class AllowPlusOrMinusOneInt(int):
 
 
 @patch('requests.request', autospec=True)
-class CommentsServiceRequestHeadersTestCase(UrlResetMixin, ModuleStoreTestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class CommentsServiceRequestHeadersTestCase(UrlResetMixin, ModuleStoreTestCase):  # pylint: disable=missing-class-docstring
 
     CREATE_USER = False
 
-    @patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+    @override_settings(ENABLE_DISCUSSION_SERVICE=True)
     def setUp(self):
         super().setUp()
         patcher = mock.patch(
@@ -342,7 +331,7 @@ class CommentsServiceRequestHeadersTestCase(UrlResetMixin, ModuleStoreTestCase):
 
         self.addCleanup(translation.deactivate)
 
-    def assert_all_calls_have_header(self, mock_request, key, value):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def assert_all_calls_have_header(self, mock_request, key, value):  # pylint: disable=missing-function-docstring
         expected = call(
             ANY,  # method
             ANY,  # url
@@ -392,13 +381,13 @@ class EnrollmentTestCase(ModuleStoreTestCase):
     in the course
     """
 
-    @patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+    @override_settings(ENABLE_DISCUSSION_SERVICE=True)
     def setUp(self):
         super().setUp()
         self.course = CourseFactory.create()
         self.student = UserFactory.create()
 
-    @patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+    @override_settings(ENABLE_DISCUSSION_SERVICE=True)
     @patch('openedx.core.djangoapps.django_comment_common.comment_client.utils.requests.request', autospec=True)
     def test_unenrolled(self, mock_request):
         mock_request.side_effect = make_mock_request_impl(course=self.course, text='dummy')
@@ -408,7 +397,7 @@ class EnrollmentTestCase(ModuleStoreTestCase):
             views.forum_form_discussion(request, course_id=str(self.course.id))  # pylint: disable=no-value-for-parameter, unexpected-keyword-arg
 
 
-class DividedDiscussionsTestCase(CohortViewsTestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class DividedDiscussionsTestCase(CohortViewsTestCase):  # pylint: disable=missing-class-docstring
 
     def create_divided_discussions(self):
         """

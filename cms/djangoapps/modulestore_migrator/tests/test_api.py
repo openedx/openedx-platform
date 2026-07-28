@@ -2,10 +2,12 @@
 Test cases for the modulestore migrator API.
 """
 
-import pytest
 from unittest.mock import patch
-from opaque_keys.edx.locator import LibraryLocator, LibraryLocatorV2, CourseLocator
-from openedx_learning.api import authoring as authoring_api
+
+import pytest
+from opaque_keys.edx.locator import CourseLocator, LibraryLocator, LibraryLocatorV2
+from openedx_content import api as content_api
+from openedx_content import models_api as content_models
 from organizations.tests.factories import OrganizationFactory
 
 from cms.djangoapps.modulestore_migrator import api
@@ -14,9 +16,8 @@ from cms.djangoapps.modulestore_migrator.models import ModulestoreMigration
 from cms.djangoapps.modulestore_migrator.tests.factories import ModulestoreSourceFactory
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.content_libraries import api as lib_api
-
-from xmodule.modulestore.tests.utils import ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import BlockFactory, LibraryFactory
+from xmodule.modulestore.tests.utils import ModuleStoreTestCase
 
 
 @pytest.mark.django_db
@@ -148,6 +149,11 @@ class TestModulestoreMigratorAPI(ModuleStoreTestCase):
                 user_id=self.user.id, publish_item=False,
             )
 
+    def tearDown(self):
+        # If we're working with Containers in test cases, we need this line:
+        content_models.Container.reset_cache()
+        return super().tearDown()
+
     def test_start_migration_to_library(self):
         """
         Test that the API can start a migration to a library.
@@ -224,9 +230,9 @@ class TestModulestoreMigratorAPI(ModuleStoreTestCase):
         user = UserFactory()
 
         collection_key = "test-collection"
-        authoring_api.create_collection(
+        content_api.create_collection(
             learning_package_id=self.learning_package.id,
-            key=collection_key,
+            collection_code=collection_key,
             title="Test Collection",
             created_by=user.id,
         )
@@ -243,7 +249,7 @@ class TestModulestoreMigratorAPI(ModuleStoreTestCase):
         )
 
         modulestoremigration = ModulestoreMigration.objects.get()
-        assert modulestoremigration.target_collection.key == collection_key
+        assert modulestoremigration.target_collection.collection_code == collection_key
 
     def test_start_migration_to_library_with_strategy_skip(self):
         """
@@ -479,21 +485,21 @@ class TestModulestoreMigratorAPI(ModuleStoreTestCase):
 
         # Lib 1 has Collection A and Collection B
         # Lib 2 has Collection C
-        authoring_api.create_collection(
+        content_api.create_collection(
             learning_package_id=self.learning_package.id,
-            key="test-collection-1a",
+            collection_code="test-collection-1a",
             title="Test Collection A in Lib 1",
             created_by=user.id,
         )
-        authoring_api.create_collection(
+        content_api.create_collection(
             learning_package_id=self.learning_package.id,
-            key="test-collection-1b",
+            collection_code="test-collection-1b",
             title="Test Collection B in Lib 1",
             created_by=user.id,
         )
-        authoring_api.create_collection(
+        content_api.create_collection(
             learning_package_id=self.learning_package_2.id,
-            key="test-collection-2c",
+            collection_code="test-collection-2c",
             title="Test Collection C in Lib 2",
             created_by=user.id,
         )

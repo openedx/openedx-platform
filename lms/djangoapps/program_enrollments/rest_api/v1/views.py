@@ -27,12 +27,12 @@ from lms.djangoapps.program_enrollments.api import (
     get_saml_providers_for_organization,
     iter_program_course_grades,
     write_program_course_enrollments,
-    write_program_enrollments
+    write_program_enrollments,
 )
 from lms.djangoapps.program_enrollments.constants import (
     ProgramCourseOperationStatuses,
     ProgramEnrollmentStatuses,
-    ProgramOperationStatuses
+    ProgramOperationStatuses,
 )
 from lms.djangoapps.program_enrollments.exceptions import ProviderDoesNotExistException
 from openedx.core.apidocs import cursor_paginate_serializer
@@ -40,7 +40,7 @@ from openedx.core.djangoapps.catalog.utils import (
     get_programs,
     get_programs_by_type,
     get_programs_for_organization,
-    normalize_program_type
+    normalize_program_type,
 )
 from openedx.core.lib.api.authentication import BearerAuthenticationAllowInactiveUser
 from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin, PaginatedAPIView
@@ -54,7 +54,7 @@ from .serializers import (
     ProgramCourseGradeSerializer,
     ProgramEnrollmentCreateRequestSerializer,
     ProgramEnrollmentSerializer,
-    ProgramEnrollmentUpdateRequestSerializer
+    ProgramEnrollmentUpdateRequestSerializer,
 )
 from .utils import (
     ProgramCourseSpecificViewMixin,
@@ -67,7 +67,7 @@ from .utils import (
     get_enrollments_for_courses_in_program,
     verify_course_exists_and_in_program,
     verify_program_exists,
-    verify_user_enrolled_in_program
+    verify_user_enrolled_in_program,
 )
 
 
@@ -100,7 +100,7 @@ class EnrollmentWriteMixin:
         num_requests = len(self.request.data)
         if num_requests > MAX_ENROLLMENT_RECORDS:
             return Response(
-                '{} enrollments requested, but limit is {}.'.format(
+                '{} enrollments requested, but limit is {}.'.format(  # noqa: UP032
                     MAX_ENROLLMENT_RECORDS, num_requests
                 ),
                 status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
@@ -339,7 +339,7 @@ class ProgramEnrollmentsView(
     ok_write_statuses = ProgramOperationStatuses.__OK__
 
     @verify_program_exists
-    def get(self, request, program_uuid=None):  # lint-amnesty, pylint: disable=unused-argument
+    def get(self, request, program_uuid=None):  # pylint: disable=unused-argument
         """ Defines the GET list endpoint for ProgramEnrollment objects. """
         enrollments = fetch_program_enrollments(
             self.program_uuid
@@ -349,21 +349,21 @@ class ProgramEnrollmentsView(
         return self.get_paginated_response(serializer.data)
 
     @verify_program_exists
-    def post(self, request, program_uuid=None):  # lint-amnesty, pylint: disable=unused-argument
+    def post(self, request, program_uuid=None):  # pylint: disable=unused-argument
         """
         Create program enrollments for a list of learners
         """
         return self.handle_write_request()
 
     @verify_program_exists
-    def patch(self, request, program_uuid=None):  # lint-amnesty, pylint: disable=unused-argument
+    def patch(self, request, program_uuid=None):  # pylint: disable=unused-argument
         """
         Update program enrollments for a list of learners
         """
         return self.handle_write_request()
 
     @verify_program_exists
-    def put(self, request, program_uuid=None):  # lint-amnesty, pylint: disable=unused-argument
+    def put(self, request, program_uuid=None):  # pylint: disable=unused-argument
         """
         Create/update program enrollments for a list of learners
         """
@@ -497,21 +497,21 @@ class ProgramCourseEnrollmentsView(
         return self.get_paginated_response(serializer.data)
 
     @verify_course_exists_and_in_program
-    def post(self, request, program_uuid=None, course_id=None):  # lint-amnesty, pylint: disable=unused-argument
+    def post(self, request, program_uuid=None, course_id=None):  # pylint: disable=unused-argument
         """
         Enroll a list of students in a course in a program
         """
         return self.handle_write_request()
 
     @verify_course_exists_and_in_program
-    def patch(self, request, program_uuid=None, course_id=None):  # lint-amnesty, pylint: disable=unused-argument
+    def patch(self, request, program_uuid=None, course_id=None):  # pylint: disable=unused-argument
         """
         Modify the program course enrollments of a list of learners
         """
         return self.handle_write_request()
 
     @verify_course_exists_and_in_program
-    def put(self, request, program_uuid=None, course_id=None):  # lint-amnesty, pylint: disable=unused-argument
+    def put(self, request, program_uuid=None, course_id=None):  # pylint: disable=unused-argument
         """
         Create or Update the program course enrollments of a list of learners
         """
@@ -615,7 +615,7 @@ class ProgramCourseGradesView(
     pagination_class = ProgramEnrollmentPagination
 
     @verify_course_exists_and_in_program
-    def get(self, request, program_uuid=None, course_id=None):  # lint-amnesty, pylint: disable=unused-argument
+    def get(self, request, program_uuid=None, course_id=None):  # pylint: disable=unused-argument
         """
         Defines the GET list endpoint for ProgramCourseGrade objects.
         """
@@ -822,7 +822,7 @@ class UserProgramCourseEnrollmentView(
     )
     @verify_program_exists
     @verify_user_enrolled_in_program
-    def get(self, request, username, program_uuid):  # lint-amnesty, pylint: disable=unused-argument
+    def get(self, request, username, program_uuid):  # pylint: disable=unused-argument
         """
         Get an overview of each of a user's course enrollments associated with a program.
 

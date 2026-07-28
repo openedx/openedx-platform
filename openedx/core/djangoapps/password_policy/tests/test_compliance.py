@@ -4,22 +4,22 @@ Test password policy utilities
 
 from datetime import datetime, timedelta
 from unittest.mock import patch
+from zoneinfo import ZoneInfo
 
 import pytest
-from zoneinfo import ZoneInfo
 from dateutil.parser import parse as parse_date
 from django.test import TestCase, override_settings
 
-from openedx.core.djangoapps.password_policy.compliance import (NonCompliantPasswordException,
-                                                                NonCompliantPasswordWarning,
-                                                                _check_user_compliance,
-                                                                _get_compliance_deadline_for_user,
-                                                                enforce_compliance_on_login,
-                                                                should_enforce_compliance_on_login)
-from common.djangoapps.student.tests.factories import (CourseAccessRoleFactory,
-                                                       UserFactory)
+from common.djangoapps.student.tests.factories import CourseAccessRoleFactory, UserFactory
 from common.djangoapps.util.password_policy_validators import ValidationError
-
+from openedx.core.djangoapps.password_policy.compliance import (
+    NonCompliantPasswordException,
+    NonCompliantPasswordWarning,
+    _check_user_compliance,
+    _get_compliance_deadline_for_user,
+    enforce_compliance_on_login,
+    should_enforce_compliance_on_login,
+)
 
 date1 = parse_date('2018-01-01 00:00:00+00:00')
 date2 = parse_date('2018-02-02 00:00:00+00:00')
@@ -199,3 +199,56 @@ class TestCompliance(TestCase):
             assert date1 == _get_compliance_deadline_for_user(staff)
             assert date1 == _get_compliance_deadline_for_user(privileged)
             assert date1 == _get_compliance_deadline_for_user(user)
+
+    def test_warning_link_uses_site_config_account_mfe_url(self):
+        """
+        When site config defines ACCOUNT_MICROFRONTEND_URL, the warning text should
+        use that value for the Account Settings anchor href.
+        """
+        user = UserFactory()
+        password = "irrelevant"
+        siteconf_url = "https://accounts.siteconf.example"
+
+        with patch(
+            "openedx.core.djangoapps.password_policy.compliance._check_user_compliance",
+            return_value=False,
+        ), patch(
+            "openedx.core.djangoapps.password_policy.compliance._get_compliance_deadline_for_user",
+            return_value=datetime.now(ZoneInfo("UTC")) + timedelta(days=1),
+        ), patch(
+            "openedx.core.djangoapps.password_policy.compliance.configuration_helpers.get_value",
+            side_effect=lambda key, default=None, *a, **k:
+                siteconf_url if key == "ACCOUNT_MICROFRONTEND_URL" else default,
+        ):
+            with pytest.raises(NonCompliantPasswordWarning) as excinfo:
+                enforce_compliance_on_login(user, password)
+
+        msg = str(excinfo.value)
+        assert f'<a href="{siteconf_url}">Account Settings</a>' in msg
+
+    def test_warning_link_falls_back_to_settings_account_mfe_url(self):
+        """
+        If site config doesn't override, the warning text should fall back to
+        settings.ACCOUNT_MICROFRONTEND_URL for the anchor href.
+        """
+        user = UserFactory()
+        password = "irrelevant"
+        fallback = "https://accounts.settings.example"
+
+        with override_settings(ACCOUNT_MICROFRONTEND_URL=fallback):
+            with patch(
+                "openedx.core.djangoapps.password_policy.compliance._check_user_compliance",
+                return_value=False,
+            ), patch(
+                "openedx.core.djangoapps.password_policy.compliance._get_compliance_deadline_for_user",
+                return_value=datetime.now(ZoneInfo("UTC")) + timedelta(days=1),
+            ), patch(
+                "openedx.core.djangoapps.password_policy.compliance.configuration_helpers.get_value",
+                # Simulate "no override": return default argument
+                side_effect=lambda key, default=None, *a, **k: default,
+            ):
+                with pytest.raises(NonCompliantPasswordWarning) as excinfo:
+                    enforce_compliance_on_login(user, password)
+
+        msg = str(excinfo.value)
+        assert f'<a href="{fallback}">Account Settings</a>' in msg

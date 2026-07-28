@@ -2,9 +2,10 @@
 Defines the sharing sites for different social media platforms
 """
 from collections import namedtuple
+from urllib.parse import urlencode
+
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
-from urllib.parse import urlencode
 
 SharingSiteConfig = namedtuple(
     'SharingSiteConfig',

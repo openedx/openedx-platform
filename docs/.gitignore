@@ -5,3 +5,5 @@ references/docstrings/common
 references/docstrings/lms
 references/docstrings/openedx
 references/docstrings/xmodule
+apps/index.rst
+decisions/app_decisions.rst

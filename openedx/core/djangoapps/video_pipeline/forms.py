@@ -4,10 +4,7 @@ Defines a form to provide validations for course-specific configuration.
 from django import forms
 
 from openedx.core.djangoapps.video_config.forms import CourseSpecificFlagAdminBaseForm
-from openedx.core.djangoapps.video_pipeline.models import (
-    CourseVideoUploadsEnabledByDefault,
-    VEMPipelineIntegration,
-)
+from openedx.core.djangoapps.video_pipeline.models import CourseVideoUploadsEnabledByDefault, VEMPipelineIntegration
 
 
 class CourseVideoUploadsEnabledByDefaultAdminForm(CourseSpecificFlagAdminBaseForm):
@@ -26,4 +23,4 @@ class VEMPipelineIntegrationAdminForm(forms.ModelForm):
     """
     class Meta:
         model = VEMPipelineIntegration
-        fields = '__all__'
+        fields = '__all__'  # noqa: DJ007

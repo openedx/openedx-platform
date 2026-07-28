@@ -10,7 +10,7 @@ from rest_framework import serializers
 from openedx.core.djangoapps.course_groups.cohorts import is_cohort_exists
 
 
-class StringListField(serializers.ListField):  # lint-amnesty, pylint: disable=missing-class-docstring
+class StringListField(serializers.ListField):  # pylint: disable=missing-class-docstring
     def to_internal_value(self, data):
         if not data:
             return []
@@ -19,7 +19,7 @@ class StringListField(serializers.ListField):  # lint-amnesty, pylint: disable=m
         return data.split(',')
 
 
-class BulkEnrollmentSerializer(serializers.Serializer):  # lint-amnesty, pylint: disable=abstract-method
+class BulkEnrollmentSerializer(serializers.Serializer):  # pylint: disable=abstract-method
     """Serializes enrollment information for a collection of students/emails.
 
     This is mainly useful for implementing validation when performing bulk enrollment operations.
@@ -46,7 +46,7 @@ class BulkEnrollmentSerializer(serializers.Serializer):  # lint-amnesty, pylint:
             try:
                 CourseKey.from_string(course)
             except InvalidKeyError:
-                raise serializers.ValidationError(f"Course key not valid: {course}")  # lint-amnesty, pylint: disable=raise-missing-from
+                raise serializers.ValidationError(f"Course key not valid: {course}")  # pylint: disable=raise-missing-from  # noqa: B904
         return value
 
     def validate(self, attrs):
@@ -60,9 +60,9 @@ class BulkEnrollmentSerializer(serializers.Serializer):  # lint-amnesty, pylint:
                 raise serializers.ValidationError(
                     "If provided, the cohorts and courses should have equal number of items.")
 
-            for course_id, cohort_name in zip(attrs['courses'], attrs['cohorts']):
+            for course_id, cohort_name in zip(attrs['courses'], attrs['cohorts']):  # noqa: B905
                 if not is_cohort_exists(course_key=CourseKey.from_string(course_id), name=cohort_name):
-                    raise serializers.ValidationError("cohort {cohort_name} not found in course {course_id}.".format(
+                    raise serializers.ValidationError("cohort {cohort_name} not found in course {course_id}.".format(  # noqa: UP032  # pylint: disable=line-too-long
                         cohort_name=cohort_name, course_id=course_id)
                     )
 

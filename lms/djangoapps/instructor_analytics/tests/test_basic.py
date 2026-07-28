@@ -3,41 +3,43 @@ Tests for instructor.basic
 """
 
 
+import datetime
+import json  # pylint: disable=wrong-import-order
+import random
 from unittest.mock import MagicMock, Mock, patch
 
-import datetime
-import random
 import ddt
-import json  # lint-amnesty, pylint: disable=wrong-import-order
 from django.contrib.auth import get_user_model
 from edx_proctoring.api import create_exam
 from edx_proctoring.models import ProctoredExamStudentAttempt
 from opaque_keys.edx.locator import UsageKey
-from lms.djangoapps.instructor_analytics.basic import (  # lint-amnesty, pylint: disable=unused-import
+
+from common.djangoapps.student.models import CourseEnrollment, CourseEnrollmentAllowed
+from common.djangoapps.student.tests.factories import InstructorFactory, UserFactory
+from lms.djangoapps.certificates.api import create_generated_certificate
+from lms.djangoapps.instructor_analytics.basic import (  # pylint: disable=unused-import
     AVAILABLE_FEATURES,
     ENROLLMENT_FEATURES,
     PROFILE_FEATURES,
     PROGRAM_ENROLLMENT_FEATURES,
     STUDENT_FEATURES,
     StudentModule,
-    issued_certificates,
     enrolled_students_features,
     get_available_features,
     get_proctored_exam_results,
     get_response_state,
     get_student_features_with_custom,
+    issued_certificates,
     list_may_enroll,
-    list_problem_responses
+    list_problem_responses,
 )
 from lms.djangoapps.program_enrollments.tests.factories import ProgramEnrollmentFactory
-from lms.djangoapps.certificates.api import create_generated_certificate
 from openedx.core.djangoapps.course_groups.tests.helpers import CohortFactory
 from openedx.core.djangoapps.site_configuration.tests.factories import SiteConfigurationFactory
-from common.djangoapps.student.models import CourseEnrollment, CourseEnrollmentAllowed
-from common.djangoapps.student.tests.factories import InstructorFactory
-from common.djangoapps.student.tests.factories import UserFactory
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # pylint: disable=wrong-import-order
+)
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 User = get_user_model()
 
@@ -182,7 +184,7 @@ class TestAnalyticsBasic(ModuleStoreTestCase):
 
         userreports = sorted(userreports, key=lambda u: u["username"])
         users = sorted(self.users, key=lambda u: u.username)
-        for userreport, user in zip(userreports, users):
+        for userreport, user in zip(userreports, users):  # noqa: B905
             assert set(userreport.keys()) == set(query_features)
             assert userreport['username'] == user.username
             assert userreport['email'] == user.email
@@ -193,10 +195,7 @@ class TestAnalyticsBasic(ModuleStoreTestCase):
     def test_enrolled_student_with_no_country_city(self):
         userreports = enrolled_students_features(self.course_key, ('username', 'city', 'country',))
         for userreport in userreports:
-            # This behaviour is somewhat inconsistent: None string fields
-            # objects are converted to "None", but non-JSON serializable fields
-            # are converted to an empty string.
-            assert userreport['city'] == 'None'
+            assert userreport['city'] == ''
             assert userreport['country'] == ''
 
     def test_enrolled_students_meta_features_keys(self):
@@ -351,7 +350,7 @@ class TestAnalyticsBasic(ModuleStoreTestCase):
 
         userreports = sorted(userreports, key=lambda u: u["username"])
         users = sorted(self.users, key=lambda u: u.username)
-        for userreport, user in zip(userreports, users):
+        for userreport, user in zip(userreports, users):  # noqa: B905
             assert set(userreport.keys()) == set(query_features)
             assert userreport['age'] == str(user.age)
 

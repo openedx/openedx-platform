@@ -3,7 +3,7 @@
 from rest_framework.serializers import Field, URLField
 
 
-class ExpandableField(Field):  # lint-amnesty, pylint: disable=abstract-method
+class ExpandableField(Field):  # pylint: disable=abstract-method
     """Field that can dynamically use a more detailed serializer based on a user-provided "expand" parameter.
 
     Kwargs:
@@ -13,12 +13,12 @@ class ExpandableField(Field):  # lint-amnesty, pylint: disable=abstract-method
 
     def __init__(self, **kwargs):
         """Sets up the ExpandableField with the collapsed and expanded versions of the serializer."""
-        assert 'collapsed_serializer' in kwargs and 'expanded_serializer' in kwargs
+        assert 'collapsed_serializer' in kwargs and 'expanded_serializer' in kwargs  # noqa: PT018
         self.collapsed = kwargs.pop('collapsed_serializer')
         self.expanded = kwargs.pop('expanded_serializer')
         super().__init__(**kwargs)
 
-    def to_representation(self, obj):  # lint-amnesty, pylint: disable=arguments-differ
+    def to_representation(self, obj):  # pylint: disable=arguments-differ
         """
         Return a representation of the field that is either expanded or collapsed.
         """
@@ -47,7 +47,7 @@ class AbsoluteURLField(URLField):
         request = self.context.get('request', None)
 
         assert request is not None, (
-            "`%s` requires the request in the serializer  context. "
+            "`%s` requires the request in the serializer  context. "  # noqa: UP031
             "Add `context={'request': request}` when instantiating the serializer." % self.__class__.__name__
         )
 

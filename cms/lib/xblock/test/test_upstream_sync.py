@@ -6,8 +6,8 @@ import datetime
 import ddt
 from organizations.api import ensure_organization
 from organizations.models import Organization
-from pytz import utc
 
+from cms.djangoapps.contentstore.xblock_storage_handlers.view_handlers import save_xblock_with_callback
 from cms.lib.xblock.upstream_sync import (
     BadDownstream,
     BadUpstream,
@@ -16,8 +16,7 @@ from cms.lib.xblock.upstream_sync import (
     decline_sync,
     sever_upstream_link,
 )
-from cms.lib.xblock.upstream_sync_block import sync_from_upstream_block, fetch_customizable_fields_from_block
-from cms.djangoapps.contentstore.xblock_storage_handlers.view_handlers import save_xblock_with_callback
+from cms.lib.xblock.upstream_sync_block import fetch_customizable_fields_from_block, sync_from_upstream_block
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.content_libraries import api as libs
 from openedx.core.djangoapps.content_tagging import api as tagging_api
@@ -117,7 +116,7 @@ class UpstreamTestCase(ModuleStoreTestCase):
         downstream_lib_block.upstream = str(self.upstream_key)
         downstream_lib_block.save()
 
-        with self.assertRaises(BadDownstream):
+        with self.assertRaises(BadDownstream):  # noqa: PT027
             sync_from_upstream_block(downstream_lib_block, self.user)
 
         assert downstream_lib_block.display_name == "Another lib block"
@@ -131,7 +130,7 @@ class UpstreamTestCase(ModuleStoreTestCase):
         block.display_name = "Block Title"
         block.data = "Block content"
 
-        with self.assertRaises(NoUpstream):
+        with self.assertRaises(NoUpstream):  # noqa: PT027
             sync_from_upstream_block(block, self.user)
 
         assert block.display_name == "Block Title"
@@ -154,7 +153,7 @@ class UpstreamTestCase(ModuleStoreTestCase):
         block.display_name = "Block Title"
         block.data = "Block content"
 
-        with self.assertRaisesRegex(BadUpstream, message_regex):
+        with self.assertRaisesRegex(BadUpstream, message_regex):  # noqa: PT027
             sync_from_upstream_block(block, self.user)
 
         assert block.display_name == "Block Title"
@@ -171,7 +170,7 @@ class UpstreamTestCase(ModuleStoreTestCase):
         downstream_block.display_name = "Block Title"
         downstream_block.data = "Block content"
 
-        with self.assertRaisesRegex(BadUpstream, "Content type mismatch.*"):
+        with self.assertRaisesRegex(BadUpstream, "Content type mismatch.*"):  # noqa: PT027
             sync_from_upstream_block(downstream_block, self.user)
 
         assert downstream_block.display_name == "Block Title"
@@ -184,7 +183,7 @@ class UpstreamTestCase(ModuleStoreTestCase):
         """
         downstream = BlockFactory.create(category='html', parent=self.unit, upstream=str(self.upstream_key))
         user_who_cannot_read_upstream = UserFactory.create(username="rando", is_staff=False, is_superuser=False)
-        with self.assertRaisesRegex(BadUpstream, ".*could not be loaded.*") as exc:
+        with self.assertRaisesRegex(BadUpstream, ".*could not be loaded.*") as exc:  # noqa: F841, PT027
             sync_from_upstream_block(downstream, user_who_cannot_read_upstream)
 
     def test_sync_updates_happy_path(self):
@@ -292,9 +291,9 @@ class UpstreamTestCase(ModuleStoreTestCase):
         # Modifing downstream-only fields are "safe" customizations
         downstream.display_name = "Downstream Title Override"
         downstream.attempts_before_showanswer_button = 2
-        downstream.due = datetime.datetime(2025, 2, 2, tzinfo=utc)
+        downstream.due = datetime.datetime(2025, 2, 2, tzinfo=datetime.timezone.utc)  # noqa: UP017
         downstream.force_save_button = True
-        downstream.graceperiod = '2d'
+        downstream.graceperiod = datetime.timedelta(days=2)
         downstream.grading_method = 'last_score'
         downstream.max_attempts = 100
         downstream.show_correctness = 'always'
@@ -320,9 +319,9 @@ class UpstreamTestCase(ModuleStoreTestCase):
         # but "safe" customizations survive
         assert downstream.display_name == "Downstream Title Override"
         assert downstream.attempts_before_showanswer_button == 2
-        assert downstream.due == datetime.datetime(2025, 2, 2, tzinfo=utc)
+        assert downstream.due == datetime.datetime(2025, 2, 2, tzinfo=datetime.timezone.utc)  # noqa: UP017
         assert downstream.force_save_button
-        assert downstream.graceperiod == '2d'
+        assert downstream.graceperiod == datetime.timedelta(days=2)
         assert downstream.grading_method == 'last_score'
         assert downstream.max_attempts == 100
         assert downstream.show_correctness == 'always'

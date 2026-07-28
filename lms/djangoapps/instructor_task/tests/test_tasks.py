@@ -9,8 +9,9 @@ paths actually work.
 import json
 from unittest.mock import MagicMock, Mock, patch
 from uuid import uuid4
-import pytest
+
 import ddt
+import pytest
 from celery.states import FAILURE, SUCCESS
 from django.utils.translation import gettext_noop
 from opaque_keys.edx.keys import i4xEncoder
@@ -28,11 +29,11 @@ from lms.djangoapps.instructor_task.tasks import (
     generate_certificates,
     override_problem_score,
     rescore_problem,
-    reset_problem_attempts
+    reset_problem_attempts,
 )
 from lms.djangoapps.instructor_task.tests.factories import InstructorTaskFactory
 from lms.djangoapps.instructor_task.tests.test_base import InstructorTaskModuleTestCase
-from xmodule.modulestore.exceptions import ItemNotFoundError  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.exceptions import ItemNotFoundError  # pylint: disable=wrong-import-order
 
 PROBLEM_URL_NAME = "test_urlname"
 
@@ -41,7 +42,7 @@ class TestTaskFailure(Exception):
     """
     An example exception to indicate failure of a mocked task.
     """
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 class TestInstructorTasks(InstructorTaskModuleTestCase):
@@ -91,7 +92,7 @@ class TestInstructorTasks(InstructorTaskModuleTestCase):
 
     def _run_task_with_mock_celery(self, task_class, entry_id, task_id, expected_failure_message=None):
         """Submit a task and mock how celery provides a current_task."""
-        self.current_task = Mock()  # lint-amnesty, pylint: disable=attribute-defined-outside-init
+        self.current_task = Mock()  # pylint: disable=attribute-defined-outside-init
         self.current_task.request = Mock()
         self.current_task.request.id = task_id
         self.current_task.update_state = Mock()
@@ -106,7 +107,7 @@ class TestInstructorTasks(InstructorTaskModuleTestCase):
     def _test_missing_current_task(self, task_class):
         """Check that a task_class fails when celery doesn't provide a current_task."""
         task_entry = self._create_input_entry()
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             task_class(task_entry.id, self._get_block_instance_args())
 
     def _test_undefined_course(self, task_class):
@@ -166,7 +167,7 @@ class TestInstructorTasks(InstructorTaskModuleTestCase):
     def _create_and_enroll_students(self, num_students, mode=CourseMode.DEFAULT_MODE_SLUG):
         """Create & enroll students for testing"""
         return [
-            self.create_student(username='robot%d' % i, email='robot+test+%d@edx.org' % i, mode=mode)
+            self.create_student(username='robot%d' % i, email='robot+test+%d@edx.org' % i, mode=mode)  # noqa: UP031
             for i in range(num_students)
         ]
 
@@ -333,7 +334,7 @@ class TestOverrideScoreInstructorTask(TestInstructorTasks):
         Tests score override for a problem in a course, for all students succeeds.
         """
         mock_instance = MagicMock()
-        getattr(mock_instance, 'override_problem_score').return_value = None  # lint-amnesty, pylint: disable=literal-used-as-attribute
+        getattr(mock_instance, 'override_problem_score').return_value = None  # pylint: disable=literal-used-as-attribute  # noqa: B009
 
         num_students = 10
         self._create_students_with_state(num_students)
@@ -426,7 +427,7 @@ class TestRescoreInstructorTask(TestInstructorTasks):
         mock_instance = MagicMock()
         del mock_instance.rescore_problem
         del mock_instance.rescore
-        with patch('lms.djangoapps.instructor_task.tasks_helper.module_state.get_block_for_descriptor') as mock_get_block:  # lint-amnesty, pylint: disable=line-too-long
+        with patch('lms.djangoapps.instructor_task.tasks_helper.module_state.get_block_for_descriptor') as mock_get_block:  # pylint: disable=line-too-long
             mock_get_block.return_value = mock_instance
             with pytest.raises(UpdateProblemModuleStateError):
                 self._run_task_with_mock_celery(rescore_problem, task_entry.id, task_entry.task_id)
@@ -434,7 +435,7 @@ class TestRescoreInstructorTask(TestInstructorTasks):
         entry = InstructorTask.objects.get(id=task_entry.id)
         output = json.loads(entry.task_output)
         assert output['exception'] == 'ExceptionWithTraceback'
-        assert 'Specified module {} of type {} does not support rescoring.'.format(
+        assert 'Specified module {} of type {} does not support rescoring.'.format(  # noqa: UP032
             self.location,
             mock_instance.__class__,
         ) in output['message']
@@ -448,7 +449,7 @@ class TestRescoreInstructorTask(TestInstructorTasks):
         num_students = 1
         self._create_students_with_state(num_students, input_state)
         task_entry = self._create_input_entry()
-        with patch('lms.djangoapps.instructor_task.tasks_helper.module_state.get_block_for_descriptor', return_value=None):  # lint-amnesty, pylint: disable=line-too-long
+        with patch('lms.djangoapps.instructor_task.tasks_helper.module_state.get_block_for_descriptor', return_value=None):  # pylint: disable=line-too-long
             self._run_task_with_mock_celery(rescore_problem, task_entry.id, task_entry.task_id)
 
         self.assert_task_output(
@@ -466,7 +467,7 @@ class TestRescoreInstructorTask(TestInstructorTasks):
         Tests rescores a problem in a course, for all students succeeds.
         """
         mock_instance = MagicMock()
-        getattr(mock_instance, 'rescore').return_value = None  # lint-amnesty, pylint: disable=literal-used-as-attribute
+        getattr(mock_instance, 'rescore').return_value = None  # pylint: disable=literal-used-as-attribute  # noqa: B009
         mock_instance.has_submitted_answer.return_value = True
         del mock_instance.done  # old CAPA code used to use this value so we delete it here to be sure
 

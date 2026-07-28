@@ -12,6 +12,13 @@ function(_, $, NotificationView, Prompt, AjaxHelpers) {
         installMockAnalytics, removeMockAnalytics, verifyPromptShowing, verifyPromptHidden,
         clickDeleteItem, patchAndVerifyRequest, submitAndVerifyFormSuccess, submitAndVerifyFormError;
 
+    // Register a single global afterEach to clean up jasmine.stealth constructor spies.
+    // Jasmine 2.99.x prohibits calling afterEach() from inside it()/beforeEach() callbacks,
+    // so we cannot register this inside createFeedbackSpy (which is called from it() blocks).
+    // Calling afterEach() at module scope (outside any describe/it) registers a global hook
+    // that runs after every spec. AMD caches this module, so the hook is registered exactly once.
+    afterEach(jasmine.stealth.clearSpies);
+
     installViewTemplates = function() {
         appendSetFixtures('<div id="page-notification"></div>');
     };
@@ -19,9 +26,6 @@ function(_, $, NotificationView, Prompt, AjaxHelpers) {
     createFeedbackSpy = function(type, intent) {
         var feedbackSpy = jasmine.stealth.spyOnConstructor(type, intent, ['show', 'hide']);
         feedbackSpy.show.and.returnValue(feedbackSpy);
-        if (afterEach) {
-            afterEach(jasmine.stealth.clearSpies);
-        }
         return feedbackSpy;
     };
 

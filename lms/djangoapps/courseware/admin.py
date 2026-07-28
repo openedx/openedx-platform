@@ -8,7 +8,6 @@ from django.contrib import admin
 
 from lms.djangoapps.courseware import models
 
-
 admin.site.register(models.FinancialAssistanceConfiguration, ConfigurationModelAdmin)
 admin.site.register(models.DynamicUpgradeDeadlineConfiguration, ConfigurationModelAdmin)
 admin.site.register(models.OfflineComputedGrade)

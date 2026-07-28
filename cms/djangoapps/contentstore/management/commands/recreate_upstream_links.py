@@ -75,7 +75,7 @@ class Command(BaseCommand):
         should_process_all = options['all']
         force = options['force']
         replace = options['replace']
-        time_now = datetime.now(tz=timezone.utc)
+        time_now = datetime.now(tz=timezone.utc)  # noqa: UP017
         if not courses and not should_process_all:
             raise CommandError('Either --course or --all argument should be provided.')
 

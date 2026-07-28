@@ -23,7 +23,7 @@ class CMSLogTest(TestCase):
         ]
         for request_params in requests:
             response = self.client.post(reverse(cms_user_track), request_params)
-            self.assertEqual(response.status_code, 204)
+            self.assertEqual(response.status_code, 204)  # noqa: PT009
 
     def test_get_answers_to_log(self):
         """
@@ -36,4 +36,4 @@ class CMSLogTest(TestCase):
         ]
         for request_params in requests:
             response = self.client.get(reverse(cms_user_track), request_params)
-            self.assertEqual(response.status_code, 204)
+            self.assertEqual(response.status_code, 204)  # noqa: PT009

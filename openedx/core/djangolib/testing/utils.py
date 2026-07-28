@@ -25,6 +25,51 @@ from edx_django_utils.cache import RequestCache
 
 from openedx.core.lib import ensure_cms, ensure_lms
 
+# Used to ignore queries against authz tables when using assertNumQueries in FilteredQueryCountMixin
+AUTHZ_TABLES = [
+    "casbin_rule",
+    "openedx_authz_policycachecontrol",
+    "django_migrations",
+]
+
+
+def assert_redact_before_delete(
+    sql_list,
+    table,
+    expected_redacted_value_list,
+    num_redact_delete_pairs=1,
+):
+    """
+    Assert that PII is redacted before deleted.
+
+    Redacting before deleting protects downstream sync of data from holding PII
+    in soft-deleted records. This helper ensures UPDATE and DELETE queries for
+    ``table`` occur in consecutive pairs, and that each UPDATE contains the
+    expected redacted values.
+    """
+    assert expected_redacted_value_list
+
+    table_key = table.upper()
+    expected_sql_list = [
+        sql for sql in sql_list
+        if table_key in sql.upper() and ('UPDATE' in sql.upper() or 'DELETE' in sql.upper())
+    ]
+
+    assert len(expected_sql_list) == num_redact_delete_pairs * 2, (
+        f'Expected {num_redact_delete_pairs * 2} UPDATE/DELETE queries on {table}, '
+        f'got {len(expected_sql_list)}'
+    )
+
+    for index in range(0, len(expected_sql_list), 2):
+        update_sql = expected_sql_list[index]
+        delete_sql = expected_sql_list[index + 1]
+        assert 'UPDATE' in update_sql.upper(), f'Expected UPDATE at position {index} for {table}'
+        assert 'DELETE' in delete_sql.upper(), f'Expected DELETE at position {index + 1} for {table}'
+        for expected_redacted_value in expected_redacted_value_list:
+            assert expected_redacted_value.upper() in update_sql.upper(), (
+                f'Expected UPDATE to set redacted value {expected_redacted_value} for {table}'
+            )
+
 
 class CacheIsolationMixin:
     """
@@ -182,9 +227,9 @@ class _AssertNumQueriesContext(CaptureQueriesContext):
             if self.table_ignorelist:
                 for table in self.table_ignorelist:
                     # SQL contains the following format for columns:
-                    # "table_name"."column_name".  The regex ensures there is no
-                    # "." before the name to avoid matching columns.
-                    if re.search(fr'[^.]"{table}"', query['sql']):
+                    # "table_name"."column_name" or table_name.column_name.
+                    # The regex ensures there is no "." before the name to avoid matching columns.
+                    if re.search(fr'[^."]"?{table}"?', query['sql']):
                         return False
             return True
 
@@ -195,7 +240,7 @@ class _AssertNumQueriesContext(CaptureQueriesContext):
         executed = len(filtered_queries)
 
         assert executed == self.num, (
-            '%d queries executed, %d expected\nCaptured queries were:\n%s' % (
+            '%d queries executed, %d expected\nCaptured queries were:\n%s' % (  # noqa: UP031
                 executed, self.num, '\n'.join(query['sql'] for query in filtered_queries)
             )
         )
@@ -207,7 +252,7 @@ class FilteredQueryCountMixin:
     assertNumQueries with one that accepts a ignorelist of tables to filter out
     of the count.
     """
-    def assertNumQueries(self, num, func=None, table_ignorelist=None, *args, **kwargs):  # lint-amnesty, pylint: disable=keyword-arg-before-vararg
+    def assertNumQueries(self, num, func=None, table_ignorelist=None, *args, **kwargs):  # pylint: disable=keyword-arg-before-vararg
         """
         Used to replace Django's assertNumQueries with the same capability, with
         the addition of the following argument:

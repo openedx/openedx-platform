@@ -1,4 +1,4 @@
-# lint-amnesty, pylint: disable=missing-module-docstring
+# pylint: disable=missing-module-docstring
 from django.conf import settings
 from django.core.management import call_command
 from django.http import Http404, HttpResponse
@@ -18,7 +18,7 @@ def cache_programs(request):
     # checks that does site has configuration if not then
     # add a configuration with COURSE_CATALOG_API_URL parameter.
 
-    if settings.FEATURES.get('EXPOSE_CACHE_PROGRAMS_ENDPOINT'):
+    if settings.EXPOSE_CACHE_PROGRAMS_ENDPOINT:
         call_command('cache_programs')
 
         return HttpResponse('Programs cached.')

@@ -25,5 +25,5 @@ def init_user_tour(sender, instance, created, **kwargs):  # pylint: disable=unus
         # feel free to remove this try/except.
         # The exact error we are catching is
         # django.db.utils.ProgrammingError: (1146, "Table 'edxtest.user_tours_usertour' doesn't exist")
-        except ProgrammingError as e:
+        except ProgrammingError as e:  # noqa: F841
             pass

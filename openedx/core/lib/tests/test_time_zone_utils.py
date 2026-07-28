@@ -5,8 +5,8 @@ from django.test import TestCase
 from freezegun import freeze_time
 from pytz import timezone
 
-from openedx.core.lib.time_zone_utils import get_display_time_zone, get_time_zone_abbr, get_time_zone_offset
 from common.djangoapps.student.tests.factories import UserFactory
+from openedx.core.lib.time_zone_utils import get_display_time_zone, get_time_zone_abbr, get_time_zone_offset
 
 
 class TestTimeZoneUtils(TestCase):
@@ -37,7 +37,7 @@ class TestTimeZoneUtils(TestCase):
         """
         Asserts that all display_tz_info is equal to the expected inputs
         """
-        assert display_tz_info['str'] == '{name} ({abbr}, UTC{offset})'.format(
+        assert display_tz_info['str'] == '{name} ({abbr}, UTC{offset})'.format(  # noqa: UP032
             name=expected_name, abbr=expected_abbr, offset=expected_offset
         )
         assert display_tz_info['abbr'] == expected_abbr

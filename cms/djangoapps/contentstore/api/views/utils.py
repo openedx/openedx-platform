@@ -14,7 +14,7 @@ from openedx.core.djangoapps.util.forms import to_bool
 from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin, view_auth_classes
 from openedx.core.lib.cache_utils import request_cached
 from xmodule.library_content_block import LegacyLibraryContentBlock
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 
 
 @view_auth_classes()
@@ -120,7 +120,7 @@ def course_author_access_required(view):
     Usage::
         @course_author_access_required
         def my_view(request, course_key):
-            # Some functionality ...
+            # Some functionality...
     """
     def _wrapper_view(self, request, course_id, *args, **kwargs):
         """

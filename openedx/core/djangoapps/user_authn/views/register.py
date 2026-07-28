@@ -6,10 +6,11 @@ Registration related views.
 import datetime
 import json
 import logging
+from zoneinfo import ZoneInfo
 
 from django.conf import settings
 from django.contrib.auth import login as django_login
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.core.exceptions import NON_FIELD_ERRORS, PermissionDenied
 from django.core.validators import ValidationError
 from django.db import transaction
@@ -22,12 +23,12 @@ from django.utils.translation import gettext as _
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 from django.views.decorators.debug import sensitive_post_parameters
 from django_countries import countries
+from django_ratelimit.decorators import ratelimit
 from edx_django_utils.monitoring import set_custom_attribute
+from edx_django_utils.user import generate_password  # pylint: disable=wrong-import-order
 from openedx_events.learning.data import UserData, UserPersonalData
 from openedx_events.learning.signals import STUDENT_REGISTRATION_COMPLETED
 from openedx_filters.learning.filters import StudentRegistrationRequested
-from zoneinfo import ZoneInfo
-from django_ratelimit.decorators import ratelimit
 from requests import HTTPError
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -35,9 +36,30 @@ from social_core.exceptions import AuthAlreadyAssociated, AuthException
 from social_django import utils as social_utils
 
 from common.djangoapps import third_party_auth
+
 # Note that this lives in LMS, so this dependency should be refactored.
 # TODO Have the discussions code subscribe to the REGISTER_USER signal instead.
-from common.djangoapps.student.helpers import get_next_url_for_login_page, get_redirect_url_with_host
+from common.djangoapps.student.helpers import (
+    AccountValidationError,
+    authenticate_new_user,
+    create_or_set_user_attribute_created_on_site,
+    do_create_account,
+    get_next_url_for_login_page,
+    get_redirect_url_with_host,
+)
+from common.djangoapps.student.models import (
+    RegistrationCookieConfiguration,
+    UserAttribute,
+    create_comments_service_user,
+    email_exists_or_retired,
+    username_exists_or_retired,
+)
+from common.djangoapps.student.views import compose_and_send_activation_email
+from common.djangoapps.third_party_auth import pipeline, provider
+from common.djangoapps.third_party_auth.saml import SAP_SUCCESSFACTORS_SAML_KEY
+from common.djangoapps.track import segment
+from common.djangoapps.util.db import outer_atomic
+from common.djangoapps.util.json_request import JsonResponse
 from lms.djangoapps.discussion.notification_prefs.views import enable_notifications
 from openedx.core.djangoapps.lang_pref import LANGUAGE_KEY
 from openedx.core.djangoapps.safe_sessions.middleware import mark_user_change_as_expected
@@ -51,45 +73,22 @@ from openedx.core.djangoapps.user_api.accounts.api import (
     get_name_validation_error,
     get_password_validation_error,
     get_username_existence_validation_error,
-    get_username_validation_error
+    get_username_validation_error,
 )
 from openedx.core.djangoapps.user_api.preferences import api as preferences_api
 from openedx.core.djangoapps.user_authn.cookies import set_logged_in_cookies
-from openedx.core.djangoapps.user_authn.utils import (
-    generate_username_suggestions, is_registration_api_v1
+from openedx.core.djangoapps.user_authn.tasks import check_pwned_password_and_send_track_event
+from openedx.core.djangoapps.user_authn.toggles import (
+    is_auto_generated_username_enabled,
+    is_require_third_party_auth_enabled,
 )
+from openedx.core.djangoapps.user_authn.utils import generate_username_suggestions, is_registration_api_v1
 from openedx.core.djangoapps.user_authn.views.registration_form import (
     AccountCreationForm,
     RegistrationFormFactory,
-    get_registration_extension_form
+    get_registration_extension_form,
 )
 from openedx.core.djangoapps.user_authn.views.utils import get_auto_generated_username
-from openedx.core.djangoapps.user_authn.tasks import check_pwned_password_and_send_track_event
-from openedx.core.djangoapps.user_authn.toggles import (
-    is_require_third_party_auth_enabled,
-    is_auto_generated_username_enabled
-)
-from common.djangoapps.student.helpers import (
-    AccountValidationError,
-    authenticate_new_user,
-    create_or_set_user_attribute_created_on_site,
-    do_create_account
-)
-from common.djangoapps.student.models import (
-    RegistrationCookieConfiguration,
-    UserAttribute,
-    create_comments_service_user,
-    email_exists_or_retired,
-    username_exists_or_retired
-)
-from common.djangoapps.student.views import compose_and_send_activation_email
-from common.djangoapps.third_party_auth import pipeline, provider
-from common.djangoapps.third_party_auth.saml import SAP_SUCCESSFACTORS_SAML_KEY
-from common.djangoapps.track import segment
-from common.djangoapps.util.db import outer_atomic
-from common.djangoapps.util.json_request import JsonResponse
-
-from edx_django_utils.user import generate_password  # lint-amnesty, pylint: disable=wrong-import-order
 
 log = logging.getLogger("edx.student")
 AUDIT_LOG = logging.getLogger("audit")
@@ -253,7 +252,7 @@ def create_account_with_params(request, params):  # pylint: disable=too-many-sta
         redirect_url = get_redirect_url_with_host(root_url, redirect_to)
         compose_and_send_activation_email(user, profile, registration, redirect_url, True)
 
-    if settings.FEATURES.get('ENABLE_DISCUSSION_EMAIL_DIGEST'):
+    if getattr(settings, 'ENABLE_DISCUSSION_EMAIL_DIGEST', False):
         try:
             enable_notifications(user)
         except Exception:  # pylint: disable=broad-except
@@ -375,7 +374,7 @@ def _track_user_registration(user, profile, params, third_party_provider, regist
             'education': profile.level_of_education_display,
             'address': profile.mailing_address,
             'gender': profile.gender_display,
-            'country': str(profile.country),
+            'country': str(profile.country) if profile.country else '',
             'is_marketable': is_marketable,
             'anonymous_id': anonymous_id
         }
@@ -477,7 +476,7 @@ def _skip_activation_email(user, running_pipeline, third_party_provider):
 
     return (
         settings.FEATURES.get('SKIP_EMAIL_VALIDATION', None) or
-        settings.FEATURES.get('AUTOMATIC_AUTH_FOR_TESTING') or
+        settings.AUTOMATIC_AUTH_FOR_TESTING or
         (third_party_provider and third_party_provider.skip_email_verification and valid_email)
     )
 
@@ -555,7 +554,7 @@ class RegistrationView(APIView):
 
     @method_decorator(ensure_csrf_cookie)
     def get(self, request):
-        return HttpResponse(RegistrationFormFactory().get_registration_form(request).to_json(),  # lint-amnesty, pylint: disable=http-response-with-content-type-json
+        return HttpResponse(RegistrationFormFactory().get_registration_form(request).to_json(),  # pylint: disable=http-response-with-content-type-json
                             content_type="application/json")
 
     @method_decorator(csrf_exempt)
@@ -700,7 +699,7 @@ class RegistrationView(APIView):
             response = self._create_response(request, errors, status_code=409, error_code=err.error_code)
         except ValidationError as err:
             # Should only get field errors from this exception
-            assert NON_FIELD_ERRORS not in err.message_dict
+            assert NON_FIELD_ERRORS not in err.message_dict  # noqa: PT017
 
             # Error messages are returned as arrays from ValidationError
             error_code = err.message_dict.get('error_code', ['validation-error'])[0]

@@ -2,31 +2,37 @@
 Unit tests for the VerificationDeadline signals
 """
 
-
 from datetime import timedelta
+from unittest.mock import patch  # pylint: disable=wrong-import-order
 
+from django.db import connection
+from django.test import override_settings
+from django.test.utils import CaptureQueriesContext
 from django.utils.timezone import now
-from unittest.mock import patch  # lint-amnesty, pylint: disable=wrong-import-order
 
 from common.djangoapps.student.models_api import do_name_change_request
 from common.djangoapps.student.tests.factories import UserFactory
 from lms.djangoapps.verify_student.models import (
+    ManualVerification,
     SoftwareSecurePhotoVerification,
+    VerificationAttempt,
     VerificationDeadline,
-    VerificationAttempt
 )
 from lms.djangoapps.verify_student.signals.handlers import (
     _listen_for_course_publish,
     _listen_for_lms_retire,
-    _listen_for_lms_retire_verification_attempts
+    _listen_for_lms_retire_verification_attempts,
 )
 from lms.djangoapps.verify_student.tests.factories import (
     SoftwareSecurePhotoVerificationFactory,
-    VerificationAttemptFactory
+    VerificationAttemptFactory,
 )
 from openedx.core.djangoapps.user_api.accounts.tests.retirement_helpers import fake_completed_retirement
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from openedx.core.djangolib.testing.utils import assert_redact_before_delete
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # pylint: disable=wrong-import-order
+)
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 
 class VerificationDeadlineHandlerTest(ModuleStoreTestCase):
@@ -68,7 +74,7 @@ class VerificationDeadlineHandlerTest(ModuleStoreTestCase):
 
 class RetirementHandlerTest(ModuleStoreTestCase):
     """
-    Tests for the VerificationDeadline handler
+    Tests for verify_student handlers in the LMS retirement flow.
     """
 
     def _create_entry(self):
@@ -116,6 +122,42 @@ class RetirementHandlerTest(ModuleStoreTestCase):
         for field in ('name', 'face_image_url', 'photo_id_image_url', 'photo_id_key'):
             assert '' == getattr(ver_obj, field)
 
+    def test_manual_verification_retirement_behavior(self):
+        user = UserFactory()
+        other_user = UserFactory()
+        user_name = 'Manual Verification Name'
+        ManualVerification.objects.create(
+            user=user,
+            name=user_name,
+            status='approved',
+        )
+        ManualVerification.objects.create(
+            user=other_user,
+            name=user_name,
+            status='approved',
+        )
+
+        with override_settings(REDACT_MANUAL_VERIFICATION_HISTORICAL_PII=False):
+            _listen_for_lms_retire(sender=self.__class__, user=user)
+
+        manual_verification = ManualVerification.objects.get(user=user)
+        assert manual_verification.name == user_name
+        assert ManualVerification.objects.filter(user=user).exists()
+        assert ManualVerification.objects.filter(user=other_user, name=user_name).exists()
+
+        with override_settings(REDACT_MANUAL_VERIFICATION_HISTORICAL_PII=True):
+            with CaptureQueriesContext(connection) as context:
+                _listen_for_lms_retire(sender=self.__class__, user=user)
+
+        assert_redact_before_delete(
+            [query['sql'] for query in context.captured_queries],
+            table=ManualVerification._meta.db_table,
+            expected_redacted_value_list=[''],
+        )
+        assert not ManualVerification.objects.filter(user=user).exists()
+
+        assert ManualVerification.objects.filter(user=other_user, name=user_name).exists()
+
 
 class PostSavePhotoVerificationTest(ModuleStoreTestCase):
     """
@@ -142,7 +184,7 @@ class PostSavePhotoVerificationTest(ModuleStoreTestCase):
             photo_id_image_url=self.photo_id_image_url,
             photo_id_key=self.photo_id_key
         )
-        self.assertTrue(mock_signal.called)
+        self.assertTrue(mock_signal.called)  # noqa: PT009
         mock_signal.assert_called_with(
             sender='idv_update',
             attempt_id=attempt.id,
@@ -155,7 +197,7 @@ class PostSavePhotoVerificationTest(ModuleStoreTestCase):
 
         attempt.mark_ready()
 
-        self.assertTrue(mock_signal.called)
+        self.assertTrue(mock_signal.called)  # noqa: PT009
         mock_signal.assert_called_with(
             sender='idv_update',
             attempt_id=attempt.id,
@@ -201,10 +243,10 @@ class RetirementHandlerVerificationAttemptsTest(ModuleStoreTestCase):
 
     def test_retirement_signal(self):
         _listen_for_lms_retire_verification_attempts(sender=self.__class__, user=self.user)
-        self.assertEqual(len(VerificationAttempt.objects.filter(user=self.user)), 0)
-        self.assertEqual(len(VerificationAttempt.objects.filter(user=self.other_user)), 1)
+        self.assertEqual(len(VerificationAttempt.objects.filter(user=self.user)), 0)  # noqa: PT009
+        self.assertEqual(len(VerificationAttempt.objects.filter(user=self.other_user)), 1)  # noqa: PT009
 
     def test_retirement_signal_no_attempts(self):
         no_attempt_user = UserFactory.create()
         _listen_for_lms_retire_verification_attempts(sender=self.__class__, user=no_attempt_user)
-        self.assertEqual(len(VerificationAttempt.objects.all()), 2)
+        self.assertEqual(len(VerificationAttempt.objects.all()), 2)  # noqa: PT009

@@ -7,18 +7,18 @@ paths actually work.
 """
 
 
-import json  # lint-amnesty, pylint: disable=wrong-import-order
+import json  # pylint: disable=wrong-import-order
 from datetime import datetime
-from itertools import chain, cycle, repeat  # lint-amnesty, pylint: disable=wrong-import-order
-from smtplib import (  # lint-amnesty, pylint: disable=wrong-import-order
+from itertools import chain, cycle, repeat  # pylint: disable=wrong-import-order
+from smtplib import (  # pylint: disable=wrong-import-order
     SMTPAuthenticationError,
     SMTPConnectError,
     SMTPDataError,
     SMTPSenderRefused,
-    SMTPServerDisconnected
+    SMTPServerDisconnected,
 )
-from unittest.mock import Mock, patch  # lint-amnesty, pylint: disable=wrong-import-order
-from uuid import uuid4  # lint-amnesty, pylint: disable=wrong-import-order
+from unittest.mock import Mock, patch  # pylint: disable=wrong-import-order
+from uuid import uuid4  # pylint: disable=wrong-import-order
 
 import pytest
 from botocore.exceptions import ClientError, EndpointConnectionError
@@ -35,14 +35,14 @@ from lms.djangoapps.instructor_task.subtasks import SubtaskStatus, update_subtas
 from lms.djangoapps.instructor_task.tasks import send_bulk_course_email
 from lms.djangoapps.instructor_task.tests.factories import InstructorTaskFactory
 from lms.djangoapps.instructor_task.tests.test_base import InstructorTaskCourseTestCase
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 from ..models import SEND_TO_LEARNERS, SEND_TO_MYSELF, SEND_TO_STAFF, CourseEmail, Optout
 
 
 class TestTaskFailure(Exception):
     """Dummy exception used for unit tests."""
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 def my_update_subtask_status(entry_id, current_task_id, new_subtask_status):
@@ -73,7 +73,7 @@ def my_update_subtask_status(entry_id, current_task_id, new_subtask_status):
         update_subtask_status(entry_id, current_task_id, new_subtask_status)
 
 
-@patch('lms.djangoapps.bulk_email.models.html_to_text', Mock(return_value='Mocking CourseEmail.text_message', autospec=True))  # lint-amnesty, pylint: disable=line-too-long
+@patch('lms.djangoapps.bulk_email.models.html_to_text', Mock(return_value='Mocking CourseEmail.text_message', autospec=True))  # pylint: disable=line-too-long
 class TestBulkEmailInstructorTask(InstructorTaskCourseTestCase):
     """Tests instructor task that send bulk email."""
 
@@ -114,13 +114,13 @@ class TestBulkEmailInstructorTask(InstructorTaskCourseTestCase):
 
     def test_email_missing_current_task(self):
         task_entry = self._create_input_entry()
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             send_bulk_course_email(task_entry.id, {})
 
     def test_email_undefined_course(self):
         # Check that we fail when passing in a course that doesn't exist.
         task_entry = self._create_input_entry(course_id=CourseLocator("bogus", "course", "id"))
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             self._run_task_with_mock_celery(send_bulk_course_email, task_entry.id, task_entry.task_id)
 
     def test_bad_task_id_on_update(self):
@@ -131,13 +131,13 @@ class TestBulkEmailInstructorTask(InstructorTaskCourseTestCase):
             bogus_task_id = "this-is-bogus"
             update_subtask_status(entry_id, bogus_task_id, new_subtask_status)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             with patch('lms.djangoapps.bulk_email.tasks.update_subtask_status', dummy_update_subtask_status):
                 send_bulk_course_email(task_entry.id, {})
 
     def _create_students(self, num_students):
         """Create students for testing"""
-        return [self.create_student('robot%d' % i) for i in range(num_students)]
+        return [self.create_student('robot%d' % i) for i in range(num_students)]  # noqa: UP031
 
     def _assert_single_subtask_status(self, entry, succeeded, failed=0, skipped=0, retried_nomax=0, retried_withmax=0):
         """Compare counts with 'subtasks' entry in InstructorTask table."""
@@ -290,7 +290,7 @@ class TestBulkEmailInstructorTask(InstructorTaskCourseTestCase):
         emails_with_non_ascii_chars = 3
         num_of_course_instructors = 1
 
-        students = [self.create_student('robot%d' % i) for i in range(num_emails)]
+        students = [self.create_student('robot%d' % i) for i in range(num_emails)]  # noqa: UP031
         for student in students[:emails_with_non_ascii_chars]:
             student.email = f'{student.username}@tesá.com'
             student.save()
@@ -462,6 +462,38 @@ class TestBulkEmailInstructorTask(InstructorTaskCourseTestCase):
         assert 'account_settings_url' in result
         assert 'email_settings_url' in result
         assert 'platform_name' in result
+
+    def test_account_settings_url_uses_site_config_value(self):
+        """
+        If site configuration defines ACCOUNT_MICROFRONTEND_URL, the email context
+        should use that value.
+        """
+        siteconf_url = "https://accounts.siteconf.example"
+
+        with patch(
+            "lms.djangoapps.bulk_email.tasks.configuration_helpers.get_value",
+            side_effect=lambda key, default=None, *a, **k:
+                siteconf_url if key == "ACCOUNT_MICROFRONTEND_URL" else default,
+        ):
+            ctx = _get_course_email_context(self.course)
+
+        assert ctx["account_settings_url"] == siteconf_url
+
+    def test_account_settings_url_falls_back_to_settings(self):
+        """
+        If site configuration does not override, fall back to settings.ACCOUNT_MICROFRONTEND_URL.
+        """
+        fallback = "https://accounts.settings.example"
+
+        with override_settings(ACCOUNT_MICROFRONTEND_URL=fallback):
+            with patch(
+                "lms.djangoapps.bulk_email.tasks.configuration_helpers.get_value",
+                side_effect=lambda key, default=None, *a, **k: default,
+            ):
+                ctx = _get_course_email_context(self.course)
+
+                assert ctx["account_settings_url"] == fallback
+                assert ctx["account_settings_url"] == settings.ACCOUNT_MICROFRONTEND_URL
 
     @override_settings(BULK_COURSE_EMAIL_LAST_LOGIN_ELIGIBILITY_PERIOD=1)
     def test_ineligible_recipients_filtered_by_last_login(self):

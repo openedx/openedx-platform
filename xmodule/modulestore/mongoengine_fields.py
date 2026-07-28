@@ -4,7 +4,6 @@ Custom field types for mongoengine
 
 
 import mongoengine
-
 from opaque_keys.edx.keys import CourseKey, UsageKey
 from opaque_keys.edx.locations import Location
 
@@ -17,7 +16,7 @@ class CourseKeyField(mongoengine.StringField):
         # it'd be useful to add init args such as support_deprecated, force_deprecated
         super().__init__(**kwargs)
 
-    def to_mongo(self, course_key):  # lint-amnesty, pylint: disable=arguments-differ
+    def to_mongo(self, course_key):  # pylint: disable=arguments-differ
         """
         For now saves the course key in the deprecated form
         """
@@ -28,7 +27,7 @@ class CourseKeyField(mongoengine.StringField):
         else:
             return None
 
-    def to_python(self, course_key):  # lint-amnesty, pylint: disable=arguments-differ
+    def to_python(self, course_key):  # pylint: disable=arguments-differ
         """
         Deserialize to a CourseKey instance
         """
@@ -57,7 +56,7 @@ class UsageKeyField(mongoengine.StringField):
     """
     Represent a UsageKey as a single string in Mongo
     """
-    def to_mongo(self, location):  # lint-amnesty, pylint: disable=arguments-differ
+    def to_mongo(self, location):  # pylint: disable=arguments-differ
         """
         For now saves the usage key in the deprecated location i4x/c4x form
         """
@@ -66,7 +65,7 @@ class UsageKeyField(mongoengine.StringField):
             return None
         return super().to_mongo(str(location))
 
-    def to_python(self, location):  # lint-amnesty, pylint: disable=arguments-differ
+    def to_python(self, location):  # pylint: disable=arguments-differ
         """
         Deserialize to a UsageKey instance: for now it's a location missing the run
         """

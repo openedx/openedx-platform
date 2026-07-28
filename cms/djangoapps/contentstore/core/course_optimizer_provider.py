@@ -11,7 +11,7 @@ from cms.djangoapps.contentstore.tasks import (
     CourseLinkCheckTask,
     CourseLinkUpdateTask,
     LinkState,
-    extract_content_URLs_from_course
+    extract_content_URLs_from_course,
 )
 from cms.djangoapps.contentstore.utils import create_course_info_usage_key, get_previous_run_course_key
 from cms.djangoapps.contentstore.xblock_storage_handlers.view_handlers import get_xblock

@@ -4,6 +4,7 @@ Helpers methods for site configuration.
 
 
 from django.conf import settings
+
 from openedx.core.lib.cache_utils import request_cached
 
 
@@ -116,7 +117,7 @@ def get_configuration_dict(name, default=None):
     return output
 
 
-def get_value(val_name, default=None, **kwargs):  # lint-amnesty, pylint: disable=unused-argument
+def get_value(val_name, default=None, **kwargs):  # pylint: disable=unused-argument
     """
     Return configuration value for the key specified as name argument.
 

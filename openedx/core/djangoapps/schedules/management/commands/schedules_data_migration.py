@@ -5,6 +5,7 @@ import time
 
 from django.core.management.base import BaseCommand
 from django.db import transaction
+
 from openedx.core.djangoapps.schedules.models import Schedule
 
 

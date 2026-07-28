@@ -6,17 +6,16 @@ Common MongoDB connection functions.
 import logging
 
 import pymongo
-from pymongo.read_preferences import (  # lint-amnesty, pylint: disable=unused-import
-    ReadPreference,
+from pymongo.read_preferences import (  # pylint: disable=unused-import
+    _MODES,
     _MONGOS_MODES,
-    _MODES
+    ReadPreference,
 )
-
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 # This will yeld a map of all available Mongo modes and their name
-MONGO_READ_PREFERENCE_MAP = dict(zip(_MONGOS_MODES, _MODES))
+MONGO_READ_PREFERENCE_MAP = dict(zip(_MONGOS_MODES, _MODES))  # noqa: B905
 
 
 def connect_to_mongodb(

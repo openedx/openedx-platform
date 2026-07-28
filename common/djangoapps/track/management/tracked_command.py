@@ -5,7 +5,7 @@ from django.core.management.base import BaseCommand
 from eventtracking import tracker
 
 
-class TrackedCommand(BaseCommand):  # lint-amnesty, pylint: disable=abstract-method
+class TrackedCommand(BaseCommand):  # pylint: disable=abstract-method
     """
     Provides management command calling info to tracking context.
 
@@ -44,10 +44,10 @@ class TrackedCommand(BaseCommand):  # lint-amnesty, pylint: disable=abstract-met
     """
     prog_name = 'unknown'
 
-    def create_parser(self, prog_name, subcommand):  # lint-amnesty, pylint: disable=arguments-differ
+    def create_parser(self, prog_name, subcommand):  # pylint: disable=arguments-differ
         """Wraps create_parser to snag command line info."""
         self.prog_name = f"{prog_name} {subcommand}"
-        return super().create_parser(prog_name, subcommand)  # lint-amnesty, pylint: disable=super-with-arguments
+        return super().create_parser(prog_name, subcommand)  # pylint: disable=super-with-arguments
 
     def execute(self, *args, **options):
         """Wraps base execute() to add command line to tracking context."""
@@ -56,4 +56,4 @@ class TrackedCommand(BaseCommand):  # lint-amnesty, pylint: disable=abstract-met
         }
         COMMAND_CONTEXT_NAME = 'edx.mgmt.command'
         with tracker.get_tracker().context(COMMAND_CONTEXT_NAME, context):
-            super().execute(*args, **options)  # lint-amnesty, pylint: disable=super-with-arguments
+            super().execute(*args, **options)  # pylint: disable=super-with-arguments

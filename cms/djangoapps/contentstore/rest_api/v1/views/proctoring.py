@@ -1,8 +1,8 @@
 """ API Views for proctored exam settings and proctoring error """
 import copy
 
-from django.conf import settings
 import edx_api_doc_tools as apidocs
+from django.conf import settings
 from opaque_keys.edx.keys import CourseKey
 from rest_framework import status
 from rest_framework.exceptions import NotFound
@@ -10,17 +10,17 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from cms.djangoapps.contentstore.views.course import get_course_and_check_access
 from cms.djangoapps.contentstore.utils import get_proctored_exam_settings_url
+from cms.djangoapps.contentstore.views.course import get_course_and_check_access
 from cms.djangoapps.models.settings.course_metadata import CourseMetadata
-from common.djangoapps.student.auth import has_studio_advanced_settings_access
-from xmodule.course_block import (
-    get_available_providers,
-    get_requires_escalation_email_providers,
-)  # lint-amnesty, pylint: disable=wrong-import-order
+from common.djangoapps.student.auth import check_course_advanced_settings_access
 from openedx.core.djangoapps.course_apps.toggles import exams_ida_enabled
 from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin, verify_course_exists, view_auth_classes
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.course_block import (  # pylint: disable=wrong-import-order
+    get_available_providers,
+    get_requires_escalation_email_providers,
+)
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 
 from ..serializers import (
     LimitedProctoredExamSettingsSerializer,
@@ -260,12 +260,14 @@ class ProctoringErrorsView(DeveloperErrorViewMixin, APIView):
         ```
         """
         course_key = CourseKey.from_string(course_id)
-        if not has_studio_advanced_settings_access(request.user):
+        if not check_course_advanced_settings_access(
+            request.user, course_key, access_type='feature_restricted'
+        ):
             self.permission_denied(request)
 
         course_block = modulestore().get_course(course_key)
         advanced_dict = CourseMetadata.fetch(course_block)
-        if settings.FEATURES.get('DISABLE_MOBILE_COURSE_AVAILABLE', False):
+        if settings.DISABLE_MOBILE_COURSE_AVAILABLE:
             advanced_dict.get('mobile_available')['deprecated'] = True
 
         proctoring_errors = CourseMetadata.validate_proctoring_settings(course_block, advanced_dict, request.user)

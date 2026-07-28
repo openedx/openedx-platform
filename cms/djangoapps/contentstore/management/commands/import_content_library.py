@@ -7,7 +7,7 @@ import base64
 import os
 
 from django.conf import settings
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.core.exceptions import SuspiciousOperation
 from django.core.management.base import BaseCommand, CommandError
 from lxml import etree
@@ -16,11 +16,11 @@ from path import Path
 
 from cms.djangoapps.contentstore.utils import add_instructor
 from openedx.core.lib.extract_archive import safe_extractall
-from xmodule.contentstore.django import contentstore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.exceptions import DuplicateCourseError  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.xml_importer import import_library_from_xml  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.contentstore.django import contentstore  # pylint: disable=wrong-import-order
+from xmodule.modulestore import ModuleStoreEnum  # pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
+from xmodule.modulestore.exceptions import DuplicateCourseError  # pylint: disable=wrong-import-order
+from xmodule.modulestore.xml_importer import import_library_from_xml  # pylint: disable=wrong-import-order
 
 
 class Command(BaseCommand):

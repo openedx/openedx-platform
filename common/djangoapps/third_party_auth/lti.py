@@ -10,11 +10,11 @@ import time
 from django.contrib.auth import REDIRECT_FIELD_NAME
 from oauthlib.common import Request
 from oauthlib.oauth1.rfc5849.signature import (
-    collect_parameters,
-    signature_base_string,
     base_string_uri,
+    collect_parameters,
     normalize_parameters,
-    sign_hmac_sha1
+    sign_hmac_sha1,
+    signature_base_string,
 )
 from social_core.backends.base import BaseAuth
 from social_core.exceptions import AuthFailed
@@ -49,7 +49,7 @@ class LTIAuthBackend(BaseAuth):
         # Set a auth_entry here so we don't have to receive that as a custom parameter
         self.strategy.session_setdefault('auth_entry', 'login')
 
-        if not validated_lti_params:  # lint-amnesty, pylint: disable=no-else-raise
+        if not validated_lti_params:  # pylint: disable=no-else-raise
             self.strategy.session_set(LTI_PARAMS_KEY, None)
             raise AuthFailed(self, "LTI parameters could not be validated.")
         else:

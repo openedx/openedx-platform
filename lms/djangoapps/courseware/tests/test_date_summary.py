@@ -1,20 +1,15 @@
-# lint-amnesty, pylint: disable=django-not-configured
+# pylint: disable=django-not-configured
 """Tests for course home page date summary blocks."""
 
 
 from datetime import datetime, timedelta
-from unittest.mock import patch
 
 import crum
 import ddt
-from django.conf import settings
-from django.test import RequestFactory
+from django.test import RequestFactory, override_settings
 from edx_toggles.toggles.testutils import override_waffle_flag, override_waffle_switch
 from freezegun import freeze_time
 from pytz import utc
-from xmodule.modulestore import ModuleStoreEnum
-from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.course_modes.tests.factories import CourseModeFactory
@@ -44,6 +39,9 @@ from openedx.core.djangoapps.content.course_overviews.models import CourseOvervi
 from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory
 from openedx.features.course_duration_limits.models import CourseDurationLimitConfig
 from openedx.features.course_experience import RELATIVE_DATES_FLAG
+from xmodule.modulestore import ModuleStoreEnum
+from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 
 
 @ddt.ddt
@@ -428,8 +426,8 @@ class CourseDateSummaryTest(SharedModuleStoreTestCase):
             enrollment.created = enrollment_created
             enrollment.save()
         date_summary = CourseStartDate(user=user, course=course)
-        self.assertEqual(date_summary.date, expected_date)
-        self.assertEqual(str(date_summary.title), expected_title)
+        self.assertEqual(date_summary.date, expected_date)  # noqa: PT009
+        self.assertEqual(str(date_summary.title), expected_title)  # noqa: PT009
 
     ## Tests Course End Date Block
     def test_course_end_date_for_certificate_eligible_mode(self):
@@ -570,7 +568,7 @@ class CourseDateSummaryTest(SharedModuleStoreTestCase):
         block = VerificationDeadlineDate(course, user)
         assert not block.is_allowed
 
-    @patch.dict(settings.FEATURES, {'ENABLE_INTEGRITY_SIGNATURE': True})
+    @override_settings(ENABLE_INTEGRITY_SIGNATURE=True)
     def test_verification_deadline_with_integrity_signature(self):
         course = create_course_run(days_till_start=-1)
         user = create_user()

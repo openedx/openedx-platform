@@ -14,9 +14,8 @@ from copy import deepcopy
 from functools import partial
 from logging import getLogger
 
-from xmodule.block_metadata_utils import get_datetime_field
-
 from openedx.core.lib.graph_traversals import traverse_post_order, traverse_topologically
+from xmodule.block_metadata_utils import get_datetime_field
 
 from .exceptions import TransformerException
 
@@ -299,11 +298,11 @@ class FieldData:
 
     def __getattr__(self, field_name):
         if self._is_own_field(field_name):
-            return super().__getattr__(field_name)  # lint-amnesty, pylint: disable=no-member
+            return super().__getattr__(field_name)  # pylint: disable=no-member
         try:
             return self.fields[field_name]
         except KeyError:
-            raise AttributeError(f"Field {field_name} does not exist")  # lint-amnesty, pylint: disable=raise-missing-from
+            raise AttributeError(f"Field {field_name} does not exist")  # pylint: disable=raise-missing-from  # noqa: B904
 
     def __setattr__(self, field_name, field_value):
         if self._is_own_field(field_name):
@@ -392,6 +391,10 @@ class BlockData(FieldData):
 
         # Map of transformer name to its block-specific data.
         self.transformer_data = TransformerDataMap()
+
+    @property
+    def usage_key(self):
+        return self.location
 
 
 class BlockStructureBlockData(BlockStructure):
@@ -749,7 +752,7 @@ class BlockStructureBlockData(BlockStructure):
         its current version number.
         """
         if transformer.WRITE_VERSION == 0:
-            raise TransformerException('Version attributes are not set on transformer {0}.', transformer.name())  # lint-amnesty, pylint: disable=raising-format-tuple
+            raise TransformerException('Version attributes are not set on transformer {0}.', transformer.name())  # pylint: disable=raising-format-tuple
         self.set_transformer_data(transformer, TRANSFORMER_VERSION_KEY, transformer.WRITE_VERSION)
 
     def _get_or_create_block(self, usage_key):

@@ -5,23 +5,26 @@ Tests for schedules signals
 
 import datetime
 from unittest.mock import patch
+from zoneinfo import ZoneInfo
 
 import ddt
 import pytest
-from zoneinfo import ZoneInfo
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.course_modes.tests.factories import CourseModeFactory
+from common.djangoapps.student.models import CourseEnrollment
+from common.djangoapps.student.tests.factories import CourseEnrollmentFactory
 from lms.djangoapps.courseware.models import DynamicUpgradeDeadlineConfiguration
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from openedx.core.djangoapps.schedules.models import ScheduleExperience
 from openedx.core.djangoapps.site_configuration.tests.factories import SiteFactory
 from openedx.core.djangolib.testing.utils import skip_unless_lms
-from common.djangoapps.student.models import CourseEnrollment
-from common.djangoapps.student.tests.factories import CourseEnrollmentFactory
-from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase, SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore import ModuleStoreEnum  # pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (  # pylint: disable=wrong-import-order
+    ModuleStoreTestCase,
+    SharedModuleStoreTestCase,
+)
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 from ..models import Schedule
 from ..tests.factories import ScheduleConfigFactory
@@ -29,7 +32,7 @@ from ..tests.factories import ScheduleConfigFactory
 
 @ddt.ddt
 @skip_unless_lms
-class CreateScheduleTests(SharedModuleStoreTestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class CreateScheduleTests(SharedModuleStoreTestCase):  # pylint: disable=missing-class-docstring
 
     def assert_schedule_created(self, is_self_paced=True, experience_type=ScheduleExperience.EXPERIENCES.default):
         """
@@ -45,24 +48,24 @@ class CreateScheduleTests(SharedModuleStoreTestCase):  # lint-amnesty, pylint: d
         assert enrollment.schedule.upgrade_deadline is None
         assert enrollment.schedule.experience.experience_type == experience_type
 
-    def assert_schedule_not_created(self):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def assert_schedule_not_created(self):  # pylint: disable=missing-function-docstring
         course = _create_course_run(self_paced=True)
         enrollment = CourseEnrollmentFactory(
             course_id=course.id,
             mode=CourseMode.AUDIT,
         )
         with pytest.raises(Schedule.DoesNotExist):
-            enrollment.schedule  # lint-amnesty, pylint: disable=pointless-statement
+            enrollment.schedule  # pylint: disable=pointless-statement  # noqa: B018
 
     def test_create_schedule(self):
         self.assert_schedule_created()
 
     @patch.object(CourseOverview, '_get_course_has_highlights', return_value=True)
-    def test_schedule_config_creation_enabled_instructor_paced(self, _mock_highlights):
+    def test_schedule_config_creation_enabled_instructor_paced(self, _mock_highlights):  # noqa: PT019
         self.assert_schedule_created(is_self_paced=False, experience_type=ScheduleExperience.EXPERIENCES.course_updates)
 
     @patch.object(CourseOverview, '_get_course_has_highlights', return_value=True)
-    def test_create_schedule_course_updates_experience(self, _mock_highlights):
+    def test_create_schedule_course_updates_experience(self, _mock_highlights):  # noqa: PT019
         self.assert_schedule_created(experience_type=ScheduleExperience.EXPERIENCES.course_updates)
 
     @patch('openedx.core.djangoapps.schedules.signals.log.exception')
@@ -94,7 +97,7 @@ class CreateScheduleTests(SharedModuleStoreTestCase):  # lint-amnesty, pylint: d
 
 @ddt.ddt
 @skip_unless_lms
-class UpdateScheduleTests(ModuleStoreTestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class UpdateScheduleTests(ModuleStoreTestCase):  # pylint: disable=missing-class-docstring
     ENABLED_SIGNALS = ['course_published']
     VERIFICATION_DEADLINE_DAYS = 14
 
@@ -142,7 +145,7 @@ class UpdateScheduleTests(ModuleStoreTestCase):  # lint-amnesty, pylint: disable
 
 
 @skip_unless_lms
-class ResetScheduleTests(SharedModuleStoreTestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class ResetScheduleTests(SharedModuleStoreTestCase):  # pylint: disable=missing-class-docstring
     def setUp(self):
         super().setUp()
 

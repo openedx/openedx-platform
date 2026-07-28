@@ -3,11 +3,11 @@ Unit tests for bulk-email-related models.
 """
 
 import datetime
-from dateutil.relativedelta import relativedelta
-from unittest.mock import Mock, patch  # lint-amnesty, pylint: disable=wrong-import-order
+from unittest.mock import Mock, patch  # pylint: disable=wrong-import-order
 
-import pytest
 import ddt
+import pytest
+from dateutil.relativedelta import relativedelta
 from django.core.management import call_command
 from django.test import TestCase
 from django.test.utils import override_settings
@@ -15,7 +15,7 @@ from opaque_keys.edx.keys import CourseKey
 from pytz import UTC
 
 from common.djangoapps.course_modes.models import CourseMode
-from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory, StaffFactory
+from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, StaffFactory, UserFactory
 from lms.djangoapps.bulk_email.api import is_bulk_email_feature_enabled
 from lms.djangoapps.bulk_email.models import (
     SEND_TO_COHORT,
@@ -33,12 +33,14 @@ from lms.djangoapps.bulk_email.models import (
 from lms.djangoapps.bulk_email.models_api import is_bulk_email_disabled_for_course
 from lms.djangoapps.bulk_email.tests.factories import TargetFactory
 from openedx.core.djangoapps.course_groups.models import CourseCohort
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # pylint: disable=wrong-import-order
+)
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 
 @ddt.ddt
-@patch('lms.djangoapps.bulk_email.models.html_to_text', Mock(return_value='Mocking CourseEmail.text_message', autospec=True))  # lint-amnesty, pylint: disable=line-too-long
+@patch('lms.djangoapps.bulk_email.models.html_to_text', Mock(return_value='Mocking CourseEmail.text_message', autospec=True))  # pylint: disable=line-too-long
 class CourseEmailTest(ModuleStoreTestCase):
     """Test the CourseEmail model."""
 
@@ -80,7 +82,7 @@ class CourseEmailTest(ModuleStoreTestCase):
         to_option = "fake"
         subject = "dummy subject"
         html_message = "<html>dummy message</html>"
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             CourseEmail.create(course_id, sender, to_option, subject, html_message)
 
     @ddt.data(
@@ -155,7 +157,7 @@ class CourseEmailTest(ModuleStoreTestCase):
         assert target.long_display() == 'Cohort: test cohort'
 
 
-class OptoutTest(TestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class OptoutTest(TestCase):  # pylint: disable=missing-class-docstring
     def test_is_user_opted_out_for_course(self):
         user = UserFactory.create()
         course_id = CourseKey.from_string('abc/123/doremi')

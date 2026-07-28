@@ -17,14 +17,15 @@ from lazy import lazy
 from lxml import etree
 from path import Path as path
 from xblock.fields import Boolean, Date, Dict, Float, Integer, List, Scope, String
-from openedx.core.djangoapps.video_pipeline.models import VideoUploadsEnabledByDefault
+
 from openedx.core.djangoapps.video_config.sharing import (
     COURSE_VIDEO_SHARING_ALL_VIDEOS,
     COURSE_VIDEO_SHARING_NONE,
     COURSE_VIDEO_SHARING_PER_VIDEO,
 )
+from openedx.core.djangoapps.video_pipeline.models import VideoUploadsEnabledByDefault
 from openedx.core.lib.license import LicenseMixin
-from openedx.core.lib.teams_config import TeamsConfig  # lint-amnesty, pylint: disable=unused-import
+from openedx.core.lib.teams_config import TeamsConfig  # pylint: disable=unused-import
 from xmodule import course_metadata_utils
 from xmodule.course_metadata_utils import DEFAULT_GRADING_POLICY, DEFAULT_START_DATE
 from xmodule.data import CertificatesDisplayBehaviors
@@ -53,7 +54,7 @@ DEFAULT_COURSE_VISIBILITY_IN_CATALOG = getattr(
 DEFAULT_MOBILE_AVAILABLE = getattr(settings, 'DEFAULT_MOBILE_AVAILABLE', False)
 # Note: updating assets does not have settings defined, so using `getattr`.
 EXAM_SETTINGS_HTML_VIEW_ENABLED = getattr(settings, 'FEATURES', {}).get('ENABLE_EXAM_SETTINGS_HTML_VIEW', False)
-SPECIAL_EXAMS_ENABLED = getattr(settings, 'FEATURES', {}).get('ENABLE_SPECIAL_EXAMS', False)
+SPECIAL_EXAMS_ENABLED = getattr(settings, 'ENABLE_SPECIAL_EXAMS', False)
 
 COURSE_VISIBILITY_PRIVATE = 'private'
 COURSE_VISIBILITY_PUBLIC_OUTLINE = 'public_outline'
@@ -76,8 +77,8 @@ CREATE_COURSE_WITH_DEFAULT_ENROLLMENT_START_DATE = SettingToggle(
 )
 
 
-class StringOrDate(Date):  # lint-amnesty, pylint: disable=missing-class-docstring
-    def from_json(self, value):  # lint-amnesty, pylint: disable=arguments-differ
+class StringOrDate(Date):  # pylint: disable=missing-class-docstring
+    def from_json(self, value):  # pylint: disable=arguments-differ
         """
         Parse an optional metadata key containing a time or a string:
         if present, assume it's a string if it doesn't parse.
@@ -97,7 +98,7 @@ class StringOrDate(Date):  # lint-amnesty, pylint: disable=missing-class-docstri
         """
         try:
             result = super().to_json(value)
-        except:  # lint-amnesty, pylint: disable=bare-except
+        except:  # pylint: disable=bare-except
             return value
         if result is None:
             return value
@@ -124,7 +125,7 @@ edx_xml_parser = etree.XMLParser(dtd_validation=False, load_dtd=False,
 _cached_toc = {}
 
 
-class Textbook:  # lint-amnesty, pylint: disable=missing-class-docstring
+class Textbook:  # pylint: disable=missing-class-docstring
     def __init__(self, title, book_url):
         self.title = title
         self.book_url = book_url
@@ -134,7 +135,7 @@ class Textbook:  # lint-amnesty, pylint: disable=missing-class-docstring
         return int(self.table_of_contents[0].attrib['page'])
 
     @lazy
-    def end_page(self):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def end_page(self):  # pylint: disable=missing-function-docstring
         # The last page should be the last element in the table of contents,
         # but it may be nested. So recurse all the way down the last element
         last_el = self.table_of_contents[-1]
@@ -167,7 +168,7 @@ class Textbook:  # lint-amnesty, pylint: disable=missing-class-docstring
                 # expire every 10 minutes
                 if age.seconds < 600:
                     return table_of_contents
-        except Exception as err:  # lint-amnesty, pylint: disable=broad-except, unused-variable
+        except Exception as err:  # pylint: disable=broad-except, unused-variable  # noqa: F841
             pass
 
         # Get the table of contents from S3
@@ -177,7 +178,7 @@ class Textbook:  # lint-amnesty, pylint: disable=missing-class-docstring
         except Exception as err:
             msg = f'Error {err}: Unable to retrieve textbook table of contents at {toc_url}'
             log.error(msg)
-            raise Exception(msg)  # lint-amnesty, pylint: disable=raise-missing-from
+            raise Exception(msg)  # pylint: disable=raise-missing-from  # noqa: B904
 
         # TOC is XML. Parse it
         try:
@@ -185,7 +186,7 @@ class Textbook:  # lint-amnesty, pylint: disable=missing-class-docstring
         except Exception as err:
             msg = f'Error {err}: Unable to parse XML for textbook table of contents at {toc_url}'
             log.error(msg)
-            raise Exception(msg)  # lint-amnesty, pylint: disable=raise-missing-from
+            raise Exception(msg)  # pylint: disable=raise-missing-from  # noqa: B904
 
         return table_of_contents
 
@@ -197,13 +198,13 @@ class Textbook:  # lint-amnesty, pylint: disable=missing-class-docstring
         return not self == other
 
 
-class TextbookList(List):  # lint-amnesty, pylint: disable=missing-class-docstring
-    def from_json(self, values):  # lint-amnesty, pylint: disable=arguments-differ
+class TextbookList(List):  # pylint: disable=missing-class-docstring
+    def from_json(self, values):  # pylint: disable=arguments-differ
         textbooks = []
         for title, book_url in values:
             try:
                 textbooks.append(Textbook(title, book_url))
-            except:  # lint-amnesty, pylint: disable=bare-except
+            except:  # pylint: disable=bare-except
                 # If we can't get to S3 (e.g. on a train with no internet), don't break
                 # the rest of the courseware.
                 log.exception(f"Couldn't load textbook ({title}, {book_url})")
@@ -211,7 +212,7 @@ class TextbookList(List):  # lint-amnesty, pylint: disable=missing-class-docstri
 
         return textbooks
 
-    def to_json(self, values):  # lint-amnesty, pylint: disable=arguments-differ
+    def to_json(self, values):  # pylint: disable=arguments-differ
         json_data = []
         for val in values:
             if isinstance(val, Textbook):
@@ -235,7 +236,7 @@ class ProctoringProvider(String):
         and include any inherited values from the platform default.
         """
         value = super().from_json(value)
-        if settings.FEATURES.get('ENABLE_PROCTORED_EXAMS'):
+        if getattr(settings, 'ENABLE_PROCTORED_EXAMS', False):
             # Only validate the provider value if ProctoredExams are enabled on the environment
             # Otherwise, the passed in provider does not matter. We should always return default
             if validate_providers:
@@ -343,7 +344,7 @@ class TeamsConfigField(Dict):
         return value.cleaned_data
 
 
-class CourseFields:  # lint-amnesty, pylint: disable=missing-class-docstring
+class CourseFields:  # pylint: disable=missing-class-docstring
     lti_passports = List(
         display_name=_("LTI Passports"),
         help=_('Enter the passports for course LTI tools in the following format: "id:client_key:client_secret".'),
@@ -472,14 +473,6 @@ class CourseFields:  # lint-amnesty, pylint: disable=missing-class-docstring
         help=_(
             "Enter policy keys and values to enable the cohort feature, define automated student assignment to "
             "groups, or identify any course-wide discussion topics as private to cohort members."
-        ),
-        scope=Scope.settings
-    )
-    is_new = Boolean(
-        display_name=_("Course Is New"),
-        help=_(
-            "Enter true or false. If true, the course appears in the list of new courses, and a New! "
-            "badge temporarily appears next to the course image."
         ),
         scope=Scope.settings
     )
@@ -1135,7 +1128,7 @@ class CourseBlock(
             if not getattr(self, "tabs", []):
                 CourseTabList.initialize_default(self)
         except InvalidTabsException as err:
-            raise type(err)(f'{str(err)} For course: {str(self.id)}')  # lint-amnesty, pylint: disable=line-too-long
+            raise type(err)(f'{str(err)} For course: {str(self.id)}')  # pylint: disable=line-too-long  # noqa: B904
 
     def set_grading_policy(self, course_policy):
         """
@@ -1240,7 +1233,7 @@ class CourseBlock(
 
         if self.textbooks:
             textbook_xml_object = etree.Element('textbook')
-            for textbook in self.textbooks:  # lint-amnesty, pylint: disable=not-an-iterable
+            for textbook in self.textbooks:  # pylint: disable=not-an-iterable
                 textbook_xml_object.set('title', textbook.title)
                 textbook_xml_object.set('book_url', textbook.book_url)
 
@@ -1278,7 +1271,7 @@ class CourseBlock(
         return grader_from_conf(self.raw_grader)
 
     @property
-    def raw_grader(self):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def raw_grader(self):  # pylint: disable=missing-function-docstring
         # force the caching of the xblock value so that it can detect the change
         # pylint: disable=pointless-statement
         self.grading_policy['GRADER']
@@ -1388,32 +1381,6 @@ class CourseBlock(
             return False
 
         return bool(config.get("always_cohort_inline_discussions", False))
-
-    @property
-    def is_newish(self):
-        """
-        Returns if the course has been flagged as new. If
-        there is no flag, return a heuristic value considering the
-        announcement and the start dates.
-        """
-        flag = self.is_new
-        if flag is None:
-            # Use a heuristic if the course has not been flagged
-            announcement, start, now = course_metadata_utils.sorting_dates(
-                self.start, self.advertised_start, self.announcement
-            )
-            if announcement and (now - announcement).days < 30:
-                # The course has been announced for less that month
-                return True
-            elif (now - start).days < 1:
-                # The course has not started yet
-                return True
-            else:
-                return False
-        elif isinstance(flag, str):
-            return flag.lower() in ['true', 'yes', 'y']
-        else:
-            return bool(flag)
 
     @property
     def sorting_score(self):
@@ -1670,7 +1637,7 @@ class CourseSummary:
             return course_metadata_utils.has_course_ended(self.end)
         except TypeError as e:
             log.warning(
-                "Course '{course_id}' has an improperly formatted end date '{end_date}'. Error: '{err}'.".format(
+                "Course '{course_id}' has an improperly formatted end date '{end_date}'. Error: '{err}'.".format(  # noqa: UP032  # pylint: disable=line-too-long
                     course_id=str(self.id), end_date=self.end, err=e
                 )
             )

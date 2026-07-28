@@ -5,8 +5,8 @@ from django.template import engines
 from django.template.utils import InvalidTemplateEngineError
 from xblock.reference.plugins import Service
 
-from common.djangoapps.edxmako.shortcuts import render_to_string
 from common.djangoapps.edxmako import Engines
+from common.djangoapps.edxmako.shortcuts import render_to_string
 
 try:
     engines[Engines.PREVIEW]
@@ -54,7 +54,6 @@ class MakoService(Service):
 
         Templates which are in these dirs will only work with this function:
             edx-platform/lms/templates/
-            edx-platform/xmodule/capa/templates/
             openedx/features/course_experience/templates
         """
         return render_to_string(template_file, dictionary, namespace=lms_mako_namespace)

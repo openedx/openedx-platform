@@ -3,13 +3,12 @@
 
 import itertools
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
 import ddt
 from crum import set_current_request
 from django.test import RequestFactory
 from django.utils import timezone
-from zoneinfo import ZoneInfo
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.course_modes.tests.factories import CourseModeFactory
@@ -23,16 +22,17 @@ from openedx.features.course_duration_limits.access import (
     generate_course_expired_message,
     get_access_expiration_data,
     get_user_course_duration,
-    get_user_course_expiration_date
+    get_user_course_expiration_date,
 )
 from openedx.features.course_duration_limits.models import CourseDurationLimitConfig
+from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 
 
 @ddt.ddt
 class TestAccess(ModuleStoreTestCase):
     """Tests of openedx.features.course_duration_limits.access"""
     def setUp(self):
-        super().setUp()  # lint-amnesty, pylint: disable=super-with-arguments
+        super().setUp()  # pylint: disable=super-with-arguments
 
         CourseDurationLimitConfig.objects.create(
             enabled=True,
@@ -41,12 +41,12 @@ class TestAccess(ModuleStoreTestCase):
         DynamicUpgradeDeadlineConfiguration.objects.create(enabled=True)
         self.course = CourseOverviewFactory.create(start=datetime(2018, 1, 1, tzinfo=ZoneInfo("UTC")), self_paced=True)
 
-    def assertDateInMessage(self, date, message):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def assertDateInMessage(self, date, message):  # pylint: disable=missing-function-docstring
         # First, check that the formatted version is in there
         assert strftime_localized(date, 'SHORT_DATE') in message
 
         # But also that the machine-readable version is in there
-        assert 'data-datetime="%s"' % date.isoformat() in message
+        assert 'data-datetime="%s"' % date.isoformat() in message  # noqa: UP031
 
     def test_get_access_expiration_data(self):
         enrollment = CourseEnrollmentFactory()

@@ -6,25 +6,20 @@ If student does not yet answered - `num_inputs` numbers of text inputs.
 If student have answered - words he entered and cloud.
 """
 
-from xblocks_contrib.word_cloud import WordCloudBlock as _ExtractedWordCloudBlock
-
 import json
 import logging
+import warnings
 
 from django.conf import settings
 from web_fragments.fragment import Fragment
 from xblock.core import XBlock
 from xblock.fields import Boolean, Dict, Integer, List, Scope, String
+from xblocks_contrib.word_cloud import WordCloudBlock as _ExtractedWordCloudBlock
 
 from xmodule.editing_block import EditingMixin
 from xmodule.raw_block import EmptyDataRawMixin
-from xmodule.util.builtin_assets import add_webpack_js_to_fragment, add_css_to_fragment
-from xmodule.x_module import (
-    ResourceTemplates,
-    shim_xmodule_js,
-    XModuleMixin,
-    XModuleToXBlockMixin,
-)
+from xmodule.util.builtin_assets import add_css_to_fragment, add_webpack_js_to_fragment
+from xmodule.x_module import ResourceTemplates, XModuleMixin, XModuleToXBlockMixin, shim_xmodule_js
 from xmodule.xml_block import XmlMixin
 
 log = logging.getLogger(__name__)
@@ -55,6 +50,10 @@ class _BuiltInWordCloudBlock(  # pylint: disable=abstract-method
 ):
     """
     Word Cloud XBlock.
+
+    .. deprecated:: 2026-03
+       This built-in word cloud block is deprecated. Please use the extracted ``WordCloudBlock``
+       from ``xblocks_contrib.word_cloud`` instead.
     """
 
     is_extracted = False
@@ -254,7 +253,7 @@ class _BuiltInWordCloudBlock(  # pylint: disable=abstract-method
             })
 
     @XBlock.supports('multi_device')
-    def student_view(self, context):  # lint-amnesty, pylint: disable=unused-argument
+    def student_view(self, context):  # pylint: disable=unused-argument
         """
         Renders the output that a student will see.
         """
@@ -330,3 +329,14 @@ def reset_class():
 
 reset_class()
 WordCloudBlock.__name__ = "WordCloudBlock"
+
+if not settings.USE_EXTRACTED_WORD_CLOUD_BLOCK:
+    warnings.warn(
+        "The built-in `xmodule.word_cloud_block` WordCloudBlock implementation is deprecated. "
+        "To fix this warning, enable `USE_EXTRACTED_WORD_CLOUD_BLOCK` (set it to True) to use "
+        "`xblocks_contrib.word_cloud.WordCloudBlock` instead. "
+        "Support for the built-in implementation, and the `USE_EXTRACTED_WORD_CLOUD_BLOCK` setting, "
+        "will be removed in Willow.",
+        DeprecationWarning,
+        stacklevel=2,
+    )

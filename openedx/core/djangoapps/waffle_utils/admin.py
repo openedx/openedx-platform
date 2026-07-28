@@ -2,10 +2,8 @@
 Django admin page for waffle utils models
 """
 
-from django.contrib import admin
-
 from config_models.admin import KeyedConfigurationModelAdmin
-
+from django.contrib import admin
 
 from .forms import WaffleFlagCourseOverrideAdminForm, WaffleFlagOrgOverrideAdminForm
 from .models import WaffleFlagCourseOverrideModel, WaffleFlagOrgOverrideModel

@@ -2,6 +2,7 @@
 
 
 import datetime
+
 import ddt
 import pytz
 from django.test import RequestFactory
@@ -9,15 +10,17 @@ from django.test import RequestFactory
 from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRole
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.lib.courses import course_image_url
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # pylint: disable=wrong-import-order
+)
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 from ...serializers.course_runs import CourseRunSerializer
 from ..utils import serialize_datetime
 
 
 @ddt.ddt
-class CourseRunSerializerTests(ModuleStoreTestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class CourseRunSerializerTests(ModuleStoreTestCase):  # pylint: disable=missing-class-docstring
 
     def setUp(self):
         super().setUp()

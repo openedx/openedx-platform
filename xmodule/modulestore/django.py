@@ -4,13 +4,12 @@ Module that provides a connection to the ModuleStore specified in the django set
 Passes settings.MODULESTORE as kwargs to MongoModuleStore
 """
 
+import gettext
+import importlib.resources as resources
+import logging
+import re  # pylint: disable=wrong-import-order
 from contextlib import contextmanager
 from importlib import import_module
-import importlib.resources as resources
-import gettext
-import logging
-
-import re  # lint-amnesty, pylint: disable=wrong-import-order
 
 from django.conf import settings
 
@@ -19,19 +18,25 @@ from django.conf import settings
 if not settings.configured:
     settings.configure()
 
-from django.contrib.staticfiles.storage import staticfiles_storage  # lint-amnesty, pylint: disable=wrong-import-position
-from django.core.cache import caches, InvalidCacheBackendError  # lint-amnesty, pylint: disable=wrong-import-position
-import django.dispatch  # lint-amnesty, pylint: disable=wrong-import-position
-import django.utils  # lint-amnesty, pylint: disable=wrong-import-position
-from django.utils.translation import get_language, to_locale  # lint-amnesty, pylint: disable=wrong-import-position
-from edx_django_utils.cache import DEFAULT_REQUEST_CACHE  # lint-amnesty, pylint: disable=wrong-import-position
+import django.dispatch  # pylint: disable=wrong-import-position
+import django.utils  # pylint: disable=wrong-import-position
+from django.contrib.staticfiles.storage import (  # pylint: disable=wrong-import-position
+    staticfiles_storage,
+)
+from django.core.cache import InvalidCacheBackendError, caches  # pylint: disable=wrong-import-position
+from django.utils.translation import get_language, to_locale  # pylint: disable=wrong-import-position
+from edx_django_utils.cache import DEFAULT_REQUEST_CACHE  # pylint: disable=wrong-import-position
 
-from xmodule.contentstore.django import contentstore  # lint-amnesty, pylint: disable=wrong-import-position
-from xmodule.modulestore.draft_and_published import BranchSettingMixin  # lint-amnesty, pylint: disable=wrong-import-position
-from xmodule.modulestore.mixed import MixedModuleStore  # lint-amnesty, pylint: disable=wrong-import-position
-from xmodule.util.xmodule_django import get_current_request_hostname  # lint-amnesty, pylint: disable=wrong-import-position
+from xmodule.contentstore.django import contentstore  # pylint: disable=wrong-import-position
+from xmodule.modulestore.draft_and_published import (  # pylint: disable=wrong-import-position
+    BranchSettingMixin,
+)
+from xmodule.modulestore.mixed import MixedModuleStore  # pylint: disable=wrong-import-position
+from xmodule.util.xmodule_django import (  # pylint: disable=wrong-import-position
+    get_current_request_hostname,
+)
 
-from .api import (  # lint-amnesty, pylint: disable=wrong-import-position
+from .api import (  # pylint: disable=wrong-import-position
     get_javascript_i18n_file_name,
     get_javascript_i18n_file_path,
     get_python_locale_root,
@@ -40,8 +45,9 @@ from .api import (  # lint-amnesty, pylint: disable=wrong-import-position
 
 # We also may not always have the current request user (crum) module available
 try:
-    from common.djangoapps.xblock_django.user_service import DjangoXBlockUserService
     from crum import get_current_user
+
+    from common.djangoapps.xblock_django.user_service import DjangoXBlockUserService
 
     HAS_USER_SERVICE = True
 except ImportError:
@@ -189,11 +195,19 @@ class SignalHandler:
     course_deleted = SwitchedSignal("course_deleted")
     library_updated = SwitchedSignal("library_updated")
     item_deleted = SwitchedSignal("item_deleted")
+    pre_item_delete = SwitchedSignal("pre_item_delete")
 
     _mapping = {
         signal.name: signal
         for signal
-        in [pre_publish, course_published, course_deleted, library_updated, item_deleted]
+        in [
+            pre_publish,
+            course_published,
+            course_deleted,
+            library_updated,
+            item_deleted,
+            pre_item_delete,
+        ]
     }
 
     def __init__(self, modulestore_class):
@@ -341,7 +355,7 @@ def modulestore():
             settings.MODULESTORE['default'].get('OPTIONS', {})
         )
 
-        if settings.FEATURES.get('CUSTOM_COURSES_EDX'):
+        if getattr(settings, 'CUSTOM_COURSES_EDX', False):
             # TODO: This import prevents a circular import issue, but is
             # symptomatic of a lib having a dependency on code in lms.  This
             # should be updated to have a setting that enumerates modulestore

@@ -162,8 +162,8 @@ class CrossStoreXMLRoundtrip(CourseComparisonTest, PartitionTestCase):
                 with MongoContentstoreBuilder().build() as dest_content:
                     # Construct the modulestore for storing the second import (using the second contentstore)
                     with SPLIT_MODULESTORE_SETUP.build(contentstore=dest_content) as dest_store:
-                        source_course_key = source_store.make_course_key('a', 'source', '2015_Fall')  # lint-amnesty, pylint: disable=no-member
-                        dest_course_key = dest_store.make_course_key('a', 'dest', '2015_Fall')  # lint-amnesty, pylint: disable=no-member
+                        source_course_key = source_store.make_course_key('a', 'source', '2015_Fall')  # pylint: disable=no-member
+                        dest_course_key = dest_store.make_course_key('a', 'dest', '2015_Fall')  # pylint: disable=no-member
 
                         import_course_from_xml(
                             source_store,
@@ -184,7 +184,7 @@ class CrossStoreXMLRoundtrip(CourseComparisonTest, PartitionTestCase):
                             EXPORTED_COURSE_DIR_NAME,
                         )
 
-                        source_course = source_store.get_course(source_course_key, depth=None, lazy=False)  # lint-amnesty, pylint: disable=no-member
+                        source_course = source_store.get_course(source_course_key, depth=None, lazy=False)  # pylint: disable=no-member
 
                         assert source_course.url_name == 'course'
 
@@ -204,6 +204,6 @@ class CrossStoreXMLRoundtrip(CourseComparisonTest, PartitionTestCase):
                             create_if_not_present=True,
                         )
 
-                        dest_course = dest_store.get_course(dest_course_key, depth=None, lazy=False)  # lint-amnesty, pylint: disable=no-member
+                        dest_course = dest_store.get_course(dest_course_key, depth=None, lazy=False)  # pylint: disable=no-member
 
                         assert dest_course.url_name == 'course'

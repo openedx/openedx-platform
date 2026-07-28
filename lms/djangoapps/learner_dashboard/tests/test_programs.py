@@ -14,10 +14,8 @@ from django.conf import settings
 from django.test import override_settings
 from django.urls import reverse, reverse_lazy
 from edx_toggles.toggles.testutils import override_waffle_flag
-
 from lti_consumer.models import LtiConfiguration
-from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory as ModuleStoreCourseFactory
+
 from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory
 from lms.djangoapps.learner_dashboard.config.waffle import ENABLE_PROGRAM_TAB_VIEW
 from lms.djangoapps.program_enrollments.rest_api.v1.tests.test_views import ProgramCacheMixin
@@ -27,12 +25,14 @@ from openedx.core.djangoapps.catalog.tests.factories import (
     CourseFactory,
     CourseRunFactory,
     PathwayFactory,
-    ProgramFactory
+    ProgramFactory,
 )
 from openedx.core.djangoapps.catalog.tests.mixins import CatalogIntegrationMixin
 from openedx.core.djangoapps.programs.models import ProgramDiscussionsConfiguration
 from openedx.core.djangoapps.programs.tests.mixins import ProgramsApiConfigMixin
 from openedx.core.djangolib.testing.utils import skip_unless_lms
+from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
+from xmodule.modulestore.tests.factories import CourseFactory as ModuleStoreCourseFactory
 
 PROGRAMS_UTILS_MODULE = 'openedx.core.djangoapps.programs.utils'
 PROGRAMS_MODULE = 'lms.djangoapps.learner_dashboard.programs'
@@ -62,7 +62,7 @@ class TestProgramListing(ProgramsApiConfigMixin, SharedModuleStoreTestCase):
         super().setUpClass()
 
         cls.course = ModuleStoreCourseFactory()
-        course_run = CourseRunFactory(key=str(cls.course.id))  # lint-amnesty, pylint: disable=no-member
+        course_run = CourseRunFactory(key=str(cls.course.id))  # pylint: disable=no-member
         course = CourseFactory(course_runs=[course_run])
 
         cls.first_program = ProgramFactory(courses=[course])
@@ -88,7 +88,7 @@ class TestProgramListing(ProgramsApiConfigMixin, SharedModuleStoreTestCase):
         Verify that the dict superset contains the dict subset.
         """
         for key, value in subset.items():
-            assert key in superset and superset[key] == value, f"{key}: {value} not found in superset or does not match"
+            assert key in superset and superset[key] == value, f"{key}: {value} not found in superset or does not match"  # noqa: PT018  # pylint: disable=line-too-long
 
     def test_login_required(self, mock_get_programs):
         """
@@ -110,7 +110,7 @@ class TestProgramListing(ProgramsApiConfigMixin, SharedModuleStoreTestCase):
         response = self.client.get(self.url)
         assert response.status_code == 200
 
-    def test_404_if_disabled(self, _mock_get_programs):
+    def test_404_if_disabled(self, _mock_get_programs):  # noqa: PT019
         """
         Verify that the page 404s if disabled.
         """
@@ -136,7 +136,7 @@ class TestProgramListing(ProgramsApiConfigMixin, SharedModuleStoreTestCase):
         self.create_programs_config()
         mock_get_programs.return_value = self.data
 
-        CourseEnrollmentFactory(user=self.user, course_id=self.course.id)  # lint-amnesty, pylint: disable=no-member
+        CourseEnrollmentFactory(user=self.user, course_id=self.course.id)  # pylint: disable=no-member
 
         response = self.client.get(self.url)
         actual = load_serialized_data(response, 'programsData')
@@ -177,7 +177,7 @@ class TestProgramListing(ProgramsApiConfigMixin, SharedModuleStoreTestCase):
         self.create_programs_config()
         mock_get_programs.return_value = self.data
 
-        CourseEnrollmentFactory(user=self.user, course_id=self.course.id)  # lint-amnesty, pylint: disable=no-member
+        CourseEnrollmentFactory(user=self.user, course_id=self.course.id)  # pylint: disable=no-member
 
         response = self.client.get(self.url)
         actual = load_serialized_data(response, 'programsData')
@@ -204,14 +204,14 @@ class TestProgramDetails(ProgramsApiConfigMixin, CatalogIntegrationMixin, Shared
         super().setUpClass()
 
         modulestore_course = ModuleStoreCourseFactory()
-        course_run = CourseRunFactory(key=str(modulestore_course.id))  # lint-amnesty, pylint: disable=no-member
+        course_run = CourseRunFactory(key=str(modulestore_course.id))  # pylint: disable=no-member
         course = CourseFactory(course_runs=[course_run])
 
         cls.program_data = ProgramFactory(uuid=cls.program_uuid, courses=[course])
         cls.pathway_data = PathwayFactory()
         cls.program_data['pathway_ids'] = [cls.pathway_data['id']]
         cls.pathway_data['program_uuids'] = [cls.program_data['uuid']]
-        del cls.pathway_data['programs']  # lint-amnesty, pylint: disable=unsupported-delete-operation
+        del cls.pathway_data['programs']  # pylint: disable=unsupported-delete-operation
 
     def setUp(self):
         super().setUp()
@@ -279,7 +279,7 @@ class TestProgramDetails(ProgramsApiConfigMixin, CatalogIntegrationMixin, Shared
         self.assert_program_data_present(response)
         self.assert_pathway_data_present(response)
 
-    def test_404_if_disabled(self, _mock_get_programs, _mock_get_pathways):
+    def test_404_if_disabled(self, _mock_get_programs, _mock_get_pathways):  # noqa: PT019
         """
         Verify that the page 404s if disabled.
         """
@@ -288,7 +288,7 @@ class TestProgramDetails(ProgramsApiConfigMixin, CatalogIntegrationMixin, Shared
         response = self.client.get(self.url)
         assert response.status_code == 404
 
-    def test_404_if_no_data(self, mock_get_programs, _mock_get_pathways):
+    def test_404_if_no_data(self, mock_get_programs, _mock_get_pathways):  # noqa: PT019
         """Verify that the page 404s if no program data is found."""
         self.create_programs_config()
 

@@ -19,44 +19,42 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.django import modulestore
-from xmodule.modulestore.exceptions import ItemNotFoundError, NoPathToItem
-from xmodule.modulestore.search import path_to_location
-from xmodule.x_module import PUBLIC_VIEW, STUDENT_VIEW
-
 from common.djangoapps.course_modes.models import CourseMode, get_course_prices
+from common.djangoapps.student.models import (
+    CourseEnrollment,
+    CourseEnrollmentCelebration,
+    LinkedInAddToProfileConfiguration,
+)
+from common.djangoapps.util.milestones_helpers import get_prerequisite_courses_display
 from common.djangoapps.util.views import expose_header
-from lms.djangoapps.edxnotes.helpers import is_feature_enabled
 from lms.djangoapps.certificates.api import get_certificate_url, get_eligible_certificate
 from lms.djangoapps.commerce.utils import EcommerceService
 from lms.djangoapps.course_api.api import course_detail
-from lms.djangoapps.course_goals.models import UserActivity
 from lms.djangoapps.course_goals.api import get_course_goal
+from lms.djangoapps.course_goals.models import UserActivity
 from lms.djangoapps.courseware.access import has_access
 from lms.djangoapps.courseware.access_utils import check_public_access
+from lms.djangoapps.courseware.block_render import get_block_by_usage_id
+from lms.djangoapps.courseware.context_processor import user_timezone_locale_prefs
 from lms.djangoapps.courseware.courses import (
     get_course_about_section,
     get_course_with_access,
     get_permission_for_course_about,
 )
-
-from lms.djangoapps.courseware.context_processor import user_timezone_locale_prefs
 from lms.djangoapps.courseware.entrance_exams import course_has_entrance_exam, user_has_passed_entrance_exam
 from lms.djangoapps.courseware.masquerade import (
+    is_masquerading_as_non_audit_enrollment,
     is_masquerading_as_specific_student,
     setup_masquerade,
-    is_masquerading_as_non_audit_enrollment,
 )
 from lms.djangoapps.courseware.models import LastSeenCoursewareTimezone
 from lms.djangoapps.courseware.permissions import VIEW_COURSEWARE
-from lms.djangoapps.courseware.block_render import get_block_by_usage_id
 from lms.djangoapps.courseware.toggles import course_exit_page_is_active, course_is_invitation_only
 from lms.djangoapps.courseware.views.views import get_cert_data
+from lms.djangoapps.edxnotes.helpers import is_feature_enabled
 from lms.djangoapps.gating.api import get_entrance_exam_score, get_entrance_exam_usage_key
 from lms.djangoapps.grades.api import CourseGradeFactory
 from lms.djangoapps.instructor.enrollment import uses_shib
-from common.djangoapps.util.milestones_helpers import get_prerequisite_courses_display
 from lms.djangoapps.verify_student.services import IDVerificationService
 from openedx.core.djangoapps.agreements.api import get_integrity_signature
 from openedx.core.djangoapps.courseware_api.utils import get_celebrations_dict
@@ -66,20 +64,17 @@ from openedx.core.djangolib.markup import clean_dangerous_html
 from openedx.core.lib.api.authentication import BearerAuthenticationAllowInactiveUser
 from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin
 from openedx.core.lib.courses import get_course_by_id
-from openedx.features.course_experience import ENABLE_COURSE_GOALS
-from openedx.features.course_experience.waffle import ENABLE_COURSE_ABOUT_SIDEBAR_HTML
 from openedx.features.content_type_gating.models import ContentTypeGatingConfig
 from openedx.features.course_duration_limits.access import get_access_expiration_data
+from openedx.features.course_experience import ENABLE_COURSE_GOALS
+from openedx.features.course_experience.waffle import ENABLE_COURSE_ABOUT_SIDEBAR_HTML
 from openedx.features.discounts.utils import generate_offer_data
-from common.djangoapps.student.models import (
-    CourseEnrollment,
-    CourseEnrollmentCelebration,
-    LinkedInAddToProfileConfiguration
-)
-from xmodule.course_block import (
-    COURSE_VISIBILITY_PUBLIC,
-    COURSE_VISIBILITY_PUBLIC_OUTLINE,
-)
+from xmodule.course_block import COURSE_VISIBILITY_PUBLIC, COURSE_VISIBILITY_PUBLIC_OUTLINE
+from xmodule.modulestore import ModuleStoreEnum  # pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore
+from xmodule.modulestore.exceptions import ItemNotFoundError, NoPathToItem
+from xmodule.modulestore.search import path_to_location
+from xmodule.x_module import PUBLIC_VIEW, STUDENT_VIEW
 
 from .serializers import CourseInfoSerializer
 
@@ -296,14 +291,14 @@ class CoursewareMeta:
         """
         Django setting for the integrity signature feature.
         """
-        return settings.FEATURES.get('ENABLE_INTEGRITY_SIGNATURE', False)
+        return settings.ENABLE_INTEGRITY_SIGNATURE
 
     @property
     def user_needs_integrity_signature(self):
         """
         Boolean describing whether the user needs to sign the integrity agreement for a course.
         """
-        if not settings.FEATURES.get('ENABLE_INTEGRITY_SIGNATURE'):
+        if not settings.ENABLE_INTEGRITY_SIGNATURE:
             return False
 
         integrity_signature_required = (
@@ -396,7 +391,7 @@ class CoursewareMeta:
             course_with_access = get_course_with_access(self.request.user, permission, self.course_key)
             return bool(
                 self.request.user.has_perm(VIEW_COURSEWARE, course_with_access)
-                or settings.FEATURES.get('ENABLE_LMS_MIGRATION')
+                or settings.ENABLE_LMS_MIGRATION
             )
 
     @property
@@ -691,7 +686,7 @@ class CoursewareInformation(RetrieveAPIView):
         if not user.id:
             return
 
-        cache_key = 'browser_timezone_{}'.format(str(user.id))
+        cache_key = 'browser_timezone_{}'.format(str(user.id))  # noqa: UP032
         browser_timezone = self.request.query_params.get('browser_timezone', None)
         cached_value = TieredCache.get_cached_response(cache_key)
         if not cached_value.is_found:
@@ -779,7 +774,7 @@ class SequenceMetadata(DeveloperErrorViewMixin, APIView):
         SessionAuthenticationAllowInactiveUser,
     )
 
-    def get(self, request, usage_key_string, *args, **kwargs):  # lint-amnesty, pylint: disable=unused-argument
+    def get(self, request, usage_key_string, *args, **kwargs):  # pylint: disable=unused-argument
         """
         Return response to a GET request.
         """
@@ -860,7 +855,7 @@ class Resume(DeveloperErrorViewMixin, APIView):
     )
     permission_classes = (IsAuthenticated,)
 
-    def get(self, request, course_key_string, *args, **kwargs):  # lint-amnesty, pylint: disable=unused-argument
+    def get(self, request, course_key_string, *args, **kwargs):  # pylint: disable=unused-argument
         """
         Return response to a GET request.
         """
@@ -916,7 +911,7 @@ class Celebration(DeveloperErrorViewMixin, APIView):
     permission_classes = (IsAuthenticated,)
     http_method_names = ['post']
 
-    def post(self, request, course_key_string, *args, **kwargs):  # lint-amnesty, pylint: disable=unused-argument
+    def post(self, request, course_key_string, *args, **kwargs):  # pylint: disable=unused-argument
         """
         Handle a POST request.
         """

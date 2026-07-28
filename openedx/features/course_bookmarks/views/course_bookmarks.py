@@ -16,11 +16,11 @@ from django.views.generic import View
 from opaque_keys.edx.keys import CourseKey
 from web_fragments.fragment import Fragment
 
+from common.djangoapps.util.views import ensure_valid_course_key
 from lms.djangoapps.courseware.courses import get_course_with_access
 from openedx.core.djangoapps.plugin_api.views import EdxFragmentView
 from openedx.core.djangoapps.user_api.models import UserPreference
 from openedx.features.course_experience import default_course_url
-from common.djangoapps.util.views import ensure_valid_course_key
 
 
 class CourseBookmarksView(View):
@@ -64,7 +64,7 @@ class CourseBookmarksFragmentView(EdxFragmentView):
     Fragment view that shows a user's bookmarks for a course.
     """
 
-    def render_to_fragment(self, request, course_id=None, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ
+    def render_to_fragment(self, request, course_id=None, **kwargs):  # pylint: disable=arguments-differ
         """
         Renders the user's course bookmarks as a fragment.
         """

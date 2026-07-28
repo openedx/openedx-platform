@@ -13,7 +13,6 @@ from opaque_keys.edx.keys import CourseKey
 from organizations.tests.factories import OrganizationFactory
 from social_django.models import UserSocialAuth
 from testfixtures import LogCapture
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.student.models import CourseEnrollmentException
@@ -29,6 +28,7 @@ from openedx.core.djangoapps.content.course_overviews.models import CourseOvervi
 from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory
 from openedx.core.djangoapps.user_api.accounts.tests.retirement_helpers import fake_completed_retirement
 from openedx.core.djangolib.testing.utils import CacheIsolationTestCase
+from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 
 
 class ProgramEnrollmentRetireSignalTests(ModuleStoreTestCase):
@@ -97,6 +97,22 @@ class ProgramEnrollmentRetireSignalTests(ModuleStoreTestCase):
         _listen_for_lms_retire(sender=self.__class__, user=enrollment.user)
         fake_completed_retirement(enrollment.user)
         _listen_for_lms_retire(sender=self.__class__, user=enrollment.user)
+
+        self.assert_enrollment_and_history_retired(enrollment)
+
+    def test_retire_signal_handler_tolerates_extra_kwargs(self):
+        """
+        Ensure program_enrollments retirement receiver does not break with additional kwargs.
+        """
+        enrollment = self.create_enrollment_and_history()
+
+        # Simulate the signal being sent with extra kwargs.
+        _listen_for_lms_retire(
+            sender=self.__class__,
+            user=enrollment.user,
+            retired_username='retired-test-username',
+            retired_email='retired-test@example.com',
+        )
 
         self.assert_enrollment_and_history_retired(enrollment)
 
@@ -396,7 +412,7 @@ class SocialAuthEnrollmentCompletionSignalTest(CacheIsolationTestCase):
         with mock.patch('lms.djangoapps.program_enrollments.api.linking.enroll_in_masters_track') as enrollMock:
             enrollMock.side_effect = Exception('unexpected error')
             with LogCapture(logger.name) as log:
-                with self.assertRaisesRegex(Exception, 'unexpected error'):
+                with self.assertRaisesRegex(Exception, 'unexpected error'):  # noqa: PT027
                     UserSocialAuth.objects.create(
                         user=self.user,
                         uid=f'{self.provider_slug}:{self.external_id}',

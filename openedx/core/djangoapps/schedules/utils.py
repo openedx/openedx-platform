@@ -1,9 +1,9 @@
-# lint-amnesty, pylint: disable=missing-module-docstring
+# pylint: disable=missing-module-docstring
 
 import datetime
 import logging
-
 from zoneinfo import ZoneInfo
+
 from django.db import transaction
 
 from openedx.core.djangoapps.schedules.models import Schedule
@@ -13,7 +13,7 @@ LOG = logging.getLogger(__name__)
 
 # TODO: consider using a LoggerAdapter instead of this mixin:
 # https://docs.python.org/2/library/logging.html#logging.LoggerAdapter
-class PrefixedDebugLoggerMixin:  # lint-amnesty, pylint: disable=missing-class-docstring
+class PrefixedDebugLoggerMixin:  # pylint: disable=missing-class-docstring
     log_prefix = None
 
     def __init__(self, *args, **kwargs):

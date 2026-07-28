@@ -1,7 +1,7 @@
 define([
-    'jquery', 'underscore', 'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers', 'js/spec/edxnotes/helpers',
+    'jquery', 'underscore', 'sinon', 'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers', 'js/spec/edxnotes/helpers',
     'annotator_1.2.9', 'logger', 'js/edxnotes/views/notes_factory'
-], function($, _, AjaxHelpers, Helpers, Annotator, Logger, NotesFactory) {
+], function($, _, sinon, AjaxHelpers, Helpers, Annotator, Logger, NotesFactory) {
     'use strict';
 
     describe('EdxNotes Events Plugin', function() {
@@ -20,8 +20,14 @@ define([
                 usage_id: 'usage-123',
                 tags: ['tag1', 'tag2']
             };
+        var requests, xhrFactory;
 
         beforeEach(function() {
+            xhrFactory = sinon.useFakeXMLHttpRequest();
+            requests = [];
+            requests.currentIndex = 0;
+            requests.restore = function() { xhrFactory.restore(); };
+            xhrFactory.onCreate = function(req) { requests.push(req); };
             this.annotator = NotesFactory.factory(
                 $('<div />').get(0), {
                     endpoint: 'http://example.com/',
@@ -35,6 +41,7 @@ define([
             while (Annotator._instances.length > 0) {
                 Annotator._instances[0].destroy();
             }
+            requests.restore();
         });
 
         it('should log edx.course.student_notes.viewed event properly', function() {
@@ -57,8 +64,7 @@ define([
         });
 
         it('should log edx.course.student_notes.added event properly', function() {
-            var requests = AjaxHelpers.requests(this),
-                newNote = {
+            var newNote = {
                     user: 'user-123',
                     text: 'text-123',
                     quote: 'quote-123',

@@ -39,17 +39,17 @@ memory instead of working on subsets of the data. As a practical matter, this
 means that it will work for databases with up to about 10 million Structures
 before RAM usage starts to become a problem.
 """
-from collections import deque, namedtuple
-from itertools import count, takewhile
 import json
 import logging
 import os
 import sys
 import time
+from collections import deque, namedtuple
+from itertools import count, takewhile
 
 from bson.objectid import ObjectId
-from pymongo import MongoClient, UpdateOne
 from opaque_keys.edx.locator import CourseLocator, LibraryLocator
+from pymongo import MongoClient, UpdateOne
 
 LOG = logging.getLogger('structures')
 
@@ -367,18 +367,18 @@ class ChangePlan(namedtuple('ChangePlan', 'delete update_parents')):
             if notes:
                 return "{} {} {}".format(action, s_id, " ".join(notes))
 
-            return "{} {}".format(action, s_id)
+            return "{} {}".format(action, s_id)  # noqa: UP032
 
         print("== Summary ==", file=details_file)
-        print("Active Version Branches: {}".format(len(branches)), file=details_file)
-        print("Total Structures: {}".format(len(structures)), file=details_file)
-        print("Structures to Save: {}".format(len(structure_ids_to_save)), file=details_file)
-        print("Structures to Delete: {}".format(len(structures) - len(structure_ids_to_save)), file=details_file)
-        print("Structures to Rewrite Parent Link: {}".format(len(set_parent_to_original)), file=details_file)
+        print("Active Version Branches: {}".format(len(branches)), file=details_file)  # noqa: UP032
+        print("Total Structures: {}".format(len(structures)), file=details_file)  # noqa: UP032
+        print("Structures to Save: {}".format(len(structure_ids_to_save)), file=details_file)  # noqa: UP032
+        print("Structures to Delete: {}".format(len(structures) - len(structure_ids_to_save)), file=details_file)  # noqa: UP032
+        print("Structures to Rewrite Parent Link: {}".format(len(set_parent_to_original)), file=details_file)  # noqa: UP032
         print("\n== Active Versions ==", file=details_file)
 
         for branch in branches:
-            print("{}".format(branch), file=details_file)
+            print("{}".format(branch), file=details_file)  # noqa: UP032
             for structure_id in structures_graph.traverse_ids(branch.structure_id, include_start=True):
                 print(text_for(structure_id), file=details_file)
             print("", file=details_file)

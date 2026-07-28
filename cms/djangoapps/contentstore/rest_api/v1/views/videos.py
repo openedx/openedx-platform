@@ -1,29 +1,25 @@
 """
 Public rest API endpoints for contentstore API video assets (outside authoring API)
 """
-import edx_api_doc_tools as apidocs
 import logging
+
+import edx_api_doc_tools as apidocs
 from opaque_keys.edx.keys import CourseKey
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin, view_auth_classes, verify_course_exists
-from common.djangoapps.student.auth import has_studio_read_access
-
-from ....utils import get_course_videos_context
-
-from cms.djangoapps.contentstore.video_storage_handlers import (
-    get_video_usage_path,
-    create_video_zip,
-)
+import cms.djangoapps.contentstore.toggles as contentstore_toggles
 from cms.djangoapps.contentstore.rest_api.v1.serializers import (
     CourseVideosSerializer,
+    VideoDownloadSerializer,
     VideoUsageSerializer,
-    VideoDownloadSerializer
 )
-import cms.djangoapps.contentstore.toggles as contentstore_toggles
+from cms.djangoapps.contentstore.video_storage_handlers import create_video_zip, get_video_usage_path
+from common.djangoapps.student.auth import has_studio_read_access
+from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin, verify_course_exists, view_auth_classes
 
+from ....utils import get_course_videos_context
 
 log = logging.getLogger(__name__)
 toggles = contentstore_toggles

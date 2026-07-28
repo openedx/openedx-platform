@@ -4,17 +4,19 @@ Tests for CourseDetails
 
 
 import datetime
-from django.test import override_settings
-import pytest
-import ddt
+from unittest.mock import MagicMock
 from zoneinfo import ZoneInfo
 
-from xmodule.modulestore import ModuleStoreEnum
-from xmodule.data import CertificatesDisplayBehaviors
-from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, ModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory
+import ddt
+import pytest
+from django.test import override_settings
 
 from openedx.core.djangoapps.models.course_details import ABOUT_ATTRIBUTES, CourseDetails
+from xmodule.data import CertificatesDisplayBehaviors
+from xmodule.modulestore import ModuleStoreEnum
+from xmodule.modulestore.django import SignalHandler
+from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, ModuleStoreTestCase
+from xmodule.modulestore.tests.factories import CourseFactory
 
 EXAMPLE_CERTIFICATE_AVAILABLE_DATE = datetime.date(2020, 1, 1)
 
@@ -145,7 +147,7 @@ class CourseDetailsTestCase(ModuleStoreTestCase):
         attribute_name = 'not_an_about_attribute'
         with self.store.branch_setting(ModuleStoreEnum.Branch.draft_preferred, self.course.id):
             CourseDetails.update_about_item(self.course, attribute_name, 'test_value', self.user.id)
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             CourseDetails.fetch_about_attribute(self.course.id, attribute_name)
 
     def test_fetch_video(self):
@@ -154,7 +156,7 @@ class CourseDetailsTestCase(ModuleStoreTestCase):
             CourseDetails.update_about_video(self.course, video_value, self.user.id)
         assert CourseDetails.fetch_youtube_video_id(self.course.id) == video_value
         video_url = CourseDetails.fetch_video_url(self.course.id)
-        self.assertRegex(video_url, fr'http://.*{video_value}')
+        self.assertRegex(video_url, fr'http://.*{video_value}')  # noqa: PT009
 
     @ddt.data(
         (
@@ -211,3 +213,32 @@ class CourseDetailsTestCase(ModuleStoreTestCase):
         assert CourseDetails.validate_certificate_settings(
             stored_date, stored_behavior
         ) == (expected_date, expected_behavior)
+
+    def test_update_from_json_emits_course_published_signal_once(self):
+        """
+        Verify that update_from_json emits the course_published signal exactly
+        once per call.
+
+        The bulk_operations context wrapping all writes inside update_from_json
+        coalesces every update_item / delete_item call into a single
+        course_published signal emission.
+        """
+        signal_handler = MagicMock()
+        SignalHandler.course_published.connect(signal_handler)
+        try:
+            jsondetails = CourseDetails.fetch(self.course.id)
+            jsondetails.overview = "<p>Updated overview</p>"
+            jsondetails.short_description = "Updated short description"
+            jsondetails.effort = "2 hours/week"
+            jsondetails.language = "en"
+            jsondetails.intro_video = None
+
+            # ModuleStoreTestCase disables all signals by default; re-enable
+            # course_published for this test so we can assert on its emission.
+            with SignalHandler.course_published.for_state(is_enabled=True):
+                with self.store.branch_setting(ModuleStoreEnum.Branch.draft_preferred, self.course.id):
+                    CourseDetails.update_from_json(self.course.id, jsondetails.__dict__, self.user)
+
+            signal_handler.assert_called_once()
+        finally:
+            SignalHandler.course_published.disconnect(signal_handler)

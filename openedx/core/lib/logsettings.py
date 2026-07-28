@@ -10,7 +10,7 @@ from logging.handlers import SysLogHandler
 LOG_LEVELS = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
 
 
-def get_logger_config(log_dir,  # lint-amnesty, pylint: disable=unused-argument
+def get_logger_config(log_dir,  # pylint: disable=unused-argument
                       logging_env="no_env",
                       local_loglevel='INFO',
                       service_variant=""):
@@ -28,7 +28,7 @@ def get_logger_config(log_dir,  # lint-amnesty, pylint: disable=unused-argument
         local_loglevel = 'INFO'
 
     hostname = platform.node().split(".")[0]
-    syslog_format = ("[service_variant={service_variant}]"
+    syslog_format = ("[service_variant={service_variant}]"  # noqa: UP032
                      "[%(name)s][env:{logging_env}] %(levelname)s "
                      "[{hostname}  %(process)d] [user %(userid)s] [ip %(remoteip)s] [%(filename)s:%(lineno)d] "
                      "- %(message)s").format(service_variant=service_variant,
@@ -171,7 +171,7 @@ def get_docker_logger_config(log_dir='/var/tmp',
     """
 
     hostname = platform.node().split(".")[0]
-    syslog_format = (
+    syslog_format = (  # noqa: UP032
         "[service_variant={service_variant}]"
         "[%(name)s][env:{logging_env}] %(levelname)s "
         "[{hostname}  %(process)d] [%(filename)s:%(lineno)d] "

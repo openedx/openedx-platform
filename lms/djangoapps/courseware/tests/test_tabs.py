@@ -3,6 +3,7 @@ Test cases for tabs.
 """
 
 from unittest.mock import MagicMock, Mock, patch
+
 import ddt
 import pytest
 from crum import set_current_request
@@ -13,13 +14,21 @@ from django.urls import reverse
 from edx_toggles.toggles.testutils import override_waffle_flag
 from milestones.tests.utils import MilestonesTestCaseMixin
 
+from common.djangoapps.student.models import CourseEnrollment
+from common.djangoapps.student.tests.factories import InstructorFactory, StaffFactory, UserFactory
+from common.djangoapps.util.milestones_helpers import (
+    add_course_content_milestone,
+    add_course_milestone,
+    add_milestone,
+    get_milestone_relationship_types,
+)
 from lms.djangoapps.courseware.tabs import (
     CoursewareTab,
     DatesTab,
     ExternalDiscussionCourseTab,
     ExternalLinkCourseTab,
     ProgressTab,
-    get_course_tab_list
+    get_course_tab_list,
 )
 from lms.djangoapps.courseware.tests.helpers import LoginEnrollmentTestCase
 from lms.djangoapps.courseware.views.views import StaticCourseTabView, get_static_tab_fragment
@@ -27,25 +36,18 @@ from lms.djangoapps.discussion.toggles import ENABLE_DISCUSSIONS_MFE
 from openedx.core.djangoapps.discussions.url_helpers import get_discussions_mfe_url
 from openedx.core.djangolib.testing.utils import get_mock_request
 from openedx.core.lib.courses import get_course_by_id
-from common.djangoapps.student.models import CourseEnrollment
-from common.djangoapps.student.tests.factories import InstructorFactory
-from common.djangoapps.student.tests.factories import StaffFactory
-from common.djangoapps.student.tests.factories import UserFactory
-from common.djangoapps.util.milestones_helpers import (
-    add_course_content_milestone,
-    add_course_milestone,
-    add_milestone,
-    get_milestone_relationship_types
-)
-from xmodule import tabs as xmodule_tabs  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.django_utils import (  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule import tabs as xmodule_tabs  # pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (  # pylint: disable=wrong-import-order
     TEST_DATA_SPLIT_MODULESTORE,
     ModuleStoreTestCase,
-    SharedModuleStoreTestCase
+    SharedModuleStoreTestCase,
 )
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.utils import TEST_DATA_DIR  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.xml_importer import import_course_from_xml  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import (  # pylint: disable=wrong-import-order
+    BlockFactory,
+    CourseFactory,
+)
+from xmodule.modulestore.tests.utils import TEST_DATA_DIR  # pylint: disable=wrong-import-order
+from xmodule.modulestore.xml_importer import import_course_from_xml  # pylint: disable=wrong-import-order
 
 
 class TabTestCase(SharedModuleStoreTestCase):
@@ -215,7 +217,7 @@ class TextbooksTestCase(TabTestCase):
         ])
         self.num_textbooks = self.num_textbook_tabs * len(self.books)
 
-    @patch.dict("django.conf.settings.FEATURES", {"ENABLE_TEXTBOOK": True})
+    @override_settings(ENABLE_TEXTBOOK=True)
     def test_textbooks_enabled(self):
 
         type_to_reverse_name = {'textbook': 'book', 'pdftextbook': 'pdf_book', 'htmltextbook': 'html_book'}
@@ -484,7 +486,7 @@ class TextBookCourseViewsTestCase(LoginEnrollmentTestCase, SharedModuleStoreTest
                 num_of_textbooks_found += 1
         assert num_of_textbooks_found == self.num_textbooks
 
-    @patch.dict("django.conf.settings.FEATURES", {"ENABLE_TEXTBOOK": False})
+    @override_settings(ENABLE_TEXTBOOK=False)
     def test_textbooks_disabled(self):
         tab = xmodule_tabs.CourseTab.load('textbooks')
         assert not tab.is_enabled(self.course, self.user)
@@ -613,9 +615,9 @@ class CourseTabListTestCase(TabListTestCase):
         assert not self.has_tab(self.course.tabs, 'external_discussion')
         assert self.has_tab(self.course.tabs, 'discussion')
 
+    @override_settings(ENABLE_DISCUSSION_SERVICE=True)
     @patch.dict("django.conf.settings.FEATURES", {
         "ENABLE_TEXTBOOK": True,
-        "ENABLE_DISCUSSION_SERVICE": True,
         "ENABLE_EDXNOTES": True,
     })
     def test_iterate_displayable(self):
@@ -773,7 +775,7 @@ class DiscussionLinkTestCase(TabTestCase):
                     (discussion_tab.link_func(self.course, reverse)
                      == expected_discussion_link)) == expected_can_display_value
 
-    @patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": False})
+    @override_settings(ENABLE_DISCUSSION_SERVICE=False)
     def test_explicit_discussion_link(self):
         """Test that setting discussion_link overrides everything else"""
         self.check_discussion(
@@ -783,7 +785,7 @@ class DiscussionLinkTestCase(TabTestCase):
             expected_can_display_value=True,
         )
 
-    @patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": False})
+    @override_settings(ENABLE_DISCUSSION_SERVICE=False)
     def test_discussions_disabled(self):
         """Test that other cases return None with discussions disabled"""
         for tab_list in [[], self.tabs_with_discussion, self.tabs_without_discussion]:
@@ -793,7 +795,7 @@ class DiscussionLinkTestCase(TabTestCase):
                 expected_can_display_value=False,
             )
 
-    @patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+    @override_settings(ENABLE_DISCUSSION_SERVICE=True)
     def test_tabs_with_discussion(self):
         """Test a course with a discussion tab configured"""
         self.check_discussion(
@@ -802,7 +804,7 @@ class DiscussionLinkTestCase(TabTestCase):
             expected_can_display_value=True,
         )
 
-    @patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+    @override_settings(ENABLE_DISCUSSION_SERVICE=True)
     def test_tabs_without_discussion(self):
         """Test a course with tabs configured but without a discussion tab"""
         self.check_discussion(
@@ -811,7 +813,7 @@ class DiscussionLinkTestCase(TabTestCase):
             expected_can_display_value=False,
         )
 
-    @patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+    @override_settings(ENABLE_DISCUSSION_SERVICE=True)
     def test_tabs_enrolled_or_staff(self):
         for is_enrolled, is_staff in [(True, False), (False, True)]:
             self.check_discussion(
@@ -822,7 +824,7 @@ class DiscussionLinkTestCase(TabTestCase):
                 is_staff=is_staff
             )
 
-    @patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+    @override_settings(ENABLE_DISCUSSION_SERVICE=True)
     def test_tabs_not_enrolled_or_staff(self):
         is_enrolled = is_staff = False
         self.check_discussion(
@@ -840,7 +842,7 @@ class DiscussionLinkTestCase(TabTestCase):
         else:
             expected_link = reverse("forum_form_discussion", args=[str(self.course.id)])
 
-        with self.settings(FEATURES={'ENABLE_DISCUSSION_SERVICE': True}):
+        with override_settings(ENABLE_DISCUSSION_SERVICE=True):
             with override_waffle_flag(ENABLE_DISCUSSIONS_MFE, toggle_enabled):
                 self.check_discussion(
                     tab_list=self.tabs_with_discussion,
@@ -870,6 +872,12 @@ class DatesTabTestCase(TabListTestCase):
         """Test cases for making sure no persisted dates tab is surfaced"""
         user = self.create_mock_user()
         self.course.tabs = self.all_valid_tab_list
+
+        # Ensure hidden state from other tests does not affect this test's intent.
+        dates_tab = xmodule_tabs.CourseTabList.get_tab_by_id(self.course.tabs, 'dates')
+        assert dates_tab is not None
+        dates_tab.is_hidden = False
+
         self.course.save()
 
         # Verify that there is a dates tab in the modulestore
@@ -886,3 +894,21 @@ class DatesTabTestCase(TabListTestCase):
             if tab.type == 'dates':
                 num_dates_tabs += 1
         assert num_dates_tabs == 1
+
+    @patch('common.djangoapps.student.models.course_enrollment.CourseEnrollment.is_enrolled')
+    def test_dates_tab_respects_hide_flag(self, is_enrolled):
+        """Test that the dates tab respects the hide flag."""
+        is_enrolled.return_value = True
+        user = self.create_mock_user(is_staff=False, is_enrolled=True)
+        self.course.tabs = self.all_valid_tab_list
+        dates_tab = xmodule_tabs.CourseTabList.get_tab_by_id(self.course.tabs, 'dates')
+        assert dates_tab is not None
+
+        dates_tab.is_hidden = False
+        self.course.save()
+        tabs = get_course_tab_list(user, self.course)
+        assert any(tab.type == 'dates' for tab in tabs)
+
+        dates_tab.is_hidden = True
+        tabs = get_course_tab_list(user, self.course)
+        assert not any(tab.type == 'dates' for tab in tabs)

@@ -2,19 +2,18 @@
 Common base classes for all new XBlock runtimes.
 """
 import logging
-from typing import Callable, Protocol
+from typing import Callable, Protocol  # noqa: UP035
 from urllib.parse import urljoin  # pylint: disable=import-error
 
 import crum
-from common.djangoapps.student.models import anonymous_id_for_user
-from completion.waffle import ENABLE_COMPLETION_TRACKING_SWITCH
 from completion.models import BlockCompletion
 from completion.services import CompletionService
+from completion.waffle import ENABLE_COMPLETION_TRACKING_SWITCH
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.core.exceptions import PermissionDenied
 from eventtracking import tracker
-from opaque_keys.edx.keys import UsageKeyV2, LearningContextKey
+from opaque_keys.edx.keys import LearningContextKey, UsageKeyV2
 from web_fragments.fragment import Fragment
 from xblock.core import XBlock
 from xblock.exceptions import NoSuchServiceError
@@ -22,27 +21,28 @@ from xblock.field_data import DictFieldData, FieldData, SplitFieldData
 from xblock.fields import Scope, ScopeIds
 from xblock.runtime import IdReader, KvsFieldData, MemoryIdManager, Runtime
 
-from xmodule.errortracker import make_error_tracker
-from xmodule.contentstore.django import contentstore
-from xmodule.modulestore.django import XBlockI18nService
-from xmodule.services import EventPublishingService, RebindUserService
-from xmodule.util.sandboxing import SandboxService
 from common.djangoapps.edxmako.services import MakoService
 from common.djangoapps.static_replace.services import ReplaceURLService
+from common.djangoapps.student.models import anonymous_id_for_user
 from common.djangoapps.track import contexts as track_contexts
 from common.djangoapps.track import views as track_views
 from common.djangoapps.xblock_django.user_service import DjangoXBlockUserService
 from lms.djangoapps.courseware.model_data import DjangoKeyValueStore, FieldDataCache
 from lms.djangoapps.grades.api import signals as grades_signals
-from openedx.core.types import User as UserType
 from openedx.core.djangoapps.enrollments.services import EnrollmentsService
 from openedx.core.djangoapps.xblock.apps import get_xblock_app_config
-from openedx.core.djangoapps.xblock.data import AuthoredDataMode, StudentDataMode, LatestVersion
+from openedx.core.djangoapps.xblock.data import AuthoredDataMode, LatestVersion, StudentDataMode
 from openedx.core.djangoapps.xblock.runtime.ephemeral_field_data import EphemeralKeyValueStore
 from openedx.core.djangoapps.xblock.runtime.mixin import LmsBlockMixin
 from openedx.core.djangoapps.xblock.utils import get_xblock_id_for_anonymous_user
 from openedx.core.lib.cache_utils import CacheService
-from openedx.core.lib.xblock_utils import wrap_fragment, xblock_local_resource_url, request_token
+from openedx.core.lib.xblock_utils import request_token, wrap_fragment, xblock_local_resource_url
+from openedx.core.types import User as UserType
+from xmodule.contentstore.django import contentstore
+from xmodule.errortracker import make_error_tracker
+from xmodule.modulestore.django import XBlockI18nService
+from xmodule.services import EventPublishingService, RebindUserService, XQueueService
+from xmodule.util.sandboxing import SandboxService
 
 from .id_managers import OpaqueKeyReader
 from .shims import RuntimeShim, XBlockShim
@@ -85,6 +85,9 @@ class XBlockRuntime(RuntimeShim, Runtime):
     The main reason we cannot make the runtime a long-lived singleton is that
     the XBlock runtime API requires 'user_id' to be a property of the runtime,
     not an argument passed in when loading particular blocks.
+
+    TODO: This should probably be merged with OpenedXContentRuntime, its one and
+          only child class. See https://github.com/openedx/openedx-platform/issues/38021
     """
 
     # ** Do not add any XModule compatibility code to this class **
@@ -259,14 +262,14 @@ class XBlockRuntime(RuntimeShim, Runtime):
 
     def parse_xml_file(self, fileobj):
         # Deny access to the inherited method
-        raise NotImplementedError("XML Serialization is only supported with LearningCoreXBlockRuntime")
+        raise NotImplementedError("XML Serialization is only supported with OpenedXContentRuntime")
 
     def add_node_as_child(self, block, node):
         """
         Called by XBlock.parse_xml to treat a child node as a child block.
         """
         # Deny access to the inherited method
-        raise NotImplementedError("XML Serialization is only supported with LearningCoreXBlockRuntime")
+        raise NotImplementedError("XML Serialization is only supported with OpenedXContentRuntime")
 
     def service(self, block: XBlock, service_name: str):
         """
@@ -301,7 +304,7 @@ class XBlockRuntime(RuntimeShim, Runtime):
 
             return DjangoXBlockUserService(
                 self.user,
-                # The value should be updated to whether the user is staff in the context when Learning Core runtime
+                # The value should be updated to whether the user is staff in the context when openedx_content runtime
                 # adds support for courses.
                 user_is_staff=self.user.is_staff,  # type: ignore
                 anonymous_user_id=self.anonymous_student_id,
@@ -347,6 +350,11 @@ class XBlockRuntime(RuntimeShim, Runtime):
             # Import here to avoid circular dependency
             from openedx.core.djangoapps.video_config.services import VideoConfigService
             return VideoConfigService()
+        elif service_name == 'discussion_config_service':
+            from openedx.core.djangoapps.discussions.services import DiscussionConfigService
+            return DiscussionConfigService()
+        elif service_name == 'xqueue':
+            return XQueueService(block)
 
         # Otherwise, fall back to the base implementation which loads services
         # defined in the constructor:
@@ -363,7 +371,7 @@ class XBlockRuntime(RuntimeShim, Runtime):
             student_data_store = DictFieldData({})
         elif self.user.is_anonymous:
             # This is an anonymous (non-registered) user:
-            assert isinstance(self.user_id, str) and self.user_id.startswith("anon")
+            assert isinstance(self.user_id, str) and self.user_id.startswith("anon")  # noqa: PT018
             kvs = EphemeralKeyValueStore()
             student_data_store = KvsFieldData(kvs)
         elif self.student_data_mode == StudentDataMode.Ephemeral:

@@ -1,6 +1,6 @@
 define([
-    'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers', 'js/discovery/models/search_state'
-], function(AjaxHelpers, SearchState) {
+    'sinon', 'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers', 'js/discovery/models/search_state'
+], function(sinon, AjaxHelpers, SearchState) {
     'use strict';
 
     var JSON_RESPONSE = {
@@ -29,7 +29,14 @@ define([
     };
 
     describe('discovery.models.SearchState', function() {
+        var requests, xhrFactory;
+
         beforeEach(function() {
+            xhrFactory = sinon.useFakeXMLHttpRequest();
+            requests = [];
+            requests.currentIndex = 0;
+            requests.restore = function() { xhrFactory.restore(); };
+            xhrFactory.onCreate = function(req) { requests.push(req); };
             this.search = new SearchState();
             this.onSearch = jasmine.createSpy('onSearch');
             this.onNext = jasmine.createSpy('onNext');
@@ -39,8 +46,11 @@ define([
             this.search.on('error', this.onError);
         });
 
+        afterEach(function() {
+            requests.restore();
+        });
+
         it('perform search', function() {
-            var requests = AjaxHelpers.requests(this);
             this.search.performSearch('dummy');
             AjaxHelpers.respondWithJson(requests, JSON_RESPONSE);
             expect(this.onSearch).toHaveBeenCalledWith('dummy', 365);
@@ -51,14 +61,12 @@ define([
         });
 
         it('returns an error', function() {
-            var requests = AjaxHelpers.requests(this);
             this.search.performSearch('');
             AjaxHelpers.respondWithError(requests, 500);
             expect(this.onError).toHaveBeenCalled();
         });
 
         it('loads next page', function() {
-            var requests = AjaxHelpers.requests(this);
             this.search.performSearch('dummy');
             AjaxHelpers.respondWithJson(requests, JSON_RESPONSE);
             this.search.loadNextPage();
@@ -67,7 +75,6 @@ define([
         });
 
         it('shows all results when there are none', function() {
-            var requests = AjaxHelpers.requests(this);
             this.search.performSearch('dummy', {modes: 'SomeOption'});
             // no results
             AjaxHelpers.respondWithJson(requests, {total: 0});

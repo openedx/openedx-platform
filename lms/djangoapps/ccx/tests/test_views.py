@@ -19,12 +19,8 @@ from django.utils.translation import gettext as _
 from edx_django_utils.cache import RequestCache
 from opaque_keys.edx.keys import CourseKey
 from pytz import UTC
-from xmodule.modulestore import ModuleStoreEnum
-from xmodule.modulestore.django import modulestore
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase, SharedModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory, SampleCourseFactory
-from xmodule.x_module import XModuleMixin
-from xmodule.capa.tests.response_xml_factory import StringResponseXMLFactory
+from xblocks_contrib.problem.capa.tests.response_xml_factory import StringResponseXMLFactory
+
 from common.djangoapps.edxmako.shortcuts import render_to_response
 from common.djangoapps.student.models import CourseEnrollment, CourseEnrollmentAllowed
 from common.djangoapps.student.roles import CourseCcxCoachRole, CourseInstructorRole, CourseStaffRole
@@ -46,6 +42,11 @@ from openedx.core.djangoapps.content.course_overviews.models import CourseOvervi
 from openedx.core.djangoapps.django_comment_common.models import FORUM_ROLE_ADMINISTRATOR
 from openedx.core.djangoapps.django_comment_common.utils import are_permissions_roles_seeded
 from openedx.core.lib.courses import get_course_by_id
+from xmodule.modulestore import ModuleStoreEnum
+from xmodule.modulestore.django import modulestore
+from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase, SharedModuleStoreTestCase
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory, SampleCourseFactory
+from xmodule.x_module import XModuleMixin
 
 
 def intercept_renderer(path, context):
@@ -229,7 +230,7 @@ class TestCCXProgressChanges(CcxTestCase, LoginEnrollmentTestCase):
 
     @patch('lms.djangoapps.ccx.views.render_to_response', intercept_renderer)
     @patch('lms.djangoapps.courseware.views.views.render_to_response', intercept_renderer)
-    @patch.dict('django.conf.settings.FEATURES', {'CUSTOM_COURSES_EDX': True})
+    @override_settings(CUSTOM_COURSES_EDX=True)
     def test_edit_schedule(self):
         """
         Get CCX schedule, modify it, save it.
@@ -355,7 +356,7 @@ class TestCoachDashboard(CcxTestCase, LoginEnrollmentTestCase):
         )
         assert re.search(error_message, response.content.decode('utf-8'))
 
-    def test_create_ccx(self, ccx_name='New CCX'):
+    def test_create_ccx(self, ccx_name='New CCX'):  # noqa: PT028
         """
         Create CCX. Follow redirect to coach dashboard, confirm we see
         the coach dashboard for the new CCX.
@@ -830,7 +831,7 @@ class TestCoachDashboardSchedule(CcxTestCase, LoginEnrollmentTestCase, ModuleSto
         # Trying to wrap the whole thing in a bulk operation fails because it
         # doesn't find the parents. But we can at least wrap this part...
         with self.store.bulk_operations(course.id, emit_signals=False):
-            blocks = flatten([  # pylint: disable=unused-variable
+            blocks = flatten([  # pylint: disable=unused-variable  # noqa: F841
                 [
                     BlockFactory.create(parent=vertical) for _ in range(2)
                 ] for vertical in self.verticals
@@ -1054,7 +1055,7 @@ class TestCCXGrades(FieldOverrideTestMixin, SharedModuleStoreTestCase, LoginEnro
         rows = response.content.decode('utf-8').strip().split('\r')
         headers = rows[0]
         # picking first student records
-        data = dict(list(zip(headers.strip().split(','), rows[1].strip().split(','))))
+        data = dict(list(zip(headers.strip().split(','), rows[1].strip().split(','))))  # noqa: B905
         assert 'HW 04' not in data
         assert data['HW 01'] == '0.75'
         assert data['HW 02'] == '0.5'
@@ -1069,7 +1070,7 @@ class TestCCXGrades(FieldOverrideTestMixin, SharedModuleStoreTestCase, LoginEnro
         get_course.return_value = self.course
         self.addCleanup(patch_context.stop)
 
-        self.client.login(username=self.student.username, password=self.TEST_PASSWORD)  # lint-amnesty, pylint: disable=no-member
+        self.client.login(username=self.student.username, password=self.TEST_PASSWORD)  # pylint: disable=no-member
         url = reverse(
             'progress',
             kwargs={'course_id': self.ccx_key}
@@ -1118,7 +1119,7 @@ class CCXCoachTabTestCase(CcxTestCase):
         """
         Test ccx coach tab state (visible or hidden) depending on the value of enable_ccx flag, ccx feature flag.
         """
-        with self.settings(FEATURES={'CUSTOM_COURSES_EDX': ccx_feature_flag}):
+        with override_settings(CUSTOM_COURSES_EDX=ccx_feature_flag):
             course = self.ccx_enabled_course if enable_ccx else self.ccx_disabled_course
             assert expected_result == self.check_ccx_tab(course, self.user)
 

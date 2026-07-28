@@ -1,4 +1,5 @@
 import $ from 'jquery';
+import sinon from 'sinon';
 import AjaxHelpers from 'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers';
 import TemplateHelpers from 'common/js/spec_helpers/template_helpers';
 import EditHelpers from 'js/spec_helpers/edit_helpers';
@@ -6,7 +7,7 @@ import XBlockInfo from 'js/models/xblock_info';
 import XBlockStringFieldEditor from 'js/views/xblock_string_field_editor';
 
 describe('XBlockStringFieldEditorView', function() {
-    var initialDisplayName, updatedDisplayName, getXBlockInfo, getFieldEditorView;
+    var initialDisplayName, updatedDisplayName, getXBlockInfo, getFieldEditorView, requests, xhrFactory;
 
     getXBlockInfo = function(displayName) {
         return new XBlockInfo(
@@ -29,6 +30,11 @@ describe('XBlockStringFieldEditorView', function() {
     };
 
     beforeEach(function() {
+        xhrFactory = sinon.useFakeXMLHttpRequest();
+        requests = [];
+        requests.currentIndex = 0;
+        requests.restore = function() { xhrFactory.restore(); };
+        xhrFactory.onCreate = function(req) { requests.push(req); };
         initialDisplayName = 'Default Display Name';
         updatedDisplayName = 'Updated Display Name';
         TemplateHelpers.installTemplate('xblock-string-field-editor');
@@ -40,6 +46,10 @@ describe('XBlockStringFieldEditorView', function() {
                 + '</h1>'
                 + '</div>'
         );
+    });
+
+    afterEach(function() {
+        requests.restore();
     });
 
     describe('Editing', function() {
@@ -54,8 +64,7 @@ describe('XBlockStringFieldEditorView', function() {
         };
 
         expectEditCanceled = function(test, fieldEditorView, options) {
-            var requests, initialRequests, displayNameInput;
-            requests = AjaxHelpers.requests(test);
+            var displayNameInput;
             displayNameInput = EditHelpers.inlineEdit(fieldEditorView.$el, options.newTitle);
             if (options.pressEscape) {
                 displayNameInput.simulate('keydown', {keyCode: $.simulate.keyCode.ESCAPE});
@@ -72,8 +81,7 @@ describe('XBlockStringFieldEditorView', function() {
         };
 
         it('can inline edit the display name', function() {
-            var requests, fieldEditorView;
-            requests = AjaxHelpers.requests(this);
+            var fieldEditorView;
             fieldEditorView = getFieldEditorView().render();
             EditHelpers.inlineEdit(fieldEditorView.$el, updatedDisplayName);
             fieldEditorView.$('button[name=submit]').click();
@@ -86,8 +94,7 @@ describe('XBlockStringFieldEditorView', function() {
         });
 
         it('does not change the title when a display name update fails', function() {
-            var requests, fieldEditorView, initialRequests;
-            requests = AjaxHelpers.requests(this);
+            var fieldEditorView;
             fieldEditorView = getFieldEditorView().render();
             EditHelpers.inlineEdit(fieldEditorView.$el, updatedDisplayName);
             fieldEditorView.$('button[name=submit]').click();
@@ -99,8 +106,7 @@ describe('XBlockStringFieldEditorView', function() {
         });
 
         it('trims whitespace from the display name', function() {
-            var requests, fieldEditorView;
-            requests = AjaxHelpers.requests(this);
+            var fieldEditorView;
             fieldEditorView = getFieldEditorView().render();
             updatedDisplayName += ' ';
             EditHelpers.inlineEdit(fieldEditorView.$el, updatedDisplayName);

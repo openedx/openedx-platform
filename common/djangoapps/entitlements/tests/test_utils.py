@@ -11,14 +11,16 @@ from opaque_keys.edx.keys import CourseKey
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.course_modes.tests.factories import CourseModeFactory
-from common.djangoapps.student.tests.factories import (  # lint-amnesty, pylint: disable=line-too-long
+from common.djangoapps.student.tests.factories import (  # pylint: disable=line-too-long
     TEST_PASSWORD,
     CourseEnrollmentFactory,
     CourseOverviewFactory,
-    UserFactory
+    UserFactory,
 )
 from openedx.core.djangolib.testing.utils import skip_unless_lms
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # pylint: disable=wrong-import-order
+)
 
 # Entitlements is not in CMS' INSTALLED_APPS so these imports will error during test collection
 if settings.ROOT_URLCONF == 'lms.urls':
@@ -38,7 +40,7 @@ class TestCourseRunFulfillableForEntitlement(ModuleStoreTestCase):
         self.user = UserFactory(is_staff=True)
         self.client.login(username=self.user.username, password=TEST_PASSWORD)
 
-    def create_course(  # lint-amnesty, pylint: disable=missing-function-docstring
+    def create_course(  # pylint: disable=missing-function-docstring
             self,
             start_from_now,
             end_from_now,

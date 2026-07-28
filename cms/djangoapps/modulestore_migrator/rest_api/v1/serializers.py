@@ -5,22 +5,23 @@ Serializers for the Course to Library Import API.
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import LearningContextKey
 from opaque_keys.edx.locator import LibraryLocatorV2
-from openedx_learning.api.authoring_models import Collection
+from openedx_content.models_api import Collection
 from rest_framework import serializers
 from user_tasks.models import UserTaskStatus
 from user_tasks.serializers import StatusSerializer
 
 from cms.djangoapps.modulestore_migrator.data import CompositionLevel, RepeatHandlingStrategy
-from cms.djangoapps.modulestore_migrator.models import (
-    ModulestoreMigration,
-    ModulestoreSource,
-)
+from cms.djangoapps.modulestore_migrator.models import ModulestoreMigration, ModulestoreSource
 
 
 class LibraryMigrationCollectionSerializer(serializers.ModelSerializer):
     """
     Serializer for the target collection of a library migration.
     """
+    # Expose Collection.collection_code as "key" to preserve the REST API field name.
+    # This is temporary: https://github.com/openedx/openedx-platform/issues/38406
+    key = serializers.CharField(source='collection_code')
+
     class Meta:
         model = Collection
         fields = ["key", "title"]

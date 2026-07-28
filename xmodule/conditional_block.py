@@ -20,15 +20,8 @@ from xmodule.seq_block import SequenceMixin
 from xmodule.studio_editable import StudioEditableBlock
 from xmodule.util.builtin_assets import add_webpack_js_to_fragment
 from xmodule.validation import StudioValidation, StudioValidationMessage
+from xmodule.x_module import STUDENT_VIEW, ResourceTemplates, XModuleMixin, XModuleToXBlockMixin, shim_xmodule_js
 from xmodule.xml_block import XmlMixin
-from xmodule.x_module import (
-    ResourceTemplates,
-    shim_xmodule_js,
-    STUDENT_VIEW,
-    XModuleMixin,
-    XModuleToXBlockMixin,
-)
-
 
 log = logging.getLogger('edx.' + __name__)
 
@@ -184,7 +177,7 @@ class ConditionalBlock(
                     for item in ConditionalBlock.parse_sources(self.xml_attributes)
                 ]
 
-    def is_condition_satisfied(self):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def is_condition_satisfied(self):  # pylint: disable=missing-function-docstring
         attr_name = self.conditions_map[self.conditional_attr]
 
         if self.conditional_value and self.get_required_blocks:
@@ -197,8 +190,7 @@ class ConditionalBlock(
                     if block is not None:
                         # We do not want to log when block is None, and it is when requester
                         # does not have access to the requested required block.
-                        log.warning('Error in conditional block: \
-                            required module {block} has no {block_attr}'.format(block=block, block_attr=attr_name))
+                        log.warning(f'Error in conditional block: required module {block} has no {attr_name}')
                     return False
 
                 attr = getattr(block, attr_name)
@@ -222,9 +214,9 @@ class ConditionalBlock(
         return fragment
 
     def get_html(self):
-        required_html_ids = [block.location.html_id() for block in self.get_required_blocks]
+        required_html_ids = [block.usage_key.html_id() for block in self.get_required_blocks]
         return self.runtime.service(self, 'mako').render_lms_template('conditional_ajax.html', {
-            'element_id': self.location.html_id(),
+            'element_id': self.usage_key.html_id(),
             'ajax_url': self.ajax_url,
             'depends': ';'.join(required_html_ids)
         })
@@ -337,7 +329,7 @@ class ConditionalBlock(
                 try:
                     block = system.process_xml(etree.tostring(child, encoding='unicode'))
                     children.append(block.scope_ids.usage_id)
-                except:  # lint-amnesty, pylint: disable=bare-except
+                except:  # pylint: disable=bare-except
                     msg = "Unable to load child when parsing Conditional."
                     log.exception(msg)
                     system.error_tracker(msg)

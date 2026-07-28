@@ -10,11 +10,13 @@ from django.contrib.messages import get_messages
 from django.test import Client
 from django.urls import reverse
 
-from openedx.core.djangoapps.catalog.tests.factories import CourseRunFactory
-from openedx.features.enterprise_support.admin.forms import CSVImportForm
 from common.djangoapps.student.models import CourseEnrollment, CourseEnrollmentAttribute
 from common.djangoapps.student.tests.factories import TEST_PASSWORD, AdminFactory, CourseEnrollmentFactory, UserFactory
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from openedx.core.djangoapps.catalog.tests.factories import CourseRunFactory
+from openedx.features.enterprise_support.admin.forms import CSVImportForm
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # pylint: disable=wrong-import-order
+)
 
 
 class EnrollmentAttributeOverrideViewTest(ModuleStoreTestCase):
@@ -36,7 +38,7 @@ class EnrollmentAttributeOverrideViewTest(ModuleStoreTestCase):
             self.users.append(UserFactory())
 
         self.course = CourseRunFactory()
-        self.course_id = self.course.get('key')  # lint-amnesty, pylint: disable=no-member
+        self.course_id = self.course.get('key')  # pylint: disable=no-member
         self.csv_data = [
             [self.users[0].id, self.course_id, 'OP_4321'],
             [self.users[1].id, self.course_id, 'OP_8765'],

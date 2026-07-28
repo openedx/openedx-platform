@@ -29,7 +29,7 @@ def track(user_id, event_name, properties=None, context=None, traits=None):
         if 'ip' not in segment_context and 'ip' in tracking_context:
             segment_context['ip'] = tracking_context.get('ip')
 
-        if ('Google Analytics' not in segment_context or 'clientId' not in segment_context['Google Analytics']) and 'client_id' in tracking_context:  # lint-amnesty, pylint: disable=line-too-long
+        if ('Google Analytics' not in segment_context or 'clientId' not in segment_context['Google Analytics']) and 'client_id' in tracking_context:  # pylint: disable=line-too-long
             segment_context['Google Analytics'] = {
                 'clientId': tracking_context.get('client_id')
             }

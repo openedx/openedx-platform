@@ -4,13 +4,10 @@ Handlers for notifications
 import logging
 
 from django.contrib.auth import get_user_model
-from django.db import IntegrityError, transaction, ProgrammingError
+from django.db import IntegrityError, ProgrammingError, transaction
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from openedx_events.learning.signals import (
-    COURSE_NOTIFICATION_REQUESTED,
-    USER_NOTIFICATION_REQUESTED
-)
+from openedx_events.learning.signals import COURSE_NOTIFICATION_REQUESTED, USER_NOTIFICATION_REQUESTED
 
 from common.djangoapps.student.models import CourseEnrollment
 from openedx.core.djangoapps.notifications.audience_filters import (
@@ -18,7 +15,7 @@ from openedx.core.djangoapps.notifications.audience_filters import (
     CourseRoleAudienceFilter,
     EnrollmentAudienceFilter,
     ForumRoleAudienceFilter,
-    TeamAudienceFilter
+    TeamAudienceFilter,
 )
 from openedx.core.djangoapps.notifications.base_notification import COURSE_NOTIFICATION_TYPES
 from openedx.core.djangoapps.notifications.models import NotificationPreference
@@ -82,7 +79,7 @@ def calculate_course_wide_notification_audience(course_key, audience_filters):
 
     audience_user_ids = []
     for filter_type, filter_values in audience_filters.items():
-        if filter_type in AUDIENCE_FILTER_CLASSES.keys():  # lint-amnesty, pylint: disable=consider-iterating-dictionary
+        if filter_type in AUDIENCE_FILTER_CLASSES.keys():  # pylint: disable=consider-iterating-dictionary
             filter_class = AUDIENCE_FILTER_CLASSES.get(filter_type)
             if filter_class:
                 filter_instance = filter_class(course_key)

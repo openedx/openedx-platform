@@ -8,11 +8,8 @@ from unittest import mock
 
 import ddt
 import httpretty
+from django.test import override_settings
 from django.test.client import RequestFactory
-from xmodule.modulestore import ModuleStoreEnum
-from xmodule.modulestore.django import modulestore
-from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory
 
 from common.djangoapps.student.tests.factories import UserFactory
 from common.djangoapps.util.testing import UrlResetMixin
@@ -32,6 +29,10 @@ from openedx.core.djangoapps.django_comment_common.models import (
     FORUM_ROLE_STUDENT,
     Role,
 )
+from xmodule.modulestore import ModuleStoreEnum
+from xmodule.modulestore.django import modulestore
+from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
+from xmodule.modulestore.tests.factories import CourseFactory
 
 
 @ddt.ddt
@@ -114,7 +115,7 @@ class CommentSerializerDeserializationTest(ForumMockUtilsMixin, SharedModuleStor
             parent_id=parent_id
         )
         saved = self.save_and_reserialize(data)
-        expected_url = (
+        expected_url = (  # noqa: F841
             f"/api/v1/comments/{parent_id}" if parent_id else
             "/api/v1/threads/test_thread/comments"
         )
@@ -179,7 +180,7 @@ class CommentSerializerDeserializationTest(ForumMockUtilsMixin, SharedModuleStor
         )
         saved = self.save_and_reserialize(data, instance=self.existing_comment)
 
-        params = {
+        params = {  # noqa: F841
             'body': 'Edited body',
             'course_id': str(self.course.id),
             'user_id': str(self.user.id),
@@ -385,6 +386,7 @@ class CommentSerializerDeserializationTest(ForumMockUtilsMixin, SharedModuleStor
 
 
 @ddt.ddt
+@override_settings(ENABLE_DISCUSSION_SERVICE=True)
 class ThreadSerializerDeserializationTest(
         ForumMockUtilsMixin,
         UrlResetMixin,
@@ -392,7 +394,6 @@ class ThreadSerializerDeserializationTest(
 ):
     """Tests for ThreadSerializer deserialization."""
     @classmethod
-    @mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
     def setUpClass(cls):
         super().setUpClass()
         cls.course = CourseFactory.create()
@@ -404,7 +405,6 @@ class ThreadSerializerDeserializationTest(
         super().tearDownClass()
         super().disposeForumMocks()
 
-    @mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
     def setUp(self):
         super().setUp()
         httpretty.reset()
@@ -538,7 +538,6 @@ class SerializerTestMixin(UrlResetMixin, ForumMockUtilsMixin):
     Test Mixin for Serializer tests
     """
     @classmethod
-    @mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
     def setUpClass(cls):
         super().setUpClass()
         cls.course = CourseFactory.create()
@@ -550,7 +549,6 @@ class SerializerTestMixin(UrlResetMixin, ForumMockUtilsMixin):
         super().tearDownClass()
         super().disposeForumMocks()
 
-    @mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
     def setUp(self):
         super().setUp()
         httpretty.reset()
@@ -658,6 +656,7 @@ class SerializerTestMixin(UrlResetMixin, ForumMockUtilsMixin):
 
 
 @ddt.ddt
+@override_settings(ENABLE_DISCUSSION_SERVICE=True)
 class CommentSerializerTest(SerializerTestMixin, SharedModuleStoreTestCase):
     """Tests for CommentSerializer."""
 
@@ -844,6 +843,7 @@ class CommentSerializerTest(SerializerTestMixin, SharedModuleStoreTestCase):
 
 
 @ddt.ddt
+@override_settings(ENABLE_DISCUSSION_SERVICE=True)
 class ThreadSerializerSerializationTest(SerializerTestMixin, SharedModuleStoreTestCase, ForumMockUtilsMixin):
     """Tests for ThreadSerializer serialization."""
 

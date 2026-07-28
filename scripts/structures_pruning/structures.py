@@ -6,8 +6,8 @@ MongoDB (edxapp.modulestore.structures by default). See docstring/help for the
 """
 
 import logging
-from os import path
 import sys
+from os import path
 
 import click
 import click_log
@@ -15,7 +15,7 @@ import click_log
 # Add top-level project path to sys.path before importing scripts code
 sys.path.append(path.abspath(path.join(path.dirname(__file__), '../..')))
 
-from scripts.structures_pruning.utils.splitmongo import SplitMongoBackend, ChangePlan
+from scripts.structures_pruning.utils.splitmongo import ChangePlan, SplitMongoBackend
 
 # Add top-level module path to sys.path before importing tubular code.
 # sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -187,7 +187,7 @@ def prune(ctx, plan_file, delay, batch_size, start):
     change_plan = ChangePlan.load(plan_file)
     if start is not None and start not in change_plan.delete:
         raise click.BadParameter(
-            "{} is not in the Change Plan {}".format(
+            "{} is not in the Change Plan {}".format(  # noqa: UP032
                 start, click.format_filename(plan_file.name)
             ),
             param_hint='--start'

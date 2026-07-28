@@ -348,7 +348,7 @@ def _add_enterprise_marketing_footer_query_params(url):
     """Add query params to url if they exist in the settings"""
     params = settings.ENTERPRISE_MARKETING_FOOTER_QUERY_PARAMS
     if params:
-        return "{url}/?{params}".format(
+        return "{url}/?{params}".format(  # noqa: UP032
             url=url,
             params=six.moves.urllib.parse.urlencode(params),
         )

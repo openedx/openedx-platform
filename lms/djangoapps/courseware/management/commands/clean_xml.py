@@ -33,7 +33,7 @@ def export(course, export_dir):
     exist.  Overwrites files, does not clean out dir beforehand.
     """
     fs = OSFS(export_dir, create=True)
-    if not fs.isdirempty('.'):  # lint-amnesty, pylint: disable=no-member
+    if not fs.isdirempty('.'):  # pylint: disable=no-member
         print(f'WARNING: Directory {export_dir} not-empty.  May clobber/confuse things')
 
     try:
@@ -44,14 +44,14 @@ def export(course, export_dir):
             root.write(f)
 
         return True
-    except:  # lint-amnesty, pylint: disable=bare-except
+    except:  # pylint: disable=bare-except
         print('Export failed!')
         traceback.print_exc()
 
     return False
 
 
-def import_with_checks(course_dir):  # lint-amnesty, pylint: disable=missing-function-docstring
+def import_with_checks(course_dir):  # pylint: disable=missing-function-docstring
     all_ok = True
 
     print(f'Attempting to load "{course_dir}"')
@@ -133,7 +133,7 @@ def check_roundtrip(course_dir):
     print('======== ideally there is no diff above this =======')
 
 
-class Command(BaseCommand):  # lint-amnesty, pylint: disable=missing-class-docstring
+class Command(BaseCommand):  # pylint: disable=missing-class-docstring
     help = 'Imports specified course, validates it, then exports it in a canonical format.'
 
     def add_arguments(self, parser):

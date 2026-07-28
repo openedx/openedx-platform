@@ -114,7 +114,7 @@ class Command(BaseCommand):
                 'JWT_AUTH': public_keys,
             }
             jwt_auth_data['JWT_AUTH'].update(private_keys)
-            with open(options['output_file'], 'w') as f_out:  # lint-amnesty, pylint: disable=bad-option-value, open-builtin
+            with open(options['output_file'], 'w') as f_out:  # pylint: disable=bad-option-value, open-builtin
                 yaml.safe_dump(jwt_auth_data, stream=f_out)
 
     def _generate_key_id(self, size, chars=string.ascii_uppercase + string.digits):

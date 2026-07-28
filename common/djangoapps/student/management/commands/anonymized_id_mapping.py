@@ -10,7 +10,7 @@ the following:
 
 import csv
 
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.core.management.base import BaseCommand, CommandError
 from opaque_keys.edx.keys import CourseKey
 
@@ -39,7 +39,7 @@ class Command(BaseCommand):
         # Figure out which students are enrolled in the course
         students = User.objects.filter(courseenrollment__course_id=course_key)
         if len(students) == 0:
-            self.stdout.write("No students enrolled in %s" % str(course_key))
+            self.stdout.write("No students enrolled in %s" % str(course_key))  # noqa: UP031
             return
 
         # Write mapping to output file in CSV format with a simple header
@@ -58,4 +58,4 @@ class Command(BaseCommand):
                         anonymous_id_for_user(student, course_key)
                     ))
         except OSError:
-            raise CommandError("Error writing to file: %s" % output_filename)  # lint-amnesty, pylint: disable=raise-missing-from
+            raise CommandError("Error writing to file: %s" % output_filename)  # pylint: disable=raise-missing-from  # noqa: B904, UP031

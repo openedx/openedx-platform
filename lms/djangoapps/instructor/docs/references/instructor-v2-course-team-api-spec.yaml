@@ -1,0 +1,612 @@
+swagger: '2.0'
+info:
+  title: Instructor Dashboard Course Team API
+  version: 2.0.0
+  description: |
+    Modern REST API for managing course team members (instructors, staff, beta testers,
+    CCX coaches, and discussion/forum roles) on the instructor dashboard.
+
+    **Design Principles:**
+    - RESTful resource-oriented URLs
+    - Query parameters for filtering operations
+    - Clear separation between read and write operations
+    - Consistent error handling
+
+    **Execution Model:**
+    - All operations execute synchronously
+    - Single-user modifications are immediate (~100-500ms)
+    - Bulk beta tester operations process each identifier and return aggregated results
+
+    **Authorization:**
+    - Listing and modifying course team members requires instructor-level access
+    - Bulk beta tester management requires beta test permission
+    - Instructors cannot remove their own instructor access
+
+host: courses.example.com
+basePath: /
+schemes:
+  - https
+
+securityDefinitions:
+  JWTAuth:
+    type: apiKey
+    in: header
+    name: Authorization
+    description: JWT token authentication. Header format depends on JWT_AUTH['JWT_AUTH_HEADER_PREFIX'] setting (default is 'JWT <token>').
+
+security:
+  - JWTAuth: []
+
+tags:
+  - name: Course Team
+    description: Course team role membership management
+  - name: Beta Testers
+    description: Bulk beta tester management
+
+paths:
+  # ==================== COURSE TEAM ENDPOINTS ====================
+
+  /api/instructor/v2/courses/{course_key}/team:
+    get:
+      tags:
+        - Course Team
+      summary: List course team members
+      description: |
+        Retrieve a list of users who hold course team roles.
+
+        When `role` is provided, returns only members with that role.
+        When `role` is omitted, returns all team members across all roles.
+        Each result includes a `role` field so the caller knows which role
+        the user holds.
+
+        **Available Roles:**
+        - `instructor` — Full admin, can manage other roles
+        - `staff` — Can view/edit content, limited role management
+        - `limited_staff` — LMS-only staff
+        - `beta` — Beta testers
+        - `ccx_coach` — CCX coach (only when CCX is enabled)
+        - `data_researcher` — Data researcher
+        - `Administrator` — Discussion administrator (forum role)
+        - `Moderator` — Discussion moderator (forum role)
+        - `Group Moderator` — Group moderator (forum role)
+        - `Community TA` — Community TA (forum role)
+
+        The `email_or_username` query parameter performs a case-insensitive
+        substring match against username and email.
+
+        Results are paginated via `page` and `page_size`.
+
+        **Note:** This replaces the legacy `POST /courses/{course_id}/instructor/api/list_course_role_members` endpoint.
+      operationId: listCourseTeamMembers
+      produces:
+        - application/json
+      parameters:
+        - $ref: '#/parameters/CourseKey'
+        - name: role
+          in: query
+          description: |
+            Filter by role. When omitted, members across all roles are returned.
+          required: false
+          type: string
+          enum:
+            - instructor
+            - staff
+            - limited_staff
+            - beta
+            - ccx_coach
+            - data_researcher
+            - Administrator
+            - Moderator
+            - Group Moderator
+            - Community TA
+          x-example: "staff"
+        - name: email_or_username
+          in: query
+          description: |
+            Case-insensitive substring filter applied to username and email.
+          required: false
+          type: string
+          x-example: "jane_doe"
+        - name: page
+          in: query
+          description: Page number (1-indexed).
+          required: false
+          type: integer
+          minimum: 1
+          default: 1
+        - name: page_size
+          in: query
+          description: Number of results per page.
+          required: false
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 10
+      responses:
+        200:
+          description: Team members retrieved successfully
+          schema:
+            $ref: '#/definitions/CourseTeamMemberList'
+          examples:
+            application/json:
+              course_id: "course-v1:edX+DemoX+Demo_Course"
+              role: null
+              email_or_username: null
+              count: 2
+              num_pages: 1
+              current_page: 1
+              start: 0
+              next: null
+              previous: null
+              results:
+                - username: "jane_doe"
+                  email: "jane@example.com"
+                  first_name: "Diana"
+                  last_name: "Salas"
+                  roles:
+                    - role: "staff"
+                      display_name: "Staff"
+                    - role: "beta"
+                      display_name: "Beta Tester"
+                    - role: "ccx_coach"
+                      display_name: "CCX Coach"
+                - username: "staff_user2"
+                  email: "staff2@example.com"
+                  first_name: "Bob"
+                  last_name: "Jones"
+                  roles:
+                    - role: "staff"
+                      display_name: "Staff"
+        400:
+          $ref: '#/responses/BadRequest'
+        401:
+          $ref: '#/responses/Unauthorized'
+        403:
+          $ref: '#/responses/Forbidden'
+        404:
+          $ref: '#/responses/NotFound'
+
+    post:
+      tags:
+        - Course Team
+      summary: Grant or revoke a course role for one or more users
+      description: |
+        Grant or revoke a specific course role for one or more users, identified by
+        username or email.
+
+        **Behavior (action=allow):**
+        - If a user is not already enrolled in the course, they will be auto-enrolled
+        - For `ccx_coach` role, an enrollment email is sent automatically
+
+        **Behavior (action=revoke):**
+        - Instructors cannot revoke their own instructor access (per-identifier error)
+
+        **Common:**
+        - Users must exist and be active; per-identifier errors are reported in the response
+
+        **Note:** This replaces the legacy
+        `POST /courses/{course_id}/instructor/api/modify_access` endpoint.
+      operationId: modifyCourseRole
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - $ref: '#/parameters/CourseKey'
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            required:
+              - identifiers
+              - role
+              - action
+            properties:
+              identifiers:
+                type: array
+                description: List of usernames or emails of users to modify
+                minItems: 1
+                items:
+                  type: string
+                example: ["jane_doe", "john@example.com"]
+              role:
+                type: string
+                description: The role to grant or revoke (course access role or forum role)
+                enum:
+                  - instructor
+                  - staff
+                  - limited_staff
+                  - beta
+                  - ccx_coach
+                  - data_researcher
+                  - Administrator
+                  - Moderator
+                  - Group Moderator
+                  - Community TA
+                example: "staff"
+              action:
+                type: string
+                description: Whether to grant ('allow') or revoke ('revoke') the role
+                enum:
+                  - allow
+                  - revoke
+                example: "allow"
+      responses:
+        200:
+          description: Role modification completed (per-identifier results)
+          schema:
+            $ref: '#/definitions/CourseTeamGrantResult'
+          examples:
+            application/json:
+              action: "allow"
+              role: "staff"
+              results:
+                - identifier: "jane_doe"
+                  error: false
+                  userDoesNotExist: false
+                  is_active: true
+                - identifier: "john@example.com"
+                  error: false
+                  userDoesNotExist: false
+                  is_active: true
+        400:
+          $ref: '#/responses/BadRequest'
+        401:
+          $ref: '#/responses/Unauthorized'
+        403:
+          $ref: '#/responses/Forbidden'
+        404:
+          $ref: '#/responses/NotFound'
+
+  /api/instructor/v2/courses/{course_key}/team/{email_or_username}:
+    delete:
+      tags:
+        - Course Team
+      summary: Revoke one or more course roles from a user
+      description: |
+        Revoke one or more course roles from a user.
+
+        **Constraints:**
+        - Instructors cannot revoke their own instructor access
+        - The user must exist and be active
+
+        **Note:** This replaces the `action=revoke` path of the legacy
+        `POST /courses/{course_id}/instructor/api/modify_access` endpoint.
+      operationId: revokeCourseRole
+      produces:
+        - application/json
+      consumes:
+        - application/json
+      parameters:
+        - $ref: '#/parameters/CourseKey'
+        - name: email_or_username
+          in: path
+          description: Username or email of the user to revoke the role from
+          required: true
+          type: string
+          x-example: "jane_doe"
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            required:
+              - roles
+            properties:
+              roles:
+                type: array
+                items:
+                  type: string
+                  enum:
+                    - instructor
+                    - staff
+                    - limited_staff
+                    - beta
+                    - ccx_coach
+                    - data_researcher
+                    - Administrator
+                    - Moderator
+                    - Group Moderator
+                    - Community TA
+                description: One or more roles to revoke (course access role or forum role)
+                minItems: 1
+                x-example: ["staff", "beta"]
+      responses:
+        200:
+          description: Role(s) revoked successfully
+          schema:
+            type: object
+            required:
+              - identifier
+              - roles
+              - action
+              - success
+            properties:
+              identifier:
+                type: string
+              roles:
+                type: array
+                items:
+                  type: string
+              action:
+                type: string
+                enum: ["revoke"]
+              success:
+                type: boolean
+          examples:
+            application/json:
+              identifier: "jane_doe"
+              roles: ["staff", "beta"]
+              action: "revoke"
+              success: true
+        400:
+          $ref: '#/responses/BadRequest'
+        401:
+          $ref: '#/responses/Unauthorized'
+        403:
+          $ref: '#/responses/Forbidden'
+        404:
+          $ref: '#/responses/NotFound'
+        409:
+          description: Cannot remove own instructor access
+          schema:
+            type: object
+            required:
+              - error
+            properties:
+              error:
+                type: string
+                description: Error message explaining why the instructor role cannot be revoked
+          examples:
+            application/json:
+              error: "Instructors cannot remove their own instructor access."
+
+# ==================== COMPONENTS ====================
+
+parameters:
+  CourseKey:
+    name: course_key
+    in: path
+    required: true
+    description: Course identifier in format `course-v1:{org}+{course}+{run}`
+    type: string
+    pattern: '^course-v1:[^/+]+(\+[^/+]+)+(\+[^/]+)$'
+    x-example: "course-v1:edX+DemoX+Demo_Course"
+
+responses:
+  BadRequest:
+    description: Bad request - Invalid parameters or malformed request. Returns either
+      a simple error payload or serializer validation errors.
+    schema:
+      $ref: '#/definitions/Error'
+    examples:
+      application/json:
+        error: "The role query parameter is required."
+
+  Unauthorized:
+    description: Unauthorized - Authentication required
+    schema:
+      $ref: '#/definitions/Error'
+    examples:
+      application/json:
+        detail: "Authentication credentials were not provided."
+
+  Forbidden:
+    description: Forbidden - Insufficient permissions
+    schema:
+      $ref: '#/definitions/Error'
+    examples:
+      application/json:
+        detail: "You do not have permission to perform this action."
+
+  NotFound:
+    description: Not found - Resource does not exist
+    schema:
+      $ref: '#/definitions/Error'
+    examples:
+      application/json:
+        error: "User 'unknown' not found."
+
+definitions:
+  CourseTeamMemberList:
+    type: object
+    description: Paginated list of course team members, optionally filtered by role and/or identity
+    required:
+      - course_id
+      - role
+      - email_or_username
+      - count
+      - num_pages
+      - current_page
+      - results
+    properties:
+      course_id:
+        type: string
+        description: Course identifier
+        example: "course-v1:edX+DemoX+Demo_Course"
+      role:
+        type: string
+        description: The role that was queried, or null when all roles were requested
+        x-nullable: true
+        example: "staff"
+      email_or_username:
+        type: string
+        description: The identity filter that was applied, or null when no filter was provided
+        x-nullable: true
+        example: "jane_doe"
+      count:
+        type: integer
+        description: Total number of matching team members across all pages
+        example: 150
+      num_pages:
+        type: integer
+        description: Total number of pages
+        example: 15
+      current_page:
+        type: integer
+        description: Current page number (1-indexed)
+        example: 1
+      start:
+        type: integer
+        description: Index (0-based) of the first result on this page in the overall result set
+        example: 0
+      next:
+        type: string
+        description: URL for the next page, or null if there is no next page
+        x-nullable: true
+        example: "http://example.com/api/instructor/v2/courses/.../team?page=2"
+      previous:
+        type: string
+        description: URL for the previous page, or null if there is no previous page
+        x-nullable: true
+        example: null
+      results:
+        type: array
+        description: List of team members on this page
+        items:
+          $ref: '#/definitions/CourseTeamMember'
+
+  CourseTeamMember:
+    type: object
+    description: A user with one or more course team roles, aggregated into a single record
+    required:
+      - username
+      - email
+      - first_name
+      - last_name
+      - roles
+    properties:
+      username:
+        type: string
+        description: User's username
+        example: "staff_user1"
+      email:
+        type: string
+        format: email
+        description: User's email address
+        example: "staff1@example.com"
+      first_name:
+        type: string
+        description: User's first name
+        example: "Alice"
+      last_name:
+        type: string
+        description: User's last name
+        example: "Smith"
+      roles:
+        type: array
+        description: All roles held by this user in the course
+        items:
+          $ref: '#/definitions/CourseTeamMemberRole'
+
+  CourseTeamMemberRole:
+    type: object
+    description: A role held by a team member, with its localized display name
+    required:
+      - role
+      - display_name
+    properties:
+      role:
+        type: string
+        description: Role identifier (course access role or forum role)
+        example: "staff"
+      display_name:
+        type: string
+        description: Localized display name for the role
+        example: "Staff"
+
+  CourseTeamModifyResult:
+    type: object
+    description: Result of granting or revoking a course role
+    required:
+      - identifier
+      - role
+      - action
+      - success
+    properties:
+      identifier:
+        type: string
+        description: Username of the affected user
+        example: "jane_doe"
+      role:
+        type: string
+        description: The role that was modified
+        example: "staff"
+      action:
+        type: string
+        enum: ["allow", "revoke"]
+        description: The action that was performed
+        example: "allow"
+      success:
+        type: boolean
+        description: Whether the operation succeeded
+        example: true
+
+  CourseTeamGrantResult:
+    type: object
+    description: Aggregated result of a course role modification operation
+    required:
+      - action
+      - role
+      - results
+    properties:
+      action:
+        type: string
+        enum: ["allow", "revoke"]
+        description: The action that was performed
+        example: "allow"
+      role:
+        type: string
+        description: The role that was modified
+        example: "staff"
+      results:
+        type: array
+        description: Per-identifier results
+        items:
+          $ref: '#/definitions/CourseTeamGrantItemResult'
+
+  CourseTeamGrantItemResult:
+    type: object
+    description: Result for a single identifier in a course role grant operation
+    required:
+      - identifier
+      - error
+      - userDoesNotExist
+      - is_active
+    properties:
+      identifier:
+        type: string
+        description: The email or username that was processed
+        example: "jane_doe"
+      error:
+        type: boolean
+        description: Whether an error occurred processing this identifier
+        example: false
+      userDoesNotExist:
+        type: boolean
+        description: Whether the user was not found
+        example: false
+      is_active:
+        type: boolean
+        description: Whether the user account is active (null if user does not exist)
+        x-nullable: true
+        example: true
+
+  Error:
+    type: object
+    description: |
+      Error response. The shape varies by error source:
+      - View-level errors return `{"error": "..."}` with a human-readable message.
+      - Serializer validation errors return field-keyed objects (e.g., `{"role": ["..."]}`).
+      - DRF permission/authentication errors return `{"detail": "..."}`.
+    properties:
+      error:
+        type: string
+        description: Human-readable error message (view-level errors)
+        example: "User 'unknown' not found."
+      detail:
+        type: string
+        description: Error message from DRF (authentication/permission errors)
+        example: "Authentication credentials were not provided."
+    additionalProperties: true

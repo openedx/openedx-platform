@@ -2,7 +2,10 @@
 Subclass of oauthlib's RequestValidator that checks an OAuth signature.
 """
 
+import time
 
+from django.core.cache import cache
+from edx_django_utils.cache import get_cache_key
 from oauthlib.oauth1 import RequestValidator, SignatureOnlyEndpoint
 
 
@@ -30,7 +33,7 @@ class SignatureValidator(RequestValidator):
     # on the platform.
     enforce_ssl = False
 
-    def check_client_key(self, key):  # lint-amnesty, pylint: disable=arguments-differ
+    def check_client_key(self, key):  # pylint: disable=arguments-differ
         """
         Verify that the key supplied by the LTI consumer is valid for an LTI
         launch. This method is only concerned with the structure of the key;
@@ -63,10 +66,37 @@ class SignatureValidator(RequestValidator):
         in which the timestamp marks a request as valid. This method signature
         is required by the oauthlib library.
 
+        Rejects requests whose timestamp falls outside a ±5-minute window, then
+        performs an atomic check-and-store of the nonce so that replayed requests
+        are rejected.
+
+        We use Django's cache.add() directly rather than TieredCache because
+        nonce replay prevention requires an atomic check-and-store: cache.add()
+        only writes the key when it does not already exist and returns False
+        immediately if it does. TieredCache has no equivalent atomic primitive,
+        so a separate get-then-set would leave a race window that an attacker
+        could exploit.
+
+        Security requirement: this protection only holds across all LMS nodes if
+        the Django cache backend is shared (e.g. Redis or Memcached). A
+        per-process backend such as LocMemCache will not prevent replays that
+        arrive on a different node. See lms/djangoapps/lti_provider/README.rst.
+
         :return: True if the OAuth nonce and timestamp are valid, False if they
         are not.
         """
-        return True
+        try:
+            if abs(time.time() - int(timestamp)) > 300:
+                return False
+        except (ValueError, TypeError):
+            return False
+
+        # Nonces are scoped per client_key so that two different LTI consumers
+        # generating the same nonce string do not interfere with each other.
+        cache_key = get_cache_key(namespace="lti_nonce", client_key=client_key, nonce=nonce)
+        # cache.add() atomically sets the key only if absent.
+        # Returns True (new nonce, allow) or False (already seen, reject).
+        return cache.add(cache_key, 1, 600)
 
     def validate_client_key(self, client_key, request):
         """
@@ -140,13 +170,13 @@ class SignatureValidator(RequestValidator):
         """
         raise NotImplementedError
 
-    def dummy_access_token(self):  # lint-amnesty, pylint: disable=invalid-overridden-method
+    def dummy_access_token(self):  # pylint: disable=invalid-overridden-method
         """
         Unused abstract method from super class. See documentation in RequestValidator
         """
         raise NotImplementedError
 
-    def dummy_client(self):  # lint-amnesty, pylint: disable=invalid-overridden-method
+    def dummy_client(self):  # pylint: disable=invalid-overridden-method
         """
         Unused abstract method from super class. See documentation in RequestValidator
         """
@@ -171,7 +201,7 @@ class SignatureValidator(RequestValidator):
         """
         raise NotImplementedError
 
-    def dummy_request_token(self):  # lint-amnesty, pylint: disable=invalid-overridden-method
+    def dummy_request_token(self):  # pylint: disable=invalid-overridden-method
         """
         Unused abstract method from super class. See documentation in RequestValidator
         """

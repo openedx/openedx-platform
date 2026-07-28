@@ -11,28 +11,19 @@ import itertools
 import random
 from datetime import datetime, timedelta
 from unittest import mock
-from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
+from urllib.parse import parse_qs, urlencode, urlparse, urlunparse  # noqa: F401
 
 import ddt
 import httpretty
 import pytest
-from django.test import override_settings
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
+from django.test import override_settings
 from django.test.client import RequestFactory
-from opaque_keys.edx.keys import CourseKey
+from opaque_keys.edx.keys import CourseKey  # noqa: F401
 from opaque_keys.edx.locator import CourseLocator
 from pytz import UTC
 from rest_framework.exceptions import PermissionDenied
-
-from xmodule.modulestore import ModuleStoreEnum
-from xmodule.modulestore.django import modulestore
-from xmodule.modulestore.tests.django_utils import (
-    ModuleStoreTestCase,
-    SharedModuleStoreTestCase,
-)
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory
-from xmodule.partitions.partitions import Group, UserPartition
 
 from common.djangoapps.student.tests.factories import (
     AdminFactory,
@@ -43,10 +34,6 @@ from common.djangoapps.student.tests.factories import (
 )
 from common.djangoapps.util.testing import UrlResetMixin
 from common.test.utils import MockSignalHandlerMixin, disable_signal
-from lms.djangoapps.discussion.tests.utils import (
-    make_minimal_cs_comment,
-    make_minimal_cs_thread,
-)
 from lms.djangoapps.discussion.rest_api import api
 from lms.djangoapps.discussion.rest_api.api import (
     create_comment,
@@ -59,7 +46,7 @@ from lms.djangoapps.discussion.rest_api.api import (
     get_course_topics_v2,
     get_thread,
     get_thread_list,
-    get_user_comments,
+    get_user_comments,  # noqa: F401
     update_comment,
     update_thread,
 )
@@ -71,22 +58,21 @@ from lms.djangoapps.discussion.rest_api.exceptions import (
 )
 from lms.djangoapps.discussion.rest_api.serializers import TopicOrdering
 from lms.djangoapps.discussion.rest_api.tests.utils import (
-    CommentsServiceMockMixin,
+    CommentsServiceMockMixin,  # noqa: F401
     ForumMockUtilsMixin,
     make_paginated_api_response,
-    parsed_body,
+    parsed_body,  # noqa: F401
 )
+from lms.djangoapps.discussion.tests.utils import make_minimal_cs_comment, make_minimal_cs_thread
 from openedx.core.djangoapps.course_groups.models import CourseUserGroupPartitionGroup
 from openedx.core.djangoapps.course_groups.tests.helpers import CohortFactory
 from openedx.core.djangoapps.discussions.models import (
     DiscussionsConfiguration,
     DiscussionTopicLink,
-    Provider,
     PostingRestriction,
+    Provider,
 )
-from openedx.core.djangoapps.discussions.tasks import (
-    update_discussions_settings_from_course_task,
-)
+from openedx.core.djangoapps.discussions.tasks import update_discussions_settings_from_course_task
 from openedx.core.djangoapps.django_comment_common.models import (
     FORUM_ROLE_ADMINISTRATOR,
     FORUM_ROLE_COMMUNITY_TA,
@@ -96,6 +82,11 @@ from openedx.core.djangoapps.django_comment_common.models import (
     Role,
 )
 from openedx.core.lib.exceptions import CourseNotFoundError, PageNotFoundError
+from xmodule.modulestore import ModuleStoreEnum
+from xmodule.modulestore.django import modulestore
+from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase, SharedModuleStoreTestCase
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
+from xmodule.partitions.partitions import Group, UserPartition
 
 User = get_user_model()
 
@@ -178,7 +169,7 @@ def _set_course_discussion_blackout(course, user_id):
 @ddt.ddt
 @disable_signal(api, "thread_created")
 @disable_signal(api, "thread_voted")
-@mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+@override_settings(ENABLE_DISCUSSION_SERVICE=True)
 class CreateThreadTest(
     UrlResetMixin,
     SharedModuleStoreTestCase,
@@ -237,9 +228,6 @@ class CreateThreadTest(
         super().tearDownClass()
         super().disposeForumMocks()
 
-    @mock.patch.dict(
-        "django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True}
-    )
     def setUp(self):
         super().setUp()
         self.course = CourseFactory.create()
@@ -323,10 +311,10 @@ class CreateThreadTest(
         """
         _set_course_discussion_blackout(course=self.course, user_id=self.user.id)
 
-        with self.assertRaises(DiscussionBlackOutException) as assertion:
+        with self.assertRaises(DiscussionBlackOutException) as assertion:  # noqa: PT027
             create_thread(self.request, self.minimal_data)
-        self.assertEqual(assertion.exception.status_code, 403)
-        self.assertEqual(
+        self.assertEqual(assertion.exception.status_code, 403)  # noqa: PT009
+        self.assertEqual(  # noqa: PT009
             assertion.exception.detail, "Discussions are in blackout period."
         )
 
@@ -392,8 +380,8 @@ class CreateThreadTest(
         }
         self.check_mock_called_with("create_thread", -1, **params)
         event_name, event_data = mock_emit.call_args[0]
-        self.assertEqual(event_name, "edx.forum.thread.created")
-        self.assertEqual(
+        self.assertEqual(event_name, "edx.forum.thread.created")  # noqa: PT009
+        self.assertEqual(  # noqa: PT009
             event_data,
             {
                 "commentable_id": "test_topic",
@@ -594,7 +582,7 @@ class CreateThreadTest(
 @ddt.ddt
 @disable_signal(api, "comment_created")
 @disable_signal(api, "comment_voted")
-@mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+@override_settings(ENABLE_DISCUSSION_SERVICE=True)
 @mock.patch(
     "lms.djangoapps.discussion.signals.handlers.send_response_notifications",
     new=mock.Mock(),
@@ -619,9 +607,6 @@ class CreateCommentTest(
         super().tearDownClass()
         super().disposeForumMocks()
 
-    @mock.patch.dict(
-        "django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True}
-    )
     def setUp(self):
         super().setUp()
         httpretty.reset()
@@ -859,8 +844,8 @@ class CreateCommentTest(
         if parent_id:
             expected_event_data["response"] = {"id": parent_id}
         actual_event_name, actual_event_data = mock_emit.call_args[0]
-        self.assertEqual(actual_event_name, expected_event_name)
-        self.assertEqual(actual_event_data, expected_event_data)
+        self.assertEqual(actual_event_name, expected_event_name)  # noqa: PT009
+        self.assertEqual(actual_event_data, expected_event_data)  # noqa: PT009
 
     def test_error_in_black_out(self):
         """
@@ -868,10 +853,10 @@ class CreateCommentTest(
         """
         _set_course_discussion_blackout(course=self.course, user_id=self.user.id)
 
-        with self.assertRaises(DiscussionBlackOutException) as assertion:
+        with self.assertRaises(DiscussionBlackOutException) as assertion:  # noqa: PT027
             create_comment(self.request, self.minimal_data)
-        self.assertEqual(assertion.exception.status_code, 403)
-        self.assertEqual(
+        self.assertEqual(assertion.exception.status_code, 403)  # noqa: PT009
+        self.assertEqual(  # noqa: PT009
             assertion.exception.detail, "Discussions are in blackout period."
         )
 
@@ -1037,7 +1022,7 @@ class CreateCommentTest(
 @ddt.ddt
 @disable_signal(api, "thread_edited")
 @disable_signal(api, "thread_voted")
-@mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+@override_settings(ENABLE_DISCUSSION_SERVICE=True)
 class UpdateThreadTest(
     UrlResetMixin,
     SharedModuleStoreTestCase,
@@ -1058,9 +1043,6 @@ class UpdateThreadTest(
         super().tearDownClass()
         super().disposeForumMocks()
 
-    @mock.patch.dict(
-        "django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True}
-    )
     def setUp(self):
         super().setUp()
 
@@ -1219,8 +1201,8 @@ class UpdateThreadTest(
                 expected_event_data["reported_status_cleared"] = False
 
             actual_event_name, actual_event_data = mock_emit.call_args[0]
-            self.assertEqual(actual_event_name, expected_event_name)
-            self.assertEqual(actual_event_data, expected_event_data)
+            self.assertEqual(actual_event_name, expected_event_name)  # noqa: PT009
+            self.assertEqual(actual_event_data, expected_event_data)  # noqa: PT009
 
     @ddt.data(
         (False, True),
@@ -1282,8 +1264,8 @@ class UpdateThreadTest(
         }
 
         actual_event_name, actual_event_data = mock_emit.call_args[0]
-        self.assertEqual(actual_event_name, expected_event_name)
-        self.assertEqual(actual_event_data, expected_event_data)
+        self.assertEqual(actual_event_name, expected_event_name)  # noqa: PT009
+        self.assertEqual(actual_event_data, expected_event_data)  # noqa: PT009
 
     @ddt.data(*itertools.product([True, False], [True, False]))
     @ddt.unpack
@@ -1448,13 +1430,13 @@ class UpdateThreadTest(
             with self.captureOnCommitCallbacks(execute=True):
                 result = update_thread(self.request, "test_thread", data)
             if old_following != new_following:
-                self.assertEqual(signal_patch.send.call_count, 1)
+                self.assertEqual(signal_patch.send.call_count, 1)  # noqa: PT009
         assert result["following"] == new_following
 
         if old_following == new_following:
             assert not self.check_mock_called("create_subscription")
         else:
-            params = {
+            params = {  # noqa: F841
                 "user_id": str(self.user.id),
                 "course_id": str(self.course.id),
                 "source_id": "test_thread",
@@ -1553,7 +1535,7 @@ class UpdateThreadTest(
             assert not expected_error
         except ValidationError as err:
             assert expected_error
-            assert err.message_dict == {
+            assert err.message_dict == {  # noqa: PT017
                 field: ["This field is not editable."] for field in data.keys()
             }
 
@@ -1617,12 +1599,12 @@ class UpdateThreadTest(
             }
 
             actual_event_name, actual_event_data = mock_emit.call_args[0]
-            self.assertEqual(actual_event_name, expected_event_name)
-            self.assertEqual(actual_event_data, expected_event_data)
+            self.assertEqual(actual_event_name, expected_event_name)  # noqa: PT009
+            self.assertEqual(actual_event_data, expected_event_data)  # noqa: PT009
 
         except ValidationError as error:
             assert role_name == FORUM_ROLE_STUDENT
-            assert error.message_dict == {
+            assert error.message_dict == {  # noqa: PT017
                 "edit_reason_code": ["This field is not editable."],
                 "raw_body": ["This field is not editable."],
             }
@@ -1684,11 +1666,11 @@ class UpdateThreadTest(
             }
 
             actual_event_name, actual_event_data = mock_emit.call_args[0]
-            self.assertEqual(actual_event_name, expected_event_name)
-            self.assertEqual(actual_event_data, expected_event_data)
+            self.assertEqual(actual_event_name, expected_event_name)  # noqa: PT009
+            self.assertEqual(actual_event_data, expected_event_data)  # noqa: PT009
         except ValidationError as error:
             assert role_name == FORUM_ROLE_STUDENT
-            assert error.message_dict == {
+            assert error.message_dict == {  # noqa: PT017
                 "closed": ["This field is not editable."],
                 "close_reason_code": ["This field is not editable."],
             }
@@ -1697,7 +1679,7 @@ class UpdateThreadTest(
 @ddt.ddt
 @disable_signal(api, "comment_edited")
 @disable_signal(api, "comment_voted")
-@mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+@override_settings(ENABLE_DISCUSSION_SERVICE=True)
 class UpdateCommentTest(
     UrlResetMixin,
     SharedModuleStoreTestCase,
@@ -1718,9 +1700,6 @@ class UpdateCommentTest(
         super().tearDownClass()
         super().disposeForumMocks()
 
-    @mock.patch.dict(
-        "django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True}
-    )
     def setUp(self):
         super().setUp()
 
@@ -1900,8 +1879,8 @@ class UpdateCommentTest(
                 expected_event_data["reported_status_cleared"] = False
 
             actual_event_name, actual_event_data = mock_emit.call_args[0]
-            self.assertEqual(actual_event_name, expected_event_name)
-            self.assertEqual(actual_event_data, expected_event_data)
+            self.assertEqual(actual_event_name, expected_event_name)  # noqa: PT009
+            self.assertEqual(actual_event_data, expected_event_data)  # noqa: PT009
 
     @ddt.data(
         (False, True),
@@ -1959,8 +1938,8 @@ class UpdateCommentTest(
         }
 
         actual_event_name, actual_event_data = mock_emit.call_args[0]
-        self.assertEqual(actual_event_name, expected_event_name)
-        self.assertEqual(actual_event_data, expected_event_data)
+        self.assertEqual(actual_event_name, expected_event_name)  # noqa: PT009
+        self.assertEqual(actual_event_data, expected_event_data)  # noqa: PT009
 
     @ddt.data(*itertools.product([True, False], [True, False]))
     @ddt.unpack
@@ -2197,7 +2176,7 @@ class UpdateCommentTest(
             assert not expected_error
         except ValidationError as err:
             assert expected_error
-            assert err.message_dict == {"raw_body": ["This field is not editable."]}
+            assert err.message_dict == {"raw_body": ["This field is not editable."]}  # noqa: PT017
 
     @ddt.data(
         *itertools.product(
@@ -2235,11 +2214,11 @@ class UpdateCommentTest(
         try:
             with self.captureOnCommitCallbacks(execute=True):
                 update_comment(self.request, "test_comment", {"endorsed": True})
-            self.assertEqual(endorsed_mock.call_count, 1)
+            self.assertEqual(endorsed_mock.call_count, 1)  # noqa: PT009
             assert not expected_error
         except ValidationError as err:
             assert expected_error
-            assert err.message_dict == {"endorsed": ["This field is not editable."]}
+            assert err.message_dict == {"endorsed": ["This field is not editable."]}  # noqa: PT017
 
     @ddt.data(
         FORUM_ROLE_ADMINISTRATOR,
@@ -2293,8 +2272,8 @@ class UpdateCommentTest(
             }
 
             actual_event_name, actual_event_data = mock_emit.call_args[0]
-            self.assertEqual(actual_event_name, expected_event_name)
-            self.assertEqual(actual_event_data, expected_event_data)
+            self.assertEqual(actual_event_name, expected_event_name)  # noqa: PT009
+            self.assertEqual(actual_event_data, expected_event_data)  # noqa: PT009
 
         except ValidationError:
             assert role_name == FORUM_ROLE_STUDENT
@@ -2302,7 +2281,7 @@ class UpdateCommentTest(
 
 @ddt.ddt
 @disable_signal(api, "thread_deleted")
-@mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+@override_settings(ENABLE_DISCUSSION_SERVICE=True)
 class DeleteThreadTest(
     UrlResetMixin,
     SharedModuleStoreTestCase,
@@ -2323,9 +2302,6 @@ class DeleteThreadTest(
         super().tearDownClass()
         super().disposeForumMocks()
 
-    @mock.patch.dict(
-        "django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True}
-    )
     def setUp(self):
         super().setUp()
         httpretty.reset()
@@ -2387,8 +2363,8 @@ class DeleteThreadTest(
         }
 
         actual_event_name, actual_event_data = mock_emit.call_args[0]
-        self.assertEqual(actual_event_name, expected_event_name)
-        self.assertEqual(actual_event_data, expected_event_data)
+        self.assertEqual(actual_event_name, expected_event_name)  # noqa: PT009
+        self.assertEqual(actual_event_data, expected_event_data)  # noqa: PT009
 
     def test_thread_id_not_found(self):
         self.register_get_thread_error_response("missing_thread", 404)
@@ -2481,7 +2457,7 @@ class DeleteThreadTest(
 
 @ddt.ddt
 @disable_signal(api, "comment_deleted")
-@mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+@override_settings(ENABLE_DISCUSSION_SERVICE=True)
 class DeleteCommentTest(
     UrlResetMixin,
     SharedModuleStoreTestCase,
@@ -2502,9 +2478,6 @@ class DeleteCommentTest(
         super().tearDownClass()
         super().disposeForumMocks()
 
-    @mock.patch.dict(
-        "django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True}
-    )
     def setUp(self):
         super().setUp()
         httpretty.reset()
@@ -2572,8 +2545,8 @@ class DeleteCommentTest(
         }
 
         actual_event_name, actual_event_data = mock_emit.call_args[0]
-        self.assertEqual(actual_event_name, expected_event_name)
-        self.assertEqual(actual_event_data, expected_event_data)
+        self.assertEqual(actual_event_name, expected_event_name)  # noqa: PT009
+        self.assertEqual(actual_event_data, expected_event_data)  # noqa: PT009
 
     def test_comment_id_not_found(self):
         self.register_get_comment_error_response("missing_comment", 404)
@@ -2671,7 +2644,7 @@ class DeleteCommentTest(
 
 
 @ddt.ddt
-@mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+@override_settings(ENABLE_DISCUSSION_SERVICE=True)
 class RetrieveThreadTest(
     UrlResetMixin,
     SharedModuleStoreTestCase,
@@ -2691,9 +2664,6 @@ class RetrieveThreadTest(
         super().tearDownClass()
         super().disposeForumMocks()
 
-    @mock.patch.dict(
-        "django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True}
-    )
     def setUp(self):
         super().setUp()
         httpretty.reset()
@@ -2827,7 +2797,7 @@ class RetrieveThreadTest(
 
 
 @ddt.ddt
-@mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+@override_settings(ENABLE_DISCUSSION_SERVICE=True)
 class GetThreadListTest(
         ForumMockUtilsMixin, UrlResetMixin, SharedModuleStoreTestCase
 ):
@@ -2845,9 +2815,6 @@ class GetThreadListTest(
         super().tearDownClass()
         super().disposeForumMocks()
 
-    @mock.patch.dict(
-        "django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True}
-    )
     def setUp(self):
         super().setUp()
         httpretty.reset()
@@ -3449,9 +3416,9 @@ class GetThreadListTest(
         """
         Test with invalid order_direction (e.g. "asc")
         """
-        with pytest.raises(ValidationError) as assertion:
+        with pytest.raises(ValidationError) as assertion:  # noqa: PT012
             self.register_get_threads_response([], page=1, num_pages=0)
-            get_thread_list(  # pylint: disable=expression-not-assigned
+            get_thread_list(  # pylint: disable=expression-not-assigned  # noqa: B018
                 self.request,
                 self.course.id,
                 page=1,
@@ -3462,7 +3429,7 @@ class GetThreadListTest(
 
 
 @ddt.ddt
-@mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+@override_settings(ENABLE_DISCUSSION_SERVICE=True)
 class GetCommentListTest(
         SharedModuleStoreTestCase, ForumMockUtilsMixin
 ):
@@ -3480,9 +3447,6 @@ class GetCommentListTest(
         super().tearDownClass()
         super().disposeForumMocks()
 
-    @mock.patch.dict(
-        "django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True}
-    )
     def setUp(self):
         super().setUp()
         httpretty.reset()
@@ -4234,10 +4198,9 @@ class CourseTopicsV2Test(ModuleStoreTestCase):
 
 
 @mock.patch.dict("django.conf.settings.FEATURES", {"DISABLE_START_DATES": False})
-@mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+@override_settings(ENABLE_DISCUSSION_SERVICE=True)
 class GetCourseTopicsTest(ForumMockUtilsMixin, UrlResetMixin, ModuleStoreTestCase):
     """Test for get_course_topics"""
-    @mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
     def setUp(self):
         httpretty.reset()
         httpretty.enable()
@@ -4669,7 +4632,7 @@ class GetCourseTopicsTest(ForumMockUtilsMixin, UrlResetMixin, ModuleStoreTestCas
         }
 
 
-@mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+@override_settings(ENABLE_DISCUSSION_SERVICE=True)
 @override_settings(DISCUSSION_MODERATION_EDIT_REASON_CODES={"test-edit-reason": "Test Edit Reason"})
 @override_settings(DISCUSSION_MODERATION_CLOSE_REASON_CODES={"test-close-reason": "Test Close Reason"})
 @ddt.ddt
@@ -4680,7 +4643,6 @@ class GetCourseTest(UrlResetMixin, SharedModuleStoreTestCase):
         super().setUpClass()
         cls.course = CourseFactory.create(org="x", course="y", run="z")
 
-    @mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
     def setUp(self):
         super().setUp()
         self.user = UserFactory.create()
@@ -4753,12 +4715,11 @@ class GetCourseTest(UrlResetMixin, SharedModuleStoreTestCase):
 
 
 @ddt.ddt
-@mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+@override_settings(ENABLE_DISCUSSION_SERVICE=True)
 class GetCourseTestBlackouts(UrlResetMixin, ModuleStoreTestCase):
     """
     Tests of get_course for courses that have blackout dates.
     """
-    @mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
     def setUp(self):
         super().setUp()
         self.course = CourseFactory.create(org="x", course="y", run="z")

@@ -1,19 +1,26 @@
 """
 Base setup for Notification Apps and Types.
 """
-from typing import Any, Literal, TypedDict, NotRequired
+from typing import Any, Literal, NotRequired, TypedDict
 
+from django.utils.html import escape
 from django.utils.translation import gettext_lazy as _
 
-from .email_notifications import EmailCadence
 from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRole
 
-from .settings_override import get_notification_types_config, get_notification_apps_config
-
-from ..django_comment_common.models import FORUM_ROLE_ADMINISTRATOR, FORUM_ROLE_MODERATOR, FORUM_ROLE_COMMUNITY_TA
+from ..django_comment_common.models import FORUM_ROLE_ADMINISTRATOR, FORUM_ROLE_COMMUNITY_TA, FORUM_ROLE_MODERATOR
+from .email_notifications import EmailCadence
 from .notification_content import get_notification_type_context_function
+from .settings_override import get_notification_apps_config, get_notification_types_config
 
 FILTER_AUDIT_EXPIRED_USERS_WITH_NO_ROLE = 'filter_audit_expired_users_with_no_role'
+
+# Context keys whose values are used as HTML tag names by content_templates
+# (e.g. `<{p}>...<{strong}>{post_title}</{strong}></{p}>`). These must NOT be
+# HTML-escaped before `template.format(**context)`; every other context value
+# must be, since it typically comes from user input (thread title, username,
+# etc.). See get_notification_content below.
+_STRUCTURAL_CONTEXT_KEYS = frozenset({'p', 'strong'})
 
 
 class NotificationType(TypedDict):
@@ -25,11 +32,11 @@ class NotificationType(TypedDict):
     notification_app: str
     # Unique identifier for this notification type.
     name: str
-    # Mark this as a core notification.
+    # Whether this notification type uses the notification app's default settings.
     # When True, user preferences are taken from the notification app's configuration,
     # overriding the `web`, `email`, `push`, `email_cadence`, and `non_editable` attributes set here.
     use_app_defaults: bool
-    # Template string for notification content (see ./docs/templates.md).
+    # Template string for notification content.
     # Wrap in gettext_lazy (_) for translation support.
     content_template: str
     # A map of variable names that can be used in the template, along with their descriptions.
@@ -38,8 +45,7 @@ class NotificationType(TypedDict):
     content_context: dict[str, Any]
     filters: list[str]
 
-    # All fields below are required unless `is_core` is True.
-    # Core notifications take this config from the associated notification app instead (and ignore anything set here).
+    # All fields below are required unless `use_app_defaults` is True.
 
     # Set to True to enable delivery on web.
     web: NotRequired[bool]
@@ -60,7 +66,8 @@ class NotificationType(TypedDict):
     info: NotRequired[str]
 
 
-# For help defining new notifications, see ./docs/creating_a_new_notification_guide.md
+# For help defining new notifications, see
+# https://docs.openedx.org/en/latest/site_ops/how-tos/enable_notifications.html#creating-a-new-notification
 _COURSE_NOTIFICATION_TYPES = {
     'new_comment_on_response': {
         'notification_app': 'discussion',
@@ -276,6 +283,25 @@ _COURSE_NOTIFICATION_TYPES = {
 
         'filters': [FILTER_AUDIT_EXPIRED_USERS_WITH_NO_ROLE],
     },
+    'ora_reminder': {
+        'notification_app': 'grading',
+        'name': 'ora_reminder',
+
+        'info': 'Reminder notifications for learners who have pending self or peer review steps in an ORA.',
+        'web': True,
+        'email': True,
+        'push': False,
+        'email_cadence': EmailCadence.DAILY,
+        'non_editable': ['push'],
+        'content_template': _('<{p}>You have <{strong}>{pending_step}</{strong}> to complete for assessment '
+                              '<{strong}>{ora_name}</{strong}></{p}>'),
+        'content_context': {
+            'ora_name': 'Name of ORA in course',
+            'pending_step': 'Pending step description (e.g. "self review" or "peer reviews")',
+        },
+
+        'filters': [FILTER_AUDIT_EXPIRED_USERS_WITH_NO_ROLE],
+    },
     'new_instructor_all_learners_post': {
         'notification_app': 'discussion',
         'name': 'new_instructor_all_learners_post',
@@ -306,9 +332,7 @@ class NotificationApp(TypedDict):
 
     Each notification type defined in COURSE_NOTIFICATION_TYPES also references an app.
 
-    Each notification type can also be optionally defined as a core notification.
     In this case, the delivery preferences for that notification are taken
-    from the `core_*` fields of the associated notification app.
     """
     # Set to True to enable this app and linked notification types.
     enabled: bool
@@ -366,106 +390,6 @@ COURSE_NOTIFICATION_TYPES = get_notification_types_config()
 COURSE_NOTIFICATION_APPS = get_notification_apps_config()
 
 
-class NotificationTypeManager:
-    """
-    Manager for notification types
-    """
-
-    def __init__(self):
-        self.notification_types = COURSE_NOTIFICATION_TYPES
-
-    def get_notification_types_by_app(self, notification_app: str):
-        """
-        Returns notification types for the given notification app name.
-        """
-        return [
-            notification_type.copy() for _, notification_type in self.notification_types.items()
-            if notification_type.get('notification_app', None) == notification_app
-        ]
-
-    def get_core_and_non_core_notification_types(
-        self, notification_app: str
-    ) -> tuple[NotificationType, NotificationType]:
-        """
-        Returns notification types for the given app name, split by core and non core.
-
-        Return type is a tuple of (core_notification_types, non_core_notification_types).
-        """
-        notification_types = self.get_notification_types_by_app(notification_app)
-        core_notification_types = []
-        non_core_notification_types = []
-        for notification_type in notification_types:
-            if notification_type.get('use_app_defaults', None):
-                core_notification_types.append(notification_type)
-            else:
-                non_core_notification_types.append(notification_type)
-        return core_notification_types, non_core_notification_types
-
-    @staticmethod
-    def get_non_core_notification_type_preferences(non_core_notification_types, email_opt_out=False):
-        """
-        Returns non-core notification type preferences for the given notification types.
-        """
-        non_core_notification_type_preferences = {}
-        for notification_type in non_core_notification_types:
-            non_core_notification_type_preferences[notification_type.get('name')] = {
-                'web': notification_type.get('web', False),
-                'email': False if email_opt_out else notification_type.get('email', False),
-                'push': notification_type.get('push', False),
-                'email_cadence': notification_type.get('email_cadence', 'Daily'),
-            }
-        return non_core_notification_type_preferences
-
-    def get_notification_app_preference(self, notification_app, email_opt_out=False):
-        """
-        Returns notification app preferences for the given notification app.
-        """
-        core_notification_types, non_core_notification_types = self.get_core_and_non_core_notification_types(
-            notification_app,
-        )
-        non_core_notification_types_preferences = self.get_non_core_notification_type_preferences(
-            non_core_notification_types, email_opt_out
-        )
-        core_notification_types_name = [notification_type.get('name') for notification_type in core_notification_types]
-        return non_core_notification_types_preferences, core_notification_types_name
-
-
-class NotificationAppManager:
-    """
-    Notification app manager
-    """
-
-    def add_core_notification_preference(self, notification_app_attrs, notification_types, email_opt_out=False):
-        """
-        Adds core notification preference for the given notification app.
-        """
-        notification_types['core'] = {
-            'web': notification_app_attrs.get('web', False),
-            'email': False if email_opt_out else notification_app_attrs.get('email', False),
-            'push': notification_app_attrs.get('push', False),
-            'email_cadence': notification_app_attrs.get('email_cadence', 'Daily'),
-        }
-
-    def get_notification_app_preferences(self, email_opt_out=False):
-        """
-        Returns notification app preferences for the given name.
-        """
-        course_notification_preference_config = {}
-        for notification_app_key, notification_app_attrs in COURSE_NOTIFICATION_APPS.items():
-            notification_app_preferences = {}
-            notification_types, core_notifications = NotificationTypeManager().get_notification_app_preference(
-                notification_app_key,
-                email_opt_out
-            )
-            self.add_core_notification_preference(notification_app_attrs, notification_types, email_opt_out)
-
-            notification_app_preferences['enabled'] = notification_app_attrs.get('enabled', False)
-            notification_app_preferences['core_notification_types'] = core_notifications
-            notification_app_preferences['notification_types'] = notification_types
-            course_notification_preference_config[notification_app_key] = notification_app_preferences
-        return course_notification_preference_config
-
-
 def get_notification_content(notification_type: str, context: dict[str, Any]):
     """
     Returns notification content for the given notification type with provided context.
@@ -489,8 +413,8 @@ def get_notification_content(notification_type: str, context: dict[str, Any]):
     if notification_type == 'course_update':
         notification_type = 'course_updates'
 
-    # Retrieve the notification type object from NotificationTypeManager.
-    notification_type = NotificationTypeManager().notification_types.get(notification_type, None)
+    # Retrieve the notification type object from the default preferences (derived from COURSE_NOTIFICATION_TYPES).
+    notification_type = get_default_values_of_preferences().get(notification_type, None)
 
     if notification_type:
         # Check if the notification is grouped.
@@ -506,23 +430,18 @@ def get_notification_content(notification_type: str, context: dict[str, Any]):
         context = context_function(context)
 
         if template:
-            # Handle grouped templates differently by modifying the context using a different function.
-            return template.format(**context)
+            # HTML-escape every context value except the structural tag-name
+            # keys, so that user-controlled input (post_title, replier_name,
+            # etc.) cannot inject `<style>` / `<script>` / other HTML into
+            # notification.content — which is rendered with `|safe` in the
+            # digest and batched email templates.
+            safe_context = {
+                key: value if key in _STRUCTURAL_CONTEXT_KEYS else escape(value)
+                for key, value in context.items()
+            }
+            return template.format(**safe_context)
 
     return ''
-
-
-def get_default_values_of_preference(notification_app, notification_type):
-    """
-    Returns default preference for notification_type
-    """
-    default_prefs = NotificationAppManager().get_notification_app_preferences()
-    app_prefs = default_prefs.get(notification_app, {})
-    core_notification_types = app_prefs.get('core_notification_types', [])
-    notification_types = app_prefs.get('notification_types', {})
-    if notification_type in core_notification_types:
-        return notification_types.get('core', {})
-    return notification_types.get(notification_type, {})
 
 
 def get_default_values_of_preferences() -> dict[str, dict[str, Any]]:

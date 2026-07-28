@@ -1,4 +1,4 @@
-# lint-amnesty, pylint: disable=missing-module-docstring
+# pylint: disable=missing-module-docstring
 
 from xmodule.contentstore.content import StaticContent
 
@@ -43,5 +43,5 @@ def restore_asset_from_trashcan(location):
         try:
             thumbnail_content = trash.find(content.thumbnail_location)
             store.save(thumbnail_content)
-        except Exception:  # lint-amnesty, pylint: disable=broad-except
+        except Exception:  # pylint: disable=broad-except
             pass  # OK if this is left dangling

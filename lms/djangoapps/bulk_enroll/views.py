@@ -70,9 +70,9 @@ class BulkEnrollView(APIView):
     permission_classes = (IsStaff,)
     throttle_classes = (EnrollmentUserThrottle,)
 
-    def post(self, request):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def post(self, request):  # pylint: disable=missing-function-docstring
         serializer = BulkEnrollmentSerializer(data=request.data)
-        if serializer.is_valid():  # lint-amnesty, pylint: disable=too-many-nested-blocks
+        if serializer.is_valid():  # pylint: disable=too-many-nested-blocks
             # Setting the content type to be form data makes Django Rest Framework v3.6.3 treat all passed JSON data as
             # POST parameters. This is necessary because this request is forwarded on to the student_update_enrollment
             # view, which requires all of the parameters to be passed in via POST parameters.
@@ -90,7 +90,7 @@ class BulkEnrollView(APIView):
                 # Internal request to DRF view
                 view = StudentsUpdateEnrollmentView()
                 response_content = view._process_student_enrollment(  # pylint: disable=protected-access
-                    user=request.user,
+                    request=request,
                     course_id=course_id,
                     data=request.data,
                     secure=request.is_secure()

@@ -19,7 +19,7 @@ class ContactUsView(View):
     View for viewing and submitting contact us form.
     """
 
-    def get(self, request):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def get(self, request):  # pylint: disable=missing-function-docstring
         # If ZENDESK_URL is not defined, then it will redirect to the static contact page
         # to avoid 500 error that arises due to missing Zendesk configuration
         if not settings.ZENDESK_URL:

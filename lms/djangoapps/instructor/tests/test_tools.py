@@ -10,7 +10,7 @@ from unittest import mock
 from unittest.mock import MagicMock, patch
 
 import pytest
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.core.exceptions import MultipleObjectsReturned
 from django.test import TestCase
 from edx_when.api import get_dates_for_course, set_dates_for_course
@@ -18,13 +18,15 @@ from edx_when.field_data import DateLookupFieldData
 from opaque_keys.edx.keys import CourseKey
 from pytz import UTC
 from xblock.fields import Date
-from xmodule.modulestore.tests.django_utils import (
-    TEST_DATA_SPLIT_MODULESTORE, ModuleStoreTestCase, SharedModuleStoreTestCase,
-)
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory
 
 from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory
 from openedx.core.djangoapps.course_date_signals import handlers
+from xmodule.modulestore.tests.django_utils import (
+    TEST_DATA_SPLIT_MODULESTORE,
+    ModuleStoreTestCase,
+    SharedModuleStoreTestCase,
+)
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 
 from ..views import tools
 
@@ -58,7 +60,7 @@ class TestHandleDashboardError(unittest.TestCase):
 
     def test_no_error(self):
         @tools.handle_dashboard_error
-        def view(request, course_id):  # lint-amnesty, pylint: disable=unused-argument
+        def view(request, course_id):  # pylint: disable=unused-argument
             """
             Returns "Oh yes!"
             """
@@ -363,7 +365,7 @@ class TestDataDumps(ModuleStoreTestCase):
             self.week1.display_name)
         assert (
             report['header'] == ["Username", "Full Name", "Extended Due Date"])
-        self.assertCountEqual(
+        self.assertCountEqual(  # noqa: PT009
             report['data'],
             [
                 {
@@ -386,7 +388,7 @@ class TestDataDumps(ModuleStoreTestCase):
                                      extended)
         report = tools.dump_student_extensions(self.course, self.user1)
         assert (
-            report['title'] == 'Due date extensions for %s (%s)' %
+            report['title'] == 'Due date extensions for %s (%s)' %  # noqa: UP031
             (self.user1.profile.name, self.user1.username))
         assert (
             report['header'] == ["Unit", "Extended Due Date"])

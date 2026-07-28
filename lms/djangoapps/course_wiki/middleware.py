@@ -2,19 +2,19 @@
 
 
 from urllib.parse import urlparse
+
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
 from django.http import Http404
 from django.shortcuts import redirect
 from django.utils.deprecation import MiddlewareMixin
+from openedx_filters.learning.filters import CoursewareViewStarted
 from wiki.models import reverse
 
+from common.djangoapps.student.models import CourseEnrollment
 from lms.djangoapps.courseware.access import has_access
 from lms.djangoapps.courseware.courses import get_course_overview_with_access, get_course_with_access
 from openedx.core.lib.request_utils import course_id_from_url
-from openedx.features.enterprise_support.api import get_enterprise_consent_url
-from common.djangoapps.student.models import CourseEnrollment
-
 from xmodule.modulestore.django import modulestore
 
 
@@ -36,12 +36,12 @@ class WikiAccessMiddleware(MiddlewareMixin):
             # See if we are able to view the course. If we are, redirect to it
             try:
                 get_course_overview_with_access(request.user, 'load', course_id)
-                return redirect(f"/courses/{str(course_id)}/wiki/{wiki_path}")  # lint-amnesty, pylint: disable=line-too-long
+                return redirect(f"/courses/{str(course_id)}/wiki/{wiki_path}")  # pylint: disable=line-too-long
             except Http404:
                 # Even though we came from the course, we can't see it. So don't worry about it.
                 pass
 
-    def process_view(self, request, view_func, view_args, view_kwargs):  # lint-amnesty, pylint: disable=unused-argument
+    def process_view(self, request, view_func, view_args, view_kwargs):  # pylint: disable=unused-argument
         """
         This function handles authentication logic for wiki urls and redirects from
         the "root wiki" to the "course wiki" if the user accesses the wiki from a course url
@@ -96,10 +96,11 @@ class WikiAccessMiddleware(MiddlewareMixin):
                     # we'll redirect them to the course about page
                     return redirect('about_course', str(course_id))
 
-                # If we need enterprise data sharing consent for this course, then redirect to the form.
-                consent_url = get_enterprise_consent_url(request, str(course_id), source='WikiAccessMiddleware')
-                if consent_url:
-                    return redirect(consent_url)
+                # If a plugin requires a redirect for this course, redirect now.
+                try:
+                    CoursewareViewStarted.run_filter(course_key=course_id, view_name='WikiAccessMiddleware')
+                except CoursewareViewStarted.RedirectToUrl as exc:
+                    return redirect(exc.redirect_to)
 
             # set the course onto here so that the wiki template can show the course navigation
             request.course = course
@@ -108,7 +109,7 @@ class WikiAccessMiddleware(MiddlewareMixin):
 
             # Check to see if we don't allow top-level access to the wiki via the /wiki/xxxx/yyy/zzz URLs
             # this will help prevent people from writing pell-mell to the Wiki in an unstructured way
-            if not settings.FEATURES.get('ALLOW_WIKI_ROOT_ACCESS', False):
+            if not settings.ALLOW_WIKI_ROOT_ACCESS:
                 raise PermissionDenied()
 
             return self._redirect_from_referrer(request, wiki_path)

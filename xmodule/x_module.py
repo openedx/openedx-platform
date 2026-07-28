@@ -196,7 +196,7 @@ def shim_xmodule_js(fragment, js_module_name):
     """
     # Delay this import so that it is only used (and django settings are parsed) when
     # they are required (rather than at startup)
-    import webpack_loader.utils  # pylint: disable=unused-import,import-outside-toplevel
+    import webpack_loader.utils  # pylint: disable=unused-import,import-outside-toplevel  # noqa: F401
 
     if not fragment.js_init_fn:
         fragment.initialize_js("XBlockToXModuleShim")
@@ -311,18 +311,32 @@ class XModuleMixin(XModuleFields, XBlock):  # pylint: disable=too-many-public-me
 
     @property
     def course_id(self):
-        """Return the course key for this block."""
-        return self.location.course_key
+        """
+        Return the key of the block to which this Course belongs.
+
+        New code should always used `context_key`, which is the key of the Learning Context to which
+        this block belongs. "Learning Context" is a generalized notion of Courses which is inclusive
+        of Content Libraries, et al.
+        """
+        return self.context_key
 
     @property
     def category(self):
-        """Return the block type/category."""
+        """
+        Return the block type, formerly known as "category".
+
+        Preferred forms for new code: `self.usage_key.block_type` or `self.scope_ids.blocks_type`
+        """
         return self.scope_ids.block_type
 
     @property
     def location(self):
-        """Return the usage key identifying this block instance."""
-        return self.scope_ids.usage_id
+        """
+        Return the usage key identifying this block instance, formerly called the "location".
+
+        `self.usage_key` is always preferred in new code.
+        """
+        return self.usage_key
 
     @location.setter
     def location(self, value):
@@ -334,8 +348,12 @@ class XModuleMixin(XModuleFields, XBlock):  # pylint: disable=too-many-public-me
 
     @property
     def url_name(self):
-        """Return the URL-friendly name for this block."""
-        return block_metadata_utils.url_name_for_block(self)
+        """
+        Return the URL-friendly name for this block.
+
+        Preferred forms for new code: `self.usage_key.block_id`
+        """
+        return self.usage_key.block_id
 
     @property
     def display_name_with_default(self):
@@ -390,21 +408,6 @@ class XModuleMixin(XModuleFields, XBlock):  # pylint: disable=too-many-public-me
         get the list of connected asides
         """
         return self._asides
-
-    def get_explicitly_set_fields_by_scope(self, scope=Scope.content):
-        """
-        Get a dictionary of the fields for the given scope which are set explicitly on this xblock. (Including
-        any set to None.)
-        """
-        result = {}
-        for field in self.fields.values():
-            if field.scope == scope and field.is_set_on(self):
-                try:
-                    result[field.name] = field.read_json(self)
-                except TypeError as exception:
-                    exception_message = f"{exception}, Block-location:{self.location}, Field-name:{field.name}"
-                    raise TypeError(exception_message) from exception
-        return result
 
     def has_children_at_depth(self, depth):
         r"""
@@ -500,12 +503,6 @@ class XModuleMixin(XModuleFields, XBlock):  # pylint: disable=too-many-public-me
             if selector(child):
                 return child
         return None
-
-    def get_icon_class(self):
-        """
-        Return a css class identifying this module in the context of an icon
-        """
-        return self.icon_class
 
     def has_dynamic_children(self):
         """

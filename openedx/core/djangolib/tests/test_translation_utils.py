@@ -3,9 +3,9 @@ Tests for openedx.core.djangolib.translation_utils
 """
 
 
+import datetime
 import unittest
 
-import datetime
 import ddt
 
 from openedx.core.djangolib.translation_utils import translate_date

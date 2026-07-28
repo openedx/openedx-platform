@@ -16,10 +16,10 @@ jobs:
         os: [ubuntu-latest]
         node-version: [20]
         python-version:
-          - "3.11"
+          - "3.12"
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Fetch master to compare coverage
         run: git fetch --depth=1 origin master
 
@@ -55,7 +55,7 @@ jobs:
 
       - name: Cache pip dependencies
         id: cache-dependencies
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: ${{ steps.pip-cache-dir.outputs.dir }}
           key: ${{ runner.os }}-pip-${{ hashFiles('requirements/edx/base.txt') }}
@@ -73,7 +73,7 @@ jobs:
           npm run test
 
       - name: Save Job Artifacts
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: Build-Artifacts
           path: |

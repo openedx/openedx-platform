@@ -8,8 +8,8 @@ The following are currently implemented:
 """
 import logging
 
-import jwt
 import django.contrib.auth as auth
+import jwt
 import social_django.utils as social_utils
 from django.conf import settings
 from django.contrib.auth import login
@@ -35,7 +35,6 @@ from openedx.core.djangoapps.oauth_dispatch.api import create_dot_access_token
 from openedx.core.djangoapps.safe_sessions.middleware import mark_user_change_as_expected
 from openedx.core.lib.api.authentication import BearerAuthenticationAllowInactiveUser
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -60,7 +59,7 @@ class AccessTokenExchangeBase(APIView):
         """
         Handle POST requests to get a first-party access token.
         """
-        form = AccessTokenExchangeForm(request=request, oauth2_adapter=self.oauth2_adapter, data=request.POST)  # lint-amnesty, pylint: disable=no-member
+        form = AccessTokenExchangeForm(request=request, oauth2_adapter=self.oauth2_adapter, data=request.POST)  # pylint: disable=no-member
         if not form.is_valid():
             error_response = self.error_response(form.errors)  # pylint: disable=no-member
             return error_response
@@ -76,7 +75,7 @@ class AccessTokenExchangeBase(APIView):
         serialized access token response.
         """
         edx_access_token = self.create_access_token(request, user, scope, client)
-        return self.access_token_response(edx_access_token)  # lint-amnesty, pylint: disable=no-member
+        return self.access_token_response(edx_access_token)  # pylint: disable=no-member
 
     def _get_invalid_request_response(self, description):
         return Response(status=400, data={

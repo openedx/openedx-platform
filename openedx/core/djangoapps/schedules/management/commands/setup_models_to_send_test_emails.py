@@ -5,9 +5,9 @@ A managment command that can be used to set up Schedules with various configurat
 
 import datetime
 from textwrap import dedent
+from zoneinfo import ZoneInfo
 
 import factory
-from zoneinfo import ZoneInfo
 from django.contrib.sites.models import Site
 from django.core.management.base import BaseCommand
 
@@ -16,10 +16,13 @@ from openedx.core.djangoapps.schedules.models import ScheduleExperience
 from openedx.core.djangoapps.schedules.tests.factories import (
     ScheduleConfigFactory,
     ScheduleExperienceFactory,
-    ScheduleFactory
+    ScheduleFactory,
 )
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import XMODULE_FACTORY_LOCK, CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import (  # pylint: disable=wrong-import-order
+    XMODULE_FACTORY_LOCK,
+    CourseFactory,
+)
 
 
 class ThreeDayNudgeSchedule(ScheduleFactory):
@@ -49,7 +52,7 @@ class ContentHighlightSchedule(ScheduleFactory):
     A ScheduleFactory that creates a Schedule set up for a course highlights email.
     """
     start_date = factory.Faker('date_time_between', start_date='-7d', end_date='-7d', tzinfo=ZoneInfo("UTC"))
-    experience = factory.RelatedFactory(ScheduleExperienceFactory, 'schedule', experience_type=ScheduleExperience.EXPERIENCES.course_updates)  # lint-amnesty, pylint: disable=line-too-long
+    experience = factory.RelatedFactory(ScheduleExperienceFactory, 'schedule', experience_type=ScheduleExperience.EXPERIENCES.course_updates)  # pylint: disable=line-too-long
 
 
 class Command(BaseCommand):

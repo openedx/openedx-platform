@@ -15,7 +15,7 @@ def plugin_settings(settings):
     )
     # Backward compatibility for deprecated feature names
     if hasattr(settings, 'ENABLE_S3_GRADE_DOWNLOADS'):
-        warnings.warn(
+        warnings.warn(  # noqa: B028
             "'ENABLE_S3_GRADE_DOWNLOADS' is deprecated. Please use 'ENABLE_GRADE_DOWNLOADS' instead",
             DeprecationWarning,
         )

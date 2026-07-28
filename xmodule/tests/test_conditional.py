@@ -1,10 +1,10 @@
-# lint-amnesty, pylint: disable=missing-module-docstring
+# pylint: disable=missing-module-docstring
 
 import json
 import unittest
 from unittest.mock import Mock, patch
 
-from django.conf import settings
+from django.test.utils import override_settings
 from fs.memoryfs import MemoryFS
 from lxml import etree
 from opaque_keys.edx.keys import CourseKey
@@ -20,7 +20,7 @@ from xmodule.tests import DATA_DIR, get_test_system, prepare_block_runtime
 from xmodule.tests.xml import XModuleXmlImportTest
 from xmodule.tests.xml import factories as xml
 from xmodule.validation import StudioValidationMessage
-from xmodule.x_module import AUTHOR_VIEW, STUDENT_VIEW
+from xmodule.x_module import AUTHOR_VIEW, STUDENT_VIEW, XModuleMixin
 
 ORG = 'test_org'
 COURSE = 'conditional'      # name of directory with course data
@@ -45,7 +45,7 @@ class DummyModuleStoreRuntime(XMLImportingModuleStoreRuntime):  # pylint: disabl
         )
 
     @property
-    def render_template(self):  # lint-amnesty, pylint: disable=method-hidden
+    def render_template(self):  # pylint: disable=method-hidden
         raise Exception("Shouldn't be called")
 
 
@@ -84,6 +84,7 @@ class ConditionalFactory:
         else:
             source_block = Mock(name='source_block')
             source_block.location = source_location
+            source_block.usage_key = source_location
 
         source_block.visible_to_staff_only = source_visible_to_staff_only
         source_block.runtime = system
@@ -92,11 +93,12 @@ class ConditionalFactory:
         # construct other blocks:
         child_block = Mock(name='child_block')
         child_block.visible_to_staff_only = False
-        child_block._xmodule.student_view.return_value = Fragment(content='<p>This is a secret</p>')  # lint-amnesty, pylint: disable=protected-access
-        child_block.student_view = child_block._xmodule.student_view  # lint-amnesty, pylint: disable=protected-access
+        child_block._xmodule.student_view.return_value = Fragment(content='<p>This is a secret</p>')  # pylint: disable=protected-access
+        child_block.student_view = child_block._xmodule.student_view  # pylint: disable=protected-access
         child_block.runtime = system
         child_block.render = lambda view, context=None: system.render(child_block, view, context)
         child_block.location = source_location.replace(category='html', name='child')
+        child_block.usage_key = child_block.location
 
         def visible_to_nonstaff_users(desc):
             """
@@ -121,7 +123,7 @@ class ConditionalFactory:
             'conditional_attr': 'attempted',
             'conditional_value': 'true',
             'xml_attributes': {'attempted': 'true'},
-            'children': [child_block.location],
+            'children': [child_block.usage_key],
         })
 
         cond_block = ConditionalBlock(
@@ -156,7 +158,7 @@ class ConditionalBlockBasicTest(unittest.TestCase):
         for attempted in ["false", "true"]:
             for icon_class in ['other', 'problem', 'video']:
                 blocks['source_block'].is_attempted = attempted
-                blocks['child_block'].get_icon_class = lambda: icon_class  # lint-amnesty, pylint: disable=cell-var-from-loop
+                blocks['child_block'].get_icon_class = lambda: icon_class  # pylint: disable=cell-var-from-loop  # noqa: B023
                 assert blocks['cond_block'].get_icon_class() == icon_class
 
     def test_get_html(self):
@@ -225,7 +227,7 @@ class ConditionalBlockXmlTest(unittest.TestCase):
             block.add_xml_to_node(child)
         self.test_system = get_test_system(add_get_block_overrides=True)
         self.test_system.add_block_as_child_node = add_block_as_child_node
-        self.modulestore = XMLModuleStore(DATA_DIR, source_dirs=['conditional_and_poll'])
+        self.modulestore = XMLModuleStore(DATA_DIR, source_dirs=['conditional_and_poll'], xblock_mixins=(XModuleMixin,))
         courses = self.modulestore.get_courses()
         assert len(courses) == 1
         self.course = courses[0]
@@ -235,8 +237,8 @@ class ConditionalBlockXmlTest(unittest.TestCase):
         return self.test_system.get_block_for_descriptor(block)
 
     @patch('xmodule.x_module.block_global_local_resource_url')
-    @patch.dict(settings.FEATURES, {'ENABLE_EDXNOTES': False})
-    def test_conditional_block(self, _):
+    @override_settings(ENABLE_EDXNOTES=False)
+    def test_conditional_block(self, _):  # noqa: PT019
         """Make sure that conditional block works"""
         # edx - HarvardX
         # cond_test - ER22x
@@ -291,7 +293,7 @@ class ConditionalBlockXmlTest(unittest.TestCase):
             dummy_scope_ids,
         )
 
-        new_run = conditional.location.course_key.run  # lint-amnesty, pylint: disable=unused-variable
+        new_run = conditional.location.course_key.run  # pylint: disable=unused-variable  # noqa: F841
         assert conditional.sources_list[0] == BlockUsageLocator.from_string(conditional.xml_attributes['sources'])\
             .replace(run=dummy_location.course_key.run)
 
@@ -302,7 +304,7 @@ class ConditionalBlockXmlTest(unittest.TestCase):
         dummy_scope_ids = ScopeIds(None, None, dummy_location, dummy_location)
         dummy_field_data = DictFieldData({
             'data': '<conditional/>',
-            'xml_attributes': {'sources': 'i4x://HarvardX/ER22x/poll_question/T15_poll;i4x://HarvardX/ER22x/poll_question/T16_poll'},  # lint-amnesty, pylint: disable=line-too-long
+            'xml_attributes': {'sources': 'i4x://HarvardX/ER22x/poll_question/T15_poll;i4x://HarvardX/ER22x/poll_question/T16_poll'},  # pylint: disable=line-too-long
             'children': None,
         })
         conditional = ConditionalBlock(
@@ -335,7 +337,7 @@ class ConditionalBlockXmlTest(unittest.TestCase):
             'message': 'You must complete {link} before you can access this unit.',
             'sources': ''
         }
-        self.assertDictEqual(blocks['cond_block'].xml_attributes, expected_xml_attributes)
+        self.assertDictEqual(blocks['cond_block'].xml_attributes, expected_xml_attributes)  # noqa: PT009
 
 
 class ConditionalBlockStudioTest(XModuleXmlImportTest):

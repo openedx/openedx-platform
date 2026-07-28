@@ -9,28 +9,33 @@ from unittest import mock
 import ddt
 import pytest
 from config_models.models import cache
-from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test.utils import override_settings
 from django.urls import reverse
+from edx_toggles.toggles.testutils import override_waffle_flag
 
 from common.djangoapps.student.models import CourseEnrollment
-from common.djangoapps.student.tests.factories import GlobalStaffFactory
-from common.djangoapps.student.tests.factories import InstructorFactory
-from common.djangoapps.student.tests.factories import UserFactory
+from common.djangoapps.student.tests.factories import GlobalStaffFactory, InstructorFactory, UserFactory
 from lms.djangoapps.certificates import api as certs_api
 from lms.djangoapps.certificates.data import CertificateStatuses
 from lms.djangoapps.certificates.tests.factories import (
     CertificateAllowlistFactory,
     CertificateInvalidationFactory,
-    GeneratedCertificateFactory
+    GeneratedCertificateFactory,
 )
-from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from lms.djangoapps.instructor.toggles import LEGACY_INSTRUCTOR_DASHBOARD
+from xmodule.modulestore.tests.django_utils import (
+    SharedModuleStoreTestCase,  # pylint: disable=wrong-import-order
+)
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 
 @ddt.ddt
+# Tests for legacy views. When DEPR-38432 is picked up, these tests will require the following changes:
+# Either remove or leave the specific parts that reference the legacy instructor dashboard,
+# and remove the override_waffle_flag for LEGACY_INSTRUCTOR_DASHBOARD.
+@override_waffle_flag(LEGACY_INSTRUCTOR_DASHBOARD, active=True)
 class CertificateTaskViewTests(SharedModuleStoreTestCase):
     """Tests for the certificate panel of the instructor dash. """
 
@@ -153,6 +158,10 @@ class CertificateTaskViewTests(SharedModuleStoreTestCase):
 
 
 @ddt.ddt
+# Tests for legacy views. When DEPR-XXXX is picked up, these tests will require the following changes:
+# Either remove or leave the specific parts that reference the legacy instructor dashboard,
+# and remove the override_waffle_flag for LEGACY_INSTRUCTOR_DASHBOARD.
+@override_waffle_flag(LEGACY_INSTRUCTOR_DASHBOARD, active=True)
 class CertificatesInstructorDashTest(SharedModuleStoreTestCase):
     """Tests for the certificate panel of the instructor dash. """
 
@@ -197,7 +206,7 @@ class CertificatesInstructorDashTest(SharedModuleStoreTestCase):
         self.client.login(username=self.global_staff.username, password=self.TEST_PASSWORD)
         self._assert_certificates_visible(False)
 
-    @mock.patch.dict(settings.FEATURES, {'ENABLE_CERTIFICATES_INSTRUCTOR_MANAGE': True})
+    @override_settings(ENABLE_CERTIFICATES_INSTRUCTOR_MANAGE=True)
     def test_visible_for_instructors_when_feature_is_enabled(self):
         self.client.login(username=self.instructor.username, password=self.TEST_PASSWORD)
         self._assert_certificates_visible(True)
@@ -239,7 +248,7 @@ class CertificatesInstructorDashTest(SharedModuleStoreTestCase):
             certs_api.set_cert_generation_enabled(self.course.id, True)
             self._assert_enable_certs_button(False)
 
-    @mock.patch.dict(settings.FEATURES, {'CERTIFICATES_HTML_VIEW': True})
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_show_enabled_button_for_html_certs(self):
         """
         Tests `Enable Student-Generated Certificates` button is enabled
@@ -255,11 +264,7 @@ class CertificatesInstructorDashTest(SharedModuleStoreTestCase):
         self.assertContains(response, 'enable-certificates-submit')
         self.assertNotContains(response, 'Generate Example Certificates')
 
-    @mock.patch.dict(settings.FEATURES, {
-        'CERTIFICATES_HTML_VIEW': True,
-        'CERTIFICATES_INSTRUCTOR_GENERATION': False
-    }
-    )
+    @override_settings(CERTIFICATES_HTML_VIEW=True, CERTIFICATES_INSTRUCTOR_GENERATION=False)
     def test_buttons_for_html_certs_in_self_paced_course(self):
         """
         Tests `Enable Student-Generated Certificates` button is enabled
@@ -336,6 +341,10 @@ class CertificatesInstructorDashTest(SharedModuleStoreTestCase):
 
 @override_settings(CERT_QUEUE='certificates')
 @ddt.ddt
+# Tests for legacy views. When DEPR-XXXX is picked up, these tests will require the following changes:
+# Either remove or leave the specific parts that reference the legacy instructor dashboard,
+# and remove the override_waffle_flag for LEGACY_INSTRUCTOR_DASHBOARD.
+@override_waffle_flag(LEGACY_INSTRUCTOR_DASHBOARD, active=True)
 class CertificatesInstructorApiTest(SharedModuleStoreTestCase):
     """Tests for the certificates end-points in the instructor dash API. """
     @classmethod
@@ -1341,7 +1350,7 @@ class CertificateInvalidationViewTests(SharedModuleStoreTestCase):
 
         # Verify that certificate invalidation successfully removed from database
 
-        with pytest.raises(ObjectDoesNotExist):
+        with pytest.raises(ObjectDoesNotExist):  # noqa: PT012
             certs_filter_args = {
                 "generated_certificate": self.generated_certificate,
                 "invalidated_by": self.global_staff,

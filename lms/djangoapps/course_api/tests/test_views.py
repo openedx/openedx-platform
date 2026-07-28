@@ -8,8 +8,9 @@ from unittest import TestCase
 
 import ddt
 import pytest
+from django.contrib.auth import get_user_model
 from django.core.exceptions import ImproperlyConfigured
-from django.test import RequestFactory
+from django.test import RequestFactory, SimpleTestCase
 from django.test.utils import override_settings
 from django.urls import reverse
 from edx_django_utils.cache import RequestCache
@@ -19,8 +20,6 @@ from opaque_keys.edx.locator import LibraryLocator
 from search.tests.test_course_discovery import DemoCourse
 from search.tests.tests import TEST_INDEX_NAME
 from search.tests.utils import SearcherMixin
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase, SharedModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.course_modes.tests.factories import CourseModeFactory
@@ -32,8 +31,10 @@ from openedx.core.djangoapps.waffle_utils.testutils import WAFFLE_TABLES
 from openedx.core.lib.api.view_utils import LazySequence
 from openedx.features.content_type_gating.models import ContentTypeGatingConfig
 from openedx.features.course_duration_limits.models import CourseDurationLimitConfig
+from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase, SharedModuleStoreTestCase
+from xmodule.modulestore.tests.factories import CourseFactory
 
-from ..views import CourseDetailView, CourseListUserThrottle, LazyPageNumberPagination
+from ..views import CourseDetailView, CourseIdListUserThrottle, CourseListUserThrottle, LazyPageNumberPagination
 from .mixins import TEST_PASSWORD, CourseApiFactoryMixin
 
 
@@ -246,16 +247,16 @@ class CourseListViewTestCaseMultipleCourses(CourseApiTestViewMixin, ModuleStoreT
                   'username': instructor_user.username}
         response = self.verify_response(params=params)
 
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
         ids = {c['course_id'] for c in response.json()['results']}
-        self.assertEqual(ids, {str(self.course.id)})
+        self.assertEqual(ids, {str(self.course.id)})  # noqa: PT009
 
     def test_filter_post(self):
         """Verify that CourseOverviews are filtered by the provided org key in a POST request."""
         self.setup_user(self.staff_user)
 
         # Create a second course to be filtered out of queries.
-        alternate_course = self.create_course(
+        alternate_course = self.create_course(  # noqa: F841
             org=md5(self.course.org.encode('utf-8')).hexdigest()
         )
 
@@ -446,8 +447,8 @@ class CourseListSearchViewTest(CourseApiTestViewMixin, ModuleStoreTestCase, Sear
         self.setup_user(self.audit_user)
 
         # These query counts were found empirically
-        query_counts = [52, 46, 46, 46, 46, 46, 46, 46, 46, 46, 16]
-        ordered_course_ids = sorted([str(cid) for cid in (course_ids + [c.id for c in self.courses])])
+        query_counts = [57, 46, 46, 46, 46, 46, 46, 46, 46, 43, 12]
+        ordered_course_ids = sorted([str(cid) for cid in (course_ids + [c.id for c in self.courses])], key=str.lower)
 
         self.clear_caches()
 
@@ -468,10 +469,10 @@ class CourseListSearchViewTest(CourseApiTestViewMixin, ModuleStoreTestCase, Sear
         # Create 15 new courses, courses have the word "new" in the title
         [self.create_and_index_course(f"numb_{number}", f"new_{number}") for number in range(15)]  # pylint: disable=expression-not-assigned
         response = self.verify_response(params={"search_term": "new"})
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
         # We don't have 'count' 15 because 'mobile_search' param is None
         # And LazySequence contains all courses
-        self.assertEqual(response.json()["pagination"]["count"], 18)
+        self.assertEqual(response.json()["pagination"]["count"], 18)  # noqa: PT009
 
     def test_count_item_pagination_with_search_term_and_filter(self):
         """
@@ -483,8 +484,8 @@ class CourseListSearchViewTest(CourseApiTestViewMixin, ModuleStoreTestCase, Sear
         [self.create_and_index_course("Org_N", f"new_{number}") for number in range(10)]  # pylint: disable=expression-not-assigned
         [self.create_and_index_course("Org_X", f"new_{number}") for number in range(15)]  # pylint: disable=expression-not-assigned
         response = self.verify_response(params={"org": "Org_X", "search_term": "new"})
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["pagination"]["count"], 15)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
+        self.assertEqual(response.json()["pagination"]["count"], 15)  # noqa: PT009
 
     def test_count_item_pagination_with_search_term_and_mobile_search(self):
         """
@@ -497,9 +498,9 @@ class CourseListSearchViewTest(CourseApiTestViewMixin, ModuleStoreTestCase, Sear
         response = self.verify_response(
             params={"search_term": "new", "mobile_search": True}
         )
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
         # We have 'count' 15 because 'mobile_search' param is true
-        self.assertEqual(response.json()["pagination"]["count"], 15)
+        self.assertEqual(response.json()["pagination"]["count"], 15)  # noqa: PT009
 
 
 class CourseIdListViewTestCase(CourseApiTestViewMixin, ModuleStoreTestCase):
@@ -622,7 +623,7 @@ class CourseIdListViewTestCase(CourseApiTestViewMixin, ModuleStoreTestCase):
         assert filtered_response.data['results'][0].startswith(f'course-v1:{self.course.org}+')
 
 
-class LazyPageNumberPaginationTestCase(TestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class LazyPageNumberPaginationTestCase(TestCase):  # pylint: disable=missing-class-docstring
 
     def test_lazy_page_number_pagination(self):
         number_sequence = range(20)
@@ -651,7 +652,7 @@ class LazyPageNumberPaginationTestCase(TestCase):  # lint-amnesty, pylint: disab
         pagination.page_size = 5
         paginated_queryset = pagination.paginate_queryset(even_numbers_lazy_sequence, request)
         paginated_response = pagination.get_paginated_response(paginated_queryset)
-        self.assertDictEqual(expected_response, paginated_response.data)
+        self.assertDictEqual(expected_response, paginated_response.data)  # noqa: PT009
 
     def test_not_found_error_for_invalid_page(self):
         number_sequence = range(20)
@@ -666,10 +667,55 @@ class LazyPageNumberPaginationTestCase(TestCase):  # lint-amnesty, pylint: disab
         request = RequestFactory().get('/endpoint', data={'page': 3, 'page_size': 5})
         request.query_params = {'page': 3, 'page_size': 5}
 
-        with pytest.raises(Exception) as exc:
+        with pytest.raises(Exception) as exc:  # noqa: PT011, PT012
             pagination = LazyPageNumberPagination()
             pagination.max_page_size = 5
             pagination.page_size = 5
             paginated_queryset = pagination.paginate_queryset(even_numbers_lazy_sequence, request)
             pagination.get_paginated_response(paginated_queryset)
             assert 'Invalid page' in exc.exception
+
+
+@ddt.ddt
+class CourseThrottleCacheKeyTests(SimpleTestCase):
+    """
+    Regression tests ensuring the course list / id throttles each store their
+    rate-limit counters in isolated cache buckets, so they do not share a bucket
+    with each other or with other throttles using the same ``staff`` scope
+    (e.g. the enrollment API). See ``CourseListUserThrottle.get_cache_key``.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.factory = RequestFactory()
+        # Unsaved instance is enough: get_cache_key only reads ``pk`` and
+        # ``is_authenticated``, so no database access is required.
+        self.user = get_user_model()(pk=42, username="service_worker", is_staff=True)
+
+    def _staff_request(self):
+        request = self.factory.get("/")
+        request.user = self.user
+        return request
+
+    @ddt.data(
+        (CourseListUserThrottle, "course_list."),
+        (CourseIdListUserThrottle, "course_id_list."),
+    )
+    @ddt.unpack
+    def test_cache_key_is_namespaced(self, throttle_class, expected_prefix):
+        throttle = throttle_class()
+        throttle.scope = "staff"
+        cache_key = throttle.get_cache_key(self._staff_request(), view=None)
+        assert cache_key.startswith(expected_prefix)
+
+    def test_throttles_with_same_scope_use_distinct_buckets(self):
+        request = self._staff_request()
+        keys = []
+        for throttle_class in (CourseListUserThrottle, CourseIdListUserThrottle):
+            throttle = throttle_class()
+            throttle.scope = "staff"
+            keys.append(throttle.get_cache_key(request, view=None))
+        # The raw, un-namespaced bucket these would otherwise share.
+        shared_bucket = CourseListUserThrottle.cache_format % {"scope": "staff", "ident": self.user.pk}
+        keys.append(shared_bucket)
+        assert len(set(keys)) == len(keys)

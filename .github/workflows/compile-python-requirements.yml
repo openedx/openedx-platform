@@ -19,14 +19,14 @@ jobs:
 
     steps:
       - name: Check out target branch
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: "${{ inputs.branch }}"
 
       - name: Set up Python environment
         uses: actions/setup-python@v6
         with:
-          python-version: "3.11"
+          python-version: "3.12"
 
       - name: Run make compile-requirements
         env:

@@ -2,9 +2,9 @@
 JWT Token handling and signing functions.
 """
 
-import jwt
 from time import time
 
+import jwt
 from django.conf import settings
 from jwt.api_jwk import PyJWK, PyJWKSet
 from jwt.exceptions import ExpiredSignatureError, InvalidSignatureError, MissingRequiredClaimError

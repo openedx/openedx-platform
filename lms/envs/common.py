@@ -43,28 +43,30 @@ Conventions
 import os
 
 from corsheaders.defaults import default_headers as corsheaders_default_headers
-from path import Path as path
 from django.utils.translation import gettext_lazy as _
+from edx_django_utils.plugins import add_plugins, get_plugin_apps
 from enterprise.constants import (
+    DEFAULT_ENTERPRISE_ENROLLMENT_INTENTIONS_ROLE,
     ENTERPRISE_ADMIN_ROLE,
-    ENTERPRISE_LEARNER_ROLE,
     ENTERPRISE_CATALOG_ADMIN_ROLE,
     ENTERPRISE_DASHBOARD_ADMIN_ROLE,
     ENTERPRISE_ENROLLMENT_API_ADMIN_ROLE,
     ENTERPRISE_FULFILLMENT_OPERATOR_ROLE,
+    ENTERPRISE_LEARNER_ROLE,
+    ENTERPRISE_OPERATOR_ROLE,
     ENTERPRISE_REPORTING_CONFIG_ADMIN_ROLE,
     ENTERPRISE_SSO_ORCHESTRATOR_OPERATOR_ROLE,
-    ENTERPRISE_OPERATOR_ROLE,
-    SYSTEM_ENTERPRISE_PROVISIONING_ADMIN_ROLE,
     PROVISIONING_ENTERPRISE_CUSTOMER_ADMIN_ROLE,
     PROVISIONING_PENDING_ENTERPRISE_CUSTOMER_ADMIN_ROLE,
-    DEFAULT_ENTERPRISE_ENROLLMENT_INTENTIONS_ROLE,
+    SYSTEM_ENTERPRISE_PROVISIONING_ADMIN_ROLE,
 )
+from openedx_content.settings_api import openedx_content_backcompat_apps_to_install
+from path import Path as path
 
+from openedx.core.djangoapps.plugins.constants import ProjectType, SettingsType
 from openedx.core.lib.derived import Derived
-from openedx.envs.common import *  # pylint: disable=wildcard-import
-
 from openedx.core.lib.features_setting_proxy import FeaturesProxy
+from openedx.envs.common import *  # pylint: disable=wildcard-import  # noqa: F403
 
 # A proxy for feature flags stored in the settings namespace
 FEATURES = FeaturesProxy(globals())
@@ -135,6 +137,16 @@ ENABLE_UNICODE_USERNAME = False
 # .. toggle_tickets: https://github.com/openedx/edx-platform/pull/829
 ENABLE_DJANGO_ADMIN_SITE = True
 ENABLE_LMS_MIGRATION = False
+
+# .. toggle_name: ENABLE_FORUM_DAILY_DIGEST
+# .. toggle_implementation: DjangoSetting
+# .. toggle_default: False
+# .. toggle_description: Settings for forums/discussions to on/off daily digest
+#   feature. Set this to True if you want to enable users to subscribe and unsubscribe
+#   for daily digest. This setting enables deprecation of daily digest.
+# .. toggle_use_cases: open_edx
+# .. toggle_creation_date: 2020-03-09
+ENABLE_FORUM_DAILY_DIGEST = False
 
 # .. toggle_name: settings.ENABLE_MASQUERADE
 # .. toggle_implementation: DjangoSetting
@@ -299,6 +311,67 @@ ALLOW_WIKI_ROOT_ACCESS = True
 # .. toggle_use_cases: open_edx
 # .. toggle_creation_date: 2014-09-15
 ENABLE_THIRD_PARTY_AUTH = False
+
+# Third-party auth settings for python-social-auth
+# These are defined unconditionally; they only take effect when
+# AUTHENTICATION_BACKENDS includes social auth backends.
+
+# Where to send the user if there's an error during social authentication
+SOCIAL_AUTH_LOGIN_ERROR_URL = '/'
+# Where to send the user once social authentication is successful
+SOCIAL_AUTH_LOGIN_REDIRECT_URL = '/dashboard'
+# Disable sanitizing of redirect urls in social-auth since the platform
+# already does its own sanitization via the LOGIN_REDIRECT_WHITELIST setting.
+SOCIAL_AUTH_SANITIZE_REDIRECTS = False
+# Adding extra key value pair in the url query string for microsoft as per request
+SOCIAL_AUTH_AZUREAD_OAUTH2_AUTH_EXTRA_ARGUMENTS = {'msafed': 0}
+# Required so that we can use unmodified PSA OAuth2 backends:
+SOCIAL_AUTH_STRATEGY = 'common.djangoapps.third_party_auth.strategy.ConfigurationModelStrategy'
+# We let the user specify their email address during signup.
+SOCIAL_AUTH_PROTECTED_USER_FIELDS = ['email']
+# Disable exceptions by default for prod so you get redirect behavior
+# instead of a Django error page.
+SOCIAL_AUTH_RAISE_EXCEPTIONS = False
+# Clean username to make sure username is compatible with our system requirements
+SOCIAL_AUTH_CLEAN_USERNAME_FUNCTION = 'common.djangoapps.third_party_auth.models.clean_username'
+# Allow users to login using social auth even if their account is not verified yet
+SOCIAL_AUTH_INACTIVE_USER_LOGIN = True
+SOCIAL_AUTH_INACTIVE_USER_URL = '/auth/inactive'
+SOCIAL_AUTH_UUID_LENGTH = 10
+# Whitelisted URL query parameters retained in the pipeline session.
+FIELDS_STORED_IN_SESSION = ['auth_entry', 'next']
+
+# Computed setting: disable clean usernames check when unicode usernames are enabled
+SOCIAL_AUTH_CLEAN_USERNAMES = Derived(
+    lambda settings: not settings.ENABLE_UNICODE_USERNAME
+)
+
+# Social auth pipeline for third-party authentication.
+# Operators can override SOCIAL_AUTH_PIPELINE directly in their settings
+# to customize the pipeline.
+# Note: Enterprise pipeline steps (enterprise_associate_by_email, handle_enterprise_logistration)
+# are inserted dynamically via enterprise/settings/common.py plugin_settings().
+SOCIAL_AUTH_PIPELINE = [
+    'common.djangoapps.third_party_auth.pipeline.parse_query_params',
+    'social_core.pipeline.social_auth.social_details',
+    'social_core.pipeline.social_auth.social_uid',
+    'social_core.pipeline.social_auth.auth_allowed',
+    'social_core.pipeline.social_auth.social_user',
+    'common.djangoapps.third_party_auth.pipeline.associate_by_email_if_login_api',
+    'common.djangoapps.third_party_auth.pipeline.associate_by_email_if_oauth',
+    'common.djangoapps.third_party_auth.pipeline.get_username',
+    'common.djangoapps.third_party_auth.pipeline.set_pipeline_timeout',
+    'common.djangoapps.third_party_auth.pipeline.ensure_user_information',
+    'social_core.pipeline.user.create_user',
+    'social_core.pipeline.social_auth.associate_user',
+    'social_core.pipeline.social_auth.load_extra_data',
+    'social_core.pipeline.user.user_details',
+    'common.djangoapps.third_party_auth.pipeline.user_details_force_sync',
+    'common.djangoapps.third_party_auth.pipeline.set_id_verification_status',
+    'common.djangoapps.third_party_auth.pipeline.set_logged_in_cookies',
+    'common.djangoapps.third_party_auth.pipeline.login_analytics',
+    'common.djangoapps.third_party_auth.pipeline.ensure_redirect_url_is_safe',
+]
 
 # Prevent concurrent logins per user
 PREVENT_CONCURRENT_LOGINS = True
@@ -695,6 +768,15 @@ ENABLE_CROSS_DOMAIN_CSRF_COOKIE = False
 # .. toggle_warning: Requires configuration of third party auth
 ENABLE_REQUIRE_THIRD_PARTY_AUTH = False
 
+# .. toggle_name: ENABLE_AUTO_GENERATED_USERNAME
+# .. toggle_implementation: DjangoSetting
+# .. toggle_default: False
+# .. toggle_description: Set to True to enable auto-generation of usernames.
+# .. toggle_use_cases: open_edx
+# .. toggle_creation_date: 2024-02-20
+# .. toggle_warning: Changing this setting may affect user authentication, account management and discussions experience.
+ENABLE_AUTO_GENERATED_USERNAME = False
+
 # Specifies extra XBlock fields that should available when requested via the Course Blocks API
 # Should be a list of tuples of (block_type, field_name), where block_type can also be "*" for all block types.
 # e.g. COURSE_BLOCKS_API_EXTRA_FIELDS = [  ('course', 'other_course_settings'), ("problem", "weight")  ]
@@ -713,14 +795,14 @@ RETRY_CALENDAR_SYNC_EMAIL_MAX_ATTEMPTS = 5
 ############################# SET PATH INFORMATION #############################
 
 PROJECT_ROOT = path(__file__).abspath().dirname().dirname()  # /edx-platform/lms
-NODE_MODULES_ROOT = REPO_ROOT / "node_modules"
+NODE_MODULES_ROOT = REPO_ROOT / "node_modules"  # noqa: F405
 
 # Where to look for a status message
-STATUS_MESSAGE_PATH = ENV_ROOT / "status_message.json"
+STATUS_MESSAGE_PATH = ENV_ROOT / "status_message.json"  # noqa: F405
 
 ############################ Global Database Configuration #####################
 
-DATABASE_ROUTERS.append('edx_django_utils.db.read_replica.ReadReplicaRouter')
+DATABASE_ROUTERS.append('edx_django_utils.db.read_replica.ReadReplicaRouter')  # noqa: F405
 
 ################################## DJANGO OAUTH TOOLKIT #######################################
 
@@ -777,10 +859,10 @@ TPA_AUTOMATIC_LOGOUT_ENABLED = False
 
 ################################## TEMPLATE CONFIGURATION #####################################
 
-MAKO_TEMPLATE_DIRS_BASE = lms_mako_template_dirs_base
+MAKO_TEMPLATE_DIRS_BASE = lms_mako_template_dirs_base  # noqa: F405
 
-CONTEXT_PROCESSORS.remove('django.contrib.messages.context_processors.messages')
-CONTEXT_PROCESSORS[5:5] = [
+CONTEXT_PROCESSORS.remove('django.contrib.messages.context_processors.messages')  # noqa: F405
+CONTEXT_PROCESSORS[5:5] = [  # noqa: F405
     # Added for django-wiki
     'django.template.context_processors.media',
     'django.template.context_processors.tz',
@@ -793,12 +875,16 @@ CONTEXT_PROCESSORS[5:5] = [
     # Timezone processor (sends language and time_zone preference)
     'lms.djangoapps.courseware.context_processor.user_timezone_locale_prefs',
 ]
-CONTEXT_PROCESSORS += [
+CONTEXT_PROCESSORS += [  # noqa: F405
     # Mobile App processor (Detects if request is from the mobile app)
     'lms.djangoapps.mobile_api.context_processor.is_from_mobile_app',
 
     # Context processor necessary for the survey report message appear on the admin site
     'openedx.features.survey_report.context_processors.admin_extra_context',
+
+    # Third-party auth context processors for social_django
+    'social_django.context_processors.backends',
+    'social_django.context_processors.login_redirect',
 ]
 
 DEFAULT_TEMPLATE_ENGINE_DIRS = Derived(lambda settings: settings.TEMPLATES[0]['DIRS'][:])
@@ -821,8 +907,8 @@ ELASTICSEARCH_INDEX_PREFIX = ""
 
 EDX_API_KEY = None
 
-LOGIN_REDIRECT_URL = EDX_ROOT_URL + '/login'
-LOGIN_URL = EDX_ROOT_URL + '/login'
+LOGIN_REDIRECT_URL = EDX_ROOT_URL + '/login'  # noqa: F405
+LOGIN_URL = EDX_ROOT_URL + '/login'  # noqa: F405
 
 CERT_QUEUE = 'test-pull'
 
@@ -851,7 +937,7 @@ LMS_SEGMENT_KEY = None
 
 DEBUG_TRACK_LOG = False
 
-TRACKING_IGNORE_URL_PATTERNS += [r'^/segmentio/event', r'^/performance']
+TRACKING_IGNORE_URL_PATTERNS += [r'^/segmentio/event', r'^/performance']  # noqa: F405
 
 TRACKING_SEGMENTIO_WEBHOOK_SECRET = None
 TRACKING_SEGMENTIO_ALLOWED_TYPES = ['track']
@@ -878,8 +964,8 @@ COURSE_LISTINGS = {}
 
 ############# ModuleStore Configuration ##########
 
-CONTENTSTORE['DOC_STORE_CONFIG']['password'] = 'password'
-CONTENTSTORE['DOC_STORE_CONFIG']['read_preference'] = 'SECONDARY_PREFERRED'
+CONTENTSTORE['DOC_STORE_CONFIG']['password'] = 'password'  # noqa: F405
+CONTENTSTORE['DOC_STORE_CONFIG']['read_preference'] = 'SECONDARY_PREFERRED'  # noqa: F405
 
 MODULESTORE_BRANCH = 'published-only'
 
@@ -922,10 +1008,6 @@ PYTHON_LIB_FILENAME = 'python_lib.zip'
 
 ############################### DJANGO BUILT-INS ###############################
 
-# django-session-cookie middleware
-DCS_SESSION_COOKIE_SAMESITE = 'None'
-DCS_SESSION_COOKIE_SAMESITE_FORCE_ALL = True
-
 # LMS base
 LMS_BASE = 'localhost:18000'
 
@@ -956,9 +1038,9 @@ ACTIVATION_EMAIL_FROM_ADDRESS = ''
 
 # Static content
 STATIC_URL = '/static/'
-STATIC_ROOT = os.environ.get('STATIC_ROOT_LMS', ENV_ROOT / "staticfiles")
+STATIC_ROOT = os.environ.get('STATIC_ROOT_LMS', ENV_ROOT / "staticfiles")  # noqa: F405
 
-STATICFILES_DIRS.insert(2, NODE_MODULES_ROOT / "@edx")
+STATICFILES_DIRS.insert(2, NODE_MODULES_ROOT / "@edx")  # noqa: F405
 
 # Guidelines for translators
 TRANSLATORS_GUIDE = 'https://docs.openedx.org/en/latest/translators/index.html'
@@ -1211,13 +1293,16 @@ MIDDLEWARE = [
     # Handles automatically storing user ids in django-simple-history tables when possible.
     'simple_history.middleware.HistoryRequestMiddleware',
 
+    # Third-party auth exception handling for social auth redirects
+    'common.djangoapps.third_party_auth.middleware.ExceptionMiddleware',
+
     # This must be last
     'openedx.core.djangoapps.site_configuration.middleware.SessionCookieDomainOverrideMiddleware',
 ]
 
 ############################### PIPELINE #######################################
 
-PIPELINE['JS_COMPRESSOR'] = 'pipeline.compressors.uglifyjs.UglifyJSCompressor'
+PIPELINE['JS_COMPRESSOR'] = 'pipeline.compressors.uglifyjs.UglifyJSCompressor'  # noqa: F405
 
 from openedx.core.lib.rooted_paths import rooted_glob  # pylint: disable=wrong-import-position
 
@@ -1287,7 +1372,7 @@ discussion_js = (
     rooted_glob(PROJECT_ROOT / 'static', 'js/customwmd.js') +
     rooted_glob(PROJECT_ROOT / 'static', 'js/mathjax_accessible.js') +
     rooted_glob(PROJECT_ROOT / 'static', 'js/mathjax_delay_renderer.js') +
-    sorted(rooted_glob(COMMON_ROOT / 'static', 'common/js/discussion/**/*.js'))
+    sorted(rooted_glob(COMMON_ROOT / 'static', 'common/js/discussion/**/*.js'))  # noqa: F405
 )
 
 discussion_vendor_js = [
@@ -1361,7 +1446,7 @@ credit_web_view_js = [
     'js/src/logger.js',
 ]
 
-PIPELINE['STYLESHEETS'] = {
+PIPELINE['STYLESHEETS'] = {  # noqa: F405
     'style-vendor': {
         'source_filenames': [
             'css/vendor/font-awesome.css',
@@ -1499,7 +1584,7 @@ lms_application_js = [
     'js/main.js',
 ]
 
-PIPELINE['JAVASCRIPT'] = {
+PIPELINE['JAVASCRIPT'] = {  # noqa: F405
     'base_application': {
         'source_filenames': base_application_js,
         'output_filename': 'js/lms-base-application.js',
@@ -1681,7 +1766,7 @@ BULK_EMAIL_RETRY_DELAY_BETWEEN_SENDS = 0.02
 ############################# Email Opt In ####################################
 
 # Minimum age for organization-wide email opt in
-EMAIL_OPTIN_MINIMUM_AGE = PARENTAL_CONSENT_AGE_LIMIT
+EMAIL_OPTIN_MINIMUM_AGE = PARENTAL_CONSENT_AGE_LIMIT  # noqa: F405
 
 ################################### APPS ######################################
 
@@ -1779,7 +1864,7 @@ INSTALLED_APPS = [
     # User tours
     'lms.djangoapps.user_tours',
 
-    # New (Learning-Core-based) XBlock runtime
+    # New XBlock runtime, based on openedx_content
     'openedx.core.djangoapps.xblock.apps.LmsXBlockAppConfig',
 
     # Student support tools
@@ -1949,7 +2034,7 @@ INSTALLED_APPS = [
     'lms.djangoapps.course_goals.apps.CourseGoalsConfig',
 
     # Tagging
-    'openedx_tagging.core.tagging.apps.TaggingConfig',
+    'openedx_tagging',
     'openedx.core.djangoapps.content_tagging',
 
     # Features
@@ -2017,20 +2102,21 @@ INSTALLED_APPS = [
     # Notifications
     'openedx.core.djangoapps.notifications',
 
+    # Authz
+    'openedx.core.djangoapps.authz',
+
     'openedx_events',
 
-    # Learning Core Apps, used by v2 content libraries (content_libraries app)
-    "openedx_learning.apps.authoring.collections",
-    "openedx_learning.apps.authoring.components",
-    "openedx_learning.apps.authoring.contents",
-    "openedx_learning.apps.authoring.publishing",
-    "openedx_learning.apps.authoring.units",
-    "openedx_learning.apps.authoring.subsections",
-    "openedx_learning.apps.authoring.sections",
+    # Core models to represent courses
+    "openedx_catalog",
+
+    # Core apps that power libraries
+    "openedx_content",
+    *openedx_content_backcompat_apps_to_install(),
 ]
 
 # Add LMS specific optional apps
-OPTIONAL_APPS += [
+OPTIONAL_APPS += [  # noqa: F405
     # Channel Integrations Apps
     ('channel_integrations.integrated_channel', None),
     ('channel_integrations.degreed2', None),
@@ -2045,7 +2131,7 @@ OPTIONAL_APPS += [
     ('django_object_actions', None),  # https://github.com/crccheck/django-object-actions
 ]
 
-add_optional_apps(OPTIONAL_APPS, INSTALLED_APPS)
+add_optional_apps(OPTIONAL_APPS, INSTALLED_APPS)  # noqa: F405
 
 ######################### Django Rest Framework ########################
 
@@ -2056,7 +2142,7 @@ SWAGGER_SETTINGS = {
 
 ######################### MARKETING SITE ###############################
 
-MKTG_URL_LINK_MAP.update({
+MKTG_URL_LINK_MAP.update({  # noqa: F405
     'ABOUT': 'about',
     'CONTACT': 'contact',
     'FAQ': 'help',
@@ -2091,7 +2177,7 @@ ENTITLEMENT_EXPIRED_ALERT_PERIOD = 90
 
 ############################# SOCIAL MEDIA SHARING #############################
 # Social Media Sharing on Student Dashboard
-SOCIAL_SHARING_SETTINGS.update({
+SOCIAL_SHARING_SETTINGS.update({  # noqa: F405
     'FACEBOOK_BRAND': None,
     'CERTIFICATE_FACEBOOK_TEXT': None,
     'TWITTER_BRAND': None,
@@ -2401,7 +2487,6 @@ ACCOUNT_VISIBILITY_CONFIGURATION["admin_fields"] = (
         "secondary_email_enabled",
         "year_of_birth",
         "phone_number",
-        "activation_key",
         "pending_name_change",
     ]
 )
@@ -2535,7 +2620,7 @@ NOTIFICATION_EMAIL_EDX_LOGO = "templates/credit_notifications/edx-logo-header.pn
 ################################ Settings for JWTs ################################
 
 # Allows JWT authentication to find the LMS user id for verification
-EDX_DRF_EXTENSIONS['VERIFY_LMS_USER_ID_PROPERTY_NAME'] = 'id'
+EDX_DRF_EXTENSIONS['VERIFY_LMS_USER_ID_PROPERTY_NAME'] = 'id'  # noqa: F405
 
 ################################ Settings for rss_proxy ################################
 
@@ -2564,8 +2649,33 @@ FINANCIAL_ASSISTANCE_MAX_LENGTH = 2500
 # Note: If you want to use a model to store the results of the form, you will
 # need to add the model's app to the ADDL_INSTALLED_APPS array in your
 # lms.yml file.
+#
+# REGISTRATION_EXTENSION_FORM is deprecated but will continue to work for backward compatibility.
+# Sites using this setting will maintain the old behavior:
+# - Data is stored in UserProfile.meta JSON field
+# - No ability to update extended fields after registration via account settings API
+#
+# To get new capabilities (model-based storage), migrate to PROFILE_EXTENSION_FORM.
+REGISTRATION_EXTENSION_FORM = None  # DEPRECATED: Use PROFILE_EXTENSION_FORM instead
 
-REGISTRATION_EXTENSION_FORM = None
+# PROFILE_EXTENSION_FORM is a Django ModelForm class used for extending user profiles
+# beyond the default fields. This setting enables new capabilities for profile management:
+# - Data is stored in a dedicated model (not just UserProfile.meta)
+# - Users can update their extended profile fields via the account settings API
+#
+# This setting supersedes REGISTRATION_EXTENSION_FORM and provides more accurate naming
+# for profile extension functionality.
+#
+# Example: PROFILE_EXTENSION_FORM = 'myapp.forms.ExtendedProfileForm'
+#
+# The custom form's model should have:
+# - A OneToOneField to User (typically named 'user')
+# - Additional fields for extended profile data
+#
+# MIGRATION NOTE: If you're currently using REGISTRATION_EXTENSION_FORM (deprecated),
+# your custom fields will continue working as before (data in meta field).
+# To get the new capabilities, migrate to PROFILE_EXTENSION_FORM.
+PROFILE_EXTENSION_FORM = None
 
 # Identifier included in the User Agent from Open edX mobile apps.
 MOBILE_APP_USER_AGENT_REGEXES = [
@@ -2779,6 +2889,10 @@ CATALOG_MICROFRONTEND_URL = None
 # .. setting_default: None
 # .. setting_description: Base URL of the micro-frontend-based instructor app.
 INSTRUCTOR_MICROFRONTEND_URL = None
+# .. setting_name: COMMUNICATIONS_MICROFRONTEND_URL
+# .. setting_default: None
+# .. setting_description: Base URL of the micro-frontend-based communications app.
+COMMUNICATIONS_MICROFRONTEND_URL = None
 # .. setting_name: DISCUSSION_SPAM_URLS
 # .. setting_default: []
 # .. setting_description: Urls to filter from discussion content to avoid spam
@@ -2871,6 +2985,7 @@ ENFORCE_SESSION_EMAIL_MATCH = False
 # Note that all settings are actually defined by the plugin
 # pylint: disable=wrong-import-position
 from openedx.core.djangoapps.ace_common.settings import common as ace_common_settings
+
 ACE_ROUTING_KEY = ace_common_settings.ACE_ROUTING_KEY
 
 ############### Settings for facebook ##############################
@@ -2884,8 +2999,6 @@ USER_STATE_BATCH_SIZE = 5000
 
 ############## Plugin Django Apps #########################
 
-from edx_django_utils.plugins import get_plugin_apps, add_plugins  # pylint: disable=wrong-import-position,wrong-import-order
-from openedx.core.djangoapps.plugins.constants import ProjectType, SettingsType  # pylint: disable=wrong-import-position
 INSTALLED_APPS.extend(get_plugin_apps(ProjectType.LMS))
 add_plugins(__name__, ProjectType.LMS, SettingsType.COMMON)
 
@@ -3005,6 +3118,25 @@ MFE_CONFIG = {}
 # .. setting_creation_date: 2022-08-05
 MFE_CONFIG_OVERRIDES = {}
 
+# .. setting_name: FRONTEND_SITE_CONFIG
+# .. setting_implementation: DjangoSetting
+# .. setting_default: {}
+# .. setting_description: Frontend site configuration in frontend-base's native camelCase
+#   format.  Unlike MFE_CONFIG, values here require no translation and are passed through
+#   to the /api/frontend_site_config/v1/ endpoint as-is, at the highest precedence (overriding any
+#   values translated from MFE_CONFIG).
+#   See https://github.com/openedx/frontend-base/blob/main/types.ts for the expected
+#   SiteConfig schema.
+#   Example: {
+#     "externalRoutes": [
+#       {"role": "learnerDashboard", "url": "https://courses.example.com/dashboard"}
+#     ],
+#     "logoutUrl": "https://courses.example.com/logout"
+#   }
+# .. setting_use_cases: open_edx
+# .. setting_creation_date: 2026-04-04
+FRONTEND_SITE_CONFIG = {}
+
 # .. setting_name: MFE_CONFIG_API_CACHE_TIMEOUT
 # .. setting_default: 60*5
 # .. setting_description: The MFE Config API response will be cached during the
@@ -3050,7 +3182,7 @@ DISABLED_ORGS_FOR_PROGRAM_NUDGE = []
 def _should_send_certificate_events(settings):
     return settings.SEND_LEARNING_CERTIFICATE_LIFECYCLE_EVENTS_TO_BUS
 
-EVENT_BUS_PRODUCER_CONFIG.update({
+EVENT_BUS_PRODUCER_CONFIG.update({  # noqa: F405
     'org.openedx.learning.certificate.created.v1': {
         'learning-certificate-lifecycle':
             {'event_key_field': 'certificate.course.course_key', 'enabled': Derived(_should_send_certificate_events)},

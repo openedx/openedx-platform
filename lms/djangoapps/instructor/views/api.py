@@ -10,19 +10,20 @@ import csv
 import datetime
 import json
 import logging
-import string
 import random
 import re
+import string
 
 import dateutil
-import pytz
 import edx_api_doc_tools as apidocs
+import pytz
 from django.conf import settings
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.core.exceptions import MultipleObjectsReturned, ObjectDoesNotExist, PermissionDenied, ValidationError
 from django.core.validators import validate_email
 from django.db import IntegrityError, transaction
-from django.http import QueryDict, HttpResponse, HttpResponseBadRequest, HttpResponseForbidden, HttpResponseNotFound
+from django.db.models import Q
+from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbidden, HttpResponseNotFound, QueryDict
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils.decorators import method_decorator
@@ -36,33 +37,29 @@ from edx_rest_framework_extensions.auth.session.authentication import SessionAut
 from edx_when.api import get_date_for_block
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey, UsageKey
-from openedx.core.djangoapps.course_groups.cohorts import get_cohort_by_name
+from rest_framework import serializers, status  # pylint: disable=wrong-import-order
 from rest_framework.exceptions import MethodNotAllowed
-from rest_framework import serializers, status  # lint-amnesty, pylint: disable=wrong-import-order
-from rest_framework.permissions import IsAdminUser, IsAuthenticated, BasePermission  # lint-amnesty, pylint: disable=wrong-import-order
-from rest_framework.response import Response  # lint-amnesty, pylint: disable=wrong-import-order
-from rest_framework.views import APIView  # lint-amnesty, pylint: disable=wrong-import-order
-from submissions import api as sub_api  # installed from the edx-submissions repository  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.exceptions import ItemNotFoundError  # lint-amnesty, pylint: disable=wrong-import-order
+from rest_framework.permissions import (  # pylint: disable=wrong-import-order
+    BasePermission,
+    IsAdminUser,
+    IsAuthenticated,
+)
+from rest_framework.response import Response  # pylint: disable=wrong-import-order
+from rest_framework.views import APIView  # pylint: disable=wrong-import-order
+from submissions import (
+    api as sub_api,  # installed from the edx-submissions repository  # pylint: disable=wrong-import-order
+)
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.student import auth
 from common.djangoapps.student.api import is_user_enrolled_in_course
 from common.djangoapps.student.models import (
-    ALLOWEDTOENROLL_TO_ENROLLED,
-    ALLOWEDTOENROLL_TO_UNENROLLED,
+    UNENROLLED_TO_ENROLLED,
     CourseEnrollment,
     CourseEnrollmentAllowed,
-    DEFAULT_TRANSITION_STATE,
-    ENROLLED_TO_ENROLLED,
-    ENROLLED_TO_UNENROLLED,
     EntranceExamConfiguration,
     ManualEnrollmentAudit,
     Registration,
-    UNENROLLED_TO_ALLOWEDTOENROLL,
-    UNENROLLED_TO_ENROLLED,
-    UNENROLLED_TO_UNENROLLED,
     UserProfile,
     get_user_by_username_or_email,
     is_email_retired,
@@ -74,8 +71,8 @@ from common.djangoapps.util.file import (
     store_uploaded_file,
 )
 from common.djangoapps.util.json_request import JsonResponse, JsonResponseBadRequest
-from common.djangoapps.util.views import require_global_staff  # pylint: disable=unused-import
-from lms.djangoapps.bulk_email.api import is_bulk_email_feature_enabled, create_course_email
+from common.djangoapps.util.views import require_global_staff  # pylint: disable=unused-import  # noqa: F401
+from lms.djangoapps.bulk_email.api import create_course_email, is_bulk_email_feature_enabled
 from lms.djangoapps.certificates import api as certs_api
 from lms.djangoapps.course_home_api.toggles import course_home_mfe_progress_tab_is_active
 from lms.djangoapps.courseware.access import has_access
@@ -87,54 +84,57 @@ from lms.djangoapps.instructor.constants import INVOICE_KEY
 from lms.djangoapps.instructor.enrollment import (
     enroll_email,
     get_email_params,
-    get_user_email_language,
     send_beta_role_email,
     send_mail_to_student,
-    unenroll_email,
 )
+from lms.djangoapps.instructor.utils import process_student_enrollment_batch
 from lms.djangoapps.instructor.views.instructor_task_helpers import extract_email_features, extract_task_features
-from lms.djangoapps.instructor_analytics import basic as instructor_analytics_basic, csvs as instructor_analytics_csvs
-from lms.djangoapps.instructor_task import api as task_api
-from lms.djangoapps.instructor_task.api_helper import AlreadyRunningError, QueueConnectionError
-from lms.djangoapps.instructor_task.data import InstructorTaskTypes
-from lms.djangoapps.instructor_task.models import ReportStore
 from lms.djangoapps.instructor.views.serializer import (
     AccessSerializer,
     BlockDueDateSerializer,
     CertificateSerializer,
     CertificateStatusesSerializer,
+    EnrollmentListSerializer,
     ForumRoleNameSerializer,
     ListInstructorTaskInputSerializer,
     ModifyAccessSerializer,
+    OverrideProblemScoreSerializer,
+    ProblemResetSerializer,
+    RescoreEntranceExamSerializer,
+    ResetEntranceExamAttemptsSerializer,
     RoleNameSerializer,
     SendEmailSerializer,
-    ShowUnitExtensionsSerializer,
     ShowStudentExtensionSerializer,
+    ShowUnitExtensionsSerializer,
     StudentAttemptsSerializer,
-    UserSerializer,
-    UniqueStudentIdentifierSerializer,
-    ProblemResetSerializer,
-    UpdateForumRoleMembershipSerializer,
-    RescoreEntranceExamSerializer,
-    OverrideProblemScoreSerializer,
     StudentsUpdateEnrollmentSerializer,
-    ResetEntranceExamAttemptsSerializer
+    UniqueStudentIdentifierSerializer,
+    UpdateForumRoleMembershipSerializer,
+    UserSerializer,
 )
+from lms.djangoapps.instructor_analytics import basic as instructor_analytics_basic
+from lms.djangoapps.instructor_analytics import csvs as instructor_analytics_csvs
+from lms.djangoapps.instructor_task import api as task_api
+from lms.djangoapps.instructor_task.api_helper import AlreadyRunningError, QueueConnectionError
+from lms.djangoapps.instructor_task.data import InstructorTaskTypes
+from lms.djangoapps.instructor_task.models import ReportStore
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
-from openedx.core.djangoapps.course_groups.cohorts import add_user_to_cohort, is_course_cohorted
+from openedx.core.djangoapps.course_groups.cohorts import add_user_to_cohort, get_cohort_by_name, is_course_cohorted
 from openedx.core.djangoapps.course_groups.models import CourseUserGroup
-from openedx.core.djangoapps.django_comment_common.models import (
-    CourseDiscussionSettings,
-    Role,
-)
+from openedx.core.djangoapps.django_comment_common.models import CourseDiscussionSettings, Role
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
+from openedx.core.djangoapps.theming.helpers import get_current_site
 from openedx.core.djangoapps.user_api.preferences.api import get_user_preference
 from openedx.core.djangolib.markup import HTML, Text
 from openedx.core.lib.api.authentication import BearerAuthenticationAllowInactiveUser
+from openedx.core.lib.api.serializers import CourseKeyField
 from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin, view_auth_classes
 from openedx.core.lib.courses import get_course_by_id
-from openedx.core.lib.api.serializers import CourseKeyField
 from openedx.features.course_experience.url_helpers import get_learning_mfe_home_url
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
+from xmodule.modulestore.exceptions import ItemNotFoundError  # pylint: disable=wrong-import-order
+
+from .. import permissions
 from .tools import (
     DashboardError,
     dump_block_extensions,
@@ -146,7 +146,6 @@ from .tools import (
     set_due_date_extension,
     strip_if_string,
 )
-from .. import permissions
 
 log = logging.getLogger(__name__)
 
@@ -285,7 +284,7 @@ class RegisterAndEnrollStudents(APIView):
         """
         if not configuration_helpers.get_value(
             'ALLOW_AUTOMATED_SIGNUPS',
-            settings.FEATURES.get('ALLOW_AUTOMATED_SIGNUPS', False),
+            settings.ALLOW_AUTOMATED_SIGNUPS,
         ):
             return HttpResponseForbidden()
 
@@ -311,7 +310,7 @@ class RegisterAndEnrollStudents(APIView):
             include_expired=False,
         )))
 
-        if 'students_list' in request.FILES:  # lint-amnesty, pylint: disable=too-many-nested-blocks
+        if 'students_list' in request.FILES:  # pylint: disable=too-many-nested-blocks
             students = []
 
             try:
@@ -341,7 +340,7 @@ class RegisterAndEnrollStudents(APIView):
             already_warned_not_cohorted = False
             extra_fields_is_enabled = configuration_helpers.get_value(
                 'ENABLE_AUTOMATED_SIGNUPS_EXTRA_FIELDS',
-                settings.FEATURES.get('ENABLE_AUTOMATED_SIGNUPS_EXTRA_FIELDS', False),
+                settings.ENABLE_AUTOMATED_SIGNUPS_EXTRA_FIELDS,
             )
 
             # Iterate each student in the uploaded csv file.
@@ -508,7 +507,7 @@ class RegisterAndEnrollStudents(APIView):
                             'email': email,
                             'response': _('Invalid email {email_address}.').format(email_address=email),
                         })
-                        log.warning('Email address %s is associated with a retired user, so course enrollment was ' +  # lint-amnesty, pylint: disable=logging-not-lazy
+                        log.warning('Email address %s is associated with a retired user, so course enrollment was ' +  # pylint: disable=logging-not-lazy
                                     'blocked.', email)
                     else:
                         # This email does not yet exist, so we need to create a new account
@@ -720,7 +719,8 @@ def create_and_enroll_user(
 
 
 @method_decorator(cache_control(no_cache=True, no_store=True, must_revalidate=True), name='dispatch')
-class StudentsUpdateEnrollmentView(APIView):
+@method_decorator(transaction.non_atomic_requests, name='dispatch')
+class StudentsUpdateEnrollmentView(DeveloperErrorViewMixin, APIView):
     """
     API view to enroll or unenroll students in a course.
     """
@@ -729,6 +729,7 @@ class StudentsUpdateEnrollmentView(APIView):
     permission_name = permissions.CAN_ENROLL
 
     @method_decorator(ensure_csrf_cookie)
+    @transaction.non_atomic_requests
     def post(self, request, course_id):
         """
         Handle POST request to enroll or unenroll students.
@@ -738,24 +739,25 @@ class StudentsUpdateEnrollmentView(APIView):
         - identifiers (str): comma/newline separated emails or usernames
         - auto_enroll (bool): auto-enroll in verified track if applicable
         - email_students (bool): whether to send enrollment emails
+        - async_processing (bool): whether to process asynchronously
         - reason (str, optional): reason for enrollment change
 
         Returns:
         - JSON response with action, auto_enroll flag, and enrollment results.
          """
         response_payload = self._process_student_enrollment(
-            user=request.user,
+            request=request,
             course_id=course_id,
             data=request.data,
             secure=request.is_secure()
         )
         return JsonResponse(response_payload)
 
-    def _process_student_enrollment(self, user, course_id, data, secure):  # pylint: disable=too-many-statements
+    def _process_student_enrollment(self, request, course_id, data, secure):  # pylint: disable=too-many-statements
         """
         Core logic for enrolling or unenrolling students.
 
-        :param user: User making the request
+        :param request: The HTTP request object
         :param course_id: Course identifier
         :param data: Request data containing action, identifiers, etc.
         :param secure: Whether the request is secure (HTTPS)
@@ -770,6 +772,7 @@ class StudentsUpdateEnrollmentView(APIView):
         identifiers_raw = serializer.validated_data['identifiers']
         auto_enroll = serializer.validated_data['auto_enroll']
         email_students = serializer.validated_data['email_students']
+        async_processing = serializer.validated_data["async_processing"]
         reason = serializer.validated_data.get('reason')
 
         # Parse identifiers
@@ -777,97 +780,97 @@ class StudentsUpdateEnrollmentView(APIView):
 
         course_key = CourseKey.from_string(course_id)
 
-        enrollment_obj = None
-        state_transition = DEFAULT_TRANSITION_STATE
+        site = get_current_site()
+        site_id = site.id if site else None
 
-        email_params = {}
-        if email_students:
-            course = get_course_by_id(course_key)
-            email_params = get_email_params(course, auto_enroll, secure=secure)
-
-        results = []
-
-        for identifier in identifiers:  # pylint: disable=too-many-nested-blocks
-            identified_user = None
-            email = None
-            language = None
+        if async_processing:
 
             try:
-                identified_user = get_student_from_identifier(identifier)
-            except User.DoesNotExist:
-                email = identifier
-            else:
-                email = identified_user.email
-                language = get_user_email_language(identified_user)
-
-            try:
-                validate_email(email)  # Raises ValidationError if invalid
-
-                if action == 'enroll':
-                    before, after, enrollment_obj = enroll_email(
-                        course_key, email, auto_enroll, email_students, {**email_params}, language=language
-                    )
-                    before_enrollment = before.to_dict()['enrollment']
-                    before_user_registered = before.to_dict()['user']
-                    before_allowed = before.to_dict()['allowed']
-                    after_enrollment = after.to_dict()['enrollment']
-                    after_allowed = after.to_dict()['allowed']
-
-                    if before_user_registered:
-                        if after_enrollment:
-                            if before_enrollment:
-                                state_transition = ENROLLED_TO_ENROLLED
-                            elif before_allowed:
-                                state_transition = ALLOWEDTOENROLL_TO_ENROLLED
-                            else:
-                                state_transition = UNENROLLED_TO_ENROLLED
-                    elif after_allowed:
-                        state_transition = UNENROLLED_TO_ALLOWEDTOENROLL
-
-                elif action == 'unenroll':
-                    before, after = unenroll_email(
-                        course_key, email, email_students, {**email_params}, language=language
-                    )
-                    before_enrollment = before.to_dict()['enrollment']
-                    before_allowed = before.to_dict()['allowed']
-                    enrollment_obj = (
-                        CourseEnrollment.get_enrollment(identified_user, course_key)
-                        if identified_user else None
-                    )
-
-                    if before_enrollment:
-                        state_transition = ENROLLED_TO_UNENROLLED
-                    elif before_allowed:
-                        state_transition = ALLOWEDTOENROLL_TO_UNENROLLED
-                    else:
-                        state_transition = UNENROLLED_TO_UNENROLLED
-
-            except ValidationError:
-                results.append({
-                    'identifier': identifier,
-                    'invalidIdentifier': True,
-                })
-            except Exception as exc:  # pylint: disable=broad-except
-                log.exception("Error while processing student")
-                log.exception(exc)
-                results.append({
-                    'identifier': identifier,
-                    'error': True,
-                })
-            else:
-                ManualEnrollmentAudit.create_manual_enrollment_audit(
-                    identified_user, email, state_transition, reason, enrollment_obj
+                instructor_task = task_api.submit_student_enrollment_batch(
+                    request=request,
+                    course_key=course_key,
+                    action=action,
+                    identifiers=identifiers,
+                    auto_enroll=auto_enroll,
+                    email_students=email_students,
+                    reason=reason,
+                    secure=secure,
+                    site_id=site_id,
                 )
-                results.append({
-                    'identifier': identifier,
-                    'before': before.to_dict(),
-                    'after': after.to_dict(),
-                })
+
+                return {
+                    "action": action,
+                    "auto_enroll": auto_enroll,
+                    "async_processing": True,
+                    "task_id": instructor_task.task_id,
+                    "task_state": instructor_task.task_state,
+                    "message": f"Async {action} task submitted for {len(identifiers)} students",
+                    "total_students": len(identifiers),
+                }
+
+            except AlreadyRunningError:
+                return {
+                    "action": action,
+                    "auto_enroll": auto_enroll,
+                    "async_processing": True,
+                    "error": "A similar enrollment task is already running. Please wait for it to complete.",
+                    "total_students": len(identifiers),
+                }
+
+        return self._process_enrollment_sync(
+            request.user, course_key, action, identifiers, auto_enroll, email_students, reason, secure
+        )
+
+    def _process_enrollment_sync(
+        self,
+        request_user: User,
+        course_key: CourseKey,
+        action: str,
+        identifiers: list[str],
+        auto_enroll: bool,
+        email_students: bool,
+        reason: str | None,
+        secure: bool,
+    ):
+        """
+        Process student enrollment/unenrollment operations synchronously.
+
+        This method handles batch enrollment operations by calling the
+        `process_student_enrollment_batch` utility function and returns a
+        simplified response containing the action, auto_enroll setting,
+        and enrollment results.
+
+        Args:
+            request_user (User): User who initiated the enrollment operation
+            course_key (CourseKey): CourseKey object for the target course
+            action (str): The enrollment action to perform ('enroll' or 'unenroll')
+            identifiers (list[str]): List of student identifiers (emails or usernames)
+            auto_enroll (bool): Whether to auto-enroll students in verified track if applicable
+            email_students (bool): Whether to send enrollment notification emails
+            reason (str | None): Optional reason for the enrollment change
+            secure (bool): Whether the request was made over HTTPS
+
+        Returns:
+            dict: Enrollment operation results containing:
+                - action: The action that was performed
+                - auto_enroll: The auto-enrollment setting used
+                - results: List of individual enrollment results for each student
+        """
+        batch_result = process_student_enrollment_batch(
+            request_user=request_user,
+            course_key=course_key,
+            action=action,
+            identifiers=identifiers,
+            auto_enroll=auto_enroll,
+            email_students=email_students,
+            reason=reason,
+            secure=secure,
+        )
 
         return {
-            'action': action,
-            'auto_enroll': auto_enroll,
-            'results': results,
+            "action": batch_result["action"],
+            "auto_enroll": batch_result["auto_enroll"],
+            "results": batch_result["results"],
         }
 
 
@@ -1050,6 +1053,11 @@ class ListCourseRoleMembersView(APIView):
 
     rolename is one of ['instructor', 'staff', 'beta', 'ccx_coach']
 
+    Supports optional search and pagination parameters:
+    - search: Filter users by username, email, first_name, or last_name
+    - page: Page number (default: 1)
+    - page_size: Number of results per page (default: 20, max: 100)
+
     Returns JSON of the form {
         "course_id": "some/course/id",
         "staff": [
@@ -1059,7 +1067,10 @@ class ListCourseRoleMembersView(APIView):
                 "first_name": "Joe",
                 "last_name": "Shmoe",
             }
-        ]
+        ],
+        "count": 10,
+        "num_pages": 1,
+        "current_page": 1
     }
     """
     permission_classes = (IsAuthenticated, permissions.InstructorPermission)
@@ -1087,13 +1098,130 @@ class ListCourseRoleMembersView(APIView):
         role_serializer = RoleNameSerializer(data=request.data)
         role_serializer.is_valid(raise_exception=True)
         rolename = role_serializer.data['rolename']
+        search = role_serializer.data.get('search', '').strip()
+        page = role_serializer.data.get('page', 1)
+        page_size = role_serializer.data.get('page_size', 20)
 
         users = list_with_level(course.id, rolename)
-        serializer = UserSerializer(users, many=True)
+
+        # Apply search filter
+        if search:
+            search_lower = search.lower()
+            users = [
+                user for user in users
+                if search_lower in user.username.lower()
+                or search_lower in user.email.lower()
+                or search_lower in (user.first_name or '').lower()
+                or search_lower in (user.last_name or '').lower()
+            ]
+
+        # Calculate pagination
+        total_count = len(users)
+        num_pages = max(1, (total_count + page_size - 1) // page_size) if page_size > 0 else 1
+        start_idx = (page - 1) * page_size
+        end_idx = start_idx + page_size
+        paginated_users = users[start_idx:end_idx]
+
+        serializer = UserSerializer(paginated_users, many=True)
 
         response_payload = {
             'course_id': str(course_id),
             rolename: serializer.data,
+            'count': total_count,
+            'num_pages': num_pages,
+            'current_page': page,
+        }
+
+        return Response(response_payload, status=status.HTTP_200_OK)
+
+
+class ListCourseEnrollmentsView(APIView):
+    """
+    View to list all enrollments (learners/students) for a specific course.
+    Requires the user to have instructor access.
+
+    Supports optional search and pagination parameters:
+    - search: Filter users by username, email, first_name, or last_name
+    - page: Page number (default: 1)
+    - page_size: Number of results per page (default: 20, max: 100)
+
+    Returns JSON of the form {
+        "course_id": "some/course/id",
+        "enrollments": [
+            {
+                "username": "student1",
+                "email": "student1@example.org",
+                "first_name": "Jane",
+                "last_name": "Doe",
+            }
+        ],
+        "count": 100,
+        "num_pages": 5,
+        "current_page": 1
+    }
+    """
+    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_name = permissions.VIEW_ENROLLMENTS
+
+    @method_decorator(ensure_csrf_cookie)
+    def post(self, request, course_id):
+        """
+        Handles POST request to list course enrollments.
+
+        Args:
+            request (HttpRequest): The request object containing user data.
+            course_id (str): The ID of the course to list enrollments for.
+
+        Returns:
+            Response: A Response object containing the list of enrollments or an error message.
+
+        Raises:
+            Http404: If the course does not exist.
+        """
+        course_key = CourseKey.from_string(course_id)
+        # Verify the user has staff-level access to the course; raises Http404 if not.
+        get_course_with_access(
+            request.user, 'staff', course_key, depth=None
+        )
+
+        enrollment_serializer = EnrollmentListSerializer(data=request.data)
+        enrollment_serializer.is_valid(raise_exception=True)
+        search = enrollment_serializer.data.get('search', '').strip()
+        page = enrollment_serializer.data.get('page', 1)
+        page_size = enrollment_serializer.data.get('page_size', 20)
+
+        # Get all active enrollments for the course
+        enrollments = CourseEnrollment.objects.filter(
+            course_id=course_key,
+            is_active=True
+        ).select_related('user').order_by('user__username')
+
+        # Apply search filter
+        if search:
+            enrollments = enrollments.filter(
+                Q(user__username__icontains=search) |
+                Q(user__email__icontains=search) |
+                Q(user__first_name__icontains=search) |
+                Q(user__last_name__icontains=search)
+            )
+
+        # Calculate pagination
+        total_count = enrollments.count()
+        num_pages = max(1, (total_count + page_size - 1) // page_size) if page_size > 0 else 1
+        start_idx = (page - 1) * page_size
+        end_idx = start_idx + page_size
+        paginated_enrollments = enrollments[start_idx:end_idx]
+
+        # Extract user data from enrollments
+        users = [enr.user for enr in paginated_enrollments]
+        serializer = UserSerializer(users, many=True)
+
+        response_payload = {
+            'course_id': str(course_key),
+            'enrollments': serializer.data,
+            'count': total_count,
+            'num_pages': num_pages,
+            'current_page': page,
         }
 
         return Response(response_payload, status=status.HTTP_200_OK)
@@ -1558,7 +1686,7 @@ class GetStudentsFeatures(DeveloperErrorViewMixin, APIView):
                 )
                 success_status = SUCCESS_MESSAGE_TEMPLATE.format(report_type=report_type)
             except Exception as e:
-                raise self.api_error(status.HTTP_400_BAD_REQUEST, str(e), 'Requested task is already running')
+                raise self.api_error(status.HTTP_400_BAD_REQUEST, str(e), 'Requested task is already running')  # noqa: B904  # pylint: disable=line-too-long
 
             return JsonResponse({"status": success_status})
 
@@ -1589,7 +1717,7 @@ class GetStudentsWhoMayEnroll(DeveloperErrorViewMixin, APIView):
             task_api.submit_calculate_may_enroll_csv(request, course_key, query_features)
             success_status = SUCCESS_MESSAGE_TEMPLATE.format(report_type=report_type)
         except Exception as e:
-            raise self.api_error(status.HTTP_400_BAD_REQUEST, str(e), 'Requested task is already running')
+            raise self.api_error(status.HTTP_400_BAD_REQUEST, str(e), 'Requested task is already running')  # noqa: B904
 
         return JsonResponse({"status": success_status})
 
@@ -1627,7 +1755,7 @@ class GetInactiveEnrolledStudents(DeveloperErrorViewMixin, APIView):
             )
             success_status = SUCCESS_MESSAGE_TEMPLATE.format(report_type=report_type)
         except Exception as e:
-            raise self.api_error(
+            raise self.api_error(  # noqa: B904
                 status.HTTP_400_BAD_REQUEST, str(e), "Requested task is already running"
             )
 
@@ -1734,7 +1862,7 @@ class CohortCSV(DeveloperErrorViewMixin, APIView):
             )
             task_api.submit_cohort_students(request, course_key, file_name)
         except (FileValidationException, ValueError) as e:
-            raise self.api_error(status.HTTP_400_BAD_REQUEST, str(e), 'failed-validation')
+            raise self.api_error(status.HTTP_400_BAD_REQUEST, str(e), 'failed-validation')  # noqa: B904
 
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -1887,7 +2015,7 @@ class StudentProgressUrlSerializer(serializers.Serializer):
         if course_home_mfe_progress_tab_is_active(course_id):
             progress_url = get_learning_mfe_home_url(course_id, url_fragment='progress')
             if user is not None:
-                progress_url += '/{}/'.format(user.id)
+                progress_url += '/{}/'.format(user.id)  # noqa: UP032
         else:
             progress_url = reverse('student_progress', kwargs={'course_id': str(course_id), 'student_id': user.id})
 
@@ -2176,7 +2304,7 @@ class RescoreProblem(DeveloperErrorViewMixin, APIView):
                 )
             except NotImplementedError as exc:
                 return HttpResponseBadRequest(str(exc))
-            except ItemNotFoundError as exc:
+            except ItemNotFoundError:
                 return HttpResponseBadRequest(f"{module_state_key} not found")
 
         elif all_students:
@@ -2188,7 +2316,7 @@ class RescoreProblem(DeveloperErrorViewMixin, APIView):
                 )
             except NotImplementedError as exc:
                 return HttpResponseBadRequest(str(exc))
-            except ItemNotFoundError as exc:
+            except ItemNotFoundError:
                 return HttpResponseBadRequest(f"{module_state_key} not found")
         else:
             return HttpResponseBadRequest()
@@ -2782,27 +2910,6 @@ def _list_report_downloads(request, course_id):
     return JsonResponse(response_payload)
 
 
-@require_POST
-@ensure_csrf_cookie
-@cache_control(no_cache=True, no_store=True, must_revalidate=True)
-@require_course_permission(permissions.CAN_RESEARCH)
-@require_finance_admin
-def list_financial_report_downloads(_request, course_id):
-    """
-    List grade CSV files that are available for download for this course.
-    """
-    course_id = CourseKey.from_string(course_id)
-    report_store = ReportStore.from_config(config_name='FINANCIAL_REPORTS')
-
-    response_payload = {
-        'downloads': [
-            dict(name=name, url=url, link=HTML('<a href="{}">{}</a>').format(HTML(url), Text(name)))
-            for name, url in report_store.links_for(course_id)
-        ]
-    }
-    return JsonResponse(response_payload)
-
-
 @method_decorator(transaction.non_atomic_requests, name='dispatch')
 class ExportOra2DataView(DeveloperErrorViewMixin, APIView):
     """
@@ -3156,7 +3263,7 @@ class UpdateForumRoleMembership(APIView):
 
 
 @require_POST
-def get_user_invoice_preference(request, course_id):  # lint-amnesty, pylint: disable=unused-argument
+def get_user_invoice_preference(request, course_id):  # pylint: disable=unused-argument
     """
     Gets invoice copy user's preferences.
     """
@@ -3897,7 +4004,7 @@ def parse_request_data(request):
     try:
         data = json.loads(request.body.decode('utf8') or '{}')
     except ValueError:
-        raise ValueError(_('The record is not in the correct format. Please add a valid username or email address.'))  # lint-amnesty, pylint: disable=raise-missing-from
+        raise ValueError(_('The record is not in the correct format. Please add a valid username or email address.'))  # pylint: disable=raise-missing-from,line-too-long  # noqa: B904
 
     return data
 
@@ -3914,7 +4021,7 @@ def get_student(username_or_email):
     try:
         student = get_user_by_username_or_email(username_or_email)
     except ObjectDoesNotExist:
-        raise ValueError(_("{user} does not exist in the LMS. Please check your spelling and retry.").format(  # lint-amnesty, pylint: disable=raise-missing-from
+        raise ValueError(_("{user} does not exist in the LMS. Please check your spelling and retry.").format(  # pylint: disable=raise-missing-from,line-too-long  # noqa: B904
             user=username_or_email
         ))
 
@@ -4233,7 +4340,7 @@ def re_validate_certificate(request, course_key, generated_certificate, student)
 
     certificate_invalidation = certs_api.get_certificate_invalidation_entry(generated_certificate)
     if not certificate_invalidation:
-        raise ValueError(_("Certificate Invalidation does not exist, Please refresh the page and try again."))  # lint-amnesty, pylint: disable=raise-missing-from
+        raise ValueError(_("Certificate Invalidation does not exist, Please refresh the page and try again."))  # pylint: disable=raise-missing-from
 
     certificate_invalidation.deactivate()
 

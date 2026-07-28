@@ -3,8 +3,7 @@ Defines URLs for theming views.
 """
 from django.urls import path
 
-from . import helpers
-from . import views
+from . import helpers, views
 
 app_name = "openedx.core.djangoapps.theming"
 

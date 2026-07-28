@@ -1,9 +1,8 @@
 """
 Test the get_learners_to_retire.py script
 """
-from unittest.mock import DEFAULT, patch
-
 import os
+from unittest.mock import DEFAULT, patch
 
 from click.testing import CliRunner
 from requests.exceptions import HTTPError

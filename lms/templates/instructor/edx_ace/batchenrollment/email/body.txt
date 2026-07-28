@@ -1,0 +1,13 @@
+{% load i18n %}
+{% autoescape off %}
+{% blocktrans %}Batch {{ action_name }} completed for {{ course_name }}{% endblocktrans %}
+
+{% blocktrans %}The batch {{ action_name }} process for {{ course_name }} is complete.{% endblocktrans %}
+
+{% blocktrans %}Out of {{ total_processed }} users:{% endblocktrans %}
+
+✓ {% blocktrans %}{{ successful }} successfully processed{% endblocktrans %}
+✗ {% blocktrans %}{{ failed }} failed to process{% endblocktrans %}
+
+{% blocktrans %}Download the CSV report{% endblocktrans %}
+{% endautoescape %}

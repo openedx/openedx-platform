@@ -22,7 +22,7 @@ class TestMobileAPIDecorators(TestCase):
             """
             Test docstring of decorated function.
             """
-            pass  # lint-amnesty, pylint: disable=unnecessary-pass
+            pass  # pylint: disable=unnecessary-pass
 
         assert 'Test docstring of decorated function.' in decorated_func.__doc__
         assert decorated_func.__name__ == 'decorated_func'

@@ -6,8 +6,8 @@ from django.db.models.signals import post_save
 from django.test import TestCase
 
 from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory
-from lms.djangoapps.user_tours.models import UserTour
 from lms.djangoapps.user_tours.handlers import init_user_tour
+from lms.djangoapps.user_tours.models import UserTour
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 
 User = get_user_model()

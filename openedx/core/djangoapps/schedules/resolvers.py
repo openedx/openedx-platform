@@ -1,4 +1,4 @@
-# lint-amnesty, pylint: disable=missing-module-docstring
+# pylint: disable=missing-module-docstring
 
 import datetime
 import logging
@@ -7,23 +7,24 @@ from urllib.parse import urljoin
 
 import attr
 from django.conf import settings
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
-from django.templatetags.static import static
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.db.models import Exists, F, OuterRef, Q
+from django.templatetags.static import static
 from django.urls import reverse
 from edx_ace.recipient import Recipient
 from edx_ace.recipient_resolver import RecipientResolver
 from edx_django_utils.monitoring import function_trace, set_custom_attribute
 from openedx_filters.learning.filters import ScheduleQuerySetRequested
 
-from lms.djangoapps.courseware.utils import verified_upgrade_deadline_link, can_show_verified_upgrade
+from lms.djangoapps.courseware.utils import can_show_verified_upgrade, verified_upgrade_deadline_link
 from lms.djangoapps.discussion.notification_prefs.views import UsernameCipher
 from openedx.core.djangoapps.ace_common.template_context import get_base_template_context
 from openedx.core.djangoapps.course_date_signals.utils import get_expected_duration
 from openedx.core.djangoapps.schedules.config import (
-    COURSE_UPDATE_SHOW_UNSUBSCRIBE_WAFFLE_SWITCH, query_external_updates
+    COURSE_UPDATE_SHOW_UNSUBSCRIBE_WAFFLE_SWITCH,
+    query_external_updates,
 )
-from openedx.core.djangoapps.schedules.content_highlights import get_week_highlights, get_next_section_highlights
+from openedx.core.djangoapps.schedules.content_highlights import get_next_section_highlights, get_week_highlights
 from openedx.core.djangoapps.schedules.exceptions import CourseUpdateDoesNotExist
 from openedx.core.djangoapps.schedules.message_types import CourseUpdate, InstructorLedCourseUpdate
 from openedx.core.djangoapps.schedules.models import Schedule, ScheduleExperience
@@ -84,9 +85,9 @@ class BinnedSchedulesBaseResolver(PrefixedDebugLoggerMixin, RecipientResolver):
 
     def __attrs_post_init__(self):
         # TODO: in the next refactor of this task, pass in current_datetime instead of reproducing it here
-        self.current_datetime = self.target_datetime - datetime.timedelta(days=self.day_offset)  # lint-amnesty, pylint: disable=attribute-defined-outside-init
+        self.current_datetime = self.target_datetime - datetime.timedelta(days=self.day_offset)  # pylint: disable=attribute-defined-outside-init
 
-    def send(self, msg_type):  # lint-amnesty, pylint: disable=arguments-differ
+    def send(self, msg_type):  # pylint: disable=arguments-differ
         for (user, language, context) in self.schedules_for_bin():
             msg = msg_type.personalize(
                 Recipient(
@@ -118,7 +119,7 @@ class BinnedSchedulesBaseResolver(PrefixedDebugLoggerMixin, RecipientResolver):
         target_day = _get_datetime_beginning_of_day(self.target_datetime)
         schedule_day_equals_target_day_filter = {
             f'courseenrollment__schedule__{self.schedule_date_field}__gte': target_day,
-            f'courseenrollment__schedule__{self.schedule_date_field}__lt': target_day + datetime.timedelta(days=1),  # lint-amnesty, pylint: disable=line-too-long
+            f'courseenrollment__schedule__{self.schedule_date_field}__lt': target_day + datetime.timedelta(days=1),  # pylint: disable=line-too-long
         }
         users = User.objects.filter(
             courseenrollment__is_active=True,
@@ -204,7 +205,7 @@ class BinnedSchedulesBaseResolver(PrefixedDebugLoggerMixin, RecipientResolver):
 
         return schedules.filter(enrollment__course__org__in=org_list)
 
-    def schedules_for_bin(self):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def schedules_for_bin(self):  # pylint: disable=missing-function-docstring
         schedules = self.get_schedules_with_target_date_by_bin_and_orgs()
         template_context = get_base_template_context(self.site)
 
@@ -223,7 +224,7 @@ class BinnedSchedulesBaseResolver(PrefixedDebugLoggerMixin, RecipientResolver):
 
             yield (user, first_schedule.enrollment.course.closest_released_language, template_context)
 
-    def get_template_context(self, user, user_schedules):  # lint-amnesty, pylint: disable=unused-argument
+    def get_template_context(self, user, user_schedules):  # pylint: disable=unused-argument
         """
         Given a user and their schedules, build the context needed to render the template for this message.
 
@@ -260,7 +261,7 @@ class RecurringNudgeResolver(BinnedSchedulesBaseResolver):
     num_bins = RECURRING_NUDGE_NUM_BINS
 
     @property
-    def experience_filter(self):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def experience_filter(self):  # pylint: disable=missing-function-docstring
         if self.day_offset == -3:
             experiences = [ScheduleExperience.EXPERIENCES.default, ScheduleExperience.EXPERIENCES.course_updates]
             return Q(experience__experience_type__in=experiences) | Q(experience__isnull=True)
@@ -335,7 +336,7 @@ class UpgradeReminderResolver(BinnedSchedulesBaseResolver):
         return context
 
 
-def _get_upsell_information_for_schedule(user, schedule):  # lint-amnesty, pylint: disable=missing-function-docstring
+def _get_upsell_information_for_schedule(user, schedule):  # pylint: disable=missing-function-docstring
     template_context = {}
     enrollment = schedule.enrollment
     course = enrollment.course
@@ -383,7 +384,7 @@ class CourseUpdateResolver(BinnedSchedulesBaseResolver):
                 context,
             )
             LOG.info(
-                'Sending email to user: {} for Instructor-paced course with course-key: {} and language: {}'.format(
+                'Sending email to user: {} for Instructor-paced course with course-key: {} and language: {}'.format(  # noqa: UP032  # pylint: disable=line-too-long
                     user.username,
                     self.course_id,
                     language
@@ -413,7 +414,7 @@ class CourseUpdateResolver(BinnedSchedulesBaseResolver):
                 week_highlights = get_week_highlights(user, enrollment.course_id, week_num)
             except CourseUpdateDoesNotExist:
                 LOG.warning(
-                    'Weekly highlights for user {} in week {} of course {} does not exist or is disabled'.format(
+                    'Weekly highlights for user {} in week {} of course {} does not exist or is disabled'.format(  # noqa: UP032  # pylint: disable=line-too-long
                         user, week_num, enrollment.course_id
                     )
                 )
@@ -459,7 +460,7 @@ class CourseNextSectionUpdate(PrefixedDebugLoggerMixin, RecipientResolver):
     log_prefix = 'Next Section Course Update'
     experience_filter = Q(experience__experience_type=ScheduleExperience.EXPERIENCES.course_updates)
 
-    def send(self):  # lint-amnesty, pylint: disable=arguments-differ
+    def send(self):  # pylint: disable=arguments-differ
         schedules = self.get_schedules()
         for (user, language, context) in schedules:
             msg = CourseUpdate().personalize(
@@ -471,13 +472,13 @@ class CourseNextSectionUpdate(PrefixedDebugLoggerMixin, RecipientResolver):
                 context,
             )
             LOG.info(
-                'Sending email to user: {} for course-key: {}'.format(
+                'Sending email to user: {} for course-key: {}'.format(  # noqa: UP032
                     user.username,
                     self.course_id
                 )
             )
             LOG.info(
-                'Sending email to user: {} for Self-paced course with course-key: {} and language: {}'.format(
+                'Sending email to user: {} for Self-paced course with course-key: {} and language: {}'.format(  # noqa: UP032  # pylint: disable=line-too-long
                     user.username,
                     self.course_id,
                     language
@@ -517,7 +518,7 @@ class CourseNextSectionUpdate(PrefixedDebugLoggerMixin, RecipientResolver):
 
             user = schedule.enrollment.user
             start_date = max(filter(None, (schedule.start_date, course.start)))
-            LOG.info('Received a schedule for user {} in course {} for date {}'.format(
+            LOG.info('Received a schedule for user {} in course {} for date {}'.format(  # noqa: UP032
                 user.username, self.course_id, target_date,
             ))
 

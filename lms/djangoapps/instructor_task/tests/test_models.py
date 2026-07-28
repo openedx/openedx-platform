@@ -6,6 +6,7 @@ Tests for instructor_task/models.py.
 import copy
 import time
 from io import StringIO
+
 import pytest
 from django.conf import settings
 from django.test import SimpleTestCase, TestCase, override_settings
@@ -48,14 +49,14 @@ class ReportStoreTestMixin:
         """
         Subclasses should override this and return their report store.
         """
-        pass  # lint-amnesty, pylint: disable=unnecessary-pass
+        pass  # pylint: disable=unnecessary-pass
 
     def test_links_for_order(self):
         """
         Test that ReportStore.links_for() returns file download links
         in reverse chronological order.
         """
-        report_store = self.create_report_store()  # lint-amnesty, pylint: disable=assignment-from-no-return
+        report_store = self.create_report_store()  # pylint: disable=assignment-from-no-return
         assert report_store.links_for(self.course_id) == []
 
         report_store.store(self.course_id, 'old_file', StringIO())

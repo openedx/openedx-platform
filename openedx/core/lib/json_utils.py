@@ -4,6 +4,7 @@ Helpers for json serialization
 
 
 import datetime
+
 from django.core.serializers.json import DjangoJSONEncoder
 from opaque_keys.edx.keys import CourseKey, UsageKey
 

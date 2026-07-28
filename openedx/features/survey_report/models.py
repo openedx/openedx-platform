@@ -18,7 +18,7 @@ SURVEY_REPORT_STATES = [
 ]
 
 
-class SurveyReport(models.Model):
+class SurveyReport(models.Model):  # noqa: DJ008
     """
     This model stores information to automate the way of gathering impact data from the openedx project.
 
@@ -62,7 +62,7 @@ class SurveyReport(models.Model):
         get_latest_by = 'created_at'
 
 
-class SurveyReportUpload(models.Model):
+class SurveyReportUpload(models.Model):  # noqa: DJ008
     """
     This model stores the result of the POST request made to an external service after generating a survey report.
 
@@ -77,7 +77,7 @@ class SurveyReportUpload(models.Model):
     sent_at = models.DateTimeField(auto_now=True, help_text="Date when the report was sent to external api.")
     report = models.ForeignKey(SurveyReport, on_delete=models.CASCADE, help_text="The report that was sent.")
     status_code = models.IntegerField(help_text="Request status code.")
-    request_details = models.CharField(
+    request_details = models.CharField(  # noqa: DJ001
         max_length=255,
         null=True,
         blank=True,
@@ -88,7 +88,7 @@ class SurveyReportUpload(models.Model):
         return 200 <= self.status_code < 300
 
 
-class SurveyReportAnonymousSiteID(models.Model):
+class SurveyReportAnonymousSiteID(models.Model):  # noqa: DJ008
     """
     This model is just to save the identification which will be send to the external API when
     the settings ANONYMOUS_SURVEY_REPORT is defined.

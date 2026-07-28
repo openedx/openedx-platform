@@ -1,8 +1,6 @@
 from django.db import migrations
 
-from cms.djangoapps.contentstore.toggles import (
-    ENABLE_REACT_MARKDOWN_EDITOR
-)
+from cms.djangoapps.contentstore.toggles import ENABLE_REACT_MARKDOWN_EDITOR
 
 
 def create_flag(apps, schema_editor):

@@ -20,7 +20,7 @@ from openedx.core.djangoapps.catalog.cache import (
     PROGRAMS_BY_TYPE_CACHE_KEY_TPL,
     PROGRAMS_BY_TYPE_SLUG_CACHE_KEY_TPL,
     SITE_PATHWAY_IDS_CACHE_KEY_TPL,
-    SITE_PROGRAM_UUIDS_CACHE_KEY_TPL
+    SITE_PROGRAM_UUIDS_CACHE_KEY_TPL,
 )
 from openedx.core.djangoapps.catalog.models import CatalogIntegration
 from openedx.core.djangoapps.catalog.utils import (
@@ -28,7 +28,7 @@ from openedx.core.djangoapps.catalog.utils import (
     course_uuids_for_program,
     get_catalog_api_base_url,
     get_catalog_api_client,
-    normalize_program_type
+    normalize_program_type,
 )
 
 logger = logging.getLogger(__name__)
@@ -53,8 +53,8 @@ class Command(BaseCommand):
             help='Help in caching the programs for one site'
         )
 
-    # lint-amnesty, pylint: disable=bad-option-value, unicode-format-string
-    def handle(self, *args, **options):  # lint-amnesty, pylint: disable=too-many-statements
+    # pylint: disable=bad-option-value, unicode-format-string
+    def handle(self, *args, **options):  # pylint: disable=too-many-statements
         domain = options.get('domain', '')
         failure = False
         logger.info('populate-multitenant-programs switch is ON')
@@ -111,14 +111,14 @@ class Command(BaseCommand):
             programs_by_type_slug.update(self.get_programs_by_type_slug(site, new_programs))
             organizations.update(self.get_programs_by_organization(new_programs))
 
-            logger.info('Caching UUIDs for {total} programs for site {site_name}.'.format(
+            logger.info('Caching UUIDs for {total} programs for site {site_name}.'.format(  # noqa: UP032
                 total=len(uuids),
                 site_name=site.domain,
             ))
             cache.set(SITE_PROGRAM_UUIDS_CACHE_KEY_TPL.format(domain=site.domain), uuids, None)
 
             pathway_ids = list(new_pathways.keys())
-            logger.info('Caching ids for {total} pathways for site {site_name}.'.format(
+            logger.info('Caching ids for {total} pathways for site {site_name}.'.format(  # noqa: UP032
                 total=len(pathway_ids),
                 site_name=site.domain,
             ))
@@ -148,7 +148,7 @@ class Command(BaseCommand):
         if failure:
             sys.exit(1)
 
-    def get_site_program_uuids(self, client, site, api_base_url):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def get_site_program_uuids(self, client, site, api_base_url):  # pylint: disable=missing-function-docstring
         failure = False
         uuids = []
         try:
@@ -166,13 +166,13 @@ class Command(BaseCommand):
             logger.exception(f'Failed to retrieve program UUIDs for site: {site.domain}.')
             failure = True
 
-        logger.info('Received {total} UUIDs for site {domain}'.format(
+        logger.info('Received {total} UUIDs for site {domain}'.format(  # noqa: UP032
             total=len(uuids),
             domain=site.domain
         ))
         return uuids, failure
 
-    def fetch_program_details(self, client, uuids, api_base_url):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def fetch_program_details(self, client, uuids, api_base_url):  # pylint: disable=missing-function-docstring
         programs = {}
         failure = False
         for uuid in uuids:
@@ -214,7 +214,7 @@ class Command(BaseCommand):
             )
             failure = True
 
-        logger.info('Received {total} pathways for site {domain}'.format(
+        logger.info('Received {total} pathways for site {domain}'.format(  # noqa: UP032
             total=len(pathways),
             domain=site.domain
         ))

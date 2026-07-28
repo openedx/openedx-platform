@@ -6,10 +6,10 @@ import copy
 from django.conf import settings
 from rest_framework.views import APIView
 
+from common.djangoapps.student.models import UserProfile
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.core.djangoapps.user_authn.api import form_fields
 from openedx.core.djangoapps.user_authn.views.registration_form import get_registration_extension_form
-from common.djangoapps.student.models import UserProfile
 
 
 class RegistrationFieldsContext(APIView):
@@ -100,7 +100,8 @@ class RegistrationFieldsContext(APIView):
         """
         Returns the required or optional fields configured in REGISTRATION_EXTRA_FIELDS settings.
         """
-        # Custom form fields can be added via the form set in settings.REGISTRATION_EXTENSION_FORM
+        # Custom form fields can be added via the form set in settings.PROFILE_EXTENSION_FORM
+        # (or deprecated settings.REGISTRATION_EXTENSION_FORM)
         custom_form = get_registration_extension_form() or {}
         response = {}
         for field in self.valid_fields:

@@ -1,7 +1,7 @@
 """
 Tests for serializers for the Mobile Course Info
 """
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Tuple, Union  # noqa: UP035
 from unittest.mock import MagicMock, Mock, patch
 
 import ddt
@@ -31,7 +31,7 @@ class TestCourseAccessSerializer(TestCase):
     @patch('lms.djangoapps.mobile_api.course_info.serializers.get_pre_requisite_courses_not_completed')
     def test_has_unmet_prerequisites(
         self,
-        mock_return_value: List[Dict],
+        mock_return_value: List[Dict],  # noqa: UP006
         has_unmet_prerequisites: bool,
         mock_get_prerequisites: MagicMock,
     ) -> None:
@@ -43,7 +43,7 @@ class TestCourseAccessSerializer(TestCase):
             'course_id': self.course.id,
         }).data
 
-        self.assertEqual(output_data['has_unmet_prerequisites'], has_unmet_prerequisites)
+        self.assertEqual(output_data['has_unmet_prerequisites'], has_unmet_prerequisites)  # noqa: PT009
         mock_get_prerequisites.assert_called_once_with(self.user, [self.course.id])
 
     @ddt.data(
@@ -66,7 +66,7 @@ class TestCourseAccessSerializer(TestCase):
             'course_id': self.course.id
         }).data
 
-        self.assertEqual(output_data['is_too_early'], is_too_early)
+        self.assertEqual(output_data['is_too_early'], is_too_early)  # noqa: PT009
         mock_check_course_open.assert_called_once_with(self.user, self.course)
 
     @ddt.data(
@@ -78,7 +78,7 @@ class TestCourseAccessSerializer(TestCase):
     @patch('lms.djangoapps.mobile_api.course_info.serializers.administrative_accesses_to_course_for_user')
     def test_is_staff(
         self,
-        mock_return_value: Tuple[bool],
+        mock_return_value: Tuple[bool],  # noqa: UP006
         is_staff: bool,
         mock_administrative_access: MagicMock,
     ) -> None:
@@ -90,14 +90,14 @@ class TestCourseAccessSerializer(TestCase):
             'course_id': self.course.id
         }).data
 
-        self.assertEqual(output_data['is_staff'], is_staff)
+        self.assertEqual(output_data['is_staff'], is_staff)  # noqa: PT009
         mock_administrative_access.assert_called_once_with(self.user, self.course.id)
 
     @ddt.data(None, 'mocked_user_course_expiration_date')
     @patch('lms.djangoapps.mobile_api.course_info.serializers.get_user_course_expiration_date')
     def test_get_audit_access_expires(
         self,
-        mock_return_value: Union[str, None],
+        mock_return_value: Union[str, None],  # noqa: UP007
         mock_get_user_course_expiration_date: MagicMock,
     ) -> None:
         mock_get_user_course_expiration_date.return_value = mock_return_value
@@ -108,7 +108,7 @@ class TestCourseAccessSerializer(TestCase):
             'course_id': self.course.id
         }).data
 
-        self.assertEqual(output_data['audit_access_expires'], mock_return_value)
+        self.assertEqual(output_data['audit_access_expires'], mock_return_value)  # noqa: PT009
         mock_get_user_course_expiration_date.assert_called_once_with(self.user, self.course)
 
     @patch('lms.djangoapps.mobile_api.course_info.serializers.has_access')
@@ -129,7 +129,7 @@ class TestCourseAccessSerializer(TestCase):
             'course_id': self.course.id
         }).data
 
-        self.assertDictEqual(output_data['courseware_access'], mocked_access)
+        self.assertDictEqual(output_data['courseware_access'], mocked_access)  # noqa: PT009
         mock_has_access.assert_called_once_with(self.user, 'load_mobile', self.course)
         mock_has_access.return_value.to_json.assert_called_once_with()
 
@@ -148,11 +148,11 @@ class TestCourseInfoOverviewSerializer(TestCase):
     def test_get_media(self, get_assignments_completions_mock: MagicMock) -> None:
         output_data = CourseInfoOverviewSerializer(self.course_overview, context={'user': self.user}).data
 
-        self.assertIn('media', output_data)
-        self.assertIn('image', output_data['media'])
-        self.assertIn('raw', output_data['media']['image'])
-        self.assertIn('small', output_data['media']['image'])
-        self.assertIn('large', output_data['media']['image'])
+        self.assertIn('media', output_data)  # noqa: PT009
+        self.assertIn('image', output_data['media'])  # noqa: PT009
+        self.assertIn('raw', output_data['media']['image'])  # noqa: PT009
+        self.assertIn('small', output_data['media']['image'])  # noqa: PT009
+        self.assertIn('large', output_data['media']['image'])  # noqa: PT009
 
     @patch('lms.djangoapps.mobile_api.course_info.serializers.get_assignments_completions')
     @patch(
@@ -166,7 +166,7 @@ class TestCourseInfoOverviewSerializer(TestCase):
     ) -> None:
         output_data = CourseInfoOverviewSerializer(self.course_overview, context={'user': self.user}).data
 
-        self.assertEqual(output_data['course_about'], mock_get_link_for_about_page.return_value)
+        self.assertEqual(output_data['course_about'], mock_get_link_for_about_page.return_value)  # noqa: PT009
         mock_get_link_for_about_page.assert_called_once_with(self.course_overview)
 
     @patch('lms.djangoapps.mobile_api.course_info.serializers.get_assignments_completions')
@@ -175,7 +175,7 @@ class TestCourseInfoOverviewSerializer(TestCase):
 
         output_data = CourseInfoOverviewSerializer(self.course_overview, context={'user': self.user}).data
 
-        self.assertListEqual(output_data['course_modes'], expected_course_modes)
+        self.assertListEqual(output_data['course_modes'], expected_course_modes)  # noqa: PT009
 
     @patch('lms.djangoapps.courseware.courses.get_course_assignments')
     def test_get_course_progress_no_assignments(self, get_course_assignment_mock: MagicMock) -> None:
@@ -183,8 +183,8 @@ class TestCourseInfoOverviewSerializer(TestCase):
 
         output_data = CourseInfoOverviewSerializer(self.course_overview, context={'user': self.user}).data
 
-        self.assertIn('course_progress', output_data)
-        self.assertDictEqual(output_data['course_progress'], expected_course_progress)
+        self.assertIn('course_progress', output_data)  # noqa: PT009
+        self.assertDictEqual(output_data['course_progress'], expected_course_progress)  # noqa: PT009
         get_course_assignment_mock.assert_called_once_with(
             self.course_overview.id, self.user, include_without_due=True
         )
@@ -199,8 +199,8 @@ class TestCourseInfoOverviewSerializer(TestCase):
 
         output_data = CourseInfoOverviewSerializer(self.course_overview, context={'user': self.user}).data
 
-        self.assertIn('course_progress', output_data)
-        self.assertDictEqual(output_data['course_progress'], expected_course_progress)
+        self.assertIn('course_progress', output_data)  # noqa: PT009
+        self.assertDictEqual(output_data['course_progress'], expected_course_progress)  # noqa: PT009
         get_course_assignment_mock.assert_called_once_with(
             self.course_overview.id, self.user, include_without_due=True
         )

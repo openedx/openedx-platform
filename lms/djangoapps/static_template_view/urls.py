@@ -32,7 +32,7 @@ for key, value in settings.MKTG_URL_LINK_MAP.items():
         continue
 
     # These urls are enabled separately
-    if key == "ROOT" or key == "COURSES":  # lint-amnesty, pylint: disable=consider-using-in
+    if key == "ROOT" or key == "COURSES":  # pylint: disable=consider-using-in
         continue
 
     # The MKTG_URL_LINK_MAP key specifies the template filename
@@ -44,4 +44,4 @@ for key, value in settings.MKTG_URL_LINK_MAP.items():
 
     # Make the assumption that the URL we want is the lowercased
     # version of the map key
-    urlpatterns.append(re_path(r'^%s$' % key.lower(), views.render, {'template': template}, name=value))
+    urlpatterns.append(re_path(r'^%s$' % key.lower(), views.render, {'template': template}, name=value))  # noqa: UP031

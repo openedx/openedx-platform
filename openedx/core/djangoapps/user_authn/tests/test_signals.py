@@ -1,6 +1,7 @@
 """Tests for user_authn signals"""
 
 from unittest.mock import patch
+
 from django.test import TestCase
 
 from common.djangoapps.student.tests.factories import UserFactory, UserProfileFactory

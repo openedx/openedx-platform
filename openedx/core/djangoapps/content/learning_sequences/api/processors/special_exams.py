@@ -12,16 +12,16 @@ https://github.com/openedx/edx-platform/pull/24545#discussion_r501738511
 
 import logging
 
-from edx_proctoring.api import get_attempt_status_summary
-from edx_proctoring.exceptions import ProctoredExamNotFoundException
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.utils.translation import gettext as _
+from edx_proctoring.api import get_attempt_status_summary
+from edx_proctoring.exceptions import ProctoredExamNotFoundException
+
+from openedx.core.djangoapps.course_apps.toggles import exams_ida_enabled
 
 from ...data import SpecialExamAttemptData, UserCourseOutlineData
 from .base import OutlineProcessor
-from openedx.core.djangoapps.course_apps.toggles import exams_ida_enabled
-
 
 User = get_user_model()
 log = logging.getLogger(__name__)
@@ -35,7 +35,7 @@ class SpecialExamsOutlineProcessor(OutlineProcessor):
         """
         Check if special exams are enabled
         """
-        self.special_exams_enabled = settings.FEATURES.get('ENABLE_SPECIAL_EXAMS', False)  # lint-amnesty, pylint: disable=attribute-defined-outside-init
+        self.special_exams_enabled = settings.ENABLE_SPECIAL_EXAMS  # pylint: disable=attribute-defined-outside-init
 
     def exam_data(self, pruned_course_outline: UserCourseOutlineData) -> SpecialExamAttemptData:
         """

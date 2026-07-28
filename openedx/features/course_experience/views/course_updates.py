@@ -23,13 +23,13 @@ class CourseUpdatesView(CourseTabView):
     """
     @method_decorator(login_required)
     @method_decorator(cache_control(no_cache=True, no_store=True, must_revalidate=True))
-    def get(self, request, course_id, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ
+    def get(self, request, course_id, **kwargs):  # pylint: disable=arguments-differ
         """
         Displays the home page for the specified course.
         """
         return super().get(request, course_id, 'courseware', **kwargs)
 
-    def render_to_fragment(self, request, course=None, tab=None, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ, unused-argument
+    def render_to_fragment(self, request, course=None, tab=None, **kwargs):  # pylint: disable=arguments-differ, unused-argument
         course_id = str(course.id)
         updates_fragment_view = CourseUpdatesFragmentView()
         return updates_fragment_view.render_to_fragment(request, course_id=course_id, **kwargs)
@@ -40,7 +40,7 @@ class CourseUpdatesFragmentView(EdxFragmentView):
     A fragment to render the updates page for a course.
     """
 
-    def render_to_fragment(self, request, course_id=None, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ
+    def render_to_fragment(self, request, course_id=None, **kwargs):  # pylint: disable=arguments-differ
         """
         Renders the course's home page as a fragment.
         """
@@ -66,11 +66,11 @@ class CourseUpdatesFragmentView(EdxFragmentView):
         return Fragment(html)
 
     @classmethod
-    def has_updates(self, request, course):  # lint-amnesty, pylint: disable=bad-classmethod-argument
+    def has_updates(self, request, course):  # pylint: disable=bad-classmethod-argument
         return len(get_ordered_updates(request, course)) > 0
 
     @classmethod
-    def get_plain_html_updates(self, request, course):  # lint-amnesty, pylint: disable=bad-classmethod-argument
+    def get_plain_html_updates(self, request, course):  # pylint: disable=bad-classmethod-argument
         """
         Returns any course updates in an html chunk. Used
         for older implementations and a few tests that store

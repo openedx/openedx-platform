@@ -1,4 +1,0 @@
-<div class="input-wrap field long text required field-add-group-name group-<%- index %>-name
-    <% if (error && error.attributes && error.attributes.name) { print('error'); } %>"><input name="group-<%- index %>-name" class="group-name long" value="<%- name %>" type="text">
-</div><div class="group-allocation"><%- allocation %>%</div>
-<a href="" class="action action-close"><span class="icon fa fa-times-circle" aria-hidden="true"></span> <span class="sr"><%- gettext("delete group") %></span></a>

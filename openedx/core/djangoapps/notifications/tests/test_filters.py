@@ -3,6 +3,7 @@ Test for the NotificationFilter class.
 """
 from datetime import timedelta
 from unittest import mock
+from unittest.mock import patch
 
 import ddt
 from django.utils.timezone import now
@@ -10,25 +11,25 @@ from django.utils.timezone import now
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRole
-from common.djangoapps.student.tests.factories import UserFactory, CourseEnrollmentFactory
+from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory
 from lms.djangoapps.teams.tests.factories import CourseTeamFactory, CourseTeamMembershipFactory
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from openedx.core.djangoapps.course_groups.tests.helpers import CohortFactory
 from openedx.core.djangoapps.django_comment_common.models import (
     FORUM_ROLE_ADMINISTRATOR,
     FORUM_ROLE_COMMUNITY_TA,
-    FORUM_ROLE_STUDENT,
     FORUM_ROLE_GROUP_MODERATOR,
     FORUM_ROLE_MODERATOR,
+    FORUM_ROLE_STUDENT,
     Role,
 )
 from openedx.core.djangoapps.notifications.audience_filters import (
+    CohortAudienceFilter,
+    CourseRoleAudienceFilter,
     EnrollmentAudienceFilter,
     ForumRoleAudienceFilter,
-    CourseRoleAudienceFilter,
-    CohortAudienceFilter,
-    TeamAudienceFilter,
     NotificationFilter,
+    TeamAudienceFilter,
 )
 from openedx.core.djangoapps.notifications.handlers import calculate_course_wide_notification_audience
 from openedx.features.course_duration_limits.models import CourseDurationLimitConfig
@@ -42,7 +43,13 @@ class CourseExpirationTestCase(ModuleStoreTestCase):
     """Tests to verify the get_user_course_expiration_date function is working correctly"""
 
     def setUp(self):
-        super().setUp()  # lint-amnesty, pylint: disable=super-with-arguments
+        super().setUp()  # pylint: disable=super-with-arguments
+        self.catalog_patch = patch(
+            'openedx.core.djangoapps.catalog.models.CatalogIntegration.is_enabled',
+            return_value=True
+        )
+        self.catalog_patch.start()
+
         self.course = CourseFactory(
             start=now() - timedelta(weeks=10),
         )
@@ -58,6 +65,10 @@ class CourseExpirationTestCase(ModuleStoreTestCase):
         expired_audit.created = now() - timedelta(weeks=6)
         expired_audit.save()
 
+    def tearDown(self):
+        self.catalog_patch.stop()
+        super().tearDown()
+
     @mock.patch("openedx.core.djangoapps.course_date_signals.utils.get_course_run_details")
     def test_audit_expired_filter_with_no_role(
         self,
@@ -72,14 +83,14 @@ class CourseExpirationTestCase(ModuleStoreTestCase):
             [self.user.id, self.user_1.id],
             self.course,
         )
-        self.assertEqual([self.user_1.id], result)
+        self.assertEqual([self.user_1.id], result)  # noqa: PT009
 
         mock_get_course_run_details.return_value = {'weeks_to_complete': 7}
         result = NotificationFilter().filter_audit_expired_users_with_no_role(
             [self.user.id, self.user_1.id],
             self.course,
         )
-        self.assertEqual([self.user.id, self.user_1.id], result)
+        self.assertEqual([self.user.id, self.user_1.id], result)  # noqa: PT009
 
         CourseDurationLimitConfig.objects.create(
             enabled=True,
@@ -92,7 +103,7 @@ class CourseExpirationTestCase(ModuleStoreTestCase):
             [self.user.id, self.user_1.id],
             self.course,
         )
-        self.assertEqual([self.user.id, self.user_1.id], result)
+        self.assertEqual([self.user.id, self.user_1.id], result)  # noqa: PT009
 
     @mock.patch("openedx.core.djangoapps.course_date_signals.utils.get_course_run_details")
     @mock.patch(
@@ -113,7 +124,7 @@ class CourseExpirationTestCase(ModuleStoreTestCase):
             self.course.id,
             'new_comment_on_response'
         )
-        self.assertEqual([self.user.id, self.user_1.id], result)
+        self.assertEqual([self.user.id, self.user_1.id], result)  # noqa: PT009
         mock_filter_audit_expired.assert_called_once()
 
     @mock.patch("openedx.core.djangoapps.course_date_signals.utils.get_course_run_details")
@@ -130,13 +141,13 @@ class CourseExpirationTestCase(ModuleStoreTestCase):
             [self.user.id, self.user_1.id],
             self.course,
         )
-        self.assertEqual([self.user_1.id], result)
+        self.assertEqual([self.user_1.id], result)  # noqa: PT009
         CourseInstructorRole(self.course.id).add_users(self.user)
         result = NotificationFilter().filter_audit_expired_users_with_no_role(
             [self.user.id, self.user_1.id],
             self.course,
         )
-        self.assertEqual([self.user.id, self.user_1.id], result)
+        self.assertEqual([self.user.id, self.user_1.id], result)  # noqa: PT009
 
     @mock.patch("openedx.core.djangoapps.course_date_signals.utils.get_course_run_details")
     @ddt.data(
@@ -160,14 +171,14 @@ class CourseExpirationTestCase(ModuleStoreTestCase):
             [self.user.id, self.user_1.id],
             self.course,
         )
-        self.assertEqual([self.user_1.id], result)
+        self.assertEqual([self.user_1.id], result)  # noqa: PT009
         role = Role.objects.get_or_create(course_id=self.course.id, name=role_name)[0]
         role.users.add(self.user.id)
         result = NotificationFilter().filter_audit_expired_users_with_no_role(
             [self.user.id, self.user_1.id],
             self.course,
         )
-        self.assertEqual([self.user.id, self.user_1.id], result)
+        self.assertEqual([self.user.id, self.user_1.id], result)  # noqa: PT009
 
 
 def assign_enrollment_mode_to_users(course_id, users, mode):
@@ -195,7 +206,7 @@ class TestEnrollmentAudienceFilter(ModuleStoreTestCase):
     Tests for the EnrollmentAudienceFilter.
     """
     def setUp(self):
-        super().setUp()  # lint-amnesty, pylint: disable=super-with-arguments
+        super().setUp()  # pylint: disable=super-with-arguments
         self.course = CourseFactory()
         self.students = [UserFactory() for _ in range(30)]
 
@@ -220,12 +231,12 @@ class TestEnrollmentAudienceFilter(ModuleStoreTestCase):
     def test_valid_enrollment_filter(self, enrollment_modes, expected_count):
         enrollment_filter = EnrollmentAudienceFilter(self.course.id)
         filtered_users = enrollment_filter.filter(enrollment_modes)
-        self.assertEqual(len(filtered_users), expected_count)
+        self.assertEqual(len(filtered_users), expected_count)  # noqa: PT009
 
     def test_invalid_enrollment_filter(self):
         enrollment_filter = EnrollmentAudienceFilter(self.course.id)
         enrollment_modes = ["INVALID_MODE"]
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError):  # noqa: PT027
             enrollment_filter.filter(enrollment_modes)
 
 
@@ -235,7 +246,7 @@ class TestForumRoleAudienceFilter(ModuleStoreTestCase):
     Tests for the ForumRoleAudienceFilter.
     """
     def setUp(self):
-        super().setUp()  # lint-amnesty, pylint: disable=super-with-arguments
+        super().setUp()  # pylint: disable=super-with-arguments
         self.course = CourseFactory()
         self.students = [UserFactory() for _ in range(25)]
 
@@ -271,12 +282,12 @@ class TestForumRoleAudienceFilter(ModuleStoreTestCase):
     def test_valid_role_filter(self, role_names, expected_count):
         role_filter = ForumRoleAudienceFilter(self.course.id)
         filtered_users = role_filter.filter(role_names)
-        self.assertEqual(len(filtered_users), expected_count)
+        self.assertEqual(len(filtered_users), expected_count)  # noqa: PT009
 
     def test_invalid_role_filter(self):
         role_filter = ForumRoleAudienceFilter(self.course.id)
         role_names = ["INVALID_MODE"]
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError):  # noqa: PT027
             role_filter.filter(role_names)
 
 
@@ -287,7 +298,7 @@ class TestCourseRoleAudienceFilter(ModuleStoreTestCase):
     Tests for the CourseRoleAudienceFilter.
     """
     def setUp(self):
-        super().setUp()  # lint-amnesty, pylint: disable=super-with-arguments
+        super().setUp()  # pylint: disable=super-with-arguments
         self.course = CourseFactory()
         self.students = [UserFactory() for _ in range(10)]
 
@@ -308,12 +319,12 @@ class TestCourseRoleAudienceFilter(ModuleStoreTestCase):
     def test_valid_role_filter(self, role_names, expected_count):
         course_role_filter = CourseRoleAudienceFilter(self.course.id)
         filtered_users = course_role_filter.filter(role_names)
-        self.assertEqual(len(filtered_users), expected_count)
+        self.assertEqual(len(filtered_users), expected_count)  # noqa: PT009
 
     def test_invalid_role_filter(self):
         course_role_filter = CourseRoleAudienceFilter(self.course.id)
         role_names = ["INVALID_MODE"]
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError):  # noqa: PT027
             course_role_filter.filter(role_names)
 
 
@@ -323,7 +334,7 @@ class TestCohortAudienceFilter(ModuleStoreTestCase):
     Tests for the CohortAudienceFilter.
     """
     def setUp(self):
-        super().setUp()  # lint-amnesty, pylint: disable=super-with-arguments
+        super().setUp()  # pylint: disable=super-with-arguments
         self.course = CourseFactory()
 
         self.cohort1_users = [UserFactory() for _ in range(3)]
@@ -346,12 +357,12 @@ class TestCohortAudienceFilter(ModuleStoreTestCase):
     def test_valid_cohort_filter(self, cohort_ids, expected_count):
         cohort_filter = CohortAudienceFilter(self.course.id)
         filtered_users = cohort_filter.filter(cohort_ids)
-        self.assertEqual(len(filtered_users), expected_count)
+        self.assertEqual(len(filtered_users), expected_count)  # noqa: PT009
 
     def test_invalid_cohort_filter(self):
         cohort_filter = CohortAudienceFilter(self.course.id)
         cohort_ids = ["INVALID_MODE"]
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError):  # noqa: PT027
             cohort_filter.filter(cohort_ids)
 
 
@@ -361,7 +372,7 @@ class TestTeamAudienceFilter(ModuleStoreTestCase):
     Tests for the TeamAudienceFilter.
     """
     def setUp(self):
-        super().setUp()  # lint-amnesty, pylint: disable=super-with-arguments
+        super().setUp()  # pylint: disable=super-with-arguments
         self.course = CourseFactory()
         self.teams = [CourseTeamFactory(course_id=self.course.id, team_id=f"team-{i}") for i in range(2)]
 
@@ -388,12 +399,12 @@ class TestTeamAudienceFilter(ModuleStoreTestCase):
     def test_valid_team_filter(self, team_ids, expected_count):
         team_filter = TeamAudienceFilter(self.course.id)
         filtered_users = team_filter.filter(team_ids)
-        self.assertEqual(len(filtered_users), expected_count)
+        self.assertEqual(len(filtered_users), expected_count)  # noqa: PT009
 
     def test_invalid_team_filter(self):
         team_filter = TeamAudienceFilter(self.course.id)
         team_ids = ["INVALID_MODE"]
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError):  # noqa: PT027
             team_filter.filter(team_ids)
 
 
@@ -403,7 +414,7 @@ class TestAudienceFilter(ModuleStoreTestCase):
     Tests for audience filtration based on different filters.
     """
     def setUp(self):
-        super().setUp()  # lint-amnesty, pylint: disable=super-with-arguments
+        super().setUp()  # pylint: disable=super-with-arguments
         self.course = CourseFactory()
         self.students = [UserFactory() for _ in range(30)]
 
@@ -448,11 +459,11 @@ class TestAudienceFilter(ModuleStoreTestCase):
     @ddt.unpack
     def test_combination_of_audience_filters(self, audience_filters, expected_count):
         user_ids = calculate_course_wide_notification_audience(self.course.id, audience_filters)
-        self.assertEqual(len(user_ids), expected_count)
+        self.assertEqual(len(user_ids), expected_count)  # noqa: PT009
 
     def test_invalid_audience_filter(self):
         audience_filters = {
             "invalid_filter": ["invalid_filter_type"],
         }
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError):  # noqa: PT027
             calculate_course_wide_notification_audience(self.course.id, audience_filters)

@@ -2,8 +2,9 @@
 A "Learning Context" is a course, a library, a program, or some other collection
 of content where learning happens.
 """
-from openedx.core.types import User as UserType
 from opaque_keys.edx.keys import UsageKeyV2
+
+from openedx.core.types import User as UserType
 
 
 class LearningContext:
@@ -69,18 +70,3 @@ class LearningContext:
         Retuns None if the usage key doesn't exist in this context.
         """
         raise NotImplementedError
-
-    def send_block_updated_event(self, usage_key):
-        """
-        Send a "block updated" event for the block with the given usage_key in this context.
-
-        usage_key: the UsageKeyV2 subclass used for this learning context
-        """
-
-    def send_container_updated_events(self, usage_key):
-        """
-        Send "container updated" events for containers that contains the block with
-        the given usage_key in this context.
-
-        usage_key: the UsageKeyV2 subclass used for this learning context
-        """

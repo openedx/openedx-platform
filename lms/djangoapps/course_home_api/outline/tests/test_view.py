@@ -10,6 +10,7 @@ from unittest.mock import Mock, patch
 import ddt
 from completion.models import BlockCompletion
 from django.conf import settings
+from django.contrib.auth.models import AnonymousUser
 from django.test import override_settings
 from django.urls import reverse
 from edx_toggles.toggles.testutils import override_waffle_flag
@@ -20,9 +21,11 @@ from common.djangoapps.course_modes.tests.factories import CourseModeFactory
 from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.roles import CourseInstructorRole
 from common.djangoapps.student.tests.factories import UserFactory
-from lms.djangoapps.course_home_api.toggles import COURSE_HOME_SEND_COURSE_PROGRESS_ANALYTICS_FOR_STUDENT
+from lms.djangoapps.course_home_api.outline.views import CourseNavigationBlocksView
 from lms.djangoapps.course_home_api.tests.utils import BaseCourseHomeTests
+from lms.djangoapps.course_home_api.toggles import COURSE_HOME_SEND_COURSE_PROGRESS_ANALYTICS_FOR_STUDENT
 from lms.djangoapps.grades.course_grade_factory import CourseGradeFactory
+from openedx.core.djangoapps.content.block_structure.api import update_course_in_cache
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from openedx.core.djangoapps.content.learning_sequences.api import replace_course_outline
 from openedx.core.djangoapps.content.learning_sequences.data import CourseOutlineData, CourseVisibility
@@ -30,19 +33,10 @@ from openedx.core.djangoapps.course_date_signals.utils import MIN_DURATION
 from openedx.core.djangoapps.user_api.preferences.api import set_user_preference
 from openedx.core.djangoapps.user_api.tests.factories import UserCourseTagFactory
 from openedx.features.course_duration_limits.models import CourseDurationLimitConfig
-from openedx.features.course_experience import (
-    COURSE_ENABLE_UNENROLLED_ACCESS_FLAG,
-    ENABLE_COURSE_GOALS
-)
+from openedx.features.course_experience import COURSE_ENABLE_UNENROLLED_ACCESS_FLAG, ENABLE_COURSE_GOALS
 from openedx.features.discounts.applicability import DISCOUNT_APPLICABILITY_FLAG, FIRST_PURCHASE_DISCOUNT_OVERRIDE_FLAG
-from xmodule.course_block import (
-    COURSE_VISIBILITY_PUBLIC,
-    COURSE_VISIBILITY_PUBLIC_OUTLINE
-)
-from xmodule.modulestore.tests.factories import (
-    BlockFactory,
-    CourseFactory
-)
+from xmodule.course_block import COURSE_VISIBILITY_PUBLIC, COURSE_VISIBILITY_PUBLIC_OUTLINE
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 
 
 @ddt.ddt
@@ -257,7 +251,7 @@ class OutlineTabTestViews(BaseCourseHomeTests):
         }
         assert course_goals == expected_course_goals
 
-    @patch.dict('django.conf.settings.FEATURES', {'ENABLE_SPECIAL_EXAMS': True})
+    @override_settings(ENABLE_SPECIAL_EXAMS=True)
     @patch('lms.djangoapps.course_api.blocks.transformers.milestones.get_attempt_status_summary')
     def test_proctored_exam(self, mock_summary):
         course = CourseFactory.create(
@@ -399,7 +393,7 @@ class OutlineTabTestViews(BaseCourseHomeTests):
         new_learning_seq_outline = CourseOutlineData(
             course_key=self.course.id,
             title="Test Course Outline!",
-            published_at=datetime(2021, 6, 14, tzinfo=timezone.utc),
+            published_at=datetime(2021, 6, 14, tzinfo=timezone.utc),  # noqa: UP017
             published_version="5ebece4b69dd593d82fe2022",
             entrance_exam_id=None,
             days_early_for_beta=None,
@@ -450,12 +444,12 @@ class OutlineTabTestViews(BaseCourseHomeTests):
         self.assert_can_enroll(False)
 
     def test_cannot_enroll_before_enrollment(self):
-        self.course.enrollment_start = datetime.now(timezone.utc) + timedelta(days=1)
+        self.course.enrollment_start = datetime.now(timezone.utc) + timedelta(days=1)  # noqa: UP017
         self.update_course_and_overview()
         self.assert_can_enroll(False)
 
     def test_cannot_enroll_after_enrollment(self):
-        self.course.enrollment_end = datetime.now(timezone.utc) - timedelta(days=1)
+        self.course.enrollment_end = datetime.now(timezone.utc) - timedelta(days=1)  # noqa: UP017
         self.update_course_and_overview()
         self.assert_can_enroll(False)
 
@@ -593,6 +587,20 @@ class SidebarBlocksTestViews(BaseCourseHomeTests):
         assert response.status_code == 200
         assert response.data.get('blocks') is None
 
+    def test_anonymous_user_completion_dict_does_not_lookup_completions(self):
+        """
+        Test that anonymous users do not query completion data.
+        """
+        view = CourseNavigationBlocksView()
+        view.request = Mock(user=AnonymousUser())
+        view.kwargs = {'course_key_string': str(self.course.id)}
+
+        with patch('lms.djangoapps.course_home_api.outline.views.BlockCompletion.objects.filter') as mock_filter:
+            completions = view.completions_dict
+
+        assert completions == {}
+        mock_filter.assert_not_called()
+
     def test_course_staff_can_see_non_user_specific_content_in_masquerade(self):
         """
         Test that course staff can see the outline and other non-user-specific content when masquerading as a learner
@@ -612,7 +620,7 @@ class SidebarBlocksTestViews(BaseCourseHomeTests):
         response = self.client.get(url)
         assert response.status_code == 404
 
-    @patch.dict('django.conf.settings.FEATURES', {'ENABLE_SPECIAL_EXAMS': True})
+    @override_settings(ENABLE_SPECIAL_EXAMS=True)
     @patch('lms.djangoapps.course_api.blocks.transformers.milestones.get_attempt_status_summary')
     def test_proctored_exam(self, mock_summary):
         """
@@ -732,7 +740,7 @@ class SidebarBlocksTestViews(BaseCourseHomeTests):
         new_learning_seq_outline = CourseOutlineData(
             course_key=self.course.id,
             title='Test Course Outline!',
-            published_at=datetime(2021, 6, 14, tzinfo=timezone.utc),
+            published_at=datetime(2021, 6, 14, tzinfo=timezone.utc),  # noqa: UP017
             published_version='5ebece4b69dd593d82fe2022',
             entrance_exam_id=None,
             days_early_for_beta=None,
@@ -890,7 +898,7 @@ class SidebarBlocksTestViews(BaseCourseHomeTests):
 
         assert vertical_data['icon'] == expected_icon
 
-    @patch('xmodule.html_block.HtmlBlock.icon_class', 'video')
+    @patch('xmodule.x_module.XModuleMixin.icon_class', 'video')
     def test_vertical_icon_determined_by_icon_class(self):
         """Test that the API checks the children `icon_class` to determine the icon for the unit."""
         self.add_blocks_to_course()
@@ -900,3 +908,55 @@ class SidebarBlocksTestViews(BaseCourseHomeTests):
         response = self.client.get(reverse('course-home:course-navigation', args=[self.course.id]))
         vertical_data = response.data['blocks'][str(self.vertical.location)]
         assert vertical_data['icon'] == 'video'
+
+    def test_navigation_does_not_cache_stale_data_after_publish(self):
+        """
+        Regression test: after the block structure rebuild task completes,
+        the navigation sidebar should serve fresh data.
+
+        This simulates a production scenario where:
+        1. A unit is deleted and the course is auto-published
+        2. The block structure rebuild Celery task is queued with a delay (30s by default)
+        3. A learner hits the navigation endpoint during that 30s window
+        4. The rebuild task completes (bumping block_structure_version)
+        5. Another request arrives
+
+        Without the fix, step 3 caches stale data under a key that step 5
+        also hits (because course_version changed eagerly). With the fix,
+        the cache key uses block_structure_version which only changes when
+        the rebuild completes, so step 5 gets a cache miss and fresh data.
+        """
+        self.add_blocks_to_course()
+        CourseEnrollment.enroll(self.user, self.course.id, CourseMode.VERIFIED)
+
+        # First request — populates both block structure and navigation cache
+        response = self.client.get(self.url)
+        assert response.status_code == 200
+        sequential_data = response.data['blocks'][str(self.sequential.location)]
+        assert str(self.vertical.location) in sequential_data['children']
+
+        # Delete the vertical directly in the modulestore. Signals are disabled
+        # in ModuleStoreTestCase, so the block structure cache is now stale —
+        # mirroring the 30s window in production before the rebuild task runs.
+        self.store.delete_item(self.vertical.location, self.user.id)
+        update_outline_from_modulestore(self.course.id)
+
+        # Request during the stale window — served from the pre-delete cache
+        # (block_structure_version hasn't changed yet, so same cache key).
+        response = self.client.get(self.url)
+        assert response.status_code == 200
+
+        # The vertical is still in the cache, even though it has been deleted
+        sequential_data = response.data['blocks'][str(self.sequential.location)]
+        assert str(self.vertical.location) in sequential_data['children']
+
+        # Now simulate the block structure rebuild task completing.
+        # This bumps block_structure_version → new cache key on next request.
+        update_course_in_cache(self.course.id)
+
+        # Next request has a new cache key (version bumped) → cache miss →
+        # fresh data built from updated block structure.
+        response = self.client.get(self.url)
+        assert response.status_code == 200
+        sequential_data = response.data['blocks'][str(self.sequential.location)]
+        assert str(self.vertical.location) not in sequential_data['children']

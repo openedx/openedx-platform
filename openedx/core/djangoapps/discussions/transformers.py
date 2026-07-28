@@ -3,7 +3,7 @@ Discussions Topic Link Transformer
 """
 
 from openedx.core.djangoapps.content.block_structure.transformer import BlockStructureTransformer
-from openedx.core.djangoapps.discussions.models import DiscussionTopicLink, DiscussionsConfiguration
+from openedx.core.djangoapps.discussions.models import DiscussionsConfiguration, DiscussionTopicLink
 from openedx.core.djangoapps.discussions.url_helpers import get_discussions_mfe_topic_url
 
 
@@ -19,8 +19,8 @@ class DiscussionsTopicLinkTransformer(BlockStructureTransformer):
     @classmethod
     def name(cls):
         """
-        Unique identifier for the transformer's class;
-        same identifier used in setup.py.
+        Unique identifier for the transformer's class.
+        This must match the entry point name in the package configuration.
         """
         return "discussions_link"
 

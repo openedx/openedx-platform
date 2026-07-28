@@ -3,18 +3,18 @@ A Command which, given a mapping of V1 to V2 Libraries,
 edits all xblocks in courses which refer to the v1 library to point to the v2 library.
 """
 
-import logging
 import csv
+import logging
 
-from django.core.management import BaseCommand, CommandError
 from celery import group
+from django.core.management import BaseCommand, CommandError
 
-from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from cms.djangoapps.contentstore.tasks import (
     replace_all_library_source_blocks_ids_for_course,
+    undo_all_library_source_blocks_ids_for_course,
     validate_all_library_source_blocks_ids_for_course,
-    undo_all_library_source_blocks_ids_for_course
 )
+from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 
 log = logging.getLogger(__name__)
 
@@ -62,7 +62,7 @@ class Command(BaseCommand):
     def validate(self, v1_to_v2_lib_map):
         """ Validate that replace_all_library_source_blocks_ids was successful"""
         course_id_strings = list(CourseOverview.get_all_course_keys())
-        tasks = group(validate_all_library_source_blocks_ids_for_course.s(course_id, v1_to_v2_lib_map) for course_id in course_id_strings)  # lint-amnesty, pylint: disable=line-too-long
+        tasks = group(validate_all_library_source_blocks_ids_for_course.s(course_id, v1_to_v2_lib_map) for course_id in course_id_strings)  # pylint: disable=line-too-long
         results = tasks.apply_async()
 
         validation = set()
@@ -107,7 +107,7 @@ class Command(BaseCommand):
         file_path = kwargs['file_path']
         v1_to_v2_lib_map = {}
         try:
-            with open(file_path, 'r', encoding='utf-8') as csvfile:
+            with open(file_path, 'r', encoding='utf-8') as csvfile:  # noqa: UP015
 
                 if not file_path.endswith('.csv'):
                     raise CommandError('Invalid file format. Only CSV files are supported.')
@@ -124,7 +124,7 @@ class Command(BaseCommand):
 
         except FileNotFoundError:
             log.error("File not found at '%s'.", {file_path})
-        except Exception as e:  # lint-amnesty, pylint: disable=broad-except
+        except Exception as e:  # pylint: disable=broad-except
             log.error("An error occurred: %s", {str(e)})
 
         if kwargs['validate']:

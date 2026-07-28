@@ -8,11 +8,11 @@ from django.utils.datastructures import MultiValueDictKeyError
 from social_core.exceptions import AuthMissingParameter
 
 from common.djangoapps.third_party_auth.dummy import DummyBackend
-from common.djangoapps.third_party_auth.saml import EdXSAMLIdentityProvider, get_saml_idp_class, SAMLAuthBackend
+from common.djangoapps.third_party_auth.saml import EdXSAMLIdentityProvider, SAMLAuthBackend, get_saml_idp_class
 from common.djangoapps.third_party_auth.tests.data.saml_identity_provider_mock_data import (
     expected_user_details,
     mock_attributes,
-    mock_conf
+    mock_conf,
 )
 from common.djangoapps.third_party_auth.tests.testutil import SAMLTestCase
 
@@ -45,7 +45,7 @@ class TestSAMLAuthBackend(SAMLTestCase):
     def test_saml_auth_complete(self, super_auth_complete):
         super_auth_complete.side_effect = MultiValueDictKeyError('RelayState')
         backend = SAMLAuthBackend()
-        with self.assertRaises(AuthMissingParameter) as cm:
+        with self.assertRaises(AuthMissingParameter) as cm:  # noqa: PT027
             backend.auth_complete()
 
         assert cm.exception.parameter == 'RelayState'

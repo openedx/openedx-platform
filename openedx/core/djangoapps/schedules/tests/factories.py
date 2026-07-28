@@ -3,12 +3,13 @@ Factories for schedules tests
 """
 
 
-import factory
 from zoneinfo import ZoneInfo
 
+import factory
+
+from common.djangoapps.student.tests.factories import CourseEnrollmentFactory
 from openedx.core.djangoapps.schedules import models
 from openedx.core.djangoapps.site_configuration.tests.factories import SiteFactory
-from common.djangoapps.student.tests.factories import CourseEnrollmentFactory
 
 
 class ScheduleExperienceFactory(factory.django.DjangoModelFactory):
@@ -18,7 +19,7 @@ class ScheduleExperienceFactory(factory.django.DjangoModelFactory):
     experience_type = models.ScheduleExperience.EXPERIENCES.default
 
 
-class ScheduleFactory(factory.django.DjangoModelFactory):  # lint-amnesty, pylint: disable=missing-class-docstring
+class ScheduleFactory(factory.django.DjangoModelFactory):  # pylint: disable=missing-class-docstring
     class Meta:
         model = models.Schedule
 
@@ -28,7 +29,7 @@ class ScheduleFactory(factory.django.DjangoModelFactory):  # lint-amnesty, pylin
     experience = factory.RelatedFactory(ScheduleExperienceFactory, 'schedule')
 
 
-class ScheduleConfigFactory(factory.django.DjangoModelFactory):  # lint-amnesty, pylint: disable=missing-class-docstring
+class ScheduleConfigFactory(factory.django.DjangoModelFactory):  # pylint: disable=missing-class-docstring
     class Meta:
         model = models.ScheduleConfig
 

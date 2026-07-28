@@ -1,0 +1,499 @@
+swagger: '2.0'
+info:
+  title: Enrollment API v2
+  version: 2.0.0
+  description: |
+    Modern REST API for enrollment management operations. This API supersedes the v1 enrollment API
+    and provides enhanced functionality for managing course enrollments across the Open edX platform.
+
+    **Design Principles:**
+    - RESTful resource-oriented URLs
+    - Query parameters for filtering operations
+    - Clear separation between read and write operations
+    - Consistent error handling
+    - Follows Open edX REST API Conventions
+
+    **Execution Model:**
+    - All operations execute synchronously
+
+    **Authentication:**
+    - OAuth2 for mobile clients and micro-services
+    - Session-based authentication for mobile webviews and browser clients
+
+    **Authorization:**
+    - Course staff and instructors can manage enrollments within their courses
+    - Global staff can manage enrollments across all courses
+
+    **Serialization:**
+    - Dates and timestamps are serialized to ISO 8601 format with explicit timezone offsets
+    - UTC timestamps are preferred
+
+host: courses.example.com
+basePath: /
+schemes:
+  - https
+
+securityDefinitions:
+  OAuth2:
+    type: oauth2
+    flow: accessCode
+    authorizationUrl: https://courses.example.com/oauth2/authorize
+    tokenUrl: https://courses.example.com/oauth2/token
+    scopes:
+      read: Read access to enrollment data
+      write: Write access to manage enrollments
+  SessionAuth:
+    type: apiKey
+    in: header
+    name: Cookie
+    description: Session-based authentication using Django session cookies
+
+security:
+  - OAuth2: [read, write]
+  - SessionAuth: []
+
+tags:
+  - name: Enrollments
+    description: Course enrollment operations
+
+paths:
+  /api/instructor/v2/courses/{course_id}/enrollments:
+    get:
+      tags:
+        - Enrollments
+      summary: List course enrollments
+      description: |
+        Retrieve a paginated list of all active enrollments for a course.
+
+        **Performance:** Returns basic enrollment data by default. Use `requested_fields`
+        parameter to include additional data such as profile images or beta tester status.
+
+        **Pagination:** Uses DRF standard pagination format with `next`, `previous`,
+        `count`, `num_pages`, and `results` fields.
+      operationId: listEnrollments
+      produces:
+        - application/json
+      parameters:
+        - $ref: '#/parameters/CourseId'
+        - name: page
+          in: query
+          description: Page number (1-indexed)
+          required: false
+          type: integer
+          minimum: 1
+          default: 1
+        - name: page_size
+          in: query
+          description: Number of results per page
+          required: false
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 25
+        - name: requested_fields
+          in: query
+          description: |
+            Comma-delimited list of optional fields to include in response.
+            Available fields: `beta_tester`, `profile_image`
+          required: false
+          type: string
+          x-example: "beta_tester,profile_image"
+      responses:
+        200:
+          description: Enrollments retrieved successfully
+          schema:
+            $ref: '#/definitions/EnrollmentList'
+          examples:
+            application/json:
+              count: 1035
+              num_pages: 42
+              next: "/api/instructor/v2/courses/course-v1:edX+DemoX+Demo_Course/enrollments?page=2"
+              previous: null
+              results:
+                - username: "bjohnson"
+                  email: "bela.j@example.com"
+                  full_name: "Bela Johnson"
+                  mode: "audit"
+                  is_active: true
+                  created: "2024-01-15T10:30:00Z"
+                  beta_tester: false
+                - username: "cpatel"
+                  email: "cyrus.patel@example.com"
+                  full_name: "Cyrus Patel"
+                  mode: "audit"
+                  is_active: true
+                  created: "2024-01-16T14:22:00Z"
+                  beta_tester: false
+        400:
+          $ref: '#/responses/BadRequest'
+        401:
+          $ref: '#/responses/Unauthorized'
+        403:
+          $ref: '#/responses/Forbidden'
+        404:
+          $ref: '#/responses/NotFound'
+
+  /api/instructor/v2/courses/{course_id}/enrollments/modify:
+    post:
+      tags:
+        - Enrollments
+      summary: Enroll or unenroll learners
+      description: |
+        Enroll or unenroll one or more learners in a course by email or username.
+
+        **Enroll behavior:**
+        - If user exists and is active: Enrolls immediately
+        - If user does not exist: Creates CourseEnrollmentAllowed record
+        - When the user registers, they will be auto-enrolled if `auto_enroll` is true
+
+        **Unenroll behavior:**
+        - If user is enrolled: Deactivates the enrollment
+        - If user has CourseEnrollmentAllowed: Deletes the allowed enrollment
+
+        **Invalid identifiers:**
+        - Identifiers that are neither a valid email nor a known username return
+          `invalid_identifier: true` with no `before`/`after` state
+
+        **Email Notifications:**
+        - Controlled by `email_students` parameter
+        - Enroll (registered user): Uses "enrolled_enroll" message type
+        - Enroll (unregistered): Uses "allowed_enroll" message type
+        - Unenroll (enrolled): Uses "enrolled_unenroll" message type
+        - Unenroll (allowed): Uses "allowed_unenroll" message type
+      operationId: modifyEnrollments
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - $ref: '#/parameters/CourseId'
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/EnrollmentModifyRequest'
+      responses:
+        200:
+          description: Per-identifier results returned (may include both successes and failures)
+          schema:
+            $ref: '#/definitions/EnrollmentModifyResponse'
+          examples:
+            application/json:
+              action: "enroll"
+              auto_enroll: false
+              results:
+                - identifier: "john@example.com"
+                  before:
+                    user: true
+                    enrollment: false
+                    allowed: false
+                    auto_enroll: false
+                  after:
+                    user: true
+                    enrollment: true
+                    allowed: false
+                    auto_enroll: false
+                - identifier: "not-an-email"
+                  invalid_identifier: true
+        400:
+          $ref: '#/responses/BadRequest'
+        401:
+          $ref: '#/responses/Unauthorized'
+        403:
+          $ref: '#/responses/Forbidden'
+
+# ==================== COMPONENTS ====================
+
+parameters:
+  CourseId:
+    name: course_id
+    in: path
+    required: true
+    description: Course identifier in format `course-v1:{org}+{course}+{run}`
+    type: string
+    pattern: '^course-v1:[^/+]+(\+[^/+]+)+(\+[^/]+)$'
+    x-example: "course-v1:edX+DemoX+Demo_Course"
+
+responses:
+  BadRequest:
+    description: Bad request - Invalid parameters or malformed request
+    schema:
+      $ref: '#/definitions/Error'
+    examples:
+      application/json:
+        error_code: "INVALID_PARAMETER"
+        developer_message: "Invalid course key format"
+        user_message: "The course identifier is not valid"
+        status_code: 400
+
+  Unauthorized:
+    description: Unauthorized - Authentication required
+    schema:
+      $ref: '#/definitions/Error'
+    examples:
+      application/json:
+        error_code: "AUTHENTICATION_REQUIRED"
+        developer_message: "You must be authenticated to access this endpoint"
+        user_message: "Please log in to continue"
+        status_code: 401
+
+  Forbidden:
+    description: Forbidden - Insufficient permissions
+    schema:
+      $ref: '#/definitions/Error'
+    examples:
+      application/json:
+        error_code: "PERMISSION_DENIED"
+        developer_message: "You do not have the required permissions for this course"
+        user_message: "You do not have permission to perform this action"
+        status_code: 403
+
+  NotFound:
+    description: Not found - Resource does not exist
+    schema:
+      $ref: '#/definitions/Error'
+    examples:
+      application/json:
+        error_code: "RESOURCE_NOT_FOUND"
+        developer_message: "The specified resource does not exist"
+        user_message: "The requested item could not be found"
+        status_code: 404
+
+definitions:
+  EnrollmentList:
+    type: object
+    description: Paginated list of enrollments
+    required:
+      - count
+      - results
+    properties:
+      count:
+        type: integer
+        description: Total number of enrollments across all pages
+        example: 1035
+      num_pages:
+        type: integer
+        description: Total number of pages
+        example: 42
+      next:
+        type: string
+        format: uri
+        description: URL to the next page of results
+        x-nullable: true
+        example: "/api/instructor/v2/courses/course-v1:edX+DemoX+Demo_Course/enrollments?page=2"
+      previous:
+        type: string
+        format: uri
+        description: URL to the previous page of results
+        x-nullable: true
+      results:
+        type: array
+        description: List of enrollments on this page
+        items:
+          $ref: '#/definitions/Enrollment'
+
+  Enrollment:
+    type: object
+    description: Learner enrollment information
+    required:
+      - username
+      - email
+      - full_name
+      - is_active
+    properties:
+      username:
+        type: string
+        description: Learner's username
+        example: "john_harvard"
+      email:
+        type: string
+        format: email
+        description: Learner's email address
+        example: "john@example.com"
+      full_name:
+        type: string
+        description: Learner's full name
+        example: "John Harvard"
+      mode:
+        type: string
+        description: Enrollment mode (audit, honor, verified, professional, etc.)
+        x-nullable: true
+        example: "audit"
+      is_active:
+        type: boolean
+        description: Whether the enrollment is active
+        example: true
+      created:
+        type: string
+        format: date-time
+        description: Enrollment creation timestamp (ISO 8601 format with timezone)
+        x-nullable: true
+        example: "2024-01-15T10:30:00Z"
+      beta_tester:
+        type: boolean
+        description: Whether learner is a beta tester (only present if requested_fields includes beta_tester)
+        x-nullable: true
+        example: false
+      profile_image:
+        type: object
+        description: Learner's profile image URLs (only present if requested_fields includes profile_image)
+        x-nullable: true
+        properties:
+          has_image:
+            type: boolean
+            description: Whether the user has uploaded a profile image
+          image_url_full:
+            type: string
+            format: uri
+            description: Full size image URL
+          image_url_large:
+            type: string
+            format: uri
+            description: Large thumbnail URL
+          image_url_medium:
+            type: string
+            format: uri
+            description: Medium thumbnail URL
+          image_url_small:
+            type: string
+            format: uri
+            description: Small thumbnail URL
+
+  EnrollmentModifyRequest:
+    type: object
+    description: Request body for enrolling or unenrolling learners
+    required:
+      - identifier
+      - action
+    properties:
+      identifier:
+        type: array
+        description: List of email addresses or usernames to enroll/unenroll
+        minItems: 1
+        items:
+          type: string
+          maxLength: 255
+        example: ["john@example.com", "jane_doe"]
+      action:
+        type: string
+        enum: ["enroll", "unenroll"]
+        description: The enrollment action to perform
+      auto_enroll:
+        type: boolean
+        description: Auto-enroll user when they register (for non-registered users, enroll action only)
+        default: false
+      email_students:
+        type: boolean
+        description: Send email notification to learners
+        default: false
+      reason:
+        type: string
+        description: Reason for the change (for audit trail)
+        default: ""
+
+  EnrollmentModifyResponse:
+    type: object
+    description: Result from an enrollment modify operation
+    required:
+      - action
+      - auto_enroll
+      - results
+    properties:
+      action:
+        type: string
+        enum: ["enroll", "unenroll"]
+        description: The action that was performed
+      auto_enroll:
+        type: boolean
+        description: The auto_enroll value from the request
+      results:
+        type: array
+        description: Per-identifier results
+        items:
+          $ref: '#/definitions/EnrollmentModifyResult'
+
+  EnrollmentModifyResult:
+    type: object
+    description: |
+      Result for a single identifier. On success, contains `before` and `after` state.
+      On invalid identifier, contains `invalid_identifier: true` with no state.
+      On error, contains `error: true` with no state.
+    required:
+      - identifier
+    properties:
+      identifier:
+        type: string
+        description: Email or username that was processed
+      before:
+        $ref: '#/definitions/EnrollmentState'
+        description: Enrollment state before the operation (absent on error or invalid identifier)
+      after:
+        $ref: '#/definitions/EnrollmentState'
+        description: Enrollment state after the operation (absent on error or invalid identifier)
+      invalid_identifier:
+        type: boolean
+        description: True if the identifier is not a valid email and not a known username
+      error:
+        type: boolean
+        description: True if an unexpected error occurred processing this identifier
+
+  EnrollmentState:
+    type: object
+    description: Snapshot of a learner's enrollment state (mirrors EmailEnrollmentState.to_dict)
+    required:
+      - user
+      - enrollment
+      - allowed
+      - auto_enroll
+    properties:
+      user:
+        type: boolean
+        description: Whether a registered user exists for this identifier
+      enrollment:
+        type: boolean
+        description: Whether the user has an active enrollment
+      allowed:
+        type: boolean
+        description: Whether a CourseEnrollmentAllowed record exists
+      auto_enroll:
+        type: boolean
+        description: Whether auto_enroll is set on the CourseEnrollmentAllowed record
+
+  Error:
+    type: object
+    description: Error response
+    required:
+      - error_code
+      - developer_message
+      - user_message
+      - status_code
+    properties:
+      error_code:
+        type: string
+        description: Machine-readable error code
+        example: "RESOURCE_NOT_FOUND"
+      developer_message:
+        type: string
+        description: Verbose, plain language description of the problem for developers
+        example: "The specified course does not exist in the modulestore"
+      user_message:
+        type: string
+        description: User-friendly error message (internationalized)
+        example: "The requested course could not be found"
+      status_code:
+        type: integer
+        description: HTTP status code
+        example: 404
+      field_errors:
+        type: object
+        description: Field-specific validation errors (if applicable)
+        x-nullable: true
+        additionalProperties:
+          type: object
+          properties:
+            developer_message:
+              type: string
+              description: Technical error details
+            user_message:
+              type: string
+              description: User-friendly error message

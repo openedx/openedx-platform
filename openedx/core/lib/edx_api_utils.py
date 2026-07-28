@@ -2,7 +2,7 @@
 
 
 import logging
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union  # noqa: UP035
 from urllib.parse import urljoin
 
 from django.core.cache import cache
@@ -28,15 +28,15 @@ def get_api_data(
     resource: str,
     api_client: "session",
     base_api_url: str,
-    resource_id: Optional[Union[int, str]] = None,
-    querystring: Optional[Dict[Any, Any]] = None,
-    cache_key: Optional[str] = None,
+    resource_id: Optional[Union[int, str]] = None,  # noqa: UP007, UP045
+    querystring: Optional[Dict[Any, Any]] = None,  # noqa: UP006, UP045
+    cache_key: Optional[str] = None,  # noqa: UP045
     many: bool = True,
     traverse_pagination: bool = True,
-    fields: Optional[List[Any]] = None,
+    fields: Optional[List[Any]] = None,  # noqa: UP006, UP045
     long_term_cache: bool = False,
     raise_on_error: bool = False,
-) -> Union[List[Any], Dict[Any, Any]]:
+) -> Union[List[Any], Dict[Any, Any]]:  # noqa: UP006, UP007
     """
     GET data from an edX REST API endpoint using the API client.
 

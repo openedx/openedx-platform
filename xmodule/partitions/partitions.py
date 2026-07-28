@@ -17,7 +17,7 @@ from stevedore.extension import ExtensionManager
 # * 1 -> 49: Unused/Reserved
 # * 50: The enrollment track partition
 # * 51: The content type gating partition (defined elsewhere)
-# * 52-99: Available for other single user partitions, plugged in via setup.py.
+# * 52-99: Available for other single user partitions, plugged in via entry points.
 #          Operators, beware of conflicting IDs between plugins!
 # * 100 -> 2^31-1: General namespace for generating IDs at runtime.
 #                  This includes, at least: content partitions, the cohort partition, and teamset partitions.
@@ -31,28 +31,28 @@ class UserPartitionError(Exception):
     """
     Base Exception for when an error was found regarding user partitions.
     """
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 class NoSuchUserPartitionError(UserPartitionError):
     """
     Exception to be raised when looking up a UserPartition by its ID fails.
     """
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 class NoSuchUserPartitionGroupError(UserPartitionError):
     """
     Exception to be raised when looking up a UserPartition Group by its ID fails.
     """
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 class ReadOnlyUserPartitionError(UserPartitionError):
     """
     Exception to be raised when attempting to modify a read only partition.
     """
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 class Group(namedtuple("Group", "id name")):
@@ -95,11 +95,11 @@ class Group(namedtuple("Group", "id name")):
 
         for key in ("id", "name", "version"):
             if key not in value:
-                raise TypeError("Group dict {} missing value key '{}'".format(
+                raise TypeError("Group dict {} missing value key '{}'".format(  # noqa: UP032
                     value, key))
 
         if value["version"] != Group.VERSION:
-            raise TypeError("Group dict {} has unexpected version".format(
+            raise TypeError("Group dict {} has unexpected version".format(  # noqa: UP032
                 value))
 
         return Group(value["id"], value["name"])
@@ -152,9 +152,9 @@ class UserPartition(namedtuple("UserPartition", "id name description groups sche
         if not UserPartition.scheme_extensions:
             UserPartition.scheme_extensions = ExtensionManager(namespace=USER_PARTITION_SCHEME_NAMESPACE)
         try:
-            scheme = UserPartition.scheme_extensions[name].plugin  # lint-amnesty, pylint: disable=unsubscriptable-object
+            scheme = UserPartition.scheme_extensions[name].plugin  # pylint: disable=unsubscriptable-object
         except KeyError:
-            raise UserPartitionError(f"Unrecognized scheme '{name}'")  # lint-amnesty, pylint: disable=raise-missing-from
+            raise UserPartitionError(f"Unrecognized scheme '{name}'")  # pylint: disable=raise-missing-from  # noqa: B904
         scheme.name = name
         return scheme
 
@@ -216,7 +216,7 @@ class UserPartition(namedtuple("UserPartition", "id name description groups sche
             raise TypeError(f"UserPartition dict {value} has unrecognized scheme {scheme_id}")
 
         if getattr(scheme, 'read_only', False):
-            raise ReadOnlyUserPartitionError(f"UserPartition dict {value} uses scheme {scheme_id} which is read only")  # lint-amnesty, pylint: disable=line-too-long
+            raise ReadOnlyUserPartitionError(f"UserPartition dict {value} uses scheme {scheme_id} which is read only")  # pylint: disable=line-too-long
 
         if hasattr(scheme, "create_user_partition"):
             return scheme.create_user_partition(
@@ -254,12 +254,12 @@ class UserPartition(namedtuple("UserPartition", "id name description groups sche
                 return group
 
         raise NoSuchUserPartitionGroupError(
-            "Could not find a Group with ID [{group_id}] in UserPartition [{partition_id}].".format(
+            "Could not find a Group with ID [{group_id}] in UserPartition [{partition_id}].".format(  # noqa: UP032
                 group_id=group_id, partition_id=self.id
             )
         )
 
-    def access_denied_message(self, block_key, user, user_group, allowed_groups):  # lint-amnesty, pylint: disable=unused-argument
+    def access_denied_message(self, block_key, user, user_group, allowed_groups):  # pylint: disable=unused-argument
         """
         Return a message that should be displayed to the user when they are not allowed to access
         content managed by this partition, or None if there is no applicable message.
@@ -274,7 +274,7 @@ class UserPartition(namedtuple("UserPartition", "id name description groups sche
         """
         return None
 
-    def access_denied_fragment(self, block, user, user_group, allowed_groups):  # lint-amnesty, pylint: disable=unused-argument
+    def access_denied_fragment(self, block, user, user_group, allowed_groups):  # pylint: disable=unused-argument
         """
         Return an html fragment that should be displayed to the user when they are not allowed to access
         content managed by this partition, or None if there is no applicable message.

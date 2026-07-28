@@ -1,22 +1,18 @@
 """
 Test that various filters are fired for views in the certificates app.
 """
-from django.conf import settings
 from django.http import HttpResponse
 from django.test import override_settings
 from openedx_filters import PipelineStep
 from openedx_filters.learning.filters import CertificateRenderStarted
 from rest_framework import status
-from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
 
 from lms.djangoapps.certificates.models import CertificateTemplate
 from lms.djangoapps.certificates.tests.test_webview_views import CommonCertificatesTestCase
 from lms.djangoapps.certificates.utils import get_certificate_url
 from openedx.core.djangoapps.site_configuration.tests.test_util import with_site_configuration
 from openedx.core.djangolib.testing.utils import skip_unless_lms
-
-FEATURES_WITH_CERTS_ENABLED = settings.FEATURES.copy()
-FEATURES_WITH_CERTS_ENABLED['CERTIFICATES_HTML_VIEW'] = True
+from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
 
 
 class TestStopCertificateRenderStep(PipelineStep):
@@ -120,7 +116,7 @@ class CertificateFiltersTest(CommonCertificatesTestCase, SharedModuleStoreTestCa
                 "fail_silently": False,
             },
         },
-        FEATURES=FEATURES_WITH_CERTS_ENABLED,
+        CERTIFICATES_HTML_VIEW=True,
     )
     def test_certificate_render_filter_executed(self):
         """
@@ -154,7 +150,7 @@ class CertificateFiltersTest(CommonCertificatesTestCase, SharedModuleStoreTestCa
                 "fail_silently": False,
             },
         },
-        FEATURES=FEATURES_WITH_CERTS_ENABLED,
+        CERTIFICATES_HTML_VIEW=True,
     )
     def test_certificate_render_invalid(self):
         """
@@ -186,7 +182,7 @@ class CertificateFiltersTest(CommonCertificatesTestCase, SharedModuleStoreTestCa
                 "fail_silently": False,
             },
         },
-        FEATURES=FEATURES_WITH_CERTS_ENABLED,
+        CERTIFICATES_HTML_VIEW=True,
     )
     def test_certificate_redirect(self):
         """
@@ -205,8 +201,8 @@ class CertificateFiltersTest(CommonCertificatesTestCase, SharedModuleStoreTestCa
 
         response = self.client.get(test_url)
 
-        self.assertEqual(status.HTTP_302_FOUND, response.status_code)
-        self.assertEqual("https://certificate.pdf", response.url)
+        self.assertEqual(status.HTTP_302_FOUND, response.status_code)  # noqa: PT009
+        self.assertEqual("https://certificate.pdf", response.url)  # noqa: PT009
 
     @override_settings(
         OPEN_EDX_FILTERS_CONFIG={
@@ -217,7 +213,7 @@ class CertificateFiltersTest(CommonCertificatesTestCase, SharedModuleStoreTestCa
                 "fail_silently": False,
             },
         },
-        FEATURES=FEATURES_WITH_CERTS_ENABLED,
+        CERTIFICATES_HTML_VIEW=True,
     )
     def test_certificate_render_custom_response(self):
         """
@@ -240,7 +236,7 @@ class CertificateFiltersTest(CommonCertificatesTestCase, SharedModuleStoreTestCa
 
     @override_settings(
         OPEN_EDX_FILTERS_CONFIG={},
-        FEATURES=FEATURES_WITH_CERTS_ENABLED,
+        CERTIFICATES_HTML_VIEW=True,
     )
     @with_site_configuration(
         configuration={
@@ -265,5 +261,5 @@ class CertificateFiltersTest(CommonCertificatesTestCase, SharedModuleStoreTestCa
 
         response = self.client.get(test_url)
 
-        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertEqual(status.HTTP_200_OK, response.status_code)  # noqa: PT009
         self.assertContains(response, "My Platform Site")

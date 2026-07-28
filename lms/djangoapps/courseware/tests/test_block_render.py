@@ -3,62 +3,60 @@ Test for lms courseware app, block render unit
 """
 import json
 import textwrap
+import warnings
 from datetime import datetime
 from functools import partial
 from unittest.mock import MagicMock, Mock, patch
-import warnings
 
-import pytest
 import ddt
+import pytest
 import pytz
 from bson import ObjectId
-from completion.waffle import ENABLE_COMPLETION_TRACKING_SWITCH  # lint-amnesty, pylint: disable=wrong-import-order
-from completion.models import BlockCompletion  # lint-amnesty, pylint: disable=wrong-import-order
-from django.conf import settings  # lint-amnesty, pylint: disable=wrong-import-order
-from django.contrib.auth.models import AnonymousUser  # lint-amnesty, pylint: disable=wrong-import-order
-from django.http import Http404, HttpResponse  # lint-amnesty, pylint: disable=wrong-import-order
-from django.middleware.csrf import get_token  # lint-amnesty, pylint: disable=wrong-import-order
-from django.test.client import RequestFactory  # lint-amnesty, pylint: disable=wrong-import-order
-from django.test.utils import override_settings  # lint-amnesty, pylint: disable=wrong-import-order
-from django.urls import reverse  # lint-amnesty, pylint: disable=wrong-import-order
-from edx_proctoring.api import create_exam, create_exam_attempt, update_attempt_status  # lint-amnesty, pylint: disable=wrong-import-order
-from edx_proctoring.runtime import set_runtime_service  # lint-amnesty, pylint: disable=wrong-import-order
-from edx_proctoring.tests.test_services import MockCertificateService, MockCreditService, MockGradesService  # lint-amnesty, pylint: disable=wrong-import-order
-from edx_toggles.toggles.testutils import override_waffle_switch  # lint-amnesty, pylint: disable=wrong-import-order
-from edx_when.field_data import DateLookupFieldData  # lint-amnesty, pylint: disable=wrong-import-order
-from freezegun import freeze_time  # lint-amnesty, pylint: disable=wrong-import-order
-from milestones.tests.utils import MilestonesTestCaseMixin  # lint-amnesty, pylint: disable=wrong-import-order
-from opaque_keys.edx.asides import AsideUsageKeyV2  # lint-amnesty, pylint: disable=wrong-import-order
-from opaque_keys.edx.keys import CourseKey, UsageKey  # lint-amnesty, pylint: disable=wrong-import-order
-from pyquery import PyQuery  # lint-amnesty, pylint: disable=wrong-import-order
-from web_fragments.fragment import Fragment  # lint-amnesty, pylint: disable=wrong-import-order
-from xblock.completable import CompletableXBlockMixin  # lint-amnesty, pylint: disable=wrong-import-order
-from xblock.core import XBlock, XBlockAside  # lint-amnesty, pylint: disable=wrong-import-order
-from xblock.exceptions import NoSuchServiceError
-from xblock.field_data import FieldData  # lint-amnesty, pylint: disable=wrong-import-order
-from xblock.fields import ScopeIds  # lint-amnesty, pylint: disable=wrong-import-order
-from xblock.runtime import DictKeyValueStore, KvsFieldData  # lint-amnesty, pylint: disable=wrong-import-order
-from xblock.test.tools import TestRuntime  # lint-amnesty, pylint: disable=wrong-import-order
-
-from xmodule.capa.tests.response_xml_factory import OptionResponseXMLFactory  # lint-amnesty, pylint: disable=reimported
-from xmodule.capa_block import ProblemBlock
-from xmodule.contentstore.django import contentstore
-from xmodule.html_block import AboutBlock, CourseInfoBlock, HtmlBlock, StaticTabBlock
-from xmodule.lti_block import LTIBlock
-from xmodule.modulestore import ModuleStoreEnum
-from xmodule.modulestore.django import XBlockI18nService, modulestore
-from xmodule.modulestore.tests.django_utils import (
-    TEST_DATA_SPLIT_MODULESTORE,
-    ModuleStoreTestCase,
-    SharedModuleStoreTestCase,
-    upload_file_to_course,
+from completion.models import BlockCompletion  # pylint: disable=wrong-import-order
+from completion.waffle import ENABLE_COMPLETION_TRACKING_SWITCH  # pylint: disable=wrong-import-order
+from django.conf import settings  # pylint: disable=wrong-import-order
+from django.contrib.auth.models import AnonymousUser  # pylint: disable=wrong-import-order
+from django.http import Http404, HttpResponse  # pylint: disable=wrong-import-order
+from django.middleware.csrf import get_token  # pylint: disable=wrong-import-order
+from django.test.client import RequestFactory  # pylint: disable=wrong-import-order
+from django.test.utils import override_settings  # pylint: disable=wrong-import-order
+from django.urls import reverse  # pylint: disable=wrong-import-order
+from edx_proctoring.api import (  # pylint: disable=wrong-import-order
+    create_exam,
+    create_exam_attempt,
+    update_attempt_status,
 )
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory, ToyCourseFactory, check_mongo_calls  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.test_asides import AsideTestType  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.services import RebindUserServiceError
-from xmodule.video_block import VideoBlock  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.x_module import STUDENT_VIEW, ModuleStoreRuntime  # lint-amnesty, pylint: disable=wrong-import-order
-from common.djangoapps.course_modes.models import CourseMode  # lint-amnesty, pylint: disable=reimported
+from edx_proctoring.runtime import set_runtime_service  # pylint: disable=wrong-import-order
+from edx_proctoring.tests.test_services import (  # pylint: disable=wrong-import-order
+    MockCertificateService,
+    MockCreditService,
+    MockGradesService,
+)
+from edx_toggles.toggles.testutils import override_waffle_switch  # pylint: disable=wrong-import-order
+from edx_when.field_data import DateLookupFieldData  # pylint: disable=wrong-import-order
+from freezegun import freeze_time  # pylint: disable=wrong-import-order
+from milestones.tests.utils import MilestonesTestCaseMixin  # pylint: disable=wrong-import-order
+from opaque_keys.edx.asides import AsideUsageKeyV2  # pylint: disable=wrong-import-order
+from opaque_keys.edx.keys import CourseKey, UsageKey  # pylint: disable=wrong-import-order
+from pyquery import PyQuery  # pylint: disable=wrong-import-order
+from web_fragments.fragment import Fragment  # pylint: disable=wrong-import-order
+from xblock.completable import CompletableXBlockMixin  # pylint: disable=wrong-import-order
+from xblock.core import XBlock, XBlockAside  # pylint: disable=wrong-import-order
+from xblock.exceptions import NoSuchServiceError
+from xblock.field_data import FieldData  # pylint: disable=wrong-import-order
+from xblock.fields import ScopeIds  # pylint: disable=wrong-import-order
+from xblock.runtime import (  # pylint: disable=wrong-import-order
+    DictKeyValueStore,
+    KvsFieldData,
+    Mixologist,  # pylint: disable=wrong-import-order
+)
+from xblock.test.tools import TestRuntime  # pylint: disable=wrong-import-order
+from xblocks_contrib.problem.capa.tests.response_xml_factory import (
+    OptionResponseXMLFactory,  # pylint: disable=reimported
+)
+
+from common.djangoapps.course_modes.models import CourseMode  # pylint: disable=reimported
+from common.djangoapps.student.models import CourseEnrollment, anonymous_id_for_user
 from common.djangoapps.student.tests.factories import (
     BetaTesterFactory,
     GlobalStaffFactory,
@@ -75,18 +73,20 @@ from common.djangoapps.xblock_django.constants import (
     ATTR_KEY_USER_IS_STAFF,
     ATTR_KEY_USER_ROLE,
 )
+from common.djangoapps.xblock_django.models import XBlockConfiguration
 from lms.djangoapps.courseware import block_render as render
 from lms.djangoapps.courseware.access_response import AccessResponse
+from lms.djangoapps.courseware.block_render import get_block_for_descriptor, hash_resource
 from lms.djangoapps.courseware.courses import get_course_info_section, get_course_with_access
 from lms.djangoapps.courseware.field_overrides import OverrideFieldData
 from lms.djangoapps.courseware.masquerade import CourseMasquerade
 from lms.djangoapps.courseware.model_data import FieldDataCache
 from lms.djangoapps.courseware.models import StudentModule
-from lms.djangoapps.courseware.block_render import get_block_for_descriptor, hash_resource
 from lms.djangoapps.courseware.tests.factories import StudentModuleFactory
 from lms.djangoapps.courseware.tests.test_submitting_problems import TestSubmittingProblems
 from lms.djangoapps.courseware.tests.tests import LoginEnrollmentTestCase
 from lms.djangoapps.lms_xblock.field_data import LmsFieldData
+from lms.djangoapps.verify_student.tests.factories import SoftwareSecurePhotoVerificationFactory
 from openedx.core.djangoapps.credit.api import set_credit_requirement_status, set_credit_requirements
 from openedx.core.djangoapps.credit.models import CreditCourse
 from openedx.core.djangoapps.oauth_dispatch.jwt import _create_jwt, create_jwt_for_user
@@ -94,10 +94,28 @@ from openedx.core.djangoapps.oauth_dispatch.tests.factories import AccessTokenFa
 from openedx.core.lib.courses import course_image_url
 from openedx.core.lib.gating import api as gating_api
 from openedx.core.lib.url_utils import quote_slashes
-from common.djangoapps.student.models import CourseEnrollment, anonymous_id_for_user
-from lms.djangoapps.verify_student.tests.factories import SoftwareSecurePhotoVerificationFactory
-from common.djangoapps.xblock_django.models import XBlockConfiguration
-
+from xmodule.capa_block import ProblemBlock
+from xmodule.contentstore.django import contentstore
+from xmodule.html_block import AboutBlock, CourseInfoBlock, HtmlBlock, StaticTabBlock
+from xmodule.lti_block import LTIBlock
+from xmodule.modulestore import ModuleStoreEnum
+from xmodule.modulestore.django import XBlockI18nService, modulestore
+from xmodule.modulestore.tests.django_utils import (
+    TEST_DATA_SPLIT_MODULESTORE,
+    ModuleStoreTestCase,
+    SharedModuleStoreTestCase,
+    upload_file_to_course,
+)
+from xmodule.modulestore.tests.factories import (  # pylint: disable=wrong-import-order
+    BlockFactory,
+    CourseFactory,
+    ToyCourseFactory,
+    check_mongo_calls,
+)
+from xmodule.modulestore.tests.test_asides import AsideTestType  # pylint: disable=wrong-import-order
+from xmodule.services import RebindUserServiceError
+from xmodule.video_block import VideoBlock  # pylint: disable=wrong-import-order
+from xmodule.x_module import STUDENT_VIEW, ModuleStoreRuntime  # pylint: disable=wrong-import-order
 
 TEST_DATA_DIR = settings.COMMON_TEST_DATA_ROOT
 
@@ -132,7 +150,7 @@ class PureXBlock(XBlock):
     """
     Pure XBlock to use in tests.
     """
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 class GradedStatelessXBlock(XBlock):
@@ -166,7 +184,7 @@ class StubCompletableXBlock(CompletableXBlockMixin):
         """
         Mark the block's completion value using the completion API.
         """
-        return self.runtime.publish(  # lint-amnesty, pylint: disable=no-member
+        return self.runtime.publish(  # pylint: disable=no-member
             self,
             'completion',
             {'completion': json_data['completion']},
@@ -179,7 +197,7 @@ class StubCompletableXBlock(CompletableXBlockMixin):
 
         New code should use the completion event instead.
         """
-        return self.runtime.publish(self, 'progress', {})  # lint-amnesty, pylint: disable=no-member
+        return self.runtime.publish(self, 'progress', {})  # pylint: disable=no-member
 
 
 class XBlockWithoutCompletionAPI(XBlock):
@@ -298,7 +316,7 @@ class BlockRenderTestCase(SharedModuleStoreTestCase, LoginEnrollmentTestCase):
             )
 
         # Verify that handle ajax is called with the correct data
-        request.POST._mutable = True  # lint-amnesty, pylint: disable=protected-access
+        request.POST._mutable = True  # pylint: disable=protected-access
         request.POST['queuekey'] = fake_key
         self.mock_block.handle_ajax.assert_called_once_with(self.dispatch, request.POST)
 
@@ -310,7 +328,7 @@ class BlockRenderTestCase(SharedModuleStoreTestCase, LoginEnrollmentTestCase):
 
         with patch('lms.djangoapps.courseware.block_render.load_single_xblock', return_value=self.mock_block):
             # Test with missing xqueue data
-            with pytest.raises(Http404):
+            with pytest.raises(Http404):  # noqa: PT012
                 request = self.request_factory.post(self.callback_url, {})
                 render.xqueue_callback(
                     request,
@@ -321,7 +339,7 @@ class BlockRenderTestCase(SharedModuleStoreTestCase, LoginEnrollmentTestCase):
                 )
 
             # Test with missing xqueue_header
-            with pytest.raises(Http404):
+            with pytest.raises(Http404):  # noqa: PT012
                 request = self.request_factory.post(self.callback_url, data)
                 render.xqueue_callback(
                     request,
@@ -485,8 +503,8 @@ class BlockRenderTestCase(SharedModuleStoreTestCase, LoginEnrollmentTestCase):
             def_id = runtime.id_generator.create_definition(block_type)
             usage_id = AsideUsageKeyV2(runtime.id_generator.create_usage(def_id), "aside")
             aside = AsideTestType(scope_ids=ScopeIds('user', block_type, def_id, usage_id), runtime=runtime)
-            aside.content = '%s_new_value11' % block_type
-            aside.data_field = '%s_new_value12' % block_type
+            aside.content = '%s_new_value11' % block_type  # noqa: UP031
+            aside.data_field = '%s_new_value12' % block_type  # noqa: UP031
             aside.has_score = False
 
             modulestore().update_item(item, self.mock_user.id, asides=[aside])
@@ -505,7 +523,7 @@ class BlockRenderTestCase(SharedModuleStoreTestCase, LoginEnrollmentTestCase):
         )
 
         # grab what _field_data was originally set to
-        original_field_data = block._field_data  # lint-amnesty, pylint: disable=no-member, protected-access
+        original_field_data = block._field_data  # pylint: disable=no-member, protected-access
 
         render.get_block_for_descriptor(
             self.mock_user, request, block, field_data_cache, course.id, course=course
@@ -529,13 +547,13 @@ class BlockRenderTestCase(SharedModuleStoreTestCase, LoginEnrollmentTestCase):
 
         # _field_data should now be wrapped by LmsFieldData
         # pylint: disable=protected-access
-        assert isinstance(block._field_data, LmsFieldData)  # lint-amnesty, pylint: disable=no-member
+        assert isinstance(block._field_data, LmsFieldData)  # pylint: disable=no-member
 
         # the LmsFieldData should now wrap OverrideFieldData
-        assert isinstance(block._field_data._authored_data._source, OverrideFieldData)   # lint-amnesty, pylint: disable=no-member, line-too-long
+        assert isinstance(block._field_data._authored_data._source, OverrideFieldData)   # pylint: disable=no-member, line-too-long
 
         # the OverrideFieldData should point to the date FieldData
-        assert isinstance(block._field_data._authored_data._source.fallback, DateLookupFieldData)    # lint-amnesty, pylint: disable=no-member, line-too-long
+        assert isinstance(block._field_data._authored_data._source.fallback, DateLookupFieldData)    # pylint: disable=no-member, line-too-long
         assert block._field_data._authored_data._source.fallback._defaults \
             is block.runtime.service(block, 'field-data-unbound')
 
@@ -677,7 +695,7 @@ class TestHandleXBlockCallback(SharedModuleStoreTestCase, LoginEnrollmentTestCas
             data={'file_id': inputfile}
         )
         request.user = self.mock_user
-        assert render.handle_xblock_callback(request, str(self.course_key), quote_slashes(str(self.location)), 'dummy_handler').content.decode('utf-8') == json.dumps({'success': ('Submission aborted! Your file "%s" is too large (max size: %d MB)' % (inputfile.name, (settings.STUDENT_FILEUPLOAD_MAX_SIZE / (1000 ** 2))))}, indent=2)  # pylint: disable=line-too-long
+        assert render.handle_xblock_callback(request, str(self.course_key), quote_slashes(str(self.location)), 'dummy_handler').content.decode('utf-8') == json.dumps({'success': ('Submission aborted! Your file "%s" is too large (max size: %d MB)' % (inputfile.name, (settings.STUDENT_FILEUPLOAD_MAX_SIZE / (1000 ** 2))))}, indent=2)  # pylint: disable=line-too-long  # noqa: UP031
 
     def test_xblock_dispatch(self):
         request = self.request_factory.post('dummy_url', data={'position': 1})
@@ -864,7 +882,7 @@ class TestHandleXBlockCallback(SharedModuleStoreTestCase, LoginEnrollmentTestCas
         with patch(
             'lms.djangoapps.courseware.block_render.is_xblock_aside',
             return_value=True
-        ), self.assertRaises(Http404):
+        ), self.assertRaises(Http404):  # noqa: PT027
             render.handle_xblock_callback(
                 request,
                 str(course.id),
@@ -1041,16 +1059,16 @@ class TestTOC(ModuleStoreTestCase):
         Sets up the toy course in the modulestore and the request object.
         """
         self.course_key = ToyCourseFactory.create().id  # pylint: disable=attribute-defined-outside-init
-        self.chapter = 'Overview'  # lint-amnesty, pylint: disable=attribute-defined-outside-init
+        self.chapter = 'Overview'  # pylint: disable=attribute-defined-outside-init
         chapter_url = '{}/{}/{}'.format('/courses', self.course_key, self.chapter)
         factory = RequestFactoryNoCsrf()
-        self.request = factory.get(chapter_url)  # lint-amnesty, pylint: disable=attribute-defined-outside-init
+        self.request = factory.get(chapter_url)  # pylint: disable=attribute-defined-outside-init
         self.request.user = UserFactory()
         self.modulestore = self.store._get_modulestore_for_courselike(self.course_key)  # pylint: disable=protected-access, attribute-defined-outside-init
         with self.modulestore.bulk_operations(self.course_key):
             with check_mongo_calls(num_finds, num_sends):
                 self.toy_course = self.store.get_course(self.course_key, depth=2)  # pylint: disable=attribute-defined-outside-init
-                self.field_data_cache = FieldDataCache.cache_for_block_descendents(  # lint-amnesty, pylint: disable=attribute-defined-outside-init
+                self.field_data_cache = FieldDataCache.cache_for_block_descendents(  # pylint: disable=attribute-defined-outside-init
                     self.course_key, self.request.user, self.toy_course, depth=2
                 )
 
@@ -1123,7 +1141,7 @@ class TestTOC(ModuleStoreTestCase):
 
 
 @ddt.ddt
-@patch.dict('django.conf.settings.FEATURES', {'ENABLE_SPECIAL_EXAMS': True})
+@override_settings(ENABLE_SPECIAL_EXAMS=True)
 class TestProctoringRendering(ModuleStoreTestCase):
     """Check the Table of Contents for a course"""
     def setUp(self):
@@ -1708,7 +1726,7 @@ class DetachedXBlock(XBlock):
         return frag
 
 
-@patch.dict('django.conf.settings.FEATURES', {'DISPLAY_DEBUG_INFO_TO_STAFF': True, 'DISPLAY_HISTOGRAMS_TO_STAFF': True})
+@override_settings(DISPLAY_DEBUG_INFO_TO_STAFF=True, DISPLAY_HISTOGRAMS_TO_STAFF=True)
 @patch('lms.djangoapps.courseware.block_render.has_access', Mock(return_value=True, autospec=True))
 class TestStaffDebugInfo(SharedModuleStoreTestCase):
     """Tests to verify that Staff Debug Info panel and histograms are displayed to staff."""
@@ -1746,7 +1764,7 @@ class TestStaffDebugInfo(SharedModuleStoreTestCase):
             self.block
         )
 
-    @patch.dict('django.conf.settings.FEATURES', {'DISPLAY_DEBUG_INFO_TO_STAFF': False})
+    @override_settings(DISPLAY_DEBUG_INFO_TO_STAFF=False)
     def test_staff_debug_info_disabled(self):
         block = render.get_block(
             self.user,
@@ -1828,7 +1846,7 @@ class TestStaffDebugInfo(SharedModuleStoreTestCase):
         result_fragment = block.render(STUDENT_VIEW)
         assert 'Staff Debug' not in result_fragment.content
 
-    @patch.dict('django.conf.settings.FEATURES', {'DISPLAY_HISTOGRAMS_TO_STAFF': False})
+    @override_settings(DISPLAY_HISTOGRAMS_TO_STAFF=False)
     def test_histogram_disabled(self):
         block = render.get_block(
             self.user,
@@ -1915,10 +1933,11 @@ class TestAnonymousStudentId(SharedModuleStoreTestCase, LoginEnrollmentTestCase)
         self.user = UserFactory()
 
     @patch('lms.djangoapps.courseware.block_render.has_access', Mock(return_value=True, autospec=True))
-    def _get_anonymous_id(self, course_id, xblock_class, should_get_deprecated_id: bool):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def _get_anonymous_id(self, course_id, xblock_class, should_get_deprecated_id: bool):  # pylint: disable=missing-function-docstring
         location = course_id.make_usage_key('dummy_category', 'dummy_name')
+        mixed_class = Mixologist(settings.XBLOCK_MIXINS).mix(xblock_class)
         block = Mock(
-            spec=xblock_class,
+            spec=mixed_class,
             _field_data=Mock(spec=FieldData, name='field_data'),
             location=location,
             static_asset_path=None,
@@ -1937,8 +1956,7 @@ class TestAnonymousStudentId(SharedModuleStoreTestCase, LoginEnrollmentTestCase)
             days_early_for_beta=None,
         )
         block.runtime = ModuleStoreRuntime(None, None, None)
-        # Use the xblock_class's bind_for_student method
-        block.bind_for_student = partial(xblock_class.bind_for_student, block)
+        block.bind_for_student = partial(mixed_class.bind_for_student, block)
 
         if hasattr(xblock_class, 'module_class'):
             block.module_class = xblock_class.module_class
@@ -2239,7 +2257,7 @@ class TestRebindBlock(TestSubmittingProblems):
         block = self.get_block_for_user(self.user)
         user2 = UserFactory()
         user2.id = 2
-        with self.assertRaisesRegex(
+        with self.assertRaisesRegex(  # noqa: PT027
             RebindUserServiceError,
             "rebind_noauth_module_to_user can only be called from a module bound to an anonymous user"
         ):
@@ -2390,11 +2408,11 @@ class LMSXBlockServiceBindingTest(LMSXBlockServiceMixin):
         assert tag == set_value
 
         # Try to set tag in wrong scope
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             self.block.runtime.service(self.block, 'user_tags').set_tag('fake_scope', key, set_value)
 
         # Try to get tag in wrong scope
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             self.block.runtime.service(self.block, 'user_tags').get_tag('fake_scope', key)
 
 
@@ -2497,13 +2515,13 @@ class TestFilteredChildren(SharedModuleStoreTestCase):
 
         # Create a child for each user
         self.children_for_user = {
-            user: BlockFactory(category='xblock', parent=self.parent).scope_ids.usage_id  # lint-amnesty, pylint: disable=no-member
+            user: BlockFactory(category='xblock', parent=self.parent).scope_ids.usage_id  # pylint: disable=no-member
             for user in self.users.values()
         }
 
         self.all_children = self.children_for_user.values()
 
-        return modulestore().get_item(self.parent.scope_ids.usage_id)  # lint-amnesty, pylint: disable=no-member
+        return modulestore().get_item(self.parent.scope_ids.usage_id)  # pylint: disable=no-member
 
     def _bind_block(self, block, user):
         """
@@ -2536,7 +2554,7 @@ class TestFilteredChildren(SharedModuleStoreTestCase):
             key = obj.scope_ids.usage_id
         elif isinstance(obj, UsageKey):
             key = obj
-        if key == self.parent.scope_ids.usage_id:  # lint-amnesty, pylint: disable=no-member
+        if key == self.parent.scope_ids.usage_id:  # pylint: disable=no-member
             return AccessResponse(True)
         return AccessResponse(key == self.children_for_user[user])
 
@@ -2595,7 +2613,7 @@ class TestDisabledXBlockTypes(ModuleStoreTestCase):
         """
         if not item_id:
             item = BlockFactory(category=category, parent=course)
-            item_id = item.scope_ids.usage_id  # lint-amnesty, pylint: disable=no-member
+            item_id = item.scope_ids.usage_id  # pylint: disable=no-member
 
         item = self.store.get_item(item_id)
         assert item.__class__.__name__ == block
@@ -2864,7 +2882,7 @@ class LmsModuleSystemShimTest(SharedModuleStoreTestCase):
         assert self.block.runtime.get_python_lib_zip() == zipfile
 
     def test_no_get_python_lib_zip(self):
-        zipfile = upload_file_to_course(
+        zipfile = upload_file_to_course(  # noqa: F841
             course_key=self.course.id,
             contentstore=self.contentstore,
             source_file=self.PYTHON_LIB_SOURCE_FILE,

@@ -1,10 +1,9 @@
 """Tests for static_replace"""
-from functools import partial
-
 import re
+from functools import partial
 from io import BytesIO
 from unittest.mock import Mock, patch
-from urllib.parse import parse_qsl, quote, urlparse, urlunparse, urlencode
+from urllib.parse import parse_qsl, quote, urlencode, urlparse, urlunparse
 
 import ddt
 import pytest
@@ -18,21 +17,26 @@ from common.djangoapps.static_replace import (
     make_static_urls_absolute,
     process_static_urls,
     replace_course_urls,
-    replace_static_urls,
     replace_jump_to_id_urls,
+    replace_static_urls,
 )
 from common.djangoapps.static_replace.services import ReplaceURLService
 from common.djangoapps.static_replace.wrapper import replace_urls_wrapper
-from xmodule.assetstore.assetmgr import AssetManager  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.contentstore.content import StaticContent  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.contentstore.django import contentstore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.exceptions import NotFoundError  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.exceptions import ItemNotFoundError  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.mongo import MongoModuleStore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import CourseFactory, check_mongo_calls  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.xml import XMLModuleStore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.assetstore.assetmgr import AssetManager  # pylint: disable=wrong-import-order
+from xmodule.contentstore.content import StaticContent  # pylint: disable=wrong-import-order
+from xmodule.contentstore.django import contentstore  # pylint: disable=wrong-import-order
+from xmodule.exceptions import NotFoundError  # pylint: disable=wrong-import-order
+from xmodule.modulestore import ModuleStoreEnum  # pylint: disable=wrong-import-order
+from xmodule.modulestore.exceptions import ItemNotFoundError  # pylint: disable=wrong-import-order
+from xmodule.modulestore.mongo import MongoModuleStore  # pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    SharedModuleStoreTestCase,  # pylint: disable=wrong-import-order
+)
+from xmodule.modulestore.tests.factories import (  # pylint: disable=wrong-import-order
+    CourseFactory,
+    check_mongo_calls,
+)
+from xmodule.modulestore.xml import XMLModuleStore  # pylint: disable=wrong-import-order
 
 DATA_DIRECTORY = 'data_dir'
 COURSE_KEY = CourseKey.from_string('org/course/run')
@@ -147,7 +151,7 @@ def test_mongo_filestore(mock_get_excluded_extensions, mock_get_base_url, mock_m
 @patch('common.djangoapps.static_replace.settings', autospec=True)
 @patch('xmodule.modulestore.django.modulestore', autospec=True)
 @patch('common.djangoapps.static_replace.staticfiles_storage', autospec=True)
-def test_data_dir_fallback(mock_storage, mock_modulestore, mock_settings):  # lint-amnesty, pylint: disable=unused-argument
+def test_data_dir_fallback(mock_storage, mock_modulestore, mock_settings):  # pylint: disable=unused-argument
     mock_modulestore.return_value = Mock(XMLModuleStore)
     mock_storage.url.side_effect = Exception
 
@@ -181,8 +185,8 @@ def test_static_url_with_query(mock_modulestore, mock_storage):
     mock_storage.exists.return_value = False
     mock_modulestore.return_value = Mock(MongoModuleStore)
 
-    pre_text = 'EMBED src ="/static/LAlec04_controller.swf?csConfigFile=/static/LAlec04_config.xml&name1=value1&name2=value2"'  # lint-amnesty, pylint: disable=line-too-long
-    post_text = 'EMBED src ="/c4x/org/course/asset/LAlec04_controller.swf?csConfigFile=%2Fc4x%2Forg%2Fcourse%2Fasset%2FLAlec04_config.xml&name1=value1&name2=value2"'  # lint-amnesty, pylint: disable=line-too-long
+    pre_text = 'EMBED src ="/static/LAlec04_controller.swf?csConfigFile=/static/LAlec04_config.xml&name1=value1&name2=value2"'  # pylint: disable=line-too-long
+    post_text = 'EMBED src ="/c4x/org/course/asset/LAlec04_controller.swf?csConfigFile=%2Fc4x%2Forg%2Fcourse%2Fasset%2FLAlec04_config.xml&name1=value1&name2=value2"'  # pylint: disable=line-too-long
     assert replace_static_urls(pre_text, DATA_DIRECTORY, COURSE_KEY) == post_text
 
 
@@ -201,13 +205,13 @@ def test_static_paths_out(mock_modulestore, mock_storage):
     mock_modulestore.return_value = Mock(MongoModuleStore)
 
     static_url = '/static/LAlec04_controller.swf?csConfigFile=/static/LAlec04_config.xml&name1=value1&name2=value2'
-    static_course_url = '/c4x/org/course/asset/LAlec04_controller.swf?csConfigFile=%2Fc4x%2Forg%2Fcourse%2Fasset%2FLAlec04_config.xml&name1=value1&name2=value2'  # lint-amnesty, pylint: disable=line-too-long
+    static_course_url = '/c4x/org/course/asset/LAlec04_controller.swf?csConfigFile=%2Fc4x%2Forg%2Fcourse%2Fasset%2FLAlec04_config.xml&name1=value1&name2=value2'  # pylint: disable=line-too-long
     raw_url = '/static/js/capa/protex/protex.nocache.js?raw'
     xblock_url = '/static/xblock/resources/babys_first.lil_xblock/public/images/pacifier.png'
     # xss-lint: disable=python-wrap-html
     pre_text = f'EMBED src ="{static_url}" xblock={xblock_url} text <tag a="{raw_url}"/><div class="'
     # xss-lint: disable=python-wrap-html
-    post_text = f'EMBED src ="{static_course_url}" xblock={xblock_url} text <tag a="{raw_url}"/><div class="'  # lint-amnesty, pylint: disable=line-too-long
+    post_text = f'EMBED src ="{static_course_url}" xblock={xblock_url} text <tag a="{raw_url}"/><div class="'  # pylint: disable=line-too-long
     static_paths = []
     assert replace_static_urls(pre_text, DATA_DIRECTORY, COURSE_KEY, static_paths_out=static_paths) == post_text
     assert static_paths == [(static_url, static_course_url), (raw_url, raw_url)]

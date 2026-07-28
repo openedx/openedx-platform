@@ -34,6 +34,6 @@ DEPRECATE_YOUTUBE = CourseWaffleFlag(f'{WAFFLE_NAMESPACE}.deprecate_youtube', __
 # .. toggle_tickets: https://github.com/openedx/edx-platform/pull/23375
 ENABLE_DEVSTACK_VIDEO_UPLOADS = WaffleFlag(f'{WAFFLE_NAMESPACE}.enable_devstack_video_uploads', __name__, LOG_PREFIX)
 
-ENABLE_VEM_PIPELINE = CourseWaffleFlag(  # lint-amnesty, pylint: disable=toggle-missing-annotation
+ENABLE_VEM_PIPELINE = CourseWaffleFlag(  # pylint: disable=toggle-missing-annotation
     f'{WAFFLE_NAMESPACE}.enable_vem_pipeline', __name__, LOG_PREFIX
 )

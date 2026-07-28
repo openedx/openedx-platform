@@ -8,9 +8,8 @@ https://openedx.atlassian.net/wiki/display/TNL/User+API
 import datetime
 import logging
 from functools import wraps
-
 from zoneinfo import ZoneInfo
-from consent.models import DataSharingConsent
+
 from django.apps import apps
 from django.conf import settings
 from django.contrib.auth import authenticate, get_user_model, logout
@@ -25,9 +24,6 @@ from edx_ace import ace
 from edx_ace.recipient import Recipient
 from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
 from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
-from enterprise.models import EnterpriseCourseEnrollment, EnterpriseCustomerUser, PendingEnterpriseCustomerUser
-from integrated_channels.degreed.models import DegreedLearnerDataTransmissionAudit
-from integrated_channels.sap_success_factors.models import SapSuccessFactorsLearnerDataTransmissionAudit
 from rest_framework import permissions, status
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.exceptions import UnsupportedMediaType
@@ -39,23 +35,25 @@ from rest_framework.viewsets import ViewSet
 from wiki.models import ArticleRevision
 from wiki.models.pluginbase import RevisionPluginRevision
 
-from common.djangoapps.track import segment
 from common.djangoapps.entitlements.models import CourseEntitlement
 from common.djangoapps.student.models import (  # lint-amnesty, pylint: disable=unused-import
+    AccountRecovery,
     CourseEnrollmentAllowed,
     LoginFailures,
     ManualEnrollmentAudit,
     PendingEmailChange,
     PendingNameChange,
+    PendingSecondaryEmailChange,
     User,
     UserProfile,
     get_potentially_retired_user_by_username,
     get_retired_email_by_email,
     get_retired_username_by_username,
     is_email_retired,
-    is_username_retired,
+    is_username_retired,  # noqa: F401
 )
 from common.djangoapps.student.models_api import confirm_name_change, do_name_change_request, get_pending_name_change
+from common.djangoapps.track import segment
 from lms.djangoapps.certificates.api import clear_pii_from_certificate_records_for_user
 from openedx.core.djangoapps.ace_common.template_context import get_base_template_context
 from openedx.core.djangoapps.api_admin.models import ApiAccessRequest
@@ -66,7 +64,10 @@ from openedx.core.djangoapps.profile_images.images import remove_profile_images
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.core.djangoapps.user_api import accounts
 from openedx.core.djangoapps.user_api.accounts.image_helpers import get_profile_image_names, set_has_profile_image
-from openedx.core.djangoapps.user_api.accounts.utils import handle_retirement_cancellation
+from openedx.core.djangoapps.user_api.accounts.utils import (
+    handle_retirement_cancellation,
+    redact_and_delete_historical_social_auth,
+)
 from openedx.core.djangoapps.user_authn.exceptions import AuthFailedError
 from openedx.core.lib.api.authentication import BearerAuthentication, BearerAuthenticationAllowInactiveUser
 from openedx.core.lib.api.parsers import MergePatchParser
@@ -297,7 +298,6 @@ class AccountViewSet(ViewSet):
         If the user makes the request for her own account, or makes a request for another account and has "is_staff" access, an HTTP 200 "OK" response is returned. The response contains the following values.
 
         * `id`: numerical lms user id in db
-        * `activation_key`: auto-genrated activation key when signed up via email
         * `bio`: null or textual representation of user biographical information ("about me").
         * `country`: An ISO 3166 country code or null.
         * `date_joined`: The date the account was created, in the string format provided by datetime. For example, "2014-08-26T17:52:11Z".
@@ -557,7 +557,7 @@ class DeactivateLogoutView(APIView):
 
         # Ensure the account deletion is not disable
         enable_account_deletion = configuration_helpers.get_value(
-            "ENABLE_ACCOUNT_DELETION", settings.FEATURES.get("ENABLE_ACCOUNT_DELETION", False)
+            "ENABLE_ACCOUNT_DELETION", settings.ENABLE_ACCOUNT_DELETION
         )
 
         if not enable_account_deletion:
@@ -998,7 +998,7 @@ class AccountRetirementStatusView(ViewSet):
             # than one row returned here (due to our MySQL collation being case-insensitive), and need
             # to disambiguate them in Python, which will respect case in the comparison.
             retirement = None
-            if len(retirements) < 1:  # lint-amnesty, pylint: disable=no-else-raise
+            if len(retirements) < 1:  # pylint: disable=no-else-raise
                 raise UserRetirementStatus.DoesNotExist()
             elif len(retirements) >= 1:
                 for r in retirements:
@@ -1024,14 +1024,20 @@ class AccountRetirementStatusView(ViewSet):
 
         ```
         {
-            'usernames': ['user1', 'user2', ...]
+            'usernames': ['user1', 'user2', ...],
+            'redacted_username': 'Value to store in username field',
+            'redacted_email': 'Value to store in email field',
+            'redacted_name': 'Value to store in name field'
         }
         ```
 
-        Deletes a batch of retirement requests by username.
+        Redacts and then deletes a batch of retirement requests by username.
         """
         try:
             usernames = request.data["usernames"]
+            redacted_username = request.data.get("redacted_username", "redacted")
+            redacted_email = request.data.get("redacted_email", "redacted")
+            redacted_name = request.data.get("redacted_name", "redacted")
 
             if not isinstance(usernames, list):
                 raise TypeError("Usernames should be an array.")
@@ -1045,7 +1051,20 @@ class AccountRetirementStatusView(ViewSet):
             if len(usernames) != len(retirements):
                 raise UserRetirementStatus.DoesNotExist("Not all usernames exist in the COMPLETE state.")
 
-            retirements.delete()
+            # Redact PII fields first, then delete. In case an ETL tool is syncing data
+            # to a downstream data warehouse, and treats the deletes as soft-deletes,
+            # the data will have first been redacted, protecting the sensitive PII.
+            # Get the IDs of the retirements to update/delete
+            retirement_ids = list(retirements.values_list('id', flat=True))
+            # Update by IDs
+            UserRetirementStatus.objects.filter(id__in=retirement_ids).update(
+                original_username=redacted_username,
+                original_email=redacted_email,
+                original_name=redacted_name
+            )
+            # Delete by IDs
+            UserRetirementStatus.objects.filter(id__in=retirement_ids, current_state=complete_state).delete()
+
             return Response(status=status.HTTP_204_NO_CONTENT)
         except (RetirementStateError, UserRetirementStatus.DoesNotExist, TypeError) as exc:
             return Response(str(exc), status=status.HTTP_400_BAD_REQUEST)
@@ -1090,6 +1109,7 @@ class LMSAccountRetirementView(ViewSet):
             CreditRequest.retire_user(retirement)
             ApiAccessRequest.retire_user(retirement.user)
             CreditRequirementStatus.retire_user(retirement)
+            redact_and_delete_historical_social_auth(retirement.user.id)
 
             # This signal allows code in higher points of LMS to retire the user as necessary
             USER_RETIRE_LMS_MISC.send(sender=self.__class__, user=retirement.user)
@@ -1154,28 +1174,31 @@ class AccountRetirementView(ViewSet):
             # Retire user information from any certificate records associated with the learner
             self.clear_pii_from_certificate_records(user)
 
-            # Retire data from Enterprise models
-            self.retire_users_data_sharing_consent(username, retired_username)
-            self.retire_sapsf_data_transmission(user)
-            self.retire_degreed_data_transmission(user)
-            self.retire_user_from_pending_enterprise_customer_user(user, retired_email)
             self.retire_entitlement_support_detail(user)
 
             # Retire misc. models that may contain PII of this user
             PendingEmailChange.delete_by_user_value(user, field="user")
             UserOrgTag.delete_by_user_value(user, field="user")
+            PendingSecondaryEmailChange.redact_and_delete_pending_secondary_email(user.id)
+            AccountRecovery.retire_recovery_email(user.id)
 
             # Retire any objects linked to the user via their original email
             CourseEnrollmentAllowed.delete_by_user_value(original_email, field="email")
             UnregisteredLearnerCohortAssignments.delete_by_user_value(original_email, field="email")
 
             # This signal allows code in higher points of LMS to retire the user as necessary
-            USER_RETIRE_LMS_CRITICAL.send(sender=self.__class__, user=user)
+            USER_RETIRE_LMS_CRITICAL.send(
+                sender=self.__class__,
+                user=user,
+                retired_username=retired_username,
+                retired_email=retired_email,
+            )
 
             user.first_name = ""
             user.last_name = ""
             user.is_active = False
             user.username = retired_username
+            user.email = retired_email
             user.save()
         except UserRetirementStatus.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
@@ -1208,32 +1231,6 @@ class AccountRetirementView(ViewSet):
     def delete_users_country_cache(user):
         cache_key = UserProfile.country_cache_key_name(user.id)
         cache.delete(cache_key)
-
-    @staticmethod
-    def retire_users_data_sharing_consent(username, retired_username):
-        DataSharingConsent.objects.filter(username=username).update(username=retired_username)
-
-    @staticmethod
-    def retire_sapsf_data_transmission(user):  # lint-amnesty, pylint: disable=missing-function-docstring
-        for ent_user in EnterpriseCustomerUser.objects.filter(user_id=user.id):
-            for enrollment in EnterpriseCourseEnrollment.objects.filter(enterprise_customer_user=ent_user):
-                audits = SapSuccessFactorsLearnerDataTransmissionAudit.objects.filter(
-                    enterprise_course_enrollment_id=enrollment.id
-                )
-                audits.update(sapsf_user_id="")
-
-    @staticmethod
-    def retire_degreed_data_transmission(user):  # lint-amnesty, pylint: disable=missing-function-docstring
-        for ent_user in EnterpriseCustomerUser.objects.filter(user_id=user.id):
-            for enrollment in EnterpriseCourseEnrollment.objects.filter(enterprise_customer_user=ent_user):
-                audits = DegreedLearnerDataTransmissionAudit.objects.filter(
-                    enterprise_course_enrollment_id=enrollment.id
-                )
-                audits.update(degreed_user_email="")
-
-    @staticmethod
-    def retire_user_from_pending_enterprise_customer_user(user, retired_email):
-        PendingEnterpriseCustomerUser.objects.filter(user_email=user.email).update(user_email=retired_email)
 
     @staticmethod
     def retire_entitlement_support_detail(user):

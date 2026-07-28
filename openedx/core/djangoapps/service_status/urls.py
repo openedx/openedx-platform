@@ -2,6 +2,7 @@
 Django URLs for service status app
 """
 from django.urls import path
+
 from openedx.core.djangoapps.service_status.views import celery_ping, celery_status, index
 
 urlpatterns = [

@@ -1,28 +1,38 @@
 """Tests for embargo app views. """
 
 
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import ddt
-import maxminddb
 import geoip2.database
-
+import maxminddb
+from django.test import override_settings
 from django.urls import reverse
-from django.conf import settings
 
-from .factories import CountryAccessRuleFactory, RestrictedCourseFactory
+from common.djangoapps.student.tests.factories import UserFactory  # pylint: disable=wrong-import-order
+from common.djangoapps.util.testing import UrlResetMixin  # pylint: disable=wrong-import-order
+from lms.djangoapps.course_api.tests.mixins import (
+    CourseApiFactoryMixin,  # pylint: disable=wrong-import-order
+)
+from openedx.core.djangoapps.theming.tests.test_util import (
+    with_comprehensive_theme,  # pylint: disable=wrong-import-order
+)
+from openedx.core.djangolib.testing.utils import (  # pylint: disable=wrong-import-order
+    CacheIsolationTestCase,
+    skip_unless_lms,
+)
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # pylint: disable=wrong-import-order
+)
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
+
 from .. import messages
-from lms.djangoapps.course_api.tests.mixins import CourseApiFactoryMixin  # lint-amnesty, pylint: disable=wrong-import-order
-from openedx.core.djangolib.testing.utils import CacheIsolationTestCase, skip_unless_lms  # lint-amnesty, pylint: disable=wrong-import-order
-from openedx.core.djangoapps.theming.tests.test_util import with_comprehensive_theme  # lint-amnesty, pylint: disable=wrong-import-order
-from common.djangoapps.student.tests.factories import UserFactory  # lint-amnesty, pylint: disable=wrong-import-order
-from common.djangoapps.util.testing import UrlResetMixin  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from .factories import CountryAccessRuleFactory, RestrictedCourseFactory
 
 
 @skip_unless_lms
 @ddt.ddt
+@override_settings(EMBARGO=True)
 class CourseAccessMessageViewTest(CacheIsolationTestCase, UrlResetMixin):
     """Tests for the courseware access message view.
 
@@ -44,10 +54,6 @@ class CourseAccessMessageViewTest(CacheIsolationTestCase, UrlResetMixin):
     ENABLED_CACHES = ['default']
 
     URLCONF_MODULES = ['openedx.core.djangoapps.embargo']
-
-    @patch.dict(settings.FEATURES, {'EMBARGO': True})
-    def setUp(self):
-        super().setUp()
 
     @ddt.data(*list(messages.ENROLL_MESSAGES.keys()))
     def test_enrollment_messages(self, msg_key):
@@ -90,16 +96,16 @@ class CourseAccessMessageViewTest(CacheIsolationTestCase, UrlResetMixin):
 
 
 @skip_unless_lms
+@override_settings(EMBARGO=True)
 class CheckCourseAccessViewTest(CourseApiFactoryMixin, ModuleStoreTestCase):
     """ Tests the course access check endpoint. """
 
-    @patch.dict(settings.FEATURES, {'EMBARGO': True})
     def setUp(self):
         super().setUp()
         self.url = reverse('api_embargo:v1_course_access')
         user = UserFactory(is_staff=True)
-        self.client.login(username=user.username, password=UserFactory._DEFAULT_PASSWORD)  # lint-amnesty, pylint: disable=protected-access
-        self.course_id = str(CourseFactory().id)  # lint-amnesty, pylint: disable=no-member
+        self.client.login(username=user.username, password=UserFactory._DEFAULT_PASSWORD)  # pylint: disable=protected-access
+        self.course_id = str(CourseFactory().id)  # pylint: disable=no-member
         self.request_data = {
             'course_ids': [self.course_id],
             'ip_address': '0.0.0.0',
@@ -152,7 +158,7 @@ class CheckCourseAccessViewTest(CourseApiFactoryMixin, ModuleStoreTestCase):
 
     def test_course_access_endpoint_with_non_staff_user(self):
         user = UserFactory(is_staff=False)
-        self.client.login(username=user.username, password=UserFactory._DEFAULT_PASSWORD)  # lint-amnesty, pylint: disable=protected-access
+        self.client.login(username=user.username, password=UserFactory._DEFAULT_PASSWORD)  # pylint: disable=protected-access
 
         response = self.client.get(self.url, data=self.request_data)
         assert response.status_code == 403

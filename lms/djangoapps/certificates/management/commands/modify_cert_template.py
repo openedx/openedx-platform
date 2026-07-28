@@ -5,9 +5,7 @@ from argparse import RawDescriptionHelpFormatter
 
 from django.core.management.base import BaseCommand, CommandError
 
-from lms.djangoapps.certificates.models import (
-    ModifiedCertificateTemplateCommandConfiguration,
-)
+from lms.djangoapps.certificates.models import ModifiedCertificateTemplateCommandConfiguration
 from lms.djangoapps.certificates.tasks import handle_modify_cert_template
 
 log = logging.getLogger(__name__)

@@ -23,15 +23,19 @@ from django.test.utils import override_settings
 from edx_django_utils.cache import RequestCache
 from freezegun import freeze_time
 from pytz import UTC
+from xblocks_contrib.problem.capa.tests.response_xml_factory import (
+    MultipleChoiceResponseXMLFactory,  # pylint: disable=wrong-import-order
+)
 
-import openedx.core.djangoapps.user_api.course_tag.api as course_tag_api
 import openedx.core.djangoapps.content.block_structure.api as bs_api
-from xmodule.capa.tests.response_xml_factory import MultipleChoiceResponseXMLFactory  # lint-amnesty, pylint: disable=wrong-import-order
+import openedx.core.djangoapps.user_api.course_tag.api as course_tag_api
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.student.models import CourseEnrollment, CourseEnrollmentAllowed
 from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory
+from common.test.utils import assert_dict_contains_subset
 from lms.djangoapps.certificates.data import CertificateStatuses
 from lms.djangoapps.certificates.tests.factories import CertificateAllowlistFactory, GeneratedCertificateFactory
+from lms.djangoapps.course_blocks.transformers import library_content
 from lms.djangoapps.courseware.models import StudentModule
 from lms.djangoapps.grades.course_data import CourseData
 from lms.djangoapps.grades.models import PersistentCourseGrade, PersistentSubsectionGradeOverride
@@ -52,12 +56,12 @@ from lms.djangoapps.instructor_task.tasks_helper.misc import (
     upload_course_survey_report,
     upload_ora2_data,
     upload_ora2_submission_files,
-    upload_ora2_summary
+    upload_ora2_summary,
 )
 from lms.djangoapps.instructor_task.tests.test_base import (
     InstructorTaskCourseTestCase,
     InstructorTaskModuleTestCase,
-    TestReportMixin
+    TestReportMixin,
 )
 from lms.djangoapps.survey.models import SurveyAnswer, SurveyForm
 from lms.djangoapps.teams.tests.factories import CourseTeamFactory, CourseTeamMembershipFactory
@@ -67,22 +71,31 @@ from openedx.core.djangoapps.course_groups.tests.helpers import CohortFactory
 from openedx.core.djangoapps.credit.tests.factories import CreditCourseFactory
 from openedx.core.djangoapps.user_api.partition_schemes import RandomUserPartitionScheme
 from openedx.core.djangoapps.util.testing import ContentGroupTestCase, TestConditionalContent
+from openedx.core.djangolib.testing.utils import AUTHZ_TABLES
 from openedx.core.lib.teams_config import TeamsConfig
-from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory, check_mongo_calls  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.partitions.partitions import Group, UserPartition  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    SharedModuleStoreTestCase,  # pylint: disable=wrong-import-order
+)
+from xmodule.modulestore.tests.factories import (  # pylint: disable=wrong-import-order
+    BlockFactory,
+    CourseFactory,
+    check_mongo_calls,
+)
+from xmodule.partitions.partitions import Group, UserPartition  # pylint: disable=wrong-import-order
+
 # noinspection PyUnresolvedReferences
-from xmodule.tests.helpers import override_descriptor_system  # pylint: disable=unused-import
+from xmodule.tests.helpers import override_descriptor_system  # pylint: disable=unused-import  # noqa: F401
 
 from ..models import ReportStore
 from ..tasks_helper.utils import UPDATE_STATUS_FAILED, UPDATE_STATUS_SUCCEEDED
-from common.test.utils import assert_dict_contains_subset
 
 _TEAMS_CONFIG = TeamsConfig({
     'max_size': 2,
     'topics': [{'id': 'topic', 'name': 'Topic', 'description': 'A Topic'}],
 })
 USE_ON_DISK_GRADE_REPORT = 'lms.djangoapps.instructor_task.tasks_helper.grades.use_on_disk_grade_reporting'
+
+QUERY_COUNT_TABLE_IGNORELIST = AUTHZ_TABLES
 
 
 class InstructorGradeReportTestCase(TestReportMixin, InstructorTaskCourseTestCase):
@@ -141,7 +154,7 @@ class TestInstructorGradeReport(InstructorGradeReportTestCase):
     @ddt.data(True, False)
     @patch('lms.djangoapps.instructor_task.tasks_helper.runner._get_current_task')
     @patch('lms.djangoapps.grades.course_grade_factory.CourseGradeFactory.iter')
-    def test_grading_failure(self, use_tempfile, mock_grades_iter, _mock_current_task):
+    def test_grading_failure(self, use_tempfile, mock_grades_iter, _mock_current_task):  # noqa: PT019
         """
         Test that any grading errors are properly reported in the
         progress dict and uploaded to the report store.
@@ -319,7 +332,7 @@ class TestInstructorGradeReport(InstructorGradeReportTestCase):
 
     @patch('lms.djangoapps.instructor_task.tasks_helper.runner._get_current_task')
     @patch('lms.djangoapps.grades.course_grade_factory.CourseGradeFactory.iter')
-    def test_unicode_in_csv_header(self, mock_grades_iter, _mock_current_task):
+    def test_unicode_in_csv_header(self, mock_grades_iter, _mock_current_task):  # noqa: PT019
         """
         Tests that CSV grade report works if unicode in headers.
         """
@@ -410,7 +423,7 @@ class TestInstructorGradeReport(InstructorGradeReportTestCase):
 
         with patch('lms.djangoapps.instructor_task.tasks_helper.runner._get_current_task'):
             with check_mongo_calls(2):
-                with self.assertNumQueries(46):
+                with self.assertNumQueries(48, table_ignorelist=QUERY_COUNT_TABLE_IGNORELIST):
                     CourseGradeReport.generate(None, None, course.id, {}, 'graded')
 
     def test_inactive_enrollments(self):
@@ -523,6 +536,48 @@ class TestProblemResponsesReport(TestReportMixin, InstructorTaskModuleTestCase):
         )
 
         assert len(student_data) == 4
+
+    @patch('lms.djangoapps.instructor_task.tasks_helper.grades.list_problem_responses', return_value=[])
+    def test_problem_responses_excludes_library_content_transformers(self, _mock_list_problem_responses):  # noqa: PT019
+        """Ensure ProblemResponses bypasses per-user library_content transformers.
+
+        The default course block access transformers include library_content transformers
+        that filter children based on the requesting user's selections. Reports must exclude
+        those transformers so output is not dependent on the instructor running the report.
+        """
+        problem = self.define_option_problem('Problem1')
+
+        captured = {}
+
+        class _FakeCourseBlocks:
+            """Minimal fake CourseBlocks object for testing."""
+            def get_xblock_field(self, _usage_key, field_name):
+                if field_name == 'display_name':
+                    return 'Problem1'
+                return None
+
+            def get_children(self, _usage_key):
+                return []
+
+        def _fake_get_course_blocks(_user, _usage_key, transformers=None, **_kwargs):
+            captured['transformers'] = transformers
+            return _FakeCourseBlocks()
+
+        with patch(
+            'lms.djangoapps.instructor_task.tasks_helper.grades.get_course_blocks',
+            side_effect=_fake_get_course_blocks,
+        ):
+            ProblemResponses._build_student_data(
+                user_id=self.instructor.id,
+                course_key=self.course.id,
+                usage_key_str_list=[str(problem.location)],
+            )
+
+        transformers = captured.get('transformers')
+        assert transformers is not None
+        all_transformers = transformers._transformers['supports_filter'] + transformers._transformers['no_filter']
+        assert not any(isinstance(t, library_content.ContentLibraryTransformer) for t in all_transformers)
+        assert not any(isinstance(t, library_content.ContentLibraryOrderTransformer) for t in all_transformers)
 
     @patch(
         'lms.djangoapps.instructor_task.tasks_helper.grades.list_problem_responses',
@@ -844,7 +899,7 @@ class TestProblemGradeReport(TestReportMixin, InstructorTaskModuleTestCase):
 
     @patch('lms.djangoapps.instructor_task.tasks_helper.runner._get_current_task')
     @ddt.data(True, False)
-    def test_no_problems(self, use_tempfile, _):
+    def test_no_problems(self, use_tempfile, _):  # noqa: PT019
         """
         Verify that we see no grade information for a course with no graded
         problems.
@@ -857,11 +912,11 @@ class TestProblemGradeReport(TestReportMixin, InstructorTaskModuleTestCase):
             result
         )
         self.verify_rows_in_csv([
-            dict(list(zip(
+            dict(list(zip(  # noqa: B905
                 self.csv_header_row,
                 [str(self.student_1.id), self.student_1.email, self.student_1.username, ENROLLED_IN_COURSE, '0.0']
             ))),
-            dict(list(zip(
+            dict(list(zip(  # noqa: B905
                 self.csv_header_row,
                 [str(self.student_2.id), self.student_2.email, self.student_2.username, ENROLLED_IN_COURSE, '0.0']
             )))
@@ -869,7 +924,7 @@ class TestProblemGradeReport(TestReportMixin, InstructorTaskModuleTestCase):
 
     @patch('lms.djangoapps.instructor_task.tasks_helper.runner._get_current_task')
     @ddt.data(True, False)
-    def test_single_problem(self, use_tempfile, _):
+    def test_single_problem(self, use_tempfile, _):  # noqa: PT019
         vertical = BlockFactory.create(
             parent_location=self.problem_section.location,
             category='vertical',
@@ -889,7 +944,7 @@ class TestProblemGradeReport(TestReportMixin, InstructorTaskModuleTestCase):
         problem_name = 'Homework 1: Subsection - Problem1'
         header_row = self.csv_header_row + [problem_name + ' (Earned)', problem_name + ' (Possible)']
         self.verify_rows_in_csv([
-            dict(list(zip(
+            dict(list(zip(  # noqa: B905
                 header_row,
                 [
                     str(self.student_1.id),
@@ -899,7 +954,7 @@ class TestProblemGradeReport(TestReportMixin, InstructorTaskModuleTestCase):
                     '0.01', '1.0', '2.0',
                 ]
             ))),
-            dict(list(zip(
+            dict(list(zip(  # noqa: B905
                 header_row,
                 [
                     str(self.student_2.id),
@@ -913,7 +968,7 @@ class TestProblemGradeReport(TestReportMixin, InstructorTaskModuleTestCase):
 
     @patch('lms.djangoapps.instructor_task.tasks_helper.runner._get_current_task')
     @ddt.data(True, False)
-    def test_single_problem_verified_student_only(self, use_tempfile, _):
+    def test_single_problem_verified_student_only(self, use_tempfile, _):  # noqa: PT019
         with patch(
             'lms.djangoapps.instructor_task.tasks_helper.grades.problem_grade_report_verified_only',
             return_value=True,
@@ -939,7 +994,7 @@ class TestProblemGradeReport(TestReportMixin, InstructorTaskModuleTestCase):
 
     @patch('lms.djangoapps.instructor_task.tasks_helper.runner._get_current_task')
     @ddt.data(True, False)
-    def test_inactive_enrollment_included(self, use_tempfile, _):
+    def test_inactive_enrollment_included(self, use_tempfile, _):  # noqa: PT019
         """
         Students with inactive enrollments in a course should be included in Problem Grade Report.
         """
@@ -963,7 +1018,7 @@ class TestProblemGradeReport(TestReportMixin, InstructorTaskModuleTestCase):
         problem_name = 'Homework 1: Subsection - Problem1'
         header_row = self.csv_header_row + [problem_name + ' (Earned)', problem_name + ' (Possible)']
         self.verify_rows_in_csv([
-            dict(list(zip(
+            dict(list(zip(  # noqa: B905
                 header_row,
                 [
                     str(self.student_1.id),
@@ -973,7 +1028,7 @@ class TestProblemGradeReport(TestReportMixin, InstructorTaskModuleTestCase):
                     '0.01', '1.0', '2.0',
                 ]
             ))),
-            dict(list(zip(
+            dict(list(zip(  # noqa: B905
                 header_row,
                 [
                     str(self.student_2.id),
@@ -983,7 +1038,7 @@ class TestProblemGradeReport(TestReportMixin, InstructorTaskModuleTestCase):
                     '0.0', 'Not Attempted', '2.0',
                 ]
             ))),
-            dict(list(zip(
+            dict(list(zip(  # noqa: B905
                 header_row,
                 [
                     str(inactive_student.id),
@@ -1045,7 +1100,7 @@ class TestProblemReportSplitTestContent(TestReportMixin, TestConditionalContent,
             header_row += [problem + ' (Earned)', problem + ' (Possible)']
 
         self.verify_rows_in_csv([
-            dict(list(zip(
+            dict(list(zip(  # noqa: B905
                 header_row,
                 [
                     str(self.student_a.id),
@@ -1055,7 +1110,7 @@ class TestProblemReportSplitTestContent(TestReportMixin, TestConditionalContent,
                     '1.0', '2.0', '2.0', 'Not Available', 'Not Available'
                 ]
             ))),
-            dict(list(zip(
+            dict(list(zip(  # noqa: B905
                 header_row,
                 [
                     str(self.student_b.id),
@@ -1076,10 +1131,10 @@ class TestProblemReportSplitTestContent(TestReportMixin, TestConditionalContent,
         self.course = CourseFactory.create(
             grading_policy={
                 "GRADER": [{
-                    "type": "Homework %d" % i,
+                    "type": "Homework %d" % i,  # noqa: UP031
                     "min_count": 1,
                     "drop_count": 0,
-                    "short_label": "HW %d" % i,
+                    "short_label": "HW %d" % i,  # noqa: UP031
                     "weight": 1.0
                 } for i in range(1, grader_num)]
             }
@@ -1094,10 +1149,10 @@ class TestProblemReportSplitTestContent(TestReportMixin, TestConditionalContent,
         problem_vertical_list = []
 
         for i in range(1, grader_num):
-            chapter_name = 'Chapter %d' % i
-            problem_section_name = 'Problem section %d' % i
-            problem_section_format = 'Homework %d' % i
-            problem_vertical_name = 'Problem Unit %d' % i
+            chapter_name = 'Chapter %d' % i  # noqa: UP031
+            problem_section_name = 'Problem section %d' % i  # noqa: UP031
+            problem_section_format = 'Homework %d' % i  # noqa: UP031
+            problem_vertical_name = 'Problem Unit %d' % i  # noqa: UP031
 
             chapter = BlockFactory.create(parent_location=self.course.location,
                                           display_name=chapter_name)
@@ -1119,9 +1174,9 @@ class TestProblemReportSplitTestContent(TestReportMixin, TestConditionalContent,
 
         problem_names = []
         for i in range(1, grader_num):
-            problem_url = 'test_problem_%d' % i
+            problem_url = 'test_problem_%d' % i  # noqa: UP031
             self.define_option_problem(problem_url, parent=problem_vertical_list[i - 1])
-            title = 'Homework %d 1: Problem section %d - %s' % (i, i, problem_url)
+            title = 'Homework %d 1: Problem section %d - %s' % (i, i, problem_url)  # noqa: UP031
             problem_names.append(title)
 
         header_row = ['Student ID', 'Email', 'Username', 'Enrollment Status', 'Grade']
@@ -1169,7 +1224,7 @@ class TestProblemReportCohortedContent(TestReportMixin, ContentGroupTestCase, In
             user(object): Django user object
             grade(list): Users' grade list
         """
-        return dict(list(zip(
+        return dict(list(zip(  # noqa: B905
             header_row,
             [
                 str(user.id),
@@ -1532,7 +1587,7 @@ class MockDefaultStorage:
 
     def open(self, file_name):
         """Mock out DefaultStorage.open with standard python open"""
-        return open(file_name)  # lint-amnesty, pylint: disable=bad-option-value, open-builtin  # lint-amnesty, pylint: disable=consider-using-with
+        return open(file_name)  # pylint: disable=bad-option-value, open-builtin  # pylint: disable=consider-using-with
 
 
 @patch('lms.djangoapps.instructor_task.tasks_helper.misc.DefaultStorage', new=MockDefaultStorage)
@@ -1573,8 +1628,8 @@ class TestCohortStudents(TestReportMixin, InstructorTaskCourseTestCase):
         assert_dict_contains_subset(self, {'total': 2, 'attempted': 2, 'succeeded': 2, 'failed': 0}, result)
         self.verify_rows_in_csv(
             [
-                dict(list(zip(self.csv_header_row, ['Cohort 1', 'True', '1', '', '', '']))),
-                dict(list(zip(self.csv_header_row, ['Cohort 2', 'True', '1', '', '', '']))),
+                dict(list(zip(self.csv_header_row, ['Cohort 1', 'True', '1', '', '', '']))),  # noqa: B905
+                dict(list(zip(self.csv_header_row, ['Cohort 2', 'True', '1', '', '', '']))),  # noqa: B905
             ],
             verify_order=False
         )
@@ -1588,8 +1643,8 @@ class TestCohortStudents(TestReportMixin, InstructorTaskCourseTestCase):
         assert_dict_contains_subset(self, {'total': 2, 'attempted': 2, 'succeeded': 2, 'failed': 0}, result)
         self.verify_rows_in_csv(
             [
-                dict(list(zip(self.csv_header_row, ['Cohort 1', 'True', '1', '', '', '']))),
-                dict(list(zip(self.csv_header_row, ['Cohort 2', 'True', '1', '', '', '']))),
+                dict(list(zip(self.csv_header_row, ['Cohort 1', 'True', '1', '', '', '']))),  # noqa: B905
+                dict(list(zip(self.csv_header_row, ['Cohort 2', 'True', '1', '', '', '']))),  # noqa: B905
             ],
             verify_order=False
         )
@@ -1603,8 +1658,8 @@ class TestCohortStudents(TestReportMixin, InstructorTaskCourseTestCase):
         assert_dict_contains_subset(self, {'total': 2, 'attempted': 2, 'succeeded': 2, 'failed': 0}, result)
         self.verify_rows_in_csv(
             [
-                dict(list(zip(self.csv_header_row, ['Cohort 1', 'True', '1', '', '', '']))),
-                dict(list(zip(self.csv_header_row, ['Cohort 2', 'True', '1', '', '', '']))),
+                dict(list(zip(self.csv_header_row, ['Cohort 1', 'True', '1', '', '', '']))),  # noqa: B905
+                dict(list(zip(self.csv_header_row, ['Cohort 2', 'True', '1', '', '', '']))),  # noqa: B905
             ],
             verify_order=False
         )
@@ -1624,8 +1679,8 @@ class TestCohortStudents(TestReportMixin, InstructorTaskCourseTestCase):
         assert_dict_contains_subset(self, {'total': 2, 'attempted': 2, 'succeeded': 2, 'failed': 0}, result)
         self.verify_rows_in_csv(
             [
-                dict(list(zip(self.csv_header_row, ['Cohort 1', 'True', '1', '', '', '']))),
-                dict(list(zip(self.csv_header_row, ['Cohort 2', 'True', '1', '', '', '']))),
+                dict(list(zip(self.csv_header_row, ['Cohort 1', 'True', '1', '', '', '']))),  # noqa: B905
+                dict(list(zip(self.csv_header_row, ['Cohort 2', 'True', '1', '', '', '']))),  # noqa: B905
             ],
             verify_order=False
         )
@@ -1638,7 +1693,7 @@ class TestCohortStudents(TestReportMixin, InstructorTaskCourseTestCase):
         assert_dict_contains_subset(self, {'total': 1, 'attempted': 1, 'succeeded': 0, 'failed': 1}, result)
         self.verify_rows_in_csv(
             [
-                dict(list(zip(self.csv_header_row, ['Cohort 1', 'True', '0', 'Invalid', '', '']))),
+                dict(list(zip(self.csv_header_row, ['Cohort 1', 'True', '0', 'Invalid', '', '']))),  # noqa: B905
             ],
             verify_order=False
         )
@@ -1652,8 +1707,8 @@ class TestCohortStudents(TestReportMixin, InstructorTaskCourseTestCase):
         assert_dict_contains_subset(self, {'total': 2, 'attempted': 2, 'succeeded': 1, 'failed': 1}, result)
         self.verify_rows_in_csv(
             [
-                dict(list(zip(self.csv_header_row, ['Does Not Exist', 'False', '0', '', '', '']))),
-                dict(list(zip(self.csv_header_row, ['Cohort 2', 'True', '1', '', '', '']))),
+                dict(list(zip(self.csv_header_row, ['Does Not Exist', 'False', '0', '', '', '']))),  # noqa: B905
+                dict(list(zip(self.csv_header_row, ['Cohort 2', 'True', '1', '', '', '']))),  # noqa: B905
             ],
             verify_order=False
         )
@@ -1670,7 +1725,7 @@ class TestCohortStudents(TestReportMixin, InstructorTaskCourseTestCase):
         )
         self.verify_rows_in_csv(
             [
-                dict(list(zip(self.csv_header_row, ['Cohort 1', 'True', '0', '', '', 'example_email@example.com']))),
+                dict(list(zip(self.csv_header_row, ['Cohort 1', 'True', '0', '', '', 'example_email@example.com']))),  # noqa: B905  # pylint: disable=line-too-long
             ],
             verify_order=False
         )
@@ -1683,7 +1738,7 @@ class TestCohortStudents(TestReportMixin, InstructorTaskCourseTestCase):
         assert_dict_contains_subset(self, {'total': 1, 'attempted': 1, 'succeeded': 0, 'failed': 1}, result)
         self.verify_rows_in_csv(
             [
-                dict(list(zip(self.csv_header_row, ['Cohort 1', 'True', '0', '', 'student_1@', '']))),
+                dict(list(zip(self.csv_header_row, ['Cohort 1', 'True', '0', '', 'student_1@', '']))),  # noqa: B905
             ],
             verify_order=False
         )
@@ -1708,7 +1763,7 @@ class TestCohortStudents(TestReportMixin, InstructorTaskCourseTestCase):
         assert_dict_contains_subset(self, {'total': 2, 'attempted': 2, 'succeeded': 0, 'failed': 2}, result)
         self.verify_rows_in_csv(
             [
-                dict(list(zip(self.csv_header_row, ['', 'False', '0', '', '', '']))),
+                dict(list(zip(self.csv_header_row, ['', 'False', '0', '', '', '']))),  # noqa: B905
             ],
             verify_order=False
         )
@@ -1732,8 +1787,8 @@ class TestCohortStudents(TestReportMixin, InstructorTaskCourseTestCase):
         assert_dict_contains_subset(self, {'total': 2, 'attempted': 2, 'succeeded': 2, 'failed': 0}, result)
         self.verify_rows_in_csv(
             [
-                dict(list(zip(self.csv_header_row, ['Cohort 1', 'True', '1', '', '', '']))),
-                dict(list(zip(self.csv_header_row, ['Cohort 2', 'True', '1', '', '', '']))),
+                dict(list(zip(self.csv_header_row, ['Cohort 1', 'True', '1', '', '', '']))),  # noqa: B905
+                dict(list(zip(self.csv_header_row, ['Cohort 2', 'True', '1', '', '', '']))),  # noqa: B905
             ],
             verify_order=False
         )
@@ -1750,8 +1805,8 @@ class TestCohortStudents(TestReportMixin, InstructorTaskCourseTestCase):
         assert_dict_contains_subset(self, {'total': 2, 'attempted': 2, 'succeeded': 2, 'failed': 0}, result)
         self.verify_rows_in_csv(
             [
-                dict(list(zip(self.csv_header_row, ['Cohort 1', 'True', '1', '', '', '']))),
-                dict(list(zip(self.csv_header_row, ['Cohort 2', 'True', '1', '', '', '']))),
+                dict(list(zip(self.csv_header_row, ['Cohort 1', 'True', '1', '', '', '']))),  # noqa: B905
+                dict(list(zip(self.csv_header_row, ['Cohort 2', 'True', '1', '', '', '']))),  # noqa: B905
             ],
             verify_order=False
         )
@@ -1770,8 +1825,8 @@ class TestCohortStudents(TestReportMixin, InstructorTaskCourseTestCase):
         assert_dict_contains_subset(self, {'total': 2, 'attempted': 2, 'succeeded': 2, 'failed': 0}, result)
         self.verify_rows_in_csv(
             [
-                dict(list(zip(self.csv_header_row, ['Cohort 1', 'True', '1', '', '', '']))),
-                dict(list(zip(self.csv_header_row, ['Cohort 2', 'True', '1', '', '', '']))),
+                dict(list(zip(self.csv_header_row, ['Cohort 1', 'True', '1', '', '', '']))),  # noqa: B905
+                dict(list(zip(self.csv_header_row, ['Cohort 2', 'True', '1', '', '', '']))),  # noqa: B905
             ],
             verify_order=False
         )
@@ -1790,8 +1845,8 @@ class TestCohortStudents(TestReportMixin, InstructorTaskCourseTestCase):
         assert_dict_contains_subset(self, {'total': 2, 'attempted': 2, 'skipped': 2, 'failed': 0}, result)
         self.verify_rows_in_csv(
             [
-                dict(list(zip(self.csv_header_row, ['Cohort 1', 'True', '0', '', '', '']))),
-                dict(list(zip(self.csv_header_row, ['Cohort 2', 'True', '0', '', '', '']))),
+                dict(list(zip(self.csv_header_row, ['Cohort 1', 'True', '0', '', '', '']))),  # noqa: B905
+                dict(list(zip(self.csv_header_row, ['Cohort 2', 'True', '0', '', '', '']))),  # noqa: B905
             ],
             verify_order=False
         )
@@ -1956,7 +2011,7 @@ class TestGradeReport(TestReportMixin, InstructorTaskModuleTestCase):
             )
 
     @patch('lms.djangoapps.instructor_task.tasks_helper.runner._get_current_task')
-    def test_course_grade_with_verified_student_only(self, _get_current_task):
+    def test_course_grade_with_verified_student_only(self, _get_current_task):  # noqa: PT019
         """
         Tests that course grade report has expected data when it is generated only for
         verified learners.
@@ -2172,7 +2227,7 @@ class TestCertificateGeneration(InstructorTaskModuleTestCase):
             'failed': 0,
             'skipped': 2
         }
-        with self.assertNumQueries(61):
+        with self.assertNumQueries(69, table_ignorelist=QUERY_COUNT_TABLE_IGNORELIST):
             self.assertCertificatesGenerated(task_input, expected_results)
 
     @ddt.data(
@@ -2580,7 +2635,7 @@ class TestCertificateGeneration(InstructorTaskModuleTestCase):
 
         with patch('lms.djangoapps.instructor_task.tasks_helper.runner._get_current_task') as mock_current_task:
             mock_current_task.return_value = current_task
-            with patch('xmodule.capa.xqueue_interface.XQueueInterface.send_to_queue') as mock_queue:
+            with patch('xblocks_contrib.problem.capa.xqueue_interface.XQueueInterface.send_to_queue') as mock_queue:
                 mock_queue.return_value = (0, "Successfully queued")
                 result = generate_students_certificates(
                     None, None, self.course.id, task_input, 'certificates generated'
@@ -2639,7 +2694,7 @@ class TestInstructorOra2Report(SharedModuleStoreTestCase):
                 mock_current_task.return_value = self.current_task
 
                 response = upload_func(None, None, self.course.id, None, 'generated')
-                self.assertEqual(response, UPDATE_STATUS_FAILED)
+                self.assertEqual(response, UPDATE_STATUS_FAILED)  # noqa: PT009
 
     def test_report_stores_results(self):
         with ExitStack() as stack:
@@ -2721,7 +2776,7 @@ class TestInstructorOra2AttachmentsExport(SharedModuleStoreTestCase):
                     key = self.course.id
                     filename = f'{key.org}_{key.course}_{key.run}_ORA_summary_{timestamp_str}.csv'
 
-                    self.assertEqual(return_val, UPDATE_STATUS_SUCCEEDED)
+                    self.assertEqual(return_val, UPDATE_STATUS_SUCCEEDED)  # noqa: PT009
                     mock_store_rows.assert_called_once_with(self.course.id, filename, [test_header] + test_rows, '')
 
     def test_export_fails_if_error_on_create_zip_step(self):

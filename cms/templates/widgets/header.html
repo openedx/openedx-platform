@@ -8,7 +8,7 @@
   from urllib.parse import quote_plus
   from common.djangoapps.student.auth import has_studio_advanced_settings_access
   from cms.djangoapps.contentstore import toggles
-  from cms.djangoapps.contentstore.utils import get_pages_and_resources_url, get_course_outline_url, get_course_libraries_url, get_updates_url, get_files_uploads_url, get_video_uploads_url, get_schedule_details_url, get_grading_url, get_advanced_settings_url, get_import_url, get_export_url, get_studio_home_url, get_course_team_url, get_optimizer_url
+  from cms.djangoapps.contentstore.utils import get_pages_and_resources_url, get_course_outline_url, get_course_libraries_url, get_updates_url, get_files_uploads_url, get_video_uploads_url, get_schedule_details_url, get_grading_url, get_advanced_settings_url, get_import_url, get_export_url, get_studio_home_url, get_course_team_url, get_optimizer_url, get_certificates_url, get_group_configurations_url
   from openedx.core.djangoapps.discussions.config.waffle import ENABLE_PAGES_AND_RESOURCES_MICROFRONTEND
   from openedx.core.djangoapps.lang_pref.api import header_language_selector_is_enabled, released_languages
 %>
@@ -30,29 +30,13 @@
             course_key = context_course.id
             url_encoded_course_key = quote(str(course_key).encode('utf-8'), safe='')
             index_url = reverse('course_handler', kwargs={'course_key_string': str(course_key)})
-            course_team_url = reverse('course_team_handler', kwargs={'course_key_string': str(course_key)})
             assets_url = reverse('assets_handler', kwargs={'course_key_string': str(course_key)})
             textbooks_url = reverse('textbooks_list_handler', kwargs={'course_key_string': str(course_key)})
             videos_url = reverse('videos_handler', kwargs={'course_key_string': str(course_key)})
-            import_url = reverse('import_handler', kwargs={'course_key_string': str(course_key)})
             course_info_url = reverse('course_info_handler', kwargs={'course_key_string': str(course_key)})
-            export_url = reverse('export_handler', kwargs={'course_key_string': str(course_key)})
-            settings_url = reverse('settings_handler', kwargs={'course_key_string': str(course_key)})
-            grading_url = reverse('grading_handler', kwargs={'course_key_string': str(course_key)})
-            advanced_settings_url = reverse('advanced_settings_handler', kwargs={'course_key_string': str(course_key)})
             tabs_url = reverse('tabs_handler', kwargs={'course_key_string': str(course_key)})
-            certificates_url = ''
-            if settings.FEATURES.get("CERTIFICATES_HTML_VIEW") and context_course.cert_html_view_enabled:
-                certificates_url = reverse('certificates_list_handler', kwargs={'course_key_string': str(course_key)})
             checklists_url = reverse('checklists_handler', kwargs={'course_key_string': str(course_key)})
             pages_and_resources_mfe_enabled = ENABLE_PAGES_AND_RESOURCES_MICROFRONTEND.is_enabled(context_course.id)
-            video_upload_mfe_enabled = toggles.use_new_video_uploads_page(context_course.id)
-            schedule_details_mfe_enabled = toggles.use_new_schedule_details_page(context_course.id)
-            grading_mfe_enabled = toggles.use_new_grading_page(context_course.id)
-            course_team_mfe_enabled = toggles.use_new_course_team_page(context_course.id)
-            advanced_settings_mfe_enabled = toggles.use_new_advanced_settings_page(context_course.id)
-            import_mfe_enabled = toggles.use_new_import_page(context_course.id)
-            export_mfe_enabled = toggles.use_new_export_page(context_course.id)
             optimizer_enabled = toggles.enable_course_optimizer(context_course.id)
             libraries_v2_enabled = toggles.libraries_v2_enabled()
 
@@ -103,12 +87,7 @@
                     <a href="${textbooks_url}">${_("Textbooks")}</a>
                   </li>
                   % endif
-                  % if context_course.video_pipeline_configured and not video_upload_mfe_enabled:
-                  <li class="nav-item nav-course-courseware-videos">
-                    <a href="${videos_url}">${_("Video Uploads")}</a>
-                  </li>
-                  % endif
-                  % if context_course.video_pipeline_configured and video_upload_mfe_enabled:
+                  % if context_course.video_pipeline_configured:
                   <li class="nav-item nav-course-courseware-videos">
                     <a href="${get_video_uploads_url(course_key)}">${_("Videos")}</a>
                   </li>
@@ -124,57 +103,31 @@
             <div class="wrapper wrapper-nav-sub">
               <div class="nav-sub">
                 <ul>
-                  % if not schedule_details_mfe_enabled:
-                  <li class="nav-item nav-course-settings-schedule">
-                    <a href="${settings_url}">${_("Schedule & Details")}</a>
-                  </li>
-                  % endif
-                  % if schedule_details_mfe_enabled:
                   <li class="nav-item nav-course-settings-schedule">
                     <a href="${get_schedule_details_url(course_key)}">${_("Schedule & Details")}</a>
                   </li>
-                  % endif
-                  % if not grading_mfe_enabled:
-                  <li class="nav-item nav-course-settings-grading">
-                    <a href="${grading_url}">${_("Grading")}</a>
-                  </li>
-                  % endif
-                  % if grading_mfe_enabled:
                   <li class="nav-item nav-course-settings-grading">
                     <a href="${get_grading_url(course_key)}">${_("Grading")}</a>
                   </li>
-                  % endif
-                  % if not course_team_mfe_enabled:
-                  <li class="nav-item nav-course-settings-team">
-                    <a href="${course_team_url}">${_("Course Team")}</a>
-                  </li>
-                  % endif
-                  % if course_team_mfe_enabled:
                   <li class="nav-item nav-course-settings-team">
                     <a href="${get_course_team_url(course_key)}">${_("Course Team")}</a>
                   </li>
-                  % endif
                   <li class="nav-item nav-course-settings-group-configurations">
-                    <a href="${reverse('group_configurations_list_handler', kwargs={'course_key_string': str(course_key)})}">${_("Group Configurations")}</a>
+                    <a href="${get_group_configurations_url(course_key)}">${_("Group Configurations")}</a>
                   </li>
                   % if mfe_proctored_exam_settings_url:
                   <li class="nav-item nav-course-settings-exams">
                     <a href="${mfe_proctored_exam_settings_url}">${_("Proctored Exam Settings")}</a>
                   </li>
                   % endif
-                  % if has_studio_advanced_settings_access(request.user) and not advanced_settings_mfe_enabled:
-                  <li class="nav-item nav-course-settings-advanced">
-                    <a href="${advanced_settings_url}">${_("Advanced Settings")}</a>
-                  </li>
-                  % endif
-                  % if has_studio_advanced_settings_access(request.user) and advanced_settings_mfe_enabled:
+                  % if has_studio_advanced_settings_access(request.user):
                   <li class="nav-item nav-course-settings-advanced">
                     <a href="${get_advanced_settings_url(course_key)}">${_("Advanced Settings")}</a>
                   </li>
                   % endif
-                  % if certificates_url:
+                  % if get_certificates_url(course_key):
                   <li class="nav-item nav-course-settings-certificates">
-                    <a href="${certificates_url}">${_("Certificates")}</a>
+                    <a href="${get_certificates_url(course_key)}">${_("Certificates")}</a>
                   </li>
                   % endif
                   % if frontend_app_publisher_url:
@@ -192,26 +145,12 @@
             <div class="wrapper wrapper-nav-sub">
               <div class="nav-sub">
                 <ul>
-                  % if not import_mfe_enabled:
-                  <li class="nav-item nav-course-tools-import">
-                    <a href="${import_url}">${_("Import")}</a>
-                  </li>
-                  % endif
-                  % if import_mfe_enabled:
                   <li class="nav-item nav-course-tools-import">
                     <a href="${get_import_url(course_key)}">${_("Import")}</a>
                   </li>
-                  % endif
-                  % if not export_mfe_enabled:
-                  <li class="nav-item nav-course-tools-export">
-                    <a href="${export_url}">${_("Export")}</a>
-                  </li>
-                  % endif
-                  % if export_mfe_enabled:
                   <li class="nav-item nav-course-tools-export">
                     <a href="${get_export_url(course_key)}">${_("Export")}</a>
                   </li>
-                  % endif
                   % if toggles.EXPORT_GIT.is_enabled() and context_course.giturl:
                   <li class="nav-item nav-course-tools-export-git">
                     <a href="${reverse('export_git', kwargs=dict(course_key_string=str(course_key)))}">${_("Export to Git")}</a>
@@ -235,9 +174,6 @@
        <%
             library_key = context_library.location.course_key
             index_url = reverse('library_handler', kwargs={'library_key_string': str(library_key)})
-            import_url = reverse('import_handler', kwargs={'course_key_string': str(library_key)})
-            lib_users_url = reverse('manage_library_users', kwargs={'library_key_string': str(library_key)})
-            export_url = reverse('export_handler', kwargs={'course_key_string': str(library_key)})
       %>
       <h2 class="info-course">
         <span class="sr">${_("Current Library:")}</span>
@@ -246,41 +182,6 @@
           <span class="course-title" title="${context_library.display_name_with_default}">${context_library.display_name_with_default}</span>
         </a>
       </h2>
-
-      <nav class="nav-course nav-dd ui-left" aria-label="${_('Course')}">
-        <h2 class="sr">${_("Course Navigation")}</h2>
-        <ol>
-
-          <li class="nav-item nav-library-settings">
-            <h3 class="title"><span class="label"><span class="label-prefix sr">${_("Library")} </span>${_("Settings")}</span> <span class="icon fa fa-caret-down ui-toggle-dd" aria-hidden="true"></span></h3>
-            <div class="wrapper wrapper-nav-sub">
-              <div class="nav-sub">
-                <ul>
-                  <li class="nav-item nav-library-settings-team">
-                    <a href="${lib_users_url}">${_("User Access")}</a>
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </li>
-          <li class="nav-item nav-course-tools">
-            <h3 class="title"><span class="label">${_("Tools")}</span> <span class="icon fa fa-caret-down ui-toggle-dd" aria-hidden="true"></span></h3>
-
-            <div class="wrapper wrapper-nav-sub">
-              <div class="nav-sub">
-                <ul>
-                  <li class="nav-item nav-course-tools-import">
-                    <a href="${import_url}">${_("Import")}</a>
-                  </li>
-                  <li class="nav-item nav-course-tools-export">
-                    <a href="${export_url}">${_("Export")}</a>
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </li>
-        </ol>
-      </nav>
       % endif
     </div>
 

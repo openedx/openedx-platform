@@ -8,52 +8,29 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.exceptions import BadRequest
 from django.shortcuts import get_object_or_404
+from django.utils import timezone as django_timezone
 from django.utils.translation import gettext as _
 from pytz import utc
-from waffle import get_waffle_flag_model  # pylint: disable=invalid-django-waffle-import
 
 from lms.djangoapps.branding.api import get_logo_url_for_email
 from lms.djangoapps.discussion.notification_prefs.views import UsernameCipher, UsernameDecryptionException
 from openedx.core.djangoapps.lang_pref import LANGUAGE_KEY
 from openedx.core.djangoapps.notifications.base_notification import (
     COURSE_NOTIFICATION_TYPES,
-    get_default_values_of_preferences
+    get_default_values_of_preferences,
 )
-from openedx.core.djangoapps.notifications.config.waffle import ENABLE_EMAIL_NOTIFICATIONS
 from openedx.core.djangoapps.notifications.email import ONE_CLICK_EMAIL_UNSUB_KEY
 from openedx.core.djangoapps.notifications.email_notifications import EmailCadence
 from openedx.core.djangoapps.notifications.events import notification_preference_unsubscribe_event
 from openedx.core.djangoapps.notifications.models import NotificationPreference
-from openedx.core.djangoapps.user_api.models import UserPreference
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
+from openedx.core.djangoapps.user_api.models import UserPreference
 from xmodule.modulestore.django import modulestore
 
-from .notification_icons import NotificationTypeIcons
 from ..utils import create_account_notification_pref_if_not_exists
+from .notification_icons import NotificationTypeIcons
 
 User = get_user_model()
-
-
-def is_email_notification_flag_enabled(user=None):
-    """
-    Returns if waffle flag is enabled for user or not
-    """
-    flag_model = get_waffle_flag_model()
-    try:
-        flag = flag_model.objects.get(name=ENABLE_EMAIL_NOTIFICATIONS.name)
-    except flag_model.DoesNotExist:
-        return False
-    if flag.everyone is not None:
-        return flag.everyone
-    if user:
-        role_value = flag.is_active_for_user(user)
-        if role_value is not None:
-            return role_value
-        try:
-            return flag.users.contains(user)
-        except ValueError:
-            pass
-    return False
 
 
 def create_datetime_string(datetime_instance):
@@ -97,11 +74,17 @@ def create_email_template_context(username):
         for social_platform in social_media_urls.keys()
         if social_media_icons.get(social_platform)
     }
-    patch = {
+    patch = {  # noqa: F841
         'channel': 'email',
         'value': False
     }
-    account_base_url = (settings.ACCOUNT_MICROFRONTEND_URL or "").rstrip('/')
+    account_base_url = (
+        configuration_helpers.get_value(
+            'ACCOUNT_MICROFRONTEND_URL',
+            settings.ACCOUNT_MICROFRONTEND_URL,
+        ) or
+        ""
+    ).rstrip('/')
     return {
         "platform_name": settings.PLATFORM_NAME,
         "mailing_address": settings.CONTACT_MAILING_ADDRESS,
@@ -195,11 +178,11 @@ def get_start_end_date(cadence_type):
     """
     if cadence_type not in [EmailCadence.DAILY, EmailCadence.WEEKLY]:
         raise ValueError('Invalid cadence_type')
-    end_date = datetime.datetime.now()
+    end_date = django_timezone.now()
     start_date = end_date - datetime.timedelta(days=1, minutes=15)
     if cadence_type == EmailCadence.WEEKLY:
         start_date = start_date - datetime.timedelta(days=6)
-    return utc.localize(start_date), utc.localize(end_date)
+    return start_date, end_date
 
 
 def get_course_info(course_key):

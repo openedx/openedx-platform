@@ -3,10 +3,11 @@ Tests for the Sending activation email celery tasks
 """
 
 
+from unittest import mock  # pylint: disable=wrong-import-order
+
 from django.conf import settings
 from django.test import TestCase
 from edx_ace.errors import ChannelError, RecoverableChannelDeliveryError
-from unittest import mock  # lint-amnesty, pylint: disable=wrong-import-order
 
 from common.djangoapps.student.models import Registration
 from common.djangoapps.student.views.management import compose_activation_email, compose_and_send_activation_email
@@ -49,7 +50,7 @@ class SendActivationEmailTestCase(TestCase):
 
     @mock.patch('time.sleep', mock.Mock(return_value=None))
     @mock.patch('openedx.core.djangoapps.user_authn.tasks.log')
-    @mock.patch('openedx.core.djangoapps.user_authn.tasks.ace.send', mock.Mock(side_effect=RecoverableChannelDeliveryError(None, None)))  # lint-amnesty, pylint: disable=line-too-long
+    @mock.patch('openedx.core.djangoapps.user_authn.tasks.ace.send', mock.Mock(side_effect=RecoverableChannelDeliveryError(None, None)))  # pylint: disable=line-too-long
     def test_RetrySendUntilFail(self, mock_log):
         """
         Tests retries when the activation email doesn't send
@@ -62,7 +63,7 @@ class SendActivationEmailTestCase(TestCase):
         # Asserts sending email retry logging.
         for attempt in range(email_max_attempts):
             mock_log.info.assert_any_call(
-                'Retrying sending email to user {dest_addr}, attempt # {attempt} of {max_attempts}'.format(
+                'Retrying sending email to user {dest_addr}, attempt # {attempt} of {max_attempts}'.format(  # noqa: UP032  # pylint: disable=line-too-long
                     dest_addr=self.student.email,
                     attempt=attempt,
                     max_attempts=email_max_attempts

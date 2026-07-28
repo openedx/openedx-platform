@@ -4,10 +4,7 @@ Tests for the xblock_django.translation module.
 
 from done import DoneXBlock
 
-from ..translation import (
-    get_non_xmodule_xblock_module_names,
-    get_non_xmodule_xblocks,
-)
+from ..translation import get_non_xmodule_xblock_module_names, get_non_xmodule_xblocks
 
 
 def test_get_non_xmodule_xblock_module_names():

@@ -1,11 +1,11 @@
 """
-Tests for Learning-Core-based Content Libraries
+Tests for openedx_content-based Content Libraries
 """
-from datetime import datetime, timezone
 import os
-import zipfile
-import uuid
 import tempfile
+import uuid
+import zipfile
+from datetime import UTC, datetime
 from io import StringIO
 from unittest import skip
 from unittest.mock import ANY, patch
@@ -13,18 +13,22 @@ from unittest.mock import ANY, patch
 import ddt
 import tomlkit
 from bridgekeeper import perms
-from django.core.files.uploadedfile import SimpleUploadedFile
 from django.contrib.auth.models import Group
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db.models import Q
 from django.test import override_settings
 from django.test.client import Client
 from freezegun import freeze_time
-from opaque_keys.edx.locator import LibraryLocatorV2, LibraryUsageLocatorV2, LibraryCollectionLocator
+from opaque_keys.edx.locator import LibraryCollectionLocator, LibraryLocatorV2, LibraryUsageLocatorV2
+from openedx_authz import api as authz_api
+from openedx_authz.constants import roles
+from openedx_authz.constants.permissions import VIEW_LIBRARY
+from openedx_authz.engine.enforcer import AuthzEnforcer
+from openedx_content.models_api import LearningPackage
 from organizations.models import Organization
-from rest_framework.test import APITestCase
 from rest_framework import status
-from openedx_learning.api.authoring_models import LearningPackage
-from user_tasks.models import UserTaskStatus, UserTaskArtifact
+from rest_framework.test import APITestCase
+from user_tasks.models import UserTaskArtifact, UserTaskStatus
 
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.content_libraries.constants import CC_4_BY
@@ -36,12 +40,8 @@ from openedx.core.djangoapps.content_libraries.tests.base import (
     URL_BLOCK_XBLOCK_HANDLER,
     ContentLibrariesRestApiTest,
 )
-from openedx_authz import api as authz_api
-from openedx_authz.constants import roles
-from openedx_authz.engine.enforcer import AuthzEnforcer
 from openedx.core.djangoapps.xblock import api as xblock_api
 from openedx.core.djangolib.testing.utils import skip_unless_cms
-from openedx_authz.constants.permissions import VIEW_LIBRARY
 
 from ..models import ContentLibrary, ContentLibraryPermission
 from ..permissions import CAN_VIEW_THIS_CONTENT_LIBRARY, HasPermissionInContentLibraryScope
@@ -51,7 +51,7 @@ from ..permissions import CAN_VIEW_THIS_CONTENT_LIBRARY, HasPermissionInContentL
 @ddt.ddt
 class ContentLibrariesTestCase(ContentLibrariesRestApiTest):
     """
-    General tests for Learning-Core-based Content Libraries
+    General tests for openedx_content-based Content Libraries
 
     These tests use the REST API, which in turn relies on the Python API.
     Some tests may use the python API directly if necessary to provide
@@ -308,7 +308,7 @@ class ContentLibrariesTestCase(ContentLibrariesRestApiTest):
 
         Tests with some non-ASCII chars in slugs, titles, descriptions.
         """
-        admin = UserFactory.create(username="Admin", email="admin@example.com", is_staff=True)
+        admin = UserFactory.create(username="Admin", email="admin@example.com", is_staff=True)  # noqa: F841
 
         lib = self._create_library(slug="téstlꜟط", title="A Tést Lꜟطrary", description="Tésting XBlocks")
         lib_id = lib["id"]
@@ -318,11 +318,11 @@ class ContentLibrariesTestCase(ContentLibrariesRestApiTest):
         assert self._get_library_blocks(lib_id)['results'] == []
 
         # Add a 'problem' XBlock to the library:
-        create_date = datetime(2024, 6, 6, 6, 6, 6, tzinfo=timezone.utc)
+        create_date = datetime(2024, 6, 6, 6, 6, 6, tzinfo=UTC)
         with freeze_time(create_date):
-            block_data = self._add_block_to_library(lib_id, "problem", "ࠒröblæm1")
+            block_data = self._add_block_to_library(lib_id, "problem", "problem1")
         self.assertDictContainsEntries(block_data, {
-            "id": "lb:CL-TEST:téstlꜟط:problem:ࠒröblæm1",
+            "id": "lb:CL-TEST:téstlꜟط:problem:problem1",
             "display_name": "Blank Problem",
             "block_type": "problem",
             "has_unpublished_changes": True,
@@ -338,7 +338,7 @@ class ContentLibrariesTestCase(ContentLibrariesRestApiTest):
         assert self._get_library(lib_id)['has_unpublished_changes'] is True
 
         # Publish the changes:
-        publish_date = datetime(2024, 7, 7, 7, 7, 7, tzinfo=timezone.utc)
+        publish_date = datetime(2024, 7, 7, 7, 7, 7, tzinfo=UTC)
         with freeze_time(publish_date):
             self._commit_library_changes(lib_id)
         assert self._get_library(lib_id)['has_unpublished_changes'] is False
@@ -357,7 +357,7 @@ class ContentLibrariesTestCase(ContentLibrariesRestApiTest):
         <problem display_name="New Multi Choice Question" max_attempts="5">
             <multiplechoiceresponse>
                 <p>This is a normal capa problem with unicode 🔥. It has "maximum attempts" set to **5**.</p>
-                <label>Learning Core is designed to store.</label>
+                <label>openedx_content is designed to store.</label>
                 <choicegroup type="MultipleChoice">
                     <choice correct="false">XBlock metadata only</choice>
                     <choice correct="true">XBlock data/metadata and associated static asset files</choice>
@@ -367,7 +367,7 @@ class ContentLibrariesTestCase(ContentLibrariesRestApiTest):
             </multiplechoiceresponse>
         </problem>
         """.strip()
-        update_date = datetime(2024, 8, 8, 8, 8, 8, tzinfo=timezone.utc)
+        update_date = datetime(2024, 8, 8, 8, 8, 8, tzinfo=UTC)
         with freeze_time(update_date):
             self._set_library_block_olx(block_id, new_olx)
         # now reading it back, we should get that exact OLX (no change to whitespace etc.):
@@ -382,7 +382,7 @@ class ContentLibrariesTestCase(ContentLibrariesRestApiTest):
         # Now view the XBlock's student_view (including draft changes):
         fragment = self._render_block_view(block_id, "student_view")
         assert 'resources' in fragment
-        assert 'Learning Core is designed to store.' in fragment['content']
+        assert 'openedx_content is designed to store.' in fragment['content']
 
         # Also call a handler to make sure that's working:
         handler_url = self._get_block_handler_url(block_id, "xmodule_handler") + "problem_get"
@@ -409,7 +409,7 @@ class ContentLibrariesTestCase(ContentLibrariesRestApiTest):
         assert self._get_library_block_olx(block_id) == new_olx
         unpublished_block_data = self._get_library_block(block_id)
         assert unpublished_block_data['has_unpublished_changes'] is True
-        block_update_date = datetime(2024, 8, 8, 8, 8, 9, tzinfo=timezone.utc)
+        block_update_date = datetime(2024, 8, 8, 8, 8, 9, tzinfo=UTC)
         with freeze_time(block_update_date):
             self._publish_library_block(block_id)
         # Confirm the block is now published:
@@ -432,7 +432,7 @@ class ContentLibrariesTestCase(ContentLibrariesRestApiTest):
         assert self._get_library_blocks(lib_id)['results'] == []
 
         # Add a 'html' XBlock to the library:
-        create_date = datetime(2024, 6, 6, 6, 6, 6, tzinfo=timezone.utc)
+        create_date = datetime(2024, 6, 6, 6, 6, 6, tzinfo=UTC)
         with freeze_time(create_date):
             block_data = self._add_block_to_library(lib_id, "problem", "problem1")
         self.assertDictContainsEntries(block_data, {
@@ -452,7 +452,7 @@ class ContentLibrariesTestCase(ContentLibrariesRestApiTest):
         assert self._get_library(lib_id)['has_unpublished_changes'] is True
 
         # Publish the changes:
-        publish_date = datetime(2024, 7, 7, 7, 7, 7, tzinfo=timezone.utc)
+        publish_date = datetime(2024, 7, 7, 7, 7, 7, tzinfo=UTC)
         with freeze_time(publish_date):
             self._commit_library_changes(lib_id)
         assert self._get_library(lib_id)['has_unpublished_changes'] is False
@@ -469,7 +469,7 @@ class ContentLibrariesTestCase(ContentLibrariesRestApiTest):
         assert '<problem' in orig_olx
         new_olx = "<problem><b>Hello world!</b></problem>"
 
-        update_date = datetime(2024, 8, 8, 8, 8, 8, tzinfo=timezone.utc)
+        update_date = datetime(2024, 8, 8, 8, 8, 8, tzinfo=UTC)
         with freeze_time(update_date):
             self._set_library_block_olx(block_id, new_olx)
         # now reading it back, we should get that exact OLX (no change to whitespace etc.):
@@ -543,8 +543,8 @@ class ContentLibrariesTestCase(ContentLibrariesRestApiTest):
         """Test that requests fail with 404 when the library does not exist"""
         valid_not_found_key = 'lb:valid:key:video:1'
         response = self.client.get(URL_BLOCK_METADATA_URL.format(block_key=valid_not_found_key))
-        self.assertEqual(response.status_code, 404)
-        self.assertEqual(response.json(), {
+        self.assertEqual(response.status_code, 404)  # noqa: PT009
+        self.assertEqual(response.json(), {  # noqa: PT009
             'detail': "Content Library 'lib:valid:key' does not exist",
         })
 
@@ -558,8 +558,8 @@ class ContentLibrariesTestCase(ContentLibrariesRestApiTest):
         library_key = LibraryLocatorV2.from_string(lib['id'])
         non_existent_block_key = LibraryUsageLocatorV2(lib_key=library_key, block_type='video', usage_id='123')
         response = self.client.get(URL_BLOCK_METADATA_URL.format(block_key=non_existent_block_key))
-        self.assertEqual(response.status_code, 404)
-        self.assertEqual(response.json(), {
+        self.assertEqual(response.status_code, 404)  # noqa: PT009
+        self.assertEqual(response.json(), {  # noqa: PT009
             'detail': f"The component '{non_existent_block_key}' does not exist.",
         })
 
@@ -576,7 +576,7 @@ class ContentLibrariesTestCase(ContentLibrariesRestApiTest):
 
         TODO: The asset permissions part of this test have been commented out
         for now. These should be re-enabled after we re-implement them over
-        Learning Core data models.
+        openedx_content data models.
         """
         # Create a few users to use for all of these tests:
         admin = UserFactory.create(username="Admin", email="admin@example.com", is_staff=True)
@@ -625,7 +625,7 @@ class ContentLibrariesTestCase(ContentLibrariesRestApiTest):
                 {"username": author.username, "group_name": None, "access_level": "author"},
                 reader_grant,
             ]
-            for entry, expected in zip(team_response, expected_response):
+            for entry, expected in zip(team_response, expected_response):  # noqa: B905
                 self.assertDictContainsEntries(entry, expected)
 
         # A random user cannot get the library nor its team:
@@ -830,7 +830,7 @@ class ContentLibrariesTestCase(ContentLibrariesRestApiTest):
             # the the block in the clipboard
             self.assertDictContainsEntries(self._get_library_block(paste_data["id"]), {
                 **block_data,
-                "last_draft_created_by": None,
+                "last_draft_created_by": "Author",
                 "last_draft_created": paste_data["last_draft_created"],
                 "created": paste_data["created"],
                 "modified": paste_data["modified"],
@@ -889,6 +889,669 @@ class ContentLibrariesTestCase(ContentLibrariesRestApiTest):
             lib_id = lib["id"]
             block_types = self._get_library_block_types(lib_id)
             assert [dict(item) for item in block_types] == expected
+
+    def test_draft_history_empty_after_publish(self):
+        """
+        A block with no unpublished changes since its last publish has an empty draft history.
+        """
+        lib = self._create_library(slug="draft-hist-empty", title="Draft History Empty")
+        block = self._add_block_to_library(lib["id"], "problem", "prob1")
+        block_key = block["id"]
+
+        self._publish_library_block(block_key)
+
+        history = self._get_block_draft_history(block_key)
+        assert history == []
+
+    def test_draft_history_shows_unpublished_edits(self):
+        """
+        Draft history contains entries for edits made since the last publication,
+        ordered most-recent-first, with the correct fields.
+        """
+        with freeze_time(datetime(2026, 1, 1, tzinfo=UTC)):
+            lib = self._create_library(slug="draft-hist-edits", title="Draft History Edits")
+            block = self._add_block_to_library(lib["id"], "problem", "prob1")
+            block_key = block["id"]
+
+        with freeze_time(datetime(2026, 2, 1, tzinfo=UTC)):
+            self._publish_library_block(block_key)
+
+        edit1_time = datetime(2026, 4, 1, 10, 0, 0, tzinfo=UTC)
+        with freeze_time(edit1_time):
+            self._set_library_block_olx(block_key, "<problem><p>edit 1</p></problem>")
+
+        edit2_time = datetime(2026, 4, 2, 10, 0, 0, tzinfo=UTC)
+        with freeze_time(edit2_time):
+            self._set_library_block_olx(block_key, "<problem><p>edit 2</p></problem>")
+
+        history = self._get_block_draft_history(block_key)
+        assert len(history) == 2
+        assert history[0]["changed_at"] == edit2_time.isoformat().replace("+00:00", "Z")
+        assert history[1]["changed_at"] == edit1_time.isoformat().replace("+00:00", "Z")
+        entry = history[0]
+        assert "contributor" in entry
+        assert "title" in entry
+        assert "action" in entry
+
+    def test_draft_history_action_renamed(self):
+        """
+        When the title changes between versions, the action is 'renamed'.
+        """
+        lib = self._create_library(slug="draft-hist-rename", title="Draft History Rename")
+        block = self._add_block_to_library(lib["id"], "problem", "prob1")
+        block_key = block["id"]
+
+        self._publish_library_block(block_key)
+        self._set_library_block_olx(
+            block_key,
+            '<problem display_name="New Title"><p>content</p></problem>',
+        )
+
+        history = self._get_block_draft_history(block_key)
+        assert len(history) >= 1
+        assert history[0]["action"] == "renamed"
+
+    def test_draft_history_action_edited(self):
+        """
+        When only the content changes (not the title), the action is 'edited'.
+        """
+        lib = self._create_library(slug="draft-hist-edit", title="Draft History Edit")
+        block = self._add_block_to_library(lib["id"], "problem", "prob1")
+        block_key = block["id"]
+
+        self._publish_library_block(block_key)
+        self._set_library_block_olx(block_key, "<problem><p>changed content</p></problem>")
+
+        history = self._get_block_draft_history(block_key)
+        assert len(history) >= 1
+        assert history[0]["action"] == "edited"
+
+    def test_draft_history_action_created(self):
+        """
+        When a block is first created (old_version=None), the action is 'created'.
+        """
+        lib = self._create_library(slug="draft-hist-create", title="Draft History Create")
+        block = self._add_block_to_library(lib["id"], "problem", "prob1")
+        block_key = block["id"]
+
+        history = self._get_block_draft_history(block_key)
+        assert len(history) >= 1
+        assert history[-1]["action"] == "created"
+        assert history[-1]["old_version"] == 0
+        assert history[-1]["new_version"] is not None
+
+    def test_draft_history_action_deleted(self):
+        """
+        When a block is soft-deleted (new_version=None), the action is 'deleted'.
+        """
+        lib = self._create_library(slug="draft-hist-delete", title="Draft History Delete")
+        block = self._add_block_to_library(lib["id"], "problem", "prob1")
+        block_key = block["id"]
+
+        self._publish_library_block(block_key)
+        self._delete_library_block(block_key)
+
+        history = self._get_block_draft_history(block_key)
+        assert len(history) >= 1
+        assert history[0]["action"] == "deleted"
+
+    def test_draft_history_cleared_after_publish(self):
+        """
+        After publishing, the draft history resets to empty.
+        """
+        lib = self._create_library(slug="draft-hist-clear", title="Draft History Clear")
+        block = self._add_block_to_library(lib["id"], "problem", "prob1")
+        block_key = block["id"]
+
+        self._publish_library_block(block_key)
+        self._set_library_block_olx(block_key, "<problem><p>unpublished</p></problem>")
+        assert len(self._get_block_draft_history(block_key)) >= 1
+
+        self._publish_library_block(block_key)
+        assert self._get_block_draft_history(block_key) == []
+
+    def test_draft_history_nonexistent_block(self):
+        """
+        Requesting draft history for a non-existent block returns 404.
+        """
+        self._get_block_draft_history("lb:CL-TEST:draft-hist-404:problem:nope", expect_response=404)
+
+    def test_draft_history_permissions(self):
+        """
+        A user without library access receives 403.
+        """
+        lib = self._create_library(slug="draft-hist-auth", title="Draft History Auth")
+        block = self._add_block_to_library(lib["id"], "problem", "prob1")
+        block_key = block["id"]
+        self._set_library_block_olx(block_key, "<problem><p>edit</p></problem>")
+
+        unauthorized = UserFactory.create(username="noauth-draft", password="edx")
+        with self.as_user(unauthorized):
+            self._get_block_draft_history(block_key, expect_response=403)
+
+    def test_publish_history_empty_before_first_publish(self):
+        """
+        A block that has never been published has an empty publish history.
+        """
+        lib = self._create_library(slug="hist-empty", title="History Empty")
+        block = self._add_block_to_library(lib["id"], "problem", "prob1")
+        history = self._get_block_publish_history(block["id"])
+        assert history == []
+
+    def test_publish_history_after_single_publish(self):
+        """
+        Post-Verawood: After one direct component publish (direct=True) the history
+        contains exactly one group with the correct publisher, timestamp, contributor,
+        and a single entry in direct_published_entities for the component itself.
+        """
+        lib = self._create_library(slug="hist-single", title="History Single")
+        block = self._add_block_to_library(lib["id"], "problem", "prob1")
+        block_key = block["id"]
+
+        publish_time = datetime(2026, 1, 10, 12, 0, 0, tzinfo=UTC)
+        with freeze_time(publish_time):
+            self._publish_library_block(block_key)
+
+        history = self._get_block_publish_history(block_key)
+        assert len(history) == 1
+        group = history[0]
+        assert group["published_by"] == self.user.username
+        assert group["published_at"] == publish_time.isoformat().replace("+00:00", "Z")
+        assert isinstance(group["publish_log_uuid"], str)
+        assert any(c["username"] == self.user.username for c in group["contributors"])
+        # Post-Verawood: component was directly published → single entry for itself
+        assert len(group["direct_published_entities"]) == 1
+        entity = group["direct_published_entities"][0]
+        assert entity["entity_key"] == block_key
+        assert entity["entity_type"] == "problem"
+
+    def test_publish_history_deleted_block_retains_title(self):
+        """
+        When a block is soft-deleted and published, the direct_published_entities
+        entry shows the block's last known title (from old_version), not an empty string.
+        """
+        lib = self._create_library(slug="hist-delete-title", title="History Delete Title")
+        block = self._add_block_to_library(lib["id"], "problem", "prob1")
+        block_key = block["id"]
+        self._set_library_block_olx(
+            block_key,
+            '<problem display_name="My Problem Title"><p>content</p></problem>',
+        )
+        self._publish_library_block(block_key)
+        self._delete_library_block(block_key)
+        self._publish_library_block(block_key)
+
+        history = self._get_block_publish_history(block_key)
+        # Most recent publish is the deletion
+        deletion_group = history[0]
+        assert len(deletion_group["direct_published_entities"]) == 1
+        assert deletion_group["direct_published_entities"][0]["title"] == "My Problem Title"
+
+    def test_publish_history_multiple_publishes(self):
+        """
+        Multiple publish events are returned newest-first.
+        """
+        lib = self._create_library(slug="hist-multi", title="History Multi")
+        block = self._add_block_to_library(lib["id"], "problem", "prob1")
+        block_key = block["id"]
+
+        first_publish = datetime(2026, 1, 1, 0, 0, 0, tzinfo=UTC)
+        with freeze_time(first_publish):
+            self._publish_library_block(block_key)
+
+        self._set_library_block_olx(block_key, "<problem><p>v2</p></problem>")
+
+        second_publish = datetime(2026, 2, 1, 0, 0, 0, tzinfo=UTC)
+        with freeze_time(second_publish):
+            self._publish_library_block(block_key)
+
+        history = self._get_block_publish_history(block_key)
+        assert len(history) == 2
+        assert history[0]["published_at"] == second_publish.isoformat().replace("+00:00", "Z")
+        assert history[1]["published_at"] == first_publish.isoformat().replace("+00:00", "Z")
+
+    def test_publish_history_tracks_contributors(self):
+        """
+        Contributors for the first publish include the block creator.
+        Note: set_library_block_olx does not record created_by, so OLX
+        edits are not tracked as contributions.
+        """
+        lib = self._create_library(slug="hist-contrib", title="History Contributors")
+        block = self._add_block_to_library(lib["id"], "problem", "prob1")
+        block_key = block["id"]
+
+        with freeze_time(datetime(2026, 1, 1, tzinfo=UTC)):
+            self._publish_library_block(block_key)
+
+        history = self._get_block_publish_history(block_key)
+        assert len(history) == 1
+        group = history[0]
+        assert any(c["username"] == self.user.username for c in group["contributors"])
+
+    def test_publish_history_entries(self):
+        """
+        The entries endpoint returns the individual draft change records for a publish event.
+        """
+        lib = self._create_library(slug="hist-entries", title="History Entries")
+        block = self._add_block_to_library(lib["id"], "problem", "prob1")
+        block_key = block["id"]
+
+        with freeze_time(datetime(2026, 2, 15, tzinfo=UTC)):
+            self._set_library_block_olx(block_key, "<problem><p>edit 1</p></problem>")
+        with freeze_time(datetime(2026, 2, 20, tzinfo=UTC)):
+            self._set_library_block_olx(block_key, "<problem><p>edit 2</p></problem>")
+
+        with freeze_time(datetime(2026, 3, 1, tzinfo=UTC)):
+            self._publish_library_block(block_key)
+
+        history = self._get_block_publish_history(block_key)
+        assert len(history) == 1
+        publish_log_uuid = history[0]["publish_log_uuid"]
+
+        entries = self._get_block_publish_history_entries(block_key, publish_log_uuid)
+        assert len(entries) >= 1
+        entry = entries[0]
+        assert "contributor" in entry
+        assert "changed_at" in entry
+        assert "title" in entry
+        assert "action" in entry
+        assert "old_version" in entry
+        assert "new_version" in entry
+
+    def test_draft_history_deleted_has_null_new_version(self):
+        """
+        Deleted draft history entry exposes new_version as null.
+        """
+        lib = self._create_library(slug="draft-hist-delete-null", title="Draft History Delete Null")
+        block = self._add_block_to_library(lib["id"], "problem", "prob1")
+        block_key = block["id"]
+
+        self._publish_library_block(block_key)
+        self._delete_library_block(block_key)
+
+        history = self._get_block_draft_history(block_key)
+        assert len(history) >= 1
+        assert history[0]["action"] == "deleted"
+        assert history[0]["old_version"] > 0
+        assert history[0]["new_version"] is None
+
+    def test_publish_history_entries_unknown_uuid(self):
+        """
+        Requesting entries for a publish_log_uuid unrelated to this component returns an empty list.
+        """
+        lib = self._create_library(slug="hist-baduid", title="History Bad UUID")
+        block = self._add_block_to_library(lib["id"], "problem", "prob1")
+        block_key = block["id"]
+
+        with freeze_time(datetime(2026, 1, 1, tzinfo=UTC)):
+            self._publish_library_block(block_key)
+
+        fake_uuid = str(uuid.uuid4())
+        entries = self._get_block_publish_history_entries(block_key, fake_uuid, expect_response=200)
+        assert entries == []
+
+    def test_publish_history_nonexistent_block(self):
+        """
+        Requesting publish history for a non-existent block returns 404.
+        """
+        self._get_block_publish_history("lb:CL-TEST:hist-404:problem:nope", expect_response=404)
+
+    def test_publish_history_permissions(self):
+        """
+        A user without library access receives 403.
+        """
+        lib = self._create_library(slug="hist-auth", title="History Auth")
+        block = self._add_block_to_library(lib["id"], "problem", "prob1")
+        block_key = block["id"]
+
+        with freeze_time(datetime(2026, 1, 1, tzinfo=UTC)):
+            self._publish_library_block(block_key)
+
+        unauthorized = UserFactory.create(username="noauth-hist", password="edx")
+        with self.as_user(unauthorized):
+            self._get_block_publish_history(block_key, expect_response=403)
+
+    # --- Post-Verawood publish history tests ---
+
+    def test_post_verawood_component_published_directly(self):
+        """
+        Post-Verawood, direct=True: when a component is published directly,
+        direct_published_entities has a single entry for the component itself.
+        The component's own history and the container's history both show the
+        component as the directly published entity.
+        """
+        lib = self._create_library(slug="pv-comp-direct", title="PV Comp Direct")
+        unit = self._create_container(lib["id"], "unit", "u1", "Unit 1")
+        unit_key = unit["id"]
+        block = self._add_block_to_library(lib["id"], "problem", "prob1")
+        block_key = block["id"]
+        self._add_container_children(unit_key, [block_key])
+
+        # Publish the component directly (not the unit)
+        self._publish_library_block(block_key)
+
+        # Component history: direct_published_entities = [component]
+        comp_history = self._get_block_publish_history(block_key)
+        assert len(comp_history) == 1
+        entities = comp_history[0]["direct_published_entities"]
+        assert len(entities) == 1
+        assert entities[0]["entity_key"] == block_key
+        assert entities[0]["entity_type"] == "problem"
+        # scope_entity_key is always the component itself for component history
+        assert comp_history[0]["scope_entity_key"] == block_key
+
+        # Container history: same publish log → same direct_published_entities
+        unit_history = self._get_container_publish_history(unit_key)
+        assert len(unit_history) == 1
+        entities = unit_history[0]["direct_published_entities"]
+        assert len(entities) == 1
+        assert entities[0]["entity_key"] == block_key
+        assert entities[0]["entity_type"] == "problem"
+        # Post-Verawood container group: scope_entity_key is null (frontend uses current container)
+        assert unit_history[0]["scope_entity_key"] is None
+
+    def test_post_verawood_unit_published_directly(self):
+        """
+        Post-Verawood, direct=True on the Unit: when a Unit is published directly,
+        the Unit's history shows the unit as directly published. The child component's
+        history shows the unit as the directly published entity (direct=False on component).
+        """
+        lib = self._create_library(slug="pv-unit-direct", title="PV Unit Direct")
+        unit = self._create_container(lib["id"], "unit", "u1", "Unit 1")
+        unit_key = unit["id"]
+        block = self._add_block_to_library(lib["id"], "problem", "prob1")
+        block_key = block["id"]
+        self._add_container_children(unit_key, [block_key])
+
+        # Publish the unit directly (component is published as a dependency)
+        self._publish_container(unit_key)
+
+        # Container history: 1 group, unit is direct
+        unit_history = self._get_container_publish_history(unit_key)
+        assert len(unit_history) == 1
+        entities = unit_history[0]["direct_published_entities"]
+        assert len(entities) == 1
+        assert entities[0]["entity_key"] == unit_key
+        assert entities[0]["entity_type"] == "unit"
+        assert unit_history[0]["scope_entity_key"] is None
+
+        # Component history: 1 group, unit is the directly published entity
+        comp_history = self._get_block_publish_history(block_key)
+        assert len(comp_history) == 1
+        entities = comp_history[0]["direct_published_entities"]
+        assert len(entities) == 1
+        assert entities[0]["entity_key"] == unit_key
+        assert entities[0]["entity_type"] == "unit"
+        assert comp_history[0]["scope_entity_key"] == block_key
+
+    def test_post_verawood_container_history_merges_same_publish_log(self):
+        """
+        Post-Verawood: when the Unit and a Component are both touched in the same
+        PublishLog, the container history returns ONE merged group (not two separate
+        groups as in Pre-Verawood).
+        """
+        lib = self._create_library(slug="pv-merged", title="PV Merged")
+        unit = self._create_container(lib["id"], "unit", "u1", "Unit 1")
+        unit_key = unit["id"]
+        block = self._add_block_to_library(lib["id"], "problem", "prob1")
+        block_key = block["id"]
+        self._add_container_children(unit_key, [block_key])
+
+        self._publish_container(unit_key)
+
+        unit_history = self._get_container_publish_history(unit_key)
+        # Post-Verawood: ONE merged group for the entire PublishLog
+        assert len(unit_history) == 1
+
+    def test_post_verawood_container_history_entries_scope(self):
+        """
+        Post-Verawood: the entries endpoint for a container returns entries for all
+        entities in scope (container + descendants) that participated in the PublishLog,
+        not just the container itself.
+        """
+        lib = self._create_library(slug="pv-entries-scope", title="PV Entries Scope")
+        unit = self._create_container(lib["id"], "unit", "u1", "Unit 1")
+        unit_key = unit["id"]
+        block = self._add_block_to_library(lib["id"], "problem", "prob1")
+        block_key = block["id"]
+        self._add_container_children(unit_key, [block_key])
+
+        self._publish_container(unit_key)
+
+        unit_history = self._get_container_publish_history(unit_key)
+        assert len(unit_history) == 1
+        publish_log_uuid = unit_history[0]["publish_log_uuid"]
+
+        entries = self._get_container_publish_history_entries(unit_key, publish_log_uuid)
+        # Post-Verawood: entries for both the unit and the component
+        assert len(entries) >= 1
+        item_types = {e["item_type"] for e in entries}
+        assert "unit" in item_types
+        assert "problem" in item_types
+
+    def test_post_verawood_multiple_publishes_stay_separate(self):
+        """
+        Post-Verawood: two separate publish events produce two separate groups,
+        ordered most-recent-first.
+        """
+        lib = self._create_library(slug="pv-multi", title="PV Multi")
+        unit = self._create_container(lib["id"], "unit", "u1", "Unit 1")
+        unit_key = unit["id"]
+        block = self._add_block_to_library(lib["id"], "problem", "prob1")
+        block_key = block["id"]
+        self._add_container_children(unit_key, [block_key])
+
+        first_publish = datetime(2026, 1, 1, tzinfo=UTC)
+        with freeze_time(first_publish):
+            self._publish_container(unit_key)
+
+        self._set_library_block_olx(block_key, "<problem><p>v2</p></problem>")
+
+        second_publish = datetime(2026, 2, 1, tzinfo=UTC)
+        with freeze_time(second_publish):
+            self._publish_container(unit_key)
+
+        unit_history = self._get_container_publish_history(unit_key)
+        assert len(unit_history) == 2
+        assert unit_history[0]["published_at"] == second_publish.isoformat().replace("+00:00", "Z")
+        assert unit_history[1]["published_at"] == first_publish.isoformat().replace("+00:00", "Z")
+
+    # --- Pre-Verawood publish history tests ---
+    # Pre-Verawood records have direct=None. We simulate them by publishing and
+    # then backfilling direct=None on the resulting PublishLogRecords, mirroring
+    # what the 0007_publishlogrecord_direct migration does for historical data.
+
+    def test_pre_verawood_component_history_uses_component_as_entity(self):
+        """
+        Pre-Verawood (direct=None): component history has one group per publish event.
+        direct_published_entities has a single approximated entry for the component itself.
+        """
+        from openedx_content.models_api import PublishLogRecord
+
+        lib = self._create_library(slug="prev-comp", title="PreV Comp")
+        block = self._add_block_to_library(lib["id"], "problem", "prob1")
+        block_key = block["id"]
+        self._publish_library_block(block_key)
+
+        # Simulate Pre-Verawood by backfilling direct=None
+        PublishLogRecord.objects.all().update(direct=None)
+
+        history = self._get_block_publish_history(block_key)
+        assert len(history) == 1
+        entities = history[0]["direct_published_entities"]
+        assert len(entities) == 1
+        assert entities[0]["entity_key"] == block_key
+        assert entities[0]["entity_type"] == "problem"
+        assert history[0]["scope_entity_key"] == block_key
+
+    def test_pre_verawood_container_history_produces_separate_groups(self):
+        """
+        Pre-Verawood (direct=None): when a Unit and Component are published in the
+        same PublishLog, the container history produces SEPARATE groups — one per
+        entity (unlike Post-Verawood which merges into one group).
+        """
+        from openedx_content.models_api import PublishLogRecord
+
+        lib = self._create_library(slug="prev-separate", title="PreV Separate")
+        unit = self._create_container(lib["id"], "unit", "u1", "Unit 1")
+        unit_key = unit["id"]
+        block = self._add_block_to_library(lib["id"], "problem", "prob1")
+        block_key = block["id"]
+        self._add_container_children(unit_key, [block_key])
+        self._publish_container(unit_key)
+
+        # Simulate Pre-Verawood by backfilling direct=None
+        PublishLogRecord.objects.all().update(direct=None)
+
+        unit_history = self._get_container_publish_history(unit_key)
+        # Pre-Verawood: one group per entity (unit + component = 2 groups)
+        assert len(unit_history) == 2
+        # Each group's scope_entity_key matches its own entity_key
+        for group in unit_history:
+            assert group["scope_entity_key"] == group["direct_published_entities"][0]["entity_key"]
+
+    def test_pre_verawood_container_history_entries_only_container_itself(self):
+        """
+        Pre-Verawood (direct=None): the entries endpoint returns entries only for
+        the container itself, not for descendant components (old behavior preserved).
+        """
+        from openedx_content.models_api import PublishLogRecord
+
+        lib = self._create_library(slug="prev-entries", title="PreV Entries")
+        unit = self._create_container(lib["id"], "unit", "u1", "Unit 1")
+        unit_key = unit["id"]
+        block = self._add_block_to_library(lib["id"], "problem", "prob1")
+        block_key = block["id"]
+        self._add_container_children(unit_key, [block_key])
+        self._publish_container(unit_key)
+
+        # Simulate Pre-Verawood by backfilling direct=None
+        PublishLogRecord.objects.all().update(direct=None)
+
+        unit_history = self._get_container_publish_history(unit_key)
+        # Find the group whose approximated entity_key is the unit itself
+        unit_group = next(
+            g for g in unit_history
+            if g["direct_published_entities"][0]["entity_key"] == unit_key
+        )
+        publish_log_uuid = unit_group["publish_log_uuid"]
+
+        entries = self._get_container_publish_history_entries(unit_key, publish_log_uuid)
+        # Pre-Verawood: entries only for the container itself
+        assert len(entries) >= 1
+        # All entries should be for the unit, not the component
+        for entry in entries:
+            assert entry["item_type"] == "unit"
+
+    def test_creation_entry_returns_first_version(self):
+        """
+        The creation entry corresponds to the first time the block was saved,
+        with action='created' and the correct fields populated.
+        """
+        lib = self._create_library(slug="creation-entry-basic", title="Creation Entry Basic")
+        block = self._add_block_to_library(lib["id"], "problem", "prob1")
+        block_key = block["id"]
+
+        entry = self._get_block_creation_entry(block_key)
+
+        assert entry is not None
+        assert entry["action"] == "created"
+        assert entry["item_type"] == "problem"
+        assert entry["old_version"] == 0
+        assert entry["new_version"] == 1
+        assert "changed_at" in entry
+        assert "title" in entry
+        assert "contributor" in entry
+
+    def test_creation_entry_unchanged_after_edits(self):
+        """
+        Subsequent edits and publishes do not affect the creation entry — it
+        always reflects the first saved version.
+        """
+        lib = self._create_library(slug="creation-entry-stable", title="Creation Entry Stable")
+        block = self._add_block_to_library(lib["id"], "problem", "prob1")
+        block_key = block["id"]
+
+        # Record the creation entry before any edits
+        entry_before = self._get_block_creation_entry(block_key)
+
+        self._set_library_block_olx(block_key, "<problem><p>edited</p></problem>")
+        self._publish_library_block(block_key)
+
+        entry_after = self._get_block_creation_entry(block_key)
+
+        assert entry_after["changed_at"] == entry_before["changed_at"]
+        assert entry_after["action"] == "created"
+
+    def test_creation_entry_nonexistent_block(self):
+        """
+        Requesting the creation entry for a non-existent block returns 404.
+        """
+        self._get_block_creation_entry("lb:CL-TEST:creation-404:problem:nope", expect_response=404)
+
+    def test_creation_entry_permissions(self):
+        """
+        A user without library access receives 403.
+        """
+        lib = self._create_library(slug="creation-entry-auth", title="Creation Entry Auth")
+        block = self._add_block_to_library(lib["id"], "problem", "prob1")
+        block_key = block["id"]
+
+        unauthorized = UserFactory.create(username="noauth-creation", password="edx")
+        with self.as_user(unauthorized):
+            self._get_block_creation_entry(block_key, expect_response=403)
+
+    def test_container_creation_entry_returns_first_version(self):
+        """
+        The container creation entry corresponds to the first time the container was
+        saved, with action='created' and item_type matching the container type.
+        """
+        lib = self._create_library(slug="ct-creation-basic", title="Container Creation Basic")
+        unit = self._create_container(lib["id"], "unit", slug="unit1", display_name="My Unit")
+        unit_key = unit["id"]
+
+        entry = self._get_container_creation_entry(unit_key)
+
+        assert entry is not None
+        assert entry["action"] == "created"
+        assert entry["item_type"] == "unit"
+        assert entry["old_version"] == 0
+        assert entry["new_version"] == 1
+        assert entry["title"] == "My Unit"
+        assert "changed_at" in entry
+        assert "contributor" in entry
+
+    def test_container_creation_entry_unchanged_after_edits(self):
+        """
+        Subsequent edits and publishes do not affect the creation entry — it always
+        reflects the first saved version of the container.
+        """
+        lib = self._create_library(slug="ct-creation-stable", title="Container Creation Stable")
+        unit = self._create_container(lib["id"], "unit", slug="unit1", display_name="Original Title")
+        unit_key = unit["id"]
+
+        entry_before = self._get_container_creation_entry(unit_key)
+
+        self._update_container(unit_key, display_name="Updated Title")
+        self._publish_container(unit_key)
+
+        entry_after = self._get_container_creation_entry(unit_key)
+
+        assert entry_after["changed_at"] == entry_before["changed_at"]
+        assert entry_after["action"] == "created"
+        assert entry_after["title"] == "Original Title"
+
+    def test_container_creation_entry_permissions(self):
+        """
+        A user without library access receives 403 for the container creation entry.
+        """
+        lib = self._create_library(slug="ct-creation-auth", title="Container Creation Auth")
+        unit = self._create_container(lib["id"], "unit", slug="unit1", display_name="Auth Unit")
+        unit_key = unit["id"]
+
+        unauthorized = UserFactory.create(username="noauth-ct-creation", password="edx")
+        with self.as_user(unauthorized):
+            self._get_container_creation_entry(unit_key, expect_response=403)
 
 
 class LibraryRestoreViewTestCase(ContentLibrariesRestApiTest):
@@ -987,17 +1650,17 @@ class LibraryRestoreViewTestCase(ContentLibrariesRestApiTest):
         with self.as_user(self.admin_user):
             response_data = self._start_library_restore_task(self.uploaded_zip_file)
 
-        self.assertIn('task_id', response_data)
-        self.assertIsNotNone(response_data['task_id'])
+        self.assertIn('task_id', response_data)  # noqa: PT009
+        self.assertIsNotNone(response_data['task_id'])  # noqa: PT009
 
         ## GET the task status and result (task is run synchronously in tests)
         with self.as_user(self.admin_user):
             response_data = self._get_library_restore_task(response_data['task_id'])
 
-        self.assertIn('state', response_data)
-        self.assertEqual(response_data['state'], 'Succeeded')
+        self.assertIn('state', response_data)  # noqa: PT009
+        self.assertEqual(response_data['state'], 'Succeeded')  # noqa: PT009
 
-        self.assertIn('result', response_data)
+        self.assertIn('result', response_data)  # noqa: PT009
         task_result = response_data.get('result', {})
 
         # Validate the learning package data in the result
@@ -1022,11 +1685,11 @@ class LibraryRestoreViewTestCase(ContentLibrariesRestApiTest):
             },
         }
 
-        self.assertIn('learning_package_id', task_result)
-        self.assertTrue(LearningPackage.objects.filter(pk=task_result['learning_package_id']).exists())
+        self.assertIn('learning_package_id', task_result)  # noqa: PT009
+        self.assertTrue(LearningPackage.objects.filter(pk=task_result['learning_package_id']).exists())  # noqa: PT009
 
         for key, value in expected.items():
-            self.assertEqual(task_result[key], value)
+            self.assertEqual(task_result[key], value)  # noqa: PT009
 
     def test_create_content_library_from_restore(self):
         """
@@ -1035,19 +1698,19 @@ class LibraryRestoreViewTestCase(ContentLibrariesRestApiTest):
         with self.as_user(self.admin_user):
             response_data = self._start_library_restore_task(self.uploaded_zip_file)
 
-        self.assertIn('task_id', response_data)
-        self.assertIsNotNone(response_data['task_id'])
+        self.assertIn('task_id', response_data)  # noqa: PT009
+        self.assertIsNotNone(response_data['task_id'])  # noqa: PT009
 
         with self.as_user(self.admin_user):
             response_data = self._get_library_restore_task(response_data['task_id'])
 
-        self.assertIn('state', response_data)
-        self.assertEqual(response_data['state'], 'Succeeded')
+        self.assertIn('state', response_data)  # noqa: PT009
+        self.assertEqual(response_data['state'], 'Succeeded')  # noqa: PT009
 
         task_result = response_data.get('result', {})
-        self.assertIn('learning_package_id', task_result)
+        self.assertIn('learning_package_id', task_result)  # noqa: PT009
         learning_package_id = task_result['learning_package_id']
-        self.assertTrue(LearningPackage.objects.filter(pk=learning_package_id).exists())
+        self.assertTrue(LearningPackage.objects.filter(pk=learning_package_id).exists())  # noqa: PT009
 
         library_title = "Restored Library"
         library_description = "A library restored from a learning package"
@@ -1061,16 +1724,16 @@ class LibraryRestoreViewTestCase(ContentLibrariesRestApiTest):
                 learning_package=learning_package_id,
             )
 
-        self.assertIn('id', create_response_data)
+        self.assertIn('id', create_response_data)  # noqa: PT009
         library_locator = LibraryLocatorV2.from_string(create_response_data['id'])
         content_library = ContentLibrary.objects.get_by_key(library_locator)
 
-        self.assertIsNotNone(content_library)
-        self.assertEqual(content_library.learning_package.id, learning_package_id)
-        self.assertEqual(content_library.learning_package.title, library_title)
-        self.assertEqual(content_library.learning_package.description, library_description)
-        self.assertIn(self.org_short_name, content_library.library_key.org)
-        self.assertIn(self.library_slug, content_library.library_key.slug)
+        self.assertIsNotNone(content_library)  # noqa: PT009
+        self.assertEqual(content_library.learning_package.id, learning_package_id)  # noqa: PT009
+        self.assertEqual(content_library.learning_package.title, library_title)  # noqa: PT009
+        self.assertEqual(content_library.learning_package.description, library_description)  # noqa: PT009
+        self.assertIn(self.org_short_name, content_library.library_key.org)  # noqa: PT009
+        self.assertIn(self.library_slug, content_library.library_key.slug)  # noqa: PT009
 
     def test_restore_library_unauthorized(self):
         """
@@ -1112,7 +1775,7 @@ class LibraryRestoreViewTestCase(ContentLibrariesRestApiTest):
             "error_log": None,
         }
 
-        self.assertEqual(response_data, expected)
+        self.assertEqual(response_data, expected)  # noqa: PT009
 
         in_progress_task_status = self._create_user_task_status(state=UserTaskStatus.IN_PROGRESS)
 
@@ -1123,7 +1786,7 @@ class LibraryRestoreViewTestCase(ContentLibrariesRestApiTest):
             response_data = self._get_library_restore_task(in_progress_task_status.task_id)
 
         expected["state"] = UserTaskStatus.IN_PROGRESS
-        self.assertEqual(response_data, expected)
+        self.assertEqual(response_data, expected)  # noqa: PT009
 
     def test_task_user_mismatch(self):
         """
@@ -1164,7 +1827,7 @@ class LibraryRestoreViewTestCase(ContentLibrariesRestApiTest):
             "error_log": None,
         }
 
-        self.assertEqual(response_data, expected)
+        self.assertEqual(response_data, expected)  # noqa: PT009
 
     def test_failed_task_with_error_log(self):
         """
@@ -1179,7 +1842,7 @@ class LibraryRestoreViewTestCase(ContentLibrariesRestApiTest):
 
         with self.as_user(self.admin_user):
             with patch(
-                "openedx.core.djangoapps.content_libraries.tasks.authoring_api.load_learning_package",
+                "openedx.core.djangoapps.content_libraries.tasks.content_api.load_learning_package",
                 return_value=error_result
             ):
                 response = self._start_library_restore_task(self.uploaded_zip_file)
@@ -1194,7 +1857,7 @@ class LibraryRestoreViewTestCase(ContentLibrariesRestApiTest):
             'result': None,
         }
 
-        self.assertEqual(task_data, expected)
+        self.assertEqual(task_data, expected)  # noqa: PT009
 
     def test_uncaught_error_creates_error_log(self):
         """
@@ -1202,7 +1865,7 @@ class LibraryRestoreViewTestCase(ContentLibrariesRestApiTest):
         """
         with self.as_user(self.admin_user):
             with patch(
-                "openedx.core.djangoapps.content_libraries.tasks.authoring_api.load_learning_package",
+                "openedx.core.djangoapps.content_libraries.tasks.content_api.load_learning_package",
                 side_effect=Exception("Uncaught exception during processing.")
             ):
                 response = self._start_library_restore_task(self.uploaded_zip_file)
@@ -1217,7 +1880,7 @@ class LibraryRestoreViewTestCase(ContentLibrariesRestApiTest):
             'result': None,
         }
 
-        self.assertEqual(task_data, expected)
+        self.assertEqual(task_data, expected)  # noqa: PT009
 
 
 @skip_unless_cms
@@ -1272,27 +1935,28 @@ class ContentLibrariesAuthZTestCase(ContentLibrariesRestApiTest):
             'openedx_authz.api.get_scopes_for_user_and_permission'
         ) as mock_get_scopes:
             # Mock: User authorized for lib1 (org1:lib1) and lib2 (org2:lib2) only, NOT lib3
-            mock_scope1 = type('Scope', (), {'library_key': LibraryLocatorV2.from_string(lib1['id'])})()
-            mock_scope2 = type('Scope', (), {'library_key': LibraryLocatorV2.from_string(lib2['id'])})()
-            mock_get_scopes.return_value = [mock_scope1, mock_scope2]
+            mock_get_scopes.return_value = [
+                authz_api.ContentLibraryData(external_key=str(LibraryLocatorV2.from_string(lib1['id']))),
+                authz_api.ContentLibraryData(external_key=str(LibraryLocatorV2.from_string(lib2['id']))),
+            ]
 
             all_libs = ContentLibrary.objects.filter(slug__in=['lib1', 'lib2', 'lib3'])
             filtered = perms[CAN_VIEW_THIS_CONTENT_LIBRARY].filter(user, all_libs).distinct()
 
             # TEST: Verify exactly 2 libraries returned (lib1 and lib2, not lib3)
-            self.assertEqual(filtered.count(), 2, "Should return exactly 2 authorized libraries")
+            self.assertEqual(filtered.count(), 2, "Should return exactly 2 authorized libraries")  # noqa: PT009
 
             # TEST: Verify correct libraries are included/excluded
             slugs = set(filtered.values_list('slug', flat=True))
-            self.assertIn('lib1', slugs, "lib1 (org1:lib1) should be included")
-            self.assertIn('lib2', slugs, "lib2 (org2:lib2) should be included")
-            self.assertNotIn('lib3', slugs, "lib3 (org1:lib3) should be excluded")
+            self.assertIn('lib1', slugs, "lib1 (org1:lib1) should be included")  # noqa: PT009
+            self.assertIn('lib2', slugs, "lib2 (org2:lib2) should be included")  # noqa: PT009
+            self.assertNotIn('lib3', slugs, "lib3 (org1:lib3) should be excluded")  # noqa: PT009
 
             # TEST: Verify the org/slug combinations match
             lib1_result = filtered.get(slug='lib1')
             lib2_result = filtered.get(slug='lib2')
-            self.assertEqual(lib1_result.org.short_name, 'org1')
-            self.assertEqual(lib2_result.org.short_name, 'org2')
+            self.assertEqual(lib1_result.org.short_name, 'org1')  # noqa: PT009
+            self.assertEqual(lib2_result.org.short_name, 'org2')  # noqa: PT009
 
     def test_authz_scope_individual_check_with_permission(self):
         """
@@ -1321,7 +1985,7 @@ class ContentLibrariesAuthZTestCase(ContentLibrariesRestApiTest):
         with patch("openedx_authz.api.is_user_allowed", return_value=True):
             result = perms[CAN_VIEW_THIS_CONTENT_LIBRARY].check(user, library_obj)
 
-            self.assertTrue(result, "Should return True when user is authorized")
+            self.assertTrue(result, "Should return True when user is authorized")  # noqa: PT009
 
     def test_authz_scope_individual_check_without_permission(self):
         """
@@ -1350,10 +2014,10 @@ class ContentLibrariesAuthZTestCase(ContentLibrariesRestApiTest):
         with patch('openedx_authz.api.is_user_allowed', return_value=False):
             result = perms[CAN_VIEW_THIS_CONTENT_LIBRARY].check(user, library_obj)
 
-            self.assertFalse(result, "Should return False when user is not authorized")
+            self.assertFalse(result, "Should return False when user is not authorized")  # noqa: PT009
 
-            self.assertFalse(library_obj.allow_public_read)
-            self.assertFalse(user.is_staff)
+            self.assertFalse(library_obj.allow_public_read)  # noqa: PT009
+            self.assertFalse(user.is_staff)  # noqa: PT009
 
     def test_authz_scope_handles_empty_scopes(self):
         """
@@ -1387,16 +2051,69 @@ class ContentLibrariesAuthZTestCase(ContentLibrariesRestApiTest):
                 ContentLibrary.objects.filter(slug="empty-lib")
             ).distinct()
 
-            self.assertEqual(
+            self.assertEqual(  # noqa: PT009
                 filtered.count(),
                 0,
                 "Should return 0 libraries when user has no authorized scopes",
             )
 
-            self.assertTrue(
+            self.assertTrue(  # noqa: PT009
                 ContentLibrary.objects.filter(slug="empty-lib").exists(),
                 "Library should exist in database",
             )
+
+    def test_authz_scope_platform_glob_returns_all_libraries(self):
+        """
+        Test that PlatformContentLibraryGlobData grants access to all libraries.
+        """
+        user = UserFactory.create(username="platform_glob_user", is_staff=False)
+
+        Organization.objects.get_or_create(short_name="glob-org1", defaults={"name": "Glob Org 1"})
+        Organization.objects.get_or_create(short_name="glob-org2", defaults={"name": "Glob Org 2"})
+
+        with self.as_user(self.admin_user):
+            self._create_library(slug="glob-lib1", org="glob-org1", title="Glob Library 1")
+            self._create_library(slug="glob-lib2", org="glob-org2", title="Glob Library 2")
+
+        ContentLibraryPermission.objects.filter(user=user).delete()
+
+        with patch(
+            'openedx_authz.api.get_scopes_for_user_and_permission',
+            return_value=[authz_api.PlatformContentLibraryGlobData(external_key="lib:*")],
+        ):
+            all_libs = ContentLibrary.objects.filter(slug__in=["glob-lib1", "glob-lib2"])
+            filtered = perms[CAN_VIEW_THIS_CONTENT_LIBRARY].filter(user, all_libs).distinct()
+
+            assert filtered.count() == 2
+
+    def test_authz_scope_org_glob_filters_by_org(self):
+        """
+        Test that OrgContentLibraryGlobData grants access to all libraries in the org.
+        """
+        user = UserFactory.create(username="org_glob_user", is_staff=False)
+
+        Organization.objects.get_or_create(short_name="org-glob1", defaults={"name": "Org Glob 1"})
+        Organization.objects.get_or_create(short_name="org-glob2", defaults={"name": "Org Glob 2"})
+
+        with self.as_user(self.admin_user):
+            self._create_library(slug="org-glob-lib1", org="org-glob1", title="Org Glob Library 1")
+            self._create_library(slug="org-glob-lib2", org="org-glob1", title="Org Glob Library 2")
+            self._create_library(slug="org-glob-lib3", org="org-glob2", title="Org Glob Library 3")
+
+        ContentLibraryPermission.objects.filter(user=user).delete()
+
+        with patch(
+            'openedx_authz.api.get_scopes_for_user_and_permission',
+            return_value=[authz_api.OrgContentLibraryGlobData(external_key="lib:org-glob1:*")],
+        ):
+            all_libs = ContentLibrary.objects.filter(
+                slug__in=["org-glob-lib1", "org-glob-lib2", "org-glob-lib3"]
+            )
+            filtered = perms[CAN_VIEW_THIS_CONTENT_LIBRARY].filter(user, all_libs).distinct()
+
+            assert filtered.count() == 2
+            slugs = set(filtered.values_list("slug", flat=True))
+            assert slugs == {"org-glob-lib1", "org-glob-lib2"}
 
     def test_authz_scope_q_object_has_correct_structure(self):
         """
@@ -1415,22 +2132,18 @@ class ContentLibrariesAuthZTestCase(ContentLibrariesRestApiTest):
         with patch(
             "openedx_authz.api.get_scopes_for_user_and_permission"
         ) as mock_get_scopes:
-            # Create scopes with specific org/slug values we can verify
-            mock_scope1 = type("Scope", (), {
-                "library_key": type("Key", (), {"org": "specific-org1", "slug": "specific-slug1"})()
-            })()
-            mock_scope2 = type("Scope", (), {
-                "library_key": type("Key", (), {"org": "specific-org2", "slug": "specific-slug2"})()
-            })()
-            mock_get_scopes.return_value = [mock_scope1, mock_scope2]
+            mock_get_scopes.return_value = [
+                authz_api.ContentLibraryData(external_key="lib:specific-org1:specific-slug1"),
+                authz_api.ContentLibraryData(external_key="lib:specific-org2:specific-slug2"),
+            ]
 
             q_obj = rule.query(user)
 
             # Test 1: Verify it returns a Q object
-            self.assertIsInstance(q_obj, Q)
+            self.assertIsInstance(q_obj, Q)  # noqa: PT009
 
             # Test 2: Verify Q object uses OR connector (for multiple scopes)
-            self.assertEqual(
+            self.assertEqual(  # noqa: PT009
                 q_obj.connector,
                 'OR',
                 "Should use OR to combine different library scopes",
@@ -1440,38 +2153,38 @@ class ContentLibrariesAuthZTestCase(ContentLibrariesRestApiTest):
             q_str = str(q_obj)
 
             # Should filter by org__short_name field
-            self.assertIn(
+            self.assertIn(  # noqa: PT009
                 "org__short_name",
                 q_str,
                 "Q object must filter by org__short_name field",
             )
 
             # Should filter by slug field
-            self.assertIn(
+            self.assertIn(  # noqa: PT009
                 "slug",
                 q_str,
                 "Q object must filter by slug field",
             )
 
             # Should contain exact org values
-            self.assertIn(
+            self.assertIn(  # noqa: PT009
                 "specific-org1",
                 q_str,
                 "Q object must include 'specific-org1'",
             )
-            self.assertIn(
+            self.assertIn(  # noqa: PT009
                 "specific-org2",
                 q_str,
                 "Q object must include 'specific-org2'",
             )
 
             # Should contain exact slug values
-            self.assertIn(
+            self.assertIn(  # noqa: PT009
                 "specific-slug1",
                 q_str,
                 "Q object must include 'specific-slug1'",
             )
-            self.assertIn(
+            self.assertIn(  # noqa: PT009
                 'specific-slug2',
                 q_str,
                 "Q object must include 'specific-slug2'",
@@ -1517,15 +2230,15 @@ class ContentLibrariesAuthZTestCase(ContentLibrariesRestApiTest):
             lib2_key = LibraryLocatorV2.from_string(lib2['id'])
 
             mock_get_scopes.return_value = [
-                type('Scope', (), {'library_key': lib1_key})(),
-                type('Scope', (), {'library_key': lib2_key})(),
+                authz_api.ContentLibraryData(external_key=str(lib1_key)),
+                authz_api.ContentLibraryData(external_key=str(lib2_key)),
             ]
 
             q_obj = rule.query(user)
             filtered = ContentLibrary.objects.filter(q_obj)
 
             # TEST: Verify EXACTLY 2 libraries match (lib1 and lib2 only)
-            self.assertEqual(
+            self.assertEqual(  # noqa: PT009
                 filtered.count(),
                 2,
                 "Must match EXACTLY 2 libraries - only those with authorized (org, slug) pairs",
@@ -1533,7 +2246,7 @@ class ContentLibrariesAuthZTestCase(ContentLibrariesRestApiTest):
 
             # TEST: Verify lib1 matches (pair-org1, pair-lib1)
             lib1_result = filtered.filter(slug='pair-lib1', org__short_name='pair-org1')
-            self.assertEqual(
+            self.assertEqual(  # noqa: PT009
                 lib1_result.count(),
                 1,
                 "Must match lib1: (pair-org1, pair-lib1) - this exact pair is authorized",
@@ -1541,7 +2254,7 @@ class ContentLibrariesAuthZTestCase(ContentLibrariesRestApiTest):
 
             # TEST: Verify lib2 matches (pair-org2, pair-lib2)
             lib2_result = filtered.filter(slug='pair-lib2', org__short_name='pair-org2')
-            self.assertEqual(
+            self.assertEqual(  # noqa: PT009
                 lib2_result.count(),
                 1,
                 "Must match lib2: (pair-org2, pair-lib2) - this exact pair is authorized",
@@ -1549,7 +2262,7 @@ class ContentLibrariesAuthZTestCase(ContentLibrariesRestApiTest):
 
             # TEST: Verify lib3 does NOT match (pair-org1, pair-lib3)
             lib3_result = filtered.filter(slug='pair-lib3', org__short_name='pair-org1')
-            self.assertEqual(
+            self.assertEqual(  # noqa: PT009
                 lib3_result.count(),
                 0,
                 "Must NOT match lib3: (pair-org1, pair-lib3) - only pair-lib1 is authorized for pair-org1",
@@ -1557,7 +2270,7 @@ class ContentLibrariesAuthZTestCase(ContentLibrariesRestApiTest):
 
             # TEST: Verify lib4 does NOT match (pair-org3, pair-lib1)
             lib4_result = filtered.filter(slug='pair-lib1', org__short_name='pair-org3')
-            self.assertEqual(
+            self.assertEqual(  # noqa: PT009
                 lib4_result.count(),
                 0,
                 "Must NOT match lib4: (pair-org3, pair-lib1) - only pair-org1 is authorized for pair-lib1",
@@ -1566,7 +2279,7 @@ class ContentLibrariesAuthZTestCase(ContentLibrariesRestApiTest):
             # TEST: Verify the result set contains exactly the right libraries
             result_pairs = set(filtered.values_list('org__short_name', 'slug'))
             expected_pairs = {('pair-org1', 'pair-lib1'), ('pair-org2', 'pair-lib2')}
-            self.assertEqual(
+            self.assertEqual(  # noqa: PT009
                 result_pairs,
                 expected_pairs,
                 f"Result must contain exactly {expected_pairs}, got {result_pairs}",
@@ -1605,10 +2318,10 @@ class ContentLibrariesAuthZTestCase(ContentLibrariesRestApiTest):
             lib1 = self._create_library(slug="comb-lib1", org="comb-org", title="AuthZ Only Library")
             lib2 = self._create_library(slug="comb-lib2", org="comb-org", title="Legacy Only Library")
             lib3 = self._create_library(slug="comb-lib3", org="comb-org", title="Both AuthZ and Legacy Library")
-            lib4 = self._create_library(slug="comb-lib4", org="comb-org", title="No Permissions Library")
+            lib4 = self._create_library(slug="comb-lib4", org="comb-org", title="No Permissions Library")  # noqa: F841
 
         # Retrieve library objects for permission assignment
-        lib1_obj = ContentLibrary.objects.get_by_key(LibraryLocatorV2.from_string(lib1['id']))
+        lib1_obj = ContentLibrary.objects.get_by_key(LibraryLocatorV2.from_string(lib1['id']))  # noqa: F841
         lib2_obj = ContentLibrary.objects.get_by_key(LibraryLocatorV2.from_string(lib2['id']))
         lib3_obj = ContentLibrary.objects.get_by_key(LibraryLocatorV2.from_string(lib3['id']))
 
@@ -1632,15 +2345,15 @@ class ContentLibrariesAuthZTestCase(ContentLibrariesRestApiTest):
             lib3_key = LibraryLocatorV2.from_string(lib3['id'])
 
             mock_get_scopes.return_value = [
-                type('Scope', (), {'library_key': lib1_key})(),
-                type('Scope', (), {'library_key': lib3_key})(),
+                authz_api.ContentLibraryData(external_key=str(lib1_key)),
+                authz_api.ContentLibraryData(external_key=str(lib3_key)),
             ]
 
             all_libs = ContentLibrary.objects.filter(slug__in=['comb-lib1', 'comb-lib2', 'comb-lib3', 'comb-lib4'])
             filtered = perms[CAN_VIEW_THIS_CONTENT_LIBRARY].filter(user, all_libs).distinct()
 
             # TEST: Verify exactly 3 libraries returned (lib1, lib2, lib3 - NOT lib4)
-            self.assertEqual(
+            self.assertEqual(  # noqa: PT009
                 filtered.count(),
                 3,
                 "Should return exactly 3 libraries: AuthZ-only, legacy-only, and both",
@@ -1648,14 +2361,14 @@ class ContentLibrariesAuthZTestCase(ContentLibrariesRestApiTest):
 
             # TEST: Verify correct libraries are included
             slugs = set(filtered.values_list('slug', flat=True))
-            self.assertIn('comb-lib1', slugs, "lib1 should be accessible via AuthZ permission")
-            self.assertIn('comb-lib2', slugs, "lib2 should be accessible via legacy permission")
-            self.assertIn('comb-lib3', slugs, "lib3 should be accessible via BOTH AuthZ and legacy permissions")
-            self.assertNotIn('comb-lib4', slugs, "lib4 should NOT be accessible (no permissions)")
+            self.assertIn('comb-lib1', slugs, "lib1 should be accessible via AuthZ permission")  # noqa: PT009
+            self.assertIn('comb-lib2', slugs, "lib2 should be accessible via legacy permission")  # noqa: PT009
+            self.assertIn('comb-lib3', slugs, "lib3 should be accessible via BOTH AuthZ and legacy permissions")  # noqa: PT009  # pylint: disable=line-too-long
+            self.assertNotIn('comb-lib4', slugs, "lib4 should NOT be accessible (no permissions)")  # noqa: PT009
 
             # TEST: Verify lib3 doesn't get duplicated despite having both permission types
             lib3_results = filtered.filter(slug='comb-lib3')
-            self.assertEqual(
+            self.assertEqual(  # noqa: PT009
                 lib3_results.count(),
                 1,
                 "lib3 should appear exactly once despite having both AuthZ and legacy permissions",
@@ -1669,7 +2382,7 @@ class ContentLibrariesAuthZTestCase(ContentLibrariesRestApiTest):
                 ('comb-org', 'comb-lib2'),  # Legacy only
                 ('comb-org', 'comb-lib3'),  # Both
             }
-            self.assertEqual(
+            self.assertEqual(  # noqa: PT009
                 result_pairs,
                 expected_pairs,
                 f"Should get exactly the 3 authorized libraries via OR logic, got {result_pairs}",
@@ -1678,7 +2391,7 @@ class ContentLibrariesAuthZTestCase(ContentLibrariesRestApiTest):
 
 @ddt.ddt
 class ContentLibraryXBlockValidationTest(APITestCase):
-    """Tests only focused on service validation, no Learning Core interactions here."""
+    """Tests only focused on service validation, no openedx_content interactions here."""
 
     @ddt.data(
         (URL_BLOCK_METADATA_URL, dict(block_key='totally_invalid_key')),
@@ -1691,7 +2404,7 @@ class ContentLibraryXBlockValidationTest(APITestCase):
         response = self.client.get(
             endpoint.format(**endpoint_parameters),
         )
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 404)  # noqa: PT009
 
     def test_xblock_handler_invalid_key(self):
         """This endpoint is tested separately from the previous ones as it's not a DRF endpoint."""
@@ -1702,7 +2415,7 @@ class ContentLibraryXBlockValidationTest(APITestCase):
             user_id='random',
             secure_token='random',
         )))
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 404)  # noqa: PT009
 
 
 @skip_unless_cms
@@ -1785,9 +2498,9 @@ class ContentLibrariesRestAPIAuthzIntegrationTestCase(ContentLibrariesRestApiTes
         This simulates the one-time database seeding that would happen
         during application deployment, separate from the runtime policy loading.
         """
+        import casbin
         import pkg_resources
         from openedx_authz.engine.utils import migrate_policy_between_enforcers
-        import casbin
 
         global_enforcer = AuthzEnforcer.get_enforcer()
         global_enforcer.load_policy()
@@ -1982,3 +2695,24 @@ class ContentLibrariesRestAPIAuthzIntegrationTestCase(ContentLibrariesRestApiTes
             with self.as_user(user):
                 result = self._delete_library(self.lib_id, expect_response=status.HTTP_200_OK)
                 assert result == {}
+
+    def test_learn_from_library_permissions(self):
+        """
+        Verify that users with view permissions can learn from the library.
+        Learning from a library means being able to render/interact with blocks.
+        """
+        # Create and publish a block
+        block_data = self._add_block_to_library(self.lib_id, "problem", "test_problem")
+        block_id = block_data["id"]
+        self._commit_library_changes(self.lib_id)
+
+        # Users with view permissions should be able to learn from the library
+        for user in self.library_viewers:
+            with self.as_user(user):
+                # Rendering a block view requires CAN_LEARN permission
+                self._render_block_view(block_id, "student_view", expect_response=status.HTTP_200_OK)
+
+        # Users without view permissions should NOT be able to learn from the library
+        for user in self._all_users_excluding(self.library_viewers):
+            with self.as_user(user):
+                self._render_block_view(block_id, "student_view", expect_response=status.HTTP_403_FORBIDDEN)

@@ -17,11 +17,7 @@ from xblock.fields import Scope, ScopeIds, String
 
 from xmodule.errortracker import exc_info_to_str
 from xmodule.modulestore import EdxJSONEncoder
-from xmodule.x_module import (
-    ResourceTemplates,
-    XModuleMixin,
-    XModuleToXBlockMixin,
-)
+from xmodule.x_module import ResourceTemplates, XModuleMixin, XModuleToXBlockMixin
 
 log = logging.getLogger(__name__)
 
@@ -125,7 +121,7 @@ class ErrorBlock(
         }
 
     @classmethod
-    def from_json(cls, json_data, system, location, error_msg='Error not available'):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def from_json(cls, json_data, system, location, error_msg='Error not available'):  # pylint: disable=missing-function-docstring
         try:
             json_string = json.dumps(json_data, skipkeys=False, indent=4, cls=EdxJSONEncoder)
         except:  # pylint: disable=bare-except
@@ -178,7 +174,7 @@ class ErrorBlock(
         return cls._construct(system, xml_data, error_msg, location=id_generator.create_definition('error'))
 
     @classmethod
-    def parse_xml(cls, node, runtime, keys):  # lint-amnesty, pylint: disable=unused-argument
+    def parse_xml(cls, node, runtime, keys):  # pylint: disable=unused-argument
         """
         Interpret the parsed XML in `node`, creating an XModuleDescriptor.
         """

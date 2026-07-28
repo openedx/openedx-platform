@@ -5,6 +5,7 @@
 </%def>
 <%!
 from cms.djangoapps.contentstore.helpers import xblock_studio_url, xblock_type_display_name
+from cms.djangoapps.contentstore.utils import get_libraries_list_url
 from django.utils.translation import gettext as _
 from openedx.core.djangolib.js_utils import dump_js_escaped_json
 from openedx.core.djangolib.markup import HTML, Text
@@ -41,7 +42,7 @@ from openedx.core.djangolib.markup import HTML, Text
 </%block>
 
 <%block name="content">
-
+<% libraries_list_url = get_libraries_list_url() %>
 
 <div class="wrapper-mast wrapper">
     <header class="mast has-actions has-navigation has-subtitle">
@@ -77,6 +78,29 @@ from openedx.core.djangolib.markup import HTML, Text
         <div class="content-area">
 
             <div class="content-primary">
+                <div class="wrapper wrapper-alert wrapper-alert-warning is-shown" role="alert">
+                    <div class="alert announcement">
+                        <span class="feedback-symbol fa fa-warning" aria-hidden="true"></span>
+                        <span class="sr">${_("Warning")}</span>
+                        <div class="copy">
+                            <h2 class="title title-3 warning-heading-text">
+                                ${_("You are creating content in a deprecated format.")}
+                            </h2>
+                            <p>
+                                ${_(
+                                    "Legacy libraries will be unsupported in Willow. Any content you create in a"
+                                    " legacy library will soon need to be migrated. Consider using the "
+                                )}
+                                % if libraries_list_url:
+                                    <a href="${get_libraries_list_url() or "#"}" targht="_blank">${_("Libraries feature")}</a>
+                                % else:
+                                    ${_("Libraries feature")}
+                                % endif
+                                ${_(" instead.")}
+                          </p>
+                        </div>
+                    </div>
+                </div>
                 <div class="container-message wrapper-message"></div>
                 <div class="wrapper-xblock level-page is-hidden studio-xblock-wrapper" data-locator="${context_library.location}" data-course-key="${context_library.location.library_key}">
                 </div>

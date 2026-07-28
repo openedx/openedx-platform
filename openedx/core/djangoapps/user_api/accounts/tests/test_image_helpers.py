@@ -6,12 +6,12 @@ Tests for helpers.py
 import datetime
 import hashlib
 from unittest.mock import patch
-
-from django.test import TestCase
 from zoneinfo import ZoneInfo
 
-from openedx.core.djangolib.testing.utils import skip_unless_lms
+from django.test import TestCase
+
 from common.djangoapps.student.tests.factories import UserFactory
+from openedx.core.djangolib.testing.utils import skip_unless_lms
 
 from ..image_helpers import get_profile_image_urls_for_user
 
@@ -32,14 +32,14 @@ class ProfileImageUrlTestCase(TestCase):
         # Ensure that parental controls don't apply to this user
         self.user.profile.year_of_birth = 1980
         self.user.profile.profile_image_uploaded_at = TEST_PROFILE_IMAGE_UPLOAD_DT
-        self.user.profile.save()  # lint-amnesty, pylint: disable=no-member
+        self.user.profile.save()  # pylint: disable=no-member
 
     def verify_url(self, actual_url, expected_name, expected_pixels, expected_version):
         """
         Verify correct url structure.
         """
         assert actual_url == 'http://example-storage.com/profile-images/{name}_{size}.jpg?v={version}'\
-            .format(name=expected_name, size=expected_pixels, version=expected_version)
+            .format(name=expected_name, size=expected_pixels, version=expected_version)  # noqa: UP032
 
     def verify_default_url(self, actual_url, expected_pixels):
         """
@@ -65,12 +65,12 @@ class ProfileImageUrlTestCase(TestCase):
         Tests `get_profile_image_urls_for_user`
         """
         self.user.profile.profile_image_uploaded_at = TEST_PROFILE_IMAGE_UPLOAD_DT
-        self.user.profile.save()  # lint-amnesty, pylint: disable=no-member
+        self.user.profile.save()  # pylint: disable=no-member
         expected_name = hashlib.md5((
             'secret' + str(self.user.username)).encode('utf-8')).hexdigest()
         actual_urls = get_profile_image_urls_for_user(self.user)
         self.verify_urls(actual_urls, expected_name, is_default=False)
 
         self.user.profile.profile_image_uploaded_at = None
-        self.user.profile.save()  # lint-amnesty, pylint: disable=no-member
+        self.user.profile.save()  # pylint: disable=no-member
         self.verify_urls(get_profile_image_urls_for_user(self.user), 'default', is_default=True)

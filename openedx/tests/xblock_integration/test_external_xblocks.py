@@ -22,18 +22,18 @@ class DuplicateXBlockTest(Exception):
     effect deployed XBlocks. See discussion at:
       https://github.com/openedx/edx-platform/pull/11032#discussion_r48097392).
     '''
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 class InvalidTestName(Exception):
     '''
     This means you have an entry point for a test that does not correspond
     to a properly named test class. For example, if you cut-and-paste entry
-    points in `setup.py`, and forgot to repoint the class (so it points to
-    `DoneXBlock` instead of `TestDone`), or otherwise made an error, you
-    will see this exception.
+    points in your package configuration, and forgot to repoint the class
+    (so it points to `DoneXBlock` instead of `TestDone`), or otherwise made
+    an error, you will see this exception.
     '''
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 xblock_loaded = False  # pylint: disable=invalid-name
 

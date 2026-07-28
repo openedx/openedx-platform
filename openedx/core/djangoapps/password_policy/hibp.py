@@ -55,7 +55,7 @@ class PwnedPasswordsAPI:
         if not is_encrypted:
             password = hashlib.sha1(password.encode('utf-8')).hexdigest().upper()
 
-        range_url = PwnedPasswordsAPI.API_URL + '/range/{}'.format(password[:5])
+        range_url = PwnedPasswordsAPI.API_URL + '/range/{}'.format(password[:5])  # noqa: UP032
 
         if ENABLE_PWNED_PASSWORD_API.is_enabled():
             try:
@@ -65,7 +65,7 @@ class PwnedPasswordsAPI:
                 return entries
 
             except ReadTimeout:
-                log.warning('Request timed out for {}'.format(password))
+                log.warning('Request timed out for {}'.format(password))  # noqa: UP032
                 return HTTP_408_REQUEST_TIMEOUT
 
             except Exception as exc:  # pylint: disable=W0703
@@ -80,7 +80,7 @@ class PwnedPasswordsAPI:
             return False
 
         try:
-            sha_int = int(maybe_sha, HEX_BASE)
+            sha_int = int(maybe_sha, HEX_BASE)  # noqa: F841
         except ValueError:
             return False
 

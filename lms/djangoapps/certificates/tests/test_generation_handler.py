@@ -20,17 +20,19 @@ from lms.djangoapps.certificates.generation_handler import (
     _set_regular_cert_status,
     generate_allowlist_certificate_task,
     generate_certificate_task,
-    is_on_certificate_allowlist
+    is_on_certificate_allowlist,
 )
 from lms.djangoapps.certificates.models import GeneratedCertificate
 from lms.djangoapps.certificates.tests.factories import (
     CertificateAllowlistFactory,
     CertificateInvalidationFactory,
-    GeneratedCertificateFactory
+    GeneratedCertificateFactory,
 )
 from lms.djangoapps.grades.api import CourseGradeFactory
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # pylint: disable=wrong-import-order
+)
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 log = logging.getLogger(__name__)
 
@@ -208,10 +210,10 @@ class AllowlistTests(ModuleStoreTestCase):
         """
         with mock.patch(ID_VERIFIED_METHOD, return_value=False), \
                 mock.patch.dict(settings.FEATURES, ENABLE_CERTIFICATES_IDV_REQUIREMENT=enable_idv_requirement):
-            self.assertNotEqual(
+            self.assertNotEqual(  # noqa: PT009
                 enable_idv_requirement,
                 _can_generate_allowlist_certificate(self.user, self.course_run_key, self.enrollment_mode))
-            self.assertIs(
+            self.assertIs(  # noqa: PT009
                 enable_idv_requirement,
                 _set_allowlist_cert_status(
                     self.user, self.course_run_key,
@@ -350,11 +352,11 @@ class AllowlistTests(ModuleStoreTestCase):
         CertificateAllowlistFactory.create(course_id=course_run_key, user=self.user)
 
         # Enable Honor Certificates and verify we can generate an AllowList certificate
-        with override_settings(FEATURES={**settings.FEATURES, 'DISABLE_HONOR_CERTIFICATES': False}):
+        with override_settings(DISABLE_HONOR_CERTIFICATES=False):
             assert _can_generate_allowlist_certificate(self.user, course_run_key, enrollment_mode)
 
         # Disable Honor Certificates and verify we cannot generate an AllowList certificate
-        with override_settings(FEATURES={**settings.FEATURES, 'DISABLE_HONOR_CERTIFICATES': True}):
+        with override_settings(DISABLE_HONOR_CERTIFICATES=True):
             assert not _can_generate_allowlist_certificate(self.user, course_run_key, enrollment_mode)
 
 
@@ -536,12 +538,12 @@ class CertificateTests(ModuleStoreTestCase):
 
         with mock.patch(ID_VERIFIED_METHOD, return_value=False), \
                 mock.patch.dict(settings.FEATURES, ENABLE_CERTIFICATES_IDV_REQUIREMENT=enable_idv_requirement):
-            self.assertNotEqual(
+            self.assertNotEqual(  # noqa: PT009
                 enable_idv_requirement,
                 _can_generate_regular_certificate(u, self.course_run_key, self.enrollment_mode, self.grade)
             )
             regular_cert_status = _set_regular_cert_status(u, self.course_run_key, self.enrollment_mode, self.grade)
-            self.assertIs(enable_idv_requirement, regular_cert_status == CertificateStatuses.unverified)
+            self.assertIs(enable_idv_requirement, regular_cert_status == CertificateStatuses.unverified)  # noqa: PT009
 
     @ddt.data(False, True)
     def test_can_generate_not_verified_no_cert(self, enable_idv_requirement):
@@ -558,12 +560,12 @@ class CertificateTests(ModuleStoreTestCase):
 
         with mock.patch(ID_VERIFIED_METHOD, return_value=False), \
                 mock.patch.dict(settings.FEATURES, ENABLE_CERTIFICATES_IDV_REQUIREMENT=enable_idv_requirement):
-            self.assertNotEqual(
+            self.assertNotEqual(  # noqa: PT009
                 enable_idv_requirement,
                 _can_generate_regular_certificate(u, self.course_run_key, self.enrollment_mode, self.grade)
             )
             regular_cert_status = _set_regular_cert_status(u, self.course_run_key, self.enrollment_mode, self.grade)
-            self.assertIs(enable_idv_requirement, regular_cert_status == CertificateStatuses.unverified)
+            self.assertIs(enable_idv_requirement, regular_cert_status == CertificateStatuses.unverified)  # noqa: PT009
 
     @ddt.data(False, True)
     def test_can_generate_not_verified_not_passing(self, enable_idv_requirement):
@@ -792,11 +794,11 @@ class CertificateTests(ModuleStoreTestCase):
         # Enable Honor Certificates and verify we can generate a certificate
         with mock.patch(ID_VERIFIED_METHOD, return_value=False), \
                 mock.patch(PASSING_GRADE_METHOD, return_value=True), \
-                override_settings(FEATURES={**settings.FEATURES, 'DISABLE_HONOR_CERTIFICATES': False}):
+                override_settings(DISABLE_HONOR_CERTIFICATES=False):
             assert _can_generate_regular_certificate(self.user, course_run_key, enrollment_mode, grade)
 
         # Disable Honor Certificates and verify we cannot generate a certificate
         with mock.patch(ID_VERIFIED_METHOD, return_value=False), \
                 mock.patch(PASSING_GRADE_METHOD, return_value=True), \
-                override_settings(FEATURES={**settings.FEATURES, 'DISABLE_HONOR_CERTIFICATES': True}):
+                override_settings(DISABLE_HONOR_CERTIFICATES=True):
             assert not _can_generate_regular_certificate(self.user, course_run_key, enrollment_mode, grade)

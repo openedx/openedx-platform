@@ -11,7 +11,7 @@ from unittest import mock
 
 import django.test
 from django.conf import settings
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.contrib.sites.models import Site
 from mako.template import Template
 from oauth2_provider.models import Application
@@ -20,14 +20,14 @@ from common.djangoapps.third_party_auth.models import (
     LTIProviderConfig,
     OAuth2ProviderConfig,
     SAMLConfiguration,
-    SAMLProviderConfig
+    SAMLProviderConfig,
 )
 from common.djangoapps.third_party_auth.models import cache as config_cache
 from openedx.core.djangolib.testing.utils import CacheIsolationMixin
 from openedx.core.storage import OverwriteStorage
 
 AUTH_FEATURES_KEY = 'ENABLE_THIRD_PARTY_AUTH'
-AUTH_FEATURE_ENABLED = AUTH_FEATURES_KEY in settings.FEATURES
+AUTH_FEATURE_ENABLED = hasattr(settings, AUTH_FEATURES_KEY)
 
 
 def patch_mako_templates():

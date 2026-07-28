@@ -64,7 +64,7 @@ class TestXMLModuleStore(TestCase):
         """
         Test the get_courses_for_wiki method
         """
-        store = XMLModuleStore(DATA_DIR, source_dirs=['toy', 'simple'])
+        store = XMLModuleStore(DATA_DIR, source_dirs=['toy', 'simple'], xblock_mixins=(XModuleMixin,))
         for course in store.get_courses():
             course_locations = store.get_courses_for_wiki(course.wiki_slug)
             assert len(course_locations) == 1
@@ -90,7 +90,7 @@ class TestXMLModuleStore(TestCase):
         Test the has_course method
         """
         check_has_course_method(
-            XMLModuleStore(DATA_DIR, source_dirs=['toy', 'simple']),
+            XMLModuleStore(DATA_DIR, source_dirs=['toy', 'simple'], xblock_mixins=(XModuleMixin,)),
             CourseKey.from_string('edX/toy/2012_Fall'),
             locator_key_fields=CourseLocator.KEY_FIELDS
         )
@@ -99,7 +99,7 @@ class TestXMLModuleStore(TestCase):
         """
         Test the branch setting context manager
         """
-        store = XMLModuleStore(DATA_DIR, source_dirs=['toy'])
+        store = XMLModuleStore(DATA_DIR, source_dirs=['toy'], xblock_mixins=(XModuleMixin,))
         course = store.get_courses()[0]
 
         # XML store allows published_only branch setting
@@ -107,7 +107,7 @@ class TestXMLModuleStore(TestCase):
             store.get_item(course.location)
 
         # XML store does NOT allow draft_preferred branch setting
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             with store.branch_setting(ModuleStoreEnum.Branch.draft_preferred, course.id):
                 # verify that the above context manager raises a ValueError
                 pass  # pragma: no cover
@@ -142,7 +142,7 @@ class TestXMLModuleStore(TestCase):
         assert shared_item_loc in other_parent.children
 
 
-class TestModuleStoreIgnore(TestXMLModuleStore):  # lint-amnesty, pylint: disable=missing-class-docstring, test-inherits-tests
+class TestModuleStoreIgnore(TestXMLModuleStore):  # pylint: disable=missing-class-docstring, test-inherits-tests
     course_dir = DATA_DIR / "course_ignore"
 
     def setUp(self):
@@ -151,8 +151,10 @@ class TestModuleStoreIgnore(TestXMLModuleStore):  # lint-amnesty, pylint: disabl
         add_temp_files_from_dict(TILDA_FILES_DICT, self.course_dir / "static")
 
     @patch("xmodule.modulestore.xml.glob.glob", side_effect=glob_tildes_at_end)
-    def test_tilde_files_ignored(self, _fake_glob):
-        modulestore = XMLModuleStore(DATA_DIR, source_dirs=['course_ignore'], load_error_blocks=False)
+    def test_tilde_files_ignored(self, _fake_glob):  # noqa: PT019
+        modulestore = XMLModuleStore(
+            DATA_DIR, source_dirs=["course_ignore"], xblock_mixins=(XModuleMixin,), load_error_blocks=False
+        )
         about_location = CourseKey.from_string('edX/course_ignore/2014_Fall').make_usage_key(
             'about', 'index',
         )

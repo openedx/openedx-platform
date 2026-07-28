@@ -6,7 +6,9 @@ from django.test.client import RequestFactory
 
 from openedx.core.djangoapps.user_api.course_tag.api import get_course_tag, set_course_tag
 from openedx.features.course_experience.course_updates import (
-    dismiss_current_update_for_user, get_current_update_for_user, get_ordered_updates,
+    dismiss_current_update_for_user,
+    get_current_update_for_user,
+    get_ordered_updates,
 )
 from openedx.features.course_experience.tests import BaseCourseUpdatesTestCase
 
@@ -28,7 +30,7 @@ class TestCourseUpdatesUtils(BaseCourseUpdatesTestCase):
         date = 'January 1, 2000'
         self.create_course_update(content, date=date)
         updates = get_ordered_updates(self.request, self.course)
-        self.assertListEqual(updates, [{
+        self.assertListEqual(updates, [{  # noqa: PT009
             'id': 1,
             'content': content,
             'date': date,
@@ -44,13 +46,13 @@ class TestCourseUpdatesUtils(BaseCourseUpdatesTestCase):
         ill_formed = self.create_course_update('Ill-formed date is parsed as now()', date='foobar')
         self.create_course_update('Deleted is ignored', deleted=True)
         updates = get_ordered_updates(self.request, self.course)
-        self.assertListEqual(updates, [ill_formed, third, second, injected, first])
+        self.assertListEqual(updates, [ill_formed, third, second, injected, first])  # noqa: PT009
 
     def test_replace_urls(self):
         """We should be replacing static URLs with course specific ones."""
         self.create_course_update("<img src='/static/img.png'>")
         updates = get_ordered_updates(self.request, self.course)
-        expected = "<img src='/asset-v1:{org}+{course}+{run}+type@asset+block/img.png'>".format(
+        expected = "<img src='/asset-v1:{org}+{course}+{run}+type@asset+block/img.png'>".format(  # noqa: UP032
             org=self.course.id.org,
             course=self.course.id.course,
             run=self.course.id.run,

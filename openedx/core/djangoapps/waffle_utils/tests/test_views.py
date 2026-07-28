@@ -11,7 +11,7 @@ from .. import models
 from .. import views as toggle_state_views
 
 
-class ToggleStateViewTests(TestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class ToggleStateViewTests(TestCase):  # pylint: disable=missing-class-docstring
     """
     Tests for the toggle state report view.
     """

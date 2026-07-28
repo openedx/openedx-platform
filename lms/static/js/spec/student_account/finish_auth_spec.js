@@ -4,6 +4,7 @@
     define([
         'jquery',
         'jquery.url',
+        'sinon',
         'utility',
         'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers',
         'js/student_account/views/FinishAuthView',
@@ -11,17 +12,16 @@
         'js/student_account/shoppingcart',
         'js/student_account/emailoptin'
     ],
-    function($, url, utility, AjaxHelpers, FinishAuthView, EnrollmentInterface, ShoppingCartInterface,
+    function($, url, sinon, utility, AjaxHelpers, FinishAuthView, EnrollmentInterface, ShoppingCartInterface,
         EmailOptInInterface) {
         describe('FinishAuthView', function() {
             var requests = null,
                 view = null,
+                xhrFactory = null,
                 FORWARD_URL = '/courseware/next',
                 COURSE_KEY = 'course-v1:edX+test+15';
 
-            var ajaxSpyAndInitialize = function(that) {
-                // Spy on AJAX requests
-                requests = AjaxHelpers.requests(that);
+            var ajaxSpyAndInitialize = function() {
 
                 // Initialize the access view
                 view = new FinishAuthView({});
@@ -55,6 +55,15 @@
             beforeEach(function() {
                 // Stub analytics tracking
                 window.analytics = jasmine.createSpyObj('analytics', ['track', 'page', 'pageview', 'trackLink']);
+                xhrFactory = sinon.useFakeXMLHttpRequest();
+                requests = [];
+                requests.currentIndex = 0;
+                requests.restore = function() { xhrFactory.restore(); };
+                xhrFactory.onCreate = function(req) { requests.push(req); };
+            });
+
+            afterEach(function() {
+                requests.restore();
             });
 
             it('saves the email opt-in preference before enrollment', function() {

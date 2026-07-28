@@ -6,24 +6,24 @@ from unittest import mock
 from unittest.mock import MagicMock
 
 import ddt
+import pytest
+from django.test import override_settings
 from lxml import etree
 
 from common.djangoapps.student.tests.factories import UserFactory
+from common.djangoapps.third_party_auth.models import SAMLProviderData
 from common.djangoapps.third_party_auth.tests.testutil import TestCase
 from common.djangoapps.third_party_auth.utils import (
+    SAMLMetadataURLError,
+    create_or_update_bulk_saml_provider_data,
     get_associated_user_by_email_response,
     get_user_from_email,
-    is_enterprise_customer_user,
     is_oauth_provider,
     parse_metadata_xml,
     user_exists,
-    convert_saml_slug_provider_id,
+    validate_saml_metadata_url,
 )
 from openedx.core.djangolib.testing.utils import skip_unless_lms
-from openedx.features.enterprise_support.tests.factories import (
-    EnterpriseCustomerIdentityProviderFactory,
-    EnterpriseCustomerUserFactory,
-)
 
 
 @ddt.ddt
@@ -45,17 +45,6 @@ class TestUtils(TestCase):
         assert not user_exists({'username': 'invalid_user'})
         assert user_exists({'username': 'TesT_User'})
 
-    def test_convert_saml_slug_provider_id(self):
-        """
-        Verify saml provider id/slug map to each other correctly.
-        """
-        provider_names = {'saml-samltest': 'samltest', 'saml-example': 'example'}
-        for provider_id in provider_names:
-            # provider_id -> slug
-            assert convert_saml_slug_provider_id(provider_id) == provider_names[provider_id]
-            # slug -> provider_id
-            assert convert_saml_slug_provider_id(provider_names[provider_id]) == provider_id
-
     def test_get_user(self):
         """
         Match the email and return user if exists.
@@ -64,26 +53,6 @@ class TestUtils(TestCase):
         UserFactory(username='test_user', email='test_user@example.com')
         assert get_user_from_email({'email': 'test_user@example.com'})
         assert not get_user_from_email({'email': 'invalid@example.com'})
-
-    def test_is_enterprise_customer_user(self):
-        """
-        Verify that if user is an enterprise learner.
-        """
-        # Create users from factory
-
-        user = UserFactory(username='test_user', email='test_user@example.com')
-        other_user = UserFactory(username='other_user', email='other_user@example.com')
-        customer_idp = EnterpriseCustomerIdentityProviderFactory.create(
-            provider_id='the-provider',
-        )
-        customer = customer_idp.enterprise_customer
-        EnterpriseCustomerUserFactory.create(
-            enterprise_customer=customer,
-            user_id=user.id,
-        )
-
-        assert is_enterprise_customer_user('the-provider', user)
-        assert not is_enterprise_customer_user('the-provider', other_user)
 
     @ddt.data(
         ('saml-farkle', False),
@@ -100,7 +69,7 @@ class TestUtils(TestCase):
         ) as get_from_pipeline:
             get_from_pipeline.return_value.provider_id = provider_id
 
-            self.assertEqual(is_oauth_provider('backend_name'), oauth_provider)
+            self.assertEqual(is_oauth_provider('backend_name'), oauth_provider)  # noqa: PT009
 
     @ddt.data(
         (None, False),
@@ -124,11 +93,11 @@ class TestUtils(TestCase):
                 backend=None, details=None, user=mock_user)
 
             if association_response:
-                self.assertEqual(association_response['user'](), user)
-                self.assertEqual(user_is_active_resonse, user_is_active)
+                self.assertEqual(association_response['user'](), user)  # noqa: PT009
+                self.assertEqual(user_is_active_resonse, user_is_active)  # noqa: PT009
             else:
-                self.assertIsNone(association_response)
-                self.assertFalse(user_is_active_resonse)
+                self.assertIsNone(association_response)  # noqa: PT009
+                self.assertFalse(user_is_active_resonse)  # noqa: PT009
 
     def test_parse_metadata_uses_signing_cert(self):
         entity_id = 'http://testid'
@@ -216,3 +185,126 @@ class TestUtils(TestCase):
         public_keys, sso_url, _ = parse_metadata_xml(xml, entity_id)
         assert public_keys == ['abc+hkIuUktxkg=']
         assert sso_url == 'https://idp/SSOService.php'
+
+
+@skip_unless_lms
+class TestCreateOrUpdateBulkSAMLProviderData(TestCase):
+    """Tests for create_or_update_bulk_saml_provider_data."""
+
+    def test_creates_new_record(self):
+        result = create_or_update_bulk_saml_provider_data(
+            'http://entity1', ['pubkey1'],
+            'https://sso.example.com', None,
+        )
+        assert result is True
+        assert SAMLProviderData.objects.filter(
+            entity_id='http://entity1', public_key='pubkey1',
+        ).exists()
+
+    def test_updates_existing_record(self):
+        create_or_update_bulk_saml_provider_data(
+            'http://entity1', ['pubkey1'],
+            'https://sso.example.com', None,
+        )
+        result = create_or_update_bulk_saml_provider_data(
+            'http://entity1', ['pubkey1'],
+            'https://sso2.example.com', None,
+        )
+        assert result is False
+        data = SAMLProviderData.objects.get(
+            entity_id='http://entity1', public_key='pubkey1',
+        )
+        assert data.sso_url == 'https://sso2.example.com'
+
+    def test_bulk_updates_multiple_existing(self):
+        from django.utils.timezone import now
+        SAMLProviderData.objects.create(
+            entity_id='http://entity1',
+            public_key='pubkey1',
+            sso_url='https://old.example.com',
+            fetched_at=now(),
+        )
+        SAMLProviderData.objects.create(
+            entity_id='http://entity1',
+            public_key='pubkey1',
+            sso_url='https://old.example.com',
+            fetched_at=now(),
+        )
+        result = create_or_update_bulk_saml_provider_data(
+            'http://entity1', ['pubkey1'],
+            'https://new.example.com', None,
+        )
+        assert result is True
+        qs = SAMLProviderData.objects.filter(
+            entity_id='http://entity1', public_key='pubkey1',
+        )
+        for obj in qs:
+            assert obj.sso_url == 'https://new.example.com'
+
+    def test_multiple_keys(self):
+        result = create_or_update_bulk_saml_provider_data(
+            'http://entity1', ['key1', 'key2'],
+            'https://sso.example.com', None,
+        )
+        assert result is True
+        count = SAMLProviderData.objects.filter(
+            entity_id='http://entity1',
+        ).count()
+        assert count == 2
+
+
+@ddt.ddt
+@skip_unless_lms
+class TestValidateSAMLMetadataURL(TestCase):
+    """Tests for validate_saml_metadata_url."""
+
+    @ddt.data(
+        'https://idp.example.com/metadata',
+        'https://1.1.1.1/metadata',
+    )
+    def test_valid_urls_pass(self, url):
+        validate_saml_metadata_url(url)  # should not raise
+
+    @ddt.data(
+        ('http://idp.example.com/metadata', 'must use HTTPS'),
+        ('ftp://idp.example.com/metadata', 'must use HTTPS'),
+        ('https://', 'no hostname'),
+    )
+    @ddt.unpack
+    def test_invalid_scheme_or_missing_hostname(self, url, expected_fragment):
+        with pytest.raises(SAMLMetadataURLError, match=expected_fragment):
+            validate_saml_metadata_url(url)
+
+    @ddt.data(
+        'https://127.0.0.1/metadata',       # IPv4 loopback
+        'https://[::1]/metadata',            # IPv6 loopback
+        'https://169.254.169.254/latest',    # AWS metadata endpoint
+        'https://169.254.0.1/metadata',      # other link-local
+        'https://[fe80::1]/metadata',        # IPv6 link-local
+        'https://240.0.0.1/metadata',        # reserved (Class E)
+    )
+    def test_always_blocked_regardless_of_setting(self, url):
+        for allow_private in (False, True):
+            with override_settings(SAML_METADATA_URL_ALLOW_PRIVATE_IPS=allow_private):
+                with pytest.raises(SAMLMetadataURLError):
+                    validate_saml_metadata_url(url)
+
+    @ddt.data(
+        'https://10.0.0.1/metadata',
+        'https://172.16.0.1/metadata',
+        'https://192.168.1.1/metadata',
+        'https://[fc00::1]/metadata',        # IPv6 unique local
+    )
+    def test_private_ip_blocked_by_default(self, url):
+        with pytest.raises(SAMLMetadataURLError):
+            validate_saml_metadata_url(url)
+
+    @ddt.data(
+        'https://10.0.0.1/metadata',
+        'https://172.16.0.1/metadata',
+        'https://192.168.1.1/metadata',
+        'https://[fc00::1]/metadata',        # IPv6 unique local
+    )
+    @override_settings(SAML_METADATA_URL_ALLOW_PRIVATE_IPS=True)
+    def test_private_ip_allowed_when_setting_enabled(self, url):
+        validate_saml_metadata_url(url)  # should not raise

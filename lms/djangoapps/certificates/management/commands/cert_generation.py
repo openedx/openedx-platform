@@ -9,9 +9,8 @@ from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand, CommandError
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey
-from lms.djangoapps.certificates.generation_handler import CertificateGenerationNotAllowed
 
-from lms.djangoapps.certificates.generation_handler import generate_certificate_task
+from lms.djangoapps.certificates.generation_handler import CertificateGenerationNotAllowed, generate_certificate_task
 from lms.djangoapps.certificates.models import CertificateGenerationCommandConfiguration
 
 User = get_user_model()
@@ -93,13 +92,13 @@ class Command(BaseCommand):
                 log.warning(f'User {user_id} could not be found')
             if user is not None:
                 log.info(
-                    'Calling generate_certificate_task for {user} : {course}'.format(
+                    'Calling generate_certificate_task for {user} : {course}'.format(  # noqa: UP032
                         user=user.id,
                         course=course_key
                     ))
                 try:
                     generate_certificate_task(user, course_key)
-                except CertificateGenerationNotAllowed as e:
+                except CertificateGenerationNotAllowed as e:  # noqa: F841
                     log.exception(
                         "Certificate generation not allowed for user %s in course %s",
                         user.id,

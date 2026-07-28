@@ -14,9 +14,9 @@ from requests.models import Response
 from rest_framework import status
 
 from common.djangoapps.student.tests.factories import GlobalStaffFactory, UserFactory
+from lms.djangoapps.courseware.access_utils import adjust_start_date
 from lms.djangoapps.courseware.constants import UNEXPECTED_ERROR_IS_ELIGIBLE
 from lms.djangoapps.courseware.tests.factories import FinancialAssistanceConfigurationFactory
-from lms.djangoapps.courseware.access_utils import adjust_start_date
 from lms.djangoapps.courseware.utils import (
     create_financial_assistance_application,
     get_financial_assistance_application_status,
@@ -51,7 +51,7 @@ class TestAccessUtils(TestCase):
             instance = role_mock.return_value
             instance.has_user.return_value = is_beta_user
             adjusted_date = adjust_start_date(user, days_early_for_beta, start, course_key)
-            self.assertEqual(expected, adjusted_date)
+            self.assertEqual(expected, adjusted_date)  # noqa: PT009
 
 
 @ddt.ddt

@@ -12,7 +12,7 @@ from openedx.core.djangoapps.schedules import resolvers, tasks
 from openedx.core.djangoapps.schedules.management.commands import send_recurring_nudge as nudge
 from openedx.core.djangoapps.schedules.management.commands.tests.send_email_base import (
     ExperienceTest,
-    ScheduleSendEmailTestMixin
+    ScheduleSendEmailTestMixin,
 )
 from openedx.core.djangoapps.schedules.management.commands.tests.upsell_base import ScheduleUpsellTestMixin
 from openedx.core.djangoapps.schedules.models import ScheduleExperience
@@ -25,7 +25,7 @@ from openedx.core.djangolib.testing.utils import CacheIsolationTestCase, skip_un
     'openedx.core.djangoapps.schedules.apps.SchedulesConfig' in settings.INSTALLED_APPS,
     "Can't test schedules if the app isn't installed",
 )
-class TestSendRecurringNudge(ScheduleUpsellTestMixin, ScheduleSendEmailTestMixin, CacheIsolationTestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class TestSendRecurringNudge(ScheduleUpsellTestMixin, ScheduleSendEmailTestMixin, CacheIsolationTestCase):  # pylint: disable=missing-class-docstring
     __test__ = True
 
     # pylint: disable=protected-access

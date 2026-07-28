@@ -3,12 +3,11 @@
 
 import json
 
-from django.conf import settings
-from django.urls import NoReverseMatch, reverse
-from django.test import TestCase
-
 import ddt
 from config_models.models import cache
+from django.conf import settings
+from django.test import TestCase
+from django.urls import NoReverseMatch, reverse
 
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 

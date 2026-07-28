@@ -5,35 +5,33 @@ from __future__ import annotations
 
 import typing as t
 from uuid import UUID
-from django.conf import settings
 
+from django.conf import settings
 from opaque_keys.edx.keys import UsageKey
-from opaque_keys.edx.locator import (
-    LibraryLocatorV2, LibraryUsageLocatorV2, LibraryContainerLocator
-)
-from openedx_learning.api.authoring import get_draft_version, get_all_drafts
-from openedx_learning.api.authoring_models import (
-    PublishableEntityVersion, PublishableEntity, DraftChangeLogRecord
-)
+from opaque_keys.edx.locator import LibraryContainerLocator, LibraryLocatorV2, LibraryUsageLocatorV2
+from openedx_content.api import get_all_drafts, get_draft_version
+from openedx_content.models_api import DraftChangeLogRecord, PublishableEntity, PublishableEntityVersion
 from xblock.plugin import PluginMissingError
 
+from openedx.core.djangoapps.content.search.api import fetch_block_types, get_all_blocks_from_context
 from openedx.core.djangoapps.content_libraries.api import (
-    library_component_usage_key, library_container_locator,
-    validate_can_add_block_to_library, BlockLimitReachedError,
-    IncompatibleTypesError, LibraryBlockAlreadyExists,
-    ContentLibrary
-)
-from openedx.core.djangoapps.content.search.api import (
-    fetch_block_types,
-    get_all_blocks_from_context,
+    BlockLimitReachedError,
+    ContentLibrary,
+    IncompatibleTypesError,
+    LibraryBlockAlreadyExists,
+    library_component_usage_key,
+    library_container_locator,
+    validate_can_add_block_to_library,
 )
 
-from ..data import (
-    SourceContextKey, ModulestoreMigration, ModulestoreBlockMigrationResult,
-    ModulestoreBlockMigrationSuccess, ModulestoreBlockMigrationFailure
-)
 from .. import models
-
+from ..data import (
+    ModulestoreBlockMigrationFailure,
+    ModulestoreBlockMigrationResult,
+    ModulestoreBlockMigrationSuccess,
+    ModulestoreMigration,
+    SourceContextKey,
+)
 
 __all__ = (
     'get_forwarding',
@@ -47,7 +45,7 @@ __all__ = (
 
 def get_forwarding_for_blocks(source_keys: t.Iterable[UsageKey]) -> dict[UsageKey, ModulestoreBlockMigrationSuccess]:
     """
-    Authoritatively determine how some Modulestore blocks have been migrated to Learning Core.
+    Authoritatively determine how some Modulestore blocks have been migrated to openedx_content.
 
     Returns a mapping from source usage keys to block migration data objects. Each block migration object
     holds the target usage key and title. If a source key is missing from the mapping, then it has not
@@ -60,9 +58,7 @@ def get_forwarding_for_blocks(source_keys: t.Iterable[UsageKey]) -> dict[UsageKe
         # For building component key
         "forwarded__target__component__component_type",
         # For building container key
-        "forwarded__target__container__section",
-        "forwarded__target__container__subsection",
-        "forwarded__target__container__unit",
+        "forwarded__target__container__container_type",
         # For determining title and version
         "forwarded__change_log_record__new_version",
     )
@@ -79,7 +75,7 @@ def get_forwarding_for_blocks(source_keys: t.Iterable[UsageKey]) -> dict[UsageKe
 
 def is_forwarded(source_key: SourceContextKey) -> bool:
     """
-    Has this course or legacy library been authoratively migrated to Learning Core,
+    Has this course or legacy library been authoratively migrated to openedx_content,
     such that references to the source course/library should be forwarded to the target library?
     """
     return get_forwarding(source_key) is not None
@@ -87,7 +83,7 @@ def is_forwarded(source_key: SourceContextKey) -> bool:
 
 def get_forwarding(source_key: SourceContextKey) -> ModulestoreMigration | None:
     """
-    Authoritatively determine how some Modulestore course or legacy library has been migrated to Learning Core.
+    Authoritatively determine how some Modulestore course or legacy library has been migrated to openedx_content.
 
     If no such successful migration exists, returns None.
 
@@ -123,7 +119,7 @@ def get_migrations(
     is_failed: bool | None = None,
 ) -> t.Generator[ModulestoreMigration]:
     """
-    Given some criteria, get all modulestore->LearningCore migrations.
+    Given some criteria, get all modulestore->openedx_content migrations.
 
     Returns an iterable, ordered from NEWEST to OLDEST.
 
@@ -139,9 +135,9 @@ def get_migrations(
     if source_key:
         migrations = migrations.filter(source__key=source_key)
     if target_key:
-        migrations = migrations.filter(target__key=str(target_key))
+        migrations = migrations.filter(target__package_ref=str(target_key))
     if target_collection_slug:
-        migrations = migrations.filter(target_collection__key=target_collection_slug)
+        migrations = migrations.filter(target_collection__collection_code=target_collection_slug)
     if task_uuid:
         migrations = migrations.filter(task_status__uuid=task_uuid)
     if is_failed is not None:
@@ -166,11 +162,7 @@ def get_migration_blocks(migration_pk: int) -> dict[UsageKey, ModulestoreBlockMi
             # For building component key
             "target__component__component_type",
             # For building container key.
-            # (Hard-coding these exact 3 container types here is not a good pattern, but it's what is needed
-            #  here in order to avoid additional SELECTs while determining the container type).
-            "target__container__section",
-            "target__container__subsection",
-            "target__container__unit",
+            "target__container__container_type",
             # For determining title and version
             "change_log_record__new_version",
         )
@@ -184,9 +176,9 @@ def _migration(m: models.ModulestoreMigration) -> ModulestoreMigration:
     return ModulestoreMigration(
         pk=m.id,
         source_key=m.source.key,
-        target_key=LibraryLocatorV2.from_string(m.target.key),
+        target_key=LibraryLocatorV2.from_string(m.target.package_ref),
         target_title=m.target.title,
-        target_collection_slug=(m.target_collection.key if m.target_collection else None),
+        target_collection_slug=(m.target_collection.collection_code if m.target_collection else None),
         target_collection_title=(m.target_collection.title if m.target_collection else None),
         is_failed=m.is_failed,
         task_uuid=m.task_status.uuid,
@@ -217,7 +209,7 @@ def _block_migration_success(
     """
     Build an instance of the migration success dataclass
     """
-    target_library_key = LibraryLocatorV2.from_string(target.learning_package.key)
+    target_library_key = LibraryLocatorV2.from_string(target.learning_package.package_ref)
     target_key: LibraryUsageLocatorV2 | LibraryContainerLocator
     if hasattr(target, "component"):
         target_key = library_component_usage_key(target_library_key, target.component)

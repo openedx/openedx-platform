@@ -11,9 +11,8 @@ from rest_framework.response import Response
 
 from common.djangoapps.student.auth import has_studio_read_access
 from openedx.core.lib.api.view_utils import view_auth_classes
+from openedx.core.lib.xblock_serializer.api import serialize_modulestore_block_for_openedx_content
 from xmodule.modulestore.django import modulestore
-
-from openedx.core.lib.xblock_serializer.api import serialize_modulestore_block_for_learning_core
 
 
 @api_view(['GET'])
@@ -22,13 +21,13 @@ def get_block_olx(request, usage_key_str):
     """
     Given a modulestore XBlock usage ID (block-v1:...), get its OLX and a list
     of any static asset files it uses.
-    (There are other APIs for getting the OLX of Learning Core XBlocks.)
+    (There are other APIs for getting the OLX of openedx_content XBlocks.)
     """
     # Parse the usage key:
     try:
         usage_key = UsageKey.from_string(usage_key_str)
     except (ValueError, InvalidKeyError):
-        raise ValidationError('Invalid usage key')  # lint-amnesty, pylint: disable=raise-missing-from
+        raise ValidationError('Invalid usage key')  # pylint: disable=raise-missing-from  # noqa: B904
     if usage_key.block_type in ('course', 'chapter', 'sequential'):
         raise ValidationError('Requested XBlock tree is too large - export verticals or their children only')
     course_key = usage_key.context_key
@@ -48,7 +47,7 @@ def get_block_olx(request, usage_key_str):
             return
 
         block = modulestore().get_item(block_key)
-        serialized_blocks[block_key] = serialize_modulestore_block_for_learning_core(block)
+        serialized_blocks[block_key] = serialize_modulestore_block_for_openedx_content(block)
 
         if block.has_children:
             for child_id in block.children:
@@ -92,7 +91,7 @@ def get_block_exportfs_file(request, usage_key_str, path):
     try:
         usage_key = UsageKey.from_string(usage_key_str)
     except (ValueError, InvalidKeyError):
-        raise ValidationError('Invalid usage key')  # lint-amnesty, pylint: disable=raise-missing-from
+        raise ValidationError('Invalid usage key')  # pylint: disable=raise-missing-from  # noqa: B904
     if usage_key.block_type in ('course', 'chapter', 'sequential'):
         raise ValidationError('Requested XBlock tree is too large - export verticals or their children only')
     course_key = usage_key.context_key
@@ -103,7 +102,7 @@ def get_block_exportfs_file(request, usage_key_str, path):
         raise PermissionDenied("You must be a member of the course team in Studio to export OLX using this API.")
 
     block = modulestore().get_item(usage_key)
-    serialized = serialize_modulestore_block_for_learning_core(block)
+    serialized = serialize_modulestore_block_for_openedx_content(block)
     static_file = None
     for f in serialized.static_files:
         if f.name == path:
