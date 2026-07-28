@@ -170,7 +170,7 @@ def send_user_notification_callback(sender, **kwargs):  # pylint: disable=unused
         user.email_user(subject, message, studio_request_email)
     except:  # pylint: disable=bare-except
         user_identifier_for_log = (
-            f"user ID {user.id}" if getattr(settings, 'SQUELCH_PII_IN_LOGS', False) else user.email
+            user.id if getattr(settings, 'SQUELCH_PII_IN_LOGS', False) else user.email
         )
         log.warning("Unable to send course creator status e-mail to %s", user_identifier_for_log)
 
@@ -200,7 +200,7 @@ def send_admin_notification_callback(sender, **kwargs):  # pylint: disable=unuse
         )
     except SMTPException:
         user_identifier_for_log = (
-            f"user ID {user.id}" if getattr(settings, 'SQUELCH_PII_IN_LOGS', False) else user.email
+            user.id if getattr(settings, 'SQUELCH_PII_IN_LOGS', False) else user.email
         )
         log.warning(
             "Failure sending 'pending state' e-mail for %s to %s",
