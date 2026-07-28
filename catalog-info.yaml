@@ -13,6 +13,6 @@ metadata:
   annotations:
     openedx.org/release: "master"
 spec:
-  owner: group:wg-maintenance-openedx-platform
+  owner: group:wg-maintenance-openedx-platform-oncall
   type: 'service'
   lifecycle: 'production'
