@@ -54,7 +54,9 @@ class Command(BaseCommand):
         if single_email:
             successfully_verified = self._add_user_to_manual_verification(single_email)
             if successfully_verified is False:
-                user_identifier_for_log = '[REDACTED]' if getattr(settings, 'SQUELCH_PII_IN_LOGS', False) else single_email
+                user_identifier_for_log = (
+                    '[REDACTED]' if getattr(settings, 'SQUELCH_PII_IN_LOGS', False) else single_email
+                )
                 log.error('Manual verification of %s failed', user_identifier_for_log)
             return
 
@@ -72,7 +74,9 @@ class Command(BaseCommand):
                 len(failed_emails),
                 total_emails
             ))
-            failed_emails_for_log = '[REDACTED]' if getattr(settings, 'SQUELCH_PII_IN_LOGS', False) else pformat(failed_emails)
+            failed_emails_for_log = (
+                '[REDACTED]' if getattr(settings, 'SQUELCH_PII_IN_LOGS', False) else pformat(failed_emails)
+            )
             log.error('Failed emails:%s', failed_emails_for_log)
         else:
             log.info(f'Successfully generated manual verification for {total_emails} emails.')

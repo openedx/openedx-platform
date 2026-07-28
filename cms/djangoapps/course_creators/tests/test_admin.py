@@ -56,6 +56,7 @@ class CourseCreatorAdminTest(TestCase):
             'user_name': 'test_user',
             'user_email': 'test_user+courses@edx.org',
         }
+        self.enable_creator_group_patch = {'ENABLE_CREATOR_GROUP': True}
 
     @override_settings(ENABLE_CREATOR_GROUP=True, STUDIO_REQUEST_EMAIL='mark@marky.mark')
     @mock.patch('django.contrib.auth.models.User.email_user')
@@ -175,24 +176,26 @@ class CourseCreatorAdminTest(TestCase):
         """
         mock_email_user.side_effect = Exception("SMTP error")
 
-        with self.settings(SQUELCH_PII_IN_LOGS=True):
-            with mock.patch.dict('django.conf.settings.FEATURES', self.enable_creator_group_patch):
-                self._change_state(CourseCreator.GRANTED)
-                mock_log.warning.assert_any_call(
-                    "Unable to send course creator status e-mail to %s",
-                    f"user ID {self.user.id}"
-                )
+        with self.settings(SQUELCH_PII_IN_LOGS=True), mock.patch.dict(
+            'django.conf.settings.FEATURES', self.enable_creator_group_patch
+        ):
+            self._change_state(CourseCreator.GRANTED)
+            mock_log.warning.assert_any_call(
+                "Unable to send course creator status e-mail to %s",
+                f"user ID {self.user.id}"
+            )
 
         mock_log.reset_mock()
 
-        with self.settings(SQUELCH_PII_IN_LOGS=False):
-            with mock.patch.dict('django.conf.settings.FEATURES', self.enable_creator_group_patch):
-                self._change_state(CourseCreator.DENIED)
-                self._change_state(CourseCreator.GRANTED)
-                mock_log.warning.assert_any_call(
-                    "Unable to send course creator status e-mail to %s",
-                    self.user.email
-                )
+        with self.settings(SQUELCH_PII_IN_LOGS=False), mock.patch.dict(
+            'django.conf.settings.FEATURES', self.enable_creator_group_patch
+        ):
+            self._change_state(CourseCreator.DENIED)
+            self._change_state(CourseCreator.GRANTED)
+            mock_log.warning.assert_any_call(
+                "Unable to send course creator status e-mail to %s",
+                self.user.email
+            )
 
     @mock.patch('cms.djangoapps.course_creators.admin.log')
     @mock.patch('cms.djangoapps.course_creators.admin.send_mail')
@@ -202,23 +205,25 @@ class CourseCreatorAdminTest(TestCase):
         """
         mock_send_mail.side_effect = SMTPException("SMTP error")
 
-        with self.settings(SQUELCH_PII_IN_LOGS=True):
-            with mock.patch.dict('django.conf.settings.FEATURES', self.enable_creator_group_patch):
-                self._change_state(CourseCreator.PENDING)
-                mock_log.warning.assert_any_call(
-                    "Failure sending 'pending state' e-mail for %s to %s",
-                    f"user ID {self.user.id}",
-                    self.studio_request_email
-                )
+        with self.settings(SQUELCH_PII_IN_LOGS=True), mock.patch.dict(
+            'django.conf.settings.FEATURES', self.enable_creator_group_patch
+        ):
+            self._change_state(CourseCreator.PENDING)
+            mock_log.warning.assert_any_call(
+                "Failure sending 'pending state' e-mail for %s to %s",
+                f"user ID {self.user.id}",
+                self.studio_request_email
+            )
 
         mock_log.reset_mock()
 
-        with self.settings(SQUELCH_PII_IN_LOGS=False):
-            with mock.patch.dict('django.conf.settings.FEATURES', self.enable_creator_group_patch):
-                self._change_state(CourseCreator.UNREQUESTED)
-                self._change_state(CourseCreator.PENDING)
-                mock_log.warning.assert_any_call(
-                    "Failure sending 'pending state' e-mail for %s to %s",
-                    self.user.email,
-                    self.studio_request_email
-                )
+        with self.settings(SQUELCH_PII_IN_LOGS=False), mock.patch.dict(
+            'django.conf.settings.FEATURES', self.enable_creator_group_patch
+        ):
+            self._change_state(CourseCreator.UNREQUESTED)
+            self._change_state(CourseCreator.PENDING)
+            mock_log.warning.assert_any_call(
+                "Failure sending 'pending state' e-mail for %s to %s",
+                self.user.email,
+                self.studio_request_email
+            )

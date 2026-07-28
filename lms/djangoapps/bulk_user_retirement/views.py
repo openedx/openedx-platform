@@ -71,7 +71,9 @@ class BulkUsersRetirementView(APIView):
                     )
 
             except User.DoesNotExist:
-                user_identifier_for_log = f"index {index}" if getattr(settings, 'SQUELCH_PII_IN_LOGS', False) else username
+                user_identifier_for_log = (
+                    f"index {index}" if getattr(settings, 'SQUELCH_PII_IN_LOGS', False) else username
+                )
                 log.exception('Bulk retirement user %s does not exist.', user_identifier_for_log)
                 failed_user_retirements.append(username)
 
