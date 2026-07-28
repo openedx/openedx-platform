@@ -13,7 +13,7 @@ from edx_proctoring.api import (
     create_exam_attempt,
     get_allowances_for_course,
 )
-from edx_proctoring.exceptions import BackendProviderCannotRemoveAttempt
+from edx_proctoring.exceptions import ProctoredBaseException
 from edx_proctoring.models import ProctoredExamStudentAttempt
 from rest_framework import status
 from rest_framework.test import APIClient
@@ -229,9 +229,14 @@ class SpecialExamResetViewTest(ModuleStoreTestCase):
             'The proctoring provider is temporarily unavailable, so this attempt '
             'could not be fully reset. Please try again in a few minutes.'
         )
+        # Simulate a proctoring-provider failure during removal (e.g. edx-proctoring's
+        # BackendProviderCannotRemoveAttempt), which resolves to a 502. Using a base
+        # ProctoredBaseException keeps the test independent of the edx-proctoring release.
+        provider_error = ProctoredBaseException(message)
+        provider_error.http_status = status.HTTP_502_BAD_GATEWAY
         with patch(
             'lms.djangoapps.instructor.views.api_v2.remove_exam_attempt',
-            side_effect=BackendProviderCannotRemoveAttempt(message),
+            side_effect=provider_error,
         ):
             response = self.client.post(self._url())
         assert response.status_code == status.HTTP_502_BAD_GATEWAY
