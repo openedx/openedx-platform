@@ -2557,14 +2557,10 @@ FIELD_OVERRIDE_PROVIDERS = ()
 # require student context.
 MODULESTORE_FIELD_OVERRIDE_PROVIDERS = ('openedx.features.content_type_gating.'
                                         'field_override.ContentTypeGatingFieldOverride',)
-# .. toggle_name: HOMEPAGE_COURSE_MAX
-# .. toggle_implementation: DjangoSetting
-# .. toggle_default: None
-# .. toggle_description: Controls the maximum number of courses displayed on the LMS homepage.
-#    If set to None, all available courses will be shown. Useful for operators who want to limit the homepage length.
-# .. toggle_use_cases: open_edx
-# .. toggle_creation_date: 2025-11-24
-# .. toggle_tickets: https://github.com/openedx/edx-platform/issues/37585
+# .. setting_name: HOMEPAGE_COURSE_MAX
+# .. setting_default: None
+# .. setting_description: Controls the maximum number of courses displayed on the LMS homepage.
+#    If set to None, all available courses will be shown.
 
 HOMEPAGE_COURSE_MAX = None
 
