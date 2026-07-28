@@ -4,19 +4,19 @@
 #
 #    make upgrade
 #
-asgiref==3.11.1
+asgiref==3.12.1
     # via django
 attrs==26.1.0
     # via zeep
 backoff==2.2.1
     # via -r scripts/user_retirement/requirements/base.in
-boto3==1.43.41
+boto3==1.43.57
     # via -r scripts/user_retirement/requirements/base.in
-botocore==1.43.41
+botocore==1.43.57
     # via
     #   boto3
     #   s3transfer
-certifi==2026.6.17
+certifi==2026.7.22
     # via requests
 cffi==2.1.0
     # via
@@ -47,11 +47,11 @@ edx-django-utils==8.0.1
     # via edx-rest-api-client
 edx-rest-api-client==7.0.0
     # via -r scripts/user_retirement/requirements/base.in
-google-api-core==2.31.0
+google-api-core==2.33.0
     # via google-api-python-client
 google-api-python-client==2.198.0
     # via -r scripts/user_retirement/requirements/base.in
-google-auth==2.55.1
+google-auth==2.56.2
     # via
     #   google-api-core
     #   google-api-python-client
@@ -80,9 +80,9 @@ lxml==5.3.2
     #   zeep
 more-itertools==11.1.0
     # via simple-salesforce
-platformdirs==4.10.0
+platformdirs==4.11.0
     # via zeep
-proto-plus==1.28.0
+proto-plus==1.28.2
     # via google-api-core
 protobuf==7.35.1
     # via
@@ -91,7 +91,7 @@ protobuf==7.35.1
     #   proto-plus
 psutil==7.2.2
     # via edx-django-utils
-pyasn1==0.6.3
+pyasn1==0.6.4
     # via pyasn1-modules
 pyasn1-modules==0.4.2
     # via google-auth
@@ -107,7 +107,7 @@ pyparsing==3.3.2
     # via httplib2
 python-dateutil==2.9.0.post0
     # via botocore
-pytz==2026.2
+pytz==2026.3.post1
     # via jenkinsapi
 pyyaml==6.0.3
     # via -r scripts/user_retirement/requirements/base.in
@@ -125,9 +125,9 @@ requests-file==3.0.1
     # via zeep
 requests-toolbelt==1.0.0
     # via zeep
-s3transfer==0.19.0
+s3transfer==0.19.2
     # via boto3
-simple-salesforce==1.12.9
+simple-salesforce==1.12.10
     # via -r scripts/user_retirement/requirements/base.in
 simplejson==4.1.1
     # via -r scripts/user_retirement/requirements/base.in

@@ -22,3 +22,9 @@ Django<6.0
 # elastic search changelog: https://www.elastic.co/guide/en/enterprise-search/master/release-notes-7.14.0.html
 # See https://github.com/openedx/edx-platform/issues/35126 for more info
 elasticsearch<7.14.0
+
+# 2026-07-06: Constrain social-auth-* packages to the latest version compatible with
+# edx-drf-extensions<=10.6.0. (Newer versions require a POST instead of a GET.)
+# Tracking issue: https://github.com/openedx/edx-drf-extensions/issues/561
+social-auth-app-django<6.0.0
+social-auth-core<5.0.0

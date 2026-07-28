@@ -8,7 +8,7 @@ acid-xblock==0.4.1
     # via -r requirements/edx/kernel.in
 aiohappyeyeballs==2.7.1
     # via aiohttp
-aiohttp==3.14.1
+aiohttp==3.14.3
     # via geoip2
 aiosignal==1.4.0
     # via aiohttp
@@ -20,13 +20,13 @@ aniso8601==10.0.1
     # via
     #   edx-tincan-py35
     #   tincan
-annotated-types==0.7.0
+annotated-types==0.8.0
     # via pydantic
-anyio==4.14.1
+anyio==4.14.2
     # via httpx
 appdirs==1.4.4
     # via fs
-asgiref==3.11.1
+asgiref==3.12.1
     # via
     #   django
     #   django-cors-headers
@@ -68,26 +68,26 @@ bleach[css]==6.4.0
     #   ora2
     #   xblock-drag-and-drop-v2
     #   xblock-poll
-boto3==1.43.41
+boto3==1.43.57
     # via
     #   -r requirements/edx/kernel.in
     #   django-ses
     #   fs-s3fs
     #   ora2
     #   snowflake-connector-python
-botocore==1.43.41
+botocore==1.43.57
     # via
     #   -r requirements/edx/kernel.in
     #   boto3
     #   s3transfer
     #   snowflake-connector-python
-bracex==3.0
+bracex==3.0.1
     # via wcmatch
 bridgekeeper==0.9
     # via -r requirements/edx/kernel.in
 cachecontrol==0.14.4
     # via firebase-admin
-cachetools==7.1.4
+cachetools==7.1.6
     # via edxval
 camel-converter[pydantic]==5.1.0
     # via meilisearch
@@ -104,7 +104,7 @@ celery==5.6.3
     #   enterprise-integrated-channels
     #   event-tracking
     #   openedx-core
-certifi==2026.6.17
+certifi==2026.7.22
     # via
     #   elasticsearch
     #   httpcore
@@ -169,6 +169,7 @@ defusedxml==0.7.1
     # via
     #   -r requirements/edx/kernel.in
     #   djangorestframework-xml
+    #   nltk
     #   ora2
     #   python3-openid
     #   social-auth-core
@@ -286,7 +287,7 @@ django-fernet-fields-v2==0.9
     # via
     #   edx-enterprise
     #   enterprise-integrated-channels
-django-filter==25.2
+django-filter==26.1
     # via
     #   -r requirements/edx/kernel.in
     #   edx-enterprise
@@ -348,7 +349,7 @@ django-sekizai==4.1.0
     #   openedx-django-wiki
 django-ses==4.7.2
     # via -r requirements/edx/bundled.in
-django-simple-history==3.12.0
+django-simple-history==3.13.0
     # via
     #   -r requirements/edx/kernel.in
     #   edx-enterprise
@@ -540,7 +541,7 @@ edx-search==5.0.2
     #   openedx-forum
 edx-sga==0.29.0
     # via -r requirements/edx/bundled.in
-edx-submissions==4.0.0
+edx-submissions==4.0.2
     # via
     #   -r requirements/edx/kernel.in
     #   ora2
@@ -590,7 +591,7 @@ event-tracking==4.0.2
     #   edx-search
 fastavro==1.12.2
     # via openedx-events
-filelock==3.29.6
+filelock==3.32.0
     # via snowflake-connector-python
 firebase-admin==7.5.0
     # via edx-ace
@@ -609,17 +610,17 @@ fs-s3fs==1.1.1
     # via
     #   -r requirements/edx/kernel.in
     #   openedx-django-pyfs
-geoip2==5.2.0
+geoip2==5.3.0
     # via -r requirements/edx/kernel.in
 glob2==0.7
     # via -r requirements/edx/kernel.in
-google-api-core[grpc]==2.31.0
+google-api-core[grpc]==2.33.0
     # via
     #   firebase-admin
     #   google-cloud-core
     #   google-cloud-firestore
     #   google-cloud-storage
-google-auth==2.55.1
+google-auth==2.56.2
     # via
     #   google-api-core
     #   google-cloud-core
@@ -631,7 +632,7 @@ google-cloud-core==2.6.0
     #   google-cloud-storage
 google-cloud-firestore==2.28.0
     # via firebase-admin
-google-cloud-storage==3.12.0
+google-cloud-storage==3.13.0
     # via firebase-admin
 google-crc32c==1.8.0
     # via
@@ -643,18 +644,18 @@ googleapis-common-protos==1.75.0
     # via
     #   google-api-core
     #   grpcio-status
-grpcio==1.82.0
+grpcio==1.83.0
     # via
     #   google-api-core
     #   google-cloud-firestore
     #   grpcio-status
-grpcio-status==1.82.0
+grpcio-status==1.83.0
     # via google-api-core
 gunicorn==26.0.0
     # via -r requirements/edx/kernel.in
 h11==0.16.0
     # via httpcore
-h2==4.3.0
+h2==4.4.0
     # via httpx
 help-tokens==4.0.0
     # via -r requirements/edx/kernel.in
@@ -673,7 +674,7 @@ httpx[http2]==0.28.1
     #   typesense
 hyperframe==6.1.0
     # via h2
-icalendar==7.2.0
+icalendar==7.2.2
     # via -r requirements/edx/kernel.in
 idna==3.18
     # via
@@ -735,7 +736,7 @@ lazy==2.0
     #   lti-consumer-xblock
     #   ora2
     #   xblock
-lti-consumer-xblock==11.3.1
+lti-consumer-xblock==11.4.0
     # via -r requirements/edx/kernel.in
 lxml[html-clean]==5.3.2
     # via
@@ -779,7 +780,7 @@ markupsafe==3.0.3
     #   xblocks-contrib
 maxminddb==3.1.1
     # via geoip2
-meilisearch==0.42.0
+meilisearch==0.43.0
     # via
     #   -r requirements/edx/kernel.in
     #   edx-search
@@ -805,7 +806,7 @@ nh3==0.3.6
     # via
     #   -r requirements/edx/kernel.in
     #   xblocks-contrib
-nltk==3.9.4
+nltk==3.10.0
     # via chem
 nodeenv==1.10.0
     # via -r requirements/edx/kernel.in
@@ -834,7 +835,7 @@ openedx-atlas==0.7.0
     #   enterprise-integrated-channels
     #   openedx-authz
     #   openedx-forum
-openedx-authz==1.21.0
+openedx-authz==1.21.1
     # via -r requirements/edx/kernel.in
 openedx-calc==5.0.0
     # via
@@ -869,7 +870,7 @@ openedx-filters==3.8.0
     #   ora2
 openedx-forum==0.4.3
     # via -r requirements/edx/kernel.in
-optimizely-sdk==5.5.0
+optimizely-sdk==5.6.0
     # via -r requirements/edx/bundled.in
 ora2==7.1.0
     # via -r requirements/edx/bundled.in
@@ -904,17 +905,17 @@ pillow==12.3.0
     #   edx-enterprise
     #   edx-organizations
     #   edxval
-platformdirs==4.10.0
+platformdirs==4.11.0
     # via snowflake-connector-python
 polib==1.2.0
     # via edx-i18n-tools
-prompt-toolkit==3.0.52
+prompt-toolkit==3.0.53
     # via click-repl
 propcache==0.5.2
     # via
     #   aiohttp
     #   yarl
-proto-plus==1.28.0
+proto-plus==1.28.2
     # via
     #   google-api-core
     #   google-cloud-firestore
@@ -931,7 +932,7 @@ psutil==7.2.2
     #   edx-django-utils
 psycopg2-binary==2.9.12
     # via -r requirements/edx/kernel.in
-pyasn1==0.6.3
+pyasn1==0.6.4
     # via
     #   pgpy
     #   pyasn1-modules
@@ -967,7 +968,7 @@ pyjwt[crypto]==2.13.0
     #   pylti1p3
     #   snowflake-connector-python
     #   social-auth-core
-pylatexenc==2.10
+pylatexenc==2.11
     # via olxcleaner
 pylti1p3==2.0.0
     # via -r requirements/edx/kernel.in
@@ -1027,7 +1028,7 @@ python3-saml==1.16.0
     # via
     #   -r requirements/edx/kernel.in
     #   edx-enterprise
-pytz==2026.2
+pytz==2026.3.post1
     # via
     #   -r requirements/edx/kernel.in
     #   drf-yasg
@@ -1060,7 +1061,7 @@ random2==1.0.2
     # via
     #   -r requirements/edx/kernel.in
     #   xblocks-contrib
-recommender-xblock==5.0.0
+recommender-xblock==5.1.0
     # via -r requirements/edx/bundled.in
 redis==8.0.1
     # via
@@ -1070,7 +1071,7 @@ referencing==0.37.0
     # via
     #   jsonschema
     #   jsonschema-specifications
-regex==2026.6.28
+regex==2026.7.19
     # via nltk
 requests==2.34.2
     # via
@@ -1112,7 +1113,7 @@ rules==3.5
     #   edx-enterprise
     #   edx-proctoring
     #   openedx-core
-s3transfer==0.19.0
+s3transfer==0.19.2
     # via boto3
 sailthru-client==2.2.3
     # via edx-ace
@@ -1156,16 +1157,18 @@ slumber==0.7.1
     #   edx-bulk-grades
     #   edx-enterprise
     #   enterprise-integrated-channels
-snowflake-connector-python==4.6.0
+snowflake-connector-python==4.7.1
     # via enterprise-integrated-channels
 social-auth-app-django==5.4.1
     # via
+    #   -c requirements/common_constraints.txt
     #   -c requirements/constraints.txt
     #   -r requirements/edx/kernel.in
     #   edx-auth-backends
     #   edx-enterprise
-social-auth-core==5.0.2
+social-auth-core==4.9.1
     # via
+    #   -c requirements/common_constraints.txt
     #   -r requirements/edx/kernel.in
     #   edx-auth-backends
     #   social-auth-app-django
@@ -1177,7 +1180,7 @@ sortedcontainers==2.4.0
     # via
     #   -r requirements/edx/kernel.in
     #   snowflake-connector-python
-soupsieve==2.8.4
+soupsieve==2.9.1
     # via beautifulsoup4
 sqlparse==0.5.5
     # via django
@@ -1195,7 +1198,7 @@ super-csv==5.0.0
     # via edx-bulk-grades
 sympy==1.14.0
     # via openedx-calc
-testfixtures==12.2.0
+testfixtures==12.3.0
     # via edx-enterprise
 text-unidecode==1.3
     # via python-slugify
@@ -1203,11 +1206,11 @@ tincan==1.0.0
     # via edx-enterprise
 tinycss2==1.5.1
     # via bleach
-tomlkit==0.15.0
+tomlkit==0.15.1
     # via
     #   openedx-core
     #   snowflake-connector-python
-tqdm==4.68.4
+tqdm==4.70.0
     # via nltk
 typesense==2.0.0
     # via
@@ -1235,7 +1238,7 @@ typing-extensions==4.16.0
     #   typing-inspection
 typing-inspection==0.4.2
     # via pydantic
-tzdata==2026.2
+tzdata==2026.3
     # via
     #   icalendar
     #   kombu
@@ -1266,7 +1269,7 @@ voluptuous==0.16.0
     # via ora2
 walrus==0.9.8
     # via edx-event-bus-redis
-wcmatch==10.2.1
+wcmatch==11.0
     # via pycasbin
 wcwidth==0.8.2
     # via prompt-toolkit
@@ -1286,7 +1289,7 @@ wrapt==2.2.2
     # via
     #   -r requirements/edx/kernel.in
     #   xblocks-contrib
-xblock[django]==6.3.0
+xblock[django]==6.3.1
     # via
     #   -r requirements/edx/kernel.in
     #   acid-xblock
@@ -1302,13 +1305,13 @@ xblock[django]==6.3.0
     #   xblock-google-drive
     #   xblock-poll
     #   xblocks-contrib
-xblock-drag-and-drop-v2==5.0.6
+xblock-drag-and-drop-v2==5.1.0
     # via -r requirements/edx/bundled.in
 xblock-google-drive==0.8.2
     # via -r requirements/edx/bundled.in
 xblock-poll==1.16.1
     # via -r requirements/edx/bundled.in
-xblocks-contrib==0.17.0
+xblocks-contrib==1.0.1
     # via -r requirements/edx/bundled.in
 xmlsec==1.3.14
     # via
@@ -1316,7 +1319,7 @@ xmlsec==1.3.14
     #   python3-saml
 xss-utils==1.0.0
     # via -r requirements/edx/kernel.in
-yarl==1.24.2
+yarl==1.24.5
     # via aiohttp
 zipp==4.1.0
     # via importlib-metadata
