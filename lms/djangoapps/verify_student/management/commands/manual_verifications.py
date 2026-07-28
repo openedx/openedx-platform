@@ -54,10 +54,8 @@ class Command(BaseCommand):
         if single_email:
             successfully_verified = self._add_user_to_manual_verification(single_email)
             if successfully_verified is False:
-                if getattr(settings, 'SQUELCH_PII_IN_LOGS', False):
-                    log.error('Manual verification of a redacted email failed')
-                else:
-                    log.error(f'Manual verification of {single_email} failed')
+                user_identifier_for_log = '[REDACTED]' if getattr(settings, 'SQUELCH_PII_IN_LOGS', False) else single_email
+                log.error('Manual verification of %s failed', user_identifier_for_log)
             return
 
         email_ids_file = options['email_ids_file']
@@ -74,10 +72,8 @@ class Command(BaseCommand):
                 len(failed_emails),
                 total_emails
             ))
-            if getattr(settings, 'SQUELCH_PII_IN_LOGS', False):
-                log.error('Failed emails are redacted')
-            else:
-                log.error(f'Failed emails:{pformat(failed_emails)}')
+            failed_emails_for_log = '[REDACTED]' if getattr(settings, 'SQUELCH_PII_IN_LOGS', False) else pformat(failed_emails)
+            log.error('Failed emails:%s', failed_emails_for_log)
         else:
             log.info(f'Successfully generated manual verification for {total_emails} emails.')
 
@@ -157,8 +153,6 @@ class Command(BaseCommand):
             )
             return True
         except User.DoesNotExist:
-            if getattr(settings, 'SQUELCH_PII_IN_LOGS', False):
-                log.error('Tried to verify a redacted email, but user not found')
-            else:
-                log.error(f'Tried to verify email {email_id}, but user not found')
+            email_for_log = '[REDACTED]' if getattr(settings, 'SQUELCH_PII_IN_LOGS', False) else email_id
+            log.error('Tried to verify email %s, but user not found', email_for_log)
             return False

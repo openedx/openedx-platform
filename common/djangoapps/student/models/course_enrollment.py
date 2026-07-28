@@ -847,8 +847,8 @@ class CourseEnrollment(models.Model):
             user = User.objects.get(email=email)
             return cls.enroll(user, course_id, mode)
         except User.DoesNotExist:
-            email_for_log = "a redacted email" if getattr(settings, 'SQUELCH_PII_IN_LOGS', False) else f"email {email}"
-            log.error("Tried to enroll %s into course %s, but user not found", email_for_log, course_id)
+            email_for_log = "[REDACTED]" if getattr(settings, 'SQUELCH_PII_IN_LOGS', False) else email
+            log.error("Tried to enroll email %s into course %s, but user not found", email_for_log, course_id)
             if ignore_errors:
                 return None
             raise

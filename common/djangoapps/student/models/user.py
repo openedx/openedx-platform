@@ -1317,7 +1317,7 @@ def log_successful_login(sender, request, user, **kwargs):  # pylint: disable=un
         }
     )
     user_identifier_for_log = (
-        f"user.id: {user.id}" if getattr(settings, 'SQUELCH_PII_IN_LOGS', False)
+        user.id if getattr(settings, 'SQUELCH_PII_IN_LOGS', False)
         else f"{user.username} ({user.email})"
     )
     AUDIT_LOG.info(f"Login success - {user_identifier_for_log}")
@@ -1335,7 +1335,7 @@ def log_successful_logout(sender, request, user, **kwargs):  # pylint: disable=u
             }
         )
         user_identifier_for_log = (
-            f"user.id: {request.user.id}" if getattr(settings, 'SQUELCH_PII_IN_LOGS', False)
+            request.user.id if getattr(settings, 'SQUELCH_PII_IN_LOGS', False)
             else f"{request.user}"
         )
         AUDIT_LOG.info(f'Logout - {user_identifier_for_log}')  # pylint: disable=logging-format-interpolation

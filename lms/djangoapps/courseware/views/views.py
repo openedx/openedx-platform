@@ -1480,7 +1480,7 @@ def generate_user_cert(request, course_id):
 
     if not is_course_passed(student, course):
         user_identifier_for_log = (
-            f"ID {student.id}" if getattr(settings, 'SQUELCH_PII_IN_LOGS', False) else student.username
+            student.id if getattr(settings, 'SQUELCH_PII_IN_LOGS', False) else student.username
         )
         log.info("User %s has not passed the course: %s", user_identifier_for_log, course_id)
         return HttpResponseBadRequest(_("Your certificate will be available when you pass the course."))

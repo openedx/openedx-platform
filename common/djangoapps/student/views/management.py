@@ -854,11 +854,8 @@ def do_email_change_request(user, new_email, activation_key=None, secondary_emai
 
     try:
         ace.send(msg)
-        user_identifier_for_log = (
-            f"for user ID: [{user.id}]" if getattr(settings, 'SQUELCH_PII_IN_LOGS', False)
-            else f"to user [{new_email}]"
-        )
-        log.info("Email activation link sent %s.", user_identifier_for_log)
+        user_identifier_for_log = user.id if getattr(settings, 'SQUELCH_PII_IN_LOGS', False) else new_email
+        log.info("Email activation link sent to user [%s].", user_identifier_for_log)
     except Exception as err:
         from_address = configuration_helpers.get_value('email_from_address', settings.DEFAULT_FROM_EMAIL)
         log.error('Unable to send email activation link to user from "%s"', from_address, exc_info=True)

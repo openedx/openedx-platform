@@ -407,7 +407,7 @@ class UserStateCache:
             )
         except DatabaseError as err:
             user_identifier_for_log = (
-                f"user ID {self.user.id}" if getattr(settings, 'SQUELCH_PII_IN_LOGS', False)
+                self.user.id if getattr(settings, 'SQUELCH_PII_IN_LOGS', False)
                 else self.user.username
             )
             log.exception("Saving user state failed for %s", user_identifier_for_log)

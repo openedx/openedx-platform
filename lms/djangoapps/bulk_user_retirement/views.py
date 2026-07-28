@@ -71,10 +71,8 @@ class BulkUsersRetirementView(APIView):
                     )
 
             except User.DoesNotExist:
-                if getattr(settings, 'SQUELCH_PII_IN_LOGS', False):
-                    log.exception('Bulk retirement user at index %s does not exist.', index)
-                else:
-                    log.exception('The user "%s" does not exist.', username)
+                user_identifier_for_log = f"index {index}" if getattr(settings, 'SQUELCH_PII_IN_LOGS', False) else username
+                log.exception('Bulk retirement user %s does not exist.', user_identifier_for_log)
                 failed_user_retirements.append(username)
 
             except Exception as exc:  # pylint: disable=broad-except
