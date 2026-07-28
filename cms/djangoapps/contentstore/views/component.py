@@ -22,7 +22,7 @@ from xblock.plugin import PluginMissingError
 from xblock.runtime import Mixologist
 
 from cms.djangoapps.contentstore.helpers import get_parent_if_split_test, is_library_content, is_unit
-from cms.djangoapps.contentstore.toggles import libraries_v1_enabled, libraries_v2_enabled, use_new_unit_page
+from cms.djangoapps.contentstore.toggles import libraries_v2_enabled, use_new_unit_page
 from cms.djangoapps.contentstore.xblock_storage_handlers.view_handlers import load_services_for_studio
 from common.djangoapps.edxmako.shortcuts import render_to_response
 from common.djangoapps.student.auth import has_course_author_access
