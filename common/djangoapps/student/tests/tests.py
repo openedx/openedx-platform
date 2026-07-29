@@ -921,8 +921,8 @@ class EnrollInCourseTest(EnrollmentEventTestMixin, CacheIsolationTestCase):
             with pytest.raises(User.DoesNotExist):
                 CourseEnrollment.enroll_by_email(email, course_id, ignore_errors=False)
             mock_log.error.assert_any_call(
-                "Tried to enroll %s into course %s, but user not found",
-                "a redacted email",
+                "Tried to enroll email %s into course %s, but user not found",
+                "[REDACTED]",
                 course_id
             )
 
@@ -932,8 +932,8 @@ class EnrollInCourseTest(EnrollmentEventTestMixin, CacheIsolationTestCase):
             with pytest.raises(User.DoesNotExist):
                 CourseEnrollment.enroll_by_email(email, course_id, ignore_errors=False)
             mock_log.error.assert_any_call(
-                "Tried to enroll %s into course %s, but user not found",
-                f"email {email}",
+                "Tried to enroll email %s into course %s, but user not found",
+                email,
                 course_id
             )
 
