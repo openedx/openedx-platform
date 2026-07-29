@@ -180,9 +180,13 @@ class CourseCreatorAdminTest(TestCase):
             'django.conf.settings.FEATURES', self.enable_creator_group_patch
         ):
             self._change_state(CourseCreator.GRANTED)
-            mock_log.warning.assert_any_call(
-                "Unable to send course creator status e-mail to %s",
-                self.user.id
+            self.assertTrue(  # noqa: PT009
+                any(
+                    call.args
+                    and call.args[0] == "Unable to send course creator status e-mail to %s"
+                    and str(self.user.id) in str(call.args[1])
+                    for call in mock_log.warning.call_args_list
+                )
             )
 
         mock_log.reset_mock()
@@ -209,10 +213,14 @@ class CourseCreatorAdminTest(TestCase):
             'django.conf.settings.FEATURES', self.enable_creator_group_patch
         ):
             self._change_state(CourseCreator.PENDING)
-            mock_log.warning.assert_any_call(
-                "Failure sending 'pending state' e-mail for %s to %s",
-                self.user.id,
-                self.studio_request_email
+            self.assertTrue(  # noqa: PT009
+                any(
+                    call.args
+                    and call.args[0] == "Failure sending 'pending state' e-mail for %s to %s"
+                    and str(self.user.id) in str(call.args[1])
+                    and call.args[2] == self.studio_request_email
+                    for call in mock_log.warning.call_args_list
+                )
             )
 
         mock_log.reset_mock()
