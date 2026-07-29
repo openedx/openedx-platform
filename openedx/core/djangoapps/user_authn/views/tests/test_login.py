@@ -437,6 +437,8 @@ class LoginTest(OpenEdxEventsTestMixin, SiteMixin, CacheIsolationTestCase):
             self.password,
         )
         self._assert_response(response, success=False, error_code="inactive-user")
+        response_dict = json.loads(response.content.decode('utf-8'))
+        assert response_dict["email"] == self.user_email
         self._assert_audit_log(mock_audit_log, 'warning', ['Login failed', 'Account not active for user'])
 
     @patch('openedx.core.djangoapps.user_authn.views.login._log_and_raise_inactive_user_auth_error')
