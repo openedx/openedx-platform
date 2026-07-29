@@ -12,9 +12,11 @@ from datetime import datetime, timezone
 from functools import cache
 from uuid import UUID, uuid4
 
+from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import F
 from django.utils.text import slugify
+from django.utils.translation import gettext as _
 from opaque_keys.edx.locator import LibraryContainerLocator, LibraryLocatorV2, LibraryUsageLocatorV2
 from openedx_content import api as content_api
 from openedx_content.models_api import Container, PublishLogRecord
@@ -41,6 +43,7 @@ from .container_metadata import (
     get_entity_from_key,
     library_container_locator,
 )
+from .exceptions import BlockLimitReachedError
 from .serializers import ContainerSerializer
 
 if typing.TYPE_CHECKING:
@@ -128,6 +131,13 @@ def create_container(
     assert isinstance(library_key, LibraryLocatorV2)
     content_library = ContentLibrary.objects.get_by_key(library_key)
     assert content_library.learning_package_id  # Should never happen but we made this a nullable field so need to check
+    component_count = content_api.get_all_drafts(content_library.learning_package_id).count()
+    if component_count + 1 > settings.MAX_BLOCKS_PER_CONTENT_LIBRARY:
+        raise BlockLimitReachedError(
+            _("Library cannot have more than {} Components.").format(
+                settings.MAX_BLOCKS_PER_CONTENT_LIBRARY
+            )
+        )
     if slug is None:
         # Automatically generate a slug. Append a random suffix so it should be unique.
         slug = slugify(title, allow_unicode=True) + "-" + uuid4().hex[-6:]
