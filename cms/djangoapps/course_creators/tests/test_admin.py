@@ -168,6 +168,7 @@ class CourseCreatorAdminTest(TestCase):
         self.request.user = self.user
         self.assertFalse(self.creator_admin.has_change_permission(self.request))  # noqa: PT009
 
+    @override_settings(ENABLE_CREATOR_GROUP=True, STUDIO_REQUEST_EMAIL='mark@marky.mark')
     @mock.patch('cms.djangoapps.course_creators.admin.log')
     @mock.patch('django.contrib.auth.models.User.email_user')
     def test_send_user_notification_error_logging(self, mock_email_user, mock_log):
@@ -201,6 +202,7 @@ class CourseCreatorAdminTest(TestCase):
                 self.user.email
             )
 
+    @override_settings(ENABLE_CREATOR_GROUP=True, STUDIO_REQUEST_EMAIL='mark@marky.mark')
     @mock.patch('cms.djangoapps.course_creators.admin.log')
     @mock.patch('cms.djangoapps.course_creators.admin.send_mail')
     def test_send_admin_notification_error_logging(self, mock_send_mail, mock_log):
