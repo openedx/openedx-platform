@@ -10,13 +10,13 @@ from django.db.models import Count
 from django.http import StreamingHttpResponse
 from openedx_authz import api as authz_api
 from openedx_authz.constants.permissions import COURSES_MANAGE_TAGS, COURSES_VIEW_COURSE
-from openedx_events.content_authoring.data import ContentObjectChangedData, ContentObjectData
-from openedx_events.content_authoring.signals import CONTENT_OBJECT_ASSOCIATIONS_CHANGED, CONTENT_OBJECT_TAGS_CHANGED
 from openedx_tagging import rules as oel_tagging_rules
+from openedx_tagging.api import TagDoesNotExist
+from openedx_tagging.rest_api.v1.serializers import ObjectTagUpdateBodySerializer
 from openedx_tagging.rest_api.v1.views import ObjectTagView, TaxonomyView
 from rest_framework import status
 from rest_framework.decorators import action
-from rest_framework.exceptions import PermissionDenied, ValidationError
+from rest_framework.exceptions import MethodNotAllowed, PermissionDenied, ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -24,6 +24,7 @@ from rest_framework.views import APIView
 from openedx.core.types.http import RestRequest
 
 from ...api import (
+    InvalidOrgException,
     create_taxonomy,
     generate_csv_rows,
     get_taxonomies,
@@ -31,6 +32,7 @@ from ...api import (
     get_taxonomy,
     get_unassigned_taxonomies,
     set_taxonomy_orgs,
+    tag_object,
 )
 from ...auth import has_view_object_tags_access, should_use_course_authz_for_object
 from ...rules import get_admin_orgs
@@ -227,29 +229,40 @@ class ObjectTagOrgView(ObjectTagView):
 
     def update(self, request, *args, **kwargs) -> Response:
         """
-        Extend the update method to fire CONTENT_OBJECT_ASSOCIATIONS_CHANGED event
+        Update the tags applied to the given object_id.
+
+        This overrides ObjectTagView.update so that the tags are applied using this
+        platform's ``tag_object`` API, which only allows tagging with taxonomies that
+        are enabled for the object's organization, and which fires the
+        CONTENT_OBJECT_ASSOCIATIONS_CHANGED / CONTENT_OBJECT_TAGS_CHANGED events.
         """
-        response = super().update(request, *args, **kwargs)
-        if response.status_code == 200:
-            object_id = kwargs.get('object_id')
+        partial = kwargs.pop('partial', False)
+        if partial:
+            raise MethodNotAllowed("PATCH", detail="PATCH not allowed")
 
-            # .. event_implemented_name: CONTENT_OBJECT_ASSOCIATIONS_CHANGED
-            # .. event_type: org.openedx.content_authoring.content.object.associations.changed.v1
-            CONTENT_OBJECT_ASSOCIATIONS_CHANGED.send_event(
-                content_object=ContentObjectChangedData(
-                    object_id=object_id,
-                    changes=["tags"],
-                )
-            )
+        object_id = kwargs.pop('object_id')
+        body = ObjectTagUpdateBodySerializer(data=request.data)
+        body.is_valid(raise_exception=True)
 
-            # Emit a (deprecated) CONTENT_OBJECT_TAGS_CHANGED event too
-            # .. event_implemented_name: CONTENT_OBJECT_TAGS_CHANGED
-            # .. event_type: org.openedx.content_authoring.content.object.tags.changed.v1
-            CONTENT_OBJECT_TAGS_CHANGED.send_event(
-                content_object=ContentObjectData(object_id=object_id)
-            )
+        data = body.validated_data.get("tagsData", [])
 
-        return response
+        # Check permissions
+        self.ensure_user_has_can_tag_object_permissions(request.user, data, object_id)
+
+        # Tag object_id per taxonomy
+        for tag_data in data:
+            taxonomy = tag_data.get("taxonomy")
+            tags = tag_data.get("tags", [])
+            try:
+                tag_object(object_id, taxonomy, tags)
+            except InvalidOrgException as e:
+                raise ValidationError(e.messages) from e
+            except TagDoesNotExist as e:
+                raise ValidationError from e
+            except ValueError as e:
+                raise ValidationError from e
+
+        return self.retrieve(request, object_id)
 
 
 class ObjectTagExportView(APIView):

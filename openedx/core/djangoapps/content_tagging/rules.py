@@ -183,7 +183,6 @@ def can_change_taxonomy(user: UserType, taxonomy: oel_tagging.Taxonomy) -> bool:
     """
     Returns True if the given user can edit the given taxonomy.
 
-    System definied taxonomies cannot be edited
     Taxonomy admins can edit any taxonomies (but can't change tags if the taxonomy is read-only).
     Only taxonomy admins can edit all org taxonomies
     Org-level staff can edit any taxonomy that is associated with one of their orgs.

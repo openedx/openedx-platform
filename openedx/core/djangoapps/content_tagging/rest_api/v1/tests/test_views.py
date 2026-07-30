@@ -1790,7 +1790,7 @@ class TestObjectTagViewSet(TestObjectTagMixin, APITestCase):
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     @ddt.data(
-        ("superuser", status.HTTP_200_OK),
+        ("superuser", status.HTTP_400_BAD_REQUEST),
         ("staff", status.HTTP_403_FORBIDDEN),
         ("staffA", status.HTTP_403_FORBIDDEN),
         ("staffB", status.HTTP_403_FORBIDDEN),
@@ -1798,7 +1798,8 @@ class TestObjectTagViewSet(TestObjectTagMixin, APITestCase):
     @ddt.unpack
     def test_tag_cross_org(self, user_attr, expected_status):
         """
-        Tests that only superusers may add a taxonomy from orgA to an object from orgB
+        Tests that even superusers may not add a taxonomy from orgA to an object
+        from orgB
         """
         user = getattr(self, user_attr)
         self.client.force_authenticate(user=user)
@@ -1808,7 +1809,7 @@ class TestObjectTagViewSet(TestObjectTagMixin, APITestCase):
         assert response.status_code == expected_status
 
     @ddt.data(
-        ("superuser", status.HTTP_200_OK),
+        ("superuser", status.HTTP_400_BAD_REQUEST),
         ("staff", status.HTTP_403_FORBIDDEN),
         ("staffA", status.HTTP_403_FORBIDDEN),
         ("staffB", status.HTTP_403_FORBIDDEN),
@@ -1816,7 +1817,7 @@ class TestObjectTagViewSet(TestObjectTagMixin, APITestCase):
     @ddt.unpack
     def test_tag_no_org(self, user_attr, expected_status):
         """
-        Tests that only superusers may add a no-org taxonomy to an object
+        Tests that event superusers cannot add a no-org taxonomy to an object
         """
         user = getattr(self, user_attr)
         self.client.force_authenticate(user=user)
