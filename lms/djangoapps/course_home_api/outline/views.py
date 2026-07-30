@@ -208,7 +208,7 @@ class OutlineTabView(RetrieveAPIView):
             staff_access=has_access(request.user, 'staff', course_key),
             reset_masquerade_data=True,
         )
-
+        masquerade_user = request.user
         user_is_masquerading = is_masquerading(request.user, course_key, course_masquerade=masquerade_object)
         # Check if the user is masquerading as a student and get the masqueraded user object
         if user_is_masquerading and masquerade_object.role == 'student':
