@@ -143,15 +143,6 @@ class OutlineTabTestViews(BaseCourseHomeTests):
         response = self.client.get(self.url)
         assert response.data['course_blocks'] is not None
         assert response.data['handouts_html'] is not None
-        
-    def _get_all_block_ids_recursive(self, block):
-        """Helper to collect all block IDs from a course block tree"""
-        block_ids = set()
-        if block:
-            block_ids.add(block.get('id'))
-            for child in block.get('children', []):
-                block_ids.update(self._get_all_block_ids_recursive(child))
-        return block_ids
 
     @override_waffle_flag(COURSE_ENABLE_UNENROLLED_ACCESS_FLAG, active=True)
     def test_handouts(self):
