@@ -7,6 +7,7 @@ from importlib import import_module
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
+from edx_django_utils.monitoring import set_custom_attribute
 
 
 def runchecks(include_extended=False):
@@ -34,6 +35,8 @@ def runchecks(include_extended=False):
                 'status': is_ok,
                 'message': message
             }
+            if not is_ok:
+                set_custom_attribute(f"heartbeat.failure.{path}", message)
         except ImportError as e:
             raise ImproperlyConfigured(f'Error importing module {module}: "{e}"')  # pylint: disable=raise-missing-from  # noqa: B904
         except AttributeError:

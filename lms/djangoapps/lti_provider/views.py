@@ -55,7 +55,7 @@ def lti_launch(request, course_id, usage_id):
         - The launch data is correctly signed using a known client key/secret
           pair
     """
-    if not settings.FEATURES['ENABLE_LTI_PROVIDER']:
+    if not settings.ENABLE_LTI_PROVIDER:
         log.info('LTI provider feature is disabled.')
         return HttpResponseForbidden()
 

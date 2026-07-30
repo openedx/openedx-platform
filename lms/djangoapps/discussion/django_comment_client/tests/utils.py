@@ -3,7 +3,7 @@ Utilities for tests within the django_comment_client module.
 """
 
 
-from unittest.mock import patch
+from django.test import override_settings
 
 from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory
 from common.djangoapps.util.testing import UrlResetMixin
@@ -17,12 +17,12 @@ from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory
 
 
+@override_settings(ENABLE_DISCUSSION_SERVICE=True)
 class CohortedTestCase(UrlResetMixin, SharedModuleStoreTestCase):
     """
     Sets up a course with a student, a moderator and their cohorts.
     """
     @classmethod
-    @patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
     def setUpClass(cls):
         super().setUpClass()
         cls.course = CourseFactory.create(
@@ -43,7 +43,6 @@ class CohortedTestCase(UrlResetMixin, SharedModuleStoreTestCase):
         fake_user_id = 1
         cls.store.update_item(cls.course, fake_user_id)
 
-    @patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
     def setUp(self):
         super().setUp()
 

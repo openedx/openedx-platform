@@ -241,7 +241,7 @@ class CourseHomeMetadataTests(BaseCourseHomeTests):
 
         self._assert_course_access_response(response, expect_course_access, error_code)
 
-    @patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
+    @override_settings(ENABLE_DISCUSSION_SERVICE=True)
     @ddt.data(True, False)
     def test_discussion_tab_visible(self, visible):
         """

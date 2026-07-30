@@ -252,7 +252,7 @@ def create_account_with_params(request, params):  # pylint: disable=too-many-sta
         redirect_url = get_redirect_url_with_host(root_url, redirect_to)
         compose_and_send_activation_email(user, profile, registration, redirect_url, True)
 
-    if settings.FEATURES.get('ENABLE_DISCUSSION_EMAIL_DIGEST'):
+    if getattr(settings, 'ENABLE_DISCUSSION_EMAIL_DIGEST', False):
         try:
             enable_notifications(user)
         except Exception:  # pylint: disable=broad-except
@@ -476,7 +476,7 @@ def _skip_activation_email(user, running_pipeline, third_party_provider):
 
     return (
         settings.FEATURES.get('SKIP_EMAIL_VALIDATION', None) or
-        settings.FEATURES.get('AUTOMATIC_AUTH_FOR_TESTING') or
+        settings.AUTOMATIC_AUTH_FOR_TESTING or
         (third_party_provider and third_party_provider.skip_email_verification and valid_email)
     )
 

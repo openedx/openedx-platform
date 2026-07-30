@@ -379,7 +379,7 @@ def credit_statuses(user, course_enrollments):
     from openedx.core.djangoapps.credit import api as credit_api
 
     # Feature flag off
-    if not settings.FEATURES.get("ENABLE_CREDIT_ELIGIBILITY"):
+    if not settings.ENABLE_CREDIT_ELIGIBILITY:
         return {}
 
     request_status_by_course = {
@@ -552,7 +552,7 @@ def student_dashboard(request):  # pylint: disable=too-many-statements
     )
     disable_unenrollment = configuration_helpers.get_value(
         'DISABLE_UNENROLLMENT',
-        settings.FEATURES.get('DISABLE_UNENROLLMENT')
+        settings.DISABLE_UNENROLLMENT
     )
 
     disable_course_limit = request and 'course_limit' in request.GET

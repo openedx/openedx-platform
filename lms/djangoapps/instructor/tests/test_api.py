@@ -600,7 +600,7 @@ class TestInstructorAPIDenyLevels(SharedModuleStoreTestCase, LoginEnrollmentTest
             )
 
 
-@patch.dict(settings.FEATURES, {'ALLOW_AUTOMATED_SIGNUPS': True})
+@override_settings(ALLOW_AUTOMATED_SIGNUPS=True)
 @ddt.ddt
 class TestInstructorAPIBulkAccountCreationAndEnrollment(SharedModuleStoreTestCase, LoginEnrollmentTestCase):
     """
@@ -960,7 +960,7 @@ class TestInstructorAPIBulkAccountCreationAndEnrollment(SharedModuleStoreTestCas
             password = generate_unique_password(generated_password, 12)
             assert password != 'first'
 
-    @patch.dict(settings.FEATURES, {'ALLOW_AUTOMATED_SIGNUPS': False})
+    @override_settings(ALLOW_AUTOMATED_SIGNUPS=False)
     def test_allow_automated_signups_flag_not_set(self):
         csv_content = b"test_student1@example.com,test_student_1,tester1,USA"
         uploaded_file = SimpleUploadedFile("temp.csv", csv_content)
@@ -970,7 +970,7 @@ class TestInstructorAPIBulkAccountCreationAndEnrollment(SharedModuleStoreTestCas
         manual_enrollments = ManualEnrollmentAudit.objects.all()
         assert manual_enrollments.count() == 0
 
-    @patch.dict(settings.FEATURES, {'ALLOW_AUTOMATED_SIGNUPS': True})
+    @override_settings(ALLOW_AUTOMATED_SIGNUPS=True)
     def test_audit_enrollment_mode(self):
         """
         Test that enrollment mode for audit courses (paid courses) is 'audit'.
@@ -996,7 +996,7 @@ class TestInstructorAPIBulkAccountCreationAndEnrollment(SharedModuleStoreTestCas
         for enrollment in manual_enrollments:
             assert enrollment.enrollment.mode == CourseMode.AUDIT
 
-    @patch.dict(settings.FEATURES, {'ALLOW_AUTOMATED_SIGNUPS': True})
+    @override_settings(ALLOW_AUTOMATED_SIGNUPS=True)
     def test_honor_enrollment_mode(self):
         """
         Test that enrollment mode for unpaid honor courses is 'honor'.
@@ -5361,7 +5361,7 @@ class TestInstructorCertificateExceptions(SharedModuleStoreTestCase):
         )
 
 
-@patch.dict(settings.FEATURES, {'ALLOW_AUTOMATED_SIGNUPS': True})
+@override_settings(ALLOW_AUTOMATED_SIGNUPS=True)
 class TestOauthInstructorAPILevelsAccess(SharedModuleStoreTestCase, LoginEnrollmentTestCase):
     """
     Test endpoints using Oauth2 authentication.

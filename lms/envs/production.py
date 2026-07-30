@@ -132,9 +132,10 @@ if STATIC_URL_BASE:  # noqa: F405
 
 DATA_DIR = path(DATA_DIR)  # noqa: F405
 
-# TODO: This was for backwards compatibility back when installed django-cookie-samesite (not since 2022).
-#       The DCS_ version of the setting can be DEPR'd at this point.
-SESSION_COOKIE_SAMESITE = DCS_SESSION_COOKIE_SAMESITE  # noqa: F405
+# Required to be 'None' so the session cookie is sent on cross-site requests
+# (e.g. LMS <-> Studio SSO). Browsers reject SameSite=None unless the cookie
+# is also Secure, so production deployments must serve over HTTPS.
+SESSION_COOKIE_SAMESITE = 'None'
 
 for feature, value in _YAML_TOKENS.get('FEATURES', {}).items():
     FEATURES[feature] = value
@@ -396,6 +397,11 @@ ENTERPRISE_EXCLUDED_REGISTRATION_FIELDS = set(ENTERPRISE_EXCLUDED_REGISTRATION_F
 #       next line. See CMS settings for the example of what we want.
 MIDDLEWARE.extend(_YAML_TOKENS.get('EXTRA_MIDDLEWARE_CLASSES', []))  # noqa: F405
 
+
+###################### drf-spectacular (LMS enrollment schema) ######################
+SPECTACULAR_SETTINGS['SERVERS'] = [  # noqa: F405
+    {'url': LMS_ROOT_URL, 'description': 'Local'},  # noqa: F405
+]
 
 #######################################################################################################################
 #### DERIVE ANY DERIVED SETTINGS

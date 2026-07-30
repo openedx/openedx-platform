@@ -303,14 +303,14 @@ def courses(request):
     courses_list = []
     course_discovery_meanings = getattr(settings, 'COURSE_DISCOVERY_MEANINGS', {})
     set_default_filter = ENABLE_COURSE_DISCOVERY_DEFAULT_LANGUAGE_FILTER.is_enabled()
-    if not settings.FEATURES.get('ENABLE_COURSE_DISCOVERY'):
+    if not settings.ENABLE_COURSE_DISCOVERY:
         courses_list = get_courses(
             request.user,
             filter_={"catalog_visibility": CATALOG_VISIBILITY_CATALOG_AND_ABOUT},
         )
 
         if configuration_helpers.get_value("ENABLE_COURSE_SORTING_BY_START_DATE",
-                                           settings.FEATURES["ENABLE_COURSE_SORTING_BY_START_DATE"]):
+                                           settings.ENABLE_COURSE_SORTING_BY_START_DATE):
             courses_list = sort_by_start_date(courses_list)
         else:
             courses_list = sort_by_announcement(courses_list)
@@ -833,7 +833,7 @@ def course_about(request, course_id):  # pylint: disable=too-many-statements
         show_courseware_link = bool(
             (
                 request.user.has_perm(VIEW_COURSEWARE, course)
-            ) or settings.FEATURES.get('ENABLE_LMS_MIGRATION')
+            ) or settings.ENABLE_LMS_MIGRATION
         )
 
         # If the ecommerce checkout flow is enabled and the mode of the course is
@@ -1164,7 +1164,7 @@ def credit_course_requirements(course_key, student):
     # If credit eligibility is not enabled or this is not a credit course,
     # short-circuit and return `None`.  This indicates that credit requirements
     # should NOT be displayed on the progress page.
-    if not (settings.FEATURES.get("ENABLE_CREDIT_ELIGIBILITY", False) and is_credit_course(course_key)):
+    if not (settings.ENABLE_CREDIT_ELIGIBILITY and is_credit_course(course_key)):
         return None
 
     # This indicates that credit requirements should NOT be displayed on the progress page.
@@ -1706,7 +1706,7 @@ def render_xblock(request, usage_key_string, check_if_enrolled=True, disable_sta
                 'enable_completion_on_view_service': enable_completion_on_view_service,
                 'edx_notes_enabled': is_feature_enabled(course, request.user),
                 'staff_access': staff_access,
-                'xqa_server': settings.FEATURES.get('XQA_SERVER', 'http://your_xqa_server.com'),
+                'xqa_server': settings.XQA_SERVER,
                 'missed_deadlines': missed_deadlines,
                 'missed_gated_content': missed_gated_content,
                 'has_ended': course.has_ended(),
@@ -2353,7 +2353,7 @@ def courseware_mfe_search_enabled(request, course_id=None):
     user = request.user
 
     has_required_enrollment = False
-    if settings.FEATURES.get('ENABLE_COURSEWARE_SEARCH_VERIFIED_ENROLLMENT_REQUIRED'):
+    if settings.ENABLE_COURSEWARE_SEARCH_VERIFIED_ENROLLMENT_REQUIRED:
         enrollment_mode, _ = CourseEnrollment.enrollment_mode_for_user(user, course_key)
         if (
             auth.user_has_role(user, CourseStaffRole(CourseKey.from_string(course_id)))

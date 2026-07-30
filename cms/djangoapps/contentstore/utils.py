@@ -255,15 +255,14 @@ def get_pages_and_resources_url(course_locator):
 
 def get_proctored_exam_settings_url(course_locator) -> str:
     """
-    Gets course authoring microfrontend URL for links to proctored exam settings page
+    Gets the relative path for links to proctored exam settings page.
+    Returns a path without the MFE base URL, since React Router prepends the base path.
     """
-    proctored_exam_settings_url = ''
     if exam_setting_view_enabled(course_locator):
         mfe_base_url = get_course_authoring_url(course_locator)
-        course_mfe_url = f'{mfe_base_url}/course/{course_locator}'
         if mfe_base_url:
-            proctored_exam_settings_url = f'{course_mfe_url}/pages-and-resources/proctoring/settings'
-    return proctored_exam_settings_url
+            return f'/course/{course_locator}/pages-and-resources/proctoring/settings'
+    return ''
 
 
 def get_editor_page_base_url(course_locator) -> str:
@@ -539,7 +538,7 @@ def course_import_olx_validation_is_enabled():
     """
     Check if course olx validation is enabled on course import.
     """
-    return settings.FEATURES.get('ENABLE_COURSE_OLX_VALIDATION', False)
+    return settings.ENABLE_COURSE_OLX_VALIDATION
 
 
 # pylint: disable=invalid-name
@@ -1377,7 +1376,7 @@ def get_course_settings(request, course_key, course_block):
 
     from .views.course import _process_courses_list, get_courses_accessible_to_user
 
-    credit_eligibility_enabled = settings.FEATURES.get('ENABLE_CREDIT_ELIGIBILITY', False)
+    credit_eligibility_enabled = settings.ENABLE_CREDIT_ELIGIBILITY
     upload_asset_url = reverse_course_url('assets_handler', course_key)
 
     # see if the ORG of this course can be attributed to a defined configuration . In that case, the
@@ -1587,9 +1586,9 @@ def get_library_context(request, request_is_json=False):
             'user': request.user,
             'request_course_creator_url': reverse('request_course_creator'),
             'course_creator_status': _get_course_creator_status(request.user),
-            'allow_unicode_course_id': settings.FEATURES.get('ALLOW_UNICODE_COURSE_ID', False),
+            'allow_unicode_course_id': settings.ALLOW_UNICODE_COURSE_ID,
             'archived_courses': True,
-            'allow_course_reruns': settings.FEATURES.get('ALLOW_COURSE_RERUNS', True),
+            'allow_course_reruns': settings.ALLOW_COURSE_RERUNS,
             'rerun_creator_status': GlobalStaff().has_user(request.user),
             'split_studio_home': split_library_view_on_dashboard(),
             'active_tab': 'libraries',
@@ -1631,7 +1630,7 @@ def get_course_context(request):
         }
 
     courses_iter, in_process_course_actions = get_courses_accessible_to_user(request)
-    split_archived = settings.FEATURES.get('ENABLE_SEPARATE_ARCHIVED_COURSES', False)
+    split_archived = settings.ENABLE_SEPARATE_ARCHIVED_COURSES
     active_courses, archived_courses = _process_courses_list(courses_iter, in_process_course_actions, split_archived)
     in_process_course_actions = [format_in_process_course_view(uca) for uca in in_process_course_actions]
     return active_courses, archived_courses, in_process_course_actions
@@ -1718,8 +1717,8 @@ def get_home_context(request, no_course=False):
         'request_course_creator_url': reverse('request_course_creator'),
         'course_creator_status': _get_course_creator_status(user),
         'rerun_creator_status': GlobalStaff().has_user(user),
-        'allow_unicode_course_id': settings.FEATURES.get('ALLOW_UNICODE_COURSE_ID', False),
-        'allow_course_reruns': settings.FEATURES.get('ALLOW_COURSE_RERUNS', True),
+        'allow_unicode_course_id': settings.ALLOW_UNICODE_COURSE_ID,
+        'allow_course_reruns': settings.ALLOW_COURSE_RERUNS,
         'active_tab': 'courses',
         'allowed_organizations': get_allowed_organizations(user),
         'allowed_organizations_for_libraries': get_allowed_organizations_for_libraries(user),
@@ -1743,7 +1742,7 @@ def get_course_rerun_context(course_key, course_block, user):
         'display_name': course_block.display_name,
         'user': user,
         'course_creator_status': _get_course_creator_status(user),
-        'allow_unicode_course_id': settings.FEATURES.get('ALLOW_UNICODE_COURSE_ID', False)
+        'allow_unicode_course_id': settings.ALLOW_UNICODE_COURSE_ID
     }
 
     return course_rerun_context
@@ -1864,7 +1863,7 @@ def _get_course_index_context(request, course_key, course_block):
 
     lms_link = get_lms_link_for_item(course_block.location)
     reindex_link = None
-    if settings.FEATURES.get('ENABLE_COURSEWARE_INDEX', False):
+    if settings.ENABLE_COURSEWARE_INDEX:
         if GlobalStaff().has_user(request.user):
             reindex_link = f"/course/{str(course_key)}/search_reindex"
     sections = course_block.get_children()

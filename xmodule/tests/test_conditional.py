@@ -4,7 +4,7 @@ import json
 import unittest
 from unittest.mock import Mock, patch
 
-from django.conf import settings
+from django.test.utils import override_settings
 from fs.memoryfs import MemoryFS
 from lxml import etree
 from opaque_keys.edx.keys import CourseKey
@@ -237,7 +237,7 @@ class ConditionalBlockXmlTest(unittest.TestCase):
         return self.test_system.get_block_for_descriptor(block)
 
     @patch('xmodule.x_module.block_global_local_resource_url')
-    @patch.dict(settings.FEATURES, {'ENABLE_EDXNOTES': False})
+    @override_settings(ENABLE_EDXNOTES=False)
     def test_conditional_block(self, _):  # noqa: PT019
         """Make sure that conditional block works"""
         # edx - HarvardX

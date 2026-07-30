@@ -166,7 +166,7 @@ def index(request, extra_context=None, user=AnonymousUser()):  # noqa: B008
 
     if configuration_helpers.get_value(
         "ENABLE_COURSE_SORTING_BY_START_DATE",
-        settings.FEATURES["ENABLE_COURSE_SORTING_BY_START_DATE"],
+        settings.ENABLE_COURSE_SORTING_BY_START_DATE,
     ):
         courses = sort_by_start_date(courses)
     else:
@@ -422,7 +422,7 @@ def change_enrollment(request, check_access=True):
             return HttpResponseBadRequest(_("Course id is invalid"))
 
         # Record the user's email opt-in preference
-        if settings.FEATURES.get('ENABLE_MKTG_EMAIL_OPT_IN'):
+        if getattr(settings, 'ENABLE_MKTG_EMAIL_OPT_IN', False):
             _update_email_opt_in(request, course_id.org)
 
         available_modes = CourseMode.modes_for_course_dict(course_id)
@@ -472,7 +472,7 @@ def change_enrollment(request, check_access=True):
     elif action == "unenroll":
         if configuration_helpers.get_value(
             "DISABLE_UNENROLLMENT",
-            settings.FEATURES.get("DISABLE_UNENROLLMENT")
+            settings.DISABLE_UNENROLLMENT
         ):
             return HttpResponseBadRequest(_("Unenrollment is currently disabled"))
 

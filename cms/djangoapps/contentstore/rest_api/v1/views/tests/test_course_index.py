@@ -77,7 +77,7 @@ class CourseIndexViewTest(CourseTestCase, PermissionAccessMixin):
             "language_code": "en",
             "lms_link": get_lms_link_for_item(self.course.location),
             "mfe_proctored_exam_settings_url": (
-                f"http://course-authoring-mfe/course/{self.course.id}"
+                f"/course/{self.course.id}"
                 "/pages-and-resources/proctoring/settings"
             ),
             "notification_dismiss_url": None,
@@ -128,7 +128,7 @@ class CourseIndexViewTest(CourseTestCase, PermissionAccessMixin):
             "language_code": "en",
             "lms_link": get_lms_link_for_item(self.course.location),
             "mfe_proctored_exam_settings_url": (
-                f"http://course-authoring-mfe/course/{self.course.id}"
+                f"/course/{self.course.id}"
                 "/pages-and-resources/proctoring/settings"
             ),
             "notification_dismiss_url": None,

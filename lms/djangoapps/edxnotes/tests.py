@@ -45,8 +45,6 @@ from .decorators import edxnotes
 from .exceptions import EdxNotesParseError, EdxNotesServiceUnavailable
 from .plugins import EdxNotesTab
 
-FEATURES = settings.FEATURES.copy()
-
 NOTES_API_EMPTY_RESPONSE = {
     "total": 0,
     "rows": [],
@@ -98,7 +96,7 @@ class TestProblem:
         return "original_get_html"
 
 
-@skipUnless(settings.FEATURES["ENABLE_EDXNOTES"], "EdxNotes feature needs to be enabled.")
+@skipUnless(settings.ENABLE_EDXNOTES, "EdxNotes feature needs to be enabled.")
 class EdxNotesDecoratorTest(ModuleStoreTestCase):
     """
     Tests for edxnotes decorator.
@@ -113,7 +111,7 @@ class EdxNotesDecoratorTest(ModuleStoreTestCase):
         self.client.login(username=self.user.username, password=UserFactory._DEFAULT_PASSWORD)  # pylint: disable=protected-access
         self.problem = TestProblem(self.course, self.user)
 
-    @patch.dict("django.conf.settings.FEATURES", {'ENABLE_EDXNOTES': True})
+    @override_settings(ENABLE_EDXNOTES=True)
     @patch("lms.djangoapps.edxnotes.helpers.get_public_endpoint", autospec=True)
     @patch("lms.djangoapps.edxnotes.helpers.get_token_url", autospec=True)
     @patch("lms.djangoapps.edxnotes.helpers.get_edxnotes_id_token", autospec=True)
@@ -149,7 +147,7 @@ class EdxNotesDecoratorTest(ModuleStoreTestCase):
         }
         assert problem.get_html() == render_to_string('edxnotes_wrapper.html', expected_context)
 
-    @patch.dict("django.conf.settings.FEATURES", {"ENABLE_EDXNOTES": True})
+    @override_settings(ENABLE_EDXNOTES=True)
     def test_edxnotes_disabled_if_edxnotes_flag_is_false(self):
         """
         Tests that get_html is wrapped when feature flag is on, but edxnotes are
@@ -158,7 +156,7 @@ class EdxNotesDecoratorTest(ModuleStoreTestCase):
         self.course.edxnotes = False
         assert 'original_get_html' == self.problem.get_html()
 
-    @patch.dict("django.conf.settings.FEATURES", {"ENABLE_EDXNOTES": False})
+    @override_settings(ENABLE_EDXNOTES=False)
     def test_edxnotes_disabled(self):
         """
         Tests that get_html is not wrapped when feature flag is off.
@@ -187,7 +185,7 @@ class EdxNotesDecoratorTest(ModuleStoreTestCase):
         enable_edxnotes_for_the_course(self.course, self.user.id)
         assert 'original_get_html' == self.problem.get_html()
 
-    @patch.dict("django.conf.settings.FEATURES", {"ENABLE_EDXNOTES": True})
+    @override_settings(ENABLE_EDXNOTES=True)
     def test_anonymous_user(self):
         user = AnonymousUser()
         problem = TestProblem(self.course, user)
@@ -195,7 +193,7 @@ class EdxNotesDecoratorTest(ModuleStoreTestCase):
         assert problem.get_html() == "original_get_html"
 
 
-@skipUnless(settings.FEATURES["ENABLE_EDXNOTES"], "EdxNotes feature needs to be enabled.")
+@skipUnless(settings.ENABLE_EDXNOTES, "EdxNotes feature needs to be enabled.")
 @ddt.ddt
 class EdxNotesHelpersTest(ModuleStoreTestCase):
     """
@@ -944,7 +942,7 @@ class EdxNotesHelpersTest(ModuleStoreTestCase):
         verify_url(previous_url, previous_api_url)
 
 
-@skipUnless(settings.FEATURES["ENABLE_EDXNOTES"], "EdxNotes feature needs to be enabled.")
+@skipUnless(settings.ENABLE_EDXNOTES, "EdxNotes feature needs to be enabled.")
 @ddt.ddt
 class EdxNotesViewsTest(ModuleStoreTestCase):
     """
@@ -991,7 +989,7 @@ class EdxNotesViewsTest(ModuleStoreTestCase):
         assert has_notes_tab(self.user, self.course)
 
     # pylint: disable=unused-argument
-    @patch.dict("django.conf.settings.FEATURES", {"ENABLE_EDXNOTES": True})
+    @override_settings(ENABLE_EDXNOTES=True)
     @patch("lms.djangoapps.edxnotes.views.get_notes", return_value={'results': []})
     def test_edxnotes_view_is_enabled(self, mock_get_notes):
         """
@@ -1002,7 +1000,7 @@ class EdxNotesViewsTest(ModuleStoreTestCase):
         self.assertContains(response, 'Highlights and notes you&#39;ve made in course content')
 
     # pylint: disable=unused-argument
-    @patch.dict("django.conf.settings.FEATURES", {"ENABLE_EDXNOTES": True})
+    @override_settings(ENABLE_EDXNOTES=True)
     @patch("lms.djangoapps.edxnotes.views.get_notes", return_value={'results': []})
     @patch("lms.djangoapps.edxnotes.views.get_course_position", return_value={
         'display_name': 'Section 1',
@@ -1019,7 +1017,7 @@ class EdxNotesViewsTest(ModuleStoreTestCase):
             'Get started by making a note in something you just read, like <a href="test_url">Section 1</a>'
         )
 
-    @patch.dict("django.conf.settings.FEATURES", {"ENABLE_EDXNOTES": False})
+    @override_settings(ENABLE_EDXNOTES=False)
     def test_edxnotes_view_is_disabled(self):
         """
         Tests that 404 status code is received if EdxNotes feature is disabled.
@@ -1027,7 +1025,7 @@ class EdxNotesViewsTest(ModuleStoreTestCase):
         response = self.client.get(self.notes_page_url)
         assert response.status_code == 404
 
-    @patch.dict("django.conf.settings.FEATURES", {"ENABLE_EDXNOTES": True})
+    @override_settings(ENABLE_EDXNOTES=True)
     @patch("lms.djangoapps.edxnotes.views.get_notes", autospec=True)
     def test_search_notes_successfully_respond(self, mock_search):
         """
@@ -1039,7 +1037,7 @@ class EdxNotesViewsTest(ModuleStoreTestCase):
         assert json.loads(response.content.decode('utf-8')) == NOTES_VIEW_EMPTY_RESPONSE
         assert response.status_code == 200
 
-    @patch.dict("django.conf.settings.FEATURES", {"ENABLE_EDXNOTES": False})
+    @override_settings(ENABLE_EDXNOTES=False)
     def test_search_notes_is_disabled(self):
         """
         Tests that 404 status code is received if EdxNotes feature is disabled.
@@ -1047,7 +1045,7 @@ class EdxNotesViewsTest(ModuleStoreTestCase):
         response = self.client.get(self.notes_url, {"text": "test"})
         assert response.status_code == 404
 
-    @patch.dict("django.conf.settings.FEATURES", {"ENABLE_EDXNOTES": True})
+    @override_settings(ENABLE_EDXNOTES=True)
     @patch("lms.djangoapps.edxnotes.views.get_notes", autospec=True)
     def test_search_500_service_unavailable(self, mock_search):
         """
@@ -1058,7 +1056,7 @@ class EdxNotesViewsTest(ModuleStoreTestCase):
         response = self.client.get(self.notes_url, {"text": "test"})
         self.assertContains(response, "error", status_code=500)
 
-    @patch.dict("django.conf.settings.FEATURES", {"ENABLE_EDXNOTES": True})
+    @override_settings(ENABLE_EDXNOTES=True)
     @patch("lms.djangoapps.edxnotes.views.get_notes", autospec=True)
     def test_search_notes_exception(self, mock_search):
         """
@@ -1070,7 +1068,7 @@ class EdxNotesViewsTest(ModuleStoreTestCase):
         response = self.client.get(self.notes_url, {"text": "test"})
         self.assertContains(response, "error", status_code=500)
 
-    @patch.dict("django.conf.settings.FEATURES", {"ENABLE_EDXNOTES": True})
+    @override_settings(ENABLE_EDXNOTES=True)
     def test_get_id_token(self):
         """
         Test generation of ID Token.
@@ -1085,7 +1083,7 @@ class EdxNotesViewsTest(ModuleStoreTestCase):
             algorithms=[settings.JWT_AUTH['JWT_ALGORITHM']]
         )
 
-    @patch.dict("django.conf.settings.FEATURES", {"ENABLE_EDXNOTES": True})
+    @override_settings(ENABLE_EDXNOTES=True)
     def test_get_id_token_anonymous(self):
         """
         Test that generation of ID Token does not work for anonymous user.
@@ -1108,7 +1106,7 @@ class EdxNotesViewsTest(ModuleStoreTestCase):
         course_block = self._get_course_block()
         assert not course_block.edxnotes_visibility
 
-    @patch.dict("django.conf.settings.FEATURES", {"ENABLE_EDXNOTES": False})
+    @override_settings(ENABLE_EDXNOTES=False)
     def test_edxnotes_visibility_if_feature_is_disabled(self):
         """
         Tests that 404 response is received if EdxNotes feature is disabled.
@@ -1116,7 +1114,7 @@ class EdxNotesViewsTest(ModuleStoreTestCase):
         response = self.client.post(self.visibility_url)
         assert response.status_code == 404
 
-    @patch.dict("django.conf.settings.FEATURES", {"ENABLE_EDXNOTES": True})
+    @override_settings(ENABLE_EDXNOTES=True)
     def test_edxnotes_visibility_invalid_json(self):
         """
         Tests that 400 response is received if invalid JSON is sent.
@@ -1129,7 +1127,7 @@ class EdxNotesViewsTest(ModuleStoreTestCase):
         )
         assert response.status_code == 400
 
-    @patch.dict("django.conf.settings.FEATURES", {"ENABLE_EDXNOTES": True})
+    @override_settings(ENABLE_EDXNOTES=True)
     def test_edxnotes_visibility_key_error(self):
         """
         Tests that 400 response is received if invalid data structure is sent.
@@ -1256,7 +1254,7 @@ class EdxNotesRetireAPITest(ModuleStoreTestCase):
         assert response.status_code == 500
 
 
-@skipUnless(settings.FEATURES["ENABLE_EDXNOTES"], "EdxNotes feature needs to be enabled.")
+@skipUnless(settings.ENABLE_EDXNOTES, "EdxNotes feature needs to be enabled.")
 @ddt.ddt
 class EdxNotesPluginTest(ModuleStoreTestCase):
     """
@@ -1278,6 +1276,5 @@ class EdxNotesPluginTest(ModuleStoreTestCase):
         """
         Verify EdxNotesTab visibility when ENABLE_EDXNOTES feature flag is enabled/disabled.
         """
-        FEATURES['ENABLE_EDXNOTES'] = enabled
-        with override_settings(FEATURES=FEATURES):
+        with override_settings(ENABLE_EDXNOTES=enabled):
             assert EdxNotesTab.is_enabled(self.course, self.user) == enabled

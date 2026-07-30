@@ -836,6 +836,7 @@ REST_FRAMEWORK = {
         'registration_validation': '30/minute',
         'high_service_user': '2000/minute',
     },
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
 # .. setting_name: REGISTRATION_VALIDATION_RATELIMIT
@@ -1064,6 +1065,24 @@ CUSTOM_COURSES_EDX = False
 
 # Settings for course import olx validation
 ENABLE_COURSE_OLX_VALIDATION = False
+
+# .. toggle_name: ENABLE_PROCTORED_EXAMS
+# .. toggle_implementation: DjangoSetting
+# .. toggle_default: False
+# .. toggle_description: Global gate on the proctoring app. When True, the proctoring
+#   app advertises itself as available for all courses; per-course opt-in is a
+#   separate check.
+# .. toggle_use_cases: open_edx
+# .. toggle_creation_date: 2015-07-24
+ENABLE_PROCTORED_EXAMS = False
+
+# .. setting_name: XQA_SERVER
+# .. setting_default: 'http://your_xqa_server.com'
+# .. setting_description: URL of the XQA staff debug/inspection server linked from the
+#   staff-only markup rendered by openedx.core.lib.xblock_utils.add_staff_markup. Set
+#   to a real endpoint if operating an XQA-compatible service; leave the placeholder
+#   default to effectively disable the link.
+XQA_SERVER = 'http://your_xqa_server.com'
 
 # .. toggle_name: AUTOMATIC_AUTH_FOR_TESTING
 # .. toggle_implementation: DjangoSetting

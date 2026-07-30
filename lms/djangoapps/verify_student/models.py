@@ -43,6 +43,7 @@ from lms.djangoapps.verify_student.ssencrypt import (
 )
 from lms.djangoapps.verify_student.statuses import VerificationAttemptStatus
 from openedx.core.djangoapps.signals.signals import LEARNER_SSO_VERIFIED, PHOTO_VERIFICATION_APPROVED
+from openedx.core.djangolib.model_mixins import DeletableByUserValue
 
 from .utils import auto_verify_for_testing_enabled, earliest_allowed_verification_date, submit_request_to_ss
 
@@ -97,9 +98,9 @@ class IDVerificationAttempt(StatusModel):
     their identity through one of several methods that inherit from this Model,
     including PhotoVerification and SSOVerification.
 
-    .. pii: The User's name is stored in this and sub-models
+    .. pii: The User's name is stored in this and sub-models.
     .. pii_types: name
-    .. pii_retirement: retained
+    .. pii_retirement: local_api
     """
     STATUS = Choices('created', 'ready', 'submitted', 'must_retry', 'approved', 'denied')
     user = models.ForeignKey(User, db_index=True, on_delete=models.CASCADE)
@@ -158,10 +159,13 @@ class IDVerificationAttempt(StatusModel):
         )
 
 
-class ManualVerification(IDVerificationAttempt):
+class ManualVerification(IDVerificationAttempt, DeletableByUserValue):
     """
     Each ManualVerification represents a user's verification that bypasses the need for
     any other verification.
+
+    The PII is retained by default, but can be redacted during retirement
+    by enabling ``REDACT_MANUAL_VERIFICATION_HISTORICAL_PII``.
 
     .. pii: The User's name is stored in the parent model
     .. pii_types: name
@@ -190,6 +194,13 @@ class ManualVerification(IDVerificationAttempt):
         Whether or not the status should be displayed to the user.
         """
         return False
+
+    @classmethod
+    def redact_before_delete_fields(cls):
+        """
+        Clear PII fields before delete in downstream soft-delete systems.
+        """
+        return {'name': ''}
 
 
 class SSOVerification(IDVerificationAttempt):
@@ -300,7 +311,7 @@ class PhotoVerification(IDVerificationAttempt):
 
     .. pii: The User's name is stored in the parent model, this one stores links to face and photo ID images
     .. pii_types: name, image
-    .. pii_retirement: retained
+    .. pii_retirement: local_api
     """
     ######################## Fields Set During Creation ########################
     # See class docstring for description of status states
@@ -628,7 +639,7 @@ class SoftwareSecurePhotoVerification(PhotoVerification):
 
     .. pii: The User's name is stored in the parent model, this one stores links to face and photo ID images
     .. pii_types: name, image
-    .. pii_retirement: retained
+    .. pii_retirement: local_api
     """
     # This is a base64.urlsafe_encode(rsa_encrypt(photo_id_aes_key), ss_pub_key)
     # So first we generate a random AES-256 key to encrypt our photo ID with.

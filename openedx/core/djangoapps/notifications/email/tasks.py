@@ -15,7 +15,6 @@ from django.utils.translation import override as translation_override
 from edx_ace import ace
 from edx_ace.recipient import Recipient
 from edx_django_utils.monitoring import set_code_owner_attribute
-from opaque_keys.edx.keys import CourseKey
 
 from openedx.core.djangoapps.notifications.email_notifications import EmailCadence
 from openedx.core.djangoapps.notifications.models import (
@@ -530,6 +529,13 @@ def decide_email_action(user: User, course_key: str, notification: Notification)
     """
     Decide what to do with this notification.
 
+    The immediate-email buffer is scoped per user (not per user + course): a
+    learner who just received an immediate email for any enrolled course has
+    subsequent immediate notifications — regardless of course — grouped into a
+    single buffered digest. ``course_key`` is accepted for signature stability
+    and is used by the caller for the immediate-email content, but it no longer
+    affects the batching decision.
+
     Logic:
     - No recent email? → send_immediate (1st)
     - Recent email + no buffer? → schedule_buffer (2nd)
@@ -541,10 +547,10 @@ def decide_email_action(user: User, course_key: str, notification: Notification)
     buffer_minutes = get_buffer_minutes()
     buffer_threshold = datetime.now() - timedelta(minutes=buffer_minutes)
 
-    # Use select_for_update to prevent race conditions
+    # Use select_for_update to prevent race conditions.
+    # Scoped by user only so all of the user's courses share one buffer window.
     recent_notifications = Notification.objects.select_for_update().filter(
         user=user,
-        course_id=course_key,
         created__gte=buffer_threshold
     )
 
@@ -644,13 +650,19 @@ def schedule_digest_buffer(
     """
     Schedule a buffer job for digest email.
     Called for the SECOND notification only.
+
+    The digest is scheduled ``buffer_minutes`` after the user's most recent
+    immediate email (``last_sent.email_sent_on``), not ``buffer_minutes`` after
+    this second notification. This keeps the delay between the immediate email
+    and its follow-up digest fixed at ``buffer_minutes``, no matter how long the
+    second notification takes to arrive.
     """
     buffer_minutes = get_buffer_minutes()
 
-    # Find when we last sent an email
+    # Find when we last sent an email to this user (across all courses — the
+    # buffer is per user, so the digest window starts at the user's most recent send).
     last_sent = Notification.objects.filter(
         user=user,
-        course_id=course_key,
         email_sent_on__isnull=False
     ).order_by('-email_sent_on').first()
 
@@ -659,7 +671,15 @@ def schedule_digest_buffer(
         return
 
     start_date = last_sent.email_sent_on
-    scheduled_time = datetime.now() + timedelta(minutes=buffer_minutes)
+    # Anchor the digest to the immediate email that opened this buffer window, so the
+    # total wait before the digest is a consistent ``buffer_minutes`` regardless of how
+    # long after the immediate email the second notification arrives. If that window has
+    # already elapsed (the second notification came in more than ``buffer_minutes`` later),
+    # fall back to "now" so the digest fires promptly instead of being scheduled in the past.
+    scheduled_time = max(
+        start_date + timedelta(minutes=buffer_minutes),
+        django_timezone.now(),
+    )
 
     # Mark this notification as scheduled FIRST
     notification.email_scheduled = True
@@ -711,7 +731,11 @@ def send_buffered_digest(
     Send digest email with all buffered notifications.
 
     This collects ALL notifications where email_scheduled=True
-    for this user+course within the buffer period.
+    for this user within the buffer period, regardless of course.
+
+    ``course_key`` is retained in the signature for compatibility with tasks
+    that were enqueued before the per-user batching change; it is no longer
+    used to filter notifications.
 
     Simple! No task ID tracking needed.
     """
@@ -729,11 +753,10 @@ def send_buffered_digest(
 
         end_date = datetime.now()
 
-        # Get ALL scheduled notifications
+        # Get ALL scheduled notifications for the user (across every course).
         # Simple query: just find where email_scheduled=True
         scheduled_notifications = Notification.objects.filter(
             user=user,
-            course_id=course_key,
             email_scheduled=True,  # This is all we need!
             created__gte=start_date,
             created__lte=end_date,
@@ -764,10 +787,9 @@ def send_buffered_digest(
                 scheduled_notifications.update(email_scheduled=False)
                 return
 
-            # Build digest email
+            # Build digest email. The digest may span multiple courses; per-notification
+            # course names are resolved on demand inside create_email_digest_context.
             apps_dict = create_app_notifications_dict(notifications_list)
-            course_key = CourseKey.from_string(course_key)
-            course_name = get_course_info(course_key).get("name", course_key)
 
             message_context = create_email_digest_context(
                 apps_dict,
@@ -775,7 +797,7 @@ def send_buffered_digest(
                 start_date,
                 end_date,
                 EmailCadence.IMMEDIATELY,
-                courses_data={course_key: {'name': course_name}}
+                courses_data={}
             )
 
             # Send digest

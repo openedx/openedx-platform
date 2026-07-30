@@ -8,6 +8,7 @@ from unittest import mock
 
 import ddt
 import httpretty
+from django.test import override_settings
 from django.test.client import RequestFactory
 
 from common.djangoapps.student.tests.factories import UserFactory
@@ -385,6 +386,7 @@ class CommentSerializerDeserializationTest(ForumMockUtilsMixin, SharedModuleStor
 
 
 @ddt.ddt
+@override_settings(ENABLE_DISCUSSION_SERVICE=True)
 class ThreadSerializerDeserializationTest(
         ForumMockUtilsMixin,
         UrlResetMixin,
@@ -392,7 +394,6 @@ class ThreadSerializerDeserializationTest(
 ):
     """Tests for ThreadSerializer deserialization."""
     @classmethod
-    @mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
     def setUpClass(cls):
         super().setUpClass()
         cls.course = CourseFactory.create()
@@ -404,7 +405,6 @@ class ThreadSerializerDeserializationTest(
         super().tearDownClass()
         super().disposeForumMocks()
 
-    @mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
     def setUp(self):
         super().setUp()
         httpretty.reset()
@@ -538,7 +538,6 @@ class SerializerTestMixin(UrlResetMixin, ForumMockUtilsMixin):
     Test Mixin for Serializer tests
     """
     @classmethod
-    @mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
     def setUpClass(cls):
         super().setUpClass()
         cls.course = CourseFactory.create()
@@ -550,7 +549,6 @@ class SerializerTestMixin(UrlResetMixin, ForumMockUtilsMixin):
         super().tearDownClass()
         super().disposeForumMocks()
 
-    @mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
     def setUp(self):
         super().setUp()
         httpretty.reset()
@@ -658,6 +656,7 @@ class SerializerTestMixin(UrlResetMixin, ForumMockUtilsMixin):
 
 
 @ddt.ddt
+@override_settings(ENABLE_DISCUSSION_SERVICE=True)
 class CommentSerializerTest(SerializerTestMixin, SharedModuleStoreTestCase):
     """Tests for CommentSerializer."""
 
@@ -844,6 +843,7 @@ class CommentSerializerTest(SerializerTestMixin, SharedModuleStoreTestCase):
 
 
 @ddt.ddt
+@override_settings(ENABLE_DISCUSSION_SERVICE=True)
 class ThreadSerializerSerializationTest(SerializerTestMixin, SharedModuleStoreTestCase, ForumMockUtilsMixin):
     """Tests for ThreadSerializer serialization."""
 

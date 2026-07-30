@@ -9,7 +9,9 @@ from django.dispatch.dispatcher import receiver
 
 from common.djangoapps.student.models_api import get_name, get_pending_name_change
 from lms.djangoapps.verify_student.apps import VerifyStudentConfig  # pylint: disable=unused-import  # noqa: F401
+from lms.djangoapps.verify_student.config import REDACT_MANUAL_VERIFICATION_HISTORICAL_PII
 from lms.djangoapps.verify_student.models import (
+    ManualVerification,
     SoftwareSecurePhotoVerification,
     VerificationAttempt,
     VerificationDeadline,
@@ -39,8 +41,13 @@ def _listen_for_course_publish(sender, course_key, **kwargs):  # pylint: disable
 
 @receiver(USER_RETIRE_LMS_CRITICAL)
 def _listen_for_lms_retire(sender, **kwargs):  # pylint: disable=unused-argument
+    """
+    Retire verify_student records handled in the LMS retirement.
+    """
     user = kwargs.get('user')
     SoftwareSecurePhotoVerification.retire_user(user.id)
+    if REDACT_MANUAL_VERIFICATION_HISTORICAL_PII.is_enabled():
+        ManualVerification.delete_by_user_value(value=user.id, field='user_id')
 
 
 @receiver(post_save, sender=SoftwareSecurePhotoVerification)

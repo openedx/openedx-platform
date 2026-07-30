@@ -22,7 +22,7 @@ cffi==2.1.0
     # via
     #   cryptography
     #   pynacl
-charset-normalizer==3.4.8
+charset-normalizer==3.4.9
     # via requests
 click==8.4.2
     # via
@@ -32,7 +32,7 @@ cryptography==49.0.0
     # via
     #   google-auth
     #   pyjwt
-django==5.2.15
+django==5.2.16
     # via
     #   -c requirements/common_constraints.txt
     #   -c requirements/constraints.txt

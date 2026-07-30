@@ -329,14 +329,19 @@ class LegacyLibraryContentBlock(ItemBankMixin, XModuleToXBlockMixin, XBlock):
         self.sync_from_library(upgrade_to_latest=False)
         return True  # Children have been handled
 
-    def v2_update_children_upstream_version(self, user_id=None):
+    def v2_update_children_upstream_version(self, user_id=None, persist_publish_state=False):
         """
         Update the upstream and upstream version fields of all children to point to library v2 version of the legacy
         library blocks. This essentially converts this legacy block to new ItemBankBlock.
+
+        If `persist_publish_state` is True, and this block was published prior to the migration
+        (with no unpublished changes), it is re-published afterward so that the
+        upstream/upstream_version changes reach LMS.
         """
         from cms.djangoapps.modulestore_migrator import api as migrator_api
         store = modulestore()
         with store.bulk_operations(self.course_id):
+            was_published = persist_publish_state and not store.has_changes(self)
             children = self.get_children()
             # These are the v1 library item upstream UsageKeys
             child_old_upstream_keys = [
@@ -358,6 +363,8 @@ class LegacyLibraryContentBlock(ItemBankMixin, XModuleToXBlockMixin, XBlock):
             self.is_migrated_to_v2 = True
             self.save()
             store.update_item(self, user_id)
+            if was_published:
+                store.publish(self.location, user_id)
 
     def _validate_library_version(self, validation, lib_tools, version, library_key):
         """

@@ -474,9 +474,10 @@ if ENABLE_ENTERPRISE_INTEGRATION:
 
 #####################################################################
 
-# django-session-cookie middleware
-DCS_SESSION_COOKIE_SAMESITE = 'Lax'
-DCS_SESSION_COOKIE_SAMESITE_FORCE_ALL = True
+# Override production's 'None' -- devstack runs over plain HTTP, and browsers
+# silently drop SameSite=None cookies that aren't also Secure, which breaks
+# session login.
+SESSION_COOKIE_SAMESITE = 'Lax'
 
 ########################## THEMING  #######################
 # If you want to enable theming in devstack, uncomment this section and add any relevant
@@ -580,6 +581,11 @@ RETIREMENT_STATES = [
     'ERRORED',
     'ABORTED',
     'COMPLETE',
+]
+
+###################### drf-spectacular (LMS enrollment schema) ######################
+SPECTACULAR_SETTINGS['SERVERS'] = [  # noqa: F405
+    {'url': LMS_ROOT_URL, 'description': 'Local'},  # noqa: F405
 ]
 
 ################# New settings must go ABOVE this line #################

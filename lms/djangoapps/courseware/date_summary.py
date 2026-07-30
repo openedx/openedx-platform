@@ -591,7 +591,7 @@ class VerificationDeadlineDate(DateSummary):
             is_active and
             mode == 'verified' and
             self.verification_status in ('expired', 'none', 'must_reverify') and
-            not settings.FEATURES.get('ENABLE_INTEGRITY_SIGNATURE')
+            not settings.ENABLE_INTEGRITY_SIGNATURE
         )
 
     @lazy

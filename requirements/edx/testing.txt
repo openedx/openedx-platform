@@ -168,7 +168,7 @@ chardet==7.4.3
     #   diff-cover
     #   encutils
     #   pysrt
-charset-normalizer==3.4.8
+charset-normalizer==3.4.9
     # via
     #   -r requirements/edx/base.txt
     #   requests
@@ -258,7 +258,7 @@ dill==0.4.1
     # via pylint
 distlib==0.4.3
     # via virtualenv
-django==5.2.15
+django==5.2.16
     # via
     #   -c requirements/common_constraints.txt
     #   -c requirements/constraints.txt
@@ -589,7 +589,7 @@ edx-drf-extensions==10.6.0
     #   enterprise-integrated-channels
     #   openedx-authz
     #   openedx-core
-edx-enterprise==8.3.0
+edx-enterprise==8.7.2
     # via
     #   -c requirements/constraints.txt
     #   -r requirements/edx/base.txt
@@ -696,7 +696,7 @@ enmerkar==0.7.1
     #   enmerkar-underscore
 enmerkar-underscore==2.4.0
     # via -r requirements/edx/base.txt
-enterprise-integrated-channels==0.1.62
+enterprise-integrated-channels==0.1.65
     # via -r requirements/edx/base.txt
 event-tracking==4.0.2
     # via
@@ -1052,7 +1052,7 @@ openedx-atlas==0.7.0
     #   enterprise-integrated-channels
     #   openedx-authz
     #   openedx-forum
-openedx-authz==1.20.1
+openedx-authz==1.21.0
     # via -r requirements/edx/base.txt
 openedx-calc==5.0.0
     # via
@@ -1081,7 +1081,7 @@ openedx-events==11.2.0
     #   openedx-authz
     #   openedx-core
     #   ora2
-openedx-filters==3.7.0
+openedx-filters==3.8.0
     # via
     #   -r requirements/edx/base.txt
     #   edx-enterprise
@@ -1597,7 +1597,7 @@ tomlkit==0.15.0
     #   snowflake-connector-python
 tox==4.56.2
     # via -r requirements/edx/testing.in
-tqdm==4.68.3
+tqdm==4.68.4
     # via
     #   -r requirements/edx/base.txt
     #   nltk
@@ -1686,8 +1686,6 @@ wcwidth==0.8.2
     # via
     #   -r requirements/edx/base.txt
     #   prompt-toolkit
-web-fragments==4.0.0
-    # via -r requirements/edx/base.txt
 webencodings==0.5.1
     # via
     #   -r requirements/edx/base.txt
