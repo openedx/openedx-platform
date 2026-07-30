@@ -200,16 +200,16 @@ class OutlineTabView(RetrieveAPIView):
         monitoring_utils.set_custom_attribute('user_id', request.user.id)
         monitoring_utils.set_custom_attribute('is_staff', request.user.is_staff)
 
-        course = get_course_or_403(user, 'load', course_key, check_if_enrolled=False)
+        course = get_course_or_403(request.user, 'load', course_key, check_if_enrolled=False)
 
         masquerade_object, request.user = setup_masquerade(
             request,
             course_key,
-            staff_access=has_access(user, 'staff', course_key),
+            staff_access=has_access(request.user, 'staff', course_key),
             reset_masquerade_data=True,
         )
 
-        user_is_masquerading = is_masquerading(user, course_key, course_masquerade=masquerade_object)
+        user_is_masquerading = is_masquerading(request.user, course_key, course_masquerade=masquerade_object)
         # Check if the user is masquerading as a student and get the masqueraded user object
         if user_is_masquerading and masquerade_object.role == 'student':
             try:
@@ -306,7 +306,7 @@ class OutlineTabView(RetrieveAPIView):
         elif allow_public_outline or allow_public or user_is_masquerading:
             course_blocks = get_course_outline_block_tree(request, course_key_string, None)
             if allow_public or user_is_masquerading:
-                handouts_html = get_course_info_section(request, user, course, 'handouts')
+                handouts_html = get_course_info_section(request, request.user, course, 'handouts')
 
         if not is_enrolled:
             if CourseMode.is_masters_only(course_key):
@@ -315,7 +315,7 @@ class OutlineTabView(RetrieveAPIView):
                     'Please contact your degree administrator or '
                     '{platform_name} Support if you have questions.'
                 ).format(platform_name=settings.PLATFORM_NAME)
-            elif CourseEnrollment.is_enrollment_closed(user, course_overview):
+            elif CourseEnrollment.is_enrollment_closed(request.user, course_overview):
                 enroll_alert['can_enroll'] = False
             elif CourseEnrollment.objects.is_course_full(course_overview):
                 enroll_alert['can_enroll'] = False
