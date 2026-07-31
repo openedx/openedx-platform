@@ -5,7 +5,7 @@ Tests for instructor_task/models.py.
 
 import copy
 import time
-from io import StringIO
+from io import BytesIO, StringIO
 
 import pytest
 from django.conf import settings
@@ -50,6 +50,69 @@ class ReportStoreTestMixin:
         Subclasses should override this and return their report store.
         """
         pass  # pylint: disable=unnecessary-pass
+
+    def test_store_streams_binary_buffer(self):
+        """
+        A binary buffer should reach the storage backend without first being
+        read into memory in its entirety.
+
+        Asserted behaviourally rather than by inspecting call args: a streaming
+        backend reads in bounded chunks (File.chunks / upload_fileobj both pass
+        an explicit size), so an unbounded read() is the signature of the whole
+        report being slurped into RAM before upload.
+        """
+        unbounded_reads = []
+
+        class _RecordingBytesIO(BytesIO):
+            """BytesIO that notes any read() not bounded by an explicit size."""
+            def read(self, size=-1, /):
+                if size is None or size < 0:
+                    unbounded_reads.append(size)
+                return super().read(size)
+
+        report_store = self.create_report_store()  # pylint: disable=assignment-from-no-return
+        payload = b'student_id,grade\n' + b'1,0.5\n' * 5000
+
+        report_store.store(self.course_id, 'streamed.csv', _RecordingBytesIO(payload))
+
+        assert unbounded_reads == []
+        with report_store.storage.open(report_store.path_to(self.course_id, 'streamed.csv')) as stored:
+            assert stored.read() == payload
+
+    def test_store_text_buffer_round_trips(self):
+        """
+        Text buffers are still accepted, and are utf-8 encoded on the way out.
+
+        Not every caller has a binary file to hand, so this path has to keep
+        working even though it cannot stream.
+        """
+        report_store = self.create_report_store()  # pylint: disable=assignment-from-no-return
+        contents = 'student_id,grade\n1,0.5\nüser,1.0\n'
+
+        report_store.store(self.course_id, 'text.csv', StringIO(contents))
+
+        with report_store.storage.open(report_store.path_to(self.course_id, 'text.csv')) as stored:
+            assert stored.read() == contents.encode('utf-8')
+
+    def test_store_rows_round_trips(self):
+        """
+        store_rows() builds its CSV in a binary buffer, so it takes the
+        streaming path too. Verify the bytes on disk are unchanged by that.
+        """
+        report_store = self.create_report_store()  # pylint: disable=assignment-from-no-return
+
+        report_store.store_rows(
+            self.course_id,
+            'rows.csv',
+            [['student_id', 'grade'], [1, 0.5], ['üser', 'Not Attempted']],
+        )
+
+        with report_store.storage.open(report_store.path_to(self.course_id, 'rows.csv')) as stored:
+            assert stored.read().decode('utf-8').splitlines() == [
+                'student_id,grade',
+                '1,0.5',
+                'üser,Not Attempted',
+            ]
 
     def test_links_for_order(self):
         """
