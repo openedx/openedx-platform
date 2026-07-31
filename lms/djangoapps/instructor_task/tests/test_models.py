@@ -75,7 +75,7 @@ class ReportStoreTestMixin:
 
         report_store.store(self.course_id, 'streamed.csv', _RecordingBytesIO(payload))
 
-        assert unbounded_reads == []
+        assert not unbounded_reads, f'buffer was read without a size bound: {unbounded_reads}'
         with report_store.storage.open(report_store.path_to(self.course_id, 'streamed.csv')) as stored:
             assert stored.read() == payload
 
