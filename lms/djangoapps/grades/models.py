@@ -288,6 +288,18 @@ class VisibleBlocks(models.Model):
         )
 
     @classmethod
+    def clear_prefetched_data(cls):
+        """
+        Clears all prefetched visible blocks from the RequestCache.
+
+        Unlike the course-keyed grade caches, this one is keyed per
+        (user, course) and is only ever added to, so it grows without bound
+        across a task that reads grades for many learners in turn. Callers
+        iterating over a large population should drop it periodically.
+        """
+        get_cache(cls._CACHE_NAMESPACE).clear()
+
+    @classmethod
     def _cache_key(cls, user_id, course_key):
         return f"visible_blocks_cache.{course_key}.{user_id}"
 
@@ -862,3 +874,14 @@ class PersistentSubsectionGradeOverride(models.Model):
     @classmethod
     def clear_prefetched_overrides_for_learner(cls, user_id, course_key):
         get_cache(cls._CACHE_NAMESPACE).pop((user_id, str(course_key)), None)
+
+    @classmethod
+    def clear_prefetched_data(cls):
+        """
+        Clears all prefetched overrides from the RequestCache.
+
+        Like the VisibleBlocks cache, this is keyed per (user, course) and only
+        ever grows, so a task reading grades for many learners needs to drop it
+        periodically rather than relying on the per-learner variant above.
+        """
+        get_cache(cls._CACHE_NAMESPACE).clear()
