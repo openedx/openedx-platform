@@ -887,6 +887,8 @@ class TestGetEmailParamsCCX(SharedModuleStoreTestCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.course = CourseFactory.create()
+        # get_link_for_about_page uses course.id (parent course), not the CCX key
+        cls.course_about_url = f'{settings.LMS_ROOT_URL}/courses/{cls.course.id}/about'
 
     @override_settings(CUSTOM_COURSES_EDX=True)
     def setUp(self):
@@ -903,7 +905,6 @@ class TestGetEmailParamsCCX(SharedModuleStoreTestCase):
             site,
             self.course_key
         )
-        self.course_about_url = self.course_url + 'about'
         self.registration_url = f'https://{site}/register'
 
     @override_settings(CUSTOM_COURSES_EDX=True)
@@ -940,13 +941,11 @@ class TestGetEmailParams(SharedModuleStoreTestCase):
             site,
             str(cls.course.id)
         )
-        cls.course_about_url = cls.course_url + 'about'
         cls.registration_url = f'https://{site}/register'
         cls.logo_url = get_logo_url_for_email()
+        cls.course_about_url = f'{settings.LMS_ROOT_URL}/courses/{cls.course.id}/about'
 
     def test_normal_params(self):
-        # For a normal site, what do we expect to get for the URLs?
-        # Also make sure `auto_enroll` is properly passed through.
         result = get_email_params(self.course, False)
 
         assert result['auto_enroll'] is False
@@ -955,18 +954,11 @@ class TestGetEmailParams(SharedModuleStoreTestCase):
         assert result['course_url'] == self.course_url
         assert result['logo_url'] == self.logo_url
 
-    def test_marketing_params(self):
-        # For a site with a marketing front end, what do we expect to get for the URLs?
-        # Also make sure `auto_enroll` is properly passed through.
-        with patch.dict('django.conf.settings.FEATURES', {'ENABLE_MKTG_SITE': True}):
-            result = get_email_params(self.course, True)
+    def test_auto_enroll_params(self):
+        result = get_email_params(self.course, True)
 
         assert result['auto_enroll'] is True
-        # We should *not* get a course about url (LMS doesn't know what the marketing site URLs are)
-        assert result['course_about_url'] is None
-        assert result['registration_url'] == self.registration_url
-        assert result['course_url'] == self.course_url
-        assert result['logo_url'] == self.logo_url
+        assert result['course_about_url'] == self.course_about_url
 
     @patch('lms.djangoapps.instructor.enrollment.get_logo_url_for_email', return_value='https://www.logo.png')
     def test_logo_url_params(self, mock_get_logo_url_for_email):

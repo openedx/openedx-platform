@@ -8,7 +8,7 @@ from django.http import Http404
 from django.shortcuts import redirect
 from django.views.generic import View
 
-from common.djangoapps.edxmako.shortcuts import render_to_response
+from common.djangoapps.edxmako.shortcuts import marketing_link, render_to_response
 from common.djangoapps.student.models import CourseEnrollment
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.features.enterprise_support import api as enterprise_api
@@ -23,7 +23,8 @@ class ContactUsView(View):
         # If ZENDESK_URL is not defined, then it will redirect to the static contact page
         # to avoid 500 error that arises due to missing Zendesk configuration
         if not settings.ZENDESK_URL:
-            return redirect('contact')
+            contact_url = marketing_link('CONTACT')
+            return redirect(contact_url if contact_url != '#' else '/')
 
         if not configuration_helpers.get_value('CONTACT_US_PAGE', True):
             raise Http404

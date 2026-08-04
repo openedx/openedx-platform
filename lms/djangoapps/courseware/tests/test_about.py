@@ -10,7 +10,6 @@ from unittest.mock import patch
 import ddt
 import pytz
 from crum import set_current_request
-from django.conf import settings
 from django.test.utils import override_settings
 from django.urls import reverse
 from edx_toggles.toggles.testutils import override_waffle_flag, override_waffle_switch
@@ -115,15 +114,13 @@ class AboutTestCase(LoginEnrollmentTestCase, SharedModuleStoreTestCase, EventTra
         resp = self.client.get(url)
         self.assertRedirects(resp, reverse('dashboard'), fetch_redirect_response=False)
 
-    @patch.dict(settings.FEATURES, {'ENABLE_MKTG_SITE': True})
+    @override_settings(ENABLE_COURSE_HOME_REDIRECT=True)
     def test_logged_in_marketing(self):
         self.setup_user()
         url = reverse('about_course', args=[str(self.course.id)])
         resp = self.client.get(url)
         self.assertRedirects(resp, course_home_url(self.course.id), fetch_redirect_response=False)
 
-    @patch.dict(settings.FEATURES, {'ENABLE_COURSE_HOME_REDIRECT': False})
-    @patch.dict(settings.FEATURES, {'ENABLE_MKTG_SITE': True})
     def test_logged_in_marketing_without_course_home_redirect(self):
         """
         Verify user is not redirected to course home page when
@@ -135,20 +132,7 @@ class AboutTestCase(LoginEnrollmentTestCase, SharedModuleStoreTestCase, EventTra
         # should not be redirected
         self.assertContains(resp, "OOGIE BLOOGIE")
 
-    @patch.dict(settings.FEATURES, {'ENABLE_COURSE_HOME_REDIRECT': True})
-    @patch.dict(settings.FEATURES, {'ENABLE_MKTG_SITE': False})
-    def test_logged_in_marketing_without_mktg_site(self):
-        """
-        Verify user is not redirected to course home page when
-        ENABLE_MKTG_SITE is set to False
-        """
-        self.setup_user()
-        url = reverse('about_course', args=[str(self.course.id)])
-        resp = self.client.get(url)
-        # should not be redirected
-        self.assertContains(resp, "OOGIE BLOOGIE")
-
-    @patch.dict(settings.FEATURES, {'ENABLE_PREREQUISITE_COURSES': True})
+    @override_settings(ENABLE_PREREQUISITE_COURSES=True)
     def test_pre_requisite_course(self):
         pre_requisite_course = CourseFactory.create(org='edX', course='900', display_name='pre requisite course')
         course = CourseFactory.create(pre_requisite_courses=[str(pre_requisite_course.id)])
@@ -163,7 +147,7 @@ class AboutTestCase(LoginEnrollmentTestCase, SharedModuleStoreTestCase, EventTra
             f'{pre_requisite_courses[0]["display"]}</a> before you begin this course.'
         ) in resp.content.decode(resp.charset).strip('\n')
 
-    @patch.dict(settings.FEATURES, {'ENABLE_PREREQUISITE_COURSES': True})
+    @override_settings(ENABLE_PREREQUISITE_COURSES=True)
     def test_about_page_unfulfilled_prereqs(self):
         pre_requisite_course = CourseFactory.create(
             org='edX',

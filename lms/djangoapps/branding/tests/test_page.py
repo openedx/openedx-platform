@@ -133,7 +133,7 @@ class PreRequisiteCourseCatalog(ModuleStoreTestCase, LoginEnrollmentTestCase, Mi
     """
     ENABLED_SIGNALS = ['course_published']
 
-    @patch.dict(settings.FEATURES, {'ENABLE_PREREQUISITE_COURSES': True})
+    @override_settings(ENABLE_PREREQUISITE_COURSES=True)
     def test_course_with_prereq(self):
         """
         Simulate having a course which has closed enrollments that has

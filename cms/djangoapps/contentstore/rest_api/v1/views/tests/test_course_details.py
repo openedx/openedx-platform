@@ -2,9 +2,10 @@
 Unit tests for course details views.
 """
 import json
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import ddt
+from django.test.utils import override_settings
 from django.urls import reverse
 from openedx_authz.constants.roles import COURSE_EDITOR, COURSE_STAFF
 from rest_framework import status
@@ -57,7 +58,7 @@ class CourseDetailsViewTest(CourseTestCase, PermissionAccessMixin):
         self.assertEqual(error, "You do not have permission to perform this action.")  # noqa: PT009
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)  # noqa: PT009
 
-    @patch.dict("django.conf.settings.FEATURES", {"ENABLE_PREREQUISITE_COURSES": True})
+    @override_settings(ENABLE_PREREQUISITE_COURSES=True)
     def test_put_invalid_pre_requisite_course(self):
         pre_requisite_course_keys = [str(self.course.id), "invalid_key"]
         request_data = {"pre_requisite_courses": pre_requisite_course_keys}
@@ -619,7 +620,7 @@ class CourseDetailsAuthzViewTest(CourseAuthoringAuthzTestMixin, CourseTestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
 
-    @patch.dict("django.conf.settings.FEATURES", {"ENABLE_PREREQUISITE_COURSES": True})
+    @override_settings(ENABLE_PREREQUISITE_COURSES=True)
     def test_put_invalid_pre_requisite_course_with_authz(self):
         """
         Ensure validation still applies under AuthZ.

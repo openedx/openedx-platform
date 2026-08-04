@@ -545,14 +545,11 @@ class CourseTabView(EdxFragmentView):
                 return CourseTabView.handle_exceptions(request, course_key, course, exception)
 
     @staticmethod
-    def url_to_enroll(course_key):
+    def url_to_enroll(course_key):  # pylint: disable=unused-argument
         """
         Returns the URL to use to enroll in the specified course.
         """
-        url_to_enroll = reverse('about_course', args=[str(course_key)])
-        if settings.FEATURES.get('ENABLE_MKTG_SITE'):
-            url_to_enroll = marketing_link('COURSES')
-        return url_to_enroll
+        return marketing_link('COURSES')
 
     @staticmethod
     def register_user_access_warning_messages(request, course):
@@ -1214,16 +1211,11 @@ def credit_course_requirements(course_key, student):
 
 def _course_home_redirect_enabled():
     """
-    Return True value if user needs to be redirected to course home based on value of
-    `ENABLE_MKTG_SITE` and `ENABLE_COURSE_HOME_REDIRECT feature` flags
-    Returns: boolean True or False
+    Return True if users should be redirected from the course about page to course home.
     """
-    if configuration_helpers.get_value(
-            'ENABLE_MKTG_SITE', settings.FEATURES.get('ENABLE_MKTG_SITE', False)
-    ) and configuration_helpers.get_value(
-        'ENABLE_COURSE_HOME_REDIRECT', settings.FEATURES.get('ENABLE_COURSE_HOME_REDIRECT', True)
-    ):
-        return True
+    return bool(configuration_helpers.get_value(
+        'ENABLE_COURSE_HOME_REDIRECT', settings.ENABLE_COURSE_HOME_REDIRECT
+    ))
 
 
 @login_required

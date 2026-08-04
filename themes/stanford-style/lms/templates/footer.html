@@ -1,9 +1,9 @@
 ## mako
 <%!
   from datetime import date
-  from django.urls import reverse
   from django.utils.translation import gettext as _
   from openedx.core.djangoapps.lang_pref.api import footer_language_selector_is_enabled
+  from common.djangoapps.edxmako.shortcuts import marketing_link
 %>
 <%namespace name='static' file='static_content.html'/>
 <!-- footer overrides for stanford theme go here -->
@@ -12,13 +12,13 @@
     <div class="colophon">
       <nav class="nav-colophon">
         <ol>
-          <li><a href="${reverse('about')}">${_("About")}</a></li>
-          <li><a href="${reverse('about')}#careers">${_("Careers")}</a></li>
-          <li><a href="${reverse('about')}#contact">${_("Contact")}</a></li>
-          <li><a href="${reverse('tos')}">${_("Terms of Service")}</a></li>
-          <li><a href="${reverse('tos')}#privacy">${_("Privacy Policy")}</a></li>
-          <li><a href="${reverse('tos')}#honor">${_("Honor Code")}</a></li>
-          <li><a href="${reverse('tos')}#copyright">${_("Copyright")}</a></li>
+          <li><a href="${marketing_link('ABOUT')}">${_("About")}</a></li>
+          <li><a href="${marketing_link('ABOUT')}#careers">${_("Careers")}</a></li>
+          <li><a href="${marketing_link('ABOUT')}#contact">${_("Contact")}</a></li>
+          <li><a href="${marketing_link('TOS')}">${_("Terms of Service")}</a></li>
+          <li><a href="${marketing_link('TOS')}#privacy">${_("Privacy Policy")}</a></li>
+          <li><a href="${marketing_link('TOS')}#honor">${_("Honor Code")}</a></li>
+          <li><a href="${marketing_link('TOS')}#copyright">${_("Copyright")}</a></li>
         </ol>
       </nav>
 

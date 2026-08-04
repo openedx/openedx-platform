@@ -16,15 +16,12 @@ from xmodule.partitions.partitions import (
 
 log = logging.getLogger(__name__)
 
-FEATURES = getattr(settings, 'FEATURES', {})
-
-
 def create_enrollment_track_partition_with_course_id(course_id):
     """
     Create and return the dynamic enrollment track user partition based only on course_id.
     If it cannot be created, None is returned.
     """
-    if not FEATURES.get('ENABLE_ENROLLMENT_TRACK_USER_PARTITION'):
+    if not settings.ENABLE_ENROLLMENT_TRACK_USER_PARTITION:
         return None
 
     try:

@@ -4,7 +4,7 @@
 #
 #    make upgrade
 #
-asgiref==3.11.1
+asgiref==3.12.1
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   django
@@ -14,17 +14,17 @@ attrs==26.1.0
     #   zeep
 backoff==2.2.1
     # via -r scripts/user_retirement/requirements/base.txt
-boto3==1.43.41
+boto3==1.43.57
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   moto
-botocore==1.43.41
+botocore==1.43.57
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   boto3
     #   moto
     #   s3transfer
-certifi==2026.6.17
+certifi==2026.7.22
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   requests
@@ -69,13 +69,13 @@ edx-django-utils==8.0.1
     #   edx-rest-api-client
 edx-rest-api-client==7.0.0
     # via -r scripts/user_retirement/requirements/base.txt
-google-api-core==2.31.0
+google-api-core==2.33.0
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   google-api-python-client
 google-api-python-client==2.198.0
     # via -r scripts/user_retirement/requirements/base.txt
-google-auth==2.55.1
+google-auth==2.56.2
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   google-api-core
@@ -127,13 +127,13 @@ moto==5.2.2
     # via -r scripts/user_retirement/requirements/testing.in
 packaging==26.2
     # via pytest
-platformdirs==4.10.0
+platformdirs==4.11.0
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   zeep
 pluggy==1.6.0
     # via pytest
-proto-plus==1.28.0
+proto-plus==1.28.2
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   google-api-core
@@ -147,7 +147,7 @@ psutil==7.2.2
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   edx-django-utils
-pyasn1==0.6.3
+pyasn1==0.6.4
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   pyasn1-modules
@@ -180,7 +180,7 @@ python-dateutil==2.9.0.post0
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   botocore
-pytz==2026.2
+pytz==2026.3.post1
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   jenkinsapi
@@ -215,11 +215,11 @@ responses==0.26.2
     # via
     #   -r scripts/user_retirement/requirements/testing.in
     #   moto
-s3transfer==0.19.0
+s3transfer==0.19.2
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   boto3
-simple-salesforce==1.12.9
+simple-salesforce==1.12.10
     # via -r scripts/user_retirement/requirements/base.txt
 simplejson==4.1.1
     # via -r scripts/user_retirement/requirements/base.txt

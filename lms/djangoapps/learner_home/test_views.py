@@ -77,12 +77,14 @@ class TestGetPlatformSettings(TestCase):
 
     @ddt.data(
         (True, f'{settings.CATALOG_MICROFRONTEND_URL}/courses'),
-        (False, '/courses'),
+        (False, '#'),
     )
     @ddt.unpack
     def test_link_with_new_catalog_page(self, catalog_mfe_enabled, expected_catalog_link):
         """
         Test that the catalog link is constructed correctly based on the MFE flags.
+        When the catalog MFE is disabled, marketing_link('COURSES') is used; '#' is
+        returned when MKTG_URLS has no COURSES entry.
         """
         with override_settings(ENABLE_CATALOG_MICROFRONTEND=catalog_mfe_enabled):
             assert get_platform_settings()["courseSearchUrl"] == expected_catalog_link

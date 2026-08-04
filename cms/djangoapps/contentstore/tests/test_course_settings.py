@@ -289,7 +289,7 @@ class CourseDetailsViewTest(CourseTestCase, MilestonesTestCaseMixin):
         elif field in encoded and encoded[field] is not None:
             self.fail(field + " included in encoding but missing from details at " + context)
 
-    @mock.patch.dict("django.conf.settings.FEATURES", {'ENABLE_PREREQUISITE_COURSES': True})
+    @override_settings(ENABLE_PREREQUISITE_COURSES=True)
     def test_pre_requisite_course_update_and_fetch(self):
         self.assertFalse(milestones_helpers.any_unfulfilled_milestones(self.course.id, self.user.id),  # noqa: PT009
                          msg='The initial empty state should be: no prerequisite courses')
@@ -325,7 +325,7 @@ class CourseDetailsViewTest(CourseTestCase, MilestonesTestCaseMixin):
         self.assertFalse(milestones_helpers.any_unfulfilled_milestones(self.course.id, self.user.id),  # noqa: PT009
                          msg='Should not have prerequisite courses anymore')
 
-    @mock.patch.dict("django.conf.settings.FEATURES", {'ENABLE_PREREQUISITE_COURSES': True})
+    @override_settings(ENABLE_PREREQUISITE_COURSES=True)
     def test_invalid_pre_requisite_course(self):
         url = get_url(self.course.id)
         resp = self.client.get_json(url)
@@ -437,7 +437,7 @@ class CourseDetailsViewTest(CourseTestCase, MilestonesTestCaseMixin):
         self.assertEqual(course.entrance_exam_minimum_score_pct, .5)  # noqa: PT009
 
     @unittest.skipUnless(settings.ENTRANCE_EXAMS, True)
-    @mock.patch.dict("django.conf.settings.FEATURES", {'ENABLE_PREREQUISITE_COURSES': True})
+    @override_settings(ENABLE_PREREQUISITE_COURSES=True)
     def test_entrance_after_changing_other_setting(self):
         """
         Test entrance exam is not deactivated when prerequisites removed.

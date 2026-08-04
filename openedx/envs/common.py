@@ -1050,6 +1050,14 @@ AUTOPLAY_VIDEOS = False
 # auto-advance.
 ENABLE_AUTOADVANCE_VIDEOS = False
 
+# .. toggle_name: DISPLAY_COURSE_MODES_ON_DASHBOARD
+# .. toggle_implementation: DjangoSetting
+# .. toggle_default: True
+# .. toggle_description: When True, course modes (verified, honor, etc.) are shown as pills on the learner dashboard.
+# .. toggle_use_cases: open_edx
+# .. toggle_creation_date: 2017-09-13
+DISPLAY_COURSE_MODES_ON_DASHBOARD = True
+
 # .. toggle_name: CUSTOM_COURSES_EDX
 # .. toggle_implementation: DjangoSetting
 # .. toggle_default: False
@@ -1121,16 +1129,6 @@ RESTRICT_AUTOMATIC_AUTH = True
 #   (e.g HTTP_X_FORWARDED_FOR) should be configured.
 # .. toggle_tickets: https://github.com/openedx/edx-platform/pull/2749
 EMBARGO = False
-
-# .. toggle_name: ENABLE_MKTG_SITE
-# .. toggle_implementation: DjangoSetting
-# .. toggle_default: False
-# .. toggle_description: Toggle to enable alternate urls for marketing links.
-# .. toggle_use_cases: open_edx
-# .. toggle_creation_date: 2014-03-24
-# .. toggle_warning: When this is enabled, the MKTG_URLS setting should be defined. The use case of this feature
-#   toggle is uncertain.
-ENABLE_MKTG_SITE = False
 
 # Expose Mobile REST API.
 ENABLE_MOBILE_REST_API = False
@@ -2160,7 +2158,6 @@ EDXMKTG_USER_INFO_COOKIE_VERSION = 1
 
 MKTG_URLS = {}
 MKTG_URL_OVERRIDES = {}
-MKTG_URL_LINK_MAP = {}
 
 SUPPORT_SITE_LINK = ''
 

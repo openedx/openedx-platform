@@ -194,7 +194,6 @@ class StudentDashboardTests(SharedModuleStoreTestCase, MilestonesTestCaseMixin, 
     MOCK_SETTINGS = {
         'FEATURES': {
             'DISABLE_START_DATES': False,
-            'ENABLE_MKTG_SITE': True,
             'DISABLE_SET_JWT_COOKIES_FOR_TESTS': True,
         },
         'SOCIAL_SHARING_SETTINGS': {
@@ -319,7 +318,7 @@ class StudentDashboardTests(SharedModuleStoreTestCase, MilestonesTestCaseMixin, 
         assert ('Share on Twitter' in response.content.decode('utf-8')) == (set_marketing or set_social_sharing)
         assert ('Share on Facebook' in response.content.decode('utf-8')) == (set_marketing or set_social_sharing)
 
-    @patch.dict("django.conf.settings.FEATURES", {'ENABLE_PREREQUISITE_COURSES': True})
+    @override_settings(ENABLE_PREREQUISITE_COURSES=True)
     def test_pre_requisites_appear_on_dashboard(self):
         """
         When a course has a prerequisite, the dashboard should display the prerequisite.
@@ -1087,13 +1086,13 @@ class TestCourseDashboardNoticesRedirects(SharedModuleStoreTestCase):
         Verifies that we will redirect the learner to the URL returned from the `check_for_unacknowledged_notices`
         function.
         """
-        mock_notices.return_value = reverse("about")
+        mock_notices.return_value = reverse("root")
 
         with override_settings(FEATURES={**settings.FEATURES, 'ENABLE_NOTICES': True}):
             response = self.client.get(self.path)
 
         assert response.status_code == 302
-        assert response.url == "/about"
+        assert response.url == "/"
         mock_notices.assert_called_once()
 
     @patch('common.djangoapps.student.views.dashboard.check_for_unacknowledged_notices')

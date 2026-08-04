@@ -33,7 +33,6 @@ class SiteMixin:
             "SITE_NAME": self.site_other.domain,
             "SESSION_COOKIE_DOMAIN": self.site_other.domain,
             "course_org_filter": "fakeOtherX",
-            "ENABLE_MKTG_SITE": True,
             "SHOW_ECOMMERCE_REPORTS": True,
             "MKTG_URLS": {
                 "ROOT": "https://marketing.fakeother",

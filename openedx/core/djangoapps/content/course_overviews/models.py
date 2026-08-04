@@ -567,7 +567,7 @@ class CourseOverview(TimeStampedModel):
         """
         Returns whether the course has marketing url.
         """
-        return settings.FEATURES.get('ENABLE_MKTG_SITE') and bool(self.marketing_url)
+        return bool(self.marketing_url)
 
     def has_social_sharing_url(self):
         """

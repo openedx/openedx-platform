@@ -3,12 +3,10 @@
 from unittest.mock import Mock, patch
 
 import ddt
-from django.conf import settings
 from django.http import HttpResponse
 from django.test import TestCase
 from django.test.client import RequestFactory
 from django.test.utils import override_settings
-from django.urls import reverse
 from edx_django_utils.cache import RequestCache
 
 from common.djangoapps.edxmako import LOOKUP, add_lookup
@@ -33,92 +31,36 @@ class ShortcutsTests(UrlResetMixin, TestCase):
 
     @override_settings(MKTG_URLS={'ROOT': 'https://dummy-root', 'ABOUT': '/about-us'})
     def test_marketing_link(self):
-        with override_settings(MKTG_URL_LINK_MAP={'ABOUT': self._get_test_url_name()}):
-            # test marketing site on
-            with patch.dict('django.conf.settings.FEATURES', {'ENABLE_MKTG_SITE': True}):
-                expected_link = 'https://dummy-root/about-us'
-                link = marketing_link('ABOUT')
-                assert link == expected_link
-            # test marketing site off
-            with patch.dict('django.conf.settings.FEATURES', {'ENABLE_MKTG_SITE': False}):
-                expected_link = reverse(self._get_test_url_name())
-                link = marketing_link('ABOUT')
-                assert link == expected_link
+        expected_link = 'https://dummy-root/about-us'
+        link = marketing_link('ABOUT')
+        assert link == expected_link
+
+    @override_settings(MKTG_URLS={'ROOT': 'https://dummy-root', 'ABOUT': '/about-us'})
+    def test_marketing_link_unconfigured(self):
+        assert marketing_link('NOT_CONFIGURED') == '#'
 
     @override_settings(MKTG_URLS={'ROOT': 'https://dummy-root', 'ABOUT': '/about-us'})
     def test_is_marketing_link_set(self):
-        with override_settings(MKTG_URL_LINK_MAP={'ABOUT': self._get_test_url_name()}):
-            # test marketing site on
-            with patch.dict('django.conf.settings.FEATURES', {'ENABLE_MKTG_SITE': True}):
-                assert is_marketing_link_set('ABOUT')
-                assert not is_marketing_link_set('NOT_CONFIGURED')
-            # test marketing site off
-            with patch.dict('django.conf.settings.FEATURES', {'ENABLE_MKTG_SITE': False}):
-                assert is_marketing_link_set('ABOUT')
-                assert not is_marketing_link_set('NOT_CONFIGURED')
+        assert is_marketing_link_set('ABOUT')
+        assert not is_marketing_link_set('NOT_CONFIGURED')
 
     @override_settings(MKTG_URLS={'ROOT': 'https://dummy-root', 'ABOUT': '/about-us'})
     def test_is_any_marketing_link_set(self):
-        with override_settings(MKTG_URL_LINK_MAP={'ABOUT': self._get_test_url_name()}):
-            # test marketing site on
-            with patch.dict('django.conf.settings.FEATURES', {'ENABLE_MKTG_SITE': True}):
-                assert is_any_marketing_link_set(['ABOUT'])
-                assert is_any_marketing_link_set(['ABOUT', 'NOT_CONFIGURED'])
-                assert not is_any_marketing_link_set(['NOT_CONFIGURED'])
-            # test marketing site off
-            with patch.dict('django.conf.settings.FEATURES', {'ENABLE_MKTG_SITE': False}):
-                assert is_any_marketing_link_set(['ABOUT'])
-                assert is_any_marketing_link_set(['ABOUT', 'NOT_CONFIGURED'])
-                assert not is_any_marketing_link_set(['NOT_CONFIGURED'])
-
-    def _get_test_url_name(self):  # pylint: disable=missing-function-docstring
-        if settings.ROOT_URLCONF == 'lms.urls':
-            # return any lms url name
-            return 'dashboard'
-        else:
-            # return any cms url name
-            return 'organizations'
+        assert is_any_marketing_link_set(['ABOUT'])
+        assert is_any_marketing_link_set(['ABOUT', 'NOT_CONFIGURED'])
+        assert not is_any_marketing_link_set(['NOT_CONFIGURED'])
 
     @override_settings(MKTG_URLS={'ROOT': 'https://dummy-root', 'TOS': '/tos'})
     @override_settings(MKTG_URL_OVERRIDES={'TOS': 'https://edx.org'})
     def test_override_marketing_link_valid(self):
-        expected_link = 'https://edx.org'
-        # test marketing site on
-        with patch.dict('django.conf.settings.FEATURES', {'ENABLE_MKTG_SITE': True}):
-            link = marketing_link('TOS')
-            assert link == expected_link
-        # test marketing site off
-        with patch.dict('django.conf.settings.FEATURES', {'ENABLE_MKTG_SITE': False}):
-            link = marketing_link('TOS')
-            assert link == expected_link
+        link = marketing_link('TOS')
+        assert link == 'https://edx.org'
 
     @override_settings(MKTG_URLS={'ROOT': 'https://dummy-root', 'TOS': '/tos'})
     @override_settings(MKTG_URL_OVERRIDES={'TOS': '123456'})
     def test_override_marketing_link_invalid(self):
-        expected_link = '#'
-        # test marketing site on
-        with patch.dict('django.conf.settings.FEATURES', {'ENABLE_MKTG_SITE': True}):
-            link = marketing_link('TOS')
-            assert link == expected_link
-        # test marketing site off
-        with patch.dict('django.conf.settings.FEATURES', {'ENABLE_MKTG_SITE': False}):
-            link = marketing_link('TOS')
-            assert link == expected_link
-
-    @skip_unless_lms
-    def test_link_map_url_reverse(self):
-        url_link_map = {
-            'ABOUT': 'dashboard',
-            'BAD_URL': 'foobarbaz',
-        }
-
-        with patch.dict('django.conf.settings.FEATURES', {'ENABLE_MKTG_SITE': False}):
-            with override_settings(MKTG_URL_LINK_MAP=url_link_map):
-                link = marketing_link('ABOUT')
-                assert link == '/dashboard'
-
-                link = marketing_link('BAD_URL')
-                assert link == '#'
+        link = marketing_link('TOS')
+        assert link == '#'
 
 
 class AddLookupTests(TestCase):

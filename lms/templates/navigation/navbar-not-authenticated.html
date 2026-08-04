@@ -11,19 +11,17 @@ from django.utils.translation import gettext as _
 
 <ol class="left list-inline nav-global">
   <%block name="navigation_global_links">
-    % if static.get_value('ENABLE_MKTG_SITE', settings.FEATURES.get('ENABLE_MKTG_SITE', False)):
-      <li class="item nav-global-01">
-        <a class="btn" href="${marketing_link('HOW_IT_WORKS')}">${_("How it Works")}</a>
-      </li>
-      % if settings.FEATURES.get('COURSES_ARE_BROWSABLE'):
-        <li class="item nav-global-02">
-          <a class="btn" href="${marketing_link('COURSES')}">${_("Courses")}</a>
-        </li>
-      % endif
-      <li class="item nav-global-03">
-        <a class="btn" href="${marketing_link('SCHOOLS')}">${_("Schools")}</a>
+    <li class="item nav-global-01">
+      <a class="btn" href="${marketing_link('HOW_IT_WORKS')}">${_("How it Works")}</a>
+    </li>
+    % if settings.FEATURES.get('COURSES_ARE_BROWSABLE'):
+      <li class="item nav-global-02">
+        <a class="btn" href="${marketing_link('COURSES')}">${_("Courses")}</a>
       </li>
     % endif
+    <li class="item nav-global-03">
+      <a class="btn" href="${marketing_link('SCHOOLS')}">${_("Schools")}</a>
+    </li>
   </%block>
 
   <%block name="navigation_other_global_links">

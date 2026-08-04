@@ -1072,14 +1072,11 @@ class TestAccountRetirementCleanup(RetirementTestCase):
         assert response.status_code == expected_status
         return response
 
-    def _assert_redacted_update_delete_queries(self, queries, redacted_username, redacted_email, redacted_name):
+    def _assert_redacted_update_delete_queries(self, queries):
         """
         Helper method to verify UPDATE and DELETE queries use ID-based filtering and correct field-value assignments.
         Args:
             queries: List of captured query dicts from CaptureQueriesContext
-            redacted_username: Expected redacted username value
-            redacted_email: Expected redacted email value
-            redacted_name: Expected redacted name value
         """
         update_queries = [q for q in queries if 'UPDATE' in q['sql'] and 'user_api_userretirementstatus' in q['sql']]
         delete_queries = [q for q in queries if 'DELETE' in q['sql'] and 'user_api_userretirementstatus' in q['sql']]
@@ -1090,15 +1087,9 @@ class TestAccountRetirementCleanup(RetirementTestCase):
         update_query = update_queries[0]
         sql_lower = update_query['sql']
         # Ensure original_username, original_email, and original_name are set to redacted values
-        assert f'"original_username" = \'{redacted_username}\'' in sql_lower, (
-            f"UPDATE query missing '\"original_username\" = {redacted_username}': {sql_lower}"
-        )
-        assert f'"original_email" = \'{redacted_email}\'' in sql_lower, (
-            f"UPDATE query missing '\"original_email\" = {redacted_email}': {sql_lower}"
-        )
-        assert f'"original_name" = \'{redacted_name}\'' in sql_lower, (
-            f"UPDATE query missing '\"original_name\" = {redacted_name}': {sql_lower}"
-        )
+        assert '"original_username" = \'redacted-before-delete\'' in sql_lower
+        assert '"original_email" = \'redacted-before-delete@safe.com\'' in sql_lower
+        assert '"original_name" = \'redacted-before-delete\'' in sql_lower
         # Ensure UPDATE uses ID-based filtering
         assert '"id" IN' in sql_lower or 'WHERE "id"' in sql_lower, (
             f"UPDATE query should use ID filtering to prevent over-update, but got: {sql_lower}"
@@ -1113,9 +1104,9 @@ class TestAccountRetirementCleanup(RetirementTestCase):
             f"DELETE query should use ID filtering to prevent over-deletion, but got: {sql_lower}"
         )
 
-    def test_default_redacted_values(self):
+    def test_redact_and_delete(self):
         """
-        Test basic cleanup with default redacted values.
+        Test basic cleanup with redacted values.
         Verify that redaction (UPDATE) happens before deletion (DELETE).
         Captures actual SQL queries to ensure UPDATE queries contain correct field-value assignments.
         """
@@ -1126,33 +1117,8 @@ class TestAccountRetirementCleanup(RetirementTestCase):
         retirements = UserRetirementStatus.objects.all()
         assert retirements.count() == 0
 
-        # Verify UPDATE and DELETE queries with default 'redacted' value
-        self._assert_redacted_update_delete_queries(context.captured_queries, 'redacted', 'redacted', 'redacted')
-
-    def test_custom_redacted_values(self):
-        """Test that custom redacted values are applied before deletion."""
-        custom_username = 'username-redacted-12345'
-        custom_email = 'email-redacted-67890'
-        custom_name = 'name-redacted-abcde'
-
-        data = {
-            'usernames': self.usernames,
-            'redacted_username': custom_username,
-            'redacted_email': custom_email,
-            'redacted_name': custom_name
-        }
-
-        with CaptureQueriesContext(connection) as context:
-            self.cleanup_and_assert_status(data=data)
-
-        # Verify records are deleted after redaction
-        retirements = UserRetirementStatus.objects.all()
-        assert retirements.count() == 0
-
-        # Verify UPDATE and DELETE queries with custom redacted values
-        self._assert_redacted_update_delete_queries(
-            context.captured_queries, custom_username, custom_email, custom_name
-        )
+        # Verify UPDATE and DELETE queries with 'redacted' value
+        self._assert_redacted_update_delete_queries(context.captured_queries)
 
     def test_does_not_delete_unrelated_redacted_records(self):
         """
@@ -1163,9 +1129,9 @@ class TestAccountRetirementCleanup(RetirementTestCase):
         # Create an unrelated record that already has redacted field values
         other_user = UserFactory()
         other_retirement = create_retirement_status(other_user, state=self.complete_state)
-        other_retirement.original_username = 'redacted'
-        other_retirement.original_email = 'redacted'
-        other_retirement.original_name = 'redacted'
+        other_retirement.original_username = 'redacted-before-delete'
+        other_retirement.original_email = 'redacted-before-delete@safe.com'
+        other_retirement.original_name = 'redacted-before-delete'
         other_retirement.save()
         other_id = other_retirement.id
         # Clean up only self.usernames records

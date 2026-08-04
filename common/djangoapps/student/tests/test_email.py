@@ -530,15 +530,7 @@ class EmailChangeConfirmationTests(EmailTestMixin, EmailTemplateTagMixin, CacheI
         # Must have two items in outbox: one for old email, another for new email
         assert len(mail.outbox) == 2
 
-        use_https = self.request.is_secure()
-        if settings.FEATURES['ENABLE_MKTG_SITE']:
-            contact_link = marketing_link('CONTACT')
-        else:
-            contact_link = '{protocol}://{site}{link}'.format(
-                protocol='https' if use_https else 'http',
-                site=settings.SITE_NAME,
-                link=reverse('contact'),
-            )
+        contact_link = marketing_link('CONTACT')
 
         # Verifying contents
         for msg in mail.outbox:
@@ -589,17 +581,10 @@ class EmailChangeConfirmationTests(EmailTestMixin, EmailTemplateTagMixin, CacheI
     @skip_unless_lms
     @override_settings(MKTG_URLS={'ROOT': 'https://dummy-root', 'CONTACT': '/help/contact-us'})
     @patch('common.djangoapps.student.signals.signals.USER_EMAIL_CHANGED.send')
-    @ddt.data(
-        ('plain_text', False),
-        ('plain_text', True),
-        ('html', False),
-        ('html', True)
-    )
-    @ddt.unpack
-    def test_successful_email_change(self, test_body_type, test_marketing_enabled, mock_email_change_signal):
-        with patch.dict(settings.FEATURES, {'ENABLE_MKTG_SITE': test_marketing_enabled}):
-            self.assertChangeEmailSent(test_body_type)
-            assert mock_email_change_signal.called
+    @ddt.data('plain_text', 'html')
+    def test_successful_email_change(self, test_body_type, mock_email_change_signal):
+        self.assertChangeEmailSent(test_body_type)
+        assert mock_email_change_signal.called
 
         meta = json.loads(UserProfile.objects.get(user=self.user).meta)
         assert 'old_emails' in meta

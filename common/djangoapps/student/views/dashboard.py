@@ -534,11 +534,11 @@ def student_dashboard(request):  # pylint: disable=too-many-statements
 
     enable_verified_certificates = configuration_helpers.get_value(
         'ENABLE_VERIFIED_CERTIFICATES',
-        settings.FEATURES.get('ENABLE_VERIFIED_CERTIFICATES')
+        getattr(settings, 'ENABLE_VERIFIED_CERTIFICATES', False)
     )
     display_course_modes_on_dashboard = configuration_helpers.get_value(
         'DISPLAY_COURSE_MODES_ON_DASHBOARD',
-        settings.FEATURES.get('DISPLAY_COURSE_MODES_ON_DASHBOARD', True)
+        settings.DISPLAY_COURSE_MODES_ON_DASHBOARD
     )
     activation_email_support_link = configuration_helpers.get_value(
         'ACTIVATION_EMAIL_SUPPORT_LINK', settings.ACTIVATION_EMAIL_SUPPORT_LINK

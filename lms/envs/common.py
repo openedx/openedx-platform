@@ -400,13 +400,14 @@ ENABLE_COURSE_SORTING_BY_START_DATE = True
 
 # .. toggle_name: settings.ENABLE_COURSE_HOME_REDIRECT
 # .. toggle_implementation: DjangoSetting
-# .. toggle_default: True
-# .. toggle_description: When enabled, along with the ENABLE_MKTG_SITE feature toggle, users who attempt to access a
-#   course "about" page will be redirected to the course home url.
+# .. toggle_default: False
+# .. toggle_description: When enabled, users who attempt to access a course "about" page will be redirected to the
+#   course home url. Previously this only took effect when ENABLE_MKTG_SITE was also True; now it is the sole gate.
+#   Operators who relied on ENABLE_MKTG_SITE=True to activate this redirect should set this to True explicitly.
 # .. toggle_use_cases: open_edx
 # .. toggle_creation_date: 2019-01-15
 # .. toggle_tickets: https://github.com/openedx/edx-platform/pull/19604
-ENABLE_COURSE_HOME_REDIRECT = True
+ENABLE_COURSE_HOME_REDIRECT = False
 
 # .. toggle_name: settings.ENABLE_COMBINED_LOGIN_REGISTRATION_FOOTER
 # .. toggle_implementation: DjangoSetting
@@ -2153,26 +2154,6 @@ SPECTACULAR_SETTINGS = {
     # set in devstack.py / production.py.
 }
 
-######################### MARKETING SITE ###############################
-
-MKTG_URL_LINK_MAP.update({  # noqa: F405
-    'ABOUT': 'about',
-    'CONTACT': 'contact',
-    'FAQ': 'help',
-    'COURSES': 'courses',
-    'ROOT': 'root',
-    'TOS': 'tos',
-    'HONOR': 'honor',  # If your site does not have an honor code, simply delete this line.
-    'TOS_AND_HONOR': 'edx-terms-service',
-    'PRIVACY': 'privacy',
-    'PRESS': 'press',
-    'BLOG': 'blog',
-    'DONATE': 'donate',
-    'SITEMAP.XML': 'sitemap_xml',
-
-    # Verified Certificates
-    'WHAT_IS_VERIFIED_CERT': 'verified-certificate',
-})
 
 STATIC_TEMPLATE_VIEW_DEFAULT_FILE_EXTENSION = 'html'
 
@@ -2570,9 +2551,11 @@ FIELD_OVERRIDE_PROVIDERS = ()
 # require student context.
 MODULESTORE_FIELD_OVERRIDE_PROVIDERS = ('openedx.features.content_type_gating.'
                                         'field_override.ContentTypeGatingFieldOverride',)
+# .. setting_name: HOMEPAGE_COURSE_MAX
+# .. setting_default: None
+# .. setting_description: Controls the maximum number of courses displayed on the LMS homepage.
+#    If set to None, all available courses will be shown.
 
-# Sets the maximum number of courses listed on the homepage
-# If set to None, all courses will be listed on the homepage
 HOMEPAGE_COURSE_MAX = None
 
 # .. setting_name: COURSE_MEMBER_API_ENROLLMENT_LIMIT

@@ -855,7 +855,7 @@ if settings.ENABLE_SERVICE_STATUS:
         path('status/', include('openedx.core.djangoapps.service_status.urls')),
     ]
 
-if settings.FEATURES.get('ENABLE_INSTRUCTOR_BACKGROUND_TASKS'):
+if settings.ENABLE_INSTRUCTOR_BACKGROUND_TASKS:
     urlpatterns += [
         path(
             'instructor_task_status/',
