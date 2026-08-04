@@ -1,5 +1,5 @@
 """
-Automatic tagging of content
+Handlers for Content Tagging
 """
 
 import logging

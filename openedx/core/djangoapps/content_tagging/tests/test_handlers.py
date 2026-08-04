@@ -1,5 +1,5 @@
 """
-Test for auto-tagging content
+Test for content tagging handlers
 """
 from __future__ import annotations
 
@@ -25,13 +25,13 @@ from ..types import ContentKey
 
 
 @skip_unless_cms  # Automatically deleting tags when an object is deleted only applies to the CMS
-class TestAutoTagHandlers(  # type: ignore[misc]
+class TestContentTaggingHandlers(  # type: ignore[misc]
     ImmediateOnCommitMixin,
     ModuleStoreTestCase,
     LiveServerTestCase
 ):
     """
-    Test if the Course and XBlock tags are automatically created
+    Test Content Tag handling when tagged courses or libraries are deleted or restored
     """
 
     MODULESTORE = TEST_DATA_SPLIT_MODULESTORE
