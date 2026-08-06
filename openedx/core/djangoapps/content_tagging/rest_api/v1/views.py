@@ -12,11 +12,10 @@ from openedx_authz import api as authz_api
 from openedx_authz.constants.permissions import COURSES_MANAGE_TAGS, COURSES_VIEW_COURSE
 from openedx_tagging import rules as oel_tagging_rules
 from openedx_tagging.api import TagDoesNotExist
-from openedx_tagging.rest_api.v1.serializers import ObjectTagUpdateBodySerializer
 from openedx_tagging.rest_api.v1.views import ObjectTagView, TaxonomyView
 from rest_framework import status
 from rest_framework.decorators import action
-from rest_framework.exceptions import MethodNotAllowed, PermissionDenied, ValidationError
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -227,33 +226,18 @@ class ObjectTagOrgView(ObjectTagView):
             # Fall back to parent implementation
             super().ensure_user_has_can_tag_object_permissions(user, tags_data, object_id)
 
-    def update(self, request, *args, **kwargs) -> Response:
+    def _apply_updated_tags(self, data: dict, object_id: str):
         """
-        Update the tags applied to the given object_id.
-
-        This overrides ObjectTagView.update so that the tags are applied using this
-        platform's ``tag_object`` API, which only allows tagging with taxonomies that
-        are enabled for the object's organization, and which fires the
-        CONTENT_OBJECT_ASSOCIATIONS_CHANGED / CONTENT_OBJECT_TAGS_CHANGED events.
+        This overrides the helper method used by ObjectTagView.update() so that the tags are applied using this
+        platform's ``tag_object`` API, which only allows tagging with taxonomies that are enabled for the object's
+        organization, and which fires the CONTENT_OBJECT_ASSOCIATIONS_CHANGED / CONTENT_OBJECT_TAGS_CHANGED events.
         """
-        partial = kwargs.pop('partial', False)
-        if partial:
-            raise MethodNotAllowed("PATCH", detail="PATCH not allowed")
-
-        object_id = kwargs.pop('object_id')
-        body = ObjectTagUpdateBodySerializer(data=request.data)
-        body.is_valid(raise_exception=True)
-
-        data = body.validated_data.get("tagsData", [])
-
-        # Check permissions
-        self.ensure_user_has_can_tag_object_permissions(request.user, data, object_id)
-
         # Tag object_id per taxonomy
         for tag_data in data:
             taxonomy = tag_data.get("taxonomy")
             tags = tag_data.get("tags", [])
             try:
+                # Call our `tag_object`, not oel_tagging's `tag_object`
                 tag_object(object_id, taxonomy, tags)
             except InvalidOrgException as e:
                 raise ValidationError(e.messages) from e
@@ -261,8 +245,6 @@ class ObjectTagOrgView(ObjectTagView):
                 raise ValidationError from e
             except ValueError as e:
                 raise ValidationError from e
-
-        return self.retrieve(request, object_id)
 
 
 class ObjectTagExportView(APIView):
