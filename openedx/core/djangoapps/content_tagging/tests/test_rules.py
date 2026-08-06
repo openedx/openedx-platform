@@ -365,13 +365,15 @@ class TestRulesTaxonomy(TestTaxonomyMixin, TestCase):
     )
     def test_tag_base_edit_permissions(self, perm):
         """
-        Test that only Staff & Superuser can call add/edit/delete tags.
+        Test that only Staff & Superuser can call add/edit/delete tags in an
+        "all orgs" taxonomy.
         """
-        assert self.superuser.has_perm(perm)
-        assert self.staff.has_perm(perm)
-        assert not self.user_both_orgs.has_perm(perm)
-        assert not self.user_org2.has_perm(perm)
-        assert not self.learner.has_perm(perm)
+        tag = Tag(taxonomy=self.taxonomy_all_orgs)
+        assert self.superuser.has_perm(perm, tag)
+        assert self.staff.has_perm(perm, tag)
+        assert not self.user_both_orgs.has_perm(perm, tag)
+        assert not self.user_org2.has_perm(perm, tag)
+        assert not self.learner.has_perm(perm, tag)
 
     def test_tag_base_view_permissions(self):
         """
@@ -459,14 +461,14 @@ class TestRulesTaxonomy(TestTaxonomyMixin, TestCase):
         "oel_tagging.delete_tag",
     )
     def test_tag_no_taxonomy(self, perm):
-        """Taxonomy administrators can modify any Tag, even those with no Taxonnmy."""
+        """A "floating" tag with no taxonomy cannot be edited. This shouldn't really happen"""
         tag = Tag()
 
-        # Global Taxonomy Admins can do pretty much anything
+        # superusers cannot be prevented from doing anything - their permissions check short-circuits our logic.
         assert self.superuser.has_perm(perm, tag)
-        assert self.staff.has_perm(perm, tag)
 
         # Everyone else can't do anything
+        assert not self.staff.has_perm(perm, tag)
         assert not self.user_both_orgs.has_perm(perm, tag)
         assert not self.user_org2.has_perm(perm, tag)
         assert not self.learner.has_perm(perm, tag)

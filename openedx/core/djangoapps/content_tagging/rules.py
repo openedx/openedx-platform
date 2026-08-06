@@ -355,9 +355,10 @@ def can_change_taxonomy_tag(user: UserType, tag: oel_tagging.Tag | None = None) 
             return False  # Cannot edit tags in read-only taxonomies.
         if taxonomy.allow_free_text:
             return False  # Cannot edit tags in free-text taxonomies.
-    # FIXME: properly block adding new tags in this case. (when tag=None, we don't have access to 'taxonomy', so the
-    # permissions check needs to pass a dummy tag object.)
-    # Also, for superusers, this permissions check is bypassed: https://github.com/openedx/openedx-core/issues/635
+    if taxonomy is None:
+        # Taxonomy shouldn't be None if we're editing any real tag.
+        # And for testing "add", we should always be passed a dummy Tag() object with a valid taxonomy.
+        return False
     return oel_tagging.is_taxonomy_admin(user)
 
 # Taxonomy
