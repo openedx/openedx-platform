@@ -19,7 +19,7 @@ from django.utils.translation import gettext as _
 from edx_django_utils.cache import RequestCache
 from opaque_keys.edx.keys import CourseKey
 from pytz import UTC
-from xblocks_contrib.problem.capa.tests.response_xml_factory import StringResponseXMLFactory
+from xblocks_contrib.problem.capa.testing.response_xml_factory import StringResponseXMLFactory
 
 from common.djangoapps.edxmako.shortcuts import render_to_response
 from common.djangoapps.student.models import CourseEnrollment, CourseEnrollmentAllowed

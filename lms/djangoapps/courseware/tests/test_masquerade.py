@@ -15,7 +15,7 @@ from django.test import RequestFactory, TestCase, override_settings
 from django.urls import reverse
 from pytz import UTC
 from xblock.runtime import DictKeyValueStore
-from xblocks_contrib.problem.capa.tests.response_xml_factory import OptionResponseXMLFactory
+from xblocks_contrib.problem.capa.testing.response_xml_factory import OptionResponseXMLFactory
 
 from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.tests.factories import StaffFactory, UserFactory
