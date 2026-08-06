@@ -268,7 +268,7 @@ class BookmarksListViewTests(BookmarksViewsTestsBase):
         assert response.data['developer_message'] == 'Parameter usage_id not provided.'
 
         # Send empty data dictionary.
-        with self.assertNumQueries(9):  # No queries for bookmark table.
+        with self.assertNumQueries(7):  # No queries for bookmark table.
             response = self.send_post(
                 client=self.client,
                 url=reverse('bookmarks'),

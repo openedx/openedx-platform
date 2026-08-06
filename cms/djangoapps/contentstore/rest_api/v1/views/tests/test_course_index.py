@@ -161,7 +161,7 @@ class CourseIndexViewTest(CourseTestCase, PermissionAccessMixin):
         """
         Test to check number of queries made to mysql and mongo
         """
-        with self.assertNumQueries(34, table_ignorelist=WAFFLE_TABLES):
+        with self.assertNumQueries(33, table_ignorelist=WAFFLE_TABLES):
             with check_mongo_calls(3):
                 self.client.get(self.url)
 
