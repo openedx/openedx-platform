@@ -23,7 +23,7 @@ from django.test.utils import override_settings
 from edx_django_utils.cache import RequestCache
 from freezegun import freeze_time
 from pytz import UTC
-from xblocks_contrib.problem.capa.tests.response_xml_factory import (
+from xblocks_contrib.problem.capa.testing.response_xml_factory import (
     MultipleChoiceResponseXMLFactory,  # pylint: disable=wrong-import-order
 )
 

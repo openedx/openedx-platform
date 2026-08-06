@@ -35,7 +35,7 @@ from web_fragments.fragment import Fragment
 from xblock.core import XBlock
 from xblock.fields import Scope, String
 from xblock.scorable import ShowCorrectness
-from xblocks_contrib.problem.capa.tests.response_xml_factory import MultipleChoiceResponseXMLFactory
+from xblocks_contrib.problem.capa.testing.response_xml_factory import MultipleChoiceResponseXMLFactory
 
 import lms.djangoapps.courseware.views.views as views
 from common.djangoapps.course_modes.models import CourseMode
