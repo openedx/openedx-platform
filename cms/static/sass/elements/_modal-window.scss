@@ -409,13 +409,16 @@
     div.edit-xblock-modal {
       display: flex;
       flex-direction: column;
+      min-height: 0;
       flex-grow: 1;
 
       div.modal-content {
         display: flex;
         flex-direction: column;
-        flex-grow: 1;
+        flex: 1;
+        min-height: 0;
         padding: 0;
+        overflow: auto;
 
         div.xblock-editor {
           display: flex;

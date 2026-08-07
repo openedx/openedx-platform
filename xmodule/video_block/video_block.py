@@ -384,7 +384,7 @@ class _BuiltInVideoBlock(
         # video will autoadvance or not.
         # For autoadvance controls to be shown, both the feature flag and the course setting must be true.
         # This allows to enable the feature for certain courses only.
-        autoadvance_enabled = settings.FEATURES.get('ENABLE_AUTOADVANCE_VIDEOS', False) and \
+        autoadvance_enabled = settings.ENABLE_AUTOADVANCE_VIDEOS and \
             getattr(self, 'video_auto_advance', False)
 
         # This is the current status of auto-advance (not the control visibility).
@@ -408,7 +408,7 @@ class _BuiltInVideoBlock(
             # this option will have an effect if changed to "True". The code on
             # front-end exists.
             'autohideHtml5': False,
-            'autoplay': settings.FEATURES.get('AUTOPLAY_VIDEOS', False),
+            'autoplay': settings.AUTOPLAY_VIDEOS,
             # This won't work when we move to data that
             # isn't on the filesystem
             'captionDataDir': getattr(self, 'data_dir', None),

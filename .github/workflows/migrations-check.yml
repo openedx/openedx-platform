@@ -71,7 +71,7 @@ jobs:
           docker exec ${{ job.services.mongo.id }} mongosh --host 127.0.0.1 --username edxapp --password password --eval 'use edxapp; db.adminCommand("ping");' edxapp
 
       - name: Checkout repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup Python ${{ matrix.python-version }}
         uses: actions/setup-python@v6
@@ -90,7 +90,7 @@ jobs:
 
       - name: Cache pip dependencies
         id: cache-dependencies
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: ${{ steps.pip-cache-dir.outputs.dir }}
           key: ${{ runner.os }}-pip-${{ hashFiles('requirements/edx/development.txt') }}

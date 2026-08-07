@@ -101,6 +101,17 @@ ENABLE_MAX_FAILED_LOGIN_ATTEMPTS = False
 # .. toggle_tickets: https://github.com/openedx/edx-platform/pull/2334
 EDITABLE_SHORT_DESCRIPTION = True
 
+# .. toggle_name: settings.ENABLE_EXTENDED_COURSE_DETAILS
+# .. toggle_implementation: DjangoSetting
+# .. toggle_default: False
+# .. toggle_description: When enabled, exposes the extended course detail fields (course background image,
+#   video thumbnail image, and related text fields) on the Schedule & Details page in Open edX Studio.
+#   Can also be overridden per-org via site configuration.
+# .. toggle_use_cases: open_edx
+# .. toggle_creation_date: 2016-04-30
+# .. toggle_tickets: WL-398
+ENABLE_EXTENDED_COURSE_DETAILS = False
+
 # Hide any Personally Identifiable Information from application logs
 SQUELCH_PII_IN_LOGS = False
 
@@ -181,6 +192,13 @@ DEPRECATE_OLD_COURSE_KEYS_IN_STUDIO = True
 # .. toggle_creation_date: 2013-12-02
 # .. toggle_warning: Another toggle DISABLE_LIBRARY_CREATION overrides DISABLE_COURSE_CREATION, if present.
 DISABLE_COURSE_CREATION = False
+
+# .. setting_name: DISABLE_LIBRARY_CREATION
+# .. setting_default: None
+# .. setting_description: If set to True, disables library creation for users without a staff role and hides the
+#   "New Library" button in Studio. If set to False, enables library creation independently of DISABLE_COURSE_CREATION.
+#   If None (the default), DISABLE_COURSE_CREATION is used to decide whether library creation is disabled.
+DISABLE_LIBRARY_CREATION = None
 
 # .. toggle_name: settings.ENABLE_LTI_PII_ACKNOWLEDGEMENT
 # .. toggle_implementation: DjangoSetting
@@ -632,6 +650,16 @@ BROKER_USE_SSL = Derived(lambda settings: settings.CELERY_BROKER_USE_SSL)
 # Additional languages that should be supported for video transcripts, not included in ALL_LANGUAGES
 EXTENDED_VIDEO_TRANSCRIPT_LANGUAGES = []
 
+# .. setting_name: VIDEO_DOWNLOAD_RATE_LIMIT
+# .. setting_default: '12/hour'
+# .. setting_description: Per-user rate limit applied to the Studio
+#    video-download endpoint
+#    (``PUT /api/contentstore/v1/videos/{course_id}/download``). Bounds how
+#    often a single course author can initiate a multi-video zip download.
+# Rate format: DRF ``UserRateThrottle`` rate string. See
+# https://www.django-rest-framework.org/api-guide/throttling/#setting-the-throttling-policy
+VIDEO_DOWNLOAD_RATE_LIMIT = '12/hour'
+
 ############################# SETTINGS FOR VIDEO UPLOAD PIPELINE #############################
 
 VIDEO_UPLOAD_PIPELINE['CONCURRENT_UPLOAD_LIMIT'] = 4  # noqa: F405
@@ -938,7 +966,7 @@ ADVANCED_PROBLEM_TYPES = [
     {
         'component': 'staffgradedxblock',
         'boilerplate_name': None
-    }
+    },
 ]
 
 LIBRARY_BLOCK_TYPES = [

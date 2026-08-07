@@ -7,6 +7,7 @@ from unittest.mock import patch
 import ddt
 from django.apps import apps
 from django.conf import settings
+from django.test.utils import override_settings
 from django.urls import reverse
 from edx_proctoring.api import create_exam
 from edx_proctoring.backends.tests.test_backend import TestBackendProvider
@@ -21,7 +22,7 @@ from xmodule.modulestore.tests.django_utils import (
 from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 
-@patch.dict(settings.FEATURES, {'ENABLE_SPECIAL_EXAMS': True})
+@override_settings(ENABLE_SPECIAL_EXAMS=True)
 @ddt.ddt
 # Tests for legacy views. When DEPR-38432 is picked up, these tests will require the following changes:
 # Either remove or leave the specific parts that reference the legacy instructor dashboard,
@@ -127,7 +128,7 @@ class TestProctoringDashboardViews(SharedModuleStoreTestCase):
         self.instructor.save()
         self._assert_proctoring_tab_available(False)
 
-    @patch.dict(settings.FEATURES, {'ENABLE_SPECIAL_EXAMS': False})
+    @override_settings(ENABLE_SPECIAL_EXAMS=False)
     @ddt.data(
         (True, False),
         (False, True)
@@ -173,7 +174,7 @@ class TestProctoringDashboardViews(SharedModuleStoreTestCase):
             'test_proctoring_provider': {"requires_escalation_email": True},
         },
     )
-    @patch.dict(settings.FEATURES, {'ENABLE_PROCTORED_EXAMS': True})
+    @override_settings(ENABLE_PROCTORED_EXAMS=True)
     def test_requires_escalation_email_set_with_email(self):
         """
         Escalation email will be visible if 'requires_escalation_email' is set, and there
@@ -193,7 +194,7 @@ class TestProctoringDashboardViews(SharedModuleStoreTestCase):
             'lti_external': {}
         },
     )
-    @patch.dict(settings.FEATURES, {'ENABLE_PROCTORED_EXAMS': True})
+    @override_settings(ENABLE_PROCTORED_EXAMS=True)
     def test_lti_proctoring_dashboard(self):
         """
         The exams dasboard MFE will be shown instead of the default special exams tab content

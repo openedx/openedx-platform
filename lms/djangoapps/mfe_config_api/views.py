@@ -74,7 +74,7 @@ def get_legacy_config() -> dict:
     return {
         "ENABLE_COURSE_SORTING_BY_START_DATE": configuration_helpers.get_value(
             "ENABLE_COURSE_SORTING_BY_START_DATE",
-            settings.FEATURES["ENABLE_COURSE_SORTING_BY_START_DATE"],
+            settings.ENABLE_COURSE_SORTING_BY_START_DATE,
         ),
         "HOMEPAGE_PROMO_VIDEO_YOUTUBE_ID": configuration_helpers.get_value(
             "homepage_promo_video_youtube_id", None
@@ -85,8 +85,8 @@ def get_legacy_config() -> dict:
         "COURSE_ABOUT_TWITTER_ACCOUNT": configuration_helpers.get_value(
             "course_about_twitter_account", settings.PLATFORM_TWITTER_ACCOUNT
         ),
-        "NON_BROWSABLE_COURSES": not settings.FEATURES.get("COURSES_ARE_BROWSABLE"),
-        "ENABLE_COURSE_DISCOVERY": settings.FEATURES["ENABLE_COURSE_DISCOVERY"],
+        "NON_BROWSABLE_COURSES": not settings.COURSES_ARE_BROWSABLE,
+        "ENABLE_COURSE_DISCOVERY": settings.ENABLE_COURSE_DISCOVERY,
     }
 
 

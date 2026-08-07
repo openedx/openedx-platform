@@ -35,6 +35,7 @@ from common.djangoapps.track.event_transaction_utils import (
     get_event_transaction_id,
     set_event_transaction_type,
 )
+from common.djangoapps.util.course import get_link_for_about_page
 from lms.djangoapps.branding.api import get_logo_url_for_email
 from lms.djangoapps.courseware.models import StudentModule
 from lms.djangoapps.grades.api import constants as grades_constants
@@ -494,14 +495,7 @@ def get_email_params(course, auto_enroll, secure=True, course_key=None, display_
         path=reverse('course_root', kwargs={'course_id': course_key})
     )
 
-    # We can't get the url to the course's About page if the marketing site is enabled.
-    course_about_url = None
-    if not settings.FEATURES.get('ENABLE_MKTG_SITE', False):
-        course_about_url = '{proto}://{site}{path}'.format(
-            proto=protocol,
-            site=stripped_site_name,
-            path=reverse('about_course', kwargs={'course_id': course_key})
-        )
+    course_about_url = get_link_for_about_page(course)
 
     is_shib_course = uses_shib(course)
 

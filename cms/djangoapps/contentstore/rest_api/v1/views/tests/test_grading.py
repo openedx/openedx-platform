@@ -5,6 +5,7 @@ import json
 from unittest.mock import patch
 
 import ddt
+from django.test.utils import override_settings
 from django.urls import reverse
 from openedx_authz.constants.roles import COURSE_DATA_RESEARCHER, COURSE_STAFF
 from rest_framework import status
@@ -63,7 +64,7 @@ class CourseGradingViewTest(CourseTestCase, PermissionAccessMixin):
         self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
         self.assertEqual(['A', 'B'], response.data["default_grade_designations"])  # noqa: PT009
 
-    @patch.dict("django.conf.settings.FEATURES", {"ENABLE_CREDIT_ELIGIBILITY": True})
+    @override_settings(ENABLE_CREDIT_ELIGIBILITY=True)
     def test_credit_eligibility_setting(self):
         """
         Make sure if the feature flag is enabled we have enabled values in response.

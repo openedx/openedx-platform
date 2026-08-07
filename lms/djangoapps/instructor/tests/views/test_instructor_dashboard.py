@@ -417,7 +417,7 @@ class TestInstructorDashboard(ModuleStoreTestCase, LoginEnrollmentTestCase, XssT
         response = self.client.get(self.url)
         self.assert_no_xss(response, '<script>alert("XSS")</script>')
 
-    @patch.dict(settings.FEATURES, {'DISPLAY_ANALYTICS_ENROLLMENTS': False})
+    @override_settings(DISPLAY_ANALYTICS_ENROLLMENTS=False)
     @override_settings(ANALYTICS_DASHBOARD_URL='')
     def test_no_enrollments(self):
         """
@@ -427,7 +427,7 @@ class TestInstructorDashboard(ModuleStoreTestCase, LoginEnrollmentTestCase, XssT
         # no enrollment information should be visible
         self.assertNotContains(response, '<h3 class="hd hd-3">Enrollment Information</h3>')
 
-    @patch.dict(settings.FEATURES, {'DISPLAY_ANALYTICS_ENROLLMENTS': True})
+    @override_settings(DISPLAY_ANALYTICS_ENROLLMENTS=True)
     @override_settings(ANALYTICS_DASHBOARD_URL='')
     def test_show_enrollments_data(self):
         """
@@ -445,7 +445,7 @@ class TestInstructorDashboard(ModuleStoreTestCase, LoginEnrollmentTestCase, XssT
         # dashboard link hidden
         self.assertNotContains(response, self.get_dashboard_enrollment_message())
 
-    @patch.dict(settings.FEATURES, {'DISPLAY_ANALYTICS_ENROLLMENTS': True})
+    @override_settings(DISPLAY_ANALYTICS_ENROLLMENTS=True)
     @override_settings(ANALYTICS_DASHBOARD_URL='')
     def test_show_enrollment_data_for_prof_ed(self):
         # Create both "professional" (meaning professional + verification)
@@ -459,7 +459,7 @@ class TestInstructorDashboard(ModuleStoreTestCase, LoginEnrollmentTestCase, XssT
         # Check that the number of professional enrollments is two
         self.assertContains(response, '<th scope="row">Professional</th><td>2</td>')
 
-    @patch.dict(settings.FEATURES, {'DISPLAY_ANALYTICS_ENROLLMENTS': False})
+    @override_settings(DISPLAY_ANALYTICS_ENROLLMENTS=False)
     @override_settings(ANALYTICS_DASHBOARD_URL='http://example.com')
     @override_settings(ANALYTICS_DASHBOARD_NAME='Example')
     def test_show_dashboard_enrollment_message(self):
@@ -516,7 +516,7 @@ class TestInstructorDashboard(ModuleStoreTestCase, LoginEnrollmentTestCase, XssT
         """
         Test whether the "CCX Coaches" option is visible or hidden depending on the value of course.enable_ccx.
         """
-        with patch.dict(settings.FEATURES, {'CUSTOM_COURSES_EDX': ccx_feature_flag}):
+        with override_settings(CUSTOM_COURSES_EDX=ccx_feature_flag):
             self.course.enable_ccx = enable_ccx
             self.store.update_item(self.course, self.instructor.id)
 

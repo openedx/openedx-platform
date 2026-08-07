@@ -170,7 +170,7 @@ class SurveyAnswer(TimeStampedModel):
 
     .. pii: These are free-form questions asked by course authors. Types below are current as of Feb 2019, new ones could be added. "other" PII currently includes "company", "job title", and "work experience".
     .. pii_types: name, location, other
-    .. pii_retirement: retained
+    .. pii_retirement: local_api
     """
     user = models.ForeignKey(User, db_index=True, on_delete=models.CASCADE)
     form = models.ForeignKey(SurveyForm, db_index=True, on_delete=models.CASCADE)

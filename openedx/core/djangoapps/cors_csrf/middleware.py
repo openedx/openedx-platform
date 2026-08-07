@@ -62,7 +62,7 @@ class CorsCSRFMiddleware(CsrfViewMiddleware, MiddlewareMixin):
 
     def __init__(self, *args, **kwargs):
         """Disable the middleware if the feature flag is disabled. """
-        if not settings.FEATURES.get('ENABLE_CORS_HEADERS'):
+        if not settings.ENABLE_CORS_HEADERS:
             raise MiddlewareNotUsed()
         super().__init__(*args, **kwargs)
 
@@ -85,7 +85,7 @@ class CsrfCrossDomainCookieMiddleware(MiddlewareMixin):
         2) Set `CROSS_DOMAIN_CSRF_COOKIE_NAME` and `CROSS_DOMAIN_CSRF_COOKIE_DOMAIN`
             in settings.
         3) Add the domain to `CORS_ORIGIN_WHITELIST`
-        4) Enable `FEATURES['ENABLE_CROSS_DOMAIN_CSRF_COOKIE']`
+        4) Enable `ENABLE_CROSS_DOMAIN_CSRF_COOKIE`
 
     For testing, it is often easier to relax the security checks by setting:
         * `CORS_ALLOW_INSECURE = True`
@@ -95,19 +95,19 @@ class CsrfCrossDomainCookieMiddleware(MiddlewareMixin):
 
     def __init__(self, *args, **kwargs):
         """Disable the middleware if the feature is not enabled. """
-        if not settings.FEATURES.get('ENABLE_CROSS_DOMAIN_CSRF_COOKIE'):
+        if not settings.ENABLE_CROSS_DOMAIN_CSRF_COOKIE:
             raise MiddlewareNotUsed()
 
         if not getattr(settings, 'CROSS_DOMAIN_CSRF_COOKIE_NAME', ''):
             raise ImproperlyConfigured(
                 "You must set `CROSS_DOMAIN_CSRF_COOKIE_NAME` when "
-                "`FEATURES['ENABLE_CROSS_DOMAIN_CSRF_COOKIE']` is True."
+                "`ENABLE_CROSS_DOMAIN_CSRF_COOKIE` is True."
             )
 
         if not getattr(settings, 'CROSS_DOMAIN_CSRF_COOKIE_DOMAIN', ''):
             raise ImproperlyConfigured(
                 "You must set `CROSS_DOMAIN_CSRF_COOKIE_DOMAIN` when "
-                "`FEATURES['ENABLE_CROSS_DOMAIN_CSRF_COOKIE']` is True."
+                "`ENABLE_CROSS_DOMAIN_CSRF_COOKIE` is True."
             )
         super().__init__(*args, **kwargs)
 

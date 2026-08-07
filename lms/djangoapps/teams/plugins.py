@@ -63,7 +63,7 @@ class TeamsCourseApp(CourseApp):
         """
         if not ENABLE_TEAMS_APP.is_enabled():
             return False
-        return settings.FEATURES.get("ENABLE_TEAMS", False)
+        return settings.ENABLE_TEAMS
 
     @classmethod
     def is_enabled(cls, course_key: CourseKey) -> bool:

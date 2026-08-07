@@ -49,7 +49,7 @@ def indexing_is_enabled():
     """
     Checks to see if the indexing feature is enabled
     """
-    return settings.FEATURES.get('ENABLE_COURSEWARE_INDEX', False)
+    return settings.ENABLE_COURSEWARE_INDEX
 
 
 class SearchIndexingError(Exception):

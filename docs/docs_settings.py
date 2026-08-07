@@ -29,7 +29,6 @@ for key, value in FEATURES.items():  # noqa: F405
 # Settings that will fail if we enable them, and we don't need them for docs anyway.
 FEATURES["RUN_AS_ANALYTICS_SERVER_ENABLED"] = False  # noqa: F405
 FEATURES["ENABLE_SOFTWARE_SECURE_FAKE"] = False  # noqa: F405
-FEATURES["ENABLE_MKTG_SITE"] = False  # noqa: F405
 
 INSTALLED_APPS.extend(  # noqa: F405
     [

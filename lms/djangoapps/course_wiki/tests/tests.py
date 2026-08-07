@@ -5,6 +5,7 @@ Tests for course wiki
 
 from unittest.mock import patch
 
+from django.test.utils import override_settings
 from django.urls import reverse
 from openedx_filters.learning.filters import CoursewareViewStarted
 
@@ -34,7 +35,7 @@ class WikiRedirectTestCase(LoginEnrollmentTestCase, ModuleStoreTestCase):
             self.activate_user(email)
             self.logout()
 
-    @patch.dict("django.conf.settings.FEATURES", {'ALLOW_WIKI_ROOT_ACCESS': True})
+    @override_settings(ALLOW_WIKI_ROOT_ACCESS=True)
     def test_wiki_redirect(self):
         """
         Test that requesting wiki URLs redirect properly to or out of classes.
@@ -70,7 +71,7 @@ class WikiRedirectTestCase(LoginEnrollmentTestCase, ModuleStoreTestCase):
         assert resp.status_code == 302
         assert resp['Location'] == destination
 
-    @patch.dict("django.conf.settings.FEATURES", {'ALLOW_WIKI_ROOT_ACCESS': False})
+    @override_settings(ALLOW_WIKI_ROOT_ACCESS=False)
     def test_wiki_no_root_access(self):
         """
         Test to verify that normally Wiki's cannot be browsed from the /wiki/xxxx/yyy/zz URLs
@@ -114,7 +115,7 @@ class WikiRedirectTestCase(LoginEnrollmentTestCase, ModuleStoreTestCase):
         self.assertContains(resp, "Home")
         self.assertContains(resp, "Course")
 
-    @patch.dict("django.conf.settings.FEATURES", {'ALLOW_WIKI_ROOT_ACCESS': True})
+    @override_settings(ALLOW_WIKI_ROOT_ACCESS=True)
     def test_course_navigator(self):
         """"
         Test that going from a course page to a wiki page contains the course navigator.
@@ -131,7 +132,7 @@ class WikiRedirectTestCase(LoginEnrollmentTestCase, ModuleStoreTestCase):
 
         self.has_course_navigator(resp)
 
-    @patch.dict("django.conf.settings.FEATURES", {'ALLOW_WIKI_ROOT_ACCESS': True})
+    @override_settings(ALLOW_WIKI_ROOT_ACCESS=True)
     def test_wiki_not_accessible_when_not_enrolled(self):
         """
         Test that going from a course page to a wiki page when not enrolled
@@ -156,7 +157,7 @@ class WikiRedirectTestCase(LoginEnrollmentTestCase, ModuleStoreTestCase):
         target_url, __ = resp.redirect_chain[-1]
         assert target_url.endswith(reverse('about_course', args=[str(self.toy.id)]))
 
-    @patch.dict("django.conf.settings.FEATURES", {'ALLOW_WIKI_ROOT_ACCESS': True})
+    @override_settings(ALLOW_WIKI_ROOT_ACCESS=True)
     def test_redirect_when_not_logged_in(self):
         """
         Test that attempting to reach a course wiki page when not logged in
@@ -174,7 +175,7 @@ class WikiRedirectTestCase(LoginEnrollmentTestCase, ModuleStoreTestCase):
         target_url, __ = resp.redirect_chain[-1]
         assert reverse('signin_user') in target_url
 
-    @patch.dict("django.conf.settings.FEATURES", {'ALLOW_WIKI_ROOT_ACCESS': True})
+    @override_settings(ALLOW_WIKI_ROOT_ACCESS=True)
     def test_create_wiki_with_long_course_id(self):
         """
         Tests that the wiki is successfully created for courses that have
@@ -204,7 +205,7 @@ class WikiRedirectTestCase(LoginEnrollmentTestCase, ModuleStoreTestCase):
         resp = self.client.get(course_wiki_page, follow=True, HTTP_REFERER=referer)
         assert resp.status_code == 200
 
-    @patch.dict("django.conf.settings.FEATURES", {'ALLOW_WIKI_ROOT_ACCESS': True})
+    @override_settings(ALLOW_WIKI_ROOT_ACCESS=True)
     @patch('openedx_filters.learning.filters.CoursewareViewStarted.run_filter')
     def test_filter_redirect(self, mock_run_filter):
         """

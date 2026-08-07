@@ -1,6 +1,8 @@
 """
 Unit tests for course settings views.
 """
+import io
+import zipfile
 from datetime import datetime
 from unittest.mock import MagicMock, patch
 
@@ -155,6 +157,10 @@ class VideoDownloadViewTest(CourseTestCase):
     ALLOWED_URL = "http://example.com/profile1/test.mp4"
     # An internal address an attacker might try to reach via SSRF.
     SSRF_URL = "http://169.254.169.254/latest/meta-data/"
+    # Opt into the default-cache isolation provided by CacheIsolationMixin
+    # (inherited via CourseTestCase) so DRF's UserRateThrottle counter
+    # doesn't bleed across tests.
+    ENABLED_CACHES = ["default"]
 
     def setUp(self):
         super().setUp()
@@ -184,20 +190,37 @@ class VideoDownloadViewTest(CourseTestCase):
             ],
         })
 
+    @staticmethod
+    def _stream_response_mock(payload=b"video-bytes", content_type="video/mp4"):
+        """
+        Build a MagicMock that mimics a streamed requests.Response: iter_content
+        yields the given payload in one chunk, raise_for_status / close are
+        no-ops, and headers expose the upstream Content-Type so the zip-entry
+        extension logic can resolve.
+        """
+        mock_response = MagicMock()
+        mock_response.iter_content = lambda chunk_size=None: iter([payload])
+        mock_response.raise_for_status = MagicMock()
+        mock_response.close = MagicMock()
+        mock_response.headers = {"Content-Type": content_type}
+        return mock_response
+
     @patch("cms.djangoapps.contentstore.video_storage_handlers.requests.get")
     def test_download_allowed_url(self, mock_get):
         """A URL that belongs to the course's videos is fetched and zipped."""
-        mock_get.return_value = MagicMock(
-            content=b"video-bytes",
-            headers={"Content-Type": "video/mp4"},
-        )
+        mock_get.return_value = self._stream_response_mock(b"video-bytes", "video/mp4")
         response = self.api_client.put(
             self.url,
             data={"files": [{"url": self.ALLOWED_URL, "name": "test.mp4"}]},
             format="json",
         )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
-        mock_get.assert_called_once_with(self.ALLOWED_URL, allow_redirects=True)
+        assert response.status_code == status.HTTP_200_OK
+        # The response body is a streamed zip; force the generator to run by
+        # consuming streaming_content so the mocked requests.get is invoked.
+        list(response.streaming_content)
+        mock_get.assert_called_once_with(
+            self.ALLOWED_URL, stream=True, allow_redirects=True,
+        )
 
     @patch("cms.djangoapps.contentstore.video_storage_handlers.requests.get")
     def test_rejects_url_not_belonging_to_course(self, mock_get):
@@ -243,3 +266,68 @@ class VideoDownloadViewTest(CourseTestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)  # noqa: PT009
         mock_get.assert_not_called()
+
+    @patch("cms.djangoapps.contentstore.video_storage_handlers.requests.get")
+    def test_zip_entry_uses_supplied_name_when_extension_present(self, mock_get):
+        """
+        When the caller-supplied name already has an extension matching the
+        upstream Content-Type, the zip entry's name is left exactly as given.
+        """
+        mock_get.return_value = self._stream_response_mock(b"video-bytes", "video/mp4")
+        response = self.api_client.put(
+            self.url,
+            data={"files": [{"url": self.ALLOWED_URL, "name": "test.mp4"}]},
+            format="json",
+        )
+        assert response.status_code == status.HTTP_200_OK
+        zip_bytes = b"".join(response.streaming_content)
+        with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
+            assert zf.namelist() == ["test.mp4"]
+
+    @patch("cms.djangoapps.contentstore.video_storage_handlers.requests.get")
+    def test_zip_entry_appends_extension_from_content_type(self, mock_get):
+        """
+        When the caller-supplied name lacks an extension, the upstream
+        Content-Type's extension (resolved via mimetypes) is appended.
+        """
+        mock_get.return_value = self._stream_response_mock(b"video-bytes", "video/mp4")
+        response = self.api_client.put(
+            self.url,
+            data={"files": [{"url": self.ALLOWED_URL, "name": "intro"}]},
+            format="json",
+        )
+        assert response.status_code == status.HTTP_200_OK
+        zip_bytes = b"".join(response.streaming_content)
+        with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
+            assert zf.namelist() == ["intro.mp4"]
+
+    def test_view_is_rate_limited(self):
+        """
+        ``VideoDownloadView`` is wired up with a per-user rate-limiting
+        throttle, sourced from the ``VIDEO_DOWNLOAD_RATE_LIMIT`` setting.
+        The throttle behaviour itself is DRF's responsibility; we just
+        confirm the throttle is attached and the rate is non-null.
+        """
+        from cms.djangoapps.contentstore.rest_api.v1.views.videos import (
+            VideoDownloadThrottle,
+            VideoDownloadView,
+        )
+        assert VideoDownloadThrottle in VideoDownloadView.throttle_classes
+        assert VideoDownloadThrottle.rate is not None
+
+    @patch("cms.djangoapps.contentstore.video_storage_handlers.requests.get")
+    def test_zip_entry_left_alone_when_content_type_unknown(self, mock_get):
+        """
+        An unknown / non-standard Content-Type from the upstream fetch leaves
+        the supplied name untouched -- we don't invent an extension.
+        """
+        mock_get.return_value = self._stream_response_mock(b"bytes", "application/x-not-a-real-type")
+        response = self.api_client.put(
+            self.url,
+            data={"files": [{"url": self.ALLOWED_URL, "name": "intro"}]},
+            format="json",
+        )
+        assert response.status_code == status.HTTP_200_OK
+        zip_bytes = b"".join(response.streaming_content)
+        with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
+            assert zf.namelist() == ["intro"]

@@ -27,7 +27,7 @@ from django.urls import reverse
     <p>${_("You will receive an activation email.  You must click on the activation link to complete the process.  Don't see the email?  Check your spam folder and mark emails from class.stanford.edu as 'not spam', since you'll want to be able to receive email from your courses.")}</p>
 </div>
 
-% if settings.MKTG_URL_LINK_MAP.get('FAQ'):
+% if is_marketing_link_set('FAQ'):
   <div class="cta cta-help">
     <h3>${_("Need Help?")}</h3>
     <p>${_("Need help in registering with {platform_name}?").format(platform_name=platform_name)}

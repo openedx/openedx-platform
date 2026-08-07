@@ -2,13 +2,12 @@
 
 {% blocktrans %}You have been invited to join {{ course_name }} at {{ site_name }} by a member of the course staff.{% endblocktrans %}
 {% if is_shib_course %}{% if auto_enroll %}{% blocktrans %}To access this course visit {{ course_url }} and login.{% endblocktrans %}
-{% elif course_about_url is not None %}
+{% else %}
 {% blocktrans %}To access this course visit {{ course_about_url }} and register for this course.{% endblocktrans %}
 {% endif %}
 {% else %}{% blocktrans %}To finish your registration, please visit {{ registration_url }} and fill out the registration form making sure to use {{ email_address }} in the Email field.{% endblocktrans %}
 {% if auto_enroll %}{% blocktrans %}Once you have registered and activated your account, you will see {{ course_name }} listed on your dashboard.{% endblocktrans %}
-{% elif course_about_url is not None %}{% blocktrans %}Once you have registered and activated your account, visit {{ course_about_url }} to join this course.{% endblocktrans %}
-{% else %}{% blocktrans %}You can then enroll in {{ course_name }}.{% endblocktrans %}
+{% else %}{% blocktrans %}Once you have registered and activated your account, visit {{ course_about_url }} to join this course.{% endblocktrans %}
 {% endif %}
 {% endif %}----
 {% blocktrans %}This email was automatically sent from {{ site_name }} to {{ email_address }}{% endblocktrans %}{% endautoescape %}

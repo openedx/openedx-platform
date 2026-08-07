@@ -4,7 +4,6 @@ Unit tests for integration of the django-user-tasks app and its REST API.
 import json
 import logging
 from unittest import mock
-from unittest.mock import patch
 from uuid import uuid4
 
 import botocore
@@ -254,7 +253,7 @@ class TestUserTaskStopped(APITestCase):
             *self.olx_validations['warnings']
         ]
 
-        with patch.dict(settings.FEATURES, ENABLE_COURSE_OLX_VALIDATION=True):
+        with override_settings(ENABLE_COURSE_OLX_VALIDATION=True):
             user_task_stopped.send(sender=UserTaskStatus, status=self.status)
             msg = mail.outbox[0]
 
@@ -277,12 +276,12 @@ class TestUserTaskStopped(APITestCase):
         msg = mail.outbox[0]
 
         # Verify olx validation is not enabled out of the box.
-        self.assertFalse(settings.FEATURES.get('ENABLE_COURSE_OLX_VALIDATION'))  # noqa: PT009
+        self.assertFalse(settings.ENABLE_COURSE_OLX_VALIDATION)  # noqa: PT009
         self.assertEqual(len(mail.outbox), 1)  # noqa: PT009
         self.assert_msg_subject(msg)
         self.assert_msg_body_fragments(msg, body_fragments)
 
-    @patch.dict(settings.FEATURES, ENABLE_COURSE_OLX_VALIDATION=True)
+    @override_settings(ENABLE_COURSE_OLX_VALIDATION=True)
     @override_waffle_flag(BYPASS_OLX_FAILURE, active=True)
     def test_email_sent_with_olx_validations_with_bypass_flag(self):
         """

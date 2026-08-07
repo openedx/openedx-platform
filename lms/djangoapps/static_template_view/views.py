@@ -58,9 +58,6 @@ def render(request, template):
 
     try:
         context = {}
-        # This is necessary for the dialog presented with the TOS in /register
-        if template == 'honor.html':
-            context['allow_iframing'] = True
         # Format Examples: static_template_about_header
         configuration_base = 'static_template_' + template.replace('.html', '').replace('-', '_')
         page_header = configuration_helpers.get_value(configuration_base + '_header')

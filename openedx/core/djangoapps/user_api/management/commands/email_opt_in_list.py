@@ -243,7 +243,7 @@ class Command(BaseCommand):
             if pref_set_datetime:
                 pref_set_datetime = timezone.make_aware(pref_set_datetime, dt_timezone.utc)  # noqa: UP017
             else:
-                pref_set_datetime = self.DEFAULT_DATETIME_STR
+                pref_set_datetime = ""
 
             if not full_name:
                 full_name = ""
@@ -257,7 +257,7 @@ class Command(BaseCommand):
                 # of ECOM-1995.
                 "full_name": full_name,
                 "course_id": course_id,
-                "is_opted_in_for_email": is_opted_in if is_opted_in else "True",
+                "is_opted_in_for_email": is_opted_in if is_opted_in else "",
                 "preference_set_datetime": pref_set_datetime,
             })
             row_count += 1

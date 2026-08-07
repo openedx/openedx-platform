@@ -139,6 +139,12 @@ class CourseSerializer(serializers.Serializer):  # pylint: disable=abstract-meth
         ])
         return self.context['request'].build_absolute_uri(base_url)
 
+    def to_representation(self, instance):
+        response = super().to_representation(instance)
+        if can_show_certificate_available_date_field(instance):
+            response['certificate_available_date'] = instance.certificate_available_date
+        return response
+
 
 class CourseDetailSerializer(CourseSerializer):  # pylint: disable=abstract-method
     """

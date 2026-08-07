@@ -8,7 +8,7 @@ from datetime import datetime
 from unittest.mock import Mock
 
 import pytest
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from opaque_keys.edx.locator import CourseLocator
 from stevedore.extension import Extension, ExtensionManager
 
@@ -20,7 +20,7 @@ from xmodule.partitions.partitions import (
     UserPartition,
     UserPartitionError,
 )
-from xmodule.partitions.partitions_service import FEATURES, PartitionService, get_all_partitions_for_course
+from xmodule.partitions.partitions_service import PartitionService, get_all_partitions_for_course
 
 
 class TestGroup(TestCase):
@@ -520,21 +520,11 @@ class TestPartitionService(PartitionServiceBaseClass):
         assert group2 == groups[1]
 
 
+@override_settings(ENABLE_ENROLLMENT_TRACK_USER_PARTITION=True)
 class TestGetCourseUserPartitions(PartitionServiceBaseClass):
     """
     Test the helper method get_all_partitions_for_course.
     """
-
-    def setUp(self):
-        super().setUp()
-        TestGetCourseUserPartitions._enable_enrollment_track_partition(True)
-
-    @staticmethod
-    def _enable_enrollment_track_partition(enable):
-        """
-        Enable or disable the feature flag for the enrollment track user partition.
-        """
-        FEATURES['ENABLE_ENROLLMENT_TRACK_USER_PARTITION'] = enable
 
     def test_filter_inactive_user_partitions(self):
         """

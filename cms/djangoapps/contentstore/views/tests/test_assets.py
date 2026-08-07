@@ -38,11 +38,7 @@ TEST_DATA_DIR = settings.COMMON_TEST_DATA_ROOT
 
 MAX_FILE_SIZE = settings.MAX_ASSET_UPLOAD_FILE_SIZE_IN_MB * 1000 ** 2
 
-FEATURES_WITH_CERTS_ENABLED = settings.FEATURES.copy()
-FEATURES_WITH_CERTS_ENABLED['CERTIFICATES_HTML_VIEW'] = True
-
-
-@override_settings(FEATURES=FEATURES_WITH_CERTS_ENABLED)
+@override_settings(CERTIFICATES_HTML_VIEW=True)
 class AssetsTestCase(CourseTestCase):
     """
     Parent class for all asset tests.

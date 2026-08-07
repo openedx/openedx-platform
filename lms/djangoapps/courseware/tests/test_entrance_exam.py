@@ -3,8 +3,6 @@ Tests use cases related to LMS Entrance Exam behavior, such as gated content acc
 """
 
 
-from unittest.mock import patch
-
 from crum import set_current_request
 from django.test import override_settings
 from django.urls import reverse
@@ -316,7 +314,7 @@ class EntranceExamTestCases(LoginEnrollmentTestCase, ModuleStoreTestCase, Milest
         )
         assert user_has_passed_entrance_exam(self.request.user, course)
 
-    @patch.dict("django.conf.settings.FEATURES", {'ENABLE_MASQUERADE': False})
+    @override_settings(ENABLE_MASQUERADE=False)
     def test_entrance_exam_xblock_response(self):
         """
         Tests entrance exam xblock has `entrance_exam_passed` key in json response.

@@ -142,6 +142,31 @@ class TestCourseSerializer(CourseApiFactoryMixin, ModuleStoreTestCase):
         result = self._get_result(course)
         assert result['pacing'] == expected_pacing
 
+    def test_certificate_available_date_included(self):
+        """Test that certificate_available_date is included when the field should be shown."""
+        course = self.create_course()
+        with mock.patch(
+            "lms.djangoapps.course_api.serializers.can_show_certificate_available_date_field",
+            return_value=True,
+        ):
+            result = self._get_result(course)
+        assert 'certificate_available_date' in result
+        actual = result['certificate_available_date']
+        if isinstance(actual, datetime):
+            assert actual.strftime('%Y-%m-%dT%H:%M:%SZ') == '2015-08-14T00:00:00Z'
+        else:
+            assert actual == '2015-08-14T00:00:00Z'
+
+    def test_certificate_available_date_excluded(self):
+        """Test that certificate_available_date is excluded when the field should not be shown."""
+        course = self.create_course()
+        with mock.patch(
+            "lms.djangoapps.course_api.serializers.can_show_certificate_available_date_field",
+            return_value=False,
+        ):
+            result = self._get_result(course)
+        assert 'certificate_available_date' not in result
+
 
 class TestCourseDetailSerializer(TestCourseSerializer):  # pylint: disable=test-inherits-tests
     """

@@ -1,7 +1,6 @@
 """
 Exam Settings View Tests
 """
-from django.conf import settings
 from django.test.utils import override_settings
 
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase
@@ -10,11 +9,8 @@ from common.djangoapps.util.testing import UrlResetMixin
 
 
 @override_settings(
-    FEATURES={
-        **settings.FEATURES,
-        "CERTIFICATES_HTML_VIEW": True,
-        "ENABLE_PROCTORED_EXAMS": True,
-    },
+    CERTIFICATES_HTML_VIEW=True,
+    ENABLE_PROCTORED_EXAMS=True,
 )
 @override_settings(COURSE_AUTHORING_MICROFRONTEND_URL='https://mfe.example')
 class TestExamSettingsView(CourseTestCase, UrlResetMixin):

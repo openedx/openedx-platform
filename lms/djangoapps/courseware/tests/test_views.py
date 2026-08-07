@@ -100,9 +100,6 @@ from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory, che
 
 QUERY_COUNT_TABLE_IGNORELIST = WAFFLE_TABLES + AUTHZ_TABLES
 
-FEATURES_WITH_DISABLE_HONOR_CERTIFICATE = settings.FEATURES.copy()
-FEATURES_WITH_DISABLE_HONOR_CERTIFICATE['DISABLE_HONOR_CERTIFICATES'] = True
-
 
 @ddt.ddt
 class TestJumpTo(ModuleStoreTestCase):
@@ -1181,7 +1178,7 @@ class ProgressPageTests(ProgressPageBaseTests):
         resp = self._get_progress_page()
         self.assertNotContains(resp, 'Request Certificate')
 
-    @patch.dict('django.conf.settings.FEATURES', {'CERTIFICATES_HTML_VIEW': True})
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_view_certificate_for_unverified_student(self):
         """
         If user has already generated a certificate, it should be visible in case of user being
@@ -1212,7 +1209,7 @@ class ProgressPageTests(ProgressPageBaseTests):
             self.assertNotContains(resp, "Certificate unavailable")
             self.assertContains(resp, "Your certificate is available")
 
-    @patch.dict('django.conf.settings.FEATURES', {'CERTIFICATES_HTML_VIEW': True})
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_view_certificate_link(self):
         """
         If certificate web view is enabled then certificate web view button should appear for user who certificate is
@@ -1337,7 +1334,7 @@ class ProgressPageTests(ProgressPageBaseTests):
 
                 assert cert_button_hidden == ('Request Certificate' not in resp.content.decode('utf-8'))
 
-    @patch.dict('django.conf.settings.FEATURES', {'CERTIFICATES_HTML_VIEW': True})
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_page_with_invalidated_certificate_with_html_view(self):
         """
         Verify that for html certs if certificate is marked as invalidated than
@@ -1373,7 +1370,7 @@ class ProgressPageTests(ProgressPageBaseTests):
             self.assertContains(resp, "View Certificate")
             self.assert_invalidate_certificate(generated_certificate)
 
-    @patch.dict('django.conf.settings.FEATURES', {'CERTIFICATES_HTML_VIEW': True})
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_page_with_allowlisted_certificate_with_html_view(self):
         """
         Verify that view certificate appears for an allowlisted user
@@ -1477,7 +1474,7 @@ class ProgressPageTests(ProgressPageBaseTests):
         self.assertNotContains(response, bannerText, html=True)
 
     @patch('lms.djangoapps.courseware.views.views.is_course_passed', PropertyMock(return_value=True))
-    @override_settings(FEATURES=FEATURES_WITH_DISABLE_HONOR_CERTIFICATE)
+    @override_settings(DISABLE_HONOR_CERTIFICATES=True)
     @ddt.data(CourseMode.AUDIT, CourseMode.HONOR)
     def test_message_for_ineligible_mode(self, course_mode):
         """ Verify that message appears on progress page, if learner is enrolled
@@ -1514,7 +1511,7 @@ class ProgressPageTests(ProgressPageBaseTests):
         assert response.cert_status == 'invalidated'
         assert response.title == 'Your certificate has been invalidated'
 
-    @override_settings(FEATURES=FEATURES_WITH_DISABLE_HONOR_CERTIFICATE)
+    @override_settings(DISABLE_HONOR_CERTIFICATES=True)
     def test_downloadable_get_cert_data(self):
         """
         Verify that downloadable cert data is returned if cert is downloadable even
@@ -2505,7 +2502,7 @@ class TestRenderXBlock(RenderXBlockTestMixin, ModuleStoreTestCase, CompletionWaf
         }
     )
     @ddt.unpack
-    @patch.dict('django.conf.settings.FEATURES', {'ENABLE_PROCTORED_EXAMS': True})
+    @override_settings(ENABLE_PROCTORED_EXAMS=True)
     @patch('lms.djangoapps.courseware.views.views.unpack_jwt')
     def test_render_descendant_of_exam_gated_by_access_token(self, exam_access_token,
                                                              expected_response, _mock_unpack_jwt):  # noqa: PT019
@@ -3183,7 +3180,7 @@ class TestCoursewareMFESearchAPI(SharedModuleStoreTestCase):
         (CourseMode.MASTERS, True),
     )
     @ddt.unpack
-    @patch.dict('django.conf.settings.FEATURES', {'ENABLE_COURSEWARE_SEARCH_VERIFIED_ENROLLMENT_REQUIRED': True})
+    @override_settings(ENABLE_COURSEWARE_SEARCH_VERIFIED_ENROLLMENT_REQUIRED=True)
     def test_courseware_mfe_search_verified_only(self, mode, expected_enabled):
         """
         Only verified enrollees may use Courseware Search if ENABLE_COURSEWARE_SEARCH_VERIFIED_ENROLLMENT_REQUIRED
@@ -3199,7 +3196,7 @@ class TestCoursewareMFESearchAPI(SharedModuleStoreTestCase):
         self.assertEqual(response.status_code, 200)  # noqa: PT009
         self.assertEqual(body, {'enabled': expected_enabled})  # noqa: PT009
 
-    @patch.dict('django.conf.settings.FEATURES', {'ENABLE_COURSEWARE_SEARCH_VERIFIED_ENROLLMENT_REQUIRED': True})
+    @override_settings(ENABLE_COURSEWARE_SEARCH_VERIFIED_ENROLLMENT_REQUIRED=True)
     def test_courseware_mfe_search_staff_access(self):
         """
         Staff users may use Courseware Search regardless of their enrollment status.

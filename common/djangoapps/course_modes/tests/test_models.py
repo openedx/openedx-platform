@@ -444,7 +444,7 @@ class CourseModeModelTest(TestCase):
     @ddt.unpack
     def test_eligible_for_cert(self, disable_honor_cert, mode_slug, expected_eligibility):
         """Verify that non-audit modes are eligible for a cert."""
-        with override_settings(FEATURES={'DISABLE_HONOR_CERTIFICATES': disable_honor_cert}):
+        with override_settings(DISABLE_HONOR_CERTIFICATES=disable_honor_cert):
             assert CourseMode.is_eligible_for_certificate(mode_slug) == expected_eligibility
 
     @ddt.data(

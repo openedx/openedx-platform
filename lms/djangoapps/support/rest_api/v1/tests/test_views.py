@@ -8,7 +8,7 @@ from rest_framework.test import APIClient
 
 from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.models.user import CourseAccessRole
-from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRole
+from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRole, SupportStaffRole
 from common.djangoapps.student.tests.factories import (
     TEST_PASSWORD,
     AdminFactory,
@@ -55,7 +55,7 @@ class CourseTeamManageAPIViewTest(SupportViewTestCase):
 
     def test_get_api_missing_query_params_returns_400(self):
         """GET API: Returns 400 if no query parameters are provided."""
-        self.client.login(username=self.user.username, password=TEST_PASSWORD)
+        self.client.login(username=self.staff.username, password=TEST_PASSWORD)
         resp = self.client.get(self.url)
         self.assertEqual(resp.status_code, 400)  # noqa: PT009
 
@@ -75,7 +75,7 @@ class CourseTeamManageAPIViewTest(SupportViewTestCase):
 
     def test_get_api_nonexistent_user_returns_404(self):
         """GET API: Returns 404 for a nonexistent user email."""
-        self.client.login(username=self.user.username, password=TEST_PASSWORD)
+        self.client.login(username=self.staff.username, password=TEST_PASSWORD)
         resp = self.client.get(self.url, {"email": "notfound@example.com"})
         self.assertEqual(resp.status_code, 404)  # noqa: PT009
 
@@ -119,7 +119,13 @@ class CourseTeamManageAPIViewTest(SupportViewTestCase):
         self.assertTrue(course_found, "Expected course not found in response.")  # noqa: PT009
 
     def test_get_api_instructor_can_only_see_their_courses(self):
-        """GET API: Course instructor sees only courses they have access to."""
+        """
+        GET API: Course instructor sees only courses within their scope.
+
+        Read access mirrors PUT: any user with an instructor CourseAccessRole
+        may reach GET so they can inspect the current state before making
+        modifications.
+        """
         self.client.login(
             username=self.instructor_user.username, password=TEST_PASSWORD
         )
@@ -131,12 +137,45 @@ class CourseTeamManageAPIViewTest(SupportViewTestCase):
         for i in range(1, 3):
             self.assertNotIn(str(self.extra_courses[i].id), course_ids)  # noqa: PT009
 
-    def test_get_api_user_with_no_access_sees_no_courses(self):
-        """GET API: Non-instructor users see no courses in the response."""
+    def test_get_api_plain_learner_returns_403(self):
+        """
+        GET API: A plain authenticated learner is denied.
+
+        Regression for GHSA-95xv-3c54-c3pw: before the fix, this call reached
+        the view and produced a 200 with an empty results list, letting any
+        authenticated user enumerate other accounts via the 404-vs-200 response.
+        """
+        self.client.login(username=self.user.username, password=TEST_PASSWORD)
+        resp = self.client.get(self.url, {"email": self.user.email})
+        self.assertEqual(resp.status_code, 403)  # noqa: PT009
+
+    def test_get_api_enumeration_not_reachable_by_learner(self):
+        """
+        GET API: A plain learner cannot enumerate accounts via 404 vs 200.
+
+        Regression for GHSA-95xv-3c54-c3pw: the fix must return 403 for BOTH an
+        existing target and a nonexistent target so the response doesn't confirm
+        whether an arbitrary email/username/user_id belongs to an active account.
+        """
+        self.client.login(username=self.user.username, password=TEST_PASSWORD)
+        existing = self.client.get(self.url, {"email": self.user.email})
+        absent = self.client.get(self.url, {"email": "notfound@example.com"})
+        self.assertEqual(existing.status_code, 403)  # noqa: PT009
+        self.assertEqual(absent.status_code, 403)  # noqa: PT009
+
+    def test_get_api_support_role_sees_all_courses(self):
+        """
+        GET API: A user holding SupportStaffRole reaches the view and sees all
+        courses (like admin/staff), not the empty list they'd get by falling
+        through to the instructor branch.
+        """
+        SupportStaffRole().add_users(self.user)
         self.client.login(username=self.user.username, password=TEST_PASSWORD)
         resp = self.client.get(self.url, {"email": self.user.email})
         self.assertEqual(resp.status_code, 200)  # noqa: PT009
-        self.assertEqual(resp.data, [])  # noqa: PT009
+        course_ids = [course["course_id"] for course in resp.data]
+        for extra in self.extra_courses:
+            self.assertIn(str(extra.id), course_ids)  # noqa: PT009
 
     # --- PUT API TEST CASES ---
 

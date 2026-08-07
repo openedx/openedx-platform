@@ -80,7 +80,7 @@ class CourseEndingTest(ModuleStoreTestCase):
         link2_expected = f"http://www.mysurvey.com?unique={user_id}"
         assert process_survey_link(link2, user) == link2_expected
 
-    @patch.dict('django.conf.settings.FEATURES', {'CERTIFICATES_HTML_VIEW': False})
+    @override_settings(CERTIFICATES_HTML_VIEW=False)
     def test_cert_info(self):
         user = UserFactory.create()
         survey_url = "http://a_survey.com"
@@ -365,7 +365,7 @@ class DashboardTest(ModuleStoreTestCase, TestVerificationBase):
             self.assertContains(response, f'class="course {mode}"')
         self.assertContains(response, value)
 
-    @patch.dict("django.conf.settings.FEATURES", {'ENABLE_VERIFIED_CERTIFICATES': True})
+    @override_settings(ENABLE_VERIFIED_CERTIFICATES=True)
     def test_verification_status_visible(self):
         """
         Test that the certificate verification status for courses is visible on the dashboard.
@@ -402,7 +402,7 @@ class DashboardTest(ModuleStoreTestCase, TestVerificationBase):
             self.assertNotContains(response, f"class=\"course {mode}\"")
             self.assertNotContains(response, value)
 
-    @patch.dict("django.conf.settings.FEATURES", {'ENABLE_VERIFIED_CERTIFICATES': False})
+    @override_settings(ENABLE_VERIFIED_CERTIFICATES=False)
     def test_verification_status_invisible(self):
         """
         Test that the certificate verification status for courses is not visible on the dashboard
@@ -477,7 +477,7 @@ class DashboardTest(ModuleStoreTestCase, TestVerificationBase):
         self.assertNotContains(response, escape(response_url))
 
     @skip_unless_lms
-    @patch.dict('django.conf.settings.FEATURES', {'CERTIFICATES_HTML_VIEW': False})
+    @override_settings(CERTIFICATES_HTML_VIEW=False)
     def test_linked_in_add_to_profile_btn_with_certificate(self):
         # If user has a certificate with valid linked-in config then Add Certificate to LinkedIn button
         # should be visible. and it has URL value with valid parameters.
@@ -621,7 +621,7 @@ class DashboardTestsWithSiteOverrides(SiteMixin, ModuleStoreTestCase):
         cache.clear()
 
     @skip_unless_lms
-    @patch.dict("django.conf.settings.FEATURES", {'ENABLE_VERIFIED_CERTIFICATES': False})
+    @override_settings(ENABLE_VERIFIED_CERTIFICATES=False)
     @ddt.data(
         ('testserver1.com', {'ENABLE_VERIFIED_CERTIFICATES': True}),
         ('testserver2.com', {'ENABLE_VERIFIED_CERTIFICATES': True, 'DISPLAY_COURSE_MODES_ON_DASHBOARD': True}),
@@ -642,7 +642,7 @@ class DashboardTestsWithSiteOverrides(SiteMixin, ModuleStoreTestCase):
         self.assertContains(response, 'class="course professional"')
 
     @skip_unless_lms
-    @patch.dict("django.conf.settings.FEATURES", {'ENABLE_VERIFIED_CERTIFICATES': False})
+    @override_settings(ENABLE_VERIFIED_CERTIFICATES=False)
     @ddt.data(
         ('testserver3.com', {'ENABLE_VERIFIED_CERTIFICATES': False}),
         ('testserver4.com', {'DISPLAY_COURSE_MODES_ON_DASHBOARD': False}),

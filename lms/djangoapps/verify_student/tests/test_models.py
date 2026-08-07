@@ -2,7 +2,6 @@
 
 import base64
 from datetime import datetime, timedelta
-from unittest import mock
 from unittest.mock import patch
 
 import ddt
@@ -10,6 +9,7 @@ import pytest
 import requests.exceptions
 import simplejson as json
 from django.conf import settings
+from django.test.utils import override_settings
 from django.utils.timezone import now
 from freezegun import freeze_time
 
@@ -219,7 +219,7 @@ class TestPhotoVerification(TestVerificationBase, MockS3Boto3Mixin, ModuleStoreT
             attempt = self.create_upload_and_submit_attempt_for_user()
             assert attempt.status == PhotoVerification.STATUS.must_retry
 
-    @mock.patch.dict(settings.FEATURES, {'AUTOMATIC_VERIFY_STUDENT_IDENTITY_FOR_TESTING': True})
+    @override_settings(AUTOMATIC_VERIFY_STUDENT_IDENTITY_FOR_TESTING=True)
     def test_submission_while_testing_flag_is_true(self):
         """ Test that a fake value is set for field 'photo_id_key' of user's
         initial verification when the feature flag 'AUTOMATIC_VERIFY_STUDENT_IDENTITY_FOR_TESTING'

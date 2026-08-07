@@ -216,7 +216,7 @@ def setup_masquerade(request, course_key, staff_access=False, reset_masquerade_d
     """
     if (
         request.user is None or
-        not settings.FEATURES.get('ENABLE_MASQUERADE', False) or
+        not settings.ENABLE_MASQUERADE or
         not staff_access
     ):
         return None, request.user

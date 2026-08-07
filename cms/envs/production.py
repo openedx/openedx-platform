@@ -84,7 +84,6 @@ with codecs.open(CONFIG_FILE, encoding='utf-8') as f:
             'EVENT_TRACKING_BACKENDS',
             'JWT_AUTH',
             'CELERY_QUEUES',
-            'MKTG_URL_LINK_MAP',
             'REST_FRAMEWORK',
             'EVENT_BUS_PRODUCER_CONFIG',
             'DEFAULT_FILE_STORAGE',
@@ -148,8 +147,6 @@ if 'loc_cache' not in CACHES:  # noqa: F405
 if 'staticfiles' in CACHES:  # noqa: F405
     CACHES['staticfiles']['KEY_PREFIX'] = EDX_PLATFORM_REVISION  # noqa: F405
 
-
-MKTG_URL_LINK_MAP.update(_YAML_TOKENS.get('MKTG_URL_LINK_MAP', {}))  # noqa: F405
 
 #Timezone overrides
 TIME_ZONE = CELERY_TIMEZONE  # noqa: F405

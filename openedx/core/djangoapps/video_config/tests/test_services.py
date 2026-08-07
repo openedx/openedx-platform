@@ -3,9 +3,8 @@ Tests for VideoConfigService.
 """
 
 import unittest
-from unittest.mock import patch
 
-from django.conf import settings
+from django.test import override_settings
 from opaque_keys.edx.locator import CourseLocator
 from xblock.field_data import DictFieldData
 from xblock.fields import ScopeIds
@@ -76,7 +75,7 @@ class VideoConfigServiceTestCase(unittest.TestCase):
         )
         assert translations_with_fallback == ['en']
 
-        with patch.dict(settings.FEATURES, FALLBACK_TO_ENGLISH_TRANSCRIPTS=False):
+        with override_settings(FALLBACK_TO_ENGLISH_TRANSCRIPTS=False):
             # Some organizations don't have English transcripts for all videos
             # This feature makes it configurable
             translations_no_fallback = video_config_service.available_translations(
