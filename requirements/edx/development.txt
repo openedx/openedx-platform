@@ -1385,7 +1385,7 @@ openedx-calc==5.0.0
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
     #   xblocks-contrib
-openedx-core==1.1.0
+openedx-core==1.2.0
     # via
     #   -c requirements/constraints.txt
     #   -r requirements/edx/doc.txt

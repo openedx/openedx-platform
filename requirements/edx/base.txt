@@ -841,7 +841,7 @@ openedx-calc==5.0.0
     # via
     #   -r requirements/edx/kernel.in
     #   xblocks-contrib
-openedx-core==1.1.0
+openedx-core==1.2.0
     # via
     #   -c requirements/constraints.txt
     #   -r requirements/edx/kernel.in
