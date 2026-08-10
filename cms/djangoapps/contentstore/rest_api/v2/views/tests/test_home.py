@@ -200,12 +200,9 @@ class HomePageCoursesViewV2Test(CourseTestCase):
 
         response = self.client.get(self.api_v2_url, {"search": "Friendly Number"})
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
-        self.assertEqual(len(response.data["results"]["courses"]), 1)  # noqa: PT009
-        self.assertEqual(  # noqa: PT009
-            response.data["results"]["courses"][0]["course_key"],
-            str(searchable_course.id),
-        )
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["results"]["courses"]) == 1
+        assert response.data["results"]["courses"][0]["course_key"] == str(searchable_course.id)
 
     def test_order_query_if_passed(self):
         """Get list of courses when order filter passed as a query param.
