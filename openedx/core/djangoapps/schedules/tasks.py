@@ -16,8 +16,6 @@ from edx_ace import ace
 from edx_ace.message import Message
 from edx_ace.utils.date import deserialize, serialize
 from edx_django_utils.monitoring import (
-    set_code_owner_attribute,
-    set_code_owner_attribute_from_module,
     set_custom_attribute,
 )
 from eventtracking import tracker
@@ -46,7 +44,6 @@ COURSE_NEXT_SECTION_UPDATE_LOG_PREFIX = 'Course Next Section Update'
 
 
 @shared_task(base=LoggedPersistOnFailureTask, bind=True, default_retry_delay=30)
-@set_code_owner_attribute
 def update_course_schedules(self, **kwargs):  # pylint: disable=missing-function-docstring
     course_key = CourseKey.from_string(kwargs['course_id'])
     new_start_date = deserialize(kwargs['new_start_date_str'])
@@ -105,7 +102,6 @@ class BinnedScheduleMessageBaseTask(ScheduleMessageBaseTask):
 
     @classmethod
     def enqueue(cls, site, current_date, day_offset, override_recipient_email=None, override_middlewares=None):  # pylint: disable=missing-function-docstring
-        set_code_owner_attribute_from_module(__name__)
         current_date = resolvers._get_datetime_beginning_of_day(current_date)  # pylint: disable=protected-access
 
         if not cls.is_enqueue_enabled(site):
@@ -132,7 +128,6 @@ class BinnedScheduleMessageBaseTask(ScheduleMessageBaseTask):
     def run(  # pylint: disable=arguments-differ
         self, site_id, target_day_str, day_offset, bin_num, override_recipient_email=None, override_middlewares=None,
     ):
-        set_code_owner_attribute_from_module(__name__)
         site = Site.objects.select_related('configuration').get(id=site_id)
         middlewares = [self.class_from_classpath(cls) for cls in override_middlewares] if override_middlewares else None
         with emulate_http_request(site=site, middleware_classes=middlewares) as request:
@@ -157,7 +152,6 @@ class BinnedScheduleMessageBaseTask(ScheduleMessageBaseTask):
 
 
 @shared_task(base=LoggedTask, ignore_result=True)
-@set_code_owner_attribute
 def _recurring_nudge_schedule_send(site_id, msg_str):
     _schedule_send(
         msg_str,
@@ -168,7 +162,6 @@ def _recurring_nudge_schedule_send(site_id, msg_str):
 
 
 @shared_task(base=LoggedTask, ignore_result=True)
-@set_code_owner_attribute
 def _upgrade_reminder_schedule_send(site_id, msg_str):
     _schedule_send(
         msg_str,
@@ -179,7 +172,6 @@ def _upgrade_reminder_schedule_send(site_id, msg_str):
 
 
 @shared_task(base=LoggedTask, ignore_result=True)
-@set_code_owner_attribute
 def _course_update_schedule_send(site_id, msg_str):
     _schedule_send(
         msg_str,
@@ -240,7 +232,6 @@ class ScheduleCourseNextSectionUpdate(ScheduleMessageBaseTask):  # pylint: disab
 
     @classmethod
     def enqueue(cls, site, current_date, day_offset, override_recipient_email=None):  # pylint: disable=missing-function-docstring
-        set_code_owner_attribute_from_module(__name__)
         target_datetime = (current_date - datetime.timedelta(days=day_offset))
 
         if not cls.is_enqueue_enabled(site):
@@ -262,7 +253,6 @@ class ScheduleCourseNextSectionUpdate(ScheduleMessageBaseTask):  # pylint: disab
             )
 
     def run(self, site_id, target_day_str, course_key, override_recipient_email=None):  # pylint: disable=arguments-differ
-        set_code_owner_attribute_from_module(__name__)
         site = Site.objects.select_related('configuration').get(id=site_id)
         with emulate_http_request(site=site):
             _annotate_for_monitoring(message_types.CourseUpdate(), site, 0, target_day_str, -1)

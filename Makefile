@@ -96,7 +96,6 @@ REQ_FILES = \
 	requirements/edx/testing \
 	requirements/edx/assets \
 	requirements/edx/development \
-	requirements/edx/semgrep \
 	scripts/xblock/requirements \
 	scripts/user_retirement/requirements/base \
 	scripts/user_retirement/requirements/testing \

@@ -9,7 +9,6 @@ from celery import shared_task
 from celery_utils.logged_task import LoggedTask
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from edx_django_utils.monitoring import set_code_owner_attribute
 from opaque_keys.edx.keys import CourseKey, UsageKey
 from opaque_keys.edx.locator import LibraryUsageLocatorV2
 from openedx_tagging.models import Taxonomy
@@ -59,7 +58,6 @@ def _delete_tags(content_object: ContentKey) -> None:
 
 
 @shared_task(base=LoggedTask)
-@set_code_owner_attribute
 def update_course_tags(course_key_str: str) -> bool:
     """
     Updates the automatically-managed tags for a course
@@ -85,7 +83,6 @@ def update_course_tags(course_key_str: str) -> bool:
 
 
 @shared_task(base=LoggedTask)
-@set_code_owner_attribute
 def delete_course_tags(course_key_str: str) -> bool:
     """
     Delete the tags for a Course (when the course itself has been deleted).
@@ -107,7 +104,6 @@ def delete_course_tags(course_key_str: str) -> bool:
 
 
 @shared_task(base=LoggedTask)
-@set_code_owner_attribute
 def update_xblock_tags(usage_key_str: str) -> bool:
     """
     Updates the automatically-managed tags for a XBlock
@@ -138,7 +134,6 @@ def update_xblock_tags(usage_key_str: str) -> bool:
 
 
 @shared_task(base=LoggedTask)
-@set_code_owner_attribute
 def delete_xblock_tags(usage_key_str: str) -> bool:
     """
     Delete the tags for a XBlock (when the XBlock itself is deleted).
@@ -160,7 +155,6 @@ def delete_xblock_tags(usage_key_str: str) -> bool:
 
 
 @shared_task(base=LoggedTask)
-@set_code_owner_attribute
 def update_library_block_tags(usage_key_str: str, language_code: str) -> bool:
     """
     Updates the automatically-managed tags for a content library block
@@ -183,7 +177,6 @@ def update_library_block_tags(usage_key_str: str, language_code: str) -> bool:
 
 
 @shared_task(base=LoggedTask)
-@set_code_owner_attribute
 def delete_library_block_tags(usage_key_str: str) -> bool:
     """
     Delete the tags for a Library Block (when the Library Block itself is deleted).

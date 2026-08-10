@@ -17,7 +17,6 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
-from edx_django_utils.monitoring import set_code_owner_attribute_from_module
 from lxml import etree
 from lxml.etree import _ElementTree as XmlTree
 from opaque_keys import InvalidKeyError
@@ -490,7 +489,6 @@ def _set_migrations_to_fail(source_data_list: list[_MigrationSourceData]):
 
 
 @shared_task(base=_BulkMigrationTask, bind=True)
-# Note: The decorator @set_code_owner_attribute cannot be used here because the UserTaskMixin
 #   does stack inspection and can't handle additional decorators.
 def bulk_migrate_from_modulestore(
     self: _BulkMigrationTask,
@@ -548,7 +546,6 @@ def bulk_migrate_from_modulestore(
     # This is a large function, but breaking it up futher would probably not
     # make it any easier to understand.
 
-    set_code_owner_attribute_from_module(__name__)
     status: UserTaskStatus = self.status
 
     # Validating input

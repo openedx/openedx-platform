@@ -35,8 +35,6 @@ from django.core.files import File
 from django.core.files.base import ContentFile
 from django.core.serializers.json import DjangoJSONEncoder
 from edx_django_utils.monitoring import (
-    set_code_owner_attribute,
-    set_code_owner_attribute_from_module,
     set_custom_attribute,
 )
 from opaque_keys import OpaqueKey
@@ -92,7 +90,6 @@ DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%SZ'  # Should match serializer format. Redefi
 
 
 @shared_task(base=LoggedTask)
-@set_code_owner_attribute
 def send_change_events_for_modified_entities(
     learning_package_id: LearningPackage.ID,
     change_list: list[dict],  # we want list[ChangeLogRecordData], but that's not JSON serializable, so use dicts
@@ -228,7 +225,6 @@ def emit_collections_updated(library: ContentLibrary, entity_ids: list[Publishab
 
 
 @shared_task(base=LoggedTask)
-@set_code_owner_attribute
 def check_container_content_changes(
     container_key_str: str,
     old_version_id: int | None,
@@ -298,7 +294,6 @@ def check_container_content_changes(
 
 
 @shared_task(base=LoggedTask)
-@set_code_owner_attribute
 def send_collections_changed_events(
     publishable_entity_ids: list[PublishableEntity.ID],
     learning_package_id: LearningPackage.ID,
@@ -344,7 +339,6 @@ def send_collections_changed_events(
 
 
 @shared_task(base=LoggedTask)
-@set_code_owner_attribute
 def send_events_after_publish(publish_log_id: int, library_key_str: str) -> None:
     """
     Send events to trigger actions like updating the search index, after we've
@@ -440,7 +434,6 @@ class LibrarySyncChildrenTask(UserTask):  # pylint: disable=abstract-method
         return f'Updating {key} from library'
 
 
-# Note: The decorator @set_code_owner_attribute cannot be used here because the UserTaskMixin does stack
 # inspection and can't handle additional decorators. So, wet set the code_owner attribute in the tasks' bodies instead.
 
 @shared_task(base=LibrarySyncChildrenTask, bind=True)
@@ -456,7 +449,6 @@ def sync_from_library(
     FIXME: this is related to legacy modulestore libraries and shouldn't be part of the
     openedx.core.djangoapps.content_libraries app, which is the app for v2 libraries.
     """
-    set_code_owner_attribute_from_module(__name__)
     store = modulestore()
     dest_block = store.get_item(BlockUsageLocator.from_string(dest_block_id))
     _sync_children(
@@ -481,7 +473,6 @@ def duplicate_children(
     FIXME: this is related to legacy modulestore libraries and shouldn't be part of the
     openedx.core.djangoapps.content_libraries app, which is the app for v2 libraries.
     """
-    set_code_owner_attribute_from_module(__name__)
     store = modulestore()
     # First, populate the destination block with children imported from the library.
     # It's important that _sync_children does this at the currently-set version of the dest library
@@ -604,7 +595,6 @@ class LibraryBackupTask(UserTask):  # pylint: disable=abstract-method
 
 
 @shared_task(base=LibraryBackupTask, bind=True)
-# Note: The decorator @set_code_owner_attribute cannot be used here because the UserTaskMixin
 #   does stack inspection and can't handle additional decorators.
 def backup_library(self, user_id: int, library_key_str: str) -> None:
     """
@@ -616,7 +606,6 @@ def backup_library(self, user_id: int, library_key_str: str) -> None:
         - Failed: Task failed and the export did not complete.
     """
     ensure_cms("backup_library may only be executed in a CMS context")
-    set_code_owner_attribute_from_module(__name__)
     library_key = LibraryLocatorV2.from_string(library_key_str)
 
     try:
@@ -721,7 +710,6 @@ def restore_library(self, user_id, storage_path):
     Restore a learning package from a backup file.
     """
     ensure_cms("restore_library may only be executed in a CMS context")
-    set_code_owner_attribute_from_module(__name__)
 
     TASK_LOGGER.info('Starting restore of learning package from %s', storage_path)
 
