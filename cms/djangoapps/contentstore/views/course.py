@@ -74,6 +74,7 @@ from common.djangoapps.student.roles import (
     GlobalStaff,
     OrgStaffRole,
     UserBasedRole,
+    enable_authz_course_authoring,
     strict_role_checking,
 )
 from common.djangoapps.util.json_request import JsonResponse, JsonResponseBadRequest, expect_json
@@ -476,19 +477,23 @@ def get_query_params_if_present(request):
     Arguments:
         request: the request object
 
+    ADR 0033 - ``ordering`` is the preferred parameter (DRF standard); ``order``
+    is kept as a deprecated alias. When both are present, ``ordering`` wins.
+
     Returns:
         search_query (str): any string used to filter Course Overviews based on visible fields.
-        order (str): any string used to order Course Overviews.
+        order (str): any string used to order Course Overviews. Sourced from
+            ``ordering`` (preferred) or ``order`` (deprecated alias).
         active_only (str): if not None, this value will limit the courses returned to active courses.
             The default value is None.
         archived_only (str): if not None, this value will limit the courses returned to archived courses.
             The default value is None.
     """
-    allowed_query_params = ['search', 'order', 'active_only', 'archived_only']
+    allowed_query_params = ['search', 'ordering', 'order', 'active_only', 'archived_only']
     if not any(param in request.GET for param in allowed_query_params):
         return None, None, None, None
     search_query = request.GET.get('search')
-    order = request.GET.get('order')
+    order = request.GET.get('ordering') or request.GET.get('order')
     active_only = get_bool_param(request, 'active_only', None)
     archived_only = get_bool_param(request, 'archived_only', None)
     return search_query, order, active_only, archived_only
@@ -857,7 +862,7 @@ def _get_course_keys_from_platform_scope() -> set[CourseKey]:
     if core_toggles.AUTHZ_COURSE_AUTHORING_FLAG.is_enabled():
         return set(course_keys)
 
-    return {course_key for course_key in course_keys if core_toggles.enable_authz_course_authoring(course_key)}
+    return {course_key for course_key in course_keys if enable_authz_course_authoring(course_key)}
 
 
 def _get_course_keys_from_scopes(authz_scopes: list[ScopeData]) -> set[CourseKey]:
@@ -888,7 +893,7 @@ def _get_course_keys_from_scopes(authz_scopes: list[ScopeData]) -> set[CourseKey
 
     for access in authz_scopes:
         if isinstance(access, CourseOverviewData) and access.course_key:
-            if core_toggles.enable_authz_course_authoring(access.course_key):
+            if enable_authz_course_authoring(access.course_key):
                 course_keys.add(access.course_key)
         elif isinstance(access, OrgCourseOverviewGlobData) and access.org:
             org_keys.add(access.org)
@@ -896,7 +901,7 @@ def _get_course_keys_from_scopes(authz_scopes: list[ScopeData]) -> set[CourseKey
     if org_keys:
         course_keys.update(
             key for key in _get_course_keys_for_org_scope(org_keys)
-            if core_toggles.enable_authz_course_authoring(key)
+            if enable_authz_course_authoring(key)
         )
 
     return course_keys
@@ -1184,7 +1189,7 @@ def _create_or_rerun_course(request):
             raise PermissionDenied()
 
         # allow/disable unicode characters in course_id according to settings
-        if not settings.FEATURES.get('ALLOW_UNICODE_COURSE_ID'):
+        if not settings.ALLOW_UNICODE_COURSE_ID:
             if _has_non_ascii_characters(org) or _has_non_ascii_characters(course) or _has_non_ascii_characters(run):
                 return JsonResponse(
                     {'error': _('Special characters not allowed in organization, course number, and course run.')},
@@ -1344,7 +1349,7 @@ def rerun_course(user, source_course_key, org, number, run, fields, background=T
     # is implemented (pre-assigning roles without a CourseOverview). Once resolved,
     # add_instructor can be called unconditionally here and the created_user fallback
     # in get_in_process_course_actions can be removed.
-    if not core_toggles.enable_authz_course_authoring(destination_course_key):
+    if not enable_authz_course_authoring(destination_course_key):
         add_instructor(destination_course_key, user, user)
 
     # Mark the action as initiated
@@ -1595,7 +1600,7 @@ def advanced_settings_handler(request, course_key_string):
         course_block = get_course_and_check_access(course_key, request.user)
 
         advanced_dict = CourseMetadata.fetch(course_block)
-        if settings.FEATURES.get('DISABLE_MOBILE_COURSE_AVAILABLE', False):
+        if settings.DISABLE_MOBILE_COURSE_AVAILABLE:
             advanced_dict.get('mobile_available')['deprecated'] = True
 
         if 'text/html' in request.META.get('HTTP_ACCEPT', '') and request.method == 'GET':
@@ -2111,9 +2116,9 @@ def _get_course_creator_status(user):
 
     if user.is_staff:
         course_creator_status = 'granted'
-    elif settings.FEATURES.get('DISABLE_COURSE_CREATION', False):
+    elif getattr(settings, 'DISABLE_COURSE_CREATION', False):
         course_creator_status = 'disallowed_for_this_site'
-    elif settings.FEATURES.get('ENABLE_CREATOR_GROUP', False):
+    elif getattr(settings, 'ENABLE_CREATOR_GROUP', False):
         course_creator_status = get_course_creator_status(user)
         if course_creator_status is None:
             # User not grandfathered in as an existing user, has not previously visited the dashboard page.
@@ -2130,7 +2135,7 @@ def get_allowed_organizations(user):
     """
     Helper method for returning the list of organizations for which the user is allowed to create courses.
     """
-    if settings.FEATURES.get('ENABLE_CREATOR_GROUP', False):
+    if getattr(settings, 'ENABLE_CREATOR_GROUP', False):
         return get_organizations(user)
     else:
         return []
@@ -2150,7 +2155,7 @@ def get_allowed_organizations_for_libraries(user):
 
     # This allows people in the course creator group for an org to create
     # libraries, which mimics course behavior.
-    if settings.FEATURES.get('ENABLE_CREATOR_GROUP', False):
+    if getattr(settings, 'ENABLE_CREATOR_GROUP', False):
         organizations_set.update(get_organizations(user))
 
     return sorted(organizations_set)
@@ -2160,7 +2165,7 @@ def user_can_create_organizations(user):
     """
     Returns True if the user can create organizations.
     """
-    return user.is_staff or not settings.FEATURES.get('ENABLE_CREATOR_GROUP', False)
+    return user.is_staff or not getattr(settings, 'ENABLE_CREATOR_GROUP', False)
 
 
 def get_organizations_for_non_course_creators(user):

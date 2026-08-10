@@ -67,9 +67,9 @@ def build_launch_request(extra_post_data=None, param_to_delete=None):
 
 class LtiTestMixin:
     """
-    Mixin for LTI tests
+    Mixin for LTI tests. Apply ``@override_settings(ENABLE_LTI_PROVIDER=True)`` at the
+    concrete test class level; `override_settings` cannot decorate a mixin directly.
     """
-    @patch.dict('django.conf.settings.FEATURES', {'ENABLE_LTI_PROVIDER': True})
     def setUp(self):
         super().setUp()
         # Always accept the OAuth signature
@@ -94,6 +94,7 @@ class LtiTestMixin:
         self.auto_link_consumer.save()
 
 
+@override_settings(ENABLE_LTI_PROVIDER=True)
 class LtiLaunchTest(LtiTestMixin, TestCase):
     """
     Tests for the lti_launch view
@@ -209,7 +210,7 @@ class LtiLaunchTest(LtiTestMixin, TestCase):
         Verifies that the LTI launch will fail if the ENABLE_LTI_PROVIDER flag
         is not set
         """
-        with patch.dict('django.conf.settings.FEATURES', {'ENABLE_LTI_PROVIDER': False}):
+        with override_settings(ENABLE_LTI_PROVIDER=False):
             request = build_launch_request()
             response = views.lti_launch(request, None, None)
             assert response.status_code == 403
@@ -269,6 +270,7 @@ class LtiLaunchTest(LtiTestMixin, TestCase):
         render_error.assert_called()
 
 
+@override_settings(ENABLE_LTI_PROVIDER=True)
 class LtiLaunchTestRender(LtiTestMixin, RenderXBlockTestMixin, ModuleStoreTestCase):
     """
     Tests for the rendering returned by lti_launch view.

@@ -103,19 +103,19 @@ class CourseMetadata:
             exclude_list.append('giturl')
 
         # Do not show edxnotes if the feature is disabled.
-        if not settings.FEATURES.get('ENABLE_EDXNOTES'):
+        if not settings.ENABLE_EDXNOTES:
             exclude_list.append('edxnotes')
 
         # Do not show video auto advance if the feature is disabled
-        if not settings.FEATURES.get('ENABLE_OTHER_COURSE_SETTINGS'):
+        if not settings.ENABLE_OTHER_COURSE_SETTINGS:
             exclude_list.append('other_course_settings')
 
         # Do not show video_upload_pipeline if the feature is disabled.
-        if not settings.FEATURES.get('ENABLE_VIDEO_UPLOAD_PIPELINE'):
+        if not settings.ENABLE_VIDEO_UPLOAD_PIPELINE:
             exclude_list.append('video_upload_pipeline')
 
         # Do not show video auto advance if the feature is disabled
-        if not settings.FEATURES.get('ENABLE_AUTOADVANCE_VIDEOS'):
+        if not settings.ENABLE_AUTOADVANCE_VIDEOS:
             exclude_list.append('video_auto_advance')
 
         # Do not show social sharing url field if the feature is disabled.
@@ -124,14 +124,14 @@ class CourseMetadata:
             exclude_list.append('social_sharing_url')
 
         # Do not show teams configuration if feature is disabled.
-        if not settings.FEATURES.get('ENABLE_TEAMS'):
+        if not settings.ENABLE_TEAMS:
             exclude_list.append('teams_configuration')
 
-        if not settings.FEATURES.get('ENABLE_VIDEO_BUMPER'):
+        if not settings.ENABLE_VIDEO_BUMPER:
             exclude_list.append('video_bumper')
 
         # Do not show enable_ccx if feature is not enabled.
-        if not settings.FEATURES.get('CUSTOM_COURSES_EDX'):
+        if not settings.CUSTOM_COURSES_EDX:
             exclude_list.append('enable_ccx')
             exclude_list.append('ccx_connector')
 

@@ -987,149 +987,6 @@ def delete_v1_library(v1_library_key_string):
     }
 
 
-@shared_task(time_limit=30)
-@set_code_owner_attribute
-def validate_all_library_source_blocks_ids_for_course(course_key_string, v1_to_v2_lib_map):
-    """Search a Modulestore for all library source blocks in a course by querying mongo.
-        replace all source_library_ids with the corresponding v2 value from the map
-    """
-    course_id = CourseKey.from_string(course_key_string)
-    store = modulestore()
-    with store.bulk_operations(course_id):
-        visited = []
-        for branch in [ModuleStoreEnum.BranchName.draft, ModuleStoreEnum.BranchName.published]:
-            blocks = store.get_items(
-                course_id.for_branch(branch),
-                settings={'source_library_id': {'$exists': True}}
-            )
-            for xblock in blocks:
-                if xblock.source_library_id not in v1_to_v2_lib_map.values():
-                    # pylint: disable=broad-except
-                    raise Exception(
-                        f'{xblock.source_library_id} in {course_id} is not found in mapping. Validation failed'
-                    )
-                visited.append(xblock.source_library_id)
-    # return sucess
-    return visited
-
-
-@shared_task(time_limit=30)
-@set_code_owner_attribute
-def replace_all_library_source_blocks_ids_for_course(course_key_string, v1_to_v2_lib_map):  # pylint: disable=useless-return
-    """Search a Modulestore for all library source blocks in a course by querying mongo.
-        replace all source_library_ids with the corresponding v2 value from the map.
-
-        This will trigger a publish on the course for every published library source block.
-    """
-    store = modulestore()
-    course_id = CourseKey.from_string(course_key_string)
-
-    with store.bulk_operations(course_id):
-        #for branch in [ModuleStoreEnum.BranchName.draft, ModuleStoreEnum.BranchName.published]:
-        draft_blocks, published_blocks = [
-            store.get_items(
-                course_id.for_branch(branch),
-                settings={'source_library_id': {'$exists': True}}
-            )
-            for branch in [ModuleStoreEnum.BranchName.draft, ModuleStoreEnum.BranchName.published]
-        ]
-
-        published_dict = {block.location: block for block in published_blocks}
-
-        for draft_library_source_block in draft_blocks:
-            try:
-                new_source_id = str(v1_to_v2_lib_map[draft_library_source_block.source_library_id])
-            except KeyError:
-                #skip invalid keys
-                LOGGER.error(
-                    'Key %s not found in mapping. Skipping block for course %s',
-                    str({draft_library_source_block.source_library_id}),
-                    str(course_id)
-                )
-                continue
-
-            # The publsihed branch should be updated as well as the draft branch
-            # This way, if authors "discard changes," they won't be reverted back to the V1 lib.
-            # However, we also don't want to publish the draft branch.
-            try:
-                if published_dict[draft_library_source_block.location] is not None:
-                    #temporarily set the published version to be the draft & publish it.
-                    temp = published_dict[draft_library_source_block.location]
-                    temp.source_library_id = new_source_id
-                    store.update_item(temp, None)
-                    store.publish(temp.location, None)
-                    draft_library_source_block.source_library_id = new_source_id
-                    store.update_item(draft_library_source_block, None)
-            except KeyError:
-                #Warn, but just update the draft block if no published block for draft block.
-                LOGGER.warning(
-                    'No matching published block for draft block %s',
-                    str(draft_library_source_block.location)
-                )
-                draft_library_source_block.source_library_id = new_source_id
-                store.update_item(draft_library_source_block, None)
-    # return success
-    return
-
-
-@shared_task(time_limit=30)
-@set_code_owner_attribute
-def undo_all_library_source_blocks_ids_for_course(course_key_string, v1_to_v2_lib_map):  # pylint: disable=useless-return
-    """Search a Modulestore for all library source blocks in a course by querying mongo.
-        replace all source_library_ids with the corresponding v1 value from the inverted map.
-        This is exists to undo changes made previously.
-    """
-    course_id = CourseKey.from_string(course_key_string)
-
-    v2_to_v1_lib_map = {v: k for k, v in v1_to_v2_lib_map.items()}
-
-    store = modulestore()
-    draft_blocks, published_blocks = [
-        store.get_items(
-            course_id.for_branch(branch),
-            settings={'source_library_id': {'$exists': True}}
-        )
-        for branch in [ModuleStoreEnum.BranchName.draft, ModuleStoreEnum.BranchName.published]
-    ]
-
-    published_dict = {block.location: block for block in published_blocks}
-
-    for draft_library_source_block in draft_blocks:
-        try:
-            new_source_id = str(v2_to_v1_lib_map[draft_library_source_block.source_library_id])
-        except KeyError:
-            #skip invalid keys
-            LOGGER.error(
-                'Key %s not found in mapping. Skipping block for course %s',
-                str({draft_library_source_block.source_library_id}),
-                str(course_id)
-            )
-            continue
-
-        # The publsihed branch should be updated as well as the draft branch
-        # This way, if authors "discard changes," they won't be reverted back to the V1 lib.
-        # However, we also don't want to publish the draft branch.
-        try:
-            if published_dict[draft_library_source_block.location] is not None:
-                #temporarily set the published version to be the draft & publish it.
-                temp = published_dict[draft_library_source_block.location]
-                temp.source_library_id = new_source_id
-                store.update_item(temp, None)
-                store.publish(temp.location, None)
-                draft_library_source_block.source_library_id = new_source_id
-                store.update_item(draft_library_source_block, None)
-        except KeyError:
-            #Warn, but just update the draft block if no published block for draft block.
-            LOGGER.warning(
-                'No matching published block for draft block %s',
-                str(draft_library_source_block.location)
-            )
-            draft_library_source_block.source_library_id = new_source_id
-            store.update_item(draft_library_source_block, None)
-    # return success
-    return
-
-
 class CourseLinkCheckTask(UserTask):  # pylint: disable=abstract-method
     """
     Base class for course link check tasks.
@@ -2340,12 +2197,21 @@ def _cancel_old_tasks(course_key: str, user: User, ignore_task_ids: list[str]):
 
 
 @shared_task(base=LegacyLibraryContentToItemBank, bind=True)
-def migrate_course_legacy_library_blocks_to_item_bank(self, user_id: int, course_key: str):
+def migrate_course_legacy_library_blocks_to_item_bank(
+    self, user_id: int, course_key: str, persist_publish_state: bool = False,
+):
     """
     Migrate legacy course library blocks to Item Bank.
 
     Depending on the number of blocks and its children blocks this operation can take a significant
     amount of time and this is why it is run as a celery task.
+
+    Arguments:
+        user_id: id of the user performing the migration.
+        course_key: the course whose legacy library content blocks should be migrated.
+        persist_publish_state: if True, blocks that were published before the migration
+            (and had no unpublished changes) are re-published afterward. Defaults to False,
+            leaving migrated blocks as drafts.
     """
     ensure_cms("Legacy library content references may only be executed in CMS")
     set_code_owner_attribute_from_module(__name__)
@@ -2363,7 +2229,9 @@ def migrate_course_legacy_library_blocks_to_item_bank(self, user_id: int, course
         with store.bulk_operations(key):
             for block in blocks:
                 self.status.set_state(f'Migrating block: {block.usage_key}')
-                block.v2_update_children_upstream_version(user_id)
+                block.v2_update_children_upstream_version(
+                    user_id, persist_publish_state=persist_publish_state
+                )
     except Exception as exc:  # pylint: disable=broad-except
         LOGGER.exception(f'Error while migrating blocks: {exc}')
         self.status.fail(str(exc))

@@ -138,6 +138,16 @@ ENABLE_UNICODE_USERNAME = False
 ENABLE_DJANGO_ADMIN_SITE = True
 ENABLE_LMS_MIGRATION = False
 
+# .. toggle_name: ENABLE_FORUM_DAILY_DIGEST
+# .. toggle_implementation: DjangoSetting
+# .. toggle_default: False
+# .. toggle_description: Settings for forums/discussions to on/off daily digest
+#   feature. Set this to True if you want to enable users to subscribe and unsubscribe
+#   for daily digest. This setting enables deprecation of daily digest.
+# .. toggle_use_cases: open_edx
+# .. toggle_creation_date: 2020-03-09
+ENABLE_FORUM_DAILY_DIGEST = False
+
 # .. toggle_name: settings.ENABLE_MASQUERADE
 # .. toggle_implementation: DjangoSetting
 # .. toggle_default: True
@@ -256,6 +266,16 @@ SKIP_EMAIL_VALIDATION = False
 # .. toggle_tickets: https://github.com/openedx/edx-platform/pull/6876
 # .. toggle_warning: The use case of this feature toggle is uncertain.
 ENABLE_COSMETIC_DISPLAY_PRICE = False
+
+# .. toggle_name: settings.ENABLE_FINANCIAL_ASSISTANCE_FORM
+# .. toggle_implementation: DjangoSetting
+# .. toggle_default: False
+# .. toggle_description: When enabled, exposes the financial assistance application form and its URL route,
+#   and shows the "financial assistance" course tool link for eligible learners.
+# .. toggle_use_cases: open_edx
+# .. toggle_creation_date: 2015-12-04
+# .. toggle_tickets: ECOM-2824
+ENABLE_FINANCIAL_ASSISTANCE_FORM = False
 
 # Automatically approve student identity verification attempts
 # .. toggle_name: settings.AUTOMATIC_VERIFY_STUDENT_IDENTITY_FOR_TESTING
@@ -390,13 +410,14 @@ ENABLE_COURSE_SORTING_BY_START_DATE = True
 
 # .. toggle_name: settings.ENABLE_COURSE_HOME_REDIRECT
 # .. toggle_implementation: DjangoSetting
-# .. toggle_default: True
-# .. toggle_description: When enabled, along with the ENABLE_MKTG_SITE feature toggle, users who attempt to access a
-#   course "about" page will be redirected to the course home url.
+# .. toggle_default: False
+# .. toggle_description: When enabled, users who attempt to access a course "about" page will be redirected to the
+#   course home url. Previously this only took effect when ENABLE_MKTG_SITE was also True; now it is the sole gate.
+#   Operators who relied on ENABLE_MKTG_SITE=True to activate this redirect should set this to True explicitly.
 # .. toggle_use_cases: open_edx
 # .. toggle_creation_date: 2019-01-15
 # .. toggle_tickets: https://github.com/openedx/edx-platform/pull/19604
-ENABLE_COURSE_HOME_REDIRECT = True
+ENABLE_COURSE_HOME_REDIRECT = False
 
 # .. toggle_name: settings.ENABLE_COMBINED_LOGIN_REGISTRATION_FOOTER
 # .. toggle_implementation: DjangoSetting
@@ -758,6 +779,15 @@ ENABLE_CROSS_DOMAIN_CSRF_COOKIE = False
 # .. toggle_warning: Requires configuration of third party auth
 ENABLE_REQUIRE_THIRD_PARTY_AUTH = False
 
+# .. toggle_name: ENABLE_AUTO_GENERATED_USERNAME
+# .. toggle_implementation: DjangoSetting
+# .. toggle_default: False
+# .. toggle_description: Set to True to enable auto-generation of usernames.
+# .. toggle_use_cases: open_edx
+# .. toggle_creation_date: 2024-02-20
+# .. toggle_warning: Changing this setting may affect user authentication, account management and discussions experience.
+ENABLE_AUTO_GENERATED_USERNAME = False
+
 # Specifies extra XBlock fields that should available when requested via the Course Blocks API
 # Should be a list of tuples of (block_type, field_name), where block_type can also be "*" for all block types.
 # e.g. COURSE_BLOCKS_API_EXTRA_FIELDS = [  ('course', 'other_course_settings'), ("problem", "weight")  ]
@@ -988,10 +1018,6 @@ CODE_JAIL = {
 PYTHON_LIB_FILENAME = 'python_lib.zip'
 
 ############################### DJANGO BUILT-INS ###############################
-
-# django-session-cookie middleware
-DCS_SESSION_COOKIE_SAMESITE = 'None'
-DCS_SESSION_COOKIE_SAMESITE_FORCE_ALL = True
 
 # LMS base
 LMS_BASE = 'localhost:18000'
@@ -2040,6 +2066,7 @@ INSTALLED_APPS = [
 
     # API Documentation
     'drf_yasg',
+    'drf_spectacular',
 
     # edx-drf-extensions
     'csrf.apps.CsrfAppConfig',  # Enables frontend apps to retrieve CSRF tokens.
@@ -2125,26 +2152,18 @@ SWAGGER_SETTINGS = {
     'DEEP_LINKING': True,
 }
 
-######################### MARKETING SITE ###############################
+###################### drf-spectacular (LMS enrollment schema) ######################
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'LMS Enrollment API',
+    'VERSION': '0.1.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'PREPROCESSING_HOOKS': ['lms.lib.spectacular.lms_api_filter'],
+    'SCHEMA_PATH_PREFIX': '/api/enrollment',
+    'SCHEMA_PATH_PREFIX_TRIM': '/api/enrollment',
+    # SERVERS is environment-specific (LMS_ROOT_URL differs per env) and is
+    # set in devstack.py / production.py.
+}
 
-MKTG_URL_LINK_MAP.update({  # noqa: F405
-    'ABOUT': 'about',
-    'CONTACT': 'contact',
-    'FAQ': 'help',
-    'COURSES': 'courses',
-    'ROOT': 'root',
-    'TOS': 'tos',
-    'HONOR': 'honor',  # If your site does not have an honor code, simply delete this line.
-    'TOS_AND_HONOR': 'edx-terms-service',
-    'PRIVACY': 'privacy',
-    'PRESS': 'press',
-    'BLOG': 'blog',
-    'DONATE': 'donate',
-    'SITEMAP.XML': 'sitemap_xml',
-
-    # Verified Certificates
-    'WHAT_IS_VERIFIED_CERT': 'verified-certificate',
-})
 
 STATIC_TEMPLATE_VIEW_DEFAULT_FILE_EXTENSION = 'html'
 
@@ -2542,9 +2561,11 @@ FIELD_OVERRIDE_PROVIDERS = ()
 # require student context.
 MODULESTORE_FIELD_OVERRIDE_PROVIDERS = ('openedx.features.content_type_gating.'
                                         'field_override.ContentTypeGatingFieldOverride',)
+# .. setting_name: HOMEPAGE_COURSE_MAX
+# .. setting_default: None
+# .. setting_description: Controls the maximum number of courses displayed on the LMS homepage.
+#    If set to None, all available courses will be shown.
 
-# Sets the maximum number of courses listed on the homepage
-# If set to None, all courses will be listed on the homepage
 HOMEPAGE_COURSE_MAX = None
 
 # .. setting_name: COURSE_MEMBER_API_ENROLLMENT_LIMIT

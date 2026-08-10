@@ -9,7 +9,7 @@ from openedx_authz import api as authz_api
 from openedx_authz.constants.permissions import COURSES_EXPORT_TAGS
 from openedx_tagging import rules as oel_tagging_rules
 
-from openedx.core import toggles as core_toggles
+from common.djangoapps.student.roles import enable_authz_course_authoring
 
 from .utils import get_context_key_from_key_string
 
@@ -30,7 +30,7 @@ def has_view_object_tags_access(user, object_id):
     except InvalidKeyError:
         pass
 
-    if course_key and core_toggles.enable_authz_course_authoring(course_key):
+    if course_key and enable_authz_course_authoring(course_key):
         return authz_api.is_user_allowed(
             user.username, COURSES_EXPORT_TAGS.identifier, str(course_key)
         )
@@ -66,7 +66,7 @@ def should_use_course_authz_for_object(object_id) -> tuple[bool, CourseKey | Non
         return False, None
 
     # Check if toggle is active
-    if not core_toggles.enable_authz_course_authoring(context_key):
+    if not enable_authz_course_authoring(context_key):
         return False, None
 
     # Authz should be used for this course object

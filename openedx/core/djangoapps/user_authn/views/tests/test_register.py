@@ -3,7 +3,6 @@
 import json
 from datetime import datetime
 from unittest import mock, skipIf, skipUnless
-from unittest.mock import patch
 from zoneinfo import ZoneInfo
 
 import ddt
@@ -66,9 +65,6 @@ from openedx.core.djangoapps.user_api.tests.test_helpers import TestCaseForm
 from openedx.core.djangoapps.user_api.tests.test_views import UserAPITestCase
 from openedx.core.djangolib.testing.utils import CacheIsolationTestCase, skip_unless_lms
 from openedx.core.lib.api import test_utils
-
-ENABLE_AUTO_GENERATED_USERNAME = settings.FEATURES.copy()
-ENABLE_AUTO_GENERATED_USERNAME['ENABLE_AUTO_GENERATED_USERNAME'] = True
 
 
 @ddt.ddt
@@ -1131,7 +1127,6 @@ class RegistrationViewTestV1(
     @override_settings(
         MKTG_URLS={"ROOT": "https://www.test.com/", "HONOR": "honor"},
     )
-    @mock.patch.dict(settings.FEATURES, {"ENABLE_MKTG_SITE": True})
     def test_registration_honor_code_mktg_site_enabled(self):
         link_template = "<a href='https://www.test.com/honor' rel='noopener' target='_blank'>{link_label}</a>"
         link_template2 = "<a href='#' rel='noopener' target='_blank'>{link_label}</a>"
@@ -1163,44 +1158,11 @@ class RegistrationViewTestV1(
             }
         )
 
-    @override_settings(MKTG_URLS_LINK_MAP={"HONOR": "honor"})
-    @mock.patch.dict(settings.FEATURES, {"ENABLE_MKTG_SITE": False})
-    def test_registration_honor_code_mktg_site_disabled(self):
-        link_template = "<a href='/privacy' rel='noopener' target='_blank'>{link_label}</a>"
-        link_label = "Terms of Service and Honor Code"
-        link_label2 = "Privacy Policy"
-        self._assert_reg_field(
-            {"honor_code": "required"},
-            {
-                "label": ("By creating an account, you agree to the {spacing}"
-                          "{link_label} {spacing}"
-                          "and you acknowledge that {platform_name} and each Member process your "
-                          "personal data in accordance {spacing}"
-                          "with the {link_label2}.").format(
-                    platform_name=settings.PLATFORM_NAME,
-                    link_label=self.link_template.format(link_label=link_label),
-                    link_label2=link_template.format(link_label=link_label2),
-                    spacing=' ' * 18
-                ),
-                "name": "honor_code",
-                "defaultValue": False,
-                "type": "plaintext",
-                "required": True,
-                "errorMessages": {
-                    "required": "You must agree to the {platform_name} {link_label}".format(  # noqa: UP032
-                        platform_name=settings.PLATFORM_NAME,
-                        link_label=link_label
-                    )
-                }
-            }
-        )
-
     @override_settings(MKTG_URLS={
         "ROOT": "https://www.test.com/",
         "HONOR": "honor",
         "TOS": "tos",
     })
-    @mock.patch.dict(settings.FEATURES, {"ENABLE_MKTG_SITE": True})
     def test_registration_separate_terms_of_service_mktg_site_enabled(self):
         # Honor code field should say ONLY honor code,
         # not "terms of service and honor code"
@@ -1244,53 +1206,6 @@ class RegistrationViewTestV1(
                     "required": "You must agree to the {platform_name} {link_label}".format(  # noqa: UP032
                         platform_name=settings.PLATFORM_NAME,
                         link_label=link_label
-                    )
-                }
-            }
-        )
-
-    @override_settings(MKTG_URLS_LINK_MAP={"HONOR": "honor", "TOS": "tos"})
-    @mock.patch.dict(settings.FEATURES, {"ENABLE_MKTG_SITE": False})
-    def test_registration_separate_terms_of_service_mktg_site_disabled(self):
-        # Honor code field should say ONLY honor code,
-        # not "terms of service and honor code"
-        link_label = 'Honor Code'
-        self._assert_reg_field(
-            {"honor_code": "required", "terms_of_service": "required"},
-            {
-                "label": "I agree to the {platform_name} {link_label}".format(  # noqa: UP032
-                    platform_name=settings.PLATFORM_NAME,
-                    link_label=self.link_template.format(link_label=link_label)
-                ),
-                "name": "honor_code",
-                "defaultValue": False,
-                "type": "checkbox",
-                "required": True,
-                "errorMessages": {
-                    "required": "You must agree to the {platform_name} Honor Code".format(  # noqa: UP032
-                        platform_name=settings.PLATFORM_NAME
-                    )
-                }
-            }
-        )
-
-        link_label = 'Terms of Service'
-        # Terms of service field should also be present
-        link_template = "<a href='/tos' rel='noopener' target='_blank'>{link_label}</a>"
-        self._assert_reg_field(
-            {"honor_code": "required", "terms_of_service": "required"},
-            {
-                "label": "I agree to the {platform_name} {link_label}".format(  # noqa: UP032
-                    platform_name=settings.PLATFORM_NAME,
-                    link_label=link_template.format(link_label=link_label)
-                ),
-                "name": "terms_of_service",
-                "defaultValue": False,
-                "type": "checkbox",
-                "required": True,
-                "errorMessages": {
-                    "required": "You must agree to the {platform_name} Terms of Service".format(  # noqa: UP032
-                        platform_name=settings.PLATFORM_NAME
                     )
                 }
             }
@@ -1835,7 +1750,7 @@ class RegistrationViewTestV1(
             response = self.client.post(self.url, {"email": self.EMAIL, "username": self.USERNAME})
             assert response.status_code == 403
 
-    @override_settings(FEATURES=ENABLE_AUTO_GENERATED_USERNAME)
+    @override_settings(ENABLE_AUTO_GENERATED_USERNAME=True)
     def test_register_with_auto_generated_username(self):
         """
         Test registration functionality with auto-generated username.
@@ -1867,7 +1782,7 @@ class RegistrationViewTestV1(
         response = self.client.get(reverse("dashboard"))
         self.assertHttpOK(response)
 
-    @override_settings(FEATURES=ENABLE_AUTO_GENERATED_USERNAME)
+    @override_settings(ENABLE_AUTO_GENERATED_USERNAME=True)
     def test_register_with_empty_name(self):
         """
         Test registration field validations when ENABLE_AUTO_GENERATED_USERNAME is enabled.
@@ -1891,7 +1806,7 @@ class RegistrationViewTestV1(
             }
         )
 
-    @override_settings(FEATURES=ENABLE_AUTO_GENERATED_USERNAME)
+    @override_settings(ENABLE_AUTO_GENERATED_USERNAME=True)
     @mock.patch('openedx.core.djangoapps.user_authn.views.utils._get_username_prefix')
     @mock.patch('openedx.core.djangoapps.user_authn.views.utils.random.choices')
     @mock.patch('openedx.core.djangoapps.user_authn.views.utils.datetime')
@@ -2429,7 +2344,7 @@ class RegistrationViewTestV2(RegistrationViewTestV1):
             })
         assert response.status_code == 400
 
-    @patch.dict(settings.FEATURES, {'EMBARGO': True})
+    @override_settings(EMBARGO=True)
     def test_register_with_disabled_country(self):
         """
         Test case to check user registration is forbidden when registration is disabled for a country
@@ -2456,7 +2371,7 @@ class RegistrationViewTestV2(RegistrationViewTestV1):
                 ], 'error_code': 'validation-error'}
         )
 
-    @patch.dict(settings.FEATURES, {'EMBARGO': False})
+    @override_settings(EMBARGO=False)
     def test_registration_allowed_when_embargo_disabled(self):
         """
         Ensures that user registration proceeds normally even for restricted countries
@@ -2572,7 +2487,7 @@ class ThirdPartyRegistrationTestMixin(
 
         self._verify_user_existence(user_exists=True, social_link_exists=True, user_is_active=False)
 
-    @patch.dict(settings.FEATURES, {'EMBARGO': True})
+    @override_settings(EMBARGO=True)
     def test_with_disabled_country(self):
         """
         Test case to check user registration is forbidden when registration is restricted for a country
@@ -2592,7 +2507,7 @@ class ThirdPartyRegistrationTestMixin(
         }
         self._verify_user_existence(user_exists=False, social_link_exists=False, user_is_active=False)
 
-    @patch.dict(settings.FEATURES, {'EMBARGO': False})
+    @override_settings(EMBARGO=False)
     def test_with_disabled_country_when_embargo_disabled(self):
         """
         Ensures that user registration proceeds normally even for restricted countries
@@ -2685,7 +2600,7 @@ class ThirdPartyRegistrationTestMixin(
         self._verify_user_existence(user_exists=False, social_link_exists=False)
 
 
-@skipUnless(settings.FEATURES.get("ENABLE_THIRD_PARTY_AUTH"), "third party auth not enabled")
+@skipUnless(getattr(settings, 'ENABLE_THIRD_PARTY_AUTH', False), "third party auth not enabled")
 class TestFacebookRegistrationView(
     ThirdPartyRegistrationTestMixin, ThirdPartyOAuthTestMixinFacebook, TransactionTestCase
 ):
@@ -2706,7 +2621,7 @@ class TestFacebookRegistrationView(
         self._verify_user_existence(user_exists=False, social_link_exists=False)
 
 
-@skipUnless(settings.FEATURES.get("ENABLE_THIRD_PARTY_AUTH"), "third party auth not enabled")
+@skipUnless(getattr(settings, 'ENABLE_THIRD_PARTY_AUTH', False), "third party auth not enabled")
 class TestGoogleRegistrationView(
     ThirdPartyRegistrationTestMixin, ThirdPartyOAuthTestMixinGoogle, TransactionTestCase
 ):
@@ -2868,7 +2783,7 @@ class RegistrationValidationViewTests(OpenEdxEventsTestMixin, test_utils.ApiTest
             {'username': str(USERNAME_BAD_LENGTH_MSG)}
         )
 
-    @skipUnless(settings.FEATURES.get("ENABLE_UNICODE_USERNAME"), "Unicode usernames disabled.")
+    @skipUnless(getattr(settings, 'ENABLE_UNICODE_USERNAME', False), "Unicode usernames disabled.")
     @ddt.data(*testutils.INVALID_USERNAMES_UNICODE)
     def test_username_invalid_unicode_validation_decision(self, username):
         self.assertValidationDecision(
@@ -2876,7 +2791,7 @@ class RegistrationValidationViewTests(OpenEdxEventsTestMixin, test_utils.ApiTest
             {'username': str(USERNAME_INVALID_CHARS_UNICODE)}
         )
 
-    @skipIf(settings.FEATURES.get("ENABLE_UNICODE_USERNAME"), "Unicode usernames enabled.")
+    @skipIf(getattr(settings, 'ENABLE_UNICODE_USERNAME', False), "Unicode usernames enabled.")
     @ddt.data(*testutils.INVALID_USERNAMES_ASCII)
     def test_username_invalid_ascii_validation_decision(self, username):
         self.assertValidationDecision(

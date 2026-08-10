@@ -7,7 +7,7 @@ from unittest.mock import Mock, patch
 import ddt
 from django.conf import settings
 from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.test.client import Client
 from opaque_keys.edx.locator import CourseLocator
 
@@ -45,7 +45,7 @@ class AutoAuthEnabledTestCase(AutoAuthTestCase, ModuleStoreTestCase):
         (COURSE_ID_SPLIT, CourseLocator.from_string(COURSE_ID_SPLIT)),
     )
 
-    @patch.dict("django.conf.settings.FEATURES", {"AUTOMATIC_AUTH_FOR_TESTING": True})
+    @override_settings(AUTOMATIC_AUTH_FOR_TESTING=True)
     def setUp(self):
         # Patching the settings.FEATURES['AUTOMATIC_AUTH_FOR_TESTING']
         # value affects the contents of urls.py,
@@ -303,7 +303,7 @@ class AutoAuthDisabledTestCase(AutoAuthTestCase):
     Test that the page is inaccessible with default settings
     """
 
-    @patch.dict("django.conf.settings.FEATURES", {"AUTOMATIC_AUTH_FOR_TESTING": False})
+    @override_settings(AUTOMATIC_AUTH_FOR_TESTING=False)
     def setUp(self):
         # Patching the settings.FEATURES['AUTOMATIC_AUTH_FOR_TESTING']
         # value affects the contents of urls.py,
@@ -327,7 +327,7 @@ class AutoAuthRestrictedTestCase(AutoAuthTestCase):
     work as intended.  These restrictions are in place for load tests.
     """
 
-    @patch.dict('django.conf.settings.FEATURES', {'AUTOMATIC_AUTH_FOR_TESTING': True})
+    @override_settings(AUTOMATIC_AUTH_FOR_TESTING=True)
     def setUp(self):
         # Patching the settings.FEATURES['AUTOMATIC_AUTH_FOR_TESTING']
         # value affects the contents of urls.py,

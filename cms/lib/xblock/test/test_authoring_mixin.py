@@ -3,7 +3,6 @@ Tests for the Studio authoring XBlock mixin.
 """
 
 
-from django.conf import settings
 from django.test.utils import override_settings
 from xblock.core import XBlock
 
@@ -31,9 +30,6 @@ class AuthoringMixinTestCase(ModuleStoreTestCase):
     CONTENT_GROUPS_TITLE = "Content Groups"
     ENROLLMENT_GROUPS_TITLE = "Enrollment Track Groups"
     STAFF_LOCKED = 'The unit that contains this component is hidden from learners'
-
-    FEATURES_WITH_ENROLLMENT_TRACK_DISABLED = settings.FEATURES.copy()
-    FEATURES_WITH_ENROLLMENT_TRACK_DISABLED['ENABLE_ENROLLMENT_TRACK_USER_PARTITION'] = False
 
     @XBlock.register_temp_plugin(PureXBlock, 'pure')
     def setUp(self):
@@ -170,7 +166,7 @@ class AuthoringMixinTestCase(ModuleStoreTestCase):
             [self.STAFF_LOCKED]
         )
 
-    @override_settings(FEATURES=FEATURES_WITH_ENROLLMENT_TRACK_DISABLED)
+    @override_settings(ENABLE_ENROLLMENT_TRACK_USER_PARTITION=False)
     def test_enrollment_tracks_disabled(self):
         """
         Test that the "no groups" messages doesn't reference enrollment tracks if

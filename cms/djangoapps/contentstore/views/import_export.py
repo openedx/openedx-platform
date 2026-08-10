@@ -33,6 +33,7 @@ from storages.backends.s3boto3 import S3Boto3Storage
 from user_tasks.conf import settings as user_tasks_settings
 from user_tasks.models import UserTaskArtifact, UserTaskStatus
 
+from common.djangoapps.student.auth import has_studio_read_access
 from common.djangoapps.util.json_request import JsonResponse
 from common.djangoapps.util.monitoring import monitor_import_failure
 from common.djangoapps.util.views import ensure_valid_course_key
@@ -41,7 +42,7 @@ from openedx.core.djangoapps.authz.decorators import user_has_course_permission
 from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 
 from ..storage import course_import_export_storage
-from ..tasks import CourseExportTask, CourseImportTask, export_olx, import_olx
+from ..tasks import CourseExportTask, CourseImportTask, create_export_tarball, export_olx, import_olx
 from ..utils import IMPORTABLE_FILE_TYPES, get_export_url, get_import_url, reverse_course_url
 
 __all__ = [
@@ -308,6 +309,20 @@ def export_handler(request, course_key_string):
     a link appearing on the page once it's ready.
     """
     course_key = CourseKey.from_string(course_key_string)
+
+    if isinstance(course_key, LibraryLocator):
+        # Legacy (v1) libraries use a synchronous export instead of the async Celery
+        # flow used for courses. When a user clicks the Export button in the Authoring
+        # MFE migration wizard, the browser navigates directly to this URL and we
+        # immediately generate and stream back the OLX .tar.gz file.
+        if not has_studio_read_access(request.user, course_key):
+            raise PermissionDenied()
+        library = modulestore().get_library(course_key)
+        if library is None:
+            raise Http404
+        tarball = create_export_tarball(library, course_key, {}, None)
+        return send_tarball(tarball, os.path.getsize(tarball.name))
+
     if not user_has_course_permission(
         user=request.user,
         authz_permission=COURSES_EXPORT_COURSE.identifier,

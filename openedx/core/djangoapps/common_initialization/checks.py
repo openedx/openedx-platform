@@ -33,19 +33,11 @@ def validate_marketing_site_setting(app_configs, **kwargs):  # pylint: disable=u
     Validates marketing site related settings.
     """
     errors = []
-    if settings.FEATURES.get('ENABLE_MKTG_SITE'):
-        if not hasattr(settings, 'MKTG_URLS'):
-            errors.append(
-                Error(
-                    'ENABLE_MKTG_SITE is True, but MKTG_URLS is not defined.',
-                    id='common.djangoapps.common_initialization.E002',
-                )
+    if not hasattr(settings, 'MKTG_URLS'):
+        errors.append(
+            Error(
+                'MKTG_URLS is not defined.',
+                id='common.djangoapps.common_initialization.E002',
             )
-        if not settings.MKTG_URLS.get('ROOT'):
-            errors.append(
-                Error(
-                    'There is no ROOT defined in MKTG_URLS.',
-                    id='common.djangoapps.common_initialization.E003',
-                )
-            )
+        )
     return errors

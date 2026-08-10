@@ -51,15 +51,6 @@ from xmodule.data import CertificatesDisplayBehaviors
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory
 
-FEATURES_WITH_CERTS_ENABLED = settings.FEATURES.copy()
-FEATURES_WITH_CERTS_ENABLED['CERTIFICATES_HTML_VIEW'] = True
-
-FEATURES_WITH_CERTS_DISABLED = settings.FEATURES.copy()
-FEATURES_WITH_CERTS_DISABLED['CERTIFICATES_HTML_VIEW'] = False
-
-FEATURES_WITH_CUSTOM_CERTS_ENABLED = FEATURES_WITH_CERTS_ENABLED.copy()
-FEATURES_WITH_CUSTOM_CERTS_ENABLED['CUSTOM_CERTIFICATE_TEMPLATES_ENABLED'] = True
-
 name_affirmation_service = get_name_affirmation_service()
 
 
@@ -289,7 +280,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
             'max_effort': '10'
         }
 
-    @override_settings(FEATURES=FEATURES_WITH_CERTS_ENABLED)
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_linkedin_share_url(self):
         """
         Test: LinkedIn share URL.
@@ -314,7 +305,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
             js_escaped_string(self.linkedin_url.format(params=urlencode(params))),
         )
 
-    @override_settings(FEATURES=FEATURES_WITH_CERTS_ENABLED)
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     @with_site_configuration(
         configuration={
             'platform_name': 'My Platform Site', 'LINKEDIN_COMPANY_ID': 2448,
@@ -348,7 +339,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
         "CERTIFICATE_FACEBOOK": True,
         "CERTIFICATE_FACEBOOK_TEXT": "test FB text"
     })
-    @override_settings(FEATURES=FEATURES_WITH_CERTS_ENABLED)
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_render_certificate_html_view_with_facebook_meta_tags(self):
         """
         Test view html certificate if share to FB is enabled.
@@ -381,7 +372,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
     @patch.dict("django.conf.settings.SOCIAL_SHARING_SETTINGS", {
         "CERTIFICATE_FACEBOOK": False,
     })
-    @override_settings(FEATURES=FEATURES_WITH_CERTS_ENABLED)
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_render_certificate_html_view_without_facebook_meta_tags(self):
         """
         Test view html certificate if share to FB is disabled.
@@ -408,7 +399,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
         self.assertNotContains(response, '<meta property="og:image" ')
         self.assertNotContains(response, '<meta property="og:description" ')
 
-    @override_settings(FEATURES=FEATURES_WITH_CERTS_ENABLED)
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     @patch.dict("django.conf.settings.SOCIAL_SHARING_SETTINGS", {"CERTIFICATE_FACEBOOK": True})
     @with_site_configuration(
         configuration={'FACEBOOK_APP_ID': 'test_facebook_my_site'},
@@ -424,7 +415,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
         self.assertContains(response, "Post on Facebook")
         self.assertContains(response, 'test_facebook_my_site')
 
-    @override_settings(FEATURES=FEATURES_WITH_CERTS_ENABLED)
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     @ddt.data(
         (False, False, False),
         (False, False, True),
@@ -456,7 +447,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
             assert ('Share on Twitter' in response.content.decode('utf-8')) == twitter_sharing
             assert ('Add to LinkedIn Profile' in response.content.decode('utf-8')) == linkedin_sharing
 
-    @override_settings(FEATURES=FEATURES_WITH_CERTS_ENABLED)
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_facebook_default_text_site(self):
         """
         Test: Facebook sharing default text for sites.
@@ -476,7 +467,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
             response = self.client.get(test_url, HTTP_HOST='test.localhost')
             self.assertContains(response, facebook_text)
 
-    @override_settings(FEATURES=FEATURES_WITH_CERTS_ENABLED)
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_twitter_default_text_site(self):
         """
         Test: Twitter sharing default text for sites.
@@ -496,7 +487,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
             response = self.client.get(test_url, HTTP_HOST='test.localhost')
             self.assertContains(response, twitter_text)
 
-    @override_settings(FEATURES=FEATURES_WITH_CERTS_ENABLED)
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_rendering_course_organization_data(self):
         """
         Test: organization data should render on certificate web view if course has organization.
@@ -525,7 +516,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
         self.assertContains(response, f'<title>test_organization {self.course.number} Certificate |')
         self.assertContains(response, 'logo_test1.png')
 
-    @override_settings(FEATURES=FEATURES_WITH_CERTS_ENABLED)
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     @patch.dict("django.conf.settings.SOCIAL_SHARING_SETTINGS", {
         "CERTIFICATE_TWITTER": True,
         "CERTIFICATE_FACEBOOK": True,
@@ -597,7 +588,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
         # Test course overrides
         self.assertContains(response, "/static/certificates/images/course_override_logo.png")
 
-    @override_settings(FEATURES=FEATURES_WITH_CERTS_ENABLED)
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_render_html_view_valid_certificate(self):
         self._add_course_certificates(count=1, signatory_count=2)
         test_url = get_certificate_url(
@@ -620,7 +611,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
         response = self.client.get(test_url)
         self.assertContains(response, str(self.cert.verify_uuid))
 
-    @override_settings(FEATURES=FEATURES_WITH_CERTS_ENABLED)
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_render_certificate_only_for_downloadable_status(self):
         """
         Tests that Certificate HTML Web View returns Certificate only if certificate status is 'downloadable',
@@ -649,7 +640,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
         (CertificateStatuses.audit_notpassing, False),
     )
     @ddt.unpack
-    @override_settings(FEATURES=FEATURES_WITH_CERTS_ENABLED)
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_audit_certificate_display(self, status, eligible_for_certificate):
         """
         Ensure that audit-mode certs are only shown in the web view if they
@@ -672,7 +663,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
         else:
             assert response.status_code == 404
 
-    @override_settings(FEATURES=FEATURES_WITH_CERTS_ENABLED)
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_html_view_returns_404_for_invalid_certificate(self):
         """
         Tests that Certificate HTML Web View successfully retrieves certificate only
@@ -694,7 +685,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
         response = self.client.get(test_url)
         assert response.status_code == 404
 
-    @override_settings(FEATURES=FEATURES_WITH_CERTS_ENABLED)
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_html_lang_attribute_is_dynamic_for_certificate_html_view(self):
         """
         Tests that Certificate HTML Web View's lang attribute is based on user language.
@@ -717,7 +708,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
         self.assertContains(response, '<html class="no-js" lang="ar">')
 
     @ddt.data(False, True)
-    @override_settings(FEATURES=FEATURES_WITH_CERTS_ENABLED)
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_html_view_for_non_viewable_certificate_and_for_student_user(self, date_override):
         """
         Tests that Certificate HTML Web View returns "Cannot Find Certificate"
@@ -755,7 +746,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
         self.assertContains(response, "Cannot Find Certificate")
         self.assertContains(response, "We cannot find a certificate with this URL or ID number.")
 
-    @override_settings(FEATURES=FEATURES_WITH_CERTS_ENABLED)
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_render_html_view_with_valid_signatories(self):
         self._add_course_certificates(count=1, signatory_count=2)
         test_url = get_certificate_url(
@@ -771,7 +762,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
         self.assertContains(response, 'Signatory_Organization 0')
         self.assertContains(response, '/static/certificates/images/demo-sig0.png')
 
-    @override_settings(FEATURES=FEATURES_WITH_CERTS_ENABLED)
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_course_display_name_not_override_with_course_title(self):
         # if certificate in block has not course_title then course name should not be overridden with this title.
         test_certificates = [
@@ -798,7 +789,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
         self.assertNotContains(response, 'test_course_title_0')
         self.assertContains(response, 'refundable course')
 
-    @override_settings(FEATURES=FEATURES_WITH_CERTS_ENABLED)
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_course_display_overrides(self):
         """
         Tests if `Course Number Display String` or `Course Organization Display` is set for a course
@@ -821,7 +812,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
         self.assertContains(response, 'overridden_number')
         self.assertContains(response, 'overridden_org')
 
-    @override_settings(FEATURES=FEATURES_WITH_CERTS_ENABLED)
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_certificate_view_without_org_logo(self):
         test_certificates = [
             {
@@ -846,7 +837,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
         # make sure response html has only one organization logo container for edX
         self.assertContains(response, "<li class=\"wrapper-organization\">", 1)
 
-    @override_settings(FEATURES=FEATURES_WITH_CERTS_ENABLED)
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_render_html_view_without_signatories(self):
         self._add_course_certificates(count=1, signatory_count=0)
         test_url = get_certificate_url(
@@ -858,7 +849,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
         self.assertNotContains(response, 'Signatory_Name 0')
         self.assertNotContains(response, 'Signatory_Title 0')
 
-    @override_settings(FEATURES=FEATURES_WITH_CERTS_ENABLED)
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_render_html_view_is_html_escaped(self):
         test_certificates = [
             {
@@ -887,7 +878,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
         self.assertNotContains(response, '<script>')
         self.assertContains(response, '&lt;script&gt;course_title&lt;/script&gt;')
 
-    @override_settings(FEATURES=FEATURES_WITH_CERTS_DISABLED)
+    @override_settings(CERTIFICATES_HTML_VIEW=False)
     def test_render_html_view_disabled_feature_flag_returns_static_url(self):
         test_url = get_certificate_url(
             user_id=self.user.id,
@@ -896,7 +887,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
         )
         assert str(self.cert.download_url) in test_url
 
-    @override_settings(FEATURES=FEATURES_WITH_CERTS_ENABLED)
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_render_html_view_invalid_course(self):
         test_url = "/certificates/user/{user_id}/course/{course_id}".format(
             user_id=self.user.id,
@@ -905,7 +896,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
         response = self.client.get(test_url)
         self.assertContains(response, 'invalid')
 
-    @override_settings(FEATURES=FEATURES_WITH_CERTS_ENABLED)
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_render_html_view_invalid_user_certificate(self):
         self._add_course_certificates(count=1, signatory_count=0)
         test_url = get_certificate_url(
@@ -919,7 +910,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
         response = self.client.get(test_url)
         assert response.status_code == 404
 
-    @override_settings(FEATURES=FEATURES_WITH_CERTS_ENABLED, PLATFORM_NAME='Űńíćődé Űńívéŕśítӳ')
+    @override_settings(CERTIFICATES_HTML_VIEW=True, PLATFORM_NAME='Űńíćődé Űńívéŕśítӳ')
     def test_render_html_view_with_unicode_platform_name(self):
         self._add_course_certificates(count=1, signatory_count=0)
 
@@ -931,7 +922,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
         response = self.client.get(test_url)
         assert response.status_code == 200
 
-    @override_settings(FEATURES=FEATURES_WITH_CERTS_ENABLED)
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_user_id_cert_url_not_supported(self):
         """
         tests the user id based certificate url is no longer supported
@@ -944,7 +935,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
         # staff or instructor access should show invalid certificate
         self.assertContains(response, 'URL Not Supported')
 
-    @override_settings(FEATURES=FEATURES_WITH_CERTS_ENABLED)
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_render_html_view_with_preview_mode(self):
         """
         test certificate web view should render properly along with its signatories information when accessing it in
@@ -967,7 +958,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
         self.assertContains(response, 'course_title_0')
         self.assertContains(response, 'Signatory_Title 0')
 
-    @override_settings(FEATURES=FEATURES_WITH_CERTS_ENABLED)
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_render_html_view_with_preview_mode_when_user_already_has_cert(self):
         """
         test certificate web view should render properly in
@@ -989,7 +980,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
         self.assertContains(response, 'course_title_0')
         self.assertContains(response, 'Signatory_Title 0')
 
-    @override_settings(FEATURES=FEATURES_WITH_CERTS_ENABLED)
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     @ddt.data(
         (-2, True),
         (-2, False)
@@ -1024,7 +1015,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
         )
         self.assertContains(response, date)
 
-    @override_settings(FEATURES=FEATURES_WITH_CERTS_ENABLED)
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     @ddt.data(
         (True, False),
         (False, False),
@@ -1072,7 +1063,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
 
         self.assertContains(response, date)
 
-    @override_settings(FEATURES=FEATURES_WITH_CERTS_ENABLED)
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_render_html_view_invalid_certificate_configuration(self):
         self.course.cert_html_view_enabled = True
         self.course.save()
@@ -1087,7 +1078,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
         self.assertContains(response, "Invalid Certificate")
 
     # TEMPLATES WITHOUT LANGUAGE TESTS
-    @override_settings(FEATURES=FEATURES_WITH_CUSTOM_CERTS_ENABLED)
+    @override_settings(CUSTOM_CERTIFICATE_TEMPLATES_ENABLED=True, CERTIFICATES_HTML_VIEW=True)
     @override_settings(LANGUAGE_CODE='fr')
     @patch('lms.djangoapps.certificates.views.webview.get_course_run_details')
     def test_certificate_custom_template_with_org_mode_and_course_key(self, mock_get_course_run_details):
@@ -1122,7 +1113,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
             self.assertContains(response, 'lang: fr')
             self.assertContains(response, 'course name: test_template_3_course')
 
-    @override_settings(FEATURES=FEATURES_WITH_CUSTOM_CERTS_ENABLED)
+    @override_settings(CUSTOM_CERTIFICATE_TEMPLATES_ENABLED=True, CERTIFICATES_HTML_VIEW=True)
     @patch('lms.djangoapps.certificates.views.webview.get_course_run_details')
     def test_certificate_custom_template_with_org_and_mode(self, mock_get_course_run_details):
         """
@@ -1157,7 +1148,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
             assert response.status_code == 200
             self.assertContains(response, 'course name: test_template_1_course')
 
-    @override_settings(FEATURES=FEATURES_WITH_CUSTOM_CERTS_ENABLED)
+    @override_settings(CUSTOM_CERTIFICATE_TEMPLATES_ENABLED=True, CERTIFICATES_HTML_VIEW=True)
     @patch('lms.djangoapps.certificates.views.webview.get_course_run_details')
     def test_certificate_custom_template_with_org(self, mock_get_course_run_details):
         """
@@ -1181,7 +1172,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
             assert response.status_code == 200
             self.assertContains(response, 'course name: test_template_1_course')
 
-    @override_settings(FEATURES=FEATURES_WITH_CUSTOM_CERTS_ENABLED)
+    @override_settings(CUSTOM_CERTIFICATE_TEMPLATES_ENABLED=True, CERTIFICATES_HTML_VIEW=True)
     @patch('lms.djangoapps.certificates.views.webview.get_course_run_details')
     def test_certificate_custom_template_with_mode(self, mock_get_course_run_details):
         """
@@ -1209,7 +1200,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
 
     # Templates With Language tests
     # 1
-    @override_settings(FEATURES=FEATURES_WITH_CUSTOM_CERTS_ENABLED)
+    @override_settings(CUSTOM_CERTIFICATE_TEMPLATES_ENABLED=True, CERTIFICATES_HTML_VIEW=True)
     @override_settings(LANGUAGE_CODE='fr')
     @patch('lms.djangoapps.certificates.views.webview.get_course_run_details')
     @patch('lms.djangoapps.certificates.api.get_course_organization_id')
@@ -1294,7 +1285,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
         self.assertContains(response, 'course name: test_right_lang_template')
 
     # 2
-    @override_settings(FEATURES=FEATURES_WITH_CUSTOM_CERTS_ENABLED)
+    @override_settings(CUSTOM_CERTIFICATE_TEMPLATES_ENABLED=True, CERTIFICATES_HTML_VIEW=True)
     @patch('lms.djangoapps.certificates.views.webview.get_course_run_details')
     @patch('lms.djangoapps.certificates.api.get_course_organization_id')
     def test_certificate_custom_language_template_with_org_and_mode(self, mock_get_org_id, mock_get_course_run_details):
@@ -1354,7 +1345,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
         self.assertContains(response, 'course name: test_right_lang_template')
 
     # 3
-    @override_settings(FEATURES=FEATURES_WITH_CUSTOM_CERTS_ENABLED)
+    @override_settings(CUSTOM_CERTIFICATE_TEMPLATES_ENABLED=True, CERTIFICATES_HTML_VIEW=True)
     @patch('lms.djangoapps.certificates.views.webview.get_course_run_details')
     @patch('lms.djangoapps.certificates.api.get_course_organization_id')
     def test_certificate_custom_language_template_with_org(self, mock_get_org_id, mock_get_course_run_details):
@@ -1412,7 +1403,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
         self.assertContains(response, 'course name: test_right_lang_template')
 
     # 4
-    @override_settings(FEATURES=FEATURES_WITH_CUSTOM_CERTS_ENABLED)
+    @override_settings(CUSTOM_CERTIFICATE_TEMPLATES_ENABLED=True, CERTIFICATES_HTML_VIEW=True)
     @patch('lms.djangoapps.certificates.views.webview.get_course_run_details')
     @patch('lms.djangoapps.certificates.api.get_course_organization_id')
     def test_certificate_custom_language_template_with_mode(self, mock_get_org_id, mock_get_course_run_details):
@@ -1470,7 +1461,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
         assert response.status_code == 200
         self.assertContains(response, 'course name: test_right_lang_template')
 
-    @override_settings(FEATURES=FEATURES_WITH_CUSTOM_CERTS_ENABLED)
+    @override_settings(CUSTOM_CERTIFICATE_TEMPLATES_ENABLED=True, CERTIFICATES_HTML_VIEW=True)
     @patch('lms.djangoapps.certificates.views.webview.get_course_run_details')
     @patch('lms.djangoapps.certificates.api.get_course_organization_id')
     def test_certificate_custom_language_template_with_locale_language_from_catalogue(
@@ -1532,7 +1523,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
         assert response.status_code == 200
         self.assertContains(response, 'course name: test_right_lang_template')
 
-    @override_settings(FEATURES=FEATURES_WITH_CUSTOM_CERTS_ENABLED)
+    @override_settings(CUSTOM_CERTIFICATE_TEMPLATES_ENABLED=True, CERTIFICATES_HTML_VIEW=True)
     @ddt.data(True, False)
     @patch('lms.djangoapps.certificates.views.webview.get_course_run_details')
     @patch('lms.djangoapps.certificates.api.get_course_organization_id')
@@ -1578,10 +1569,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
         mode = 'honor'
         self._add_course_certificates(count=1, signatory_count=2)
         self._create_custom_template(mode=mode)
-        with patch.dict("django.conf.settings.FEATURES", {
-            "CERTIFICATES_HTML_VIEW": True,
-            "CUSTOM_CERTIFICATE_TEMPLATES_ENABLED": custom_certs_enabled
-        }):
+        with override_settings(CERTIFICATES_HTML_VIEW=True, CUSTOM_CERTIFICATE_TEMPLATES_ENABLED=custom_certs_enabled):
             test_url = get_certificate_url(
                 user_id=self.user.id,
                 course_id=str(self.course.id),
@@ -1603,7 +1591,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
                             self.assertContains(response, "Tweet this Accomplishment")
                         self.assertContains(response, 'https://twitter.com/intent/tweet')
 
-    @override_settings(FEATURES=FEATURES_WITH_CUSTOM_CERTS_ENABLED)
+    @override_settings(CUSTOM_CERTIFICATE_TEMPLATES_ENABLED=True, CERTIFICATES_HTML_VIEW=True)
     @patch('lms.djangoapps.certificates.views.webview.get_course_run_details')
     def test_certificate_asset_by_slug(self, mock_get_course_run_details):
         """
@@ -1642,7 +1630,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
             )
 
     @skipUnless(name_affirmation_service is not None, 'Requires Name Affirmation')
-    @override_settings(FEATURES=FEATURES_WITH_CERTS_ENABLED)
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     @ddt.data((True, 'approved'),
               (True, 'denied'),
               (False, 'pending'))
@@ -1679,7 +1667,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
             self.assertContains(response, self.user.profile.name)
             self.assertNotContains(response, verified_name)
 
-    @override_settings(FEATURES=FEATURES_WITH_CUSTOM_CERTS_ENABLED)
+    @override_settings(CUSTOM_CERTIFICATE_TEMPLATES_ENABLED=True, CERTIFICATES_HTML_VIEW=True)
     @ddt.data(
         True,
         False
@@ -1823,7 +1811,7 @@ class CertificateEventTests(CommonCertificatesTestCase, EventTrackingTestCase):
     Test events emitted by certificate handling.
     """
 
-    @override_settings(FEATURES=FEATURES_WITH_CERTS_ENABLED)
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_certificate_evidence_event_emitted(self):
         self.client.logout()
         self._add_course_certificates(count=1, signatory_count=2)

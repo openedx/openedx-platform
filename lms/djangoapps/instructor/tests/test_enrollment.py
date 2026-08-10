@@ -12,6 +12,7 @@ import pytest
 from ccx_keys.locator import CCXLocator
 from crum import set_current_request
 from django.conf import settings
+from django.test import override_settings
 from django.utils.translation import get_language
 from django.utils.translation import override as override_language
 from opaque_keys.edx.locator import CourseLocator
@@ -886,8 +887,10 @@ class TestGetEmailParamsCCX(SharedModuleStoreTestCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.course = CourseFactory.create()
+        # get_link_for_about_page uses course.id (parent course), not the CCX key
+        cls.course_about_url = f'{settings.LMS_ROOT_URL}/courses/{cls.course.id}/about'
 
-    @patch.dict('django.conf.settings.FEATURES', {'CUSTOM_COURSES_EDX': True})
+    @override_settings(CUSTOM_COURSES_EDX=True)
     def setUp(self):
         super().setUp()
         self.coach = AdminFactory.create()
@@ -902,10 +905,9 @@ class TestGetEmailParamsCCX(SharedModuleStoreTestCase):
             site,
             self.course_key
         )
-        self.course_about_url = self.course_url + 'about'
         self.registration_url = f'https://{site}/register'
 
-    @patch.dict('django.conf.settings.FEATURES', {'CUSTOM_COURSES_EDX': True})
+    @override_settings(CUSTOM_COURSES_EDX=True)
     def test_ccx_enrollment_email_params(self):
         # For a CCX, what do we expect to get for the URLs?
         # Also make sure `auto_enroll` is properly passed through.
@@ -939,13 +941,11 @@ class TestGetEmailParams(SharedModuleStoreTestCase):
             site,
             str(cls.course.id)
         )
-        cls.course_about_url = cls.course_url + 'about'
         cls.registration_url = f'https://{site}/register'
         cls.logo_url = get_logo_url_for_email()
+        cls.course_about_url = f'{settings.LMS_ROOT_URL}/courses/{cls.course.id}/about'
 
     def test_normal_params(self):
-        # For a normal site, what do we expect to get for the URLs?
-        # Also make sure `auto_enroll` is properly passed through.
         result = get_email_params(self.course, False)
 
         assert result['auto_enroll'] is False
@@ -954,18 +954,11 @@ class TestGetEmailParams(SharedModuleStoreTestCase):
         assert result['course_url'] == self.course_url
         assert result['logo_url'] == self.logo_url
 
-    def test_marketing_params(self):
-        # For a site with a marketing front end, what do we expect to get for the URLs?
-        # Also make sure `auto_enroll` is properly passed through.
-        with patch.dict('django.conf.settings.FEATURES', {'ENABLE_MKTG_SITE': True}):
-            result = get_email_params(self.course, True)
+    def test_auto_enroll_params(self):
+        result = get_email_params(self.course, True)
 
         assert result['auto_enroll'] is True
-        # We should *not* get a course about url (LMS doesn't know what the marketing site URLs are)
-        assert result['course_about_url'] is None
-        assert result['registration_url'] == self.registration_url
-        assert result['course_url'] == self.course_url
-        assert result['logo_url'] == self.logo_url
+        assert result['course_about_url'] == self.course_about_url
 
     @patch('lms.djangoapps.instructor.enrollment.get_logo_url_for_email', return_value='https://www.logo.png')
     def test_logo_url_params(self, mock_get_logo_url_for_email):
@@ -993,7 +986,7 @@ class TestRenderMessageToString(EmailTemplateTagMixin, SharedModuleStoreTestCase
         cls.subject_template = 'instructor/edx_ace/allowedenroll/email/subject.txt'
         cls.message_template = 'instructor/edx_ace/allowedenroll/email/body.txt'
 
-    @patch.dict('django.conf.settings.FEATURES', {'CUSTOM_COURSES_EDX': True})
+    @override_settings(CUSTOM_COURSES_EDX=True)
     def setUp(self):
         super().setUp()
         coach = AdminFactory.create()
@@ -1066,7 +1059,7 @@ class TestRenderMessageToString(EmailTemplateTagMixin, SharedModuleStoreTestCase
             assert 'You have been' in subject
             assert 'You have been' in message
 
-    @patch.dict('django.conf.settings.FEATURES', {'CUSTOM_COURSES_EDX': True})
+    @override_settings(CUSTOM_COURSES_EDX=True)
     @ddt.data('body.txt', 'body.html')
     def test_render_enrollment_message_ccx_members(self, body_file_name):
         """
@@ -1089,7 +1082,7 @@ class TestRenderMessageToString(EmailTemplateTagMixin, SharedModuleStoreTestCase
         )
         assert course_url in message
 
-    @patch.dict('django.conf.settings.FEATURES', {'CUSTOM_COURSES_EDX': True})
+    @override_settings(CUSTOM_COURSES_EDX=True)
     @ddt.data('body.txt', 'body.html')
     def test_render_unenrollment_message_ccx_members(self, body_file_name):
         """
@@ -1105,7 +1098,7 @@ class TestRenderMessageToString(EmailTemplateTagMixin, SharedModuleStoreTestCase
         assert self.ccx.display_name in subject
         assert self.ccx.display_name in message
 
-    @patch.dict('django.conf.settings.FEATURES', {'CUSTOM_COURSES_EDX': True})
+    @override_settings(CUSTOM_COURSES_EDX=True)
     @ddt.data('body.txt', 'body.html')
     def test_render_enrollment_message_ccx_non_members(self, body_file_name):
         """
@@ -1124,7 +1117,7 @@ class TestRenderMessageToString(EmailTemplateTagMixin, SharedModuleStoreTestCase
         registration_url = f'https://{site}/register'
         assert registration_url in message
 
-    @patch.dict('django.conf.settings.FEATURES', {'CUSTOM_COURSES_EDX': True})
+    @override_settings(CUSTOM_COURSES_EDX=True)
     @ddt.data('body.txt', 'body.html')
     def test_render_unenrollment_message_ccx_non_members(self, body_file_name):
         """

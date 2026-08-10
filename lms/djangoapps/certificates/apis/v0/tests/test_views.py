@@ -6,7 +6,7 @@ Tests for the Certificate REST APIs.
 from unittest.mock import patch
 
 import ddt
-from django.conf import settings
+from django.test import override_settings
 from django.urls import reverse
 from django.utils import timezone
 from freezegun import freeze_time
@@ -382,7 +382,7 @@ class CertificatesListRestApiTest(AuthAndScopesTestMixin, SharedModuleStoreTestC
             assert resp.status_code == status.HTTP_200_OK
             assert len(resp.data) == 2
 
-    @patch.dict(settings.FEATURES, {'CERTIFICATES_HTML_VIEW': True})
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_with_no_certificate_configuration(self):
         """
         Verify that certificates are not returned until there is an active

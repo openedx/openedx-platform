@@ -587,6 +587,72 @@ class RescoreViewTestCase(GradingEndpointTestBase):
         assert response.status_code == status.HTTP_202_ACCEPTED
         assert mock_submit.call_args[0][3] is True
 
+    @patch('lms.djangoapps.instructor_task.api.submit_rescore_problem_for_student')
+    def test_rescore_only_if_higher_form_encoded_body(self, mock_submit):
+        """
+        only_if_higher sent form-encoded in the POST body (as the instructor
+        dashboard MFE does) must be honored, not silently dropped.
+
+        Regression test: dropping the flag caused "Rescore Only if Score
+        Improves" to run an unconditional rescore and lower learner scores.
+        """
+        mock_task = MagicMock()
+        mock_task.task_id = str(uuid4())
+        mock_submit.return_value = mock_task
+
+        response = self.client.post(
+            self._get_url(),
+            data='learner=test_student&only_if_higher=true',
+            content_type='application/x-www-form-urlencoded',
+        )
+        assert response.status_code == status.HTTP_202_ACCEPTED
+        assert mock_submit.call_args[0][3] is True
+
+    @patch('lms.djangoapps.instructor_task.api.submit_rescore_problem_for_student')
+    def test_rescore_only_if_higher_json_body(self, mock_submit):
+        """only_if_higher as a JSON boolean in the body is honored."""
+        mock_task = MagicMock()
+        mock_task.task_id = str(uuid4())
+        mock_submit.return_value = mock_task
+
+        response = self.client.post(
+            self._get_url(),
+            data={'learner': 'test_student', 'only_if_higher': True},
+            content_type='application/json',
+        )
+        assert response.status_code == status.HTTP_202_ACCEPTED
+        assert mock_submit.call_args[0][3] is True
+
+    @patch('lms.djangoapps.instructor_task.api.submit_rescore_problem_for_student')
+    def test_rescore_only_if_higher_false_in_body(self, mock_submit):
+        """An explicit 'false' string in the body resolves to False."""
+        mock_task = MagicMock()
+        mock_task.task_id = str(uuid4())
+        mock_submit.return_value = mock_task
+
+        response = self.client.post(
+            self._get_url(),
+            data='learner=test_student&only_if_higher=false',
+            content_type='application/x-www-form-urlencoded',
+        )
+        assert response.status_code == status.HTTP_202_ACCEPTED
+        assert mock_submit.call_args[0][3] is False
+
+    @patch('lms.djangoapps.instructor_task.api.submit_rescore_problem_for_student')
+    def test_rescore_only_if_higher_query_param_wins_over_body(self, mock_submit):
+        """The documented query-param contract takes precedence over a conflicting body value."""
+        mock_task = MagicMock()
+        mock_task.task_id = str(uuid4())
+        mock_submit.return_value = mock_task
+
+        response = self.client.post(
+            self._get_url() + '?only_if_higher=true',
+            data='learner=test_student&only_if_higher=false',
+            content_type='application/x-www-form-urlencoded',
+        )
+        assert response.status_code == status.HTTP_202_ACCEPTED
+        assert mock_submit.call_args[0][3] is True
+
     @patch('lms.djangoapps.instructor_task.tasks.rescore_problem.apply_async')
     def test_rescore_all_learners(self, mock_apply):
         """Bulk rescore queues a task and returns 202."""

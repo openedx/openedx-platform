@@ -130,7 +130,7 @@ class MFEContextViewTest(ThirdPartyAuthTestMixin, APITestCase):
             },
         }
 
-    @patch.dict(settings.FEATURES, {'ENABLE_THIRD_PARTY_AUTH': False})
+    @override_settings(ENABLE_THIRD_PARTY_AUTH=False)
     def test_no_third_party_auth_providers(self):
         """
         Test that if third party auth is enabled, context returned by API contains
@@ -175,6 +175,30 @@ class MFEContextViewTest(ThirdPartyAuthTestMixin, APITestCase):
 
         assert response.status_code == 200
         assert response.data == self.get_context(params, current_provider, current_backend, add_user_details)
+
+    @ddt.data(
+        ('test@test.com', True),
+        (None, False),
+    )
+    @ddt.unpack
+    def test_skip_registration_form_requires_email(self, email, expect_auto_submit):
+        """
+        Regression test for openedx/edx-platform#38780.
+
+        "Skip registration form" should only auto-submit the registration form when the
+        third-party provider actually returned an email claim. Some providers (e.g. Facebook,
+        Microsoft Entra ID) can complete authentication without an email, and blindly
+        auto-submitting in that case silently fails client-side validation in the authn MFE,
+        leaving the learner stuck on a partially-filled form with no explanation.
+        """
+        self.configure_facebook_provider(enabled=True, visible=True, skip_registration_form=True)
+
+        pipeline_target = 'openedx.core.djangoapps.user_authn.views.login_form.third_party_auth.pipeline'
+        with simulate_running_pipeline(pipeline_target, 'facebook', email=email):
+            response = self.client.get(self.url, self.query_params)
+
+        assert response.status_code == 200
+        assert response.data['contextData']['autoSubmitRegForm'] == expect_auto_submit
 
     def test_tpa_hint(self):
         """
@@ -347,7 +371,7 @@ class MFEContextViewTest(ThirdPartyAuthTestMixin, APITestCase):
     @override_settings(
         ENABLE_DYNAMIC_REGISTRATION_FIELDS=True,
     )
-    @patch.dict(settings.FEATURES, {'ENABLE_THIRD_PARTY_AUTH': False})
+    @override_settings(ENABLE_THIRD_PARTY_AUTH=False)
     def test_response_structure(self):
         """
         Test that API return valid response dictionary with both required and optional fields

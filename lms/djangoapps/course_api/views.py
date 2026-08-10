@@ -165,6 +165,14 @@ class CourseListUserThrottle(UserRateThrottle):
 
         return super().allow_request(request, view)
 
+    def get_cache_key(self, request, view):
+        # Namespace this throttle's cache key so it does not share a rate-limit
+        # bucket with other throttles that happen to use the same scope name.
+        cache_key = super().get_cache_key(request, view)
+        if cache_key:
+            cache_key = f"course_list.{cache_key}"
+        return cache_key
+
 
 class LazyPageNumberPagination(NamespacedPageNumberPagination):
     """
@@ -391,6 +399,14 @@ class CourseIdListUserThrottle(UserRateThrottle):
             self.num_requests, self.duration = self.parse_rate(self.rate)
 
         return super().allow_request(request, view)
+
+    def get_cache_key(self, request, view):
+        # Namespace this throttle's cache key so it does not share a rate-limit
+        # bucket with other throttles that use the same scope name.
+        cache_key = super().get_cache_key(request, view)
+        if cache_key:
+            cache_key = f"course_id_list.{cache_key}"
+        return cache_key
 
 
 @view_auth_classes()

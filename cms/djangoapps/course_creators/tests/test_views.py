@@ -3,10 +3,9 @@ Tests course_creators.views.py.
 """
 
 
-from unittest import mock
-
 from django.core.exceptions import PermissionDenied
 from django.test import TestCase
+from django.test.utils import override_settings
 from django.urls import reverse
 
 from cms.djangoapps.course_creators.views import (
@@ -64,35 +63,35 @@ class CourseCreatorView(TestCase):
         add_user_with_status_granted(self.admin, self.user)
         self.assertEqual('unrequested', get_course_creator_status(self.user))  # noqa: PT009
 
+    @override_settings(ENABLE_CREATOR_GROUP=True)
     def test_add_granted(self):
-        with mock.patch.dict('django.conf.settings.FEATURES', {"ENABLE_CREATOR_GROUP": True}):
-            # Calling add_user_with_status_granted impacts is_user_in_course_group_role.
-            self.assertFalse(auth.user_has_role(self.user, CourseCreatorRole()))  # noqa: PT009
+        # Calling add_user_with_status_granted impacts is_user_in_course_group_role.
+        self.assertFalse(auth.user_has_role(self.user, CourseCreatorRole()))  # noqa: PT009
 
-            add_user_with_status_granted(self.admin, self.user)
-            self.assertEqual('granted', get_course_creator_status(self.user))  # noqa: PT009
+        add_user_with_status_granted(self.admin, self.user)
+        self.assertEqual('granted', get_course_creator_status(self.user))  # noqa: PT009
 
-            # Calling add again will be a no-op (even if state is different).
-            add_user_with_status_unrequested(self.user)
-            self.assertEqual('granted', get_course_creator_status(self.user))  # noqa: PT009
+        # Calling add again will be a no-op (even if state is different).
+        add_user_with_status_unrequested(self.user)
+        self.assertEqual('granted', get_course_creator_status(self.user))  # noqa: PT009
 
-            self.assertTrue(auth.user_has_role(self.user, CourseCreatorRole()))  # noqa: PT009
+        self.assertTrue(auth.user_has_role(self.user, CourseCreatorRole()))  # noqa: PT009
 
+    @override_settings(ENABLE_CREATOR_GROUP=True)
     def test_update_creator_group(self):
-        with mock.patch.dict('django.conf.settings.FEATURES', {"ENABLE_CREATOR_GROUP": True}):
-            self.assertFalse(auth.user_has_role(self.user, CourseCreatorRole()))  # noqa: PT009
-            update_course_creator_group(self.admin, self.user, True)
-            self.assertTrue(auth.user_has_role(self.user, CourseCreatorRole()))  # noqa: PT009
-            update_course_creator_group(self.admin, self.user, False)
-            self.assertFalse(auth.user_has_role(self.user, CourseCreatorRole()))  # noqa: PT009
+        self.assertFalse(auth.user_has_role(self.user, CourseCreatorRole()))  # noqa: PT009
+        update_course_creator_group(self.admin, self.user, True)
+        self.assertTrue(auth.user_has_role(self.user, CourseCreatorRole()))  # noqa: PT009
+        update_course_creator_group(self.admin, self.user, False)
+        self.assertFalse(auth.user_has_role(self.user, CourseCreatorRole()))  # noqa: PT009
 
+    @override_settings(ENABLE_CREATOR_GROUP=True)
     def test_update_org_content_creator_role(self):
-        with mock.patch.dict('django.conf.settings.FEATURES', {"ENABLE_CREATOR_GROUP": True}):
-            self.assertFalse(auth.user_has_role(self.user, OrgContentCreatorRole(self.org)))  # noqa: PT009
-            update_org_content_creator_role(self.admin, self.user, [self.org])
-            self.assertTrue(auth.user_has_role(self.user, OrgContentCreatorRole(self.org)))  # noqa: PT009
-            update_org_content_creator_role(self.admin, self.user, [])
-            self.assertFalse(auth.user_has_role(self.user, OrgContentCreatorRole(self.org)))  # noqa: PT009
+        self.assertFalse(auth.user_has_role(self.user, OrgContentCreatorRole(self.org)))  # noqa: PT009
+        update_org_content_creator_role(self.admin, self.user, [self.org])
+        self.assertTrue(auth.user_has_role(self.user, OrgContentCreatorRole(self.org)))  # noqa: PT009
+        update_org_content_creator_role(self.admin, self.user, [])
+        self.assertFalse(auth.user_has_role(self.user, OrgContentCreatorRole(self.org)))  # noqa: PT009
 
     def test_user_requested_access(self):
         add_user_with_status_unrequested(self.user)

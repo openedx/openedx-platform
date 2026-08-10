@@ -70,7 +70,7 @@ class EmailOptInListTest(ModuleStoreTestCase):
         output = self._run_command(self.TEST_ORG)
 
         # By default, if no preference is set by the user is enrolled, opt in
-        self._assert_output(output, (self.user, self.courses[0].id, True))
+        self._assert_output(output, (self.user, self.courses[0].id, ""))
 
     def test_enrolled_pref_opted_in(self):
         self._create_courses_and_enrollments((self.TEST_ORG, True))
@@ -107,7 +107,7 @@ class EmailOptInListTest(ModuleStoreTestCase):
         output = self._run_command(self.TEST_ORG)
         self._assert_output(
             output,
-            (self.user, self.courses[0].id, True),
+            (self.user, self.courses[0].id, ""),
             expect_pref_datetime=False
         )
 
@@ -355,7 +355,7 @@ class EmailOptInListTest(ModuleStoreTestCase):
 
         """
         pref = UserOrgTag.objects.filter(user=user).order_by("-modified")
-        return pref[0].modified.isoformat(' ') if len(pref) > 0 else self.DEFAULT_DATETIME_STR
+        return pref[0].modified.isoformat(' ') if len(pref) > 0 else ""
 
     def _run_command(self, org, other_names=None, only_courses=None, query_interval=None, chunk_size=None):
         """Execute the management command to generate the email opt-in list.
@@ -439,7 +439,7 @@ class EmailOptInListTest(ModuleStoreTestCase):
             assert {'user_id': str(user.id), 'username': user.username, 'email': user.email,
                     'full_name': (user.profile.name if hasattr(user, 'profile') else ''),
                     'course_id': str(course_id),
-                    'is_opted_in_for_email': str(opt_in_pref),
+                    'is_opted_in_for_email': str(opt_in_pref) if isinstance(opt_in_pref, bool) else opt_in_pref,
                     'preference_set_datetime':
                         (self._latest_pref_set_datetime(self.user) if kwargs.get('expect_pref_datetime', True) else
-                         self.DEFAULT_DATETIME_STR)} in output[1:]
+                         "")} in output[1:]

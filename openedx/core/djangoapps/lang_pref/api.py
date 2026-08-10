@@ -17,17 +17,17 @@ Language = namedtuple('Language', 'code name')
 
 def header_language_selector_is_enabled():
     """Return true if the header language selector has been enabled via settings or site-specific configuration."""
-    setting = get_value('SHOW_HEADER_LANGUAGE_SELECTOR', settings.FEATURES.get('SHOW_HEADER_LANGUAGE_SELECTOR', False))
+    setting = get_value('SHOW_HEADER_LANGUAGE_SELECTOR', settings.SHOW_HEADER_LANGUAGE_SELECTOR)
 
     # The SHOW_LANGUAGE_SELECTOR setting is deprecated, but might still be in use on some installations.
-    deprecated_setting = get_value('SHOW_LANGUAGE_SELECTOR', settings.FEATURES.get('SHOW_LANGUAGE_SELECTOR', False))
+    deprecated_setting = get_value('SHOW_LANGUAGE_SELECTOR', getattr(settings, 'SHOW_LANGUAGE_SELECTOR', False))
 
     return setting or deprecated_setting
 
 
 def footer_language_selector_is_enabled():
     """Return true if the footer language selector has been enabled via settings or site-specific configuration."""
-    return get_value('SHOW_FOOTER_LANGUAGE_SELECTOR', settings.FEATURES.get('SHOW_FOOTER_LANGUAGE_SELECTOR', False))
+    return get_value('SHOW_FOOTER_LANGUAGE_SELECTOR', settings.SHOW_FOOTER_LANGUAGE_SELECTOR)
 
 
 def released_languages():

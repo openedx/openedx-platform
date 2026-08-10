@@ -9,9 +9,9 @@ from unittest.mock import MagicMock, patch
 import attr
 import ddt
 import pytest
-from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
 from django.db.models import signals
+from django.test import override_settings
 from edx_proctoring.exceptions import ProctoredExamNotFoundException
 from edx_toggles.toggles.testutils import override_waffle_flag
 from edx_when.api import set_dates_for_course
@@ -996,7 +996,7 @@ class SpecialExamsTestCase(OutlineProcessorTestCase):  # pylint: disable=missing
         # Enroll student in the course
         cls.student.courseenrollment_set.create(course_id=cls.course_key, is_active=True, mode="audit")
 
-    @patch.dict(settings.FEATURES, {'ENABLE_SPECIAL_EXAMS': True})
+    @override_settings(ENABLE_SPECIAL_EXAMS=True)
     def test_special_exams_enabled_all_sequences_visible(self):
         at_time = datetime(2020, 5, 22, tzinfo=timezone.utc)  # pylint: disable=unused-variable  # noqa: F841, UP017
 
@@ -1012,7 +1012,7 @@ class SpecialExamsTestCase(OutlineProcessorTestCase):  # pylint: disable=missing
         assert len(student_details.outline.accessible_sequences) == 4
         assert len(student_details.outline.sequences) == 4
 
-    @patch.dict(settings.FEATURES, {'ENABLE_SPECIAL_EXAMS': False})
+    @override_settings(ENABLE_SPECIAL_EXAMS=False)
     def test_special_exams_disabled_preserves_exam_sequences(self):
         at_time = datetime(2020, 5, 22, tzinfo=timezone.utc)  # pylint: disable=unused-variable  # noqa: F841, UP017
 
@@ -1031,7 +1031,7 @@ class SpecialExamsTestCase(OutlineProcessorTestCase):  # pylint: disable=missing
             assert key in student_details.outline.accessible_sequences
             assert key in student_details.outline.sequences
 
-    @patch.dict(settings.FEATURES, {'ENABLE_SPECIAL_EXAMS': True})
+    @override_settings(ENABLE_SPECIAL_EXAMS=True)
     @patch('openedx.core.djangoapps.content.learning_sequences.api.processors.special_exams.get_attempt_status_summary')
     def test_special_exam_attempt_data_in_details(self, mock_get_attempt_status_summary):
         at_time = datetime(2020, 5, 22, tzinfo=timezone.utc)  # pylint: disable=unused-variable  # noqa: F841, UP017
@@ -1065,7 +1065,7 @@ class SpecialExamsTestCase(OutlineProcessorTestCase):  # pylint: disable=missing
             assert type(attempt_summary) == dict  # pylint: disable=unidiomatic-typecheck
             assert attempt_summary["summary"]["usage_key"] == str(sequence_key)
 
-    @patch.dict(settings.FEATURES, {'ENABLE_SPECIAL_EXAMS': False})
+    @override_settings(ENABLE_SPECIAL_EXAMS=False)
     @patch('openedx.core.djangoapps.content.learning_sequences.api.processors.special_exams.get_attempt_status_summary')
     def test_special_exam_attempt_data_empty_when_disabled(self, mock_get_attempt_status_summary):
         at_time = datetime(2020, 5, 22, tzinfo=timezone.utc)  # pylint: disable=unused-variable  # noqa: F841, UP017
@@ -1079,7 +1079,7 @@ class SpecialExamsTestCase(OutlineProcessorTestCase):  # pylint: disable=missing
         assert len(student_details.special_exam_attempts.sequences) == 0
 
     @override_waffle_flag(EXAMS_IDA, active=True)
-    @patch.dict(settings.FEATURES, {'ENABLE_SPECIAL_EXAMS': True})
+    @override_settings(ENABLE_SPECIAL_EXAMS=True)
     @patch('openedx.core.djangoapps.content.learning_sequences.api.processors.special_exams.get_attempt_status_summary')
     def test_special_exam_attempt_data_exams_ida_flag_on(self, mock_get_attempt_status_summary):
         _, student_details, _ = self.get_details(
@@ -1090,7 +1090,7 @@ class SpecialExamsTestCase(OutlineProcessorTestCase):  # pylint: disable=missing
         assert mock_get_attempt_status_summary.call_count == 0
 
     @override_waffle_flag(EXAMS_IDA, active=True)
-    @patch.dict(settings.FEATURES, {'ENABLE_SPECIAL_EXAMS': True})
+    @override_settings(ENABLE_SPECIAL_EXAMS=True)
     def test_special_exam_attempt_data_exam_type(self):
         _, student_details, _ = self.get_details(
             datetime(2020, 5, 25, tzinfo=timezone.utc)  # noqa: UP017

@@ -4,10 +4,9 @@ Tests for the certificates models.
 
 
 from datetime import datetime, timedelta
-from unittest.mock import patch
 
 from ddt import data, ddt, unpack
-from django.conf import settings
+from django.test.utils import override_settings
 from milestones.tests.utils import MilestonesTestCaseMixin
 from pytz import UTC
 
@@ -181,7 +180,7 @@ class CertificatesModelTest(ModuleStoreTestCase, MilestonesTestCaseMixin):
             {course_1.id, course_2.id}
         )
 
-    @patch.dict(settings.FEATURES, {'ENABLE_PREREQUISITE_COURSES': True})
+    @override_settings(ENABLE_PREREQUISITE_COURSES=True)
     def test_course_milestone_collected(self):
         student = UserFactory()
         course = CourseFactory.create(org='edx', number='998', display_name='Test Course')

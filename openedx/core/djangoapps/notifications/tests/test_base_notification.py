@@ -1,6 +1,8 @@
 """
 Tests for base_notification
 """
+import pytest
+
 from openedx.core.djangoapps.notifications import base_notification
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 
@@ -62,3 +64,40 @@ class NotificationPreferenceValidationTest(ModuleStoreTestCase):
                 assert isinstance(notification_type[key], str)
             for key in bool_keys:
                 assert isinstance(notification_type[key], bool)
+
+
+@pytest.mark.parametrize(
+    ('user_input', 'escaped'),
+    [
+        ('<style>body{background:red}</style>evil', '&lt;style&gt;body{background:red}&lt;/style&gt;evil'),
+        ('<script>alert(1)</script>', '&lt;script&gt;alert(1)&lt;/script&gt;'),
+        ('AT&T "quoted"', 'AT&amp;T &quot;quoted&quot;'),
+    ],
+)
+def test_get_notification_content_escapes_user_input(user_input, escaped):
+    """
+    Regression test for GHSA-rv5w-f4r5-h77g: user-controlled context values
+    must be HTML-escaped before being interpolated into a content_template
+    via `str.format`. Structural context keys (`p`, `strong`) are exempt so
+    the template can still emit real <p>/<strong> tags.
+    """
+    context = {'replier_name': 'alice', 'post_title': user_input}
+    content = base_notification.get_notification_content('new_response', context)
+    assert '<style>' not in content
+    assert '<script>' not in content
+    assert escaped in content
+
+
+def test_get_notification_content_preserves_structural_tags():
+    """
+    Companion to test_get_notification_content_escapes_user_input: verify
+    that the structural `p` and `strong` keys still produce real HTML tags
+    after the escape pass, and that innocuous user input renders as plain
+    text alongside them.
+    """
+    context = {'replier_name': 'alice', 'post_title': 'Hello world'}
+    content = base_notification.get_notification_content('new_response', context)
+    assert '<p>' in content
+    assert '</p>' in content
+    assert '<strong>alice</strong>' in content
+    assert '<strong>Hello world</strong>' in content

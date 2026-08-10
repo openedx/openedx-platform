@@ -4,9 +4,11 @@ Public rest API endpoints for contentstore API video assets (outside authoring A
 import logging
 
 import edx_api_doc_tools as apidocs
+from django.conf import settings
 from opaque_keys.edx.keys import CourseKey
 from rest_framework.request import Request
 from rest_framework.response import Response
+from rest_framework.throttling import UserRateThrottle
 from rest_framework.views import APIView
 
 import cms.djangoapps.contentstore.toggles as contentstore_toggles
@@ -180,11 +182,24 @@ class VideoUsageView(DeveloperErrorViewMixin, APIView):
         return Response(serializer.data)
 
 
+class VideoDownloadThrottle(UserRateThrottle):
+    """
+    Per-user rate limit on the Studio video-download endpoint.
+
+    The download endpoint streams a multi-video zip into the response, which
+    keeps a uWSGI worker busy for the duration. Rate-limiting per user keeps
+    a single course author from initiating many overlapping streams.
+    """
+    rate = settings.VIDEO_DOWNLOAD_RATE_LIMIT
+
+
 @view_auth_classes(is_authenticated=True)
 class VideoDownloadView(DeveloperErrorViewMixin, APIView):
     """
     View for course video downloads.
     """
+    throttle_classes = (VideoDownloadThrottle,)
+
     @apidocs.schema(
         body=VideoDownloadSerializer,
         parameters=[
@@ -195,6 +210,7 @@ class VideoDownloadView(DeveloperErrorViewMixin, APIView):
             401: "The requester is not authenticated",
             403: "The requester cannot access the specified course",
             404: "The requested course does not exist",
+            429: "The requester has exceeded the per-user rate limit",
         },
     )
     @verify_course_exists()

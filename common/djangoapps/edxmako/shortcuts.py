@@ -20,12 +20,9 @@ from django.core.exceptions import ValidationError
 from django.core.validators import URLValidator
 from django.http import HttpResponse  # pylint: disable=unused-import
 from django.template import engines
-from django.urls import NoReverseMatch, reverse
-from edx_django_utils.monitoring import set_custom_attribute
 from six.moves.urllib.parse import urljoin
 
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
-from xmodule.util.xmodule_django import get_current_request_hostname  # pylint: disable=wrong-import-order
 
 from . import Engines
 
@@ -33,20 +30,11 @@ log = logging.getLogger(__name__)
 
 
 def marketing_link(name):
-    """Returns the correct URL for a link to the marketing site
-    depending on if the marketing site is enabled
+    """Returns the URL for a marketing site link from MKTG_URLS.
 
-    Since the marketing site is enabled by a setting, we have two
-    possible URLs for certain links. This function is to decides
-    which URL should be provided.
+    MKTG_URL_OVERRIDES take priority. 'ROOT' falls back to the local landing page
+    ('/'); any other unconfigured link falls back to '#'.
     """
-    # link_map maps URLs from the marketing site to the old equivalent on
-    # the Django site
-    link_map = settings.MKTG_URL_LINK_MAP
-    enable_mktg_site = configuration_helpers.get_value(
-        'ENABLE_MKTG_SITE',
-        settings.FEATURES.get('ENABLE_MKTG_SITE', False)
-    )
     marketing_urls = configuration_helpers.get_value(
         'MKTG_URLS',
         settings.MKTG_URLS
@@ -66,7 +54,7 @@ def marketing_link(name):
             log.debug("Invalid link set for link %s: %s", name, err)
             return '#'
 
-    if enable_mktg_site and name in marketing_urls:
+    if name in marketing_urls:
         # special case for when we only want the root marketing URL
         if name == 'ROOT':
             return marketing_urls.get('ROOT')
@@ -81,23 +69,14 @@ def marketing_link(name):
         # URLs in the MKTG_URLS setting
         # e.g. urljoin('https://marketing.com', 'https://open-edx.org/about') >>> 'https://open-edx.org/about'
         return urljoin(marketing_urls.get('ROOT'), marketing_urls.get(name))
-    # only link to the old pages when the marketing site isn't on
-    elif not enable_mktg_site and name in link_map:
-        # don't try to reverse disabled marketing links
-        if link_map[name] is not None:
-            host_name = get_current_request_hostname()  # pylint: disable=unused-variable  # noqa: F841
-            if link_map[name].startswith('http'):
-                return link_map[name]
-            else:
-                try:
-                    return reverse(link_map[name])
-                except NoReverseMatch:
-                    log.debug("Cannot find corresponding link for name: %s", name)
-                    set_custom_attribute('unresolved_marketing_link', name)
-                    return '#'
-    else:
-        log.debug("Cannot find corresponding link for name: %s", name)
-        return '#'
+
+    # ROOT is the live site root (not a legacy marketing page), so default it to
+    # the local landing page when no marketing site ROOT is configured.
+    if name == 'ROOT':
+        return '/'
+
+    log.debug("Cannot find corresponding link for name: %s", name)
+    return '#'
 
 
 def is_any_marketing_link_set(names):
@@ -112,20 +91,11 @@ def is_marketing_link_set(name):
     """
     Returns a boolean if a given named marketing link is configured.
     """
-
-    enable_mktg_site = configuration_helpers.get_value(
-        'ENABLE_MKTG_SITE',
-        settings.FEATURES.get('ENABLE_MKTG_SITE', False)
-    )
     marketing_urls = configuration_helpers.get_value(
         'MKTG_URLS',
         settings.MKTG_URLS
     )
-
-    if enable_mktg_site:
-        return name in marketing_urls
-    else:
-        return name in settings.MKTG_URL_LINK_MAP
+    return name in marketing_urls
 
 
 def marketing_link_context_processor(request):
@@ -144,9 +114,7 @@ def marketing_link_context_processor(request):
 
     return {
         "MKTG_URL_" + k: marketing_link(k)
-        for k in (
-            settings.MKTG_URL_LINK_MAP.keys() | marketing_urls.keys()
-        )
+        for k in marketing_urls.keys()
     }
 
 

@@ -475,7 +475,7 @@ def render_html_view(request, course_id, certificate=None):  # pylint: disable=t
     configuration = CertificateHtmlViewConfiguration.get_config()
 
     # Kick the user back to the "Invalid" screen if the feature is disabled globally
-    if not settings.FEATURES.get('CERTIFICATES_HTML_VIEW', False):
+    if not settings.CERTIFICATES_HTML_VIEW:
         return _render_invalid_certificate(request, course_id, platform_name, configuration)
 
     # Load the course and user objects
@@ -531,7 +531,7 @@ def render_html_view(request, course_id, certificate=None):  # pylint: disable=t
     # Determine whether to use the standard or custom template to render the certificate.
     custom_template = None
     custom_template_language = None
-    if settings.FEATURES.get('CUSTOM_CERTIFICATE_TEMPLATES_ENABLED', False):
+    if settings.CUSTOM_CERTIFICATE_TEMPLATES_ENABLED:
         log.info("Custom certificate for course %s", course_id)
         custom_template, custom_template_language = _get_custom_template_and_language(
             course.id,

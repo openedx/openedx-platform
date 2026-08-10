@@ -67,7 +67,7 @@ jobs:
         #    os-version: "ubuntu-24.04"
     steps:
       - name: checkout repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: install system requirements
         run: |
@@ -121,8 +121,12 @@ jobs:
       - name: run tests
         shell: bash
         run: |
-          python -Wd -m pytest -p no:randomly --ds=${{ env.settings_path }} ${{ env.unit_test_paths }} --cov=. \
-            ${{ env.report_log_arg }}
+          # --cov-report="" suppresses the per-shard terminal coverage table
+          # (~3.7k lines of noise). The .coverage data file is still written and
+          # uploaded as an artifact for the combined `coverage` job below, which
+          # is what reports to codecov.
+          python -Wd -m pytest -p no:randomly --ds=${{ env.settings_path }} ${{ env.unit_test_paths }} \
+            --cov=. --cov-report="" ${{ env.report_log_arg }}
 
       - name: Upload pytest timing report
         if: github.ref == 'refs/heads/master'
@@ -162,7 +166,7 @@ jobs:
   collect-and-verify:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Setup Python
         uses: actions/setup-python@v6
         with:
@@ -238,7 +242,7 @@ jobs:
     runs-on: ubuntu-24.04
     needs: [run-tests]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: collect pytest warnings files
         uses: actions/download-artifact@v8
         with:
@@ -291,7 +295,7 @@ jobs:
           - 3.12
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup Python ${{ matrix.python-version }}
         uses: actions/setup-python@v6

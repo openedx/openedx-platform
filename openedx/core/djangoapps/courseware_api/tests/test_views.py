@@ -128,7 +128,7 @@ class CourseApiTestViews(BaseCoursewareTests, MasqueradeMixin):
         (True, 'verified'),
     )
     @ddt.unpack
-    @mock.patch.dict('django.conf.settings.FEATURES', {'CERTIFICATES_HTML_VIEW': True})
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_enrolled_course_metadata(self, logged_in, enrollment_mode):
         check_public_access = mock.Mock()
         check_public_access.return_value = ACCESS_DENIED
@@ -204,7 +204,7 @@ class CourseApiTestViews(BaseCoursewareTests, MasqueradeMixin):
         (False, ACCESS_GRANTED),
     )
     @ddt.unpack
-    @mock.patch.dict('django.conf.settings.FEATURES', {'CERTIFICATES_HTML_VIEW': True})
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_unenrolled_course_metadata(self, logged_in, enable_anonymous):
         check_public_access = mock.Mock()
         check_public_access.return_value = enable_anonymous
@@ -330,7 +330,7 @@ class CourseApiTestViews(BaseCoursewareTests, MasqueradeMixin):
         ('audit', True, False, False),
     )
     @ddt.unpack
-    @mock.patch.dict(settings.FEATURES, {'ENABLE_INTEGRITY_SIGNATURE': True})
+    @override_settings(ENABLE_INTEGRITY_SIGNATURE=True)
     def test_user_needs_integrity_signature(
         self, enrollment_mode, is_staff, has_integrity_signature, needs_integrity_signature,
     ):
@@ -366,7 +366,7 @@ class CourseApiTestViews(BaseCoursewareTests, MasqueradeMixin):
         (3, True),
     )
     @ddt.unpack
-    @mock.patch.dict(settings.FEATURES, {'ENABLE_INTEGRITY_SIGNATURE': True})
+    @override_settings(ENABLE_INTEGRITY_SIGNATURE=True)
     def test_course_staff_masquerade(self, masquerade_group_id, needs_signature):
         self.user.is_staff = True
         self.user.save()
@@ -396,7 +396,7 @@ class CourseApiTestViews(BaseCoursewareTests, MasqueradeMixin):
         ('credit', True),
     )
     @ddt.unpack
-    @mock.patch.dict('django.conf.settings.FEATURES', {'DISABLE_HONOR_CERTIFICATES': True})
+    @override_settings(DISABLE_HONOR_CERTIFICATES=True)
     def test_can_access_proctored_exams(self, mode, result):
         CourseEnrollment.enroll(self.user, self.course.id, mode)
         response = self.client.get(self.url)
@@ -411,7 +411,7 @@ class CourseApiTestViews(BaseCoursewareTests, MasqueradeMixin):
         (3, True),
     )
     @ddt.unpack
-    @mock.patch.dict('django.conf.settings.FEATURES', {'DISABLE_HONOR_CERTIFICATES': True})
+    @override_settings(DISABLE_HONOR_CERTIFICATES=True)
     def test_can_access_proctored_exams_masquerading(self, masquerade_group_id, result):
         self.user.is_staff = True
         self.user.save()

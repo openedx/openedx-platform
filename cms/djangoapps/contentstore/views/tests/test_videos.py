@@ -212,8 +212,8 @@ class VideoPipelineStudioAccessTestsMixin:
     Access tests for video views that rely on the video pipeline
     """
     def test_video_pipeline_not_enabled(self):
-        settings.FEATURES["ENABLE_VIDEO_UPLOAD_PIPELINE"] = False
-        self.assertEqual(self.client.get(self.url).status_code, 404)  # noqa: PT009
+        with override_settings(ENABLE_VIDEO_UPLOAD_PIPELINE=False):
+            self.assertEqual(self.client.get(self.url).status_code, 404)  # noqa: PT009
 
     def test_video_pipeline_not_configured(self):
         settings.VIDEO_UPLOAD_PIPELINE = None
@@ -349,7 +349,7 @@ class VideoUploadPostTestsMixin:
 
 
 @ddt.ddt
-@patch.dict("django.conf.settings.FEATURES", {"ENABLE_VIDEO_UPLOAD_PIPELINE": True})
+@override_settings(ENABLE_VIDEO_UPLOAD_PIPELINE=True)
 @override_settings(VIDEO_UPLOAD_PIPELINE={
     "VEM_S3_BUCKET": "vem_test_bucket", "BUCKET": "test_bucket", "ROOT_PATH": "test_root"
 })
@@ -854,7 +854,7 @@ class VideosHandlerTestCase(
 
 
 @ddt.ddt
-@patch.dict("django.conf.settings.FEATURES", {"ENABLE_VIDEO_UPLOAD_PIPELINE": True})
+@override_settings(ENABLE_VIDEO_UPLOAD_PIPELINE=True)
 @override_settings(VIDEO_UPLOAD_PIPELINE={
     "VEM_S3_BUCKET": "vem_test_bucket", "BUCKET": "test_bucket", "ROOT_PATH": "test_root"
 })
@@ -884,7 +884,7 @@ class GenerateVideoUploadLinkTestCase(
 
 
 @ddt.ddt
-@patch.dict('django.conf.settings.FEATURES', {'ENABLE_VIDEO_UPLOAD_PIPELINE': True})
+@override_settings(ENABLE_VIDEO_UPLOAD_PIPELINE=True)
 @override_settings(VIDEO_UPLOAD_PIPELINE={'BUCKET': 'test_bucket', 'ROOT_PATH': 'test_root'})
 class VideoImageTestCase(VideoUploadTestBase, CourseTestCase):
     """
@@ -1179,7 +1179,7 @@ class VideoImageTestCase(VideoUploadTestBase, CourseTestCase):
     'openedx.core.djangoapps.video_config.models.VideoTranscriptEnabledFlag.feature_enabled',
     Mock(return_value=True)
 )
-@patch.dict('django.conf.settings.FEATURES', {'ENABLE_VIDEO_UPLOAD_PIPELINE': True})
+@override_settings(ENABLE_VIDEO_UPLOAD_PIPELINE=True)
 class TranscriptPreferencesTestCase(VideoUploadTestBase, CourseTestCase):
     """
     Tests for video transcripts preferences.
@@ -1496,7 +1496,7 @@ class TranscriptPreferencesTestCase(VideoUploadTestBase, CourseTestCase):
                 self.assertNotIn('transcript_preferences', metadata)  # noqa: PT009
 
 
-@patch.dict("django.conf.settings.FEATURES", {"ENABLE_VIDEO_UPLOAD_PIPELINE": True})
+@override_settings(ENABLE_VIDEO_UPLOAD_PIPELINE=True)
 @override_settings(VIDEO_UPLOAD_PIPELINE={"BUCKET": "test_bucket", "ROOT_PATH": "test_root"})
 class VideoUrlsCsvTestCase(
     VideoUploadTestBase,
