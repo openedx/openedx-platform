@@ -47,12 +47,23 @@ Domain names
 Database and migrations
 =======================
 
-Create the databases and run migrations exactly as in the bare-metal
-instructions, but pass ``--settings=development``::
+Studio content search is on by default (backed by `Meilisearch`_), and its index
+is created during ``cms migrate`` by a post-migrate step -- so start Meilisearch
+before migrating: run it at ``http://localhost:7700`` with ``MEILI_MASTER_KEY``
+matching ``MEILISEARCH_MASTER_KEY`` in ``cms/envs/development.py``, and create the
+backend API key once (a ready-to-run ``curl`` is in the "Studio Search" section of
+that file).
+
+Create the databases and run the one-time setup, passing ``--settings=development``::
 
   python manage.py lms --settings=development migrate
   python manage.py lms --settings=development migrate --database=student_module_history
   python manage.py cms --settings=development migrate
+  python manage.py cms --settings=development reindex_studio   # populate the Studio search index
+
+If Meilisearch was not reachable during ``cms migrate``, the search index is not
+created and content indexing later fails with "primary key inference failed";
+re-run ``cms migrate`` with Meilisearch up and then ``reindex_studio`` to fix it.
 
 Build frontend assets
 ======================
@@ -155,3 +166,4 @@ Notes and differences from devstack
 
 .. _Tutor's development mode: https://docs.tutor.edly.io/dev.html
 .. _openedx-platform README: https://github.com/openedx/edx-platform/blob/master/README.rst
+.. _Meilisearch: https://www.meilisearch.com/

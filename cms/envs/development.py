@@ -6,6 +6,9 @@ This file is currently in development itself and so may not work for everyone ou
 updated documentation will be added as we get closer to removing devstack.py
 """
 
+import hashlib
+import hmac
+
 #Helpers for loading plugins and their settings.
 from edx_django_utils.plugins import add_plugins
 
@@ -119,9 +122,48 @@ LEARNING_MICROFRONTEND_URL = "http://apps.local.openedx.io:2000/learning"
 COURSE_AUTHORING_MICROFRONTEND_URL = "http://apps.local.openedx.io:2001/authoring"
 CATALOG_MICROFRONTEND_URL = "http://apps.local.openedx.io:1998/catalog"
 
+#################### Studio Search (Meilisearch) ####################
+# Enable Studio/library content search (the content.search app behind /api/content_search),
+# pointing at a local Meilisearch on :7700. MEILISEARCH_URL is used by the Python backend;
+# MEILISEARCH_PUBLIC_URL is the URL the browser uses to query Meilisearch directly.
+MEILISEARCH_ENABLED = True
+MEILISEARCH_URL = "http://localhost:7700"
+MEILISEARCH_PUBLIC_URL = "http://localhost:7700"
+
+# Namespace Meilisearch indexes so a dev instance doesn't collide with other indexes on a shared
+# Meilisearch. "openedx_" is a sensible default; the base default in cms/envs/common.py is "".
+# TODO: long term this default should move up to cms/envs/common.py, but changing it there is a
+# breaking change for existing deployments (their unprefixed indexes would need a reindex), so we
+# set it here for development only until that migration is handled separately.
+MEILISEARCH_INDEX_PREFIX = "openedx_"
+
+# Meilisearch derives every API key's value as HMAC-SHA256(master_key, key_uid): you choose the
+# UID, and Meilisearch determines the key value. By fixing both the master key and the UID as shared
+# dev constants, the derived key is the same for everyone, so we compute it here -- rather than each
+# developer having to fetch a randomly-generated key from their own Meilisearch and paste a
+# per-person value into this shared file. MEILISEARCH_MASTER_KEY must match the MEILI_MASTER_KEY of
+# whatever Meilisearch instance you run locally.
+#
+# Meilisearch cannot declare a key at boot, so a key with this UID must also be created once in your
+# Meilisearch (this is idempotent -- Meilisearch returns an error if the UID already exists, which
+# you can ignore):
+#
+#   curl -X POST "http://localhost:7700/keys" \
+#     -H "Authorization: Bearer openedx-insecure-meilisearch-master-key" \
+#     -H "Content-Type: application/json" \
+#     --data-binary '{"uid": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d", "name": "Open edX backend",
+#                     "actions": ["*"], "indexes": ["openedx_*"], "expiresAt": null}'
+#
+# These are insecure, dev-only values.
+MEILISEARCH_MASTER_KEY = "openedx-insecure-meilisearch-master-key"
+MEILISEARCH_API_KEY_UID = "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d"
+MEILISEARCH_API_KEY = hmac.new(
+    MEILISEARCH_MASTER_KEY.encode(), MEILISEARCH_API_KEY_UID.encode(), hashlib.sha256
+).hexdigest()
+
 #######################################################################################################################
 #### DERIVE ANY DERIVED SETTINGS
 ####
 
 derive_settings(__name__)
-add_plugins(__name__, ProjectType.LMS, SettingsType.DEVSTACK)
+add_plugins(__name__, ProjectType.CMS, SettingsType.DEVSTACK)
