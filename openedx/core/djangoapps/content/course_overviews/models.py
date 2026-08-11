@@ -721,6 +721,7 @@ class CourseOverview(TimeStampedModel):
         """
         return course_overviews.filter(
             Q(display_name__icontains=query) |
+            Q(display_number_with_default__icontains=query) |
             Q(org__icontains=query) |
             Q(id__icontains=query)
         )
