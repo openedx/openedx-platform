@@ -148,6 +148,37 @@ def get_enterprise_sidebar_context(enterprise_customer, is_proxy_login):
     }
 
 
+def build_enterprise_branding_for_authn_mfe(enterprise_customer):
+    """Build the enterpriseBranding payload for Authn MFE context.
+
+    Args:
+        enterprise_customer (dict): Serialized enterprise customer for the request.
+
+    Returns:
+        dict or None: Branding fields for the MFE, or None if there is no
+        customer.
+    """
+    if not enterprise_customer:
+        return None
+
+    sidebar_context = get_enterprise_sidebar_context(
+        enterprise_customer,
+        is_proxy_login=False,
+    )
+
+    return {
+        'enterpriseName': sidebar_context.get('enterprise_name'),
+        'enterpriseLogoUrl': sidebar_context.get('enterprise_logo_url'),
+        'enterpriseBrandedWelcomeString': str(
+            sidebar_context.get('enterprise_branded_welcome_string', '')
+        ),
+        'platformWelcomeString': str(
+            sidebar_context.get('platform_welcome_string', '')
+        ),
+        'enterpriseSlug': sidebar_context.get('enterprise_slug') or enterprise_customer.get('slug'),
+    }
+
+
 def enterprise_fields_only(fields):
     """
     Take the received field definition, and exclude those fields that we don't want
@@ -488,3 +519,11 @@ def is_course_accessed(user, course_id):
         return True
     except UnavailableCompletionData:
         return False
+
+
+def get_enterprise_dashboard_url(request, enterprise_customer):
+    """
+    Generate the enterprise-specific dashboard URL.
+    """
+    base_url = settings.ENTERPRISE_LEARNER_PORTAL_BASE_URL
+    return f"{base_url}/{enterprise_customer['slug']}"

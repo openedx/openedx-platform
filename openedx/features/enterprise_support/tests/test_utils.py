@@ -30,6 +30,7 @@ from openedx.features.enterprise_support.tests.factories import (
 from openedx.features.enterprise_support.utils import (
     ENTERPRISE_HEADER_LINKS,
     _user_has_social_auth_record,
+    build_enterprise_branding_for_authn_mfe,
     clear_data_consent_share_cache,
     enterprise_fields_only,
     fetch_enterprise_customer_by_id,
@@ -174,6 +175,52 @@ class TestEnterpriseUtils(TestCase):
         expected_logo_url = branding_configuration.get('logo', '')
         assert expected_logo_url == actual_result['enterprise_logo_url']
         assert 'pied-piper' in str(actual_result['enterprise_branded_welcome_string'])
+
+    def test_build_enterprise_branding_for_authn_mfe_without_customer(self):
+        assert build_enterprise_branding_for_authn_mfe(None) is None
+
+    @mock.patch('openedx.features.enterprise_support.utils.get_enterprise_sidebar_context')
+    def test_build_enterprise_branding_for_authn_mfe(self, mock_sidebar_context):
+        enterprise_customer = {
+            'name': 'pied-piper',
+            'slug': 'pied-piper-slug',
+        }
+        mock_sidebar_context.return_value = {
+            'enterprise_name': 'pied-piper',
+            'enterprise_logo_url': 'https://example.com/logo.png',
+            'enterprise_branded_welcome_string': 'Welcome to Pied Piper',
+            'platform_welcome_string': 'Welcome to Open edX',
+            'enterprise_slug': 'sidebar-slug',
+        }
+
+        actual_result = build_enterprise_branding_for_authn_mfe(enterprise_customer)
+
+        assert actual_result == {
+            'enterpriseName': 'pied-piper',
+            'enterpriseLogoUrl': 'https://example.com/logo.png',
+            'enterpriseBrandedWelcomeString': 'Welcome to Pied Piper',
+            'platformWelcomeString': 'Welcome to Open edX',
+            'enterpriseSlug': 'sidebar-slug',
+        }
+        mock_sidebar_context.assert_called_once_with(enterprise_customer, is_proxy_login=False)
+
+    @mock.patch('openedx.features.enterprise_support.utils.get_enterprise_sidebar_context')
+    def test_build_enterprise_branding_for_authn_mfe_falls_back_to_customer_slug(self, mock_sidebar_context):
+        enterprise_customer = {
+            'name': 'pied-piper',
+            'slug': 'customer-slug',
+        }
+        mock_sidebar_context.return_value = {
+            'enterprise_name': 'pied-piper',
+            'enterprise_logo_url': '',
+            'enterprise_branded_welcome_string': 'Welcome to Pied Piper',
+            'platform_welcome_string': 'Welcome to Open edX',
+            'enterprise_slug': None,
+        }
+
+        actual_result = build_enterprise_branding_for_authn_mfe(enterprise_customer)
+
+        assert actual_result['enterpriseSlug'] == 'customer-slug'
 
     @ddt.data(
         ('notfoundpage', 0),
