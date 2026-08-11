@@ -54,6 +54,10 @@ class ContextDataSerializer(serializers.Serializer):
     syncLearnerProfileData = serializers.BooleanField(default=False)
     countryCode = serializers.CharField(allow_null=True)
     welcomePageRedirectUrl = serializers.CharField(allow_null=True)
+    enterpriseBranding = EnterpriseBrandingSerializer(
+        allow_null=True,
+        required=False,
+    )
     pipelineUserDetails = serializers.SerializerMethodField()
 
     def get_pipelineUserDetails(self, obj):

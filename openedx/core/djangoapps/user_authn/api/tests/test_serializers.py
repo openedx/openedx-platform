@@ -6,7 +6,9 @@ from django.test import TestCase
 
 from openedx.core.djangoapps.user_authn.api.tests.data_mock import (
     MFE_CONTEXT_WITH_TPA_DATA,
+    MFE_CONTEXT_WITH_ENTERPRISE_BRANDING_DATA,
     MFE_CONTEXT_WITHOUT_TPA_DATA,
+    SERIALIZED_MFE_CONTEXT_WITH_ENTERPRISE_BRANDING_DATA,
     SERIALIZED_MFE_CONTEXT_WITH_TPA_DATA,
     SERIALIZED_MFE_CONTEXT_WITHOUT_TPA_DATA,
 )
@@ -43,4 +45,15 @@ class TestMFEContextSerializer(TestCase):
         self.assertDictEqual(  # noqa: PT009
             serialized_data,
             SERIALIZED_MFE_CONTEXT_WITHOUT_TPA_DATA
+        )
+
+    def test_mfe_context_serializer_with_enterprise_branding(self):
+        """Test enterpriseBranding nested dict is serialized with correct keys."""
+        output_data = MFEContextSerializer(
+            MFE_CONTEXT_WITH_ENTERPRISE_BRANDING_DATA
+        ).data
+
+        self.assertDictEqual(
+            output_data,
+            SERIALIZED_MFE_CONTEXT_WITH_ENTERPRISE_BRANDING_DATA
         )
