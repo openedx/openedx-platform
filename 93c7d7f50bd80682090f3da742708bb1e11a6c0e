@@ -1,0 +1,18 @@
+common/djangoapps/course_modes/helpers.py
+  h_42fcc3ed5b24c4 87-92
+common/djangoapps/course_modes/tests/test_views.py
+  h_42fcc3ed5b24c4 188,190-193,199-201,203-214,221-223,227-243
+common/djangoapps/course_modes/views.py
+  h_42fcc3ed5b24c4 27,29,190-196
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "93c7d7f50bd80682090f3da742708bb1e11a6c0e",
+  "prompts": {},
+  "humans": {
+    "h_42fcc3ed5b24c4": {
+      "author": "GitHub <noreply@github.com>"
+    }
+  }
+}
