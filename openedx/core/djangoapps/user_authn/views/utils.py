@@ -122,12 +122,29 @@ def get_mfe_context(request, redirect_to, tpa_hint=None):
     """
     Returns Authn MFE context.
     """
+    # Import enterprise functions INSIDE the function to avoid circular import
+    from openedx.features.enterprise_support.api import enterprise_customer_for_request
+    from openedx.features.enterprise_support.utils import get_enterprise_sidebar_context
 
     ip_address = get_client_ip(request)[0]
     country_code = country_code_from_ip(ip_address)
     context = third_party_auth_context(request, redirect_to, tpa_hint)
+    # Add enterprise branding if enterprise customer is detected
+    enterprise_customer = enterprise_customer_for_request(request)
+    enterprise_branding = None
+    if enterprise_customer:
+        sidebar_context = get_enterprise_sidebar_context(enterprise_customer, is_proxy_login=False)
+        if sidebar_context:
+            enterprise_branding = {
+                'enterpriseName': sidebar_context.get('enterprise_name'),
+                'enterpriseLogoUrl': sidebar_context.get('enterprise_logo_url'),
+                'enterpriseBrandedWelcomeString': str(sidebar_context.get('enterprise_branded_welcome_string', '')),
+                'platformWelcomeString': str(sidebar_context.get('platform_welcome_string', '')),
+                'enterpriseSlug': sidebar_context.get('enterprise_slug') or enterprise_customer.get('slug'),
+            }
     context.update({
         'countryCode': country_code,
+        'enterpriseBranding': enterprise_branding,  # Add enterprise branding to context
     })
     return context
 

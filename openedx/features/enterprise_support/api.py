@@ -298,6 +298,16 @@ class EnterpriseApiServiceClient(EnterpriseServiceClientMixin, EnterpriseApiClie
         return enterprise_customer
 
 
+def fetch_enterprise_branding(self, enterprise_customer_uuid):
+    """
+    Fetch branding configuration for the given enterprise customer UUID.
+    """
+    branding_url = f"{self.base_api_url}/enterprise-customer-branding/{enterprise_customer_uuid}/"
+    response = self.client.get(branding_url)
+    response.raise_for_status()
+    return response.json()
+
+
 def activate_learner_enterprise(request, user, enterprise_customer):
     """
     Allow an enterprise learner to activate one of learner's linked enterprises.

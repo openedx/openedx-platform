@@ -32,6 +32,16 @@ class PipelineUserDetailsSerializer(serializers.Serializer):
     lastName = serializers.CharField(source='last_name', allow_null=True)
 
 
+class EnterpriseBrandingSerializer(serializers.Serializer):
+    """Serializer for enterprise branding data."""
+
+    enterpriseName = serializers.CharField(allow_null=True, required=False)
+    enterpriseLogoUrl = serializers.CharField(allow_null=True, required=False)
+    enterpriseBrandedWelcomeString = serializers.CharField(allow_null=True, required=False)
+    enterpriseSlug = serializers.CharField(allow_null=True, required=False)
+    platformWelcomeString = serializers.CharField(allow_null=True, required=False)
+
+
 class ContextDataSerializer(serializers.Serializer):
     """
     Context Data Serializers
