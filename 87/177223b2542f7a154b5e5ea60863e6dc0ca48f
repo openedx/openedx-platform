@@ -1,0 +1,59 @@
+requirements/edx/base.txt
+  s_edaae7cc2dd6fe::t_daf019cee84e5b 487,865
+openedx/core/djangoapps/user_authn/api/tests/test_serializers.py
+  s_edaae7cc2dd6fe::t_f0e42fa7cee04f 8,11,49-58,60-78
+  s_edaae7cc2dd6fe::t_36f9c95c452d23 59
+openedx/core/djangoapps/user_authn/views/tests/test_logistration.py
+  s_edaae7cc2dd6fe::t_6cedd3b84a12d9 181,184-191,211,355,369
+openedx/core/djangoapps/user_authn/views/login.py
+  s_edaae7cc2dd6fe::t_010efe784cc191 30,56,59,479,481,483-485,487-490,492-515,517,662-663
+requirements/edx/development.txt
+  s_edaae7cc2dd6fe::t_daf019cee84e5b 760,1418
+openedx/core/djangoapps/user_authn/serializers.py
+  s_edaae7cc2dd6fe::t_fd2bd5f6c04882 64-75
+openedx/core/djangoapps/user_authn/views/registration_form.py
+  s_edaae7cc2dd6fe::t_7bb98a4e9fedd5 1339-1351,1370
+  s_edaae7cc2dd6fe::t_00396b3a15a651 1336-1338
+  s_edaae7cc2dd6fe::t_7023e349af96fc 1367-1369
+  s_edaae7cc2dd6fe::t_cf1ebdad0833ce 13-14,21,38-41,587-601,1309,1320-1325,1327-1331,1333-1335,1353-1356,1358-1366,1372-1381,1383-1400,1402
+openedx/core/djangoapps/user_authn/views/tests/test_filters.py
+  s_edaae7cc2dd6fe::t_f99095896ec208 4-5,277-724
+openedx/core/djangoapps/user_authn/views/utils.py
+  s_edaae7cc2dd6fe::t_57a2c7a6f94d0f 13,16-17,22,122-124,126-138,140-145,147-151,155,159-167
+requirements/constraints.txt
+  s_edaae7cc2dd6fe::t_dae10fe6c96702 47
+openedx/core/djangoapps/user_authn/views/tests/test_utils.py
+  s_edaae7cc2dd6fe::t_6e7bc7cf3cfc9b 10,17-20
+  s_edaae7cc2dd6fe::t_8af6e74ed41e1b 21,330-373
+common/djangoapps/third_party_auth/pipeline.py
+  s_edaae7cc2dd6fe::t_8d7a6cd0710ef3 81,216-224,233
+mypy.ini
+  s_edaae7cc2dd6fe::t_ef1dab7ce3faed 9-18,77-78
+requirements/edx/testing.txt
+  s_edaae7cc2dd6fe::t_daf019cee84e5b 593,1085
+common/djangoapps/third_party_auth/models.py
+  s_edaae7cc2dd6fe::t_8d7a6cd0710ef3 18,321,329-333
+openedx/core/djangoapps/user_authn/api/tests/data_mock.py
+  s_edaae7cc2dd6fe::t_f1f01792e593a8 115-165
+requirements/edx/doc.txt
+  s_edaae7cc2dd6fe::t_daf019cee84e5b 577,1046
+openedx/core/djangoapps/user_authn/views/login_form.py
+  s_edaae7cc2dd6fe::t_5f4658aa088311 16-20,62-72,176,178-184,246-248,252-254
+  s_edaae7cc2dd6fe::t_a77fbc8c4ea3de 39-41
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "87177223b2542f7a154b5e5ea60863e6dc0ca48f",
+  "prompts": {},
+  "sessions": {
+    "s_edaae7cc2dd6fe": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a0a44d7b-4f79-420e-9f3b-b67a894e2029",
+        "model": "claude-opus-5"
+      },
+      "human_author": null
+    }
+  }
+}
