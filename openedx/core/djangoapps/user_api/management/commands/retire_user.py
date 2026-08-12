@@ -70,6 +70,8 @@ class Command(BaseCommand):
             userdata = record.split(',')
             username = userdata[0].strip()
             user_email = userdata[1].strip()
+            if username.lower() == 'username' and user_email.lower() in ('email', 'user_email'):
+                continue
             try:
                 users.append(User.objects.get(username=username, email=user_email))
             except user_model.DoesNotExist:
