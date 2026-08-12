@@ -7,7 +7,6 @@ import datetime
 import hashlib
 import json
 import unicodedata
-import urllib.parse
 from unittest.mock import Mock, patch
 
 import ddt
@@ -45,7 +44,6 @@ from openedx.core.djangoapps.user_authn.views.login import (
 )
 from openedx.core.djangolib.testing.utils import CacheIsolationTestCase, skip_unless_lms
 from openedx.core.lib.api.test_utils import ApiTestCase
-from openedx.features.enterprise_support.tests.factories import EnterpriseCustomerUserFactory
 
 
 @ddt.ddt
@@ -204,113 +202,6 @@ class LoginTest(OpenEdxEventsTestMixin, SiteMixin, CacheIsolationTestCase):
         )
         self._assert_response(response, success=True)
         self._assert_redirect_url(response, expected_redirect)
-
-    @ddt.data(('/dashboard', False), ('/enterprise/select/active/?success_url=/dashboard', True))
-    @ddt.unpack
-    @override_settings(ENABLE_AUTHN_MICROFRONTEND=True, ENABLE_ENTERPRISE_INTEGRATION=True)
-    @override_settings(LOGIN_REDIRECT_WHITELIST=['openedx.service'])
-    @patch('openedx.features.enterprise_support.api.EnterpriseApiClient')
-    @patch('openedx.core.djangoapps.user_authn.views.login.reverse')
-    @skip_unless_lms
-    def test_login_success_for_multiple_enterprises(
-        self, expected_redirect, user_has_multiple_enterprises, reverse_mock, mock_api_client_class
-    ):
-        """
-        Test that if multiple enterprise feature is enabled, user is redirected
-        to correct page
-        """
-        api_response = {'results': []}
-        enterprise = EnterpriseCustomerUserFactory(user_id=self.user.id).enterprise_customer
-        api_response['results'].append(
-            {
-                "enterprise_customer": {
-                    "uuid": enterprise.uuid,
-                    "name": enterprise.name,
-                    "active": enterprise.active,
-                }
-            }
-        )
-
-        if user_has_multiple_enterprises:
-            enterprise = EnterpriseCustomerUserFactory(user_id=self.user.id).enterprise_customer
-            api_response['results'].append(
-                {
-                    "enterprise_customer": {
-                        "uuid": enterprise.uuid,
-                        "name": enterprise.name,
-                        "active": enterprise.active,
-                    }
-                }
-            )
-
-        mock_client = mock_api_client_class.return_value
-        mock_client.fetch_enterprise_learner_data.return_value = api_response
-        reverse_mock.return_value = '/enterprise/select/active'
-
-        response, _ = self._login_response(
-            self.user.email,
-            self.password,
-            HTTP_ACCEPT='*/*',
-        )
-        self._assert_response(response, success=True)
-        self._assert_redirect_url(response, settings.LMS_ROOT_URL + expected_redirect)
-
-    @ddt.data(('', True), ('/enterprise/select/active/?success_url=', False))
-    @ddt.unpack
-    @override_settings(ENABLE_AUTHN_MICROFRONTEND=True, ENABLE_ENTERPRISE_INTEGRATION=True)
-    @patch('openedx.features.enterprise_support.api.EnterpriseApiClient')
-    @patch('openedx.core.djangoapps.user_authn.views.login.activate_learner_enterprise')
-    @patch('openedx.core.djangoapps.user_authn.views.login.reverse')
-    @skip_unless_lms
-    def test_enterprise_in_url(
-        self, expected_redirect, is_activated, reverse_mock, mock_activate_learner_enterprise, mock_api_client_class
-    ):
-        """
-        If user has multiple enterprises and the enterprise is present in url,
-        activate that url
-        """
-        api_response = {}
-        enterprise_1 = EnterpriseCustomerUserFactory(user_id=self.user.id).enterprise_customer
-        enterprise_2 = EnterpriseCustomerUserFactory(user_id=self.user.id).enterprise_customer
-        api_response['results'] = [
-            {
-                "enterprise_customer": {
-                    "uuid": enterprise_1.uuid,
-                    "name": enterprise_1.name,
-                    "active": enterprise_1.active,
-                }
-            },
-            {
-                "enterprise_customer": {
-                    "uuid": enterprise_2.uuid,
-                    "name": enterprise_2.name,
-                    "active": enterprise_2.active,
-                }
-            }
-        ]
-
-        next_url = '/enterprise/{}/course/{}/enroll/?catalog=catalog_uuid&utm_medium=enterprise'.format(
-            enterprise_1.uuid,
-            'course-v1:testX+test101+2T2020'
-        )
-
-        mock_client = mock_api_client_class.return_value
-        mock_client.fetch_enterprise_learner_data.return_value = api_response
-        mock_activate_learner_enterprise.return_value = is_activated
-        reverse_mock.return_value = '/enterprise/select/active'
-
-        response, _ = self._login_response(
-            self.user.email,
-            self.password,
-            extra_post_params={'next': next_url},
-            HTTP_ACCEPT='*/*',
-        )
-
-        if not is_activated:
-            next_url = urllib.parse.quote(next_url)
-
-        self._assert_response(response, success=True)
-        self._assert_redirect_url(response, settings.LMS_ROOT_URL + expected_redirect + next_url)
 
     @patch.dict("django.conf.settings.FEATURES", {'SQUELCH_PII_IN_LOGS': True})
     def test_login_success_no_pii(self):

@@ -7,8 +7,6 @@ Much of this file was broken out from views.py, previous history can be found th
 import hashlib
 import json
 import logging
-import re
-import urllib
 
 from django.conf import settings
 from django.contrib.auth import authenticate, get_user_model
@@ -29,6 +27,7 @@ from edx_django_utils.monitoring import set_custom_attribute
 from eventtracking import tracker
 from openedx_events.learning.data import UserData, UserPersonalData
 from openedx_events.learning.signals import SESSION_LOGIN_COMPLETED
+from openedx_filters.authentication.filters import LoginAltRedirectURLRequested
 from openedx_filters.learning.filters import StudentLoginRequested
 from rest_framework import status
 from rest_framework.views import APIView
@@ -54,12 +53,12 @@ from openedx.core.djangoapps.user_authn.toggles import (
     is_require_third_party_auth_enabled,
     should_redirect_to_authn_microfrontend,
 )
+from openedx.core.djangoapps.user_authn.utils import is_safe_login_or_logout_redirect
 from openedx.core.djangoapps.user_authn.views.login_form import get_login_session_form
 from openedx.core.djangoapps.user_authn.views.password_reset import send_password_reset_email_for_user
-from openedx.core.djangoapps.user_authn.views.utils import API_V1, ENTERPRISE_ENROLLMENT_URL_REGEX, UUID4_REGEX
+from openedx.core.djangoapps.user_authn.views.utils import API_V1
 from openedx.core.djangoapps.util.user_messages import PageLevelMessages
 from openedx.core.djangolib.markup import HTML, Text
-from openedx.features.enterprise_support.api import activate_learner_enterprise, get_enterprise_learner_data_from_api
 
 log = logging.getLogger("edx.student")
 AUDIT_LOG = logging.getLogger("audit")
@@ -477,33 +476,45 @@ def finish_auth(request):
     )
 
 
-def enterprise_selection_page(request, user, next_url):
+def _get_alt_redirect_url(request, redirect_url, user):
     """
-    Updates redirect url to enterprise selection page if user is associated
-    with multiple enterprises otherwise return the next url.
+    Ask the configured pipeline steps for an alternative post-login redirect URL.
 
-    param:
-      next_url(string): The URL to redirect to after multiple enterprise selection or in case
-      the selection page is bypassed e.g when dealing with direct enrolment urls.
+    The pipeline is arbitrary configured code, so its answer is held to the same
+    open-redirect protections as a caller-supplied ``?next=`` parameter: an unsafe URL is
+    discarded and the caller's own destination is used instead.
+
+    Arguments:
+        request (HttpRequest)
+        redirect_url (str): the destination the caller intends to send the user to.
+        user (User): the authenticated user.
+
+    Returns: str
+        the alternative redirect url if safe, else the given redirect_url.
     """
-    redirect_url = next_url
+    # .. filter_implemented_name: LoginAltRedirectURLRequested
+    # .. filter_type: org.openedx.authentication.login.alt_redirect_url.requested.v1
+    alt_redirect_url, __ = LoginAltRedirectURLRequested.run_filter(
+        redirect_url=redirect_url,
+        user=user,
+    )
 
-    response = get_enterprise_learner_data_from_api(user)
-    if response and len(response) > 1:
-        redirect_url = reverse("enterprise_select_active") + "/?success_url=" + urllib.parse.quote(next_url)
+    if alt_redirect_url == redirect_url:
+        return redirect_url
 
-        # Check to see if next url has an enterprise in it. In this case if user is associated with
-        # that enterprise, activate that enterprise and bypass the selection page.
-        if re.match(ENTERPRISE_ENROLLMENT_URL_REGEX, urllib.parse.unquote(next_url)):
-            enterprise_in_url = re.search(UUID4_REGEX, next_url).group(0)
-            for enterprise in response:
-                if enterprise_in_url == str(enterprise["enterprise_customer"]["uuid"]):
-                    is_activated_successfully = activate_learner_enterprise(request, user, enterprise_in_url)
-                    if is_activated_successfully:
-                        redirect_url = next_url
-                    break
+    if not alt_redirect_url or not is_safe_login_or_logout_redirect(
+        redirect_to=alt_redirect_url,
+        request_host=request.get_host(),
+        dot_client_id=request.POST.get("client_id"),
+        require_https=request.is_secure(),
+    ):
+        log.warning(
+            "Unsafe alternative redirect URL detected after login: '%(alt_redirect_url)s'",
+            {"alt_redirect_url": alt_redirect_url},
+        )
+        return redirect_url
 
-    return redirect_url
+    return alt_redirect_url
 
 
 @ensure_csrf_cookie
@@ -648,7 +659,8 @@ def login_user(request, api_version="v1"):  # pylint: disable=too-many-statement
         elif should_redirect_to_authn_microfrontend():
             next_url, root_url = get_next_url_for_login_page(request, include_host=True)
             redirect_url = get_redirect_url_with_host(
-                root_url, enterprise_selection_page(request, possibly_authenticated_user, finish_auth_url or next_url)
+                root_url,
+                _get_alt_redirect_url(request, finish_auth_url or next_url, possibly_authenticated_user),
             )
 
         if (

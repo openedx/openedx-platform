@@ -188,6 +188,22 @@ class HomePageCoursesViewV2Test(CourseTestCase):
         ])])
         self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
 
+    def test_search_query_matches_display_number(self):
+        """Search must match course display number values."""
+        course_key = self.store.make_course_key("search-org", "opaque-number", "run")
+        searchable_course = CourseOverviewFactory.create(
+            id=course_key,
+            org=course_key.org,
+            display_name="Unrelated Title",
+            display_number_with_default="Friendly Number 42",
+        )
+
+        response = self.client.get(self.api_v2_url, {"search": "Friendly Number"})
+
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["results"]["courses"]) == 1
+        assert response.data["results"]["courses"][0]["course_key"] == str(searchable_course.id)
+
     def test_order_query_if_passed(self):
         """Get list of courses when order filter passed as a query param.
 
