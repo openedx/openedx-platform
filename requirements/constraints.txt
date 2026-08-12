@@ -66,11 +66,6 @@ numpy<2.0.0
 # Issue for unpinning: https://github.com/openedx/edx-platform/issues/35269
 openedx-core<2
 
-# Date: 2023-11-29
-# Open AI version 1.0.0 dropped support for openai.ChatCompletion which is currently in use in enterprise.
-# Issue for unpinning: https://github.com/openedx/edx-platform/issues/35268
-openai<=0.28.1
-
 # Date: 2024-04-26
 # path==16.12.0 breaks the unit test collections check
 # needs to be investigated and fixed separately
