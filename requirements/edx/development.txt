@@ -2319,7 +2319,7 @@ xblock-poll==1.16.1
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
-xblocks-contrib==0.17.0
+xblocks-contrib==1.0.5
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt

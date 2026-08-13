@@ -1311,7 +1311,7 @@ xblock-google-drive==0.8.2
     # via -r requirements/edx/bundled.in
 xblock-poll==1.16.1
     # via -r requirements/edx/bundled.in
-xblocks-contrib==0.17.0
+xblocks-contrib==1.0.5
     # via -r requirements/edx/bundled.in
 xmlsec==1.3.14
     # via
