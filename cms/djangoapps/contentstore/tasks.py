@@ -49,7 +49,6 @@ from user_tasks.tasks import UserTask
 import cms.djangoapps.contentstore.errors as UserErrors
 from cms.djangoapps.contentstore.courseware_index import (
     CoursewareSearchIndexer,
-    LibrarySearchIndexer,
     SearchIndexingError,
 )
 from cms.djangoapps.contentstore.storage import course_import_export_storage
@@ -290,20 +289,6 @@ def update_search_index(course_id, triggered_time_isoformat):
         )
     else:
         LOGGER.debug('Search indexing successful for complete course %s', course_id)
-
-
-@shared_task
-@set_code_owner_attribute
-def update_library_index(library_id, triggered_time_isoformat):
-    """ Updates course search index. """
-    try:
-        library_key = CourseKey.from_string(library_id)
-        LibrarySearchIndexer.index(modulestore(), library_key, triggered_at=(_parse_time(triggered_time_isoformat)))
-
-    except SearchIndexingError as exc:
-        LOGGER.error('Search indexing error for library %s - %s', library_id, str(exc))
-    else:
-        LOGGER.debug('Search indexing successful for library %s', library_id)
 
 
 @shared_task

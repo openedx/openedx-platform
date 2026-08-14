@@ -17,17 +17,15 @@ from search.search_engine_base import SearchEngine
 from cms.djangoapps.contentstore.courseware_index import (
     CourseAboutSearchIndexer,
     CoursewareSearchIndexer,
-    LibrarySearchIndexer,
     SearchIndexingError,
 )
-from cms.djangoapps.contentstore.signals.handlers import listen_for_course_publish, listen_for_library_update
+from cms.djangoapps.contentstore.signals.handlers import listen_for_course_publish
 from cms.djangoapps.contentstore.tasks import update_search_index
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase
 from cms.djangoapps.contentstore.utils import reverse_course_url, reverse_usage_url
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.course_modes.tests.factories import CourseModeFactory
 from openedx.core.djangoapps.models.course_details import CourseDetails
-from xmodule.library_tools import normalize_key_for_search  # pylint: disable=wrong-import-order
 from xmodule.modulestore import ModuleStoreEnum  # pylint: disable=wrong-import-order
 from xmodule.modulestore.django import SignalHandler, modulestore  # pylint: disable=wrong-import-order
 from xmodule.modulestore.tests.django_utils import (  # pylint: disable=wrong-import-order
@@ -38,7 +36,6 @@ from xmodule.modulestore.tests.django_utils import (  # pylint: disable=wrong-im
 from xmodule.modulestore.tests.factories import (  # pylint: disable=wrong-import-order
     BlockFactory,
     CourseFactory,
-    LibraryFactory,
 )
 from xmodule.partitions.partitions import UserPartition  # pylint: disable=wrong-import-order
 
@@ -608,7 +605,6 @@ class TestTaskExecution(SharedModuleStoreTestCase):
     def setUpClass(cls):
         super().setUpClass()
         SignalHandler.course_published.disconnect(listen_for_course_publish)
-        SignalHandler.library_updated.disconnect(listen_for_library_update)
         cls.course = CourseFactory.create(start=datetime(2015, 3, 1, tzinfo=UTC))
 
         cls.chapter = BlockFactory.create(
@@ -640,26 +636,9 @@ class TestTaskExecution(SharedModuleStoreTestCase):
             publish_item=False,
         )
 
-        cls.library = LibraryFactory.create()
-
-        cls.library_block1 = BlockFactory.create(
-            parent_location=cls.library.location,
-            category="html",
-            display_name="Html Content",
-            publish_item=False,
-        )
-
-        cls.library_block2 = BlockFactory.create(
-            parent_location=cls.library.location,
-            category="html",
-            display_name="Html Content 2",
-            publish_item=False,
-        )
-
     @classmethod
     def tearDownClass(cls):
         SignalHandler.course_published.connect(listen_for_course_publish)
-        SignalHandler.library_updated.connect(listen_for_library_update)
         super().tearDownClass()
 
     def test_task_indexing_course(self):
@@ -681,19 +660,6 @@ class TestTaskExecution(SharedModuleStoreTestCase):
         )
         self.assertEqual(response["total"], 3)  # noqa: PT009
 
-    def test_task_library_update(self):
-        """ Making sure that the receiver correctly fires off the task when invoked by signal """
-        searcher = SearchEngine.get_search_engine(LibrarySearchIndexer.INDEX_NAME)
-        library_search_key = str(normalize_key_for_search(self.library.location.library_key))
-        response = searcher.search(field_dictionary={"library": library_search_key})
-        self.assertEqual(response["total"], 0)  # noqa: PT009
-
-        listen_for_library_update(self, self.library.location.library_key)
-
-        # Note that this test will only succeed if celery is working in inline mode
-        response = searcher.search(field_dictionary={"library": library_search_key})
-        self.assertEqual(response["total"], 2)  # noqa: PT009
-
     def test_ignore_ccx(self):
         """Test that we ignore CCX courses (it's too slow now)."""
         # We're relying on our CCX short circuit to just stop execution as soon
@@ -707,156 +673,6 @@ class TestTaskExecution(SharedModuleStoreTestCase):
                 )
             )
             self.assertFalse(mock_index.called)  # noqa: PT009
-
-
-@pytest.mark.django_db
-@ddt.ddt
-class TestLibrarySearchIndexer(MixedWithOptionsTestCase):
-    """ Tests the operation of the CoursewareSearchIndexer """
-
-    # libraries work only with split, so do library indexer
-    WORKS_WITH_STORES = (ModuleStoreEnum.Type.split, )
-
-    def setUp(self):
-        super().setUp()
-
-        self.library = None
-        self.html_unit1 = None
-        self.html_unit2 = None
-
-    def setup_course_base(self, store):
-        """
-        Set up the for the course outline tests.
-        """
-        self.library = LibraryFactory.create(modulestore=store)
-
-        self.html_unit1 = BlockFactory.create(
-            parent_location=self.library.location,
-            category="html",
-            display_name="Html Content",
-            modulestore=store,
-            publish_item=False,
-        )
-
-        self.html_unit2 = BlockFactory.create(
-            parent_location=self.library.location,
-            category="html",
-            display_name="Html Content 2",
-            modulestore=store,
-            publish_item=False,
-        )
-
-    INDEX_NAME = LibrarySearchIndexer.INDEX_NAME
-
-    def _get_default_search(self):
-        """ Returns field_dictionary for default search """
-        return {"library": str(self.library.location.library_key.replace(version_guid=None, branch=None))}
-
-    def reindex_library(self, store):
-        """ kick off complete reindex of the course """
-        return LibrarySearchIndexer.do_library_reindex(store, self.library.location.library_key)
-
-    def _get_contents(self, response):
-        """ Extracts contents from search response """
-        return [item['data']['content'] for item in response['results']]
-
-    def _test_indexing_library(self, store):
-        """ indexing course tests """
-        self.reindex_library(store)
-        response = self.search()
-        self.assertEqual(response["total"], 2)  # noqa: PT009
-
-        added_to_index = self.reindex_library(store)
-        self.assertEqual(added_to_index, 2)  # noqa: PT009
-        response = self.search()
-        self.assertEqual(response["total"], 2)  # noqa: PT009
-
-    def _test_creating_item(self, store):
-        """ test updating an item """
-        self.reindex_library(store)
-        response = self.search()
-        self.assertEqual(response["total"], 2)  # noqa: PT009
-
-        # updating a library item causes immediate reindexing
-        data = "Some data"
-        BlockFactory.create(
-            parent_location=self.library.location,
-            category="html",
-            display_name="Html Content 3",
-            data=data,
-            modulestore=store,
-            publish_item=False,
-        )
-
-        self.reindex_library(store)
-        response = self.search()
-        self.assertEqual(response["total"], 3)  # noqa: PT009
-        html_contents = [cont['html_content'] for cont in self._get_contents(response)]
-        self.assertIn(data, html_contents)  # noqa: PT009
-
-    def _test_updating_item(self, store):
-        """ test updating an item """
-        self.reindex_library(store)
-        response = self.search()
-        self.assertEqual(response["total"], 2)  # noqa: PT009
-
-        # updating a library item causes immediate reindexing
-        new_data = "I'm new data"
-        self.html_unit1.data = new_data
-        self.update_item(store, self.html_unit1)
-        self.reindex_library(store)
-        response = self.search()
-        self.assertEqual(response["total"], 2)  # noqa: PT009
-        html_contents = [cont['html_content'] for cont in self._get_contents(response)]
-        self.assertIn(new_data, html_contents)  # noqa: PT009
-
-    def _test_deleting_item(self, store):
-        """ test deleting an item """
-        self.reindex_library(store)
-        response = self.search()
-        self.assertEqual(response["total"], 2)  # noqa: PT009
-
-        # deleting a library item causes immediate reindexing
-        self.delete_item(store, self.html_unit1.location)
-        self.reindex_library(store)
-        response = self.search()
-        self.assertEqual(response["total"], 1)  # noqa: PT009
-
-    @patch('django.conf.settings.SEARCH_ENGINE', None)
-    def _test_search_disabled(self, store):
-        """ if search setting has it as off, confirm that nothing is indexed """
-        indexed_count = self.reindex_library(store)
-        self.assertFalse(indexed_count)  # noqa: PT009
-
-    @patch('django.conf.settings.SEARCH_ENGINE', 'search.tests.utils.ErroringIndexEngine')
-    def _test_exception(self, store):
-        """ Test that exception within indexing yields a SearchIndexingError """
-        with self.assertRaises(SearchIndexingError):  # noqa: PT027
-            self.reindex_library(store)
-
-    @ddt.data(*WORKS_WITH_STORES)
-    def test_indexing_library(self, store_type):
-        self._perform_test_using_store(store_type, self._test_indexing_library)
-
-    @ddt.data(*WORKS_WITH_STORES)
-    def test_updating_item(self, store_type):
-        self._perform_test_using_store(store_type, self._test_updating_item)
-
-    @ddt.data(*WORKS_WITH_STORES)
-    def test_creating_item(self, store_type):
-        self._perform_test_using_store(store_type, self._test_creating_item)
-
-    @ddt.data(*WORKS_WITH_STORES)
-    def test_deleting_item(self, store_type):
-        self._perform_test_using_store(store_type, self._test_deleting_item)
-
-    @ddt.data(*WORKS_WITH_STORES)
-    def test_search_disabled(self, store_type):
-        self._perform_test_using_store(store_type, self._test_search_disabled)
-
-    @ddt.data(*WORKS_WITH_STORES)
-    def test_exception(self, store_type):
-        self._perform_test_using_store(store_type, self._test_exception)
 
 
 class GroupConfigurationSearchSplit(CourseTestCase, MixedWithOptionsTestCase):
