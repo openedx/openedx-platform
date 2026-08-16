@@ -1,8 +1,9 @@
 """Tests for CRUD Operations"""
 
 
+from xblocks_contrib.problem import ProblemBlock
+
 from xmodule import templates
-from xmodule.capa_block import ProblemBlock
 from xmodule.course_block import CourseBlock
 from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.exceptions import DuplicateCourseError

@@ -2131,15 +2131,6 @@ USE_EXTRACTED_HTML_BLOCK = True
 # .. toggle_target_removal_date: 2026-04-10
 USE_EXTRACTED_DISCUSSION_BLOCK = True
 
-# .. toggle_name: USE_EXTRACTED_PROBLEM_BLOCK
-# .. toggle_default: False
-# .. toggle_implementation: DjangoSetting
-# .. toggle_description: Enables the use of the extracted Problem XBlock, which has been shifted to the 'openedx/xblocks-contrib' repo.
-# .. toggle_use_cases: temporary
-# .. toggle_warning: Not production-ready until relevant subtask https://github.com/openedx/edx-platform/issues/34827 is done.
-# .. toggle_creation_date: 2024-11-10
-# .. toggle_target_removal_date: 2026-04-10
-USE_EXTRACTED_PROBLEM_BLOCK = True
 
 # .. toggle_name: USE_EXTRACTED_VIDEO_BLOCK
 # .. toggle_default: True
@@ -2245,10 +2236,10 @@ COURSES_WITH_UNSAFE_CODE = []
 ENABLE_CODEJAIL_REST_SERVICE = False
 
 # .. setting_name: CODE_JAIL_REST_SERVICE_REMOTE_EXEC
-# .. setting_default: 'xmodule.capa.safe_exec.remote_exec.send_safe_exec_request_v0'
+# .. setting_default: 'xblocks_contrib.problem.capa.safe_exec.remote_exec.send_safe_exec_request_v0'
 # .. setting_description: Set the python package.module.function that is reponsible of
 #   calling the remote service in charge of jailed code execution
-CODE_JAIL_REST_SERVICE_REMOTE_EXEC = 'xmodule.capa.safe_exec.remote_exec.send_safe_exec_request_v0'
+CODE_JAIL_REST_SERVICE_REMOTE_EXEC = 'xblocks_contrib.problem.capa.safe_exec.remote_exec.send_safe_exec_request_v0'
 
 # .. setting_name: CODE_JAIL_REST_SERVICE_HOST
 # .. setting_default: 'http://127.0.0.1:8550'
