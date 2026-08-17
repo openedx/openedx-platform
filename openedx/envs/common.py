@@ -2103,14 +2103,6 @@ USE_EXTRACTED_ANNOTATABLE_BLOCK = True
 # .. toggle_target_removal_date: 2026-04-10
 USE_EXTRACTED_POLL_QUESTION_BLOCK = True
 
-# .. toggle_name: USE_EXTRACTED_LTI_BLOCK
-# .. toggle_default: True
-# .. toggle_implementation: DjangoSetting
-# .. toggle_description: Enables the use of the extracted LTI XBlock, which has been shifted to the 'openedx/xblocks-contrib' repo.
-# .. toggle_use_cases: temporary
-# .. toggle_creation_date: 2024-11-10
-# .. toggle_target_removal_date: 2026-04-10
-USE_EXTRACTED_LTI_BLOCK = True
 
 # .. toggle_name: USE_EXTRACTED_HTML_BLOCK
 # .. toggle_default: True

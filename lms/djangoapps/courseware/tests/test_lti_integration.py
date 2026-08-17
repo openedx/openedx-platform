@@ -1,7 +1,6 @@
 """LTI integration tests"""
 
 
-import importlib
 import json
 import re
 import urllib
@@ -11,7 +10,6 @@ from unittest.mock import patch
 
 import oauthlib
 from django.conf import settings
-from django.test import override_settings
 from django.urls import reverse
 from xblock import plugin
 
@@ -19,7 +17,6 @@ from common.djangoapps.xblock_django.constants import ATTR_KEY_ANONYMOUS_USER_ID
 from lms.djangoapps.courseware.tests.helpers import BaseTestXmodule
 from lms.djangoapps.courseware.views.views import get_course_lti_endpoints
 from openedx.core.lib.url_utils import quote_slashes
-from xmodule import lti_block
 from xmodule.modulestore.tests.django_utils import (
     SharedModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
@@ -45,7 +42,6 @@ class _TestLTIBase(BaseTestXmodule):
     def setUpClass(cls):
         super().setUpClass()
         plugin.PLUGIN_CACHE = {}
-        importlib.reload(lti_block)
 
     def setUp(self):
         """
@@ -137,25 +133,17 @@ class _TestLTIBase(BaseTestXmodule):
     @patch('xblock.utils.resources.ResourceLoader.render_django_template', side_effect=mock_render_template)
     def test_lti_constructor(self, mock_render_django_template):
         generated_content = self.block.student_view(None).content
-
-        if settings.USE_EXTRACTED_LTI_BLOCK:
-            # Remove i18n service from the extracted LTI Block's rendered `student_view` content
-            generated_content = re.sub(r"\{.*?}", "{}", generated_content)
-            expected_content = self.runtime.render_template('templates/lti.html', self.expected_context)
-            mock_render_django_template.assert_called_once()
-        else:
-            expected_content = self.runtime.render_template('lti.html', self.expected_context)
+        # Remove i18n service from the extracted LTI Block's rendered `student_view` content
+        generated_content = re.sub(r"\{.*?}", "{}", generated_content)
+        expected_content = self.runtime.render_template('templates/lti.html', self.expected_context)
+        mock_render_django_template.assert_called_once()
         assert generated_content == expected_content
 
     @patch('xblock.utils.resources.ResourceLoader.render_django_template', side_effect=mock_render_template)
     def test_lti_preview_handler(self, mock_render_django_template):
         generated_content = self.block.preview_handler(None, None).body
-
-        if settings.USE_EXTRACTED_LTI_BLOCK:
-            expected_content = self.runtime.render_template('templates/lti_form.html', self.expected_context)
-            mock_render_django_template.assert_called_once()
-        else:
-            expected_content = self.runtime.render_template('lti_form.html', self.expected_context)
+        expected_content = self.runtime.render_template('templates/lti_form.html', self.expected_context)
+        mock_render_django_template.assert_called_once()
         assert generated_content.decode('utf-8') == expected_content
 
 
@@ -251,21 +239,9 @@ class _TestLTIBlockListingBase(SharedModuleStoreTestCase):
             assert 405 == response.status_code
 
 
-@override_settings(USE_EXTRACTED_LTI_BLOCK=True)
-class TestLTIExtracted(_TestLTIBase):
+class TestLTI(_TestLTIBase):
     __test__ = True
 
 
-@override_settings(USE_EXTRACTED_LTI_BLOCK=False)
-class TestLTIBuiltIn(_TestLTIBase):
-    __test__ = True
-
-
-@override_settings(USE_EXTRACTED_LTI_BLOCK=True)
-class TestLTIBlockListingExtracted(_TestLTIBlockListingBase):
-    __test__ = True
-
-
-@override_settings(USE_EXTRACTED_LTI_BLOCK=False)
-class TestLTIBlockListingBuiltIn(_TestLTIBlockListingBase):
+class TestLTIBlockListing(_TestLTIBlockListingBase):
     __test__ = True
