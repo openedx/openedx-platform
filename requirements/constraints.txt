@@ -66,24 +66,11 @@ numpy<2.0.0
 # Issue for unpinning: https://github.com/openedx/edx-platform/issues/35269
 openedx-core<2
 
-# Date: 2023-11-29
-# Open AI version 1.0.0 dropped support for openai.ChatCompletion which is currently in use in enterprise.
-# Issue for unpinning: https://github.com/openedx/edx-platform/issues/35268
-openai<=0.28.1
-
 # Date: 2024-04-26
 # path==16.12.0 breaks the unit test collections check
 # needs to be investigated and fixed separately
 # Issue for unpinning: https://github.com/openedx/edx-platform/issues/35267
 path<16.12.0
-
-# Date: 2021-08-25
-# At the time of writing this comment, we do not know whether py2neo>=2022
-# will support our currently-deployed Neo4j version (3.5).
-# Feel free to loosen this constraint if/when it is confirmed that a later
-# version of py2neo will work with Neo4j 3.5.
-# Issue for unpinning: https://github.com/openedx/edx-platform/issues/35266
-py2neo<2022
 
 # Date: 2020-04-08
 # Adding pin to avoid any major upgrade
