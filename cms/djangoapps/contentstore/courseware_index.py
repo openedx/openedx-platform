@@ -77,7 +77,7 @@ class SearchIndexerBase(metaclass=ABCMeta):
         """
         Checks to see if the indexing feature is enabled
         """
-        return settings.FEATURES.get(cls.ENABLE_INDEXING_KEY, False)
+        return getattr(settings, cls.ENABLE_INDEXING_KEY, False)
 
     @classmethod
     @abstractmethod
