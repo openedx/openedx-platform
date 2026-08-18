@@ -28,3 +28,20 @@ elasticsearch<7.14.0
 # Tracking issue: https://github.com/openedx/edx-drf-extensions/issues/561
 social-auth-app-django<6.0.0
 social-auth-core<5.0.0
+
+# 2026-08-11: pip-tools is only tested against the latest pip released at the time
+# pip-tools was released; also, pip-tools package dependencies are extremely permissive
+# about the pip version required, so the dependency resolver will not prevent an unwanted
+# pip upgrade which would break pip-tools. The end result is that pip MUST be constrained
+# by all pip-tools users in order to avoid potentially weeks-long lapses in pip <->
+# pip-tools compatibility.  We've constrained pip here in common_constraints.txt in the
+# past, but always removed it once the issue was "fixed". Removing this constraint was
+# always a mistake.
+#
+# This is a semi-permanent constraint and should be manually bumped after each pip-tools
+# release.
+#
+# Exceptional conditions for removal:
+# - We stop using pip-tools, OR
+# - We migrate to the proposed `pip-tools[stable]` extra: https://github.com/jazzband/pip-tools/pull/2257
+pip<26.2.1  # Known to work with pip-tools==7.6.1
