@@ -18,8 +18,8 @@ dummy_render = lambda block, _: Fragment(block.data)  # pylint: disable=invalid-
 @patch(
     'xmodule.modulestore.split_mongo.runtime.SplitModuleStoreRuntime.render', VanillaRuntime.render
 )
-@patch('xmodule.html_block.HtmlBlock.author_view', dummy_render, create=True)
-@patch('xmodule.html_block.HtmlBlock.has_author_view', True, create=True)
+@patch('xblocks_contrib.html.HtmlBlock.author_view', dummy_render, create=True)
+@patch('xblocks_contrib.html.HtmlBlock.has_author_view', True, create=True)
 @patch('xmodule.x_module.ModuleStoreRuntime.applicable_aside_types', lambda self, block: [])
 class TestLibraryRoot(MixedSplitTestCase):
     """
