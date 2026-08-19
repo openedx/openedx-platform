@@ -615,11 +615,11 @@ class CourseTabListTestCase(TabListTestCase):
         assert not self.has_tab(self.course.tabs, 'external_discussion')
         assert self.has_tab(self.course.tabs, 'discussion')
 
-    @override_settings(ENABLE_DISCUSSION_SERVICE=True)
-    @patch.dict("django.conf.settings.FEATURES", {
-        "ENABLE_TEXTBOOK": True,
-        "ENABLE_EDXNOTES": True,
-    })
+    @override_settings(
+        ENABLE_DISCUSSION_SERVICE=True,
+        ENABLE_TEXTBOOK=True,
+        ENABLE_EDXNOTES=True,
+    )
     def test_iterate_displayable(self):
         self.course.hide_progress_tab = False
 
