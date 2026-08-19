@@ -96,9 +96,7 @@ class RegistrationViewValidationErrorTest(
         super().setUp()
         self.url = reverse("user_api_registration")
 
-    @mock.patch.dict(settings.FEATURES, {
-        "ENABLE_THIRD_PARTY_AUTH": True,
-    })
+    @override_settings(ENABLE_THIRD_PARTY_AUTH=True)
     @mock.patch(
         'openedx.core.djangoapps.user_authn.views.register.is_require_third_party_auth_enabled',
         mock.Mock(return_value=True)

@@ -576,7 +576,7 @@ class IntegrationTestMixin(testutil.TestCase, test.TestCase, HelperMixin):
 
 
 @unittest.skipUnless(
-    testutil.AUTH_FEATURES_KEY in django_settings.FEATURES, testutil.AUTH_FEATURES_KEY + " not in settings.FEATURES"
+    testutil.AUTH_FEATURE_ENABLED, testutil.AUTH_FEATURES_KEY + " not enabled"
 )
 @django_utils.override_settings()  # For settings reversion on a method-by-method basis.
 class IntegrationTest(testutil.TestCase, test.TestCase, HelperMixin):

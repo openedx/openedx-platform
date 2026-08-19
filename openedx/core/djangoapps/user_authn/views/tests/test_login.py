@@ -111,9 +111,7 @@ class LoginTest(OpenEdxEventsTestMixin, SiteMixin, CacheIsolationTestCase):
             mock_audit_log, 'warning', ['Login failed - Account not active for user.id: 1, resending activation']
         )
 
-    @patch.dict(settings.FEATURES, {
-        "ENABLE_THIRD_PARTY_AUTH": True
-    })
+    @override_settings(ENABLE_THIRD_PARTY_AUTH=True)
     @patch(
         'openedx.core.djangoapps.user_authn.views.login.is_require_third_party_auth_enabled',
         Mock(return_value=True)
