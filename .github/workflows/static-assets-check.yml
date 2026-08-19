@@ -99,7 +99,7 @@ jobs:
 
       - name: Install Full Python Deps for Collection
         run: |
-          pip install -r requirements/edx/base.txt -e .
+          pip install -e .
 
       - name: Check Assets Collection
         env:

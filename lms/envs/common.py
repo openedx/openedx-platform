@@ -806,7 +806,6 @@ RETRY_CALENDAR_SYNC_EMAIL_MAX_ATTEMPTS = 5
 ############################# SET PATH INFORMATION #############################
 
 PROJECT_ROOT = path(__file__).abspath().dirname().dirname()  # /edx-platform/lms
-NODE_MODULES_ROOT = REPO_ROOT / "node_modules"  # noqa: F405
 
 # Where to look for a status message
 STATUS_MESSAGE_PATH = ENV_ROOT / "status_message.json"  # noqa: F405

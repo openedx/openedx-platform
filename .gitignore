@@ -2,6 +2,7 @@
 # There's a lot here, please try to keep it organized.
 
 ### Files private to developers
+.venv
 
 # Files that should be git-ignored, but are hand-edited or otherwise valued,
 # and so should not be destroyed by "make clean".

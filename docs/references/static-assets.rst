@@ -139,7 +139,7 @@ skip this section.
 First, ensure you have a Python enironment with all edx-platform dependencies
 installed::
 
-  pip install -r requirements/edx/base.txt -e .
+  pip install -e .
 
 Next, download localized versions of edx-platform assets. Under the hood, this
 command uses the `Open edX Atlas`_ tool, which manages aggregated translations

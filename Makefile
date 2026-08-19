@@ -2,7 +2,7 @@
 .PHONY: base-requirements check-types clean \
   compile-requirements detect_changed_source_translations dev-requirements \
   docs extract_translations \
-  guides help lint-imports local-requirements migrate migrate-lms migrate-cms \
+  guides help lint-imports  migrate migrate-lms migrate-cms \
   pre-requirements pull pull_xblock_translations pull_translations push_translations \
   requirements shell swagger \
   technical-docs test-requirements ubuntu-requirements upgrade-package upgrade
@@ -67,23 +67,16 @@ detect_changed_source_translations: ## check if translation files are up-to-date
 pre-requirements: ## install Python requirements for running pip-tools
 	pip install -r requirements/pip-tools.txt
 
-local-requirements:
-# 	edx-platform installs some Python projects from within the edx-platform repo itself.
-	pip install -e .
-
 dev-requirements: pre-requirements
 	@# The "$(wildcard..)" is to include private.txt if it exists, and make no mention
 	@# of it if it does not.  Shell wildcarding can't do that with default options.
-	pip-sync requirements/edx/development.txt $(wildcard requirements/edx/private.txt)
-	make local-requirements
+	pip install -e '.[development]' $(wildcard requirements/edx/private.txt)
 
 base-requirements: pre-requirements
-	pip-sync requirements/edx/base.txt
-	make local-requirements
+	pip install -e '.'
 
 test-requirements: pre-requirements
-	pip-sync --pip-args="--exists-action=w" requirements/edx/testing.txt
-	make local-requirements
+	pip install -e '.[testing]'
 
 requirements: dev-requirements ## install development environment requirements
 
