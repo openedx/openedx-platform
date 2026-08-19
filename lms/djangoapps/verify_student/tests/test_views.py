@@ -792,7 +792,7 @@ class TestPayAndVerifyView(UrlResetMixin, ModuleStoreTestCase, XssTestMixin, Tes
         self.assertContains(response, "verification deadline")
         self.assertContains(response, verification_deadline_in_past)
 
-    @patch.dict(settings.FEATURES, {'EMBARGO': True})
+    @override_settings(EMBARGO=True)
     @ddt.data("verify_student_start_flow", "verify_student_begin_flow")
     def test_embargo_restrict(self, payment_flow):
         course = self._create_course("verified")
@@ -802,7 +802,7 @@ class TestPayAndVerifyView(UrlResetMixin, ModuleStoreTestCase, XssTestMixin, Tes
             response = self._get_page(payment_flow, course.id, expected_status_code=302)
             self.assertRedirects(response, redirect_url)
 
-    @patch.dict(settings.FEATURES, {'EMBARGO': True})
+    @override_settings(EMBARGO=True)
     @ddt.data("verify_student_start_flow", "verify_student_begin_flow")
     def test_embargo_allow(self, payment_flow):
         course = self._create_course("verified")
