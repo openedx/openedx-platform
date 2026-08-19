@@ -43,7 +43,7 @@ def auto_auth(request):  # pylint: disable=too-many-statements
     Create or configure a user account, then log in as that user.
 
     Enabled only when
-    settings.FEATURES['AUTOMATIC_AUTH_FOR_TESTING'] is true.
+    settings.AUTOMATIC_AUTH_FOR_TESTING is true.
 
     Accepts the following querystring parameters:
     * `username`, `email`, and `password` for the user account

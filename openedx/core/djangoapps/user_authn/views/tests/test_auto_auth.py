@@ -47,7 +47,7 @@ class AutoAuthEnabledTestCase(AutoAuthTestCase, ModuleStoreTestCase):
 
     @override_settings(AUTOMATIC_AUTH_FOR_TESTING=True)
     def setUp(self):
-        # Patching the settings.FEATURES['AUTOMATIC_AUTH_FOR_TESTING']
+        # Patching the AUTOMATIC_AUTH_FOR_TESTING setting
         # value affects the contents of urls.py,
         # so we need to call super.setUp() which reloads urls.py (because
         # of the UrlResetMixin)
@@ -305,7 +305,7 @@ class AutoAuthDisabledTestCase(AutoAuthTestCase):
 
     @override_settings(AUTOMATIC_AUTH_FOR_TESTING=False)
     def setUp(self):
-        # Patching the settings.FEATURES['AUTOMATIC_AUTH_FOR_TESTING']
+        # Patching the AUTOMATIC_AUTH_FOR_TESTING setting
         # value affects the contents of urls.py,
         # so we need to call super.setUp() which reloads urls.py (because
         # of the UrlResetMixin)
@@ -329,7 +329,7 @@ class AutoAuthRestrictedTestCase(AutoAuthTestCase):
 
     @override_settings(AUTOMATIC_AUTH_FOR_TESTING=True)
     def setUp(self):
-        # Patching the settings.FEATURES['AUTOMATIC_AUTH_FOR_TESTING']
+        # Patching the AUTOMATIC_AUTH_FOR_TESTING setting
         # value affects the contents of urls.py,
         # so we need to call super.setUp() which reloads urls.py (because
         # of the UrlResetMixin)
