@@ -3224,7 +3224,7 @@ class TestCoursewareMFESearchAPI(SharedModuleStoreTestCase):
         self.assertEqual(response.status_code, 200)  # noqa: PT009
         self.assertEqual(body, {'enabled': False})  # noqa: PT009
 
-    @patch.dict('django.conf.settings.FEATURES', {'COURSEWARE_SEARCH_INCLUSION_DATE': '2020'})
+    @override_settings(COURSEWARE_SEARCH_INCLUSION_DATE='2020')
     @override_waffle_flag(COURSEWARE_MICROFRONTEND_SEARCH_ENABLED, active=False)
     @ddt.data(
         (datetime(2013, 9, 18, 11, 30, 00), False),

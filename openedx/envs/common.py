@@ -1172,6 +1172,16 @@ LICENSING = False
 #   redirect URLs site-wide. Usually left empty and overridden per-site via site configuration.
 THIRD_PARTY_AUTH_HINT = ''
 
+# .. setting_name: COURSEWARE_SEARCH_INCLUSION_DATE
+# .. setting_default: None
+# .. setting_description: YYYY-MM-DD cutoff date used to roll out courseware search to newer courses.
+#   In the LMS, the courseware-search-enabled endpoint exposes search for any course whose start date
+#   is after this date (in addition to any course where the courseware.mfe_courseware_search waffle
+#   flag is enabled); leaving it None disables this date-based rollout. The Studio
+#   `reindex_course --from_inclusion_date` command reindexes courses starting on/after this date,
+#   flooring an unset value at 2020-01-01 so the standalone command still has a bound to filter by.
+COURSEWARE_SEARCH_INCLUSION_DATE = None
+
 # .. toggle_name: CERTIFICATES_HTML_VIEW
 # .. toggle_implementation: DjangoSetting
 # .. toggle_default: False

@@ -2355,7 +2355,7 @@ def courseware_mfe_search_enabled(request, course_id=None):
     else:
         has_required_enrollment = True
 
-    inclusion_date = settings.FEATURES.get('COURSEWARE_SEARCH_INCLUSION_DATE')
+    inclusion_date = settings.COURSEWARE_SEARCH_INCLUSION_DATE
     start_date = CourseOverview.get_from_id(course_key).start
     has_valid_inclusion_date = False
 
