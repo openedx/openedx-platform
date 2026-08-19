@@ -43,7 +43,7 @@ jobs:
             echo "RELEVANT=true" >> "$GITHUB_ENV"
           fi
 
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         if: ${{ env.RELEVANT == 'true' }}
         with:
           python-version: '3.12'
