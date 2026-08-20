@@ -15,15 +15,15 @@ from social_django import models as social_models
 from common.djangoapps.student.tests.factories import UserFactory
 from common.djangoapps.third_party_auth import pipeline, provider
 from common.djangoapps.third_party_auth.tests import testutil
-from common.djangoapps.third_party_auth.tests.utils import skip_unless_thirdpartyauth
 from lms.djangoapps.verify_student.models import SSOVerification
+from openedx.core.djangolib.testing.utils import skip_unless_lms
 
 # Get Django User model by reference from python-social-auth. Not a type
 # constant, pylint.
 User = social_models.DjangoStorage.user.user_model()  # pylint: disable=invalid-name
 
 
-@skip_unless_thirdpartyauth()
+@skip_unless_lms
 class TestCase(testutil.TestCase, test.TestCase):
     """Base test case."""
 
