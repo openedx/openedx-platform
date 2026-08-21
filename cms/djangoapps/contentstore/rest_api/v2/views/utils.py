@@ -4,7 +4,7 @@ Common utilities for V2 APIs.
 from rest_framework import permissions
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
-from xblocks_contrib.problem.capa.inputtypes import preview_numeric_input
+from xblock_problem.capa.inputtypes import preview_numeric_input
 
 from cms.djangoapps.contentstore.rest_api.v2.serializers.utils import NumericalInputValidationRequestSerializer
 

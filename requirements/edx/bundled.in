@@ -39,7 +39,7 @@ ora2>=4.5.0                         # Open Response Assessment XBlock
 xblock-poll                         # Xblock for polling users
 xblock-drag-and-drop-v2             # Drag and Drop XBlock
 xblock-google-drive                 # XBlock for google docs and calendar
-xblocks-contrib                     # Package having multiple core XBlocks, https://github.com/openedx/xblocks-contrib?tab=readme-ov-file#xblocks-being-moved-here
+xblocks-core                        # Package having multiple core XBlocks
 
 
 ## Integrated Channels

@@ -9,7 +9,7 @@ from lxml import etree
 from web_fragments.fragment import Fragment
 from xblock.core import XBlock
 from xblock.fields import Scope, String
-from xblocks_contrib.annotatable import AnnotatableBlock as _ExtractedAnnotatableBlock
+from xblock_annotatable import AnnotatableBlock as _ExtractedAnnotatableBlock
 
 from openedx.core.djangolib.markup import HTML, Text
 from xmodule.editing_block import EditingMixin
@@ -39,7 +39,7 @@ class _BuiltInAnnotatableBlock(
 
     .. deprecated:: 2026-03
        This built-in annotatable block is deprecated. Please use the extracted ``AnnotatableBlock``
-       from ``xblocks_contrib.annotatable`` instead.
+       from ``xblock_annotatable`` instead.
     """
 
     is_extracted = False
@@ -221,7 +221,7 @@ if not settings.USE_EXTRACTED_ANNOTATABLE_BLOCK:
     warnings.warn(
         "The built-in `xmodule.annotatable_block` AnnotatableBlock implementation is deprecated. "
         "To fix this warning, enable `USE_EXTRACTED_ANNOTATABLE_BLOCK` (set it to True) to use "
-        "`xblocks_contrib.annotatable.AnnotatableBlock` instead. "
+        "`xblock_annotatable.AnnotatableBlock` instead. "
         "Support for the built-in implementation, and the `USE_EXTRACTED_ANNOTATABLE_BLOCK` setting, "
         "will be removed in Willow.",
         DeprecationWarning,

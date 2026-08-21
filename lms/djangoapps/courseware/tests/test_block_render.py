@@ -51,7 +51,7 @@ from xblock.runtime import (  # pylint: disable=wrong-import-order
     Mixologist,  # pylint: disable=wrong-import-order
 )
 from xblock.test.tools import TestRuntime  # pylint: disable=wrong-import-order
-from xblocks_contrib.problem.capa.testing.response_xml_factory import (
+from xblock_problem.capa.testing.response_xml_factory import (
     OptionResponseXMLFactory,  # pylint: disable=reimported
 )
 

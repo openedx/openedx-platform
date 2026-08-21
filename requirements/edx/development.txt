@@ -2319,7 +2319,7 @@ xblock-poll==1.16.1
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
-xblocks-contrib==1.0.5
+git+https://github.com/openedx/xblocks-core.git@kdmccormick/xblocks-core
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt

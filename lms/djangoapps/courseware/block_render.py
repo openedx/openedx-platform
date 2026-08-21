@@ -40,7 +40,7 @@ from xblock.django.request import django_to_webob_request, webob_to_django_respo
 from xblock.exceptions import NoSuchHandlerError, NoSuchViewError, NotFoundError, ProcessingError
 from xblock.reference.plugins import FSService
 from xblock.runtime import KvsFieldData
-from xblocks_contrib.video.exceptions import TranscriptNotFoundError
+from xblock_video.exceptions import TranscriptNotFoundError
 
 from common.djangoapps.edxmako.services import MakoService
 from common.djangoapps.static_replace.services import ReplaceURLService

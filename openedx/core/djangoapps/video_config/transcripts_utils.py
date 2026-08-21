@@ -22,8 +22,8 @@ from opaque_keys.edx.keys import UsageKeyV2
 from opaque_keys.edx.locator import LibraryLocatorV2
 from pysrt import SubRipFile, SubRipItem, SubRipTime
 from pysrt.srtexc import Error
-from xblocks_contrib.video.bumper_utils import get_bumper_settings
-from xblocks_contrib.video.exceptions import TranscriptsGenerationException
+from xblock_video.bumper_utils import get_bumper_settings
+from xblock_video.exceptions import TranscriptsGenerationException
 
 from openedx.core.djangoapps.xblock.api import get_component_from_usage_key
 from xmodule.contentstore.content import StaticContent
