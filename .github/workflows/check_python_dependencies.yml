@@ -21,11 +21,13 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install repo-tools
-        run: pip install edx-repo-tools[find_dependencies]
+      - name: Upgrade pip and setuptools
+        run: python -m pip install --upgrade pip setuptools
 
-      - name: Install setuptool
-        run: pip install setuptools
+      - name: Install repo-tools
+        run: |
+          python -m pip install edx-repo-tools[find_dependencies]
+          python -m pip install --upgrade 'requirements-parser>=0.13.0'
 
       - name: Run Python script
         run: |
