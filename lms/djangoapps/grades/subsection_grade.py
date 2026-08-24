@@ -281,12 +281,17 @@ class CreateSubsectionGrade(NonZeroSubsectionGrade):
 
         super().__init__(subsection, all_total, graded_total)
 
-    def update_or_create_model(self, student, score_deleted=False, force_update_subsections=False):
+    def update_or_create_model(
+        self, student, score_deleted=False, force_update_subsections=False, grading_policy_hash=None
+    ):
         """
         Saves or updates the subsection grade in a persisted model.
         """
         if self._should_persist_per_attempted(score_deleted, force_update_subsections):
-            model = PersistentSubsectionGrade.update_or_create_grade(**self._persisted_model_params(student))
+            model = PersistentSubsectionGrade.update_or_create_grade(
+                grading_policy_hash=grading_policy_hash,
+                **self._persisted_model_params(student),
+            )
 
             if hasattr(model, 'override'):
                 # When we're doing an update operation, the PersistentSubsectionGrade model
@@ -299,7 +304,7 @@ class CreateSubsectionGrade(NonZeroSubsectionGrade):
             return model
 
     @classmethod
-    def bulk_create_models(cls, student, subsection_grades, course_key):
+    def bulk_create_models(cls, student, subsection_grades, course_key, grading_policy_hash=None):
         """
         Saves the subsection grade in a persisted model.
         """
@@ -309,7 +314,9 @@ class CreateSubsectionGrade(NonZeroSubsectionGrade):
             if subsection_grade
             if subsection_grade._should_persist_per_attempted()  # pylint: disable=protected-access
         ]
-        return PersistentSubsectionGrade.bulk_create_grades(params, student.id, course_key)
+        return PersistentSubsectionGrade.bulk_create_grades(
+            params, student.id, course_key, grading_policy_hash=grading_policy_hash
+        )
 
     def _should_persist_per_attempted(self, score_deleted=False, force_update_subsections=False):
         """

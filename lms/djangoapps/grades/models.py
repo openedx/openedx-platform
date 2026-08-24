@@ -21,12 +21,21 @@ from lazy import lazy
 from model_utils.models import TimeStampedModel
 from opaque_keys.edx.django.models import CourseKeyField, UsageKeyField
 from opaque_keys.edx.keys import CourseKey, UsageKey
-from openedx_events.learning.data import CourseData, PersistentCourseGradeData
-from openedx_events.learning.signals import PERSISTENT_GRADE_SUMMARY_CHANGED
+from openedx_events.learning.data import (
+    CourseData,
+    PersistentCourseGradeData,
+    PersistentSubsectionGradeData,
+    XBlockWithScoringData,
+)
+from openedx_events.learning.signals import (
+    PERSISTENT_GRADE_SUMMARY_CHANGED,
+    PERSISTENT_SUBSECTION_GRADE_CHANGED,
+)
 from simple_history.models import HistoricalRecords
 
 from lms.djangoapps.courseware.fields import UnsignedBigIntAutoField
 from lms.djangoapps.grades import events  # pylint: disable=unused-import
+from lms.djangoapps.grades.course_data import CourseData as GradesCourseData
 from lms.djangoapps.grades.signals.signals import (
     COURSE_GRADE_PASSED_FIRST_TIME,
     COURSE_GRADE_PASSED_UPDATE_IN_LEARNER_PATHWAY,
@@ -452,12 +461,15 @@ class PersistentSubsectionGrade(TimeStampedModel):
             )
 
     @classmethod
-    def update_or_create_grade(cls, **params):
+    def update_or_create_grade(cls, grading_policy_hash=None, **params):
         """
         Wrapper for objects.update_or_create.
         """
         cls._prepare_params(params)
-        VisibleBlocks.cached_get_or_create(params['user_id'], params['visible_blocks'])
+        # Capture the BlockRecordList before it's removed from params below, so the
+        # event can be emitted without extra queries on grade.visible_blocks
+        visible_blocks = params['visible_blocks']
+        VisibleBlocks.cached_get_or_create(params['user_id'], visible_blocks)
         cls._prepare_params_visible_blocks_id(params)
 
         # TODO: do we NEED to pop these?
@@ -478,10 +490,11 @@ class PersistentSubsectionGrade(TimeStampedModel):
             grade.save()
 
         cls._emit_grade_calculated_event(grade)
+        cls._emit_openedx_persistent_subsection_grade_changed_event(grade, visible_blocks, grading_policy_hash)
         return grade
 
     @classmethod
-    def bulk_create_grades(cls, grade_params_iter, user_id, course_key):
+    def bulk_create_grades(cls, grade_params_iter, user_id, course_key, grading_policy_hash=None):
         """
         Bulk creation of grades.
         """
@@ -491,15 +504,17 @@ class PersistentSubsectionGrade(TimeStampedModel):
         PersistentSubsectionGradeOverride.prefetch(user_id, course_key)
 
         list(map(cls._prepare_params, grade_params_iter))
-        VisibleBlocks.bulk_get_or_create(
-            user_id, course_key, [params['visible_blocks'] for params in grade_params_iter]
-        )
+        # Capture the BlockRecordLists (in order) before they're removed from params below,
+        # so events can be emitted without extra queries on grade.visible_blocks
+        visible_blocks_list = [params['visible_blocks'] for params in grade_params_iter]
+        VisibleBlocks.bulk_get_or_create(user_id, course_key, visible_blocks_list)
         list(map(cls._prepare_params_visible_blocks_id, grade_params_iter))
 
         grades = [PersistentSubsectionGrade(**params) for params in grade_params_iter]
         grades = cls.objects.bulk_create(grades)
-        for grade in grades:
+        for grade, visible_blocks in zip(grades, visible_blocks_list, strict=True):
             cls._emit_grade_calculated_event(grade)
+            cls._emit_openedx_persistent_subsection_grade_changed_event(grade, visible_blocks, grading_policy_hash)
         return grades
 
     @classmethod
@@ -528,6 +543,58 @@ class PersistentSubsectionGrade(TimeStampedModel):
     @staticmethod
     def _emit_grade_calculated_event(grade):
         events.subsection_grade_calculated(grade)
+
+    @staticmethod
+    def _emit_openedx_persistent_subsection_grade_changed_event(grade, visible_blocks, grading_policy_hash=None):
+        """
+        When called emits an event when a persistent subsection grade is created or updated.
+
+        ``grading_policy_hash`` should be supplied by callers that already have the course's
+        block structure loaded, so it can be reused instead of loading the course from the
+        modulestore (an extra query per event).  When not provided, it is computed here.
+        """
+        # .. event_implemented_name: PERSISTENT_SUBSECTION_GRADE_CHANGED
+        # .. event_type: org.openedx.learning.course.persistent_subsection_grade.changed.v1
+        if grading_policy_hash is None:
+            try:
+                grading_policy_hash = GradesCourseData(user=None, course_key=grade.course_id).grading_policy_hash
+            except Exception:  # pylint: disable=broad-except
+                grading_policy_hash = ""
+                log.debug(
+                    "Unable to compute grading_policy_hash for course %s",
+                    grade.course_id,
+                    exc_info=True,
+                )
+
+        xblocks_scoring_data = [
+            XBlockWithScoringData(
+                usage_key=block.locator,
+                block_type=block.locator.block_type,
+                graded=block.graded,
+                raw_possible=block.raw_possible,
+                weight=block.weight,
+            )
+            for block in visible_blocks
+        ]
+
+        PERSISTENT_SUBSECTION_GRADE_CHANGED.send_event(
+            grade=PersistentSubsectionGradeData(
+                user_id=grade.user_id,
+                course=CourseData(
+                    course_key=grade.course_id,
+                ),
+                subsection_edited_timestamp=grade.subtree_edited_timestamp,
+                grading_policy_hash=grading_policy_hash,
+                usage_key=grade.usage_key,
+                weighted_graded_earned=grade.earned_graded,
+                weighted_graded_possible=grade.possible_graded,
+                weighted_total_earned=grade.earned_all,
+                weighted_total_possible=grade.possible_all,
+                first_attempted=grade.first_attempted,
+                visible_blocks=xblocks_scoring_data,
+                visible_blocks_hash=str(grade.visible_blocks_id),
+            )
+        )
 
     @classmethod
     def _cache_key(cls, course_id):

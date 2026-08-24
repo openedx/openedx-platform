@@ -2768,6 +2768,12 @@ EVENT_BUS_PRODUCER_CONFIG = {
             "enabled": Derived(should_send_learning_badge_events),
         },
     },
+    "org.openedx.learning.course.persistent_subsection_grade.changed.v1": {
+        "learning-subsection-grade": {
+            "event_key_field": "grade.course.course_key",
+            "enabled": True,
+        },
+    },
 }
 
 ### event tracking

@@ -57,7 +57,10 @@ class SubsectionGradeFactory:
                 if read_only:
                     self._unsaved_subsection_grades[subsection_grade.location] = subsection_grade
                 else:
-                    grade_model = subsection_grade.update_or_create_model(self.student)
+                    grade_model = subsection_grade.update_or_create_model(
+                        self.student,
+                        grading_policy_hash=self.course_data.grading_policy_hash,
+                    )
                     self._update_saved_subsection_grade(subsection.location, grade_model)
         return subsection_grade
 
@@ -66,7 +69,8 @@ class SubsectionGradeFactory:
         Bulk creates all the unsaved subsection_grades to this point.
         """
         CreateSubsectionGrade.bulk_create_models(
-            self.student, list(self._unsaved_subsection_grades.values()), self.course_data.course_key
+            self.student, list(self._unsaved_subsection_grades.values()), self.course_data.course_key,
+            grading_policy_hash=self.course_data.grading_policy_hash,
         )
         self._unsaved_subsection_grades.clear()
 
@@ -100,7 +104,8 @@ class SubsectionGradeFactory:
             grade_model = calculated_grade.update_or_create_model(
                 self.student,
                 score_deleted,
-                force_update_subsections
+                force_update_subsections,
+                grading_policy_hash=self.course_data.grading_policy_hash,
             )
             self._update_saved_subsection_grade(subsection.location, grade_model)
 
