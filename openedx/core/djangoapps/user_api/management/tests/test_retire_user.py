@@ -95,16 +95,20 @@ def test_successful_retire_with_userfile(setup_retirement_states):  # pylint: di
     remove_user_file()
 
 
+@pytest.mark.parametrize('email_header', ['email', 'user_email'])
+@pytest.mark.parametrize('username_header', ['username', '\ufeffusername'])
 @skip_unless_lms
 def test_successful_retire_with_userfile_header(  # pylint: disable=redefined-outer-name, unused-argument  # noqa: F811
-    setup_retirement_states
+    setup_retirement_states, email_header, username_header
 ):
     user = UserFactory.create(username='header-user', email="header-user@example.com")
     username = user.username
     user_email = user.email
     with open(user_file, 'w', newline='') as file:
         write = csv.writer(file)
-        write.writerow(['username', 'email'])
+        write.writerow([])
+        write.writerow(['username'])
+        write.writerow([username_header, email_header])
         write.writerow([username, user_email])
 
     try:
