@@ -204,7 +204,6 @@ cffi==1.17.1
     #   cryptography
     #   pact-python
     #   pynacl
-    #   snowflake-connector-python
 chardet==5.2.0
     # via
     #   -r requirements/edx/doc.txt
@@ -333,6 +332,7 @@ distlib==0.4.0
     #   virtualenv
 django==5.2.7
     # via
+    #   -c requirements/common_constraints.txt
     #   -c requirements/constraints.txt
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -1941,19 +1941,21 @@ snowballstemmer==3.0.1
     # via
     #   -r requirements/edx/doc.txt
     #   sphinx
-snowflake-connector-python==3.18.0
+snowflake-connector-python==4.3.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
     #   edx-enterprise
 social-auth-app-django==5.4.1
     # via
+    #   -c requirements/common_constraints.txt
     #   -c requirements/constraints.txt
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
     #   edx-auth-backends
 social-auth-core==4.7.0
     # via
+    #   -c requirements/common_constraints.txt
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
     #   edx-auth-backends

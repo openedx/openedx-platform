@@ -113,7 +113,6 @@ cffi==1.17.1
     # via
     #   cryptography
     #   pynacl
-    #   snowflake-connector-python
 chardet==5.2.0
     # via pysrt
 charset-normalizer==3.4.3
@@ -169,6 +168,7 @@ defusedxml==0.7.1
     #   social-auth-core
 django==5.2.7
     # via
+    #   -c requirements/common_constraints.txt
     #   -c requirements/constraints.txt
     #   -r requirements/edx/kernel.in
     #   django-appconf
@@ -1119,15 +1119,17 @@ slumber==0.7.1
     #   enterprise-integrated-channels
 sniffio==1.3.1
     # via anyio
-snowflake-connector-python==3.18.0
+snowflake-connector-python==4.3.0
     # via edx-enterprise
 social-auth-app-django==5.4.1
     # via
+    #   -c requirements/common_constraints.txt
     #   -c requirements/constraints.txt
     #   -r requirements/edx/kernel.in
     #   edx-auth-backends
 social-auth-core==4.7.0
     # via
+    #   -c requirements/common_constraints.txt
     #   -r requirements/edx/kernel.in
     #   edx-auth-backends
     #   social-auth-app-django

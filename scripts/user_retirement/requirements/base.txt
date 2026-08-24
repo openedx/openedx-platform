@@ -36,6 +36,7 @@ cryptography==45.0.7
     #   pyjwt
 django==5.2.7
     # via
+    #   -c requirements/common_constraints.txt
     #   -c requirements/constraints.txt
     #   django-crum
     #   django-waffle
