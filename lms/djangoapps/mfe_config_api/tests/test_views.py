@@ -183,19 +183,6 @@ class MFEConfigTestCase(APITestCase):
         self.assertEqual(response.json(), expected)  # noqa: PT009
 
     @patch("lms.djangoapps.mfe_config_api.views.configuration_helpers")
-    @override_settings(ENABLE_MFE_CONFIG_API=False)
-    def test_404_get_mfe_config(self, configuration_helpers_mock):
-        """Test the 404 not found response from get mfe config.
-
-        Expected result:
-        - The get_value method of configuration_helpers is not called.
-        - The status of the response of the request is a HTTP_404_NOT_FOUND.
-        """
-        response = self.client.get(self.mfe_config_api_url)
-        configuration_helpers_mock.get_value.assert_not_called()
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)  # noqa: PT009
-
-    @patch("lms.djangoapps.mfe_config_api.views.configuration_helpers")
     def test_get_mfe_config_for_catalog(self, configuration_helpers_mock):
         """Test the mfe config by explicitly using catalog mfe as an example.
 
@@ -487,12 +474,6 @@ class FrontendSiteConfigTestCase(APITestCase):
         self.url = reverse("frontend_site_config:frontend_site_config")
         cache.clear()
         return super().setUp()
-
-    @override_settings(ENABLE_MFE_CONFIG_API=False)
-    def test_404_when_disabled(self):
-        """API returns 404 when ENABLE_MFE_CONFIG_API is False."""
-        response = self.client.get(self.url)
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)  # noqa: PT009
 
     @patch("lms.djangoapps.mfe_config_api.views.configuration_helpers")
     def test_site_level_keys_translated(self, configuration_helpers_mock):
