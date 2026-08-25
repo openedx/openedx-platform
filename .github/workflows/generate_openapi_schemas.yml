@@ -1,0 +1,103 @@
+# generate_openapi_schemas.yml
+#
+# Purpose: Generate OpenAPI schemas for the LMS and CMS using drf-spectacular,
+# then open a pull request if either schema changed. The generated schema files
+# are consumed by the openedx-platform-sdk repo's regen_sdk.sh script to keep
+# the SDK in sync with the platform's tagged API views.
+#
+# Tuning notes:
+#   - The settings modules below (lms.envs.production / cms.envs.production)
+#     must have SPECTACULAR_SETTINGS configured. Adjust if your environment
+#     uses a different settings module (e.g. lms.envs.devstack).
+#   - The requirements path (requirements/edx/base.txt) may need adjustment
+#     depending on your local layout or if drf-spectacular lives in a different
+#     requirements file.
+
+name: Generate OpenAPI Schemas
+
+permissions:
+  contents: write
+  pull-requests: write
+
+on:
+  workflow_dispatch:
+
+  push:
+    branches:
+      - master
+    paths:
+      # Triggers whenever a view file tagged with the openedx-platform-sdk
+      # @extend_schema tag changes — add new tagged view paths here as more
+      # APIs are onboarded to the SDK.
+      #
+      # LMS — Enrollment v2
+      - 'openedx/core/djangoapps/enrollments/**'
+      # CMS — XBlock v1, Home v3/v4, Course Details v3, Authoring Grading v3
+      - 'cms/djangoapps/contentstore/rest_api/v1/views/xblock.py'
+      - 'cms/djangoapps/contentstore/rest_api/v3/views/home.py'
+      - 'cms/djangoapps/contentstore/rest_api/v3/views/course_details.py'
+      - 'cms/djangoapps/contentstore/rest_api/v3/views/authoring_grading.py'
+      - 'cms/djangoapps/contentstore/rest_api/v4/views/home.py'
+      # drf-spectacular config changes in either service
+      - 'lms/lib/spectacular.py'
+      - 'cms/lib/spectacular.py'
+      - 'lms/envs/common.py'
+      - 'cms/envs/common.py'
+
+jobs:
+  generate-schemas:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          # Note: adjust this path if drf-spectacular is in a different requirements file
+          pip install -r requirements/edx/base.txt
+
+      - name: Generate LMS OpenAPI schema
+        run: |
+          # SPECTACULAR_SETTINGS must be present in the settings module used here.
+          # Switch to a lighter settings module if production settings require
+          # environment variables or external services that are unavailable in CI.
+          python manage.py spectacular \
+            --settings=lms.envs.production \
+            --file lms_schema.yml
+
+      - name: Generate CMS OpenAPI schema
+        run: |
+          # Same note as above — SPECTACULAR_SETTINGS must be available.
+          python manage.py spectacular \
+            --settings=cms.envs.production \
+            --file cms_schema.yml
+
+      - name: Open pull request if schemas changed
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: chore/update-openapi-schemas
+          commit-message: 'chore: regenerate OpenAPI schemas'
+          title: 'chore: update OpenAPI schemas for SDK generation'
+          body: |
+            ## Auto-generated OpenAPI schema update
+
+            This PR was opened automatically by the **Generate OpenAPI Schemas** workflow.
+            It contains regenerated `lms_schema.yml` and/or `cms_schema.yml` files
+            reflecting the latest state of the platform's tagged API views.
+
+            These schema files are used by the
+            [openedx-platform-sdk](https://github.com/your-org/openedx-platform-sdk)
+            repository's `regen_sdk.sh` script to keep the SDK client in sync with
+            the platform. Update the link above once the SDK repo URL is finalised.
+
+            **Do not edit these files by hand** — they will be overwritten on the next run.
+          add-paths: |
+            lms_schema.yml
+            cms_schema.yml
