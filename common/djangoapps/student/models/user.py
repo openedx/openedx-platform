@@ -888,7 +888,9 @@ class Registration(models.Model):  # noqa: DJ008
         self.save()
         USER_ACCOUNT_ACTIVATED.send_robust(self.__class__, user=self.user)
         user_identifier_for_log = (
-            self.user.id if getattr(settings, 'SQUELCH_PII_IN_LOGS', False) else '%s, %s' % (self.user.username, self.user.email)
+            self.user.id
+            if getattr(settings, 'SQUELCH_PII_IN_LOGS', False)
+            else '{}, {}'.format(self.user.username, self.user.email)
         )
         log.info('User %s account is successfully activated.', user_identifier_for_log)
 
@@ -1336,7 +1338,7 @@ def log_successful_logout(sender, request, user, **kwargs):  # pylint: disable=u
         )
         user_identifier_for_log = (
             request.user.id if getattr(settings, 'SQUELCH_PII_IN_LOGS', False)
-            else f"{request.user}"
+            else request.user
         )
         AUDIT_LOG.info(f'Logout - {user_identifier_for_log}')  # pylint: disable=logging-format-interpolation
         if request.user.id:

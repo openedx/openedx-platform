@@ -463,15 +463,15 @@ class RegisterAndEnrollStudents(APIView):
                                 'username': username, 'email': email, 'response': warning_message
                             })
                             email_for_log, user_identifier_for_log = (
-                                ('[REDACTED]', ' for user %s' % user.id)
+                                ('[REDACTED]', ' for user {}'.format(user.id))
                                 if getattr(settings, 'SQUELCH_PII_IN_LOGS', False)
                                 else (email, '')
                             )
                             log.warning('email %s already exists%s', email_for_log, user_identifier_for_log)
                         else:
                             user_identifier_for_log = (
-                                'user ID %s' % user.id if getattr(settings, 'SQUELCH_PII_IN_LOGS', False)
-                                else "username '%s' and email '%s'" % (username, email)
+                                'user ID {}'.format(user.id) if getattr(settings, 'SQUELCH_PII_IN_LOGS', False)
+                                else "username '{}' and email '{}'".format(username, email)
                             )
                             log.info('user already exists with %s', user_identifier_for_log)
 

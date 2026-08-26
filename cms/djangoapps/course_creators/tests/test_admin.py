@@ -177,21 +177,22 @@ class CourseCreatorAdminTest(TestCase):
         """
         mock_email_user.side_effect = Exception("SMTP error")
 
-        def assert_case(squelch_pii, states, expected_identifier):
+        def assert_case(squelch_pii, states):
             mock_log.reset_mock()
             with self.settings(SQUELCH_PII_IN_LOGS=squelch_pii), mock.patch.dict(
                 'django.conf.settings.FEATURES', self.enable_creator_group_patch
             ):
                 for state in states:
                     self._change_state(state)
+                expected_identifier = self.user.id if squelch_pii else self.user.email
                 mock_log.warning.assert_any_call(
                     "Unable to send course creator status e-mail to %s",
                     expected_identifier
                 )
 
-        assert_case(True, [CourseCreator.GRANTED], self.user.id)
+        assert_case(True, [CourseCreator.GRANTED])
         # True case moved the object to GRANTED; False case needs DENIED -> GRANTED to retrigger.
-        assert_case(False, [CourseCreator.DENIED, CourseCreator.GRANTED], self.user.email)
+        assert_case(False, [CourseCreator.DENIED, CourseCreator.GRANTED])
 
     @override_settings(ENABLE_CREATOR_GROUP=True, STUDIO_REQUEST_EMAIL='mark@marky.mark')
     @mock.patch('cms.djangoapps.course_creators.admin.log')
@@ -202,19 +203,20 @@ class CourseCreatorAdminTest(TestCase):
         """
         mock_send_mail.side_effect = SMTPException("SMTP error")
 
-        def assert_case(squelch_pii, states, expected_identifier):
+        def assert_case(squelch_pii, states):
             mock_log.reset_mock()
             with self.settings(SQUELCH_PII_IN_LOGS=squelch_pii), mock.patch.dict(
                 'django.conf.settings.FEATURES', self.enable_creator_group_patch
             ):
                 for state in states:
                     self._change_state(state)
+                expected_identifier = self.user.id if squelch_pii else self.user.email
                 mock_log.warning.assert_any_call(
                     "Failure sending 'pending state' e-mail for %s to %s",
                     expected_identifier,
                     self.studio_request_email
                 )
 
-        assert_case(True, [CourseCreator.PENDING], self.user.id)
+        assert_case(True, [CourseCreator.PENDING])
         # True case left the object at PENDING; False case needs UNREQUESTED -> PENDING to retrigger.
-        assert_case(False, [CourseCreator.UNREQUESTED, CourseCreator.PENDING], self.user.email)
+        assert_case(False, [CourseCreator.UNREQUESTED, CourseCreator.PENDING])
