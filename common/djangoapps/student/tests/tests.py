@@ -890,25 +890,19 @@ class EnrollInCourseTest(EnrollmentEventTestMixin, CacheIsolationTestCase):
         user = UserFactory.create(username="squelchy", email="squelchy@example.com")
         course_id = CourseLocator("edX", "NoExist", "2013")
 
-        with self.settings(SQUELCH_PII_IN_LOGS=True):
-            with pytest.raises(NonExistentCourseError):
-                CourseEnrollment.enroll(user, course_id, check_access=True)
-            mock_log.warning.assert_any_call(
-                "User %s failed to enroll in non-existent course %s",
-                user.id,
-                str(course_id)
-            )
+        def assert_case(squelch_pii, expected_user_identifier):
+            mock_log.reset_mock()
+            with self.settings(SQUELCH_PII_IN_LOGS=squelch_pii):
+                with pytest.raises(NonExistentCourseError):
+                    CourseEnrollment.enroll(user, course_id, check_access=True)
+                mock_log.warning.assert_any_call(
+                    "User %s failed to enroll in non-existent course %s",
+                    expected_user_identifier,
+                    str(course_id)
+                )
 
-        mock_log.reset_mock()
-
-        with self.settings(SQUELCH_PII_IN_LOGS=False):
-            with pytest.raises(NonExistentCourseError):
-                CourseEnrollment.enroll(user, course_id, check_access=True)
-            mock_log.warning.assert_any_call(
-                "User %s failed to enroll in non-existent course %s",
-                user.username,
-                str(course_id)
-            )
+        assert_case(True, user.id)
+        assert_case(False, user.username)
 
     @skip_unless_lms
     @patch('common.djangoapps.student.models.course_enrollment.log')
@@ -917,25 +911,19 @@ class EnrollInCourseTest(EnrollmentEventTestMixin, CacheIsolationTestCase):
         CourseOverviewFactory.create(id=course_id)
         email = "non_existent_user@example.com"
 
-        with self.settings(SQUELCH_PII_IN_LOGS=True):
-            with pytest.raises(User.DoesNotExist):
-                CourseEnrollment.enroll_by_email(email, course_id, ignore_errors=False)
-            mock_log.error.assert_any_call(
-                "Tried to enroll email %s into course %s, but user not found",
-                "[REDACTED]",
-                course_id
-            )
+        def assert_case(squelch_pii, expected_email_for_log):
+            mock_log.reset_mock()
+            with self.settings(SQUELCH_PII_IN_LOGS=squelch_pii):
+                with pytest.raises(User.DoesNotExist):
+                    CourseEnrollment.enroll_by_email(email, course_id, ignore_errors=False)
+                mock_log.error.assert_any_call(
+                    "Tried to enroll email %s into course %s, but user not found",
+                    expected_email_for_log,
+                    course_id
+                )
 
-        mock_log.reset_mock()
-
-        with self.settings(SQUELCH_PII_IN_LOGS=False):
-            with pytest.raises(User.DoesNotExist):
-                CourseEnrollment.enroll_by_email(email, course_id, ignore_errors=False)
-            mock_log.error.assert_any_call(
-                "Tried to enroll email %s into course %s, but user not found",
-                email,
-                course_id
-            )
+        assert_case(True, "[REDACTED]")
+        assert_case(False, email)
 
     @skip_unless_lms
     def test_enrollment_multiple_classes(self):

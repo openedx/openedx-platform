@@ -77,7 +77,7 @@ class Command(BaseCommand):
             failed_emails_for_log = (
                 '[REDACTED]' if getattr(settings, 'SQUELCH_PII_IN_LOGS', False) else pformat(failed_emails)
             )
-            log.error('Failed emails:%s', failed_emails_for_log)
+            log.error('Failed emails for manual verification:%s', failed_emails_for_log)
         else:
             log.info(f'Successfully generated manual verification for {total_emails} emails.')
 
@@ -129,10 +129,8 @@ class Command(BaseCommand):
                     status='approved',
                 ))
             else:
-                if getattr(settings, 'SQUELCH_PII_IN_LOGS', False):
-                    log.info(f'Skipping user ID {user.id}, existing verification found.')
-                else:
-                    log.info(f'Skipping email {user.email}, existing verification found.')
+                user_identifier_for_log = user.id if getattr(settings, 'SQUELCH_PII_IN_LOGS', False) else user.email
+                log.info('Skipping user %s, existing verification found.', user_identifier_for_log)
         ManualVerification.objects.bulk_create(verifications_to_create)
         failed_emails = set(email_ids) - set(users.values_list('email', flat=True))
         return list(failed_emails)

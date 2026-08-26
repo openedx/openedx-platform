@@ -555,20 +555,19 @@ def disable_account_ajax(request):
         user_account, _success = UserStanding.objects.get_or_create(
             user=user, defaults={'changed_by': request.user},
         )
+        request_user_identifier_for_log, user_identifier_for_log = (
+            (request.user.id, user.id)
+            if getattr(settings, 'SQUELCH_PII_IN_LOGS', False)
+            else (request.user, username)
+        )
         if account_action == 'disable':
             user_account.account_status = UserStanding.ACCOUNT_DISABLED
             context['message'] = _("Successfully disabled {}'s account").format(username)
-            if getattr(settings, 'SQUELCH_PII_IN_LOGS', False):
-                log.info("User %s disabled user %s's account", request.user.id, user.id)
-            else:
-                log.info("%s disabled %s's account", request.user, username)
+            log.info("%s disabled %s's account", request_user_identifier_for_log, user_identifier_for_log)
         elif account_action == 'reenable':
             user_account.account_status = UserStanding.ACCOUNT_ENABLED
             context['message'] = _("Successfully reenabled {}'s account").format(username)
-            if getattr(settings, 'SQUELCH_PII_IN_LOGS', False):
-                log.info("User %s reenabled user %s's account", request.user.id, user.id)
-            else:
-                log.info("%s reenabled %s's account", request.user, username)
+            log.info("%s reenabled %s's account", request_user_identifier_for_log, user_identifier_for_log)
         else:
             context['message'] = _("Unexpected account status")
             return JsonResponse(context, status=400)

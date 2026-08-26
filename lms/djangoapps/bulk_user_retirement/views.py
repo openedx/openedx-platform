@@ -57,22 +57,21 @@ class BulkUsersRetirementView(APIView):
                 user_to_retire = User.objects.get(username=username)
                 with transaction.atomic():
                     create_retirement_request_and_deactivate_account(user_to_retire)
-                if getattr(settings, 'SQUELCH_PII_IN_LOGS', False):
-                    log.info('User %s added to retirement pipeline by user %s at index %s',
-                        user_to_retire.id,
-                        request.user.id,
-                        index,
-                    )
-                else:
-                    log.info('The user "%s" has been added to the retirement pipeline by "%s" at index %s',
-                        username,
-                        request.user,
-                        index,
-                    )
+                user_identifier_for_log, request_user_identifier_for_log = (
+                    (user_to_retire.id, request.user.id)
+                    if getattr(settings, 'SQUELCH_PII_IN_LOGS', False)
+                    else (username, request.user)
+                )
+                log.info(
+                    'User %s added to retirement pipeline by user %s at index %s',
+                    user_identifier_for_log,
+                    request_user_identifier_for_log,
+                    index,
+                )
 
             except User.DoesNotExist:
                 user_identifier_for_log = (
-                    f"index {index}" if getattr(settings, 'SQUELCH_PII_IN_LOGS', False) else username
+                    'index %s' % index if getattr(settings, 'SQUELCH_PII_IN_LOGS', False) else username
                 )
                 log.exception('Bulk retirement user %s does not exist.', user_identifier_for_log)
                 failed_user_retirements.append(username)
