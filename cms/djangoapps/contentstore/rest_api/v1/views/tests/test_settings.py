@@ -1,8 +1,6 @@
 """
 Unit tests for course settings views.
 """
-from unittest.mock import patch
-
 import ddt
 from django.conf import settings
 from django.test.utils import override_settings
@@ -48,7 +46,7 @@ class CourseSettingsViewTest(CourseTestCase, PermissionAccessMixin):
             "is_prerequisite_courses_enabled": False,
             "language_options": settings.ALL_LANGUAGES,
             "lms_link_for_about_page": get_link_for_about_page(self.course),
-            "marketing_enabled": False,
+            "marketing_enabled": True,
             "mfe_proctored_exam_settings_url": get_proctored_exam_settings_url(
                 self.course.id
             ),
@@ -74,13 +72,7 @@ class CourseSettingsViewTest(CourseTestCase, PermissionAccessMixin):
         self.assertIn("credit_requirements", response.data)  # noqa: PT009
         self.assertTrue(response.data["is_credit_course"])  # noqa: PT009
 
-    @patch.dict(
-        "django.conf.settings.FEATURES",
-        {
-            "ENABLE_PREREQUISITE_COURSES": True,
-            "MILESTONES_APP": True,
-        },
-    )
+    @override_settings(ENABLE_PREREQUISITE_COURSES=True, MILESTONES_APP=True)
     def test_prerequisite_courses_enabled_setting(self):
         """
         Make sure if the feature flags are enabled we have updated the dict keys in response.

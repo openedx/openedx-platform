@@ -7,14 +7,18 @@ from unittest.mock import Mock, patch
 
 import ddt
 from django.db.models import Model
-from django.test import TestCase
+from django.test import RequestFactory, TestCase
 from django.test.utils import override_settings
 
 from openedx.core.djangoapps.user_authn.views.registration_form import (
     get_extended_profile_model,
     get_registration_extension_form,
 )
-from openedx.core.djangoapps.user_authn.views.utils import _get_username_prefix, get_auto_generated_username
+from openedx.core.djangoapps.user_authn.views.utils import (
+    _get_username_prefix,
+    get_auto_generated_username,
+    get_running_third_party_auth_state,
+)
 
 
 @ddt.ddt
@@ -323,3 +327,47 @@ class TestGetRegistrationExtensionForm(TestCase):
 
         error_calls = mock_logger.error.call_args_list
         self.assertGreater(len(error_calls), 0, "Expected an error to be logged")  # noqa: PT009
+
+
+@ddt.ddt
+class TestGetRunningThirdPartyAuthState(TestCase):
+    """
+    Test case for the get_running_third_party_auth_state function.
+    """
+
+    @patch('openedx.core.djangoapps.user_authn.views.utils.third_party_auth')
+    def test_third_party_auth_disabled(self, mock_third_party_auth):
+        """
+        No pipeline or provider is returned when third party auth is disabled.
+        """
+        mock_third_party_auth.is_enabled.return_value = False
+
+        assert get_running_third_party_auth_state(RequestFactory().get('/')) == (None, None)
+
+    @patch('openedx.core.djangoapps.user_authn.views.utils.pipeline')
+    @patch('openedx.core.djangoapps.user_authn.views.utils.third_party_auth')
+    def test_no_running_pipeline(self, mock_third_party_auth, mock_pipeline):
+        """
+        No pipeline or provider is returned when no pipeline is running for the request.
+        """
+        mock_third_party_auth.is_enabled.return_value = True
+        mock_pipeline.get.return_value = None
+
+        assert get_running_third_party_auth_state(RequestFactory().get('/')) == (None, None)
+        mock_third_party_auth.provider.Registry.get_from_pipeline.assert_not_called()
+
+    @patch('openedx.core.djangoapps.user_authn.views.utils.pipeline')
+    @patch('openedx.core.djangoapps.user_authn.views.utils.third_party_auth')
+    def test_running_pipeline_and_provider_returned(self, mock_third_party_auth, mock_pipeline):
+        """
+        The running pipeline and the provider it is using are both returned.
+        """
+        running_pipeline = {'kwargs': {'details': {'email': 'learner@example.com'}}}
+        mock_third_party_auth.is_enabled.return_value = True
+        mock_pipeline.get.return_value = running_pipeline
+        current_provider = mock_third_party_auth.provider.Registry.get_from_pipeline.return_value
+
+        assert get_running_third_party_auth_state(RequestFactory().get('/')) == (
+            running_pipeline, current_provider,
+        )
+        mock_third_party_auth.provider.Registry.get_from_pipeline.assert_called_once_with(running_pipeline)

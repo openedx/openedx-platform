@@ -1,0 +1,31 @@
+[project]
+name = "edx-platform-semgrep"
+version = "0.1"
+requires-python = ">=3.12"
+dependencies = [
+    "semgrep", # Semgrep performs structural code searches
+]
+
+[tool.uv]
+# This isn't installed as a package itself -- it's just a locked dependency
+# set for running the semgrep CLI against the main project's source tree.
+# Isolated into its own sub-project (rather than a root pyproject.toml
+# dependency-group) because semgrep's own dependency chain (via wcmatch) is
+# incompatible with other root-project dependencies (e.g. openedx-authz's
+# pycasbin pin) when resolved in one shared graph -- mirrors how
+# requirements/edx-sandbox and scripts/xblock are isolated for the same
+# reason (see their READMEs).
+package = false
+
+#  DO NOT EDIT constraint-dependencies DIRECTLY.
+#  This list is managed by `edx_lint write_uv_constraints`
+#  and will be overwritten the next time `make upgrade` is run.
+#  - GLOBAL constraints: edit edx_lint/files/common_constraints.txt
+#  - REPO-SPECIFIC constraints: edit [tool.edx_lint].uv_constraints in this file
+constraint-dependencies = [
+    "Django<6.0",
+    "elasticsearch<7.14.0",
+    "social-auth-app-django<6.0.0",
+    "social-auth-core<5.0.0",
+    "pip<26.2.1",
+]

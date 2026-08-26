@@ -48,19 +48,13 @@ def index(request):
     if use_catalog_mfe():
         return redirect(f'{settings.CATALOG_MICROFRONTEND_URL}/', permanent=True)
 
-    enable_mktg_site = configuration_helpers.get_value(
-        'ENABLE_MKTG_SITE',
-        getattr(settings, 'ENABLE_MKTG_SITE', False)
+    marketing_urls = configuration_helpers.get_value(
+        'MKTG_URLS',
+        settings.MKTG_URLS
     )
-
-    if enable_mktg_site:
-        marketing_urls = configuration_helpers.get_value(
-            'MKTG_URLS',
-            settings.MKTG_URLS
-        )
-        root_url = marketing_urls.get("ROOT")
-        if root_url != getattr(settings, "LMS_ROOT_URL", None):
-            return redirect(root_url)
+    root_url = marketing_urls.get("ROOT")
+    if root_url and root_url != getattr(settings, "LMS_ROOT_URL", None):
+        return redirect(root_url)
 
     domain = request.headers.get('Host')
 
@@ -76,11 +70,10 @@ def index(request):
         return student_views.index(request, user=request.user)
     except NoReverseMatch:
         log.error(
-            f'https is not a registered namespace Request from {domain}',
-            f'request_site= {request.site.__dict__}',
-            f'enable_mktg_site= {enable_mktg_site}',
-            f'Auth Status= {request.user.is_authenticated}',
-            f'Request Meta= {request.META}'
+            f'NoReverseMatch on index view for domain {domain}; '
+            f'request_site={getattr(request, "site", None)}; '
+            f'Auth Status={request.user.is_authenticated}; '
+            f'Request Meta={request.META}'
         )
         raise
 
@@ -89,26 +82,21 @@ def index(request):
 @cache_if_anonymous()
 def courses(request):
     """
-    Render the "find courses" page. If the marketing site is enabled, redirect
-    to that. Otherwise, if subdomain branding is on, this is the university
-    profile page. Otherwise, it's the edX courseware.views.views.courses page
+    Serve the "find courses" page. Redirects to the catalog MFE or the marketing
+    site COURSES URL if configured; falls back to rendering the local courses page.
     """
     if use_catalog_mfe():
         return redirect(f'{settings.CATALOG_MICROFRONTEND_URL}/courses', permanent=True)
 
-    enable_mktg_site = configuration_helpers.get_value(
-        'ENABLE_MKTG_SITE',
-        settings.FEATURES.get('ENABLE_MKTG_SITE', False)
-    )
-
-    if enable_mktg_site:
-        return redirect(marketing_link('COURSES'), permanent=True)
+    courses_url = marketing_link('COURSES')
+    if courses_url != '#':
+        return redirect(courses_url, permanent=True)
 
     if not settings.COURSES_ARE_BROWSABLE:
         raise Http404
 
     #  we do not expect this case to be reached in cases where
-    #  marketing is enabled or the courses are not browsable
+    #  the courses are not browsable
     return courseware_views.courses(request)
 
 

@@ -80,7 +80,6 @@ with codecs.open(CONFIG_FILE, encoding='utf-8') as f:
             'EVENT_TRACKING_BACKENDS',
             'JWT_AUTH',
             'CELERY_QUEUES',
-            'MKTG_URL_LINK_MAP',
             'REST_FRAMEWORK',
             'EVENT_BUS_PRODUCER_CONFIG',
             'DEFAULT_FILE_STORAGE',
@@ -175,8 +174,6 @@ CELERY_QUEUES.update(
         if alternate not in CELERY_QUEUES.keys()
     }
 )
-
-MKTG_URL_LINK_MAP.update(_YAML_TOKENS.get('MKTG_URL_LINK_MAP', {}))  # noqa: F405
 
 # Timezone overrides
 TIME_ZONE = CELERY_TIMEZONE  # noqa: F405
@@ -397,6 +394,11 @@ ENTERPRISE_EXCLUDED_REGISTRATION_FIELDS = set(ENTERPRISE_EXCLUDED_REGISTRATION_F
 #       next line. See CMS settings for the example of what we want.
 MIDDLEWARE.extend(_YAML_TOKENS.get('EXTRA_MIDDLEWARE_CLASSES', []))  # noqa: F405
 
+
+###################### drf-spectacular (LMS enrollment schema) ######################
+SPECTACULAR_SETTINGS['SERVERS'] = [  # noqa: F405
+    {'url': LMS_ROOT_URL, 'description': 'Local'},  # noqa: F405
+]
 
 #######################################################################################################################
 #### DERIVE ANY DERIVED SETTINGS

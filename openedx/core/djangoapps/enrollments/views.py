@@ -110,6 +110,14 @@ class EnrollmentUserThrottle(UserRateThrottle, ApiKeyPermissionMixIn):
 
         return self.has_api_key_permissions(request) or super().allow_request(request, view)
 
+    def get_cache_key(self, request, view):
+        # Namespace this throttle's cache key so it does not share a rate-limit
+        # bucket with other throttles that use the same scope name.
+        cache_key = super().get_cache_key(request, view)
+        if cache_key:
+            cache_key = f"enrollment.{cache_key}"
+        return cache_key
+
 
 @can_disable_rate_limit
 class EnrollmentView(APIView, ApiKeyPermissionMixIn):

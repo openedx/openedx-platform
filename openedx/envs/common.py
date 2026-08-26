@@ -836,6 +836,7 @@ REST_FRAMEWORK = {
         'registration_validation': '30/minute',
         'high_service_user': '2000/minute',
     },
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
 # .. setting_name: REGISTRATION_VALIDATION_RATELIMIT
@@ -1049,6 +1050,14 @@ AUTOPLAY_VIDEOS = False
 # auto-advance.
 ENABLE_AUTOADVANCE_VIDEOS = False
 
+# .. toggle_name: DISPLAY_COURSE_MODES_ON_DASHBOARD
+# .. toggle_implementation: DjangoSetting
+# .. toggle_default: True
+# .. toggle_description: When True, course modes (verified, honor, etc.) are shown as pills on the learner dashboard.
+# .. toggle_use_cases: open_edx
+# .. toggle_creation_date: 2017-09-13
+DISPLAY_COURSE_MODES_ON_DASHBOARD = True
+
 # .. toggle_name: CUSTOM_COURSES_EDX
 # .. toggle_implementation: DjangoSetting
 # .. toggle_default: False
@@ -1121,16 +1130,6 @@ RESTRICT_AUTOMATIC_AUTH = True
 # .. toggle_tickets: https://github.com/openedx/edx-platform/pull/2749
 EMBARGO = False
 
-# .. toggle_name: ENABLE_MKTG_SITE
-# .. toggle_implementation: DjangoSetting
-# .. toggle_default: False
-# .. toggle_description: Toggle to enable alternate urls for marketing links.
-# .. toggle_use_cases: open_edx
-# .. toggle_creation_date: 2014-03-24
-# .. toggle_warning: When this is enabled, the MKTG_URLS setting should be defined. The use case of this feature
-#   toggle is uncertain.
-ENABLE_MKTG_SITE = False
-
 # Expose Mobile REST API.
 ENABLE_MOBILE_REST_API = False
 
@@ -1166,6 +1165,22 @@ ENABLE_PREREQUISITE_COURSES = False
 # .. toggle_creation_date: 2015-05-14
 # .. toggle_tickets: https://github.com/openedx/edx-platform/pull/7315
 LICENSING = False
+
+# .. setting_name: THIRD_PARTY_AUTH_HINT
+# .. setting_default: ''
+# .. setting_description: Default third-party auth provider hint (tpa_hint) to append to login/registration
+#   redirect URLs site-wide. Usually left empty and overridden per-site via site configuration.
+THIRD_PARTY_AUTH_HINT = ''
+
+# .. setting_name: COURSEWARE_SEARCH_INCLUSION_DATE
+# .. setting_default: None
+# .. setting_description: YYYY-MM-DD cutoff date used to roll out courseware search to newer courses.
+#   In the LMS, the courseware-search-enabled endpoint exposes search for any course whose start date
+#   is after this date (in addition to any course where the courseware.mfe_courseware_search waffle
+#   flag is enabled); leaving it None disables this date-based rollout. The Studio
+#   `reindex_course --from_inclusion_date` command reindexes courses starting on/after this date,
+#   flooring an unset value at 2020-01-01 so the standalone command still has a bound to filter by.
+COURSEWARE_SEARCH_INCLUSION_DATE = None
 
 # .. toggle_name: CERTIFICATES_HTML_VIEW
 # .. toggle_implementation: DjangoSetting
@@ -2159,7 +2174,6 @@ EDXMKTG_USER_INFO_COOKIE_VERSION = 1
 
 MKTG_URLS = {}
 MKTG_URL_OVERRIDES = {}
-MKTG_URL_LINK_MAP = {}
 
 SUPPORT_SITE_LINK = ''
 

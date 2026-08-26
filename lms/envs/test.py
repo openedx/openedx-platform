@@ -201,28 +201,6 @@ OAUTH_ENFORCE_SECURE = False
 ENABLE_MOBILE_REST_API = True
 ENABLE_VIDEO_ABSTRACTION_LAYER_API = True
 
-######################### MARKETING SITE ###############################
-
-MKTG_URL_LINK_MAP = {
-    'ABOUT': 'about',
-    'CONTACT': 'contact',
-    'HELP_CENTER': 'help-center',
-    'COURSES': 'courses',
-    'ROOT': 'root',
-    'TOS': 'tos',
-    'HONOR': 'honor',
-    'PRIVACY': 'privacy',
-    'CAREERS': 'careers',
-    'NEWS': 'news',
-    'PRESS': 'press',
-    'BLOG': 'blog',
-    'DONATE': 'donate',
-    'SITEMAP.XML': 'sitemap_xml',
-
-    # Verified Certificates
-    'WHAT_IS_VERIFIED_CERT': 'verified-certificate',
-}
-
 SUPPORT_SITE_LINK = 'https://example.support.edx.org'
 PASSWORD_RESET_SUPPORT_LINK = 'https://support.example.com/password-reset-help.html'
 ACTIVATION_EMAIL_SUPPORT_LINK = 'https://support.example.com/activation-email-help.html'

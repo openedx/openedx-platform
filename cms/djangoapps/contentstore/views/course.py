@@ -420,19 +420,8 @@ def get_in_process_course_actions(request):
             exclude_args={'state': CourseRerunUIStateManager.State.SUCCEEDED},
             should_display=True,
         )
-        if (
-            # The user who initiated the rerun can always see its status.
-            # This is needed because when the authz flag is enabled, permission
-            # checks require a CourseOverview which doesn't exist until the
-            # rerun task clones the course.
-            # TODO: This created_user fallback is a temporary workaround until
-            # openedx/openedx-authz#352 is implemented. Once authz supports
-            # pre-assigning roles without a CourseOverview, this check can be removed
-            # and the standard permission check will suffice.
-            course.created_user == request.user
-            or user_has_course_permission(
-                request.user, COURSES_VIEW_COURSE.identifier, course.course_key, LegacyAuthoringPermission.READ
-            )
+        if user_has_course_permission(
+            request.user, COURSES_VIEW_COURSE.identifier, course.course_key, LegacyAuthoringPermission.READ
         )
     ]
 
@@ -477,19 +466,23 @@ def get_query_params_if_present(request):
     Arguments:
         request: the request object
 
+    ADR 0033 - ``ordering`` is the preferred parameter (DRF standard); ``order``
+    is kept as a deprecated alias. When both are present, ``ordering`` wins.
+
     Returns:
         search_query (str): any string used to filter Course Overviews based on visible fields.
-        order (str): any string used to order Course Overviews.
+        order (str): any string used to order Course Overviews. Sourced from
+            ``ordering`` (preferred) or ``order`` (deprecated alias).
         active_only (str): if not None, this value will limit the courses returned to active courses.
             The default value is None.
         archived_only (str): if not None, this value will limit the courses returned to archived courses.
             The default value is None.
     """
-    allowed_query_params = ['search', 'order', 'active_only', 'archived_only']
+    allowed_query_params = ['search', 'ordering', 'order', 'active_only', 'archived_only']
     if not any(param in request.GET for param in allowed_query_params):
         return None, None, None, None
     search_query = request.GET.get('search')
-    order = request.GET.get('order')
+    order = request.GET.get('ordering') or request.GET.get('order')
     active_only = get_bool_param(request, 'active_only', None)
     archived_only = get_bool_param(request, 'archived_only', None)
     return search_query, order, active_only, archived_only
@@ -1336,17 +1329,8 @@ def rerun_course(user, source_course_key, org, number, run, fields, background=T
             raise PermissionDenied()
 
     # Make sure user has instructor and staff access to the destination course
-    # so the user can see the updated status for that course.
-    # When authz is enabled, we skip this because the authz layer requires a
-    # CourseOverview (which doesn't exist until the course is cloned in the task).
-    # In that case, visibility of the rerun status is granted by checking
-    # created_user on CourseRerunState instead.
-    # TODO: This conditional is a temporary workaround until openedx/openedx-authz#352
-    # is implemented (pre-assigning roles without a CourseOverview). Once resolved,
-    # add_instructor can be called unconditionally here and the created_user fallback
-    # in get_in_process_course_actions can be removed.
-    if not enable_authz_course_authoring(destination_course_key):
-        add_instructor(destination_course_key, user, user)
+    # so the user can see the updated status for that course
+    add_instructor(destination_course_key, user, user)
 
     # Mark the action as initiated
     CourseRerunState.objects.initiated(source_course_key, destination_course_key, user, fields['display_name'])
@@ -2146,7 +2130,7 @@ def get_allowed_organizations_for_libraries(user):
     # This allows org-level staff to create libraries. We should re-evaluate
     # whether this is necessary and try to normalize course and library creation
     # authorization behavior.
-    if settings.FEATURES.get('ENABLE_ORGANIZATION_STAFF_ACCESS_FOR_CONTENT_LIBRARIES', False):
+    if settings.ENABLE_ORGANIZATION_STAFF_ACCESS_FOR_CONTENT_LIBRARIES:
         organizations_set.update(get_organizations_for_non_course_creators(user))
 
     # This allows people in the course creator group for an org to create

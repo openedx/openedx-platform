@@ -160,6 +160,21 @@ function parameterized_suite(label, globalPageOptions) {
             });
         });
 
+        describe('Add component buttons when embedded in the authoring MFE', function() {
+            it('removes the buttons for a unit, since the MFE renders its own', function() {
+                renderContainerPage(this, mockContainerXBlockHtml, {isIframeEmbed: true});
+                expect(containerPage.$('.add-xblock-component').length).toBe(0);
+            });
+
+            it('keeps the buttons for a content experiment, where the MFE renders none', function() {
+                model.set('category', 'split_test');
+                renderContainerPage(this, mockContainerXBlockHtml, {isIframeEmbed: true});
+                // One panel per experiment group, each with its own component buttons.
+                expect(containerPage.$('.add-xblock-component').length).toBe(2);
+                expect(containerPage.$('.add-xblock-component-button').length).toBeGreaterThan(0);
+            });
+        });
+
         describe('Editing the container', function() {
             var updatedDisplayName = 'Updated Test Container',
                 getDisplayNameWrapper;

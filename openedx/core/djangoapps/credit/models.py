@@ -115,6 +115,7 @@ class CreditProvider(TimeStampedModel):
         )
     )
 
+    # pylint: disable-next=pii-invalid-no-pii-annotation  # field does not store user PII data, safe under OEP-30
     eligibility_email_message = models.TextField(
         default="",
         help_text=gettext_lazy(
@@ -124,6 +125,7 @@ class CreditProvider(TimeStampedModel):
         )
     )
 
+    # pylint: disable-next=pii-invalid-no-pii-annotation  # field does not store user PII data, safe under OEP-30
     receipt_email_message = models.TextField(
         default="",
         help_text=gettext_lazy(
@@ -424,7 +426,9 @@ class CreditRequirementStatus(TimeStampedModel):
 
     In case (3), no CreditRequirementStatus record will exist for the requirement and user.
 
-    .. no_pii:
+    .. pii: Contains username, anonymized by retire_user().
+    .. pii_types: username
+    .. pii_retirement: local_api
     """
 
     REQUIREMENT_STATUS_CHOICES = (
@@ -545,7 +549,9 @@ class CreditEligibility(TimeStampedModel):
     """
     A record of a user's eligibility for credit for a specific course.
 
-    .. no_pii:
+    .. pii: Contains username, anonymized by retire_user().
+    .. pii_types: username
+    .. pii_retirement: local_api
     """
     username = models.CharField(max_length=255, db_index=True)
     course = models.ForeignKey(CreditCourse, related_name="eligibilities", on_delete=models.CASCADE)
@@ -658,7 +664,9 @@ class CreditRequest(TimeStampedModel):
     (perhaps because the user did not finish filling in forms on the credit provider's site),
     the request record will be updated, but the UUID will remain the same.
 
-    .. no_pii:
+    .. pii: Contains username, anonymized by retire_user().
+    .. pii_types: username
+    .. pii_retirement: local_api
     """
 
     uuid = models.CharField(max_length=32, unique=True, db_index=True)

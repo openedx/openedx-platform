@@ -43,13 +43,13 @@ CDL_METHOD_NAME = 'openedx.features.course_duration_limits.models.CourseDuration
 
 @ddt.ddt
 @skip_unless_lms
+@override_settings(MODE_CREATION_FOR_TESTING=True)
 class CourseModeViewTest(CatalogIntegrationMixin, UrlResetMixin, ModuleStoreTestCase, CourseCatalogServiceMockMixin):
     """
     Course Mode View tests
     """
     URLCONF_MODULES = ['common.djangoapps.course_modes.urls']
 
-    @patch.dict(settings.FEATURES, {'MODE_CREATION_FOR_TESTING': True})
     def setUp(self):
         super().setUp()
         now = datetime.now(ZoneInfo("UTC"))
@@ -185,38 +185,62 @@ class CourseModeViewTest(CatalogIntegrationMixin, UrlResetMixin, ModuleStoreTest
         # TODO: Fix it so that response.templates works w/ mako templates, and then assert
         # that the right template rendered
 
-    @httpretty.activate
-    @patch('common.djangoapps.course_modes.views.enterprise_customer_for_request')
-    @patch('common.djangoapps.course_modes.views.get_course_final_price')
+    @patch('openedx_filters.learning.filters.CourseModePriceRequested.run_filter')
     @ddt.data(
-        (1.0, True),
-        (50.0, False),
-        (0.0, True),
-        (None, False),
+        (100, 149, True),    # discounted_price, base_price, has_discount
+        (149, 149, False),   # no discount
+        (50, 149, True),     # significant discount
+        (0, 149, True),      # free course
     )
     @ddt.unpack
     def test_display_after_discounted_price(
         self,
         discounted_price,
-        is_enterprise_enabled,
-        mock_get_course_final_price,
-        mock_enterprise_customer_for_request
+        base_price,
+        has_discount,
+        mock_run_filter,
     ):
-        verified_mode = CourseModeFactory.create(mode_slug='verified', course_id=self.course.id, sku='dummy')
+        """
+        Test that the discounted price is displayed when an enterprise customer applies a discount.
+
+        The discounted price is calculated through the CourseModePriceRequested filter,
+        which invokes the CalculateEnterpriseDiscountedPrice pipeline step from edx-enterprise.
+        """
+        verified_mode = CourseModeFactory.create(
+            mode_slug='verified',
+            course_id=self.course.id,
+            sku='dummy',
+            min_price=base_price,
+        )
         CourseEnrollmentFactory(
             is_active=True,
             course_id=self.course.id,
             user=self.user
         )
 
-        mock_enterprise_customer_for_request.return_value = {'name': 'dummy'} if is_enterprise_enabled else {}
-        mock_get_course_final_price.return_value = discounted_price
+        # Capture the actual call and verify it was made
+        mock_run_filter.return_value = (self.user, verified_mode, discounted_price)
+
         url = reverse('course_modes_choose', args=[self.course.id])
         response = self.client.get(url)
 
-        if is_enterprise_enabled:
-            self.assertContains(response, discounted_price)
-        self.assertContains(response, verified_mode.min_price)
+        # Verify the filter was called with correct user and price
+        assert mock_run_filter.called
+        call_args = mock_run_filter.call_args
+        assert call_args.kwargs['user'] == self.user
+        assert call_args.kwargs['price'] == base_price
+        # The course_mode_data should be a Mode object with the verified mode's slug
+        assert call_args.kwargs['course_mode_data'].slug == 'verified'
+
+        # Verify the response is successful
+        assert response.status_code == 200
+
+        # The discounted price should always be displayed
+        self.assertContains(response, str(discounted_price))
+
+        # When there's a discount, the original price should be used as the "contribution" value
+        if has_discount:
+            self.assertContains(response, f'name="contribution" value="{base_price}"')
 
     @ddt.data('professional', 'no-id-professional')
     def test_professional_enrollment(self, mode):

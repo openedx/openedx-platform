@@ -826,3 +826,69 @@ class TestLegacyLibraryContentBlockMigration(LegacyLibraryContentTest):
         assert '<li>html 2</li>' in rendered.content
         assert '<li>html 3</li>' in rendered.content
         assert '<li>html 4</li>' in rendered.content
+
+
+@ddt.ddt
+class TestLegacyLibraryContentBlockMigrationPublishing(LegacyLibraryContentTest):
+    """
+    Unit tests for the `persist_publish_state` flag of
+    LegacyLibraryContentBlock.v2_update_children_upstream_version.
+    """
+
+    def setUp(self):
+        from cms.djangoapps.modulestore_migrator import api
+        from cms.djangoapps.modulestore_migrator.data import CompositionLevel, RepeatHandlingStrategy
+        super().setUp()
+        user = UserFactory()
+        self._sync_lc_block_from_library()
+        self.organization = OrganizationFactory(short_name="myorg")
+        lib_api.create_library(
+            org=self.organization,
+            slug="mylib",
+            title="My Test V2 Library",
+        )
+        self.library_v2 = lib_api.ContentLibrary.objects.get(slug="mylib")
+        api.start_migration_to_library(
+            user=user,
+            source_key=self.library.location.library_key,
+            target_library_key=self.library_v2.library_key,
+            target_collection_slug=None,
+            composition_level=CompositionLevel.Component,
+            repeat_handling_strategy=RepeatHandlingStrategy.Skip,
+            preserve_url_slugs=True,
+            forward_source_to_target=True,
+        )
+
+    @ddt.data(
+        # Published before migration, flag True: re-published with the migration reflected.
+        (True, True),
+        # Published before migration, flag False (default): published branch is left untouched.
+        (True, False),
+        # Never published before migration, flag True: stays unpublished.
+        (False, True),
+    )
+    @ddt.unpack
+    def test_persist_publish_state(self, was_published_before, persist_publish_state):
+        """
+        Tests the `persist_publish_state` flag of `v2_update_children_upstream_version` under
+        the various combinations of prior publish state and flag value.
+        """
+        if was_published_before:
+            self.store.publish(self.course.location, self.user_id)
+
+        self.lc_block.v2_update_children_upstream_version(
+            self.user_id, persist_publish_state=persist_publish_state,
+        )
+
+        if was_published_before and persist_publish_state:
+            with self.store.branch_setting(ModuleStoreEnum.Branch.published_only):
+                published_block = self.store.get_item(self.lc_block.location)
+                assert published_block.is_migrated_to_v2 is True
+                assert published_block.get_children()[0].upstream == "lb:myorg:mylib:html:html_1"
+        elif was_published_before and not persist_publish_state:
+            with self.store.branch_setting(ModuleStoreEnum.Branch.published_only):
+                published_block = self.store.get_item(self.lc_block.location)
+                # The published version still reflects the pre-migration state.
+                assert published_block.is_migrated_to_v2 is False
+        else:
+            assert not self.store.has_published_version(self.store.get_item(self.lc_block.location))

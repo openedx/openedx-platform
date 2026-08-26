@@ -35,7 +35,7 @@ from web_fragments.fragment import Fragment
 from xblock.core import XBlock
 from xblock.fields import Scope, String
 from xblock.scorable import ShowCorrectness
-from xblocks_contrib.problem.capa.tests.response_xml_factory import MultipleChoiceResponseXMLFactory
+from xblocks_contrib.problem.capa.testing.response_xml_factory import MultipleChoiceResponseXMLFactory
 
 import lms.djangoapps.courseware.views.views as views
 from common.djangoapps.course_modes.models import CourseMode
@@ -1296,7 +1296,7 @@ class ProgressPageTests(ProgressPageBaseTests):
             ), check_mongo_calls(2):
                 self._get_progress_page()
 
-    @patch.dict(settings.FEATURES, {'ENABLE_CERTIFICATES_IDV_REQUIREMENT': True})
+    @override_settings(ENABLE_CERTIFICATES_IDV_REQUIREMENT=True)
     @ddt.data(
         *itertools.product(
             (
@@ -1581,7 +1581,7 @@ class ProgressPageTests(ProgressPageBaseTests):
         """
         certs_api.set_certificate_generation_config(enabled=True)
         certs_api.set_cert_generation_enabled(self.course.id, True)
-        with patch.dict(settings.FEATURES, ENABLE_CERTIFICATES_IDV_REQUIREMENT=enable_cert_idv_requirement):
+        with override_settings(ENABLE_CERTIFICATES_IDV_REQUIREMENT=enable_cert_idv_requirement):
             with patch(
                 'lms.djangoapps.certificates.api.certificate_downloadable_status',
                 return_value=self.mock_certificate_downloadable_status()
@@ -2696,7 +2696,7 @@ class AccessUtilsTestCase(ModuleStoreTestCase):
         },
     )
     @ddt.unpack
-    @patch.dict('django.conf.settings.FEATURES', {'DISABLE_START_DATES': False, 'ENABLE_ENTERPRISE_INTEGRATION': True})
+    @override_settings(DISABLE_START_DATES=False, ENABLE_ENTERPRISE_INTEGRATION=True)
     def test_is_course_open_for_learner(
         self,
         start_date_modifier,
@@ -3180,7 +3180,7 @@ class TestCoursewareMFESearchAPI(SharedModuleStoreTestCase):
         (CourseMode.MASTERS, True),
     )
     @ddt.unpack
-    @patch.dict('django.conf.settings.FEATURES', {'ENABLE_COURSEWARE_SEARCH_VERIFIED_ENROLLMENT_REQUIRED': True})
+    @override_settings(ENABLE_COURSEWARE_SEARCH_VERIFIED_ENROLLMENT_REQUIRED=True)
     def test_courseware_mfe_search_verified_only(self, mode, expected_enabled):
         """
         Only verified enrollees may use Courseware Search if ENABLE_COURSEWARE_SEARCH_VERIFIED_ENROLLMENT_REQUIRED
@@ -3196,7 +3196,7 @@ class TestCoursewareMFESearchAPI(SharedModuleStoreTestCase):
         self.assertEqual(response.status_code, 200)  # noqa: PT009
         self.assertEqual(body, {'enabled': expected_enabled})  # noqa: PT009
 
-    @patch.dict('django.conf.settings.FEATURES', {'ENABLE_COURSEWARE_SEARCH_VERIFIED_ENROLLMENT_REQUIRED': True})
+    @override_settings(ENABLE_COURSEWARE_SEARCH_VERIFIED_ENROLLMENT_REQUIRED=True)
     def test_courseware_mfe_search_staff_access(self):
         """
         Staff users may use Courseware Search regardless of their enrollment status.
@@ -3224,7 +3224,7 @@ class TestCoursewareMFESearchAPI(SharedModuleStoreTestCase):
         self.assertEqual(response.status_code, 200)  # noqa: PT009
         self.assertEqual(body, {'enabled': False})  # noqa: PT009
 
-    @patch.dict('django.conf.settings.FEATURES', {'COURSEWARE_SEARCH_INCLUSION_DATE': '2020'})
+    @override_settings(COURSEWARE_SEARCH_INCLUSION_DATE='2020')
     @override_waffle_flag(COURSEWARE_MICROFRONTEND_SEARCH_ENABLED, active=False)
     @ddt.data(
         (datetime(2013, 9, 18, 11, 30, 00), False),

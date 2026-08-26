@@ -96,9 +96,7 @@ class RegistrationViewValidationErrorTest(
         super().setUp()
         self.url = reverse("user_api_registration")
 
-    @mock.patch.dict(settings.FEATURES, {
-        "ENABLE_THIRD_PARTY_AUTH": True,
-    })
+    @override_settings(ENABLE_THIRD_PARTY_AUTH=True)
     @mock.patch(
         'openedx.core.djangoapps.user_authn.views.register.is_require_third_party_auth_enabled',
         mock.Mock(return_value=True)
@@ -1127,7 +1125,6 @@ class RegistrationViewTestV1(
     @override_settings(
         MKTG_URLS={"ROOT": "https://www.test.com/", "HONOR": "honor"},
     )
-    @mock.patch.dict(settings.FEATURES, {"ENABLE_MKTG_SITE": True})
     def test_registration_honor_code_mktg_site_enabled(self):
         link_template = "<a href='https://www.test.com/honor' rel='noopener' target='_blank'>{link_label}</a>"
         link_template2 = "<a href='#' rel='noopener' target='_blank'>{link_label}</a>"
@@ -1159,44 +1156,11 @@ class RegistrationViewTestV1(
             }
         )
 
-    @override_settings(MKTG_URLS_LINK_MAP={"HONOR": "honor"})
-    @mock.patch.dict(settings.FEATURES, {"ENABLE_MKTG_SITE": False})
-    def test_registration_honor_code_mktg_site_disabled(self):
-        link_template = "<a href='/privacy' rel='noopener' target='_blank'>{link_label}</a>"
-        link_label = "Terms of Service and Honor Code"
-        link_label2 = "Privacy Policy"
-        self._assert_reg_field(
-            {"honor_code": "required"},
-            {
-                "label": ("By creating an account, you agree to the {spacing}"
-                          "{link_label} {spacing}"
-                          "and you acknowledge that {platform_name} and each Member process your "
-                          "personal data in accordance {spacing}"
-                          "with the {link_label2}.").format(
-                    platform_name=settings.PLATFORM_NAME,
-                    link_label=self.link_template.format(link_label=link_label),
-                    link_label2=link_template.format(link_label=link_label2),
-                    spacing=' ' * 18
-                ),
-                "name": "honor_code",
-                "defaultValue": False,
-                "type": "plaintext",
-                "required": True,
-                "errorMessages": {
-                    "required": "You must agree to the {platform_name} {link_label}".format(  # noqa: UP032
-                        platform_name=settings.PLATFORM_NAME,
-                        link_label=link_label
-                    )
-                }
-            }
-        )
-
     @override_settings(MKTG_URLS={
         "ROOT": "https://www.test.com/",
         "HONOR": "honor",
         "TOS": "tos",
     })
-    @mock.patch.dict(settings.FEATURES, {"ENABLE_MKTG_SITE": True})
     def test_registration_separate_terms_of_service_mktg_site_enabled(self):
         # Honor code field should say ONLY honor code,
         # not "terms of service and honor code"
@@ -1240,53 +1204,6 @@ class RegistrationViewTestV1(
                     "required": "You must agree to the {platform_name} {link_label}".format(  # noqa: UP032
                         platform_name=settings.PLATFORM_NAME,
                         link_label=link_label
-                    )
-                }
-            }
-        )
-
-    @override_settings(MKTG_URLS_LINK_MAP={"HONOR": "honor", "TOS": "tos"})
-    @mock.patch.dict(settings.FEATURES, {"ENABLE_MKTG_SITE": False})
-    def test_registration_separate_terms_of_service_mktg_site_disabled(self):
-        # Honor code field should say ONLY honor code,
-        # not "terms of service and honor code"
-        link_label = 'Honor Code'
-        self._assert_reg_field(
-            {"honor_code": "required", "terms_of_service": "required"},
-            {
-                "label": "I agree to the {platform_name} {link_label}".format(  # noqa: UP032
-                    platform_name=settings.PLATFORM_NAME,
-                    link_label=self.link_template.format(link_label=link_label)
-                ),
-                "name": "honor_code",
-                "defaultValue": False,
-                "type": "checkbox",
-                "required": True,
-                "errorMessages": {
-                    "required": "You must agree to the {platform_name} Honor Code".format(  # noqa: UP032
-                        platform_name=settings.PLATFORM_NAME
-                    )
-                }
-            }
-        )
-
-        link_label = 'Terms of Service'
-        # Terms of service field should also be present
-        link_template = "<a href='/tos' rel='noopener' target='_blank'>{link_label}</a>"
-        self._assert_reg_field(
-            {"honor_code": "required", "terms_of_service": "required"},
-            {
-                "label": "I agree to the {platform_name} {link_label}".format(  # noqa: UP032
-                    platform_name=settings.PLATFORM_NAME,
-                    link_label=link_template.format(link_label=link_label)
-                ),
-                "name": "terms_of_service",
-                "defaultValue": False,
-                "type": "checkbox",
-                "required": True,
-                "errorMessages": {
-                    "required": "You must agree to the {platform_name} Terms of Service".format(  # noqa: UP032
-                        platform_name=settings.PLATFORM_NAME
                     )
                 }
             }

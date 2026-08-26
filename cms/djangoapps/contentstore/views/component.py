@@ -22,7 +22,7 @@ from xblock.plugin import PluginMissingError
 from xblock.runtime import Mixologist
 
 from cms.djangoapps.contentstore.helpers import get_parent_if_split_test, is_library_content, is_unit
-from cms.djangoapps.contentstore.toggles import libraries_v1_enabled, libraries_v2_enabled, use_new_unit_page
+from cms.djangoapps.contentstore.toggles import libraries_v2_enabled, use_new_unit_page
 from cms.djangoapps.contentstore.xblock_storage_handlers.view_handlers import load_services_for_studio
 from common.djangoapps.edxmako.shortcuts import render_to_response
 from common.djangoapps.student.auth import has_course_author_access
@@ -49,7 +49,6 @@ COMPONENT_TYPES = [
     'problem',
     'itembank',
     'library_v2',  # Not an XBlock
-    'library',
     'discussion',
     'openassessment',
     'drag-and-drop-v2',
@@ -275,7 +274,6 @@ def get_component_templates(courselike, library=False):  # pylint: disable=too-m
         'problem': _("Problem"),
         'video': _("Video"),
         'openassessment': _("Open Response"),
-        'library': _("Legacy Library"),
         'library_v2': _("Library Content"),
         'itembank': _("Problem Bank"),
         'drag-and-drop-v2': _("Drag and Drop"),
@@ -287,10 +285,9 @@ def get_component_templates(courselike, library=False):  # pylint: disable=too-m
     # by the components in the order listed in COMPONENT_TYPES.
     component_types = COMPONENT_TYPES[:]
 
-    # Libraries do not support discussions, drag-and-drop, and openassessment and other libraries
+    # Libraries do not support discussions, drag-and-drop, openassessment, and library_v2/itembank
     component_not_supported_by_library = [
         'discussion',
-        'library',
         'openassessment',
         'drag-and-drop-v2',
         'library_v2',
@@ -314,7 +311,7 @@ def get_component_templates(courselike, library=False):  # pylint: disable=too-m
         templates_for_category = []
         component_class = _load_mixed_class(category)
 
-        if support_level_without_template and category not in ['library']:
+        if support_level_without_template:
             # add the default template with localized display name
             # TODO: Once mixins are defined per-application, rather than per-runtime,
             # this should use a cms mixed-in class. (cpennington)
@@ -394,37 +391,6 @@ def get_component_templates(courselike, library=False):  # pylint: disable=too-m
                                 advanced_component_support_level,
                                 boilerplate_name,
                                 'advanced'
-                            )
-                        )
-                        categories.add(component)
-
-        # Add library block types.
-        if category == 'library' and not library:
-            disabled_block_names = [block.name for block in disabled_xblocks()]
-            library_block_types = [problem_type for problem_type in LIBRARY_BLOCK_TYPES
-                                   if problem_type['component'] not in disabled_block_names]
-            for library_block_type in library_block_types:
-                component = library_block_type['component']
-                boilerplate_name = library_block_type['boilerplate_name']
-                authorable_variations = authorable_xblocks(allow_unsupported=allow_unsupported, name=component)
-                library_component_support_level = component_support_level(
-                    authorable_variations, component, boilerplate_name
-                )
-                if library_component_support_level:
-                    try:
-                        component_display_name = xblock_type_display_name(component, default_display_name=component)
-                    except PluginMissingError:
-                        log.warning(
-                            "Unable to load xblock type %s to read display_name",
-                            component
-                        )
-                    else:
-                        templates_for_category.append(
-                            create_template_dict(
-                                component_display_name,
-                                component,
-                                library_component_support_level,
-                                boilerplate_name
                             )
                         )
                         categories.add(component)
@@ -513,8 +479,6 @@ def _filter_disabled_blocks(all_blocks):
     Filter out disabled xblocks from the provided list of xblock names.
     """
     disabled_block_names = [block.name for block in disabled_xblocks()]
-    if not libraries_v1_enabled():
-        disabled_block_names.append('library')
     if not libraries_v2_enabled():
         disabled_block_names.append('library_v2')
         disabled_block_names.append('itembank')

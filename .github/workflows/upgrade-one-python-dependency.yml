@@ -13,7 +13,7 @@ on:
         required: true
         type: string
       version:
-        description: "Version number to upgrade to in constraints.txt (only needed if pinned)"
+        description: "Version number to upgrade to, if pinned in [tool.edx_lint].uv_constraints (only needed if pinned)"
         default: ""
         type: string
       change_desc:
@@ -36,9 +36,10 @@ jobs:
         with:
           ref: "${{ inputs.branch }}"
 
-      - name: Set up Python environment
-        uses: actions/setup-python@v6
+      - name: Install uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
         with:
+          enable-cache: true
           python-version: "3.12"
 
       - name: Update any pinned dependencies
@@ -46,7 +47,8 @@ jobs:
           NEW_VERSION: "${{ inputs.version }}"
           PACKAGE: "${{ inputs.package }}"
         run: |
-          sed 's/^\('$PACKAGE'[^#]*\)==[^ #]\+/\1=='$NEW_VERSION'/' -i requirements/constraints.txt
+          test -z "$NEW_VERSION" && exit 0
+          uv run --no-project --with tomlkit python3 scripts/update_uv_constraint_version.py
 
       - name: Run make upgrade-package
         env:
@@ -88,7 +90,11 @@ jobs:
           branch-suffix: short-commit-hash
           add-paths: |
             requirements
+            scripts/**/pyproject.toml
+            scripts/**/uv.lock
             scripts/**/requirements*
+            pyproject.toml
+            uv.lock
           commit-message: |
             feat: Upgrade Python dependency ${{ inputs.package }}
 

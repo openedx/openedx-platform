@@ -19,7 +19,6 @@ from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator, LibraryCol
 from openedx_authz.constants import permissions as authz_permissions
 from openedx_authz.constants.roles import COURSE_AUDITOR, COURSE_EDITOR, COURSE_STAFF
 from openedx_tagging.models import Tag, Taxonomy
-from openedx_tagging.models.system_defined import SystemDefinedTaxonomy
 from openedx_tagging.rest_api.v1.serializers import TaxonomySerializer
 from organizations.models import Organization
 from rest_framework import status
@@ -68,7 +67,7 @@ def check_taxonomy(
     enabled=True,
     allow_multiple=True,
     allow_free_text=False,
-    system_defined=False,
+    read_only=False,
     visible_to_authors=True,
     export_id=None,
     **_
@@ -82,7 +81,7 @@ def check_taxonomy(
     assert data["enabled"] == enabled
     assert data["allow_multiple"] == allow_multiple
     assert data["allow_free_text"] == allow_free_text
-    assert data["system_defined"] == system_defined
+    assert data["read_only"] == read_only
     assert data["visible_to_authors"] == visible_to_authors
     assert data["export_id"] == export_id
 
@@ -203,20 +202,22 @@ class TestTaxonomyObjectsMixin:
         self.ot1 = tagging_api.create_taxonomy(name="ot1", enabled=True)
         self.ot2 = tagging_api.create_taxonomy(name="ot2", enabled=False)
 
-        # System defined taxonomy
-        self.st1 = tagging_api.create_taxonomy(name="st1", enabled=True)
-        self.st1.taxonomy_class = SystemDefinedTaxonomy
-        self.st1.save()
+        # Read-only taxonomy
+        self.ro1 = tagging_api.create_taxonomy(name="ro1", enabled=True)
+        self.ro1.add_tag("read only tag")
+        self.ro1.read_only = True
+        self.ro1.save()
         TaxonomyOrg.objects.create(
-            taxonomy=self.st1,
+            taxonomy=self.ro1,
             rel_type=TaxonomyOrg.RelType.OWNER,
             org=None,
         )
-        self.st2 = tagging_api.create_taxonomy(name="st2", enabled=False)
-        self.st2.taxonomy_class = SystemDefinedTaxonomy
-        self.st2.save()
+        self.ro2 = tagging_api.create_taxonomy(name="ro2", enabled=False)
+        self.ro2.add_tag("read only tag in ro2")
+        self.ro2.read_only = True
+        self.ro2.save()
         TaxonomyOrg.objects.create(
-            taxonomy=self.st2,
+            taxonomy=self.ro2,
             rel_type=TaxonomyOrg.RelType.OWNER,
         )
 
@@ -346,7 +347,7 @@ class TestTaxonomyListCreateViewSet(TestTaxonomyObjectsMixin, APITestCase):
         Tests that staff users see all taxonomies
         """
         # page_size=10, and so "tBA1" and "tBA2" appear on the second page
-        expected_taxonomies = ["ot1", "ot2", "st1", "st2", "t1", "t2", "tA1", "tA2", "tB1", "tB2"]
+        expected_taxonomies = ["ot1", "ot2", "ro1", "ro2", "t1", "t2", "tA1", "tA2", "tB1", "tB2"]
         self._test_list_taxonomy(
             user_attr="staff",
             expected_taxonomies=expected_taxonomies,
@@ -365,7 +366,7 @@ class TestTaxonomyListCreateViewSet(TestTaxonomyObjectsMixin, APITestCase):
         """
         Tests that non staff users from orgA can see only enabled taxonomies from orgA and global taxonomies
         """
-        expected_taxonomies = ["st1", "t1", "tA1", "tBA1"]
+        expected_taxonomies = ["ro1", "t1", "tA1", "tBA1"]
         self._test_list_taxonomy(
             user_attr=user_attr,
             enabled_parameter=True,
@@ -373,8 +374,8 @@ class TestTaxonomyListCreateViewSet(TestTaxonomyObjectsMixin, APITestCase):
         )
 
     @ddt.data(
-        (True, ["ot1", "st1", "t1", "tA1", "tB1", "tBA1"]),
-        (False, ["ot2", "st2", "t2", "tA2", "tB2", "tBA2"]),
+        (True, ["ot1", "ro1", "t1", "tA1", "tB1", "tBA1"]),
+        (False, ["ot2", "ro2", "t2", "tA2", "tB2", "tBA2"]),
     )
     @ddt.unpack
     def test_list_taxonomy_enabled_filter(self, enabled_parameter: bool, expected_taxonomies: list[str]) -> None:
@@ -388,11 +389,11 @@ class TestTaxonomyListCreateViewSet(TestTaxonomyObjectsMixin, APITestCase):
         )
 
     @ddt.data(
-        ("orgA", ["st1", "st2", "t1", "t2", "tA1", "tA2", "tBA1", "tBA2"]),
-        ("orgB", ["st1", "st2", "t1", "t2", "tB1", "tB2", "tBA1", "tBA2"]),
-        ("orgX", ["st1", "st2", "t1", "t2"]),
+        ("orgA", ["ro1", "ro2", "t1", "t2", "tA1", "tA2", "tBA1", "tBA2"]),
+        ("orgB", ["ro1", "ro2", "t1", "t2", "tB1", "tB2", "tBA1", "tBA2"]),
+        ("orgX", ["ro1", "ro2", "t1", "t2"]),
         # Non-existent orgs are ignored
-        ("invalidOrg", ["st1", "st2", "t1", "t2"]),
+        ("invalidOrg", ["ro1", "ro2", "t1", "t2"]),
     )
     @ddt.unpack
     def test_list_taxonomy_org_filter(self, org_parameter: str, expected_taxonomies: list[str]) -> None:
@@ -433,7 +434,7 @@ class TestTaxonomyListCreateViewSet(TestTaxonomyObjectsMixin, APITestCase):
     @ddt.data(
         ("user", (), None),
         ("staffA", ["tA2", "tBA1", "tBA2"], None),
-        ("staff", ["st2", "t1", "t2"], "3"),
+        ("staff", ["ro2", "t1", "t2"], "3"),
     )
     @ddt.unpack
     def test_list_taxonomy_pagination(
@@ -520,13 +521,13 @@ class TestTaxonomyListCreateViewSet(TestTaxonomyObjectsMixin, APITestCase):
                 assert response.data["orgs"] == [self.orgA.short_name]
 
     @ddt.data(
-        ('staff', 11),
-        ("content_creatorA", 23),
-        ("library_staffA", 23),
-        ("library_userA", 23),
-        ("instructorA", 23),
-        ("course_instructorA", 23),
-        ("course_staffA", 23),
+        ('staff', 10),
+        ("content_creatorA", 22),
+        ("library_staffA", 22),
+        ("library_userA", 22),
+        ("instructorA", 22),
+        ("course_instructorA", 22),
+        ("course_staffA", 22),
     )
     @ddt.unpack
     def test_list_taxonomy_query_count(self, user_attr: str, expected_queries: int):
@@ -543,14 +544,9 @@ class TestTaxonomyListCreateViewSet(TestTaxonomyObjectsMixin, APITestCase):
         assert response.data["can_add_taxonomy"] == user.is_staff
         assert len(response.data["results"]) == 4
         for taxonomy in response.data["results"]:
-            if taxonomy["system_defined"]:
-                assert not taxonomy["can_change_taxonomy"]
-                assert not taxonomy["can_delete_taxonomy"]
-                assert taxonomy["can_tag_object"]
-            else:
-                assert taxonomy["can_change_taxonomy"] == user.is_staff
-                assert taxonomy["can_delete_taxonomy"] == user.is_staff
-                assert taxonomy["can_tag_object"]
+            assert taxonomy["can_change_taxonomy"] == user.is_staff  # Note: taxonomy.read_only only affects its tags,
+            assert taxonomy["can_delete_taxonomy"] == user.is_staff  # not the metadata about the taxonomy.
+            assert taxonomy["can_tag_object"]
 
 
 @ddt.ddt
@@ -670,7 +666,7 @@ class TestTaxonomyDetailExportMixin(TestTaxonomyObjectsMixin):
         )
 
     @ddt.data(
-        "st2",
+        "ro2",
         "t2",
     )
     def test_detail_taxonomy_org_admin_dont_see_disabled_global(self, taxonomy_attr: str) -> None:
@@ -810,8 +806,8 @@ class TestTaxonomyDetailExportMixin(TestTaxonomyObjectsMixin):
     @ddt.data(
         "ot1",
         "ot2",
-        "st1",
-        "st2",
+        "ro1",
+        "ro2",
         "t1",
         "t2",
         "tA1",
@@ -869,7 +865,7 @@ class TestTaxonomyDetailViewSet(TestTaxonomyDetailExportMixin, APITestCase):
             check_taxonomy(
                 response.data,
                 taxonomy.pk,
-                **(TaxonomySerializer(taxonomy.cast(), context=context)).data,
+                **(TaxonomySerializer(taxonomy, context=context)).data,
             )
 
 
@@ -919,8 +915,8 @@ class TestTaxonomyChangeMixin(TestTaxonomyObjectsMixin):
     @ddt.data(
         "ot1",
         "ot2",
-        "st1",
-        "st2",
+        "ro1",
+        "ro2",
         "t1",
         "t2",
         "tA1",
@@ -1004,34 +1000,19 @@ class TestTaxonomyChangeMixin(TestTaxonomyObjectsMixin):
         "tB2",
         "tBA1",
         "tBA2",
-
+        "ro1",  # Even read-only taxonomies can be edited; just not their tags
+        "ro2",
     )
     def test_staff_can_edit_almost_all_taxonomies(self, taxonomy_attr: str) -> None:
         """
-        Tests that staff can edit all but system defined taxonomies
+        Tests that staff can edit all taxonomies
         """
         self._test_api_call(
             user_attr="staff",
             taxonomy_attr=taxonomy_attr,
             # Check both status: 200 for update and 204 for delete
             expected_status=[status.HTTP_200_OK, status.HTTP_204_NO_CONTENT],
-            reason="Staff should be able to edit all but system defined taxonomies",
-        )
-
-    @ddt.data(
-        "st1",
-        "st2",
-    )
-    def test_staff_cant_edit_system_defined_taxonomies(self, taxonomy_attr: str) -> None:
-        """
-        Tests that staff can't edit system defined taxonomies
-        """
-        self._test_api_call(
-            user_attr="staff",
-            taxonomy_attr=taxonomy_attr,
-            # Check both status: 200 for update and 204 for delete
-            expected_status=[status.HTTP_403_FORBIDDEN],
-            reason="Staff shouldn't be able to edit system defined ",
+            reason="Staff should be able to edit all taxonomies",
         )
 
 
@@ -1072,6 +1053,7 @@ class TestTaxonomyUpdateViewSet(TestTaxonomyChangeMixin, APITestCase):
                     "description": taxonomy.description,
                     "enabled": taxonomy.enabled,
                     "export_id": taxonomy.export_id,
+                    "read_only": taxonomy.read_only,
                 },
             )
 
@@ -1113,6 +1095,7 @@ class TestTaxonomyPatchViewSet(TestTaxonomyChangeMixin, APITestCase):
                     "description": taxonomy.description,
                     "enabled": taxonomy.enabled,
                     "export_id": taxonomy.export_id,
+                    "read_only": taxonomy.read_only,
                 },
             )
 
@@ -1228,22 +1211,6 @@ class TestTaxonomyUpdateOrg(TestTaxonomyObjectsMixin, APITestCase):
         url = TAXONOMY_ORG_DETAIL_URL.format(pk=self.tA1.pk)
         response = self.client.get(url)
         assert response.data["orgs"] == [self.orgA.short_name]
-
-    def test_update_org_system_defined(self) -> None:
-        """
-        Tests that is not possible to change the orgs associated with a system defined taxonomy
-        """
-        url = TAXONOMY_ORG_UPDATE_ORG_URL.format(pk=self.st1.pk)
-        self.client.force_authenticate(user=self.staff)
-
-        response = self.client.put(url, {"orgs": [self.orgA.short_name]}, format="json")
-        assert response.status_code in [status.HTTP_403_FORBIDDEN, status.HTTP_400_BAD_REQUEST]
-
-        # Check that the orgs didn't change
-        url = TAXONOMY_ORG_DETAIL_URL.format(pk=self.st1.pk)
-        response = self.client.get(url)
-        assert response.data["orgs"] == []
-        assert response.data["all_orgs"]
 
     @ddt.data(
         "staffA",
@@ -1823,7 +1790,7 @@ class TestObjectTagViewSet(TestObjectTagMixin, APITestCase):
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     @ddt.data(
-        ("superuser", status.HTTP_200_OK),
+        ("superuser", status.HTTP_400_BAD_REQUEST),
         ("staff", status.HTTP_403_FORBIDDEN),
         ("staffA", status.HTTP_403_FORBIDDEN),
         ("staffB", status.HTTP_403_FORBIDDEN),
@@ -1831,7 +1798,8 @@ class TestObjectTagViewSet(TestObjectTagMixin, APITestCase):
     @ddt.unpack
     def test_tag_cross_org(self, user_attr, expected_status):
         """
-        Tests that only superusers may add a taxonomy from orgA to an object from orgB
+        Tests that even superusers may not add a taxonomy from orgA to an object
+        from orgB
         """
         user = getattr(self, user_attr)
         self.client.force_authenticate(user=user)
@@ -1841,7 +1809,7 @@ class TestObjectTagViewSet(TestObjectTagMixin, APITestCase):
         assert response.status_code == expected_status
 
     @ddt.data(
-        ("superuser", status.HTTP_200_OK),
+        ("superuser", status.HTTP_400_BAD_REQUEST),
         ("staff", status.HTTP_403_FORBIDDEN),
         ("staffA", status.HTTP_403_FORBIDDEN),
         ("staffB", status.HTTP_403_FORBIDDEN),
@@ -1849,7 +1817,7 @@ class TestObjectTagViewSet(TestObjectTagMixin, APITestCase):
     @ddt.unpack
     def test_tag_no_org(self, user_attr, expected_status):
         """
-        Tests that only superusers may add a no-org taxonomy to an object
+        Tests that event superusers cannot add a no-org taxonomy to an object
         """
         user = getattr(self, user_attr)
         self.client.force_authenticate(user=user)
@@ -1981,18 +1949,18 @@ class TestObjectTagViewSet(TestObjectTagMixin, APITestCase):
 
     @ddt.data(
         ('staff', 'courseA', 10),
-        ('staff', 'libraryA', 17),
-        ('staff', 'collection_key', 17),
-        ("content_creatorA", 'courseA', 20, False),
-        ("content_creatorA", 'libraryA', 23, False),
-        ("content_creatorA", 'collection_key', 23, False),
-        ("library_staffA", 'libraryA', 23, False),  # Library users can only view objecttags, not change them?
-        ("library_staffA", 'collection_key', 23, False),
-        ("library_userA", 'libraryA', 23, False),
-        ("library_userA", 'collection_key', 23, False),
-        ("instructorA", 'courseA', 20),
-        ("course_instructorA", 'courseA', 20),
-        ("course_staffA", 'courseA', 20),
+        ('staff', 'libraryA', 13),
+        ('staff', 'collection_key', 13),
+        ("content_creatorA", 'courseA', 14, False),
+        ("content_creatorA", 'libraryA', 17, False),
+        ("content_creatorA", 'collection_key', 17, False),
+        ("library_staffA", 'libraryA', 17, False),  # Library users can only view objecttags, not change them?
+        ("library_staffA", 'collection_key', 17, False),
+        ("library_userA", 'libraryA', 17, False),
+        ("library_userA", 'collection_key', 17, False),
+        ("instructorA", 'courseA', 14),
+        ("course_instructorA", 'courseA', 14),
+        ("course_staffA", 'courseA', 14),
     )
     @ddt.unpack
     def test_object_tags_query_count(
@@ -2024,6 +1992,11 @@ class TestObjectTagViewSet(TestObjectTagMixin, APITestCase):
         url = OBJECT_TAGS_URL.format(object_id=object_id)
         user = getattr(self, user_attr)
         self.client.force_authenticate(user=user)
+        # Pre-GET the endpoint to populate the in-memory caches of the current site and waffle flags.
+        # Without this, the number of queries can sometimes be different depending on the order in which these tests get
+        # run by the test runner, causing the test to occasionally be flaky.
+        self.client.get(url)
+        # Now run the test and count the queries:
         with self.assertNumQueries(expected_queries):
             response = self.client.get(url)
 
@@ -2827,7 +2800,7 @@ class TestImportTagsView(ImportTaxonomyMixin, APITestCase):
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert response.data == f"Invalid taxonomy ({self.taxonomy.id}): You cannot import a free-form taxonomy."
+        assert response.data == f"Invalid taxonomy ({self.taxonomy.id}): You cannot import to a free-text taxonomy."
 
         # Check if the taxonomy has no tags, since it is free text
         url = TAXONOMY_TAGS_URL.format(pk=self.taxonomy.id)
@@ -2879,12 +2852,12 @@ class TestTaxonomyTagsViewSet(TestTaxonomyObjectsMixin, APITestCase):
     """
     @ddt.data(
         ('staff', 11),
-        ("content_creatorA", 13),
-        ("library_staffA", 13),
-        ("library_userA", 13),
-        ("instructorA", 13),
-        ("course_instructorA", 13),
-        ("course_staffA", 13),
+        ("content_creatorA", 11),
+        ("library_staffA", 11),
+        ("library_userA", 11),
+        ("instructorA", 11),
+        ("course_instructorA", 11),
+        ("course_staffA", 11),
     )
     @ddt.unpack
     def test_taxonomy_tags_query_count(self, user_attr: str, expected_queries: int):
@@ -2895,6 +2868,12 @@ class TestTaxonomyTagsViewSet(TestTaxonomyObjectsMixin, APITestCase):
 
         user = getattr(self, user_attr)
         self.client.force_authenticate(user=user)
+
+        # Pre-GET the endpoint to populate the in-memory caches of the current site and waffle flags.
+        # Without this, the number of queries can sometimes be different depending on the order in which these tests get
+        # run by the test runner, causing the test to occasionally be flaky.
+        self.client.get(url)
+        # Now test the number of queries:
         with self.assertNumQueries(expected_queries):
             response = self.client.get(url)
 
@@ -2904,3 +2883,26 @@ class TestTaxonomyTagsViewSet(TestTaxonomyObjectsMixin, APITestCase):
         for taxonomy in response.data["results"]:
             assert taxonomy["can_change_tag"] == user.is_staff
             assert taxonomy["can_delete_tag"] == user.is_staff
+
+    @ddt.data(
+        ('staff', ),
+        ("content_creatorA", ),
+        ("library_staffA", ),
+    )
+    @ddt.unpack
+    def test_taxonomy_tags_read_only(self, user_attr: str):
+        """
+        Check taxonomy tag editing permissions with a read-only taxonomy
+        """
+        url = f"{TAXONOMY_TAGS_URL}".format(pk=self.ro1.id)
+
+        user = getattr(self, user_attr)
+        self.client.force_authenticate(user=user)
+        response = self.client.get(url)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert not response.data["can_add_tag"]
+        assert len(response.data["results"]) == 1
+        for taxonomy in response.data["results"]:
+            assert not taxonomy["can_change_tag"]
+            assert not taxonomy["can_delete_tag"]

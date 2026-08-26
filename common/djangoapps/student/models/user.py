@@ -1007,7 +1007,7 @@ class LoginFailures(models.Model):
         """
         Returns whether the feature flag around this functionality has been set
         """
-        return settings.FEATURES['ENABLE_MAX_FAILED_LOGIN_ATTEMPTS']
+        return settings.ENABLE_MAX_FAILED_LOGIN_ATTEMPTS
 
     @classmethod
     def is_user_locked_out(cls, user):
@@ -1375,7 +1375,7 @@ def enforce_single_login(sender, request, user, signal, **kwargs):  # pylint: di
     Sets the current session id in the user profile,
     to prevent concurrent logins.
     """
-    if settings.FEATURES.get('PREVENT_CONCURRENT_LOGINS', False):
+    if settings.PREVENT_CONCURRENT_LOGINS:
         if signal == user_logged_in:
             key = request.session.session_key
         else:

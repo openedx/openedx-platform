@@ -1,6 +1,0 @@
--c ../../../requirements/constraints.txt
-
-click
-click-log
-edx-opaque-keys
-pymongo

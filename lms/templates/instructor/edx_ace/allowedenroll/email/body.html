@@ -31,7 +31,7 @@
                 </p>
 
                 {% include "ace_common/edx_ace/common/return_to_course_cta.html" with course_cta_text=course_name course_cta_url=course_url %}
-            {% elif course_about_url is not None %}
+            {% else %}
                 <p style="color: rgba(0,0,0,.75);">
                     {% filter force_escape %}
                     {% blocktrans %}To access this course visit it and register:{% endblocktrans %}
@@ -58,16 +58,11 @@
                     {# xss-lint: disable=django-blocktrans-missing-escape-filter #}
                     {% blocktrans %}Once you have registered and activated your account, you will see {{ course_name }} listed on your dashboard.{% endblocktrans %}
                     {% endautoescape %}
-                {% elif course_about_url is not None %}
+                {% else %}
                     {% filter force_escape %}
                     {% blocktrans %}Once you have registered and activated your account, you will be able to access this course:{% endblocktrans %}
                     {% endfilter %}
                     {% include "ace_common/edx_ace/common/return_to_course_cta.html" with course_cta_text=course_name course_cta_url=course_about_url %}
-                {% else %}
-                    {% autoescape off %}
-                    {# xss-lint: disable=django-blocktrans-missing-escape-filter #}
-                    {% blocktrans %}You can then enroll in {{ course_name }}.{% endblocktrans %}
-                    {% endautoescape %}
                 {% endif %}
                 <br />
             </p>

@@ -19,7 +19,7 @@ from django.contrib.auth.models import User  # pylint: disable=imported-auth-use
 from django.urls import reverse
 from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locations import Location
-from xblocks_contrib.problem.capa.tests.response_xml_factory import OptionResponseXMLFactory
+from xblocks_contrib.problem.capa.testing.response_xml_factory import OptionResponseXMLFactory
 
 from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory
 from lms.djangoapps.courseware.model_data import StudentModule

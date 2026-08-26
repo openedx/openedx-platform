@@ -14,7 +14,6 @@ from openedx.core.djangoapps.user_authn.toggles import should_redirect_to_authn_
 %>
 
 <%
-  mktg_site_enabled = static.get_value('ENABLE_MKTG_SITE', settings.FEATURES.get('ENABLE_MKTG_SITE', False))
   courses_are_browsable = settings.FEATURES.get('COURSES_ARE_BROWSABLE')
   allows_login = not settings.FEATURES['DISABLE_LOGIN_BUTTON'] and not combined_login_and_register
   can_discover_courses = settings.FEATURES.get('ENABLE_COURSE_DISCOVERY')
@@ -23,7 +22,6 @@ from openedx.core.djangoapps.user_authn.toggles import should_redirect_to_authn_
 %>
 <nav class="nav-links" aria-label=${_("Supplemental Links")}>
   <div class="main">
-  % if mktg_site_enabled:
     <div class="mobile-nav-item hidden-mobile nav-item">
       <a href="${marketing_link('HOW_IT_WORKS')}">${_("How it Works")}</a>
     </div>
@@ -35,7 +33,6 @@ from openedx.core.djangoapps.user_authn.toggles import should_redirect_to_authn_
     <div class="mobile-nav-item hidden-mobile nav-item">
       <a href="${marketing_link('SCHOOLS')}">${_("Schools")}</a>
     </div>
-  % endif
   % if allows_login:
     % if can_discover_courses:
       <div class="mobile-nav-item hidden-mobile nav-item">

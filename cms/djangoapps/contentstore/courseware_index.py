@@ -16,7 +16,6 @@ from cms.djangoapps.contentstore.course_group_config import GroupConfiguration
 from common.djangoapps.course_modes.models import CourseMode
 from openedx.core.lib.courses import course_image_url, course_organization_image_url
 from xmodule.annotator_mixin import html_to_text  # pylint: disable=wrong-import-order
-from xmodule.library_tools import normalize_key_for_search  # pylint: disable=wrong-import-order
 from xmodule.modulestore import ModuleStoreEnum  # pylint: disable=wrong-import-order
 
 # REINDEX_AGE is the default amount of time that we look back for changes
@@ -49,7 +48,7 @@ def indexing_is_enabled():
     """
     Checks to see if the indexing feature is enabled
     """
-    return settings.FEATURES.get('ENABLE_COURSEWARE_INDEX', False)
+    return settings.ENABLE_COURSEWARE_INDEX
 
 
 class SearchIndexingError(Exception):
@@ -78,7 +77,7 @@ class SearchIndexerBase(metaclass=ABCMeta):
         """
         Checks to see if the indexing feature is enabled
         """
-        return settings.FEATURES.get(cls.ENABLE_INDEXING_KEY, False)
+        return getattr(settings, cls.ENABLE_INDEXING_KEY, False)
 
     @classmethod
     @abstractmethod
@@ -441,46 +440,6 @@ class CoursewareSearchIndexer(SearchIndexerBase):
             "course_name": location_path[0],
             "location": location_path[1:4]
         }
-
-
-class LibrarySearchIndexer(SearchIndexerBase):
-    """
-    Base class to perform indexing for library search from different modulestores
-    """
-    INDEX_NAME = "library_index"
-    ENABLE_INDEXING_KEY = 'ENABLE_LIBRARY_INDEX'
-
-    INDEX_EVENT = {
-        'name': 'edx.library.index.reindexed',
-        'category': 'library_index'
-    }
-
-    @classmethod
-    def normalize_structure_key(cls, structure_key):
-        """ Normalizes structure key for use in indexing """
-        return normalize_key_for_search(structure_key)
-
-    @classmethod
-    def _fetch_top_level(cls, modulestore, structure_key):
-        """ Fetch the item from the modulestore location """
-        return modulestore.get_library(structure_key, depth=None)
-
-    @classmethod
-    def _get_location_info(cls, normalized_structure_key):
-        """ Builds location info dictionary """
-        return {"library": str(normalized_structure_key)}
-
-    @classmethod
-    def _id_modifier(cls, usage_id):
-        """ Modifies usage_id to submit to index """
-        return usage_id.replace(library_key=(usage_id.library_key.replace(version_guid=None, branch=None)))
-
-    @classmethod
-    def do_library_reindex(cls, modulestore, library_key):
-        """
-        (Re)index all content within the given library, tracking the fact that a full reindex has taken place
-        """
-        return cls._do_reindex(modulestore, library_key)
 
 
 class AboutInfo:

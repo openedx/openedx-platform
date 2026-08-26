@@ -39,6 +39,13 @@ class LibraryTabSerializer(serializers.Serializer):
     libraries = LibraryViewSerializer(many=True, required=False, allow_null=True)
 
 
+class CourseHomeTabSerializer(serializers.Serializer):
+    """Serializer for the courses tab of the Studio home page."""
+    courses = CourseCommonSerializer(required=False, many=True)
+    archived_courses = CourseCommonSerializer(required=False, many=True)
+    in_process_course_actions = UnsucceededCourseSerializer(many=True, required=False, allow_null=True)
+
+
 class StudioHomeSerializer(serializers.Serializer):
     """Serializer for Studio home"""
     allow_course_reruns = serializers.BooleanField()

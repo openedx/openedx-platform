@@ -84,7 +84,12 @@ def _enrollment_mode_display(enrollment_mode, course_id):
 
 def get_course_final_price(user, sku, course_price):
     """
-    Return the course's discounted price for a user if user is eligible for any otherwise return course original price.
+    Return the course's discounted price for a user (if eligible), otherwise return course original price.
+
+    Note: this function is no longer called directly within edx-platform. It is called externally
+    via the openedx-filters pipeline, by edx-enterprise's CalculateEnterpriseDiscountedPrice
+    step (org.openedx.learning.course_mode.price.requested.v1). Do not delete this function even
+    though static analysis may flag it as unused here.
     """
     price_details = {}
     try:

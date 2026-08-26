@@ -11,7 +11,6 @@ import ddt
 import pytz
 from completion.models import BlockCompletion
 from completion.test_utils import CompletionWaffleTestMixin, submit_completions_for_testing
-from django.conf import settings
 from django.db import transaction
 from django.template import defaultfilters
 from django.test import RequestFactory, override_settings
@@ -148,7 +147,6 @@ class TestUserEnrollmentApi(UrlResetMixin, MobileAPITestCase, MobileAuthUserTest
         courses = response.data
         assert len(courses) == 0
 
-    @patch.dict(settings.FEATURES, {'ENABLE_MKTG_SITE': True})
     @ddt.data(API_V05, API_V1, API_V2)
     def test_sort_order(self, api_version):
         self.login()
@@ -168,11 +166,7 @@ class TestUserEnrollmentApi(UrlResetMixin, MobileAPITestCase, MobileAuthUserTest
                    str(courses[((num_courses - course_index) - 1)].id)
 
     @ddt.data(API_V05, API_V1, API_V2)
-    @patch.dict(settings.FEATURES, {
-        'ENABLE_PREREQUISITE_COURSES': True,
-        'DISABLE_START_DATES': False,
-        'ENABLE_MKTG_SITE': True,
-    })
+    @override_settings(ENABLE_PREREQUISITE_COURSES=True, DISABLE_START_DATES=False)
     def test_courseware_access(self, api_version):
         self.login()
 
@@ -231,7 +225,7 @@ class TestUserEnrollmentApi(UrlResetMixin, MobileAPITestCase, MobileAuthUserTest
         ('default_start_date', None, None, "empty", API_V2),
     )
     @ddt.unpack
-    @patch.dict(settings.FEATURES, {'DISABLE_START_DATES': False, 'ENABLE_MKTG_SITE': True})
+    @override_settings(DISABLE_START_DATES=False)
     def test_start_type_and_display(self, start, advertised_start, expected_display, expected_type, api_version):
         """
         Tests that the correct start_type and start_display are returned in the
@@ -248,7 +242,6 @@ class TestUserEnrollmentApi(UrlResetMixin, MobileAPITestCase, MobileAuthUserTest
 
     @ddt.data(API_V05, API_V1, API_V2)
     @override_settings(ENABLE_DISCUSSION_SERVICE=True)
-    @patch.dict(settings.FEATURES, {'ENABLE_MKTG_SITE': True})
     def test_discussion_url(self, api_version):
         self.login_and_enroll()
 
@@ -1078,7 +1071,6 @@ class TestUserEnrollmentCertificates(UrlResetMixin, MobileAPITestCase, Milestone
         certificate_data = response.data[0]['certificate']
         assert certificate_data['url'] == certificate_url
 
-    @patch.dict(settings.FEATURES, {'ENABLE_MKTG_SITE': True})
     def test_no_certificate(self):
         self.login_and_enroll()
 
@@ -1087,7 +1079,6 @@ class TestUserEnrollmentCertificates(UrlResetMixin, MobileAPITestCase, Milestone
         self.assertDictEqual(certificate_data, {})  # noqa: PT009
 
     @override_settings(CERTIFICATES_HTML_VIEW=False)
-    @patch.dict(settings.FEATURES, {'ENABLE_MKTG_SITE': True})
     def test_pdf_certificate_with_html_cert_disabled(self):
         """
         Tests PDF certificates with CERTIFICATES_HTML_VIEW set to True.
@@ -1095,7 +1086,6 @@ class TestUserEnrollmentCertificates(UrlResetMixin, MobileAPITestCase, Milestone
         self.verify_pdf_certificate()
 
     @override_settings(CERTIFICATES_HTML_VIEW=True)
-    @patch.dict(settings.FEATURES, {'ENABLE_MKTG_SITE': True})
     def test_pdf_certificate_with_html_cert_enabled(self):
         """
         Tests PDF certificates with CERTIFICATES_HTML_VIEW set to True.
@@ -1103,7 +1093,6 @@ class TestUserEnrollmentCertificates(UrlResetMixin, MobileAPITestCase, Milestone
         self.verify_pdf_certificate()
 
     @override_settings(CERTIFICATES_HTML_VIEW=True)
-    @patch.dict(settings.FEATURES, {'ENABLE_MKTG_SITE': True})
     def test_web_certificate(self):
         self.login_and_enroll()
 
@@ -1303,7 +1292,6 @@ class TestCourseStatusPATCH(CourseStatusAPITestCase, MobileAuthUserTestMixin,
 
 
 @ddt.ddt
-@patch.dict(settings.FEATURES, {'ENABLE_MKTG_SITE': True})
 @override_settings(MKTG_URLS={'ROOT': 'dummy-root'})
 class TestCourseEnrollmentSerializer(MobileAPITestCase, MilestonesTestCaseMixin):
     """

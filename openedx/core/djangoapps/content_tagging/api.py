@@ -9,6 +9,7 @@ from itertools import groupby
 from typing import Iterator  # noqa: UP035
 
 import openedx_tagging.api as oel_tagging
+from django.core.exceptions import ValidationError
 from django.db.models import Exists, OuterRef, Q, QuerySet
 from django.utils.timezone import now
 from opaque_keys.edx.keys import CollectionKey, ContainerKey, CourseKey, UsageKey
@@ -24,6 +25,16 @@ from .models import TaxonomyOrg
 from .types import ContentKey, TagValuesByObjectIdDict, TagValuesByTaxonomyIdDict, TaxonomyDict
 from .utils import check_taxonomy_context_key_org, get_content_key_from_string, get_context_key_from_key
 
+
+class InvalidOrgException(ValidationError):
+    """
+    Exception when attempting to use a taxonomy that's not valid for the given
+    org's content.
+    """
+
+    def __init__(self, message: str):
+        """Initialize with the detailed error message"""
+        super().__init__(message)
 
 def create_taxonomy(
     name: str,
@@ -71,9 +82,6 @@ def set_taxonomy_orgs(
     If not `all_orgs`, the taxonomy is associated with each org in the `orgs` list. If that list is empty, the
     taxonomy is not associated with any orgs.
     """
-    if taxonomy.system_defined:
-        raise ValueError("Cannot set orgs for a system-defined taxonomy")
-
     TaxonomyOrg.objects.filter(
         taxonomy=taxonomy,
         rel_type=relationship,
@@ -103,7 +111,6 @@ def get_taxonomies_for_org(
     Generates a list of the enabled Taxonomies available for the given org, sorted by name.
 
     We return a QuerySet here for ease of use with Django Rest Framework and other query-based use cases.
-    So be sure to use `Taxonomy.cast()` to cast these instances to the appropriate subclass before use.
 
     If no `org` is provided, then only Taxonomies which are available for _all_ Organizations are returned.
 
@@ -200,22 +207,27 @@ def get_all_object_tags(
 def set_all_object_tags(
     content_key: ContentKey,
     object_tags: TagValuesByTaxonomyIdDict,
+    ignore_invalid_orgs=False,
 ) -> None:
     """
     Sets the tags for the given content object.
+
+    If any of the taxonomies are not configured for use by the org that owns
+    the content, this will raise ``InvalidOrgException``, unless you also pass
+    ``ignore_invalid_orgs=True``.
     """
     for taxonomy_id, tags_values in object_tags.items():
-
         taxonomy = oel_tagging.get_taxonomy(taxonomy_id)
-
         if not taxonomy:
             continue
 
-        tag_object(
-            object_id=str(content_key),
-            taxonomy=taxonomy,
-            tags=tags_values,
-        )
+        try:
+            tag_object(object_id=str(content_key), taxonomy=taxonomy, tags=tags_values)
+        except InvalidOrgException:
+            if ignore_invalid_orgs:
+                pass
+            else:
+                raise
 
 
 def generate_csv_rows(object_id, buffer) -> Iterator[str]:
@@ -372,18 +384,20 @@ def copy_object_tags(
 
     for taxonomy_id, taxonomy in taxonomies.items():
         tags = source_object_tags.get(taxonomy_id, [])
-        tag_object(
-            object_id=str(dest_content_key),
-            taxonomy=taxonomy,
-            tags=tags,
-        )
+        try:
+            tag_object(
+                object_id=str(dest_content_key),
+                taxonomy=taxonomy,
+                tags=tags,
+            )
+        except InvalidOrgException:
+            pass
 
 
 def tag_object(
     object_id: str,
     taxonomy: Taxonomy,
     tags: list[str],
-    object_tag_class: type[ObjectTag] = ObjectTag,
 ) -> None:
     """
     Replaces the existing ObjectTag entries for the given taxonomy + object_id
@@ -393,9 +407,6 @@ def tag_object(
     when tagging an object.
 
     tags: A list of the values of the tags from this taxonomy to apply.
-
-    object_tag_class: Optional. Use a proxy subclass of ObjectTag for additional
-        validation. (e.g. only allow tagging certain types of objects.)
 
     Raised Tag.DoesNotExist if the proposed tags are invalid for this taxonomy.
     Preserves existing (valid) tags, adds new (valid) tags, and removes omitted
@@ -426,6 +437,10 @@ def tag_object(
         CONTENT_OBJECT_TAGS_CHANGED.send_event(
             time=now(),
             content_object=ContentObjectData(object_id=object_id)
+        )
+    else:
+        raise InvalidOrgException(
+            f'Taxonomy "{taxonomy.name}" is not configured for use with organization "{context_key.org}".'
         )
 
 # Expose the oel_tagging APIs

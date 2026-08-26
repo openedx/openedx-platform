@@ -451,5 +451,4 @@ def _id_verification_enforced_and_missing(user):
     """
     Return true if IDV is required for this course and the user does not have it
     """
-    return settings.FEATURES.get(
-        'ENABLE_CERTIFICATES_IDV_REQUIREMENT') and not IDVerificationService.user_is_verified(user)
+    return settings.ENABLE_CERTIFICATES_IDV_REQUIREMENT and not IDVerificationService.user_is_verified(user)

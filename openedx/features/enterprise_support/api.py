@@ -328,7 +328,7 @@ def enterprise_enabled():
     """
     Determines whether the Enterprise app is installed
     """
-    return django_apps.is_installed('enterprise') and settings.FEATURES.get('ENABLE_ENTERPRISE_INTEGRATION', False)
+    return django_apps.is_installed('enterprise') and getattr(settings, 'ENABLE_ENTERPRISE_INTEGRATION', False)
 
 
 def enterprise_is_enabled(otherwise=None):

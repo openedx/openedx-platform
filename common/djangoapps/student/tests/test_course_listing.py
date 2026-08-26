@@ -7,6 +7,7 @@ from unittest import mock
 
 from django.conf import settings
 from django.test.client import Client
+from django.test.utils import override_settings
 from milestones.tests.utils import MilestonesTestCaseMixin
 
 from common.djangoapps.student.models import CourseEnrollment  # pylint: disable=unused-import
@@ -139,7 +140,7 @@ class TestCourseListing(ModuleStoreTestCase, MilestonesTestCaseMixin):
         assert len(courses_list) == 1, courses_list
         assert courses_list[0].course_id == good_location
 
-    @mock.patch.dict("django.conf.settings.FEATURES", {'ENABLE_PREREQUISITE_COURSES': True})
+    @override_settings(ENABLE_PREREQUISITE_COURSES=True)
     def test_course_listing_has_pre_requisite_courses(self):
         """
         Creates four courses. Enroll test user in all courses

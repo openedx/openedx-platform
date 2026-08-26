@@ -45,7 +45,7 @@ from openedx.core.djangoapps.catalog.utils import (
 from openedx.core.lib.api.authentication import BearerAuthenticationAllowInactiveUser
 from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin, PaginatedAPIView
 
-from .constants import ENABLE_ENROLLMENT_RESET_FLAG, MAX_ENROLLMENT_RECORDS
+from .constants import MAX_ENROLLMENT_RECORDS
 from .serializers import (
     CourseRunOverviewListSerializer,
     CourseRunOverviewSerializer,
@@ -980,7 +980,7 @@ class EnrollmentDataResetView(APIView):
         """
         Reset enrollment and user data for organization
         """
-        if not settings.FEATURES.get(ENABLE_ENROLLMENT_RESET_FLAG):
+        if not settings.ENABLE_ENROLLMENT_RESET:
             return Response('reset not enabled on this environment', status.HTTP_501_NOT_IMPLEMENTED)
 
         try:

@@ -30,11 +30,6 @@ jobs:
       - name: Install Required System Packages
         run: sudo apt-get update && sudo apt-get install libxmlsec1-dev
 
-      - name: Setup Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: ${{ matrix.python-version }}
-
       - name: Setup Node
         uses: actions/setup-node@v6
         with:
@@ -43,42 +38,24 @@ jobs:
       - name: Setup npm
         run: npm i -g npm@8.5.x
 
-      - name: Get pip cache dir
-        id: pip-cache-dir
-        run: |
-          echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
-
-      - name: Cache pip dependencies
-        id: cache-dependencies
-        uses: actions/cache@v6
+      - name: Install uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
         with:
-          path: ${{ steps.pip-cache-dir.outputs.dir }}
-          key: ${{ runner.os }}-pip-${{ hashFiles('requirements/edx/testing.txt') }}
-          restore-keys: ${{ runner.os }}-pip-
+          enable-cache: true
+          python-version: ${{ matrix.python-version }}
 
       - name: Install Required Python Dependencies
-        env:
-          PIP_SRC: ${{ runner.temp }}
         run: |
           make test-requirements
 
       - name: Install npm
-        env:
-          PIP_SRC: ${{ runner.temp }}
         run: npm ci
-
-      - name: Install python packages
-        env:
-          PIP_SRC: ${{ runner.temp }}
-        run: |
-            pip install -e .
 
       - name: Run Quality Tests
         env:
-          PIP_SRC: ${{ runner.temp }}
           TARGET_BRANCH: ${{ github.base_ref }}
         run: |
-            ruff check --output-format=github .
+            uv run ruff check --output-format=github .
             make xsslint
             make pii_check
             make check_keywords

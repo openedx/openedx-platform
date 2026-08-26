@@ -1,34 +1,22 @@
 """ Tests for Logistration views. """
 
-
-from http.cookies import SimpleCookie
-from unittest import mock
 from urllib.parse import urlencode
 
 import ddt
 from django.conf import settings
-from django.contrib import messages
-from django.contrib.auth.models import AnonymousUser
-from django.contrib.messages.middleware import MessageMiddleware
-from django.contrib.sessions.middleware import SessionMiddleware
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
-from django.test.client import RequestFactory
 from django.test.utils import override_settings
 from django.urls import reverse
-from django.utils.translation import gettext as _
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.third_party_auth.tests.testutil import ThirdPartyAuthTestMixin, simulate_running_pipeline
 from common.djangoapps.util.testing import UrlResetMixin
-from lms.djangoapps.branding.api import get_privacy_url
 from openedx.core.djangoapps.site_configuration.tests.mixins import SiteMixin
 from openedx.core.djangoapps.theming.tests.test_util import with_comprehensive_theme_context
 from openedx.core.djangoapps.user_authn.cookies import JWT_COOKIE_NAMES
 from openedx.core.djangoapps.user_authn.tests.utils import setup_login_oauth_client
-from openedx.core.djangoapps.user_authn.views.login_form import login_and_registration_form
 from openedx.core.djangolib.js_utils import dump_js_escaped_json
-from openedx.core.djangolib.markup import HTML, Text
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 from xmodule.modulestore.tests.django_utils import (
     ModuleStoreTestCase,  # pylint: disable=wrong-import-order
@@ -114,7 +102,7 @@ class LoginAndRegistrationTest(ThirdPartyAuthTestMixin, UrlResetMixin, ModuleSto
         expected_data = f'"initial_mode": "{initial_mode}"'
         self.assertContains(response, expected_data)
 
-    @mock.patch.dict("django.conf.settings.FEATURES", {"DISABLE_SET_JWT_COOKIES_FOR_TESTS": False})
+    @override_settings(DISABLE_SET_JWT_COOKIES_FOR_TESTS=False)
     @ddt.data("signin_user", "register_user")
     def test_login_and_registration_form_already_authenticated(self, url_name):
         setup_login_oauth_client()
@@ -190,29 +178,17 @@ class LoginAndRegistrationTest(ThirdPartyAuthTestMixin, UrlResetMixin, ModuleSto
     @ddt.data("signin_user", "register_user")
     def test_third_party_auth_disabled(self, url_name):
         response = self.client.get(reverse(url_name))
-        self._assert_third_party_auth_data(response, None, None, [], None)
+        self._assert_third_party_auth_data(response, None, None, [])
 
-    @mock.patch('openedx.core.djangoapps.user_authn.views.login_form.enterprise_customer_for_request')
     @ddt.data(
-        ("signin_user", None, None, None, False),
-        ("register_user", None, None, None, False),
-        ("signin_user", "google-oauth2", "Google", None, False),
-        ("register_user", "google-oauth2", "Google", None, False),
-        ("signin_user", "facebook", "Facebook", None, False),
-        ("register_user", "facebook", "Facebook", None, False),
-        ("signin_user", "dummy", "Dummy", None, False),
-        ("register_user", "dummy", "Dummy", None, False),
-        (
-            "signin_user",
-            "google-oauth2",
-            "Google",
-            {
-                'name': 'FakeName',
-                'logo': 'https://host.com/logo.jpg',
-                'welcome_msg': 'No message'
-            },
-            True
-        )
+        ("signin_user", None, None),
+        ("register_user", None, None),
+        ("signin_user", "google-oauth2", "Google"),
+        ("register_user", "google-oauth2", "Google"),
+        ("signin_user", "facebook", "Facebook"),
+        ("register_user", "facebook", "Facebook"),
+        ("signin_user", "dummy", "Dummy"),
+        ("register_user", "dummy", "Dummy"),
     )
     @ddt.unpack
     def test_third_party_auth(
@@ -220,9 +196,6 @@ class LoginAndRegistrationTest(ThirdPartyAuthTestMixin, UrlResetMixin, ModuleSto
             url_name,
             current_backend,
             current_provider,
-            expected_enterprise_customer_mock_attrs,
-            add_user_details,
-            enterprise_customer_mock,
     ):
         params = [
             ('course_id', 'course-v1:Org+Course+Run'),
@@ -232,26 +205,10 @@ class LoginAndRegistrationTest(ThirdPartyAuthTestMixin, UrlResetMixin, ModuleSto
             ('next', '/custom/final/destination'),
         ]
 
-        if expected_enterprise_customer_mock_attrs:
-            expected_ec = {
-                'name': expected_enterprise_customer_mock_attrs['name'],
-                'branding_configuration': {
-                    'logo': 'https://host.com/logo.jpg',
-                    'welcome_message': expected_enterprise_customer_mock_attrs['welcome_msg']
-                }
-            }
-        else:
-            expected_ec = None
-
-        email = None
-        if add_user_details:
-            email = 'test@test.com'
-        enterprise_customer_mock.return_value = expected_ec
-
         # Simulate a running pipeline
         if current_backend is not None:
             pipeline_target = "openedx.core.djangoapps.user_authn.views.login_form.third_party_auth.pipeline"
-            with simulate_running_pipeline(pipeline_target, current_backend, email=email):
+            with simulate_running_pipeline(pipeline_target, current_backend):
                 response = self.client.get(reverse(url_name), params, HTTP_ACCEPT="text/html")
 
         # Do NOT simulate a running pipeline
@@ -296,91 +253,6 @@ class LoginAndRegistrationTest(ThirdPartyAuthTestMixin, UrlResetMixin, ModuleSto
             current_backend,
             current_provider,
             expected_providers,
-            expected_ec,
-            add_user_details
-        )
-
-    def _configure_testshib_provider(self, provider_name, idp_slug):
-        """
-        Enable and configure the TestShib SAML IdP as a third_party_auth provider.
-        """
-        kwargs = {}
-        kwargs.setdefault('name', provider_name)
-        kwargs.setdefault('enabled', True)
-        kwargs.setdefault('visible', True)
-        kwargs.setdefault('slug', idp_slug)
-        kwargs.setdefault('entity_id', 'https://idp.testshib.org/idp/shibboleth')
-        kwargs.setdefault('metadata_source', 'https://mock.testshib.org/metadata/testshib-providers.xml')
-        kwargs.setdefault('icon_class', 'fa-university')
-        kwargs.setdefault('attr_email', 'dummy-email-attr')
-        kwargs.setdefault('max_session_length', None)
-        kwargs.setdefault('skip_registration_form', False)
-        self.configure_saml_provider(**kwargs)
-
-    @mock.patch('django.conf.settings.MESSAGE_STORAGE', 'django.contrib.messages.storage.cookie.CookieStorage')
-    @mock.patch('openedx.core.djangoapps.user_authn.views.login_form.enterprise_customer_for_request')
-    @ddt.data(
-        (
-            'signin_user',
-            'tpa-saml',
-            'TestShib',
-        )
-    )
-    @ddt.unpack
-    def test_saml_auth_with_error(
-            self,
-            url_name,
-            current_backend,
-            current_provider,
-            enterprise_customer_mock,
-    ):
-        params = []
-        request = RequestFactory().get(reverse(url_name), params, HTTP_ACCEPT='text/html')
-        SessionMiddleware(get_response=lambda request: None).process_request(request)
-        request.user = AnonymousUser()
-
-        self.enable_saml()
-        dummy_idp = 'testshib'
-        self._configure_testshib_provider(current_provider, dummy_idp)
-        enterprise_customer_data = {
-            'uuid': '72416e52-8c77-4860-9584-15e5b06220fb',
-            'name': 'Dummy Enterprise',
-            'identity_provider': dummy_idp,
-        }
-        enterprise_customer_mock.return_value = enterprise_customer_data
-        dummy_error_message = 'Authentication failed: SAML login failed ' \
-                              '["invalid_response"] [SAML Response must contain 1 assertion]'
-
-        # Add error message for error in auth pipeline
-        MessageMiddleware(get_response=lambda request: None).process_request(request)
-        messages.error(request, dummy_error_message, extra_tags='social-auth')
-
-        # Simulate a running pipeline
-        pipeline_response = {
-            'response': {
-                'idp_name': dummy_idp
-            }
-        }
-        pipeline_target = 'openedx.core.djangoapps.user_authn.views.login_form.third_party_auth.pipeline'
-        with simulate_running_pipeline(pipeline_target, current_backend, **pipeline_response):
-            with mock.patch('common.djangoapps.edxmako.request_context.get_current_request', return_value=request):
-                response = login_and_registration_form(request)
-
-        expected_error_message = Text(_(
-            'We are sorry, you are not authorized to access {platform_name} via this channel. '
-            'Please contact your learning administrator or manager in order to access {platform_name}.'
-            '{line_break}{line_break}'
-            'Error Details:{line_break}{error_message}')
-        ).format(
-            platform_name=settings.PLATFORM_NAME,
-            error_message=dummy_error_message,
-            line_break=HTML('<br/>')
-        )
-        self._assert_saml_auth_data_with_error(
-            response,
-            current_backend,
-            current_provider,
-            expected_error_message
         )
 
     def test_hinted_login(self):
@@ -417,14 +289,14 @@ class LoginAndRegistrationTest(ThirdPartyAuthTestMixin, UrlResetMixin, ModuleSto
             target_status_code=302
         )
 
-    @override_settings(FEATURES=dict(settings.FEATURES, THIRD_PARTY_AUTH_HINT='oa2-google-oauth2'))
+    @override_settings(THIRD_PARTY_AUTH_HINT='oa2-google-oauth2')
     @ddt.data(
         'signin_user',
         'register_user',
     )
     def test_settings_tpa_hinted_login(self, url_name):
         """
-        Ensure that settings.FEATURES['THIRD_PARTY_AUTH_HINT'] can set third_party_auth_hint.
+        Ensure that settings.THIRD_PARTY_AUTH_HINT can set third_party_auth_hint.
         """
         params = [("next", "/courses/something/")]
         response = self.client.get(reverse(url_name), params, HTTP_ACCEPT="text/html")
@@ -442,7 +314,7 @@ class LoginAndRegistrationTest(ThirdPartyAuthTestMixin, UrlResetMixin, ModuleSto
         response = self.client.get(reverse(url_name), params, HTTP_ACCEPT="text/html")
         assert response.content.decode('utf-8') not in tpa_hint
 
-    @override_settings(FEATURES=dict(settings.FEATURES, THIRD_PARTY_AUTH_HINT='oa2-google-oauth2'))
+    @override_settings(THIRD_PARTY_AUTH_HINT='oa2-google-oauth2')
     @ddt.data(
         ('signin_user', 'login'),
         ('register_user', 'register'),
@@ -462,79 +334,6 @@ class LoginAndRegistrationTest(ThirdPartyAuthTestMixin, UrlResetMixin, ModuleSto
             target_status_code=302
         )
 
-    @mock.patch('openedx.core.djangoapps.user_authn.views.login_form.enterprise_customer_for_request')
-    @ddt.data(
-        ('signin_user', False, None, None, False),
-        ('register_user', False, None, None, False),
-        ('signin_user', True, 'Fake EC', 'http://logo.com/logo.jpg', False),
-        ('register_user', True, 'Fake EC', 'http://logo.com/logo.jpg', False),
-        ('signin_user', True, 'Fake EC', 'http://logo.com/logo.jpg', True),
-        ('register_user', True, 'Fake EC', 'http://logo.com/logo.jpg', True),
-        ('signin_user', True, 'Fake EC', None, False),
-        ('register_user', True, 'Fake EC', None, False),
-    )
-    @ddt.unpack
-    def test_enterprise_register(self, url_name, ec_present, ec_name, logo_url, is_proxy, mock_get_ec):
-        """
-        Verify that when an EnterpriseCustomer is received on the login and register views,
-        the appropriate sidebar is rendered.
-        """
-        if ec_present:
-            mock_get_ec.return_value = {
-                'name': ec_name,
-                'branding_configuration': {'logo': logo_url}
-            }
-        else:
-            mock_get_ec.return_value = None
-
-        params = []
-        if is_proxy:
-            params.append(("proxy_login", "True"))
-
-        response = self.client.get(reverse(url_name), params, HTTP_ACCEPT="text/html")
-
-        enterprise_sidebar_div_id = 'enterprise-content-container'
-
-        if not ec_present:
-            self.assertNotContains(response, text=enterprise_sidebar_div_id)
-        else:
-            self.assertContains(response, text=enterprise_sidebar_div_id)
-            if is_proxy:
-                welcome_message = settings.ENTERPRISE_PROXY_LOGIN_WELCOME_TEMPLATE
-            else:
-                welcome_message = settings.ENTERPRISE_SPECIFIC_BRANDED_WELCOME_TEMPLATE
-            expected_message = Text(welcome_message).format(
-                start_bold=HTML('<b>'),
-                end_bold=HTML('</b>'),
-                line_break=HTML('<br/>'),
-                enterprise_name=ec_name,
-                platform_name=settings.PLATFORM_NAME,
-                privacy_policy_link_start=HTML("<a href='{pp_url}' rel='noopener' target='_blank'>").format(
-                    pp_url=get_privacy_url()
-                ),
-                privacy_policy_link_end=HTML("</a>"),
-            )
-            self.assertContains(response, expected_message)
-            if logo_url:
-                self.assertContains(response, logo_url)
-
-    def test_enterprise_cookie_delete(self):
-        """
-        Test that enterprise cookies are deleted in login/registration views.
-
-        Cookies must be deleted in login/registration views so that *default* login/registration branding
-        is displayed to subsequent requests from non-enterprise customers.
-        """
-        cookies = SimpleCookie()
-        cookies[settings.ENTERPRISE_CUSTOMER_COOKIE_NAME] = 'test-enterprise-customer'
-        response = self.client.get(reverse('signin_user'), HTTP_ACCEPT="text/html", cookies=cookies)
-
-        assert settings.ENTERPRISE_CUSTOMER_COOKIE_NAME in response.cookies
-        enterprise_cookie = response.cookies[settings.ENTERPRISE_CUSTOMER_COOKIE_NAME]
-
-        assert enterprise_cookie['domain'] == settings.BASE_COOKIE_DOMAIN
-        assert enterprise_cookie.value == ''
-
     def test_login_registration_xframe_protected(self):
         resp = self.client.get(
             reverse("register_user"),
@@ -553,8 +352,7 @@ class LoginAndRegistrationTest(ThirdPartyAuthTestMixin, UrlResetMixin, ModuleSto
 
         assert resp['X-Frame-Options'] == 'ALLOW'
 
-    def _assert_third_party_auth_data(self, response, current_backend, current_provider, providers, expected_ec,
-                                      add_user_details=False):
+    def _assert_third_party_auth_data(self, response, current_backend, current_provider, providers):
         """Verify that third party auth info is rendered correctly in a DOM data attribute. """
         finish_auth_url = None
         if current_backend:
@@ -568,40 +366,8 @@ class LoginAndRegistrationTest(ThirdPartyAuthTestMixin, UrlResetMixin, ModuleSto
             "errorMessage": None,
             "registerFormSubmitButtonText": "Create Account",
             "syncLearnerProfileData": False,
-            "pipeline_user_details": {"email": "test@test.com"} if add_user_details else {},
+            "pipeline_user_details": {},
             "skipRegistrationOptionalCheckboxes": False
-        }
-        if expected_ec is not None:
-            # If we set an EnterpriseCustomer, third-party auth providers ought to be hidden.
-            auth_info['providers'] = []
-        auth_info = dump_js_escaped_json(auth_info)
-
-        expected_data = '"third_party_auth": {auth_info}'.format(  # noqa: UP032
-            auth_info=auth_info
-        )
-        self.assertContains(response, expected_data)
-
-    def _assert_saml_auth_data_with_error(
-            self, response, current_backend, current_provider, expected_error_message
-    ):
-        """
-        Verify that third party auth info is rendered correctly in a DOM data attribute.
-        """
-        finish_auth_url = None
-        if current_backend:
-            finish_auth_url = reverse('social:complete', kwargs={'backend': current_backend}) + '?'
-
-        auth_info = {
-            'currentProvider': current_provider,
-            'platformName': settings.PLATFORM_NAME,
-            'providers': [],
-            'secondaryProviders': [],
-            'finishAuthUrl': finish_auth_url,
-            'errorMessage': expected_error_message,
-            'registerFormSubmitButtonText': 'Create Account',
-            'syncLearnerProfileData': False,
-            'pipeline_user_details': {'response': {'idp_name': 'testshib'}},
-            'skipRegistrationOptionalCheckboxes': False
         }
         auth_info = dump_js_escaped_json(auth_info)
 

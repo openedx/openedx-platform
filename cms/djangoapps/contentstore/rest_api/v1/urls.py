@@ -2,6 +2,7 @@
 
 from django.conf import settings
 from django.urls import path, re_path
+from rest_framework.routers import DefaultRouter
 
 from openedx.core.constants import COURSE_ID_PATTERN
 
@@ -26,6 +27,7 @@ from .views import (
     ProctoringErrorsView,
     VideoDownloadView,
     VideoUsageView,
+    XblockViewSet,
     vertical_container_children_redirect_view,
 )
 
@@ -33,7 +35,10 @@ app_name = 'v1'
 
 VIDEO_ID_PATTERN = r'(?P<edx_video_id>[-\w]+)'
 
-urlpatterns = [
+_router = DefaultRouter()
+_router.register(r'xblock', XblockViewSet, basename='xblock')
+
+urlpatterns = _router.urls + [
     path(
         'home',
         HomePageView.as_view(),

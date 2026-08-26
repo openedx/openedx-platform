@@ -3,6 +3,8 @@
 from unittest import skipUnless
 from unittest.mock import patch
 
+from django.contrib.auth import get_user_model
+from django.test import TestCase
 from edx_toggles.toggles.testutils import override_waffle_flag
 
 from common.djangoapps.student.models import CourseEnrollmentCelebration, PendingNameChange, UserProfile
@@ -92,3 +94,59 @@ class ReceiversTest(SharedModuleStoreTestCase):
 
         assert mock_get_email_client.called
         assert request.session.get('email', None) == user.email
+
+
+class GrantStaffToSuperusersTest(TestCase):
+    """
+    Tests for the ``grant_staff_access_to_superusers`` pre_save receiver, which
+    grants ``is_staff`` to any superuser. The behaviour is grant-only: it never
+    removes ``is_staff`` when a user stops being a superuser.
+    """
+
+    def test_new_superuser_is_marked_staff(self):
+        """ A user created as a superuser is automatically marked as staff. """
+        user = get_user_model().objects.create(
+            username='super', email='super@test.com', is_superuser=True,
+        )
+        user.refresh_from_db()
+        assert user.is_superuser is True
+        assert user.is_staff is True
+
+    def test_promoting_to_superuser_grants_staff(self):
+        """ Promoting an existing non-staff user to superuser grants staff access. """
+        user = UserFactory(is_superuser=False, is_staff=False)
+        assert user.is_staff is False
+
+        user.is_superuser = True
+        user.save()
+
+        user.refresh_from_db()
+        assert user.is_staff is True
+
+    def test_non_superuser_is_not_forced_to_staff(self):
+        """ Saving a regular, non-superuser user leaves its non-staff status untouched. """
+        user = UserFactory(is_superuser=False, is_staff=False)
+
+        # Explicitly re-save to exercise the pre_save receiver on an update.
+        user.save()
+
+        user.refresh_from_db()
+        assert user.is_staff is False
+
+    def test_existing_staff_superuser_unchanged(self):
+        """ A superuser that is already staff stays staff. """
+        user = UserFactory(is_superuser=True, is_staff=True)
+        user.save()
+        user.refresh_from_db()
+        assert user.is_staff is True
+
+    def test_demotion_does_not_remove_staff(self):
+        """ Dropping ``is_superuser`` is grant-only, so ``is_staff`` is left in place. """
+        user = UserFactory(is_superuser=True, is_staff=True)
+
+        user.is_superuser = False
+        user.save()
+
+        user.refresh_from_db()
+        assert user.is_superuser is False
+        assert user.is_staff is True

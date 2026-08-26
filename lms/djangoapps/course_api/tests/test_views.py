@@ -8,8 +8,9 @@ from unittest import TestCase
 
 import ddt
 import pytest
+from django.contrib.auth import get_user_model
 from django.core.exceptions import ImproperlyConfigured
-from django.test import RequestFactory
+from django.test import RequestFactory, SimpleTestCase
 from django.test.utils import override_settings
 from django.urls import reverse
 from edx_django_utils.cache import RequestCache
@@ -33,7 +34,7 @@ from openedx.features.course_duration_limits.models import CourseDurationLimitCo
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase, SharedModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory
 
-from ..views import CourseDetailView, CourseListUserThrottle, LazyPageNumberPagination
+from ..views import CourseDetailView, CourseIdListUserThrottle, CourseListUserThrottle, LazyPageNumberPagination
 from .mixins import TEST_PASSWORD, CourseApiFactoryMixin
 
 
@@ -673,3 +674,48 @@ class LazyPageNumberPaginationTestCase(TestCase):  # pylint: disable=missing-cla
             paginated_queryset = pagination.paginate_queryset(even_numbers_lazy_sequence, request)
             pagination.get_paginated_response(paginated_queryset)
             assert 'Invalid page' in exc.exception
+
+
+@ddt.ddt
+class CourseThrottleCacheKeyTests(SimpleTestCase):
+    """
+    Regression tests ensuring the course list / id throttles each store their
+    rate-limit counters in isolated cache buckets, so they do not share a bucket
+    with each other or with other throttles using the same ``staff`` scope
+    (e.g. the enrollment API). See ``CourseListUserThrottle.get_cache_key``.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.factory = RequestFactory()
+        # Unsaved instance is enough: get_cache_key only reads ``pk`` and
+        # ``is_authenticated``, so no database access is required.
+        self.user = get_user_model()(pk=42, username="service_worker", is_staff=True)
+
+    def _staff_request(self):
+        request = self.factory.get("/")
+        request.user = self.user
+        return request
+
+    @ddt.data(
+        (CourseListUserThrottle, "course_list."),
+        (CourseIdListUserThrottle, "course_id_list."),
+    )
+    @ddt.unpack
+    def test_cache_key_is_namespaced(self, throttle_class, expected_prefix):
+        throttle = throttle_class()
+        throttle.scope = "staff"
+        cache_key = throttle.get_cache_key(self._staff_request(), view=None)
+        assert cache_key.startswith(expected_prefix)
+
+    def test_throttles_with_same_scope_use_distinct_buckets(self):
+        request = self._staff_request()
+        keys = []
+        for throttle_class in (CourseListUserThrottle, CourseIdListUserThrottle):
+            throttle = throttle_class()
+            throttle.scope = "staff"
+            keys.append(throttle.get_cache_key(request, view=None))
+        # The raw, un-namespaced bucket these would otherwise share.
+        shared_bucket = CourseListUserThrottle.cache_format % {"scope": "staff", "ident": self.user.pk}
+        keys.append(shared_bucket)
+        assert len(set(keys)) == len(keys)

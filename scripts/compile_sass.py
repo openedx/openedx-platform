@@ -3,7 +3,8 @@
 Defines a CLI for compiling Sass (both default and themed) into CSS.
 
 Should be run from the root of edx-platform using `npm run` wrapper.
-Requirements for this scripts are stored in requirements/edx/assets.in.
+Requirements for this scripts are stored in the `assets` dependency group
+in pyproject.toml.
 
 Get more details:
 
@@ -12,9 +13,7 @@ Get more details:
 
 Setup (Tutor and Devstack will do this for you):
 
-    python -m venv venv
-    . venv/bin/activate
-    pip install -r requirements/edx/assets.txt
+    uv sync --no-default-groups --only-group assets --no-install-project
 
 Usage:
 

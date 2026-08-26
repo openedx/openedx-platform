@@ -39,13 +39,21 @@ jobs:
           git fetch origin "$BASE_SHA"
 
           # The ^"? is because git may quote weird file paths
-          if git diff --name-only "$BASE_SHA" | grep -P '^"?((requirements/)|(scripts/.*?/requirements/))'; then
+          #
+          # This still watches requirements/ because requirements/edx-sandbox
+          # (its own uv project) and the requirements/edx/*.txt compatibility
+          # exports still live there. A planned follow-up will remove the
+          # requirements/ folder entirely (see public-engineering#543), at
+          # which point this pattern will need updating again.
+          if git diff --name-only "$BASE_SHA" | grep -P '^"?((requirements/)|(scripts/.*?/requirements/)|(scripts/[^/]+/pyproject\.toml)|(scripts/[^/]+/uv\.lock)|(pyproject\.toml)|(uv\.lock))'; then
             echo "RELEVANT=true" >> "$GITHUB_ENV"
           fi
 
-      - uses: actions/setup-python@v6
+      - name: Install uv
         if: ${{ env.RELEVANT == 'true' }}
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
         with:
+          enable-cache: true
           python-version: '3.12'
 
       - name: "Recompile requirements"

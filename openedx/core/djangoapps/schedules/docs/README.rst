@@ -208,9 +208,6 @@ add/change the following:
 
 .. code:: python
 
-    FEATURES = {
-        'ENABLE_MKTG_SITE': True,
-    }
     MKTG_URLS = {
         'ROOT': '<insert_lms_url_here>',
     }

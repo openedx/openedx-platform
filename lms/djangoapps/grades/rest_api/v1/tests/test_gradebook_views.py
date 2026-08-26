@@ -11,6 +11,7 @@ from unittest.mock import MagicMock, patch
 
 import ddt
 import pytest
+from django.test.utils import override_settings
 from django.urls import reverse
 from edx_toggles.toggles.testutils import override_waffle_flag
 from freezegun import freeze_time
@@ -2222,7 +2223,7 @@ class SubsectionGradeViewTest(GradebookViewTestBase):
 
         assert status.HTTP_403_FORBIDDEN == resp.status_code
 
-    @patch.dict('django.conf.settings.FEATURES', {'DISABLE_START_DATES': False})
+    @override_settings(DISABLE_START_DATES=False)
     def test_get_override_for_unreleased_block(self):
         self.login_course_staff()
         unreleased_subsection = BlockFactory.create(

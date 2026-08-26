@@ -4,7 +4,6 @@ from django.conf import settings
 from django.test import TestCase, override_settings
 
 from common.djangoapps.third_party_auth import provider
-from common.djangoapps.third_party_auth.tests.utils import skip_unless_thirdpartyauth
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 
 
@@ -20,7 +19,7 @@ class SettingsUnitTest(TestCase):
         """Verify FIELDS_STORED_IN_SESSION is defined with expected values."""
         assert settings.FIELDS_STORED_IN_SESSION == ['auth_entry', 'next']
 
-    @skip_unless_thirdpartyauth()
+    @skip_unless_lms
     def test_no_providers_enabled_by_default(self):
         """Providers are only enabled via ConfigurationModels in the database."""
         assert provider.Registry.enabled() == []

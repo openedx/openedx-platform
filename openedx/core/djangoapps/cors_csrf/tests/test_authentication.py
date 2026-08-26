@@ -1,8 +1,6 @@
 """Tests for the CORS CSRF version of Django Rest Framework's SessionAuthentication."""
 
 
-from unittest.mock import patch
-
 from django.conf import settings
 from django.middleware.csrf import get_token
 from django.test import TestCase
@@ -34,11 +32,9 @@ class CrossDomainAuthTest(TestCase):
         with self.assertRaisesRegex(PermissionDenied, 'CSRF'):  # noqa: PT027
             self.auth.enforce_csrf(request)
 
-    @patch.dict(settings.FEATURES, {
-        'ENABLE_CORS_HEADERS': True,
-        'ENABLE_CROSS_DOMAIN_CSRF_COOKIE': True
-    })
     @override_settings(
+        ENABLE_CORS_HEADERS=True,
+        ENABLE_CROSS_DOMAIN_CSRF_COOKIE=True,
         CORS_ORIGIN_WHITELIST=["https://www.edx.org"],
         CROSS_DOMAIN_CSRF_COOKIE_NAME="prod-edx-csrftoken",
         CROSS_DOMAIN_CSRF_COOKIE_DOMAIN=".edx.org"

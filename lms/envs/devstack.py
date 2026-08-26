@@ -423,7 +423,6 @@ SHOW_HEADER_LANGUAGE_SELECTOR = True
 # Toggle this off if you don't want anything to do with enterprise in devstack.
 ENABLE_ENTERPRISE_INTEGRATION = True
 
-ENABLE_MKTG_SITE = os.environ.get('ENABLE_MARKETING_SITE', False)  # noqa: F405
 MARKETING_SITE_ROOT = os.environ.get('MARKETING_SITE_ROOT', 'http://localhost:8080')  # noqa: F405
 
 MKTG_URLS = {
@@ -581,6 +580,11 @@ RETIREMENT_STATES = [
     'ERRORED',
     'ABORTED',
     'COMPLETE',
+]
+
+###################### drf-spectacular (LMS enrollment schema) ######################
+SPECTACULAR_SETTINGS['SERVERS'] = [  # noqa: F405
+    {'url': LMS_ROOT_URL, 'description': 'Local'},  # noqa: F405
 ]
 
 ################# New settings must go ABOVE this line #################

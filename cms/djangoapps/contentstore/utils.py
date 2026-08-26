@@ -1384,17 +1384,13 @@ def get_course_settings(request, course_key, course_block):
     publisher_enabled = configuration_helpers.get_value_for_org(
         course_block.location.org,
         'ENABLE_PUBLISHER',
-        settings.FEATURES.get('ENABLE_PUBLISHER', False)
+        settings.ENABLE_PUBLISHER
     )
-    marketing_enabled = configuration_helpers.get_value_for_org(
-        course_block.location.org,
-        'ENABLE_MKTG_SITE',
-        settings.FEATURES.get('ENABLE_MKTG_SITE', False)
-    )
+    marketing_enabled = True
     enable_extended_course_details = configuration_helpers.get_value_for_org(
         course_block.location.org,
         'ENABLE_EXTENDED_COURSE_DETAILS',
-        settings.FEATURES.get('ENABLE_EXTENDED_COURSE_DETAILS', False)
+        settings.ENABLE_EXTENDED_COURSE_DETAILS
     )
 
     about_page_editable = not publisher_enabled
@@ -1402,7 +1398,7 @@ def get_course_settings(request, course_key, course_block):
     short_description_editable = configuration_helpers.get_value_for_org(
         course_block.location.org,
         'EDITABLE_SHORT_DESCRIPTION',
-        settings.FEATURES.get('EDITABLE_SHORT_DESCRIPTION', True)
+        settings.EDITABLE_SHORT_DESCRIPTION
     )
     sidebar_html_enabled = ENABLE_COURSE_ABOUT_SIDEBAR_HTML.is_enabled()
 
@@ -1630,7 +1626,7 @@ def get_course_context(request):
         }
 
     courses_iter, in_process_course_actions = get_courses_accessible_to_user(request)
-    split_archived = settings.FEATURES.get('ENABLE_SEPARATE_ARCHIVED_COURSES', False)
+    split_archived = settings.ENABLE_SEPARATE_ARCHIVED_COURSES
     active_courses, archived_courses = _process_courses_list(courses_iter, in_process_course_actions, split_archived)
     in_process_course_actions = [format_in_process_course_view(uca) for uca in in_process_course_actions]
     return active_courses, archived_courses, in_process_course_actions
@@ -1863,7 +1859,7 @@ def _get_course_index_context(request, course_key, course_block):
 
     lms_link = get_lms_link_for_item(course_block.location)
     reindex_link = None
-    if settings.FEATURES.get('ENABLE_COURSEWARE_INDEX', False):
+    if settings.ENABLE_COURSEWARE_INDEX:
         if GlobalStaff().has_user(request.user):
             reindex_link = f"/course/{str(course_key)}/search_reindex"
     sections = course_block.get_children()
@@ -1889,7 +1885,7 @@ def _get_course_index_context(request, course_key, course_block):
     frontend_app_publisher_url = configuration_helpers.get_value_for_org(
         course_block.location.org,
         'FRONTEND_APP_PUBLISHER_URL',
-        settings.FEATURES.get('FRONTEND_APP_PUBLISHER_URL', False)
+        settings.FRONTEND_APP_PUBLISHER_URL
     )
     # gather any errors in the currently stored proctoring settings.
     advanced_dict = CourseMetadata.fetch(course_block)

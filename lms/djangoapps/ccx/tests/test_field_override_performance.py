@@ -38,12 +38,7 @@ from xmodule.modulestore.tests.utils import ProceduralCourseTestMixin
 QUERY_COUNT_TABLE_IGNORELIST = WAFFLE_TABLES + AUTHZ_TABLES
 
 
-@mock.patch.dict(
-    'django.conf.settings.FEATURES',
-    {
-        'ENABLE_XBLOCK_VIEW_ENDPOINT': True,
-    }
-)
+@override_settings(ENABLE_XBLOCK_VIEW_ENDPOINT=True)
 @ddt.ddt
 class FieldOverridePerformanceTestCase(FieldOverrideTestMixin, ProceduralCourseTestMixin, ModuleStoreTestCase):
     """

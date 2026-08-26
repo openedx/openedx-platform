@@ -2863,7 +2863,6 @@ class TestComponentTemplates(CourseTestCase):
         self._verify_basic_component_display_name("discussion", "Discussion")
         self._verify_basic_component_display_name("video", "Video")
         self._verify_basic_component_display_name("openassessment", "Open Response")
-        self.assertGreater(len(self.get_templates_of_type("library")), 0)  # noqa: PT009
         self.assertGreater(len(self.get_templates_of_type("html")), 0)  # noqa: PT009
         self.assertGreater(len(self.get_templates_of_type("problem")), 0)  # noqa: PT009
 

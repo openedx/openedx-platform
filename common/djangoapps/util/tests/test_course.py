@@ -38,13 +38,12 @@ class TestCourseSharingLinks(ModuleStoreTestCase):
         self.course_overview.marketing_url = 'test_marketing_url'
         self.course_overview.save()
 
-    def get_course_sharing_link(self, enable_social_sharing, enable_mktg_site, use_overview=True):
+    def get_course_sharing_link(self, enable_social_sharing, use_overview=True):
         """
         Get course sharing link.
 
         Arguments:
             enable_social_sharing(Boolean): To indicate whether social sharing is enabled.
-            enable_mktg_site(Boolean): A feature flag to decide activation of marketing site.
 
         Keyword Arguments:
             use_overview: indicates whether course overview or course block should get
@@ -53,9 +52,6 @@ class TestCourseSharingLinks(ModuleStoreTestCase):
         Returns course sharing url.
         """
         mock_settings = {
-            'FEATURES': {
-                'ENABLE_MKTG_SITE': enable_mktg_site,
-            },
             'SOCIAL_SHARING_SETTINGS': {
                 'CUSTOM_COURSE_URLS': enable_social_sharing
             }
@@ -70,19 +66,17 @@ class TestCourseSharingLinks(ModuleStoreTestCase):
         return course_sharing_link
 
     @ddt.data(
-        (True, True, 'test_social_sharing_url'),
-        (False, True, 'test_marketing_url'),
-        (True, False, 'test_social_sharing_url'),
-        (False, False, f'{settings.LMS_ROOT_URL}/courses/course-v1:test_org+test_number+test_run/about'),
+        (True, 'test_social_sharing_url'),
+        (False, 'test_marketing_url'),
     )
     @ddt.unpack
-    def test_sharing_link_with_settings(self, enable_social_sharing, enable_mktg_site, expected_course_sharing_link):
+    def test_sharing_link_with_settings(self, enable_social_sharing, expected_course_sharing_link):
         """
-        Verify the method gives correct course sharing url on settings manipulations.
+        Verify the method gives correct course sharing url: social sharing URL takes priority
+        over marketing URL, which takes priority over the LMS about URL.
         """
         actual_course_sharing_link = self.get_course_sharing_link(
             enable_social_sharing=enable_social_sharing,
-            enable_mktg_site=enable_mktg_site,
         )
         assert actual_course_sharing_link == expected_course_sharing_link
 
@@ -107,7 +101,6 @@ class TestCourseSharingLinks(ModuleStoreTestCase):
 
         actual_course_sharing_link = self.get_course_sharing_link(
             enable_social_sharing=True,
-            enable_mktg_site=True,
         )
         assert actual_course_sharing_link == expected_course_sharing_link
 
@@ -122,11 +115,10 @@ class TestCourseSharingLinks(ModuleStoreTestCase):
     def test_sharing_link_with_course_block(self, enable_social_sharing, expected_course_sharing_link):
         """
         Verify the method gives correct course sharing url on passing
-        course block as a parameter.
+        course block as a parameter (course blocks have no marketing_url attribute).
         """
         actual_course_sharing_link = self.get_course_sharing_link(
             enable_social_sharing=enable_social_sharing,
-            enable_mktg_site=True,
             use_overview=False,
         )
         assert actual_course_sharing_link == expected_course_sharing_link
@@ -146,8 +138,11 @@ class TestCourseSharingLinks(ModuleStoreTestCase):
         self, catalog_mfe_enabled, expected_course_sharing_link
     ):
         """
-        Verify the method gives correct course sharing url when new course about page is used.
+        Verify the correct about URL base is used when neither social sharing URL nor
+        marketing URL is set (catalog MFE URL vs LMS root URL).
         """
+        self.course_overview.marketing_url = None
+        self.course_overview.save()
         with override_settings(ENABLE_CATALOG_MICROFRONTEND=catalog_mfe_enabled):
             actual_course_sharing_link = get_link_for_about_page(self.course_overview)
             assert actual_course_sharing_link == expected_course_sharing_link

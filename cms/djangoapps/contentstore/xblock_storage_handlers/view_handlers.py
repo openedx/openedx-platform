@@ -305,46 +305,7 @@ def handle_xblock(request, usage_key_string=None):
 
     elif request.method in ("PUT", "POST"):
         if "duplicate_source_locator" in request.json:
-            parent_usage_key = usage_key_with_run(request.json["parent_locator"])
-            duplicate_source_usage_key = usage_key_with_run(
-                request.json["duplicate_source_locator"]
-            )
-            source_course = duplicate_source_usage_key.course_key
-            dest_course = parent_usage_key.course_key  # noqa: F841
-
-            # Check authz permission for destination
-            permission = _check_xblock_permission(request, parent_usage_key)
-            # Legacy path also requires read access on the source course
-            if permission is None:
-                if not has_studio_read_access(request.user, source_course):
-                    raise PermissionDenied()
-
-            # Libraries have a maximum component limit enforced on them
-            if isinstance(
-                parent_usage_key, LibraryUsageLocator
-            ) and _is_library_component_limit_reached(parent_usage_key):
-                return JsonResponse(
-                    {
-                        "error": _(
-                            "Libraries cannot have more than {limit} components"
-                        ).format(limit=settings.MAX_BLOCKS_PER_CONTENT_LIBRARY)
-                    },
-                    status=400,
-                )
-
-            dest_usage_key = duplicate_block(
-                parent_usage_key,
-                duplicate_source_usage_key,
-                request.user,
-                display_name=request.json.get('display_name'),
-            )
-
-            return JsonResponse(
-                {
-                    "locator": str(dest_usage_key),
-                    "courseKey": str(dest_usage_key.course_key),
-                }
-            )
+            return _duplicate_xblock(request)
         else:
             return _create_block(request)
     elif request.method == "PATCH":
@@ -376,6 +337,122 @@ def handle_xblock(request, usage_key_string=None):
             "Only instance creation is supported without a usage key.",
             content_type="text/plain",
         )
+
+
+# ---------------------------------------------------------------------------
+# Public per-verb helpers for XblockViewSet (v1 — ADR 0028)
+# These replace handle_xblock's internal method-dispatch so each ViewSet action
+# calls the correct logic directly, satisfying REST semantics.
+# ---------------------------------------------------------------------------
+
+def _duplicate_xblock(request):
+    """
+    Shared duplicate-block logic used by both handle_xblock and create_xblock_response.
+
+    Expects request.json to contain ``parent_locator`` and ``duplicate_source_locator``.
+    """
+    parent_usage_key = usage_key_with_run(request.json["parent_locator"])
+    duplicate_source_usage_key = usage_key_with_run(
+        request.json["duplicate_source_locator"]
+    )
+    source_course = duplicate_source_usage_key.course_key
+
+    # Check authz permission for destination
+    permission = _check_xblock_permission(request, parent_usage_key)
+    # Legacy path also requires read access on the source course
+    if permission is None:
+        if not has_studio_read_access(request.user, source_course):
+            raise PermissionDenied()
+
+    # Libraries have a maximum component limit enforced on them
+    if isinstance(
+        parent_usage_key, LibraryUsageLocator
+    ) and _is_library_component_limit_reached(parent_usage_key):
+        return JsonResponse(
+            {
+                "error": _(
+                    "Libraries cannot have more than {limit} components"
+                ).format(limit=settings.MAX_BLOCKS_PER_CONTENT_LIBRARY)
+            },
+            status=400,
+        )
+
+    dest_usage_key = duplicate_block(
+        parent_usage_key,
+        duplicate_source_usage_key,
+        request.user,
+        display_name=request.json.get('display_name'),
+    )
+    return JsonResponse(
+        {
+            "locator": str(dest_usage_key),
+            "courseKey": str(dest_usage_key.course_key),
+        }
+    )
+
+
+def create_xblock_response(request):
+    """
+    Public entry point for POST (create). Called by XblockViewSet.create.
+
+    Handles both duplication (duplicate_source_locator present) and normal creation.
+    """
+    if "duplicate_source_locator" in request.json:
+        return _duplicate_xblock(request)
+    return _create_block_core(request)
+
+
+def retrieve_xblock_response(request, usage_key_string):
+    """
+    Public entry point for GET on a specific xblock. Called by XblockViewSet.retrieve.
+    """
+    usage_key = usage_key_with_run(usage_key_string)
+    _check_xblock_permission(request, usage_key)
+
+    accept_header = request.META.get("HTTP_ACCEPT", "application/json")
+    if "application/json" not in accept_header:
+        return HttpResponse(status=406)
+
+    fields = request.GET.get("fields", "").split(",")
+    if "graderType" in fields:
+        return JsonResponse(CourseGradingModel.get_section_grader_type(usage_key))
+    if "ancestorInfo" in fields:
+        xblock = get_xblock(usage_key, request.user)
+        return JsonResponse(_create_xblock_ancestor_info(xblock, is_concise=True))
+    with modulestore().bulk_operations(usage_key.course_key):
+        response = get_block_info(get_xblock(usage_key, request.user))
+        if "customReadToken" in fields:
+            parent_children = _get_block_parent_children(get_xblock(usage_key, request.user))
+            response.update(parent_children)
+    return JsonResponse(response)
+
+
+def update_xblock_response(request, usage_key_string):
+    """
+    Public entry point for PUT/PATCH on a specific xblock. Called by XblockViewSet.update/partial_update.
+
+    For PATCH with ``move_source_locator``, routes to the move-item path (permission check
+    is against the target parent, not the URL's usage key).
+    """
+    if request.method == "PATCH" and "move_source_locator" in request.json:
+        move_source_usage_key = usage_key_with_run(request.json.get("move_source_locator"))
+        target_parent_usage_key = usage_key_with_run(request.json.get("parent_locator"))
+        target_index = request.json.get("target_index")
+        _check_xblock_permission(request, target_parent_usage_key)
+        return _move_item(move_source_usage_key, target_parent_usage_key, request.user, target_index)
+    usage_key = usage_key_with_run(usage_key_string)
+    _check_xblock_permission(request, usage_key)
+    return modify_xblock(usage_key, request)
+
+
+def delete_xblock_response(request, usage_key_string):
+    """
+    Public entry point for DELETE on a specific xblock. Called by XblockViewSet.destroy.
+    """
+    usage_key = usage_key_with_run(usage_key_string)
+    _check_xblock_permission(request, usage_key)
+    _delete_item(usage_key, request.user)
+    return JsonResponse()
 
 
 def modify_xblock(usage_key, request):
@@ -746,10 +823,12 @@ def sync_library_content(
     return static_file_notices
 
 
-@login_required
-@expect_json
-def _create_block(request):
-    """View for create blocks."""
+def _create_block_core(request):
+    """
+    Core xblock creation logic, usable without @login_required / @expect_json decorators.
+
+    Called by both _create_block (legacy view) and create_xblock_response (v1 ViewSet).
+    """
     parent_locator = request.json["parent_locator"]
     usage_key = usage_key_with_run(parent_locator)
     category = request.json.get("category")
@@ -834,6 +913,13 @@ def _create_block(request):
             response["parent_locator"] = parent_locator
 
     return JsonResponse(response)
+
+
+@login_required
+@expect_json
+def _create_block(request):
+    """View for create blocks."""
+    return _create_block_core(request)
 
 
 def _get_source_index(source_usage_key, source_parent):
@@ -1347,7 +1433,7 @@ def create_xblock_info(  # pylint: disable=too-many-statements
                 "user_partitions": user_partitions,
                 "show_correctness": xblock.show_correctness,
                 "hide_from_toc": xblock.hide_from_toc,
-                "enable_hide_from_toc_ui": settings.FEATURES.get("ENABLE_HIDE_FROM_TOC_UI", False),
+                "enable_hide_from_toc_ui": settings.ENABLE_HIDE_FROM_TOC_UI,
                 "xblock_type": get_icon(xblock),
             }
         )

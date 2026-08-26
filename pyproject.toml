@@ -6,7 +6,409 @@ build-backend = "setuptools.build_meta"
 name = "openedx-platform"
 version = "0.13"
 requires-python = ">=3.12"
-dependencies = ["setuptools"]
+dependencies = [
+    "acid-xblock", # This XBlock is used for unit tests as well as manual tests
+    "analytics-python", # Used for Segment analytics
+    "attrs", # Reduces boilerplate code involving class attributes
+    "Babel", # Internationalization utilities, used for date formatting in a few places
+    "boto3", # Amazon Web Services SDK for Python
+    "botocore", # via boto3, s3transfer
+    "bridgekeeper", # Used for determining permissions for courseware. Use of django-rules is preferred.
+    "celery", # Asynchronous task execution library
+    "chem", # A helper library for chemistry calculations
+    "codejail-includes", # CodeJail manages execution of untrusted code in secure sandboxes.
+    "cryptography", # Implementations of assorted cryptography algorithms
+    "defusedxml",
+    "Django", # Web application framework
+    "django-autocomplete-light", # Enhances Django admin with single-select autocomplete dropdowns for a better user experience.
+    "django-celery-results", # Only used for the CacheBackend for celery results
+    "django-config-models", # Configuration models for Django allowing config management with auditing
+    "django-cors-headers", # Used to allow to configure CORS headers for cross-domain requests
+    "django-countries", # Country data for Django forms and model fields
+    "django-crum", # Middleware that stores the current request and user in thread local storage
+    "django-filter", # Allows users to filter Django querysets dynamically
+    "django-ipware", # Get the client's real IP address
+    "django-method-override", # Allow use of HTTP methods normally not supported by browsers via the X-HTTP-Method-Override header
+    "django-model-utils",
+    "django-mptt",
+    "django-mysql",
+    "django-oauth-toolkit", # Provides oAuth2 capabilities for Django
+    "django-pipeline",
+    "django-ratelimit",
+    "django-sekizai",
+    "django-simple-history",
+    "django-statici18n",
+    "django-storages",
+    "django-user-tasks",
+    "django-waffle",
+    "django-webpack-loader", # Used to wire webpack bundles into the django asset pipeline
+    "djangorestframework",
+    "drf-spectacular",
+    "edx-ace",
+    "edx-api-doc-tools",
+    "edx-auth-backends", # Allow Studio to use LMS SSO
+    "edx-bulk-grades", # LMS REST API for managing bulk grading operations
+    "edx-ccx-keys",
+    "edx-celeryutils",
+    "edx-completion",
+    "edx-django-release-util", # Release utils for the edx release pipeline
+    "edx-django-sites-extensions",
+    "edx-codejail>=4.0.0", # Codejail 4 brings important safety improvements (no unsafe mode by default)
+    "edx-django-utils>=5.14.1", # edx-django-utils 5.14.1 adds FrontendMonitoringMiddleware; Utilities for cache, monitoring, and plugins
+    "edx-drf-extensions",
+    "edx-enterprise",
+    "edx-event-bus-kafka>=5.6.0", # edx-event-bus-kafka 5.6.0 adds support for putting client ids on event producers/consumers; Kafka implementation of event bus
+    "edx-event-bus-redis",
+    "edx-milestones",
+    "edx-opaque-keys>=2.12.0",
+    "edx-organizations",
+    "edx-proctoring>=2.0.1",
+    "edx-rest-api-client",
+    "edx-search",
+    "edx-submissions",
+    "edx-toggles", # Feature toggles management
+    "edx-when",
+    "edxval",
+    "event-tracking",
+    "enmerkar-underscore", # Implements a underscore extractor for django-babel.
+    "fs",
+    "fs-s3fs",
+    "geoip2", # Python API for the GeoIP web services and databases
+    "glob2", # Enhanced glob module, used in openedx.core.lib.rooted_paths
+    "gunicorn",
+    "help-tokens",
+    "html5lib", # HTML parser, used for capa problems
+    "icalendar", # .ics generator, used by calendar_sync
+    "ipaddress", # Ip network support for Embargo feature
+    "importlib_metadata", # Used to access entry_points in i18n_api plugin
+    "jsonfield", # Django model field for validated JSON; used in several apps
+    "laboratory", # Library for testing that code refactors/infrastructure changes produce identical results
+    "lxml[html_clean]", # XML parser
+    "lti-consumer-xblock>=11.0.0",
+    "mako", # Primary template language used for server-side page rendering
+    "Markdown", # Convert text markup to HTML; used in capa problems, forums, and course wikis
+    "meilisearch", # Library to access Meilisearch search engine (will replace ElasticSearch)
+    "mongoengine", # Object-document mapper for MongoDB, used in the LMS dashboard
+    "mysqlclient", # Driver for the default production relational database
+    "nh3", # Python bindings to the ammonia (whitelist-based HTML sanitizing library); used for capa and LTI
+    "nodeenv", # Utility for managing Node.js environments; we use this for deployments and testing
+    "oauthlib", # OAuth specification support for authenticating via LTI or other Open edX services
+    "olxcleaner",
+    "openedx-atlas", # CLI tool to manage translations
+    "openedx-calc", # Library supporting mathematical calculations for Open edX
+    "openedx-core",
+    "openedx-django-require",
+    "openedx-events", # Open edX Events from Hooks Extension Framework (OEP-50)
+    "openedx-filters", # Open edX Filters from Hooks Extension Framework (OEP-50)
+    "openedx-forum", # Open edX forum v2 application
+    "openedx-django-wiki",
+    "path",
+    "piexif", # Exif image metadata manipulation, used in the profile_images app
+    "Pillow", # Image manipulation library; used for course assets, profile images, invoice PDFs, etc.
+    "psutil", # Library for retrieving information on running processes and system utilization
+    "pycountry",
+    "pycryptodomex",
+    "PyJWT>=1.6.3", # PyJWT 1.6.3 contains PyJWTError, which is required by Apple auth in social-auth-core
+    "pylti1p3", # Required by content_libraries core library to support LTI 1.3 launches
+    "pymemcache", # Python interface to the memcached memory cache daemon
+    "pymongo", # MongoDB driver
+    "pynliner", # Inlines CSS styles into HTML for email notifications
+    "python-dateutil",
+    "python3-openid ; python_version>='3'",
+    "python3-saml",
+    "pyuca", # For more accurate sorting of translated country names in django-countries
+    "pysrt", # Support for SubRip subtitle files, used in the video XModule
+    "pytz", # Time zone information database
+    "PyYAML", # Used to parse XModule resource templates
+    "redis", # celery task broker
+    "requests-oauthlib", # Simplifies use of OAuth via the requests library, used for CCX and LTI
+    "random2",
+    "rules", # Django extension for rules-based authorization checks
+    "social-auth-core",
+    "simplejson",
+    "Shapely", # Geometry library, used for image click regions in capa
+    "six", # Utilities for supporting Python 2 & 3 in the same codebase
+    "slumber", # The following dependency is unsupported and used by the DeprecatedRestApiClient
+    "social-auth-app-django",
+    "sorl-thumbnail",
+    "sortedcontainers", # Provides SortedKeyList, used for lists of XBlock assets
+    "stevedore", # Support for runtime plugins, used for XBlocks and edx-platform Django app plugins
+    "unicodecsv", # Easier support for CSV files with unicode text
+    "webob",
+    "web-fragments", # Provides the ability to render fragments of web pages
+    "wrapt", # Better functools.wrapped. TODO: functools has since improved, maybe we can switch?
+    "XBlock[django]", # Courseware component architecture
+    "xss-utils", # https://github.com/openedx/edx-platform/pull/20633 Fix XSS via Translations
+    "unicodeit", # Converts mathjax equation to plain text by using unicode symbols
+    "psycopg2-binary",
+    "openedx-authz", # Authorization Framework for the Open edX Ecosystem
+]
+
+[dependency-groups]
+coverage = [
+    "coverage", # Code coverage testing for Python
+    "diff-cover", # Automatically find diff lines that need test coverage
+]
+bundled = [
+    # Dependencies that are normally bundled with the platform, but are not core to
+    # the platform's functionality. They are still installed by default (this group is
+    # included from `testing`, and explicitly synced in `base-requirements`), but they
+    # should not be required for the platform to run nor for the test suite to pass.
+    "edx-i18n-tools>=0.4.6", # i18n_tool is needed at build time for pulling translations; Commands for developers and translators to extract, compile and validate translations
+    "django-ses", # Django email backend for Amazon’s Simple Email Service
+    "mailsnake", # MailChimp API; used for two management commands in the "mailing" djangoapp
+    "optimizely-sdk", # Optimizely provides A/B testing and other features, used by edx.org
+    "crowdsourcehinter-xblock",
+    "done-xblock", # a very simple XBlock that allows learners to mark an activity as Done
+    "recommender-xblock", # https://github.com/edx/RecommenderXBlock
+    "staff-graded-xblock", # https://github.com/openedx/staff_graded-xblock Allows off-site bulk scoring.
+    "edx-sga", # The more well known "staff graded assignment" XBlock, from MIT.
+    "ora2>=4.5.0", # Open Response Assessment XBlock
+    "xblock-poll", # Xblock for polling users
+    "xblock-drag-and-drop-v2", # Drag and Drop XBlock
+    "xblock-google-drive", # XBlock for google docs and calendar
+    "xblocks-contrib", # Package having multiple core XBlocks, https://github.com/openedx/xblocks-contrib?tab=readme-ov-file#xblocks-being-moved-here
+    "enterprise-integrated-channels", # Integrated Channels to transmit content metadata and learner data.
+]
+testing = [
+    {include-group = "coverage"},
+    {include-group = "bundled"},
+    "beautifulsoup4", # Library for extracting data from HTML and XML files
+    "code-annotations", # Perform code annotation checking, such as for PII annotations
+    "cssselect", # Used to extract HTML fragments via CSS selectors in 2 test cases and pyquery
+    "ddt", # Run a test case multiple times with different input; used in many, many of our tests
+    "edx-lint", # pylint extensions for Open edX repositories
+    "factory-boy", # Library for creating test fixtures, used in many tests
+    "freezegun", # Pinning the freezegun version because 0.3.13 is causing failures which have also been reported on the git repo by public.; Allows tests to mock the output of assorted datetime module functions
+    "httpretty", # Library for mocking HTTP requests, used in many tests
+    "import-linter", # Tool for making assertions about which modules can import which others
+    "mock", # Deprecated alias to standard library `unittest.mock`
+    "ruff", # Fast Python linter and formatter
+    "polib", # Library for manipulating gettext translation files, used to test paver i18n commands
+    "pyquery", # jQuery-like API for retrieving fragments of HTML and XML files in tests
+    "pytest", # Testing framework
+    "pytest-attrib", # Select tests based on attributes
+    "pytest-cov", # pytest plugin for measuring code coverage
+    "pytest-django", # Django support for pytest
+    "pytest-json-report", # Output json formatted warnings after running pytest
+    "pytest-metadata", # To prevent 'make upgrade' failure, dependency of pytest-json-report
+    "pytest-randomly", # pytest plugin to randomly order tests
+    "pytest-reportlog", # Per-test timing data including setup/teardown (used for shard rebalancing)
+    "pytest-xdist[psutil]", # Parallel execution of tests on multiple CPU cores or hosts
+    "singledispatch", # Backport of functools.singledispatch from Python 3.4+, used in tests of XBlock rendering
+    "testfixtures", # Provides a LogCapture utility used by several tests
+    "unidiff", # Required by coverage_pytest_plugin
+    "pylint-pytest", # A Pylint plugin to suppress pytest-related false positives.
+    "pact-python", # Library for contract testing
+    "py", # Needed for pytest configurations, was previously been fetched through tox
+]
+docs = [
+    # matches requirements/edx/doc.in's old `-r base.txt` -- docs/conf.py imports
+    # cms.envs.common, whose add_optional_apps() needs the bundled XBlocks/apps
+    # importable to succeed (e.g. openassessment), not just doc-building tools.
+    {include-group = "bundled"},
+    "code-annotations", # provides annotations for certain documentation
+    "sphinx-book-theme", # Common theme for all Open edX projects
+    "gitpython", # fetch git repo information
+    "Sphinx", # Documentation builder
+    "sphinx-design", # provides various responsive web-components
+    "sphinxcontrib-openapi", # Be able to render openapi schema in a sphinx project
+    "sphinxext-rediraffe", # Quickly and easily redirect when we move pages around.
+    "sphinx-reredirects", # Redirect from a sphinx project out to other places on the web including other sphinx projects
+    "sphinx-autoapi",
+]
+assets = [
+    "click",
+    "libsass",
+    "nodeenv",
+]
+development = [
+    {include-group = "testing"},
+    {include-group = "docs"},
+    {include-group = "assets"},
+    "django-debug-toolbar", # A set of panels that display debug information about the current request/response
+    "django-stubs[compatible-mypy]", # Typing stubs for Django, so it works with mypy
+    "djangorestframework-stubs", # Typing stubs for DRF
+    "mypy", # static type checking
+    "pywatchman", # More efficient checking for runserver reload trigger events
+    "types-requests", # Typing stubs for requests
+    "vulture", # Detects possible dead/unused code, used in scripts/find-dead-code.sh
+    "watchdog", # Used by `npm run watch` to auto-recompile when assets are changed
+]
+# Alternate-Django-version test matrix groups. Each is a real, independently-resolved
+# environment (not a runtime `uv pip install` patch on top of `testing`) — see
+# [tool.uv].conflicts below, which is required for these to coexist in one uv.lock at
+# all. Currently unexercised: the CI matrices that would select one of these
+# (migrations-check.yml, unit-tests.yml) only ever run with django-version: "pinned",
+# which resolves independently via `testing`'s own (unconstrained-except-<6.0) Django
+# requirement. If re-enabling that matrix dimension, add the matching fork to
+# [tool.uv].conflicts for whichever combination gets exercised together.
+django42 = [
+    {include-group = "testing"},
+    "django>=4.2,<4.3",
+]
+django52 = [
+    {include-group = "testing"},
+    "django>=5.2,<5.3",
+]
+ci = [
+    "tox",
+    "tox-uv",
+]
+
+[tool.uv]
+default-groups = [] # explicit, not omitted -- uv's own default-groups fallback is ["dev"]
+conflicts = [
+    [
+        { group = "django42" },
+        { group = "django52" },
+    ],
+]
+
+#  DO NOT EDIT constraint-dependencies DIRECTLY.
+#  This list is managed by `edx_lint write_uv_constraints` and will be
+#  overwritten the next time `make upgrade` is run.
+#  - GLOBAL constraints: edit edx_lint/files/common_constraints.txt
+#  - REPO-SPECIFIC constraints: edit [tool.edx_lint].uv_constraints in this file
+constraint-dependencies = [
+    "Django<6.0",
+    "elasticsearch==7.9.1",
+    "social-auth-app-django<=5.4.1",
+    "social-auth-core<5.0.0",
+    "pip<26.2.1",
+    "celery>=5.2.2,!=5.6.1,<6.0.0",
+    "django-oauth-toolkit==1.7.1",
+    "django-stubs<6",
+    "libsass==0.10.0",
+    "numpy<2.0.0",
+    "openedx-core<2",
+    "path<16.12.0",
+    "pymongo<4.4.1",
+    "lxml==5.3.2",
+    "xmlsec==1.3.14",
+    "django-debug-toolbar<6.0.0",
+    "sphinx-autoapi<3.6.1",
+    "setuptools<82",
+    "astroid==4.0.4",
+    "edx-enterprise==8.9.2",
+]
+[tool.edx_lint]
+uv_constraints = [
+    # Date: 2025-10-07
+    # Stay on LTS version, remove once this is added to common constraint
+    "Django<6.0",
+    # Date: 2026-01-13
+    # We would normally pin celery to <6.0.0 to avoid auto-updating across a major
+    # version boundary without more thorough testing. The reason it's currently also
+    # pinned to !=5.6.1 is because of a celery bug related to the eta and countdown
+    # parameters. This bug caused operational issues in MIT's deployment.
+    # Issue for unpinning: https://github.com/openedx/edx-platform/issues/35280
+    "celery>=5.2.2,!=5.6.1,<6.0.0",
+    # Date: 2020-02-10
+    # django-oauth-toolkit version >=2.0.0 has breaking changes. More details
+    # mentioned on this issue https://github.com/openedx/edx-platform/issues/32884
+    # Issue for unpinning: https://github.com/openedx/edx-platform/issues/35277
+    "django-oauth-toolkit==1.7.1",
+    # Date: 2024-07-19
+    # Generally speaking, the major version of django-stubs must either match the major version
+    # of django, or exceed it by 1. So, we will need to perpetually constrain django-stubs and
+    # update it as we perform django upgrades. For more details, see:
+    # https://github.com/typeddjango/django-stubs?tab=readme-ov-file#version-compatibility
+    # including the note on "Partial Support".
+    # Issue: https://github.com/openedx/edx-platform/issues/35275
+    "django-stubs<6",
+    # Date: 2023-07-26
+    # Our legacy Sass code is incompatible with anything except this ancient libsass version.
+    # Here is a ticket to upgrade, but it's of debatable importance given that we are rapidly moving
+    # away from legacy LMS/CMS frontends:
+    # https://github.com/openedx/edx-platform/issues/31616
+    "libsass==0.10.0",
+    # Date: 2024-07-16
+    # We need to upgrade the version of elasticsearch to at least 7.15 before we can upgrade to Numpy 2.0.0
+    # Otherwise we see a failure while running the following command:
+    # export DJANGO_SETTINGS_MODULE=cms.envs.test; python manage.py cms check_reserved_keywords --override_file db_keyword_overrides.yml --report_path reports/reserved_keywords --report_file cms_reserved_keyword_report.csv
+    # Issue for unpinning: https://github.com/openedx/edx-platform/issues/35126
+    "numpy<2.0.0",
+    # Date: 2023-09-18
+    # Library is still in active development. Major versions require review
+    # from openedx-maintainers. Minor and patch versions can roll out automatically.
+    # Issue for unpinning: https://github.com/openedx/edx-platform/issues/35269
+    "openedx-core<2",
+    # Date: 2024-04-26
+    # path==16.12.0 breaks the unit test collections check
+    # needs to be investigated and fixed separately
+    # Issue for unpinning: https://github.com/openedx/edx-platform/issues/35267
+    "path<16.12.0",
+    # Date: 2020-04-08
+    # Adding pin to avoid any major upgrade
+    # Issue for unpinning: https://github.com/openedx/edx-platform/issues/35265
+    "pymongo<4.4.1",
+    # Date: 2024-08-06
+    # social-auth-app-django 5.4.2 introduces a new migration that will not play nicely with large installations. This will touch
+    # user tables, which are quite large, especially on instances like edx.org.
+    # We are pinning this until after all the smaller migrations get handled and then we can migrate this all at once.
+    # Issue for unpinning: https://github.com/openedx/edx-platform/issues/37639
+    "social-auth-app-django<=5.4.1",
+    # Date 2026-07-02
+    # social-auth-core 5.x changes the OAuth pipeline's post-login redirect
+    # behavior, breaking common/djangoapps/third_party_auth's integration
+    # tests (AzureAD/Google/LinkedIn/Twitter full-pipeline specs). Keep on
+    # the 4.x line until that's investigated and fixed separately -- see the
+    # social-auth-app-django pin above for a related, already-deferred
+    # migration in this dependency family.
+    # Issue for unpinning: https://github.com/openedx/edx-platform/issues/38841
+    "social-auth-core<5.0.0",
+    # Date 2025-01-08
+    # elasticsearch==7.13.x is downgrading urllib3 from 2.2.3 to 1.26.20
+    # https://github.com/elastic/elasticsearch-py/blob/v7.13.4/setup.py#L42
+    # We are pinning this until we can upgrade to a version of elasticsearch that uses a more recent version of urllib3.
+    # Issue for unpinning: https://github.com/openedx/edx-platform/issues/35126
+    "elasticsearch==7.9.1",
+    # Date 2025-05-09
+    # lxml and xmlsec need to be constrained because the latest version builds against a newer
+    # version of libxml2 than what we're running with.  This leads to a version mismatch error
+    # at runtime.  You can re-produce it by running any test.
+    # If lxml is pinned in the future and you see this error, it may be that the system libxml2
+    # is now shipping the correct version and we can un-pin this.
+    # Issue: https://github.com/openedx/edx-platform/issues/36695
+    "lxml==5.3.2",
+    "xmlsec==1.3.14",
+    # Date 2025-08-12
+    # The newest version of the debug toolbar has a bug in it
+    # https://github.com/django-commons/django-debug-toolbar/issues/2172
+    # Pin this back to the previous version until that bug is fixed.
+    "django-debug-toolbar<6.0.0",
+    # Date 2026-01-13
+    # Sphinx-autoapi changed the version of astroid it needs
+    # but the newer version is not compatible with the current pylint version
+    # which wants a newer version of astroid.  This can be removed once we're
+    # building requirements with Python 3.12
+    # https://github.com/openedx/edx-platform/issues/37880
+    "sphinx-autoapi<3.6.1",
+    # Date 2026-03-02
+    # setuptools 82.0.0 removed pkg_resources from its distribution, but fs (pyfilesystem2)
+    # still uses pkg_resources for namespace package declarations. This constraint can be
+    # removed once pyfilesystem2 drops its pkg_resources usage.
+    # https://github.com/PyFilesystem/pyfilesystem2/issues/577
+    # Issue for unpinning: https://github.com/openedx/openedx-platform/issues/38068
+    "setuptools<82",
+    # Date 2026-03-02
+    # The latest version of pylint pins back astroid to an older version.
+    # This holdback is not caught in the docs requirements file and since both the docs
+    # and testing file are required in the development.in file, we fail to compile
+    # development.txt because of conflicting dependencies.
+    #
+    # Holding astroid back until pylint releases a new version that works with the latest
+    # version of astroid.
+    # https://github.com/openedx/openedx-platform/issues/38066
+    "astroid==4.0.4",
+    # Date: 2019-08-16 (bumped 2026-08-22 to match master's own already-reviewed
+    # bump in requirements/constraints.txt, PR #39012)
+    # The team that owns this package will manually bump this package rather than
+    # having it pulled in automatically. This is to allow them to better control its
+    # deployment and to do it in a process that works better for them.
+    "edx-enterprise==8.9.2",
+]
 
 [tool.setuptools]
 packages = ["cms", "common", "lms", "openedx", "xmodule"]
@@ -205,6 +607,60 @@ junit_family = "xunit2"
 norecursedirs = ". .* *.egg build conf dist node_modules test_root cms/envs lms/envs openedx/envs"
 python_classes = []
 python_files = ["tests.py", "test_*.py", "tests_*.py", "*_tests.py", "__init__.py"]
+
+[tool.coverage.run]
+branch = true
+data_file = "reports/.coverage"
+source = [
+    "cms",
+    "common/djangoapps",
+    "lms",
+    "openedx",
+    "pavelib",
+    "scripts",
+    "xmodule",
+]
+omit = [
+    "cms/envs/*",
+    "cms/manage.py",
+    "cms/djangoapps/contentstore/views/dev.py",
+    "cms/djangoapps/*/migrations/*",
+    "cms/djangoapps/*/features/*",
+    "cms/lib/*/migrations/*",
+    "lms/debug/*",
+    "lms/envs/*",
+    "lms/djangoapps/*/migrations/*",
+    "lms/djangoapps/*/features/*",
+    "common/djangoapps/*/migrations/*",
+    "openedx/core/djangoapps/*/migrations/*",
+    "openedx/core/djangoapps/debug/*",
+    "openedx/envs/*",
+    "openedx/features/*/migrations/*",
+]
+concurrency = ["multiprocessing"]
+parallel = true
+relative_files = true
+
+[tool.coverage.report]
+ignore_errors = true
+exclude_lines = [
+    "pragma: no cover",
+    "raise NotImplementedError",
+]
+
+[tool.coverage.html]
+title = "edx-platform Python Test Coverage Report"
+directory = "reports/cover"
+
+[tool.coverage.xml]
+output = "reports/coverage.xml"
+
+[tool.coverage.paths]
+jenkins_source = [
+    "/home/jenkins/workspace/$JOB_NAME",
+    "/home/jenkins/workspace/$SUBSET_JOB",
+    "/home/jenkins/edx-platform",
+]
 
 [tool.ruff]
 line-length = 120

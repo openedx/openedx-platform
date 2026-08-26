@@ -78,6 +78,7 @@ from django.http import HttpResponseBadRequest
 from django.shortcuts import redirect
 from django.urls import reverse
 from edx_django_utils.monitoring import set_custom_attribute
+from openedx_filters.authentication.types import RunningPipeline
 from social_core.exceptions import AuthException
 from social_core.pipeline import partial
 from social_core.utils import module_member, slugify
@@ -212,8 +213,15 @@ class ProviderUserState:
         return self.provider.provider_id + '_unlink_form'
 
 
-def get(request):
-    """Gets the running pipeline's data from the passed request."""
+def get(request) -> RunningPipeline | None:
+    """Gets the running pipeline's data from the passed request.
+
+    The returned mapping is the shared cross-repository contract for third-party auth
+    pipeline state: it is handed to pipeline steps of the login and registration form
+    filters, which may live in other repositories. See
+    ``openedx_filters.authentication.types.RunningPipeline`` for the declared shape, and
+    keep this function's dict literal in agreement with it.
+    """
     strategy = social_django.utils.load_strategy(request)
     token = strategy.session_get('partial_pipeline_token')
 
@@ -222,7 +230,7 @@ def get(request):
         token = strategy.session_get('partial_pipeline_token')
 
     partial_object = strategy.partial_load(token)
-    pipeline_data = None
+    pipeline_data: RunningPipeline | None = None
     if partial_object:
         pipeline_data = {'kwargs': partial_object.kwargs, 'backend': partial_object.backend}
     return pipeline_data

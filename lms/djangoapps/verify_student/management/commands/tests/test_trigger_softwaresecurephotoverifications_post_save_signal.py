@@ -17,7 +17,6 @@ from lms.djangoapps.verify_student.tests.test_models import FAKE_SETTINGS, mock_
 
 # Lots of patching to stub in our own settings, and HTTP posting
 @patch.dict(settings.VERIFY_STUDENT, FAKE_SETTINGS)
-@patch.dict(settings.FEATURES, {'AUTOMATIC_VERIFY_STUDENT_IDENTITY_FOR_TESTING': True})
 @patch('lms.djangoapps.verify_student.models.requests.post', new=mock_software_secure_post)
 class TestTriggerSoftwareSecurePhotoVerificationsPostSaveSignal(MockS3Boto3Mixin, TestVerificationBase):
     """

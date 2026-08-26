@@ -3,11 +3,6 @@ Things commonly needed in Enterprise tests.
 """
 
 
-from django.conf import settings
-
-FEATURES_WITH_ENTERPRISE_ENABLED = settings.FEATURES.copy()
-FEATURES_WITH_ENTERPRISE_ENABLED['ENABLE_ENTERPRISE_INTEGRATION'] = True
-
 FAKE_ENTERPRISE_CUSTOMER = {
     'active': True,
     'branding_configuration': None,

@@ -31,7 +31,7 @@
                 </p>
 
                 {% include "ace_common/edx_ace/common/return_to_course_cta.html" with course_cta_text=display_name|default:course.display_name_with_default course_cta_url=course_url %}
-            {% elif course_about_url is not None %}
+            {% else %}
                 <p style="color: rgba(0,0,0,.75);">
                     {% filter force_escape %}
                     {% blocktrans %}To enroll in this course and begin the beta test:{% endblocktrans %}
@@ -43,19 +43,6 @@
                 {% endfilter %}
 
                 {% include "ace_common/edx_ace/common/return_to_course_cta.html" with course_cta_text=course_cta_text course_cta_url=course_about_url %}
-            {% else %}
-                <p style="color: rgba(0,0,0,.75);">
-                    {% filter force_escape %}
-                    {% blocktrans %}To enroll in this course and begin the beta test:{% endblocktrans %}
-                    {% endfilter %}
-                    <br />
-                </p>
-                {% filter force_escape %}
-                {% blocktrans asvar course_cta_text %}Visit {{ site_name }}
-                {% endblocktrans %}
-                {%endfilter%}
-
-                {% include "ace_common/edx_ace/common/return_to_course_cta.html" with course_cta_text=course_cta_text course_cta_url=course_url %}
             {% endif %}
 
             <p style="color: rgba(0,0,0,.75);">

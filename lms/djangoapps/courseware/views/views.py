@@ -545,14 +545,11 @@ class CourseTabView(EdxFragmentView):
                 return CourseTabView.handle_exceptions(request, course_key, course, exception)
 
     @staticmethod
-    def url_to_enroll(course_key):
+    def url_to_enroll(course_key):  # pylint: disable=unused-argument
         """
         Returns the URL to use to enroll in the specified course.
         """
-        url_to_enroll = reverse('about_course', args=[str(course_key)])
-        if settings.FEATURES.get('ENABLE_MKTG_SITE'):
-            url_to_enroll = marketing_link('COURSES')
-        return url_to_enroll
+        return marketing_link('COURSES')
 
     @staticmethod
     def register_user_access_warning_messages(request, course):
@@ -892,7 +889,7 @@ def course_about(request, course_id):  # pylint: disable=too-many-statements
             'studio_url': studio_url,
             'registered': registered,
             'course_target': course_target,
-            'is_cosmetic_price_enabled': settings.FEATURES.get('ENABLE_COSMETIC_DISPLAY_PRICE'),
+            'is_cosmetic_price_enabled': settings.ENABLE_COSMETIC_DISPLAY_PRICE,
             'course_price': course_price,
             'ecommerce_checkout': ecommerce_checkout,
             'ecommerce_checkout_link': ecommerce_checkout_link,
@@ -1091,7 +1088,7 @@ def _downloadable_certificate_message(course, cert_downloadable_status):  # pyli
 
 
 def _missing_required_verification(student, enrollment_mode):
-    return settings.FEATURES.get('ENABLE_CERTIFICATES_IDV_REQUIREMENT') and (
+    return settings.ENABLE_CERTIFICATES_IDV_REQUIREMENT and (
         enrollment_mode in CourseMode.VERIFIED_MODES and not IDVerificationService.user_is_verified(student)
     )
 
@@ -1214,16 +1211,11 @@ def credit_course_requirements(course_key, student):
 
 def _course_home_redirect_enabled():
     """
-    Return True value if user needs to be redirected to course home based on value of
-    `ENABLE_MKTG_SITE` and `ENABLE_COURSE_HOME_REDIRECT feature` flags
-    Returns: boolean True or False
+    Return True if users should be redirected from the course about page to course home.
     """
-    if configuration_helpers.get_value(
-            'ENABLE_MKTG_SITE', settings.FEATURES.get('ENABLE_MKTG_SITE', False)
-    ) and configuration_helpers.get_value(
-        'ENABLE_COURSE_HOME_REDIRECT', settings.FEATURES.get('ENABLE_COURSE_HOME_REDIRECT', True)
-    ):
-        return True
+    return bool(configuration_helpers.get_value(
+        'ENABLE_COURSE_HOME_REDIRECT', settings.ENABLE_COURSE_HOME_REDIRECT
+    ))
 
 
 @login_required
@@ -2356,7 +2348,7 @@ def courseware_mfe_search_enabled(request, course_id=None):
     user = request.user
 
     has_required_enrollment = False
-    if settings.FEATURES.get('ENABLE_COURSEWARE_SEARCH_VERIFIED_ENROLLMENT_REQUIRED'):
+    if settings.ENABLE_COURSEWARE_SEARCH_VERIFIED_ENROLLMENT_REQUIRED:
         enrollment_mode, _ = CourseEnrollment.enrollment_mode_for_user(user, course_key)
         if (
             auth.user_has_role(user, CourseStaffRole(CourseKey.from_string(course_id)))
@@ -2366,7 +2358,7 @@ def courseware_mfe_search_enabled(request, course_id=None):
     else:
         has_required_enrollment = True
 
-    inclusion_date = settings.FEATURES.get('COURSEWARE_SEARCH_INCLUSION_DATE')
+    inclusion_date = settings.COURSEWARE_SEARCH_INCLUSION_DATE
     start_date = CourseOverview.get_from_id(course_key).start
     has_valid_inclusion_date = False
 

@@ -380,8 +380,6 @@ openedx_content.ContainerType:
   ".. no_pii:": "No PII"
 openedx_content.ContainerVersion:
   ".. no_pii:": "No PII"
-openedx_content.Draft:
-  ".. no_pii:": "No PII"
 openedx_content.EntityList:
   ".. no_pii:": "No PII"
 openedx_content.EntityListRow:
@@ -397,10 +395,6 @@ openedx_content.PublishLog:
 openedx_content.PublishLogRecord:
   ".. no_pii:": "No PII"
 openedx_content.PublishableEntity:
-  ".. no_pii:": "No PII"
-openedx_content.PublishableEntityVersion:
-  ".. no_pii:": "No PII"
-openedx_content.PublishableEntityVersionDependency:
   ".. no_pii:": "No PII"
 openedx_content.Published:
   ".. no_pii:": "No PII"

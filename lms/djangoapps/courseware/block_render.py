@@ -1005,9 +1005,9 @@ def xblock_view(request, course_id, usage_id, view_name):
         resources: A list of tuples where the first element is the resource hash, and
             the second is the resource description
     """
-    if not settings.FEATURES.get('ENABLE_XBLOCK_VIEW_ENDPOINT', False):
+    if not settings.ENABLE_XBLOCK_VIEW_ENDPOINT:
         log.warning("Attempt to use deactivated XBlock view endpoint -"
-                    " see FEATURES['ENABLE_XBLOCK_VIEW_ENDPOINT']")
+                    " see ENABLE_XBLOCK_VIEW_ENDPOINT")
         raise Http404
 
     try:

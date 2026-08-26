@@ -246,12 +246,12 @@ if toggles.EXPORT_GIT.is_enabled():
                 name='export_git')
     ]
 
-if settings.FEATURES.get('ENABLE_SERVICE_STATUS'):
+if settings.ENABLE_SERVICE_STATUS:
     urlpatterns.append(path('status/', include('openedx.core.djangoapps.service_status.urls')))
 
 # The password pages in the admin tool are disabled so that all password
 # changes go through our user portal and follow complexity requirements.
-if not settings.FEATURES.get('ENABLE_CHANGE_USER_PASSWORD_ADMIN'):
+if not settings.ENABLE_CHANGE_USER_PASSWORD_ADMIN:
     urlpatterns.append(re_path(r'^admin/auth/user/\d+/password/$', handler404))
 urlpatterns.append(path('admin/password_change/', handler404))
 urlpatterns.append(

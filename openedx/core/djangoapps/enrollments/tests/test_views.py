@@ -12,11 +12,11 @@ from zoneinfo import ZoneInfo
 
 import ddt
 import pytest
-from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.core.exceptions import ImproperlyConfigured
 from django.core.handlers.wsgi import WSGIRequest
-from django.test import Client
+from django.test import Client, RequestFactory, SimpleTestCase
 from django.test.utils import override_settings
 from django.urls import reverse
 from freezegun import freeze_time
@@ -1396,22 +1396,16 @@ class EnrollmentEmbargoTest(EnrollmentTestMixin, UrlResetMixin, ModuleStoreTestC
 
 def cross_domain_config(func):
     """Decorator for configuring a cross-domain request. """
-    feature_flag_decorator = patch.dict(settings.FEATURES, {
-        'ENABLE_CORS_HEADERS': True,
-        'ENABLE_CROSS_DOMAIN_CSRF_COOKIE': True
-    })
     settings_decorator = override_settings(
+        ENABLE_CORS_HEADERS=True,
+        ENABLE_CROSS_DOMAIN_CSRF_COOKIE=True,
         CORS_ORIGIN_WHITELIST=["https://www.edx.org"],
         CROSS_DOMAIN_CSRF_COOKIE_NAME="prod-edx-csrftoken",
-        CROSS_DOMAIN_CSRF_COOKIE_DOMAIN=".edx.org"
+        CROSS_DOMAIN_CSRF_COOKIE_DOMAIN=".edx.org",
     )
     is_secure_decorator = patch.object(WSGIRequest, 'is_secure', return_value=True)
 
-    return feature_flag_decorator(
-        settings_decorator(
-            is_secure_decorator(func)
-        )
-    )
+    return settings_decorator(is_secure_decorator(func))
 
 
 @skip_unless_lms
@@ -1991,3 +1985,42 @@ class EnrollmentAllowedViewTest(APITestCase):
         self.client.post(self.url, self.data)
         response = self.client.delete(self.url, delete_data)
         assert response.status_code == expected_result
+
+
+class EnrollmentUserThrottleCacheKeyTests(SimpleTestCase):
+    """
+    Regression tests ensuring ``EnrollmentUserThrottle`` stores its rate-limit
+    counter in an isolated cache bucket.
+
+    DRF's default cache key is ``throttle_{scope}_{ident}``. Several endpoints
+    (e.g. the course list / id APIs) also use a ``staff`` scope, so without a
+    per-throttle prefix a single service user's traffic to one endpoint would
+    consume the rate-limit allowance of the others. See
+    ``EnrollmentUserThrottle.get_cache_key``.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.factory = RequestFactory()
+        # Unsaved instance is enough: get_cache_key only reads ``pk`` and
+        # ``is_authenticated``, so no database access is required.
+        self.user = get_user_model()(pk=42, username="service_worker", is_staff=True)
+
+    def _staff_request(self):
+        request = self.factory.get("/")
+        request.user = self.user
+        return request
+
+    def test_cache_key_is_prefixed_with_enrollment(self):
+        throttle = EnrollmentUserThrottle()
+        throttle.scope = "staff"
+        cache_key = throttle.get_cache_key(self._staff_request(), view=None)
+        assert cache_key.startswith("enrollment.")
+
+    def test_cache_key_differs_from_unprefixed_same_scope_bucket(self):
+        throttle = EnrollmentUserThrottle()
+        throttle.scope = "staff"
+        cache_key = throttle.get_cache_key(self._staff_request(), view=None)
+        shared_bucket = throttle.cache_format % {"scope": "staff", "ident": self.user.pk}
+        assert cache_key != shared_bucket
+        assert cache_key == f"enrollment.{shared_bucket}"

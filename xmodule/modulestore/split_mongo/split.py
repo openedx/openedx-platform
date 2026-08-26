@@ -1720,7 +1720,7 @@ class SplitMongoModuleStore(SplitBulkWriteMixin, ModuleStoreWriteBase):
 
             parent = new_structure['blocks'][block_id]
 
-            # Originally added to support entrance exams (settings.FEATURES.get('ENTRANCE_EXAMS'))
+            # Originally added to support entrance exams (the ENTRANCE_EXAMS feature)
             if kwargs.get('position') is None:
                 parent.fields.setdefault('children', []).append(BlockKey.from_usage_key(xblock.location))
             else:

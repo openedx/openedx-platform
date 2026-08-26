@@ -17,9 +17,10 @@ jobs:
         os: [ubuntu-24.04]
         python-version:
           - "3.12"
-        # 'pinned' is used to install the latest patch version of Django
-        # within the global constraint i.e. Django==4.2.8 in current case
-        # because we have global constraint of Django<4.2
+        # 'pinned' installs whatever Django version `testing` resolves to under the
+        # global `Django<6.0` constraint (currently 5.2.x). To test another supported
+        # version instead, use a value matching a real `djangoNN` dependency-group in
+        # pyproject.toml (e.g. "42" for the `django42` group), synced below.
         django-version: ["pinned"]
         mongo-version:
           - "7"
@@ -73,40 +74,28 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v7
 
-      - name: Setup Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v6
-        with:
-          python-version: ${{ matrix.python-version }}
-
       - name: Install system Packages
         run: |
           sudo apt-get update
           make ubuntu-requirements
 
-      - name: Get pip cache dir
-        id: pip-cache-dir
-        run: |
-          echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
-
-      - name: Cache pip dependencies
-        id: cache-dependencies
-        uses: actions/cache@v6
+      - name: Install uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
         with:
-          path: ${{ steps.pip-cache-dir.outputs.dir }}
-          key: ${{ runner.os }}-pip-${{ hashFiles('requirements/edx/development.txt') }}
-          restore-keys: ${{ runner.os }}-pip-
+          enable-cache: true
+          python-version: ${{ matrix.python-version }}
 
       - name: Install Python dependencies
         run: |
-          make dev-requirements
-          if [[ "${{ matrix.django-version }}" != "pinned" ]]; then
-            pip install "django~=${{ matrix.django-version }}.0"
-            pip check # fail if this test-reqs/Django combination is broken
+          if [[ "${{ matrix.django-version }}" == "pinned" ]]; then
+            make dev-requirements
+          else
+            uv sync --no-default-groups --group testing --group "django${{ matrix.django-version }}" --frozen
           fi
 
       - name: list installed package versions
         run: |
-          sudo pip freeze
+          uv tree
 
       - name: Run Tests
         env:
@@ -115,9 +104,9 @@ jobs:
           STUDIO_CFG: lms/envs/minimal.yml
         run: |
           echo "Running the LMS migrations."
-          ./manage.py lms migrate
+          uv run ./manage.py lms migrate
           echo "Running the CMS migrations."
-          ./manage.py cms migrate
+          uv run ./manage.py cms migrate
 
   # This job aggregates test results. It's the required check for branch protection.
   # https://github.com/marketplace/actions/alls-green#why

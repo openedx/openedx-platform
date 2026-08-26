@@ -6,7 +6,6 @@ from unittest.mock import patch
 
 import ddt
 import pytest
-from django.conf import settings
 from django.test import override_settings
 from django.urls import reverse
 from openedx_events.testing import OpenEdxEventsTestMixin
@@ -178,7 +177,7 @@ class EnrollmentTest(OpenEdxEventsTestMixin, UrlResetMixin, ModuleStoreTestCase)
         assert traits['mode'] == 'verified'
         assert traits['email'] == self.EMAIL
 
-    @patch.dict(settings.FEATURES, {'ENABLE_MKTG_EMAIL_OPT_IN': True})
+    @override_settings(ENABLE_MKTG_EMAIL_OPT_IN=True)
     @patch('openedx.core.djangoapps.user_api.preferences.api.update_email_opt_in')
     @ddt.data(
         ([], 'true'),

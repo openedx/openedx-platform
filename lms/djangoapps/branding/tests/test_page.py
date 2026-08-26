@@ -6,7 +6,6 @@ Tests for branding page
 import datetime
 from unittest.mock import Mock, patch
 
-from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
 from django.http import HttpResponseRedirect
 from django.test.client import RequestFactory
@@ -25,11 +24,6 @@ from xmodule.modulestore.tests.django_utils import (
     ModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
 from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
-
-FEATURES_WITH_STARTDATE = settings.FEATURES.copy()
-FEATURES_WITH_STARTDATE['DISABLE_START_DATES'] = False
-FEATURES_WO_STARTDATE = settings.FEATURES.copy()
-FEATURES_WO_STARTDATE['DISABLE_START_DATES'] = True
 
 
 def mock_render_to_response(*args, **kwargs):
@@ -67,7 +61,7 @@ class AnonymousIndexPageTest(ModuleStoreTestCase):
 
         return headers
 
-    @override_settings(FEATURES=FEATURES_WITH_STARTDATE)
+    @override_settings(DISABLE_START_DATES=False)
     def test_none_user_index_access_with_startdate_fails(self):
         """
         This is a regression test for a bug where the incoming user is
@@ -78,12 +72,12 @@ class AnonymousIndexPageTest(ModuleStoreTestCase):
         response = self.client.get(reverse('root'))
         assert response.status_code == 200
 
-    @override_settings(FEATURES=FEATURES_WITH_STARTDATE)
+    @override_settings(DISABLE_START_DATES=False)
     def test_anon_user_with_startdate_index(self):
         response = self.client.get('/')
         assert response.status_code == 200
 
-    @override_settings(FEATURES=FEATURES_WO_STARTDATE)
+    @override_settings(DISABLE_START_DATES=True)
     def test_anon_user_no_startdate_index(self):
         response = self.client.get('/')
         assert response.status_code == 200
@@ -133,7 +127,7 @@ class PreRequisiteCourseCatalog(ModuleStoreTestCase, LoginEnrollmentTestCase, Mi
     """
     ENABLED_SIGNALS = ['course_published']
 
-    @patch.dict(settings.FEATURES, {'ENABLE_PREREQUISITE_COURSES': True})
+    @override_settings(ENABLE_PREREQUISITE_COURSES=True)
     def test_course_with_prereq(self):
         """
         Simulate having a course which has closed enrollments that has

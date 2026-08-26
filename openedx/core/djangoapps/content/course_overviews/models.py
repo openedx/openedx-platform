@@ -56,7 +56,9 @@ class CourseOverview(TimeStampedModel):
     will cause a slew of modulestore reads as each course needs to be re-cached into
     the course overview.
 
-    .. no_pii:
+    .. pii: Contains proctoring_escalation_email, a staff contact address copied from CourseFields.
+    .. pii_types: email_address
+    .. pii_retirement: retained
     """
 
     class Meta:
@@ -567,7 +569,7 @@ class CourseOverview(TimeStampedModel):
         """
         Returns whether the course has marketing url.
         """
-        return settings.FEATURES.get('ENABLE_MKTG_SITE') and bool(self.marketing_url)
+        return bool(self.marketing_url)
 
     def has_social_sharing_url(self):
         """
@@ -727,6 +729,7 @@ class CourseOverview(TimeStampedModel):
         """
         return course_overviews.filter(
             Q(display_name__icontains=query) |
+            Q(display_number_with_default__icontains=query) |
             Q(org__icontains=query) |
             Q(id__icontains=query)
         )

@@ -22,7 +22,6 @@ from lms.djangoapps.certificates.signals import listen_for_passing_grade
 from openedx.core.djangoapps.commerce.utils import ECOMMERCE_DATE_FORMAT
 from openedx.core.djangoapps.credit.tests.test_api import TEST_ECOMMERCE_WORKER
 from openedx.core.djangoapps.signals.signals import COURSE_ASSESSMENT_GRADE_CHANGED, COURSE_GRADE_NOW_PASSED
-from openedx.features.enterprise_support.tests import FEATURES_WITH_ENTERPRISE_ENABLED
 from openedx.features.enterprise_support.tests.factories import (
     EnterpriseCourseEnrollmentFactory,
     EnterpriseCustomerFactory,
@@ -42,7 +41,7 @@ TEST_EMAIL = "test@edx.org"
 
 
 @ddt.ddt
-@override_settings(FEATURES=FEATURES_WITH_ENTERPRISE_ENABLED)
+@override_settings(ENABLE_ENTERPRISE_INTEGRATION=True)
 @override_settings(ECOMMERCE_SERVICE_WORKER_USERNAME=TEST_ECOMMERCE_WORKER)
 class EnterpriseSupportSignals(SharedModuleStoreTestCase):
     """

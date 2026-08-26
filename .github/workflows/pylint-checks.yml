@@ -37,36 +37,22 @@ jobs:
       - name: Install required system packages
         run: sudo apt-get update && sudo apt-get install libxmlsec1-dev
 
-      - name: Set up Python
-        uses: actions/setup-python@v6
+      - name: Install uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
         with:
-          python-version: 3.12
-
-      - name: Get pip cache dir
-        id: pip-cache-dir
-        run: |
-          echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
-
-      - name: Cache pip dependencies
-        id: cache-dependencies
-        uses: actions/cache@v6
-        with:
-          path: ${{ steps.pip-cache-dir.outputs.dir }}
-          key: ${{ runner.os }}-pip-${{ hashFiles('requirements/edx/development.txt') }}
-          restore-keys: ${{ runner.os }}-pip-
+          enable-cache: true
+          python-version: "3.12"
 
       - name: Install required Python dependencies
         run: |
           # dev-requirements is needed because the linter will otherwise
           # trip over some dev-only things like django-debug-toolbar
-          # (import debug_toolbar) that aren't in testing.txt.
+          # (import debug_toolbar) that aren't in the testing group.
           make dev-requirements
-          # After all requirements are installed, check that they're consistent with each other
-          pip check
 
       - name: Run quality tests
         run: |
-          pylint ${{ matrix.path }}
+          uv run pylint ${{ matrix.path }}
 
   # This job aggregates test results. It's the required check for branch protection.
   # https://github.com/marketplace/actions/alls-green#why

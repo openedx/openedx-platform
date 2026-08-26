@@ -157,8 +157,6 @@ def can_view_taxonomy(user: UserType, taxonomy: oel_tagging.Taxonomy) -> bool:
     if not taxonomy:
         return True
 
-    taxonomy = taxonomy.cast()
-
     # Taxonomy admins can view any taxonomy
     if oel_tagging.is_taxonomy_admin(user):
         return True
@@ -185,8 +183,7 @@ def can_change_taxonomy(user: UserType, taxonomy: oel_tagging.Taxonomy) -> bool:
     """
     Returns True if the given user can edit the given taxonomy.
 
-    System definied taxonomies cannot be edited
-    Taxonomy admins can edit any non system defined taxonomies
+    Taxonomy admins can edit any taxonomies (but can't change tags if the taxonomy is read-only).
     Only taxonomy admins can edit all org taxonomies
     Org-level staff can edit any taxonomy that is associated with one of their orgs.
     """
@@ -194,13 +191,7 @@ def can_change_taxonomy(user: UserType, taxonomy: oel_tagging.Taxonomy) -> bool:
     if not taxonomy:
         return True
 
-    taxonomy = taxonomy.cast()
-
-    # System definied taxonomies cannot be edited
-    if taxonomy.system_defined:
-        return False
-
-    # Taxonomy admins can edit any non system defined taxonomies
+    # Taxonomy admins can edit any taxonomies
     if oel_tagging.is_taxonomy_admin(user):
         return True
 
@@ -264,7 +255,7 @@ def can_view_object_tag_taxonomy(user: UserType, taxonomy: oel_tagging.Taxonomy)
     """
     # Note: in the REST API, where we're dealing with multiple taxonomies at once, permissions
     # are also enforced by ObjectTagTaxonomyOrgFilterBackend.
-    return not taxonomy or (taxonomy.cast().enabled and can_view_taxonomy(user, taxonomy))
+    return not taxonomy or (taxonomy.enabled and can_view_taxonomy(user, taxonomy))
 
 
 @rules.predicate
@@ -356,18 +347,19 @@ def can_change_object_tag(
 @rules.predicate
 def can_change_taxonomy_tag(user: UserType, tag: oel_tagging.Tag | None = None) -> bool:
     """
-    Even taxonomy admins cannot add tags to system taxonomies (their tags are system-defined), or free-text taxonomies
-    (these don't have predefined tags).
+    Even taxonomy admins cannot add tags to read-only or free-text taxonomies.
     """
     taxonomy = tag.taxonomy if tag else None
     if taxonomy:
-        taxonomy = taxonomy.cast()
-    return oel_tagging.is_taxonomy_admin(user) and (
-        not tag
-        or not taxonomy
-        or (bool(taxonomy) and not taxonomy.allow_free_text and not taxonomy.system_defined)
-    )
-
+        if taxonomy.read_only:
+            return False  # Cannot edit tags in read-only taxonomies.
+        if taxonomy.allow_free_text:
+            return False  # Cannot edit tags in free-text taxonomies.
+    if taxonomy is None:
+        # Taxonomy shouldn't be None if we're editing any real tag.
+        # And for testing "add", we should always be passed a dummy Tag() object with a valid taxonomy.
+        return False
+    return oel_tagging.is_taxonomy_admin(user)
 
 # Taxonomy
 rules.set_perm("oel_tagging.add_taxonomy", can_create_taxonomy)

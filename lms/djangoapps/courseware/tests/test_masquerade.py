@@ -7,7 +7,6 @@ import pickle
 from datetime import datetime
 from importlib import import_module
 from operator import itemgetter  # pylint: disable=wrong-import-order
-from unittest.mock import patch
 
 import ddt
 import pytest
@@ -16,7 +15,7 @@ from django.test import RequestFactory, TestCase, override_settings
 from django.urls import reverse
 from pytz import UTC
 from xblock.runtime import DictKeyValueStore
-from xblocks_contrib.problem.capa.tests.response_xml_factory import OptionResponseXMLFactory
+from xblocks_contrib.problem.capa.testing.response_xml_factory import OptionResponseXMLFactory
 
 from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.tests.factories import StaffFactory, UserFactory
@@ -200,8 +199,7 @@ class TestMasqueradeLearnerOptions(StaffMasqueradeTestCase):
         """
         If there are partitions, then the View as Learner should NOT be available
         """
-        with patch.dict('django.conf.settings.FEATURES',
-                        {'ENABLE_ENROLLMENT_TRACK_USER_PARTITION': partitions_enabled}):
+        with override_settings(ENABLE_ENROLLMENT_TRACK_USER_PARTITION=partitions_enabled):
             response = self.get_available_masquerade_identities()
             is_learner_available = 'Learner' in map(itemgetter('name'), response.json()['available'])
             assert partitions_enabled != is_learner_available
@@ -303,7 +301,7 @@ class TestStaffMasqueradeAsSpecificStudent(StaffMasqueradeTestCase, ProblemSubmi
         'john',  # Non-unicode username
         'fôô@bar',  # Unicode username with @, which is what the ENABLE_UNICODE_USERNAME feature allows
     )
-    @patch.dict('django.conf.settings.FEATURES', {'DISABLE_START_DATES': False})
+    @override_settings(DISABLE_START_DATES=False)
     def test_masquerade_as_specific_student(self, username):
         """
         Test masquerading as a specific user.
@@ -409,7 +407,7 @@ class TestGetMasqueradingGroupId(StaffMasqueradeTestCase):
         self.course.user_partitions.append(self.user_partition)
         modulestore().update_item(self.course, self.test_user.id)
 
-    @patch.dict('django.conf.settings.FEATURES', {'DISABLE_START_DATES': False})
+    @override_settings(DISABLE_START_DATES=False)
     def test_get_masquerade_group(self):
         """
         Tests that a staff member can masquerade as being in a group in a user partition

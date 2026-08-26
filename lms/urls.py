@@ -10,6 +10,7 @@ from django.contrib.admin import autodiscover as django_autodiscover
 from django.urls import include, path, re_path
 from django.utils.translation import gettext_lazy as _
 from django.views.generic.base import RedirectView
+from drf_spectacular.views import SpectacularAPIView
 from edx_api_doc_tools import make_docs_urls
 from edx_django_utils.plugins import get_plugin_url_patterns
 from submissions import urls as submissions_urls
@@ -58,7 +59,7 @@ RENDER_VIDEO_XBLOCK_NAME = 'render_public_video_xblock'
 RENDER_VIDEO_XBLOCK_EMBED_NAME = 'render_public_video_xblock_embed'
 COURSE_PROGRESS_NAME = 'progress'
 
-if settings.DEBUG or settings.FEATURES.get('ENABLE_DJANGO_ADMIN_SITE'):
+if settings.DEBUG or settings.ENABLE_DJANGO_ADMIN_SITE:
     django_autodiscover()
     admin.site.site_header = _('LMS Administration')
     admin.site.site_title = admin.site.site_header
@@ -117,6 +118,7 @@ urlpatterns = [
 
     # Enrollment API RESTful endpoints
     path('api/enrollment/v1/', include('openedx.core.djangoapps.enrollments.urls')),
+    path('api/enrollment/v2/', include('openedx.core.djangoapps.enrollments.v2.urls')),
 
     # Agreements API RESTful endpoints
     path('api/agreements/v1/', include('openedx.core.djangoapps.agreements.urls')),
@@ -789,7 +791,7 @@ urlpatterns += [
     ),
 ]
 
-if settings.FEATURES.get('ENABLE_STUDENT_HISTORY_VIEW'):
+if settings.ENABLE_STUDENT_HISTORY_VIEW:
     urlpatterns += [
         re_path(
             r'^courses/{}/submission_history/(?P<learner_identifier>[^/]*)/(?P<location>.*?)$'.format(  # noqa: UP032
@@ -800,14 +802,14 @@ if settings.FEATURES.get('ENABLE_STUDENT_HISTORY_VIEW'):
         ),
     ]
 
-if settings.DEBUG or settings.FEATURES.get('ENABLE_DJANGO_ADMIN_SITE'):
+if settings.DEBUG or settings.ENABLE_DJANGO_ADMIN_SITE:
     # Jasmine and admin
 
     # The password pages in the admin tool are disabled so that all password
     # changes go through our user portal and follow complexity requirements.
     # The form to change another user's password is conditionally enabled
     # for backwards compatibility.
-    if not settings.FEATURES.get('ENABLE_CHANGE_USER_PASSWORD_ADMIN'):
+    if not settings.ENABLE_CHANGE_USER_PASSWORD_ADMIN:
         urlpatterns += [
             re_path(r'^admin/auth/user/\d+/password/$', handler404),
         ]
@@ -848,12 +850,12 @@ urlpatterns += [
     path('_o/', include('oauth2_provider.urls', namespace='oauth2_provider')),
 ]
 
-if settings.FEATURES.get('ENABLE_SERVICE_STATUS'):
+if settings.ENABLE_SERVICE_STATUS:
     urlpatterns += [
         path('status/', include('openedx.core.djangoapps.service_status.urls')),
     ]
 
-if settings.FEATURES.get('ENABLE_INSTRUCTOR_BACKGROUND_TASKS'):
+if settings.ENABLE_INSTRUCTOR_BACKGROUND_TASKS:
     urlpatterns += [
         path(
             'instructor_task_status/',
@@ -862,7 +864,7 @@ if settings.FEATURES.get('ENABLE_INSTRUCTOR_BACKGROUND_TASKS'):
         ),
     ]
 
-if settings.FEATURES.get('ENABLE_DEBUG_RUN_PYTHON'):
+if settings.ENABLE_DEBUG_RUN_PYTHON:
     urlpatterns += [
         path('debug/run_python', debug_views.run_python),
     ]
@@ -947,7 +949,7 @@ if 'debug_toolbar' in settings.INSTALLED_APPS:
         path('__debug__/', include(debug_toolbar.urls)),
     ]
 
-if settings.FEATURES.get('ENABLE_FINANCIAL_ASSISTANCE_FORM'):
+if settings.ENABLE_FINANCIAL_ASSISTANCE_FORM:
     urlpatterns += [
         path(
             'financial-assistance/',
@@ -1028,7 +1030,7 @@ urlpatterns += [
 ]
 
 # Bulk User Retirement API urls
-if settings.FEATURES.get('ENABLE_BULK_USER_RETIREMENT'):
+if settings.ENABLE_BULK_USER_RETIREMENT:
     urlpatterns += [
         path('', include('lms.djangoapps.bulk_user_retirement.urls')),
     ]
@@ -1066,4 +1068,9 @@ urlpatterns += [
 
 urlpatterns += [
     path('xqueue/', include((submissions_urls, 'submissions'), namespace='submissions')),
+]
+
+# LMS API schema for openedx-platform-sdk generation.
+urlpatterns += [
+    path('lms-api/schema/', SpectacularAPIView.as_view(), name='lms-schema'),
 ]

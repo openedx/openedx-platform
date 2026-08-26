@@ -63,9 +63,6 @@ lms/envs/minimal.yml                                                 @feanil
 lms/envs/production.py                                               @feanil @kdmccormick
 cms/envs/production.py                                               @feanil @kdmccormick
 
-# Ensure that this file is only used when strictly necessary
-requirements/edx/github.in                                           @feanil @kdmccormick
-
 # Review GitHub Actions workflow changes (incl. Dependabot PRs).
 # Replaces the deprecated `reviewers:` key in dependabot.yml.
-/.github/workflows/                                                  @openedx/wg-maintenance-edx-platform
+/.github/workflows/                                                  @openedx/wg-maintenance-openedx-platform-oncall

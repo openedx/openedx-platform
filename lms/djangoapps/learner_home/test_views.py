@@ -44,8 +44,6 @@ from openedx.core.djangoapps.site_configuration.tests.factories import SiteFacto
 from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, SharedModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory
 
-ENTERPRISE_ENABLED = "ENABLE_ENTERPRISE_INTEGRATION"
-
 
 @ddt.ddt
 class TestGetPlatformSettings(TestCase):
@@ -77,12 +75,14 @@ class TestGetPlatformSettings(TestCase):
 
     @ddt.data(
         (True, f'{settings.CATALOG_MICROFRONTEND_URL}/courses'),
-        (False, '/courses'),
+        (False, '#'),
     )
     @ddt.unpack
     def test_link_with_new_catalog_page(self, catalog_mfe_enabled, expected_catalog_link):
         """
         Test that the catalog link is constructed correctly based on the MFE flags.
+        When the catalog MFE is disabled, marketing_link('COURSES') is used; '#' is
+        returned when MKTG_URLS has no COURSES entry.
         """
         with override_settings(ENABLE_CATALOG_MICROFRONTEND=catalog_mfe_enabled):
             assert get_platform_settings()["courseSearchUrl"] == expected_catalog_link
@@ -571,7 +571,7 @@ class TestDashboardView(BaseTestDashboardView):
 
         return (program, enrollment, entitlement)
 
-    @patch.dict(settings.FEATURES, ENTERPRISE_ENABLED=False)
+    @override_settings(ENTERPRISE_ENABLED=False)
     def test_response_structure(self):
         """Basic test for correct response structure"""
 
@@ -598,7 +598,7 @@ class TestDashboardView(BaseTestDashboardView):
 
         assert expected_keys == response_data.keys()
 
-    @patch.dict(settings.FEATURES, ENTERPRISE_ENABLED=False)
+    @override_settings(ENTERPRISE_ENABLED=False)
     def test_response_course_advertised_start(self):
         """Basic test for correct response structure"""
 
@@ -627,7 +627,7 @@ class TestDashboardView(BaseTestDashboardView):
             assert "advertisedStart" in course_run
             assert course_run["advertisedStart"] == advertised_start
 
-    @patch.dict(settings.FEATURES, ENTERPRISE_ENABLED=False)
+    @override_settings(ENTERPRISE_ENABLED=False)
     @patch("lms.djangoapps.learner_home.views.get_user_account_confirmation_info")
     def test_email_confirmation(self, mock_user_conf_info):
         """Test that email confirmation info passes through correctly"""
@@ -656,7 +656,7 @@ class TestDashboardView(BaseTestDashboardView):
             },
         )
 
-    @patch.dict(settings.FEATURES, ENTERPRISE_ENABLED=False)
+    @override_settings(ENTERPRISE_ENABLED=False)
     @patch("lms.djangoapps.learner_home.views.cert_info")
     def test_get_cert_statuses(self, mock_get_cert_info):
         """Test that cert information gets loaded correctly"""
@@ -697,7 +697,7 @@ class TestDashboardView(BaseTestDashboardView):
             },
         )
 
-    @patch.dict(settings.FEATURES, ENTERPRISE_ENABLED=False)
+    @override_settings(ENTERPRISE_ENABLED=False)
     @patch("lms.djangoapps.learner_home.views.cert_info")
     def test_get_cert_statuses_exception(self, mock_get_cert_info):
         """Test that cert information gets loaded correctly"""
@@ -733,7 +733,7 @@ class TestDashboardView(BaseTestDashboardView):
             response_data["courses"][0]["certificate"], empty_cert_data
         )
 
-    @patch.dict(settings.FEATURES, ENTERPRISE_ENABLED=False)
+    @override_settings(ENTERPRISE_ENABLED=False)
     @patch("openedx.core.djangoapps.programs.utils.get_programs")
     def test_get_for_one_of_course_programs(self, mock_get_programs):
         """Test that course programs get loaded correctly"""
@@ -756,7 +756,7 @@ class TestDashboardView(BaseTestDashboardView):
         assert programs[course_uuid][0] == program
         assert len(data) > len(programs)
 
-    @patch.dict(settings.FEATURES, ENTERPRISE_ENABLED=False)
+    @override_settings(ENTERPRISE_ENABLED=False)
     @patch("openedx.core.djangoapps.programs.utils.get_programs")
     def test_get_multiple_course_programs(self, mock_get_programs):
         """Test that course programs get loaded correctly"""
