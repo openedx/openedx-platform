@@ -6,6 +6,7 @@ Tests for student activation and login
 import datetime
 import hashlib
 import json
+import urllib
 import unicodedata
 from unittest.mock import Mock, patch
 
@@ -27,6 +28,7 @@ from common.djangoapps.student.models import LoginFailures
 from common.djangoapps.student.tests.factories import RegistrationFactory, UserFactory, UserProfileFactory
 from common.djangoapps.util.password_policy_validators import DEFAULT_MAX_PASSWORD_LENGTH
 from common.test.utils import assert_dict_contains_subset
+from openedx.features.enterprise_support.tests.factories import EnterpriseCustomerUserFactory
 from openedx.core.djangoapps.password_policy.compliance import (
     NonCompliantPasswordException,
     NonCompliantPasswordWarning,
