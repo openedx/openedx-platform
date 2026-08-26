@@ -890,7 +890,7 @@ class Registration(models.Model):  # noqa: DJ008
         user_identifier_for_log = (
             self.user.id
             if getattr(settings, 'SQUELCH_PII_IN_LOGS', False)
-            else '{}, {}'.format(self.user.username, self.user.email)
+            else f'{self.user.username}, {self.user.email}'
         )
         log.info('User %s account is successfully activated.', user_identifier_for_log)
 
