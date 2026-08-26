@@ -1,0 +1,49 @@
+pyproject.toml
+  s_0c1fb42deff9a1::t_33730d0b4b6b0d 293
+  s_0c1fb42deff9a1::t_24bf4133600c30 410
+requirements/edx/base.txt
+  s_0c1fb42deff9a1::t_42582de95535c6 485
+requirements/edx/development.txt
+  s_0c1fb42deff9a1::t_42582de95535c6 537
+openedx/core/djangoapps/programs/rest_api/v1/views.py
+  s_36ffe2f7109ad6::t_7cbb77d540e6f8 102-103,105
+  s_36ffe2f7109ad6::t_97bd8c78f2a6aa 6,28-36
+  s_36ffe2f7109ad6::t_5d4d4a1a932bda 37-38
+openedx/core/djangoapps/programs/rest_api/v1/tests/test_views.py
+  s_0c1fb42deff9a1::t_86d6bb7ada8239 179-180,208,240,242
+  s_36ffe2f7109ad6::t_7f11320fd79610 139-151,153-157,160-163,207,239,241,249
+  s_36ffe2f7109ad6::t_d5b5a134ab2a5a 215,219-220,255-263
+  s_36ffe2f7109ad6::t_72594ba6ec4ec0 25
+  s_36ffe2f7109ad6::t_c96352cab6c62a 152
+  s_0c1fb42deff9a1::t_c54f7ad4ccb3ce 158-159,164
+  s_0c1fb42deff9a1::t_5be815ec10f9a2 133-138
+  s_36ffe2f7109ad6::t_355a84acc1289f 216-218
+  s_0c1fb42deff9a1::t_6ff167b1bb07e3 244
+  s_36ffe2f7109ad6::t_1f18ecf5eec949 9
+uv.lock
+  s_0c1fb42deff9a1::t_75014e9c8df804 22,1908,1961,1963
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.24",
+  "base_commit_sha": "2aa7e37197a8516bb7fcf03af6542844c6c77a05",
+  "prompts": {},
+  "sessions": {
+    "s_0c1fb42deff9a1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "87931368-ba27-4fa1-a6e8-bd9108bc1f5a",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Troy Sankey <tsankey@2u.com>"
+    },
+    "s_36ffe2f7109ad6": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a37d08a6-99bd-422e-bf12-daa8d1671caf",
+        "model": "claude-opus-5"
+      },
+      "human_author": null
+    }
+  }
+}
