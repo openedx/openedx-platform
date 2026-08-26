@@ -13,6 +13,13 @@ openedx/core/djangoapps/programs/rest_api/v1/views.py
   s_36ffe2f7109ad6::t_97bd8c78f2a6aa 6,28-36
   s_36ffe2f7109ad6::t_7cbb77d540e6f8 102-103,105
   s_36ffe2f7109ad6::t_5d4d4a1a932bda 37-38
+pyproject.toml
+  s_0c1fb42deff9a1::t_33730d0b4b6b0d 293
+  s_0c1fb42deff9a1::t_24bf4133600c30 410
+requirements/edx/development.txt
+  s_0c1fb42deff9a1::t_42582de95535c6 537
+requirements/edx/base.txt
+  s_0c1fb42deff9a1::t_42582de95535c6 485
 ---
 {
   "schema_version": "authorship/3.0.0",
