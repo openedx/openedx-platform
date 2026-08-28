@@ -1284,6 +1284,18 @@ MEILISEARCH_PUBLIC_URL = "http://meilisearch.example.com"
 MEILISEARCH_INDEX_PREFIX = ""
 MEILISEARCH_API_KEY = "devkey"
 
+# .. setting_name: MEILISEARCH_COURSE_INDEXING
+# .. setting_default: 'all'
+# .. setting_description: Controls how much course content is written to the Studio
+# ..   Meilisearch index. 'all' indexes every course XBlock, the historical behaviour.
+# ..   'library_downstream_only' indexes only course blocks linked to a library upstream,
+# ..   which is what the course-libraries Review tab needs; the Studio course content
+# ..   search modal and the course outline block-type facets go empty. 'none' writes no
+# ..   course content at all. Library content is indexed in every mode. Changing this
+# ..   setting takes full effect after a reindex (./manage.py cms reindex_studio
+# ..   --experimental), so it is reversible without a code change.
+MEILISEARCH_COURSE_INDEXING = "all"
+
 # .. setting_name: LIBRARY_ENABLED_BLOCKS
 # .. setting_default: ['problem', 'video', 'html', 'drag-and-drop-v2']
 # .. setting_description: List of block types that are ready/enabled to be created/used
