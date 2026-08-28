@@ -177,7 +177,7 @@ class CourseCreatorAdminTest(TestCase):
         """
         mock_email_user.side_effect = Exception("SMTP error")
 
-        def assert_case(squelch_pii, states):
+        def test_and_assert_case(squelch_pii, states):
             mock_log.reset_mock()
             with self.settings(SQUELCH_PII_IN_LOGS=squelch_pii), mock.patch.dict(
                 'django.conf.settings.FEATURES', self.enable_creator_group_patch
@@ -190,9 +190,9 @@ class CourseCreatorAdminTest(TestCase):
                     expected_identifier
                 )
 
-        assert_case(True, [CourseCreator.GRANTED])
+        test_and_assert_case(True, [CourseCreator.GRANTED])
         # True case moved the object to GRANTED; False case needs DENIED -> GRANTED to retrigger.
-        assert_case(False, [CourseCreator.DENIED, CourseCreator.GRANTED])
+        test_and_assert_case(False, [CourseCreator.DENIED, CourseCreator.GRANTED])
 
     @override_settings(ENABLE_CREATOR_GROUP=True, STUDIO_REQUEST_EMAIL='mark@marky.mark')
     @mock.patch('cms.djangoapps.course_creators.admin.log')
@@ -203,7 +203,7 @@ class CourseCreatorAdminTest(TestCase):
         """
         mock_send_mail.side_effect = SMTPException("SMTP error")
 
-        def assert_case(squelch_pii, states):
+        def test_and_assert_case(squelch_pii, states):
             mock_log.reset_mock()
             with self.settings(SQUELCH_PII_IN_LOGS=squelch_pii), mock.patch.dict(
                 'django.conf.settings.FEATURES', self.enable_creator_group_patch
@@ -217,6 +217,6 @@ class CourseCreatorAdminTest(TestCase):
                     self.studio_request_email
                 )
 
-        assert_case(True, [CourseCreator.PENDING])
+        test_and_assert_case(True, [CourseCreator.PENDING])
         # True case left the object at PENDING; False case needs UNREQUESTED -> PENDING to retrigger.
-        assert_case(False, [CourseCreator.UNREQUESTED, CourseCreator.PENDING])
+        test_and_assert_case(False, [CourseCreator.UNREQUESTED, CourseCreator.PENDING])

@@ -890,7 +890,7 @@ class EnrollInCourseTest(EnrollmentEventTestMixin, CacheIsolationTestCase):
         user = UserFactory.create(username="squelchy", email="squelchy@example.com")
         course_id = CourseLocator("edX", "NoExist", "2013")
 
-        def assert_case(squelch_pii, expected_user_identifier):
+        def test_and_assert_case(squelch_pii, expected_user_identifier):
             mock_log.reset_mock()
             with self.settings(SQUELCH_PII_IN_LOGS=squelch_pii):
                 with pytest.raises(NonExistentCourseError):
@@ -901,8 +901,8 @@ class EnrollInCourseTest(EnrollmentEventTestMixin, CacheIsolationTestCase):
                     str(course_id)
                 )
 
-        assert_case(True, user.id)
-        assert_case(False, user.username)
+        test_and_assert_case(True, user.id)
+        test_and_assert_case(False, user.username)
 
     @skip_unless_lms
     @patch('common.djangoapps.student.models.course_enrollment.log')
@@ -911,7 +911,7 @@ class EnrollInCourseTest(EnrollmentEventTestMixin, CacheIsolationTestCase):
         CourseOverviewFactory.create(id=course_id)
         email = "non_existent_user@example.com"
 
-        def assert_case(squelch_pii, expected_email_for_log):
+        def test_and_assert_case(squelch_pii, expected_email_for_log):
             mock_log.reset_mock()
             with self.settings(SQUELCH_PII_IN_LOGS=squelch_pii):
                 with pytest.raises(User.DoesNotExist):
@@ -922,8 +922,8 @@ class EnrollInCourseTest(EnrollmentEventTestMixin, CacheIsolationTestCase):
                     course_id
                 )
 
-        assert_case(True, "[REDACTED]")
-        assert_case(False, email)
+        test_and_assert_case(True, "[REDACTED]")
+        test_and_assert_case(False, email)
 
     @skip_unless_lms
     def test_enrollment_multiple_classes(self):
