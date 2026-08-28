@@ -6,11 +6,12 @@ import csv
 from io import StringIO
 from unittest.mock import MagicMock, patch
 
+from django.core.management import CommandError, call_command
 from django.test import TestCase
+from opaque_keys.edx.keys import CourseKey
 
 from lms.djangoapps.courseware.management.commands.xblock_list_csv import generate_xblocks_csv
 
-OVERVIEWS_PATH = "lms.djangoapps.courseware.management.commands.xblock_list_csv.CourseOverview.objects"
 MODULESTORE_PATH = "lms.djangoapps.courseware.management.commands.xblock_list_csv.modulestore"
 
 
@@ -29,6 +30,7 @@ class GenerateCSVCommandTestCase(TestCase):
         component = MagicMock()
         component.display_name = display_name
         component.location.block_type = block_type
+        component.get_children.return_value = []
         return component
 
     @staticmethod
@@ -52,15 +54,6 @@ class GenerateCSVCommandTestCase(TestCase):
         course.get_children.return_value = sections
         return course
 
-    @staticmethod
-    def _make_overview(course_id):
-        """
-        Creates a mock overview for a course
-        """
-        overview = MagicMock()
-        overview.id = course_id
-        return overview
-
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -72,21 +65,24 @@ class GenerateCSVCommandTestCase(TestCase):
         subsection = cls._make_container("Subsection 1", [unit])
         section = cls._make_container("Section 1", [subsection])
         cls.MOCK_COURSE = cls._make_course(cls.COURSE_ID, "Test Course", [section])
-        cls.MOCK_OVERVIEW = cls._make_overview(cls.COURSE_ID)
 
-    def _run_generate(self, overviews, exclude_core_xblocks=False, courses=None):
-        """Helper: run generate_xblocks_csv with mocked DB/modulestore, return parsed CSV rows."""
+    def _run_generate(self, exclude_core_xblocks=False, courses=None):
+        """Helper: run generate_xblocks_csv with mocked modulestore, return parsed CSV rows."""
         output = StringIO()
-        with patch(OVERVIEWS_PATH) as mock_overviews, patch(MODULESTORE_PATH) as mock_modulestore:
-            mock_overviews.all.return_value.order_by.return_value = overviews
-            mock_overviews.filter.return_value.order_by.return_value = overviews
+        with patch(MODULESTORE_PATH) as mock_modulestore:
+            mock_modulestore.return_value.get_courses.return_value = [self.MOCK_COURSE]
             mock_modulestore.return_value.get_course.return_value = self.MOCK_COURSE
             generate_xblocks_csv(output, exclude_core_xblocks, courses)
         output.seek(0)
         return list(csv.reader(output))
 
     def test_header_row(self):
-        rows = self._run_generate([])
+        with patch(MODULESTORE_PATH) as mock_modulestore:
+            mock_modulestore.return_value.get_courses.return_value = []
+            output = StringIO()
+            generate_xblocks_csv(output, False, None)
+            output.seek(0)
+            rows = list(csv.reader(output))
         assert rows[0] == [
             "Course ID",
             "Course Name",
@@ -95,10 +91,11 @@ class GenerateCSVCommandTestCase(TestCase):
             "Unit Name",
             "Component Name",
             "Xblock Type",
+            "Full Hierarchy",
         ]
 
     def test_all_components_included_by_default(self):
-        rows = self._run_generate([self.MOCK_OVERVIEW])
+        rows = self._run_generate()
         # 1 header + 4 components
         assert len(rows) == 5
 
@@ -111,31 +108,137 @@ class GenerateCSVCommandTestCase(TestCase):
         assert row[4] == "Unit 1"
         assert row[5] == "My HTML"
         assert row[6] == "html"
+        assert row[7] == "Section 1 > Subsection 1 > Unit 1 > My HTML"
 
     def test_exclude_core_xblocks(self):
-        rows = self._run_generate([self.MOCK_OVERVIEW], exclude_core_xblocks=True)
+        rows = self._run_generate(exclude_core_xblocks=True)
         # Only drag-and-drop-v2 survives; html/video/problem are filtered out
         assert len(rows) == 2
         assert rows[1][6] == "drag-and-drop-v2"
 
-    def test_courses_filter_uses_filter_queryset(self):
+    def test_courses_filter_uses_modulestore_get_course(self):
         output = StringIO()
-        with patch(OVERVIEWS_PATH) as mock_overviews, patch(MODULESTORE_PATH) as mock_modulestore:
-            mock_overviews.filter.return_value.order_by.return_value = []
+        course_key = CourseKey.from_string(self.COURSE_ID)
+        with patch(MODULESTORE_PATH) as mock_modulestore:
             mock_modulestore.return_value.get_course.return_value = self.MOCK_COURSE
 
             generate_xblocks_csv(output, False, [self.COURSE_ID])
 
-            mock_overviews.filter.assert_called_once_with(id__in=[self.COURSE_ID])
-            mock_overviews.all.assert_not_called()
+            mock_modulestore.return_value.get_course.assert_called_once_with(course_key)
+            mock_modulestore.return_value.get_courses.assert_not_called()
 
-    def test_no_courses_filter_uses_all_queryset(self):
+    def test_no_courses_filter_uses_get_courses(self):
         output = StringIO()
-        with patch(OVERVIEWS_PATH) as mock_overviews, patch(MODULESTORE_PATH) as mock_modulestore:
-            mock_overviews.all.return_value.order_by.return_value = []
-            mock_modulestore.return_value.get_course.return_value = self.MOCK_COURSE
+        with patch(MODULESTORE_PATH) as mock_modulestore:
+            mock_modulestore.return_value.get_courses.return_value = [self.MOCK_COURSE]
 
             generate_xblocks_csv(output, False, None)
 
-            mock_overviews.all.assert_called_once()
-            mock_overviews.filter.assert_not_called()
+            mock_modulestore.return_value.get_courses.assert_called_once()
+            mock_modulestore.return_value.get_course.assert_not_called()
+
+    def test_traversal_failure_writes_to_error_file(self):
+        output = StringIO()
+        errors = StringIO()
+        broken_course = self._make_course(self.COURSE_ID, "Broken Course", None)
+        broken_course.get_children.side_effect = Exception("boom")
+        with patch(MODULESTORE_PATH) as mock_modulestore:
+            mock_modulestore.return_value.get_courses.return_value = [broken_course]
+
+            failures = generate_xblocks_csv(output, False, None, errors)
+
+        assert failures == 1
+
+        errors.seek(0)
+        assert f"Failed processing course {self.COURSE_ID}" in errors.getvalue()
+
+        output.seek(0)
+        rows = list(csv.reader(output))
+        # Only the header row is written since traversal failed
+        assert len(rows) == 1
+
+    def test_missing_course_id_writes_to_error_file(self):
+        output = StringIO()
+        errors = StringIO()
+        course_key = CourseKey.from_string(self.COURSE_ID)
+        with patch(MODULESTORE_PATH) as mock_modulestore:
+            mock_modulestore.return_value.get_course.return_value = None
+
+            failures = generate_xblocks_csv(output, False, [self.COURSE_ID], errors)
+
+        assert failures == 1
+
+        errors.seek(0)
+        assert f"Course not found: {course_key}" in errors.getvalue()
+
+        output.seek(0)
+        rows = list(csv.reader(output))
+        # Only the header row is written since the course doesn't exist
+        assert len(rows) == 1
+
+    def test_invalid_course_id_writes_to_error_file(self):
+        output = StringIO()
+        errors = StringIO()
+        with patch(MODULESTORE_PATH) as mock_modulestore:
+            failures = generate_xblocks_csv(output, False, ["not-a-valid-course-id"], errors)
+
+            mock_modulestore.return_value.get_course.assert_not_called()
+
+        assert failures == 1
+
+        errors.seek(0)
+        assert "Invalid course ID: not-a-valid-course-id" in errors.getvalue()
+
+    def test_no_failures_returns_zero(self):
+        output = StringIO()
+        with patch(MODULESTORE_PATH) as mock_modulestore:
+            mock_modulestore.return_value.get_courses.return_value = [self.MOCK_COURSE]
+            failures = generate_xblocks_csv(output, False, None)
+        assert failures == 0
+
+    def test_handle_raises_command_error_on_failures(self):
+        out = StringIO()
+        err = StringIO()
+        course_key = CourseKey.from_string(self.COURSE_ID)
+        with patch(MODULESTORE_PATH) as mock_modulestore:
+            mock_modulestore.return_value.get_course.return_value = None
+            with self.assertRaises(CommandError):
+                call_command("xblock_list_csv", "-", "--courses", self.COURSE_ID, stdout=out, stderr=err)
+
+        err.seek(0)
+        assert f"Course not found: {course_key}" in err.getvalue()
+
+    def test_nested_components_included_with_full_hierarchy(self):
+        nested_leaf_a = self._make_block("Nested Video A", "video")
+        nested_leaf_b = self._make_block("Nested Video B", "video")
+        parent_component = self._make_block("Split Test", "split_test")
+        parent_component.get_children.return_value = [nested_leaf_a, nested_leaf_b]
+
+        unit = self._make_container("Unit 1", [parent_component])
+        subsection = self._make_container("Subsection 1", [unit])
+        section = self._make_container("Section 1", [subsection])
+        course = self._make_course(self.COURSE_ID, "Test Course", [section])
+
+        output = StringIO()
+        with patch(MODULESTORE_PATH) as mock_modulestore:
+            mock_modulestore.return_value.get_courses.return_value = [course]
+
+            generate_xblocks_csv(output, False, None)
+
+        output.seek(0)
+        rows = list(csv.reader(output))
+        # 1 header + parent component + 2 nested leaves
+        assert len(rows) == 4
+
+        parent_row = rows[1]
+        assert parent_row[5] == "Split Test"
+        assert parent_row[6] == "split_test"
+        assert parent_row[7] == "Section 1 > Subsection 1 > Unit 1 > Split Test"
+
+        child_a_row = rows[2]
+        assert child_a_row[5] == "Nested Video A"
+        assert child_a_row[7] == "Section 1 > Subsection 1 > Unit 1 > Split Test > Nested Video A"
+
+        child_b_row = rows[3]
+        assert child_b_row[5] == "Nested Video B"
+        assert child_b_row[7] == "Section 1 > Subsection 1 > Unit 1 > Split Test > Nested Video B"
