@@ -3,7 +3,7 @@
 import logging
 from typing import TYPE_CHECKING, Any
 
-from django.db.models.query import EmptyQuerySet
+from edx_django_utils.plugins import pluggable_override
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -16,17 +16,24 @@ from openedx.core.djangoapps.programs.utils import (
     get_program_and_course_data,
     get_program_urls,
 )
-from openedx.features.enterprise_support.api import enterprise_is_enabled, get_enterprise_course_enrollments
 
 if TYPE_CHECKING:
     from django.contrib.auth.models import AnonymousUser, User  # pylint: disable=imported-auth-user
     from django.contrib.sites.models import Site
-    from django.db.models.query import QuerySet
     from django.http import HttpRequest, HttpResponse
 
-    from common.djangoapps.student.models import CourseEnrollment
-
 logger = logging.getLogger(__name__)
+
+
+@pluggable_override('OVERRIDE_PROGRAMS_GET_ENTERPRISE_COURSE_IDS')
+def get_enterprise_course_ids(enterprise_uuid: str, user: "AnonymousUser | User") -> list[str]:
+    """
+    Return the course IDs the given user is enterprise-enrolled in for one enterprise customer.
+
+    This function can be overridden by an installed plugin via the
+    OVERRIDE_PROGRAMS_GET_ENTERPRISE_COURSE_IDS setting.
+    """
+    return []
 
 
 class Programs(APIView):
@@ -92,9 +99,10 @@ class Programs(APIView):
         user: "AnonymousUser | User" = request.user  # noqa: UP037
 
         if enterprise_uuid:
-            enrollments = list(self._get_enterprise_course_enrollments(enterprise_uuid, user))
+            course_ids = get_enterprise_course_ids(enterprise_uuid=enterprise_uuid, user=user)
+            enrollments = list(get_course_enrollments(user=user, is_filtered=True, course_ids=course_ids))
         else:
-            enrollments = list(get_course_enrollments(user))
+            enrollments = list(get_course_enrollments(user=user))
 
         # return empty reponse if no enrollments exists for a user
         if not enrollments:
@@ -178,23 +186,6 @@ class Programs(APIView):
             programs.append(program)
 
         return programs
-
-    @enterprise_is_enabled(otherwise=EmptyQuerySet)
-    def _get_enterprise_course_enrollments(
-        self, enterprise_uuid: str, user: "AnonymousUser | User"
-    ) -> "QuerySet[CourseEnrollment]":
-        """
-        Return only enterprise enrollments for a user.
-        """
-        enterprise_enrollment_course_ids = (
-            get_enterprise_course_enrollments(user)
-            .filter(enterprise_customer_user__enterprise_customer__uuid=enterprise_uuid)
-            .values_list("course_id", flat=True)
-        )
-
-        course_enrollments = get_course_enrollments(user, True, list(enterprise_enrollment_course_ids))
-
-        return course_enrollments
 
 
 class ProgramProgressDetailView(APIView):

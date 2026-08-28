@@ -290,7 +290,7 @@ constraint-dependencies = [
     "sphinx-autoapi<3.6.1",
     "setuptools<82",
     "astroid==4.0.4",
-    "edx-enterprise==8.9.2",
+    "edx-enterprise==8.9.3",
 ]
 [tool.edx_lint]
 uv_constraints = [
@@ -402,12 +402,11 @@ uv_constraints = [
     # version of astroid.
     # https://github.com/openedx/openedx-platform/issues/38066
     "astroid==4.0.4",
-    # Date: 2019-08-16 (bumped 2026-08-22 to match master's own already-reviewed
-    # bump in requirements/constraints.txt, PR #39012)
+    # Date: 2019-08-16
     # The team that owns this package will manually bump this package rather than
     # having it pulled in automatically. This is to allow them to better control its
     # deployment and to do it in a process that works better for them.
-    "edx-enterprise==8.9.2",
+    "edx-enterprise==8.9.3",
 ]
 
 [tool.setuptools]
