@@ -6,6 +6,7 @@ import csv
 from io import StringIO
 from unittest.mock import MagicMock, patch
 
+import pytest
 from django.core.management import CommandError, call_command
 from django.test import TestCase
 from opaque_keys.edx.keys import CourseKey
@@ -202,7 +203,7 @@ class GenerateCSVCommandTestCase(TestCase):
         course_key = CourseKey.from_string(self.COURSE_ID)
         with patch(MODULESTORE_PATH) as mock_modulestore:
             mock_modulestore.return_value.get_course.return_value = None
-            with self.assertRaises(CommandError):
+            with pytest.raises(CommandError):
                 call_command("xblock_list_csv", "-", "--courses", self.COURSE_ID, stdout=out, stderr=err)
 
         err.seek(0)
