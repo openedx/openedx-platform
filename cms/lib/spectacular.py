@@ -11,6 +11,7 @@ LEGACY_MIGRATED_PATH_PREFIXES = (
     "/v1/xblock/",             # → /api/authoring/v1/xblocks/
     "/v3/home/",               # → /api/authoring/v3/home/
     "/v3/course_details/",     # → /api/authoring/v3/courses/{course_key}/details/
+    "/v3/authoring_grading/",  # → /api/authoring/v3/courses/{course_key}/grading/
     "/v4/home/courses/",       # → /api/authoring/v4/courses/
 )
 

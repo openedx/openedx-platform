@@ -18,7 +18,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from django.test import TestCase
-from django.urls import reverse
+from django.urls import resolve, reverse
 from rest_framework import status
 from rest_framework.test import APIClient, APITestCase
 
@@ -291,3 +291,69 @@ class TestAuthoringGradingViewSetErrorShape(APITestCase):
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
         assert "type" not in response.data
         assert "instance" not in response.data
+
+
+# ===========================================================================
+# ADR 0038 — URL-structure tests:
+# conforming /api/authoring/v3/courses/{course_key}/grading/ mount
+# ===========================================================================
+class TestAuthoringGradingAdr0038Urls(APITestCase):
+    """
+    ADR 0038: the conforming nested route is mounted beside the legacy
+    /api/contentstore/v3/authoring_grading/{course_key}/ route (OEP-21) and
+    resolves to the same view — the app-flavored ``authoring_grading``
+    collection becomes ``courses/{course_key}/grading/`` (rules 3, 4 and 8),
+    with the course key resolved by the shared ``course_key`` converter
+    (rule 9).
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.client = APIClient()
+        self.conforming_url = reverse(
+            "authoring_v3:course_grading",
+            kwargs={"course_key": COURSE_ID},
+        )
+        self.legacy_url = reverse(
+            "cms.djangoapps.contentstore:v3:authoring_grading-detail",
+            kwargs={"course_key": COURSE_ID},
+        )
+
+    def test_conforming_url_reverses_to_expected_path(self):
+        assert self.conforming_url == f"/api/authoring/v3/courses/{COURSE_ID}/grading/"
+
+    def test_conforming_and_legacy_routes_share_view(self):
+        legacy_cls = resolve(self.legacy_url).func.cls
+        conforming_cls = resolve(self.conforming_url).func.cls
+        assert conforming_cls is legacy_cls
+
+    def test_invalid_course_key_is_404_on_conforming_route(self):
+        # The shared course_key converter rejects unparseable keys, so a bad
+        # identifier is a routing-level 404 (ADR 0038 rule 9).
+        response = self.client.patch(
+            "/api/authoring/v3/courses/not-a-course-key/grading/",
+            data={}, format="json",
+        )
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_unauthenticated_patch_returns_401(self):
+        response = self.client.patch(self.conforming_url, data={}, format="json")
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+    @patch(MOCK_CREDIT_TASK)
+    @patch(MOCK_UPDATE_FROM_JSON, return_value=_MOCK_GRADING_MODEL)
+    @patch(MOCK_HAS_PERMISSION, return_value=True)
+    @patch(MOCK_COURSE_EXISTS, return_value=True)
+    def test_patch_on_conforming_route_updates_grading(
+        self, mock_exists, mock_perm, mock_update, mock_credit,  # noqa: ARG002
+    ):
+        """Same contract on the conforming mount as on the legacy one."""
+        user = UserFactory.create()
+        self.client.force_authenticate(user=user)
+        response = self.client.patch(
+            self.conforming_url,
+            data={"graders": _GRADERS_PAYLOAD},
+            format="json",
+        )
+        assert response.status_code == status.HTTP_200_OK
+        mock_update.assert_called_once()
