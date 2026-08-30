@@ -10,6 +10,7 @@ import re
 LEGACY_MIGRATED_PATH_PREFIXES = (
     "/v1/xblock/",             # → /api/authoring/v1/xblocks/
     "/v3/home/",               # → /api/authoring/v3/home/
+    "/v4/home/courses/",       # → /api/authoring/v4/courses/
 )
 
 # BFF surfaces (ADR 0038): kept under /api/ with one canonical conforming

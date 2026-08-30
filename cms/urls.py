@@ -368,6 +368,7 @@ urlpatterns += [
 urlpatterns += [
     path('api/authoring/v1/', include('cms.djangoapps.contentstore.rest_api.v1.authoring_urls')),
     path('api/authoring/v3/', include('cms.djangoapps.contentstore.rest_api.v3.authoring_urls')),
+    path('api/authoring/v4/', include('cms.djangoapps.contentstore.rest_api.v4.authoring_urls')),
 ]
 
 # Content tagging

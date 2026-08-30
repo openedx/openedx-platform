@@ -8,7 +8,7 @@ from unittest.mock import patch
 
 import ddt
 from django.conf import settings
-from django.urls import reverse
+from django.urls import resolve, reverse
 from rest_framework import status
 from rest_framework.test import APIClient, APITestCase
 
@@ -277,3 +277,42 @@ class TestHomeCoursesViewSetOrderingDeprecation(CourseTestCase):
             response = self.client.get(self.list_url)
 
         self.assertNotIn("Deprecation", response)  # noqa: PT009
+
+
+# ===========================================================================
+# ADR 0038 — URL-structure tests: conforming /api/authoring/v4/courses/ mount
+# ===========================================================================
+class TestCoursesAdr0038Urls(APITestCase):
+    """
+    ADR 0038: the conforming /api/authoring/v4/courses/ route is mounted
+    beside the legacy /api/contentstore/v4/home/courses/ route (OEP-21) and
+    resolves to the same view — the screen-named ``home/courses/`` address
+    becomes the concrete plural ``courses/`` collection (rule 4).
+    """
+
+    def test_conforming_url_reverses_to_expected_path(self):
+        assert reverse("authoring_v4:course_list") == "/api/authoring/v4/courses/"
+
+    def test_conforming_and_legacy_routes_share_view(self):
+        legacy_cls = resolve(
+            reverse("cms.djangoapps.contentstore:v4:home-courses-list")
+        ).func.cls
+        conforming_cls = resolve(reverse("authoring_v4:course_list")).func.cls
+        assert conforming_cls is legacy_cls
+
+    def test_unauthenticated_returns_401(self):
+        response = APIClient().get(reverse("authoring_v4:course_list"))
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)  # noqa: PT009
+
+    def test_authenticated_staff_gets_200(self):
+        """Same contract on the conforming mount as on the legacy one."""
+        from django.contrib.auth import get_user_model
+
+        User = get_user_model()
+        user = User.objects.create_user(
+            username="teststaff-authoring", password="pass", is_staff=True
+        )
+        self.client.force_authenticate(user=user)
+        with patch(_MOCK_GET_COURSE_CONTEXT_V2, return_value=([], [])):
+            response = self.client.get(reverse("authoring_v4:course_list"))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
