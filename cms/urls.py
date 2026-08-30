@@ -13,6 +13,7 @@ from django.utils.translation import gettext_lazy as _
 from django.views.generic import RedirectView
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from edx_api_doc_tools import make_docs_urls
+from edx_rest_framework_extensions.url_converters import register_url_converters
 
 import openedx.core.djangoapps.common_views.xblock
 import openedx.core.djangoapps.debug.views
@@ -25,6 +26,10 @@ from openedx.core import toggles as core_toggles
 from openedx.core.apidocs import api_info
 from openedx.core.djangoapps.password_policy import compliance as password_policy_compliance
 from openedx.core.djangoapps.password_policy.forms import PasswordPolicyAwareAdminAuthForm
+
+# Shared opaque-key path converters (ADR 0038): registered once per service,
+# before any URL pattern that uses <course_key:...> / <usage_key:...>.
+register_url_converters()
 
 django_autodiscover()
 admin.site.site_header = _('Studio Administration')

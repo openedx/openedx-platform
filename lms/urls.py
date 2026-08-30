@@ -13,6 +13,7 @@ from django.views.generic.base import RedirectView
 from drf_spectacular.views import SpectacularAPIView
 from edx_api_doc_tools import make_docs_urls
 from edx_django_utils.plugins import get_plugin_url_patterns
+from edx_rest_framework_extensions.url_converters import register_url_converters
 from submissions import urls as submissions_urls
 
 from common.djangoapps.student import views as student_views
@@ -52,6 +53,10 @@ from openedx.core.djangoapps.programs.models import ProgramsApiConfig
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.core.djangoapps.user_authn.views.login import redirect_to_lms_login
 from openedx.features.enterprise_support.api import enterprise_enabled
+
+# Shared opaque-key path converters (ADR 0038): registered once per service,
+# before any URL pattern that uses <course_key:...> / <usage_key:...>.
+register_url_converters()
 
 RESET_COURSE_DEADLINES_NAME = 'reset_course_deadlines'
 RENDER_XBLOCK_NAME = 'render_xblock'
