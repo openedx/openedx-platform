@@ -9,12 +9,16 @@ import re
 # in the schema, i.e. after SCHEMA_PATH_PREFIX_TRIM strips /api/contentstore.
 LEGACY_MIGRATED_PATH_PREFIXES = (
     "/v1/xblock/",             # → /api/authoring/v1/xblocks/
+    "/v3/home/",               # → /api/authoring/v3/home/
 )
 
 # BFF surfaces (ADR 0038): kept under /api/ with one canonical conforming
 # mount, but marked ``x-internal`` so clients can tell them apart from a
 # stable resource contract. Applies to both the legacy and conforming mounts.
-INTERNAL_BFF_PATH_PREFIXES = ()
+INTERNAL_BFF_PATH_PREFIXES = (
+    "/v3/home/",
+    "/api/authoring/v3/home/",
+)
 
 
 def cms_api_filter(endpoints):

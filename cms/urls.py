@@ -367,6 +367,7 @@ urlpatterns += [
 # rule 5, each mount declares its own full api/{api_name}/v{N}/ prefix.
 urlpatterns += [
     path('api/authoring/v1/', include('cms.djangoapps.contentstore.rest_api.v1.authoring_urls')),
+    path('api/authoring/v3/', include('cms.djangoapps.contentstore.rest_api.v3.authoring_urls')),
 ]
 
 # Content tagging
