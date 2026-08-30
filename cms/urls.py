@@ -361,6 +361,14 @@ urlpatterns += [
     path('api/contentstore/', include('cms.djangoapps.contentstore.rest_api.urls'))
 ]
 
+# Authoring REST APIs — the ADR 0038-conforming addresses of the APIs
+# standardized under FC-0118, dual-mounted (OEP-21) beside their legacy
+# /api/contentstore/ routes during the deprecation window. Per ADR 0038
+# rule 5, each mount declares its own full api/{api_name}/v{N}/ prefix.
+urlpatterns += [
+    path('api/authoring/v1/', include('cms.djangoapps.contentstore.rest_api.v1.authoring_urls')),
+]
+
 # Content tagging
 urlpatterns += [
     path('api/content_tagging/', include(('openedx.core.djangoapps.content_tagging.urls', 'content_tagging'))),
