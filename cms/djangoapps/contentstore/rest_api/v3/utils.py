@@ -27,10 +27,15 @@ from rest_framework.exceptions import NotFound
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 
 
-def resolve_course_key(course_key: str) -> CourseKey:
+def resolve_course_key(course_key: str | CourseKey) -> CourseKey:
     """
-    Parse ``course_key`` (string) into a :class:`CourseKey` and verify the
-    course exists.
+    Parse ``course_key`` into a :class:`CourseKey` and verify the course
+    exists.
+
+    Accepts either the raw string (the legacy ``/api/contentstore/v3/``
+    routes) or an already-parsed :class:`CourseKey` (the conforming
+    ``/api/authoring/v3/`` routes, whose ``course_key`` path converter —
+    ADR 0038 rule 9 — hands views a parsed key).
 
     Raises:
         rest_framework.exceptions.NotFound: if the string is unparseable
@@ -44,7 +49,7 @@ def resolve_course_key(course_key: str) -> CourseKey:
     positional argument.
     """
     try:
-        parsed = CourseKey.from_string(course_key)
+        parsed = course_key if isinstance(course_key, CourseKey) else CourseKey.from_string(course_key)
     except InvalidKeyError as exc:
         raise NotFound("The provided course key cannot be parsed.") from exc
     if not CourseOverview.course_exists(parsed):
