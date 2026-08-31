@@ -27,6 +27,7 @@ import logging
 from abc import ABCMeta, abstractmethod
 from collections import defaultdict, namedtuple
 
+from django.conf import settings
 from django.db import DatabaseError, IntegrityError, transaction
 from opaque_keys.edx.asides import AsideUsageKeyV1, AsideUsageKeyV2
 from opaque_keys.edx.block_types import BlockTypeKeyV1
@@ -404,9 +405,13 @@ class UserStateCache:
                 self.user.username,
                 pending_updates
             )
-        except DatabaseError:
-            log.exception("Saving user state failed for %s", self.user.username)
-            raise KeyValueMultiSaveError([])  # pylint: disable=raise-missing-from  # noqa: B904
+        except DatabaseError as err:
+            user_identifier_for_log = (
+                self.user.id if getattr(settings, 'SQUELCH_PII_IN_LOGS', False)
+                else self.user.username
+            )
+            log.exception("Saving user state failed for %s", user_identifier_for_log)
+            raise KeyValueMultiSaveError([]) from err
         finally:
             self._cache.update(pending_updates)
 

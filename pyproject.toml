@@ -290,7 +290,7 @@ constraint-dependencies = [
     "sphinx-autoapi<3.6.1",
     "setuptools<82",
     "astroid==4.0.4",
-    "edx-enterprise==8.9.3",
+    "edx-enterprise==8.9.4",
 ]
 [tool.edx_lint]
 uv_constraints = [
@@ -406,7 +406,7 @@ uv_constraints = [
     # The team that owns this package will manually bump this package rather than
     # having it pulled in automatically. This is to allow them to better control its
     # deployment and to do it in a process that works better for them.
-    "edx-enterprise==8.9.3",
+    "edx-enterprise==8.9.4",
 ]
 
 [tool.setuptools]

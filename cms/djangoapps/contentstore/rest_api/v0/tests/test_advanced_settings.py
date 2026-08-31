@@ -11,7 +11,7 @@ from django.test import override_settings
 from django.urls import reverse
 from milestones.tests.utils import MilestonesTestCaseMixin
 from openedx_authz.api.users import assign_role_to_user_in_scope
-from openedx_authz.constants.roles import COURSE_STAFF
+from openedx_authz.constants.roles import COURSE_AUDITOR, COURSE_EDITOR, COURSE_STAFF
 from openedx_authz.engine.enforcer import AuthzEnforcer
 from openedx_authz.engine.utils import migrate_policy_between_enforcers
 from rest_framework.test import APIClient
@@ -103,6 +103,7 @@ class CourseAdvanceSettingViewTest(CourseTestCase, MilestonesTestCaseMixin):
             assert excluded_field not in resp.data
 
 
+@ddt.ddt
 @patch.object(core_toggles.AUTHZ_COURSE_AUTHORING_FLAG, 'is_enabled', return_value=True)
 class AdvancedSettingsAuthzTest(CourseTestCase):
     """
@@ -203,3 +204,37 @@ class AdvancedSettingsAuthzTest(CourseTestCase):
             content_type="application/json"
         )
         self.assertEqual(response.status_code, 403)  # noqa: PT009
+
+    @ddt.data(COURSE_EDITOR, COURSE_AUDITOR)
+    def test_view_only_role_can_read(self, role, mock_flag):
+        """Course editor/auditor (view-only for advanced settings) can GET."""
+        view_only_user = UserFactory()
+        assign_role_to_user_in_scope(
+            view_only_user.username,
+            role.external_key,
+            str(self.course.id),
+        )
+
+        view_only_client = APIClient()
+        view_only_client.force_authenticate(user=view_only_user)
+        response = view_only_client.get(self.url)
+        assert response.status_code == 200
+
+    @ddt.data(COURSE_EDITOR, COURSE_AUDITOR)
+    def test_view_only_role_cannot_write(self, role, mock_flag):
+        """Course editor/auditor cannot PATCH advanced settings (requires manage permission)."""
+        view_only_user = UserFactory()
+        assign_role_to_user_in_scope(
+            view_only_user.username,
+            role.external_key,
+            str(self.course.id),
+        )
+
+        view_only_client = APIClient()
+        view_only_client.force_authenticate(user=view_only_user)
+        response = view_only_client.patch(
+            self.url,
+            {"display_name": {"value": "Test"}},
+            content_type="application/json",
+        )
+        assert response.status_code == 403

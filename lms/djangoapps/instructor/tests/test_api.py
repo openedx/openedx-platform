@@ -720,9 +720,8 @@ class TestInstructorAPIBulkAccountCreationAndEnrollment(SharedModuleStoreTestCas
 
         # test the log for email that's send to new created user.
         info_log.assert_called_with(
-            "user already exists with username '%s' and email '%s'",
-            'test_student_1',
-            'test_student@example.com'
+            'user already exists with %s',
+            "username 'test_student_1' and email 'test_student@example.com'"
         )
 
     def test_file_upload_type_not_csv(self):
