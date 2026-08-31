@@ -19,6 +19,7 @@ constraints = [
     { name = "django-debug-toolbar", specifier = "<6.0.0" },
     { name = "django-oauth-toolkit", specifier = "==1.7.1" },
     { name = "django-stubs", specifier = "<6" },
+    { name = "djangorestframework", specifier = "<3.18" },
     { name = "edx-enterprise", specifier = "==8.9.4" },
     { name = "elasticsearch", specifier = "==7.9.1" },
     { name = "libsass", specifier = "==0.10.0" },
