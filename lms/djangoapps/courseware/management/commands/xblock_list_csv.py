@@ -29,6 +29,33 @@ def iter_descendants(block, ancestor_names=None):
         yield from iter_descendants(child, ancestor_names + [child.display_name])
 
 
+def _iter_course_rows(course, exclude_core_xblocks):
+    """
+    Yield CSV rows for `course`.
+    """
+    for section in course.get_children():
+        for subsection in section.get_children():
+            for unit in subsection.get_children():
+                for ancestors, component in iter_descendants(unit):
+                    if exclude_core_xblocks and component.location.block_type in CORE_XBLOCKS:
+                        continue
+                    yield (
+                        course.id,
+                        course.display_name,
+                        section.display_name,
+                        subsection.display_name,
+                        unit.display_name,
+                        component.display_name,
+                        component.location.block_type,
+                        " > ".join(
+                            str(name or "")
+                            for name in [section.display_name, subsection.display_name, unit.display_name]
+                            + ancestors
+                            + [component.display_name]
+                        ),
+                    )
+
+
 def _resolve_courses(courses, error_file):
     """
     Resolve the requested course ID strings directly against the
@@ -37,7 +64,7 @@ def _resolve_courses(courses, error_file):
     """
     resolved = []
     failures = 0
-    for course_id in courses:
+    for course_id in dict.fromkeys(courses):
         try:
             course_key = CourseKey.from_string(course_id)
         except InvalidKeyError:
@@ -124,43 +151,19 @@ def generate_xblocks_csv(
     )
 
     for course in course_list:
-        try:
-            # Materialize the traversal into a list before writing, so this
-            # try/except only covers walking the course's block tree (which
-            # can legitimately fail for a single malformed course) and not
-            # the CSV write itself. A write failure (e.g. broken pipe, full
-            # disk) should propagate instead of being reported as a
-            # per-course failure, and except Exception (not bare except)
-            # avoids swallowing KeyboardInterrupt/SystemExit.
-            rows = [
-                (
-                    course.id,
-                    course.display_name,
-                    section.display_name,
-                    subsection.display_name,
-                    unit.display_name,
-                    component.display_name,
-                    component.location.block_type,
-                    " > ".join(
-                        [section.display_name, subsection.display_name, unit.display_name]
-                        + ancestors
-                        + [component.display_name]
-                    ),
+        row_iter = _iter_course_rows(course, exclude_core_xblocks)
+        while True:
+            try:
+                row = next(row_iter)
+            except StopIteration:
+                break
+            except Exception:  # pylint: disable=broad-except
+                failures += 1
+                print(
+                    f"Failed processing course {course.id}",
+                    file=error_file
                 )
-                for section in course.get_children()
-                for subsection in section.get_children()
-                for unit in subsection.get_children()
-                for ancestors, component in iter_descendants(unit)
-                if not exclude_core_xblocks
-                or component.location.block_type not in CORE_XBLOCKS
-            ]
-        except Exception:  # pylint: disable=broad-except
-            failures += 1
-            print(
-                f"Failed processing course {course.id}",
-                file=error_file
-            )
-            continue
-        writer.writerows(rows)
+                break
+            writer.writerow(row)
 
     return failures

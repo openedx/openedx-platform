@@ -128,6 +128,20 @@ class GenerateCSVCommandTestCase(TestCase):
             mock_modulestore.return_value.get_course.assert_called_once_with(course_key)
             mock_modulestore.return_value.get_courses.assert_not_called()
 
+    def test_duplicate_course_id_is_resolved_once(self):
+        output = StringIO()
+        with patch(MODULESTORE_PATH) as mock_modulestore:
+            mock_modulestore.return_value.get_course.return_value = self.MOCK_COURSE
+
+            generate_xblocks_csv(output, False, [self.COURSE_ID, self.COURSE_ID])
+
+            mock_modulestore.return_value.get_course.assert_called_once()
+
+        output.seek(0)
+        rows = list(csv.reader(output))
+        # 1 header + 4 components, not duplicated
+        assert len(rows) == 5
+
     def test_no_courses_filter_uses_get_courses(self):
         output = StringIO()
         with patch(MODULESTORE_PATH) as mock_modulestore:
@@ -243,3 +257,35 @@ class GenerateCSVCommandTestCase(TestCase):
         child_b_row = rows[3]
         assert child_b_row[5] == "Nested Video B"
         assert child_b_row[7] == "Section 1 > Subsection 1 > Unit 1 > Split Test > Nested Video B"
+
+    def test_component_with_no_display_name_does_not_fail_course(self):
+        unnamed_component = self._make_block(None, "html")
+        named_component = self._make_block("My HTML", "html")
+        unit = self._make_container("Unit 1", [unnamed_component, named_component])
+        subsection = self._make_container("Subsection 1", [unit])
+        section = self._make_container("Section 1", [subsection])
+        course = self._make_course(self.COURSE_ID, "Test Course", [section])
+
+        output = StringIO()
+        errors = StringIO()
+        with patch(MODULESTORE_PATH) as mock_modulestore:
+            mock_modulestore.return_value.get_courses.return_value = [course]
+
+            failures = generate_xblocks_csv(output, False, None, errors)
+
+        assert failures == 0
+        errors.seek(0)
+        assert errors.getvalue() == ""
+
+        output.seek(0)
+        rows = list(csv.reader(output))
+        # 1 header + 2 components; the course is not skipped
+        assert len(rows) == 3
+
+        unnamed_row = rows[1]
+        assert unnamed_row[5] == ""
+        assert unnamed_row[7] == "Section 1 > Subsection 1 > Unit 1 > "
+
+        named_row = rows[2]
+        assert named_row[5] == "My HTML"
+        assert named_row[7] == "Section 1 > Subsection 1 > Unit 1 > My HTML"
