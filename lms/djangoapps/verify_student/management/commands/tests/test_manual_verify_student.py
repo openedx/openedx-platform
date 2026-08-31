@@ -95,7 +95,7 @@ class TestVerifyStudentCommand(TestCase):
              ),
             (LOGGER_NAME,
              'ERROR',
-             "Failed emails:['unknown@unknown.com']"
+             "Failed emails for manual verification:['unknown@unknown.com']"
              )
         )
         with LogCapture(LOGGER_NAME, level=logging.INFO) as logger:

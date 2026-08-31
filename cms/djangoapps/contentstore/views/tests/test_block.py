@@ -3627,6 +3627,101 @@ class TestXBlockOutlineHandlerAuthz(CourseAuthoringAuthzTestMixin, ItemTest):
         assert resp.status_code == 403
 
 
+@ddt.ddt
+class TestXBlockContainerAndViewHandlerAuthz(CourseAuthoringAuthzTestMixin, ItemTest):
+    """
+    Unit tests for xblock_container_handler and xblock_view_handler authorization.
+
+    Regression test for openedx-authz#384: navigating to a unit (the container page,
+    which in turn renders each child block via the view handler) returned 403 for
+    roles like course_auditor that have no legacy role equivalent, because these two
+    handlers checked the legacy-only has_studio_read_access instead of the AuthZ-aware
+    user_has_course_permission already used by xblock_outline_handler.
+    """
+
+    def setUp(self):
+        super().setUp()
+        user_id = self.user.id
+        self.chapter = BlockFactory.create(
+            parent_location=self.course.location,
+            category="chapter",
+            display_name="Week 1",
+            user_id=user_id,
+        )
+        self.sequential = BlockFactory.create(
+            parent_location=self.chapter.location,
+            category="sequential",
+            display_name="Lesson 1",
+            user_id=user_id,
+        )
+        self.vertical = BlockFactory.create(
+            parent_location=self.sequential.location,
+            category="vertical",
+            display_name="Unit 1",
+            user_id=user_id,
+        )
+
+    @ddt.data(
+        COURSE_STAFF.external_key,
+        COURSE_ADMIN.external_key,
+        COURSE_AUDITOR.external_key,
+        COURSE_EDITOR.external_key,
+    )
+    def test_course_roles_can_view_unit_container(self, role_key):
+        """
+        Any role with COURSES_VIEW_COURSE, including the legacy-less course_auditor
+        and course_editor roles, can open the unit (container) page.
+        """
+        role_user = UserFactory(password=self.password)
+        self.add_user_to_role_in_course(role_user, role_key, self.course.id)
+
+        container_url = reverse_usage_url("xblock_container_handler", self.vertical.location)
+        self.client.login(username=role_user.username, password=self.password)
+        resp = self.client.get(container_url, HTTP_ACCEPT="application/json")
+
+        assert resp.status_code == 200
+
+    @ddt.data(
+        COURSE_STAFF.external_key,
+        COURSE_ADMIN.external_key,
+        COURSE_AUDITOR.external_key,
+        COURSE_EDITOR.external_key,
+    )
+    def test_course_roles_can_render_unit_preview(self, role_key):
+        """
+        Any role with COURSES_VIEW_COURSE can render the unit's preview fragment,
+        which is what the frontend fetches for each block shown on the unit page.
+        """
+        role_user = UserFactory(password=self.password)
+        self.add_user_to_role_in_course(role_user, role_key, self.course.id)
+
+        preview_url = reverse_usage_url(
+            "xblock_view_handler", self.vertical.location, {"view_name": "container_preview"}
+        )
+        self.client.login(username=role_user.username, password=self.password)
+        resp = self.client.get(preview_url, HTTP_ACCEPT="application/json")
+
+        assert resp.status_code == 200
+
+    def test_unauthorized_user_gets_permission_denied_on_unit_container(self):
+        container_url = reverse_usage_url("xblock_container_handler", self.vertical.location)
+
+        self.client.login(username=self.unauthorized_user.username, password=self.password)
+        resp = self.client.get(container_url, HTTP_ACCEPT="application/json")
+
+        assert resp.status_code == 403
+
+    def test_unauthorized_user_gets_permission_denied_on_unit_preview(self):
+        preview_url = reverse_usage_url(
+            "xblock_view_handler", self.vertical.location, {"view_name": "container_preview"}
+        )
+
+        self.client.login(username=self.unauthorized_user.username, password=self.password)
+        resp = self.client.get(preview_url, HTTP_ACCEPT="application/json")
+
+        assert resp.status_code == 403
+
+
 class TestGetMetadataWithProblemDefaults(ModuleStoreTestCase):
     """
     Unit tests for _get_metadata_with_problem_defaults.

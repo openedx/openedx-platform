@@ -3066,18 +3066,6 @@ IS_ELIGIBLE_FOR_FINANCIAL_ASSISTANCE_URL = '/core/api/course_eligibility/'
 FINANCIAL_ASSISTANCE_APPLICATION_STATUS_URL = "/core/api/financial_assistance_application/status/"
 CREATE_FINANCIAL_ASSISTANCE_APPLICATION_URL = '/core/api/financial_assistance_applications'
 
-# .. toggle_name: ENABLE_MFE_CONFIG_API
-# .. toggle_implementation: DjangoSetting
-# .. toggle_default: False
-# .. toggle_description: Set to True to enable MFE Config API. This is disabled by
-#   default.
-# .. toggle_use_cases: open_edx
-# .. toggle_creation_date: 2022-05-20
-# .. toggle_target_removal_date: None
-# .. toggle_warnings: None
-# .. toggle_tickets: None
-ENABLE_MFE_CONFIG_API = False
-
 # .. setting_name: MFE_CONFIG
 # .. setting_implementation: DjangoSetting
 # .. setting_default: {}

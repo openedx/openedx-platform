@@ -534,7 +534,7 @@ edx-drf-extensions==10.6.0
     #   openedx-authz
     #   openedx-core
     #   openedx-platform
-edx-enterprise==8.9.2
+edx-enterprise==8.9.4
     # via openedx-platform
 edx-event-bus-kafka==6.1.0
     # via openedx-platform
@@ -542,7 +542,7 @@ edx-event-bus-redis==1.0.0
     # via openedx-platform
 edx-i18n-tools==2.0.0
     # via ora2
-edx-lint==6.1.0
+edx-lint==6.2.0
 edx-milestones==2.0.0
     # via openedx-platform
 edx-opaque-keys==4.0.0

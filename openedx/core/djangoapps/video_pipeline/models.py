@@ -37,6 +37,7 @@ class VEMPipelineIntegration(ConfigurationModel):
         help_text=_('video encode manager API URL.')
     )
 
+    # pylint: disable-next=pii-invalid-no-pii-annotation  # field does not store user PII data, safe under OEP-30
     service_username = models.CharField(
         max_length=100,
         default='vem_service_user',

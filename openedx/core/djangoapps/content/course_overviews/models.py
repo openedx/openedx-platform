@@ -56,7 +56,9 @@ class CourseOverview(TimeStampedModel):
     will cause a slew of modulestore reads as each course needs to be re-cached into
     the course overview.
 
-    .. no_pii:
+    .. pii: Contains proctoring_escalation_email, a staff contact address copied from CourseFields.
+    .. pii_types: email_address
+    .. pii_retirement: retained
     """
 
     class Meta:

@@ -29,6 +29,7 @@ from common.djangoapps.student.models import (
     ManualEnrollmentAudit,
     get_user_by_username_or_email,
 )
+from common.djangoapps.student.models.course_enrollment import EnrollmentNotAllowed
 from lms.djangoapps.instructor.enrollment import (
     enroll_email,
     get_email_params,
@@ -136,7 +137,16 @@ def process_single_student_enrollment(
 
     try:
         validate_email(email)  # Raises ValidationError if invalid
+    except ValidationError:
+        return {
+            "identifier": identifier,
+            "invalidIdentifier": True,
+            "success": False,
+            "error_type": "invalid_identifier",
+            "error_message": _("Invalid email address"),
+        }
 
+    try:
         # Wrap enrollment and audit operations in an atomic transaction
         # to ensure both succeed or both are rolled back
         with transaction.atomic():
@@ -171,13 +181,28 @@ def process_single_student_enrollment(
             "success": True,
             "state_transition": state_transition,
         }
-    except ValidationError:
+    except EnrollmentNotAllowed as exc:
+        # Enrollment was blocked by a pipeline filter (e.g. NIF requirement).
+        # Surface the specific message so the instructor knows the reason.
+        log.warning("Enrollment not allowed for %s: %s", identifier, exc)
         return {
             "identifier": identifier,
-            "invalidIdentifier": True,
+            "error": True,
             "success": False,
-            "error_type": "invalid_identifier",
-            "error_message": _("Invalid email address"),
+            "error_type": "enrollment_not_allowed",
+            "error_message": str(exc),
+        }
+    except ValidationError as exc:
+        # ValidationError raised during enrollment (e.g. a pre_save signal guard
+        # blocking CourseEnrollmentAllowed creation for a restricted course).
+        # Surface the specific message so the instructor knows the reason.
+        log.warning("ValidationError while enrolling %s: %s", identifier, exc)
+        return {
+            "identifier": identifier,
+            "error": True,
+            "success": False,
+            "error_type": "validation_error",
+            "error_message": exc.messages[0] if exc.messages else str(exc),
         }
     except Exception as exc:  # pylint: disable=broad-exception-caught
         log.exception("Error while processing student %s: %s", identifier, exc)
