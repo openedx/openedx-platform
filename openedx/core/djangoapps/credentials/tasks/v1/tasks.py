@@ -11,7 +11,6 @@ from celery_utils.logged_task import LoggedTask
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.sites.models import Site
-from edx_django_utils.monitoring import set_code_owner_attribute
 from MySQLdb import OperationalError
 from opaque_keys.edx.keys import CourseKey
 
@@ -52,7 +51,6 @@ INTERESTING_STATUSES = [
     retry_backoff_max=600,
     retry_jitter=True,
 )
-@set_code_owner_attribute
 def send_grade_to_credentials(
     self,
     username,
@@ -100,7 +98,6 @@ def send_grade_to_credentials(
 
 
 @shared_task(base=LoggedTask, ignore_result=True)
-@set_code_owner_attribute
 def handle_notify_credentials(options, course_keys):
     """
     Celery task to handle the notify_credentials management command. Finds the relevant cert and grade records, then
@@ -425,7 +422,6 @@ def is_course_run_in_a_program(course_run_key):
 
 
 @shared_task(base=LoggedTask, ignore_result=True)
-@set_code_owner_attribute
 def backfill_date_for_all_course_runs():
     """
     This task enqueues an `update_certificate_available_date_on_course_update` subtask for each course overview in the

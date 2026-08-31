@@ -11,7 +11,6 @@ from celery import Task, shared_task
 from celery.states import FAILURE
 from django.conf import settings
 from django.core.mail import EmailMessage
-from edx_django_utils.monitoring import set_code_owner_attribute
 
 from common.djangoapps.edxmako.shortcuts import render_to_string
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
@@ -73,7 +72,6 @@ class BaseSoftwareSecureTask(Task):  # pylint: disable=abstract-method
 
 
 @shared_task
-@set_code_owner_attribute
 def send_verification_status_email(context):
     """
     Spins a task to send verification status email to the learner
@@ -100,7 +98,6 @@ def send_verification_status_email(context):
     default_retry_delay=settings.SOFTWARE_SECURE_REQUEST_RETRY_DELAY,
     max_retries=settings.SOFTWARE_SECURE_RETRY_MAX_ATTEMPTS,
 )
-@set_code_owner_attribute
 def send_request_to_ss_for_user(self, user_verification_id, copy_id_photo_from):
     """
     Assembles a submission to Software Secure.

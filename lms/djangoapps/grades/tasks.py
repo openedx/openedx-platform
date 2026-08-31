@@ -10,7 +10,6 @@ from django.contrib.auth.models import User  # pylint: disable=imported-auth-use
 from django.core.exceptions import ValidationError
 from django.db.utils import DatabaseError
 from edx_django_utils.monitoring import (
-    set_code_owner_attribute,
     set_custom_attribute,
     set_custom_attributes_for_course_key,
 )
@@ -55,7 +54,6 @@ SUBSECTION_GRADE_TIMEOUT_SECONDS = 300
 
 
 @shared_task(base=LoggedPersistOnFailureTask)
-@set_code_owner_attribute
 def compute_all_grades_for_course(**kwargs):
     """
     Compute grades for all students in the specified course.
@@ -88,7 +86,6 @@ def compute_all_grades_for_course(**kwargs):
     time_limit=COURSE_GRADE_TIMEOUT_SECONDS,
     rate_limit=settings.POLICY_CHANGE_TASK_RATE_LIMIT,
 )
-@set_code_owner_attribute
 def compute_grades_for_course_v2(self, **kwargs):
     """
     Compute grades for a set of students in the specified course.
@@ -113,7 +110,6 @@ def compute_grades_for_course_v2(self, **kwargs):
 
 
 @shared_task(base=LoggedPersistOnFailureTask)
-@set_code_owner_attribute
 def compute_grades_for_course(course_key, offset, batch_size, **kwargs):  # pylint: disable=unused-argument
     """
     Compute and save grades for a set of students in the specified course.
@@ -141,7 +137,6 @@ def compute_grades_for_course(course_key, offset, batch_size, **kwargs):  # pyli
     max_retries=2,
     default_retry_delay=RETRY_DELAY_SECONDS,
 )
-@set_code_owner_attribute
 def recalculate_course_and_subsection_grades_for_user(self, **kwargs):  # pylint: disable=unused-argument
     """
     Recalculates the course grade and all subsection grades
@@ -182,7 +177,6 @@ def recalculate_course_and_subsection_grades_for_user(self, **kwargs):  # pylint
     max_retries=2,
     default_retry_delay=RETRY_DELAY_SECONDS
 )
-@set_code_owner_attribute
 def recalculate_subsection_grade_v3(self, **kwargs):
     """
     Latest version of the recalculate_subsection_grade task.  See docstring

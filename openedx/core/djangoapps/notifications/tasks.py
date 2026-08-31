@@ -9,7 +9,6 @@ from celery import shared_task
 from celery.utils.log import get_task_logger
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from edx_django_utils.monitoring import set_code_owner_attribute
 from opaque_keys.edx.keys import CourseKey
 
 from openedx.core.djangoapps.notifications.audience_filters import NotificationFilter
@@ -46,7 +45,6 @@ logger = get_task_logger(__name__)
 
 
 @shared_task(ignore_result=True)
-@set_code_owner_attribute
 def delete_notifications(kwargs):
     """
     Delete notifications
@@ -72,7 +70,6 @@ def delete_notifications(kwargs):
 
 
 @shared_task(ignore_result=True)
-@set_code_owner_attribute
 def delete_expired_notifications():
     """
     This task deletes all expired notifications
@@ -100,7 +97,6 @@ def delete_expired_notifications():
 
 # pylint: disable=too-many-statements
 @shared_task
-@set_code_owner_attribute
 def send_notifications(user_ids, course_key: str, app_name, notification_type, context, content_url):
     """
     Send notifications to the users.

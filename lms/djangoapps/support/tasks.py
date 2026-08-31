@@ -8,7 +8,6 @@ from completion.models import BlockCompletion
 from django.contrib.sites.models import Site
 from edx_ace import ace
 from edx_ace.recipient import Recipient
-from edx_django_utils.monitoring import set_code_owner_attribute
 
 from common.djangoapps.student.models.course_enrollment import CourseEnrollment
 from common.djangoapps.student.models.user import get_user_by_username_or_email
@@ -45,7 +44,6 @@ def get_blocks(course):
 
 
 @shared_task
-@set_code_owner_attribute
 def send_reset_course_completion_email(course, user):
     """
     Sends email to a learner when whole course reset is complete.
@@ -85,7 +83,6 @@ def send_reset_course_completion_email(course, user):
 
 
 @shared_task
-@set_code_owner_attribute
 def reset_student_course(course_id, learner_email, reset_by_user_email):
     """
     Resets a learner's course progress
