@@ -156,6 +156,11 @@ REPORTS_DATA = (
 )
 
 
+# These are sets because the membership checks below are the common use. Any
+# ddt parameterization over them must sort first: set iteration order for str
+# depends on PYTHONHASHSEED, which differs per process, so ddt would generate a
+# different index -> endpoint mapping in each pytest-xdist worker and collection
+# would not match across workers.
 INSTRUCTOR_GET_ENDPOINTS = {
     'get_anon_ids',
     'get_issued_certificates',
@@ -340,7 +345,7 @@ class TestEndpointHttpMethods(SharedModuleStoreTestCase, LoginEnrollmentTestCase
         global_user = GlobalStaffFactory()
         self.client.login(username=global_user.username, password=self.TEST_PASSWORD)
 
-    @ddt.data(*INSTRUCTOR_POST_ENDPOINTS)
+    @ddt.data(*sorted(INSTRUCTOR_POST_ENDPOINTS))
     def test_endpoints_reject_get(self, data):
         """
         Tests that POST endpoints are rejected with 405 when using GET.
@@ -351,7 +356,7 @@ class TestEndpointHttpMethods(SharedModuleStoreTestCase, LoginEnrollmentTestCase
         assert response.status_code == 405, \
             f'Endpoint {data} returned status code {response.status_code} instead of a 405. It should not allow GET.'
 
-    @ddt.data(*INSTRUCTOR_GET_ENDPOINTS)
+    @ddt.data(*sorted(INSTRUCTOR_GET_ENDPOINTS))
     def test_endpoints_accept_get(self, data):
         """
         Tests that GET endpoints are not rejected with 405 when using GET.

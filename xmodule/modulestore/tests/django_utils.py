@@ -6,6 +6,7 @@ Modulestore configuration for test cases.
 import copy
 import functools
 import os
+import warnings
 from contextlib import contextmanager
 from enum import Enum
 from mimetypes import guess_type
@@ -260,6 +261,21 @@ class SignalIsolationMixin:
             signal.enable()
 
 
+def _contentstore_is_readable():
+    """Can settings.CONTENTSTORE be read right now?
+
+    UserSettingsHolder raises AttributeError for a setting in its _deleted set,
+    so getattr with a default is not enough on its own -- the point is to
+    observe whether the lookup succeeds, not what it returns.
+    """
+    try:
+        # The attribute access *is* the probe; both linters need telling.
+        settings.CONTENTSTORE  # noqa: B018  # pylint: disable=pointless-statement
+    except AttributeError:
+        return False
+    return True
+
+
 class ModuleStoreIsolationMixin(CacheIsolationMixin, SignalIsolationMixin):
     """
     A mixin to be used by TestCases that want to isolate their use of the
@@ -300,6 +316,16 @@ class ModuleStoreIsolationMixin(CacheIsolationMixin, SignalIsolationMixin):
     __old_modulestores = []
     __old_contentstores = []
 
+    # Number of isolations this exact class currently has open. Read from
+    # cls.__dict__ rather than as a normal attribute so that subclasses never
+    # see (and never decrement) a parent's count.
+    _ISOLATION_DEPTH_ATTR = '_modulestore_isolation_depth_count'
+
+    @classmethod
+    def _modulestore_isolation_depth(cls):
+        """How many isolations this exact class currently has open."""
+        return cls.__dict__.get(cls._ISOLATION_DEPTH_ATTR, 0)
+
     @classmethod
     def start_modulestore_isolation(cls):
         """
@@ -307,21 +333,68 @@ class ModuleStoreIsolationMixin(CacheIsolationMixin, SignalIsolationMixin):
         :py:meth:`end_modulestore_isolation` is called, this modulestore will
         be flushed (all content will be deleted).
         """
+        if not _contentstore_is_readable():
+            # Warn rather than fail. This isolation overrides CONTENTSTORE
+            # anyway, and the old value is only kept to assert against at
+            # teardown, so a missing one is recoverable here. Raising instead
+            # turned a single upstream problem into hundreds of downstream
+            # errors and hid where it came from.
+            warnings.warn(
+                f"settings.CONTENTSTORE was missing when {cls.__name__} started "
+                "modulestore isolation; an earlier override_settings frame is "
+                "masking it. Proceeding, since this isolation overrides it.",
+                RuntimeWarning,
+                stacklevel=2,
+            )
+
         cls.disable_all_signals()
         cls.enable_signals_by_name(*cls.ENABLED_SIGNALS)
         cls.start_cache_isolation()
-        override = override_settings(
-            MODULESTORE=cls.MODULESTORE(),
-            CONTENTSTORE=cls.CONTENTSTORE(),
-        )
 
-        cls.__old_modulestores.append(copy.deepcopy(settings.MODULESTORE))
-        cls.__old_contentstores.append(copy.deepcopy(settings.CONTENTSTORE))
-        override.__enter__()  # pylint: disable=unnecessary-dunder-call
+        # Cache isolation is now held but the modulestore isolation is not, and
+        # end_modulestore_isolation() keys off the modulestore depth: if it is
+        # zero that call returns immediately and never unwinds the cache. So
+        # anything that raises between here and the depth increment below would
+        # strand a CACHES override for the rest of the process, which surfaces
+        # later as InvalidCacheBackendError or KeyError on a named cache rather
+        # than as an error here. cls.MODULESTORE() and cls.CONTENTSTORE() are
+        # arbitrary callables and copy.deepcopy is not total, so this is a real
+        # window, not a theoretical one. Undo the cache isolation and the signal
+        # changes if it happens.
+        try:
+            override = override_settings(
+                MODULESTORE=cls.MODULESTORE(),
+                CONTENTSTORE=cls.CONTENTSTORE(),
+            )
+
+            # getattr with a default: these snapshots exist only to assert against
+            # at teardown, and the override replaces both settings regardless, so a
+            # missing value must not stop isolation from being established.
+            old_modulestore = copy.deepcopy(getattr(settings, 'MODULESTORE', None))
+            old_contentstore = copy.deepcopy(getattr(settings, 'CONTENTSTORE', None))
+            override.__enter__()  # pylint: disable=unnecessary-dunder-call
+        except Exception:
+            cls.end_cache_isolation()
+            cls.enable_all_signals()
+            raise
+
+        # settings is global and now mutated. Record the isolation before doing
+        # anything else that can raise, so that a failure below is still
+        # unwindable; otherwise the override leaks for the rest of the process
+        # and every later start_modulestore_isolation() reads a settings object
+        # whose CONTENTSTORE has been restored away.
+        cls.__old_modulestores.append(old_modulestore)
+        cls.__old_contentstores.append(old_contentstore)
         cls.__settings_overrides.append(override)
-        XMODULE_FACTORY_LOCK.enable()
-        clear_existing_modulestores()
-        cls.store = modulestore()
+        setattr(cls, cls._ISOLATION_DEPTH_ATTR, cls._modulestore_isolation_depth() + 1)
+
+        try:
+            XMODULE_FACTORY_LOCK.enable()
+            clear_existing_modulestores()
+            cls.store = modulestore()
+        except Exception:
+            cls.end_modulestore_isolation()
+            raise
 
     @classmethod
     def end_modulestore_isolation(cls):
@@ -329,15 +402,40 @@ class ModuleStoreIsolationMixin(CacheIsolationMixin, SignalIsolationMixin):
         Delete all content in the Modulestore, and reset the Modulestore
         settings from before :py:meth:`start_modulestore_isolation` was
         called.
-        """
-        drop_mongo_collections()  # pylint: disable=no-value-for-parameter
-        XMODULE_FACTORY_LOCK.disable()
-        cls.__settings_overrides.pop().__exit__(None, None, None)
 
-        assert settings.MODULESTORE == cls.__old_modulestores.pop()
-        assert settings.CONTENTSTORE == cls.__old_contentstores.pop()
-        cls.end_cache_isolation()
-        cls.enable_all_signals()
+        Does nothing if this class has no isolation open, so that it is safe to
+        call both from an explicit tearDownClass and from a registered cleanup.
+        """
+        if cls._modulestore_isolation_depth() <= 0:
+            return
+        setattr(cls, cls._ISOLATION_DEPTH_ATTR, cls._modulestore_isolation_depth() - 1)
+
+        # Everything below must run even if an earlier step raises. Unwinding the
+        # settings override is the part that matters: an override_settings object
+        # is single-use (Django's disable() does `del self.wrapped`), so a frame
+        # that is skipped here can never be unwound later, and every subsequent
+        # test in this process reads a settings object that has been rewound past
+        # the modulestore overrides. drop_mongo_collections() in particular can
+        # fail under load, which is how one bad teardown used to poison a whole
+        # xdist worker.
+        try:
+            drop_mongo_collections()  # pylint: disable=no-value-for-parameter
+        finally:
+            try:
+                XMODULE_FACTORY_LOCK.disable()
+                override = cls.__settings_overrides.pop()
+                old_modulestore = cls.__old_modulestores.pop()
+                old_contentstore = cls.__old_contentstores.pop()
+
+                override.__exit__(None, None, None)
+                if old_modulestore is not None:
+                    assert settings.MODULESTORE == old_modulestore
+                if old_contentstore is not None:
+                    assert settings.CONTENTSTORE == old_contentstore
+
+            finally:
+                cls.end_cache_isolation()
+                cls.enable_all_signals()
 
     @staticmethod
     def allow_transaction_exception():
@@ -458,10 +556,16 @@ class SharedModuleStoreTestCase(
             <these models can use variables (courses) setup in setUpClass() above>
         """
         cls.start_modulestore_isolation()
-        # Now yield to allow the test class to run its setUpClass() setup code.
-        yield
-        # Now call the base class, which calls back into the test class's setUpTestData().
-        super().setUpClass()
+        try:
+            # Now yield to allow the test class to run its setUpClass() setup code.
+            yield
+            # Now call the base class, which calls back into the test class's setUpTestData().
+            super().setUpClass()
+        except Exception:
+            # unittest skips tearDownClass when setUpClass raises, so without this
+            # the isolation above would leak into every later class in the process.
+            cls.end_modulestore_isolation()
+            raise
 
     @classmethod
     def setUpClass(cls):
@@ -471,6 +575,11 @@ class SharedModuleStoreTestCase(
         """
         super().setUpClass()
         cls.start_modulestore_isolation()
+        # tearDownClass is skipped entirely when a subclass's setUpClass raises
+        # after this point; a class cleanup still runs, so register one as a
+        # backstop. end_modulestore_isolation() is a no-op once the isolation
+        # has already been ended, so the normal path is unaffected.
+        cls.addClassCleanup(cls.end_modulestore_isolation)
 
     @classmethod
     def tearDownClass(cls):

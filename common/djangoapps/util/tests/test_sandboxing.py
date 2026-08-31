@@ -10,7 +10,7 @@ from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locator import CourseLocator, LibraryLocator, LibraryLocatorV2
 
 from xmodule.contentstore.django import contentstore
-from xmodule.modulestore.tests.django_utils import upload_file_to_course
+from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase, upload_file_to_course
 from xmodule.util.sandboxing import SandboxService, can_execute_unsafe_code
 
 
@@ -45,9 +45,16 @@ class SandboxingTest(TestCase):
 
 
 @ddt.ddt
-class SandboxServiceTest(TestCase):
+class SandboxServiceTest(SharedModuleStoreTestCase):
     """
     Test SandboxService methods.
+
+    SharedModuleStoreTestCase rather than TestCase: this class writes to the
+    contentstore in setUpClass, and plain TestCase gives it no contentstore
+    isolation -- it just reads whatever settings.CONTENTSTORE happens to hold. If
+    an earlier test has left an override_settings frame masking that setting, the
+    upload raises here, setUpClass dies with the class-level atomic already open,
+    and every later test in the worker fails with TransactionManagementError.
     """
     PYTHON_LIB_FILENAME = 'test_python_lib.zip'
     PYTHON_LIB_SOURCE_FILE = './common/test/data/uploads/python_lib.zip'
@@ -116,11 +123,14 @@ class SandboxServiceTest(TestCase):
         assert self.sandbox_service.get_python_lib_zip() is None
 
 
-class SandboxServiceForLibrariesV2Test(TestCase):
+class SandboxServiceForLibrariesV2Test(SharedModuleStoreTestCase):
     """
     Test SandboxService methods for V2 Content Libraries.
 
     (Lacks tests for anything other than python_lib_zip)
+
+    SharedModuleStoreTestCase for the same reason as SandboxServiceTest above:
+    it builds a SandboxService around the contentstore in setUpClass.
     """
 
     @classmethod

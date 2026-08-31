@@ -9,8 +9,53 @@ on:
       - master
 
 jobs:
+  # Applying all ~1800 migrations from an empty database takes ~9 minutes, and
+  # 99% of commits on master touch no migration at all, so the overwhelming
+  # majority of runs re-derive a schema identical to the previous one.
+  #
+  # models.py is included deliberately: a model changed without a matching
+  # migration is exactly what this workflow exists to catch.
+  #
+  # Only pull_request is gated. push, merge_group and workflow_dispatch always
+  # run the full check, so nothing is permanently skipped -- in particular a
+  # RunPython migration that imports application code can still be broken by a
+  # code-only change, and master will catch that.
+  changed:
+    name: detect migration changes
+    runs-on: ubuntu-24.04
+    outputs:
+      migrations: ${{ steps.detect.outputs.migrations }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: detect
+        id: detect
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" != "pull_request" ]]; then
+            echo "migrations=true" >> "$GITHUB_OUTPUT"
+            echo "Not a pull request; running the full check."
+            exit 0
+          fi
+          base="origin/${{ github.base_ref }}"
+          git fetch --no-tags --depth=1 origin "${{ github.base_ref }}" || true
+          changed=$(git diff --name-only "$(git merge-base "$base" HEAD)" HEAD)
+          echo "$changed" | grep -E '(/migrations/[^/]+\.py$|/models\.py$)' > /tmp/hits || true
+          if [[ -s /tmp/hits ]]; then
+            echo "migrations=true" >> "$GITHUB_OUTPUT"
+            echo "Migration or model files changed:"
+            sed 's/^/  /' /tmp/hits
+          else
+            echo "migrations=false" >> "$GITHUB_OUTPUT"
+            echo "No migration or model files changed; skipping the migration check."
+          fi
+
   check_migrations:
     name: check migrations
+    needs: changed
+    if: needs.changed.outputs.migrations == 'true'
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -45,7 +90,9 @@ jobs:
           MYSQL_DATABASE: "edxapp"
           MYSQL_USER: "edxapp001"
           MYSQL_PASSWORD: "password"
-          MYSQL_RANDOM_ROOT_PASSWORD: true
+          # Fixed rather than random so the schema-cache fallback below can drop
+          # and recreate the database. This database is discarded with the job.
+          MYSQL_ROOT_PASSWORD: "rootpw"
         options: >-
           --health-cmd "mysqladmin ping"
           --health-interval 10s
@@ -97,16 +144,66 @@ jobs:
         run: |
           uv tree
 
+      # Applying every migration from an empty database is ~9 minutes and almost
+      # all of that work is identical between runs. Cache the resulting schema
+      # (including the django_migrations table, which records what has already
+      # been applied) and reload it instead.
+      #
+      # restore-keys matters more than the exact key here: on a PR that adds one
+      # migration the exact key misses, an older schema is restored, and the
+      # migrate below applies only the delta. Both LMS and CMS point at the same
+      # database, so one dump covers both.
+      - name: Restore cached migrated schema
+        uses: actions/cache@v4
+        with:
+          path: migrations-schema.sql
+          key: migschema-${{ matrix.mysql-version }}-${{ matrix.django-version }}-${{ hashFiles('**/migrations/*.py', 'uv.lock') }}
+          restore-keys: |
+            migschema-${{ matrix.mysql-version }}-${{ matrix.django-version }}-
+
       - name: Run Tests
         env:
           LMS_CFG: lms/envs/minimal.yml
           # This is from the LMS dir on purpose since we don't need anything different for the CMS yet.
           STUDIO_CFG: lms/envs/minimal.yml
         run: |
-          echo "Running the LMS migrations."
-          uv run ./manage.py lms migrate
-          echo "Running the CMS migrations."
-          uv run ./manage.py cms migrate
+          set -o pipefail
+
+          load_cached_schema() {
+            if [[ -s migrations-schema.sql ]]; then
+              echo "Restoring cached schema ($(du -h migrations-schema.sql | cut -f1))."
+              docker exec -i ${{ job.services.mysql.id }} mysql -uedxapp001 -ppassword edxapp < migrations-schema.sql
+            else
+              echo "No cached schema; migrating from an empty database."
+            fi
+          }
+
+          reset_database() {
+            docker exec ${{ job.services.mysql.id }} mysql -uroot -prootpw -e "
+              DROP DATABASE IF EXISTS edxapp;
+              CREATE DATABASE edxapp;
+              GRANT ALL ON edxapp.* TO 'edxapp001'@'%';"
+          }
+
+          run_migrations() {
+            uv run ./manage.py lms migrate && uv run ./manage.py cms migrate
+          }
+
+          load_cached_schema
+          if ! run_migrations; then
+            # A restored schema can be unusable -- a migration squashed, renamed
+            # or removed since the dump was taken leaves django_migrations
+            # describing a graph that no longer exists. Fall back to the cold
+            # path rather than reporting a migration failure that is really a
+            # stale cache, which would be indistinguishable from a real break.
+            echo "::warning::Incremental migration failed; retrying from an empty database."
+            reset_database
+            run_migrations
+          fi
+
+          echo "Dumping schema for the next run."
+          docker exec ${{ job.services.mysql.id }} mysqldump -uedxapp001 -ppassword \
+            --no-tablespaces --single-transaction --routines edxapp > migrations-schema.sql
 
   # This job aggregates test results. It's the required check for branch protection.
   # https://github.com/marketplace/actions/alls-green#why
@@ -115,6 +212,7 @@ jobs:
     name: Migrations checks successful
     if: always()
     needs:
+      - changed
       - check_migrations
     runs-on: ubuntu-24.04
     steps:
@@ -123,3 +221,7 @@ jobs:
         uses: re-actors/alls-green@05ac9388f0aebcb5727afa17fcccfecd6f8ec5fe
         with:
           jobs: ${{ toJSON(needs) }}
+          # check_migrations is skipped on pull requests that touch no migration
+          # or model file. allowed-skips keeps this required check green in that
+          # case, while a genuine failure still fails it.
+          allowed-skips: check_migrations

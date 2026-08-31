@@ -55,6 +55,13 @@ from xmodule.data import CertificatesDisplayBehaviors
 from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory
 
+# Fixed URLs for ddt parameterization. These must be stable across processes:
+# ddt puts trivial values (str/bool/None/numbers) into the generated test name,
+# so a random URL would produce different node IDs in each pytest-xdist worker.
+TEST_URL_A = "example.com/test-url-a"
+TEST_URL_B = "example.com/test-url-b"
+TEST_URL_C = "example.com/test-url-c"
+
 
 class LearnerDashboardBaseTest(SharedModuleStoreTestCase):
     """Base class for common setup"""
@@ -395,11 +402,14 @@ class TestEnrollmentSerializer(LearnerDashboardBaseTest):
 
         self.assertEqual(output["isAuditAccessExpired"], should_be_expired)  # noqa: PT009
 
+    # Literal URLs, not random_url(): ddt embeds trivial values in the generated
+    # test name, so a per-process random URL gives each pytest-xdist worker a
+    # different node ID and collection no longer matches across workers.
     @ddt.data(
-        (random_url(), True, uuid4(), True),
+        (TEST_URL_A, True, uuid4(), True),
         (None, True, uuid4(), False),
-        (random_url(), False, uuid4(), False),
-        (random_url(), True, None, False),
+        (TEST_URL_B, False, uuid4(), False),
+        (TEST_URL_C, True, None, False),
     )
     @ddt.unpack
     def test_user_can_upgrade(
@@ -647,9 +657,10 @@ class TestCertificateSerializer(LearnerDashboardBaseTest):
         # Then isDownloadable should be calculated correctly
         self.assertEqual(output_data["isDownloadable"], is_downloadable_expected)  # noqa: PT009
 
+    # Literal URLs -- see the note on test_user_can_upgrade above.
     @ddt.data(
-        (True, random_url()),
-        (False, random_url()),
+        (True, TEST_URL_A),
+        (False, TEST_URL_B),
         (True, None),
         (False, None),
     )

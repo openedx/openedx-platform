@@ -21,6 +21,10 @@ jobs:
     name: ${{ matrix.shard_name }}(py=${{ matrix.python-version }},dj=${{ matrix.django-version }},mongo=${{ matrix.mongo-version }})
     runs-on: ${{ matrix.os-version }}
     strategy:
+      # One shard failing shouldn't cancel the other nine. At ~20 min a run,
+      # seeing every failing shard at once is worth more than the runner
+      # minutes saved by bailing early.
+      fail-fast: false
       matrix:
         python-version:
           - "3.12"
@@ -119,6 +123,12 @@ jobs:
             echo "report_log_arg=" >> $GITHUB_ENV
           fi
 
+      - name: report available parallelism
+        shell: bash
+        run: |
+          echo "nproc: $(nproc)"
+          uv run python -c "import os, psutil; print('logical:', os.cpu_count(), 'physical:', psutil.cpu_count(logical=False))"
+
       - name: run tests
         shell: bash
         run: |
@@ -126,7 +136,20 @@ jobs:
           # (~3.7k lines of noise). The .coverage data file is still written and
           # uploaded as an artifact for the combined `coverage` job below, which
           # is what reports to codecov.
-          uv run python -Wd -m pytest -p no:randomly --ds=${{ env.settings_path }} ${{ env.unit_test_paths }} \
+          #
+          # -n logical spreads the shard across every vCPU on the runner; without
+          # it pytest used a single core and left ~75% of the runner idle.
+          #
+          # --dist loadfile groups by module, not by class. ModuleStoreIsolationMixin
+          # keeps process-global stacks (__old_modulestores, __old_contentstores,
+          # __settings_overrides) on top of Django's override_settings stack, and both
+          # SharedModuleStoreTestCase.setUpClass and ModuleStoreTestCase.setUp push onto
+          # them, so unwinding has to stay strictly LIFO. Splitting a module's classes
+          # across workers (loadscope) produced interleavings that broke that nesting
+          # and left settings restored to the wrong object. Keeping whole files together
+          # preserves the within-file ordering the stacks rely on.
+          uv run python -Wd -m pytest -p no:randomly -n logical --dist loadfile \
+            --ds=${{ env.settings_path }} ${{ env.unit_test_paths }} \
             --cov=. --cov-report="" ${{ env.report_log_arg }}
 
       - name: Upload pytest timing report
@@ -164,66 +187,16 @@ jobs:
           path: reports/${{ matrix.shard_name }}_${{ matrix.python-version }}_${{ matrix.django-version }}_${{ matrix.mongo-version }}_${{ matrix.os-version }}.coverage
           overwrite: true
 
-  collect-and-verify:
+  verify-shard-coverage:
+    name: verify shard coverage
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
-
-      - name: install system requirements
-        run: |
-          sudo apt-get update && sudo apt-get install libxmlsec1-dev
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
-        with:
-          enable-cache: true
-          python-version: "3.12"
-
-      - name: install requirements
-        run: make test-requirements
-
-      - name: collect tests from all modules
-        shell: bash
-        run: |
-          echo "root_cms_unit_tests_count=$(uv run pytest --disable-warnings --collect-only --ds=cms.envs.test cms/ -q | head -n -2 | wc -l)" >> $GITHUB_ENV
-          echo "root_lms_unit_tests_count=$(uv run pytest --disable-warnings --collect-only --ds=lms.envs.test lms/ openedx/ common/djangoapps/ xmodule/ -q | head -n -2 | wc -l)" >> $GITHUB_ENV
-
-      - name: get GHA unit test paths
-        shell: bash
-        run: |
-          echo "cms_unit_test_paths=$(uv run python scripts/gha_unit_tests_collector.py --cms-only)" >> $GITHUB_ENV
-          echo "lms_unit_test_paths=$(uv run python scripts/gha_unit_tests_collector.py --lms-only)" >> $GITHUB_ENV
-
-      - name: collect tests from GHA unit test shards
-        shell: bash
-        run: |
-          echo "cms_unit_tests_count=$(uv run pytest --disable-warnings --collect-only --ds=cms.envs.test ${{ env.cms_unit_test_paths }} -q | head -n -2 | wc -l)" >> $GITHUB_ENV
-          echo "lms_unit_tests_count=$(uv run pytest --disable-warnings --collect-only --ds=lms.envs.test ${{ env.lms_unit_test_paths }} -q | head -n -2 | wc -l)" >> $GITHUB_ENV
-
-      - name: add unit tests count
-        shell: bash
-        run: |
-          echo "root_all_unit_tests_count=$((${{ env.root_cms_unit_tests_count }}+${{ env.root_lms_unit_tests_count }}))" >> $GITHUB_ENV
-          echo "shards_all_unit_tests_count=$((${{ env.cms_unit_tests_count }}+${{ env.lms_unit_tests_count }}))" >> $GITHUB_ENV
-
-      - name: print unit tests count
-        shell: bash
-        run: |
-          echo CMS unit tests from root: ${{ env.root_cms_unit_tests_count }}
-          echo LMS unit tests from root: ${{ env.root_lms_unit_tests_count }}
-          echo CMS unit tests from shards: ${{ env.cms_unit_tests_count }}
-          echo LMS unit tests from shards: ${{ env.lms_unit_tests_count }}
-          echo All root unit tests count: ${{ env.root_all_unit_tests_count }}
-          echo All shards unit tests count: ${{ env.shards_all_unit_tests_count }}
-
-      - name: fail the check
-        shell: bash
-        if: ${{ env.root_all_unit_tests_count != env.shards_all_unit_tests_count }}
-        run: |
-          echo "::error title='Unit test modules in unit-test-shards.json (unit-tests.yml workflow) are outdated'::unit tests running in unit-tests
-          workflow don't match the count for unit tests for entire openedx-platform suite, please update the unit-test-shards.json under .github/workflows
-          to add any missing apps and match the count. for more details please take a look at scripts/gha-shards-readme.md"
-          exit 1
+      # Replaces collect-and-verify, which installed every dependency and ran
+      # two full pytest collections (~2 min) to compare test counts. This reads
+      # the file tree in a few seconds and names the directory that is missing.
+      - name: check every test directory belongs to a shard
+        run: python3 scripts/verify_test_suite_coverage.py
 
   # This job aggregates test results. It's the required check for branch protection.
   # https://github.com/marketplace/actions/alls-green#why
@@ -232,7 +205,7 @@ jobs:
     name: Unit tests successful
     runs-on: ubuntu-24.04
     if: always()
-    needs: [run-tests]
+    needs: [run-tests, verify-shard-coverage]
     steps:
       - name: Decide whether the needed jobs succeeded or failed
         # uses: re-actors/alls-green@v1.2.1

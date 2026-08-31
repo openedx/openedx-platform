@@ -89,8 +89,14 @@ class BaseCoursewareTests(SharedModuleStoreTestCase):
 
     @classmethod
     def tearDownClass(cls):
-        super().tearDownClass()
+        # Delete the course before ending modulestore isolation, not after.
+        # super().tearDownClass() tears the isolation down and drops the mongo
+        # collections, so a delete_course() after it operates on a modulestore
+        # that no longer holds this course and raises -- which aborts the rest
+        # of tearDownClass and leaves the class's settings override on the
+        # global stack for the remainder of the process.
         cls.store.delete_course(cls.course.id, cls.user.id)
+        super().tearDownClass()
 
     def setUp(self):
         super().setUp()

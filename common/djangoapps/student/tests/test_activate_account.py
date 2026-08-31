@@ -7,6 +7,7 @@ from uuid import uuid4
 
 from django.conf import settings
 from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
+from django.core.cache import cache
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils.http import urlencode
@@ -24,6 +25,13 @@ class TestActivateAccount(TestCase):
 
     def setUp(self):
         super().setUp()
+        # django_ratelimit counts attempts in the Django cache, which is not
+        # rolled back between tests the way the database is. Left over counts
+        # from earlier tests in the same process make the login views answer
+        # 400/429 with "Too many failed login attempts". Serial ordering hid
+        # this; under pytest-xdist a different mix of tests shares the worker.
+        # test_reset_password.py in this package already does the same thing.
+        cache.clear()
         self.username = "jack"
         self.email = "jack@fake.edx.org"
         self.password = "test-password"

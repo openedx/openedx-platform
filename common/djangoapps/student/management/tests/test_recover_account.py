@@ -4,9 +4,11 @@ Test cases for recover account management command
 import re
 from tempfile import NamedTemporaryFile
 
+import crum
 import pytest
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.contrib.sites.models import Site
 from django.core import mail
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.management import CommandError, call_command
@@ -30,6 +32,23 @@ class RecoverAccountTests(TestCase):
     def setUp(self):
         super().setUp()
         self.user = UserFactory.create(username='amy', email='amy@edx.com', password='password')
+
+        # recover_account sends an ACE message, and the ace template tags resolve
+        # the "current" request through crum's thread-local, which no test resets.
+        # emulate_http_request() sets .site on the request it finds there, so
+        # whether rendering succeeds depends on what an earlier test happened to
+        # leave behind: a request without .site makes the tags raise, the command
+        # swallows it as "Unable to send email", and mail.outbox stays empty.
+        # Install a well-formed request instead of inheriting one.
+        request = self.request_factory.get('/')
+        request.site = Site.objects.get_current()
+        request.user = self.user
+        previous_request = crum.get_current_request()
+        crum.set_current_request(request)
+        # Restore whatever was there rather than clearing to None: other tests in
+        # this process may be relying on it, and it is not this class's business
+        # to change that -- only to stop depending on it itself.
+        self.addCleanup(crum.set_current_request, previous_request)
 
     def _write_test_csv(self, csv, lines):
         """Write a test csv file with the lines provided"""

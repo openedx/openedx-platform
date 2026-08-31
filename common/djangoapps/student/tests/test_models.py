@@ -185,7 +185,7 @@ class CourseEnrollmentTests(SharedModuleStoreTestCase):  # pylint: disable=missi
         assert enrollment.upgrade_deadline == enrollment.schedule.upgrade_deadline
 
     @skip_unless_lms
-    @ddt.data(*(set(CourseMode.ALL_MODES) - set(CourseMode.AUDIT_MODES)))
+    @ddt.data(*sorted(set(CourseMode.ALL_MODES) - set(CourseMode.AUDIT_MODES)))
     def test_upgrade_deadline_for_non_upgradeable_enrollment(self, mode):
         """ The property should return None if an upgrade cannot be upgraded. """
         enrollment = CourseEnrollmentFactory(course_id=self.course.id, mode=mode)  # pylint: disable=no-member
@@ -831,7 +831,7 @@ class TestUserPostSaveCallback(SharedModuleStoreTestCase):
         super().setUp()
         self.course = CourseFactory.create()
 
-    @ddt.data(*(set(CourseMode.ALL_MODES) - set(CourseMode.AUDIT_MODES)))
+    @ddt.data(*sorted(set(CourseMode.ALL_MODES) - set(CourseMode.AUDIT_MODES)))
     def test_paid_user_not_downgraded_on_activation(self, mode):
         """
         Make sure that students who are already enrolled + have paid do not get downgraded to audit mode

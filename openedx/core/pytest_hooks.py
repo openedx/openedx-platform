@@ -47,6 +47,14 @@ def pytest_sessionfinish(session):
     Since multiple pytests are running,
     this makes sure warnings from different run are not overwritten
     """
+    # Under pytest-xdist this hook fires on every worker as well as on the
+    # controller. Only the controller holds the aggregated report, so the
+    # workers bail out here; otherwise they race each other for the next free
+    # file name and leave behind partial files that the warning report job
+    # would then double-count.
+    if os.environ.get("PYTEST_XDIST_WORKER"):
+        return
+
     dir_path = "test_root/log"
     file_name_postfix = "pytest_warnings"
     num = 0

@@ -8,6 +8,7 @@ from unittest import mock
 import ddt
 import nh3
 from django.conf import settings
+from django.core.cache import cache
 from django.test import TestCase
 from django.test.utils import override_settings
 from django.urls import reverse
@@ -26,6 +27,13 @@ class LogoutTests(TestCase):
     def setUp(self):
         """ Create a course and user, then log in. """
         super().setUp()
+        # django_ratelimit counts attempts in the Django cache, which is not
+        # rolled back between tests the way the database is. Left over counts
+        # from earlier tests in the same process make the login views answer
+        # 400/429 with "Too many failed login attempts". Serial ordering hid
+        # this; under pytest-xdist a different mix of tests shares the worker.
+        # test_reset_password.py in this package already does the same thing.
+        cache.clear()
         self.user = UserFactory()
         self.client.login(username=self.user.username, password='test')
 

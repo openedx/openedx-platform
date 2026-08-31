@@ -16,7 +16,15 @@ from xmodule.partitions.partitions import UserPartitionError  # pylint: disable=
 
 
 class TestContentTypeGatingPartition(CacheIsolationTestCase):  # pylint: disable=missing-class-docstring
-    def setUp(self):  # pylint: disable=super-method-not-called
+    def setUp(self):
+        # CacheIsolationTestCase.setUp() is what clears the caches and registers
+        # the cleanup that clears them again. Skipping it opted this class out of
+        # the isolation its base class exists to provide, so ContentTypeGatingConfig
+        # -- a ConfigurationModel, which caches current() -- was answered from
+        # whatever an earlier test had cached. That made
+        # test_create_content_gating_partition_disabled see enabled=True and build
+        # a partition where it asserts None.
+        super().setUp()
         self.course_key = CourseKey.from_string('course-v1:test+course+key')
         CourseOverviewFactory.create(id=self.course_key)
 
@@ -49,6 +57,13 @@ class TestContentTypeGatingPartition(CacheIsolationTestCase):  # pylint: disable
 
     def test_create_content_gating_partition_no_scheme_installed(self):
         mock_course = Mock(id=self.course_key, user_partitions={})
+        # enabled_for_course() starts with `if not correct_modes_for_fbe(...)`,
+        # so the course needs audit and verified modes before the config's
+        # enabled=True has any effect. Without them this returns None at the
+        # first branch and never reaches the code under test. This test asserted None and so passed either way, but was
+        # never actually exercising the UserPartitionError branch it patches.
+        CourseModeFactory.create(course_id=mock_course.id, mode_slug='audit')
+        CourseModeFactory.create(course_id=mock_course.id, mode_slug='verified')
         ContentTypeGatingConfig.objects.create(enabled=True, enabled_as_of=datetime(2018, 1, 1))
 
         with patch(
@@ -62,6 +77,14 @@ class TestContentTypeGatingPartition(CacheIsolationTestCase):  # pylint: disable
         mock_course = Mock(
             id=self.course_key, user_partitions={Mock(name='partition', id=CONTENT_GATING_PARTITION_ID): object()}
         )
+        # enabled_for_course() starts with `if not correct_modes_for_fbe(...)`,
+        # so the course needs audit and verified modes before the config's
+        # enabled=True has any effect. Without them this returns None at the
+        # first branch and never reaches the code under test. It passed
+        # previously only because the ConfigurationModel cache was polluted by
+        # test_create_content_gating_partition_happy_path, which does create them.
+        CourseModeFactory.create(course_id=mock_course.id, mode_slug='audit')
+        CourseModeFactory.create(course_id=mock_course.id, mode_slug='verified')
         ContentTypeGatingConfig.objects.create(enabled=True, enabled_as_of=datetime(2018, 1, 1))
 
         with patch('openedx.features.content_type_gating.partitions.LOG') as mock_log:

@@ -4,6 +4,7 @@ Test that various filters are fired for the vies in the user_authn app.
 from unittest.mock import Mock, patch
 
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 from django.test import override_settings
 from django.urls import reverse
 from openedx_filters import PipelineStep
@@ -565,6 +566,13 @@ class PostLoginRedirectFiltersTest(UserAPITestCase):
 
     def setUp(self):  # pylint: disable=arguments-differ
         super().setUp()
+        # django_ratelimit counts attempts in the Django cache, which is not
+        # rolled back between tests the way the database is. Left over counts
+        # from earlier tests in the same process make the login views answer
+        # 400/429 with "Too many failed login attempts". Serial ordering hid
+        # this; under pytest-xdist a different mix of tests shares the worker.
+        # test_reset_password.py in this package already does the same thing.
+        cache.clear()
         self.user = UserFactory.create(
             username="test",
             email="test@example.com",

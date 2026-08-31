@@ -453,12 +453,19 @@ class TestSafeSessionMiddleware(TestSafeSessionsLogMixin, CacheIsolationTestCase
     @patch("openedx.core.djangoapps.safe_sessions.middleware.set_custom_attribute")
     def test_warn_with_verbose_logging(self, mock_set_custom_attribute):
         self.set_up_for_success()
-        self.request.user = UserFactory.create()
+        # The ids are read back from the users rather than hard-coded as 1 and 2:
+        # they come from an auto-increment column, so they are only 1 and 2 when
+        # nothing earlier in the process has created a user. That holds in a
+        # fixed serial order and stops holding as soon as the order changes.
+        session_user = self.user
+        request_user = self.request.user = UserFactory.create()
         with self.assert_logged('SafeCookieData: Changing request user. ', log_level='warning'):
             SafeSessionMiddleware(get_response=lambda request: None).process_response(
                 self.request, self.client.response
             )
-        mock_set_custom_attribute.assert_has_calls([call('safe_sessions.user_id_list', '1,2')])
+        mock_set_custom_attribute.assert_has_calls([
+            call('safe_sessions.user_id_list', f'{session_user.id},{request_user.id}')
+        ])
 
     @patch("openedx.core.djangoapps.safe_sessions.middleware.LOG_REQUEST_USER_CHANGES", False)
     def test_warn_without_verbose_logging(self):
@@ -474,7 +481,10 @@ class TestSafeSessionMiddleware(TestSafeSessionsLogMixin, CacheIsolationTestCase
     @patch("openedx.core.djangoapps.safe_sessions.middleware.cache")
     def test_user_change_with_header_logging(self, mock_cache):
         self.set_up_for_success()
-        self.request.user = UserFactory.create()
+        # See the note in test_warn_with_verbose_logging: these ids are
+        # auto-increment values, not constants.
+        session_user = self.user
+        request_user = self.request.user = UserFactory.create()
         with self.assert_logged('SafeCookieData: Changing request user. ', log_level='warning'):
             SafeSessionMiddleware(get_response=lambda request: None).process_response(
                 self.request, self.client.response
@@ -483,8 +493,8 @@ class TestSafeSessionMiddleware(TestSafeSessionsLogMixin, CacheIsolationTestCase
         #   simply assert that the cache is set (here) and checked (below).
         mock_cache.set_many.assert_called_with(
             {
-                'safe_sessions.middleware.recent_user_change_detected_1': True,
-                'safe_sessions.middleware.recent_user_change_detected_2': True
+                f'safe_sessions.middleware.recent_user_change_detected_{session_user.id}': True,
+                f'safe_sessions.middleware.recent_user_change_detected_{request_user.id}': True
             }, 300
         )
 
@@ -494,7 +504,9 @@ class TestSafeSessionMiddleware(TestSafeSessionsLogMixin, CacheIsolationTestCase
         # Note: The test cache is not returning True because it is not retaining its values
         #   for some reason. Rather than asserting that we log the header appropriately, we'll
         #   simply verify that we are checking the cache.
-        mock_cache.get.assert_called_with('safe_sessions.middleware.recent_user_change_detected_1', False)
+        mock_cache.get.assert_called_with(
+            f'safe_sessions.middleware.recent_user_change_detected_{session_user.id}', False
+        )
 
     @override_settings(LOG_REQUEST_USER_CHANGE_HEADERS=True)
     @patch("openedx.core.djangoapps.safe_sessions.middleware.LOG_REQUEST_USER_CHANGES", True)

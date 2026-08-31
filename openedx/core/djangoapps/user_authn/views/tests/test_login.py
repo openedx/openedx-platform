@@ -989,6 +989,13 @@ class LoginSessionViewTest(OpenEdxEventsTestMixin, ApiTestCase):
 
     def setUp(self):
         super().setUp()
+        # django_ratelimit counts attempts in the Django cache, which is not
+        # rolled back between tests the way the database is. Left over counts
+        # from earlier tests in the same process make the login views answer
+        # 400/429 with "Too many failed login attempts". Serial ordering hid
+        # this; under pytest-xdist a different mix of tests shares the worker.
+        # test_reset_password.py in this package already does the same thing.
+        cache.clear()
         self.url = reverse("user_api_login_session", kwargs={'api_version': 'v1'})
         self.url_v2 = reverse("user_api_login_session", kwargs={'api_version': 'v2'})
         self.user = UserFactory.create(username=self.USERNAME, email=self.EMAIL, password=self.PASSWORD)

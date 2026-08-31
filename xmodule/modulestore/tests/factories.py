@@ -46,7 +46,11 @@ class XModuleFactoryLock(threading.local):
 
     def __init__(self):
         super().__init__()
-        self._enabled = False
+        # A count rather than a flag: modulestore isolation nests (a
+        # SharedModuleStoreTestCase class-level isolation can contain further
+        # isolations), and with a plain boolean the inner disable() switched
+        # factories off while the outer scope was still using them.
+        self._depth = 0
 
     def enable(self):
         """
@@ -54,20 +58,20 @@ class XModuleFactoryLock(threading.local):
         where the modulestore will be reset at the end of the test (such
         as inside ModuleStoreTestCase).
         """
-        self._enabled = True
+        self._depth += 1
 
     def disable(self):
         """
         Disable XModuleFactories. This should be called once the data
         from the factory has been cleaned up.
         """
-        self._enabled = False
+        self._depth = max(0, self._depth - 1)
 
     def is_enabled(self):
         """
         Return whether XModuleFactories are enabled.
         """
-        return self._enabled
+        return self._depth > 0
 
 
 XMODULE_FACTORY_LOCK = XModuleFactoryLock()
