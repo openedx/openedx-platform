@@ -19,7 +19,7 @@ constraints = [
     { name = "django-debug-toolbar", specifier = "<6.0.0" },
     { name = "django-oauth-toolkit", specifier = "==1.7.1" },
     { name = "django-stubs", specifier = "<6" },
-    { name = "edx-enterprise", specifier = "==8.9.2" },
+    { name = "edx-enterprise", specifier = "==8.9.4" },
     { name = "elasticsearch", specifier = "==7.9.1" },
     { name = "libsass", specifier = "==0.10.0" },
     { name = "lxml", specifier = "==5.3.2" },
@@ -1905,7 +1905,7 @@ wheels = [
 
 [[package]]
 name = "edx-enterprise"
-version = "8.9.2"
+version = "8.9.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "bleach" },
@@ -1958,9 +1958,9 @@ dependencies = [
     { name = "tincan" },
     { name = "unicodecsv" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/00/bc/c5d43697f518e0f543781228d6e58892788c868cd218658aeaae371b0dfe/edx_enterprise-8.9.2.tar.gz", hash = "sha256:04c707debfb2970150c3611e8561198a32a3baba454b84ce0838f1662f5ce75d", size = 5164812, upload-time = "2026-08-21T14:41:26.226Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/3e/3a/7b57ce0e6781268bab6035b0a85b769a01e13fdfd231de7a447e51eaf7c0/edx_enterprise-8.9.4.tar.gz", hash = "sha256:22ff6461888a496bdeaba57623cb58ea6114cefa4479d7bf821a281be75a4db1", size = 5166016, upload-time = "2026-08-28T13:08:06.996Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/1e/e0/93ba79e1976596dfa1bfe962a444d960fd1c35d84c6d55c8ee854df4de83/edx_enterprise-8.9.2-py3-none-any.whl", hash = "sha256:96dcacc4f454fd3109a8cd05e732aa5d3c140b2acb0236636a570448481f02ee", size = 5557964, upload-time = "2026-08-21T14:41:22.29Z" },
+    { url = "https://files.pythonhosted.org/packages/fa/ac/a44afffd844843be1241faa1a8de145e83d9cb284da026c7b248268fcfa0/edx_enterprise-8.9.4-py3-none-any.whl", hash = "sha256:ab81432141cc106e9319e76be9da9516f7acb3f577635016355f58b6ad8d2ce8", size = 5559792, upload-time = "2026-08-28T13:08:03.667Z" },
 ]
 
 [[package]]
@@ -2015,7 +2015,7 @@ wheels = [
 
 [[package]]
 name = "edx-lint"
-version = "6.1.0"
+version = "6.2.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click" },
@@ -2027,9 +2027,9 @@ dependencies = [
     { name = "six" },
     { name = "tomlkit" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ee/f0/834dcbb9d847d5654c1fc22dad18813eef66046d521e70d3d21be5a8647f/edx_lint-6.1.0.tar.gz", hash = "sha256:f879f55ed0a94222dee69a4361833f7de6b91576256881eeb35afbed2a85dfa2", size = 50843, upload-time = "2026-04-27T14:05:06.491Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/da/e2/20b4782eba5bbbaeb949877666f871912db05fb22cee2eafdbc83566cffc/edx_lint-6.2.0.tar.gz", hash = "sha256:2ce94b0b1235024e7714792442ea674e1bbe2877e7ca2ca970609e74aa73dfdf", size = 55456, upload-time = "2026-08-18T12:40:35.178Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/7a/3c/dd55e7200bab2b60d993f76cf540b4098e02ce9d300367b395d936d48152/edx_lint-6.1.0-py3-none-any.whl", hash = "sha256:937eeee9c440bf4fbcbdee8553ee11d11a6c675e0834fe43f27174457de7c84a", size = 58548, upload-time = "2026-04-27T14:05:05.167Z" },
+    { url = "https://files.pythonhosted.org/packages/cf/f3/72bbb973cb654aa9d8291c438dd02b21ffb3bf2bdc9e653f9ea9048e3b20/edx_lint-6.2.0-py3-none-any.whl", hash = "sha256:0e1491f9a049927e35eb05a0fd33464b4ec912b83e387568e37f4ce5d10acb30", size = 64109, upload-time = "2026-08-18T12:40:34.102Z" },
 ]
 
 [[package]]

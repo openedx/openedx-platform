@@ -42,6 +42,7 @@ from openedx_authz.constants.permissions import (
     COURSES_PUBLISH_COURSE_CONTENT,
     COURSES_VIEW_COURSE,
     COURSES_VIEW_COURSE_UPDATES,
+    COURSES_VIEW_GROUP_CONFIGURATIONS,
     COURSES_VIEW_PAGES_AND_RESOURCES,
 )
 from organizations.api import add_organization_course, ensure_organization
@@ -1913,13 +1914,25 @@ def group_configurations_list_handler(request, course_key_string):
         json: create new group configuration
     """
     course_key = CourseKey.from_string(course_key_string)
+
+    if request.method == 'GET':
+        # GET only redirects to the MFE (html) or returns 406 (json)
+        if not user_has_course_permission(
+            user=request.user,
+            authz_permission=COURSES_VIEW_GROUP_CONFIGURATIONS.identifier,
+            course_key=course_key,
+            legacy_permission=LegacyAuthoringPermission.READ,
+        ):
+            raise PermissionDenied()
+        if 'text/html' in request.META.get('HTTP_ACCEPT', 'text/html'):
+            return redirect(get_group_configurations_url(course_key))
+        return HttpResponse(status=406)
+
     store = modulestore()
     with store.bulk_operations(course_key):
         course = get_course_and_check_manage_group_configurations_access(course_key, request.user)
 
-        if 'text/html' in request.META.get('HTTP_ACCEPT', 'text/html'):
-            return redirect(get_group_configurations_url(course_key))
-        elif "application/json" in request.META.get('HTTP_ACCEPT'):
+        if "application/json" in request.META.get('HTTP_ACCEPT'):
             if request.method == 'POST':
                 # create a new group configuration for the course
                 try:

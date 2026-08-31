@@ -7,6 +7,7 @@ import logging
 import os
 from pprint import pformat
 
+from django.conf import settings
 from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.core.management.base import BaseCommand, CommandError
 
@@ -53,7 +54,10 @@ class Command(BaseCommand):
         if single_email:
             successfully_verified = self._add_user_to_manual_verification(single_email)
             if successfully_verified is False:
-                log.error(f'Manual verification of {single_email} failed')
+                user_identifier_for_log = (
+                    '[REDACTED]' if getattr(settings, 'SQUELCH_PII_IN_LOGS', False) else single_email
+                )
+                log.error('Manual verification of %s failed', user_identifier_for_log)
             return
 
         email_ids_file = options['email_ids_file']
@@ -70,7 +74,10 @@ class Command(BaseCommand):
                 len(failed_emails),
                 total_emails
             ))
-            log.error(f'Failed emails:{pformat(failed_emails)}')
+            failed_emails_for_log = (
+                '[REDACTED]' if getattr(settings, 'SQUELCH_PII_IN_LOGS', False) else pformat(failed_emails)
+            )
+            log.error('Failed emails for manual verification:%s', failed_emails_for_log)
         else:
             log.info(f'Successfully generated manual verification for {total_emails} emails.')
 
@@ -122,7 +129,8 @@ class Command(BaseCommand):
                     status='approved',
                 ))
             else:
-                log.info(f'Skipping email {user.email}, existing verification found.')
+                user_identifier_for_log = user.id if getattr(settings, 'SQUELCH_PII_IN_LOGS', False) else user.email
+                log.info('Skipping user %s, existing verification found.', user_identifier_for_log)
         ManualVerification.objects.bulk_create(verifications_to_create)
         failed_emails = set(email_ids) - set(users.values_list('email', flat=True))
         return list(failed_emails)
@@ -147,5 +155,6 @@ class Command(BaseCommand):
             )
             return True
         except User.DoesNotExist:
-            log.error(f'Tried to verify email {email_id}, but user not found')
+            email_for_log = '[REDACTED]' if getattr(settings, 'SQUELCH_PII_IN_LOGS', False) else email_id
+            log.error('Tried to verify email %s, but user not found', email_for_log)
             return False
