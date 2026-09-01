@@ -60,6 +60,15 @@ class CourseAdvanceSettingViewTest(CourseTestCase, MilestonesTestCaseMixin):
         error = self.get_and_check_developer_response(response)
         assert error == "You do not have permission to perform this action."
 
+    def test_upstream_sync_field_hidden(self):
+        """
+        Test that a field on UpstreamSyncMixin is excluded (not an exhaustive test).
+        """
+        response = self.client.get(self.url)
+        content = json.loads(response.content.decode("utf-8"))
+        assert "display_name" in content  # Ensure that we are seeing *any* fields
+        assert "upstream_display_name" not in content
+
     @ddt.data(
         ("ENABLE_EDXNOTES", "edxnotes"),
         ("ENABLE_OTHER_COURSE_SETTINGS", "other_course_settings"),
