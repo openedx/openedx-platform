@@ -11,7 +11,7 @@ from collections import defaultdict
 from enum import Enum
 
 import crum
-from config_models.models import ConfigurationModel, cache
+from config_models.models import ConfigurationModel
 from django.conf import settings
 from django.contrib.sites.models import Site
 from django.contrib.sites.requests import RequestSite
@@ -19,6 +19,7 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
+from edx_django_utils.cache.utils import TieredCache
 
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from openedx.core.djangoapps.site_configuration.models import SiteConfiguration
@@ -157,10 +158,9 @@ class StackedConfigurationModel(ConfigurationModel):
             no arguments are supplied).
         """
         cache_key_name = cls.cache_key_name(site, org, org_course, course_key)
-        cached = cache.get(cache_key_name)
-
-        if cached is not None:
-            return cached
+        cached_response = TieredCache.get_cached_response(cache_key_name)
+        if cached_response.is_found and cached_response.value is not None:
+            return cached_response.value
 
         # Raise an error if more than one of site/org/course are specified simultaneously.
         if len([arg for arg in [site, org, org_course, course_key] if arg is not None]) > 1:
@@ -235,7 +235,8 @@ class StackedConfigurationModel(ConfigurationModel):
 
         current = cls(**values)
         current.provenances = {field.name: provenances[field.name] for field in stackable_fields}  # pylint: disable=attribute-defined-outside-init
-        cache.set(cache_key_name, current, cls.cache_timeout)
+
+        TieredCache.set_all_tiers(cache_key_name, current, cls.cache_timeout)
         return current
 
     @classmethod
