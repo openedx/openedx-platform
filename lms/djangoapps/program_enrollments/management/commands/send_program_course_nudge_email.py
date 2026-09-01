@@ -23,6 +23,7 @@ from lms.djangoapps.grades.models import PersistentCourseGrade
 from openedx.core.constants import COURSE_PUBLISHED
 from openedx.core.djangoapps.catalog.utils import get_programs
 from openedx.core.djangoapps.programs.utils import ProgramProgressMeter
+from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.features.enterprise_support.api import get_enterprise_learner_data_from_db
 
 User = get_user_model()
@@ -190,7 +191,10 @@ class Command(BaseCommand):
         if enterprise_customer and enterprise_customer['enable_learner_portal']:
             # If user is an enterprise learner then we want to redirect to B2B course landing page on learner portal.
             recommended_course_url = urljoin(
-                settings.ENTERPRISE_LEARNER_PORTAL_BASE_URL,
+                configuration_helpers.get_value(
+                    'ENTERPRISE_LEARNER_PORTAL_BASE_URL',
+                    settings.ENTERPRISE_LEARNER_PORTAL_BASE_URL,
+                ),
                 '/'.join([enterprise_customer['slug'], 'course', suggested_course['key']]),
             )
         else:

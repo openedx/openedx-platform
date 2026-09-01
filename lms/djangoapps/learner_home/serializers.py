@@ -15,6 +15,7 @@ from rest_framework import serializers
 from common.djangoapps.course_modes.models import CourseMode
 from lms.djangoapps.learner_home.utils import course_progress_url
 from openedx.features.course_experience import course_home_url
+from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from xmodule.data import CertificatesDisplayBehaviors
 
 
@@ -595,8 +596,10 @@ class EnterpriseDashboardSerializer(serializers.Serializer):
 
     def get_url(self, instance):
         return urljoin(
-            settings.ENTERPRISE_LEARNER_PORTAL_BASE_URL,
-            instance["slug"],
+            configuration_helpers.get_value(
+                'ENTERPRISE_LEARNER_PORTAL_BASE_URL',
+                settings.ENTERPRISE_LEARNER_PORTAL_BASE_URL,
+            ),
         )
 
 
