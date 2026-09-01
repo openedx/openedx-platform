@@ -304,7 +304,7 @@ def _studio_wrap_xblock(xblock, view, frag, context, display_name_only=False):
     Wraps the results of rendering an XBlock view in a div which adds a header and Studio action buttons.
     """
     # Allow some imported components to be edited by authors in course.
-    editable_library_components = ["html"]
+    editable_library_components = ["html", "problem"]
     # Only add the Studio wrapper when on the container page. The "Pages" page will remain as is for now.
     if not context.get('is_pages_view', None) and view in PREVIEW_VIEWS:
         root_xblock = context.get('root_xblock')

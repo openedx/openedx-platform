@@ -4,11 +4,13 @@ by reversing group name formats.
 """
 
 import random
+from datetime import timedelta
 from unittest.mock import Mock, patch
 
 import ddt
 from ccx_keys.locator import CCXLocator
 from django.test import RequestFactory
+from django.utils import timezone
 from opaque_keys.edx.locations import CourseLocator
 from openedx_authz.api.data import OrgCourseOverviewGlobData, PlatformCourseOverviewGlobData
 from openedx_authz.api.users import assign_role_to_user_in_scope
@@ -188,6 +190,44 @@ class TestCourseListing(ModuleStoreTestCase):
         # Now count the db queries for staff
         with self.assertNumQueries(2):
             list(_accessible_courses_summary_iter(self.request))
+
+    def test_start_date_filters_reach_get_courses_accessible_to_user(self):
+        """
+        Verify start_date_on_or_after/start_date_on_or_before query params reach
+        CourseOverview.get_all_courses through get_courses_accessible_to_user and allowed_query_params.
+        """
+        GlobalStaff().add_users(self.user)
+
+        today = timezone.now()
+        in_range_course_key = self.store.make_course_key('Org', 'InRangeCourse', 'Run')
+        CourseFactory.create(
+            org=in_range_course_key.org, number=in_range_course_key.course, run=in_range_course_key.run
+        )
+        in_range_course = CourseOverviewFactory.create(id=in_range_course_key, org=in_range_course_key.org, start=today)
+
+        out_of_range_course_key = self.store.make_course_key('Org', 'OutOfRangeCourse', 'Run')
+        CourseFactory.create(
+            org=out_of_range_course_key.org, number=out_of_range_course_key.course, run=out_of_range_course_key.run
+        )
+        out_of_range_course = CourseOverviewFactory.create(
+            id=out_of_range_course_key, org=out_of_range_course_key.org, start=today + timedelta(days=60)
+        )
+
+        request = self.factory.get('/course', {
+            'start_date_on_or_after': (today - timedelta(days=1)).date().isoformat(),
+            'start_date_on_or_before': (today + timedelta(days=1)).date().isoformat(),
+        })
+        request.user = self.user
+        # Since a date param is present, _apply_course_query_filters also runs get_bool_param,
+        # which reads request.query_params; only DRF's Request provides that, and production
+        # traffic carrying these params reaches get_courses_accessible_to_user through a DRF view.
+        request.query_params = request.GET
+
+        courses, __ = get_courses_accessible_to_user(request)
+        course_ids = {course.id for course in courses}
+
+        self.assertIn(in_range_course.id, course_ids)  # noqa: PT009
+        self.assertNotIn(out_of_range_course.id, course_ids)  # noqa: PT009
 
     def test_course_limited_staff_course_listing(self):
         # Setup a new course
