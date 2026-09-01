@@ -240,7 +240,9 @@ class SpecialExamResetViewTest(ModuleStoreTestCase):
         ):
             response = self.client.post(self._url())
         assert response.status_code == status.HTTP_502_BAD_GATEWAY
+        # message is returned under both keys so the consumer surfaces it either way
         assert response.json()['detail'] == message
+        assert response.json()['error'] == message
 
 
 @override_settings(**PROCTORING_SETTINGS)

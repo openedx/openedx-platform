@@ -4278,7 +4278,11 @@ class SpecialExamResetView(DeveloperErrorViewMixin, APIView):
             # attempt from being removed. Surface the typed exception's status and message
             # (e.g. a 502 when the provider is unavailable) so the instructor dashboard can
             # display a descriptive error instead of a generic 500.
-            return Response({'detail': str(err)}, status=err.http_status)
+            # Return the message under both ``detail`` (DRF convention, and what the
+            # instructor-dashboard MFE reads) and ``error`` (the key used by the other
+            # error branches in this view), so it is surfaced regardless of which the
+            # consumer looks at.
+            return Response({'detail': str(err), 'error': str(err)}, status=err.http_status)
 
         return Response(
             {'success': True, 'message': f'Exam attempt reset for user {username}'},
