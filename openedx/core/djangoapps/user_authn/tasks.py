@@ -7,28 +7,40 @@ import logging
 from celery import shared_task
 from celery.exceptions import MaxRetriesExceededError
 from django.conf import settings
-from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
 from django.contrib.sites.models import Site
 from edx_ace import ace
 from edx_ace.errors import RecoverableChannelDeliveryError
 from edx_ace.message import Message
 from edx_django_utils.monitoring import set_code_owner_attribute
+from edx_toggles.toggles import WaffleFlag
 
 from common.djangoapps.track import segment
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.core.djangoapps.user_authn.utils import check_pwned_password
 from openedx.core.lib.celery.task_utils import emulate_http_request
 
-log = logging.getLogger('edx.celery.task')
+log = logging.getLogger("edx.celery.task")
+
+# .. toggle_name: user_authn.enable_ses_for_account_activation
+# .. toggle_implementation: WaffleFlag
+# .. toggle_default: False
+# .. toggle_description: Route account activation emails via SES using ACE.
+# .. toggle_use_cases: opt_in, temporary
+# .. toggle_creation_date: 2026-03-31
+# .. toggle_target_removal_date: None
+# .. toggle_warning: Controls SES routing for account activation emails.
+
+ENABLE_SES_FOR_ACCOUNT_ACTIVATION = WaffleFlag(
+    "user_authn.enable_ses_for_account_activation",
+    __name__,
+)
 
 
 @shared_task
 @set_code_owner_attribute
 def check_pwned_password_and_send_track_event(
-    user_id, password,
-    internal_user=False,
-    is_new_user=False,
-    request_page=''
+    user_id, password, internal_user=False, is_new_user=False, request_page=""
 ):
     """
     Check the Pwned Databases and send its event to Segment.
@@ -36,17 +48,17 @@ def check_pwned_password_and_send_track_event(
     try:
         pwned_properties = check_pwned_password(password)
         if pwned_properties:
-            pwned_properties['internal_user'] = internal_user
-            pwned_properties['new_user'] = is_new_user
-            pwned_properties['user_request_page'] = request_page
-            segment.track(user_id, 'edx.bi.user.pwned.password.status', pwned_properties)
+            pwned_properties["internal_user"] = internal_user
+            pwned_properties["new_user"] = is_new_user
+            pwned_properties["user_request_page"] = request_page
+            segment.track(user_id, "edx.bi.user.pwned.password.status", pwned_properties)
         return pwned_properties
     except Exception:  # pylint: disable=W0703
         log.exception(
             'Unable to get response from pwned password api for user_id: "%s"',
             user_id,
         )
-        return {}  # pylint: disable=raise-missing-from
+        return {}  # lint-amnesty, pylint: disable=raise-missing-from
 
 
 @shared_task(bind=True, default_retry_delay=30, max_retries=2)
@@ -60,39 +72,65 @@ def send_activation_email(self, msg_string, from_address=None, site_id=None):
     max_retries = settings.RETRY_ACTIVATION_EMAIL_MAX_ATTEMPTS
     retries = self.request.retries
 
+    if msg.options is None:
+        msg.options = {}
+
     if from_address is None:
-        from_address = configuration_helpers.get_value('ACTIVATION_EMAIL_FROM_ADDRESS') or (
-            configuration_helpers.get_value('email_from_address', settings.DEFAULT_FROM_EMAIL)
+        from_address = configuration_helpers.get_value("ACTIVATION_EMAIL_FROM_ADDRESS") or (
+            configuration_helpers.get_value("email_from_address", settings.DEFAULT_FROM_EMAIL)
         )
-    msg.options['from_address'] = from_address
+    msg.options["from_address"] = from_address
 
     dest_addr = msg.recipient.email_address
 
     site = Site.objects.get(id=site_id) if site_id else Site.objects.get_current()
     user = User.objects.get(id=msg.recipient.lms_user_id)
 
+    route_via_ses = ENABLE_SES_FOR_ACCOUNT_ACTIVATION.is_enabled()
+    sent_via_ses = False
+
+    if route_via_ses:
+        msg.options["override_default_channel"] = "django_email"
+
     try:
         with emulate_http_request(site=site, user=user):
             ace.send(msg)
+            sent_via_ses = route_via_ses
+
     except RecoverableChannelDeliveryError:
-        log.info('Retrying sending email to user {dest_addr}, attempt # {attempt} of {max_attempts}'.format(  # noqa: UP032  # pylint: disable=line-too-long
-            dest_addr=dest_addr,
-            attempt=retries,
-            max_attempts=max_retries
-        ))
-        try:
-            self.retry(countdown=settings.RETRY_ACTIVATION_EMAIL_TIMEOUT, max_retries=max_retries)
-        except MaxRetriesExceededError:
-            log.error(
-                'Unable to send activation email to user from "%s" to "%s"',
-                from_address,
+        if route_via_ses:
+            log.warning(
+                "SES send failed for %s, falling back to default ACE channel",
                 dest_addr,
-                exc_info=True
+                exc_info=True,
             )
+
+            msg.options.pop("override_default_channel", None)
+
+            with emulate_http_request(site=site, user=user):
+                ace.send(msg)
+                sent_via_ses = False
+
+        else:
+            log.info(f"Retrying sending email to user {dest_addr}, attempt # {retries} of {max_retries}")
+            try:
+                self.retry(countdown=settings.RETRY_ACTIVATION_EMAIL_TIMEOUT, max_retries=max_retries)
+            except MaxRetriesExceededError:
+                log.error(
+                    'Unable to send activation email to user from "%s" to "%s"', from_address, dest_addr, exc_info=True
+                )
+            return
+
     except Exception:
         log.exception(
             'Unable to send activation email to user from "%s" to "%s"',
             from_address,
             dest_addr,
         )
-        raise Exception  # pylint: disable=raise-missing-from  # noqa: B904
+        raise
+
+    log.info(
+        "Activation email for %s sent via %s",
+        dest_addr,
+        "SES" if sent_via_ses else "default ACE channel",
+    )
