@@ -7,6 +7,7 @@ import logging
 import re
 from collections import OrderedDict, defaultdict
 from datetime import datetime
+from io import TextIOWrapper
 from itertools import chain
 from tempfile import TemporaryFile
 from time import time
@@ -351,7 +352,11 @@ class TemporaryFileReportMixin:
         self.context.update_status('TemporaryFileReportMixin - 1: Starting grade report')
         batched_rows = self._batched_rows()
 
-        with TemporaryFile('r+') as success_file, TemporaryFile('r+') as error_file:
+        # Binary temp files, written through a text wrapper. The report store
+        # streams a binary buffer straight to the storage backend, where a text
+        # one has to be read into memory and encoded in full -- which would undo
+        # most of the benefit of spilling to disk in the first place.
+        with TemporaryFile('w+b') as success_file, TemporaryFile('w+b') as error_file:
             self.context.update_status('TemporaryFileReportMixin - 2: Compiling grades into temp files')
             has_errors = self.iter_and_write_batched_rows(batched_rows, success_file, error_file)
 
@@ -360,13 +365,24 @@ class TemporaryFileReportMixin:
 
         return self.context.update_status('TemporaryFileReportMixin - 4: Completed grades')
 
+    @staticmethod
+    def _csv_writer_for(binary_file):
+        """
+        Return a csv.writer over a binary file, plus the wrapper to flush.
+
+        newline='' is the csv module's documented requirement: the writer emits
+        its own line terminators and they must not be translated again.
+        """
+        wrapper = TextIOWrapper(binary_file, encoding='utf-8', newline='', write_through=True)
+        return csv.writer(wrapper), wrapper
+
     def iter_and_write_batched_rows(self, batched_rows, success_file, error_file):
         """
         Iterate through batched rows, writing returned chunks to disk as we go.
         This should hopefully help us avoid out of memory errors.
         """
-        success_writer = csv.writer(success_file)
-        error_writer = csv.writer(error_file)
+        success_writer, success_wrapper = self._csv_writer_for(success_file)
+        error_writer, error_wrapper = self._csv_writer_for(error_file)
 
         # Write headers
         success_writer.writerow(self._success_headers())
@@ -385,6 +401,12 @@ class TemporaryFileReportMixin:
         self.context.task_progress.failed = failed
         self.context.task_progress.attempted = succeeded + failed
         self.context.task_progress.total = self.context.task_progress.attempted
+
+        # Detach rather than close: the wrappers must flush their buffered text
+        # into the temp files before those are read back for upload, but the
+        # temp files themselves stay open and are closed by the caller.
+        success_wrapper.detach()
+        error_wrapper.detach()
 
         return self.context.task_progress.failed > 0
 

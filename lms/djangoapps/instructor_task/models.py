@@ -17,13 +17,14 @@ import hashlib
 import json
 import logging
 import os.path
+from io import BytesIO, TextIOWrapper
 from uuid import uuid4
 
 from botocore.exceptions import ClientError
 from django.apps import apps
 from django.conf import settings
 from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
-from django.core.files.base import ContentFile
+from django.core.files.base import ContentFile, File
 from django.db import models, transaction
 from django.utils.translation import gettext as _
 from model_utils.models import TimeStampedModel
@@ -293,27 +294,57 @@ class DjangoStorageReportStore(ReportStore):
         Store the contents of `buff` in a directory determined by hashing
         `course_id`, and name the file `filename`. `buff` can be any file-like
         object, ready to be read from the beginning.
+
+        A binary buffer is handed to the storage backend as-is, so the backend
+        streams it -- S3Boto3Storage uploads in parts and FileSystemStorage
+        writes in chunks -- and peak memory stays at one chunk rather than the
+        whole report. This matters for grade reports, which can run to hundreds
+        of megabytes on large courses; previously the entire file was read into
+        memory, re-encoded, and copied into a ContentFile before upload, so an
+        on-disk report still cost roughly 3x its size in RAM at the final step.
+
+        A text buffer still works, but has to be read and encoded in full
+        because the storage backends require bytes. Callers handling
+        potentially large reports should pass a binary file.
         """
         path = self.path_to(course_id, filename, parent_dir)
+
+        if self._yields_bytes(buff):
+            self.storage.save(path, File(buff, name=filename))
+            return
+
         # See https://github.com/boto/boto/issues/2868
         # Boto doesn't play nice with unicode in python3
-        buff_contents = buff.read()
+        self.storage.save(path, ContentFile(buff.read().encode('utf-8')))
 
-        if not isinstance(buff_contents, bytes):
-            buff_contents = buff_contents.encode('utf-8')
+    @staticmethod
+    def _yields_bytes(buff):
+        """
+        Return True if reading from `buff` produces bytes rather than str.
 
-        buff = ContentFile(buff_contents)
-
-        self.storage.save(path, buff)
+        Probes with a zero-length read so the buffer is left positioned exactly
+        where it was, rather than inspecting the type -- callers pass a mix of
+        raw file objects, ContentFile and BytesIO, and mode attributes are not
+        consistently present across them.
+        """
+        try:
+            return isinstance(buff.read(0), bytes)
+        except (AttributeError, TypeError, ValueError):
+            return False
 
     def store_rows(self, course_id, filename, rows, parent_dir=''):
         """
         Given a course_id, filename, and rows (each row is an iterable of
         strings), write the rows to the storage backend in csv format.
         """
-        output_buffer = ContentFile('')
-        csvwriter = csv.writer(output_buffer)
+        output_buffer = BytesIO()
+        # newline='' per the csv module's contract; the writer emits its own
+        # line terminators and must not have them translated again.
+        text_wrapper = TextIOWrapper(output_buffer, encoding='utf-8', newline='', write_through=True)
+        csvwriter = csv.writer(text_wrapper)
         csvwriter.writerows(self._get_utf8_encoded_rows(rows))
+        # Detach so closing the wrapper does not close the buffer underneath it.
+        text_wrapper.detach()
         output_buffer.seek(0)
         self.store(course_id, filename, output_buffer, parent_dir)
 
