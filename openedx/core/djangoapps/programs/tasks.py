@@ -16,6 +16,8 @@ from django.core.exceptions import ObjectDoesNotExist
 from edx_django_utils.monitoring import set_code_owner_attribute
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey
+from openedx_events.learning.data import ProgramCertificateData, ProgramData, UserData, UserPersonalData
+from openedx_events.learning.signals import PROGRAM_CERTIFICATE_AWARDED, PROGRAM_CERTIFICATE_REVOKED
 from requests.exceptions import HTTPError
 
 from common.djangoapps.course_modes.models import CourseMode
@@ -364,6 +366,27 @@ def award_program_certificates(self, username):  # pylint: disable=too-many-stat
             try:
                 award_program_certificate(credentials_client, student, program_uuid)
                 LOGGER.info(f"Awarded program certificate to user {student.id} in program {program_uuid}")
+                PROGRAM_CERTIFICATE_AWARDED.send_event(
+                    program_certificate=ProgramCertificateData(
+                        user=UserData(
+                            pii=UserPersonalData(
+                                username=student.username,
+                                email=student.email,
+                                name=student.profile.name,
+                            ),
+                            id=student.id,
+                            is_active=student.is_active,
+                        ),
+                        program=ProgramData(
+                            uuid=program_uuid,
+                            title="",
+                            program_type="",
+                        ),
+                        uuid="",
+                        status="awarded",
+                        url="",
+                    )
+                )
             except HTTPError as exc:
                 if exc.response.status_code == 404:
                     LOGGER.warning(
@@ -669,6 +692,27 @@ def revoke_program_certificates(self, username, course_key):  # pylint: disable=
             try:
                 revoke_program_certificate(credentials_client, username, program_uuid)
                 LOGGER.info(f"Revoked program certificate from user {student.id} in program {program_uuid}")
+                PROGRAM_CERTIFICATE_REVOKED.send_event(
+                    program_certificate=ProgramCertificateData(
+                        user=UserData(
+                            pii=UserPersonalData(
+                                username=student.username,
+                                email=student.email,
+                                name=student.profile.name,
+                            ),
+                            id=student.id,
+                            is_active=student.is_active,
+                        ),
+                        program=ProgramData(
+                            uuid=program_uuid,
+                            title="",
+                            program_type="",
+                        ),
+                        uuid="",
+                        status="revoked",
+                        url="",
+                    )
+                )
             except HTTPError as exc:
                 if exc.response.status_code == 404:
                     LOGGER.warning(
