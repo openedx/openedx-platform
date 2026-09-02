@@ -1,19 +1,24 @@
 """HTTP end-points for the User API. """
 
-from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.db import transaction
 from django.http import HttpResponse
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django_filters.rest_framework import DjangoFilterBackend
+from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
 from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx import locator
 from opaque_keys.edx.keys import CourseKey
 from rest_framework import generics, status, viewsets
-from rest_framework.exceptions import ParseError
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.exceptions import ParseError, ValidationError
+from rest_framework.permissions import IsAdminUser, IsAuthenticated
+from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from common.djangoapps.student.helpers import AccountValidationError
 from openedx.core.djangoapps.django_comment_common.models import Role
 from openedx.core.djangoapps.user_api.models import UserPreference
 from openedx.core.djangoapps.user_api.preferences.api import get_country_time_zones, update_email_opt_in
@@ -22,6 +27,8 @@ from openedx.core.djangoapps.user_api.serializers import (
     UserPreferenceSerializer,
     UserSerializer,
 )
+from openedx.core.djangoapps.user_authn.views.register import create_account_with_params
+from openedx.core.lib.api.authentication import BearerAuthenticationAllowInactiveUser
 from openedx.core.lib.api.permissions import ApiKeyHeaderPermission
 from openedx.core.lib.api.view_utils import require_post_params
 
@@ -161,3 +168,128 @@ class CountryTimeZoneListView(generics.ListAPIView):
     def get_queryset(self):
         country_code = self.request.GET.get("country_code", None)
         return get_country_time_zones(country_code)
+
+
+class UserModifyView(APIView):
+    """
+    **Use Cases**
+
+        Creates a user with email and username, or updates user information by
+        email or username.
+
+    **Example Requests**
+
+        POST /api/user/v1/modify/
+
+        PATCH /api/user/v1/modify/
+
+    **Example POST Response**
+
+        If the request is successful, an HTTP 201 "Created" response is
+        returned along with the user id and username, e.g.:
+
+        {
+            "user_id": 5,
+            "username": "newuser"
+        }
+
+    """
+
+    authentication_classes = (
+        JwtAuthentication,
+        BearerAuthenticationAllowInactiveUser,
+        SessionAuthenticationAllowInactiveUser,
+    )
+    permission_classes = (IsAdminUser,)
+
+    @method_decorator(transaction.non_atomic_requests)
+    def dispatch(self, request, *args, **kwargs):
+        """
+        Decorate with `non_atomic_requests` to work on newer versions of platform.
+        """
+        return super().dispatch(request, *args, **kwargs)
+
+    def post(self, request):
+        """
+        Create a user with email and username.
+        """
+        try:
+            user = create_account_with_params(request, request.data)
+        except (
+            AccountValidationError,
+            ValueError,
+            ValidationError,
+            DjangoValidationError,
+        ) as e:
+            if isinstance(e, ValidationError):
+                message = e.detail
+            else:
+                message = str(e)
+            return Response(
+                data={"error": message},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return Response(
+            data={"user_id": user.id, "username": user.username},
+            status=status.HTTP_201_CREATED,
+        )
+
+    def patch(self, request):
+        """
+        Update user information by email or username.
+        """
+        try:
+            user = self._get_user_by_email_or_username(request)
+            if not user:
+                return Response(
+                    data={"error": "User not found."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+
+            data = request.data.copy()
+            # Remove email and username from the data to prevent changing them
+            data.pop("email", None)
+            data.pop("username", None)
+            # Remove password from the data and handle it separately
+            password = data.pop("password", None)
+            if password:
+                user.set_password(password)
+            user = UserSerializer().update(user, data)
+        except (
+            AccountValidationError,
+            ValueError,
+            ValidationError,
+            DjangoValidationError,
+        ) as e:
+            if isinstance(e, ValidationError):
+                message = e.detail
+            else:
+                message = str(e)
+            return Response(
+                data={"error": message},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return Response(
+            data={"user_id": user.id, "username": user.username},
+            status=status.HTTP_200_OK,
+        )
+
+    @staticmethod
+    def _get_user_by_email_or_username(request):
+        """
+        Get a user by email and/or username.
+
+        Returns None if one doesn't exist.
+        """
+
+        email = request.data.get("email")
+        username = request.data.get("username")
+        if not email and not username:
+            raise ValidationError("email or username must be specified")
+        query = {}
+        if email:
+            query["email"] = email
+        if username:
+            query["username"] = username
+        return User.objects.filter(**query).first()

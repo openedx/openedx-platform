@@ -178,6 +178,9 @@ urlpatterns = [
     path('v1/accounts/replace_usernames/', UsernameReplacementView.as_view(),
          name='username_replacement'
          ),
+    path('v1/modify', user_api_views.UserModifyView.as_view(),
+         name='user_account_modify'
+         ),
     re_path(
         fr'^v1/preferences/{settings.USERNAME_PATTERN}$',
         PreferencesView.as_view(),

@@ -1,27 +1,29 @@
 """Tests for the user API at the HTTP request level. """
 
+import json
+from unittest.mock import patch
+
 import ddt
 import pytest
+from django.contrib.auth import get_user_model
 from django.test.utils import override_settings
 from django.urls import reverse
 from opaque_keys.edx.keys import CourseKey
 from pytz import common_timezones, common_timezones_set, country_timezones
+from rest_framework import status
+from rest_framework.exceptions import ValidationError
 
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.django_comment_common import models
 from openedx.core.djangolib.testing.utils import CacheIsolationTestCase, skip_unless_lms
 from openedx.core.lib.api.test_utils import TEST_API_KEY, ApiTestCase
 from openedx.core.lib.time_zone_utils import get_display_time_zone
-from xmodule.modulestore.tests.django_utils import (
-    SharedModuleStoreTestCase,  # pylint: disable=wrong-import-order
-)
+from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase  # pylint: disable=wrong-import-order
 from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
-from ..accounts.tests.retirement_helpers import (  # pylint: disable=unused-import
-    RetirementTestCase,  # noqa: F401
-    fake_requested_retirement,  # noqa: F401
-    setup_retirement_states,  # noqa: F401
-)
+from ..accounts.tests.retirement_helpers import RetirementTestCase  # pylint: disable=unused-import; noqa: F401
+from ..accounts.tests.retirement_helpers import fake_requested_retirement  # pylint: disable=unused-import; noqa: F401
+from ..accounts.tests.retirement_helpers import setup_retirement_states  # pylint: disable=unused-import; noqa: F401
 from ..models import UserOrgTag
 from ..tests.factories import UserPreferenceFactory
 
@@ -29,6 +31,7 @@ USER_LIST_URI = "/api/user/v1/users/"
 USER_PREFERENCE_LIST_URI = "/api/user/v1/user_prefs/"
 ROLE_LIST_URI = "/api/user/v1/forum_roles/Moderator/users/"
 
+User = get_user_model()
 
 class UserAPITestCase(ApiTestCase):
     """
@@ -649,3 +652,130 @@ class CountryTimeZoneListViewTest(UserApiTestCase):
         assert len(results) == len(common_timezones)
         for time_zone_info in results:
             self._assert_time_zone_is_valid(time_zone_info)
+
+
+@override_settings(ENABLE_AUTHN_REGISTER_HIBP_POLICY=False)
+@ddt.ddt
+class TestUserModifyAPI(ApiTestCase):
+    """Test cases covering the user modification API"""
+
+    PATH = "/api/user/v1/modify"
+
+    DATA = {
+        "name": "Test User",
+        "username": "testuser",
+        "password": "Password1234",
+        "email": "e@mail.com",
+        "terms_of_service": "true",
+        "honor_code": "true",
+    }
+
+    def setUp(self):
+        """Create a test user and log in with that user"""
+        super().setUp()
+
+        self.test_user = UserFactory.create(
+            username="user",
+            email="user@example.com",
+            password="pass",
+            is_staff=True,
+            is_superuser=True,
+        )
+        self.client.login(username="user", password="pass")
+
+    @override_settings(ENFORCE_SAFE_SESSIONS=False)
+    def test_create_new_user_success(self):
+        """Test creating a user with valid information"""
+        response = self.client.post(self.PATH, self.DATA)
+        assert response.status_code == status.HTTP_201_CREATED
+        created_user = User.objects.get(username=self.DATA["username"])
+        assert response.json() == {
+            "user_id": created_user.id,
+            "username": created_user.username,
+        }
+
+    @ddt.data("username", "password", "email", "terms_of_service", "honor_code")
+    def test_create_new_user_error_missing_info(self, missing_field):
+        """Test creating a user with missing required information"""
+        data = self.DATA.copy()
+        data.pop(missing_field)
+        response = self.client.post(self.PATH, data)
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "error" in response.json()
+        assert missing_field in str(response.json()["error"])
+
+    def test_create_new_user_error_invalid_attribute(self):
+        """Test creating a user with an invalid attribute"""
+        data = self.DATA.copy()
+        data["email"] = "invalid-email"
+        response = self.client.post(self.PATH, data)
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "error" in response.json()
+        assert "email" in str(response.json()["error"])
+
+    @ddt.data(
+        ("email", "user@example.com", "existing account"),
+        ("username", "user", "already exists"),
+    )
+    @ddt.unpack
+    def test_create_new_user_error_already_exists(self, field, value, error):
+        """Test creating a user with an invalid attribute"""
+        data = self.DATA.copy()
+        data[field] = value
+        response = self.client.post(self.PATH, data)
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "error" in response.json()
+        assert error in str(response.json()["error"])
+
+    def test_patch_user_success(self):
+        """Test updating a user with a valid lookup field"""
+        user = UserFactory.create(
+            username="patch-user",
+            email="patch@example.com",
+        )
+
+        response = self.client.patch(
+            self.PATH,
+            data=json.dumps({"email": user.email, "first_name": "Updated Name"}),
+            content_type="application/json",
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json() == {"user_id": user.id, "username": user.username}
+        user = User.objects.get(id=user.id)
+        assert user.first_name == "Updated Name"
+
+    def test_patch_user_not_found(self):
+        """Test patch returns 404 when no user matches the lookup fields"""
+        response = self.client.patch(
+            self.PATH,
+            data=json.dumps(
+                {"email": "missing@example.com", "first_name": "Updated Name"}
+            ),
+            content_type="application/json",
+        )
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert response.json() == {"error": "User not found."}
+
+    @patch("openedx.core.djangoapps.user_api.views.UserSerializer.update")
+    def test_patch_user_validation_error(self, serializer_update):
+        """Test serializer validation errors are returned with status 400"""
+        user = UserFactory.create(
+            username="test-user",
+            email="patch-error@example.com",
+        )
+        serializer_update.side_effect = ValidationError(
+            {"email": ["Invalid email address."]}
+        )
+
+        response = self.client.patch(
+            self.PATH,
+            data=json.dumps({"email": user.email, "first_name": "Updated Name"}),
+            content_type="application/json",
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.json() == {
+            "error": {"email": ["Invalid email address."]}
+        }
