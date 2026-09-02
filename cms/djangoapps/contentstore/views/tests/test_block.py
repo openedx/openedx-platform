@@ -2944,6 +2944,69 @@ class TestComponentTemplates(CourseTestCase):
         self.templates = get_component_templates(self.course)
         self.assertTrue((not any(item.get("category") == "done" for item in self.get_templates_of_type("advanced"))))  # noqa: PT009, UP034  # pylint: disable=line-too-long
 
+    def test_advanced_by_default_components(self):
+        """
+        Test that an xblock which an operator has marked as advanced by default is offered to a course
+        which does not list it in its own Advanced Module List.
+        """
+        advanced_categories = [
+            template.get("category") for template in self.get_templates_of_type("advanced")
+        ]
+        self.assertNotIn("done", advanced_categories)  # noqa: PT009
+
+        XBlockStudioConfiguration.objects.create(
+            name="done", enabled=True, support_level="fs", advanced_by_default=True
+        )
+        self.templates = get_component_templates(self.course)
+        advanced_templates = self.get_templates_of_type("advanced")
+        self.assertEqual(len(advanced_templates), len(DEFAULT_ADVANCED_MODULES) + 1)  # noqa: PT009
+        done_template = self.get_template(advanced_templates, "Completion")
+        self.assertEqual(done_template.get("category"), "done")  # noqa: PT009
+        self.assertIsNone(done_template.get("boilerplate_name", None))  # noqa: PT009
+
+        # Verify that the component is not added twice if the course lists it as well.
+        self.course.advanced_modules.append("done")
+        self.templates = get_component_templates(self.course)
+        self.assertEqual(  # noqa: PT009
+            len(self.get_templates_of_type("advanced")), len(DEFAULT_ADVANCED_MODULES) + 1
+        )
+
+        # Now fully disable done through XBlockConfiguration.
+        XBlockConfiguration.objects.create(name="done", enabled=False)
+        self.templates = get_component_templates(self.course)
+        self.assertTrue((not any(item.get("category") == "done" for item in self.get_templates_of_type("advanced"))))  # noqa: PT009, UP034  # pylint: disable=line-too-long
+
+    def test_advanced_by_default_components_support_levels(self):
+        """
+        Test that an xblock which is advanced by default still honors Studio support levels, so that
+        opting an unsupported xblock into every course requires course author opt-in as usual.
+        """
+        XBlockStudioConfiguration.objects.create(
+            name="done", enabled=True, support_level="us", advanced_by_default=True
+        )
+        XBlockStudioConfigurationFlag.objects.create(enabled=True)
+
+        self.templates = get_component_templates(self.course)
+        self.assertTrue((not any(item.get("category") == "done" for item in self.get_templates_of_type("advanced"))))  # noqa: PT009, UP034  # pylint: disable=line-too-long
+
+        self.course.allow_unsupported_xblocks = True
+        self.templates = get_component_templates(self.course)
+        done_template = self.get_template(self.get_templates_of_type("advanced"), "Completion")
+        self.assertEqual(done_template.get("category"), "done")  # noqa: PT009
+        self.assertEqual(done_template.get("support_level"), "us")  # noqa: PT009
+
+    def test_advanced_by_default_components_not_offered_to_libraries(self):
+        """
+        Test that xblocks which are advanced by default are not offered to libraries, which do not
+        support advanced components at all.
+        """
+        XBlockStudioConfiguration.objects.create(
+            name="done", enabled=True, support_level="fs", advanced_by_default=True
+        )
+        library = LibraryFactory.create()
+        self.templates = get_component_templates(library, library=True)
+        self.assertIsNone(self.get_templates_of_type("advanced"))  # noqa: PT009
+
     def test_deprecated_no_advance_component_button(self):
         """
         Test that there will be no `Advanced` button on unit page if xblocks have disabled

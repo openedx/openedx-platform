@@ -7,6 +7,7 @@ from common.djangoapps.xblock_django.models import XBlockConfiguration, XBlockSt
 from openedx.core.lib.cache_utils import CacheInvalidationManager
 
 cacher = CacheInvalidationManager(model=XBlockConfiguration)
+studio_config_cacher = CacheInvalidationManager(model=XBlockStudioConfiguration)
 
 
 @cacher
@@ -25,6 +26,21 @@ def disabled_xblocks():
     Note that this method is independent of `XBlockStudioConfigurationFlag` and `XBlockStudioConfiguration`.
     """
     return XBlockConfiguration.objects.current_set().filter(enabled=False)
+
+
+@studio_config_cacher
+def default_advanced_xblocks():
+    """
+    Return the QuerySet of XBlock types which operators have marked as advanced by default, meaning that
+    Studio offers them in the Advanced component list of every course, without course teams having to add
+    them to the course's Advanced Module List.
+
+    Note that this method is independent of `XBlockStudioConfigurationFlag`: the flag governs whether support
+    levels are enforced, not whether an operator has opted an XBlock into every course. It does not take into
+    account fully disabled xblocks (as returned by `disabled_xblocks`) or deprecated xblocks (as returned by
+    `deprecated_xblocks`); callers are expected to filter those out, as `get_component_templates` does.
+    """
+    return XBlockStudioConfiguration.objects.current_set().filter(enabled=True, advanced_by_default=True)
 
 
 def authorable_xblocks(allow_unsupported=False, name=None):
