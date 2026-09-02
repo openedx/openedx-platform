@@ -2,6 +2,7 @@
 
 import logging
 import re
+from urllib.parse import unquote
 
 from django.conf import settings
 from django.contrib.staticfiles import finders
@@ -216,6 +217,10 @@ def replace_static_urls(
                 from common.djangoapps.static_replace.models import AssetBaseUrlConfig, AssetExcludedExtensionsConfig
                 base_url = AssetBaseUrlConfig.get_base_url()
                 excluded_exts = AssetExcludedExtensionsConfig.get_excluded_extensions()
+                # TinyMCE percent-encodes unicode characters (e.g. é -> %C3%A9) in asset
+                # filenames. Decode before building the asset key so get_canonicalized_asset_path
+                # doesn't double-encode the '%' into '%25'.
+                rest = unquote(rest)
                 url = StaticContent.get_canonicalized_asset_path(course_id, rest, base_url, excluded_exts)
 
                 if AssetLocator.CANONICAL_NAMESPACE in url:

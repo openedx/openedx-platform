@@ -148,6 +148,41 @@ def test_mongo_filestore(mock_get_excluded_extensions, mock_get_base_url, mock_m
     mock_static_content.get_canonicalized_asset_path.assert_called_once_with(COURSE_KEY, 'file.png', '', ['foobar'])
 
 
+@patch('common.djangoapps.static_replace.StaticContent', autospec=True)
+@patch('xmodule.modulestore.django.modulestore', autospec=True)
+@patch('common.djangoapps.static_replace.models.AssetBaseUrlConfig.get_base_url')
+@patch('common.djangoapps.static_replace.models.AssetExcludedExtensionsConfig.get_excluded_extensions')
+def test_replace_static_url_with_percent_encoded_unicode(
+    mock_get_excluded_extensions, mock_get_base_url, mock_modulestore, mock_static_content
+):
+    """
+    Test that percent-encoded unicode characters in static URLs are not double-encoded.
+
+    TinyMCE encodes é as %C3%A9; replace_static_urls should decode it before building the
+    asset key so get_canonicalized_asset_path does not re-encode the '%' into '%25'.
+    """
+    mock_modulestore.return_value = Mock(MongoModuleStore)
+    # Echo the decoded rest back so the output reflects what was passed to the asset key builder.
+    mock_static_content.get_canonicalized_asset_path.side_effect = \
+        lambda course_id, rest, base_url, excluded_exts: f"c4x://mock/{rest}"
+    mock_get_base_url.return_value = ''
+    mock_get_excluded_extensions.return_value = ['foobar']
+
+    # Input: TinyMCE-encoded é (%C3%A9)
+    html = '<img src="/static/Se_prot%C3%A9ger.png" />'
+    result = replace_static_urls(html, DATA_DIRECTORY, course_id=COURSE_KEY)
+
+    # Must NOT contain double-encoded %25C3%25A9
+    assert '%25C3%25A9' not in result
+    # Must contain the decoded é (single-encoded %C3%A9 or the raw é)
+    assert '%C3%A9' in result or 'é' in result
+
+    # The decoded filename must be passed to get_canonicalized_asset_path
+    mock_static_content.get_canonicalized_asset_path.assert_called_once_with(
+        COURSE_KEY, 'Se_protéger.png', '', ['foobar']
+    )
+
+
 @patch('common.djangoapps.static_replace.settings', autospec=True)
 @patch('xmodule.modulestore.django.modulestore', autospec=True)
 @patch('common.djangoapps.static_replace.staticfiles_storage', autospec=True)
