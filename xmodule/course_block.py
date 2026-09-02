@@ -28,6 +28,7 @@ from openedx.core.lib.license import LicenseMixin
 from openedx.core.lib.teams_config import TeamsConfig  # pylint: disable=unused-import
 from xmodule import course_metadata_utils
 from xmodule.course_metadata_utils import DEFAULT_GRADING_POLICY, DEFAULT_START_DATE
+from xmodule.course_settings_field_options import CERTIFICATES_DISPLAY_BEHAVIOR_FIELD_OPTIONS
 from xmodule.data import CertificatesDisplayBehaviors
 from xmodule.graders import grader_from_conf
 from xmodule.seq_block import SequenceBlock
@@ -605,6 +606,7 @@ class CourseFields:  # pylint: disable=missing-class-docstring
         ),
         scope=Scope.settings,
         default=CertificatesDisplayBehaviors.END.value,
+        values=CERTIFICATES_DISPLAY_BEHAVIOR_FIELD_OPTIONS,
     )
     course_image = String(
         display_name=_("Course About Page Image"),
