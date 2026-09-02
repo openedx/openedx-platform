@@ -429,11 +429,16 @@ class ComputeGradesForCourseTest(HasCourseWithProblemsMixin, ModuleStoreTestCase
 
     @ddt.data(*range(0, 12, 3))
     def test_behavior(self, batch_size):
+        enrollment_ids = list(CourseEnrollment.objects.filter(
+            course_id=self.course.id
+        ).order_by('id').values_list('id', flat=True))
+        start_id = enrollment_ids[4]
+
         with mock_get_score(1, 2):
             result = compute_grades_for_course_v2.delay(
                 course_key=str(self.course.id),
                 batch_size=batch_size,
-                offset=4,
+                start_id=start_id,
             )
         assert result.successful
         assert PersistentCourseGrade.objects.filter(course_id=self.course.id).count() == min(batch_size, 8)
@@ -441,14 +446,17 @@ class ComputeGradesForCourseTest(HasCourseWithProblemsMixin, ModuleStoreTestCase
 
     @ddt.data(*range(1, 12, 3))
     def test_course_task_args(self, test_batch_size):
-        offset_expected = 0
-        for course_key, offset, batch_size in _course_task_args(
+        enrollment_ids = list(CourseEnrollment.objects.filter(
+            course_id=self.course.id
+        ).order_by('id').values_list('id', flat=True))
+        current_index = 0
+        for course_key, start_id, batch_size in _course_task_args(
             batch_size=test_batch_size, course_key=self.course.id, from_settings=False
         ):
             assert course_key == str(self.course.id)
             assert batch_size == test_batch_size
-            assert offset == offset_expected
-            offset_expected += test_batch_size
+            assert start_id == enrollment_ids[current_index]
+            current_index += test_batch_size
 
 
 class RecalculateGradesForUserTest(HasCourseWithProblemsMixin, ModuleStoreTestCase):
@@ -575,6 +583,11 @@ class FreezeGradingAfterCourseEndTest(HasCourseWithProblemsMixin, ModuleStoreTes
         for user in self.users:
             CourseEnrollment.enroll(user, self.course.id)
 
+        enrollment_ids = list(CourseEnrollment.objects.filter(
+            course_id=self.course.id
+        ).order_by('id').values_list('id', flat=True))
+        start_id = enrollment_ids[4]
+
         with override_waffle_flag(self.freeze_grade_flag, active=freeze_flag_value):
             with patch('lms.djangoapps.grades.tasks.CourseGradeFactory') as mock_factory:
                 factory = mock_factory.return_value
@@ -583,7 +596,7 @@ class FreezeGradingAfterCourseEndTest(HasCourseWithProblemsMixin, ModuleStoreTes
                         kwargs={
                             'course_key': str(self.course.id),
                             'batch_size': 2,
-                            'offset': 4,
+                            'start_id': start_id,
                         }
                     )
                     self._assert_for_freeze_grade_flag(

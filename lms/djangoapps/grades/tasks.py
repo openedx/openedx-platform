@@ -69,10 +69,10 @@ def compute_all_grades_for_course(**kwargs):
         if are_grades_frozen(course_key):
             log.info("Attempted compute_all_grades_for_course for course '%s', but grades are frozen.", course_key)
             return
-        for course_key_string, offset, batch_size in _course_task_args(course_key=course_key, **kwargs):
+        for course_key_string, start_id, batch_size in _course_task_args(course_key=course_key, **kwargs):
             kwargs.update({
                 'course_key': course_key_string,
-                'offset': offset,
+                'start_id': start_id,
                 'batch_size': batch_size,
             })
             compute_grades_for_course_v2.apply_async(
@@ -107,14 +107,14 @@ def compute_grades_for_course_v2(self, **kwargs):
         set_event_transaction_type(kwargs['event_transaction_type'])
 
     try:
-        return compute_grades_for_course(kwargs['course_key'], kwargs['offset'], kwargs['batch_size'])
+        return compute_grades_for_course(kwargs['course_key'], kwargs['start_id'], kwargs['batch_size'])
     except Exception as exc:
         raise self.retry(kwargs=kwargs, exc=exc)  # noqa: B904
 
 
 @shared_task(base=LoggedPersistOnFailureTask)
 @set_code_owner_attribute
-def compute_grades_for_course(course_key, offset, batch_size, **kwargs):  # pylint: disable=unused-argument
+def compute_grades_for_course(course_key, start_id, batch_size, **kwargs):  # pylint: disable=unused-argument
     """
     Compute and save grades for a set of students in the specified course.
 
@@ -127,8 +127,12 @@ def compute_grades_for_course(course_key, offset, batch_size, **kwargs):  # pyli
         log.info("Attempted compute_grades_for_course for course '%s', but grades are frozen.", course_key)
         return
 
-    enrollments = CourseEnrollment.objects.filter(course_id=course_key).order_by('created')
-    student_iter = (enrollment.user for enrollment in enrollments[offset:offset + batch_size])
+    enrollments = CourseEnrollment.objects.filter(
+        course_id=course_key,
+        id__gte=start_id,
+    ).select_related('user').order_by('id')[:batch_size]
+    student_iter = (enrollment.user for enrollment in enrollments)
+
     for result in CourseGradeFactory().iter(users=student_iter, course_key=course_key, force_update=True):
         if result.error is not None:
             raise result.error
@@ -364,8 +368,14 @@ def _course_task_args(course_key, **kwargs):
     Helper function to generate course-grade task args.
     """
     from_settings = kwargs.pop('from_settings', True)
-    enrollment_count = CourseEnrollment.objects.filter(course_id=course_key).count()
-    if enrollment_count == 0:
+    enrollment_ids = list(
+        CourseEnrollment.objects.filter(course_id=course_key)
+        .order_by('id')
+        .values_list('id', flat=True)
+    )
+    total_count = len(enrollment_ids)
+
+    if total_count == 0:
         log.warning(f"No enrollments found for {course_key}")
 
     if from_settings is False:
@@ -373,5 +383,5 @@ def _course_task_args(course_key, **kwargs):
     else:
         batch_size = ComputeGradesSetting.current().batch_size
 
-    for offset in range(0, enrollment_count, batch_size):
-        yield (str(course_key), offset, batch_size)
+    for batch_start_id in enrollment_ids[::batch_size]:
+        yield (str(course_key), batch_start_id, batch_size)
