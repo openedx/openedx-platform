@@ -195,7 +195,7 @@ def override_export_fs(block):
     in that it relies on `XmlMixin.export_to_file` (or `CustomTagBlock.export_to_file`) method to control
     whether a block has to be exported as two files (one .olx pointing to one .xml) file, or a single XML node.
 
-    For the legacy blocks (`AnnotatableBlock` for instance) `export_to_file` returns `True` by default.
+    For most legacy blocks, `export_to_file` returns `True` by default.
     The only exception is `CustomTagBlock`, for which this method was originally developed, as customtags don't
     have to be exported as separate files.
 
