@@ -291,6 +291,7 @@ constraint-dependencies = [
     "setuptools<82",
     "astroid==4.0.4",
     "edx-enterprise==8.9.4",
+    "djangorestframework<3.18",
 ]
 [tool.edx_lint]
 uv_constraints = [
@@ -407,6 +408,11 @@ uv_constraints = [
     # having it pulled in automatically. This is to allow them to better control its
     # deployment and to do it in a process that works better for them.
     "edx-enterprise==8.9.4",
+    # Date: 2026-08-31
+    # DRF 3.18.0 changes many=True validation errors from a list to a dict keyed by
+    # item index, which breaks the error response shape of several write endpoints.
+    # Issue for unpinning: https://github.com/openedx/openedx-platform/issues/39048
+    "djangorestframework<3.18",
 ]
 
 [tool.setuptools]
@@ -683,7 +689,7 @@ ignore = [
 ]
 
 [tool.importlinter]
-root_packages = ["lms", "cms", "openedx", "openedx_content", "openedx_catalog"]
+root_packages = ["lms", "cms", "openedx", "openedx_content", "openedx_catalog", "openedx_learning"]
 include_external_packages = true
 # Our custom contract which checks that we're only importing from 'api.py'
 # for participating packages.
@@ -804,6 +810,7 @@ isolated_apps = [
     "openedx.core.djangoapps.xblock",
     "openedx.core.lib.xblock_serializer",
     "openedx_catalog",
+    "openedx_learning",
 ]
 allowed_modules = [
     # Only imports from api.py and data.py are allowed elsewhere in the code

@@ -5,7 +5,7 @@ Declaration of CourseOverview model
 
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from urllib.parse import urlparse, urlunparse
 from zoneinfo import ZoneInfo
 
@@ -78,7 +78,7 @@ class CourseOverview(TimeStampedModel):
     display_number_with_default = models.TextField()
     display_org_with_default = models.TextField()
 
-    start = models.DateTimeField(null=True)
+    start = models.DateTimeField(null=True, db_index=True)
     end = models.DateTimeField(null=True)
 
     # These are deprecated and unused, but cannot be dropped via simple migration due to the size of the downstream
@@ -152,7 +152,7 @@ class CourseOverview(TimeStampedModel):
 
     language = models.TextField(null=True)  # noqa: DJ001
 
-    history = HistoricalRecords()
+    history = HistoricalRecords(no_db_index=["start"])
 
     @classmethod
     def _create_or_update(cls, course):  # pylint: disable=too-many-statements
@@ -680,7 +680,10 @@ class CourseOverview(TimeStampedModel):
         log.info('Finished generating course overviews.')
 
     @classmethod
-    def get_all_courses(cls, orgs=None, filter_=None, active_only=False, course_keys=None):
+    def get_all_courses(
+        cls, orgs=None, filter_=None, active_only=False, course_keys=None,
+        start_date_on_or_after=None, start_date_on_or_before=None,
+    ) -> models.QuerySet["CourseOverview"]:
         """
         Return a queryset containing all CourseOverview objects in the database.
 
@@ -691,11 +694,23 @@ class CourseOverview(TimeStampedModel):
             active_only (bool): If provided, only the courses that have not ended will be returned.
             course_keys (list[string]): Optional parameter that allows case-insensitive
                 filter by course ids
+            start_date_on_or_after (date): Optional parameter that limits the results to courses
+                starting on or after this date.
+            start_date_on_or_before (date): Optional parameter that limits the results to courses
+                starting on or before this date.
         """
         # Note: If a newly created course is not returned in this QueryList,
         # make sure the "publish" signal was emitted when the course was
         # created. For tests using CourseFactory, use emit_signals=True.
         course_overviews = CourseOverview.objects.all()
+
+        if start_date_on_or_after or start_date_on_or_before:
+            date_range_filter = {}
+            if start_date_on_or_after:
+                date_range_filter["start__gte"] = start_date_on_or_after
+            if start_date_on_or_before:
+                date_range_filter["start__lt"] = start_date_on_or_before + timedelta(days=1)
+            course_overviews = course_overviews.filter(**date_range_filter)
 
         if course_keys:
             course_overviews = course_overviews.filter(id__in=course_keys)
