@@ -2092,14 +2092,6 @@ XBLOCK_MIXINS = (
 #
 # Ticket: https://github.com/openedx/edx-platform/issues/35308
 
-# .. toggle_name: USE_EXTRACTED_WORD_CLOUD_BLOCK
-# .. toggle_default: True
-# .. toggle_implementation: DjangoSetting
-# .. toggle_description: Enables the use of the extracted Word Cloud XBlock, which has been shifted to the 'openedx/xblocks-contrib' repo.
-# .. toggle_use_cases: temporary
-# .. toggle_creation_date: 2024-11-10
-# .. toggle_target_removal_date: 2026-04-10
-USE_EXTRACTED_WORD_CLOUD_BLOCK = True
 
 # .. toggle_name: USE_EXTRACTED_ANNOTATABLE_BLOCK
 # .. toggle_default: True

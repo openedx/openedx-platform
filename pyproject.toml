@@ -453,7 +453,7 @@ vertical = "xmodule.vertical_block:VerticalBlock"
 video = "xmodule.video_block:VideoBlock"
 videoalpha = "xmodule.video_block:VideoBlock"
 videodev = "xmodule.template_block:TranslateCustomTagBlock"
-word_cloud = "xmodule.word_cloud_block:WordCloudBlock"
+word_cloud = "xblocks_contrib:WordCloudBlock"
 wrapper = "xmodule.wrapper_block:WrapperBlock"
 
 [project.entry-points."xblock_asides.v1"]
