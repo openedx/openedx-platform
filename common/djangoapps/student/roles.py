@@ -17,6 +17,7 @@ from opaque_keys.edx.locator import CourseLocator
 from openedx_authz.api import users as authz_api
 from openedx_authz.api.data import CourseOverviewData, OrgCourseOverviewGlobData, RoleAssignmentData
 from openedx_authz.constants import roles as authz_roles
+from organizations.api import get_organizations
 
 from common.djangoapps.student.models import CourseAccessRole
 from common.djangoapps.student.signals.signals import emit_course_access_role_added, emit_course_access_role_removed
@@ -632,6 +633,11 @@ class RoleBase(AccessRole):
             user_external_key=user.username,
             role_external_key=role,
         )
+        # A platform-wide grant (course-v1:*, lib:*) covers every org, not just the ones
+        # with a concrete assignment. Platform-glob scopes have no .org attribute at all
+        # (unlike org-glob/course/library scopes, where it's a real field that can be None).
+        if any(assignment.scope.IS_PLATFORM_GLOB for assignment in assignments):
+            return [org["short_name"] for org in get_organizations()]
         orgs = {assignment.scope.org for assignment in assignments if assignment.scope.org is not None}
         return list(orgs)
 
