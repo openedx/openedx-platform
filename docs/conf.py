@@ -339,9 +339,9 @@ def on_init(app):  # pylint: disable=redefined-outer-name, unused-argument
     """
     repo_docs_build_path = f'{root}/docs/references/docs'
     repo_docs = RepositoryDocs(root, repo_docs_build_path)
-    repo_docs.build_rst_docs()
-    repo_docs.build_apps_index(root / 'docs' / 'apps' / 'index.rst')
-    repo_docs.build_decisions_index(root / 'docs' / 'decisions' / 'app_decisions.rst')
+    repo_docs.build_rst_docs(root_title='docs - tree')
+    repo_docs.build_apps_index(root / 'docs' / 'references' / 'app_index.rst')
+    repo_docs.build_decisions_index(root / 'docs' / 'references' / 'app_adr_index.rst')
 
     docs_path = root / 'docs'
     apidoc_path = 'sphinx-apidoc'

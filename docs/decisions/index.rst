@@ -2,4 +2,3 @@
 
 .. toctree::
    0*
-   app_decisions
