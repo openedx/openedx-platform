@@ -45,16 +45,11 @@ CATALOG_VISIBILITY_CATALOG_AND_ABOUT = "both"
 CATALOG_VISIBILITY_ABOUT = "about"
 CATALOG_VISIBILITY_NONE = "none"
 
-DEFAULT_COURSE_VISIBILITY_IN_CATALOG = getattr(
-    settings,
-    'DEFAULT_COURSE_VISIBILITY_IN_CATALOG',
-    'both'
-)
+DEFAULT_COURSE_VISIBILITY_IN_CATALOG = settings.DEFAULT_COURSE_VISIBILITY_IN_CATALOG
 
-DEFAULT_MOBILE_AVAILABLE = getattr(settings, 'DEFAULT_MOBILE_AVAILABLE', False)
-# Note: updating assets does not have settings defined, so using `getattr`.
-EXAM_SETTINGS_HTML_VIEW_ENABLED = getattr(settings, 'ENABLE_EXAM_SETTINGS_HTML_VIEW', False)
-SPECIAL_EXAMS_ENABLED = getattr(settings, 'ENABLE_SPECIAL_EXAMS', False)
+DEFAULT_MOBILE_AVAILABLE = settings.DEFAULT_MOBILE_AVAILABLE
+EXAM_SETTINGS_HTML_VIEW_ENABLED = settings.ENABLE_EXAM_SETTINGS_HTML_VIEW
+SPECIAL_EXAMS_ENABLED = settings.ENABLE_SPECIAL_EXAMS
 
 COURSE_VISIBILITY_PRIVATE = 'private'
 COURSE_VISIBILITY_PUBLIC_OUTLINE = 'public_outline'
@@ -236,7 +231,7 @@ class ProctoringProvider(String):
         and include any inherited values from the platform default.
         """
         value = super().from_json(value)
-        if getattr(settings, 'ENABLE_PROCTORED_EXAMS', False):
+        if settings.ENABLE_PROCTORED_EXAMS:
             # Only validate the provider value if ProctoredExams are enabled on the environment
             # Otherwise, the passed in provider does not matter. We should always return default
             if validate_providers:
@@ -275,7 +270,7 @@ class ProctoringProvider(String):
         """
         default = super().default
 
-        proctoring_backend_settings = getattr(settings, 'PROCTORING_BACKENDS', None)
+        proctoring_backend_settings = settings.PROCTORING_BACKENDS
 
         if proctoring_backend_settings:
             return proctoring_backend_settings.get('DEFAULT', None)
@@ -287,11 +282,7 @@ def get_available_providers() -> list[str]:
     """
     Return list of available proctoring providers.
     """
-    proctoring_backend_settings = getattr(
-        settings,
-        'PROCTORING_BACKENDS',
-        {}
-    )
+    proctoring_backend_settings = settings.PROCTORING_BACKENDS
 
     available_providers = [provider for provider in proctoring_backend_settings if provider != 'DEFAULT']
     available_providers.append('lti_external')
