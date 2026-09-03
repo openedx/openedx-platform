@@ -84,6 +84,7 @@ with codecs.open(CONFIG_FILE, encoding='utf-8') as f:
             'EVENT_BUS_PRODUCER_CONFIG',
             'DEFAULT_FILE_STORAGE',
             'STATICFILES_STORAGE',
+            'OPEN_EDX_FILTERS_CONFIG',
         ]
     })
 
@@ -518,6 +519,19 @@ EVENT_BUS_PRODUCER_CONFIG = merge_producer_configs(
     EVENT_BUS_PRODUCER_CONFIG,  # noqa: F405
     _YAML_TOKENS.get('EVENT_BUS_PRODUCER_CONFIG', {})
 )
+
+# Merge OPEN_EDX_FILTERS_CONFIG from YAML into the default defined in common.py.
+# Pipeline steps from YAML are appended after steps defined in common.py.
+# The fail_silently value from YAML takes precedence over the one in common.py.
+for _filter_type, _filter_config in _YAML_TOKENS.get('OPEN_EDX_FILTERS_CONFIG', {}).items():
+    if _filter_type in OPEN_EDX_FILTERS_CONFIG:  # noqa: F405
+        OPEN_EDX_FILTERS_CONFIG[_filter_type]['pipeline'].extend(  # noqa: F405
+            _filter_config.get('pipeline', [])
+        )
+        if 'fail_silently' in _filter_config:
+            OPEN_EDX_FILTERS_CONFIG[_filter_type]['fail_silently'] = _filter_config['fail_silently']  # noqa: F405
+    else:
+        OPEN_EDX_FILTERS_CONFIG[_filter_type] = _filter_config  # noqa: F405
 
 #######################################################################################################################
 # HEY! Don't add anything to the end of this file.
