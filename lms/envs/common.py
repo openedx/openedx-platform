@@ -2644,40 +2644,21 @@ CCX_MAX_STUDENTS_ALLOWED = 200
 FINANCIAL_ASSISTANCE_MIN_LENGTH = 1250
 FINANCIAL_ASSISTANCE_MAX_LENGTH = 2500
 
-#### Registration form extension. ####
-# Only used if combined login/registration is enabled.
-# This can be used to add fields to the registration page.
-# It must be a path to a valid form, in dot-separated syntax.
-# IE: custom_form_app.forms.RegistrationExtensionForm
-# Note: If you want to use a model to store the results of the form, you will
-# need to add the model's app to the ADDL_INSTALLED_APPS array in your
-# lms.yml file.
-#
-# REGISTRATION_EXTENSION_FORM is deprecated but will continue to work for backward compatibility.
-# Sites using this setting will maintain the old behavior:
-# - Data is stored in UserProfile.meta JSON field
-# - No ability to update extended fields after registration via account settings API
-#
-# To get new capabilities (model-based storage), migrate to PROFILE_EXTENSION_FORM.
-REGISTRATION_EXTENSION_FORM = None  # DEPRECATED: Use PROFILE_EXTENSION_FORM instead
+##### User Profile Extension #####
 
-# PROFILE_EXTENSION_FORM is a Django ModelForm class used for extending user profiles
-# beyond the default fields. This setting enables new capabilities for profile management:
-# - Data is stored in a dedicated model (not just UserProfile.meta)
-# - Users can update their extended profile fields via the account settings API
+# PROFILE_EXTENSION_FORM is a Django ModelForm used to add extended user
+# fields to the platform. This setting integrates these fields into both
+# the registration form and the account settings api.
+
+# Usage:
+# - Set this to the dot-separated path of a valid ModelForm class.
+#   Example: PROFILE_EXTENSION_FORM = 'my_custom_app.forms.ExtendedProfileForm'
 #
-# This setting supersedes REGISTRATION_EXTENSION_FORM and provides more accurate naming
-# for profile extension functionality.
-#
-# Example: PROFILE_EXTENSION_FORM = 'myapp.forms.ExtendedProfileForm'
-#
-# The custom form's model should have:
-# - A OneToOneField to User (typically named 'user')
-# - Additional fields for extended profile data
-#
-# MIGRATION NOTE: If you're currently using REGISTRATION_EXTENSION_FORM (deprecated),
-# your custom fields will continue working as before (data in meta field).
-# To get the new capabilities, migrate to PROFILE_EXTENSION_FORM.
+# Requirements:
+# 1. Linked Model: The form must be based on a model with a OneToOneField to
+#    the User (typically named 'user').
+# 2. Installed Apps: Ensure the app containing your model is included in
+#    the ADDL_INSTALLED_APPS array.
 PROFILE_EXTENSION_FORM = None
 
 # Identifier included in the User Agent from Open edX mobile apps.
