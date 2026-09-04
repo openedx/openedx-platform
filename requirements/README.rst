@@ -15,8 +15,8 @@ by ``make compile-requirements``, not hand-edited) for external tools like
 Tutor/Devstack that still do ``pip install -r requirements/edx/base.txt``
 directly instead of using ``uv sync``.
 
-The four standalone script directories at the repo root (``scripts/xblock``,
-``scripts/user_retirement``, ``scripts/structures_pruning``, ``scripts/semgrep``)
+The three standalone script directories at the repo root (``scripts/xblock``,
+``scripts/user_retirement``, ``scripts/structures_pruning``)
 each have their own ``pyproject.toml`` + ``uv.lock`` too, independent of both
 the main app and each other.
 
