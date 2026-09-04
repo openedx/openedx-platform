@@ -9,6 +9,7 @@ from django.conf import settings
 from xblock.exceptions import NoSuchServiceError
 
 from common.djangoapps.edxmako.shortcuts import render_to_string
+from common.djangoapps.student.auth import is_ccx_course
 
 
 def edxnotes(cls):
@@ -56,7 +57,7 @@ def edxnotes(cls):
                 "params": {
                     # Use camelCase to name keys.
                     "usageId": self.scope_ids.usage_id,
-                    "courseId": course.id,
+                    "courseId": course.id if not is_ccx_course(course.id) else course.id.for_branch(branch=None),
                     "token": get_edxnotes_id_token(user),
                     "tokenUrl": get_token_url(course.id),
                     "endpoint": get_public_endpoint(),
