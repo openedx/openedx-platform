@@ -585,7 +585,19 @@ class TestXBlockViewHandlerHeaderActionsAuthz(ItemTest):
     AUTHZ_PERMISSION_PATH = (
         "cms.djangoapps.contentstore.views.block.user_has_course_permission"
     )
+    # Patch has_studio_write_access at the block.py binding so the legacy
+    # authoring path can be toggled independently of the authz path.
+    STUDIO_WRITE_ACCESS_PATH = (
+        "cms.djangoapps.contentstore.views.block.has_studio_write_access"
+    )
     HEADER_ACTIONS_DIV = 'class="header-actions"'
+    # The component (content) "Edit" button is rendered only when
+    # ``not show_inline and can_edit`` in studio_xblock_wrapper.html.  Match on
+    # its full class string so this does NOT collide with the separate
+    # "Edit Title" button (``title-edit-button``), which is rendered on the
+    # opposite condition (``can_edit_title and not can_edit``) and would
+    # otherwise match a bare ``edit-button`` substring.
+    CONTENT_EDIT_BUTTON = 'class="btn-default edit-button action-button"'
 
     @staticmethod
     def _permission_side_effect(*, can_edit_course_content, can_manage_tags=True):
@@ -631,6 +643,35 @@ class TestXBlockViewHandlerHeaderActionsAuthz(ItemTest):
         )
         resp = self.client.get(preview_url, HTTP_ACCEPT="application/json")
         assert resp.status_code == 200
+        return json.loads(resp.content.decode("utf-8"))["html"]
+
+    def _get_leaf_component_preview_html(self):
+        """
+        Return the rendered HTML for a leaf ``html`` component card.
+
+        The component (content) "Edit" button is gated on
+        ``not show_inline and can_edit`` in studio_xblock_wrapper.html, where
+        ``show_inline = xblock.has_children and not xblock_url``.  A vertical has
+        children, so its card is rendered inline and never shows that edit
+        button regardless of ``can_edit``.  We therefore create a leaf ``html``
+        component (no children -> ``show_inline`` is False) inside a vertical and
+        request ``container_child_preview`` for it, which is the branch that the
+        ``can_edit`` fix actually controls.
+        """
+        parent_usage_key = self._create_vertical()
+        resp = self.create_xblock(
+            parent_usage_key=parent_usage_key, category="html"
+        )
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
+        child_usage_key = self.response_usage_key(resp)
+
+        preview_url = reverse_usage_url(
+            "xblock_view_handler",
+            child_usage_key,
+            {"view_name": "container_child_preview"},
+        )
+        resp = self.client.get(preview_url, HTTP_ACCEPT="application/json")
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
         return json.loads(resp.content.decode("utf-8"))["html"]
 
     def test_header_actions_visible_when_flag_off(self):
@@ -804,6 +845,50 @@ class TestXBlockViewHandlerManageTagsAuthz(ItemTest):
             html = self._get_container_preview_html()
 
         assert self.MANAGE_TAGS_LINK not in html
+
+    def test_can_edit_true_via_authz_without_legacy_write_access(self):
+        """
+        Regression test for the ``can_edit`` fix in xblock_view_handler.
+
+        ``can_edit`` is computed as::
+
+            has_studio_write_access(...) or (
+                is_authz_authoring_enabled and authz_can_edit_course_content
+            )
+
+        A user granted courses.edit_course_content through the authz rollout may
+        not hold legacy studio write access.  Before the fix ``can_edit`` was
+        derived solely from ``has_studio_write_access`` and such a user would
+        lose the per-block "Edit" button.  With the flag on and the permission
+        granted, ``can_edit`` must be True even when legacy write access is
+        False, so the edit button must be rendered.
+        """
+        with patch(self.STUDIO_WRITE_ACCESS_PATH, return_value=False), \
+                patch(self.AUTHZ_FLAG_PATH, return_value=True), \
+                patch(
+                    self.AUTHZ_PERMISSION_PATH,
+                    side_effect=self._permission_side_effect(can_edit_course_content=True),
+                ):
+            html = self._get_leaf_component_preview_html()
+
+        self.assertIn(self.CONTENT_EDIT_BUTTON, html)  # noqa: PT009
+
+    def test_can_edit_false_without_legacy_write_access_or_authz_permission(self):
+        """
+        When the user lacks legacy studio write access and, with the authz flag
+        on, is not granted courses.edit_course_content, both operands of the
+        ``can_edit`` expression are False.  ``can_edit`` must therefore be False
+        and the per-block "Edit" button must be absent.
+        """
+        with patch(self.STUDIO_WRITE_ACCESS_PATH, return_value=False), \
+                patch(self.AUTHZ_FLAG_PATH, return_value=True), \
+                patch(
+                    self.AUTHZ_PERMISSION_PATH,
+                    side_effect=self._permission_side_effect(can_edit_course_content=False),
+                ):
+            html = self._get_leaf_component_preview_html()
+
+        self.assertNotIn(self.CONTENT_EDIT_BUTTON, html)  # noqa: PT009
 
 
 @ddt.ddt
