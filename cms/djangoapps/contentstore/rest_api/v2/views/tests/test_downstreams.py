@@ -1686,3 +1686,60 @@ class GetDownstreamDeletedUpstream(
         }
 
         self.assertDictEqual(data[0], expected_results)  # noqa: PT009
+
+
+class PostDownstreamSyncAuthzViewTest(
+    CourseAuthoringAuthzTestMixin,
+    _BaseDownstreamViewTestMixin,
+    ImmediateOnCommitMixin,
+    SharedModuleStoreTestCase,
+):
+    """
+    AuthZ tests for:
+    POST /api/contentstore/v2/downstreams/{usage_key}/sync
+
+    Verifies that a user with the ``course_staff`` authz role (which includes
+    ``courses.manage_library_updates``) can sync a downstream container even
+    when the user has **no** permissions on the source library.
+    """
+
+    def call_api(self, usage_key_string):
+        return self.authorized_client.post(
+            f"/api/contentstore/v2/downstreams/{usage_key_string}/sync"
+        )
+
+    def test_course_staff_can_sync_container_without_library_access(self):
+        """
+        A user with Course Staff role (which carries
+        ``courses.manage_library_updates``) should be able to sync a
+        downstream container from its upstream library, even when the user
+        has no explicit permissions on the library.
+        """
+        # Give the user Course Staff in authz so they get manage_library_updates
+        from openedx_authz.constants.roles import COURSE_STAFF
+        self.add_user_to_role_in_course(
+            self.authorized_user,
+            COURSE_STAFF.external_key,
+            self.course.id,
+        )
+
+        # Confirm the user has NO explicit permissions on the library.
+        assert lib_api.get_library_user_permissions(
+            self.library_key, self.authorized_user,
+        ) is None
+
+        # The downstream_unit_key is linked to a container upstream in self.library.
+        # The unit was updated (display_name changed + republished) in setUp,
+        # so it is ready to sync.
+        response = self.call_api(self.downstream_unit_key)
+
+        assert response.status_code == 200, (
+            f"Expected 200 but got {response.status_code}: {getattr(response, 'data', '')}"
+        )
+
+        # Same test but for a block sync instead of a container one
+        response = self.call_api(self.downstream_html_key)
+
+        assert response.status_code == 200, (
+            f"Expected 200 but got {response.status_code}: {getattr(response, 'data', '')}"
+        )
