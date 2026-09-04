@@ -19,7 +19,7 @@ class Comment(models.Model):
         'endorsed', 'parent_id', 'thread_id', 'username', 'votes', 'user_id',
         'closed', 'created_at', 'updated_at', 'depth', 'at_position_list',
         'type', 'commentable_id', 'abuse_flaggers', 'endorsement',
-        'child_count', 'edit_history',
+        'child_count', 'edit_history', 'is_spam',
     ]
 
     updatable_fields = [
