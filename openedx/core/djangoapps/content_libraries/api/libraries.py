@@ -94,6 +94,7 @@ __all__ = [
     "get_libraries_for_user",
     "get_metadata",
     "require_permission_for_library_key",
+    "has_permission_for_library_key",
     "get_library",
     "create_library",
     "get_library_team",
@@ -361,6 +362,30 @@ def require_permission_for_library_key(
         raise PermissionDenied
 
     return library_obj
+
+
+def has_permission_for_library_key(
+    library_key: LibraryLocatorV2, user: UserType, permission: str | authz_api.data.PermissionData
+) -> bool:
+    """
+    Like require_permission_for_library_key, checks if the user has the specified permission
+    for a library. Unlike require_permission_for_library_key, returns a boolean rather than the
+    library model or raising an exception.
+
+    Args:
+        library_key: The library key identifying the content library
+        user: The user whose permissions are being checked
+        permission: Either a permission string from content_libraries.permissions
+                   or a PermissionData instance from the authz API
+
+    Returns:
+        bool: True if the user has the requested permission, False otherwise.
+    """
+    try:
+        require_permission_for_library_key(library_key, user, permission)
+        return True
+    except (PermissionError, ContentLibrary.DoesNotExist):
+        return False
 
 
 def get_library(library_key: LibraryLocatorV2) -> ContentLibraryMetadata:
