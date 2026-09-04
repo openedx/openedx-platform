@@ -42,7 +42,6 @@ from cms.djangoapps.contentstore.toggles import (
     libraries_v1_enabled,
     libraries_v2_enabled,
     split_library_view_on_dashboard,
-    use_new_unit_page,
 )
 from cms.djangoapps.models.settings.course_grading import CourseGradingModel
 from cms.djangoapps.models.settings.course_metadata import CourseMetadata
@@ -425,13 +424,10 @@ def get_unit_url(course_locator, unit_locator) -> str:
     """
     Gets course authoring microfrontend URL for unit page view.
     """
-    unit_url = None
-    if use_new_unit_page(course_locator):
-        mfe_base_url = get_course_authoring_url(course_locator)
-        course_mfe_url = f'{mfe_base_url}/course/{course_locator}/container/{unit_locator}'
-        if mfe_base_url:
-            unit_url = course_mfe_url
-    return unit_url
+    mfe_base_url = get_course_authoring_url(course_locator)
+    if mfe_base_url:
+        return f'{mfe_base_url}/course/{course_locator}/container/{unit_locator}'
+    return None
 
 
 def get_certificates_url(course_locator) -> str:

@@ -158,10 +158,14 @@ class CourseWaffleFlagsSerializer(serializers.Serializer):
 
     def get_use_new_unit_page(self, obj):
         """
-        Method to get the use_new_unit_page switch
+        Method to get the use_new_unit_page switch.
+
+        Always returns True. The legacy unit editor has been removed.
+        This method will be removed in a follow-up cleanup.
+
+        See https://github.com/openedx/edx-platform/issues/36275
         """
-        course_key = self.get_course_key()
-        return toggles.use_new_unit_page(course_key)
+        return True
 
     def get_use_new_course_team_page(self, obj):
         """
