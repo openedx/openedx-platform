@@ -6,7 +6,6 @@ import datetime
 import functools
 import json
 import logging
-from copy import deepcopy
 
 from ccx_keys.locator import CCXLocator
 from django.contrib import messages
@@ -26,8 +25,6 @@ from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.roles import CourseCcxCoachRole
 from lms.djangoapps.ccx.models import CustomCourseForEdX
 from lms.djangoapps.ccx.overrides import (
-    bulk_delete_ccx_override_fields,
-    clear_ccx_field_info_from_ccx_map,
     get_override_for_ccx,
     override_field_for_ccx,
 )
@@ -40,11 +37,10 @@ from lms.djangoapps.ccx.utils import (
     get_ccx_by_ccx_id,
     get_ccx_creation_dict,
     get_ccx_for_coach,
-    get_date,
+    get_ccx_schedule,
     get_enrollment_action_and_identifiers,
-    parse_date,
+    save_ccx_schedule,
 )
-from lms.djangoapps.courseware.field_overrides import disable_overrides
 from lms.djangoapps.grades.api import CourseGradeFactory
 from lms.djangoapps.instructor.enrollment import get_email_params
 from lms.djangoapps.instructor.views.gradebook_api import get_grade_book_page
@@ -190,102 +186,18 @@ def create_ccx(request, course, ccx=None):
 @ensure_csrf_cookie
 @cache_control(no_cache=True, no_store=True, must_revalidate=True)
 @coach_dashboard
-def save_ccx(request, course, ccx=None):  # pylint: disable=too-many-statements
+def save_ccx(request, course, ccx=None):
     """
     Save changes to CCX.
     """
     if not ccx:
         raise Http404
 
-    def override_fields(parent, data, graded, earliest=None, ccx_ids_to_delete=None):
-        """
-        Recursively apply CCX schedule data to CCX by overriding the
-        `visible_to_staff_only`, `start` and `due` fields for units in the
-        course.
-        """
-        if ccx_ids_to_delete is None:
-            ccx_ids_to_delete = []
-        blocks = {
-            str(child.location): child
-            for child in parent.get_children()}
-
-        for unit in data:
-            block = blocks[unit['location']]
-            override_field_for_ccx(
-                ccx, block, 'visible_to_staff_only', unit['hidden'])
-
-            start = parse_date(unit['start'])
-            if start:
-                if not earliest or start < earliest:
-                    earliest = start
-                override_field_for_ccx(ccx, block, 'start', start)
-            else:
-                ccx_ids_to_delete.append(get_override_for_ccx(ccx, block, 'start_id'))
-                clear_ccx_field_info_from_ccx_map(ccx, block, 'start')
-
-            # Only subsection (aka sequential) and unit (aka vertical) have due dates.
-            if 'due' in unit:  # checking that the key (due) exist in dict (unit).
-                due = parse_date(unit['due'])
-                if due:
-                    override_field_for_ccx(ccx, block, 'due', due)
-                else:
-                    ccx_ids_to_delete.append(get_override_for_ccx(ccx, block, 'due_id'))
-                    clear_ccx_field_info_from_ccx_map(ccx, block, 'due')
-            else:
-                # In case of section aka chapter we do not have due date.
-                ccx_ids_to_delete.append(get_override_for_ccx(ccx, block, 'due_id'))
-                clear_ccx_field_info_from_ccx_map(ccx, block, 'due')
-
-            if not unit['hidden'] and block.graded:
-                graded[block.format] = graded.get(block.format, 0) + 1
-
-            children = unit.get('children', None)
-            # For a vertical, override start and due dates of all its problems.
-            if unit.get('category', None) == 'vertical':
-                for component in block.get_children():
-                    # override start and due date of problem (Copy dates of vertical into problems)
-                    if start:
-                        override_field_for_ccx(ccx, component, 'start', start)
-
-                    if due:
-                        override_field_for_ccx(ccx, component, 'due', due)
-
-            if children:
-                override_fields(block, children, graded, earliest, ccx_ids_to_delete)
-        return earliest, ccx_ids_to_delete
-
-    graded = {}
-    earliest, ccx_ids_to_delete = override_fields(course, json.loads(request.body.decode('utf8')), graded, [])
-    bulk_delete_ccx_override_fields(ccx, ccx_ids_to_delete)
-    if earliest:
-        override_field_for_ccx(ccx, course, 'start', earliest)
-
-    # Attempt to automatically adjust grading policy
-    changed = False
-    policy = get_override_for_ccx(
-        ccx, course, 'grading_policy', course.grading_policy
-    )
-    policy = deepcopy(policy)
-    grader = policy['GRADER']
-    for section in grader:
-        count = graded.get(section.get('type'), 0)
-        if count < section.get('min_count', 0):
-            changed = True
-            section['min_count'] = count
-    if changed:
-        override_field_for_ccx(ccx, course, 'grading_policy', policy)
-
-    # using CCX object as sender here.
-    responses = SignalHandler.course_published.send(
-        sender=ccx,
-        course_key=CCXLocator.from_course_locator(course.id, str(ccx.id))
-    )
-    for rec, response in responses:
-        log.info('Signal fired when course is published. Receiver: %s. Response: %s', rec, response)
+    schedule, policy = save_ccx_schedule(course, ccx, json.loads(request.body.decode('utf8')))
 
     return HttpResponse(  # pylint: disable=http-response-with-content-type-json, http-response-with-json-dumps
         json.dumps({
-            'schedule': get_ccx_schedule(course, ccx),
+            'schedule': schedule,
             'grading_policy': json.dumps(policy, indent=4)}),
         content_type='application/json',
     )
@@ -317,73 +229,6 @@ def set_grading_policy(request, course, ccx=None):
         kwargs={'course_id': CCXLocator.from_course_locator(course.id, str(ccx.id))}
     )
     return redirect(url)
-
-
-def get_ccx_schedule(course, ccx):
-    """
-    Generate a JSON serializable CCX schedule.
-    """
-    def visit(node, depth=1):
-        """
-        Recursive generator function which yields CCX schedule nodes.
-        We convert dates to string to get them ready for use by the js date
-        widgets, which use text inputs.
-        Visits students visible nodes only; nodes children of hidden ones
-        are skipped as well.
-
-        Dates:
-        Only start date is applicable to a section. If ccx coach did not override start date then
-        getting it from the master course.
-        Both start and due dates are applicable to a subsection (aka sequential). If ccx coach did not override
-        these dates then getting these dates from corresponding subsection in master course.
-        Unit inherits start date and due date from its subsection. If ccx coach did not override these dates
-        then getting them from corresponding subsection in master course.
-        """
-        for child in node.get_children():
-            # in case the children are visible to staff only, skip them
-            if child.visible_to_staff_only:
-                continue
-
-            hidden = get_override_for_ccx(
-                ccx, child, 'visible_to_staff_only',
-                child.visible_to_staff_only)
-
-            start = get_date(ccx, child, 'start')
-            if depth > 1:
-                # Subsection has both start and due dates and unit inherit dates from their subsections
-                if depth == 2:
-                    due = get_date(ccx, child, 'due')
-                elif depth == 3:
-                    # Get start and due date of subsection in case unit has not override dates.
-                    due = get_date(ccx, child, 'due', node)
-                    start = get_date(ccx, child, 'start', node)
-
-                visited = {
-                    'location': str(child.location),
-                    'display_name': child.display_name,
-                    'category': child.category,
-                    'start': start,
-                    'due': due,
-                    'hidden': hidden,
-                }
-            else:
-                visited = {
-                    'location': str(child.location),
-                    'display_name': child.display_name,
-                    'category': child.category,
-                    'start': start,
-                    'hidden': hidden,
-                }
-            if depth < 3:
-                children = tuple(visit(child, depth + 1))
-                if children:
-                    visited['children'] = children
-                    yield visited
-            else:
-                yield visited
-
-    with disable_overrides():
-        return tuple(visit(course))
 
 
 @ensure_csrf_cookie

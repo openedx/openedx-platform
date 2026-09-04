@@ -10,6 +10,7 @@ Both follow the Instructor Dashboard v2 conventions (DRF `APIView` +
 `DeveloperErrorViewMixin`, JWT/session auth) and reuse existing CCX logic.
 """
 
+import json
 import logging
 
 from ccx_keys.locator import CCXLocator
@@ -25,9 +26,20 @@ from rest_framework.views import APIView
 
 from lms.djangoapps.ccx.api.v0.views import get_valid_course
 from lms.djangoapps.ccx.api.v2.permissions import IsCCXCoach
-from lms.djangoapps.ccx.api.v2.serializers import CCXCoachMetadataSerializer, CreateCCXRequestSerializer
-from lms.djangoapps.ccx.utils import create_ccx_course, get_ccx_for_coach
+from lms.djangoapps.ccx.api.v2.serializers import (
+    CCXCoachMetadataSerializer,
+    CreateCCXRequestSerializer,
+    RemoveScheduleRequestSerializer,
+)
+from lms.djangoapps.ccx.utils import (
+    create_ccx_course,
+    get_ccx_for_coach,
+    get_ccx_schedule,
+    remove_block_from_ccx_schedule,
+    save_ccx_schedule,
+)
 from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin
+from openedx.core.lib.courses import get_course_by_id
 
 log = logging.getLogger(__name__)
 
@@ -46,15 +58,31 @@ def _error_response(error_code, http_status, field_errors=None):
     return Response(payload, status=http_status)
 
 
+def _resolve_ccx_course(course_id):
+    """
+    Resolve a CCX course id to `(master_course, ccx, error_response)`.
+
+    `master_course` is the master :class:`CourseBlock` (loaded with full
+    depth for schedule traversal) and `ccx` is the
+    :class:`CustomCourseForEdX`. On failure, `error_response` is a DRF
+    `Response` and the first two values are `None`.
+    """
+    ccx, ccx_key, error_code, http_status = get_valid_course(course_id, is_ccx=True)
+    if error_code:
+        return None, None, _error_response(error_code, http_status)
+    master_course = get_course_by_id(ccx_key.to_course_locator(), depth=None)
+    return master_course, ccx, None
+
+
 class CCXCoachMetadataView(DeveloperErrorViewMixin, APIView):
     """
     Return CCX Coach metadata for a master course or CCX course.
 
-    **Example Request**
+    *Example Request*
 
         GET /api/ccx_coach/v2/courses/{course_id|ccx_course_id}/metadata
 
-    **Response Values**
+    *Response Values*
 
         {
             "course_id": "course-v1:edX+DemoX+Demo_Course",
@@ -103,7 +131,7 @@ class CreateCCXView(DeveloperErrorViewMixin, APIView):
     """
     Create a CCX course for a master course and return its metadata payload.
 
-    **Example Request**
+    *Example Request*
 
         POST /api/ccx_coach/v2/courses/{course_id}/create_ccx
         { "name": "My CCX" }
@@ -158,3 +186,108 @@ class CreateCCXView(DeveloperErrorViewMixin, APIView):
 
         data = {'master_course_key': master_course_key, 'ccx_course_key': ccx_course_key}
         return Response(CCXCoachMetadataSerializer(data).data, status=status.HTTP_201_CREATED)
+
+
+class CCXScheduleView(DeveloperErrorViewMixin, APIView):
+    """
+    Return the CCX schedule for a CCX course.
+
+    *Example Request*
+
+        GET /api/ccx_coach/v2/courses/{ccx_course_id}/schedule
+
+    *Response Values*
+
+        A JSON array of schedule blocks (sections -> subsections -> units), each
+        with `location`, `display_name`, `category`, `start`, optional
+        `due`, `hidden` and optional `children`. This mirrors the legacy
+        `ccx_schedule` output.
+    """
+
+    authentication_classes = (JwtAuthentication, SessionAuthenticationAllowInactiveUser)
+    permission_classes = (IsAuthenticated, IsCCXCoach)
+
+    def get(self, request, course_id):
+        """Return the CCX schedule for the given CCX course id."""
+        master_course, ccx, error_response = _resolve_ccx_course(course_id)
+        if error_response:
+            return error_response
+        return Response(get_ccx_schedule(master_course, ccx), status=status.HTTP_200_OK)
+
+
+class SaveScheduleView(DeveloperErrorViewMixin, APIView):
+    """
+    Apply an edited schedule tree to a CCX course.
+
+    *Example Request*
+
+        POST /api/ccx_coach/v2/courses/{ccx_course_id}/save_schedule
+        [ { "location": "...", "hidden": false, "start": "...", "due": "...", "children": [...] }, ... ]
+
+    *Response Values*
+
+        { "schedule": [...], "grading_policy": "<json string>" }
+
+    Mirrors the legacy `save_ccx` behavior (including automatic grading-policy
+    adjustment) but with DRF/JWT auth and JSON in/out.
+    """
+
+    authentication_classes = (JwtAuthentication, SessionAuthenticationAllowInactiveUser)
+    permission_classes = (IsAuthenticated, IsCCXCoach)
+
+    def post(self, request, course_id):
+        """Save the supplied schedule tree to the CCX course."""
+        master_course, ccx, error_response = _resolve_ccx_course(course_id)
+        if error_response:
+            return error_response
+
+        schedule_data = request.data
+        if not isinstance(schedule_data, list):
+            return _error_response('invalid_schedule_payload', status.HTTP_400_BAD_REQUEST)
+
+        try:
+            schedule, policy = save_ccx_schedule(master_course, ccx, schedule_data)
+        except (KeyError, ValueError, TypeError):
+            # Unknown block location, missing required keys, or malformed dates
+            # in the payload. Return a structured JSON error rather than a 500.
+            return _error_response('invalid_schedule_payload', status.HTTP_400_BAD_REQUEST)
+
+        return Response(
+            {'schedule': schedule, 'grading_policy': json.dumps(policy, indent=4)},
+            status=status.HTTP_200_OK,
+        )
+
+
+class RemoveScheduleView(DeveloperErrorViewMixin, APIView):
+    """
+    Remove a block (and its descendants) from a CCX schedule.
+
+    *Example Request*
+
+        POST /api/ccx_coach/v2/courses/{ccx_course_id}/remove_schedule
+        { "location": "block-v1:edX+DemoX+Demo_Course+type@chapter+block@week1" }
+
+    Hides the block and its descendants and clears their start/due overrides,
+    then returns the updated schedule (same shape as the schedule endpoint) so
+    the client can refresh in a single call.
+    """
+
+    authentication_classes = (JwtAuthentication, SessionAuthenticationAllowInactiveUser)
+    permission_classes = (IsAuthenticated, IsCCXCoach)
+
+    def post(self, request, course_id):
+        """Remove the block identified by `location` from the CCX schedule."""
+        master_course, ccx, error_response = _resolve_ccx_course(course_id)
+        if error_response:
+            return error_response
+
+        request_serializer = RemoveScheduleRequestSerializer(data=request.data)
+        request_serializer.is_valid(raise_exception=True)
+        location = request_serializer.validated_data['location']
+
+        try:
+            schedule = remove_block_from_ccx_schedule(ccx, master_course, location)
+        except ValueError:
+            return _error_response('schedule_block_not_found', status.HTTP_400_BAD_REQUEST)
+
+        return Response(schedule, status=status.HTTP_200_OK)

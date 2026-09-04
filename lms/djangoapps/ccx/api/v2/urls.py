@@ -21,4 +21,19 @@ urlpatterns = [
         views.CreateCCXView.as_view(),
         name='create_ccx',
     ),
+    re_path(
+        fr'^courses/{settings.COURSE_ID_PATTERN}/schedule$',
+        views.CCXScheduleView.as_view(),
+        name='schedule',
+    ),
+    re_path(
+        fr'^courses/{settings.COURSE_ID_PATTERN}/save_schedule$',
+        views.SaveScheduleView.as_view(),
+        name='save_schedule',
+    ),
+    re_path(
+        fr'^courses/{settings.COURSE_ID_PATTERN}/remove_schedule$',
+        views.RemoveScheduleView.as_view(),
+        name='remove_schedule',
+    ),
 ]
