@@ -386,6 +386,23 @@ class TestSearchApi(ModuleStoreTestCase):
             any_order=True,
         )
 
+    @override_settings(MEILISEARCH_ENABLED=True, MEILISEARCH_COURSE_INDEXING="none")
+    def test_reindex_meilisearch_skips_courses(self, mock_meilisearch) -> None:
+        """
+        A rebuild with course indexing off still populates every library document and
+        writes no course documents, which is what makes the gate reversible: flip the
+        setting back to "all" and re-run reindex_studio to restore course content.
+        """
+        api.rebuild_index()
+
+        indexed_types = {
+            doc["type"]
+            for call_args in mock_meilisearch.return_value.index.return_value.add_documents.call_args_list
+            for doc in call_args[0][0]
+        }
+        assert "course_block" not in indexed_types
+        assert "library_block" in indexed_types
+
     @override_settings(MEILISEARCH_ENABLED=True)
     def test_reindex_meilisearch_incremental(self, mock_meilisearch) -> None:
 
@@ -603,6 +620,54 @@ class TestSearchApi(ModuleStoreTestCase):
         api.upsert_xblock_index_doc(UsageKey.from_string(self.course_block_key))
 
         mock_meilisearch.return_value.index.return_value.update_document.assert_not_called()
+
+    @override_settings(MEILISEARCH_ENABLED=True, MEILISEARCH_COURSE_INDEXING="none")
+    def test_index_xblock_course_indexing_none(self, mock_meilisearch) -> None:
+        """
+        With course indexing off entirely, no course block reaches the index.
+        """
+        api.upsert_xblock_index_doc(self.sequential.usage_key, recursive=True)
+
+        mock_meilisearch.return_value.index.return_value.update_documents.assert_not_called()
+
+    @override_settings(MEILISEARCH_ENABLED=True, MEILISEARCH_COURSE_INDEXING="library_downstream_only")
+    def test_index_xblock_downstream_only_skips_unlinked(self, mock_meilisearch) -> None:
+        """
+        Course blocks with no library upstream are skipped in library_downstream_only mode.
+        """
+        api.upsert_xblock_index_doc(self.sequential.usage_key, recursive=True)
+
+        mock_meilisearch.return_value.index.return_value.update_documents.assert_not_called()
+
+    @override_settings(MEILISEARCH_ENABLED=True, MEILISEARCH_COURSE_INDEXING="library_downstream_only")
+    def test_index_xblock_downstream_only_indexes_linked(self, mock_meilisearch) -> None:
+        """
+        A course block linked to a library upstream is still indexed, and the walk
+        reaches it through an ancestor that is itself skipped.
+
+        This is what the course-libraries Review tab hydrates its out-of-sync list from.
+        """
+        vertical = self.store.get_item(
+            UsageKey.from_string("block-v1:org1+test_course+test_run+type@vertical+block@test_vertical")
+        )
+        vertical.upstream = str(self.problem1.usage_key)
+        self.store.update_item(vertical, self.user_id)
+
+        api.upsert_xblock_index_doc(self.sequential.usage_key, recursive=True)
+
+        indexed = mock_meilisearch.return_value.index.return_value.update_documents.call_args[0][0]
+        assert [doc["usage_key"] for doc in indexed] == [str(vertical.usage_key)]
+
+    @override_settings(MEILISEARCH_ENABLED=True)
+    @ddt.data("all", "library_downstream_only", "none")
+    def test_get_course_indexing_mode(self, mode, mock_meilisearch) -> None:  # pylint: disable=unused-argument
+        with override_settings(MEILISEARCH_COURSE_INDEXING=mode):
+            assert api.get_course_indexing_mode() == mode
+
+    @override_settings(MEILISEARCH_ENABLED=True, MEILISEARCH_COURSE_INDEXING="nonsense")
+    def test_get_course_indexing_mode_invalid(self, mock_meilisearch) -> None:  # pylint: disable=unused-argument
+        assert api.get_course_indexing_mode() == api.COURSE_INDEXING_ALL
+        assert api.is_course_indexing_enabled()
 
     @override_settings(MEILISEARCH_ENABLED=True)
     def test_index_xblock_tags(self, mock_meilisearch) -> None:
