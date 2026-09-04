@@ -111,7 +111,6 @@ USE_TZ = True
 TIME_ZONE = 'UTC'
 
 # User-uploaded content
-MEDIA_ROOT = '/edx/var/edxapp/media/'
 MEDIA_URL = '/media/'
 
 # Dummy secret key for dev/test
@@ -1613,7 +1612,7 @@ VIDEO_IMAGE_SETTINGS = dict(
     # STORAGE_CLASS='storages.backends.s3boto3.S3Boto3Storage',
     # STORAGE_KWARGS=dict(bucket='video-image-bucket'),
     STORAGE_KWARGS=dict(
-        location=MEDIA_ROOT,
+        location=Derived(lambda settings: settings.MEDIA_ROOT),
     ),
     DIRECTORY_PREFIX='video-images/',
     BASE_URL=MEDIA_URL,
@@ -1630,7 +1629,7 @@ VIDEO_TRANSCRIPTS_SETTINGS = dict(
     # STORAGE_CLASS='storages.backends.s3boto3.S3Boto3Storage',
     # STORAGE_KWARGS=dict(bucket='video-transcripts-bucket'),
     STORAGE_KWARGS=dict(
-        location=MEDIA_ROOT,
+        location=Derived(lambda settings: settings.MEDIA_ROOT),
     ),
     DIRECTORY_PREFIX='video-transcripts/',
     BASE_URL=MEDIA_URL,
@@ -2020,7 +2019,7 @@ OAUTH2_PROVIDER_APPLICATION_MODEL = 'oauth2_provider.Application'
 PROFILE_IMAGE_BACKEND = {
     'class': 'openedx.core.storage.OverwriteStorage',
     'options': {
-        'location': os.path.join(MEDIA_ROOT, 'profile-images/'),
+        'location': Derived(lambda settings: os.path.join(settings.MEDIA_ROOT, 'profile-images/')),
         'base_url': os.path.join(MEDIA_URL, 'profile-images/'),
     },
 }
