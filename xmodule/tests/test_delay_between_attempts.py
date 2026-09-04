@@ -198,6 +198,26 @@ class XModuleQuizAttemptsDelayTest(unittest.TestCase):
         # Also, the number of attempts should not be incremented
         self.assertRegex(result['success'], r"You must wait at least 3 minutes between submissions. 2 minutes remaining\..*")  # pylint: disable=line-too-long  # noqa: PT009
         assert block.attempts == num_attempts
+        assert not block.student_answers_history, \
+            "student_answers_history must stay empty when a submission arrives before the wait period elapsed"
+
+    def test_no_answer_history_when_submitted_too_soon(self):
+        """
+        Verify that a submission rejected for arriving before the wait period
+        elapsed is not recorded in `student_answers_history`.
+        """
+        num_attempts = 1
+        (block, result) = self.create_and_check(
+            num_attempts=num_attempts,
+            last_submission_time=datetime.datetime(2013, 12, 6, 0, 17, 36, tzinfo=UTC),
+            submission_wait_seconds=180,
+            considered_now=datetime.datetime(2013, 12, 6, 0, 18, 36, tzinfo=UTC)
+        )
+        self.assertRegex(result['success'], r"You must wait at least.*")
+        assert block.attempts == num_attempts, \
+            "attempts must not change when a submission arrives before the wait period elapsed"
+        assert block.student_answers_history == [], \
+            "student_answers_history must stay empty when a submission arrives before the wait period elapsed"
 
     def test_submit_quiz_1_second_too_soon(self):
         # Already attempted once (just now)

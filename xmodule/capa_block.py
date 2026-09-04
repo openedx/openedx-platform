@@ -1752,7 +1752,6 @@ class _BuiltInProblemBlock(  # pylint: disable=too-many-public-methods,too-many-
         self.lcp.has_saved_answers = False
         answers = self.make_dict_of_responses(data)
         answers_without_files = convert_files_to_filenames(answers)
-        self.student_answers_history.append(answers_without_files)
         event_info["answers"] = answers_without_files
 
         # Can override current time
@@ -1812,6 +1811,9 @@ class _BuiltInProblemBlock(  # pylint: disable=too-many-public-methods,too-many-
             # self.lcp.context['attempt'] refers to the attempt number (1-based)
             self.lcp.context["attempt"] = self.attempts + 1
             correct_map = self.lcp.grade_answers(answers)
+            # recorded only once grading has succeeded, to stay aligned with the
+            # correct map history that grade_answers appends to
+            self.student_answers_history.append(answers_without_files)
             # self.attempts refers to the number of attempts that did not
             # raise an error (0-based)
             self.attempts = self.attempts + 1

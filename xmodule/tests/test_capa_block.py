@@ -1367,6 +1367,48 @@ class ProblemBlockTest(unittest.TestCase):  # pylint: disable=too-many-public-me
             # but that this was considered attempt number 2 for grading purposes
             assert block.lcp.context["attempt"] == 2
 
+    def test_submit_problem_error_does_not_record_answer_history(self):
+        """
+        Verify that a submission that fails to grade is not recorded in `student_answers_history`, which keeps it
+        aligned with `correct_map_history`.
+        """
+        exception_classes = [StudentInputError, LoncapaProblemError, ResponseError]
+        for exception_class in exception_classes:
+            block = CapaFactory.create(attempts=1, user_is_staff=False)
+
+            with patch('xblocks_contrib.problem.capa.capa_problem.LoncapaProblem.grade_answers') as mock_grade:
+                mock_grade.side_effect = exception_class('test error')
+
+                get_request_dict = {CapaFactory.input_key(): '3.14'}
+                block.submit_problem(get_request_dict)
+
+            assert not block.student_answers_history, \
+                f"student_answers_history must stay empty when grading raises {exception_class.__name__}"
+            assert len(block.student_answers_history) == len(block.correct_map_history), (
+                "student_answers_history and correct_map_history must stay the same length "
+                f"when grading raises {exception_class.__name__}"
+            )
+
+    def test_answer_and_correct_map_histories_stay_aligned(self):
+        """
+        Verify that `student_answers_history` and `correct_map_history` hold one entry per graded attempt, so
+        an attempt that fails to grade does not misalign the two lists for the attempts that follow it.
+        """
+        block = CapaFactory.create(attempts=0, max_attempts=3, rerandomize=RANDOMIZATION.NEVER)
+
+        block.submit_problem({CapaFactory.input_key(): '3.14'})
+
+        with patch('xblocks_contrib.problem.capa.capa_problem.LoncapaProblem.grade_answers') as mock_grade:
+            mock_grade.side_effect = StudentInputError('test error')
+            block.submit_problem({CapaFactory.input_key(): 'not a number'})
+
+        block.submit_problem({CapaFactory.input_key(): '3.21'})
+
+        assert len(block.student_answers_history) == len(block.correct_map_history) == 2, \
+            "both histories must hold one entry per graded attempt, excluding the attempt that failed to grade"
+        assert block.student_answers_history[-1] == {CapaFactory.answer_key(): '3.21'}, \
+            "the last entry of student_answers_history must be the answers of the last graded attempt"
+
     def test_submit_problem_error_with_codejail_exception(self):
         """Verify codejail execution errors are sanitized and handled correctly."""
 
