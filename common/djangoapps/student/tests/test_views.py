@@ -193,9 +193,7 @@ class StudentDashboardTests(SharedModuleStoreTestCase, MilestonesTestCaseMixin, 
     ENABLED_SIGNALS = ['course_published']
     MOCK_SETTINGS = {
         'DISABLE_START_DATES': False,
-        'FEATURES': {
-            'DISABLE_SET_JWT_COOKIES_FOR_TESTS': True,
-        },
+        'DISABLE_SET_JWT_COOKIES_FOR_TESTS': True,
         'SOCIAL_SHARING_SETTINGS': {
             'CUSTOM_COURSE_URLS': True,
             'DASHBOARD_FACEBOOK': True,
@@ -203,9 +201,7 @@ class StudentDashboardTests(SharedModuleStoreTestCase, MilestonesTestCaseMixin, 
         },
     }
     MOCK_SETTINGS_HIDE_COURSES = {
-        'FEATURES': {
-            'DISABLE_SET_JWT_COOKIES_FOR_TESTS': True,
-        }
+        'DISABLE_SET_JWT_COOKIES_FOR_TESTS': True,
     }
 
     def setUp(self):
