@@ -2892,6 +2892,12 @@ CATALOG_MICROFRONTEND_URL = None
 # .. setting_default: None
 # .. setting_description: Base URL of the micro-frontend-based instructor app.
 INSTRUCTOR_MICROFRONTEND_URL = None
+# .. setting_name: CCX_COACH_MICROFRONTEND_URL
+# .. setting_default: None
+# .. setting_description: Base URL of the micro-frontend-based CCX Coach app. The CCX Coach
+#   experience is served by the Instructor Dashboard MFE; the CCX Coach v2 API uses this to
+#   build absolute tab URLs returned in the course metadata payload.
+CCX_COACH_MICROFRONTEND_URL = None
 # .. setting_name: COMMUNICATIONS_MICROFRONTEND_URL
 # .. setting_default: None
 # .. setting_description: Base URL of the micro-frontend-based communications app.

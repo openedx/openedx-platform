@@ -915,6 +915,10 @@ if settings.CUSTOM_COURSES_EDX:
     urlpatterns += [
         re_path(fr'^courses/{settings.COURSE_ID_PATTERN}/', include('lms.djangoapps.ccx.urls')),
         path('api/ccx/', include(('lms.djangoapps.ccx.api.urls', 'lms.djangoapps.ccx'), namespace='ccx_api')),
+        path(
+            'api/ccx_coach/v2/',
+            include(('lms.djangoapps.ccx.api.v2.urls', 'lms.djangoapps.ccx'), namespace='ccx_coach_api_v2'),
+        ),
     ]
 
 # Access to courseware as an LTI provider
