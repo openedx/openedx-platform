@@ -1213,6 +1213,17 @@ SHOW_BUMPER_PERIODICITY = 7 * 24 * 3600
 # .. toggle_tickets: https://github.com/openedx/edx-platform/pull/9744
 ENABLE_SPECIAL_EXAMS = False
 
+# .. toggle_name: ENABLE_EXAM_SETTINGS_HTML_VIEW
+# .. toggle_implementation: DjangoSetting
+# .. toggle_default: False
+# .. toggle_description: Enable the "Exam Settings" view in Studio's course settings. When enabled,
+#   the corresponding legacy proctored/timed-exam fields on the course are marked deprecated in the
+#   advanced settings editor so they are edited via the dedicated view instead.
+# .. toggle_use_cases: open_edx
+# .. toggle_creation_date: 2020-07-09
+# .. toggle_tickets: https://github.com/openedx/edx-platform/pull/24405
+ENABLE_EXAM_SETTINGS_HTML_VIEW = False
+
 # .. toggle_name: SHOW_HEADER_LANGUAGE_SELECTOR
 # .. toggle_implementation: DjangoSetting
 # .. toggle_default: False
