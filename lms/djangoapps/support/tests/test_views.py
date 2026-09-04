@@ -60,22 +60,12 @@ from openedx.core.djangoapps.content.course_overviews.models import CourseOvervi
 from openedx.core.djangoapps.oauth_dispatch.tests import factories
 from openedx.features.content_type_gating.models import ContentTypeGatingConfig
 from openedx.features.course_duration_limits.models import CourseDurationLimitConfig
-from openedx.features.enterprise_support.api import enterprise_is_enabled
-from openedx.features.enterprise_support.tests.factories import (
-    EnterpriseCourseEnrollmentFactory,
-    EnterpriseCustomerUserFactory,
-)
 from xmodule.modulestore.tests.django_utils import (
     TEST_DATA_SPLIT_MODULESTORE,
     ModuleStoreTestCase,
     SharedModuleStoreTestCase,
 )
 from xmodule.modulestore.tests.factories import CourseFactory
-
-try:
-    from consent.models import DataSharingConsent
-except ImportError:  # pragma: no cover
-    pass
 
 
 class SupportViewTestCase(ModuleStoreTestCase):
@@ -94,6 +84,49 @@ class SupportViewTestCase(ModuleStoreTestCase):
         self.course = CourseFactory.create()
         success = self.client.login(username=self.USERNAME, password=self.PASSWORD)
         assert success, 'Could not log in'
+
+
+class ContactUsViewTests(SupportViewTestCase):
+    """
+    Tests for ContactUsView.
+    """
+
+    @override_settings(ZENDESK_URL='https://example.zendesk.com')
+    @patch('lms.djangoapps.support.views.contact_us.SupportContactContextRequested.run_filter')
+    def test_tags_run_through_filter_for_authenticated_user(self, mock_run_filter):
+        """
+        For an authenticated user, the tags list is passed through the
+        SupportContactContextRequested filter, and the filter's return value is used
+        as the final tags list in the rendered context.
+
+        The enterprise-specific behavior of the filter's pipeline step (edx-enterprise's
+        SupportContactEnterpriseTagInjector) is covered by edx-enterprise's own test suite.
+        This view only needs to verify it wires the filter's return value through correctly.
+        """
+        mock_run_filter.return_value = ['LMS', 'enterprise_learner']
+
+        response = self.client.get(reverse('support:contact_us'))
+
+        assert response.status_code == 200
+        mock_run_filter.assert_called_once()
+        _, call_kwargs = mock_run_filter.call_args
+        assert call_kwargs['tags'] == ['LMS']
+        assert call_kwargs['user'] == self.user
+        assert b'enterprise_learner' in response.content
+
+    def test_filter_not_called_for_anonymous_user(self):
+        """
+        Anonymous users never reach the enterprise-tagging branch.
+        """
+        self.client.logout()
+        with override_settings(ZENDESK_URL='https://example.zendesk.com'):
+            with patch(
+                'lms.djangoapps.support.views.contact_us.SupportContactContextRequested.run_filter'
+            ) as mock_run_filter:
+                response = self.client.get(reverse('support:contact_us'))
+
+        assert response.status_code == 200
+        mock_run_filter.assert_not_called()
 
 
 class SupportViewManageUserTests(SupportViewTestCase):
@@ -359,7 +392,7 @@ class SupportViewEnrollmentsTests(SharedModuleStoreTestCase, SupportViewTestCase
         )
         assert {CourseMode.VERIFIED, CourseMode.AUDIT, CourseMode.HONOR, CourseMode.NO_ID_PROFESSIONAL_MODE,
                 CourseMode.PROFESSIONAL, CourseMode.CREDIT_MODE} == {mode['slug'] for mode in data[0]['course_modes']}
-        assert 'enterprise_course_enrollments' not in data[0]
+        assert data[0]['enterprise_course_enrollments'] == []
         assert data[0]['order_number'] == ''
         assert data[0]['source_system'] == ''
 
@@ -400,52 +433,39 @@ class SupportViewEnrollmentsTests(SharedModuleStoreTestCase, SupportViewTestCase
         assert len(data) == 1
         assert data[0]['source_system'] == 'commercetools'
 
-    @override_settings(ENABLE_ENTERPRISE_INTEGRATION=True)
-    @enterprise_is_enabled()
-    def test_get_enrollments_enterprise_enabled(self):
+    @patch('lms.djangoapps.support.views.enrollments.SupportEnrollmentDataRequested.run_filter')
+    def test_get_enrollments_with_enterprise_filter(self, mock_run_filter):
+        """
+        Enterprise enrollment data returned by the SupportEnrollmentDataRequested filter
+        is threaded into each enrollment's 'enterprise_course_enrollments' key.
+
+        The enterprise-specific behavior of the filter's pipeline step (edx-enterprise's
+        SupportEnterpriseEnrollmentDataInjector) is covered by edx-enterprise's own test suite.
+        This view only needs to verify it wires the filter's return value through correctly.
+        """
+        course_id = str(self.course.id)
+        mock_enterprise_enrollment = {
+            'course_id': course_id,
+            'enterprise_customer_name': 'Test Enterprise',
+            'enterprise_customer_user_id': 42,
+            'license': None,
+            'saved_for_later': False,
+            'data_sharing_consent': {'consent_provided': True},
+        }
+        mock_run_filter.return_value = {course_id: [mock_enterprise_enrollment]}
+
         url = reverse(
             'support:enrollment_list',
             kwargs={'username_or_email': self.student.username}
         )
-
-        enterprise_customer_user = EnterpriseCustomerUserFactory(
-            user_id=self.student.id
-        )
-        enterprise_course_enrollment = EnterpriseCourseEnrollmentFactory(
-            course_id=self.course.id,
-            enterprise_customer_user=enterprise_customer_user
-        )
-        data_sharing_consent = DataSharingConsent(
-            course_id=self.course.id,
-            enterprise_customer=enterprise_customer_user.enterprise_customer,
-            username=self.student.username,
-            granted=True
-        )
-        data_sharing_consent.save()
-
         response = self.client.get(url)
         assert response.status_code == 200
         data = json.loads(response.content.decode('utf-8'))
         assert len(data) == 1
 
+        mock_run_filter.assert_called_once_with(enrollment_data={}, user=self.student)
         enterprise_course_enrollments_data = data[0]['enterprise_course_enrollments']
-        assert len(enterprise_course_enrollments_data) == 1
-        expected = {
-            'course_id': str(enterprise_course_enrollment.course_id),
-            'enterprise_customer_name': enterprise_customer_user.enterprise_customer.name,
-            'enterprise_customer_user_id': enterprise_customer_user.id,
-            'license': None,
-            'saved_for_later': enterprise_course_enrollment.saved_for_later,
-            'data_sharing_consent': {
-                'username': self.student.username,
-                'enterprise_customer_uuid': str(enterprise_customer_user.enterprise_customer_id),
-                'exists': data_sharing_consent.exists,
-                'consent_provided': data_sharing_consent.granted,
-                'consent_required': data_sharing_consent.consent_required(),
-                'course_id': str(enterprise_course_enrollment.course_id),
-            }
-        }
-        assert enterprise_course_enrollments_data[0] == expected
+        assert enterprise_course_enrollments_data == [mock_enterprise_enrollment]
 
     @ddt.data(
         (True, 'Self Paced'),
