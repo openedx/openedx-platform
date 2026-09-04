@@ -1,14 +1,20 @@
 """Content search model tests"""
 from __future__ import annotations
 
+from unittest import mock
+
 import ddt
+import pytest
+from django.db import OperationalError
 from django.test import RequestFactory
 from django.utils.crypto import get_random_string
+from edx_toggles.toggles.testutils import override_waffle_flag
 from organizations.models import Organization
 
 from common.djangoapps.student.auth import update_org_role
 from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRole, OrgInstructorRole, OrgStaffRole
 from common.djangoapps.student.tests.factories import UserFactory
+from openedx.core import toggles as core_toggles
 from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory
 from openedx.core.djangoapps.content_libraries import api as library_api
 from openedx.core.djangolib.testing.utils import skip_unless_cms
@@ -21,6 +27,18 @@ try:
 except RuntimeError:
     SearchAccess = {}
     get_access_ids_for_request = lambda request: []
+
+
+def _fake_authz_assignment(course_key):
+    """
+    Build a stand-in for openedx_authz's RoleAssignmentData that exposes only
+    the ``scope.external_key`` attribute that ``_get_authz_course_keys`` reads.
+
+    We stub the assignment rather than provision real authz role rows because
+    the model helper only cares about the scope's external key; the shape of
+    the authz storage is exercised by openedx-authz's own test suite.
+    """
+    return mock.Mock(scope=mock.Mock(external_key=str(course_key)))
 
 
 class StudioSearchTestMixin:
@@ -245,3 +263,158 @@ class StudioSearchAccessTest(StudioSearchTestMixin, SharedModuleStoreTestCase):
         request.user = self.student
         access_ids = get_access_ids_for_request(request)
         assert not access_ids
+
+
+@ddt.ddt
+@skip_unless_cms
+class StudioSearchAuthzAccessTest(StudioSearchTestMixin, SharedModuleStoreTestCase):
+    """
+    Tests that ``get_access_ids_for_request`` includes courses granted through
+    openedx-authz role assignments, not just legacy CourseStaffRole /
+    CourseInstructorRole (openedx/openedx-authz#417).
+    """
+
+    AUTHZ_PATH = 'openedx.core.djangoapps.content.search.models.get_user_role_assignments_per_scope_type'
+
+    def _create_course(self, course_location):
+        """Create a SearchAccess row per course so access_ids can resolve."""
+        course = super()._create_course(course_location)
+        SearchAccess.objects.create(context_key=course.id)
+        return course
+
+    def _create_library(self, org, num):
+        """Create a SearchAccess row per library so access_ids can resolve."""
+        library = super()._create_library(org, num)
+        SearchAccess.objects.create(context_key=library.key)
+        return library
+
+    def _authz_only_user(self):
+        """A user with no legacy course role — access can only come from authz."""
+        return UserFactory.create(
+            username='authz_editor',
+            email='authz_editor@example.com',
+            is_staff=False,
+            password='authz_editor_pass',
+        )
+
+    def _course_access_ids(self, course_keys):
+        """Resolve the SearchAccess ids for the given course keys."""
+        return set(
+            SearchAccess.objects.filter(context_key__in=course_keys).values_list('id', flat=True)
+        )
+
+    @override_waffle_flag(core_toggles.AUTHZ_COURSE_AUTHORING_FLAG, active=True)
+    def test_authz_only_user_sees_authz_courses(self):
+        """
+        A user with an authz role assignment but no legacy role gets the
+        matching course access_ids when the flag is enabled.
+        """
+        user = self._authz_only_user()
+        granted = self.course_user_keys[:2]  # first two are CourseKeys (libraries come later)
+        request = RequestFactory().get('/course')
+        request.user = user
+
+        with mock.patch(
+            self.AUTHZ_PATH,
+            return_value=[_fake_authz_assignment(key) for key in granted],
+        ):
+            access_ids = get_access_ids_for_request(request)
+
+        assert set(access_ids) == self._course_access_ids(granted)
+
+    @override_waffle_flag(core_toggles.AUTHZ_COURSE_AUTHORING_FLAG, active=True)
+    def test_authz_courses_respect_omit_orgs(self):
+        """Authz-granted courses in an omitted org are excluded."""
+        user = self._authz_only_user()
+        granted = self.course_user_keys[:2]
+        request = RequestFactory().get('/course')
+        request.user = user
+
+        with mock.patch(
+            self.AUTHZ_PATH,
+            return_value=[_fake_authz_assignment(key) for key in granted],
+        ):
+            access_ids = get_access_ids_for_request(request, omit_orgs=['Org'])
+
+        assert not access_ids
+
+    @override_waffle_flag(core_toggles.AUTHZ_COURSE_AUTHORING_FLAG, active=False)
+    def test_authz_courses_excluded_when_flag_off(self):
+        """With the flag disabled, authz assignments contribute no access_ids."""
+        user = self._authz_only_user()
+        granted = self.course_user_keys[:2]
+        request = RequestFactory().get('/course')
+        request.user = user
+
+        with mock.patch(
+            self.AUTHZ_PATH,
+            return_value=[_fake_authz_assignment(key) for key in granted],
+        ):
+            access_ids = get_access_ids_for_request(request)
+
+        assert not access_ids
+
+    @override_waffle_flag(core_toggles.AUTHZ_COURSE_AUTHORING_FLAG, active=True)
+    def test_authz_db_failure_is_swallowed(self):
+        """
+        A database failure in the authz query must not break search; the
+        request falls back to legacy roles only (here: none, so no access_ids).
+        """
+        user = self._authz_only_user()
+        request = RequestFactory().get('/course')
+        request.user = user
+
+        with mock.patch(self.AUTHZ_PATH, side_effect=OperationalError('authz db down')):
+            access_ids = get_access_ids_for_request(request)
+
+        assert not access_ids
+
+    @override_waffle_flag(core_toggles.AUTHZ_COURSE_AUTHORING_FLAG, active=True)
+    def test_authz_unexpected_error_propagates(self):
+        """
+        Only known operational (DatabaseError) failures are swallowed. An
+        unexpected error is NOT masked — it propagates so real bugs surface.
+        """
+        user = self._authz_only_user()
+        request = RequestFactory().get('/course')
+        request.user = user
+
+        with mock.patch(self.AUTHZ_PATH, side_effect=RuntimeError('unexpected')):
+            with pytest.raises(RuntimeError):
+                get_access_ids_for_request(request)
+
+    @override_waffle_flag(core_toggles.AUTHZ_COURSE_AUTHORING_FLAG, active=True)
+    def test_authz_ignores_unparseable_scope(self):
+        """A scope external_key that is not a course key is skipped, not fatal."""
+        user = self._authz_only_user()
+        granted = self.course_user_keys[:1]
+        request = RequestFactory().get('/course')
+        request.user = user
+        assignments = [
+            _fake_authz_assignment(granted[0]),
+            _fake_authz_assignment('not-a-course-key'),
+        ]
+
+        with mock.patch(self.AUTHZ_PATH, return_value=assignments):
+            access_ids = get_access_ids_for_request(request)
+
+        assert set(access_ids) == self._course_access_ids(granted)
+
+    @override_waffle_flag(core_toggles.AUTHZ_COURSE_AUTHORING_FLAG, active=True)
+    def test_authz_union_with_legacy_roles_no_duplicates(self):
+        """
+        When a course is granted through BOTH a legacy role and authz, its
+        access_id appears exactly once.
+        """
+        request = RequestFactory().get('/course')
+        request.user = self.course_staff  # already has legacy CourseStaffRole on course_user_keys
+        legacy_courses = self.course_user_keys[:2]
+
+        with mock.patch(
+            self.AUTHZ_PATH,
+            return_value=[_fake_authz_assignment(key) for key in legacy_courses],
+        ):
+            access_ids = get_access_ids_for_request(request)
+
+        assert len(access_ids) == len(set(access_ids))
+        assert self._course_access_ids(legacy_courses).issubset(set(access_ids))
