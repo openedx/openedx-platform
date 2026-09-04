@@ -11,7 +11,7 @@ from django.urls import reverse
 from freezegun import freeze_time
 from opaque_keys.edx.keys import ContainerKey, UsageKey
 from opaque_keys.edx.locator import LibraryLocatorV2, LibraryUsageLocatorV2
-from openedx_authz.constants.roles import COURSE_EDITOR
+from openedx_authz.constants.roles import COURSE_AUDITOR, COURSE_EDITOR
 from openedx_content import models_api as content_models
 from organizations.models import Organization
 from rest_framework import status
@@ -1686,3 +1686,77 @@ class GetDownstreamDeletedUpstream(
         }
 
         self.assertDictEqual(data[0], expected_results)  # noqa: PT009
+
+
+class GetDownstreamListAuthzViewTest(
+    CourseAuthoringAuthzTestMixin,
+    _BaseDownstreamViewTestMixin,
+    ImmediateOnCommitMixin,
+    SharedModuleStoreTestCase,
+):
+    """
+    AuthZ tests for:
+    GET /api/contentstore/v2/downstreams/?course_id=...
+
+    Validates that view_library_updates grants read access and
+    manage_library_updates is required for sync operations.
+    """
+
+    def call_list_api(self, client, course_id):
+        return client.get("/api/contentstore/v2/downstreams/", data={"course_id": str(course_id)})
+
+    def call_sync_api(self, client, usage_key):
+        return client.post(
+            f"/api/contentstore/v2/downstreams/{usage_key}/sync",
+            content_type="application/json",
+        )
+
+    def test_editor_can_list_downstreams(self):
+        """Course editor (has view_library_updates) can list downstream links."""
+        self.add_user_to_role_in_course(
+            self.authorized_user, COURSE_EDITOR.external_key, self.course.id
+        )
+        response = self.call_list_api(self.authorized_client, self.course.id)
+        assert response.status_code == status.HTTP_200_OK
+
+    def test_auditor_can_list_downstreams(self):
+        """Course auditor (has view_library_updates) can list downstream links."""
+        self.add_user_to_role_in_course(
+            self.authorized_user, COURSE_AUDITOR.external_key, self.course.id
+        )
+        response = self.call_list_api(self.authorized_client, self.course.id)
+        assert response.status_code == status.HTTP_200_OK
+
+    def test_unauthorized_user_cannot_list_downstreams(self):
+        """User without any course role cannot list downstream links."""
+        response = self.call_list_api(self.unauthorized_client, self.course.id)
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_editor_can_sync_downstream(self):
+        """Course editor passes the manage_library_updates gate for sync.
+
+        Note: a full 200 sync additionally requires library-level access on the
+        upstream, which is out of scope for this PR and tracked in
+        openedx-authz#419. This asserts only that the course-level write gate is
+        satisfied — i.e. the request is not the 404 that _load_accessible_block
+        raises on permission denial.
+        """
+        self.add_user_to_role_in_course(
+            self.authorized_user, COURSE_EDITOR.external_key, self.course.id
+        )
+        response = self.call_sync_api(self.authorized_client, str(self.downstream_video_key))
+        assert response.status_code != status.HTTP_404_NOT_FOUND
+
+    def test_auditor_cannot_sync_downstream(self):
+        """Course auditor (only view_library_updates) cannot sync a downstream block."""
+        self.add_user_to_role_in_course(
+            self.authorized_user, COURSE_AUDITOR.external_key, self.course.id
+        )
+        response = self.call_sync_api(self.authorized_client, str(self.downstream_video_key))
+        # This 404 is permission-based, not "block missing": test_editor_can_sync_downstream
+        # hits the SAME downstream_video_key with a role that holds manage_library_updates and
+        # gets a non-404 response, so the block demonstrably exists and is reachable. The only
+        # variable between the two tests is the role, so the auditor's 404 is the
+        # _load_accessible_block permission denial (which returns 404, not 403, to avoid
+        # leaking block existence).
+        assert response.status_code == status.HTTP_404_NOT_FOUND
