@@ -68,8 +68,12 @@ class Command(BaseCommand):
             if isinstance(record, bytes):
                 record = record.decode('utf-8')
             userdata = record.split(',')
-            username = userdata[0].strip()
+            if len(userdata) < 2:
+                continue
+            username = userdata[0].strip().lstrip('\ufeff')
             user_email = userdata[1].strip()
+            if username.lower() == 'username' and user_email.lower() in ('email', 'user_email'):
+                continue
             try:
                 users.append(User.objects.get(username=username, email=user_email))
             except user_model.DoesNotExist:
