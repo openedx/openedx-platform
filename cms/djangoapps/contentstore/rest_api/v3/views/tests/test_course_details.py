@@ -19,7 +19,7 @@ attribute does not replace the live ViewSet attribute.
 """
 from unittest.mock import MagicMock, patch
 
-from django.urls import reverse
+from django.urls import resolve, reverse
 from rest_framework import status
 from rest_framework.test import APIClient, APITestCase
 
@@ -378,3 +378,59 @@ class TestCourseDetailsViewSetNestedJsonNormalization(APITestCase):
 
         assert response.status_code == status.HTTP_200_OK
         assert set(response.data.keys()) == {"course_id", "title"}
+
+
+# ===========================================================================
+# ADR 0038 — URL-structure tests:
+# conforming /api/authoring/v3/courses/{course_key}/details/ mount
+# ===========================================================================
+class TestCourseDetailsAdr0038Urls(APITestCase):
+    """
+    ADR 0038: the conforming nested route is mounted beside the legacy
+    /api/contentstore/v3/course_details/{course_id}/ route (OEP-21) and
+    resolves to the same view — the screen-named collection becomes a
+    sub-resource of the plural ``courses/`` collection, one level deep
+    (rules 4 and 8), with the course key resolved by the shared
+    ``course_key`` converter (rule 9).
+    """
+
+    def _conforming_url(self):
+        return reverse(
+            "authoring_v3:course_details",
+            kwargs={"course_id": TEST_COURSE_ID},
+        )
+
+    def _legacy_url(self):
+        return reverse(
+            "cms.djangoapps.contentstore:v3:course_details-detail",
+            kwargs={"course_id": TEST_COURSE_ID},
+        )
+
+    def test_conforming_url_reverses_to_expected_path(self):
+        assert self._conforming_url() == (
+            f"/api/authoring/v3/courses/{TEST_COURSE_ID}/details/"
+        )
+
+    def test_conforming_and_legacy_routes_share_view(self):
+        legacy_cls = resolve(self._legacy_url()).func.cls
+        conforming_cls = resolve(self._conforming_url()).func.cls
+        assert conforming_cls is legacy_cls
+
+    def test_invalid_course_key_is_404_on_conforming_route(self):
+        # The shared course_key converter rejects unparseable keys, so a bad
+        # identifier is a routing-level 404 (ADR 0038 rule 9).
+        response = self.client.get("/api/authoring/v3/courses/not-a-course-key/details/")
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_unauthenticated_get_returns_401(self):
+        response = self.client.get(self._conforming_url())
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+    @patch(MOCK_COURSE_EXISTS, return_value=True)
+    @patch(MOCK_HAS_PERMISSION, return_value=False)
+    def test_non_author_get_returns_403(self, mock_perm, mock_exists):  # noqa: ARG002
+        """The conforming mount enforces the same authorization as the legacy one."""
+        user = UserFactory.create()
+        self.client.force_authenticate(user=user)
+        response = self.client.get(self._conforming_url())
+        assert response.status_code == status.HTTP_403_FORBIDDEN

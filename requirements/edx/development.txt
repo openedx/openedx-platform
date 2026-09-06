@@ -520,7 +520,7 @@ edx-django-utils==8.0.2
     #   ora2
     #   super-csv
     #   xblocks-contrib
-edx-drf-extensions==10.7.0
+edx-drf-extensions==10.8.0
     # via
     #   edx-completion
     #   edx-enterprise

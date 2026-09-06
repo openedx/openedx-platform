@@ -13,7 +13,7 @@ Covers:
 from unittest.mock import patch
 
 from django.test import override_settings
-from django.urls import reverse
+from django.urls import resolve, reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -213,7 +213,9 @@ class TestUserRolesViewAliases(APITestCase):
     def setUp(self):
         super().setUp()
         self.user = UserFactory.create(password="test")
-        self.url = reverse("v2:enrollment-v2-roles")
+        # ADR 0038 rule 11: renamed from the versioned kebab-case
+        # ``enrollment-v2-roles`` (the path is unchanged).
+        self.url = reverse("v2:user_roles")
 
     @patch("openedx.core.djangoapps.enrollments.v2.views.api.get_user_roles", return_value=[])
     def test_new_course_key_param_no_header(self, mock_get):  # noqa: ARG002
@@ -287,3 +289,86 @@ class TestEnrollmentViewSetMinimalView(APITestCase):
         assert {r["course_id"] for r in response.data["results"]} == {
             "course-v1:org+a+r", "course-v1:org+b+r",
         }
+
+
+# ---------------------------------------------------------------------------
+# ADR 0038 — URL-structure tests (conforming routes beside legacy ones)
+# ---------------------------------------------------------------------------
+
+@skip_unless_lms
+class TestEnrollmentAdr0038Urls(APITestCase):
+    """
+    ADR 0038: /api/enrollment/v2/ already conforms in name and version
+    position; these tests pin the rule 6 / rule 11 fixes — conforming
+    trailing-slash routes with snake_case version-free names, dual-mounted
+    (OEP-21) beside the legacy slashless routes, which keep their names.
+    """
+
+    USERNAME = "someone"
+    COURSE_ID = "course-v1:org+course+run"
+
+    def test_conforming_urls_reverse_to_expected_paths(self):
+        assert reverse("v2:enrollment_admin_list") == "/api/enrollment/v2/enrollments/"
+        assert reverse(
+            "v2:enrollment_detail",
+            kwargs={"username": self.USERNAME, "course_id": self.COURSE_ID},
+        ) == f"/api/enrollment/v2/enrollments/{self.USERNAME},{self.COURSE_ID}/"
+        assert reverse(
+            "v2:course_enrollment_detail", kwargs={"course_id": self.COURSE_ID},
+        ) == f"/api/enrollment/v2/courses/{self.COURSE_ID}/"
+        assert reverse("v2:user_roles") == "/api/enrollment/v2/roles/"
+
+    def test_conforming_and_legacy_routes_share_views(self):
+        pairs = (
+            # (conforming path, legacy path)
+            ("/api/enrollment/v2/enrollments/", "/api/enrollment/v2/enrollments"),
+            (
+                f"/api/enrollment/v2/enrollments/{self.USERNAME},{self.COURSE_ID}/",
+                f"/api/enrollment/v2/enrollment/{self.USERNAME},{self.COURSE_ID}",
+            ),
+            (
+                f"/api/enrollment/v2/courses/{self.COURSE_ID}/",
+                f"/api/enrollment/v2/course/{self.COURSE_ID}",
+            ),
+        )
+        for conforming, legacy in pairs:
+            assert resolve(conforming).func.cls is resolve(legacy).func.cls, (
+                f"{conforming} must serve the same view as {legacy}"
+            )
+
+    def test_legacy_admin_list_optional_slash_coverage_is_preserved(self):
+        """
+        The legacy ``^enrollments/?$`` optional-slash pattern (the ADR 0038
+        rule 6 example) is split into a conforming slashed route plus a
+        slashless legacy route: both addresses still resolve, one route each.
+        """
+        slashless = resolve("/api/enrollment/v2/enrollments")
+        slashed = resolve("/api/enrollment/v2/enrollments/")
+        assert slashless.func.cls is slashed.func.cls
+        assert slashless.url_name == "enrollment-v2-admin-list"
+        assert slashed.url_name == "enrollment_admin_list"
+
+    def test_legacy_retrieve_routes_have_unique_names(self):
+        """
+        ADR 0038 rule 11: the two legacy retrieve forms no longer share one
+        URL name (Django disambiguated them only by argument signature).
+        """
+        composite = resolve(
+            f"/api/enrollment/v2/enrollment/{self.USERNAME},{self.COURSE_ID}"
+        )
+        course_only = resolve(f"/api/enrollment/v2/enrollment/{self.COURSE_ID}")
+        assert composite.func.cls is course_only.func.cls
+        assert composite.url_name == "enrollment-v2-retrieve"
+        assert course_only.url_name == "enrollment-v2-retrieve-own"
+
+    def test_invalid_course_key_is_404_on_conforming_route(self):
+        # The shared course_key converter rejects unparseable keys, so a bad
+        # identifier is a routing-level 404 (ADR 0038 rule 9).
+        response = self.client.get("/api/enrollment/v2/courses/not-a-course-key/")
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_admin_list_contract_is_identical_on_both_addresses(self):
+        """Unauthenticated callers get the same 401 on legacy and conforming."""
+        legacy = self.client.get("/api/enrollment/v2/enrollments")
+        conforming = self.client.get("/api/enrollment/v2/enrollments/")
+        assert legacy.status_code == conforming.status_code == status.HTTP_401_UNAUTHORIZED

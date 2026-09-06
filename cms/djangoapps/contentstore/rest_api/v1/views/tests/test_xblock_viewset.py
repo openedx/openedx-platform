@@ -10,7 +10,7 @@ Verifies:
 from unittest.mock import patch
 
 from django.http import JsonResponse
-from django.urls import reverse
+from django.urls import resolve, reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -216,3 +216,70 @@ class TestXblockViewSetMinimalView(ModuleStoreTestCase, APITestCase):
         response = self.client.get(_detail_url(), {"view": "minimal", "fields": "graderType"})
         assert response.status_code == status.HTTP_200_OK
         assert response.json() == "notgraded"
+
+
+# ---------------------------------------------------------------------------
+# ADR 0038 URL-structure tests — conforming /api/authoring/v1/xblocks/ mount
+# ---------------------------------------------------------------------------
+
+
+def _authoring_list_url():
+    return reverse("authoring_v1:xblock_list")
+
+
+def _authoring_detail_url():
+    return reverse(
+        "authoring_v1:xblock_detail",
+        kwargs={"usage_key_string": TEST_LOCATOR},
+    )
+
+
+class XblockAdr0038UrlTest(ModuleStoreTestCase, APITestCase):
+    """
+    ADR 0038: the conforming /api/authoring/v1/xblocks/ routes are mounted
+    beside the legacy /api/contentstore/v1/xblock/ routes (OEP-21) and
+    resolve to the same view.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.staff = GlobalStaffFactory(password='password')
+        self.client.force_authenticate(user=self.staff)
+
+    def test_conforming_urls_reverse_to_expected_paths(self):
+        assert _authoring_list_url() == "/api/authoring/v1/xblocks/"
+        assert _authoring_detail_url() == f"/api/authoring/v1/xblocks/{TEST_LOCATOR}/"
+
+    def test_conforming_and_legacy_routes_share_view(self):
+        legacy_cls = resolve(_detail_url()).func.cls
+        conforming_cls = resolve(_authoring_detail_url()).func.cls
+        assert conforming_cls is legacy_cls
+
+    def test_invalid_usage_key_is_404_on_conforming_route(self):
+        # The shared usage_key converter rejects unparseable keys, so a bad
+        # identifier is a routing-level 404 (ADR 0038 rule 9), not a 400.
+        response = self.client.get("/api/authoring/v1/xblocks/not-a-usage-key/")
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    @patch(f"{_VIEW_MODULE}.retrieve_xblock_response", return_value=_MOCK_RESPONSE)
+    def test_get_on_conforming_route_calls_retrieve(self, mock_fn):
+        # Also exercises the UsageKey→str coercion in XblockViewSet.initial().
+        response = self.client.get(_authoring_detail_url())
+        assert response.status_code == status.HTTP_200_OK
+        mock_fn.assert_called_once()
+        assert mock_fn.call_args[0][0].method == "GET"
+
+    @patch(f"{_VIEW_MODULE}.create_xblock_response", return_value=_MOCK_RESPONSE)
+    def test_post_on_conforming_route_calls_create(self, mock_fn):
+        data = {"parent_locator": PARENT_LOCATOR, "category": "html"}
+        response = self.client.post(_authoring_list_url(), data=data, format="json")
+        assert response.status_code == status.HTTP_200_OK
+        mock_fn.assert_called_once()
+        assert mock_fn.call_args[0][0].method == "POST"
+
+    @patch(f"{_VIEW_MODULE}.delete_xblock_response", return_value=_MOCK_RESPONSE)
+    def test_delete_on_conforming_route_calls_destroy(self, mock_fn):
+        response = self.client.delete(_authoring_detail_url())
+        assert response.status_code == status.HTTP_200_OK
+        mock_fn.assert_called_once()
+        assert mock_fn.call_args[0][0].method == "DELETE"
