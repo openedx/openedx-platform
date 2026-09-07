@@ -86,32 +86,33 @@ jobs:
         with:
           mongodb-version: ${{ matrix.mongo-version }}
 
-      - name: Setup Python
-        uses: actions/setup-python@v6
+      - name: Install uv
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
+          enable-cache: true
           python-version: ${{ matrix.python-version }}
 
       - name: install requirements
         run: |
-          make test-requirements
-          if [[ "${{ matrix.django-version }}" != "pinned" ]]; then
-            pip install "django~=${{ matrix.django-version }}.0"
-            pip check # fail if this test-reqs/Django combination is broken
+          if [[ "${{ matrix.django-version }}" == "pinned" ]]; then
+            make test-requirements
+          else
+            uv sync --no-default-groups --group testing --group "django${{ matrix.django-version }}" --frozen
           fi
 
       - name: list installed package versions
         run: |
-          pip freeze
+          uv tree
 
       - name: set settings path
         shell: bash
         run: |
-          echo "settings_path=$(python scripts/unit_test_shards_parser.py --shard-name=${{ matrix.shard_name }} --output settings )" >> $GITHUB_ENV
+          echo "settings_path=$(uv run python scripts/unit_test_shards_parser.py --shard-name=${{ matrix.shard_name }} --output settings )" >> $GITHUB_ENV
 
       - name: get unit tests for shard
         shell: bash
         run: |
-          echo "unit_test_paths=$(python scripts/unit_test_shards_parser.py --shard-name=${{ matrix.shard_name }} )" >> $GITHUB_ENV
+          echo "unit_test_paths=$(uv run python scripts/unit_test_shards_parser.py --shard-name=${{ matrix.shard_name }} )" >> $GITHUB_ENV
           if [[ "${{ github.ref }}" == "refs/heads/master" ]]; then
             echo "report_log_arg=--report-log=reports/pytest-report-${{ matrix.shard_name }}.jsonl" >> $GITHUB_ENV
           else
@@ -125,7 +126,7 @@ jobs:
           # (~3.7k lines of noise). The .coverage data file is still written and
           # uploaded as an artifact for the combined `coverage` job below, which
           # is what reports to codecov.
-          python -Wd -m pytest -p no:randomly --ds=${{ env.settings_path }} ${{ env.unit_test_paths }} \
+          uv run python -Wd -m pytest -p no:randomly --ds=${{ env.settings_path }} ${{ env.unit_test_paths }} \
             --cov=. --cov-report="" ${{ env.report_log_arg }}
 
       - name: Upload pytest timing report
@@ -167,36 +168,37 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
-      - name: Setup Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: 3.12
 
       - name: install system requirements
         run: |
           sudo apt-get update && sudo apt-get install libxmlsec1-dev
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          enable-cache: true
+          python-version: "3.12"
+
       - name: install requirements
-        run: |
-          make test-requirements
+        run: make test-requirements
 
       - name: collect tests from all modules
         shell: bash
         run: |
-          echo "root_cms_unit_tests_count=$(pytest --disable-warnings --collect-only --ds=cms.envs.test cms/ -q | head -n -2 | wc -l)" >> $GITHUB_ENV
-          echo "root_lms_unit_tests_count=$(pytest --disable-warnings --collect-only --ds=lms.envs.test lms/ openedx/ common/djangoapps/ xmodule/ -q | head -n -2 | wc -l)" >> $GITHUB_ENV
+          echo "root_cms_unit_tests_count=$(uv run pytest --disable-warnings --collect-only --ds=cms.envs.test cms/ -q | head -n -2 | wc -l)" >> $GITHUB_ENV
+          echo "root_lms_unit_tests_count=$(uv run pytest --disable-warnings --collect-only --ds=lms.envs.test lms/ openedx/ common/djangoapps/ xmodule/ -q | head -n -2 | wc -l)" >> $GITHUB_ENV
 
       - name: get GHA unit test paths
         shell: bash
         run: |
-          echo "cms_unit_test_paths=$(python scripts/gha_unit_tests_collector.py --cms-only)" >> $GITHUB_ENV
-          echo "lms_unit_test_paths=$(python scripts/gha_unit_tests_collector.py --lms-only)" >> $GITHUB_ENV
+          echo "cms_unit_test_paths=$(uv run python scripts/gha_unit_tests_collector.py --cms-only)" >> $GITHUB_ENV
+          echo "lms_unit_test_paths=$(uv run python scripts/gha_unit_tests_collector.py --lms-only)" >> $GITHUB_ENV
 
       - name: collect tests from GHA unit test shards
         shell: bash
         run: |
-          echo "cms_unit_tests_count=$(pytest --disable-warnings --collect-only --ds=cms.envs.test ${{ env.cms_unit_test_paths }} -q | head -n -2 | wc -l)" >> $GITHUB_ENV
-          echo "lms_unit_tests_count=$(pytest --disable-warnings --collect-only --ds=lms.envs.test ${{ env.lms_unit_test_paths }} -q | head -n -2 | wc -l)" >> $GITHUB_ENV
+          echo "cms_unit_tests_count=$(uv run pytest --disable-warnings --collect-only --ds=cms.envs.test ${{ env.cms_unit_test_paths }} -q | head -n -2 | wc -l)" >> $GITHUB_ENV
+          echo "lms_unit_tests_count=$(uv run pytest --disable-warnings --collect-only --ds=lms.envs.test ${{ env.lms_unit_test_paths }} -q | head -n -2 | wc -l)" >> $GITHUB_ENV
 
       - name: add unit tests count
         shell: bash
@@ -234,7 +236,7 @@ jobs:
     steps:
       - name: Decide whether the needed jobs succeeded or failed
         # uses: re-actors/alls-green@v1.2.1
-        uses: re-actors/alls-green@05ac9388f0aebcb5727afa17fcccfecd6f8ec5fe
+        uses: re-actors/alls-green@b5b5b37504aa4183270bd3d855c52a67f212be35
         with:
           jobs: ${{ toJSON(needs) }}
 
@@ -288,7 +290,7 @@ jobs:
   coverage:
     if: (github.repository == 'edx/edx-platform-private') || (github.repository == 'openedx/openedx-platform' && (startsWith(github.base_ref, 'release') == false))
     runs-on: ubuntu-24.04
-    needs: [run-tests]
+    needs: [merge-artifacts]
     strategy:
       matrix:
         python-version:
@@ -297,25 +299,24 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v7
 
-      - name: Setup Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v6
-        with:
-          python-version: ${{ matrix.python-version }}
-
       - name: Download all artifacts
         uses: actions/download-artifact@v8
         with:
-          pattern: coverage-*
-          merge-multiple: true
+          name: coverage
           path: reports
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          enable-cache: true
+          python-version: ${{ matrix.python-version }}
+
       - name: Install Python dependencies
-        run: |
-          pip install -r requirements/edx/coverage.txt
+        run: uv sync --no-default-groups --only-group coverage --no-install-project --frozen
 
       - name: Run coverage
         run: |
-          coverage combine reports/*
-          coverage report
-          coverage xml
+          uv run coverage combine reports/*
+          uv run coverage report
+          uv run coverage xml
       - uses: codecov/codecov-action@v7

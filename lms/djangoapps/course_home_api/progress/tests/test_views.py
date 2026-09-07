@@ -7,6 +7,7 @@ from unittest.mock import patch
 
 import dateutil
 import ddt
+from django.test.utils import override_settings
 from django.urls import reverse
 from django.utils.timezone import now
 from edx_toggles.toggles.testutils import override_waffle_flag
@@ -160,7 +161,7 @@ class ProgressTabTestViews(BaseCourseHomeTests):
         assert response.status_code == 200
         assert get_subsection_show_grades(response) is False
 
-    @patch.dict('django.conf.settings.FEATURES', {'DISABLE_START_DATES': False})
+    @override_settings(DISABLE_START_DATES=False)
     def test_has_scheduled_content_data(self):
         CourseEnrollment.enroll(self.user, self.course.id)
         future = now() + timedelta(days=30)

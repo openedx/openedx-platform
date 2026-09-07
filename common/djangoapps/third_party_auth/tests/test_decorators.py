@@ -8,7 +8,7 @@ from django.test import RequestFactory
 
 from common.djangoapps.third_party_auth.decorators import xframe_allow_whitelisted
 from common.djangoapps.third_party_auth.tests.testutil import TestCase
-from common.djangoapps.third_party_auth.tests.utils import skip_unless_thirdpartyauth
+from openedx.core.djangolib.testing.utils import skip_unless_lms
 
 
 @xframe_allow_whitelisted
@@ -17,7 +17,7 @@ def mock_view(_request):
     return HttpResponse()
 
 
-@skip_unless_thirdpartyauth()
+@skip_unless_lms
 @ddt.ddt
 class TestXFrameWhitelistDecorator(TestCase):
     """ Test the xframe_allow_whitelisted decorator. """

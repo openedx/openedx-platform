@@ -20,8 +20,8 @@ from django.contrib.auth.models import User  # pylint: disable=imported-auth-use
 from django.test.utils import override_settings
 from django.urls import reverse
 from xblocks_contrib.problem.capa.responsetypes import StudentInputError
-from xblocks_contrib.problem.capa.tests.response_xml_factory import CodeResponseXMLFactory, CustomResponseXMLFactory
-from xblocks_contrib.problem.capa.tests.test_util import UseUnsafeCodejail
+from xblocks_contrib.problem.capa.testing.codejail import UseUnsafeCodejail
+from xblocks_contrib.problem.capa.testing.response_xml_factory import CodeResponseXMLFactory, CustomResponseXMLFactory
 
 from common.test.utils import assert_dict_contains_subset
 from lms.djangoapps.courseware.model_data import StudentModule

@@ -49,14 +49,12 @@ from user_tasks.tasks import UserTask
 import cms.djangoapps.contentstore.errors as UserErrors
 from cms.djangoapps.contentstore.courseware_index import (
     CoursewareSearchIndexer,
-    LibrarySearchIndexer,
     SearchIndexingError,
 )
 from cms.djangoapps.contentstore.storage import course_import_export_storage
 from cms.djangoapps.contentstore.toggles import enable_course_optimizer_check_prev_run_links
 from cms.djangoapps.contentstore.utils import (
     IMPORTABLE_FILE_TYPES,
-    add_instructor,
     contains_course_reference,
     create_course_info_usage_key,
     create_or_update_xblock_upstream_link,
@@ -189,14 +187,7 @@ def rerun_course(source_course_key_string, destination_course_key_string, user_i
         update_unit_discussion_state_from_discussion_blocks(destination_course_key, user_id)
 
         # set initial permissions for the user to access the course.
-        # NOTE: add_instructor is called here (after clone_course) because when
-        # authz.enable_course_authoring is enabled, it cannot be called pre-task
-        # (CourseOverview doesn't exist yet). This is a temporary workaround until
-        # openedx/openedx-authz#352 is implemented. Once resolved, add_instructor
-        # can move back to the pre-task call site unconditionally.
-        user = User.objects.get(id=user_id)
-        add_instructor(destination_course_key, user, user)
-        initialize_permissions(destination_course_key, user)
+        initialize_permissions(destination_course_key, User.objects.get(id=user_id))
 
         # update state: Succeeded
         CourseRerunState.objects.succeeded(course_key=destination_course_key)
@@ -290,20 +281,6 @@ def update_search_index(course_id, triggered_time_isoformat):
         )
     else:
         LOGGER.debug('Search indexing successful for complete course %s', course_id)
-
-
-@shared_task
-@set_code_owner_attribute
-def update_library_index(library_id, triggered_time_isoformat):
-    """ Updates course search index. """
-    try:
-        library_key = CourseKey.from_string(library_id)
-        LibrarySearchIndexer.index(modulestore(), library_key, triggered_at=(_parse_time(triggered_time_isoformat)))
-
-    except SearchIndexingError as exc:
-        LOGGER.error('Search indexing error for library %s - %s', library_id, str(exc))
-    else:
-        LOGGER.debug('Search indexing successful for library %s', library_id)
 
 
 @shared_task

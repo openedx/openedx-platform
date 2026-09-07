@@ -49,12 +49,15 @@ class Notification(TimeStampedModel):
     content_context = models.JSONField(default=dict)
     content_url = models.URLField(null=True, blank=True)  # noqa: DJ001
     web = models.BooleanField(default=True, null=False, blank=False)
+    # pylint: disable-next=pii-invalid-no-pii-annotation  # field does not store user PII data, safe under OEP-30
     email = models.BooleanField(default=False, null=False, blank=False)
     push = models.BooleanField(default=False, null=False, blank=False)
     last_read = models.DateTimeField(null=True, blank=True)
     last_seen = models.DateTimeField(null=True, blank=True)
     group_by_id = models.CharField(max_length=255, db_index=True, null=False, default="")
+    # pylint: disable-next=pii-invalid-no-pii-annotation  # field does not store user PII data, safe under OEP-30
     email_sent_on = models.DateTimeField(null=True, blank=True)
+    # pylint: disable-next=pii-invalid-no-pii-annotation  # field does not store user PII data, safe under OEP-30
     email_scheduled = models.BooleanField(
         default=False,
         db_index=True,
@@ -101,7 +104,9 @@ class NotificationPreference(TimeStampedModel):
     app = models.CharField(max_length=128, null=False, blank=False, db_index=True)
     web = models.BooleanField(default=True, null=False, blank=False)
     push = models.BooleanField(default=False, null=False, blank=False)
+    # pylint: disable-next=pii-invalid-no-pii-annotation  # field does not store user PII data, safe under OEP-30
     email = models.BooleanField(default=False, null=False, blank=False)
+    # pylint: disable-next=pii-invalid-no-pii-annotation  # field does not store user PII data, safe under OEP-30
     email_cadence = models.CharField(max_length=64, choices=EmailCadenceChoices.choices, null=False, blank=False)
     is_active = models.BooleanField(default=True)
 

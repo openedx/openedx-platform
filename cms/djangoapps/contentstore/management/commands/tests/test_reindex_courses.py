@@ -6,6 +6,7 @@ from unittest import mock
 
 import ddt
 from django.core.management import CommandError, call_command
+from django.test import override_settings
 
 from cms.djangoapps.contentstore.management.commands.reindex_course import Command as ReindexCommand
 from xmodule.modulestore import ModuleStoreEnum  # pylint: disable=wrong-import-order
@@ -148,9 +149,8 @@ class TestReindexCourse(ModuleStoreTestCase):
             expected_calls = self._build_calls(self.first_course, self.fourth_course)
             self.assertCountEqual(patched_index.mock_calls, expected_calls)  # noqa: PT009
 
-    @mock.patch.dict(
-        'django.conf.settings.FEATURES',
-        {'COURSEWARE_SEARCH_INCLUSION_DATE': (datetime.min.today() - timedelta(weeks=52)).strftime('%Y-%m-%d')}
+    @override_settings(
+        COURSEWARE_SEARCH_INCLUSION_DATE=(datetime.min.today() - timedelta(weeks=52)).strftime('%Y-%m-%d')
     )
     def test_given_from_inclusion_date_key_prompt(self):
         """
@@ -163,3 +163,19 @@ class TestReindexCourse(ModuleStoreTestCase):
 
             expected_calls = self._build_calls(self.first_course, self.second_course)
             self.assertCountEqual(patched_index.mock_calls, expected_calls)  # noqa: PT009
+
+    @override_settings(COURSEWARE_SEARCH_INCLUSION_DATE=None)
+    def test_from_inclusion_date_warns_and_defaults_when_unset(self):
+        """
+            Test that --from_inclusion_date logs a warning and falls back to the 2020-01-01
+            floor (reindexing every course that starts on or after that date) when
+            COURSEWARE_SEARCH_INCLUSION_DATE is not configured.
+        """
+        with mock.patch(self.REINDEX_PATH_LOCATION) as patched_index, \
+                mock.patch(self.MODULESTORE_PATCH_LOCATION, mock.Mock(return_value=self.store)), \
+                self.assertLogs(level='WARNING') as logs:
+            call_command('reindex_course', from_inclusion_date=True)
+
+        assert any('COURSEWARE_SEARCH_INCLUSION_DATE is not set' in message for message in logs.output)
+        expected_calls = self._build_calls(self.first_course, self.second_course, self.fourth_course)
+        self.assertCountEqual(patched_index.mock_calls, expected_calls)  # noqa: PT009

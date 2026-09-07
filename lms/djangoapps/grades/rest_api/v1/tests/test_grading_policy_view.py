@@ -8,7 +8,7 @@ from datetime import datetime
 import ddt
 from django.urls import reverse
 from pytz import UTC
-from xblocks_contrib.problem.capa.tests.response_xml_factory import MultipleChoiceResponseXMLFactory
+from xblocks_contrib.problem.capa.testing.response_xml_factory import MultipleChoiceResponseXMLFactory
 
 from common.djangoapps.student.tests.factories import GlobalStaffFactory, StaffFactory, UserFactory
 from openedx.core.djangoapps.oauth_dispatch.tests.factories import AccessTokenFactory, ApplicationFactory

@@ -28,6 +28,7 @@ from common.djangoapps.third_party_auth.tasks import fetch_saml_metadata
 from common.djangoapps.third_party_auth.tests import testutil, utils
 from common.test.utils import assert_dict_contains_subset
 from openedx.core.djangoapps.user_authn.views.login import login_user
+from openedx.core.djangolib.testing.utils import skip_unless_lms
 
 from .base import IntegrationTestMixin
 
@@ -160,7 +161,7 @@ class SamlIntegrationTestUtilities:
 
 
 @ddt.ddt
-@utils.skip_unless_thirdpartyauth()
+@skip_unless_lms
 class TestIndexExceptionTest(SamlIntegrationTestUtilities, IntegrationTestMixin, testutil.SAMLTestCase):
     """
     To test SAML error handling when presented with an empty-list attribute value
@@ -199,7 +200,7 @@ class TestIndexExceptionTest(SamlIntegrationTestUtilities, IntegrationTestMixin,
 
 
 @ddt.ddt
-@utils.skip_unless_thirdpartyauth()
+@skip_unless_lms
 class TestShibIntegrationTest(SamlIntegrationTestUtilities, IntegrationTestMixin, testutil.SAMLTestCase):
     """
     TestShib provider Integration Test, to test SAML functionality
@@ -404,7 +405,7 @@ class TestShibIntegrationTest(SamlIntegrationTestUtilities, IntegrationTestMixin
             self._test_return_login(previous_session_timed_out=True)
 
 
-@utils.skip_unless_thirdpartyauth()
+@skip_unless_lms
 class SuccessFactorsIntegrationTest(SamlIntegrationTestUtilities, IntegrationTestMixin, testutil.SAMLTestCase):
     """
     Test basic SAML capability using the TestShib details, and then check that we're able

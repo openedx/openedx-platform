@@ -15,11 +15,6 @@ from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.exceptions import ItemNotFoundError
 
 
-def normalize_key_for_search(library_key):
-    """ Normalizes library key for use with search indexing """
-    return library_key.replace(version_guid=None, branch=None)
-
-
 class LegacyLibraryToolsService:
     """
     Service for LegacyLibraryContentBlock.

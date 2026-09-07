@@ -11,7 +11,6 @@ import ddt
 import pytz
 from completion.models import BlockCompletion
 from completion.test_utils import CompletionWaffleTestMixin, submit_completions_for_testing
-from django.conf import settings
 from django.db import transaction
 from django.template import defaultfilters
 from django.test import RequestFactory, override_settings
@@ -167,10 +166,7 @@ class TestUserEnrollmentApi(UrlResetMixin, MobileAPITestCase, MobileAuthUserTest
                    str(courses[((num_courses - course_index) - 1)].id)
 
     @ddt.data(API_V05, API_V1, API_V2)
-    @override_settings(ENABLE_PREREQUISITE_COURSES=True)
-    @patch.dict(settings.FEATURES, {
-        'DISABLE_START_DATES': False,
-    })
+    @override_settings(ENABLE_PREREQUISITE_COURSES=True, DISABLE_START_DATES=False)
     def test_courseware_access(self, api_version):
         self.login()
 
@@ -229,7 +225,7 @@ class TestUserEnrollmentApi(UrlResetMixin, MobileAPITestCase, MobileAuthUserTest
         ('default_start_date', None, None, "empty", API_V2),
     )
     @ddt.unpack
-    @patch.dict(settings.FEATURES, {'DISABLE_START_DATES': False})
+    @override_settings(DISABLE_START_DATES=False)
     def test_start_type_and_display(self, start, advertised_start, expected_display, expected_type, api_version):
         """
         Tests that the correct start_type and start_display are returned in the

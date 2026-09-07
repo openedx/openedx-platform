@@ -7,7 +7,6 @@ from django.test.utils import override_settings
 from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory
 from openedx.core.djangolib.testing.utils import CacheIsolationTestCase, skip_unless_lms
 from openedx.features.enterprise_support.context import get_enterprise_event_context
-from openedx.features.enterprise_support.tests import FEATURES_WITH_ENTERPRISE_ENABLED
 from openedx.features.enterprise_support.tests.factories import (
     EnterpriseCourseEnrollmentFactory,
     EnterpriseCustomerUserFactory,
@@ -15,7 +14,7 @@ from openedx.features.enterprise_support.tests.factories import (
 from openedx.features.enterprise_support.tests.mixins.enterprise import EnterpriseServiceMockMixin
 
 
-@override_settings(FEATURES=FEATURES_WITH_ENTERPRISE_ENABLED)
+@override_settings(ENABLE_ENTERPRISE_INTEGRATION=True)
 @skip_unless_lms
 class TestEnterpriseContext(EnterpriseServiceMockMixin, CacheIsolationTestCase):
     """

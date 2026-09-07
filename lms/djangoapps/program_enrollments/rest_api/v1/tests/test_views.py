@@ -9,7 +9,6 @@ from unittest import mock
 from uuid import UUID, uuid4
 
 import ddt
-from django.conf import settings
 from django.core.cache import cache
 from django.test import override_settings
 from django.urls import reverse
@@ -61,7 +60,6 @@ from xmodule.modulestore.tests.factories import CourseFactory as ModulestoreCour
 
 from .. import views
 from ..constants import (
-    ENABLE_ENROLLMENT_RESET_FLAG,
     MAX_ENROLLMENT_RECORDS,
     REQUEST_STUDENT_KEY,
     CourseRunProgressStatuses,
@@ -2358,9 +2356,6 @@ class UserProgramCourseEnrollmentViewGetTests(ProgramCourseEnrollmentOverviewGet
 class EnrollmentDataResetViewTests(ProgramCacheMixin, APITestCase):
     """ Tests endpoint for resetting enrollments in integration environments """
 
-    FEATURES_WITH_ENABLED = settings.FEATURES.copy()
-    FEATURES_WITH_ENABLED[ENABLE_ENROLLMENT_RESET_FLAG] = True
-
     reset_enrollments_cmd = 'reset_enrollment_data'
     reset_users_cmd = 'remove_social_auth_users'
 
@@ -2395,7 +2390,7 @@ class EnrollmentDataResetViewTests(ProgramCacheMixin, APITestCase):
         assert response.status_code == status.HTTP_501_NOT_IMPLEMENTED
         mock_call_command.assert_has_calls([])
 
-    @override_settings(FEATURES=FEATURES_WITH_ENABLED)
+    @override_settings(ENABLE_ENROLLMENT_RESET=True)
     @patch_call_command
     def test_403_for_non_staff(self, mock_call_command):
         student = UserFactory.create(username='student', password='password')
@@ -2404,7 +2399,7 @@ class EnrollmentDataResetViewTests(ProgramCacheMixin, APITestCase):
         assert response.status_code == status.HTTP_403_FORBIDDEN
         mock_call_command.assert_has_calls([])
 
-    @override_settings(FEATURES=FEATURES_WITH_ENABLED)
+    @override_settings(ENABLE_ENROLLMENT_RESET=True)
     @patch_call_command
     def test_reset(self, mock_call_command):
         programs = [str(uuid4()), str(uuid4())]
@@ -2417,7 +2412,7 @@ class EnrollmentDataResetViewTests(ProgramCacheMixin, APITestCase):
             mock.call(self.reset_enrollments_cmd, ','.join(programs), force=True),
         ])
 
-    @override_settings(FEATURES=FEATURES_WITH_ENABLED)
+    @override_settings(ENABLE_ENROLLMENT_RESET=True)
     @patch_call_command
     def test_reset_with_multiple_idp(self, mock_call_command):
         programs = [str(uuid4()), str(uuid4())]
@@ -2436,7 +2431,7 @@ class EnrollmentDataResetViewTests(ProgramCacheMixin, APITestCase):
             mock.call(self.reset_enrollments_cmd, ','.join(programs), force=True),
         ])
 
-    @override_settings(FEATURES=FEATURES_WITH_ENABLED)
+    @override_settings(ENABLE_ENROLLMENT_RESET=True)
     @patch_call_command
     def test_reset_without_idp(self, mock_call_command):
         organization = LMSOrganizationFactory()
@@ -2449,14 +2444,14 @@ class EnrollmentDataResetViewTests(ProgramCacheMixin, APITestCase):
             mock.call(self.reset_enrollments_cmd, ','.join(programs), force=True),
         ])
 
-    @override_settings(FEATURES=FEATURES_WITH_ENABLED)
+    @override_settings(ENABLE_ENROLLMENT_RESET=True)
     @patch_call_command
     def test_organization_not_found(self, mock_call_command):
         response = self.request('yyz')
         assert response.status_code == status.HTTP_404_NOT_FOUND
         mock_call_command.assert_has_calls([])
 
-    @override_settings(FEATURES=FEATURES_WITH_ENABLED)
+    @override_settings(ENABLE_ENROLLMENT_RESET=True)
     @patch_call_command
     def test_no_programs_doesnt_break(self, mock_call_command):
         programs = []
@@ -2468,7 +2463,7 @@ class EnrollmentDataResetViewTests(ProgramCacheMixin, APITestCase):
             mock.call(self.reset_users_cmd, self.provider.slug, force=True),
         ])
 
-    @override_settings(FEATURES=FEATURES_WITH_ENABLED)
+    @override_settings(ENABLE_ENROLLMENT_RESET=True)
     @patch_call_command
     def test_missing_body_content(self, mock_call_command):
         response = self.client.post(

@@ -1,0 +1,41 @@
+[project]
+name = "edx-platform-structures-pruning-scripts"
+version = "0.1"
+requires-python = ">=3.12"
+dependencies = [
+    "click",
+    "click-log",
+    "edx-opaque-keys",
+    "pymongo",
+]
+
+[dependency-groups]
+test = [
+    "ddt",
+    "pytest",
+]
+
+[tool.uv]
+# This isn't installed as a package itself -- it's just a locked dependency
+# set for running the standalone script in this directory.
+package = false
+
+#  DO NOT EDIT constraint-dependencies DIRECTLY.
+#  This list is managed by `edx_lint write_uv_constraints`
+#  and will be overwritten the next time `make upgrade` is run.
+#  - GLOBAL constraints: edit edx_lint/files/common_constraints.txt
+#  - REPO-SPECIFIC constraints: edit [tool.edx_lint].uv_constraints in this file
+constraint-dependencies = [
+    "Django<6.0",
+    "elasticsearch<7.14.0",
+    "social-auth-app-django<6.0.0",
+    "social-auth-core<5.0.0",
+    "pip<26.2.1",
+    "pymongo<4.4.1",
+]
+[tool.edx_lint]
+# Adding pin to avoid any major upgrade -- see the root pyproject.toml's
+# [tool.edx_lint].uv_constraints for the full rationale.
+uv_constraints = [
+    "pymongo<4.4.1",
+]

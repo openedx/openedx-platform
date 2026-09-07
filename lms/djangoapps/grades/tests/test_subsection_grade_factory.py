@@ -6,7 +6,7 @@ Tests for the SubsectionGradeFactory class.
 from unittest.mock import patch
 
 import ddt
-from django.conf import settings
+from django.test import override_settings
 
 from common.djangoapps.student.tests.factories import UserFactory
 from lms.djangoapps.courseware.tests.test_submitting_problems import ProblemSubmissionTestMixin
@@ -43,7 +43,7 @@ class TestSubsectionGradeFactory(ProblemSubmissionTestMixin, GradeTestBase):
         assert isinstance(grade, ZeroSubsectionGrade)
         self.assert_grade(grade, 0.0, 1.0)
 
-    @patch.dict(settings.FEATURES, {'ENABLE_COURSE_ASSESSMENT_GRADE_CHANGE_SIGNAL': True})
+    @override_settings(ENABLE_COURSE_ASSESSMENT_GRADE_CHANGE_SIGNAL=True)
     def test_update(self):
         """
         Assuming the underlying score reporting methods work,

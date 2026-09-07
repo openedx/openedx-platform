@@ -11,13 +11,13 @@ from common.djangoapps.student.tests.factories import UserFactory
 from common.djangoapps.third_party_auth.admin import OAuth2ProviderConfigAdmin
 from common.djangoapps.third_party_auth.models import OAuth2ProviderConfig
 from common.djangoapps.third_party_auth.tests import testutil
-from common.djangoapps.third_party_auth.tests.utils import skip_unless_thirdpartyauth
+from openedx.core.djangolib.testing.utils import skip_unless_lms
 
 TEST_PASSWORD = 'Password1234'
 
 
 # This is necessary because cms does not implement third party auth
-@skip_unless_thirdpartyauth()
+@skip_unless_lms
 class Oauth2ProviderConfigAdminTest(testutil.TestCase):
     """
     Tests for oauth2 provider config admin

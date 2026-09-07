@@ -43,13 +43,13 @@ CDL_METHOD_NAME = 'openedx.features.course_duration_limits.models.CourseDuration
 
 @ddt.ddt
 @skip_unless_lms
+@override_settings(MODE_CREATION_FOR_TESTING=True)
 class CourseModeViewTest(CatalogIntegrationMixin, UrlResetMixin, ModuleStoreTestCase, CourseCatalogServiceMockMixin):
     """
     Course Mode View tests
     """
     URLCONF_MODULES = ['common.djangoapps.course_modes.urls']
 
-    @patch.dict(settings.FEATURES, {'MODE_CREATION_FOR_TESTING': True})
     def setUp(self):
         super().setUp()
         now = datetime.now(ZoneInfo("UTC"))

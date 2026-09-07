@@ -4,6 +4,7 @@ Tests for CourseData utility class.
 from unittest.mock import patch
 
 import pytest
+from django.test.utils import override_settings
 
 from common.djangoapps.student.tests.factories import UserFactory
 from lms.djangoapps.course_blocks.api import get_course_blocks
@@ -88,7 +89,7 @@ class CourseDataTest(ModuleStoreTestCase):
         with pytest.raises(ValueError):  # noqa: PT011
             _ = CourseData(self.user)
 
-    @patch.dict('django.conf.settings.FEATURES', {'DISABLE_START_DATES': False})
+    @override_settings(DISABLE_START_DATES=False)
     def test_full_string(self):
         empty_structure = get_course_blocks(self.user, self.course.location)
         assert not empty_structure

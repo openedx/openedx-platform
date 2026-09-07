@@ -4197,7 +4197,7 @@ class CourseTopicsV2Test(ModuleStoreTestCase):
             )
 
 
-@mock.patch.dict("django.conf.settings.FEATURES", {"DISABLE_START_DATES": False})
+@override_settings(DISABLE_START_DATES=False)
 @override_settings(ENABLE_DISCUSSION_SERVICE=True)
 class GetCourseTopicsTest(ForumMockUtilsMixin, UrlResetMixin, ModuleStoreTestCase):
     """Test for get_course_topics"""

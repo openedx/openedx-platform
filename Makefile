@@ -3,7 +3,7 @@
   compile-requirements detect_changed_source_translations dev-requirements \
   docs extract_translations \
   guides help lint-imports local-requirements migrate migrate-lms migrate-cms \
-  pre-requirements pull pull_xblock_translations pull_translations push_translations \
+  pull pull_xblock_translations pull_translations push_translations \
   requirements shell swagger \
   technical-docs test-requirements ubuntu-requirements upgrade-package upgrade
 
@@ -30,20 +30,20 @@ docs: swagger guides technical-docs ## build the documentation for this reposito
 	$(MAKE) -C docs html
 
 swagger: ## generate the swagger.yaml file
-	DJANGO_SETTINGS_MODULE=docs.docs_settings python manage.py lms generate_swagger --generator-class=edx_api_doc_tools.ApiSchemaGenerator -o $(SWAGGER)
+	DJANGO_SETTINGS_MODULE=docs.docs_settings uv run python manage.py lms generate_swagger --generator-class=edx_api_doc_tools.ApiSchemaGenerator -o $(SWAGGER)
 
 extract_translations: ## extract localizable strings from sources
-	i18n_tool extract --no-segment -v
+	uv run i18n_tool extract --no-segment -v
 	cd conf/locale/en/LC_MESSAGES && msgcat djangojs.po underscore.po -o djangojs.po
 
 pull_plugin_translations:  ## Pull translations for edx_django_utils.plugins for both lms and cms
-	python manage.py lms pull_plugin_translations --verbose $(ATLAS_OPTIONS)
-	python manage.py lms compile_plugin_translations
+	uv run python manage.py lms pull_plugin_translations --verbose $(ATLAS_OPTIONS)
+	uv run python manage.py lms compile_plugin_translations
 
 pull_xblock_translations:  ## pull xblock translations via atlas
-	python manage.py lms pull_xblock_translations --verbose $(ATLAS_OPTIONS)
-	python manage.py lms compile_xblock_translations
-	python manage.py cms compile_xblock_translations
+	uv run python manage.py lms pull_xblock_translations --verbose $(ATLAS_OPTIONS)
+	uv run python manage.py lms compile_xblock_translations
+	uv run python manage.py cms compile_xblock_translations
 
 clean_translations: ## Remove existing translations to prepare for a fresh pull
 	# Removes core edx-platform translations but keeps config files and Esperanto (eo) test translations
@@ -54,107 +54,129 @@ clean_translations: ## Remove existing translations to prepare for a fresh pull
 pull_translations: clean_translations  ## pull translations via atlas
 	make pull_xblock_translations
 	make pull_plugin_translations
-	atlas pull $(ATLAS_OPTIONS) \
+	uv run atlas pull $(ATLAS_OPTIONS) \
 	    translations/edx-platform/conf/locale:conf/locale \
 	    $(ATLAS_EXTRA_SOURCES)
-	python manage.py lms compilemessages
-	python manage.py lms compilejsi18n
-	python manage.py cms compilejsi18n
+	uv run python manage.py lms compilemessages
+	uv run python manage.py lms compilejsi18n
+	uv run python manage.py cms compilejsi18n
 
 detect_changed_source_translations: ## check if translation files are up-to-date
-	i18n_tool changed
+	uv run i18n_tool changed
 
-pre-requirements: ## install Python requirements for running pip-tools
-	pip install -r requirements/pip-tools.txt
+local-requirements: ## no-op; kept for backwards compatibility -- uv sync handles this now
+	@echo "WARNING: 'make local-requirements' is a no-op post uv migration. Please update your code."
 
-local-requirements:
-# 	edx-platform installs some Python projects from within the edx-platform repo itself.
-	pip install -e .
+dev-requirements: ## install development environment requirements
+	uv sync --group development --group ci --frozen
 
-dev-requirements: pre-requirements
-	@# The "$(wildcard..)" is to include private.txt if it exists, and make no mention
-	@# of it if it does not.  Shell wildcarding can't do that with default options.
-	pip-sync requirements/edx/development.txt $(wildcard requirements/edx/private.txt)
-	make local-requirements
+base-requirements: ## install only production/runtime dependencies
+	uv sync --no-default-groups --group bundled --frozen
 
-base-requirements: pre-requirements
-	pip-sync requirements/edx/base.txt
-	make local-requirements
-
-test-requirements: pre-requirements
-	pip-sync --pip-args="--exists-action=w" requirements/edx/testing.txt
-	make local-requirements
+test-requirements: ## install production dependencies plus the testing group (used by CI and tox)
+	uv sync --no-default-groups --group testing --frozen
 
 requirements: dev-requirements ## install development environment requirements
 
-# Order is very important in this list: files must appear after everything they include!
-REQ_FILES = \
-	requirements/edx/coverage \
-	requirements/edx-sandbox/base \
-	requirements/edx/base \
-	requirements/edx/doc \
-	requirements/edx/testing \
-	requirements/edx/assets \
-	requirements/edx/development \
-	requirements/edx/semgrep \
-	scripts/xblock/requirements \
-	scripts/user_retirement/requirements/base \
-	scripts/user_retirement/requirements/testing \
-	scripts/structures_pruning/requirements/base \
-	scripts/structures_pruning/requirements/testing
+compile-requirements: ## Regenerate uv.lock for the root project and all uv sub-projects
+	uv run --no-project --isolated --with edx-lint edx_lint write_uv_constraints pyproject.toml
+	uv lock ${UV_LOCK_OPTS}
 
-define COMMON_CONSTRAINTS_TEMP_COMMENT
-# This is a temporary solution to override the real common_constraints.txt\n# In edx-lint, until the pyjwt constraint in edx-lint has been removed.\n# See BOM-2721 for more details.\n# Below is the copied and edited version of common_constraints\n
-endef
-
-COMMON_CONSTRAINTS_TXT=requirements/common_constraints.txt
-.PHONY: $(COMMON_CONSTRAINTS_TXT)
-$(COMMON_CONSTRAINTS_TXT):
-	curl -L https://raw.githubusercontent.com/edx/edx-lint/master/edx_lint/files/common_constraints.txt > "$(@)"
-	printf "$(COMMON_CONSTRAINTS_TEMP_COMMENT)" | cat - $(@) > temp && mv temp $(@)
-
-compile-requirements: export CUSTOM_COMPILE_COMMAND=make upgrade
-compile-requirements: pre-requirements ## Re-compile *.in requirements to *.txt
-	@# Bootstrapping: Rebuild pip and pip-tools first, and then install them
-	@# so that if there are any failures we'll know now, rather than the next
-	@# time someone tries to use the outputs.
-	sed 's/Django<5.0//g' requirements/common_constraints.txt > requirements/common_constraints.tmp
-	mv requirements/common_constraints.tmp requirements/common_constraints.txt
-	sed 's/pip<25.3//g' requirements/common_constraints.txt > requirements/common_constraints.tmp
-	mv requirements/common_constraints.tmp requirements/common_constraints.txt
-
-	pip-compile -v --allow-unsafe ${COMPILE_OPTS} -o requirements/pip-tools.txt requirements/pip-tools.in
-	pip install -r requirements/pip-tools.txt
-
-	@ export REBUILD='--rebuild'; \
-	for f in $(REQ_FILES); do \
+	@# Lock every uv-managed sub-project (each has its own pyproject.toml + uv.lock,
+	@# independent of the root project's dependency graph) before exporting any
+	@# compat file below, so a failure in one halts the whole target before
+	@# anything downstream of it is (re)generated.
+	@for d in requirements/edx-sandbox scripts/xblock scripts/semgrep scripts/user_retirement scripts/structures_pruning; do \
 		echo ; \
-		echo "== $$f ===============================" ; \
-		echo "pip-compile -v $$REBUILD ${COMPILE_OPTS} -o $$f.txt $$f.in"; \
-		pip-compile -v $$REBUILD ${COMPILE_OPTS} -o $$f.txt $$f.in || exit 1; \
-		export REBUILD=''; \
+		echo "== $$d ===============================" ; \
+		uv run --no-project --isolated --with edx-lint edx_lint write_uv_constraints $$d/pyproject.toml && \
+		(cd $$d && uv lock ${UV_LOCK_OPTS}) \
+		|| exit 1; \
 	done
 
-upgrade: $(COMMON_CONSTRAINTS_TXT) ## update the pip requirements files to use the latest releases satisfying our constraints
-	$(MAKE) compile-requirements COMPILE_OPTS="--upgrade"
+	@# --- Everything below is DEPR-tracked compatibility-export scaffolding for
+	@# external tooling (e.g. Tutor's Dockerfile) that still does
+	@# `pip install -r requirements/edx/<name>.txt` directly instead of using uv.
+	@# These are GENERATED FILES -- see the header comment in each for what
+	@# regenerates them. Remove this whole section (and the scripts/*/requirements/
+	@# *.txt targets it writes) once external consumers have migrated to `uv sync`:
+	@# https://github.com/openedx/public-engineering/issues/552
+	@mkdir -p requirements/edx
+	@{ \
+		echo "# GENERATED FILE, DO NOT EDIT DIRECTLY."; \
+		echo "# Compatibility export of [project.dependencies] plus the 'bundled' group"; \
+		echo "# (optional third-party add-ons installed by default) for tools that still"; \
+		echo "# 'pip install -r requirements/edx/base.txt' directly instead of using uv."; \
+		echo "# Source of truth: [project.dependencies] / [dependency-groups].bundled in pyproject.toml / uv.lock."; \
+		uv export --frozen --no-hashes --no-default-groups --group bundled --no-emit-project; \
+	} > requirements/edx/base.txt
+	@{ \
+		echo "# GENERATED FILE, DO NOT EDIT DIRECTLY."; \
+		echo "# Compatibility export of the 'assets' dependency-group for tools that still"; \
+		echo "# 'pip install -r requirements/edx/assets.txt' directly instead of using uv."; \
+		echo "# Source of truth: [dependency-groups].assets in pyproject.toml / uv.lock."; \
+		uv export --frozen --no-hashes --only-group assets --no-emit-project; \
+	} > requirements/edx/assets.txt
+	@{ \
+		echo "# GENERATED FILE, DO NOT EDIT DIRECTLY."; \
+		echo "# Compatibility export of the 'development' and 'ci' dependency-groups for"; \
+		echo "# tools that still 'pip install -r requirements/edx/development.txt'"; \
+		echo "# directly instead of using uv."; \
+		echo "# Source of truth: [dependency-groups].development / .ci in pyproject.toml / uv.lock."; \
+		uv export --frozen --no-hashes --group development --group ci --no-emit-project; \
+	} > requirements/edx/development.txt
+
+	@# requirements/edx-sandbox, scripts/xblock: single compat export, no dependency-groups.
+	@{ \
+		echo "# GENERATED FILE, DO NOT EDIT DIRECTLY."; \
+		echo "# Compatibility export for anyone still 'pip install -r requirements/edx-sandbox/base.txt'"; \
+		echo "# directly instead of using uv. Source of truth: requirements/edx-sandbox/pyproject.toml / uv.lock."; \
+		(cd requirements/edx-sandbox && uv export --frozen --no-hashes --no-emit-project); \
+	} > requirements/edx-sandbox/base.txt
+	@{ \
+		echo "# GENERATED FILE, DO NOT EDIT DIRECTLY."; \
+		echo "# Compatibility export for anyone still 'pip install -r scripts/xblock/requirements.txt'"; \
+		echo "# directly instead of using uv. Source of truth: scripts/xblock/pyproject.toml / uv.lock."; \
+		(cd scripts/xblock && uv export --frozen --no-hashes --no-emit-project); \
+	} > scripts/xblock/requirements.txt
+
+	@# scripts/user_retirement and scripts/structures_pruning: base + testing (test group) compat exports.
+	@for d in scripts/user_retirement scripts/structures_pruning; do \
+		{ \
+			echo "# GENERATED FILE, DO NOT EDIT DIRECTLY."; \
+			echo "# Compatibility export for anyone still 'pip install -r $$d/requirements/base.txt'"; \
+			echo "# directly instead of using uv. Source of truth: $$d/pyproject.toml / uv.lock."; \
+			(cd $$d && uv export --frozen --no-hashes --no-emit-project); \
+		} > $$d/requirements/base.txt && \
+		{ \
+			echo "# GENERATED FILE, DO NOT EDIT DIRECTLY."; \
+			echo "# Compatibility export for anyone still 'pip install -r $$d/requirements/testing.txt'"; \
+			echo "# directly instead of using uv. Source of truth: $$d/pyproject.toml (test group) / uv.lock."; \
+			(cd $$d && uv export --frozen --no-hashes --group test --no-emit-project); \
+		} > $$d/requirements/testing.txt \
+		|| exit 1; \
+	done
+
+upgrade: ## update all dependencies (uv.lock for the root project and all uv sub-projects) to the latest releases satisfying our constraints
+	$(MAKE) compile-requirements UV_LOCK_OPTS="--upgrade"
 
 upgrade-package: ## update just one package to the latest usable release
 	@test -n "$(package)" || { echo "\nUsage: make upgrade-package package=...\n"; exit 1; }
-	$(MAKE) compile-requirements COMPILE_OPTS="--upgrade-package $(package)"
+	$(MAKE) compile-requirements UV_LOCK_OPTS="--upgrade-package $(package)"
 
 check-types: ## run static type-checking tests
-	mypy
+	uv run mypy
 
 lint-imports:
-	lint-imports
+	uv run lint-imports
 
 migrate-lms:
-	python manage.py lms showmigrations --database default --traceback --pythonpath=.
-	python manage.py lms migrate --database default --traceback --pythonpath=.
+	uv run python manage.py lms showmigrations --database default --traceback --pythonpath=.
+	uv run python manage.py lms migrate --database default --traceback --pythonpath=.
 
 migrate-cms:
-	python manage.py cms showmigrations --database default --traceback --pythonpath=.
-	python manage.py cms migrate --database default --noinput --traceback --pythonpath=.
+	uv run python manage.py cms showmigrations --database default --traceback --pythonpath=.
+	uv run python manage.py cms migrate --database default --noinput --traceback --pythonpath=.
 
 migrate: migrate-lms migrate-cms
 
@@ -166,33 +188,33 @@ ubuntu-requirements: ## Install ubuntu 22.04 system packages needed for `pip ins
 	sudo apt install libmysqlclient-dev libxmlsec1-dev
 
 xsslint: ## check xss for quality issuest
-	python scripts/xsslint/xss_linter.py \
+	uv run python scripts/xsslint/xss_linter.py \
 	--rule-totals \
 	--config=scripts.xsslint_config \
 	--thresholds=scripts/xsslint_thresholds.json
 
 ruff: ## check python files with ruff
-	ruff check .
+	uv run ruff check .
 
 ## Re-enable --lint flag when this issue https://github.com/openedx/edx-platform/issues/35775 is resolved
 pii_check: ## check django models for pii annotations
 	DJANGO_SETTINGS_MODULE=cms.envs.test \
-	code_annotations django_find_annotations \
+	uv run code_annotations django_find_annotations \
 		--config_file .pii_annotations.yml \
 		--coverage \
 		--lint
 
 	DJANGO_SETTINGS_MODULE=lms.envs.test \
-	code_annotations django_find_annotations \
+	uv run code_annotations django_find_annotations \
 		--config_file .pii_annotations.yml \
 		--coverage \
 		--lint
 
 check_keywords: ## check django models for reserve keywords
 	DJANGO_SETTINGS_MODULE=cms.envs.test \
-	python manage.py cms check_reserved_keywords \
+	uv run python manage.py cms check_reserved_keywords \
 	--override_file db_keyword_overrides.yml
 
 	DJANGO_SETTINGS_MODULE=lms.envs.test \
-	python manage.py lms check_reserved_keywords \
+	uv run python manage.py lms check_reserved_keywords \
 	--override_file db_keyword_overrides.yml

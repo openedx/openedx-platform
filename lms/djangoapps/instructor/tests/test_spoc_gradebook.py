@@ -2,7 +2,7 @@
 Tests of the instructor dashboard spoc gradebook
 """
 from django.urls import reverse
-from xblocks_contrib.problem.capa.tests.response_xml_factory import StringResponseXMLFactory
+from xblocks_contrib.problem.capa.testing.response_xml_factory import StringResponseXMLFactory
 
 from common.djangoapps.student.tests.factories import AdminFactory, CourseEnrollmentFactory, UserFactory
 from lms.djangoapps.courseware.tests.factories import StudentModuleFactory

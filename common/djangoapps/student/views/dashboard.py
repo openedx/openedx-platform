@@ -545,7 +545,7 @@ def student_dashboard(request):  # pylint: disable=too-many-statements
     ) or settings.SUPPORT_SITE_LINK
     hide_dashboard_courses_until_activated = configuration_helpers.get_value(
         'HIDE_DASHBOARD_COURSES_UNTIL_ACTIVATED',
-        settings.FEATURES.get('HIDE_DASHBOARD_COURSES_UNTIL_ACTIVATED', False)
+        settings.HIDE_DASHBOARD_COURSES_UNTIL_ACTIVATED
     )
     empty_dashboard_message = configuration_helpers.get_value(
         'EMPTY_DASHBOARD_MESSAGE', None

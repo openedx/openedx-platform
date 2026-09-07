@@ -56,7 +56,7 @@ class FilenamePrefixGeneratorTestCase(TestCase):
         [CCXLocator.from_course_locator(CourseLocator(org='foo', course='bar', run='baz'), '1'), 'foo_bar_baz_ccx_1'],
     )
     @ddt.unpack
-    @override_settings(FEATURES={'ENABLE_COURSE_FILENAME_CCX_SUFFIX': True})
+    @override_settings(ENABLE_COURSE_FILENAME_CCX_SUFFIX=True)
     def test_include_ccx_id(self, course_key, expected_filename):
         """
         Test filename prefix genaration from multiple course key formats.
@@ -82,7 +82,7 @@ class FilenamePrefixGeneratorTestCase(TestCase):
         [CCXLocator.from_course_locator(CourseLocator(org='foo', course='bar', run='baz'), '1'), 'foo-bar-baz-ccx-1'],
     )
     @ddt.unpack
-    @override_settings(FEATURES={'ENABLE_COURSE_FILENAME_CCX_SUFFIX': True})
+    @override_settings(ENABLE_COURSE_FILENAME_CCX_SUFFIX=True)
     def test_custom_separator_including_ccx_id(self, course_key, expected_filename):
         """
         Test filename prefix is generated with a custom separator.

@@ -7,6 +7,7 @@ import ddt
 from django.test.utils import override_settings
 from django.urls import reverse
 from edx_toggles.toggles.testutils import override_waffle_flag
+from openedx_authz.constants.permissions import COURSES_VIEW_ADVANCED_SETTINGS
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -480,3 +481,18 @@ class CourseProctoringErrorsViewTest(CourseTestCase, PermissionAccessMixin):
             response = self.non_staff_client.get(self.url)
             self.assertEqual(response.status_code, 403)  # noqa: PT009
             mock_is_user_allowed.assert_not_called()
+
+    @patch.object(core_toggles.AUTHZ_COURSE_AUTHORING_FLAG, 'is_enabled', return_value=True)
+    @patch('common.djangoapps.student.auth.authz_api.is_user_allowed')
+    def test_authz_feature_restricted_checks_view_permission(self, mock_is_user_allowed, mock_flag):
+        """
+        The proctoring errors endpoint uses the 'feature_restricted' access type, which should
+        check the view (read) permission so that view-only roles (editor/auditor) can access it.
+        """
+        mock_is_user_allowed.return_value = True
+        response = self.non_staff_client.get(self.url)
+        assert response.status_code == 200
+        mock_is_user_allowed.assert_called_once()
+        # The permission identifier is the second positional arg to is_user_allowed.
+        called_permission = mock_is_user_allowed.call_args[0][1]
+        assert called_permission == COURSES_VIEW_ADVANCED_SETTINGS.identifier

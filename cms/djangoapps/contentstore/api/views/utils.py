@@ -4,9 +4,10 @@ Common utilities for Contentstore APIs.
 
 
 from contextlib import contextmanager
+from datetime import date
 
 from opaque_keys.edx.keys import CourseKey
-from rest_framework import status
+from rest_framework import serializers, status
 from rest_framework.generics import GenericAPIView
 
 from common.djangoapps.student.auth import has_course_author_access
@@ -107,6 +108,23 @@ def get_bool_param(request, param_name, default):
         return default
     else:
         return bool_value
+
+
+def get_date_param(request, param_name, default=None) -> date | None:
+    """
+    Given a request, parameter name, and default value, returns
+    either a ``date`` value parsed from the query param, or the default
+    if the param wasn't provided.
+
+    Raises:
+        rest_framework.exceptions.ValidationError: If the param was provided
+            but isn't a valid ``YYYY-MM-DD`` date (including if a datetime,
+            rather than a date, was given).
+    """
+    param_value = request.GET.get(param_name, None)
+    if param_value is None:
+        return default
+    return serializers.DateField().run_validation(param_value)
 
 
 def course_author_access_required(view):

@@ -4,9 +4,9 @@ Check that view authentication works properly.
 
 
 import datetime
-from unittest.mock import patch
 
 import pytz
+from django.test.utils import override_settings
 from django.urls import reverse
 from edx_toggles.toggles.testutils import override_waffle_flag
 
@@ -387,7 +387,7 @@ class TestViewAuth(ModuleStoreTestCase, LoginEnrollmentTestCase):
         # Test the _check_staff_legacy method which includes instructor dashboard checks
         self._check_staff_legacy(self.course)
 
-    @patch.dict('lms.djangoapps.courseware.access.settings.FEATURES', {'DISABLE_START_DATES': False})
+    @override_settings(DISABLE_START_DATES=False)
     def test_dark_launch_enrolled_student(self):
         """
         Make sure that before course start, students can't access course
@@ -414,7 +414,7 @@ class TestViewAuth(ModuleStoreTestCase, LoginEnrollmentTestCase):
         self._check_non_staff_light(self.test_course)
         self._check_non_staff_dark(self.test_course)
 
-    @patch.dict('lms.djangoapps.courseware.access.settings.FEATURES', {'DISABLE_START_DATES': False})
+    @override_settings(DISABLE_START_DATES=False)
     def test_dark_launch_instructor(self):
         """
         Make sure that before course start instructors can access the
@@ -437,7 +437,7 @@ class TestViewAuth(ModuleStoreTestCase, LoginEnrollmentTestCase):
         self._check_non_staff_light(self.test_course)
         self._check_non_staff_dark(self.test_course)
 
-    @patch.dict('lms.djangoapps.courseware.access.settings.FEATURES', {'DISABLE_START_DATES': False})
+    @override_settings(DISABLE_START_DATES=False)
     def test_dark_launch_global_staff(self):
         """
         Make sure that before course start staff can access
@@ -459,7 +459,7 @@ class TestViewAuth(ModuleStoreTestCase, LoginEnrollmentTestCase):
         self._check_staff(self.course)
         self._check_staff(self.test_course)
 
-    @patch.dict('lms.djangoapps.courseware.access.settings.FEATURES', {'DISABLE_START_DATES': False})
+    @override_settings(DISABLE_START_DATES=False)
     def test_enrollment_period(self):
         """
         Check that enrollment periods work.
@@ -495,7 +495,7 @@ class TestViewAuth(ModuleStoreTestCase, LoginEnrollmentTestCase):
         assert self.enroll(self.course)
 
     @override_waffle_flag(LEGACY_INSTRUCTOR_DASHBOARD, active=True)
-    @patch.dict('lms.djangoapps.courseware.access.settings.FEATURES', {'DISABLE_START_DATES': False})
+    @override_settings(DISABLE_START_DATES=False)
     def test_dark_launch_instructor_legacy(self):
         """
         Make sure that before course start instructors can access the
@@ -518,7 +518,7 @@ class TestViewAuth(ModuleStoreTestCase, LoginEnrollmentTestCase):
         self._check_non_staff_dark(self.test_course)
 
     @override_waffle_flag(LEGACY_INSTRUCTOR_DASHBOARD, active=True)
-    @patch.dict('lms.djangoapps.courseware.access.settings.FEATURES', {'DISABLE_START_DATES': False})
+    @override_settings(DISABLE_START_DATES=False)
     def test_dark_launch_global_staff_legacy(self):
         """
         Make sure that before course start staff can access
@@ -558,7 +558,7 @@ class TestBetatesterAccess(ModuleStoreTestCase, CourseAccessTestMixin):
         self.normal_student = UserFactory()
         self.beta_tester = BetaTesterFactory(course_key=self.course.id)  # pylint: disable=no-member
 
-    @patch.dict('lms.djangoapps.courseware.access.settings.FEATURES', {'DISABLE_START_DATES': False})
+    @override_settings(DISABLE_START_DATES=False)
     def test_course_beta_period(self):
         """
         Check that beta-test access works for courses.
@@ -567,7 +567,7 @@ class TestBetatesterAccess(ModuleStoreTestCase, CourseAccessTestMixin):
         self.assertCannotAccessCourse(self.normal_student, 'load', self.course)
         self.assertCanAccessCourse(self.beta_tester, 'load', self.course)
 
-    @patch.dict('lms.djangoapps.courseware.access.settings.FEATURES', {'DISABLE_START_DATES': False})
+    @override_settings(DISABLE_START_DATES=False)
     def test_content_beta_period(self):
         """
         Check that beta-test access works for content.

@@ -400,7 +400,7 @@ class SupportViewEnrollmentsTests(SharedModuleStoreTestCase, SupportViewTestCase
         assert len(data) == 1
         assert data[0]['source_system'] == 'commercetools'
 
-    @override_settings(FEATURES=dict(ENABLE_ENTERPRISE_INTEGRATION=True))
+    @override_settings(ENABLE_ENTERPRISE_INTEGRATION=True)
     @enterprise_is_enabled()
     def test_get_enrollments_enterprise_enabled(self):
         url = reverse(

@@ -29,6 +29,8 @@ class Command(BaseCommand):
         ./manage.py reindex_course <course_id_1> <course_id_2> ... - reindexes courses with provided keys
         ./manage.py reindex_course --all --warning - reindexes all available courses with quieter logging
         ./manage.py reindex_course --setup - reindexes all courses for devstack setup
+        ./manage.py reindex_course --from_inclusion_date - reindexes courses that start on or after
+            settings.COURSEWARE_SEARCH_INCLUSION_DATE (defaults to 2020-01-01 if that setting is unset)
     """
     help = dedent(__doc__)
     CONFIRMATION_PROMPT = "Re-indexing all courses might be a time consuming operation. Do you want to continue?"
@@ -45,7 +47,9 @@ class Command(BaseCommand):
                             help='Reindex active courses only')
         parser.add_argument('--from_inclusion_date',
                             action='store_true',
-                            help='Reindex courses with a start date greater than COURSEWARE_SEARCH_INCLUSION_DATE'
+                            help='Reindex courses with a start date on or after '
+                                 'settings.COURSEWARE_SEARCH_INCLUSION_DATE (defaults to 2020-01-01 '
+                                 'if that setting is unset)'
                             )
         parser.add_argument('--setup',
                             action='store_true',
@@ -142,10 +146,15 @@ class Command(BaseCommand):
             # the settings defined COURSEWARE_SEARCH_INCLUSION_DATE
             all_courses = modulestore().get_courses()
 
-            inclusion_date = datetime.strptime(
-                settings.FEATURES.get('COURSEWARE_SEARCH_INCLUSION_DATE', '2020-01-01'),
-                '%Y-%m-%d'
-            )
+            configured_inclusion_date = settings.COURSEWARE_SEARCH_INCLUSION_DATE
+            if not configured_inclusion_date:
+                configured_inclusion_date = '2020-01-01'
+                logging.warning(
+                    'COURSEWARE_SEARCH_INCLUSION_DATE is not set; defaulting to %s for '
+                    '--from_inclusion_date filtering.',
+                    configured_inclusion_date,
+                )
+            inclusion_date = datetime.strptime(configured_inclusion_date, '%Y-%m-%d')
 
             # We keep the courses that has a start date and the start date is greater than the inclusion date
             active_courses = filter(lambda course: course.start and (course.start >= inclusion_date), all_courses)

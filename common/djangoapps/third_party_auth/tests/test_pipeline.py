@@ -11,10 +11,10 @@ from common.djangoapps.third_party_auth.tests import testutil
 from common.djangoapps.third_party_auth.tests.specs.base import IntegrationTestMixin
 from common.djangoapps.third_party_auth.tests.specs.test_testshib import SamlIntegrationTestUtilities
 from common.djangoapps.third_party_auth.tests.testutil import simulate_running_pipeline
-from common.djangoapps.third_party_auth.tests.utils import skip_unless_thirdpartyauth
+from openedx.core.djangolib.testing.utils import skip_unless_lms
 
 
-@skip_unless_thirdpartyauth()
+@skip_unless_lms
 @ddt.ddt
 class ProviderUserStateTestCase(testutil.TestCase):
     """Tests ProviderUserState behavior."""
@@ -54,7 +54,7 @@ class ProviderUserStateTestCase(testutil.TestCase):
             assert idp_config['logout_url'] == logout_url
 
 
-@skip_unless_thirdpartyauth()
+@skip_unless_lms
 @ddt.ddt
 class PipelineOverridesTest(SamlIntegrationTestUtilities, IntegrationTestMixin, testutil.SAMLTestCase):
     """

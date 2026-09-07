@@ -289,14 +289,14 @@ class LoginAndRegistrationTest(ThirdPartyAuthTestMixin, UrlResetMixin, ModuleSto
             target_status_code=302
         )
 
-    @override_settings(FEATURES=dict(settings.FEATURES, THIRD_PARTY_AUTH_HINT='oa2-google-oauth2'))
+    @override_settings(THIRD_PARTY_AUTH_HINT='oa2-google-oauth2')
     @ddt.data(
         'signin_user',
         'register_user',
     )
     def test_settings_tpa_hinted_login(self, url_name):
         """
-        Ensure that settings.FEATURES['THIRD_PARTY_AUTH_HINT'] can set third_party_auth_hint.
+        Ensure that settings.THIRD_PARTY_AUTH_HINT can set third_party_auth_hint.
         """
         params = [("next", "/courses/something/")]
         response = self.client.get(reverse(url_name), params, HTTP_ACCEPT="text/html")
@@ -314,7 +314,7 @@ class LoginAndRegistrationTest(ThirdPartyAuthTestMixin, UrlResetMixin, ModuleSto
         response = self.client.get(reverse(url_name), params, HTTP_ACCEPT="text/html")
         assert response.content.decode('utf-8') not in tpa_hint
 
-    @override_settings(FEATURES=dict(settings.FEATURES, THIRD_PARTY_AUTH_HINT='oa2-google-oauth2'))
+    @override_settings(THIRD_PARTY_AUTH_HINT='oa2-google-oauth2')
     @ddt.data(
         ('signin_user', 'login'),
         ('register_user', 'register'),
