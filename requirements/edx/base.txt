@@ -68,14 +68,14 @@ bleach==6.4.0
     #   ora2
     #   xblock-drag-and-drop-v2
     #   xblock-poll
-boto3==1.43.83
+boto3==1.43.85
     # via
     #   django-ses
     #   fs-s3fs
     #   openedx-platform
     #   ora2
     #   snowflake-connector-python
-botocore==1.43.83
+botocore==1.43.85
     # via
     #   boto3
     #   openedx-platform
@@ -87,7 +87,7 @@ bridgekeeper==0.9
     # via openedx-platform
 cachecontrol==0.14.4
     # via firebase-admin
-cachetools==7.1.7
+cachetools==7.1.8
     # via edxval
 camel-converter==5.1.1
     # via meilisearch
@@ -577,7 +577,7 @@ event-tracking==4.1.2
     #   openedx-platform
 fastavro==1.12.2
     # via openedx-events
-filelock==3.32.4
+filelock==3.32.5
     # via snowflake-connector-python
 firebase-admin==7.5.0
     # via edx-ace
@@ -898,7 +898,7 @@ proto-plus==1.28.4
     # via
     #   google-api-core
     #   google-cloud-firestore
-protobuf==7.36.0
+protobuf==7.36.1
     # via
     #   google-api-core
     #   google-cloud-firestore
@@ -1048,7 +1048,7 @@ referencing==0.37.0
     # via
     #   jsonschema
     #   jsonschema-specifications
-regex==2026.8.31
+regex==2026.9.3
     # via nltk
 requests==2.34.2
     # via
@@ -1296,7 +1296,7 @@ xblock==6.3.1
 xblock-drag-and-drop-v2==5.1.0
 xblock-google-drive==0.8.2
 xblock-poll==1.16.1
-xblocks-contrib==1.0.5
+xblocks-contrib==1.0.6
 xmlsec==1.3.14
     # via python3-saml
 xss-utils==1.0.0
