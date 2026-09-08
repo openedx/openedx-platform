@@ -31,4 +31,9 @@ urlpatterns = [
         views.RemoveScheduleView.as_view(),
         name='remove_schedule',
     ),
+    re_path(
+        fr'^courses/{settings.COURSE_ID_PATTERN}/grading_policy$',
+        views.CCXGradingPolicyView.as_view(),
+        name='grading_policy',
+    ),
 ]

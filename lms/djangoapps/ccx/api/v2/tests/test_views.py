@@ -14,6 +14,7 @@ from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.roles import CourseStaffRole
 from common.djangoapps.student.tests.factories import UserFactory
 from lms.djangoapps.ccx.models import CustomCourseForEdX
+from lms.djangoapps.ccx.overrides import get_override_for_ccx, override_field_for_ccx
 from lms.djangoapps.ccx.tests.utils import CcxTestCase
 
 CCX_COACH_MFE_URL = 'http://localhost:2003/ccx-coach'
@@ -197,3 +198,171 @@ class CCXCoachV2CreateViewTest(CcxTestCase):
         assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
         assert response.data.get('error_code') == 'ccx_creation_failed'
         assert not CustomCourseForEdX.objects.exists()
+
+@override_settings(CUSTOM_COURSES_EDX=True)
+class CCXCoachV2GradingPolicyViewTest(CcxTestCase):
+    """Tests for `GET /api/ccx_coach/v2/courses/{ccx_course_id}/grading_policy`."""
+
+    def setUp(self):
+        super().setUp()
+        self.make_coach()
+        self.ccx = self.make_ccx()
+        self.ccx_key = CCXLocator.from_course_locator(self.course.id, str(self.ccx.id))
+        self.api_client = APIClient()
+        self.api_client.force_authenticate(user=self.coach)
+
+    def _url(self, course_id):
+        return reverse('ccx_coach_api_v2:grading_policy', kwargs={'course_id': str(course_id)})
+
+    def test_returns_master_course_policy_when_no_override(self):
+        """Without an override, the master course policy is returned as fallback."""
+        response = self.api_client.get(self._url(self.ccx_key))
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == self.course.grading_policy
+
+    def test_returns_ccx_override_when_present(self):
+        """When an override is set for the CCX, the override is returned."""
+        custom_policy = {
+            'GRADER': [
+                {
+                    'type': 'Homework',
+                    'min_count': 5,
+                    'drop_count': 1,
+                    'short_label': 'HW',
+                    'weight': 1.0,
+                },
+            ],
+            'GRADE_CUTOFFS': {'Pass': 0.75},
+        }
+        override_field_for_ccx(self.ccx, self.course, 'grading_policy', custom_policy)
+
+        response = self.api_client.get(self._url(self.ccx_key))
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == custom_policy
+
+    def test_master_course_id_rejected(self):
+        """The grading policy endpoint requires a CCX course id."""
+        response = self.api_client.get(self._url(self.course.id))
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.data['error_code'] == 'course_id_not_valid_ccx_id'
+
+    def test_nonexistent_ccx_returns_404(self):
+        missing_ccx_key = CCXLocator.from_course_locator(self.course.id, '99999')
+        response = self.api_client.get(self._url(missing_ccx_key))
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_requires_authentication(self):
+        self.api_client.force_authenticate(user=None)
+        response = self.api_client.get(self._url(self.ccx_key))
+        assert response.status_code in (status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN)
+
+    def test_non_coach_forbidden(self):
+        self.api_client.force_authenticate(user=UserFactory.create())
+        response = self.api_client.get(self._url(self.ccx_key))
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_staff_allowed(self):
+        staff = UserFactory.create()
+        CourseStaffRole(self.course.id).add_users(staff)
+        self.api_client.force_authenticate(user=staff)
+        response = self.api_client.get(self._url(self.ccx_key))
+        assert response.status_code == status.HTTP_200_OK
+
+    def test_feature_flag_off_forbidden(self):
+        with override_settings(CUSTOM_COURSES_EDX=False):
+            response = self.api_client.get(self._url(self.ccx_key))
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+@override_settings(CUSTOM_COURSES_EDX=True)
+class CCXCoachV2GradingPolicyPutViewTest(CcxTestCase):
+    """Tests for `PUT /api/ccx_coach/v2/courses/{ccx_course_id}/grading_policy`."""
+
+    NEW_POLICY = {
+        'GRADER': [
+            {
+                'type': 'Homework',
+                'min_count': 5,
+                'drop_count': 1,
+                'short_label': 'HW',
+                'weight': 1.0,
+            },
+        ],
+        'GRADE_CUTOFFS': {'Pass': 0.75},
+    }
+
+    def setUp(self):
+        super().setUp()
+        self.make_coach()
+        self.ccx = self.make_ccx()
+        self.ccx_key = CCXLocator.from_course_locator(self.course.id, str(self.ccx.id))
+        self.api_client = APIClient()
+        self.api_client.force_authenticate(user=self.coach)
+
+    def _url(self, course_id):
+        return reverse('ccx_coach_api_v2:grading_policy', kwargs={'course_id': str(course_id)})
+
+    def test_put_replaces_policy_and_returns_it(self):
+        response = self.api_client.put(
+            self._url(self.ccx_key), {'policy': self.NEW_POLICY}, format='json'
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == self.NEW_POLICY
+        stored = get_override_for_ccx(self.ccx, self.course, 'grading_policy')
+        assert stored == self.NEW_POLICY
+
+    def test_put_missing_policy_returns_400(self):
+        response = self.api_client.put(self._url(self.ccx_key), {}, format='json')
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_put_invalid_grader_type_returns_400(self):
+        bad = {'GRADER': 'not-a-list', 'GRADE_CUTOFFS': {'Pass': 0.5}}
+        response = self.api_client.put(
+            self._url(self.ccx_key), {'policy': bad}, format='json'
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_put_invalid_grade_cutoffs_type_returns_400(self):
+        bad = {'GRADER': [], 'GRADE_CUTOFFS': 'not-a-dict'}
+        response = self.api_client.put(
+            self._url(self.ccx_key), {'policy': bad}, format='json'
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_put_master_course_id_rejected(self):
+        response = self.api_client.put(
+            self._url(self.course.id), {'policy': self.NEW_POLICY}, format='json'
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.data['error_code'] == 'course_id_not_valid_ccx_id'
+
+    def test_put_nonexistent_ccx_returns_404(self):
+        missing_ccx_key = CCXLocator.from_course_locator(self.course.id, '99999')
+        response = self.api_client.put(
+            self._url(missing_ccx_key), {'policy': self.NEW_POLICY}, format='json'
+        )
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_put_requires_authentication(self):
+        self.api_client.force_authenticate(user=None)
+        response = self.api_client.put(
+            self._url(self.ccx_key), {'policy': self.NEW_POLICY}, format='json'
+        )
+        assert response.status_code in (status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN)
+
+    def test_put_non_coach_forbidden(self):
+        self.api_client.force_authenticate(user=UserFactory.create())
+        response = self.api_client.put(
+            self._url(self.ccx_key), {'policy': self.NEW_POLICY}, format='json'
+        )
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_put_feature_flag_off_forbidden(self):
+        with override_settings(CUSTOM_COURSES_EDX=False):
+            response = self.api_client.put(
+                self._url(self.ccx_key), {'policy': self.NEW_POLICY}, format='json'
+            )
+        assert response.status_code == status.HTTP_403_FORBIDDEN
