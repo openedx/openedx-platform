@@ -163,6 +163,7 @@ can_unlink = upstream_info.upstream_ref and not upstream_info.top_level_parent_k
                 % endif
             </div>
         </div>
+        % if not is_authz_authoring_enabled or authz_can_edit_course_content:
         <div class="header-actions">
             <ul class="actions-list nav-dd ui-right">
                 % if can_edit_title and not can_edit:
@@ -215,7 +216,7 @@ can_unlink = upstream_info.upstream_ref and not upstream_info.top_level_parent_k
                                             <a class="move-button" href="#" role="button">${_("Move")}</a>
                                         </li>
                                     % endif
-                                    % if use_tagging:
+                                    % if use_tagging and (not is_authz_authoring_enabled or authz_can_manage_tags):
                                         <li class="nav-item">
                                             <a class="manage-tags-button" href="#" role="button">${_("Manage Tags")}</a>
                                         </li>
@@ -257,6 +258,7 @@ can_unlink = upstream_info.upstream_ref and not upstream_info.top_level_parent_k
                 % endif
             </ul>
         </div>
+        % endif
     </div>
     % if not is_root:
         <div class="wrapper-xblock-message xblock-validation-messages" data-locator="${xblock.location}"/>
