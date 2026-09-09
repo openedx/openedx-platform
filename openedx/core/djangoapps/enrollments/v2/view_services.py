@@ -28,6 +28,7 @@ import logging
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ObjectDoesNotExist
+from edx_rest_framework_extensions.errors import Conflict
 from rest_framework.exceptions import (
     APIException,
     NotFound,
@@ -50,7 +51,6 @@ from openedx.core.djangoapps.enrollments.errors import (
 )
 from openedx.core.djangoapps.user_api.models import UserRetirementStatus
 from openedx.core.djangoapps.user_api.preferences.api import update_email_opt_in
-from openedx.core.lib.api.exceptions import Conflict
 from openedx.core.lib.exceptions import CourseNotFoundError
 from openedx.core.lib.log_utils import audit_log
 from openedx.features.enterprise_support.api import (
