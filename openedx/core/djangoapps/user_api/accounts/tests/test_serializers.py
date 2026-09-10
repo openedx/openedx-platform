@@ -5,9 +5,9 @@ Test cases to cover Accounts-related serializers of the User API application
 import logging
 from unittest.mock import Mock, patch
 
+from django.core.exceptions import ObjectDoesNotExist
 from django.test import TestCase
 from django.test.client import RequestFactory
-from django.test.utils import override_settings
 from testfixtures import LogCapture
 
 from common.djangoapps.student.models import UserProfile
@@ -66,7 +66,7 @@ class GetExtendedProfileTest(TestCase):
         self.user_profile = UserProfile.objects.get(user=self.user)
 
     @patch("openedx.core.djangoapps.user_api.accounts.serializers.configuration_helpers")
-    @patch("openedx.core.djangoapps.user_api.accounts.serializers.get_extended_profile_model")
+    @patch("openedx.core.djangoapps.user_api.accounts.serializers.get_profile_extension_model")
     def test_get_extended_profile_from_model(self, mock_get_model: Mock, mock_config_helpers: Mock):
         """
         Test getting extended profile from a custom model
@@ -96,11 +96,10 @@ class GetExtendedProfileTest(TestCase):
         self.assertIn({"field_name": "title", "field_value": "Software Engineer"}, result)  # noqa: PT009
         self.assertIn({"field_name": "company", "field_value": "EdX"}, result)  # noqa: PT009
 
-    @override_settings(REGISTRATION_EXTENSION_FORM=None)
     @patch("openedx.core.djangoapps.user_api.accounts.serializers.configuration_helpers")
-    def test_get_extended_profile_model_does_not_exist(self, mock_config_helpers: Mock):
+    def test_get_extended_profile_no_model_configured_uses_meta(self, mock_config_helpers: Mock):
         """
-        Test fallback to meta field when model instance doesn't exist
+        Test fallback to meta field when no PROFILE_EXTENSION_FORM is configured.
         """
         mock_config_helpers.get_value.return_value = ["department", "title"]
         self.user_profile.set_meta({"department": "Sales", "title": "Manager"})
@@ -113,7 +112,80 @@ class GetExtendedProfileTest(TestCase):
         self.assertIn({"field_name": "title", "field_value": "Manager"}, result)  # noqa: PT009
 
     @patch("openedx.core.djangoapps.user_api.accounts.serializers.configuration_helpers")
-    @patch("openedx.core.djangoapps.user_api.accounts.serializers.get_extended_profile_model")
+    @patch("openedx.core.djangoapps.user_api.accounts.serializers.get_profile_extension_model")
+    def test_get_profile_extension_model_instance_missing_falls_back_to_meta(
+        self, mock_get_model: Mock, mock_config_helpers: Mock
+    ):
+        """
+        Test that when a model is configured but the user has no record in it,
+        the function falls back to user_profile.meta instead of returning empty.
+        """
+        mock_config_helpers.get_value.return_value = ["department", "title"]
+        mock_model = Mock()
+        mock_model.objects.get.side_effect = ObjectDoesNotExist
+        mock_get_model.return_value = mock_model
+
+        self.user_profile.set_meta({"department": "Sales", "title": "Manager"})
+        self.user_profile.save()
+
+        result = get_extended_profile(self.user_profile)
+
+        self.assertEqual(len(result), 2)  # noqa: PT009
+        self.assertIn({"field_name": "department", "field_value": "Sales"}, result)  # noqa: PT009
+        self.assertIn({"field_name": "title", "field_value": "Manager"}, result)  # noqa: PT009
+
+    @patch("openedx.core.djangoapps.user_api.accounts.serializers.configuration_helpers")
+    @patch("openedx.core.djangoapps.user_api.accounts.serializers.get_profile_extension_model")
+    def test_get_extended_profile_field_absent_from_model_falls_back_to_meta(
+        self, mock_get_model: Mock, mock_config_helpers: Mock
+    ):
+        """
+        Test that a configured field not present in the model is read from meta.
+        Model has 'department', but 'title' is only in meta and must be returned from there.
+        """
+        mock_config_helpers.get_value.return_value = ["department", "title"]
+        mock_model = Mock()
+        mock_get_model.return_value = mock_model
+
+        self.user_profile.set_meta({"department": "Meta-Dept", "title": "Meta-Title"})
+        self.user_profile.save()
+
+        with patch("openedx.core.djangoapps.user_api.accounts.serializers.model_to_dict") as mock_model_to_dict:
+            # Model only knows about 'department', but 'title' is absent.
+            mock_model_to_dict.return_value = {"department": "Model-Dept"}
+
+            result = get_extended_profile(self.user_profile)
+
+        self.assertEqual(len(result), 2)  # noqa: PT009
+        self.assertIn({"field_name": "department", "field_value": "Model-Dept"}, result)  # noqa: PT009
+        self.assertIn({"field_name": "title", "field_value": "Meta-Title"}, result)  # noqa: PT009
+
+    @patch("openedx.core.djangoapps.user_api.accounts.serializers.configuration_helpers")
+    @patch("openedx.core.djangoapps.user_api.accounts.serializers.get_profile_extension_model")
+    def test_get_profile_extension_model_takes_precedence_over_meta(
+        self, mock_get_model: Mock, mock_config_helpers: Mock
+    ):
+        """
+        Test that when both the model and meta have a value for the same field,
+        the model value takes precedence.
+        """
+        mock_config_helpers.get_value.return_value = ["department"]
+        mock_model = Mock()
+        mock_get_model.return_value = mock_model
+
+        self.user_profile.set_meta({"department": "Meta-Dept"})
+        self.user_profile.save()
+
+        with patch("openedx.core.djangoapps.user_api.accounts.serializers.model_to_dict") as mock_model_to_dict:
+            mock_model_to_dict.return_value = {"department": "Model-Dept"}
+
+            result = get_extended_profile(self.user_profile)
+
+        self.assertEqual(len(result), 1)  # noqa: PT009
+        self.assertIn({"field_name": "department", "field_value": "Model-Dept"}, result)  # noqa: PT009
+
+    @patch("openedx.core.djangoapps.user_api.accounts.serializers.configuration_helpers")
+    @patch("openedx.core.djangoapps.user_api.accounts.serializers.get_profile_extension_model")
     def test_get_extended_profile_no_model_configured(self, mock_get_model: Mock, mock_config_helpers: Mock):
         """
         Test fallback to meta field when no model is configured
@@ -131,7 +203,7 @@ class GetExtendedProfileTest(TestCase):
         self.assertIn({"field_name": "title", "field_value": "Director"}, result)  # noqa: PT009
 
     @patch("openedx.core.djangoapps.user_api.accounts.serializers.configuration_helpers")
-    @patch("openedx.core.djangoapps.user_api.accounts.serializers.get_extended_profile_model")
+    @patch("openedx.core.djangoapps.user_api.accounts.serializers.get_profile_extension_model")
     def test_get_extended_profile_empty_meta(self, mock_get_model: Mock, mock_config_helpers: Mock):
         """
         Test getting extended profile with empty meta field
@@ -148,7 +220,7 @@ class GetExtendedProfileTest(TestCase):
         self.assertIn({"field_name": "title", "field_value": ""}, result)  # noqa: PT009
 
     @patch("openedx.core.djangoapps.user_api.accounts.serializers.configuration_helpers")
-    @patch("openedx.core.djangoapps.user_api.accounts.serializers.get_extended_profile_model")
+    @patch("openedx.core.djangoapps.user_api.accounts.serializers.get_profile_extension_model")
     def test_get_extended_profile_invalid_json_in_meta(self, mock_get_model: Mock, mock_config_helpers: Mock):
         """
         Test getting extended profile with invalid JSON in meta field
@@ -165,7 +237,7 @@ class GetExtendedProfileTest(TestCase):
         self.assertIn({"field_name": "title", "field_value": ""}, result)  # noqa: PT009
 
     @patch("openedx.core.djangoapps.user_api.accounts.serializers.configuration_helpers")
-    @patch("openedx.core.djangoapps.user_api.accounts.serializers.get_extended_profile_model")
+    @patch("openedx.core.djangoapps.user_api.accounts.serializers.get_profile_extension_model")
     def test_get_extended_profile_missing_fields(self, mock_get_model: Mock, mock_config_helpers: Mock):
         """
         Test getting extended profile when some configured fields are missing
@@ -184,7 +256,7 @@ class GetExtendedProfileTest(TestCase):
         self.assertIn({"field_name": "location", "field_value": ""}, result)  # noqa: PT009
 
     @patch("openedx.core.djangoapps.user_api.accounts.serializers.configuration_helpers")
-    @patch("openedx.core.djangoapps.user_api.accounts.serializers.get_extended_profile_model")
+    @patch("openedx.core.djangoapps.user_api.accounts.serializers.get_profile_extension_model")
     def test_get_extended_profile_no_configured_fields(self, mock_get_model: Mock, mock_config_helpers: Mock):
         """
         Test getting extended profile when no fields are configured
