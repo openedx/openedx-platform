@@ -280,8 +280,8 @@ EVENT_TRACKING_BACKENDS['segmentio']['OPTIONS']['processors'][0]['OPTIONS']['whi
 )
 
 
-if ENABLE_COURSEWARE_INDEX or ENABLE_LIBRARY_INDEX:  # noqa: F405
-    # Use ElasticSearch for the search engine
+if (ENABLE_COURSEWARE_INDEX or ENABLE_LIBRARY_INDEX) and SEARCH_ENGINE is None:  # noqa: F405
+    # Use Elasticsearch as the default search engine when none was configured.
     SEARCH_ENGINE = "search.elastic.ElasticSearchEngine"
 
 # TODO: Once we have successfully upgraded to ES7, switch this back to ELASTIC_SEARCH_CONFIG.
