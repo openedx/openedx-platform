@@ -44,7 +44,7 @@ jobs:
           sudo apt-get install libxmlsec1-dev pkg-config
 
       - name: Setup Node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.node-version }}
 
