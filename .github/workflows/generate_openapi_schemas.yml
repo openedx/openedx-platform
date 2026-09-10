@@ -14,27 +14,9 @@ permissions:
 on:
   workflow_dispatch:
 
-  push:
-    branches:
-      - master
-    paths:
-      # Triggers whenever a view file tagged with the openedx-platform-sdk
-      # @extend_schema tag changes — add new tagged view paths here as more
-      # APIs are onboarded to the SDK.
-      #
-      # LMS — Enrollment v2
-      - 'openedx/core/djangoapps/enrollments/**'
-      # CMS — XBlock v1, Home v3/v4, Course Details v3, Authoring Grading v3
-      - 'cms/djangoapps/contentstore/rest_api/v1/views/xblock.py'
-      - 'cms/djangoapps/contentstore/rest_api/v3/views/home.py'
-      - 'cms/djangoapps/contentstore/rest_api/v3/views/course_details.py'
-      - 'cms/djangoapps/contentstore/rest_api/v3/views/authoring_grading.py'
-      - 'cms/djangoapps/contentstore/rest_api/v4/views/home.py'
-      # drf-spectacular config changes in either service
-      - 'lms/lib/spectacular.py'
-      - 'cms/lib/spectacular.py'
-      - 'lms/envs/common.py'
-      - 'cms/envs/common.py'
+  schedule:
+    # Regenerate and commit the full OpenAPI schemas every Monday at 09:00 UTC.
+    - cron: "0 9 * * 1"
 
 jobs:
   generate-schemas:
@@ -64,6 +46,7 @@ jobs:
           branch: chore/update-openapi-schemas
           commit-message: 'chore: regenerate OpenAPI schemas'
           title: 'chore: update OpenAPI schemas for SDK generation'
+          team-reviewers: wg-maintenance-openedx-platform-oncall
           body: |
             ## Auto-generated OpenAPI schema update
 
@@ -77,8 +60,6 @@ jobs:
             the platform.
 
             **Do not edit these files by hand** — they will be overwritten on the next run.
-
-            @openedx/wg-maintenance-openedx-platform-oncall heads up on this automated PR.
           add-paths: |
             lms_schema.yml
             cms_schema.yml
