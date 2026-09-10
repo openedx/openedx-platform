@@ -172,12 +172,19 @@ def _create_or_update_video_transcript(**kwargs):
 
 def upload_transcript(request):
     """
-    Upload a transcript file
+    Upload a transcript file for a video, creating or replacing the transcript
+    for ``new_language_code``.
 
     Arguments:
-        request: A WSGI request object
+        request: A WSGI request object. ``request.POST`` must contain
+            ``edx_video_id``, ``language_code`` (the language of the transcript
+            being replaced, if any) and ``new_language_code``; ``request.FILES``
+            must contain the transcript ``file`` in SRT (SubRip) format.
 
-        Transcript file in SRT format
+    Returns:
+        - 201 Created if no transcript existed for ``new_language_code`` yet.
+        - 200 OK if an existing transcript for ``new_language_code`` was replaced.
+        - 400 Bad Request if the file could not be parsed as SRT or decoded as UTF-8.
     """
     edx_video_id = request.POST['edx_video_id']
     language_code = request.POST['language_code']
