@@ -543,6 +543,7 @@ class CommentsServiceMockMixin:
             "anonymous_to_peers": False,
             "author": self.user.username,
             "author_label": None,
+            "author_labels": None,
             "created_at": "1970-01-01T00:00:00Z",
             "updated_at": "1970-01-01T00:00:00Z",
             "raw_body": "Test body",
@@ -588,6 +589,7 @@ class CommentsServiceMockMixin:
             "closed_by_label": None,
             "close_reason": None,
             "close_reason_code": None,
+            "learner_status": "new",
         }
         response_data.update(overrides or {})
         return response_data
@@ -780,6 +782,7 @@ class ForumMockUtilsMixin(MockForumApiMixin):
             "anonymous_to_peers": False,
             "author": self.user.username,
             "author_label": None,
+            "author_labels": None,
             "created_at": "1970-01-01T00:00:00Z",
             "updated_at": "1970-01-01T00:00:00Z",
             "raw_body": "Test body",
@@ -821,6 +824,7 @@ class ForumMockUtilsMixin(MockForumApiMixin):
             "response_count": 0,
             "last_edit": None,
             "edit_by_label": None,
+            "learner_status": "new",
             "closed_by": None,
             "closed_by_label": None,
             "close_reason": None,

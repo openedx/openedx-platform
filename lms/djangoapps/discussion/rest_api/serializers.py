@@ -16,7 +16,7 @@ from django.utils.html import strip_tags
 from rest_framework import serializers
 
 from common.djangoapps.student.models import get_user_by_username_or_email
-from common.djangoapps.student.roles import GlobalStaff
+from common.djangoapps.student.roles import GlobalStaff, CourseStaffRole, CourseInstructorRole
 from lms.djangoapps.discussion.django_comment_client.base.views import (
     track_comment_edited_event,
     track_forum_response_mark_event,
@@ -45,9 +45,20 @@ from openedx.core.djangoapps.discussions.models import DiscussionTopicLink
 from openedx.core.djangoapps.discussions.utils import get_group_names_by_id
 from openedx.core.djangoapps.django_comment_common.comment_client.comment import Comment
 from openedx.core.djangoapps.django_comment_common.comment_client.thread import Thread
-from openedx.core.djangoapps.django_comment_common.comment_client.user import User as CommentClientUser
-from openedx.core.djangoapps.django_comment_common.comment_client.utils import CommentClientRequestError
-from openedx.core.djangoapps.django_comment_common.models import CourseDiscussionSettings
+from openedx.core.djangoapps.django_comment_common.comment_client.user import (
+    User as CommentClientUser,
+)
+from openedx.core.djangoapps.django_comment_common.comment_client.utils import (
+    CommentClientRequestError,
+)
+from openedx.core.djangoapps.django_comment_common.models import (
+    CourseDiscussionSettings,
+    Role,
+    FORUM_ROLE_ADMINISTRATOR,
+    FORUM_ROLE_MODERATOR,
+    FORUM_ROLE_COMMUNITY_TA,
+    FORUM_ROLE_GROUP_MODERATOR,
+)
 from openedx.core.djangoapps.user_api.accounts.api import get_profile_images
 from openedx.core.lib.api.serializers import CourseKeyField
 
@@ -185,6 +196,8 @@ class _ContentSerializer(serializers.Serializer):
     id = serializers.CharField(read_only=True)  # pylint: disable=invalid-name
     author = serializers.SerializerMethodField()
     author_label = serializers.SerializerMethodField()
+    author_labels = serializers.SerializerMethodField()
+    learner_status = serializers.SerializerMethodField()
     created_at = serializers.CharField(read_only=True)
     updated_at = serializers.CharField(read_only=True)
     raw_body = serializers.CharField(source="body", validators=[validate_not_blank])
@@ -243,19 +256,118 @@ class _ContentSerializer(serializers.Serializer):
 
     def _get_user_label(self, user_id):
         """
-        Returns the role label (i.e. "Staff", "Moderator" or "Community TA") for the user
-        with the given id.
+        Returns a single legacy role label for the user.
+        Used by edit_by_label, closed_by_label, endorsed_by_label, deleted_by_label
+        to preserve backward compatibility.
+        Returns one of: "Staff", "Administrator", "Moderator", "Community TA", or None.
         """
         is_staff = user_id in self.context["course_staff_user_ids"]
         is_moderator = user_id in self.context["moderator_user_ids"]
         is_ta = user_id in self.context["ta_user_ids"]
 
+        is_global_staff = False
+        if not (is_moderator or is_ta):
+            try:
+                user = User.objects.get(id=user_id)
+                is_global_staff = GlobalStaff().has_user(user)
+            except User.DoesNotExist:
+                pass
+
+        is_administrator = False
+        if is_moderator:
+            course_id = self.context.get("course_id")
+            if course_id:
+                user_roles = Role.objects.filter(
+                    users__id=user_id,
+                    course_id=course_id,
+                    name__in=[FORUM_ROLE_ADMINISTRATOR, FORUM_ROLE_MODERATOR],
+                ).values_list("name", flat=True)
+                is_administrator = FORUM_ROLE_ADMINISTRATOR in user_roles
+
         return (
-            "Staff" if is_staff else
-            "Moderator" if is_moderator else
-            "Community TA" if is_ta else
-            None
+            "Staff"
+            if is_global_staff
+            else "Administrator"
+            if is_administrator
+            else "Moderator" if is_moderator else "Community TA" if is_ta else None
         )
+
+    def _get_user_labels_all(self, user_id):
+        """
+        Returns an array of ALL roles assigned to the user.
+        Used exclusively by get_author_labels to support multi-role display.
+        Examples: ["Global Staff", "Course Staff"], ["Administrator", "Community TA"]
+        """
+        roles = []
+
+        # Check GlobalStaff (platform-wide)
+        try:
+            user = User.objects.get(id=user_id)
+            if GlobalStaff().has_user(user):
+                roles.append("Global Staff")
+        except User.DoesNotExist:
+            user = None
+
+        # Check CourseStaff and CourseInstructor (platform course roles)
+        if user and user_id in self.context.get("course_staff_user_ids", []):
+            course_id = self.context.get("course_id")
+            if course_id:
+                if CourseInstructorRole(course_id).has_user(user):
+                    roles.append("Course Instructor")
+                if CourseStaffRole(course_id).has_user(user):
+                    roles.append("Course Staff")
+
+        # Check discussion-specific moderator roles
+        if user_id in self.context.get("moderator_user_ids", []):
+            course_id = self.context.get("course_id")
+            if course_id:
+                user_roles = Role.objects.filter(
+                    users__id=user_id,
+                    course_id=course_id,
+                    name__in=[FORUM_ROLE_ADMINISTRATOR, FORUM_ROLE_MODERATOR]
+                ).values_list('name', flat=True)
+
+                if FORUM_ROLE_ADMINISTRATOR in user_roles:
+                    roles.append("Administrator")
+                if FORUM_ROLE_MODERATOR in user_roles:
+                    roles.append("Moderator")
+
+        # Check discussion-specific TA roles
+        if user_id in self.context.get("ta_user_ids", []):
+            course_id = self.context.get("course_id")
+            if course_id:
+                user_roles = Role.objects.filter(
+                    users__id=user_id,
+                    course_id=course_id,
+                    name__in=[FORUM_ROLE_COMMUNITY_TA, FORUM_ROLE_GROUP_MODERATOR]
+                ).values_list('name', flat=True)
+
+                if FORUM_ROLE_COMMUNITY_TA in user_roles:
+                    roles.append("Community TA")
+                if FORUM_ROLE_GROUP_MODERATOR in user_roles:
+                    roles.append("Group Moderator")
+
+        return roles if roles else None
+
+    def get_learner_status(self, obj):
+        """
+        Get the learner status for the discussion post author.
+        Returns one of: "anonymous", "staff", "new", "regular"
+        """
+        # Skip for anonymous content
+        if self._is_anonymous(obj) or obj.get("user_id") is None:
+            return "anonymous"
+
+        try:
+            user = User.objects.get(id=int(obj["user_id"]))
+        except (User.DoesNotExist, ValueError):
+            return "anonymous"
+
+        course = self.context.get("course")
+        if not course:
+            return "anonymous"
+
+        return get_user_learner_status(user, course.id)
 
     def _get_user_label_from_username(self, username):
         """
@@ -270,13 +382,25 @@ class _ContentSerializer(serializers.Serializer):
 
     def get_author_label(self, obj):
         """
-        Returns the role label for the content author.
+        Returns the primary role label for the content author as a string.
+        Returns None for posts that are anonymous to the viewer.
+        For anonymous_to_peers posts, staff/moderators/admins can see the label.
         """
         if self._is_anonymous(obj) or obj["user_id"] is None:
             return None
-        else:
-            user_id = int(obj["user_id"])
-            return self._get_user_label(user_id)
+        return self._get_user_label(int(obj["user_id"]))
+
+    def get_author_labels(self, obj):
+        """
+        Returns all role labels for the content author as an array.
+        New additive field for multi-role display in the frontend.
+        Existing legacy fields (edit_by_label, closed_by_label, endorsed_by_label,
+        deleted_by_label) are unaffected and continue to use _get_user_label.
+        Returns None for anonymous posts or users with no recognized roles.
+        """
+        if self._is_anonymous(obj) or obj["user_id"] is None:
+            return None
+        return self._get_user_labels_all(int(obj["user_id"]))
 
     def get_rendered_body(self, obj):
         """
