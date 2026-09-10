@@ -1,7 +1,0 @@
-<div class="result-type">
-    <i class="fa fa-<%- unit_icon %>"></i>
-</div>
-<div class="result-info">
-    <a class="result-link" href="<%- url %>"><%- location.join(' / ') %></a>
-    <div class="result-excerpt"><%= HtmlUtils.ensureHtml(excerptHtml) %></div>
-</div>
