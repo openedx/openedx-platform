@@ -44,12 +44,14 @@ from xblock.runtime import DictKeyValueStore, KvsFieldData
 
 from common.djangoapps.util.monitoring import monitor_import_failure
 from openedx.core.djangoapps.content_tagging.api import import_course_tags_from_csv
+from openedx.core.lib.gating import api as gating_api
+from openedx.core.lib.gating.exceptions import GatingValidationError
 from xmodule.assetstore import AssetMetadata
 from xmodule.contentstore.content import StaticContent
 from xmodule.errortracker import make_error_tracker
 from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.django import ASSET_IGNORE_REGEX
-from xmodule.modulestore.exceptions import DuplicateCourseError
+from xmodule.modulestore.exceptions import DuplicateCourseError, ItemNotFoundError
 from xmodule.modulestore.mongo.base import MongoRevisionKey
 from xmodule.modulestore.store_utilities import draft_node_constructor, get_draft_subtree_roots
 from xmodule.modulestore.xml import LibraryXMLModuleStore, XMLImportingModuleStoreRuntime, XMLModuleStore
@@ -297,6 +299,10 @@ class ImportManager:
         )
         self.logger, self.errors = make_error_tracker()
 
+        # Here we introduce an approach where we collect all gating relationship information in a course
+        # and persist at the end. For this we have introduced a new gating_relationships array property.
+        self.gating_relationships = []
+
     def preflight(self):
         """
         Perform any pre-import sanity checks.
@@ -437,6 +443,7 @@ class ImportManager:
                 dest_id,
                 do_import_static=self.do_import_static,
                 runtime=runtime,
+                gating_relationships=self.gating_relationships,
             )
             self.static_updater(course, source_courselike, courselike_key, dest_id, runtime)
             self.store.update_item(course, self.user_id)
@@ -519,6 +526,7 @@ class ImportManager:
                             dest_id,
                             do_import_static=self.do_import_static,
                             runtime=courselike.runtime,
+                            gating_relationships=self.gating_relationships,
                         )
                     except Exception:
                         log.exception(
@@ -543,6 +551,7 @@ class ImportManager:
                     dest_id,
                     do_import_static=self.do_import_static,
                     runtime=courselike.runtime,
+                    gating_relationships=self.gating_relationships,
                 )
             except Exception:
                 log.exception(
@@ -566,6 +575,10 @@ class ImportManager:
                 dest_id, runtime = self.get_dest_id(courselike_key)
             except DuplicateCourseError:
                 continue
+
+            # Prerequisite records are specific to a course, therefore, we need to reset
+            # the relationship information that has been collected on the previous course.
+            self.gating_relationships = []
 
             # This bulk operation wraps all the operations to populate the published branch.
             with self.store.bulk_operations(dest_id):
@@ -597,6 +610,15 @@ class ImportManager:
                     logging.info(f'Course import {dest_id}: No tags.csv file present.')
                 except ValueError as e:
                     logging.info(f'Course import {dest_id}: {str(e)}')
+
+            # After collecting all gating relationships, here we will try to persist
+            # the relationship records ensuring all validation rules are applied.
+            # If the there is invalid information, we can take measures (skip registering
+            # the relationship.)
+            if self.gating_relationships:
+                _apply_gating_relationships(self.store, dest_id, self.gating_relationships)
+                self.gating_relationships = []
+
             self.post_course_import(dest_id)
             yield courselike
 
@@ -711,7 +733,8 @@ class CourseImportManager(ImportManager):
                 data_path,
                 courselike_key,
                 dest_id,
-                courselike.runtime
+                courselike.runtime,
+                self.gating_relationships,
             )
 
         # Importing the drafts potentially triggered a new structure version.
@@ -834,10 +857,86 @@ def import_library_from_xml(*args, **kwargs):
     return list(manager.run_imports())
 
 
+def _process_sequential_prerequisites(block):
+    """
+    Extracts sequential prerequisite information, does basic validation and
+    returns the relationship information as a tuple.
+
+    Args:
+        block: The sequential block
+    """
+    if not hasattr(block, "xml_attributes") or not block.xml_attributes:
+        return None
+
+    try:
+        required_content = block.xml_attributes.get('required_content')
+        if not isinstance(required_content, str):
+            return None
+
+        min_score = block.xml_attributes.get('min_score')
+        min_completion = block.xml_attributes.get('min_completion')
+        if not min_score or not min_completion:
+            return None
+
+        min_score = int(min_score)
+        min_completion = int(min_completion)
+
+    except (ValueError, TypeError) as e:
+        logging.debug('Failed to extract valid required_content, min_score, and/or min_completion: %s', e)
+        return None
+
+    course_key = block.location.course_key
+    prerequisite_usage_key = course_key.make_usage_key('sequential', required_content)
+
+    return (block.location, prerequisite_usage_key, min_score, min_completion)
+
+
+def _apply_gating_relationships(store, course_key, gating_relationships):
+    """
+    Validates that each prerequisite block exists before calling the gating API to persist the gating relationship,
+    logs errors and ignores invalid gating relationship.
+
+    Args:
+        store: modulestore
+        course_key: Course key
+        gating_relationships: List of tuples (block_location, prereq_usage_key, min_score, min_completion)
+    """
+    for block_location, prereq_usage_key, min_score, min_completion in gating_relationships:
+        # Here we validate and store records that are valid, in this case validate if
+        # sequantial with the specified ID exists.
+        try:
+            store.get_item(prereq_usage_key)  # raises ItemNotFoundError if missing
+        except ItemNotFoundError:
+            logging.error(
+                "Prerequisite block '%s' referenced by '%s' does not exist.",
+                prereq_usage_key, block_location
+            )
+            continue
+
+        try:
+            gating_api.add_prerequisite(course_key, prereq_usage_key)
+            gating_api.set_required_content(
+                course_key,
+                block_location,
+                prereq_usage_key,
+                min_score,
+                min_completion
+            )
+        except GatingValidationError as e:
+            logging.error(
+                "Error invalid block %s with prerequisite %s",
+                block_location, prereq_usage_key
+            )
+            logging.error(
+                "Error : %s",
+                e
+            )
+
+
 def _update_and_import_block(  # pylint: disable=too-many-statements
         block, store, user_id,
         source_course_id, dest_course_id,
-        do_import_static=True, runtime=None):
+        do_import_static=True, runtime=None, gating_relationships=None):
     """
     Update all the block reference fields to the destination course id,
     then import the block into the destination course.
@@ -918,6 +1017,15 @@ def _update_and_import_block(  # pylint: disable=too-many-statements
         block.location.block_id, fields, runtime, asides=asides
     )
 
+    # As the order of course blocks is unpredictable during import, we only collect sequantials
+    # and store the gating relationship at the end. This is to enfirce validation and
+    # persist relationship if only the referenced sequentials exist in our database.
+    # We do this only if the current block is sequential and gating_relationships is iitialized.
+    if block.location.block_type == "sequential" and gating_relationships is not None:
+        gating_relationship_data = _process_sequential_prerequisites(block)
+        if gating_relationship_data:
+            gating_relationships.append(gating_relationship_data)
+
     # TODO: Move this code once the following condition is met.
     # Get to the point where XML import is happening inside the
     # modulestore that is eventually going to store the data.
@@ -980,7 +1088,8 @@ def _import_course_draft(
         course_data_path,
         source_course_id,
         target_id,
-        mongo_runtime
+        mongo_runtime,
+        gating_relationships=None
 ):
     """
     This method will import all the content inside of the 'drafts' folder, if content exists.
@@ -1050,6 +1159,7 @@ def _import_course_draft(
             source_course_id,
             target_id,
             runtime=mongo_runtime,
+            gating_relationships=gating_relationships,
         )
         for child in block.get_children():
             _import_block(child)

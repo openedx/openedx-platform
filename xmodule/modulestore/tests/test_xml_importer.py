@@ -2,7 +2,6 @@
 Tests for XML importer.
 """
 
-
 import importlib
 import os
 import unittest
@@ -16,10 +15,17 @@ from path import Path as path
 from xblock.fields import List, Scope, ScopeIds, String
 from xblock.runtime import DictKeyValueStore, KvsFieldData, Runtime
 
+from openedx.core.lib.gating.exceptions import GatingValidationError
 from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.inheritance import InheritanceMixin
 from xmodule.modulestore.tests.mongo_connection import MONGO_HOST, MONGO_PORT_NUM
-from xmodule.modulestore.xml_importer import StaticContentImporter, _update_and_import_block, _update_block_location
+from xmodule.modulestore.xml_importer import (
+    StaticContentImporter,
+    _apply_gating_relationships,
+    _process_sequential_prerequisites,
+    _update_and_import_block,
+    _update_block_location,
+)
 from xmodule.tests import DATA_DIR
 from xmodule.x_module import XModuleMixin
 
@@ -398,3 +404,132 @@ class UpdateAndImportBlockLibraryContentTest(unittest.TestCase):
 
         # Outer else runs even though inner sync failed → publish is called
         store.publish.assert_called_once_with(published_block.location, 1)
+
+
+class TestSequentialPrerequisitesImport(unittest.TestCase):
+    """
+    Verifies sequential blocks with prerequisite attributes in OLX/XML are processed correctly
+    by _process_sequential_prerequisites and later persisted by _apply_gating_relationships.
+    """
+
+    def setUp(self):
+        """
+        Set up test course and sequential.
+        """
+        self.course_key = CourseLocator('test_org', 'test_course', 'test_run')
+        self.sequential_location = self.course_key.make_usage_key('sequential', 'gated_sequential')
+
+        # Mock sequential block
+        self.mock_sequential = mock.Mock()
+        self.mock_sequential.location = self.sequential_location
+
+    def test_gating_information_extraction(self):
+        """
+        Verify that _process_sequential_prerequisites correctly processes valid prerequisite data
+        """
+        self.mock_sequential.xml_attributes = {
+            'required_content': 'required_sequential',
+            'min_score': '80',
+            'min_completion': '90'
+        }
+
+        result = _process_sequential_prerequisites(self.mock_sequential)
+        expected_prereq_key = self.course_key.make_usage_key('sequential', 'required_sequential')
+
+        assert result is not None
+        block_location, prereq_key, min_score, min_completion = result
+        assert block_location == self.sequential_location
+        assert prereq_key  == expected_prereq_key
+        assert min_score  == 80
+        assert min_completion == 90
+
+
+
+    def test_gating_information_extraction_invalid_min_score(self):
+        """
+        Verify that _process_sequential_prerequisites correctly processes invalid min_score prerequisite data
+        """
+        self.mock_sequential.xml_attributes = {
+            'required_content': 'required_sequential',
+            'min_score': None,
+            'min_completion': '90'
+        }
+
+        result = _process_sequential_prerequisites(self.mock_sequential)
+
+        assert result is None
+
+
+    def test_gating_information_extraction_invalid_min_completion(self):
+        """
+        Verify that _process_sequential_prerequisites correctly processes invalid min_completion prerequisite data
+        """
+        self.mock_sequential.xml_attributes = {
+            'required_content': 'required_sequential',
+            'min_score': '80',
+            'min_completion': 'NotANumber'
+        }
+
+        result = _process_sequential_prerequisites(self.mock_sequential)
+
+        assert result is None
+
+
+    def test_gating_information_extraction_missing_required_content(self):
+        """
+        Verify that _process_sequential_prerequisites correctly processes missing required_content prerequisite data
+        """
+        self.mock_sequential.xml_attributes = {
+            'min_score': '80',
+            'min_completion': 'NotANumber'
+        }
+
+        result = _process_sequential_prerequisites(self.mock_sequential)
+
+        assert result is None
+
+    def test_gating_information_valid_relationship(self):
+        """
+        Verify valid gating information is persisted.
+        """
+        mock_store = mock.Mock()
+        mock_store.get_item.return_value = mock.Mock()  # block exists
+
+        relationships = [
+            (self.sequential_location, self.course_key.make_usage_key('sequential', 'required_sequential'), 80, 90),
+        ]
+
+        with mock.patch('xmodule.modulestore.xml_importer.gating_api') as mock_gating_api:
+            _apply_gating_relationships(mock_store, self.course_key, relationships)
+
+        mock_gating_api.add_prerequisite.assert_called_once_with(
+            self.course_key,
+            self.course_key.make_usage_key('sequential', 'required_sequential'),
+        )
+        mock_gating_api.set_required_content.assert_called_once_with(
+            self.course_key,
+            self.sequential_location,
+            self.course_key.make_usage_key('sequential', 'required_sequential'),
+            80,
+            90,
+        )
+
+    def test_gating_api_error(self):
+        """
+        If GatingValidationError is raised, the error should be logged and the relationship should be ignored
+        """
+        mock_store = mock.Mock()
+        mock_store.get_item.return_value = mock.Mock()
+
+        relationships = [
+            (self.sequential_location, self.course_key.make_usage_key('sequential', 'required_sequential'), 80, 90),
+        ]
+
+        with mock.patch('xmodule.modulestore.xml_importer.gating_api') as mock_gating_api:
+            mock_gating_api.set_required_content.side_effect = GatingValidationError("Invalid")
+            with mock.patch('xmodule.modulestore.xml_importer.logging') as mock_logging:
+                _apply_gating_relationships(mock_store, self.course_key, relationships)
+
+        mock_gating_api.add_prerequisite.assert_called_once()
+        mock_gating_api.set_required_content.assert_called_once()
+        mock_logging.error.assert_called()
