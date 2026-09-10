@@ -1270,8 +1270,8 @@ class ProgressPageTests(ProgressPageBaseTests):
             self.assertContains(resp, "earned a certificate for this course.")
 
     @ddt.data(
-        (True, 56),
-        (False, 56),
+        (True, 57),
+        (False, 57),
     )
     @ddt.unpack
     def test_progress_queries_paced_courses(self, self_paced, query_count):
@@ -1285,8 +1285,11 @@ class ProgressPageTests(ProgressPageBaseTests):
     def test_progress_queries(self):
         ContentTypeGatingConfig.objects.create(enabled=True, enabled_as_of=datetime(2018, 1, 1))
         self.setup_course()
+        # 57, not 56: EmbargoMiddleware now always resolves GlobalRestrictedCountry's cached
+        # country list (one query on a cold cache) even when the course has no RestrictedCourse
+        # row, so a global block applies without needing a per-course row.
         with self.assertNumQueries(
-            56, table_ignorelist=QUERY_COUNT_TABLE_IGNORELIST
+            57, table_ignorelist=QUERY_COUNT_TABLE_IGNORELIST
         ), check_mongo_calls(2):
             self._get_progress_page()
 

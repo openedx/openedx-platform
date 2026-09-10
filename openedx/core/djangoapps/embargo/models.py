@@ -319,11 +319,15 @@ class RestrictedCourse(models.Model):
         # Presumably if the caller is requesting a URL, the caller
         # has already determined that the user should be blocked.
         # We use generic messaging unless we find something more specific,
-        # but *always* return a valid URL path.
+        # but *always* return a valid URL path. The fallback keeps the caller's
+        # access point, so a user blocked while enrolling still gets the
+        # enrollment-specific message (a course blocked only by
+        # `GlobalRestrictedCountry` has no `RestrictedCourse` row and always
+        # lands here).
         default_path = reverse(
             'embargo:blocked_message',
             kwargs={
-                'access_point': 'courseware',
+                'access_point': access_point,
                 'message_key': 'default'
             }
         )

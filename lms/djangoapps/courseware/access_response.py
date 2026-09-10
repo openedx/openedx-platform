@@ -290,3 +290,15 @@ class OldMongoAccessError(AccessError):
             course_name=courselike.display_name_with_default,
         )
         super().__init__(error_code, developer_message, user_message)
+
+
+class EmbargoAccessError(AccessError):
+    """
+    Access denied because the user's country is blocked by embargo rules
+    (`GlobalRestrictedCountry` or a per-course `CountryAccessRule`).
+    """
+    def __init__(self):
+        error_code = "embargo"
+        developer_message = "User's location is blocked by country embargo rules"
+        user_message = _("Access to this course is blocked from your current location")
+        super().__init__(error_code, developer_message, user_message)

@@ -20,6 +20,7 @@ from lms.djangoapps.course_goals.models import UserActivity
 from lms.djangoapps.course_home_api.course_metadata.serializers import CourseHomeMetadataSerializer
 from lms.djangoapps.course_home_api.toggles import new_discussion_sidebar_view_is_enabled
 from lms.djangoapps.courseware.access import has_access, has_cms_access
+from lms.djangoapps.courseware.access_utils import check_embargo_access
 from lms.djangoapps.courseware.context_processor import user_timezone_locale_prefs
 from lms.djangoapps.courseware.courses import check_course_access
 from lms.djangoapps.courseware.exceptions import CourseAccessRedirect
@@ -104,6 +105,16 @@ class CourseHomeMetadataView(RetrieveAPIView):
             check_if_authenticated=True,
             apply_priority_access_checks=True,
         )
+        # A country embargo (GlobalRestrictedCountry / CountryAccessRule) is checked here -
+        # rather than shared into check_course_access() - so it stays scoped to metadata's
+        # UI-level access flag for now. Only worth checking once access is otherwise granted:
+        # a more specific denial (enrollment_required, authentication_required) keeps its own
+        # error code, and we skip the embargo check's country lookups on requests that are
+        # already blocked.
+        if load_access:
+            embargo_access = check_embargo_access(request.user, course)
+            if not embargo_access:
+                load_access = embargo_access
 
         _, request.user = setup_masquerade(
             request,
