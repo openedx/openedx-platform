@@ -304,15 +304,7 @@ module.exports = Merge.merge({
                  * we know, the only modules that absolutely need to be added to the global namespace are those
                  * which define module types, for example "Problem" (in xmodule/js/src/capa/display.js).
                  */
-                {
-                    test: /xmodule\/assets\/word_cloud\/src\/js\/word_cloud.js/,
-                    use: [
-                        {
-                            loader: 'imports-loader',
-                            options: 'this=>window'
-                        }
-                    ]
-                },
+
                 {
                     test: /xmodule\/js\/common_static\/js\/vendor\/draggabilly.js/,
                     use: [
@@ -629,7 +621,6 @@ module.exports = Merge.merge({
                 'lms/static',
                 path.resolve(__dirname),
                 'xmodule/js/src',
-                'xmodule/assets/word_cloud/src/js',
                 'common/static',
                 'common/static/coffee/src',
                 'common/static/common/js',
