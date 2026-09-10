@@ -13,6 +13,7 @@ from edx_proctoring.api import (
     create_exam_attempt,
     get_allowances_for_course,
 )
+from edx_proctoring.exceptions import ProctoredBaseException
 from edx_proctoring.models import ProctoredExamStudentAttempt
 from rest_framework import status
 from rest_framework.test import APIClient
@@ -216,6 +217,32 @@ class SpecialExamResetViewTest(ModuleStoreTestCase):
     def test_reset_no_attempts(self):
         response = self.client.post(self._url())
         assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_reset_provider_unavailable_returns_descriptive_error(self):
+        """
+        When removing the attempt raises a ProctoredBaseException (e.g. the proctoring
+        provider is unavailable), the view surfaces the exception's HTTP status and
+        message so the instructor dashboard shows a descriptive error rather than a 500.
+        """
+        create_exam_attempt(self.exam_id, self.student.id)
+        message = (
+            'The proctoring provider is temporarily unavailable, so this attempt '
+            'could not be fully reset. Please try again in a few minutes.'
+        )
+        # Simulate a proctoring-provider failure during removal (e.g. edx-proctoring's
+        # BackendProviderCannotRemoveAttempt), which resolves to a 502. Using a base
+        # ProctoredBaseException keeps the test independent of the edx-proctoring release.
+        provider_error = ProctoredBaseException(message)
+        provider_error.http_status = status.HTTP_502_BAD_GATEWAY
+        with patch(
+            'lms.djangoapps.instructor.views.api_v2.remove_exam_attempt',
+            side_effect=provider_error,
+        ):
+            response = self.client.post(self._url())
+        assert response.status_code == status.HTTP_502_BAD_GATEWAY
+        # message is returned under both keys so the consumer surfaces it either way
+        assert response.json()['detail'] == message
+        assert response.json()['error'] == message
 
 
 @override_settings(**PROCTORING_SETTINGS)
