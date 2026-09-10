@@ -4,14 +4,15 @@ Tests for the Studio content search API.
 from __future__ import annotations
 
 import copy
+import time
 from datetime import UTC, datetime
 from unittest.mock import MagicMock, Mock, call, patch
 
 import ddt
 import pytest
-from django.test import override_settings
+from django.test import TestCase, override_settings
 from freezegun import freeze_time
-from meilisearch.errors import MeilisearchApiError
+from meilisearch.errors import MeilisearchApiError, MeilisearchError
 from opaque_keys.edx.keys import UsageKey
 from opaque_keys.edx.locator import LibraryCollectionLocator, LibraryContainerLocator
 from openedx_content import api as content_api
@@ -1436,3 +1437,88 @@ class TestSearchApi(ModuleStoreTestCase):
                 "attributesToRetrieve": ["usage_key", "display_name"],
             }
         )
+
+
+def _wait_for_meili_task(*args, **kwargs):
+    """
+    Call the module-private helper under test.
+
+    Wrapped rather than aliased at module level: `api` is imported inside a try/except above
+    because it raises in the LMS, so resolving the attribute at import time would break
+    collection on LMS test runs even though these tests are CMS-only.
+    """
+    return api._wait_for_meili_task(*args, **kwargs)  # pylint: disable=protected-access
+
+
+@override_settings(MEILISEARCH_ENABLED=True)
+@skip_unless_cms
+class TestWaitForMeiliTaskTimeout(TestCase):
+    """
+    Tests for the bounded wait in ``_wait_for_meili_task``.
+    """
+
+    def setUp(self):
+        super().setUp()
+        api.clear_meilisearch_client()
+
+    def tearDown(self):
+        super().tearDown()
+        api.clear_meilisearch_client()
+
+    @staticmethod
+    def _client_with_status(status):
+        """A Meilisearch client whose tasks never leave ``status``."""
+        client = MagicMock()
+        client.get_task.return_value = MagicMock(status=status, error=None)
+        return client
+
+    def test_returns_false_once_the_timeout_elapses(self):
+        """
+        A task that never finishes must not block the caller past the timeout.
+
+        This is the whole point of the bound: the documents have already been accepted by
+        Meilisearch and will be applied regardless, so there is nothing to gain by waiting.
+        """
+        with patch.object(api, "_MEILI_CLIENT", self._client_with_status("processing")):
+            started = time.monotonic()
+            completed = _wait_for_meili_task(MagicMock(task_uid=1), timeout=0.5)
+            elapsed = time.monotonic() - started
+
+        assert completed is False
+        # Generous upper bound so this does not flake on a loaded CI worker, but tight enough to
+        # fail if the timeout is ignored (without it, this call never returns).
+        assert elapsed < 5
+
+    def test_does_not_sleep_past_the_deadline(self):
+        """
+        The backoff caps at 2s, so a naive implementation would overshoot a shorter timeout.
+        """
+        with patch.object(api, "_MEILI_CLIENT", self._client_with_status("enqueued")):
+            started = time.monotonic()
+            _wait_for_meili_task(MagicMock(task_uid=2), timeout=0.1)
+            elapsed = time.monotonic() - started
+
+        assert elapsed < 2
+
+    def test_returns_true_when_the_task_succeeds(self):
+        with patch.object(api, "_MEILI_CLIENT", self._client_with_status("succeeded")):
+            assert _wait_for_meili_task(MagicMock(task_uid=3), timeout=5) is True
+
+    def test_raises_on_failure_rather_than_reporting_completion(self):
+        with patch.object(api, "_MEILI_CLIENT", self._client_with_status("failed")):
+            with pytest.raises(MeilisearchError):
+                _wait_for_meili_task(MagicMock(task_uid=4), timeout=5)
+
+    def test_waits_indefinitely_by_default(self):
+        """
+        Omitting ``timeout`` must keep the historical behaviour, which reindex and the management
+        commands rely on. Verified by letting the task complete on the second poll.
+        """
+        client = MagicMock()
+        client.get_task.side_effect = [
+            MagicMock(status="processing", error=None),
+            MagicMock(status="succeeded", error=None),
+        ]
+        with patch.object(api, "_MEILI_CLIENT", client):
+            assert _wait_for_meili_task(MagicMock(task_uid=5)) is True
+        assert client.get_task.call_count == 2

@@ -58,6 +58,16 @@ from .documents import (
 
 log = logging.getLogger(__name__)
 
+# Socket timeout, in seconds, for HTTP calls to Meilisearch. The Meilisearch client defaults to no
+# timeout, which lets an unresponsive search backend pin a web worker indefinitely.
+MEILISEARCH_HTTP_TIMEOUT = 30
+
+# How long a request may block waiting for Meilisearch to finish applying an index update before
+# giving up and returning. Giving up does not lose the update: Meilisearch has already accepted the
+# documents and will apply them regardless, so this only bounds how long the user waits for the
+# index to become consistent.
+SYNC_INDEX_WAIT_TIMEOUT = 3.0
+
 User = get_user_model()
 
 STUDIO_INDEX_SUFFIX = "studio_content"
@@ -122,7 +132,13 @@ def _get_meilisearch_client():
     if _MEILI_CLIENT is not None:
         return _MEILI_CLIENT
 
-    _MEILI_CLIENT = MeilisearchClient(settings.MEILISEARCH_URL, settings.MEILISEARCH_API_KEY)
+    _MEILI_CLIENT = MeilisearchClient(
+        settings.MEILISEARCH_URL,
+        settings.MEILISEARCH_API_KEY,
+        # Without this the client has no socket timeout at all, so a Meilisearch that accepts
+        # the connection and then stops responding blocks the calling thread forever.
+        timeout=MEILISEARCH_HTTP_TIMEOUT,
+    )
     try:
         _MEILI_CLIENT.health()
     except MeilisearchError as err:
@@ -147,17 +163,24 @@ def _get_meili_api_key_uid():
     return _MEILI_API_KEY_UID
 
 
-def _wait_for_meili_task(info: TaskInfo) -> None:
+def _wait_for_meili_task(info: TaskInfo, timeout: float | None = None) -> bool:
     """
     Simple helper method to wait for a Meilisearch task to complete
-    This method will block until the task is completed, so it should only be used in celery tasks
-    or management commands.
+
+    By default this blocks until the task is completed, so the default should only be used in celery
+    tasks or management commands. Pass ``timeout`` (seconds) to bound the wait when calling from a
+    request thread.
+
+    Returns True if the task completed, False if we stopped waiting because ``timeout`` elapsed.
+    Giving up does not lose the update: Meilisearch has already accepted the documents and will apply
+    them regardless. Waiting only tells us *when* the index became consistent.
 
     ✨ Note: "Meilisearch processes tasks in the order they were added to the queue."
        per https://www.meilisearch.com/docs/capabilities/indexing/tasks_and_batches/monitor_tasks#monitoring-task-status
        so if you need to wait for multiple tasks, simply wait for the final (last) task.
     """
     client = _get_meilisearch_client()
+    deadline = None if timeout is None else time.monotonic() + timeout
     # This function almost always gets called immediately after enqueing a task, and from experiments, an initial wait
     # of at least 15ms is warranted, as the task is almost never done in less than 10ms. We are using 20ms which seems
     # to work well without requiring an additional wait in most cases.
@@ -165,6 +188,16 @@ def _wait_for_meili_task(info: TaskInfo) -> None:
     time.sleep(sleep_delay)
     current_status = client.get_task(info.task_uid)
     while current_status.status in ("enqueued", "processing"):
+        if deadline is not None and time.monotonic() >= deadline:
+            log.warning(
+                "Stopped waiting for Meilisearch task %s after %.1fs (status=%s). The update has been "
+                "accepted by Meilisearch and will still be applied; the search index is briefly stale.",
+                info.task_uid, timeout, current_status.status,
+            )
+            return False
+        # Never sleep past the deadline - otherwise a 2s backoff can overshoot a short timeout.
+        if deadline is not None:
+            sleep_delay = min(sleep_delay, max(deadline - time.monotonic(), 0.005))
         time.sleep(sleep_delay)
         sleep_delay = min(sleep_delay * 1.5, 2.0)  # Increase delay up to 2s
         current_status = client.get_task(info.task_uid)
@@ -174,6 +207,7 @@ def _wait_for_meili_task(info: TaskInfo) -> None:
         except (TypeError, KeyError):
             err_reason = "Unknown error"
         raise MeilisearchError(err_reason)
+    return True
 
 
 def _index_exists(index_name: str) -> bool:
@@ -313,11 +347,14 @@ def _recurse_children(block, fn, status_cb: Callable[[str], None] | None = None)
                 fn(child)
 
 
-def _update_index_docs(docs) -> None:
+def _update_index_docs(docs, wait_timeout: float | None = None) -> None:
     """
     Helper function that updates the documents in the search index
 
     If there is a rebuild in progress, the document will also be added to the new index.
+
+    ``wait_timeout`` bounds how long we wait for Meilisearch to finish applying the update. The
+    documents are applied either way; see ``_wait_for_meili_task``.
     """
     if not docs:
         return
@@ -328,7 +365,7 @@ def _update_index_docs(docs) -> None:
     if current_rebuild_index_name:
         # If there is a rebuild in progress, the document will also be added to the new index.
         client.index(current_rebuild_index_name).update_documents(docs)
-    _wait_for_meili_task(client.index(STUDIO_INDEX_NAME).update_documents(docs))
+    _wait_for_meili_task(client.index(STUDIO_INDEX_NAME).update_documents(docs), timeout=wait_timeout)
 
 
 def only_if_meilisearch_enabled(f):
@@ -851,9 +888,12 @@ def _delete_index_doc(doc_id) -> None:
     _wait_for_meili_task(client.index(STUDIO_INDEX_NAME).delete_document(doc_id))
 
 
-def upsert_library_block_index_doc(usage_key: UsageKey) -> None:
+def upsert_library_block_index_doc(usage_key: UsageKey, wait_timeout: float | None = None) -> None:
     """
     Creates or updates the document for the given Library Block in the search index
+
+    ``wait_timeout`` bounds how long to wait for Meilisearch to apply the update; pass it when
+    calling from a request thread so a slow search backend cannot hold the response open.
     """
 
     library_block = lib_api.get_component_from_usage_key(usage_key)
@@ -861,7 +901,7 @@ def upsert_library_block_index_doc(usage_key: UsageKey) -> None:
 
     docs = [searchable_doc_for_library_block(library_block_metadata)]
 
-    _update_index_docs(docs)
+    _update_index_docs(docs, wait_timeout=wait_timeout)
 
 
 def _get_document_from_index(document_id: str) -> dict:
