@@ -1,5 +1,23 @@
 """
 Defines asynchronous celery task for content indexing
+
+Every task here talks to Meilisearch, so every task inherits whatever latency the
+search backend is having. Three of the knobs below bound that:
+
+``max_retries`` bounds the number of attempts. It is the only one of the three that
+also applies on the inline path: the signal handlers in ``handlers.py`` run several
+of these with ``.apply()`` so that the index is updated before the Authoring MFE
+refetches, which puts the whole attempt sequence inside a Studio HTTP request. Celery
+runs an eager retry immediately, so the backoff below does not slow that path down;
+only the attempt count limits it.
+
+``retry_backoff`` / ``retry_backoff_max`` / ``retry_jitter`` bound how hard a queued
+retry storm hits a struggling Meilisearch. Celery's default is a flat 180s, which is
+both too long for the request-path tasks and unjittered for the rest.
+
+``soft_time_limit`` / ``time_limit`` bound a single attempt. These are enforced by the
+worker's prefork pool and are therefore ignored under ``.apply()``; they exist so a
+task that blocks on Meilisearch cannot occupy a worker slot indefinitely.
 """
 
 from __future__ import annotations
@@ -22,8 +40,48 @@ from . import api
 
 log = logging.getLogger(__name__)
 
+# Tasks the handlers run inline with .apply(), so their attempts land inside a Studio
+# HTTP request. Each is a single-document write; two extra attempts is the useful
+# amount before the caller is better off failing fast.
+_REQUEST_PATH_TASK = {
+    "base": LoggedTask,
+    "autoretry_for": (MeilisearchError, ConnectionError),
+    "max_retries": 2,
+    "retry_backoff": 1,
+    "retry_backoff_max": 8,
+    "retry_jitter": True,
+    "soft_time_limit": 10,
+    "time_limit": 15,
+}
 
-@shared_task(base=LoggedTask, autoretry_for=(MeilisearchError, ConnectionError))
+# Tasks only ever reached through .delay(). Nothing is waiting on them, so they get
+# more attempts and a longer per-attempt budget.
+_BACKGROUND_TASK = {
+    "base": LoggedTask,
+    "autoretry_for": (MeilisearchError, ConnectionError),
+    "max_retries": 3,
+    "retry_backoff": True,
+    "retry_backoff_max": 60,
+    "retry_jitter": True,
+    "soft_time_limit": 60,
+    "time_limit": 90,
+}
+
+# Whole-context walks: these load every block in a course or library from the
+# modulestore before writing, which legitimately takes minutes on a large context.
+_BULK_TASK = {
+    "base": LoggedTask,
+    "autoretry_for": (MeilisearchError, ConnectionError),
+    "max_retries": 2,
+    "retry_backoff": True,
+    "retry_backoff_max": 300,
+    "retry_jitter": True,
+    "soft_time_limit": 30 * 60,
+    "time_limit": 31 * 60,
+}
+
+
+@shared_task(**_BACKGROUND_TASK)
 @set_code_owner_attribute
 def upsert_xblock_index_doc(usage_key_str: str, recursive: bool) -> None:
     """
@@ -36,7 +94,7 @@ def upsert_xblock_index_doc(usage_key_str: str, recursive: bool) -> None:
     api.upsert_xblock_index_doc(usage_key, recursive)
 
 
-@shared_task(base=LoggedTask, autoretry_for=(MeilisearchError, ConnectionError))
+@shared_task(**_BULK_TASK)
 @set_code_owner_attribute
 def upsert_course_blocks_docs(course_key_str: str) -> None:
     """
@@ -49,7 +107,7 @@ def upsert_course_blocks_docs(course_key_str: str) -> None:
     api.index_course(course_key)
 
 
-@shared_task(base=LoggedTask, autoretry_for=(MeilisearchError, ConnectionError))
+@shared_task(**_BACKGROUND_TASK)
 @set_code_owner_attribute
 def delete_xblock_index_doc(usage_key_str: str) -> None:
     """
@@ -63,7 +121,7 @@ def delete_xblock_index_doc(usage_key_str: str) -> None:
     api.delete_index_doc(usage_key, delete_children=True)
 
 
-@shared_task(base=LoggedTask, autoretry_for=(MeilisearchError, ConnectionError))
+@shared_task(**_REQUEST_PATH_TASK)
 @set_code_owner_attribute
 def upsert_library_block_index_doc(usage_key_str: str) -> None:
     """
@@ -76,7 +134,7 @@ def upsert_library_block_index_doc(usage_key_str: str) -> None:
     api.upsert_library_block_index_doc(usage_key)
 
 
-@shared_task(base=LoggedTask, autoretry_for=(MeilisearchError, ConnectionError))
+@shared_task(**_REQUEST_PATH_TASK)
 @set_code_owner_attribute
 def delete_library_block_index_doc(usage_key_str: str) -> None:
     """
@@ -89,7 +147,7 @@ def delete_library_block_index_doc(usage_key_str: str) -> None:
     api.delete_index_doc(usage_key)
 
 
-@shared_task(base=LoggedTask, autoretry_for=(MeilisearchError, ConnectionError))
+@shared_task(**_BULK_TASK)
 @set_code_owner_attribute
 def update_content_library_index_docs(library_key_str: str, full_index: bool = False) -> None:
     """
@@ -103,7 +161,7 @@ def update_content_library_index_docs(library_key_str: str, full_index: bool = F
     api.upsert_content_library_index_docs(library_key, full_index=full_index)
 
 
-@shared_task(base=LoggedTask, autoretry_for=(MeilisearchError, ConnectionError))
+@shared_task(**_REQUEST_PATH_TASK)
 @set_code_owner_attribute
 def update_library_collection_index_doc(collection_key_str: str) -> None:
     """
@@ -117,7 +175,7 @@ def update_library_collection_index_doc(collection_key_str: str) -> None:
     api.upsert_library_collection_index_doc(collection_key)
 
 
-@shared_task(base=LoggedTask, autoretry_for=(MeilisearchError, ConnectionError))
+@shared_task(**_BACKGROUND_TASK)
 @set_code_owner_attribute
 def update_library_components_collections(collection_key_str: str) -> None:
     """
@@ -131,7 +189,7 @@ def update_library_components_collections(collection_key_str: str) -> None:
     api.update_library_components_collections(collection_key)
 
 
-@shared_task(base=LoggedTask, autoretry_for=(MeilisearchError, ConnectionError))
+@shared_task(**_BACKGROUND_TASK)
 @set_code_owner_attribute
 def update_library_containers_collections(collection_key_str: str) -> None:
     """
@@ -145,7 +203,7 @@ def update_library_containers_collections(collection_key_str: str) -> None:
     api.update_library_containers_collections(collection_key)
 
 
-@shared_task(base=LoggedTask, autoretry_for=(MeilisearchError, ConnectionError))
+@shared_task(**_REQUEST_PATH_TASK)
 @set_code_owner_attribute
 def update_library_container_index_doc(container_key_str: str) -> None:
     """
@@ -159,7 +217,7 @@ def update_library_container_index_doc(container_key_str: str) -> None:
     api.upsert_library_container_index_doc(container_key)
 
 
-@shared_task(base=LoggedTask, autoretry_for=(MeilisearchError, ConnectionError))
+@shared_task(**_REQUEST_PATH_TASK)
 @set_code_owner_attribute
 def delete_library_container_index_doc(container_key_str: str) -> None:
     """
@@ -172,7 +230,7 @@ def delete_library_container_index_doc(container_key_str: str) -> None:
     api.delete_index_doc(container_key)
 
 
-@shared_task(base=LoggedTask, autoretry_for=(MeilisearchError, ConnectionError))
+@shared_task(**_BACKGROUND_TASK)
 @set_code_owner_attribute
 def delete_course_index_docs(course_key_str: str) -> None:
     """
@@ -186,11 +244,16 @@ def delete_course_index_docs(course_key_str: str) -> None:
     api.delete_docs_with_context_key(course_key)
 
 
+# No time limit: a full rebuild walks every course and library and legitimately runs
+# for hours. It is bounded by the index rebuild lock instead, and by resuming from
+# IncrementalIndexCompleted rather than starting over.
 @shared_task(
     base=LoggedTask,
     autoretry_for=(MeilisearchError, ConnectionError),
     max_retries=3,
     retry_backoff=True,
+    retry_backoff_max=600,
+    retry_jitter=True,
 )
 @set_code_owner_attribute
 def rebuild_index_incremental() -> None:
