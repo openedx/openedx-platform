@@ -116,7 +116,10 @@ class CourseLiveConfigurationView(APIView):
         """
         pii_sharing_allowed = get_lti_pii_sharing_state_for_course(course_id)
         provider = ProviderManager().get_enabled_providers().get(request.data.get('provider_type', ''), None)
-        if not pii_sharing_allowed and provider.requires_pii_sharing():
+        # `provider` is None when `provider_type` is missing or names a provider that is not
+        # enabled. Let the serializer report that as a 400 rather than raising an AttributeError
+        # here -- the check below already treats `provider` as optional.
+        if not pii_sharing_allowed and provider and provider.requires_pii_sharing():
             return Response({
                 "pii_sharing_allowed": pii_sharing_allowed,
                 "message": "PII sharing is not allowed on this course"
