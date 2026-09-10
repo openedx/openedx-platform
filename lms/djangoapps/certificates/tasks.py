@@ -9,7 +9,6 @@ from typing import Any, Dict, List  # noqa: UP035
 from celery import shared_task
 from celery_utils.persist_on_failure import LoggedPersistOnFailureTask, LoggedTask
 from django.contrib.auth import get_user_model
-from edx_django_utils.monitoring import set_code_owner_attribute
 from opaque_keys.edx.keys import CourseKey
 
 from lms.djangoapps.certificates.data import CertificateStatuses
@@ -27,7 +26,6 @@ CERTIFICATE_DELAY_SECONDS = 2
 @shared_task(
     base=LoggedPersistOnFailureTask, bind=True, default_retry_delay=30, max_retries=2
 )
-@set_code_owner_attribute
 def generate_certificate(self, **kwargs):  # pylint: disable=unused-argument
     """
     Generates a certificate for a single user.
@@ -60,7 +58,6 @@ def generate_certificate(self, **kwargs):  # pylint: disable=unused-argument
 
 
 @shared_task(base=LoggedTask, ignore_result=True)
-@set_code_owner_attribute
 def handle_modify_cert_template(options: Dict[str, Any]) -> None:  # noqa: UP006
     """
     Celery task to handle the modify_cert_template management command.

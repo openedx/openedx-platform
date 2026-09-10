@@ -7,7 +7,6 @@ from datetime import timedelta
 from celery import shared_task
 from celery_utils.logged_task import LoggedTask
 from django.utils import timezone
-from edx_django_utils.monitoring import set_code_owner_attribute
 
 from lms.djangoapps.program_enrollments.models import ProgramCourseEnrollment, ProgramEnrollment
 
@@ -15,7 +14,6 @@ log = logging.getLogger(__name__)
 
 
 @shared_task(base=LoggedTask)
-@set_code_owner_attribute
 def expire_waiting_enrollments(expiration_days):
     """
     Remove all ProgramEnrollments and related ProgramCourseEnrollments for

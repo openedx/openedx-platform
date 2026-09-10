@@ -8,7 +8,6 @@ import logging
 
 from celery import shared_task
 from celery_utils.logged_task import LoggedTask
-from edx_django_utils.monitoring import set_code_owner_attribute
 from meilisearch.errors import MeilisearchError
 from opaque_keys.edx.keys import CourseKey, UsageKey
 from opaque_keys.edx.locator import (
@@ -24,7 +23,6 @@ log = logging.getLogger(__name__)
 
 
 @shared_task(base=LoggedTask, autoretry_for=(MeilisearchError, ConnectionError))
-@set_code_owner_attribute
 def upsert_xblock_index_doc(usage_key_str: str, recursive: bool) -> None:
     """
     Celery task to update the content index document for an XBlock
@@ -37,7 +35,6 @@ def upsert_xblock_index_doc(usage_key_str: str, recursive: bool) -> None:
 
 
 @shared_task(base=LoggedTask, autoretry_for=(MeilisearchError, ConnectionError))
-@set_code_owner_attribute
 def upsert_course_blocks_docs(course_key_str: str) -> None:
     """
     Celery task to update the content index document for all XBlocks in a course.
@@ -50,7 +47,6 @@ def upsert_course_blocks_docs(course_key_str: str) -> None:
 
 
 @shared_task(base=LoggedTask, autoretry_for=(MeilisearchError, ConnectionError))
-@set_code_owner_attribute
 def delete_xblock_index_doc(usage_key_str: str) -> None:
     """
     Celery task to delete the content index document for an XBlock
@@ -64,7 +60,6 @@ def delete_xblock_index_doc(usage_key_str: str) -> None:
 
 
 @shared_task(base=LoggedTask, autoretry_for=(MeilisearchError, ConnectionError))
-@set_code_owner_attribute
 def upsert_library_block_index_doc(usage_key_str: str) -> None:
     """
     Celery task to update the content index document for a library block
@@ -77,7 +72,6 @@ def upsert_library_block_index_doc(usage_key_str: str) -> None:
 
 
 @shared_task(base=LoggedTask, autoretry_for=(MeilisearchError, ConnectionError))
-@set_code_owner_attribute
 def delete_library_block_index_doc(usage_key_str: str) -> None:
     """
     Celery task to delete the content index document for a library block
@@ -90,7 +84,6 @@ def delete_library_block_index_doc(usage_key_str: str) -> None:
 
 
 @shared_task(base=LoggedTask, autoretry_for=(MeilisearchError, ConnectionError))
-@set_code_owner_attribute
 def update_content_library_index_docs(library_key_str: str, full_index: bool = False) -> None:
     """
     Celery task to update the content index documents for all library blocks in a library
@@ -104,7 +97,6 @@ def update_content_library_index_docs(library_key_str: str, full_index: bool = F
 
 
 @shared_task(base=LoggedTask, autoretry_for=(MeilisearchError, ConnectionError))
-@set_code_owner_attribute
 def update_library_collection_index_doc(collection_key_str: str) -> None:
     """
     Celery task to update the content index document for a library collection
@@ -118,7 +110,6 @@ def update_library_collection_index_doc(collection_key_str: str) -> None:
 
 
 @shared_task(base=LoggedTask, autoretry_for=(MeilisearchError, ConnectionError))
-@set_code_owner_attribute
 def update_library_components_collections(collection_key_str: str) -> None:
     """
     Celery task to update the "collections" field for components in the given content library collection.
@@ -132,7 +123,6 @@ def update_library_components_collections(collection_key_str: str) -> None:
 
 
 @shared_task(base=LoggedTask, autoretry_for=(MeilisearchError, ConnectionError))
-@set_code_owner_attribute
 def update_library_containers_collections(collection_key_str: str) -> None:
     """
     Celery task to update the "collections" field for containers in the given content library collection.
@@ -146,7 +136,6 @@ def update_library_containers_collections(collection_key_str: str) -> None:
 
 
 @shared_task(base=LoggedTask, autoretry_for=(MeilisearchError, ConnectionError))
-@set_code_owner_attribute
 def update_library_container_index_doc(container_key_str: str) -> None:
     """
     Celery task to update the content index document for a library container
@@ -160,7 +149,6 @@ def update_library_container_index_doc(container_key_str: str) -> None:
 
 
 @shared_task(base=LoggedTask, autoretry_for=(MeilisearchError, ConnectionError))
-@set_code_owner_attribute
 def delete_library_container_index_doc(container_key_str: str) -> None:
     """
     Celery task to delete the content index document for a library block
@@ -173,7 +161,6 @@ def delete_library_container_index_doc(container_key_str: str) -> None:
 
 
 @shared_task(base=LoggedTask, autoretry_for=(MeilisearchError, ConnectionError))
-@set_code_owner_attribute
 def delete_course_index_docs(course_key_str: str) -> None:
     """
     Celery task to delete the content index documents for a Course
@@ -192,7 +179,6 @@ def delete_course_index_docs(course_key_str: str) -> None:
     max_retries=3,
     retry_backoff=True,
 )
-@set_code_owner_attribute
 def rebuild_index_incremental() -> None:
     """
     Celery task to incrementally populate the Studio Meilisearch index.

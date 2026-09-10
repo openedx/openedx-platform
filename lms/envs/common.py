@@ -1210,7 +1210,6 @@ MIDDLEWARE = [
 
     # Various monitoring middleware
     'edx_django_utils.monitoring.CachedCustomMonitoringMiddleware',
-    'edx_django_utils.monitoring.CodeOwnerMonitoringMiddleware',
     'edx_django_utils.monitoring.CookieMonitoringMiddleware',
     'edx_django_utils.monitoring.DeploymentMonitoringMiddleware',
     'edx_django_utils.monitoring.FrontendMonitoringMiddleware',

@@ -8,7 +8,6 @@ import logging
 import requests
 from celery import shared_task
 from django.core.exceptions import ObjectDoesNotExist
-from edx_django_utils.monitoring import set_code_owner_attribute
 from lxml import etree
 from requests import exceptions
 from social_django.models import UserSocialAuth
@@ -28,7 +27,6 @@ SAML_XML_NS = 'urn:oasis:names:tc:SAML:2.0:metadata'  # The SAML Metadata XML na
 
 
 @shared_task
-@set_code_owner_attribute
 def fetch_saml_metadata():
     """
     Fetch and store/update the metadata of all IdPs
@@ -139,7 +137,6 @@ def fetch_saml_metadata():
 
 
 @shared_task
-@set_code_owner_attribute
 def update_saml_users_social_auth_uid(reader, slug):
     """
     Update the UserSocialAuth UID for users based on a CSV reader input.

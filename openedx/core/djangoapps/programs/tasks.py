@@ -13,7 +13,6 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.sites.models import Site
 from django.core.exceptions import ObjectDoesNotExist
-from edx_django_utils.monitoring import set_code_owner_attribute
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey
 from requests.exceptions import HTTPError
@@ -271,7 +270,6 @@ def post_course_certificate_configuration(client, cert_config, certificate_avail
     retry_backoff_max=600,
     retry_jitter=True,
 )
-@set_code_owner_attribute
 def award_program_certificates(self, username):  # pylint: disable=too-many-statements
     """
     This task is designed to be called whenever a student's completion status changes with respect to one or more
@@ -421,7 +419,6 @@ def award_program_certificates(self, username):  # pylint: disable=too-many-stat
     retry_backoff_max=600,
     retry_jitter=True,
 )
-@set_code_owner_attribute
 def update_credentials_course_certificate_configuration_available_date(
     self, course_key, certificate_available_date=None
 ):
@@ -474,7 +471,6 @@ def update_credentials_course_certificate_configuration_available_date(
     retry_backoff_max=600,
     retry_jitter=True,
 )
-@set_code_owner_attribute
 def award_course_certificate(self, username, course_run_key):
     """
     This task is designed to be called whenever a student GeneratedCertificate is updated, or when a course-run's
@@ -592,7 +588,6 @@ def award_course_certificate(self, username, course_run_key):
     retry_backoff_max=600,
     retry_jitter=True,
 )
-@set_code_owner_attribute
 def revoke_program_certificates(self, username, course_key):  # pylint: disable=too-many-statements
     """
     This task is designed to be called whenever a student's course certificate is revoked.
@@ -725,7 +720,6 @@ def revoke_program_certificates(self, username, course_key):  # pylint: disable=
     retry_backoff_max=600,
     retry_jitter=True,
 )
-@set_code_owner_attribute
 def update_certificate_available_date_on_course_update(self, course_key):
     """
     This task is designed to be enqueued whenever a course run's Certificate Display Behavior (CDB) or Certificate

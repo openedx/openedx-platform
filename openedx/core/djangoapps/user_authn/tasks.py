@@ -12,7 +12,6 @@ from django.contrib.sites.models import Site
 from edx_ace import ace
 from edx_ace.errors import RecoverableChannelDeliveryError
 from edx_ace.message import Message
-from edx_django_utils.monitoring import set_code_owner_attribute
 
 from common.djangoapps.track import segment
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
@@ -23,7 +22,6 @@ log = logging.getLogger('edx.celery.task')
 
 
 @shared_task
-@set_code_owner_attribute
 def check_pwned_password_and_send_track_event(
     user_id, password,
     internal_user=False,
@@ -50,7 +48,6 @@ def check_pwned_password_and_send_track_event(
 
 
 @shared_task(bind=True, default_retry_delay=30, max_retries=2)
-@set_code_owner_attribute
 def send_activation_email(self, msg_string, from_address=None, site_id=None):
     """
     Sending an activation email to the user.
