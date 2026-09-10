@@ -698,7 +698,7 @@ def activate_account(request, key):
     if request.GET.get('next'):
         redirect_to, root_login_url = get_next_url_for_login_page(request, include_host=True)
 
-        # Don't automatically redirect authenticated users to the redirect_url
+        # Don't automatically redirect to the redirect_url
         # if the `next` value is either:
         # 1. "/dashboard" or
         # 2. "https://{LMS_ROOT_URL}/dashboard" (which we might provide as a value from the AuthN MFE)
@@ -708,14 +708,23 @@ def activate_account(request, key):
         ):
             redirect_url = get_redirect_url_with_host(root_login_url, redirect_to)
 
-    if should_redirect_to_authn_microfrontend() and not request.user.is_authenticated:
-        params = {'account_activation_status': activation_message_type}
+    # Visitors who are not signed in have to authenticate before they can use their
+    # destination, so force a detour to the login page.
+    if not request.user.is_authenticated:
+        params = {}
+        if should_redirect_to_authn_microfrontend():
+            login_url = settings.AUTHN_MICROFRONTEND_URL + '/login'
+            params['account_activation_status'] = activation_message_type
+        else:
+            login_url = reverse('signin_user')
+
         if redirect_url:
             params['next'] = redirect_url
-        url_path = '/login?{}'.format(urllib.parse.urlencode(params))  # noqa: UP032
-        return redirect(settings.AUTHN_MICROFRONTEND_URL + url_path)
+        if params:
+            login_url = f'{login_url}?{urllib.parse.urlencode(params)}'
+        redirect_url = login_url
 
-    response = redirect(redirect_url) if redirect_url and is_enterprise_learner(request.user) else redirect('dashboard')
+    response = redirect(redirect_url or 'dashboard')
     if show_account_activation_popup:
         response.delete_cookie(
             settings.SHOW_ACTIVATE_CTA_POPUP_COOKIE_NAME,

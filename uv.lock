@@ -2023,7 +2023,7 @@ wheels = [
 
 [[package]]
 name = "edx-drf-extensions"
-version = "10.7.0"
+version = "10.8.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "django", version = "4.2.30", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'group-16-openedx-platform-django42'" },
@@ -2037,9 +2037,9 @@ dependencies = [
     { name = "requests" },
     { name = "semantic-version" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/50/06/b32d6d48415d9278c188a70da786796715ce2c4e73178f114fd498108052/edx_drf_extensions-10.7.0.tar.gz", hash = "sha256:784710bf9dc77e4234d201295963c20fd15b4e27595f1c1587b180a79e0914d4", size = 80429, upload-time = "2026-08-18T15:32:48.976Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/03/ce/7b348f25bb9a975171166904abe740a026ce7c6dca10e3827c927aab36cb/edx_drf_extensions-10.8.0.tar.gz", hash = "sha256:f7a6d1d0a4cfdec7c95635b0f3eb427cc473f28428bfabe3c4e3db0095feb6da", size = 99711, upload-time = "2026-09-02T20:47:28.28Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e8/e6/03aa9fc1de473702887657c0e165798c99dee32c77a6eca5a4b2f4d8809d/edx_drf_extensions-10.7.0-py2.py3-none-any.whl", hash = "sha256:c1931816a88ac60908051e28ecb6fd18ba97cc3d6f18d61360d8eb22d3203886", size = 79474, upload-time = "2026-08-18T15:32:47.815Z" },
+    { url = "https://files.pythonhosted.org/packages/ff/cd/7db09d26bb1c01ecef32d0762207930c900caf689d9bdc635c31406d4488/edx_drf_extensions-10.8.0-py2.py3-none-any.whl", hash = "sha256:853892aaba931315e82a3d3cf3cab57c5fe105f8d1760d70a45455b6e995e33b", size = 102718, upload-time = "2026-09-02T20:47:26.99Z" },
 ]
 
 [[package]]

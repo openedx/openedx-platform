@@ -645,6 +645,11 @@ class RoleBase(AccessRole):
             user_external_key=user.username,
             role_external_key=role,
         )
+        # A platform-wide grant (course-v1:*, lib:*) covers every org, not just the ones
+        # with a concrete assignment. Platform-glob scopes have no .org attribute at all
+        # (unlike org-glob/course/library scopes, where it's a real field that can be None).
+        if any(assignment.scope.IS_PLATFORM_GLOB for assignment in assignments):
+            return [org["short_name"] for org in get_organizations()]
         orgs = {assignment.scope.org for assignment in assignments if assignment.scope.org is not None}
         return list(orgs)
 
