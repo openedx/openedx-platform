@@ -1676,7 +1676,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
         """
         Test that for a verified cert, the correct language is used when the integrity signature feature is enabled.
         """
-        with patch.dict(settings.FEATURES, ENABLE_CERTIFICATES_IDV_REQUIREMENT=enable_cert_idv_requirement):
+        with override_settings(ENABLE_CERTIFICATES_IDV_REQUIREMENT=enable_cert_idv_requirement):
             self._add_course_certificates(count=1, signatory_count=2, is_active=True)
             self._create_custom_template_with_verified_description()
             self.cert.mode = 'verified'

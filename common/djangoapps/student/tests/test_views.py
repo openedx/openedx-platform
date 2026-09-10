@@ -192,8 +192,8 @@ class StudentDashboardTests(SharedModuleStoreTestCase, MilestonesTestCaseMixin, 
     EMAIL_SETTINGS_ELEMENT_ID = "#actions-item-email-settings-0"
     ENABLED_SIGNALS = ['course_published']
     MOCK_SETTINGS = {
+        'DISABLE_START_DATES': False,
         'FEATURES': {
-            'DISABLE_START_DATES': False,
             'DISABLE_SET_JWT_COOKIES_FOR_TESTS': True,
         },
         'SOCIAL_SHARING_SETTINGS': {
@@ -204,7 +204,6 @@ class StudentDashboardTests(SharedModuleStoreTestCase, MilestonesTestCaseMixin, 
     }
     MOCK_SETTINGS_HIDE_COURSES = {
         'FEATURES': {
-            'HIDE_DASHBOARD_COURSES_UNTIL_ACTIVATED': True,
             'DISABLE_SET_JWT_COOKIES_FOR_TESTS': True,
         }
     }
@@ -599,6 +598,7 @@ class StudentDashboardTests(SharedModuleStoreTestCase, MilestonesTestCaseMixin, 
         response = self.client.get(self.path)
         assert pq(response.content)(self.EMAIL_SETTINGS_ELEMENT_ID).length == 0
 
+    @override_settings(HIDE_DASHBOARD_COURSES_UNTIL_ACTIVATED=True)
     @patch.multiple('django.conf.settings', **MOCK_SETTINGS_HIDE_COURSES)
     def test_hide_dashboard_courses_until_activated(self):
         """
@@ -1013,7 +1013,11 @@ class StudentDashboardTests(SharedModuleStoreTestCase, MilestonesTestCaseMixin, 
 
 
 @skip_unless_lms
-@unittest.skipUnless(settings.FEATURES.get("ENABLE_NOTICES"), 'Notices plugin is not enabled')
+# TODO: It seems like ENABLE_NOTICES does not exist on the backend at all. There's a
+# frontend config flag called ENABLE_NOTICES, but it's unaffected by anything on the
+# backend. We should remove this skipUnless and the override_settings calls, and get
+# then get these tests to pass as-is.
+@unittest.skipUnless(getattr(settings, "ENABLE_NOTICES", False), 'Notices plugin is not enabled')
 class TestCourseDashboardNoticesRedirects(SharedModuleStoreTestCase):
     """
     Tests for the Dashboard redirect functionality introduced via the Notices plugin.
@@ -1088,7 +1092,7 @@ class TestCourseDashboardNoticesRedirects(SharedModuleStoreTestCase):
         """
         mock_notices.return_value = reverse("root")
 
-        with override_settings(FEATURES={**settings.FEATURES, 'ENABLE_NOTICES': True}):
+        with override_settings(ENABLE_NOTICES=True):
             response = self.client.get(self.path)
 
         assert response.status_code == 302
@@ -1103,7 +1107,7 @@ class TestCourseDashboardNoticesRedirects(SharedModuleStoreTestCase):
         """
         mock_notices.return_value = None
 
-        with override_settings(FEATURES={**settings.FEATURES, 'ENABLE_NOTICES': True}):
+        with override_settings(ENABLE_NOTICES=True):
             response = self.client.get(self.path)
 
         assert response.status_code == 200
@@ -1116,7 +1120,7 @@ class TestCourseDashboardNoticesRedirects(SharedModuleStoreTestCase):
         """
         mock_notices.return_value = None
 
-        with override_settings(FEATURES={**settings.FEATURES, 'ENABLE_NOTICES': False}):
+        with override_settings(ENABLE_NOTICES=False):
             response = self.client.get(self.path)
 
         assert response.status_code == 200

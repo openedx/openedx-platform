@@ -87,6 +87,7 @@ class CourseEnrollmentSerializer(serializers.ModelSerializer):
         model = CourseEnrollment
         fields = ("created", "mode", "is_active", "course_details", "user")
         lookup_field = "username"
+        ref_name = "CourseEnrollment"  # Explicit ref_name to help avoid conflicts with other similar serializers
 
 
 class CourseEnrollmentsApiListSerializer(CourseEnrollmentSerializer):

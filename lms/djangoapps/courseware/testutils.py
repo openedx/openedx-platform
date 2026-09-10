@@ -5,10 +5,10 @@ Common test utilities for courseware functionality
 
 from abc import ABCMeta, abstractmethod
 from datetime import datetime, timedelta
-from unittest.mock import patch
 from urllib.parse import urlencode
 
 import ddt
+from django.test.utils import override_settings
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.course_modes.tests.factories import CourseModeFactory
@@ -206,7 +206,7 @@ class RenderXBlockTestMixin(MasqueradeMixin, metaclass=ABCMeta):
         self.setup_user(admin=False, enroll=False, login=True)
         self.verify_response(expected_response_code=404)
 
-    @patch.dict('django.conf.settings.FEATURES', {'DISABLE_START_DATES': False})
+    @override_settings(DISABLE_START_DATES=False)
     def test_fail_block_unreleased(self):
         self.setup_course()
         self.setup_user(admin=False, enroll=True, login=True)

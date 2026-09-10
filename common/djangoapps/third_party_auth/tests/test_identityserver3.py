@@ -7,11 +7,11 @@ import ddt
 
 from common.djangoapps.third_party_auth.identityserver3 import IdentityServer3
 from common.djangoapps.third_party_auth.tests import testutil
-from common.djangoapps.third_party_auth.tests.utils import skip_unless_thirdpartyauth
 from common.test.utils import assert_dict_contains_subset
+from openedx.core.djangolib.testing.utils import skip_unless_lms
 
 
-@skip_unless_thirdpartyauth()
+@skip_unless_lms
 @ddt.ddt
 class IdentityServer3Test(testutil.TestCase):
     """

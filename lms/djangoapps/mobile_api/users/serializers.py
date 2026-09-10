@@ -150,6 +150,7 @@ class CourseEnrollmentSerializer(serializers.ModelSerializer):
         model = CourseEnrollment
         fields = ('audit_access_expires', 'created', 'mode', 'is_active', 'course', 'certificate', 'course_modes')
         lookup_field = 'username'
+        ref_name = "MobileCourseEnrollment"  # Explicit ref_name to help avoid conflicts with other similar serializers
 
 
 class CourseEnrollmentSerializerv05(CourseEnrollmentSerializer):

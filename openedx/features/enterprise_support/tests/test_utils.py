@@ -21,7 +21,6 @@ from opaque_keys.edx.keys import CourseKey, UsageKey
 from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangolib.testing.utils import skip_unless_lms
-from openedx.features.enterprise_support.tests import FEATURES_WITH_ENTERPRISE_ENABLED
 from openedx.features.enterprise_support.tests.factories import (
     EnterpriseCustomerBrandingConfigurationFactory,
     EnterpriseCustomerFactory,
@@ -59,7 +58,7 @@ TEST_PASSWORD = 'test'
 
 
 @ddt.ddt
-@override_settings(FEATURES=FEATURES_WITH_ENTERPRISE_ENABLED)
+@override_settings(ENABLE_ENTERPRISE_INTEGRATION=True)
 @skip_unless_lms
 class TestEnterpriseUtils(TestCase):
     """
@@ -594,7 +593,7 @@ class TestEnterpriseUtils(TestCase):
         assert not mock_user_social_auth.objects.select_related.called
 
 
-@override_settings(FEATURES=FEATURES_WITH_ENTERPRISE_ENABLED)
+@override_settings(ENABLE_ENTERPRISE_INTEGRATION=True)
 @skip_unless_lms
 class TestCourseAccessed(SharedModuleStoreTestCase, CompletionWaffleTestMixin):
     """

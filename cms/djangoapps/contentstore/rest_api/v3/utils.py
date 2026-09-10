@@ -13,10 +13,6 @@ Currently provides:
   * :data:`COMMON_ERROR_RESPONSES` – the shared ``@extend_schema(responses=...)``
     fragment for the 401 / 403 / 404 cases every v3 course-scoped viewset
     can raise.
-  * :func:`apply_field_selection` – ADR 0036 helper. Drops every top-level
-    key not listed in the caller's ``?fields=`` CSV. No-op when ``?fields=``
-    is absent. Use this when an action returns a wide flat object and clients
-    want to request a subset (e.g. ``?fields=id,display_name,courses``).
 """
 
 from drf_spectacular.utils import OpenApiResponse
@@ -35,7 +31,7 @@ def resolve_course_key(course_key: str) -> CourseKey:
     Raises:
         rest_framework.exceptions.NotFound: if the string is unparseable
             *or* the course does not exist. The ADR 0029 envelope (wired in
-            by :class:`openedx.core.lib.api.mixins.StandardizedErrorMixin`)
+            by :class:`edx_rest_framework_extensions.mixins.StandardizedErrorMixin`)
             renders both as a structured 404.
 
     OEP-68: the parameter name is ``course_key`` rather than the legacy
@@ -57,31 +53,3 @@ COMMON_ERROR_RESPONSES = {
     403: OpenApiResponse(description="The requester cannot access the specified course."),
     404: OpenApiResponse(description="The requested course does not exist."),
 }
-
-
-def apply_field_selection(data, fields_csv):
-    """
-    ADR 0036 — drop every top-level key not listed in ``fields_csv``.
-
-    Args:
-        data: a ``dict`` (typically ``serializer.data``). Anything else is
-            returned untouched.
-        fields_csv: the raw value of the ``?fields=`` query parameter. ``None``
-            or empty string → no filtering (the full ``data`` is returned).
-
-    Returns:
-        A new ``dict`` containing only the requested top-level keys, or the
-        original ``data`` if filtering is not applicable.
-
-    Note:
-        Only top-level keys are honoured. Dotted paths (``?fields=children.x``)
-        are stripped to their first segment (``children``) — full dotted-path
-        traversal is intentionally left to a future implementation per the
-        ADR 0036 guidance to "reject silent over-fetching" via that syntax.
-    """
-    if not fields_csv or not isinstance(data, dict):
-        return data
-    wanted = {name.strip().split(".", 1)[0] for name in fields_csv.split(",") if name.strip()}
-    if not wanted:
-        return data
-    return {key: value for key, value in data.items() if key in wanted}

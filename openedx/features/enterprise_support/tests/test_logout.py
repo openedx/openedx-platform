@@ -16,14 +16,13 @@ from openedx.core.djangolib.testing.utils import CacheIsolationTestCase, skip_un
 from openedx.features.enterprise_support.api import enterprise_enabled
 from openedx.features.enterprise_support.tests import (
     FAKE_ENTERPRISE_CUSTOMER,
-    FEATURES_WITH_ENTERPRISE_ENABLED,
     factories,
 )
 from openedx.features.enterprise_support.tests.mixins.enterprise import EnterpriseServiceMockMixin
 
 
 @ddt.ddt
-@override_settings(FEATURES=FEATURES_WITH_ENTERPRISE_ENABLED)
+@override_settings(ENABLE_ENTERPRISE_INTEGRATION=True)
 @skip_unless_lms
 class EnterpriseLogoutTests(EnterpriseServiceMockMixin, CacheIsolationTestCase, UrlResetMixin):
     """ Tests for the enterprise logout functionality. """

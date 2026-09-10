@@ -7,7 +7,6 @@ import ddt
 from completion.models import BlockCompletion
 from completion.services import CompletionService
 from completion.test_utils import CompletionWaffleTestMixin
-from django.conf import settings
 from django.test import override_settings
 from opaque_keys.edx.keys import CourseKey
 
@@ -180,7 +179,7 @@ class CompletionServiceTestCase(CompletionWaffleTestMixin, SharedModuleStoreTest
         assert self.completion_service.can_mark_block_complete_on_view(self.html) is True
         assert self.completion_service.can_mark_block_complete_on_view(self.problem) is False
 
-    @override_settings(FEATURES={**settings.FEATURES, 'MARK_LIBRARY_CONTENT_BLOCK_COMPLETE_ON_VIEW': True})
+    @override_settings(MARK_LIBRARY_CONTENT_BLOCK_COMPLETE_ON_VIEW=True)
     def test_can_mark_library_content_complete_on_view(self):
         library = LibraryFactory.create(modulestore=self.store)
         lib_vertical = BlockFactory.create(parent=self.sequence, category='vertical', publish_item=False)

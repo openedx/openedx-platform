@@ -87,7 +87,7 @@ class ItemBankMixin(
 
         This is a property, so it can be dynamically overridden in tests, as it is not evaluated at runtime.
         """
-        if settings.FEATURES.get('MARK_LIBRARY_CONTENT_BLOCK_COMPLETE_ON_VIEW', False):
+        if settings.MARK_LIBRARY_CONTENT_BLOCK_COMPLETE_ON_VIEW:
             return XBlockCompletionMode.COMPLETABLE
 
         return XBlockCompletionMode.AGGREGATOR

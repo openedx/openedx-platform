@@ -1,6 +1,0 @@
-#
-# Dependencies for OpenStack deployments.
-#
-
-# OpenStack swift backend for django storage API
-django-storage-swift==1.2.19

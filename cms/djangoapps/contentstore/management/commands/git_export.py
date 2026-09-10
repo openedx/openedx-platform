@@ -10,7 +10,7 @@ repository before attempting to export the XML, add, and commit changes if
 any have taken place.
 
 This functionality is also available as an export view in studio if the giturl
-attribute is set and the FEATURE['ENABLE_EXPORT_GIT'] is set.
+attribute is set and the ENABLE_EXPORT_GIT setting is enabled.
 """
 
 

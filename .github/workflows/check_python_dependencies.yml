@@ -10,27 +10,22 @@ jobs:
 
     strategy:
       matrix:
-        python-version: ["3.12"]
+        python-version:
+          - "3.12"
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v7
 
-      - name: Set up Python
-        uses: actions/setup-python@v6
+      - name: Install uv
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
+          enable-cache: true
           python-version: ${{ matrix.python-version }}
-
-      - name: Install repo-tools
-        run: pip install edx-repo-tools[find_dependencies]
-
-      - name: Install setuptool
-        run: pip install setuptools
 
       - name: Run Python script
         run: |
-          find_python_dependencies \
-            --req-file requirements/edx/base.txt \
-            --req-file requirements/edx/testing.txt \
+          uvx --from 'edx-repo-tools[find_dependencies]' find_python_dependencies \
+            --req-file uv.lock \
             --ignore https://github.com/mitodl/edx-sga \
             --ignore https://github.com/open-craft/xblock-poll

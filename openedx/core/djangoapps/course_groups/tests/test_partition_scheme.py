@@ -7,6 +7,7 @@ Test the partitions and partitions service
 from unittest.mock import patch
 
 import django.test
+from django.test.utils import override_settings
 
 from common.djangoapps.student.tests.factories import UserFactory
 from lms.djangoapps.courseware.tests.test_masquerade import StaffMasqueradeTestCase
@@ -364,7 +365,7 @@ class TestMasqueradedGroup(StaffMasqueradeTestCase):
         self._verify_masquerade_for_group(None)
 
     @skip_unless_lms
-    @patch.dict('django.conf.settings.FEATURES', {'DISABLE_START_DATES': False})
+    @override_settings(DISABLE_START_DATES=False)
     def test_group_masquerade(self):
         """
         Tests that a staff member can masquerade as being in a particular group.
@@ -372,7 +373,7 @@ class TestMasqueradedGroup(StaffMasqueradeTestCase):
         self._verify_masquerade_for_all_groups()
 
     @skip_unless_lms
-    @patch.dict('django.conf.settings.FEATURES', {'DISABLE_START_DATES': False})
+    @override_settings(DISABLE_START_DATES=False)
     def test_group_masquerade_with_cohort(self):
         """
         Tests that a staff member can masquerade as being in a particular group

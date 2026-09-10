@@ -1885,7 +1885,7 @@ def _get_course_index_context(request, course_key, course_block):
     frontend_app_publisher_url = configuration_helpers.get_value_for_org(
         course_block.location.org,
         'FRONTEND_APP_PUBLISHER_URL',
-        settings.FEATURES.get('FRONTEND_APP_PUBLISHER_URL', False)
+        settings.FRONTEND_APP_PUBLISHER_URL
     )
     # gather any errors in the currently stored proctoring settings.
     advanced_dict = CourseMetadata.fetch(course_block)

@@ -32,6 +32,8 @@ from drf_spectacular.openapi import AutoSchema
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
 from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
+from edx_rest_framework_extensions.mixins import StandardizedErrorMixin
+from edx_rest_framework_extensions.shaping import project
 from organizations import api as org_api
 from rest_framework import viewsets
 from rest_framework.decorators import action
@@ -44,9 +46,7 @@ from cms.djangoapps.contentstore.rest_api.v1.serializers import (
     LibraryTabSerializer,
     StudioHomeSerializer,
 )
-from cms.djangoapps.contentstore.rest_api.v3.utils import apply_field_selection
 from cms.djangoapps.contentstore.utils import get_course_context, get_home_context, get_library_context
-from openedx.core.lib.api.mixins import StandardizedErrorMixin
 
 
 class _HomeAutoSchema(AutoSchema):
@@ -122,14 +122,14 @@ class HomeViewSet(StandardizedErrorMixin, viewsets.ViewSet):
             ),
             'studio_name': settings.STUDIO_NAME,
             'studio_short_name': settings.STUDIO_SHORT_NAME,
-            'studio_request_email': settings.FEATURES.get('STUDIO_REQUEST_EMAIL', ''),
+            'studio_request_email': settings.STUDIO_REQUEST_EMAIL,
             'tech_support_email': settings.TECH_SUPPORT_EMAIL,
             'platform_name': settings.PLATFORM_NAME,
             'user_is_active': request.user.is_active,
         })
         serializer = self.get_serializer(home_context)
         # ADR 0036 — drop top-level keys not requested via ?fields=.
-        return Response(apply_field_selection(serializer.data, request.query_params.get("fields")))
+        return Response(project(serializer.data, request.query_params.get("fields")))
 
     @apidocs.schema(
         parameters=[

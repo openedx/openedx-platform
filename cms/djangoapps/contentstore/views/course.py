@@ -7,6 +7,7 @@ import logging
 import random
 import re
 import string
+from collections.abc import Iterable
 from typing import Dict  # noqa: UP035
 
 import django.utils
@@ -42,6 +43,7 @@ from openedx_authz.constants.permissions import (
     COURSES_PUBLISH_COURSE_CONTENT,
     COURSES_VIEW_COURSE,
     COURSES_VIEW_COURSE_UPDATES,
+    COURSES_VIEW_GROUP_CONFIGURATIONS,
     COURSES_VIEW_PAGES_AND_RESOURCES,
 )
 from organizations.api import add_organization_course, ensure_organization
@@ -50,7 +52,7 @@ from organizations.models import Organization
 from rest_framework.decorators import api_view
 from rest_framework.exceptions import ValidationError
 
-from cms.djangoapps.contentstore.api.views.utils import get_bool_param
+from cms.djangoapps.contentstore.api.views.utils import get_bool_param, get_date_param
 from cms.djangoapps.contentstore.xblock_storage_handlers.view_handlers import create_xblock_info
 from cms.djangoapps.course_creators.models import CourseCreator
 from cms.djangoapps.course_creators.views import add_user_with_status_unrequested, get_course_creator_status
@@ -420,19 +422,8 @@ def get_in_process_course_actions(request):
             exclude_args={'state': CourseRerunUIStateManager.State.SUCCEEDED},
             should_display=True,
         )
-        if (
-            # The user who initiated the rerun can always see its status.
-            # This is needed because when the authz flag is enabled, permission
-            # checks require a CourseOverview which doesn't exist until the
-            # rerun task clones the course.
-            # TODO: This created_user fallback is a temporary workaround until
-            # openedx/openedx-authz#352 is implemented. Once authz supports
-            # pre-assigning roles without a CourseOverview, this check can be removed
-            # and the standard permission check will suffice.
-            course.created_user == request.user
-            or user_has_course_permission(
-                request.user, COURSES_VIEW_COURSE.identifier, course.course_key, LegacyAuthoringPermission.READ
-            )
+        if user_has_course_permission(
+            request.user, COURSES_VIEW_COURSE.identifier, course.course_key, LegacyAuthoringPermission.READ
         )
     ]
 
@@ -470,7 +461,7 @@ def _accessible_courses_summary_iter(request):
     return courses_summary, in_process_course_actions
 
 
-def get_query_params_if_present(request):
+def get_query_params_if_present(request) -> tuple[str | None, str | None, bool | None, bool | None]:
     """
     Returns the query params from request if present.
 
@@ -488,8 +479,14 @@ def get_query_params_if_present(request):
             The default value is None.
         archived_only (str): if not None, this value will limit the courses returned to archived courses.
             The default value is None.
+
+    Note: ``start_date_on_or_after``/``start_date_on_or_before`` are listed below for consistency
+    with the other recognized filter params; they have no effect on this function's return value.
     """
-    allowed_query_params = ['search', 'ordering', 'order', 'active_only', 'archived_only']
+    allowed_query_params = [
+        'search', 'ordering', 'order', 'active_only', 'archived_only',
+        'start_date_on_or_after', 'start_date_on_or_before',
+    ]
     if not any(param in request.GET for param in allowed_query_params):
         return None, None, None, None
     search_query = request.GET.get('search')
@@ -1011,7 +1008,7 @@ def _get_candidate_course_keys(request):
     return authz_keys | group_keys
 
 @function_trace('get_courses_accessible_to_user')
-def get_courses_accessible_to_user(request):
+def get_courses_accessible_to_user(request) -> tuple[Iterable[CourseOverview], list]:
     """
     Return courses accessible to the user using a hybrid AuthZ + legacy approach.
 
@@ -1031,7 +1028,7 @@ def get_courses_accessible_to_user(request):
 
     Returns:
         tuple:
-            - list[CourseOverview]: Accessible courses.
+            - Iterable[CourseOverview]: Accessible courses.
             - list: In-process course actions (staff only).
     """
     user = request.user
@@ -1068,8 +1065,12 @@ def get_courses_accessible_to_user(request):
         return [], in_process_actions
 
     # Step 3: Batch fetch valid courses with a single query, ordered by creation date
+    start_date_on_or_after = get_date_param(request, 'start_date_on_or_after', None)
+    start_date_on_or_before = get_date_param(request, 'start_date_on_or_before', None)
     courses = CourseOverview.get_all_courses(
-        filter_={'id__in': list(valid_course_keys)}
+        filter_={'id__in': list(valid_course_keys)},
+        start_date_on_or_after=start_date_on_or_after,
+        start_date_on_or_before=start_date_on_or_before,
     ).order_by('created')  # default ordering is by created date
 
     # Step 4: Apply filters (e.g. search, active/archived status, ordering)
@@ -1340,17 +1341,8 @@ def rerun_course(user, source_course_key, org, number, run, fields, background=T
             raise PermissionDenied()
 
     # Make sure user has instructor and staff access to the destination course
-    # so the user can see the updated status for that course.
-    # When authz is enabled, we skip this because the authz layer requires a
-    # CourseOverview (which doesn't exist until the course is cloned in the task).
-    # In that case, visibility of the rerun status is granted by checking
-    # created_user on CourseRerunState instead.
-    # TODO: This conditional is a temporary workaround until openedx/openedx-authz#352
-    # is implemented (pre-assigning roles without a CourseOverview). Once resolved,
-    # add_instructor can be called unconditionally here and the created_user fallback
-    # in get_in_process_course_actions can be removed.
-    if not enable_authz_course_authoring(destination_course_key):
-        add_instructor(destination_course_key, user, user)
+    # so the user can see the updated status for that course
+    add_instructor(destination_course_key, user, user)
 
     # Mark the action as initiated
     CourseRerunState.objects.initiated(source_course_key, destination_course_key, user, fields['display_name'])
@@ -1933,13 +1925,25 @@ def group_configurations_list_handler(request, course_key_string):
         json: create new group configuration
     """
     course_key = CourseKey.from_string(course_key_string)
+
+    if request.method == 'GET':
+        # GET only redirects to the MFE (html) or returns 406 (json)
+        if not user_has_course_permission(
+            user=request.user,
+            authz_permission=COURSES_VIEW_GROUP_CONFIGURATIONS.identifier,
+            course_key=course_key,
+            legacy_permission=LegacyAuthoringPermission.READ,
+        ):
+            raise PermissionDenied()
+        if 'text/html' in request.META.get('HTTP_ACCEPT', 'text/html'):
+            return redirect(get_group_configurations_url(course_key))
+        return HttpResponse(status=406)
+
     store = modulestore()
     with store.bulk_operations(course_key):
         course = get_course_and_check_manage_group_configurations_access(course_key, request.user)
 
-        if 'text/html' in request.META.get('HTTP_ACCEPT', 'text/html'):
-            return redirect(get_group_configurations_url(course_key))
-        elif "application/json" in request.META.get('HTTP_ACCEPT'):
+        if "application/json" in request.META.get('HTTP_ACCEPT'):
             if request.method == 'POST':
                 # create a new group configuration for the course
                 try:
@@ -2150,7 +2154,7 @@ def get_allowed_organizations_for_libraries(user):
     # This allows org-level staff to create libraries. We should re-evaluate
     # whether this is necessary and try to normalize course and library creation
     # authorization behavior.
-    if settings.FEATURES.get('ENABLE_ORGANIZATION_STAFF_ACCESS_FOR_CONTENT_LIBRARIES', False):
+    if settings.ENABLE_ORGANIZATION_STAFF_ACCESS_FOR_CONTENT_LIBRARIES:
         organizations_set.update(get_organizations_for_non_course_creators(user))
 
     # This allows people in the course creator group for an org to create

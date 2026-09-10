@@ -972,6 +972,16 @@ EDX_DRF_EXTENSIONS = {
     # Set this value to an empty dict in order to prevent automatically updating
     # user data from values in (possibly stale) JWTs.
     'JWT_PAYLOAD_USER_ATTRIBUTE_MAPPING': {},
+
+    # .. setting_name: EDX_DRF_EXTENSIONS['STANDARDIZED_ERROR_BASE_HANDLER']
+    # .. setting_default: openedx.core.lib.request_utils.ignored_error_exception_handler
+    # .. setting_description: The exception handler that the ADR 0029 standardized
+    #      error-response handler (``edx_rest_framework_extensions.errors
+    #      .standardized_error_exception_handler``) delegates to before shaping the
+    #      error envelope. Pointing it at ``ignored_error_exception_handler``
+    #      preserves the platform's ignored-error logging and monitoring on every
+    #      endpoint that opts into the standardized envelope.
+    'STANDARDIZED_ERROR_BASE_HANDLER': 'openedx.core.lib.request_utils.ignored_error_exception_handler',
 }
 
 ################################# Features #################################
@@ -1165,6 +1175,22 @@ ENABLE_PREREQUISITE_COURSES = False
 # .. toggle_creation_date: 2015-05-14
 # .. toggle_tickets: https://github.com/openedx/edx-platform/pull/7315
 LICENSING = False
+
+# .. setting_name: THIRD_PARTY_AUTH_HINT
+# .. setting_default: ''
+# .. setting_description: Default third-party auth provider hint (tpa_hint) to append to login/registration
+#   redirect URLs site-wide. Usually left empty and overridden per-site via site configuration.
+THIRD_PARTY_AUTH_HINT = ''
+
+# .. setting_name: COURSEWARE_SEARCH_INCLUSION_DATE
+# .. setting_default: None
+# .. setting_description: YYYY-MM-DD cutoff date used to roll out courseware search to newer courses.
+#   In the LMS, the courseware-search-enabled endpoint exposes search for any course whose start date
+#   is after this date (in addition to any course where the courseware.mfe_courseware_search waffle
+#   flag is enabled); leaving it None disables this date-based rollout. The Studio
+#   `reindex_course --from_inclusion_date` command reindexes courses starting on/after this date,
+#   flooring an unset value at 2020-01-01 so the standalone command still has a bound to filter by.
+COURSEWARE_SEARCH_INCLUSION_DATE = None
 
 # .. toggle_name: CERTIFICATES_HTML_VIEW
 # .. toggle_implementation: DjangoSetting

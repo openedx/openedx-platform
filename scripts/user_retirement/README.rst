@@ -25,23 +25,22 @@ To download the scripts, you can perform a partial clone of the edx-platform rep
     git sparse-checkout init --cone
     git sparse-checkout set $directory
 
-Create Python Virtual Environment
----------------------------------
+Install Dependencies
+--------------------
 
-Create a Python virtual environment using Python 3.12:
+With `uv <https://docs.astral.sh/uv/>`_ (recommended)::
 
-.. code-block:: bash
+    uv sync --project scripts/user_retirement --frozen
+
+Prefix commands below with ``uv run --project scripts/user_retirement`` to
+run them in that environment, or activate it directly with
+``source scripts/user_retirement/.venv/bin/activate``.
+
+Without uv, create a virtual environment using Python 3.12 and install from
+the compatibility export instead::
 
     python3.12 -m venv ../venv
     source ../venv/bin/activate
-
-Install Pip Packages
---------------------
-
-Install the required pip packages using the provided requirements file:
-
-.. code-block:: bash
-
     pip install -r scripts/user_retirement/requirements/base.txt
 
 In-depth Documentation and Configuration Steps
@@ -87,14 +86,11 @@ Feel free to customize these steps according to your specific environment and re
 Run Test Cases
 ==============
 
-Before running test cases, install the testing requirements:
+With uv::
 
-.. code-block:: bash
+    uv run --project scripts/user_retirement --group test pytest scripts/user_retirement
+
+Without uv, install the testing requirements and run pytest directly::
 
     pip install -r scripts/user_retirement/requirements/testing.txt
-
-Run the test cases using pytest:
-
-.. code-block:: bash
-
     pytest scripts/user_retirement

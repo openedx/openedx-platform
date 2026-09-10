@@ -313,10 +313,13 @@ function($, _, Backbone, gettext, BasePage,
 
         renderAddXBlockComponents: function() {
             var self = this;
-            // When rendered inside the authoring MFE iframe, add buttons are always rendered
-            // natively by the MFE (for every container type, not just verticals), so the
-            // legacy add-button widgets must never be initialised here.
-            if (self.options.canEdit && !self.options.isIframeEmbed) {
+            // When rendered inside the authoring MFE iframe, add buttons are normally rendered
+            // natively by the MFE, so the legacy add-button widgets must not be initialised here.
+            // Content experiments (split_test) are the exception: the MFE renders no add buttons
+            // for them, because each group needs its own set of buttons next to its children,
+            // which only this page can place. The rest of that flow is already iframe-aware --
+            // see the split_test branches in createComponent() and in add_xblock.js.
+            if (self.options.canEdit && (!self.options.isIframeEmbed || self.isSplitTestContentPage)) {
                 this.$('.add-xblock-component').each(function(index, element) {
                     var component = new AddXBlockComponent({
                         el: element,

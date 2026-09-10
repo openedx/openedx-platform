@@ -51,7 +51,7 @@ from xblock.runtime import (  # pylint: disable=wrong-import-order
     Mixologist,  # pylint: disable=wrong-import-order
 )
 from xblock.test.tools import TestRuntime  # pylint: disable=wrong-import-order
-from xblocks_contrib.problem.capa.tests.response_xml_factory import (
+from xblocks_contrib.problem.capa.testing.response_xml_factory import (
     OptionResponseXMLFactory,  # pylint: disable=reimported
 )
 
@@ -993,7 +993,7 @@ class TestHandleXBlockCallback(SharedModuleStoreTestCase, LoginEnrollmentTestCas
 
 
 @ddt.ddt
-@patch.dict('django.conf.settings.FEATURES', {'ENABLE_XBLOCK_VIEW_ENDPOINT': True})
+@override_settings(ENABLE_XBLOCK_VIEW_ENDPOINT=True)
 class TestXBlockView(SharedModuleStoreTestCase, LoginEnrollmentTestCase):
     """
     Test the handle_xblock_callback function

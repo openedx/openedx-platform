@@ -824,7 +824,7 @@ def _section_open_response_assessment(request, course, openassessment_blocks, ac
     section_data = {
         'fragment': block.render('ora_blocks_listing_view', context={
             'ora_items': ora_items,
-            'ora_item_view_enabled': settings.FEATURES.get('ENABLE_XBLOCK_VIEW_ENDPOINT', False)
+            'ora_item_view_enabled': settings.ENABLE_XBLOCK_VIEW_ENDPOINT
         }),
         'section_key': 'open_response_assessment',
         'section_display_name': _('Open Responses'),

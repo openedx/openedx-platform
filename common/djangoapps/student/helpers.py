@@ -316,7 +316,7 @@ def get_next_url_for_login_page(request, include_host=False):
     # Append a tpa_hint query parameter, if one is configured
     tpa_hint = configuration_helpers.get_value(
         "THIRD_PARTY_AUTH_HINT",
-        settings.FEATURES.get("THIRD_PARTY_AUTH_HINT", '')
+        settings.THIRD_PARTY_AUTH_HINT
     )
     if tpa_hint:
         # Don't add tpa_hint if we're already in the TPA pipeline (prevent infinite loop),

@@ -182,7 +182,7 @@ class SendEmailWithMockedUgettextMixin:
         return mail.outbox[0]
 
 
-@patch.dict(settings.FEATURES, {'ENABLE_INSTRUCTOR_EMAIL': True, 'REQUIRE_COURSE_EMAIL_AUTH': False})
+@override_settings(ENABLE_INSTRUCTOR_EMAIL=True, REQUIRE_COURSE_EMAIL_AUTH=False)
 @ddt.ddt
 class LocalizedFromAddressPlatformLangTestCase(SendEmailWithMockedUgettextMixin, EmailSendFromDashboardTestCase):
     """
@@ -210,7 +210,7 @@ class LocalizedFromAddressPlatformLangTestCase(SendEmailWithMockedUgettextMixin,
             self.assertRegex(message.from_email, f'{language_code.upper()} .* Course Staff')  # noqa: PT009
 
 
-@patch.dict(settings.FEATURES, {'ENABLE_INSTRUCTOR_EMAIL': True, 'REQUIRE_COURSE_EMAIL_AUTH': False})
+@override_settings(ENABLE_INSTRUCTOR_EMAIL=True, REQUIRE_COURSE_EMAIL_AUTH=False)
 @ddt.ddt
 class AceEmailTestCase(SendEmailWithMockedUgettextMixin, EmailSendFromDashboardTestCase):
     """
@@ -268,7 +268,7 @@ class AceEmailTestCase(SendEmailWithMockedUgettextMixin, EmailSendFromDashboardT
         self.assertIn(f'Welcome to {self.course.display_name}', html_message_body)  # noqa: PT009
 
 
-@patch.dict(settings.FEATURES, {'ENABLE_INSTRUCTOR_EMAIL': True, 'REQUIRE_COURSE_EMAIL_AUTH': False})
+@override_settings(ENABLE_INSTRUCTOR_EMAIL=True, REQUIRE_COURSE_EMAIL_AUTH=False)
 @ddt.ddt
 class LocalizedFromAddressCourseLangTestCase(SendEmailWithMockedUgettextMixin, EmailSendFromDashboardTestCase):
     """

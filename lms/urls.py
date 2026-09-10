@@ -864,7 +864,7 @@ if settings.ENABLE_INSTRUCTOR_BACKGROUND_TASKS:
         ),
     ]
 
-if settings.FEATURES.get('ENABLE_DEBUG_RUN_PYTHON'):
+if settings.ENABLE_DEBUG_RUN_PYTHON:
     urlpatterns += [
         path('debug/run_python', debug_views.run_python),
     ]
@@ -1030,7 +1030,7 @@ urlpatterns += [
 ]
 
 # Bulk User Retirement API urls
-if settings.FEATURES.get('ENABLE_BULK_USER_RETIREMENT'):
+if settings.ENABLE_BULK_USER_RETIREMENT:
     urlpatterns += [
         path('', include('lms.djangoapps.bulk_user_retirement.urls')),
     ]

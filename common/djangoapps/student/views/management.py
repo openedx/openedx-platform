@@ -247,7 +247,7 @@ def compose_activation_email(
     })
 
     if route_enabled:
-        dest_addr = settings.FEATURES['REROUTE_ACTIVATION_EMAIL']
+        dest_addr = getattr(settings, 'REROUTE_ACTIVATION_EMAIL', False)
     else:
         dest_addr = user.email
 
@@ -293,7 +293,7 @@ def compose_and_send_activation_email(
         redirect_url: The URL to redirect to after successful activation
         registration_flow: Is the request coming from registration workflow
     """
-    route_enabled = settings.FEATURES.get('REROUTE_ACTIVATION_EMAIL')
+    route_enabled = getattr(settings, 'REROUTE_ACTIVATION_EMAIL', False)
 
     msg = compose_activation_email(
         user, user_registration, route_enabled, profile.name, redirect_url, registration_flow
@@ -489,7 +489,8 @@ def change_enrollment(request, check_access=True):
         except UnenrollmentNotAllowed as exc:
             return HttpResponseBadRequest(str(exc))
 
-        log.info("User %s unenrolled from %s; sending REFUND_ORDER", user.username, course_id)
+        user_identifier_for_log = user.id if getattr(settings, 'SQUELCH_PII_IN_LOGS', False) else user.username
+        log.info("User %s unenrolled from %s; sending REFUND_ORDER", user_identifier_for_log, course_id)
         REFUND_ORDER.send(sender=None, course_enrollment=enrollment)
         return HttpResponse()
     else:
@@ -554,14 +555,19 @@ def disable_account_ajax(request):
         user_account, _success = UserStanding.objects.get_or_create(
             user=user, defaults={'changed_by': request.user},
         )
+        request_user_identifier_for_log, user_identifier_for_log = (
+            (request.user.id, user.id)
+            if getattr(settings, 'SQUELCH_PII_IN_LOGS', False)
+            else (request.user, username)
+        )
         if account_action == 'disable':
             user_account.account_status = UserStanding.ACCOUNT_DISABLED
             context['message'] = _("Successfully disabled {}'s account").format(username)
-            log.info("%s disabled %s's account", request.user, username)
+            log.info("%s disabled %s's account", request_user_identifier_for_log, user_identifier_for_log)
         elif account_action == 'reenable':
             user_account.account_status = UserStanding.ACCOUNT_ENABLED
             context['message'] = _("Successfully reenabled {}'s account").format(username)
-            log.info("%s reenabled %s's account", request.user, username)
+            log.info("%s reenabled %s's account", request_user_identifier_for_log, user_identifier_for_log)
         else:
             context['message'] = _("Unexpected account status")
             return JsonResponse(context, status=400)
@@ -847,11 +853,12 @@ def do_email_change_request(user, new_email, activation_key=None, secondary_emai
 
     try:
         ace.send(msg)
-        log.info("Email activation link sent to user [%s].", new_email)
-    except Exception:
+        user_identifier_for_log = user.id if getattr(settings, 'SQUELCH_PII_IN_LOGS', False) else new_email
+        log.info("Email activation link sent to user [%s].", user_identifier_for_log)
+    except Exception as err:
         from_address = configuration_helpers.get_value('email_from_address', settings.DEFAULT_FROM_EMAIL)
         log.error('Unable to send email activation link to user from "%s"', from_address, exc_info=True)
-        raise ValueError(_('Unable to send email activation link. Please try again later.'))  # pylint: disable=raise-missing-from  # noqa: B904
+        raise ValueError(_('Unable to send email activation link. Please try again later.')) from err
 
     if not secondary_email_change_request:
         # When the email address change is complete, a "edx.user.settings.changed" event will be emitted.

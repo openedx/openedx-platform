@@ -18,6 +18,7 @@ from botocore.exceptions import ClientError
 from django.conf import settings
 from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.core import mail
+from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.http import HttpRequest, HttpResponse
 from django.test import RequestFactory, TestCase
@@ -51,6 +52,7 @@ from common.djangoapps.student.models import (
     get_retired_email_by_email,
     get_retired_username_by_username,
 )
+from common.djangoapps.student.models.course_enrollment import EnrollmentNotAllowed
 from common.djangoapps.student.roles import (
     CourseBetaTesterRole,
     CourseDataResearcherRole,
@@ -718,9 +720,8 @@ class TestInstructorAPIBulkAccountCreationAndEnrollment(SharedModuleStoreTestCas
 
         # test the log for email that's send to new created user.
         info_log.assert_called_with(
-            "user already exists with username '%s' and email '%s'",
-            'test_student_1',
-            'test_student@example.com'
+            'user already exists with %s',
+            "username 'test_student_1' and email 'test_student@example.com'"
         )
 
     def test_file_upload_type_not_csv(self):
@@ -1135,6 +1136,60 @@ class TestInstructorAPIEnrollment(SharedModuleStoreTestCase, LoginEnrollmentTest
             ]
         }
 
+        res_json = json.loads(response.content.decode('utf-8'))
+        assert res_json == expected
+
+    @patch("lms.djangoapps.instructor.utils.enroll_email")
+    def test_enroll_enrollment_not_allowed(self, mock_enroll_email):
+        """EnrollmentNotAllowed from a filter is returned by students_update_enrollment."""
+        mock_enroll_email.side_effect = EnrollmentNotAllowed("Enrollment requires NIF verification.")
+        url = reverse('students_update_enrollment', kwargs={'course_id': str(self.course.id)})
+        response = self.client.post(
+            url,
+            {'identifiers': self.notenrolled_student.email, 'action': 'enroll', 'email_students': False},
+        )
+        assert response.status_code == 200
+        expected = {
+            "action": "enroll",
+            "auto_enroll": False,
+            "results": [
+                {
+                    "identifier": self.notenrolled_student.email,
+                    "error": True,
+                    "success": False,
+                    "error_type": "enrollment_not_allowed",
+                    "error_message": "Enrollment requires NIF verification.",
+                }
+            ]
+        }
+        res_json = json.loads(response.content.decode('utf-8'))
+        assert res_json == expected
+
+    @patch("lms.djangoapps.instructor.utils.enroll_email")
+    def test_enroll_validation_error_during_enrollment(self, mock_enroll_email):
+        """ValidationError raised during enrollment is returned by students_update_enrollment."""
+        mock_enroll_email.side_effect = ValidationError(
+            ["This email is not allowed to enroll in this course."]
+        )
+        url = reverse('students_update_enrollment', kwargs={'course_id': str(self.course.id)})
+        response = self.client.post(
+            url,
+            {'identifiers': self.notregistered_email, 'action': 'enroll', 'email_students': False},
+        )
+        assert response.status_code == 200
+        expected = {
+            "action": "enroll",
+            "auto_enroll": False,
+            "results": [
+                {
+                    "identifier": self.notregistered_email,
+                    "error": True,
+                    "success": False,
+                    "error_type": "validation_error",
+                    "error_message": "This email is not allowed to enroll in this course.",
+                }
+            ]
+        }
         res_json = json.loads(response.content.decode('utf-8'))
         assert res_json == expected
 
