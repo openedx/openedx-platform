@@ -184,6 +184,9 @@ def upload_transcript(request):
     new_language_code = request.POST['new_language_code']
     transcript_file = request.FILES['file']
     try:
+        # Determine whether this upload replaces an existing transcript
+        # (return 200) or creates a new one (return 201).
+        is_replace = new_language_code in get_available_transcript_languages(video_id=edx_video_id)
         # Convert SRT transcript into an SJSON format
         # and upload it to S3.
         sjson_subs = Transcript.convert(
@@ -201,7 +204,7 @@ def upload_transcript(request):
             },
             file_data=ContentFile(sjson_subs),
         )
-        response = JsonResponse(status=201)
+        response = JsonResponse(status=200 if is_replace else 201)
     except (TranscriptsGenerationException, UnicodeDecodeError):
         LOGGER.error("Unable to update transcript on edX video %s for language %s", edx_video_id, new_language_code)
         response = JsonResponse(

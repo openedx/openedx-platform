@@ -32,6 +32,9 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from drf_spectacular.utils import OpenApiParameter, OpenApiRequest, OpenApiResponse, extend_schema
 from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
 from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
+from edx_rest_framework_extensions.mixins import StandardizedErrorMixin
+from edx_rest_framework_extensions.routers import COURSE_KEY_LOOKUP_REGEX
+from edx_rest_framework_extensions.shaping import MinimalViewMixin, project
 from openedx_authz.constants.permissions import (
     COURSES_EDIT_DETAILS,
     COURSES_EDIT_SCHEDULE,
@@ -47,14 +50,12 @@ from cms.djangoapps.contentstore.rest_api.v1.serializers import CourseDetailsSer
 from cms.djangoapps.contentstore.rest_api.v1.views.course_details import _classify_update
 from cms.djangoapps.contentstore.rest_api.v3.utils import (
     COMMON_ERROR_RESPONSES,
-    apply_field_selection,
     resolve_course_key,
 )
 from cms.djangoapps.contentstore.utils import update_course_details
 from openedx.core.djangoapps.authz.constants import LegacyAuthoringPermission
 from openedx.core.djangoapps.authz.decorators import user_has_course_permission
 from openedx.core.djangoapps.models.course_details import CourseDetails
-from openedx.core.lib.api.mixins import StandardizedErrorMixin
 from xmodule.modulestore.django import modulestore
 
 _COURSE_ID_PARAMETER = OpenApiParameter(
@@ -121,15 +122,8 @@ _MINIMAL_VIEW_FIELDS = frozenset({
 })
 
 
-def _apply_view_preset(data, view_preset):
-    """ADR 0036 — drop everything outside ``_MINIMAL_VIEW_FIELDS`` when ``?view=minimal``."""
-    if view_preset != "minimal" or not isinstance(data, dict):
-        return data
-    return {key: value for key, value in data.items() if key in _MINIMAL_VIEW_FIELDS}
-
-
 @extend_schema(tags=["openedx-platform-sdk"])
-class CourseDetailsViewSet(StandardizedErrorMixin, viewsets.ViewSet):
+class CourseDetailsViewSet(StandardizedErrorMixin, MinimalViewMixin, viewsets.ViewSet):
     """
     ViewSet for course details (v3). Registered via DefaultRouter (basename ``course_details``).
 
@@ -147,7 +141,10 @@ class CourseDetailsViewSet(StandardizedErrorMixin, viewsets.ViewSet):
 
     # Matches both slash-separated (org/course/run) and plus-separated (course-v1:org+course+run) IDs
     lookup_field = "course_id"
-    lookup_value_regex = r"[^/+]+(?:/|\+)[^/+]+(?:/|\+)[^/?]+"
+    lookup_value_regex = COURSE_KEY_LOOKUP_REGEX
+
+    # ADR 0036 — the ``?view=minimal`` preset (MinimalViewMixin) keeps these keys.
+    minimal_fields = _MINIMAL_VIEW_FIELDS
 
     @extend_schema(
         summary="Retrieve a course's details",
@@ -199,9 +196,9 @@ class CourseDetailsViewSet(StandardizedErrorMixin, viewsets.ViewSet):
 
         course_details = CourseDetails.fetch(course_key)
         data = self.serializer_class(course_details).data
-        # ADR 0036 — preset first, then explicit CSV subset.
-        data = _apply_view_preset(data, request.query_params.get("view"))
-        data = apply_field_selection(data, request.query_params.get("fields"))
+        # ADR 0036 — preset first (MinimalViewMixin), then explicit CSV subset.
+        data = self.shape_minimal(data, request)
+        data = project(data, request.query_params.get("fields"))
         return Response(data)
 
     @extend_schema(

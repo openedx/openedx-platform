@@ -9,9 +9,9 @@ attrs==26.1.0
     # via zeep
 backoff==2.2.1
     # via edx-platform-user-retirement-scripts
-boto3==1.43.83
+boto3==1.43.85
     # via edx-platform-user-retirement-scripts
-botocore==1.43.83
+botocore==1.43.85
     # via
     #   boto3
     #   s3transfer
@@ -46,7 +46,7 @@ edx-rest-api-client==7.0.0
     # via edx-platform-user-retirement-scripts
 google-api-core==2.34.0
     # via google-api-python-client
-google-api-python-client==2.199.0
+google-api-python-client==2.200.0
     # via edx-platform-user-retirement-scripts
 google-auth==2.57.0
     # via
@@ -79,7 +79,7 @@ platformdirs==4.11.5
     # via zeep
 proto-plus==1.28.4
     # via google-api-core
-protobuf==7.36.0
+protobuf==7.36.1
     # via
     #   google-api-core
     #   googleapis-common-protos

@@ -689,7 +689,7 @@ ignore = [
 ]
 
 [tool.importlinter]
-root_packages = ["lms", "cms", "openedx", "openedx_content", "openedx_catalog"]
+root_packages = ["lms", "cms", "openedx", "openedx_content", "openedx_catalog", "openedx_learning"]
 include_external_packages = true
 # Our custom contract which checks that we're only importing from 'api.py'
 # for participating packages.
@@ -810,6 +810,7 @@ isolated_apps = [
     "openedx.core.djangoapps.xblock",
     "openedx.core.lib.xblock_serializer",
     "openedx_catalog",
+    "openedx_learning",
 ]
 allowed_modules = [
     # Only imports from api.py and data.py are allowed elsewhere in the code
