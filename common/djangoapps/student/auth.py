@@ -11,7 +11,10 @@ from django.conf import settings
 from django.core.exceptions import PermissionDenied
 from opaque_keys.edx.locator import LibraryLocator
 from openedx_authz import api as authz_api
-from openedx_authz.constants.permissions import COURSES_MANAGE_ADVANCED_SETTINGS
+from openedx_authz.constants.permissions import (
+    COURSES_MANAGE_ADVANCED_SETTINGS,
+    COURSES_VIEW_ADVANCED_SETTINGS,
+)
 
 from common.djangoapps.student.roles import (
     CourseBetaTesterRole,
@@ -209,8 +212,15 @@ def check_course_advanced_settings_access(user, course_key, access_type='read'):
         ):
             # When feature is disabled, only staff/superuser can access (bypass authz)
             return user.is_staff or user.is_superuser
-        # Otherwise check authz permission
-        return authz_api.is_user_allowed(user.username, COURSES_MANAGE_ADVANCED_SETTINGS.identifier, str(course_key))
+
+        # Read and feature_restricted require only the view permission;
+        # write operations require the manage permission.
+        if access_type == 'write':
+            permission = COURSES_MANAGE_ADVANCED_SETTINGS.identifier
+        else:
+            permission = COURSES_VIEW_ADVANCED_SETTINGS.identifier
+
+        return authz_api.is_user_allowed(user.username, permission, str(course_key))
 
     # Legacy permission checks
     if access_type == 'read':

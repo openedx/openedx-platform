@@ -972,6 +972,16 @@ EDX_DRF_EXTENSIONS = {
     # Set this value to an empty dict in order to prevent automatically updating
     # user data from values in (possibly stale) JWTs.
     'JWT_PAYLOAD_USER_ATTRIBUTE_MAPPING': {},
+
+    # .. setting_name: EDX_DRF_EXTENSIONS['STANDARDIZED_ERROR_BASE_HANDLER']
+    # .. setting_default: openedx.core.lib.request_utils.ignored_error_exception_handler
+    # .. setting_description: The exception handler that the ADR 0029 standardized
+    #      error-response handler (``edx_rest_framework_extensions.errors
+    #      .standardized_error_exception_handler``) delegates to before shaping the
+    #      error envelope. Pointing it at ``ignored_error_exception_handler``
+    #      preserves the platform's ignored-error logging and monitoring on every
+    #      endpoint that opts into the standardized envelope.
+    'STANDARDIZED_ERROR_BASE_HANDLER': 'openedx.core.lib.request_utils.ignored_error_exception_handler',
 }
 
 ################################# Features #################################

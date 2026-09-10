@@ -45,7 +45,9 @@ from drf_spectacular.utils import (
     extend_schema,
 )
 from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
-from edx_rest_framework_extensions.paginators import DefaultPagination
+from edx_rest_framework_extensions.mixins import StandardizedErrorMixin
+from edx_rest_framework_extensions.paginators import DefaultPagination, IterablePaginationMixin
+from edx_rest_framework_extensions.shaping import MinimalViewMixin
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey
 from rest_framework import permissions, status, viewsets
@@ -77,7 +79,6 @@ from openedx.core.djangoapps.enrollments.views import (
     EnrollmentUserThrottle,
 )
 from openedx.core.djangoapps.user_api.accounts.permissions import CanRetireUser
-from openedx.core.lib.api.mixins import StandardizedErrorMixin
 from openedx.core.lib.api.permissions import ApiKeyHeaderPermissionIsAuthenticated
 
 log = logging.getLogger(__name__)
@@ -187,9 +188,17 @@ def _to_minimal_enrollment(enrollment_dict):
     return minimal
 
 
-def _is_minimal_view_requested(request) -> bool:
-    """Return True when the caller asked for the ADR 0036 minimal preset."""
-    return request.query_params.get("view") == "minimal"
+class _EnrollmentMinimalViewMixin(MinimalViewMixin):
+    """
+    ADR 0036 ``?view=minimal`` for enrollment payloads, on the shared
+    :class:`~edx_rest_framework_extensions.shaping.MinimalViewMixin`. The
+    enrollment preset is not a plain field projection — it collapses the
+    embedded ``course_details`` sub-object to a ``course_id`` string — so the
+    representation hook is overridden instead of setting ``minimal_fields``.
+    """
+
+    def to_minimal_representation(self, item):
+        return _to_minimal_enrollment(item)
 
 
 # ===========================================================================
@@ -197,7 +206,10 @@ def _is_minimal_view_requested(request) -> bool:
 # ===========================================================================
 @can_disable_rate_limit
 @extend_schema(tags=["openedx-platform-sdk"])
-class EnrollmentViewSet(StandardizedErrorMixin, viewsets.ViewSet, ApiKeyPermissionMixIn):
+class EnrollmentViewSet(
+    StandardizedErrorMixin, _EnrollmentMinimalViewMixin, IterablePaginationMixin,
+    viewsets.ViewSet, ApiKeyPermissionMixIn,
+):
     """
     Canonical ViewSet for the v2 Enrollment API.
 
@@ -279,12 +291,13 @@ class EnrollmentViewSet(StandardizedErrorMixin, viewsets.ViewSet, ApiKeyPermissi
             target_username=username,
             has_api_key=self.has_api_key_permissions(request),
         )
-        paginator = self.pagination_class()
-        page = paginator.paginate_queryset(enrollments, request, view=self)
-        data = self.get_serializer(page, many=True).data
-        if _is_minimal_view_requested(request):
-            data = [_to_minimal_enrollment(item) for item in data]
-        return paginator.get_paginated_response(data)
+        # ADR 0032 pagination envelope; the ADR 0036 minimal preset is applied
+        # to the serialized page.
+        return self.paginate_iterable(
+            request,
+            enrollments,
+            serialize=lambda page: self.shape_minimal(self.get_serializer(page, many=True).data),
+        )
 
     # ------------------------------------------------------------------
     # create — POST /enrollment/
@@ -425,7 +438,7 @@ class EnrollmentViewSet(StandardizedErrorMixin, viewsets.ViewSet, ApiKeyPermissi
 # Kept as a standalone APIView because the {username},{course_id} URL form
 # (comma-separated, both optional) is not expressible via DefaultRouter.
 @extend_schema(tags=["openedx-platform-sdk"])
-class EnrollmentRetrieveView(StandardizedErrorMixin, ApiKeyPermissionMixIn, APIView):
+class EnrollmentRetrieveView(StandardizedErrorMixin, _EnrollmentMinimalViewMixin, ApiKeyPermissionMixIn, APIView):
     """GET enrollment for a course (and optionally a named user)."""
 
     # ADR 0034 — JWT + cross-domain session (BearerAuthenticationAllowInactiveUser
@@ -494,10 +507,7 @@ class EnrollmentRetrieveView(StandardizedErrorMixin, ApiKeyPermissionMixIn, APIV
                 f"'{username}' in course '{course_id}'"
             ) from exc
 
-        data = self.serializer_class(enrollment).data
-        if _is_minimal_view_requested(request):
-            data = _to_minimal_enrollment(data)
-        return Response(data)
+        return Response(self.shape_minimal(self.serializer_class(enrollment).data))
 
 
 # ===========================================================================

@@ -2,6 +2,10 @@
 
 import ddt
 import pytest
+from django.contrib import messages as django_messages
+from django.contrib.messages.storage.session import SessionStorage
+from django.http import HttpResponse
+from django.test import RequestFactory
 from django.test.utils import override_settings
 from django.urls import reverse
 from opaque_keys.edx.keys import CourseKey
@@ -97,6 +101,117 @@ class EmptyRoleTestCase(UserAPITestCase):
         assert result['next'] is None
         assert result['previous'] is None
         assert result['results'] == []
+
+
+@skip_unless_lms
+class ThirdPartyAuthErrorMessageViewTests(ApiTestCase):
+    """
+    Tests for the endpoint the Account MFE polls once on mount to read the
+    pending third-party-auth error message left in the session by
+    common.djangoapps.third_party_auth.middleware.ExceptionMiddleware (via
+    SocialAuthExceptionMiddleware.process_exception).
+    """
+
+    URL = '/api/user/v1/accounts/third_party_auth_error/'
+    TEST_PASSWORD = 'Password1234'
+
+    def setUp(self):
+        super().setUp()
+        self.user = UserFactory.create(password=self.TEST_PASSWORD)
+        self.client.login(username=self.user.username, password=self.TEST_PASSWORD)
+
+    def _queue_session_message(self, text, extra_tags=''):
+        """Simulate SocialAuthExceptionMiddleware queuing a Django message in the current session."""
+        session = self.client.session
+        request = RequestFactory().get('/')
+        request.session = session
+        storage = SessionStorage(request)
+        storage.add(django_messages.constants.ERROR, text, extra_tags=extra_tags)
+        storage.update(HttpResponse())
+        session.save()
+
+    def test_requires_authentication(self):
+        """
+        Anonymous requests are rejected. DRF returns 403 (not 401) here
+        because SessionAuthentication.authenticate_header() returns None, so
+        no WWW-Authenticate challenge is issued.
+        """
+        self.client.logout()
+
+        response = self.client.get(self.URL)
+
+        assert response.status_code == 403
+
+    def test_returns_null_when_no_pending_message(self):
+        """No 'social-auth'-tagged message in the session means nothing to show."""
+        response = self.client.get(self.URL)
+
+        assert response.status_code == 200
+        assert response.json() == {'user_message': None}
+
+    def test_returns_pending_social_auth_message(self):
+        """A message tagged 'social-auth ...' (as SocialAuthExceptionMiddleware tags it) is surfaced."""
+        self._queue_session_message('This account is already in use.', extra_tags='social-auth tpa-saml')
+
+        response = self.client.get(self.URL)
+
+        assert response.status_code == 200
+        assert response.json() == {'user_message': 'This account is already in use.'}
+
+    def test_message_is_consumed_on_read(self):
+        """Matches Django's messages flash semantics: read once, gone on the next read."""
+        self._queue_session_message('This account is already in use.', extra_tags='social-auth tpa-saml')
+
+        self.client.get(self.URL)
+        second_response = self.client.get(self.URL)
+
+        assert second_response.json() == {'user_message': None}
+
+    def test_ignores_messages_without_social_auth_tag(self):
+        """Unrelated Django messages (e.g. from other flows) are not leaked through this endpoint."""
+        self._queue_session_message('Unrelated message', extra_tags='some-other-tag')
+
+        response = self.client.get(self.URL)
+
+        assert response.json() == {'user_message': None}
+
+    def test_preserves_unrelated_message_for_a_later_read(self):
+        """
+        Reading the storage at all marks the whole thing consumed, so an
+        unrelated message queued in the same session must be explicitly
+        re-queued -- otherwise it would be silently dropped here instead of
+        being shown wherever it was actually meant to be displayed.
+        """
+        self._queue_session_message('Unrelated message', extra_tags='some-other-tag')
+
+        response = self.client.get(self.URL)
+        assert response.json() == {'user_message': None}
+
+        # Read it back through a fresh storage bound to the client's session,
+        # the same way _queue_session_message wrote it.
+        session = self.client.session
+        request = RequestFactory().get('/')
+        request.session = session
+        remaining = list(SessionStorage(request))
+        assert [str(m) for m in remaining] == ['Unrelated message']
+        assert remaining[0].extra_tags == 'some-other-tag'
+
+    def test_only_first_social_auth_message_is_returned_rest_are_preserved(self):
+        """If somehow two social-auth messages are queued, only the first is returned this call."""
+        self._queue_session_message('First error', extra_tags='social-auth tpa-saml')
+        session = self.client.session
+        request = RequestFactory().get('/')
+        request.session = session
+        storage = SessionStorage(request)
+        storage.add(django_messages.constants.ERROR, 'Second error', extra_tags='social-auth tpa-saml')
+        storage.update(HttpResponse())
+        session.save()
+
+        first_response = self.client.get(self.URL)
+        second_response = self.client.get(self.URL)
+
+        assert first_response.json() == {'user_message': 'First error'}
+        assert second_response.json() == {'user_message': 'Second error'}
 
 
 class UserApiTestCase(UserAPITestCase):

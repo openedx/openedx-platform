@@ -83,6 +83,16 @@ class HomePageCoursesViewV2(APIView):
                 apidocs.ParameterLocation.QUERY,
                 description="Query param to set page size",
             ),
+            apidocs.string_parameter(
+                "start_date_on_or_after",
+                apidocs.ParameterLocation.QUERY,
+                description="Query param to filter courses with a start date on or after this date (YYYY-MM-DD).",
+            ),
+            apidocs.string_parameter(
+                "start_date_on_or_before",
+                apidocs.ParameterLocation.QUERY,
+                description="Query param to filter courses with a start date on or before this date (YYYY-MM-DD).",
+            ),
         ],
         responses={
             200: CourseHomeTabSerializerV2,
@@ -103,6 +113,8 @@ class HomePageCoursesViewV2(APIView):
             GET /api/contentstore/v2/home/courses?archived_only=true
             GET /api/contentstore/v2/home/courses?page=2
             GET /api/contentstore/v2/home/courses?page_size=20
+            GET /api/contentstore/v2/home/courses?start_date_on_or_after=2024-01-01
+            GET /api/contentstore/v2/home/courses?start_date_on_or_before=2024-12-31
 
         **Response Values**
 
