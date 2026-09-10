@@ -194,24 +194,6 @@ def use_new_video_uploads_page(course_key):
 LEGACY_STUDIO_COURSE_OUTLINE = CourseWaffleFlag('legacy_studio.course_outline', __name__)
 
 
-# .. toggle_name: legacy_studio.unit_editor
-# .. toggle_implementation: WaffleFlag
-# .. toggle_default: False
-# .. toggle_description: Temporarily fall back to the old Studio unit editing page.
-# .. toggle_use_cases: temporary
-# .. toggle_creation_date: 2025-03-14
-# .. toggle_target_removal_date: 2025-09-14
-# .. toggle_tickets: https://github.com/openedx/edx-platform/issues/36275
-# .. toggle_warning: In Ulmo, this toggle will be removed. Only the new (React-based) experience will be available.
-LEGACY_STUDIO_UNIT_EDITOR = CourseWaffleFlag('legacy_studio.unit_editor', __name__)
-
-
-def use_new_unit_page(course_key):
-    """
-    Returns a boolean if new studio course outline mfe is enabled
-    """
-    return not LEGACY_STUDIO_UNIT_EDITOR.is_enabled(course_key)
-
 
 # .. toggle_name: contentstore.mock_video_uploads
 # .. toggle_implementation: WaffleFlag
