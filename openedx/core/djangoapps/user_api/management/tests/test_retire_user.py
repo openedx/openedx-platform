@@ -98,8 +98,8 @@ def test_successful_retire_with_userfile(setup_retirement_states):  # pylint: di
 @pytest.mark.parametrize('email_header', ['email', 'user_email'])
 @pytest.mark.parametrize('username_header', ['username', '\ufeffusername'])
 @skip_unless_lms
-def test_successful_retire_with_userfile_header(  # pylint: disable=redefined-outer-name, unused-argument  # noqa: F811
-    setup_retirement_states, email_header, username_header
+def test_successful_retire_with_userfile_header(  # pylint: disable=redefined-outer-name, unused-argument
+    setup_retirement_states, email_header, username_header  # noqa: F811
 ):
     user = UserFactory.create(username='header-user', email="header-user@example.com")
     username = user.username
