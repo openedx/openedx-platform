@@ -1985,7 +1985,7 @@ LANGUAGES = [
     ('id', 'Bahasa Indonesia'),  # Indonesian
     ('it-it', 'Italiano (Italia)'),  # Italian (Italy)
     ('ja-jp', '日本語 (日本)'),  # Japanese (Japan)
-    ('kk-kz', 'қазақ тілі (Қазақстан)'),  # Kazakh (Kazakhstan)
+    ('kk', 'Қазақша'),  # Kazakh (Kazakhstan)
     ('km-kh', 'ភាសាខ្មែរ (កម្ពុជា)'),  # Khmer (Cambodia)
     ('kn', 'ಕನ್ನಡ'),  # Kannada
     ('ko-kr', '한국어 (대한민국)'),  # Korean (Korea)
@@ -3033,6 +3033,8 @@ YOUTUBE_API_KEY = 'PUT_YOUR_API_KEY_HERE'
 # - Make it a plugin (which are auto-registered) and add it to the EDXAPP_PRIVATE_REQUIREMENTS configuration variable
 #   (See https://github.com/openedx/edx-django-utils/tree/master/edx_django_utils/plugins)
 INSTALLED_APPS = [
+    'lms.djangoapps.univerapi',
+    'lms.djangoapps.news',
     # Standard ones that are always installed...
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -3441,7 +3443,7 @@ REST_FRAMEWORK = {
 #    It's POST endpoint is rate-limited up to 30 requests per IP Address in a week by default.
 #    It was introduced because an attacker can guess or brute force a series of names to enumerate valid users.
 # .. setting_tickets: https://github.com/openedx/edx-platform/pull/24664
-REGISTRATION_VALIDATION_RATELIMIT = '30/7d'
+REGISTRATION_VALIDATION_RATELIMIT = '10000/7d'
 
 # .. setting_name: REGISTRATION_RATELIMIT
 # .. setting_default: 60/7d
@@ -3449,7 +3451,7 @@ REGISTRATION_VALIDATION_RATELIMIT = '30/7d'
 #    It's POST end-point is rate-limited up to 60 requests per IP Address in a week by default.
 #    Purpose of this setting is to restrict an attacker from registering numerous fake accounts.
 # .. setting_tickets: https://github.com/openedx/edx-platform/pull/27060
-REGISTRATION_RATELIMIT = '60/7d'
+REGISTRATION_RATELIMIT = '10000/7d'
 
 SWAGGER_SETTINGS = {
     'DEFAULT_INFO': 'openedx.core.apidocs.api_info',
@@ -4881,7 +4883,7 @@ COMPLETION_BY_VIEWING_DELAY_MS = 5000
 # .. toggle_use_cases: open_edx
 # .. toggle_creation_date: 2018-01-08
 # .. toggle_tickets: https://github.com/openedx/edx-platform/pull/16951
-RATELIMIT_ENABLE = True
+RATELIMIT_ENABLE = False
 
 # .. setting_name: RATELIMIT_RATE
 # .. setting_default: 120/m
@@ -4892,13 +4894,13 @@ RATELIMIT_ENABLE = True
 # .. setting_use_cases: open_edx
 # .. setting_creation_date: 2018-01-08
 # .. setting_tickets: https://github.com/openedx/edx-platform/pull/16951
-RATELIMIT_RATE = '120/m'
+RATELIMIT_RATE = '1200/m'
 
 ##### LOGISTRATION RATE LIMIT SETTINGS #####
-LOGISTRATION_RATELIMIT_RATE = '100/5m'
-LOGISTRATION_PER_EMAIL_RATELIMIT_RATE = '30/5m'
-LOGISTRATION_API_RATELIMIT = '20/m'
-LOGIN_AND_REGISTER_FORM_RATELIMIT = '100/5m'
+LOGISTRATION_RATELIMIT_RATE = '6000/5m'
+LOGISTRATION_PER_EMAIL_RATELIMIT_RATE = '300/5m'
+LOGISTRATION_API_RATELIMIT = '1000/m'
+LOGIN_AND_REGISTER_FORM_RATELIMIT = '1000000/5m'
 RESET_PASSWORD_TOKEN_VALIDATE_API_RATELIMIT = '30/7d'
 RESET_PASSWORD_API_RATELIMIT = '30/7d'
 OPTIONAL_FIELD_API_RATELIMIT = '10/h'

@@ -1,0 +1,842 @@
+<%page expression_filter="h"/>
+<%! from django.utils.translation import gettext as _ %>
+<%inherit file="../main.html" />
+
+<%block name="pagetitle">${_("Analyze")}</%block>
+
+<%block name="extrahead">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+    .analytics-page .course-search { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 18px; }
+    .analytics-page .course-search input { box-sizing: border-box; width: 100%; max-width: 480px; min-width: 0; padding: 12px 16px; background: #fff; color: #172033; border: 1px solid #d7e0ea; border-radius: 6px; box-shadow: none; }
+    .analytics-page .course-search input:focus { outline: 2px solid #2f6f95; outline-offset: 2px; }
+    :root {
+        --analytics-bg: #f6f8fb;
+        --analytics-surface: #ffffff;
+        --analytics-surface-soft: #f9fafc;
+
+        --analytics-border: #d7e0ea;
+        --analytics-border-soft: #e7edf4;
+
+        --analytics-text: #172033;
+        --analytics-muted: #667085;
+
+        /* Мягкий синий: не слишком яркий, но все еще аккуратный */
+        --analytics-accent: #2f6f95;
+        --analytics-accent-strong: #244b66;
+        --analytics-accent-dark: #18384f;
+        --analytics-accent-soft: #edf5fa;
+        --analytics-accent-soft-2: #f5f9fc;
+
+        --analytics-good: #3b8067;
+
+        --analytics-radius-sm: 6px;
+        --analytics-radius-md: 10px;
+        --analytics-radius-lg: 12px;
+
+        --analytics-shadow: 0 14px 40px rgba(16, 24, 40, 0.08);
+        --analytics-shadow-soft: 0 2px 8px rgba(16, 24, 40, 0.05);
+    }
+
+    .analytics-page {
+        background: var(--analytics-bg);
+        color: var(--analytics-text);
+        margin: -20px -15px 0;
+        min-height: 100vh;
+        padding: 32px 20px 48px;
+    }
+
+    .analytics-shell {
+        max-width: 1240px;
+        margin: 0 auto;
+    }
+
+    .analytics-header {
+        display: flex;
+        justify-content: space-between;
+        gap: 24px;
+        align-items: flex-end;
+        margin-bottom: 24px;
+    }
+
+    .analytics-kicker {
+        color: var(--analytics-accent);
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        margin-bottom: 8px;
+        text-transform: uppercase;
+    }
+
+    .analytics-title {
+        color: var(--analytics-text);
+        font-size: 34px;
+        font-weight: 700;
+        line-height: 1.15;
+        margin: 0;
+    }
+
+    .analytics-subtitle {
+        color: var(--analytics-muted);
+        font-size: 15px;
+        margin: 10px 0 0;
+        max-width: 740px;
+    }
+
+    .analytics-date {
+        color: var(--analytics-muted);
+        font-size: 13px;
+        white-space: nowrap;
+    }
+
+    .analytics-summary {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 14px;
+        margin-bottom: 18px;
+    }
+
+    .summary-card {
+        background: var(--analytics-surface);
+        border: 1px solid var(--analytics-border-soft);
+        border-radius: var(--analytics-radius-md);
+        box-shadow: var(--analytics-shadow-soft);
+        padding: 18px;
+    }
+
+    .summary-label {
+        color: var(--analytics-muted);
+        font-size: 13px;
+        font-weight: 600;
+        margin-bottom: 9px;
+    }
+
+    .summary-value {
+        color: var(--analytics-text);
+        font-size: 30px;
+        font-weight: 700;
+        line-height: 1;
+    }
+
+    .summary-note {
+        color: var(--analytics-muted);
+        font-size: 13px;
+        margin-top: 10px;
+    }
+
+    .language-strip {
+        background: var(--analytics-surface);
+        border: 1px solid var(--analytics-border-soft);
+        border-radius: var(--analytics-radius-md);
+        box-shadow: var(--analytics-shadow-soft);
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        align-items: center;
+        margin-bottom: 24px;
+        padding: 14px 16px;
+    }
+
+    .language-strip__title {
+        color: var(--analytics-muted);
+        font-size: 13px;
+        font-weight: 700;
+        margin-right: 6px;
+    }
+
+    .language-chip,
+    .filter-chip {
+        align-items: center;
+        background: var(--analytics-accent-soft-2);
+        border: 1px solid #d4e4ee;
+        border-radius: 999px;
+        color: var(--analytics-text);
+        display: inline-flex;
+        font-size: 13px;
+        font-weight: 600;
+        gap: 8px;
+        min-height: 30px;
+        padding: 5px 12px;
+    }
+
+    .language-chip strong,
+    .filter-chip strong {
+        color: var(--analytics-accent-strong);
+    }
+
+    .analytics-section {
+        margin-top: 24px;
+    }
+
+    .section-heading {
+        align-items: end;
+        display: flex;
+        justify-content: space-between;
+        gap: 20px;
+        margin-bottom: 12px;
+    }
+
+    .section-heading h2 {
+        color: var(--analytics-text);
+        font-size: 21px;
+        font-weight: 700;
+        margin: 0;
+    }
+
+    .section-heading p {
+        color: var(--analytics-muted);
+        font-size: 13px;
+        margin: 5px 0 0;
+    }
+
+    .panel {
+        background: var(--analytics-surface);
+        border: 1px solid var(--analytics-border-soft);
+        border-radius: var(--analytics-radius-lg);
+        box-shadow: var(--analytics-shadow);
+        padding: 20px;
+    }
+
+    .chart-panel {
+        min-height: 360px;
+    }
+
+    .chart-wrap {
+        height: 380px;
+        position: relative;
+    }
+
+    .split-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 18px;
+    }
+
+    .active-filter-bar {
+        align-items: center;
+        background: var(--analytics-accent-soft);
+        border: 1px solid #cbdde9;
+        border-radius: var(--analytics-radius-md);
+        display: none;
+        gap: 12px;
+        justify-content: space-between;
+        margin-bottom: 14px;
+        padding: 12px 14px;
+    }
+
+    .active-filter-bar.is-visible {
+        display: flex;
+    }
+
+    .active-filter-label {
+        color: var(--analytics-accent-strong);
+        font-size: 14px;
+        font-weight: 700;
+    }
+
+    .clear-filter-button {
+        background: var(--analytics-surface);
+        border: 1px solid #c3d6e3;
+        border-radius: 999px;
+        color: var(--analytics-accent-strong);
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 700;
+        min-height: 34px;
+        padding: 6px 14px;
+        transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    .clear-filter-button:hover,
+    .clear-filter-button:focus {
+        background: var(--analytics-accent-dark);
+        border-color: var(--analytics-accent-dark);
+        color: #ffffff;
+        box-shadow: 0 6px 14px rgba(24, 56, 79, 0.18);
+        outline: none;
+    }
+
+    .courses-toolbar {
+        align-items: center;
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 12px;
+    }
+
+    .courses-count {
+        color: var(--analytics-muted);
+        font-size: 13px;
+    }
+
+    .courses-table-wrap {
+        overflow-x: hidden;
+    }
+
+    .courses-table {
+        border-collapse: collapse;
+        width: 100%;
+        table-layout: fixed;
+    }
+
+    .courses-table th {
+        background: #f3f6fa;
+        border-bottom: 1px solid var(--analytics-border);
+        color: #384152;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        padding: 12px 12px;
+        text-align: left;
+        text-transform: uppercase;
+    }
+
+    .courses-table td {
+        border-bottom: 1px solid var(--analytics-border-soft);
+        color: var(--analytics-text);
+        font-size: 14px;
+        padding: 14px 12px;
+        vertical-align: top;
+    }
+
+    .courses-table td,
+    .courses-table th {
+        word-break: break-word;
+        overflow-wrap: anywhere;
+    }
+
+    .courses-table th:nth-child(1),
+    .courses-table td:nth-child(1) {
+        width: 29%;
+    }
+
+    .courses-table th:nth-child(2),
+    .courses-table td:nth-child(2) {
+        width: 15%;
+    }
+
+    .courses-table th:nth-child(3),
+    .courses-table td:nth-child(3) {
+        width: 19%;
+    }
+
+    .courses-table th:nth-child(4),
+    .courses-table td:nth-child(4) {
+        width: 9%;
+    }
+
+    .courses-table th:nth-child(5),
+    .courses-table td:nth-child(5) {
+        width: 9%;
+    }
+
+    .courses-table th:nth-child(6),
+    .courses-table td:nth-child(6) {
+        width: 11%;
+    }
+
+    .courses-table th:nth-child(7),
+    .courses-table td:nth-child(7) {
+        width: 8%;
+    }
+
+    .courses-table tr:last-child td {
+        border-bottom: 0;
+    }
+
+    .courses-table tbody tr {
+        transition: background-color 0.16s ease;
+    }
+
+    .courses-table tbody tr:hover {
+        background: #f8fbfd;
+    }
+
+    .course-title {
+        color: var(--analytics-accent-strong);
+        font-weight: 700;
+        text-decoration: none;
+    }
+
+    .course-title:hover {
+        color: var(--analytics-accent);
+        text-decoration: underline;
+    }
+
+    .course-meta {
+        color: var(--analytics-muted);
+        font-size: 12px;
+        margin-top: 5px;
+    }
+
+    .filter-button {
+        background: var(--analytics-accent-soft-2);
+        border: 1px solid #d4e4ee;
+        border-radius: 999px;
+        color: var(--analytics-accent-strong);
+        cursor: pointer;
+        font: inherit;
+        font-size: 13px;
+        font-weight: 700;
+        padding: 5px 11px;
+        text-align: left;
+        transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    .filter-button:hover,
+    .filter-button:focus {
+        background: var(--analytics-accent-dark);
+        border-color: var(--analytics-accent-dark);
+        color: #ffffff;
+        box-shadow: 0 6px 14px rgba(24, 56, 79, 0.16);
+        outline: none;
+        text-decoration: none;
+    }
+
+    .course-link {
+        color: var(--analytics-accent-strong);
+        font-weight: 700;
+        text-decoration: none;
+        white-space: nowrap;
+    }
+
+    .course-link:hover {
+        color: var(--analytics-accent);
+        text-decoration: underline;
+    }
+
+    .empty-state {
+        color: var(--analytics-muted);
+        display: none;
+        font-size: 14px;
+        padding: 24px 0 6px;
+        text-align: center;
+    }
+
+    .empty-state.is-visible {
+        display: block;
+    }
+
+    @media (max-width: 980px) {
+        .analytics-header,
+        .section-heading,
+        .courses-toolbar {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .analytics-summary {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .split-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .analytics-date {
+            white-space: normal;
+        }
+    }
+
+    @media (max-width: 640px) {
+        .analytics-page {
+            margin: -15px -15px 0;
+            padding: 24px 14px 36px;
+        }
+
+        .analytics-title {
+            font-size: 26px;
+        }
+
+        .analytics-summary {
+            grid-template-columns: 1fr;
+        }
+
+        .summary-value {
+            font-size: 26px;
+        }
+
+        .panel {
+            padding: 16px;
+        }
+    }
+</style>
+</%block>
+
+<%block name="content">
+<div class="analytics-page">
+    <div class="analytics-shell">
+        <header class="analytics-header">
+            <div>
+                <div class="analytics-kicker">${_("Course analytics")}</div>
+                <h1 class="analytics-title">${_("Course analysis")}</h1>
+                <p class="analytics-subtitle">
+                    ${_("Summary of published courses without test organizations. The current courses of the current year are shown below; schedules of faculties and directions filter the list.")}
+                </p>
+            </div>
+            <div class="analytics-date">${_("Updated")}: ${generated_at}</div>
+        </header>
+
+        <section class="analytics-summary" aria-label="${_('Short summary')}">
+            <div class="summary-card">
+                <div class="summary-label">${_("Total courses")}</div>
+                <div class="summary-value">${courses_count}</div>
+                <div class="summary-note">${_("Without test courses")}</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-label">${_("Current issues")} ${current_year}</div>
+                <div class="summary-value">${current_year_courses_count}</div>
+                <div class="summary-note">${_("Used in the list below")}</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-label">${_("Faculties")}</div>
+                <div class="summary-value">${faculty_count}</div>
+                <div class="summary-note">${_("With filled faculty field")}</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-label">${_("Directions")}</div>
+                <div class="summary-value">${directions_count}</div>
+                <div class="summary-note">${_("With filled directions field")}</div>
+            </div>
+        </section>
+
+        <section class="language-strip" aria-label="${_('Course languages')}">
+            <span class="language-strip__title">${_("Languages")}:</span>
+            % if language_summary:
+            % for language in language_summary:
+            <span class="language-chip">${language["label"]}: <strong>${language["total"]}</strong></span>
+            % endfor
+            % else:
+            <span class="language-chip">${_("No data")}</span>
+            % endif
+        </section>
+
+        <section class="analytics-section">
+            <div class="section-heading">
+                <div>
+                    <h2>${_("Courses by year")}</h2>
+                    <p>${_("Course count dynamics by start date.")}</p>
+                </div>
+            </div>
+            <div class="panel chart-panel">
+                <div class="chart-wrap">
+                    <canvas id="byYear"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <section class="analytics-section">
+            <div class="section-heading">
+                <div>
+                    <h2>${_("Course Structure")}</h2>
+                    <p>${_("Click a faculty or direction bar to filter the current courses below.")}</p>
+                </div>
+            </div>
+            <div class="split-grid">
+                <div class="panel chart-panel">
+                    <div class="section-heading">
+                        <div>
+                            <h2>${_("Courses by faculty")}</h2>
+                            <p>${_("Top faculties by number of courses.")}</p>
+                        </div>
+                    </div>
+                    <div class="chart-wrap">
+                        <canvas id="byFaculty"></canvas>
+                    </div>
+                </div>
+
+                <div class="panel chart-panel">
+                    <div class="section-heading">
+                        <div>
+                            <h2>${_("Courses by directions")}</h2>
+                            <p>${_("Top directions by number of courses.")}</p>
+                        </div>
+                    </div>
+                    <div class="chart-wrap">
+                        <canvas id="byDirections"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="analytics-section">
+            <div class="section-heading">
+                <div>
+                    <h2>${_("All courses")}</h2>
+                    <p>${_("Current courses with a start date in")} ${current_year} ${_("year")}.</p>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="active-filter-bar" id="activeFilterBar">
+                    <div class="active-filter-label" id="activeFilterLabel"></div>
+                    <button class="clear-filter-button" type="button"
+                            id="clearFilterButton">${_("Clear filter")}</button>
+                </div>
+
+                <div class="courses-toolbar">
+                    <div class="courses-count" id="coursesCount" role="status" aria-live="polite"></div>
+                </div>
+                <div class="course-search">
+                    <label for="courseSearch">${_("Search by course name")}</label>
+                    <input type="search" id="courseSearch" placeholder="${_('Search by course name...')}" />
+                </div>
+
+                <div class="courses-table-wrap">
+                    <table class="courses-table">
+                        <thead>
+                        <tr>
+                            <th>${_("Course")}</th>
+                            <th>${_("Faculty")}</th>
+                            <th>${_("Direction")}</th>
+                            <th>${_("Language")}</th>
+                            <th>${_("Launches")}</th>
+                            <th>${_("Start")}</th>
+                            <th></th>
+                        </tr>
+                        </thead>
+                        <tbody id="coursesTableBody"></tbody>
+                    </table>
+                </div>
+                <div class="empty-state"
+                     id="emptyState">${_("There are no current courses for the selected filter in")} ${current_year} ${_("year")}
+                    .
+                </div>
+            </div>
+        </section>
+    </div>
+</div>
+</%block>
+
+<%block name="extrajs">
+<script>
+    (function () {
+        var yearLabels = ${year_labels | n};
+        var yearData = ${year_data | n};
+        var facultyLabels = ${faculty_labels | n};
+        var facultyData = ${faculty_data | n};
+        var directionsLabels = ${directions_labels | n};
+        var directionsData = ${directions_data | n};
+        var courses = ${courses_json | n};
+
+        var translations = {
+            courses: "${_("Courses")}",
+            notSpecified: "${_("Not specified")}",
+            open: "${_("Open it")}",
+            shown: "${_("Shown")}",
+            of: "${_("of")}",
+            faculty: "${_("Faculty")}",
+            direction: "${_("Direction")}"
+        };
+
+        var palette = [
+            "#2f6f95",
+            "#3b8067",
+            "#9a7742",
+            "#6f5f96",
+            "#9a5b5b",
+            "#4b7f8f",
+            "#6f7f54",
+            "#6b7280",
+            "#8a6680",
+            "#5f7896"
+        ];
+
+        if (window.Chart) {
+            Chart.defaults.font.family = "'Inter', 'Segoe UI', Arial, sans-serif";
+            Chart.defaults.color = "#5f6f82";
+            Chart.defaults.plugins.legend.display = false;
+        }
+
+        function barChart(canvasId, labels, values, horizontal) {
+            if (!window.Chart) { return null; }
+            return new Chart(document.getElementById(canvasId), {
+                type: "bar",
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: translations.courses,
+                        data: values,
+                        backgroundColor: labels.map(function (_, index) {
+                            return palette[index % palette.length];
+                        }),
+                        borderRadius: 4,
+                        maxBarThickness: horizontal ? 28 : 42
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: horizontal ? "y" : "x",
+                    layout: {
+                        padding: {
+                            left: horizontal ? 8 : 0,
+                            right: 18,
+                            top: 4,
+                            bottom: 4
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            backgroundColor: "#18384f",
+                            borderColor: "#2f6f95",
+                            borderWidth: 1,
+                            cornerRadius: 8,
+                            padding: 11,
+                            titleFont: {weight: "700"},
+                            callbacks: {
+                                label: function (context) {
+                                    return translations.courses + ": " + context.parsed[horizontal ? "x" : "y"];
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            grid: {color: "#edf1f6"},
+                            ticks: {precision: 0}
+                        },
+                        y: {
+                            beginAtZero: true,
+                            grid: {color: horizontal ? "transparent" : "#edf1f6"},
+                            ticks: {
+                                precision: 0,
+                                autoSkip: false,
+                                font: {
+                                    size: horizontal ? 11 : 12
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        var byYear = barChart("byYear", yearLabels, yearData, false);
+        var byFaculty = barChart("byFaculty", facultyLabels, facultyData, true);
+        var byDirections = barChart("byDirections", directionsLabels, directionsData, true);
+
+        var activeFilter = null;
+        var tableBody = document.getElementById("coursesTableBody");
+        var coursesCount = document.getElementById("coursesCount");
+        var activeFilterBar = document.getElementById("activeFilterBar");
+        var activeFilterLabel = document.getElementById("activeFilterLabel");
+        var emptyState = document.getElementById("emptyState");
+        var clearFilterButton = document.getElementById("clearFilterButton");
+        var searchInput = document.getElementById("courseSearch");
+
+        function escapeHtml(value) {
+            return String(value || "")
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function courseCell(course) {
+            return '' +
+                '<a class="course-title" href="' + escapeHtml(course.url) + '">' + escapeHtml(course.display_name) + '</a>' +
+                '<div class="course-meta">' + escapeHtml(course.id) + '</div>';
+        }
+
+        function filterButton(type, value) {
+            if (!value) {
+                return '<span class="course-meta">' + translations.notSpecified + '</span>';
+            }
+            return '<button class="filter-button" type="button" data-filter-type="' + type + '" data-filter-value="' + escapeHtml(value) + '">' + escapeHtml(value) + '</button>';
+        }
+
+        function filteredCourses() {
+            var query = searchInput.value.toLowerCase().trim();
+            return courses.filter(function (course) {
+                return (!activeFilter || course[activeFilter.type] === activeFilter.value) &&
+                    (course.display_name || "").toLowerCase().indexOf(query) !== -1;
+            });
+        }
+
+        function renderCourses() {
+            var filtered = filteredCourses();
+            var displayLimit = 50;
+            var visibleCourses = filtered.slice(0, displayLimit);
+
+            tableBody.innerHTML = visibleCourses.map(function (course) {
+                return '' +
+                    '<tr>' +
+                    '<td>' + courseCell(course) + '</td>' +
+                    '<td>' + filterButton("faculty", course.faculty) + '</td>' +
+                    '<td>' + filterButton("directions", course.directions) + '</td>' +
+                    '<td>' + escapeHtml(course.language || translations.notSpecified) + '</td>' +
+                    '<td>' + escapeHtml(course.run_count || 1) + '</td>' +
+                    '<td>' + escapeHtml(course.start || translations.notSpecified) + '</td>' +
+                    '<td><a class="course-link" href="' +
+                    escapeHtml(course.url) + '">' +
+                    translations.open +
+                    '</a></td>' +
+                    '</tr>';
+            }).join("");
+
+            coursesCount.textContent =
+                translations.shown + ": " +
+                visibleCourses.length + " " +
+                translations.of + " " +
+                filtered.length;
+
+            emptyState.classList.toggle(
+                "is-visible",
+                filtered.length === 0
+            );
+
+            if (activeFilter) {
+                activeFilterBar.classList.add("is-visible");
+                activeFilterLabel.textContent =
+                    (activeFilter.type === "faculty"
+                        ? translations.faculty + ": "
+                        : translations.direction + ": ") +
+                    activeFilter.value;
+            } else {
+                activeFilterBar.classList.remove("is-visible");
+                activeFilterLabel.textContent = "";
+            }
+        }
+
+        function setFilter(type, value) {
+            activeFilter = {type: type, value: value};
+            renderCourses();
+            document.getElementById("coursesTableBody").scrollIntoView({behavior: "smooth", block: "start"});
+        }
+
+        document.getElementById("byFaculty").onclick = function (event) {
+            if (!byFaculty) { return; }
+            var point = byFaculty.getElementsAtEventForMode(event, "nearest", {intersect: true}, true)[0];
+            if (point) {
+                setFilter("faculty", facultyLabels[point.index]);
+            }
+        };
+
+        document.getElementById("byDirections").onclick = function (event) {
+            if (!byDirections) { return; }
+            var point = byDirections.getElementsAtEventForMode(event, "nearest", {intersect: true}, true)[0];
+            if (point) {
+                setFilter("directions", directionsLabels[point.index]);
+            }
+        };
+
+        tableBody.addEventListener("click", function (event) {
+            var button = event.target.closest("[data-filter-type]");
+            if (button) {
+                setFilter(button.getAttribute("data-filter-type"), button.getAttribute("data-filter-value"));
+            }
+        });
+
+        clearFilterButton.addEventListener("click", function () {
+            activeFilter = null;
+            renderCourses();
+        });
+        searchInput.addEventListener("input", renderCourses);
+
+        renderCourses();
+    })();
+</script>
+</%block>

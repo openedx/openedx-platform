@@ -33,6 +33,7 @@ from common.djangoapps.pipeline_mako import render_require_js_path_overrides
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+<link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet">
 
 ## Define a couple of helper functions to make life easier when
 ## embedding theme conditionals into templates. All inheriting
@@ -132,7 +133,15 @@ from common.djangoapps.pipeline_mako import render_require_js_path_overrides
     ${render_require_js_path_overrides(settings.REQUIRE_JS_PATH_OVERRIDES) | n, decode.utf8}
   </%block>
 
-  <%block name="headextra"/>
+  <%block name="headextra">
+  <style>
+      body {
+      zoom: 100% !important;
+      transform: none !important;
+      }
+  </style>
+  </%block>
+
   <%block name="head_extra"/>
 
   <%include file="/courseware/experiments.html"/>
@@ -211,7 +220,7 @@ from common.djangoapps.pipeline_mako import render_require_js_path_overrides
 
     <div class="marketing-hero"><%block name="marketing_hero"></%block></div>
 
-    <div class="content-wrapper main-container" id="content" dir="${static.dir_rtl()}">
+    <div class="content-wrapper main-container" id="content" dir="${static.dir_rtl()}" style="padding: 0 !important; width: 100% !important;">
       ${next.body()}
       <%block name="bodyextra"/>
     </div>
@@ -248,3 +257,7 @@ from common.djangoapps.pipeline_mako import render_require_js_path_overrides
     next=quote_plus(login_redirect_url if login_redirect_url else request.path)
   ) if (login_redirect_url or (request and not request.path.startswith("/logout"))) else ""
 }</%def>
+<script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
+<script>
+  AOS.init();
+</script>

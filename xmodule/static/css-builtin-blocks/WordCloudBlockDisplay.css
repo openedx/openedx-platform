@@ -25,3 +25,6 @@
     font-size: 0.85em;
     display: block;
 }
+.xmodule_display.xmodule_WordCloudBlock .hd.hd-3 {
+    font-weight: bold !important;
+}

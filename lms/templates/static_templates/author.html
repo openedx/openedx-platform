@@ -1,0 +1,603 @@
+<%page expression_filter="h"/>
+<%! from django.utils.translation import gettext as _ %>
+<%inherit file="../main.html" />
+
+<%block name="pagetitle">${_("For authors")}</%block>
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Создание онлайн-курса</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-dark: #1a263c;
+            --primary-accent: #d3985c;
+            --primary-light: #f5f7fa;
+            --secondary-dark: #142034;
+            --text-dark: #333;
+            --text-light: #fff;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            --border-radius: 8px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--text-dark);
+            background-color: var(--primary-light);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Header styles */
+        .hero {
+            background: linear-gradient(rgba(26, 38, 60, 0.85), rgba(26, 38, 60, 0.9)), url('https://open.kaznu.kz/static/kaznu/images/header.png') center/cover no-repeat;
+            height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            position: relative;
+            margin-bottom: 40px;
+        }
+
+        .hero-content {
+            max-width: 800px;
+            padding: 20px;
+            color: var(--text-light);
+        }
+
+        .hero h1 {
+            font-size: 2.8rem;
+            margin-bottom: 20px;
+            font-weight: 700;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Section styling */
+        section {
+            margin-bottom: 60px;
+        }
+
+        .section-title {
+            text-align: center;
+            margin-bottom: 40px;
+            color: var(--primary-dark);
+            position: relative;
+        }
+
+        .section-title h2 {
+            font-size: 2.2rem;
+            display: inline-block;
+            padding-bottom: 10px;
+        }
+
+        .section-title h2::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 4px;
+            background: var(--primary-accent);
+            border-radius: 2px;
+        }
+
+        .content-card {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            padding: 30px;
+            margin-bottom: 30px;
+            transition: transform 0.3s ease;
+        }
+
+        .content-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .content-card h3 {
+            color: var(--primary-dark);
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+        }
+
+        /* Accordion styles */
+        .accordion {
+            margin-top: 30px;
+        }
+
+        .accordion-item {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 15px;
+            overflow: hidden;
+            border-left: 4px solid var(--primary-accent);
+        }
+
+        .accordion-header {
+            padding: 20px;
+            background: #f9f9f9;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: background 0.3s;
+        }
+
+        .accordion-header:hover {
+            background: #f0f0f0;
+        }
+
+        .accordion-header i {
+            transition: transform 0.3s;
+        }
+
+        .accordion-content {
+            padding: 0 20px;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s, padding 0.3s;
+        }
+
+        .accordion-item.active .accordion-content {
+            padding: 20px;
+            max-height: 1000px;
+        }
+
+        .accordion-item.active .accordion-header i {
+            transform: rotate(180deg);
+        }
+
+        .requirement-list {
+            padding-left: 20px;
+            margin: 15px 0;
+        }
+
+        .requirement-list li {
+            margin-bottom: 10px;
+            position: relative;
+            padding-left: 25px;
+        }
+
+        .requirement-list li::before {
+            content: "•";
+            color: var(--primary-accent);
+            font-weight: bold;
+            position: absolute;
+            left: 0;
+            font-size: 1.2rem;
+        }
+
+        /* Timeline styles */
+        .timeline {
+            position: relative;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: var(--primary-accent);
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .timeline-item {
+            position: relative;
+            width: 50%;
+            padding: 20px 40px;
+        }
+
+        .timeline-item:nth-child(odd) {
+            left: 0;
+        }
+
+        .timeline-item:nth-child(even) {
+            left: 50%;
+        }
+
+        .timeline-item::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: var(--primary-accent);
+            border: 4px solid white;
+            border-radius: 50%;
+            top: 30px;
+        }
+
+        .timeline-item:nth-child(odd)::after {
+            right: -10px;
+        }
+
+        .timeline-item:nth-child(even)::after {
+            left: -10px;
+        }
+
+        .timeline-content {
+            background: white;
+            padding: 25px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            position: relative;
+        }
+
+        .timeline-icon {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background: var(--primary-dark);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+            top: 20px;
+        }
+
+        .timeline-item:nth-child(odd) .timeline-icon {
+            right: -65px;
+        }
+
+        .timeline-item:nth-child(even) .timeline-icon {
+            left: -65px;
+        }
+
+        /* Contact Section */
+        .contact-info {
+            background: var(--primary-dark);
+            color: white;
+            padding: 30px;
+            border-radius: var(--border-radius);
+            text-align: center;
+            margin-top: 40px;
+        }
+
+        .contact-info p {
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.8;
+        }
+
+        /* Responsive styles */
+        @media (max-width: 768px) {
+            .hero {
+                height: 300px;
+            }
+            
+            .hero h1 {
+                font-size: 2rem;
+            }
+            
+            .timeline::before {
+                left: 30px;
+            }
+            
+            .timeline-item {
+                width: 100%;
+                padding-left: 70px;
+                padding-right: 20px;
+                left: 0 !important;
+            }
+            
+            .timeline-item::after {
+                left: 20px !important;
+            }
+            
+            .timeline-item:nth-child(odd) .timeline-icon,
+            .timeline-item:nth-child(even) .timeline-icon {
+                left: 20px;
+                top: 25px;
+                right: auto;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1 style="color: white !important;">${_("Creating an Online Course for Authors")}</h1>
+            <p style="font-size: 1.2rem !important;">${_("Al-Farabi Kazakh National University")}</p>
+        </div>
+    </section>
+
+    <div class="container">
+        <!-- Requirements Section -->
+        <section>
+            <div class="section-title">
+                <h2>${_("Methodological Requirements")}</h2>
+            </div>
+            
+            <div class="content-card">
+                <h3>${_("Requirements for Online Course Design")}</h3>
+                
+                <div class="accordion">
+                    <div class="accordion-item">
+                        <div class="accordion-header">
+                            <span>${_("Electronic UMKD (e-UMKD)")}</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        <div class="accordion-content">
+                            <ul class="requirement-list">
+                                <li>${_("Electronic syllabus")}</li>
+                                <li>${_("Announcements for students – 1 per module")}</li>
+                                <li>${_("Questionnaires at the beginning and end of the course")}</li>
+                                <li>${_("Lecture notes with a list of sources – 1 per topic")}</li>
+                                <li>${_("Presentation – 1 per topic")}</li>
+                                <li>${_("Additional course materials with active links for online reading and viewing")}</li>
+                                <li>${_("Study questions – at least 10 per module")}</li>
+                                <li>${_("Discussion questions – at least 1 per module")}</li>
+                                <li>${_("Test tasks – at least 3 practice and 10 graded per module")}</li>
+                                <li>${_("Peer review assignments – no more than 1–2 per course")}</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="accordion-item">
+                        <div class="accordion-header">
+                            <span>${_("Academic Presentation of the Online Course")}</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        <div class="accordion-content">
+                            <ul class="requirement-list">
+                                <li>${_("Measurable learning objectives")}</li>
+                                <li>${_("Expected Learning Outcomes (LO)")}</li>
+                                <li>${_("Indicators of LO achievement")}</li>
+                                <li>${_("Course language – student-oriented, accessible to a diverse audience")}</li>
+                                <li>${_("Course duration – at least 4 and no more than 15 weeks")}</li>
+                                <li>${_("Student workload per week – no less than 2 and no more than 5 hours")}</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Technical Requirements Section -->
+        <section>
+            <div class="section-title">
+                <h2>${_("Technical Requirements for Video")}</h2>
+            </div>
+            
+            <div class="content-card">
+                <h3>${_("Video recording must be carried out with professional equipment with track parameters not lower than the following:")}</h3>
+                
+                <div class="accordion">
+                    <div class="accordion-item">
+                        <div class="accordion-header">
+                            <span>${_("Video")}</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        <div class="accordion-content">
+                            <h4>${_("Timing")}</h4>
+                            <ul class="requirement-list">
+                                <li>${_("Welcome/Promo video – no more than 3 minutes")}</li>
+                                <li>${_("Course introduction (purpose, objectives, structure, assignments) – 3 minutes")}</li>
+                                <li>${_("Video lecture – 3–9 minutes")}</li>
+                                <li>${_("Weekly video duration – at least 15 and no more than 30 minutes")}</li>
+                            </ul>
+                            
+                            <h4>${_("Technical Requirements")}</h4>
+                            <ul class="requirement-list">
+                                <li>${_("File format (container) – MP4")}</li>
+                                <li>${_("Codec – H264")}</li>
+                                <li>${_("Resolution: 1920 x 1080 (1080p)")}</li>
+                                <li>${_("Aspect ratio – 16:9")}</li>
+                                <li>${_("Frame rate – 25 or 30 fps")}</li>
+                                <li>${_("Progressive scan (25p/30p)")}</li>
+                                <li>${_("Bitrate – not less than 10,000 kbps and not more than 30,000 kbps")}</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="accordion-item">
+                        <div class="accordion-header">
+                            <span>${_("Audio")}</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        <div class="accordion-content">
+                            <ul class="requirement-list">
+                                <li>${_("Codec: AAC, AC3, OGG, mp3")}</li>
+                                <li>${_("Channels: 2 (stereo)")}</li>
+                                <li>${_("Sample rate: 48 kHz")}</li>
+                                <li>${_("Audio stream: CBR not less than 192 kbps, VBR 160–320 kbps")}</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="accordion-item">
+                        <div class="accordion-header">
+                            <span>${_("Audio Quality Characteristics")}</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        <div class="accordion-content">
+                            <ul class="requirement-list">
+                                <li>${_("Audio track must be true stereo, with the lecturer’s voice localized strictly between the left and right channels")}</li>
+                                <li>${_("Stereo track must be playable on monophonic equipment")}</li>
+                                <li>${_("Signal-to-noise ratio – at least 40 dB")}</li>
+                                <li>${_("Dynamic range of useful signal – no more than 16 dB")}</li>
+                                <li>${_("Average RMS loudness – from -14 dB to -12 dB")}</li>
+                                <li>${_("Peak loudness – limited to -2 dB")}</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="accordion-item">
+                        <div class="accordion-header">
+                            <span>${_("Presentation Design Quality for Video")}</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        <div class="accordion-content">
+                            <ul class="requirement-list">
+                                <li>${_("Sans-serif font is recommended")}</li>
+                                <li>${_("No more than 2 fonts per course")}</li>
+                                <li>${_("Bullet points must be consistent throughout the course")}</li>
+                                <li>${_("Use contrasting text and background colors for readability")}</li>
+                                <li>${_("No more than 3 font colors per course")}</li>
+                                <li>${_("Avoid mixing contrasting colors within one sentence, paragraph, or table")}</li>
+                                <li>${_("Line thickness for borders, tables, and arrows should match font line thickness")}</li>
+                                <li>${_("Use photos, drawings, and animations in a consistent color scheme")}</li>
+                                <li>${_("Icons and infographics are recommended")}</li>
+                                <li>${_("Avoid merging same-sized scenes for natural perception")}</li>
+                                <li>${_("Avoid distracting clothing and makeup during recording")}</li>
+                                <li>${_("Slides: heading font – 20 pt, body text – 18 pt")}</li>
+                                <li>${_("Image size – at least 1280x720p (HD)")}</li>
+                                <li>${_("Image format – PNG")}</li>
+                                <li>${_("All external materials must have a CC Attribution license")}</li>
+                                <li>${_("Each borrowed image must include a source link")}</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Development Stages Section -->
+        <section>
+            <div class="section-title">
+                <h2>${_("Stages of Online Course Development")}</h2>
+            </div>
+            
+            <div class="timeline">
+                <div class="timeline-item">
+                    <div class="timeline-content">
+                        <div class="timeline-icon">
+                            <i class="fas fa-file-alt"></i>
+                        </div>
+                        <h3>${_("Application Submission")}</h3>
+                        <p>${_("Submission of an application for online course development. Participation in the competition of pedagogical scenarios for creating and publishing online courses (MOOC/SPOC).")}</p>
+                    </div>
+                </div>
+                
+                <div class="timeline-item">
+                    <div class="timeline-content">
+                        <div class="timeline-icon">
+                            <i class="fas fa-laptop-code"></i>
+                        </div>
+                        <h3>${_("Course Development")}</h3>
+                        <p>${_("Start of the online course development process.")}</p>
+                    </div>
+                </div>
+                
+                <div class="timeline-item">
+                    <div class="timeline-content">
+                        <div class="timeline-icon">
+                            <i class="fas fa-book"></i>
+                        </div>
+                        <h3>${_("Preparation of Materials")}</h3>
+                        <p>${_("Preparation of online course materials by the author-developer. For documents on requirements and recommendations for recording video materials, please contact the Center for Massive Open Online Courses.")}</p>
+                    </div>
+                </div>
+                
+                <div class="timeline-item">
+                    <div class="timeline-content">
+                        <div class="timeline-icon">
+                            <i class="fas fa-search"></i>
+                        </div>
+                        <h3>${_("Material Expertise")}</h3>
+                        <p>${_("Methodological and technical expertise of online course materials.")}</p>
+                    </div>
+                </div>
+                
+                <div class="timeline-item">
+                    <div class="timeline-content">
+                        <div class="timeline-icon">
+                            <i class="fas fa-video"></i>
+                        </div>
+                        <h3>${_("Video Recording")}</h3>
+                        <p>${_("Recording of online course video materials.")}</p>
+                    </div>
+                </div>
+                
+                <div class="timeline-item">
+                    <div class="timeline-content">
+                        <div class="timeline-icon">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                        </div>
+                        <h3>${_("Material Upload")}</h3>
+                        <p>${_("Uploading online course materials to the platform.")}</p>
+                    </div>
+                </div>
+                
+                <div class="timeline-item">
+                    <div class="timeline-content">
+                        <div class="timeline-icon">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <h3>${_("Testing and Expertise")}</h3>
+                        <p>${_("Beta testing and course expertise.")}</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Contact Section -->
+        <div class="contact-info">
+            <h3 style="color: white !important;">${_("Contacts")}</h3>
+            <p>${_("For all inquiries, please contact the Office of Academic and Digital Innovations: Building - Rectorate, Office 207, phone")} +7 727 377 33 30 ${_("(ext.")} 31-24, 11-33, 16-47)</p>
+        </div>
+    </div>
+    
+    <script>
+        // Accordion functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const accordionHeaders = document.querySelectorAll('.accordion-header');
+            
+            accordionHeaders.forEach(header => {
+                header.addEventListener('click', function() {
+                    const item = this.parentNode;
+                    item.classList.toggle('active');
+                });
+            });
+            
+            // Timeline animation
+            const timelineItems = document.querySelectorAll('.timeline-item');
+            
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.opacity = 1;
+                        entry.target.style.transform = 'translateY(0)';
+                    }
+                });
+            }, { threshold: 0.1 });
+            
+            timelineItems.forEach(item => {
+                item.style.opacity = 0;
+                item.style.transform = 'translateY(20px)';
+                item.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                observer.observe(item);
+            });
+        });
+    </script>
+</body>
+
+
+</html>

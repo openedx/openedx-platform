@@ -1,0 +1,1040 @@
+<%page expression_filter="h"/>
+<%!
+  from django.utils.translation import gettext as _
+%>
+<%inherit file="../main.html" />
+
+<%block name="pagetitle">${_("Courses")}</%block>
+
+<%block name="headextra">
+  <style>
+    :root {
+      --catalog-navy: #1a263c;
+      --catalog-blue: #1e40af;
+      --catalog-blue-bright: #2563eb;
+      --catalog-sky: #60a5fa;
+      --catalog-ice: #dbeafe;
+      --catalog-bg: #f5f8ff;
+      --catalog-surface: rgba(255, 255, 255, 0.94);
+      --catalog-text: #172033;
+      --catalog-muted: #64748b;
+      --catalog-border: rgba(30, 64, 175, 0.12);
+      --catalog-radius: 22px;
+      --catalog-shadow: 0 18px 45px rgba(30, 64, 175, 0.12);
+      --catalog-shadow-hover: 0 28px 60px rgba(30, 64, 175, 0.2);
+      --catalog-transition: 280ms cubic-bezier(.2, .8, .2, 1);
+    }
+
+    body {
+      background:
+        radial-gradient(circle at 8% 28%, rgba(96, 165, 250, 0.14), transparent 24rem),
+        radial-gradient(circle at 92% 72%, rgba(30, 64, 175, 0.09), transparent 28rem),
+        var(--catalog-bg);
+      color: var(--catalog-text);
+      font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+    }
+
+    .catalog-page {
+      min-height: 100vh;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .catalog-scroll-progress {
+      background: rgba(219, 234, 254, 0.35);
+      height: 4px;
+      left: 0;
+      pointer-events: none;
+      position: fixed;
+      right: 0;
+      top: 0;
+      z-index: 9999;
+    }
+
+    .catalog-scroll-progress span {
+      background: linear-gradient(90deg, var(--catalog-navy), var(--catalog-blue-bright), var(--catalog-sky));
+      box-shadow: 0 0 12px rgba(96, 165, 250, 0.7);
+      display: block;
+      height: 100%;
+      transform: scaleX(0);
+      transform-origin: left center;
+      width: 100%;
+      will-change: transform;
+    }
+
+    .catalog-hero {
+      align-items: center;
+      animation: catalogGradient 14s ease-in-out infinite alternate;
+      background: linear-gradient(125deg, rgba(26, 38, 60, 0.98), rgba(30, 64, 175, 0.94), rgba(37, 99, 235, 0.9));
+      background-size: 180% 180%;
+      color: #fff;
+      display: flex;
+      isolation: isolate;
+      min-height: 430px;
+      overflow: hidden;
+      padding: 88px 24px 125px;
+      position: relative;
+      text-align: center;
+    }
+
+    .catalog-hero::before {
+      background-image:
+        linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+      background-size: 46px 46px;
+      content: "";
+      inset: 0;
+      mask-image: linear-gradient(to bottom, #000, transparent 90%);
+      pointer-events: none;
+      position: absolute;
+      z-index: -1;
+    }
+
+    .catalog-hero::after {
+      background: var(--catalog-bg);
+      border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+      bottom: -74px;
+      content: "";
+      height: 132px;
+      left: -5%;
+      position: absolute;
+      width: 110%;
+      z-index: 2;
+    }
+
+    .catalog-hero__inner {
+      margin: 0 auto;
+      max-width: 820px;
+      position: relative;
+      z-index: 3;
+    }
+
+    .catalog-eyebrow {
+      align-items: center;
+      backdrop-filter: blur(12px);
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.28);
+      border-radius: 999px;
+      display: inline-flex;
+      font-size: 0.78rem;
+      font-weight: 800;
+      gap: 9px;
+      letter-spacing: 0.12em;
+      margin-bottom: 22px;
+      padding: 9px 15px;
+      text-transform: uppercase;
+    }
+
+    .catalog-eyebrow::before {
+      animation: catalogPulse 2.4s ease-in-out infinite;
+      background: #93c5fd;
+      border-radius: 50%;
+      box-shadow: 0 0 0 6px rgba(147, 197, 253, 0.16);
+      content: "";
+      height: 9px;
+      width: 9px;
+    }
+
+    .catalog-hero h1 {
+      color: #fff !important;
+      font-size: clamp(2.8rem, 7vw, 5.2rem);
+      font-weight: 850;
+      letter-spacing: -0.055em;
+      line-height: 0.98;
+      margin: 0 0 20px;
+      text-shadow: 0 12px 36px rgba(7, 18, 48, 0.28);
+    }
+
+    .catalog-hero p {
+      font-size: clamp(1rem, 2vw, 1.22rem);
+      line-height: 1.72;
+      margin: 0 auto;
+      max-width: 670px;
+      opacity: 0.92;
+    }
+
+    .catalog-hero__stats {
+      backdrop-filter: blur(14px);
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 18px;
+      display: grid;
+      gap: 0;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin: 32px auto 0;
+      max-width: 570px;
+      overflow: hidden;
+    }
+
+    .catalog-stat {
+      padding: 15px 18px;
+      position: relative;
+    }
+
+    .catalog-stat + .catalog-stat::before {
+      background: rgba(255, 255, 255, 0.18);
+      bottom: 14px;
+      content: "";
+      left: 0;
+      position: absolute;
+      top: 14px;
+      width: 1px;
+    }
+
+    .catalog-stat strong {
+      color: #fff;
+      display: block;
+      font-size: 1.45rem;
+      font-weight: 850;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+
+    .catalog-stat span {
+      color: rgba(255, 255, 255, 0.76);
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .catalog-orb,
+    .catalog-glow {
+      border-radius: 50%;
+      pointer-events: none;
+      position: absolute;
+      z-index: 0;
+    }
+
+    .catalog-orb {
+      backdrop-filter: blur(3px);
+      background: linear-gradient(145deg, rgba(255, 255, 255, 0.24), rgba(96, 165, 250, 0.08));
+      border: 1px solid rgba(255, 255, 255, 0.24);
+      box-shadow: inset 0 0 35px rgba(255, 255, 255, 0.08);
+    }
+
+    .catalog-orb--one {
+      animation: catalogFloatOne 7s ease-in-out infinite;
+      height: 150px;
+      left: 7%;
+      top: 60px;
+      width: 150px;
+    }
+
+    .catalog-orb--two {
+      animation: catalogFloatTwo 9s ease-in-out infinite;
+      bottom: 85px;
+      height: 92px;
+      right: 11%;
+      width: 92px;
+    }
+
+    .catalog-orb--three {
+      animation: catalogFloatOne 11s ease-in-out infinite reverse;
+      height: 44px;
+      right: 27%;
+      top: 66px;
+      width: 44px;
+    }
+
+    .catalog-glow {
+      background: rgba(96, 165, 250, 0.3);
+      filter: blur(55px);
+      height: 240px;
+      right: 8%;
+      top: 35px;
+      width: 240px;
+    }
+
+    .catalog-content {
+      margin: 0 auto;
+      max-width: 1250px;
+      padding: 25px 20px 85px;
+      position: relative;
+      z-index: 4;
+    }
+
+    .catalog-filter {
+      backdrop-filter: blur(18px);
+      background: rgba(255, 255, 255, 0.86);
+      border: 1px solid rgba(255, 255, 255, 0.94);
+      border-radius: var(--catalog-radius);
+      box-shadow: var(--catalog-shadow);
+      margin-bottom: 42px;
+      padding: 28px;
+      position: relative;
+    }
+
+    .catalog-filter::before {
+      background: linear-gradient(90deg, var(--catalog-navy), var(--catalog-blue), var(--catalog-sky));
+      border-radius: 999px;
+      content: "";
+      height: 5px;
+      left: 30px;
+      position: absolute;
+      right: 30px;
+      top: 0;
+    }
+
+    .catalog-filter__header {
+      align-items: center;
+      display: flex;
+      gap: 18px;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .catalog-filter h2 {
+      color: var(--catalog-text);
+      font-size: 1.38rem;
+      font-weight: 800;
+      margin: 0;
+    }
+
+    .catalog-filter__count {
+      color: var(--catalog-muted);
+      font-size: 0.86rem;
+      font-weight: 650;
+      margin-left: auto;
+    }
+
+    .catalog-reset {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 999px;
+      color: var(--catalog-blue);
+      cursor: pointer;
+      font-size: 0.82rem;
+      font-weight: 750;
+      padding: 8px 13px;
+      transition: background var(--catalog-transition), color var(--catalog-transition), transform var(--catalog-transition);
+    }
+
+    .catalog-reset:hover,
+    .catalog-reset:focus-visible {
+      background: var(--catalog-blue);
+      color: #fff;
+      outline: none;
+      transform: translateY(-1px);
+    }
+
+    .catalog-filters {
+        display: grid;
+        grid-template-columns:
+        repeat(auto-fit, minmax(min(100%, 210px), 1fr));
+        gap: 14px;
+
+        box-sizing: border-box;
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .catalog-filters input,
+    .catalog-filters select {
+        appearance: none;
+        box-sizing: border-box !important;
+
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+
+        background-color: #fff;
+        border: 2px solid #e2e8f0;
+        border-radius: 14px;
+        color: var(--catalog-text);
+        font: inherit;
+        font-size: 15px;
+        min-height: 48px;
+        outline: none;
+        padding: 12px 16px;
+    }
+
+    .catalog-filters select {
+      background-image:
+        linear-gradient(45deg, transparent 50%, var(--catalog-blue) 50%),
+        linear-gradient(135deg, var(--catalog-blue) 50%, transparent 50%);
+      background-position:
+        calc(100% - 19px) calc(50% - 2px),
+        calc(100% - 14px) calc(50% - 2px);
+      background-repeat: no-repeat;
+      background-size: 5px 5px, 5px 5px;
+      padding-right: 38px;
+    }
+
+    .catalog-filters input:hover,
+    .catalog-filters select:hover {
+      border-color: rgba(37, 99, 235, 0.42);
+    }
+
+    .catalog-filters input:focus,
+    .catalog-filters select:focus {
+      border-color: var(--catalog-blue-bright);
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.13);
+      transform: translateY(-1px);
+    }
+
+    .catalog-grid {
+      display: grid;
+      gap: 26px;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    }
+
+    .catalog-card {
+      background: var(--catalog-surface);
+      border: 1px solid var(--catalog-border);
+      border-radius: var(--catalog-radius);
+      box-shadow: var(--catalog-shadow);
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      overflow: hidden;
+      position: relative;
+      transition: border-color var(--catalog-transition), box-shadow var(--catalog-transition), transform var(--catalog-transition);
+    }
+
+    .catalog-card[hidden] {
+      display: none !important;
+    }
+
+    .catalog-card::after {
+      background: linear-gradient(90deg, var(--catalog-navy), var(--catalog-blue-bright), var(--catalog-sky));
+      bottom: 0;
+      content: "";
+      height: 4px;
+      left: 0;
+      position: absolute;
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform var(--catalog-transition);
+      width: 100%;
+    }
+
+    .catalog-card:hover {
+      border-color: rgba(37, 99, 235, 0.2);
+      box-shadow: var(--catalog-shadow-hover);
+      transform: translateY(-9px);
+    }
+
+    .catalog-card:hover::after {
+      transform: scaleX(1);
+    }
+
+    .catalog-card__media {
+      background: var(--catalog-ice);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .catalog-card__media::after {
+      background: linear-gradient(180deg, transparent 48%, rgba(15, 23, 42, 0.35));
+      content: "";
+      inset: 0;
+      pointer-events: none;
+      position: absolute;
+    }
+
+    .catalog-card img {
+      display: block;
+      height: 190px;
+      object-fit: cover;
+      transition: filter 700ms cubic-bezier(.2, .8, .2, 1), transform 700ms cubic-bezier(.2, .8, .2, 1);
+      width: 100%;
+    }
+
+    .catalog-card:hover img {
+      filter: saturate(1.08) contrast(1.02);
+      transform: scale(1.055);
+    }
+
+    .catalog-status {
+      backdrop-filter: blur(10px);
+      background: rgba(30, 64, 175, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.38);
+      border-radius: 999px;
+      color: #fff;
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      padding: 7px 12px;
+      position: absolute;
+      right: 14px;
+      text-transform: uppercase;
+      top: 14px;
+      z-index: 2;
+    }
+
+    .catalog-status.completed {
+      background: rgba(71, 85, 105, 0.9);
+    }
+
+    .catalog-card__content {
+      display: flex;
+      flex-direction: column;
+      flex-grow: 1;
+      padding: 22px;
+    }
+
+    .catalog-card h3 {
+      color: var(--catalog-text);
+      font-size: 1.2rem;
+      font-weight: 800;
+      line-height: 1.38;
+      margin: 0 0 11px;
+    }
+
+    .catalog-card h3 a {
+      color: inherit;
+      text-decoration: none;
+      transition: color var(--catalog-transition);
+    }
+
+    .catalog-card h3 a:hover,
+    .catalog-card h3 a:focus-visible {
+      color: var(--catalog-blue);
+      outline: none;
+    }
+
+    .catalog-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 15px;
+    }
+
+    .catalog-tag {
+      background: #eff6ff;
+      border: 1px solid #dbeafe;
+      border-radius: 999px;
+      color: var(--catalog-blue);
+      font-size: 0.76rem;
+      font-weight: 750;
+      padding: 5px 10px;
+    }
+
+    .catalog-details {
+      color: var(--catalog-muted);
+      flex-grow: 1;
+      font-size: 0.9rem;
+      line-height: 1.65;
+      margin-bottom: 19px;
+    }
+
+    .catalog-details span {
+      display: block;
+      margin-bottom: 3px;
+    }
+
+    .catalog-button {
+      background: linear-gradient(135deg, var(--catalog-navy), var(--catalog-blue));
+      border-radius: 14px;
+      box-shadow: 0 11px 24px rgba(30, 64, 175, 0.2);
+      color: #fff !important;
+      font-weight: 800;
+      overflow: hidden;
+      padding: 12px 16px;
+      position: relative;
+      text-align: center;
+      text-decoration: none !important;
+      transition: box-shadow var(--catalog-transition), filter var(--catalog-transition), transform var(--catalog-transition);
+    }
+
+    .catalog-button::before {
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.26), transparent);
+      content: "";
+      inset: 0;
+      position: absolute;
+      transform: translateX(-120%);
+      transition: transform 650ms ease;
+    }
+
+    .catalog-button:hover,
+    .catalog-button:focus-visible {
+      box-shadow: 0 15px 30px rgba(30, 64, 175, 0.3);
+      filter: saturate(1.14);
+      outline: none;
+      transform: translateY(-2px);
+    }
+
+    .catalog-button:hover::before,
+    .catalog-button:focus-visible::before {
+      transform: translateX(120%);
+    }
+
+    .catalog-empty {
+      color: var(--catalog-muted);
+      grid-column: 1 / -1;
+      padding: 75px 20px;
+      text-align: center;
+    }
+
+    .catalog-empty__icon {
+      align-items: center;
+      background: var(--catalog-ice);
+      border-radius: 50%;
+      color: var(--catalog-blue);
+      display: inline-flex;
+      font-size: 2rem;
+      height: 72px;
+      justify-content: center;
+      margin-bottom: 16px;
+      width: 72px;
+    }
+
+    .catalog-empty h3 {
+      color: var(--catalog-text);
+      font-size: 1.25rem;
+      margin: 0 0 8px;
+    }
+
+    .catalog-empty p {
+      margin: 0;
+    }
+    /*#searchInput {*/
+    /*    max-width: 250px;*/
+    /*}*/
+
+    @keyframes catalogGradient {
+      0% { background-position: 0% 50%; }
+      100% { background-position: 100% 50%; }
+    }
+
+    @keyframes catalogPulse {
+      0%, 100% { box-shadow: 0 0 0 5px rgba(147, 197, 253, 0.14); transform: scale(1); }
+      50% { box-shadow: 0 0 0 9px rgba(147, 197, 253, 0.05); transform: scale(1.08); }
+    }
+
+    @keyframes catalogFloatOne {
+      0%, 100% { transform: translate3d(0, 0, 0) rotate(0); }
+      50% { transform: translate3d(18px, 16px, 0) rotate(8deg); }
+    }
+
+    @keyframes catalogFloatTwo {
+      0%, 100% { transform: translate3d(0, 0, 0); }
+      50% { transform: translate3d(-24px, -14px, 0); }
+    }
+
+    @media (max-width: 760px) {
+        .catalog-filters {
+                grid-template-columns: 1fr;
+            }
+
+        /*#searchInput {*/
+        /*    max-width: 340px;*/
+        /*}*/
+      .catalog-hero {
+        min-height: 360px;
+        padding: 72px 18px 108px;
+      }
+
+      .catalog-orb--one { left: -62px; }
+      .catalog-orb--two { right: -35px; }
+      .catalog-orb--three { display: none; }
+
+      .catalog-content {
+        padding-left: 14px;
+        padding-right: 14px;
+      }
+
+    #searchInput {
+      box-sizing: border-box !important;
+      width: 100% !important;
+      min-width: 0 !important;
+      max-width: 100% !important;
+    }
+    .catalog-filter {
+        box-sizing: border-box;
+        min-width: 0;
+        max-width: 100%;
+    }
+
+      .catalog-filter__header {
+        align-items: flex-start;
+        flex-wrap: wrap;
+      }
+
+      .catalog-filter__count {
+        margin-left: 0;
+        order: 3;
+        width: 100%;
+      }
+
+      .catalog-hero__stats {
+        margin-top: 25px;
+      }
+
+      .catalog-stat {
+        padding: 13px 7px;
+      }
+
+      .catalog-stat strong {
+        font-size: 1.18rem;
+      }
+
+      .catalog-stat span {
+        font-size: 0.62rem;
+        letter-spacing: 0.02em;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</%block>
+
+<%block name="content">
+  <div class="catalog-page">
+    <div class="catalog-scroll-progress" aria-hidden="true">
+      <span id="catalogScrollProgress"></span>
+    </div>
+
+    <section class="catalog-hero">
+      <div class="catalog-glow" aria-hidden="true"></div>
+      <div class="catalog-orb catalog-orb--one" aria-hidden="true"></div>
+      <div class="catalog-orb catalog-orb--two" aria-hidden="true"></div>
+      <div class="catalog-orb catalog-orb--three" aria-hidden="true"></div>
+
+      <div class="catalog-hero__inner">
+        <div class="catalog-eyebrow">${_("Course catalog")}</div>
+        <h1>${_("Courses")}</h1>
+        <p>${_("Explore our collection of educational programs and start learning today")}</p>
+
+        <div class="catalog-hero__stats" aria-label="${_('Course statistics')}">
+          <div class="catalog-stat">
+            <strong>${len(courses)}</strong>
+            <span>${_("Courses")}</span>
+          </div>
+          <div class="catalog-stat">
+            <strong>${len(set([c.language for c in courses if c.language]))}</strong>
+            <span>${_("Languages")}</span>
+          </div>
+          <div class="catalog-stat">
+            <strong>${len(set([c.faculty for c in courses if c.faculty]))}</strong>
+            <span>${_("Faculties")}</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <main class="catalog-content">
+      <section class="catalog-filter" aria-labelledby="catalogFilterTitle">
+        <div class="catalog-filter__header">
+          <h2 id="catalogFilterTitle">${_("Filter Courses")}</h2>
+          <span class="catalog-filter__count" id="catalogResultsCount"></span>
+          <button class="catalog-reset" id="catalogReset" type="button">${_("Clear filters")}</button>
+        </div>
+
+        <div class="catalog-filters">
+          <input
+            type="search"
+            id="searchInput"
+            placeholder="${_('Search by course name...')}"
+            aria-label="${_('Search by course name')}"
+          />
+
+          <select id="languageFilter" aria-label="${_('Filter by language')}">
+            <option value="">${_('All languages')}</option>
+            % for lang in sorted(set([c.language for c in courses if c.language])):
+              <option value="${lang}">${_(lang)}</option>
+            % endfor
+          </select>
+
+          <select id="statusFilter" aria-label="${_('Filter by status')}">
+            <option value="">${_('All statuses')}</option>
+            <option value="ongoing">${_('Ongoing')}</option>
+            <option value="completed">${_('Completed')}</option>
+          </select>
+
+          <select id="facultyFilter" aria-label="${_('Filter by faculty')}">
+            <option value="">${_('All faculties')}</option>
+            % for faculty in sorted(set([c.faculty for c in courses if c.faculty])):
+              <option value="${faculty}">${_(faculty)}</option>
+            % endfor
+          </select>
+        </div>
+      </section>
+
+      <div class="catalog-grid" id="courseList" aria-live="polite">
+        % if courses:
+          % for course in courses:
+            <%
+              from django.utils import timezone
+              now = timezone.now()
+              status = "completed" if course.end and course.end < now else "ongoing"
+              status_text = _('Completed') if status == "completed" else _('Ongoing')
+            %>
+            <article
+              class="catalog-card"
+              data-title="${(course.display_name or '').lower()}"
+              data-language="${course.language or ''}"
+              data-status="${status}"
+              data-faculty="${course.faculty or ''}"
+            >
+              <div class="catalog-card__media">
+                <img
+                  src="${course.course_image_url if hasattr(course, 'course_image_url') else '/static/images/default-course.jpg'}"
+                  alt="${course.display_name or _('Course')}"
+                  loading="lazy"
+                >
+                <div class="catalog-status ${status}">${status_text}</div>
+              </div>
+
+              <div class="catalog-card__content">
+                <h3><a href="/courses/${course.id}/about">${course.display_name}</a></h3>
+
+                <div class="catalog-meta">
+                  <span class="catalog-tag">${course.display_org_with_default}</span>
+                  % if course.language:
+                    <span class="catalog-tag">${course.language}</span>
+                  % endif
+                </div>
+
+                <div class="catalog-details">
+                  <span>${_('Start')}: ${course.start.strftime('%Y-%m-%d') if course.start else _('Not specified')}</span>
+                  <span>${_('End')}: ${course.end.strftime('%Y-%m-%d') if course.end else _('Not specified')}</span>
+                </div>
+
+                <a href="/courses/${course.id}/about" class="catalog-button">${_('Go to course')}</a>
+              </div>
+            </article>
+          % endfor
+        % else:
+          <div class="catalog-empty">
+            <span class="catalog-empty__icon" aria-hidden="true">&#128218;</span>
+            <h3>${_('No courses found')}</h3>
+            <p>${_('There are currently no available courses')}</p>
+          </div>
+        % endif
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/ScrollTrigger.min.js"></script>
+  <script>
+    (function () {
+      "use strict";
+
+      var searchInput = document.getElementById("searchInput");
+      var languageFilter = document.getElementById("languageFilter");
+      var statusFilter = document.getElementById("statusFilter");
+      var facultyFilter = document.getElementById("facultyFilter");
+      var resetButton = document.getElementById("catalogReset");
+      var resultsCount = document.getElementById("catalogResultsCount");
+      var scrollProgress = document.getElementById("catalogScrollProgress");
+      var courseList = document.getElementById("courseList");
+      var cards = Array.prototype.slice.call(courseList.querySelectorAll(".catalog-card"));
+      var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      var emptyMessage = "${_('No courses found')}";
+      var shownMessage = "${_('Shown')}";
+
+      function animateVisibleCard(card) {
+        if (reduceMotion || !window.gsap) {
+          return;
+        }
+
+        gsap.fromTo(card, {
+          autoAlpha: 0,
+          scale: 0.985,
+          y: 14
+        }, {
+          autoAlpha: 1,
+          clearProps: "opacity,transform,visibility",
+          duration: 0.38,
+          ease: "power2.out",
+          scale: 1,
+          y: 0
+        });
+      }
+
+      function updateEmptyState(visible) {
+        var emptyState = courseList.querySelector(".catalog-empty[data-filter-empty]");
+
+        if (!visible && cards.length && !emptyState) {
+          emptyState = document.createElement("div");
+          emptyState.className = "catalog-empty";
+          emptyState.setAttribute("data-filter-empty", "true");
+          emptyState.innerHTML =
+            '<span class="catalog-empty__icon" aria-hidden="true">&#128269;</span>' +
+            "<h3>" + emptyMessage + "</h3>";
+          courseList.appendChild(emptyState);
+
+          if (!reduceMotion && window.gsap) {
+            gsap.from(emptyState, {
+              autoAlpha: 0,
+              duration: 0.4,
+              ease: "power2.out",
+              y: 16
+            });
+          }
+        } else if (visible && emptyState) {
+          emptyState.remove();
+        }
+      }
+
+      function filterCourses() {
+          courseList.querySelectorAll("img").forEach(function (image) {
+              image.loading = "eager";
+          });
+
+          // Останавливаем незавершённые анимации карточек
+          if (window.gsap) {
+              gsap.killTweensOf(cards);
+
+              gsap.set(cards, {
+                  clearProps: "opacity,transform,visibility"
+              });
+          }
+        var query = searchInput.value.toLowerCase().trim();
+        var language = languageFilter.value;
+        var status = statusFilter.value;
+        var faculty = facultyFilter.value;
+        var visible = 0;
+
+        cards.forEach(function (card) {
+          var wasHidden = card.hidden;
+          var matches =
+            (!query || card.dataset.title.indexOf(query) !== -1) &&
+            (!language || card.dataset.language === language) &&
+            (!status || card.dataset.status === status) &&
+            (!faculty || card.dataset.faculty === faculty);
+
+          card.hidden = !matches;
+
+          if (matches) {
+            visible += 1;
+            if (wasHidden) {
+              animateVisibleCard(card);
+            }
+          }
+        });
+
+        resultsCount.textContent = shownMessage + ": " + visible + " / " + cards.length;
+        updateEmptyState(visible);
+      }
+
+      searchInput.addEventListener("input", filterCourses);
+      languageFilter.addEventListener("change", filterCourses);
+      statusFilter.addEventListener("change", filterCourses);
+      facultyFilter.addEventListener("change", filterCourses);
+
+      resetButton.addEventListener("click", function () {
+        searchInput.value = "";
+        languageFilter.value = "";
+        statusFilter.value = "";
+        facultyFilter.value = "";
+        filterCourses();
+        searchInput.focus();
+      });
+
+      filterCourses();
+
+      var scrollTicking = false;
+
+      function updateScrollProgress() {
+        var documentHeight = document.documentElement.scrollHeight - window.innerHeight;
+        var progress = documentHeight > 0 ? window.pageYOffset / documentHeight : 0;
+        scrollProgress.style.transform = "scaleX(" + Math.min(Math.max(progress, 0), 1) + ")";
+        scrollTicking = false;
+      }
+
+      window.addEventListener("scroll", function () {
+        if (!scrollTicking) {
+          window.requestAnimationFrame(updateScrollProgress);
+          scrollTicking = true;
+        }
+      }, { passive: true });
+
+      updateScrollProgress();
+
+      if (!reduceMotion && window.gsap) {
+        gsap.from(".catalog-eyebrow", {
+          autoAlpha: 0,
+          duration: 0.7,
+          ease: "back.out(1.7)",
+          scale: 0.82,
+          y: -12
+        });
+
+        gsap.from(".catalog-hero h1, .catalog-hero p", {
+          autoAlpha: 0,
+          delay: 0.12,
+          duration: 0.85,
+          ease: "power3.out",
+          stagger: 0.12,
+          y: 30
+        });
+
+        gsap.from(".catalog-stat", {
+          autoAlpha: 0,
+          delay: 0.42,
+          duration: 0.58,
+          ease: "back.out(1.35)",
+          scale: 0.92,
+          stagger: 0.08,
+          y: 14
+        });
+
+        if (window.ScrollTrigger) {
+          gsap.registerPlugin(ScrollTrigger);
+
+          gsap.from(".catalog-filter", {
+            autoAlpha: 0,
+            duration: 0.8,
+            ease: "power3.out",
+            scrollTrigger: {
+              once: true,
+              start: "top 90%",
+              trigger: ".catalog-filter"
+            },
+            y: 34
+          });
+
+          cards.forEach(function (card, index) {
+            gsap.from(card, {
+              autoAlpha: 0,
+              delay: (index % 3) * 0.07,
+              duration: 0.64,
+              ease: "power3.out",
+              scrollTrigger: {
+                once: true,
+                start: "top 94%",
+                trigger: card
+              },
+              y: 40
+            });
+          });
+        }
+
+        document.querySelector(".catalog-hero").addEventListener("pointermove", function (event) {
+          var x = (event.clientX / window.innerWidth - 0.5) * 24;
+          var y = (event.clientY / window.innerHeight - 0.5) * 18;
+
+          gsap.to(".catalog-glow", {
+            duration: 1.1,
+            ease: "power2.out",
+            x: x,
+            y: y
+          });
+
+          gsap.to(".catalog-hero__inner", {
+            duration: 1.1,
+            ease: "power2.out",
+            x: -x * 0.16,
+            y: -y * 0.12
+          });
+        });
+      }
+    })();
+  </script>
+</%block>

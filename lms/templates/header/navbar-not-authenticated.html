@@ -1,5 +1,3 @@
-## mako
-
 <%page expression_filter="h"/>
 
 <%namespace name='static' file='../static_content.html'/>
@@ -21,12 +19,57 @@ from openedx.core.djangoapps.user_authn.toggles import should_redirect_to_authn_
   allow_public_account_creation = static.get_value('ALLOW_PUBLIC_ACCOUNT_CREATION', settings.FEATURES.get('ALLOW_PUBLIC_ACCOUNT_CREATION')) and settings.FEATURES.get('SHOW_REGISTRATION_LINKS', True)
   should_redirect_to_authn_mfe = should_redirect_to_authn_microfrontend()
 %>
+<style>
+
+a.register-btn {
+    background-color: white !important;
+    border-color: #1a263c !important;
+    color: #1a263c !important;
+    border: 3px solid white !important;
+    font-weight: bold !important;
+}
+
+a.register-btn:hover {
+    font-weight: bold !important;
+    background-color: #1a263c !important;
+    color: white !important;
+    border: 3px solid white !important;
+}
+
+/* Для кнопки Вход (инвертированный стиль) */
+a.sign-in-btn {
+    background-color: #1a263c !important;
+    border: 3px solid white !important;
+    color: white !important;
+    font-weight: bold !important;
+}
+
+a.sign-in-btn:hover {
+    font-weight: bold !important;
+    background-color: white !important;
+    color: #1a263c !important;
+    border: 3px solid white !important;
+}
+.mobile-nav-link {
+  color: white !important;
+  font-weight: bold !important;
+}
+
+@media (max-width: 768px) {
+  .mobile-nav-link {
+    color: #1a263c !important;
+  }
+}
+
+
+</style>
+
 <nav class="nav-links" aria-label=${_("Supplemental Links")}>
   <div class="main">
   % if mktg_site_enabled:
     <div class="mobile-nav-item hidden-mobile nav-item">
       <a href="${marketing_link('HOW_IT_WORKS')}">${_("How it Works")}</a>
-    </div>
+ </div>
     % if courses_are_browsable:
       <div class="mobile-nav-item hidden-mobile nav-item">
         <a href="${marketing_link('COURSES')}">${_("Courses")}</a>
@@ -36,13 +79,44 @@ from openedx.core.djangoapps.user_authn.toggles import should_redirect_to_authn_
       <a href="${marketing_link('SCHOOLS')}">${_("Schools")}</a>
     </div>
   % endif
-  % if allows_login:
+     % if allows_login:
     % if can_discover_courses:
-      <div class="mobile-nav-item hidden-mobile nav-item">
-        <a href="/courses">${_("Explore courses")}</a>
+<div class="mobile-nav-item hidden-mobile nav-item" style="padding: 0 !important; font-size: 13px !important; margin-top: 6px !important;">
+        <a href="/courses" class="mobile-nav-link">
+          ${_("Courses")}
+        </a>
       </div>
-    %endif
-  % endif
+
+      <div class="mobile-nav-item hidden-mobile nav-item" style="padding: 0 !important; font-size: 13px !important; margin-top: 6px !important;">
+        <a href="/competition" class="mobile-nav-link">
+          ${_("Competition")}
+        </a>
+      </div>
+      <div class="mobile-nav-item hidden-mobile nav-item" style="padding: 0 !important; font-size: 13px !important; margin-top: 6px !important;">
+        <a href="/catalog_transfer" class="mobile-nav-link">
+          ${_("Catalog MOOC for Transfer")}
+        </a>
+      </div>
+      <div class="mobile-nav-item hidden-mobile nav-item" style="padding: 0 !important; font-size: 13px !important; margin-top: 6px !important;">
+        <a href="/author" class="mobile-nav-link">
+          ${_("For Authors")}
+        </a>
+      </div>
+      <div class="mobile-nav-item hidden-mobile nav-item" style="padding: 0 !important; font-size: 13px !important; margin-top: 6px !important;">
+        <a href="/detect" class="mobile-nav-link">
+          ${_("The System of Checking")}
+        </a>
+      </div>
+      <div class="mobile-nav-item hidden-mobile nav-item" style="padding: 0 !important; font-size: 13px !important; margin-top: 6px !important;">
+        <a href="/news" class="mobile-nav-link">
+          ${_("News")}
+        </a>
+      </div>
+
+
+    % endif
+% endif
+
   </div>
   <div class="secondary">
     <div>
@@ -50,21 +124,21 @@ from openedx.core.djangoapps.user_authn.toggles import should_redirect_to_authn_
         % if allow_public_account_creation and not disable_register_button:
           % if should_redirect_to_authn_mfe:
             <div class="mobile-nav-item hidden-mobile nav-item">
-                <a class="register-btn btn" href="${settings.AUTHN_MICROFRONTEND_URL}/register${login_query()}">${_("Register for free")}</a>
+                <a class="register-btn btn" href="${settings.AUTHN_MICROFRONTEND_URL}/login${login_query()}">${_("Login for external users")}</a>
             </div>
           % else:
             <div class="mobile-nav-item hidden-mobile nav-item">
-                <a class="register-btn btn" href="/register${login_query()}">${_("Register for free")}</a>
+                <a class="register-btn btn" href="/login${login_query()}">${_("Login for external users")}</a>
             </div>
           % endif
         % endif
         % if should_redirect_to_authn_mfe:
           <div class="mobile-nav-item hidden-mobile nav-item">
-              <a class="sign-in-btn btn" href="${settings.AUTHN_MICROFRONTEND_URL}/login${login_query()}">${_("Sign in")}</a>
+              <a class="sign-in-btn btn" href="https://univer.kaznu.kz/user/loginopenkaznu">${_("Login via Univer")}</a>
           </div>
         % else:
           <div class="mobile-nav-item hidden-mobile nav-item">
-              <a class="sign-in-btn btn" href="/login${login_query()}">${_("Sign in")}</a>
+              <a class="sign-in-btn btn" href="https://univer.kaznu.kz/user/loginopenkaznu">${_("Login via Univer")}</a>
           </div>
         % endif
       % endif

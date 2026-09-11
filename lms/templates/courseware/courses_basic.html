@@ -1,0 +1,353 @@
+<%page expression_filter="h"/>
+<%!
+  from django.utils.translation import gettext as _
+%>
+<%inherit file="../main.html" />
+
+<%block name="pagetitle">${_("Courses")}</%block>
+
+<%block name="headextra">
+  <style>
+    :root {
+      --bg-color: #f9fafc;
+      --card-bg: #fff;
+      --primary: #1a263c;
+      --accent: #1e40af;
+      --text-dark: #1f2937;
+      --text-muted: #6b7280;
+      --radius: 12px;
+      --shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
+      --transition: 0.3s ease;
+    }
+
+    body {
+      background: var(--bg-color);
+      font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+    }
+
+    /* Hero Section */
+    .hero {
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      color: #fff;
+      padding: 80px 20px;
+      text-align: center;
+      box-shadow: inset 0 -2px 6px rgba(0, 0, 0, 0.15);
+    }
+
+    .hero h1 {
+      font-size: 2.75rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .hero p {
+      font-size: 1.15rem;
+      opacity: 0.9;
+    }
+
+    /* Main container */
+    .courses {
+      max-width: 1250px;
+      margin: 0 auto;
+      padding: 50px 20px;
+    }
+
+    /* Filter bar */
+    .filter-box {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 25px;
+      box-shadow: var(--shadow);
+      margin-bottom: 40px;
+    }
+
+    .filter-box h2 {
+      font-size: 1.4rem;
+      color: var(--text-dark);
+      font-weight: 600;
+      margin-bottom: 20px;
+    }
+
+    .filters {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 15px;
+    }
+
+    .filters input,
+    .filters select {
+      padding: 12px 16px;
+      border: 1.5px solid #e5e7eb;
+      border-radius: var(--radius);
+      font-size: 15px;
+      transition: border var(--transition), box-shadow var(--transition);
+      outline: none;
+      background: #fff;
+    }
+
+    .filters input:focus,
+    .filters select:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+    }
+
+    /* Grid */
+    .course-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+      gap: 25px;
+    }
+
+    /* Course card */
+    .course {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: transform var(--transition), box-shadow var(--transition);
+    }
+
+    .course:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+    }
+
+    .course img {
+      width: 100%;
+      height: 180px;
+      object-fit: cover;
+    }
+
+    .status {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      padding: 6px 12px;
+      background: var(--primary);
+      color: white;
+      font-size: 0.8rem;
+      font-weight: 600;
+      border-radius: 9999px;
+      text-transform: uppercase;
+    }
+
+    .status.completed {
+      background: #6b7280;
+    }
+
+    .course-content {
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      flex-grow: 1;
+    }
+
+    .course h3 {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: var(--text-dark);
+      margin-bottom: 8px;
+    }
+
+    .course h3 a {
+      text-decoration: none;
+      color: inherit;
+      transition: color var(--transition);
+    }
+
+    .course h3 a:hover {
+      color: var(--primary);
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .tag {
+      background: #eff6ff;
+      color: var(--accent);
+      font-weight: 600;
+      font-size: 0.8rem;
+      padding: 4px 10px;
+      border-radius: 6px;
+    }
+
+    .details {
+      flex-grow: 1;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-bottom: 15px;
+    }
+
+    .details span {
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .course a.btn {
+      background: var(--primary);
+      color: #fff;
+      text-align: center;
+      padding: 12px;
+      border-radius: var(--radius);
+      font-weight: 600;
+      transition: background var(--transition);
+      text-decoration: none;
+    }
+
+    .course a.btn:hover {
+      background: var(--accent);
+    }
+
+    /* Empty state */
+    .no-results {
+      text-align: center;
+      padding: 80px 20px;
+      color: var(--text-muted);
+    }
+
+    .no-results span {
+      font-size: 3rem;
+      display: block;
+      margin-bottom: 15px;
+    }
+
+    @media (max-width: 600px) {
+      .hero h1 {
+        font-size: 2rem;
+      }
+
+      .hero p {
+        font-size: 1rem;
+      }
+    }
+  </style>
+</%block>
+
+<%block name="content">
+  <div class="hero">
+    <h1 style="color: white !important;">${_("Courses")}</h1>
+    <p>${_("Explore our collection of educational programs and start learning today")}</p>
+  </div>
+
+  <div class="courses">
+    <div class="filter-box">
+      <h2>${_("Filter Courses")}</h2>
+      <div class="filters">
+        <input
+          type="text"
+          id="searchInput"
+          placeholder="${_('Search by course name...')}"
+          onkeyup="filterCourses()"
+        />
+
+        <select id="languageFilter" onchange="filterCourses()">
+          <option value="">${_('All languages')}</option>
+          % for lang in sorted(set([c.language for c in courses if c.language])):
+            <option value="${lang}">${_(lang)}</option>
+          % endfor
+        </select>
+
+        <select id="statusFilter" onchange="filterCourses()">
+          <option value="">${_('All statuses')}</option>
+          <option value="ongoing">${_('Ongoing')}</option>
+          <option value="completed">${_('Completed')}</option>
+        </select>
+
+        <select id="orgFilter" onchange="filterCourses()">
+          <option value="">${_('All organizations')}</option>
+          % for org in sorted(set([c.display_org_with_default for c in courses])):
+            <option value="${org}">${_(org)}</option>
+          % endfor
+        </select>
+      </div>
+    </div>
+
+    <div class="course-grid" id="courseList">
+      % if courses:
+        % for course in courses:
+          <%
+            from django.utils import timezone
+            now = timezone.now()
+            status = "completed" if course.end and course.end < now else "ongoing"
+            status_text = _('Completed') if status == "completed" else _('Ongoing')
+          %>
+          <div class="course"
+               data-title="${course.display_name.lower()}"
+               data-language="${course.language or ''}"
+               data-status="${status}"
+               data-org="${course.display_org_with_default}">
+            <div style="position: relative;">
+              <img src="${course.course_image_url if hasattr(course, 'course_image_url') else '/static/images/default-course.jpg'}"
+                   alt="${course.display_name}">
+              <div class="status ${status}">${status_text}</div>
+            </div>
+            <div class="course-content">
+              <h3><a href="/courses/${course.id}/about">${course.display_name}</a></h3>
+              <div class="meta">
+                <span class="tag">${course.display_org_with_default}</span>
+                % if course.language:
+                  <span class="tag">${course.language}</span>
+                % endif
+              </div>
+              <div class="details">
+                <span>${_('Start')}: ${course.start.strftime('%Y-%m-%d') if course.start else _('Not specified')}</span>
+                <span>${_('End')}: ${course.end.strftime('%Y-%m-%d') if course.end else _('Not specified')}</span>
+              </div>
+              <a href="/courses/${course.id}/about" class="btn">${_('Go to course')}</a>
+            </div>
+          </div>
+        % endfor
+      % else:
+        <div class="no-results">
+          <span>📚</span>
+          <h3>${_('No courses found')}</h3>
+          <p>${_('There are currently no available courses')}</p>
+        </div>
+      % endif
+    </div>
+  </div>
+
+  <script>
+    function filterCourses() {
+      const query = document.getElementById("searchInput").value.toLowerCase().trim();
+      const lang = document.getElementById("languageFilter").value;
+      const status = document.getElementById("statusFilter").value;
+      const org = document.getElementById("orgFilter").value;
+
+      const cards = document.querySelectorAll("#courseList .course");
+      let visible = 0;
+
+      cards.forEach(card => {
+        const title = card.getAttribute("data-title");
+        const cardLang = card.getAttribute("data-language");
+        const cardStatus = card.getAttribute("data-status");
+        const cardOrg = card.getAttribute("data-org");
+
+        const matches =
+          (!query || title.includes(query)) &&
+          (!lang || cardLang === lang) &&
+          (!status || cardStatus === status) &&
+          (!org || cardOrg === org);
+
+        card.style.display = matches ? "flex" : "none";
+        if (matches) visible++;
+      });
+
+      const emptyState = document.querySelector(".no-results");
+      if (!visible && !emptyState) {
+        const div = document.createElement("div");
+        div.className = "no-results";
+        div.innerHTML = `<span>🔍</span><h3>${_('No courses found')}</h3>`;
+        document.getElementById("courseList").appendChild(div);
+      } else if (visible && emptyState) {
+        emptyState.remove();
+      }
+    }
+  </script>
+</%block>

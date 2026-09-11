@@ -49,7 +49,8 @@ from openedx.core.djangoapps.programs.models import ProgramsApiConfig
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.core.djangoapps.user_authn.views.login import redirect_to_lms_login
 from openedx.features.enterprise_support.api import enterprise_enabled
-
+from lms.djangoapps.univerapi import views as univer_views
+from lms.djangoapps.news import views as news_views
 RESET_COURSE_DEADLINES_NAME = 'reset_course_deadlines'
 RENDER_XBLOCK_NAME = 'render_xblock'
 RENDER_VIDEO_XBLOCK_NAME = 'render_public_video_xblock'
@@ -93,6 +94,14 @@ notification_prefs_urls = [
 
 
 urlpatterns = [
+    path('news/', news_views.news_list, name='news_list'),
+    path('news/<int:news_id>/', news_views.news_detail, name='news_detail'),
+    path('news/create/', news_views.news_create, name='news_create'),
+    path('analyze/', news_views.analyze, name='analyze'),
+    path('analyze/course_details/<path:course_id>/', news_views.course_details, name='course_details'),
+    path('go-to-exam/', news_views.go_to_exam, name='exam'),
+    path('finish-exam/', news_views.finish_exam, name='finish_exam'),
+    path('api/univertest/', univer_views.UniverTestView.as_view(), name='univer_test'),
     path('', branding_views.index, name='root'),  # Main marketing page, or redirect to courseware
 
     path('', include('common.djangoapps.student.urls')),

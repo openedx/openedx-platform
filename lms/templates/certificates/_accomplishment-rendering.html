@@ -2,117 +2,337 @@
 <%! from django.utils.translation import gettext as _ %>
 <%namespace name='static' file='../static_content.html'/>
 <%
+from datetime import datetime
 course_mode_class = course_mode if course_mode else ''
+
+# Преобразуем дату в формат дд.мм.гггг
+try:
+    date_obj = datetime.strptime(certificate_date_issued, "%B %d, %Y")
+    formatted_date = date_obj.strftime("%d.%m.%Y")
+except:
+    formatted_date = certificate_date_issued
+
+# Создаем URL для QR кода
+qr_code_url = "https://open.kaznu.kz/certificates/" + certificate_id_number
 %>
+<%! import re %>
 
-<main class="accomplishment accomplishment-main">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
-    <div class="wrapper-accomplishment-rendering">
-        <div class="accomplishment-rendering">
-            <span class="deco-corner deco-corner-tl"></span>
-            <span class="deco-corner deco-corner-tr"></span>
-            <span class="deco-corner deco-corner-bl"></span>
-            <span class="deco-corner deco-corner-br"></span>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
 
-            <div class="accomplishment-type">
-                <span class="accomplishment-type-symbol">
-                    <img class="src" src="/static/certificates/images/ico-${course_mode_class}.png" alt="Image for course mode of type ${course_mode_class}">
-                </span>
+<style>
+  #certificate-container {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch; /* Улучшает скролл на iOS */
+  }
 
-                <span class="accomplishment-type-label hd-3">${document_title}</span>
-            </div>
+  .mobile-warning {
+    display: none;
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 8px;
+    padding: 15px;
+    margin: 20px 0;
+    color: #856404;
+    text-align: center;
+    max-width: 600px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
 
-            <div class="wrapper-statement-and-signatories">
-                <div class="accomplishment-statement">
-                    <p class="accomplishment-statement-lead">
-                        <strong class="accomplishment-recipient hd-1 emphasized">${accomplishment_copy_name}</strong>
-                        <span class="accomplishment-summary copy copy-lead">${accomplishment_copy_description_full}</span>
+  .mobile-warning.show {
+    display: block;
+  }
 
-                        <span class="accomplishment-course hd-1 emphasized">
-                            <span class="accomplishment-course-org">${accomplishment_copy_course_org}  </span>
-                            <span class="accomplishment-course-number">${course_number}</span>:
-                            <span class="accomplishment-course-name">${accomplishment_copy_course_name}</span>
-                        </span>
-                    </p>
+  .mobile-warning h4 {
+    margin: 0 0 10px 0;
+    color: #856404;
+    font-size: 16px;
+  }
 
-                    <p class="accomplishment-statement-detail copy copy-lead">${accomplishment_copy_course_description}</p>
-                </div>
+  .mobile-warning p {
+    margin: 5px 0;
+    font-size: 14px;
+  }
 
-                % if mode != 'base':
-                <div class="accomplishment-signatories">
-                    <h3 class="accomplishment-signatories-title sr-only">${_("Noted by")}</h3>
+  .mobile-warning .icon {
+    font-size: 24px;
+    margin-bottom: 10px;
+  }
 
-                    <div class="wrapper-signatories">
-                        <div class="list-signatories">
-                            % if certificate_data:
-                                % for signatory in certificate_data.get('signatories', []):
-                                        <div class="signatory">
-                                            % if signatory.get('signature_image_path'):
-                                                <img class="signatory-signature" src="${static.url(signatory['signature_image_path'])}" alt="${signatory['name']}">
-                                            % endif
-                                            <h4 class="signatory-name hd-5">${signatory['name']}</h4>
-                                            <p class="signatory-credentials copy copy-micro">
-                                                <span class="role">${signatory['title']}</span>
-                                                <span class="organization">${signatory['organization']}</span>
-                                            </p>
-                                        </div>
-                                % endfor
-                            % endif
-                        </div>
+  @media (max-width: 768px) {
+    .mobile-warning {
+      display: block;
+    }
+
+    #certificate {
+      transform: scale(0.8);
+      transform-origin: top center;
+    }
+
+    .download-btn {
+      margin: 20px auto !important;
+      display: block;
+    }
+  }
+
+  /* Определение iPhone */
+  @media only screen and (max-width: 768px) and (-webkit-min-device-pixel-ratio: 2) {
+    .mobile-warning {
+      display: block;
+    }
+  }
+
+  /* Исправления для iOS */
+  .certificate {
+    -webkit-transform: translateZ(0); /* Аппаратное ускорение */
+    transform: translateZ(0);
+  }
+</style>
+
+<!-- Блок предупреждения для мобильных устройств -->
+<div class="mobile-warning" id="mobileWarning">
+  <div class="icon">⚠️</div>
+  <h4>Внимание пользователям iPhone!</h4>
+  <p>На устройствах Apple сертификат может скачиваться некорректно.</p>
+  <p><strong>Рекомендуем:</strong> Для гарантированно качественного результата скачайте сертификат с компьютера или ноутбука.</p>
+  <p style="font-size: 12px; margin-top: 10px; opacity: 0.8;">
+    Если скачиваете с iPhone - проверьте качество файла после загрузки
+  </p>
+</div>
+
+<div style="width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align:center; font-family: 'Times New Roman', Times, serif !important;">
+  <div id="certificate-container">
+    <div class="certificate" id="certificate" style="position: relative; width: 298mm; height: 210mm; background-color: #001A72; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); overflow: hidden; -webkit-print-color-adjust: exact;">
+      <div class="certificate-inner" style="position: absolute; top: 40px; left: 40px; right: 40px; bottom: 40px; background-color: white; z-index: 15;">
+
+        <!-- ✅ QR код в левом верхнем углу -->
+        <div style="position: absolute; top: 10px; left: 10px; z-index: 25;">
+          <img
+            src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${qr_code_url}"
+            alt="QR Code"
+            crossorigin="anonymous"
+            style="width: 100px; height: 100px; border: 1px solid #ddd;">
+        </div>
+
+        <div style="width: 100%; display: flex; flex-direction: column; align-items: center; margin-top: 10px;">
+          <img src="https://open.kaznu.kz/theming/asset/images/logo.png" alt="KazNU Logo" style="width: 100px; height: auto; margin-bottom: 10px;">
+          <span style="font-size: 18px; color: #FFD700; letter-spacing: 2px;">FARABI UNIVERSITY</span>
+
+          <span style="font-size: 58px; color: #318CE7; font-weight: 400; margin-top: 25px; letter-spacing: 8px;">СЕРТИФИКАТ</span>
+          <div style="margin-top: 30px; font-size: 28px; color: #001A72; max-width: 700px;">
+            ${_("This certificate hereby confirms that")}
+          </div>
+          <span style="font-size: 38px; color: #001A72; border-bottom: 2px solid #001A72; min-width: 1000px; padding: 2px 8px; margin-top: 30px;">
+            ${accomplishment_copy_name}
+          </span>
+        </div>
+
+        <div style="width: 100%; margin-top: 30px; font-size: 18px; color: #001A72; font-weight: bolder; text-align: left; padding-left: 15px">
+          <div style="margin-bottom: 20px;">
+              ${_("Passed an online course")}:
+              <span style="font-weight: bold; color: #FABF67; margin-left: 10px;">${accomplishment_copy_course_name}</span>
+          </div>
+          <div style="margin-bottom: 20px;">
+              ${_("Date of issue")}:
+              <span style="font-weight: bold; color: #FABF67; margin-left: 10px;">${formatted_date}</span>
+          </div>
+          <div>
+              ${_("Registration number")}:
+              <span style="font-weight: bold; color: #FABF67; margin-left: 10px;">${certificate_id_number}</span>
+          </div>
+        </div>
+
+        <div style="position: absolute; bottom: 20px; left: 0; width: 100%; display: flex; justify-content: space-between; align-items: center; z-index: 20;">
+          <div style="text-align: center; flex: 1; margin-top: 10px">
+            <img src="https://open.kaznu.kz/static/images/sign1.png" alt="Signature 1" style="width: 150px; height: auto;">
+            <div style="margin-top: 5px; font-size: 16px; color: #001A72; font-weight: bold;">Галеева А.К.</div>
+            <div style="margin-top: 5px; font-size: 16px; color: #001A72; font-weight: bold;">${_("Board Member - Vice-Rector for")} <br>${_("Academic Affairs")}</div>
+          </div>
+          <div style="text-align: center; flex: 1; margin-top: 58px;">
+            <img src="https://open.kaznu.kz/static/images/sign2.jpg" alt="Signature 2" style="width: 80px; height: auto;">
+            <div style="margin-top: 5px; font-size: 16px; color: #001A72; font-weight: bold;">Круговых И.И.</div>
+            <div style="margin-top: 5px; font-size: 16px; color: #001A72; font-weight: bold;">${_("Head of the Office of")} <br>${_("academic and digital innovation")}</div>
+          </div>
+          <div style="text-align: center; flex: 1; margin-top: 35px;">
+              % if mode != 'base' and certificate_data:
+                <%
+                signatories = certificate_data.get('signatories', [])
+                label = _("Course author")
+
+                if signatories:
+                    name_text = signatories[0].get('name', '')
+                    matches = re.findall(r'[А-ЯЁA-Z]\.[А-ЯЁA-Z]\.', name_text)
+                    if len(matches) > 1:
+                        label = _("Course authors")
+                %>
+
+                % for signatory in certificate_data.get('signatories', []):
+                  % if signatory.get('signature_image_path'):
+                    <div style="width: 110px; height: 60px; margin: 0 auto; display: flex; align-items: center; justify-content: center;">
+                      <img src="${static.url(signatory['signature_image_path'])}"
+                           alt="${signatory['name']}"
+                           style="max-width: 100%; max-height: 100%; object-fit: contain;">
                     </div>
+                  % endif
+                  <div style="margin-top: 5px; font-size: 16px; color: #001A72; font-weight: bold;">
+                    ${signatory['name']}
+                  </div>
+                % endfor
+
+                <div style="margin-top: 5px; font-size: 16px; color: #001A72; font-weight: bold;">
+                  ${label}
                 </div>
-                % endif
-            </div>
-
-            <div class="accomplishment-orgs">
-                <h3 class="accomplishment-orgs-title sr-only">${_("Supported by the following organizations")}</h3>
-
-                <ul class="wrapper-orgs list-orgs">
-                    <li class="wrapper-organization">
-                        <div class="organization organization-edX">
-                            <img class="organization-logo" src="${logo_src}" alt="${platform_name}">
-                        </div>
-                    </li>
-
-                    % if organization_logo:
-                    <li class="wrapper-organization">
-                        <div class="organization">
-                            <img class="organization-logo" src="${organization_logo.url}" alt="${platform_name}">
-                        </div>
-                    </li>
-                    % endif
-                </ul>
+              % endif
             </div>
         </div>
+      </div>
+
+      <div class="certificate-inner2" style="position: absolute; top: 20px; left: 20px; right: 20px; bottom: 20px; background-color: white; z-index: 12;"></div>
+      <div class="triangle" style="position: absolute; bottom: 0; left: 0; width: 0; height: 0; border-style: solid; border-width: 200px 0 0 250px; border-color: transparent transparent transparent #007BFF; z-index: 10;"></div>
+      <div class="triangle-secondary" style="position: absolute; bottom: 0; left: 0; width: 0; height: 0; border-style: solid; border-width: 250px 0 0 300px; border-color: transparent transparent transparent #318CE7; z-index: 5;"></div>
+      <div class="triangle-top-left" style="position: absolute; top: 0; right: 0; width: 0; height: 0; border-style: solid; border-width: 0 250px 200px 0; border-color: transparent #F4B759 transparent transparent; z-index: 13;"></div>
+      <div class="triangle-top-right" style="position: absolute; top: 0; right: 0; width: 0; height: 0; border-style: solid; border-width: 0 300px 250px 0; border-color: transparent #FABF67 transparent transparent; z-index: 12;"></div>
     </div>
+  </div>
+</div>
 
-    <div class="wrapper-accomplishment-metadata">
-        <div class="accomplishment-metadata">
-            <h2 class="accomplishment-metadata-title hd-6">${accomplishment_copy_more_about}</h2>
+<button class="download-btn" style="margin-top: 20px; padding: 10px 20px; font-size: 16px; color: white; background-color: #007BFF; border: none; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); transition: background-color 0.3s ease; -webkit-appearance: none;" onmouseover="this.style.backgroundColor='#0056b3'" onmouseout="this.style.backgroundColor='#007BFF'" onclick="downloadCertificate()">Скачать сертификат</button>
 
-            <div class="wrapper-metadata">
-                <dl class="metadata accomplishment-recipient">
-                    <dt class="label sr-only">${_("Awarded to:")}</dt>
-                    <dd class="value copy copy-meta">
-                        <span class="recipient-img">
-                            <img class="src" src="/static/certificates/images/demo-user-profile.png" alt="Recipient Image">
-                        </span>
-                        <div class="recipient-details">
-                            <h3 class="recipient-name">${accomplishment_copy_name}</h3>
-                            <p class="recipient-username">${accomplishment_copy_username} @ ${platform_name}</p>
-                        </div>
-                    </dd>
-                </dl>
-                <dl class="metadata accomplishment-id">
-                    <dt class="label copy copy-meta">${certificate_id_number_title}:</dt>
-                    <dd class="value copy copy-base">${certificate_id_number}</dd>
-                </dl>
-                <dl class="metadata accomplishment-date">
-                    <dt class="label copy copy-meta">${certificate_date_issued_title}</dt>
-                    <dd class="value copy copy-base">${certificate_date_issued}</dd>
-                </dl>
-            </div>
-        </div>
-    </div>
+<script>
+  // Определяем мобильные устройства и показываем предупреждение
+  function isMobileDevice() {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  }
 
-</main>
+  function isiPhone() {
+    return /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    if (isMobileDevice()) {
+      const warning = document.getElementById('mobileWarning');
+      if (warning) {
+        warning.style.display = 'block';
+
+        // Особое сообщение для iPhone
+        if (isiPhone()) {
+          const icon = warning.querySelector('.icon');
+          const title = warning.querySelector('h4');
+          title.innerHTML = '⚠️ Внимание пользователям iPhone!';
+          title.style.color = '#dc3545';
+        }
+      }
+    }
+
+    // Предзагрузка критических ресурсов
+    const criticalImages = [
+      'https://open.kaznu.kz/theming/asset/images/logo.png',
+      'https://open.kaznu.kz/static/images/sign1.png',
+      'https://open.kaznu.kz/static/images/sign2.jpg'
+    ];
+
+    criticalImages.forEach(src => {
+      const img = new Image();
+      img.src = src;
+    });
+  });
+
+  async function downloadCertificate() {
+    const button = document.querySelector('.download-btn');
+    const originalText = button.textContent;
+    const isIOS = isiPhone();
+
+    try {
+      // Показываем дополнительное предупреждение для iOS
+      if (isIOS) {
+        const confirmDownload = confirm(
+          'Внимание! На iPhone сертификат может скачаться некорректно.\n\n' +
+          'Для гарантированно качественного результата рекомендуем скачать сертификат с компьютера.\n\n' +
+          'Все равно продолжить скачивание?'
+        );
+
+        if (!confirmDownload) {
+          return;
+        }
+      }
+
+      // Показываем пользователю, что процесс начался
+      button.textContent = isIOS ? 'Подготовка для iPhone...' : 'Подготовка скачивания...';
+      button.disabled = true;
+
+      const qrImg = document.querySelector('#certificate img[alt="QR Code"]');
+      const allImages = document.querySelectorAll('#certificate img');
+
+      // Ждем загрузки всех изображений
+      const imagePromises = Array.from(allImages).map(img => {
+        if (img.complete) return Promise.resolve();
+        return new Promise((resolve, reject) => {
+          img.onload = resolve;
+          img.onerror = resolve; // Продолжаем даже если изображение не загрузилось
+        });
+      });
+
+      await Promise.all(imagePromises);
+
+      // Добавляем задержку для iOS
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      const certificateElement = document.getElementById('certificate');
+
+      // Используем меньший scale для iOS для улучшения производительности
+      const scale = isIOS ? 2 : 3;
+
+      const canvas = await html2canvas(certificateElement, {
+        scale: scale,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#001A72',
+        onclone: function(clonedDoc) {
+          const clonedElement = clonedDoc.getElementById('certificate');
+          if (clonedElement) {
+            clonedElement.style.width = '298mm';
+            clonedElement.style.height = '210mm';
+          }
+        }
+      });
+
+      const imgData = canvas.toDataURL('image/png', 1.0);
+      const { jsPDF } = window.jspdf;
+
+      // Создаем PDF с правильными размерами A4
+      const pdf = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+
+      // Сохраняем PDF
+      const fileName = 'certificate_' + Date.now() + '.pdf';
+      pdf.save(fileName);
+
+      // Показываем сообщение об успехе с дополнительной информацией для iOS
+      if (isIOS) {
+        setTimeout(() => {
+          alert('Сертификат скачан!\n\nЕсли качество不满意, пожалуйста, попробуйте скачать с компьютера для лучшего результата.');
+        }, 1000);
+      }
+
+    } catch (error) {
+      console.error('Ошибка при создании сертификата:', error);
+      alert('Произошла ошибка при скачивании. Пожалуйста, попробуйте еще раз или воспользуйтесь компьютером.');
+    } finally {
+      // Восстанавливаем кнопку
+      button.textContent = originalText;
+      button.disabled = false;
+    }
+  }
+</script>

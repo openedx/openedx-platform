@@ -1,81 +1,679 @@
 <%page expression_filter="h"/>
 <%!
-  import json
   from django.utils.translation import gettext as _
-  from openedx.core.djangolib.js_utils import js_escaped_string, dump_js_escaped_json
 %>
 <%inherit file="../main.html" />
-<%
-  course_discovery_enabled = settings.FEATURES.get('ENABLE_COURSE_DISCOVERY')
-%>
-
-<%namespace name='static' file='../static_content.html'/>
-
-% if course_discovery_enabled:
-<%block name="header_extras">
-  % for template_name in ["course_card", "filter_bar", "filter", "facet", "facet_option"]:
-  <script type="text/template" id="${template_name}-tpl">
-      <%static:include path="discovery/${template_name}.underscore" />
-  </script>
-  % endfor
-  <%static:require_module module_name="js/discovery/discovery_factory" class_name="DiscoveryFactory">
-    DiscoveryFactory(
-      ${course_discovery_meanings | n, dump_js_escaped_json},
-      getParameterByName('search_query'),
-      "${user_language | n, js_escaped_string}",
-      "${user_timezone | n, js_escaped_string}",
-      ${set_default_filter | n, dump_js_escaped_json}
-    );
-  </%static:require_module>
-</%block>
-% endif
 
 <%block name="pagetitle">${_("Courses")}</%block>
 
-<main id="main" aria-label="Content" tabindex="-1">
-    <section class="find-courses">
-      <section class="courses-container">
-        % if course_discovery_enabled:
-        <div id="discovery-form" role="search" aria-label="course" class="wrapper-search-context">
-          <div id="discovery-message" class="search-status-label"></div>
-          <form class="wrapper-search-input">
-            <label for="discovery-input" class="sr">${_('Search for a course')}</label>
-            <input id="discovery-input" class="discovery-input" placeholder="${_('Search for a course')}" type="text"/>
-            <button type="submit" class="button postfix discovery-submit" title="${_('Search')}">
-              <span class="icon fa fa-search" aria-hidden="true"></span>
-              <div aria-live="polite" aria-relevant="all">
-                <div id="loading-indicator" class="loading-spinner hidden">
-                  <span class="icon fa fa-spinner fa-spin" aria-hidden="true"></span>
-                  <span class="sr">${_('Loading')}</span>
-                </div>
-              </div>
-            </button>
-          </form>
-        </div>
+<%block name="headextra">
+  <style>
+    :root {
+      --courses-bg: #f5f8ff;
+      --courses-card: #ffffff;
+      --courses-navy: #1a263c;
+      --courses-blue: #1e40af;
+      --courses-blue-bright: #2563eb;
+      --courses-sky: #60a5fa;
+      --courses-text: #1f2937;
+      --courses-muted: #64748b;
+      --courses-border: #dce5f2;
+      --courses-radius: 18px;
+      --courses-shadow: 0 14px 36px rgba(30, 64, 175, 0.10);
+      --courses-shadow-hover: 0 22px 48px rgba(30, 64, 175, 0.17);
+      --courses-transition: 280ms cubic-bezier(.2, .8, .2, 1);
+    }
 
-        <div id="filter-bar" class="filters hide-phone is-collapsed">
-        </div>
-        % endif
+    body {
+      background:
+        radial-gradient(circle at 8% 24%, rgba(96, 165, 250, 0.14), transparent 25rem),
+        radial-gradient(circle at 94% 76%, rgba(30, 64, 175, 0.08), transparent 28rem),
+        var(--courses-bg);
+      color: var(--courses-text);
+      font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+    }
 
-        <div class="courses${'' if course_discovery_enabled else ' no-course-discovery'}" role="region" aria-label="${_('List of Courses')}">
-          <ul class="courses-listing courses-list">
-            %for course in courses:
-            <li class="courses-listing-item">
-              <%include file="../course.html" args="course=course" />
-            </li>
-            %endfor
-          </ul>
-        </div>
+    .courses-page {
+      min-height: 100vh;
+      overflow: hidden;
+    }
 
+    .courses-hero {
+      background: linear-gradient(125deg, var(--courses-navy), var(--courses-blue), var(--courses-blue-bright));
+      color: #fff;
+      isolation: isolate;
+      min-height: 350px;
+      overflow: hidden;
+      padding: 82px 24px 115px;
+      position: relative;
+      text-align: center;
+    }
 
-        % if course_discovery_enabled:
-        <aside aria-label="${_('Refine Your Search')}" class="search-facets phone-menu">
-          <h2 class="header-search-facets">${_('Refine Your Search')}</h2>
-          <section class="search-facets-lists">
-          </section>
-        </aside>
-        % endif
+    .courses-hero::before {
+      background-image:
+        linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+      background-size: 46px 46px;
+      content: "";
+      inset: 0;
+      mask-image: linear-gradient(to bottom, #000, transparent 92%);
+      pointer-events: none;
+      position: absolute;
+      z-index: -1;
+    }
 
-      </section>
+    .courses-hero::after {
+      background: var(--courses-bg);
+      border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+      bottom: -72px;
+      content: "";
+      height: 128px;
+      left: -5%;
+      position: absolute;
+      width: 110%;
+      z-index: 2;
+    }
+
+    .courses-hero__orb {
+      background: linear-gradient(145deg, rgba(255, 255, 255, 0.22), rgba(96, 165, 250, 0.06));
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      border-radius: 50%;
+      pointer-events: none;
+      position: absolute;
+    }
+
+    .courses-hero__orb--one {
+      height: 150px;
+      left: 7%;
+      top: 54px;
+      width: 150px;
+    }
+
+    .courses-hero__orb--two {
+      bottom: 76px;
+      height: 92px;
+      right: 11%;
+      width: 92px;
+    }
+
+    .courses-hero__inner {
+      margin: 0 auto;
+      max-width: 790px;
+      position: relative;
+      z-index: 3;
+    }
+
+    .courses-eyebrow {
+      backdrop-filter: blur(10px);
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.26);
+      border-radius: 999px;
+      display: inline-block;
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.11em;
+      margin-bottom: 20px;
+      padding: 8px 14px;
+      text-transform: uppercase;
+    }
+
+    .courses-hero h1 {
+      color: #fff !important;
+      font-size: clamp(2.7rem, 7vw, 5rem);
+      font-weight: 850;
+      letter-spacing: -0.052em;
+      line-height: 1;
+      margin: 0 0 18px;
+      text-shadow: 0 10px 32px rgba(7, 18, 48, 0.25);
+    }
+
+    .courses-hero p {
+      color: rgba(255, 255, 255, 0.86);
+      font-size: clamp(1rem, 2vw, 1.18rem);
+      line-height: 1.7;
+      margin: 0 auto;
+      max-width: 660px;
+    }
+
+    .courses-container {
+      margin: 0 auto;
+      max-width: 1250px;
+      padding: 24px 20px 80px;
+      position: relative;
+      z-index: 4;
+    }
+
+    .filter-box {
+      backdrop-filter: blur(18px);
+      background: rgba(255, 255, 255, 0.90);
+      border: 1px solid rgba(255, 255, 255, 0.94);
+      border-radius: var(--courses-radius);
+      box-shadow: var(--courses-shadow);
+      margin-bottom: 38px;
+      padding: 26px;
+      position: relative;
+    }
+
+    .filter-box::before {
+      background: linear-gradient(90deg, var(--courses-navy), var(--courses-blue-bright), var(--courses-sky));
+      border-radius: 999px;
+      content: "";
+      height: 4px;
+      left: 28px;
+      position: absolute;
+      right: 28px;
+      top: 0;
+    }
+
+    .filter-header {
+      align-items: center;
+      display: flex;
+      gap: 16px;
+      justify-content: space-between;
+      margin-bottom: 19px;
+    }
+
+    .filter-box h2 {
+      color: var(--courses-text);
+      font-size: 1.35rem;
+      font-weight: 800;
+      margin: 0;
+    }
+
+    .results-count {
+      color: var(--courses-muted);
+      font-size: 0.84rem;
+      font-weight: 650;
+      margin-left: auto;
+    }
+
+    .reset-filters {
+      background: #eff6ff;
+      border: 1px solid #c7dcf8;
+      border-radius: 999px;
+      color: var(--courses-blue);
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 750;
+      padding: 8px 13px;
+    }
+
+    .reset-filters:hover,
+    .reset-filters:focus-visible {
+      background: var(--courses-blue);
+      color: #fff;
+      outline: none;
+    }
+
+    .filters {
+      display: grid;
+      gap: 14px;
+      grid-template-columns: minmax(240px, 1.25fr) repeat(3, minmax(190px, 1fr));
+    }
+
+    .catalog-filters #searchInput {
+        box-sizing: border-box !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+    }
+    .filters input,
+    .filters select {
+      appearance: none;
+      background-color: #fff;
+      border: 2px solid #e1e7f0;
+      border-radius: 13px;
+      color: var(--courses-text);
+      font: inherit;
+      font-size: 14px;
+      min-height: 46px;
+      outline: none;
+      padding: 11px 15px;
+      transition: border var(--courses-transition), box-shadow var(--courses-transition);
+    }
+
+    .filters select {
+      background-image:
+        linear-gradient(45deg, transparent 50%, var(--courses-blue) 50%),
+        linear-gradient(135deg, var(--courses-blue) 50%, transparent 50%);
+      background-position:
+        calc(100% - 19px) calc(50% - 2px),
+        calc(100% - 14px) calc(50% - 2px);
+      background-repeat: no-repeat;
+      background-size: 5px 5px, 5px 5px;
+      padding-right: 38px;
+    }
+
+    .filters input:focus,
+    .filters select:focus {
+      border-color: var(--courses-blue-bright);
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+    }
+
+    .course-grid {
+      display: grid;
+      gap: 25px;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    }
+
+    .course {
+      background: var(--courses-card);
+      border: 1px solid rgba(30, 64, 175, 0.10);
+      border-radius: var(--courses-radius);
+      box-shadow: var(--courses-shadow);
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      opacity: 1;
+      overflow: hidden;
+      position: relative;
+      transform: none;
+      transition: box-shadow var(--courses-transition), transform var(--courses-transition);
+    }
+
+    .course:hover {
+      box-shadow: var(--courses-shadow-hover);
+      transform: translateY(-7px);
+    }
+
+    .course[hidden] {
+      display: none !important;
+    }
+
+    .course-media {
+      background: #dbeafe;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .course-media::after {
+      background: linear-gradient(180deg, transparent 50%, rgba(15, 23, 42, 0.30));
+      content: "";
+      inset: 0;
+      pointer-events: none;
+      position: absolute;
+    }
+
+    .course img {
+      display: block;
+      height: 185px;
+      object-fit: cover;
+      transition: transform 650ms cubic-bezier(.2, .8, .2, 1);
+      width: 100%;
+    }
+
+    .course:hover img {
+      transform: scale(1.045);
+    }
+
+    .status {
+      backdrop-filter: blur(10px);
+      background: rgba(30, 64, 175, 0.90);
+      border: 1px solid rgba(255, 255, 255, 0.38);
+      border-radius: 999px;
+      color: #fff;
+      font-size: 0.71rem;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      padding: 7px 11px;
+      position: absolute;
+      right: 13px;
+      text-transform: uppercase;
+      top: 13px;
+      z-index: 2;
+    }
+
+    .status.completed {
+      background: rgba(71, 85, 105, 0.90);
+    }
+
+    .course-content {
+      display: flex;
+      flex-direction: column;
+      flex-grow: 1;
+      padding: 20px;
+    }
+
+    .course h3 {
+      color: var(--courses-text);
+      font-size: 1.15rem;
+      font-weight: 750;
+      line-height: 1.4;
+      margin: 0 0 10px;
+    }
+
+    .course h3 a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .course h3 a:hover {
+      color: var(--courses-blue);
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-bottom: 13px;
+    }
+
+    .tag {
+      background: #eff6ff;
+      border: 1px solid #dbeafe;
+      border-radius: 999px;
+      color: var(--courses-blue);
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 5px 9px;
+    }
+
+    .details {
+      color: var(--courses-muted);
+      flex-grow: 1;
+      font-size: 0.88rem;
+      line-height: 1.6;
+      margin-bottom: 17px;
+    }
+
+    .details span {
+      display: block;
+      margin-bottom: 3px;
+    }
+
+    .course-button {
+      background: linear-gradient(135deg, var(--courses-navy), var(--courses-blue));
+      border-radius: 13px;
+      box-shadow: 0 10px 22px rgba(30, 64, 175, 0.20);
+      color: #fff !important;
+      font-weight: 750;
+      padding: 11px 15px;
+      text-align: center;
+      text-decoration: none !important;
+    }
+
+    .course-button:hover,
+    .course-button:focus-visible {
+      background: linear-gradient(135deg, var(--courses-blue), var(--courses-blue-bright));
+      outline: none;
+    }
+
+    .no-results {
+      color: var(--courses-muted);
+      grid-column: 1 / -1;
+      padding: 72px 20px;
+      text-align: center;
+    }
+
+    .no-results__icon {
+      align-items: center;
+      background: #dbeafe;
+      border-radius: 50%;
+      display: inline-flex;
+      font-size: 2rem;
+      height: 70px;
+      justify-content: center;
+      margin-bottom: 15px;
+      width: 70px;
+    }
+
+    .no-results h3 {
+      color: var(--courses-text);
+      margin: 0 0 8px;
+    }
+
+    .no-results p {
+      margin: 0;
+    }
+
+    @media (max-width: 1020px) {
+      .filters {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 650px) {
+      .courses-hero {
+        min-height: 320px;
+        padding: 68px 18px 105px;
+      }
+
+      .courses-hero__orb--one { left: -70px; }
+      .courses-hero__orb--two { right: -35px; }
+
+      .courses-container {
+        padding-left: 13px;
+        padding-right: 13px;
+      }
+
+      .filter-box {
+        padding: 24px 17px 19px;
+      }
+
+      .filter-header {
+        align-items: flex-start;
+        flex-wrap: wrap;
+      }
+
+      .results-count {
+        margin-left: 0;
+        order: 3;
+        width: 100%;
+      }
+
+      .filters,
+      .course-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+      }
+
+    }
+
+  </style>
+</%block>
+
+<%block name="content">
+  <div class="courses-page">
+    <section class="courses-hero">
+      <div class="courses-hero__orb courses-hero__orb--one" aria-hidden="true"></div>
+      <div class="courses-hero__orb courses-hero__orb--two" aria-hidden="true"></div>
+
+      <div class="courses-hero__inner">
+        <div class="courses-eyebrow">${_("Course catalog")}</div>
+        <h1>${_("Courses")}</h1>
+        <p>${_("Explore our collection of educational programs and start learning today")}</p>
+      </div>
     </section>
-</main>
+
+    <main class="courses-container">
+      <section class="filter-box" aria-labelledby="filterTitle">
+        <div class="filter-header">
+          <h2 id="filterTitle">${_("Filter Courses")}</h2>
+          <span class="results-count" id="resultsCount"></span>
+          <button class="reset-filters" type="button" id="resetFilters">${_("Clear filters")}</button>
+        </div>
+
+        <div class="filters">
+          <input
+            type="search"
+            id="searchInput"
+            placeholder="${_('Search by course name...')}"
+            aria-label="${_('Search by course name')}"
+          />
+
+          <select id="languageFilter" aria-label="${_('Filter by language')}">
+            <option value="">${_('All languages')}</option>
+            % for lang in sorted(set([c.language for c in courses if c.language])):
+              <option value="${lang}">${_(lang)}</option>
+            % endfor
+          </select>
+
+          <select id="statusFilter" aria-label="${_('Filter by status')}">
+            <option value="">${_('All statuses')}</option>
+            <option value="ongoing">${_('Ongoing')}</option>
+            <option value="completed">${_('Completed')}</option>
+          </select>
+
+          <select id="facultyFilter" aria-label="${_('Filter by faculty')}">
+            <option value="">${_('All faculties')}</option>
+            % for faculty in sorted(set([c.faculty for c in courses if c.faculty])):
+              <option value="${faculty}">${_(faculty)}</option>
+            % endfor
+          </select>
+        </div>
+      </section>
+
+      <div class="course-grid" id="courseList" aria-live="polite">
+        % if courses:
+          % for course in courses:
+            <%
+              from django.utils import timezone
+              now = timezone.now()
+              status = "completed" if course.end and course.end < now else "ongoing"
+              status_text = _('Completed') if status == "completed" else _('Ongoing')
+            %>
+
+            <article
+              class="course"
+              data-title="${(course.display_name or '').lower()}"
+              data-language="${course.language or ''}"
+              data-status="${status}"
+              data-faculty="${course.faculty or ''}"
+            >
+              <div class="course-media">
+                <img
+                  src="${course.course_image_url if hasattr(course, 'course_image_url') else '/static/images/default-course.jpg'}"
+                  alt="${course.display_name or _('Course')}"
+                  loading="lazy"
+                >
+                <div class="status ${status}">${status_text}</div>
+              </div>
+
+              <div class="course-content">
+                <h3><a href="/courses/${course.id}/about">${course.display_name}</a></h3>
+
+                <div class="meta">
+                  <span class="tag">${course.display_org_with_default}</span>
+                  % if course.language:
+                    <span class="tag">${course.language}</span>
+                  % endif
+                </div>
+
+                <div class="details">
+                  <span>${_('Start')}: ${course.start.strftime('%Y-%m-%d') if course.start else _('Not specified')}</span>
+                  <span>${_('End')}: ${course.end.strftime('%Y-%m-%d') if course.end else _('Not specified')}</span>
+                </div>
+
+                <a href="/courses/${course.id}/about" class="course-button">${_('Go to course')}</a>
+              </div>
+            </article>
+          % endfor
+        % else:
+          <div class="no-results">
+            <span class="no-results__icon" aria-hidden="true">&#128218;</span>
+            <h3>${_('No courses found')}</h3>
+            <p>${_('There are currently no available courses')}</p>
+          </div>
+        % endif
+      </div>
+    </main>
+  </div>
+
+  <script>
+    (function () {
+      "use strict";
+
+      var searchInput = document.getElementById("searchInput");
+      var languageFilter = document.getElementById("languageFilter");
+      var statusFilter = document.getElementById("statusFilter");
+      var facultyFilter = document.getElementById("facultyFilter");
+      var resetButton = document.getElementById("resetFilters");
+      var resultsCount = document.getElementById("resultsCount");
+      var courseList = document.getElementById("courseList");
+      var cards = Array.prototype.slice.call(courseList.querySelectorAll(".course"));
+      var emptyMessage = "${_('No courses found')}";
+      var shownMessage = "${_('Shown')}";
+
+      function normalizeText(value) {
+        return String(value || "")
+          .toLocaleLowerCase()
+          .replace(/ё/g, "е")
+          .replace(/\s+/g, " ")
+          .trim();
+      }
+
+      function updateEmptyState(visible) {
+        var emptyState = courseList.querySelector('.no-results[data-filter-empty="true"]');
+
+        if (visible === 0 && cards.length > 0 && !emptyState) {
+          emptyState = document.createElement("div");
+          emptyState.className = "no-results";
+          emptyState.setAttribute("data-filter-empty", "true");
+          emptyState.innerHTML =
+            '<span class="no-results__icon" aria-hidden="true">&#128269;</span>' +
+            "<h3>" + emptyMessage + "</h3>";
+          courseList.appendChild(emptyState);
+        } else if (visible > 0 && emptyState) {
+          emptyState.remove();
+        }
+      }
+
+      function filterCourses() {
+        var query = normalizeText(searchInput.value);
+        var language = languageFilter.value;
+        var status = statusFilter.value;
+        var faculty = facultyFilter.value;
+        var visible = 0;
+
+        cards.forEach(function (card) {
+          var title = normalizeText(card.dataset.title);
+          var cardLanguage = card.dataset.language || "";
+          var cardStatus = card.dataset.status || "";
+          var cardFaculty = card.dataset.faculty || "";
+
+          var matches =
+            (!query || title.indexOf(query) !== -1) &&
+            (!language || cardLanguage === language) &&
+            (!status || cardStatus === status) &&
+            (!faculty || cardFaculty === faculty);
+
+          card.hidden = !matches;
+
+          if (matches) {
+            visible += 1;
+          }
+        });
+
+        resultsCount.textContent = shownMessage + ": " + visible + " / " + cards.length;
+        updateEmptyState(visible);
+      }
+
+      searchInput.addEventListener("input", filterCourses);
+      languageFilter.addEventListener("change", filterCourses);
+      statusFilter.addEventListener("change", filterCourses);
+      facultyFilter.addEventListener("change", filterCourses);
+
+      resetButton.addEventListener("click", function () {
+        searchInput.value = "";
+        languageFilter.value = "";
+        statusFilter.value = "";
+        facultyFilter.value = "";
+        filterCourses();
+        searchInput.focus();
+      });
+
+      resultsCount.textContent = shownMessage + ": " + cards.length + " / " + cards.length;
+    })();
+  </script>
+</%block>

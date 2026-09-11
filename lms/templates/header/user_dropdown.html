@@ -1,10 +1,9 @@
-## mako
+
 <%page expression_filter="h"/>
 <%namespace name='static' file='static_content.html'/>
 
 <%!
 import json
-from urllib.parse import urljoin
 
 from django.conf import settings
 from django.urls import reverse
@@ -12,6 +11,12 @@ from django.utils.translation import gettext as _
 
 from openedx.core.djangoapps.user_api.accounts.image_helpers import get_profile_image_urls_for_user
 from openedx.features.enterprise_support.utils import get_enterprise_learner_generic_name, get_enterprise_learner_portal
+
+try:
+    from openedx.core.djangoapps.user_api.accounts.toggles import should_redirect_to_order_history_microfrontend
+except ImportError:
+    def should_redirect_to_order_history_microfrontend():
+        return False
 %>
 
 <%
@@ -21,34 +26,35 @@ profile_image_url = get_profile_image_urls_for_user(self.real_user)['medium']
 username = self.real_user.username
 displayname = get_enterprise_learner_generic_name(request) or username
 enterprise_customer_portal = get_enterprise_learner_portal(request)
+
 ## Enterprises with the learner portal enabled should not show order history, as it does
 ## not apply to the learner's method of purchasing content.
-should_show_order_history = not enterprise_customer_portal
+should_show_order_history = should_redirect_to_order_history_microfrontend() and not enterprise_customer_portal
 %>
 
-<div class="nav-item hidden-mobile">
-    <a href="${reverse('dashboard')}" class="menu-title">
-        <img data-hj-suppress class="user-image-frame" src="${profile_image_url}" alt="">
-        <span class="sr-only">${_("Dashboard for:")}</span>
-        <span data-hj-suppress class="username">${displayname}</span>
-    </a>
-</div>
-<div class="nav-item hidden-mobile nav-item-dropdown" tabindex="-1">
-    <div class="toggle-user-dropdown" role="button" aria-label=${_("Options Menu")} aria-expanded="false" tabindex="0" aria-controls="user-menu">
-        <span class="fa fa-caret-down" aria-hidden="true"></span>
-    </div>
-    <div class="dropdown-user-menu hidden" aria-label=${_("More Options")} role="menu" id="user-menu" tabindex="-1">
-        % if not enterprise_customer_portal:
-            <div class="mobile-nav-item dropdown-item dropdown-nav-item"><a href="${reverse('dashboard')}" role="menuitem">${_("Dashboard")}</a></div>
-        % else:
-            <div class="mobile-nav-item dropdown-item dropdown-nav-item"><a href="${settings.ENTERPRISE_LEARNER_PORTAL_BASE_URL}/${enterprise_customer_portal.get('slug')}" role="menuitem">${_("Dashboard")}</a></div>
-        % endif
 
-        <div class="mobile-nav-item dropdown-item dropdown-nav-item"><a href="${urljoin(settings.PROFILE_MICROFRONTEND_URL, f'/u/{user.username}')}" role="menuitem">${_("Profile")}</a></div>
-        <div class="mobile-nav-item dropdown-item dropdown-nav-item"><a href="${settings.ACCOUNT_MICROFRONTEND_URL}" role="menuitem">${_("Account")}</a></div>
-        % if should_show_order_history:
-            <div class="mobile-nav-item dropdown-item dropdown-nav-item"><a href="${settings.ORDER_HISTORY_MICROFRONTEND_URL}" role="menuitem">${_("Order History")}</a></div>
-        % endif
-        <div class="mobile-nav-item dropdown-item dropdown-nav-item"><a href="${reverse('logout')}" role="menuitem">${_("Sign Out")}</a></div>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<div class="nav-item hidden-mobile nav-item-dropdown" tabindex="-1">
+  <div class="toggle-user-dropdown" role="button" aria-label="${_("Options Menu")}" aria-expanded="false" tabindex="0" aria-controls="user-menu"
+       style="display: flex; align-items: center; gap: 6px; border: 2px solid white; padding: 6px 12px; border-radius: 4px; cursor: pointer;">
+    <i class="fas fa-user" style="font-size: 16px; color: white;"></i>
+    <span data-hj-suppress class="username" style="color: white !important; font-weight: 800 !important; font-size: 15px;">${displayname}</span>
+  </div>
+
+  <div class="dropdown-user-menu hidden" aria-label="${_("More Options")}" role="menu" id="user-menu" tabindex="-1"
+       style="position: absolute; background: white; border: 1px solid #ccc; margin-top: 6px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); min-width: 200px;">
+    <div class="mobile-nav-item dropdown-item dropdown-nav-item">
+      <a href="/" role="menuitem" style="display: block; padding: 10px 16px; color: #002554 !important; font-weight: 800 !important; text-decoration: none;">${_("My Courses")}</a>
     </div>
+    <div class="mobile-nav-item dropdown-item dropdown-nav-item">
+      <a href="https://apps.open.kaznu.kz/profile/u/${username}" role="menuitem" style="display: block; padding: 10px 16px; color: #002554 !important; font-weight: 800 !important; text-decoration: none;">${_("Profile")}</a>
+    </div>
+    <div class="mobile-nav-item dropdown-item dropdown-nav-item">
+      <a href="https://apps.open.kaznu.kz/account/" role="menuitem" style="display: block; padding: 10px 16px; color: #002554 !important; font-weight: 800 !important; text-decoration: none;">${_("Account")}</a>
+    </div>
+    <div class="mobile-nav-item dropdown-item dropdown-nav-item">
+      <a href="https://open.kaznu.kz/logout" role="menuitem" style="display: block; padding: 10px 16px; color: #002554 !important; font-weight: 800 !important; text-decoration: none;">${_("Sign Out")}</a>
+    </div>
+  </div>
 </div>

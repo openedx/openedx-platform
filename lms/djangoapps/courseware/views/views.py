@@ -285,37 +285,22 @@ def user_groups(user):
     return group_names
 
 
+
 @ensure_csrf_cookie
 @cache_if_anonymous()
 def courses(request):
     """
-    Render "find courses" page.  The course selection work is done in courseware.courses.
+    Render "find courses" page. Only show courses with catalog_visibility = both.
     """
-    courses_list = []
-    course_discovery_meanings = getattr(settings, 'COURSE_DISCOVERY_MEANINGS', {})
-    set_default_filter = ENABLE_COURSE_DISCOVERY_DEFAULT_LANGUAGE_FILTER.is_enabled()
-    if not settings.FEATURES.get('ENABLE_COURSE_DISCOVERY'):
-        courses_list = get_courses(
-            request.user,
-            filter_={"catalog_visibility": CATALOG_VISIBILITY_CATALOG_AND_ABOUT},
-        )
-
-        if configuration_helpers.get_value("ENABLE_COURSE_SORTING_BY_START_DATE",
-                                           settings.FEATURES["ENABLE_COURSE_SORTING_BY_START_DATE"]):
-            courses_list = sort_by_start_date(courses_list)
-        else:
-            courses_list = sort_by_announcement(courses_list)
-
-    # Add marketable programs to the context.
-    programs_list = get_programs_with_type(request.site, include_hidden=False)
-
+    courses_list = get_courses(
+        request.user,
+        filter_={"catalog_visibility": CATALOG_VISIBILITY_CATALOG_AND_ABOUT},
+    )
+    # Do not change courses2 to courses
     return render_to_response(
-        "courseware/courses.html",
+        "courseware/courses2.html",
         {
             'courses': courses_list,
-            'course_discovery_meanings': course_discovery_meanings,
-            'set_default_filter': set_default_filter,
-            'programs_list': programs_list,
         }
     )
 
@@ -866,13 +851,17 @@ def course_about(request, course_id):  # pylint: disable=too-many-statements
 
         # Overview
         overview = CourseOverview.get_from_id(course.id)
-
+        same_name_courses = CourseOverview.objects.filter(
+            display_name=overview.display_name
+        ).order_by('start')
         sidebar_html_enabled = ENABLE_COURSE_ABOUT_SIDEBAR_HTML.is_enabled()
 
         allow_anonymous = check_public_access(course, [COURSE_VISIBILITY_PUBLIC, COURSE_VISIBILITY_PUBLIC_OUTLINE])
+        complexity = overview.complexity
 
         context = {
             'course': course,
+            'complexity': complexity,
             'course_details': course_details,
             'staff_access': staff_access,
             'studio_url': studio_url,
@@ -897,6 +886,7 @@ def course_about(request, course_id):  # pylint: disable=too-many-statements
             'course_image_urls': overview.image_urls,
             'sidebar_html_enabled': sidebar_html_enabled,
             'allow_anonymous': allow_anonymous,
+            'same_name_courses': same_name_courses,
         }
 
         course_about_template = 'courseware/course_about.html'
@@ -985,7 +975,10 @@ def _progress(request, course_key, student_id):
             student_id = int(student_id)
         # Check for ValueError if 'student_id' cannot be converted to integer.
         except ValueError:
-            raise Http404  # lint-amnesty, pylint: disable=raise-missing-from
+            try:
+                user_by_username = User.objects.get(username=student_id)
+            except User.DoesNotExist:
+                raise Http404
 
     course = get_course_with_access(request.user, 'load', course_key)
 
@@ -1007,9 +1000,12 @@ def _progress(request, course_key, student_id):
         if not has_access_on_students_profiles:
             raise Http404
         try:
-            student = User.objects.get(id=student_id)
+            if user_by_username:
+                student = user_by_username
+            else:
+                student = User.objects.get(id=student_id)
         except User.DoesNotExist:
-            raise Http404  # lint-amnesty, pylint: disable=raise-missing-from
+            raise Http404 # lint-amnesty, pylint: disable=raise-missing-from
 
     # NOTE: To make sure impersonation by instructor works, use
     # student instead of request.user in the rest of the function.

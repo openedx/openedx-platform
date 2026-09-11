@@ -1,0 +1,738 @@
+<%page expression_filter="h"/>
+<%!
+  from django.utils.translation import gettext as _
+%>
+<%inherit file="../main.html" />
+
+<%block name="pagetitle">${_("Courses")}</%block>
+
+<%block name="headextra">
+  <style>
+    :root {
+      --summer-sky: #66d4f1;
+      --summer-sky-deep: #1ca7d1;
+      --summer-sun: #ffd447;
+      --summer-orange: #ff8a3d;
+      --summer-coral: #ff626d;
+      --summer-leaf: #24a878;
+      --summer-leaf-dark: #087a61;
+      --summer-sand: #fff4d3;
+      --card-bg: rgba(255, 255, 255, 0.94);
+      --text-dark: #15394a;
+      --text-muted: #607684;
+      --radius: 24px;
+      --shadow: 0 18px 45px rgba(24, 111, 137, 0.14);
+      --transition: 280ms cubic-bezier(.2, .8, .2, 1);
+    }
+
+    body {
+      background:
+        radial-gradient(circle at 12% 18%, rgba(255, 212, 71, 0.18), transparent 24rem),
+        linear-gradient(180deg, #edfaff 0%, #fffaf0 52%, #fff4d3 100%);
+      color: var(--text-dark);
+      font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+    }
+
+    .summer-page {
+      min-height: 100vh;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .hero {
+      align-items: center;
+      background:
+        linear-gradient(135deg, rgba(21, 168, 209, 0.96), rgba(102, 212, 241, 0.88)),
+        linear-gradient(180deg, var(--summer-sky), var(--summer-sky-deep));
+      color: #fff;
+      display: flex;
+      min-height: 410px;
+      overflow: hidden;
+      padding: 90px 24px 120px;
+      position: relative;
+      text-align: center;
+      isolation: isolate;
+    }
+
+    .hero::after {
+      background: var(--summer-sand);
+      border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+      bottom: -72px;
+      content: "";
+      height: 130px;
+      left: -5%;
+      position: absolute;
+      width: 110%;
+      z-index: 2;
+    }
+
+    .hero-inner {
+      margin: 0 auto;
+      max-width: 780px;
+      position: relative;
+      z-index: 3;
+    }
+
+    .season-pill {
+      align-items: center;
+      backdrop-filter: blur(10px);
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.45);
+      border-radius: 999px;
+      display: inline-flex;
+      font-size: 0.8rem;
+      font-weight: 800;
+      gap: 8px;
+      letter-spacing: 0.12em;
+      margin-bottom: 20px;
+      padding: 9px 15px;
+      text-transform: uppercase;
+    }
+
+    .season-pill::before {
+      background: var(--summer-sun);
+      border-radius: 50%;
+      box-shadow: 0 0 0 5px rgba(255, 212, 71, 0.22);
+      content: "";
+      height: 9px;
+      width: 9px;
+    }
+
+    .hero h1 {
+      color: #fff !important;
+      font-size: clamp(2.7rem, 7vw, 5.3rem);
+      font-weight: 850;
+      letter-spacing: -0.055em;
+      line-height: 0.98;
+      margin: 0 0 18px;
+      text-shadow: 0 8px 30px rgba(0, 98, 131, 0.2);
+    }
+
+    .hero p {
+      font-size: clamp(1rem, 2vw, 1.25rem);
+      line-height: 1.7;
+      margin: 0 auto;
+      max-width: 650px;
+      opacity: 0.96;
+    }
+
+    .sun {
+      background: var(--summer-sun);
+      border-radius: 50%;
+      box-shadow:
+        0 0 0 18px rgba(255, 212, 71, 0.16),
+        0 0 70px rgba(255, 193, 47, 0.55);
+      height: 150px;
+      position: absolute;
+      right: 9%;
+      top: 52px;
+      width: 150px;
+      z-index: 1;
+    }
+
+    .cloud {
+      background: rgba(255, 255, 255, 0.75);
+      border-radius: 999px;
+      height: 24px;
+      position: absolute;
+      width: 112px;
+      z-index: 1;
+    }
+
+    .cloud::before,
+    .cloud::after {
+      background: inherit;
+      border-radius: 50%;
+      content: "";
+      position: absolute;
+    }
+
+    .cloud::before {
+      height: 46px;
+      left: 20px;
+      top: -23px;
+      width: 46px;
+    }
+
+    .cloud::after {
+      height: 58px;
+      right: 17px;
+      top: -34px;
+      width: 58px;
+    }
+
+    .cloud-one {
+      left: 8%;
+      top: 95px;
+    }
+
+    .cloud-two {
+      bottom: 95px;
+      opacity: 0.56;
+      right: 26%;
+      transform: scale(0.72);
+    }
+
+    .leaf {
+      border: 5px solid rgba(0, 120, 91, 0.35);
+      border-bottom: 0;
+      border-radius: 100% 0 100% 0;
+      height: 90px;
+      position: absolute;
+      width: 48px;
+      z-index: 1;
+    }
+
+    .leaf-one {
+      bottom: 32px;
+      left: 6%;
+      rotate: -24deg;
+    }
+
+    .leaf-two {
+      bottom: 55px;
+      left: 10%;
+      rotate: 26deg;
+      scale: 0.75;
+    }
+
+    .courses {
+      margin: 0 auto;
+      max-width: 1250px;
+      padding: 28px 20px 80px;
+      position: relative;
+      z-index: 4;
+    }
+
+    .filter-box {
+      backdrop-filter: blur(18px);
+      background: rgba(255, 255, 255, 0.84);
+      border: 1px solid rgba(255, 255, 255, 0.92);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      margin-bottom: 42px;
+      padding: 28px;
+      position: relative;
+    }
+
+    .filter-box::before {
+      background: linear-gradient(90deg, var(--summer-orange), var(--summer-sun), var(--summer-leaf));
+      border-radius: 999px;
+      content: "";
+      height: 5px;
+      left: 30px;
+      position: absolute;
+      right: 30px;
+      top: 0;
+    }
+
+    .filter-box h2 {
+      color: var(--text-dark);
+      font-size: 1.35rem;
+      font-weight: 800;
+      margin: 0 0 20px;
+    }
+
+    .filters {
+      display: grid;
+      gap: 14px;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+
+    .filters input,
+    .filters select {
+      background: #fffdf8;
+      border: 2px solid #e6f0ed;
+      border-radius: 14px;
+      color: var(--text-dark);
+      font-size: 15px;
+      outline: none;
+      padding: 13px 16px;
+      transition: border var(--transition), box-shadow var(--transition), transform var(--transition);
+    }
+
+    .filters input:hover,
+    .filters select:hover {
+      border-color: rgba(36, 168, 120, 0.45);
+    }
+
+    .filters input:focus,
+    .filters select:focus {
+      border-color: var(--summer-leaf);
+      box-shadow: 0 0 0 4px rgba(36, 168, 120, 0.13);
+      transform: translateY(-1px);
+    }
+
+    .course-grid {
+      display: grid;
+      gap: 26px;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    }
+
+    .course {
+      background: var(--card-bg);
+      border: 1px solid rgba(255, 255, 255, 0.95);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      overflow: hidden;
+      position: relative;
+      transition: transform var(--transition), box-shadow var(--transition);
+    }
+
+    .course[hidden] {
+      display: none;
+    }
+
+    .course::after {
+      background: linear-gradient(90deg, var(--summer-orange), var(--summer-sun));
+      bottom: 0;
+      content: "";
+      height: 4px;
+      left: 0;
+      position: absolute;
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform var(--transition);
+      width: 100%;
+    }
+
+    .course:hover {
+      box-shadow: 0 24px 55px rgba(24, 111, 137, 0.22);
+      transform: translateY(-9px) rotate(0.25deg);
+    }
+
+    .course:hover::after {
+      transform: scaleX(1);
+    }
+
+    .course-media {
+      overflow: hidden;
+      position: relative;
+    }
+
+    .course img {
+      display: block;
+      height: 190px;
+      object-fit: cover;
+      transition: transform 700ms cubic-bezier(.2, .8, .2, 1), filter var(--transition);
+      width: 100%;
+    }
+
+    .course:hover img {
+      filter: saturate(1.1);
+      transform: scale(1.055);
+    }
+
+    .course-media::after {
+      background: linear-gradient(180deg, transparent 50%, rgba(10, 70, 83, 0.22));
+      content: "";
+      inset: 0;
+      pointer-events: none;
+      position: absolute;
+    }
+
+    .status {
+      backdrop-filter: blur(10px);
+      background: rgba(21, 57, 74, 0.86);
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      border-radius: 999px;
+      color: #fff;
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      padding: 7px 12px;
+      position: absolute;
+      right: 14px;
+      text-transform: uppercase;
+      top: 14px;
+      z-index: 2;
+    }
+
+    .status.ongoing {
+      background: rgba(8, 122, 97, 0.9);
+    }
+
+    .status.completed {
+      background: rgba(96, 118, 132, 0.9);
+    }
+
+    .course-content {
+      display: flex;
+      flex-direction: column;
+      flex-grow: 1;
+      padding: 22px;
+    }
+
+    .course h3 {
+      color: var(--text-dark);
+      font-size: 1.2rem;
+      font-weight: 800;
+      line-height: 1.35;
+      margin: 0 0 11px;
+    }
+
+    .course h3 a {
+      color: inherit;
+      text-decoration: none;
+      transition: color var(--transition);
+    }
+
+    .course h3 a:hover {
+      color: var(--summer-leaf-dark);
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 15px;
+    }
+
+    .tag {
+      background: #eaf9f4;
+      border: 1px solid #d2f0e5;
+      border-radius: 999px;
+      color: var(--summer-leaf-dark);
+      font-size: 0.76rem;
+      font-weight: 750;
+      padding: 5px 10px;
+    }
+
+    .details {
+      color: var(--text-muted);
+      flex-grow: 1;
+      font-size: 0.9rem;
+      line-height: 1.6;
+      margin-bottom: 18px;
+    }
+
+    .details span {
+      display: block;
+      margin-bottom: 3px;
+    }
+
+    .course a.btn {
+      background: linear-gradient(135deg, var(--summer-orange), var(--summer-coral));
+      border-radius: 14px;
+      box-shadow: 0 10px 22px rgba(255, 98, 109, 0.2);
+      color: #fff;
+      font-weight: 800;
+      padding: 12px 16px;
+      position: relative;
+      text-align: center;
+      text-decoration: none;
+      transition: box-shadow var(--transition), transform var(--transition), filter var(--transition);
+    }
+
+    .course a.btn:hover {
+      box-shadow: 0 14px 28px rgba(255, 98, 109, 0.3);
+      filter: saturate(1.08);
+      transform: translateY(-2px);
+    }
+
+    .no-results {
+      color: var(--text-muted);
+      grid-column: 1 / -1;
+      padding: 70px 20px;
+      text-align: center;
+    }
+
+    .no-results span {
+      display: block;
+      font-size: 3rem;
+      margin-bottom: 12px;
+    }
+
+    .no-results h3 {
+      color: var(--text-dark);
+      margin-bottom: 8px;
+    }
+
+    @media (max-width: 760px) {
+      .hero {
+        min-height: 350px;
+        padding: 75px 20px 105px;
+      }
+
+      .sun {
+        height: 105px;
+        right: -25px;
+        top: 30px;
+        width: 105px;
+      }
+
+      .cloud-one {
+        left: -40px;
+        top: 75px;
+        transform: scale(0.75);
+      }
+
+      .cloud-two,
+      .leaf {
+        display: none;
+      }
+
+      .filter-box {
+        padding: 25px 18px 20px;
+      }
+
+      .courses {
+        padding-left: 14px;
+        padding-right: 14px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</%block>
+
+<%block name="content">
+  <div class="summer-page">
+    <section class="hero">
+      <div class="sun" aria-hidden="true"></div>
+      <div class="cloud cloud-one" aria-hidden="true"></div>
+      <div class="cloud cloud-two" aria-hidden="true"></div>
+      <div class="leaf leaf-one" aria-hidden="true"></div>
+      <div class="leaf leaf-two" aria-hidden="true"></div>
+
+      <div class="hero-inner">
+        <div class="season-pill">${_("Summer of learning")}</div>
+        <h1>${_("Courses")}</h1>
+        <p>${_("Explore our collection of educational programs and start learning today")}</p>
+      </div>
+    </section>
+
+    <main class="courses">
+      <div class="filter-box">
+        <h2>${_("Find your next course")}</h2>
+        <div class="filters">
+          <input
+            type="search"
+            id="searchInput"
+            placeholder="${_('Search by course name...')}"
+            aria-label="${_('Search by course name')}"
+          />
+
+          <select id="languageFilter" aria-label="${_('Filter by language')}">
+            <option value="">${_('All languages')}</option>
+            % for lang in sorted(set([c.language for c in courses if c.language])):
+              <option value="${lang}">${_(lang)}</option>
+            % endfor
+          </select>
+
+          <select id="statusFilter" aria-label="${_('Filter by status')}">
+            <option value="">${_('All statuses')}</option>
+            <option value="ongoing">${_('Ongoing')}</option>
+            <option value="completed">${_('Completed')}</option>
+          </select>
+
+          <select id="facultyFilter" aria-label="${_('Filter by faculty')}">
+            <option value="">${_('All faculties')}</option>
+            % for faculty in sorted(set([c.faculty for c in courses if c.faculty])):
+              <option value="${faculty}">${_(faculty)}</option>
+            % endfor
+          </select>
+        </div>
+      </div>
+
+      <div class="course-grid" id="courseList" aria-live="polite">
+        % if courses:
+          % for course in courses:
+            <%
+              from django.utils import timezone
+              now = timezone.now()
+              status = "completed" if course.end and course.end < now else "ongoing"
+              status_text = _('Completed') if status == "completed" else _('Ongoing')
+            %>
+            <article
+              class="course"
+              data-title="${course.display_name.lower()}"
+              data-language="${course.language or ''}"
+              data-status="${status}"
+              data-faculty="${course.faculty or ''}"
+            >
+              <div class="course-media">
+                <img
+                  src="${course.course_image_url if hasattr(course, 'course_image_url') else '/static/images/default-course.jpg'}"
+                  alt="${course.display_name}"
+                  loading="lazy"
+                >
+                <div class="status ${status}">${status_text}</div>
+              </div>
+
+              <div class="course-content">
+                <h3><a href="/courses/${course.id}/about">${course.display_name}</a></h3>
+                <div class="meta">
+                  <span class="tag">${course.display_org_with_default}</span>
+                  % if course.language:
+                    <span class="tag">${course.language}</span>
+                  % endif
+                </div>
+                <div class="details">
+                  <span>${_('Start')}: ${course.start.strftime('%Y-%m-%d') if course.start else _('Not specified')}</span>
+                  <span>${_('End')}: ${course.end.strftime('%Y-%m-%d') if course.end else _('Not specified')}</span>
+                </div>
+                <a href="/courses/${course.id}/about" class="btn">${_('Go to course')}</a>
+              </div>
+            </article>
+          % endfor
+        % else:
+          <div class="no-results">
+            <span aria-hidden="true">&#9728;</span>
+            <h3>${_('No courses found')}</h3>
+            <p>${_('There are currently no available courses')}</p>
+          </div>
+        % endif
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/ScrollTrigger.min.js"></script>
+  <script>
+    (function () {
+      const searchInput = document.getElementById("searchInput");
+      const filterFields = [
+        searchInput,
+        document.getElementById("languageFilter"),
+        document.getElementById("statusFilter"),
+        document.getElementById("facultyFilter")
+      ];
+      const courseList = document.getElementById("courseList");
+      const emptyMessage = "${_('No courses found')}";
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+      function filterCourses() {
+        const query = searchInput.value.toLowerCase().trim();
+        const lang = document.getElementById("languageFilter").value;
+        const status = document.getElementById("statusFilter").value;
+        const faculty = document.getElementById("facultyFilter").value;
+        const cards = courseList.querySelectorAll(".course");
+        let visible = 0;
+
+        cards.forEach(function (card) {
+          const matches =
+            (!query || card.dataset.title.includes(query)) &&
+            (!lang || card.dataset.language === lang) &&
+            (!status || card.dataset.status === status) &&
+            (!faculty || card.dataset.faculty === faculty);
+
+          card.hidden = !matches;
+          if (matches) {
+            visible += 1;
+            if (!reduceMotion && window.gsap) {
+              gsap.fromTo(card, { autoAlpha: 0, y: 12 }, {
+                autoAlpha: 1,
+                duration: 0.35,
+                ease: "power2.out",
+                y: 0
+              });
+            }
+          }
+        });
+
+        let emptyState = courseList.querySelector(".no-results[data-filter-empty]");
+        if (!visible && cards.length && !emptyState) {
+          emptyState = document.createElement("div");
+          emptyState.className = "no-results";
+          emptyState.dataset.filterEmpty = "true";
+          emptyState.innerHTML = '<span aria-hidden="true">&#9728;</span><h3>' + emptyMessage + "</h3>";
+          courseList.appendChild(emptyState);
+        } else if (visible && emptyState) {
+          emptyState.remove();
+        }
+      }
+
+      filterFields.forEach(function (field) {
+        field.addEventListener(field === searchInput ? "input" : "change", filterCourses);
+      });
+
+      if (!reduceMotion && window.gsap) {
+        gsap.registerPlugin(ScrollTrigger);
+
+        gsap.from(".season-pill", {
+          autoAlpha: 0,
+          duration: 0.7,
+          ease: "back.out(1.7)",
+          scale: 0.8,
+          y: -12
+        });
+
+        gsap.from(".hero h1, .hero p", {
+          autoAlpha: 0,
+          delay: 0.15,
+          duration: 0.85,
+          ease: "power3.out",
+          stagger: 0.12,
+          y: 28
+        });
+
+        gsap.to(".sun", {
+          duration: 4.5,
+          ease: "sine.inOut",
+          repeat: -1,
+          scale: 1.06,
+          yoyo: true
+        });
+
+        gsap.to(".cloud-one", {
+          duration: 6,
+          ease: "sine.inOut",
+          repeat: -1,
+          x: 28,
+          yoyo: true
+        });
+
+        gsap.to(".cloud-two", {
+          duration: 7,
+          ease: "sine.inOut",
+          repeat: -1,
+          x: -34,
+          yoyo: true
+        });
+
+        gsap.from(".filter-box", {
+          autoAlpha: 0,
+          duration: 0.8,
+          ease: "power3.out",
+          scrollTrigger: {
+            start: "top 88%",
+            trigger: ".filter-box"
+          },
+          y: 35
+        });
+
+        gsap.utils.toArray(".course").forEach(function (card, index) {
+          gsap.from(card, {
+            autoAlpha: 0,
+            delay: (index % 3) * 0.08,
+            duration: 0.65,
+            ease: "power3.out",
+            scrollTrigger: {
+              start: "top 92%",
+              trigger: card
+            },
+            y: 42
+          });
+        });
+
+        document.querySelector(".hero").addEventListener("pointermove", function (event) {
+          const x = (event.clientX / window.innerWidth - 0.5) * 18;
+          const y = (event.clientY / window.innerHeight - 0.5) * 12;
+          gsap.to(".sun", { duration: 1.2, ease: "power2.out", x: x, y: y });
+          gsap.to(".hero-inner", { duration: 1.2, ease: "power2.out", x: -x * 0.18, y: -y * 0.18 });
+        });
+      }
+    })();
+  </script>
+</%block>

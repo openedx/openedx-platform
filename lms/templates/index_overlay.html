@@ -5,6 +5,620 @@ from django.utils.translation import gettext as _
 from openedx.core.djangolib.markup import HTML, Text
 %>
 
-<h1>${Text(_(u"Welcome to {platform_name}")).format(platform_name=settings.PLATFORM_NAME)}</h1>
-## Translators: 'Open edX' is a registered trademark, please keep this untranslated. See https://openedx.org for more information.
-<p>${Text(_("It works! Powered by the Open edX{registered_trademark} Platform")).format(registered_trademark=HTML("<sup style='font-size: 65%'>&reg;</sup>"))}</p>
+<style>
+        .hero {
+            position: relative;
+            height: 90vh;
+            background-image: url('https://images.unsplash.com/photo-1506377872008-6645d9d29ef7?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .hero::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.4); /* затемнение */
+            z-index: 1;
+        }
+
+.hero-content {
+    position: relative !important;    /* чтобы z-index работал */
+    z-index: 2 !important;            /* поверх затемняющей псевдо-маски */
+    text-align: center !important;
+}
+
+.hero-content h1 {
+    color: #F5F5F5 !important;  /* один !important */
+    font-size: 4rem !important;
+    font-weight: 800 !important;
+    margin-bottom: 10px !important;
+    font-family: 'Arial Black', 'Segoe UI', sans-serif !important;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.6) !important;
+}
+
+.hero-content p {
+    color: #FFFFF0 !important;
+    font-size: 1.5rem !important;
+    font-weight: 600 !important;
+    margin-bottom: 2px !important;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.4) !important;
+    line-height: 1.3 !important;
+}
+
+
+@media (max-width: 768px) {
+    .hero-content h1 {
+        font-size: 3rem !important;
+    }
+
+    .hero-content p {
+        font-size: 1.2rem !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .hero-content h1 {
+        font-size: 2.2rem !important;
+    }
+ .hero-content p {
+        font-size: 1rem !important;
+    }
+}
+
+
+    </style>
+
+
+<section class="hero">
+    <div class="hero-content">
+        <h1 data-aos="zoom-in">${_("Open KazNU")}</h1>
+        <p data-aos="fade-right" data-aos-delay="300">
+            ${_("ONLINE COURSES FROM LEADING PROFESSORS OF Al-Farabi KazNU")}
+        </p>
+        <p data-aos="fade-right" data-aos-delay="500">
+            ${_("Leader of higher education in Kazakhstan in implementing MOOCs on the Open edX platform")}
+        </p>
+    </div>
+</section>
+
+
+<style>
+  .mooc-section * {
+    box-sizing: border-box !important;
+  }
+
+  .mooc-section .container2 {
+    display: flex !important;
+    width: 100% !important;
+    min-height: 100vh !important;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+  }
+
+  .mooc-section .content-wrapper {
+    width: 70% !important;
+    background-color: #1a263c !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .mooc-section .sidebar {
+    clip-path: inset(20px 0 0 0) !important;
+    width: 30% !important;
+    background-color: #f8e7cc !important;
+    padding: 40px 20px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    gap: 30px !important;
+  }
+
+  .mooc-section .sidebar .card {
+    position: relative !important;
+    background: linear-gradient(145deg, #ffffff, #f8f0e3) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+    padding: 25px !important;
+    transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1) !important;
+    overflow: hidden !important;
+    border: 1px solid rgba(26, 38, 60, 0.1) !important;
+  }
+
+  .mooc-section .sidebar .card::before {
+    content: '' !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 4px !important;
+    background: linear-gradient(90deg, #D3985C 0%, #1a263c 100%) !important;
+  }
+
+  .mooc-section .sidebar .card:hover {
+    transform: translateY(-8px) !important;
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15) !important;
+  }
+
+
+  .mooc-section .sidebar p {
+    color: #333 !important;
+    line-height: 1.6 !important;
+    margin-bottom: 15px !important;
+  }
+
+  .mooc-section .card-link {
+    display: inline-flex !important;
+    align-items: center !important;
+    margin-top: 15px !important;
+    padding: 8px 20px !important;
+    background: linear-gradient(45deg, #1a263c, #2a3850) !important;
+    color: white !important;
+    text-decoration: none !important;
+    border-radius: 8px !important;
+ font-size: 0.9em !important;
+    transition: all 0.3s !important;
+    opacity: 0 !important;
+    transform: translateY(10px) !important;
+    max-width: 100% !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .mooc-section .card:hover .card-link {
+    opacity: 1 !important;
+    transform: translateY(0) !important;
+  }
+
+  .mooc-section .card-link:hover {
+    background: linear-gradient(45deg, #D3985C, #e4b583) !important;
+    box-shadow: 0 2px 8px rgba(210, 152, 92, 0.3) !important;
+  }
+
+  .mooc-section .card-link::after {
+    content: '→' !important;
+    margin-left: 8px !important;
+    transition: transform 0.3s !important;
+  }
+
+  .mooc-section .card-link:hover::after {
+    transform: translateX(3px) !important;
+  }
+
+  .mooc-section .about-mooc {
+    color: white !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 50px 20px !important;
+    gap: 40px !important;
+    flex-wrap: wrap !important;
+  }
+
+  .mooc-section .icon-block .circle {
+    position: relative !important;
+    background-color: #f8e7cc !important;
+    width: 250px !important;
+    height: 250px !important;
+    border-radius: 50% !important;
+    display: grid !important;
+    place-items: center !important;
+  }
+
+  .mooc-section .version {
+    position: absolute !important;
+    top: 20px !important;
+left: 30px !important;
+    background-color: #1a263c !important;
+    color: white !important;
+    padding: 2px 10px !important;
+    border-radius: 10px !important;
+    font-size: 14px !important;
+    font-weight: bold !important;
+  }
+
+  .mooc-section .hex {
+    position: absolute !important;
+    width: 80px !important;
+    height: 80px !important;
+    background-color: #D3985C !important;
+    clip-path: polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+font-weight: bold !important;
+    color: white !important;
+    font-size: 12px !important;
+    padding: 5px !important;
+  }
+
+  .hex1 { transform: rotate(0deg) translate(65px) rotate(0deg) !important; }
+  .hex2 { transform: rotate(90deg) translate(65px) rotate(-90deg) !important; }
+  .hex3 { transform: rotate(180deg) translate(65px) rotate(-180deg) !important; }
+  .hex4 { transform: rotate(270deg) translate(65px) rotate(-270deg) !important; }
+
+  .mooc-section .text-block {
+    max-width: 600px !important;
+  }
+
+  .mooc-section .text-block h2 {
+    color: #f8e7cc !important;
+    font-size: 2em !important;
+    margin-bottom: 20px !important;
+  }
+
+  .mooc-section .text-block p {
+    margin-bottom: 15px !important;
+    line-height: 1.6 !important;
+  }
+
+  .mooc-section .highlight {
+    background-color: #f8e7cc !important;
+    color: #1a263c !important;
+    padding: 15px !important;
+    border-radius: 10px !important;
+    font-weight: bold !important;
+    margin-top: 20px !important;
+  }
+
+/* Общий стиль контейнера-иконки */
+.mooc-section .sidebar h3 .icon-box {
+  display: inline-flex !important;
+  align-items: center !important ;
+  justify-content: center !important;
+  width: 28px !important;
+  height: 28px !important;
+  background-color: #D3985C !important;            /* фоновый цвет квадратика */
+  border-radius: 6px !important;
+  margin-right: 12px !important;
+  flex-shrink: 0 !important;
+}
+
+/* Белая иконка в первом и последнем карточках */
+.mooc-section .sidebar .card:nth-child(1) .icon-box i,
+.mooc-section .sidebar .card:nth-child(3) .icon-box i {
+  color: #ffffff !important;                        /* белый цвет иконки */
+  /* устанавливаем размер под контейнер */
+  font-size: 14px !important;
+}
+
+  /* Media Queries */
+  @media (max-width: 1200px) {
+    .mooc-section .container2 {
+      flex-direction: column !important;
+    }
+
+    .mooc-section .content-wrapper,
+    .mooc-section .sidebar {
+      width: 100% !important;
+      min-height: auto !important;
+    }
+
+    .mooc-section .sidebar {
+      clip-path: none !important;
+      padding: 40px 15px !important;
+}
+
+    .mooc-section .about-mooc {
+padding: 60px 20px !important;
+      flex-direction: column !important;
+      text-align: center !important;
+    }
+
+    .mooc-section .text-block {
+      max-width: 100% !important;
+      padding: 0 15px !important;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .mooc-section .icon-block .circle {
+      width: 200px !important;
+      height: 200px !important;
+    }
+
+    .mooc-section .hex {
+      width: 60px !important;
+      height: 60px !important;
+      font-size: 10px !important;
+    }
+
+    .hex1 { transform: rotate(0deg) translate(50px) rotate(0deg) !important; }
+    .hex2 { transform: rotate(90deg) translate(50px) rotate(-90deg) !important; }
+    .hex3 { transform: rotate(180deg) translate(50px) rotate(-180deg) !important; }
+    .hex4 { transform: rotate(270deg) translate(50px) rotate(-270deg) !important; }
+
+    .mooc-section .text-block h2 {
+      font-size: 1.8em !important;
+    }
+
+    .mooc-section .sidebar .card {
+      padding: 20px !important;
+    }
+  }
+
+.news-block {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.news-block:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  cursor: pointer;
+}
+
+  @media (max-width: 480px) {
+    .mooc-section .version {
+      top: 10px !important;
+      left: 15px !important;
+      font-size: 12px !important;
+    }
+
+    .mooc-section .icon-block .circle {
+      width: 180px !important;
+      height: 180px !important;
+    }
+
+    .mooc-section .hex {
+      width: 50px !important;
+      height: 50px !important;
+    }
+
+  }
+
+
+.highlight-link {
+  text-decoration: none;
+  color: inherit;
+}
+
+.highlight {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  cursor: pointer;
+  display: inline-block;
+  padding: 15px;
+  border-radius: 10px;
+}
+
+.highlight:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+}
+</style>
+<div class="mooc-section">
+  <div class="container2">
+    <!-- Левая часть: контент -->
+    <div class="content-wrapper">
+
+        <section class="about-mooc">
+  <div class="icon-block" data-aos="fade-up" data-aos-delay="500">
+    <div class="circle">
+      <div class="version">${_("MOOC")}</div>
+      <div class="hex hex1">${_("Online")}</div>
+      <div class="hex hex2">${_("Courses")}</div>
+      <div class="hex hex3">${_("Open")}</div>
+      <div class="hex hex4">${_("Massive")}</div>
+    </div>
+  </div>
+  <div class="text-block">
+    <h2 data-aos="zoom-in">${_("About MOOC")}</h2>
+    <p data-aos="fade-left">
+      ${_("Massive Open Online Courses (MOOCs) are free online courses available to everyone. MOOCs provide a flexible and accessible way to gain new skills, advance your career, and deliver quality education at scale.")}
+    </p>
+    <p data-aos="fade-left">
+      ${_("Millions of people worldwide use MOOCs for various reasons, including career advancement, career change, college preparation, additional education, lifelong learning, corporate e-learning, training, and much more.")}
+    </p>
+    <p data-aos="fade-left">
+      ${_("MOOCs have fundamentally changed the way people learn around the world. Ready to get started?")}
+    </p>
+
+<a href="/news" class="highlight-link">
+  <div class="highlight" data-aos="fade-down" data-aos-delay="300">
+      <strong>${_("Our News")}!</strong><br />
+      ${_("Check out our latest updates on the platform")}
+  </div>
+</a>
+
+  </div>
+</section>
+
+    </div>
+
+
+<div class="sidebar">
+  <div class="card" data-aos="fade-right">
+    <h3>
+      <span class="icon-box"><i class="fas fa-book" aria-hidden="true"></i></span>
+      ${_("Guide")}
+    </h3>
+    <p>${_("Follow the step-by-step guide to quickly and easily start learning.")}</p>
+    <a href="https://www.youtube.com/watch?v=1pZ3HGCu_bE" class="card-link">${_("Learn more")}</a>
+  </div>
+
+  <div class="card" data-aos="fade-right">
+    <h3>
+      <span class="icon-box"><i class="fas fa-laptop-code" aria-hidden="true" style="color: white !important; font-size: 12px !important;"></i></span>
+      ${_("Popular Topics")}
+    </h3>
+    <p>${_("Artificial Intelligence, Digital Marketing, Web Development, Project Management, and Personal Growth.")}</p>
+    <a href="/courses" class="card-link">${_("Browse courses")}</a>
+  </div>
+
+  <div class="card" data-aos="fade-right">
+    <h3>
+      <span class="icon-box"><i class="fas fa-award" aria-hidden="true"></i></span>
+      ${_("Join us!")}
+    </h3>
+    <p>${_("Become part of a community of 2 million students. Connect, share projects, and find like-minded people.")}</p>
+    <a href="/register" class="card-link">${_("Register")}</a>
+  </div>
+</div>
+
+</div>
+
+
+<style>
+.advantages-section * {
+    box-sizing: border-box !important;
+}
+.advantages-section {
+    background-color: #f8f0e3 !important;
+    padding: 60px 20px !important;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+}
+.advantages-section .container {
+    max-width: 1200px !important;
+    margin: 0 auto !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 30px !important;
+    justify-content: center !important;
+}
+.advantages-section h2 {
+    color: #1a263c !important;
+    font-size: 2.5em !important;
+    font-weight: 800 !important;
+    text-align: center !important;
+    margin-bottom: 40px !important;
+    width: 100% !important;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2) !important;
+}
+.advantages-section .advantage-card {
+    background: linear-gradient(145deg, #ffffff, #f8e7cc) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+    padding: 25px !important;
+    transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1) !important;
+    border: 1px solid rgba(26, 38, 60, 0.1) !important;
+    width: calc(33.33% - 20px) !important;
+    position: relative !important;
+    overflow: hidden !important;
+}
+.advantages-section .advantage-card::before {
+    content: '' !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 4px !important;
+    background: linear-gradient(90deg, #D3985C 0%, #1a263c 100%) !important;
+}
+.advantages-section .advantage-card:hover {
+    transform: translateY(-8px) !important;
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15) !important;
+}
+.advantages-section .advantage-card h3 {
+    color: #1a263c !important;
+    font-size: 1.5em !important;
+    margin-bottom: 15px !important;
+    display: flex !important;
+    align-items: center !important;
+}
+.advantages-section .advantage-card .icon-box {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 28px !important;
+    height: 28px !important;
+    background-color: #D3985C !important;
+    border-radius: 6px !important;
+    margin-right: 12px !important;
+    flex-shrink: 0 !important;
+}
+.advantages-section .advantage-card .icon-box i {
+    color: #ffffff !important;
+    font-size: 14px !important;
+}
+.advantages-section .advantage-card p {
+    color: #333 !important;
+    line-height: 1.6 !important;
+    margin-bottom: 15px !important;
+}
+@media (max-width: 992px) {
+    .advantages-section .advantage-card {
+        width: calc(50% - 20px) !important;
+    }
+}
+@media (max-width: 768px) {
+    .advantages-section h2 {
+        font-size: 2em !important;
+    }
+    .advantages-section .advantage-card {
+        width: 100% !important;
+    }
+}
+@media (max-width: 480px) {
+    .advantages-section {
+        padding: 40px 15px !important;
+    }
+    .advantages-section h2 {
+        font-size: 1.8em !important;
+    }
+    .advantages-section .advantage-card {
+        padding: 20px !important;
+    }
+}
+</style>
+
+<section class="advantages-section">
+    <div class="container">
+        <h2 data-aos="zoom-in">${_("Advantages of Online Courses")}</h2>
+
+        <div class="advantage-card">
+            <h3>
+                <span class="icon-box"><i class="fas fa-clock" aria-hidden="true"></i></span>
+                ${_("Flexible Schedule")}
+            </h3>
+            <p>${_("Learn at your own pace and at a convenient time, balancing studies with work or other commitments.")}</p>
+        </div>
+
+        <div class="advantage-card">
+            <h3>
+                <span class="icon-box"><i class="fas fa-globe" aria-hidden="true"></i></span>
+                ${_("Accessibility")}
+            </h3>
+            <p>${_("Get access to high-quality courses from anywhere in the world, without leaving your home.")}</p>
+        </div>
+
+        <div class="advantage-card">
+            <h3>
+                <span class="icon-box"><i class="fas fa-graduation-cap" aria-hidden="true"></i></span>
+                ${_("Variety of Courses")}
+            </h3>
+            <p>${_("Choose from a wide range of programs: from programming to personal development.")}</p>
+        </div>
+
+        <div class="advantage-card">
+            <h3>
+                <span class="icon-box"><i class="fas fa-certificate" aria-hidden="true"></i></span>
+                ${_("Certificates")}
+            </h3>
+            <p>${_("Earn official certificates upon course completion to strengthen your resume.")}</p>
+        </div>
+
+        <div class="advantage-card">
+            <h3>
+                <span class="icon-box"><i class="fas fa-users" aria-hidden="true"></i></span>
+                ${_("Community")}
+            </h3>
+            <p>${_("Connect with instructors and students, share experiences, and exchange ideas.")}</p>
+        </div>
+
+        <div class="advantage-card">
+            <h3>
+                <span class="icon-box"><i class="fas fa-wallet" aria-hidden="true"></i></span>
+                ${_("Free Learning")}
+            </h3>
+            <p>${_("Many courses are available for free, making education accessible to everyone.")}</p>
+        </div>
+    </div>
+</section>

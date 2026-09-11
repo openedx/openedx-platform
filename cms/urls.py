@@ -20,6 +20,11 @@ from cms.djangoapps.contentstore import toggles
 from cms.djangoapps.contentstore import views as contentstore_views
 from cms.djangoapps.contentstore.views.block import xblock_edit_view
 from cms.djangoapps.contentstore.views.organization import OrganizationListView
+from cms.djangoapps.contentstore.views.course_admin import (
+    course_admin_action,
+    course_admin_page,
+    course_admin_status,
+)
 from openedx.core.apidocs import api_info
 from openedx.core.djangoapps.password_policy import compliance as password_policy_compliance
 from openedx.core.djangoapps.password_policy.forms import PasswordPolicyAwareAdminAuthForm
@@ -69,6 +74,10 @@ urlpatterns = oauth2_urlpatterns + [
     path('server_error', contentstore_views.server_error, name='server_error'),
     path('organizations', OrganizationListView.as_view(), name='organizations'),
     path('api/toggles/', include('openedx.core.djangoapps.waffle_utils.urls')),
+    # Deliberately absent from Studio navigation; every endpoint requires global staff.
+    path('course-admin/', course_admin_page, name='course_admin'),
+    path('course-admin/action/', course_admin_action, name='course_admin_action'),
+    path('course-admin/status/', course_admin_status, name='course_admin_status'),
 
     # noop to squelch ajax errors
     path('event', contentstore_views.event, name='event'),

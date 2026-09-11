@@ -22,6 +22,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.exceptions import SuspiciousOperation
 from django.core.files import File
+from django.db import transaction
 from django.test import RequestFactory
 from django.utils.text import get_valid_filename
 from edx_django_utils.monitoring import (
@@ -131,12 +132,72 @@ def clone_instance(instance, field_values):
     return instance
 
 
+def copy_custom_course_overview_fields(source_course_key, destination_course_key, raise_on_error=False):
+    """
+    Copy custom CourseOverview fields from source course to rerun course.
+    """
+    from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
+
+    try:
+        source_overview = CourseOverview.objects.get(id=source_course_key)
+
+        try:
+            destination_overview = CourseOverview.objects.get(id=destination_course_key)
+        except CourseOverview.DoesNotExist:
+            destination_overview = CourseOverview.get_from_id(destination_course_key)
+
+        destination_overview.faculty = source_overview.faculty
+        destination_overview.directions = source_overview.directions
+        destination_overview.complexity = source_overview.complexity
+
+        destination_overview.save(update_fields=[
+            "faculty",
+            "directions",
+            "complexity",
+        ])
+
+        LOGGER.info(
+            "my-log: copied custom overview fields during course rerun: %s -> %s, faculty=%s, directions=%s, complexity=%s",
+            source_course_key,
+            destination_course_key,
+            source_overview.faculty,
+            source_overview.directions,
+            source_overview.complexity,
+        )
+
+    except Exception:
+        LOGGER.exception(
+            "my-log: failed to copy custom overview fields during course rerun: %s -> %s",
+            source_course_key,
+            destination_course_key,
+        )
+        if raise_on_error:
+            raise
+
+
 @shared_task
 @set_code_owner_attribute
-def rerun_course(source_course_key_string, destination_course_key_string, user_id, fields=None):
+def rerun_course(source_course_key_string, destination_course_key_string, user_id, fields=None, admin_settings=None):
     """
     Reruns a course in a new celery task.
     """
+    if admin_settings is not None:
+        # Celery may redeliver a task. Hold the destination reservation lock so
+        # concurrent deliveries cannot clone or overwrite one another's status.
+        with transaction.atomic():
+            state = CourseRerunState.objects.select_for_update().get(
+                course_key=CourseKey.from_string(destination_course_key_string), action='rerun',
+            )
+            if state.state != 'in_progress':
+                return state.state
+            return _rerun_course(
+                source_course_key_string, destination_course_key_string, user_id, fields, admin_settings,
+            )
+    return _rerun_course(source_course_key_string, destination_course_key_string, user_id, fields)
+
+
+def _rerun_course(source_course_key_string, destination_course_key_string, user_id, fields=None, admin_settings=None):
+    """Implementation shared by native Studio reruns and reserved admin reruns."""
     # import here, at top level this import prevents the celery workers from starting up correctly
     from edxval.api import copy_course_videos
 
@@ -152,34 +213,53 @@ def rerun_course(source_course_key_string, destination_course_key_string, user_i
         with store.default_store('split'):
             store.clone_course(source_course_key, destination_course_key, user_id, fields=fields)
 
+        if admin_settings is not None:
+            from cms.djangoapps.contentstore.course_admin import shift_rerun_content_dates
+            shift_rerun_content_dates(source_course_key, destination_course_key, user_id, admin_settings)
+
+        copy_custom_course_overview_fields(
+            source_course_key,
+            destination_course_key,
+            raise_on_error=admin_settings is not None,
+        )
+
         update_unit_discussion_state_from_discussion_blocks(destination_course_key, user_id)
-
-        # set initial permissions for the user to access the course.
-        initialize_permissions(destination_course_key, User.objects.get(id=user_id))
-
-        # update state: Succeeded
-        CourseRerunState.objects.succeeded(course_key=destination_course_key)
 
         # call edxval to attach videos to the rerun
         copy_course_videos(source_course_key, destination_course_key)
 
-        # Copy OrganizationCourse
-        organization_course = OrganizationCourse.objects.filter(course_id=source_course_key_string).first()
+        # Success includes every copy and the admin workflow's SQL configuration.
+        # Keep SQL copies in one transaction, and apply admin configuration after
+        # modulestore signals so pacing handlers cannot overwrite certificate settings.
+        with transaction.atomic():
+            # Set initial permissions for the user to access the course.
+            creator = User.objects.get(id=user_id)
+            if admin_settings is not None:
+                # The private bulk workflow reserves directly instead of invoking the
+                # single-course HTTP helper that normally grants these roles.
+                CourseInstructorRole(destination_course_key).add_users(creator)
+                CourseStaffRole(destination_course_key).add_users(creator)
+            initialize_permissions(destination_course_key, creator)
 
-        if organization_course:
-            clone_instance(organization_course, {'course_id': destination_course_key_string})
+            # Copy OrganizationCourse
+            organization_course = OrganizationCourse.objects.filter(course_id=source_course_key_string).first()
+            if organization_course:
+                clone_instance(organization_course, {'course_id': destination_course_key_string})
 
-        # Copy RestrictedCourse
-        restricted_course = RestrictedCourse.objects.filter(course_key=source_course_key).first()
+            # Copy RestrictedCourse
+            restricted_course = RestrictedCourse.objects.filter(course_key=source_course_key).first()
+            if restricted_course:
+                country_access_rules = CountryAccessRule.objects.filter(restricted_course=restricted_course)
+                new_restricted_course = clone_instance(restricted_course, {'course_key': destination_course_key})
+                for country_access_rule in country_access_rules:
+                    clone_instance(country_access_rule, {'restricted_course': new_restricted_course})
 
-        if restricted_course:
-            country_access_rules = CountryAccessRule.objects.filter(restricted_course=restricted_course)
-            new_restricted_course = clone_instance(restricted_course, {'course_key': destination_course_key})
-            for country_access_rule in country_access_rules:
-                clone_instance(country_access_rule, {'restricted_course': new_restricted_course})
-
-        org_data = ensure_organization(source_course_key.org)
-        add_organization_course(org_data, destination_course_key)
+            org_data = ensure_organization(source_course_key.org)
+            add_organization_course(org_data, destination_course_key)
+            if admin_settings is not None:
+                from cms.djangoapps.contentstore.course_admin import configure_rerun
+                configure_rerun(source_course_key, destination_course_key, admin_settings)
+            CourseRerunState.objects.succeeded(course_key=destination_course_key)
         return "succeeded"
 
     except DuplicateCourseError:

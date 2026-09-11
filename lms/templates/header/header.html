@@ -1,5 +1,3 @@
-## mako
-
 <%page expression_filter="h" args="online_help_token, use_cookie_banner=False"/>
 
 <%namespace name='static' file='../static_content.html'/>
@@ -20,6 +18,9 @@ from openedx.core.djangoapps.site_configuration import helpers as configuration_
 %>
 
 ## Provide a hook for themes to inject branding on top.
+
+
+
 <%block name="navigation_top" />
 
 <%
@@ -41,6 +42,26 @@ from openedx.core.djangoapps.site_configuration import helpers as configuration_
     catch(e){window.attachEvent("onload", $buo_f)}
   </script>
 % endif
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+
+.global-header{
+    background-color: #1a263c !important;
+    border-bottom: none !important;
+}
+
+@media (min-width: 1025px) {
+    .header-container {
+    width: 90% !important;
+    margin: 0 auto !important; /* центрирует по горизонтали */
+}
+}
+@media (max-width: 1024px) {
+    .fa-globe {
+        display: none !important;
+    }
+}
+</style>
 
 <header class="global-header ${'slim' if course else ''}">
     % if settings.FEATURES.get('ENABLE_COOKIE_POLICY_BANNER', use_cookie_banner):
@@ -48,24 +69,67 @@ from openedx.core.djangoapps.site_configuration import helpers as configuration_
             component="CookiePolicyBanner",
             id="frontend-component-cookie-policy-banner",
             props={}
-        )}
+ )}
     % endif
-    <div class="main-header">
-        <%include file="navbar-logo-header.html" args="online_help_token=online_help_token"/>
-        <div class="hamburger-menu" role="button" aria-label=${_("Options Menu")} aria-expanded="false" aria-controls="mobile-menu" tabindex="0">
-            <span class="line"></span>
-            <span class="line"></span>
-            <span class="line"></span>
-            <span class="line"></span>
+
+    <!-- Добавляем обёртку -->
+    <div class="header-container">
+        <div class="main-header">
+            <%include file="navbar-logo-header.html" args="online_help_token=online_help_token"/>
+            <div class="hamburger-menu" role="button" aria-label=${_("Options Menu")} aria-expanded="false" aria-controls="mobile-menu" tabindex="0">
+                <span class="line"></span>
+                <span class="line"></span>
+                <span class="line"></span>
+                <span class="line"></span>
+            </div>
+
+            % if user.is_authenticated:
+                <%include file="navbar-authenticated.html" args="online_help_token=online_help_token"/>
+            % else:
+                <%include file="navbar-not-authenticated.html" args="online_help_token=online_help_token"/>
+            % endif
+
+            ## --- Селектор языка вынесен наружу ---
+            % if header_language_selector_is_enabled():
+                <% languages = released_languages() %>
+                % if len(languages) > 1:
+                    <form action="/i18n/setlang/" method="post" class="settings-language-form" id="language-settings-form"
+                          style="display: flex; align-items: center; gap: 8px; margin-top: 10px;">
+                        <input type="hidden" id="csrf_token" name="csrfmiddlewaretoken" value="${csrf_token}">
+                        % if user.is_authenticated:
+                            <input type="hidden" class="url-endpoint"
+                                   value="${reverse('preferences_api', kwargs={'username': user.username})}"
+                                   data-user-is-authenticated="true">
+                        % else:
+                            <input type="hidden" class="url-endpoint"
+                                   value="${reverse('update_language')}"
+                                   data-user-is-authenticated="false">
+                        % endif
+
+                        <label style="margin: 0; font-weight: bold; display: flex; align-items: center; gap: 6px;">
+                            <i class="fa-solid fa-globe" style="color: #d3985c; font-size: 16px;"></i>
+                            <span class="sr">${_("Choose Language")}</span>
+                            <select class="input select language-selector" id="settings-language-value" name="language"
+                                    style="border-radius: 8px; padding: 5px 10px; font-size: 14px;">
+                                % for language in languages:
+                                    % if language[0] == LANGUAGE_CODE:
+                                        <option value="${language[0]}" selected="selected">${language[1]}</option>
+                                    % else:
+                                        <option value="${language[0]}">${language[1]}</option>
+                                    % endif
+                                % endfor
+                            </select>
+                        </label>
+                    </form>
+                % endif
+            % endif
+            ## --- конец блока ---
         </div>
-        % if user.is_authenticated:
-            <%include file="navbar-authenticated.html" args="online_help_token=online_help_token"/>
-        % else:
-            <%include file="navbar-not-authenticated.html" args="online_help_token=online_help_token"/>
-        % endif
+        <div class="mobile-menu hidden" aria-label=${_("More Options")} role="menu" id="mobile-menu"></div>
     </div>
-    <div class="mobile-menu hidden" aria-label=${_("More Options")} role="menu" id="mobile-menu"></div>
 </header>
+
+
 
 % if course:
 <!--[if lte IE 9]>
@@ -82,27 +146,17 @@ from openedx.core.djangoapps.site_configuration import helpers as configuration_
   <%include file="../widgets/cookie-consent.html" />
 % endif
 
-% if header_language_selector_is_enabled():
-    <% languages = released_languages() %>
-    % if len(languages) > 1:
-        <form action="/i18n/setlang/" method="post" class="settings-language-form" id="language-settings-form">
-            <input type="hidden" id="csrf_token" name="csrfmiddlewaretoken" value="${csrf_token}">
-            % if user.is_authenticated:
-                <input title="preference api" type="hidden" class="url-endpoint" value="${reverse('preferences_api', kwargs={'username': user.username})}" data-user-is-authenticated="true">
-            % else:
-                <input title="session update url" type="hidden" class="url-endpoint" value="${reverse('update_language')}" data-user-is-authenticated="false">
-            % endif
-            <label><span class="sr">${_("Choose Language")}</span>
-            <select class="input select language-selector" id="settings-language-value" name="language">
-                % for language in languages:
-                    % if language[0] == LANGUAGE_CODE:
-                        <option value="${language[0]}" selected="selected">${language[1]}</option>
-                    % else:
-                        <option value="${language[0]}" >${language[1]}</option>
-                    % endif
-                % endfor
-            </select>
-            </label>
-        </form>
-    % endif
-% endif
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const header = document.querySelector(".global-header");
+
+    window.addEventListener("scroll", function () {
+
+ if (window.scrollY > 10) {
+            header.classList.add("scrolled");
+        } else {
+            header.classList.remove("scrolled");
+        }
+    });
+});
+</script>

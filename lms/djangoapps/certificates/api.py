@@ -355,6 +355,42 @@ def set_cert_generation_enabled(course_key, is_enabled):
         log.info("Disabled self-generated certificates for course '%s'.", str(course_key))
 
 
+def get_course_certificate_generation_settings(course_key):
+    """Return the latest per-course certificate-generation settings as plain data."""
+    course_settings = CertificateGenerationCourseSetting.get(course_key)
+    if course_settings is None:
+        return None
+    return {
+        "self_generation_enabled": course_settings.self_generation_enabled,
+        "language_specific_templates_enabled": course_settings.language_specific_templates_enabled,
+        "include_hours_of_effort": course_settings.include_hours_of_effort,
+    }
+
+
+def get_self_generation_enabled_for_courses(course_keys):
+    """Return the effective latest self-generation flag for each supplied course."""
+    result = {}
+    course_settings = CertificateGenerationCourseSetting.objects.filter(
+        course_key__in=course_keys,
+    ).order_by("created", "pk")
+    for item in course_settings:
+        result[str(item.course_key)] = item.self_generation_enabled
+    return result
+
+
+def create_course_certificate_generation_settings(course_key, values):
+    """Append per-course settings so historical duplicate rows remain well-defined."""
+    allowed = {
+        "self_generation_enabled",
+        "language_specific_templates_enabled",
+        "include_hours_of_effort",
+    }
+    unknown = set(values) - allowed
+    if unknown:
+        raise ValueError(f"Unsupported certificate generation settings: {sorted(unknown)}")
+    return CertificateGenerationCourseSetting.objects.create(course_key=course_key, **values)
+
+
 def is_certificate_invalidated(student, course_key):
     """Check whether the certificate belonging to the given student (in given course) has been invalidated.
 

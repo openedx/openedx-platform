@@ -1,0 +1,644 @@
+<%page expression_filter="h"/>
+<%! from django.utils.translation import gettext as _ %>
+<%inherit file="../main.html" />
+
+<%block name="pagetitle">${_("Competition")}</%block>
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Конкурс педагогических сценариев онлайн-курсов</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-dark: #1a263c;
+            --primary-accent: #d3985c;
+            --primary-light: #f5f7fa;
+            --secondary-dark: #142034;
+            --text-dark: #333;
+            --text-light: #fff;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            --border-radius: 8px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--text-dark);
+            background-color: var(--primary-light);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Header styles */
+        .hero {
+            background: linear-gradient(rgba(26, 38, 60, 0.85), rgba(26, 38, 60, 0.9)), url('https://open.kaznu.kz/static/kaznu/images/header.png') center/cover no-repeat;
+            height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            position: relative;
+            margin-bottom: 40px;
+        }
+
+        .hero-content {
+            max-width: 800px;
+            padding: 20px;
+            color: var(--text-light);
+        }
+
+        .hero h1 {
+            font-size: 2.8rem;
+            margin-bottom: 20px;
+            font-weight: 700;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        /* Section styling */
+        section {
+            margin-bottom: 60px;
+        }
+
+        .section-title {
+            text-align: center;
+            margin-bottom: 40px;
+            color: var(--primary-dark);
+            position: relative;
+        }
+
+        .section-title h2 {
+            font-size: 2.2rem;
+            display: inline-block;
+            padding-bottom: 10px;
+        }
+
+        .section-title h2::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 4px;
+            background: var(--primary-accent);
+            border-radius: 2px;
+        }
+
+        .content-card {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            padding: 30px;
+            margin-bottom: 30px;
+            transition: transform 0.3s ease;
+        }
+
+        .content-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .content-card h3 {
+            color: var(--primary-dark);
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+        }
+
+        /* Timeline styling */
+        .timeline {
+            position: relative;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: var(--primary-accent);
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .timeline-item {
+            position: relative;
+            width: 50%;
+            padding: 20px 40px;
+        }
+
+        .timeline-item:nth-child(odd) {
+            left: 0;
+        }
+
+        .timeline-item:nth-child(even) {
+            left: 50%;
+        }
+
+        .timeline-item::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: var(--primary-accent);
+            border: 4px solid white;
+            border-radius: 50%;
+            top: 30px;
+        }
+
+        .timeline-item:nth-child(odd)::after {
+            right: -10px;
+        }
+
+        .timeline-item:nth-child(even)::after {
+            left: -10px;
+        }
+
+        .timeline-content {
+            background: white;
+            padding: 25px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            position: relative;
+        }
+
+        .timeline-date {
+            font-weight: 700;
+            color: var(--primary-accent);
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        /* Requirements grid - обновленный стиль для центрирования последней карточки */
+        .requirements-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .requirements-row {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 25px;
+            margin-bottom: 25px;
+            width: 100%;
+        }
+
+        .requirement-card {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            padding: 25px;
+            text-align: center;
+            transition: all 0.3s ease;
+            border-top: 4px solid var(--primary-accent);
+            width: calc(33.333% - 25px);
+            min-width: 250px;
+            flex-grow: 1;
+        }
+
+        .requirement-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+        }
+
+        .requirement-icon {
+            font-size: 3.5rem;
+            color: var(--primary-dark);
+            margin-bottom: 20px;
+        }
+
+        .requirement-card h4 {
+            color: var(--primary-dark);
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+            min-height: 60px;
+        }
+
+        .requirement-links {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .requirement-links a {
+            background: var(--primary-accent);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 4px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: background 0.3s;
+            font-size: 0.9rem;
+        }
+
+        .requirement-links a:hover {
+            background: var(--primary-dark);
+        }
+
+        /* Announcement */
+        .announcement {
+            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--secondary-dark) 100%);
+            border-radius: var(--border-radius);
+            color: white;
+            padding: 40px;
+            margin: 50px 0;
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .announcement::before {
+            content: "📢";
+            position: absolute;
+            font-size: 8rem;
+            opacity: 0.1;
+            right: 20px;
+            top: 20px;
+            transform: rotate(15deg);
+        }
+
+        .announcement h3 {
+            font-size: 2rem;
+            margin-bottom: 25px;
+            position: relative;
+        }
+
+        .announcement h3::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 0;
+            width: 60px;
+            height: 4px;
+            background: var(--primary-accent);
+            border-radius: 2px;
+        }
+
+        .announcement-list {
+            list-style-type: none;
+        }
+
+        .announcement-list li {
+            padding: 15px 0;
+            padding-left: 30px;
+            position: relative;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .announcement-list li:last-child {
+            border-bottom: none;
+        }
+
+        .announcement-list li::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 20px;
+            width: 12px;
+            height: 12px;
+            background: var(--primary-accent);
+            border-radius: 50%;
+        }
+
+        .announcement-list strong {
+            color: var(--primary-accent);
+        }
+
+        /* Button styles */
+        .cta-button {
+            display: inline-block;
+            background: var(--primary-accent);
+            color: white;
+            text-decoration: none;
+            padding: 15px 35px;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin: 30px 0;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(211, 152, 92, 0.4);
+            border: none;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta-button:hover {
+            background: var(--primary-dark);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(26, 38, 60, 0.5);
+        }
+
+        .cta-button:active {
+            transform: translateY(1px);
+        }
+
+        .cta-container {
+            text-align: center;
+            margin: 40px 0;
+        }
+
+        /* Footer/contact */
+        .contact-info {
+            background: var(--primary-dark);
+            color: white;
+            padding: 30px;
+            border-radius: var(--border-radius);
+            text-align: center;
+            margin-top: 40px;
+        }
+
+        .contact-info p {
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.8;
+        }
+
+        .contact-info a {
+            color: var(--primary-accent);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .contact-info a:hover {
+            text-decoration: underline;
+        }
+
+        /* Responsive styles */
+        @media (max-width: 992px) {
+            .requirement-card {
+                width: calc(50% - 25px);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .hero {
+                height: 300px;
+            }
+
+            .hero h1 {
+                font-size: 2rem;
+            }
+
+            .timeline::before {
+                left: 30px;
+            }
+
+            .timeline-item {
+                width: 100%;
+                padding-left: 70px;
+                padding-right: 20px;
+                left: 0 !important;
+            }
+
+            .timeline-item::after {
+                left: 20px !important;
+            }
+
+            .requirement-card {
+                width: 100%;
+            }
+
+            .announcement {
+                padding: 25px;
+            }
+        }
+    </style>
+</head>
+
+    <body>
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1 style="color: white !important;">${_("Competition for the Selection of Pedagogical Scenarios for Online Courses")}</h1>
+            <p>${_("Al-Farabi Kazakh National University")}</p>
+        </div>
+    </section>
+
+    <div class="container">
+        <!-- About Section -->
+        <section>
+            <div class="section-title">
+                <h2>${_("About the Competition")}</h2>
+            </div>
+
+            <div class="content-card">
+                <p>${_("The Office of Academic and Digital Innovations is accepting applications for participation in the competition of pedagogical scenarios for the creation and publication of online courses (MOOC/SPOC)")}.</p>
+                <div style="margin: 25px 0; padding: 20px; background: #f8f9fa; border-radius: var(--border-radius);">
+                <h3 style="color: #cc3300; margin-bottom: 15px;">${_("Attention!")}</h3>
+                <p>${_("The competition for pedagogical scenarios for the development and publication of online courses (MOOC/SPOC), organized by the Office of Academic and Digital Innovations, has been canceled in 2026.")}</p>
+                <p>${_("Order on cancellation.")}</p>
+                <p>${_("Information about the next competition will be published on this page.")}</p>
+                <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-top: 20px">
+                    <a href="https://open.kaznu.kz/asset-v1:KazNU+CS2024+C1+type@asset+block@140.pdf"
+                       target="_blank"
+                       style="background: var(--primary-dark); color: white; padding: 10px 20px; border-radius: 4px; text-decoration: none;">${_("Order")}</a>
+                </div>
+            </div>
+                <div style="margin: 25px 0; padding: 20px; background: #f8f9fa; border-radius: var(--border-radius);">
+                    <h3 style="color: var(--primary-accent); margin-bottom: 15px;">${_("MOOC Competition Regulations")}</h3>
+                    <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                        <a href="https://open.kaznu.kz/asset-v1:FIT+STO+2025_C1+type@asset+block@Положение_рус1__1_.pdf" target="_blank" style="background: var(--primary-dark); color: white; padding: 10px 20px; border-radius: 4px; text-decoration: none;">${_("Russian")}</a>
+                        <a href="https://open.kaznu.kz/asset-v1:FIT+STO+2025_C1+type@asset+block@Положение_каз_1__1_.pdf" target="_blank" style="background: var(--primary-dark); color: white; padding: 10px 20px; border-radius: 4px; text-decoration: none;">${_("Kazakh")}</a>
+                    </div>
+                </div>
+
+                <p>${_("Both creative teams of university departments and individual teaching or research staff of the university can participate in the competition")}.</p>
+                <p>${_("Based on the results of the competition, the commission will approve and release 5 MOOC and 5 SPOC")}.</p>
+            </div>
+        </section>
+
+        <!-- Stages Section -->
+        <section>
+            <div class="section-title">
+                <h2>${_("Competition Stages")}</h2>
+            </div>
+
+            <div class="timeline">
+                <div class="timeline-item">
+                    <div class="timeline-content">
+                        <span class="timeline-date">${_("Stage")} 1</span>
+                        <h3>${_("Registration and Submission of Applications")}</h3>
+                        <p>${_("Until")} ${_("February")} 10, 2025</p>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-content">
+                        <span class="timeline-date">${_("Stage")} 2</span>
+                        <h3>${_("Public Defense of Pedagogical Scenarios")}</h3>
+                        <p>${_("Until")} ${_("February")} 17, 2025</p>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-content">
+                        <span class="timeline-date">${_("Stage")} 3</span>
+                        <h3>${_("Evaluation of Applications and Selection of Winners")}</h3>
+                        <p>${_("Until")} ${_("February")} 24, 2025</p>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-content">
+                        <span class="timeline-date">${_("Stage")} 4</span>
+                        <h3>${_("Approval of Competition Results")}</h3>
+                        <p>${_("Until")} ${_("March")} 3, 2025</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Requirements Section -->
+        <section>
+            <div class="section-title">
+                <h2>${_("Application Requirements")}</h2>
+            </div>
+
+            <div class="requirements-container">
+                <div class="requirements-row">
+                    <div class="requirement-card">
+                        <div class="requirement-icon">
+                            <i class="fas fa-file-alt"></i>
+                        </div>
+                        <h4>${_("Cover Letter")}</h4>
+                        <div class="requirement-links">
+                            <a href="https://docs.google.com/document/d/1wv01Ul-EzLwsRIYF-hhS__iHwQV7bRkD/edit?pli=1" target="_blank">${_("Russian")}</a>
+                            <a href="https://docs.google.com/document/d/1tSIHMhunRS4kKno3NtAm5Js5cO9j14V_/" target="_blank">${_("Kazakh")}</a>
+                        </div>
+                    </div>
+
+                    <div class="requirement-card">
+                        <div class="requirement-icon">
+                            <i class="fas fa-book-open"></i>
+                        </div>
+                        <h4>${_("Pedagogical Scenario of an Online Course")}</h4>
+                        <div class="requirement-links">
+                            <a href="https://docs.google.com/document/d/15caemjpKIW6hb0Lqk-X8X7qhwtThdR_8/edit" target="_blank">${_("Russian")}</a>
+                            <a href="https://docs.google.com/document/d/1o1f0UCgxr4RbD-z2hPVs3kfScg50VlDp/edit" target="_blank">${_("Kazakh")}</a>
+                        </div>
+                    </div>
+
+                    <div class="requirement-card">
+                        <div class="requirement-icon">
+                            <i class="fas fa-file-video"></i>
+                        </div>
+                        <h4>${_("Lecture Video Recording")}</h4>
+                        <div class="requirement-links">
+                            <a href="https://docs.google.com/document/d/1pYmM_bsuu6MtVaSyqOsOXEi_3nvGrgpu/edit" target="_blank">${_("Russian")}</a>
+                            <a href="https://docs.google.com/document/d/1pYmM_bsuu6MtVaSyqOsOXEi_3nvGrgpu/edit" target="_blank">${_("Kazakh")}</a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="requirements-row">
+                    <div class="requirement-card">
+                        <div class="requirement-icon">
+                            <i class="fas fa-certificate"></i>
+                        </div>
+                        <h4>${_("Online Course Certificate")}</h4>
+                        <div class="requirement-links">
+                            <a href="https://docs.google.com/document/d/1jc5oFXDXTDyPrMNr5zQ5CouQ8WWkweth/edit" target="_blank">${_("Russian")}</a>
+                            <a href="https://docs.google.com/document/d/1qdHYSRc5VdhspmvISFviteM187-LT6lJ/edit" target="_blank">${_("Kazakh")}</a>
+                        </div>
+                    </div>
+
+                    <div class="requirement-card">
+                        <div class="requirement-icon">
+                            <i class="fas fa-chalkboard-teacher"></i>
+                        </div>
+                        <h4>${_("Author Information")}</h4>
+                        <div class="requirement-links">
+                            <a href="https://docs.google.com/document/d/1_P6p1vX6cF82WjLVj7Apr_QL4VMKquBn/edit" target="_blank">${_("Russian")}</a>
+                            <a href="https://docs.google.com/document/d/15f8lFPUV3GjNy5cqqmW-xryUr7Q58Wbj/edit" target="_blank">${_("Kazakh")}</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Announcement Section -->
+        <section>
+            <div class="announcement">
+                <h3 style="color: white !important">${_("Competition Announcement")}</h3>
+                <ul class="announcement-list">
+                    <li>
+                        <strong>${_("The Office of Academic and Digital Innovations")}</strong> ${_("is pleased to announce the launch of the competition for the selection of pedagogical scenarios for online courses.")}
+                    </li>
+                    <li>
+                        <strong>${_("Stage")} 1:</strong> ${_("Application submission")} — <strong>${_("February")} 10–17, 2025</strong>
+                    </li>
+                    <li>
+                        <strong>${_("Stage")} 2:</strong> ${_("Selection of applications for participation")} — <strong>${_("February")} 18–24, 2025</strong>
+                    </li>
+                    <li>
+                        <strong>${_("Stage")} 3:</strong> ${_("Public defense of projects")} — <strong>${_("February")} 25–28, 2025</strong>
+                    </li>
+                    <li>
+                        <strong>${_("Stage")} 4:</strong> ${_("Announcement of winners")} — <strong>${_("March")} 3–10, 2025</strong>
+                    </li>
+                    <li>
+                        ${_("Applications are accepted online via the form on the Open Kaznu website. Details and application templates can be found on the competition page")}.
+                    </li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- CTA Section -->
+        <div class="cta-container">
+            <a href="..." target="_blank" class="cta-button" style="color: white !important;">
+                ${_("Submit Application")}
+            </a>
+        </div>
+
+        <!-- Contact Section -->
+        <div class="contact-info">
+            <h3 style="color: white !important">${_("Contacts")}</h3>
+            <p>${_("For all inquiries, please contact the Office of Academic and Digital Innovations: Building - Rectorate, Office 207, phone")} +7 727 377 33 30 ${_("(ext.")} 31-24, 11-33, 16-47)</p>
+        </div>
+    </div>
+        <script>
+        // Simple animation for timeline items
+        document.addEventListener('DOMContentLoaded', function() {
+            const timelineItems = document.querySelectorAll('.timeline-item');
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.opacity = 1;
+                        entry.target.style.transform = 'translateY(0)';
+                    }
+                });
+            }, { threshold: 0.1 });
+
+            timelineItems.forEach(item => {
+                item.style.opacity = 0;
+                item.style.transform = 'translateY(20px)';
+                item.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                observer.observe(item);
+            });
+        });
+    </script>
+</body>
+</html>

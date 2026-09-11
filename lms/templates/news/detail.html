@@ -1,0 +1,106 @@
+<%! from django.utils.html import escape %>
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>${escape(news.title)}</title>
+    <style>
+        :root {
+            --primary-dark: #1a263c;
+            --primary-accent: #d3985c;
+            --primary-light: #f5f7fa;
+            --text-dark: #333;
+            --text-light: #fff;
+            --shadow: 0 4px 12px rgba(0,0,0,0.1);
+            --border-radius: 10px;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--primary-light);
+            color: var(--text-dark);
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 50px auto;
+            background-color: #fff;
+            padding: 30px 40px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+        }
+
+        article h1 {
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+            color: var(--primary-dark);
+        }
+
+        article em {
+            display: block;
+            margin-bottom: 20px;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        article img {
+            display: block;
+            max-width: 100%;
+            margin: 20px 0;
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+
+        article div {
+            font-size: 1rem;
+            line-height: 1.7;
+            color: var(--text-dark);
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-top: 30px;
+            padding: 10px 20px;
+            background-color: var(--primary-accent);
+            color: var(--text-light);
+            border-radius: 6px;
+            text-decoration: none;
+            transition: background-color 0.3s ease;
+        }
+
+        .back-link:hover {
+            background-color: var(--primary-dark);
+        }
+
+        /* Адаптив для мобильных */
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+                margin: 30px auto;
+            }
+
+            article h1 {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <article>
+            <h1>${escape(news.title)}</h1>
+            <em>${news.created_at.date()}</em>
+
+            % if news.image:
+                <img src="${news.image.url}" alt="${escape(news.title)}">
+            % endif
+
+            <div>${news.content | n}</div>
+        </article>
+
+        <a href="/news/" class="back-link">Назад к списку</a>
+    </div>
+</body>
+</html>

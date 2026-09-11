@@ -65,7 +65,26 @@ from openedx.core.lib.courses import course_image_url
           <p><small>${course.display_org_with_default}</small></p>
           <h1>${course.display_name_with_default}</h1>
           <br />
-          <p>${get_course_about_section(request, course, 'short_description')}</p>
+          % if same_name_courses:
+  <div class="course-variants">
+    <label for="courseSelector"><strong>${_("Course launches")}</strong></label>
+    <select id="courseSelector" class="form-control" onchange="if(this.value) window.location.href=this.value;">
+      % for c in same_name_courses:
+        <option value="/courses/${c.id}/about"
+                % if c.id == course.id:
+                    selected
+                % endif
+        >
+          ${c.start.strftime('%d.%m.%Y') if c.start else 'Дата начала не указана'}
+          —
+          ${c.end.strftime('%d.%m.%Y') if c.end else 'Дата окончания не указана'}
+        </option>
+      % endfor
+    </select>
+  </div>
+% endif
+
+
         </div>
 
         <div class="main-cta">
@@ -206,6 +225,17 @@ from openedx.core.lib.courses import course_image_url
             <li class="important-dates-item"><span class="icon fa fa-pencil" aria-hidden="true"></span><p class="important-dates-item-title">${_("Estimated Effort")}</p><span class="important-dates-item-text effort">${get_course_about_section(request, course, "effort")}</span></li>
           % endif
 
+          % if complexity:
+          <li class="important-dates-item">
+            <span class="icon fa fa-pencil" aria-hidden="true"></span>
+            <p class="important-dates-item-title">
+              ${_("Course Difficulty")}
+            </p>
+            <span class="important-dates-item-text complexity">
+              ${_(complexity)}
+            </span>
+          </li>
+          % endif
           ##<li class="important-dates-item"><span class="icon fa fa-clock-o" aria-hidden="true"></span><p class="important-dates-item-title">${_('Course Length')}</p><span class="important-dates-item-text course-length">${_('{number} weeks').format(number=15)}</span></li>
 
           %if course_price and (is_cosmetic_price_enabled):

@@ -34,6 +34,7 @@ class CourseDetailsSerializer(serializers.Serializer):
     description = serializers.CharField(allow_blank=True)
     duration = serializers.CharField(allow_blank=True)
     effort = serializers.CharField(allow_null=True, allow_blank=True)
+    # complexity = serializers.CharField(allow_null=True, allow_blank=True, required=False)
     end_date = serializers.DateTimeField(allow_null=True)
     enrollment_end = serializers.DateTimeField(allow_null=True)
     enrollment_start = serializers.DateTimeField(allow_null=True)
