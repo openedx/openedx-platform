@@ -29,7 +29,7 @@ from lms.djangoapps.ccx.models import CustomCourseForEdX
 from lms.djangoapps.ccx.overrides import get_override_for_ccx, override_field_for_ccx
 from lms.djangoapps.ccx.tests.factories import CcxFactory
 from lms.djangoapps.ccx.tests.utils import CcxTestCase, flatten
-from lms.djangoapps.ccx.utils import ccx_course, is_email
+from lms.djangoapps.ccx.utils import ccx_course, create_ccx_course, is_email
 from lms.djangoapps.ccx.views import get_date
 from lms.djangoapps.courseware.tabs import get_course_tab_list
 from lms.djangoapps.courseware.tests.factories import StudentModuleFactory
@@ -355,6 +355,38 @@ class TestCoachDashboard(CcxTestCase, LoginEnrollmentTestCase):
             " Contact a course admin to give you access."
         )
         assert re.search(error_message, response.content.decode('utf-8'))
+
+    def test_create_ccx_course_service(self):
+        """
+        The extracted ``create_ccx_course`` service performs the full CCX
+        creation side effects independently of the legacy view. This guards the
+        refactor that moved the creation logic out of ``create_ccx`` so the v2
+        API can reuse it.
+        """
+        ccx_name = 'Service CCX'
+        self.make_coach()
+
+        ccx = create_ccx_course(self.course, self.coach, ccx_name)
+
+        # A CCX row is created and owned by the coach with the given name.
+        assert isinstance(ccx, CustomCourseForEdX)
+        assert ccx.coach == self.coach
+        assert ccx.display_name == ccx_name
+
+        course_key = CCXLocator.from_course_locator(self.course.id, str(ccx.id))
+
+        # Field overrides are applied (max students + display name).
+        assert get_override_for_ccx(
+            ccx, self.course, 'max_student_enrollments_allowed'
+        ) == settings.CCX_MAX_STUDENTS_ALLOWED
+        assert get_override_for_ccx(ccx, self.course, 'display_name') == ccx_name
+
+        # Coach is enrolled and granted staff + forum admin roles on the CCX.
+        assert CourseEnrollment.is_enrolled(self.coach, course_key)
+        assert CourseStaffRole(course_key).has_user(self.coach)
+        assert are_permissions_roles_seeded(course_key)
+        assert has_forum_access(self.coach.username, course_key, FORUM_ROLE_ADMINISTRATOR)
+
 
     def test_create_ccx(self, ccx_name='New CCX'):  # noqa: PT028
         """
