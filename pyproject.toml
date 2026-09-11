@@ -293,6 +293,13 @@ constraint-dependencies = [
     "edx-enterprise==8.11.0",
     "djangorestframework<3.18",
 ]
+
+# TEMPORARY: install xblocks-core from its development branch until the
+# renamed package is published to PyPI. Remove this section (and re-run
+# `make compile-requirements`) once xblocks-core is available on PyPI.
+[tool.uv.sources]
+xblocks-core = { git = "https://github.com/openedx/xblocks-core", branch = "kdmccormick/xblocks-core" }
+
 [tool.edx_lint]
 uv_constraints = [
     # Date: 2025-10-07
