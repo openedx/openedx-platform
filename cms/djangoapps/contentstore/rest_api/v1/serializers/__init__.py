@@ -26,3 +26,9 @@ from .videos import (
     VideoUploadSerializer,  # noqa: F401
     VideoUsageSerializer,  # noqa: F401
 )
+from .youtube_transcripts import (  # noqa: F401
+    YoutubeTranscriptCheckRequestSerializer,
+    YoutubeTranscriptCheckSerializer,
+    YoutubeTranscriptUploadRequestSerializer,
+    YoutubeTranscriptUploadSerializer,
+)
