@@ -96,6 +96,51 @@ class SupportViewTestCase(ModuleStoreTestCase):
         assert success, 'Could not log in'
 
 
+class ContactUsViewTests(SupportViewTestCase):
+    """
+    Tests for ContactUsView.
+    """
+
+    @override_settings(ZENDESK_URL='https://example.zendesk.com')
+    @patch('lms.djangoapps.support.views.contact_us.SupportContactContextRequested.run_filter')
+    def test_tags_run_through_filter_for_authenticated_user(self, mock_run_filter):
+        """
+        For an authenticated user, the page context (including tags) is passed through the
+        SupportContactContextRequested filter, and the filter's return value is used as the
+        final context for the rendered page.
+
+        The behavior of the filter's pipeline step (edx-enterprise's SupportContactEnterpriseTagStep)
+        is covered by edx-enterprise's own test suite. This view only needs to verify it wires
+        the filter's return value through correctly.
+        """
+        def fake_run_filter(context):
+            return {**context, 'tags': [*context['tags'], 'enterprise_learner']}
+
+        mock_run_filter.side_effect = fake_run_filter
+
+        response = self.client.get(reverse('support:contact_us'))
+
+        assert response.status_code == 200
+        mock_run_filter.assert_called_once()
+        _, call_kwargs = mock_run_filter.call_args
+        assert call_kwargs['context']['tags'] == ['LMS']
+        assert b'enterprise_learner' in response.content
+
+    def test_filter_not_called_for_anonymous_user(self):
+        """
+        Anonymous users never reach the enterprise-tagging branch.
+        """
+        self.client.logout()
+        with override_settings(ZENDESK_URL='https://example.zendesk.com'):
+            with patch(
+                'lms.djangoapps.support.views.contact_us.SupportContactContextRequested.run_filter'
+            ) as mock_run_filter:
+                response = self.client.get(reverse('support:contact_us'))
+
+        assert response.status_code == 200
+        mock_run_filter.assert_not_called()
+
+
 class SupportViewManageUserTests(SupportViewTestCase):
     """
     Base class for support view tests.
