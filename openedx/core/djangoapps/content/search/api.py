@@ -38,7 +38,11 @@ from openedx.core.djangoapps.content.search.index_config import (
     INDEX_SEARCHABLE_ATTRIBUTES,
     INDEX_SORTABLE_ATTRIBUTES,
 )
-from openedx.core.djangoapps.content.search.models import IncrementalIndexCompleted, get_access_ids_for_request
+from openedx.core.djangoapps.content.search.models import (
+    IncrementalIndexCompleted,
+    get_access_ids_for_request,
+    get_authz_org_keys,
+)
 from openedx.core.djangoapps.content_libraries import api as lib_api
 from xmodule.modulestore.django import modulestore
 from xmodule.modulestore.exceptions import ItemNotFoundError
@@ -1069,11 +1073,18 @@ def _get_user_orgs(request: Request) -> list[str]:
     Get the org.short_names for the organizations that the requesting user has OrgStaffRole or OrgInstructorRole.
 
     Note: org-level roles have course_id=None to distinguish them from course-level roles.
+
+    Also includes orgs where the user holds an org-wide (glob) authz course role, so that
+    authz-only users granted at the org level (e.g. ``course-v1:Org+*``) are covered by the
+    ``org IN [...]`` search filter clause rather than being dropped.
     """
     course_roles = get_course_roles(request.user)
-    return list(
-        set(role.org for role in course_roles if role.course_id is None and role.role in ["staff", "instructor"])
+    orgs = set(
+        role.org for role in course_roles if role.course_id is None and role.role in ["staff", "instructor"]
     )
+    # Union in org-level authz grants (flag-gated per org inside the helper).
+    orgs.update(get_authz_org_keys(request.user.username, omit_orgs=list(orgs)))
+    return list(orgs)
 
 
 def _get_meili_access_filter(request: Request) -> dict:

@@ -206,6 +206,35 @@ class StudioSearchViewTest(StudioSearchTestMixin, SharedModuleStoreTestCase):
         )
 
     @mock_meilisearch(enabled=True)
+    @patch('openedx.core.djangoapps.content.search.api.get_authz_org_keys')
+    @patch('openedx.core.djangoapps.content.search.api.MeilisearchClient')
+    def test_studio_search_authz_org_glob_access(self, mock_search_client, mock_authz_orgs):
+        """
+        A user with only an org-wide (glob) authz course grant -- and no legacy
+        role -- is covered by the org clause (openedx/openedx-authz#417). The
+        student has no legacy access, so 'org1' here comes purely from the authz
+        org union wired into ``_get_user_orgs``.
+        """
+        mock_authz_orgs.return_value = {'org1'}
+
+        self.client.login(username='student', password='student_pass')
+        mock_generate_tenant_token = self._mock_generate_tenant_token(mock_search_client)
+        result = self.client.get(STUDIO_SEARCH_ENDPOINT_URL)
+        assert result.status_code == 200
+        # The authz org union is fed into _get_user_orgs, which is passed as omit_orgs
+        # to the access_ids query, so org1's courses are covered by the org clause.
+        mock_authz_orgs.assert_called_once()
+        mock_generate_tenant_token.assert_called_once_with(
+            api_key_uid=MOCK_API_KEY_UID,
+            search_rules={
+                "studio_content": {
+                    "filter": "org IN ['org1'] OR access_id IN []",
+                }
+            },
+            expires_at=ANY,
+        )
+
+    @mock_meilisearch(enabled=True)
     @patch('openedx.core.djangoapps.content.search.api.MeilisearchClient')
     def test_studio_search_omit_orgs(self, mock_search_client):
         """
