@@ -6,12 +6,15 @@ from __future__ import annotations
 import functools
 from typing import TYPE_CHECKING
 
+from django.core import exceptions
 from django.db.models import Count
 from django.http import StreamingHttpResponse
 from openedx_authz import api as authz_api
 from openedx_authz.constants.permissions import COURSES_MANAGE_TAGS, COURSES_VIEW_COURSE
+from openedx_learning.api import create_competency_taxonomy
 from openedx_tagging import rules as oel_tagging_rules
-from openedx_tagging.api import TagDoesNotExist
+from openedx_tagging.api import TagDoesNotExist, TaxonomyType
+from openedx_tagging.models import Taxonomy
 from openedx_tagging.rest_api.v1.views import ObjectTagView, TaxonomyView
 from rest_framework import status
 from rest_framework.decorators import action
@@ -24,7 +27,6 @@ from openedx.core.types.http import RestRequest
 
 from ...api import (
     InvalidOrgException,
-    create_taxonomy,
     generate_csv_rows,
     get_taxonomies,
     get_taxonomies_for_org,
@@ -100,12 +102,36 @@ class TaxonomyOrgView(TaxonomyView):
 
         return queryset
 
-    def perform_create(self, serializer):
+    def perform_create(self, serializer) -> None:
         """
-        Create a new taxonomy.
+        Create a new taxonomy (competency or tags).
         """
+        taxonomy_type = serializer.validated_data.pop("taxonomy_type", TaxonomyType.TAGS.value)
+        if taxonomy_type == TaxonomyType.COMPETENCY.value:
+            try:
+                serializer.instance = create_competency_taxonomy(**serializer.validated_data)
+            except exceptions.ValidationError as e:
+                raise ValidationError() from e
+        else:
+            super().perform_create(serializer)
         user_admin_orgs = get_admin_orgs(self.request.user)
-        serializer.instance = create_taxonomy(**serializer.validated_data, orgs=user_admin_orgs)
+        set_taxonomy_orgs(taxonomy=serializer.instance, all_orgs=False, orgs=user_admin_orgs)
+
+    def _create_taxonomy_for_import(self, validated_data: dict) -> Taxonomy:
+        """
+        Create a competency taxonomy if requested, otherwise defer to the base implementation.
+        """
+        taxonomy_type = validated_data.get("taxonomy_type", TaxonomyType.TAGS.value)
+        if taxonomy_type == TaxonomyType.COMPETENCY.value:
+            try:
+                return create_competency_taxonomy(
+                    name=validated_data["taxonomy_name"],
+                    description=validated_data["taxonomy_description"],
+                    export_id=validated_data.get("taxonomy_export_id"),
+                )
+            except exceptions.ValidationError as e:
+                raise ValidationError() from e
+        return super()._create_taxonomy_for_import(validated_data)
 
     @action(detail=False, url_path="import", methods=["post"])
     def create_import(self, request: RestRequest, **kwargs) -> Response:  # type: ignore
