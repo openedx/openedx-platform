@@ -69,7 +69,7 @@ beautifulsoup4==4.15.0
     #   openedx-forum
     #   pydata-sphinx-theme
     #   pynliner
-    #   xblocks-contrib
+    #   xblocks-core
 billiard==4.2.4
     # via celery
 bleach==6.4.0
@@ -141,7 +141,7 @@ charset-normalizer==3.5.1
 chem==2.0.0
     # via
     #   openedx-platform
-    #   xblocks-contrib
+    #   xblocks-core
 click==8.5.0
     # via
     #   celery
@@ -209,7 +209,7 @@ defusedxml==0.7.1
     #   ora2
     #   python3-openid
     #   social-auth-core
-    #   xblocks-contrib
+    #   xblocks-core
 diff-cover==10.5.1
 dill==0.4.1
     # via pylint
@@ -290,7 +290,7 @@ django==5.2.17
     #   social-auth-app-django
     #   super-csv
     #   xblock-google-drive
-    #   xblocks-contrib
+    #   xblocks-core
     #   xss-utils
 django-appconf==1.2.0
     # via django-statici18n
@@ -490,7 +490,7 @@ edx-celeryutils==2.0.0
 edx-codejail==4.1.0
     # via
     #   openedx-platform
-    #   xblocks-contrib
+    #   xblocks-core
 edx-completion==5.0.0
     # via openedx-platform
 edx-django-release-util==1.5.0
@@ -519,7 +519,7 @@ edx-django-utils==8.0.2
     #   openedx-platform
     #   ora2
     #   super-csv
-    #   xblocks-contrib
+    #   xblocks-core
 edx-drf-extensions==10.8.0
     # via
     #   edx-completion
@@ -563,7 +563,7 @@ edx-opaque-keys==4.0.0
     #   openedx-platform
     #   ora2
     #   xblock
-    #   xblocks-contrib
+    #   xblocks-core
 edx-organizations==9.0.0
     # via
     #   openedx-authz
@@ -590,7 +590,7 @@ edx-submissions==4.0.2
     # via
     #   openedx-platform
     #   ora2
-    #   xblocks-contrib
+    #   xblocks-core
 edx-tincan-py35==2.0.0
     # via enterprise-integrated-channels
 edx-toggles==6.0.0
@@ -605,7 +605,7 @@ edx-toggles==6.0.0
     #   event-tracking
     #   openedx-platform
     #   ora2
-    #   xblocks-contrib
+    #   xblocks-core
 edx-when==4.0.0
     # via
     #   edx-proctoring
@@ -613,7 +613,7 @@ edx-when==4.0.0
 edxval==5.0.1
     # via
     #   openedx-platform
-    #   xblocks-contrib
+    #   xblocks-core
 elasticsearch==7.9.1
     # via
     #   edx-search
@@ -655,7 +655,7 @@ fs==2.4.16
     #   openedx-django-pyfs
     #   openedx-platform
     #   xblock
-    #   xblocks-contrib
+    #   xblocks-core
 fs-s3fs==1.1.1
     # via
     #   openedx-django-pyfs
@@ -720,7 +720,7 @@ html5lib==1.1
     # via
     #   openedx-platform
     #   ora2
-    #   xblocks-contrib
+    #   xblocks-core
 httpcore==1.0.9
     # via httpx
 httpretty==1.1.4
@@ -826,7 +826,7 @@ lxml==5.3.2
     #   pyquery
     #   python3-saml
     #   xblock
-    #   xblocks-contrib
+    #   xblocks-core
     #   xmlsec
 lxml-html-clean==0.4.4
     # via lxml
@@ -852,7 +852,7 @@ markupsafe==3.0.3
     #   mako
     #   openedx-calc
     #   xblock
-    #   xblocks-contrib
+    #   xblocks-core
 maxminddb==3.1.1
     # via geoip2
 mccabe==0.7.0
@@ -893,7 +893,7 @@ mysqlclient==2.2.8
 nh3==0.3.7
     # via
     #   openedx-platform
-    #   xblocks-contrib
+    #   xblocks-core
 nltk==3.10.3
     # via chem
 nodeenv==1.10.0
@@ -904,7 +904,7 @@ numpy==1.26.4
     #   openedx-calc
     #   scipy
     #   shapely
-    #   xblocks-contrib
+    #   xblocks-core
 oauthlib==3.3.1
     # via
     #   django-oauth-toolkit
@@ -912,7 +912,7 @@ oauthlib==3.3.1
     #   openedx-platform
     #   requests-oauthlib
     #   social-auth-core
-    #   xblocks-contrib
+    #   xblocks-core
 olxcleaner==0.3.0
     # via openedx-platform
 openedx-atlas==0.7.0
@@ -927,7 +927,7 @@ openedx-authz==1.23.0
 openedx-calc==5.0.0
     # via
     #   openedx-platform
-    #   xblocks-contrib
+    #   xblocks-core
 openedx-core==1.4.0
     # via openedx-platform
 openedx-django-pyfs==4.0.0
@@ -978,7 +978,7 @@ path==16.11.0
     #   edx-i18n-tools
     #   openedx-platform
     #   path-py
-    #   xblocks-contrib
+    #   xblocks-core
 path-py==12.5.0
     # via
     #   edx-enterprise
@@ -1124,7 +1124,7 @@ pyparsing==3.3.2
     # via
     #   chem
     #   openedx-calc
-    #   xblocks-contrib
+    #   xblocks-core
 pyproject-api==1.11.0
     # via tox
 pyquery==2.1.0
@@ -1202,7 +1202,7 @@ pytz==2026.3.post1
     #   snowflake-connector-python
     #   tincan
     #   xblock
-    #   xblocks-contrib
+    #   xblocks-core
 pyuca==1.2
     # via openedx-platform
 pywatchman==4.0.0
@@ -1221,7 +1221,7 @@ pyyaml==6.0.3
 random2==1.0.2
     # via
     #   openedx-platform
-    #   xblocks-contrib
+    #   xblocks-core
 recommender-xblock==5.1.0
 redis==8.1.0
     # via
@@ -1260,7 +1260,7 @@ requests==2.34.2
     #   social-auth-core
     #   sphinx
     #   xblock-google-drive
-    #   xblocks-contrib
+    #   xblocks-core
 requests-oauthlib==2.0.0
     # via
     #   openedx-platform
@@ -1302,7 +1302,7 @@ setuptools==81.0.0
 shapely==2.1.2
     # via
     #   openedx-platform
-    #   xblocks-contrib
+    #   xblocks-core
 simpleeval==1.0.7
     # via pycasbin
 simplejson==4.1.2
@@ -1311,7 +1311,7 @@ simplejson==4.1.2
     #   sailthru-client
     #   super-csv
     #   xblock
-    #   xblocks-contrib
+    #   xblocks-core
 singledispatch==4.1.2
 six==1.17.0
     # via
@@ -1532,13 +1532,13 @@ webob==1.8.11
     # via
     #   openedx-platform
     #   xblock
-    #   xblocks-contrib
+    #   xblocks-core
 wheel==0.48.0
     # via django-pipeline
 wrapt==2.4.0
     # via
     #   openedx-platform
-    #   xblocks-contrib
+    #   xblocks-core
 xblock==6.3.1
     # via
     #   acid-xblock
@@ -1554,11 +1554,11 @@ xblock==6.3.1
     #   xblock-drag-and-drop-v2
     #   xblock-google-drive
     #   xblock-poll
-    #   xblocks-contrib
+    #   xblocks-core
 xblock-drag-and-drop-v2==5.1.0
 xblock-google-drive==0.8.2
 xblock-poll==1.16.1
-xblocks-contrib==1.0.6
+xblocks-core==1.0.6
 xmlsec==1.3.14
     # via python3-saml
 xss-utils==1.0.0
