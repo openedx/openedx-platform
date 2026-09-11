@@ -6,7 +6,6 @@ persist the assignments.
 import logging
 from typing import Dict  # noqa: UP035
 
-from django.conf import settings
 from django.contrib.auth import get_user_model
 from opaque_keys.edx.keys import CourseKey
 
@@ -20,8 +19,6 @@ from .partitions import Group
 User = get_user_model()
 
 log = logging.getLogger(__name__)
-
-FEATURES = getattr(settings, 'FEATURES', {})
 
 
 @request_cached()
