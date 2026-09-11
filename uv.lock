@@ -20,7 +20,7 @@ constraints = [
     { name = "django-oauth-toolkit", specifier = "==1.7.1" },
     { name = "django-stubs", specifier = "<6" },
     { name = "djangorestframework", specifier = "<3.18" },
-    { name = "edx-enterprise", specifier = "==8.9.4" },
+    { name = "edx-enterprise", specifier = "==8.12.0" },
     { name = "elasticsearch", specifier = "==7.9.1" },
     { name = "libsass", specifier = "==0.10.0" },
     { name = "lxml", specifier = "==5.3.2" },
@@ -2044,7 +2044,7 @@ wheels = [
 
 [[package]]
 name = "edx-enterprise"
-version = "8.9.4"
+version = "8.12.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "bleach" },
@@ -2098,9 +2098,9 @@ dependencies = [
     { name = "tincan" },
     { name = "unicodecsv" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/3e/3a/7b57ce0e6781268bab6035b0a85b769a01e13fdfd231de7a447e51eaf7c0/edx_enterprise-8.9.4.tar.gz", hash = "sha256:22ff6461888a496bdeaba57623cb58ea6114cefa4479d7bf821a281be75a4db1", size = 5166016, upload-time = "2026-08-28T13:08:06.996Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/bc/fd/c744321b6fb4c1990a322dfcd660d09ad52794c948a5cebbdb52479ad84d/edx_enterprise-8.12.0.tar.gz", hash = "sha256:c15f04f4a41775bb9c1d4ca80a55156a97d14b29210445f999e9206aba002c94", size = 5166898, upload-time = "2026-09-11T16:48:30.776Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/fa/ac/a44afffd844843be1241faa1a8de145e83d9cb284da026c7b248268fcfa0/edx_enterprise-8.9.4-py3-none-any.whl", hash = "sha256:ab81432141cc106e9319e76be9da9516f7acb3f577635016355f58b6ad8d2ce8", size = 5559792, upload-time = "2026-08-28T13:08:03.667Z" },
+    { url = "https://files.pythonhosted.org/packages/4e/68/db0c4accde5a578c3497f4a39c57acb3706fe9483515f33e7e5baa68707c/edx_enterprise-8.12.0-py3-none-any.whl", hash = "sha256:095dc348a2203a7e43675d3b6380dc7ecc4cb28adf259553d49de14933777a1c", size = 5561048, upload-time = "2026-09-11T16:48:27.719Z" },
 ]
 
 [[package]]
@@ -2965,6 +2965,8 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/3f/e1/211fa3ceac04b4ab9fb4c1c880717e9cb12080c5d9d226d867cde43015d9/grimp-3.16-cp313-cp313-win32.whl", hash = "sha256:9c144b81cf1d1699ecf9192f7997f71301a0ce730030b1c30fec5673796a0ccc", size = 1856024, upload-time = "2026-08-28T11:41:36.328Z" },
     { url = "https://files.pythonhosted.org/packages/ac/66/66db0aa202e638fce7929a78db1ecae2e059f22effc1925239f8ebe1b870/grimp-3.16-cp313-cp313-win_amd64.whl", hash = "sha256:8ceb54d891f879b4e5aa55ba9c95d37ac2af5c9bee5fcc7a07a909d03f3d9ade", size = 1982718, upload-time = "2026-08-28T11:41:20.854Z" },
     { url = "https://files.pythonhosted.org/packages/34/e8/6a7e0d68b6b24b79ffd4f274dc2d66751c3cdb6cfefe180201119c173f17/grimp-3.16-cp313-cp313-win_arm64.whl", hash = "sha256:86124a3dafb3184f34389c650db3ff2a27238773da2fbc840f51290552d83ca3", size = 1906377, upload-time = "2026-08-28T11:41:06.15Z" },
+    { url = "https://files.pythonhosted.org/packages/02/ed/a610e125d26dd4009a07d0926f597a7d2a7910ec376e1af63b8132aedf63/grimp-3.16-cp314-cp314-macosx_10_12_x86_64.whl", hash = "sha256:effd0823194230fb77335fd2b25cefedb08b5a66f1957b24551ede7000766532", size = 2145473, upload-time = "2026-09-11T10:36:44.183Z" },
+    { url = "https://files.pythonhosted.org/packages/71/13/7a6474d44b6815f30d6aa7862c464976ebf2c40b88f6abc1ecd65f5bd87c/grimp-3.16-cp314-cp314-macosx_11_0_arm64.whl", hash = "sha256:c98876370f8d88c2a15cc76a1ebe3e7f1fb51a168eb84a58bf716f92292cc187", size = 2091978, upload-time = "2026-09-11T10:36:40.901Z" },
     { url = "https://files.pythonhosted.org/packages/bf/b1/676a33dee3897841d741028feae79930586ebbf092d9fc2c7942844a47f9/grimp-3.16-cp314-cp314-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:826ba2eacb67ba50f32ea2e8ec3c5503dca9a6159165a0b3e725f9a816eaff0f", size = 2259778, upload-time = "2026-08-28T11:38:34.608Z" },
     { url = "https://files.pythonhosted.org/packages/3d/83/042e97731f2e374bdbc64b40cf08910fafabc63904ade03e4d66dadf298f/grimp-3.16-cp314-cp314-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:38c148df96ef17f36521e45539eb3baa958098dc54e00fc901aba83e0d976429", size = 2206517, upload-time = "2026-08-28T11:38:46.218Z" },
     { url = "https://files.pythonhosted.org/packages/72/72/e8daaf975629c5ac16ee49c5d8a486d4492c74121124d2e88ca2dea8041f/grimp-3.16-cp314-cp314-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:6b94363624bd1e4959b5dfad67bbc20d80c1c62c4cd086ef0c268736995b3597", size = 2351283, upload-time = "2026-08-28T11:39:22.53Z" },
@@ -4370,7 +4372,7 @@ wheels = [
 
 [[package]]
 name = "openedx-filters"
-version = "3.9.0"
+version = "3.12.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "django", version = "4.2.30", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'group-16-openedx-platform-django42'" },
@@ -4378,9 +4380,9 @@ dependencies = [
     { name = "edx-opaque-keys" },
     { name = "setuptools" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ed/54/34ff71ff7ac30feff9b76f4961b1ad1561010d2b218afb30c44ac2e81361/openedx_filters-3.9.0.tar.gz", hash = "sha256:928c159c9d215172f82cc894a06ada805b7a0c53a3ab1d148efefa1209efe4d5", size = 51210, upload-time = "2026-08-07T00:39:07.819Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/79/2c/b38d1f7ccf49320a357900521207c84bb5df4f6945f56199f7011cd593cd/openedx_filters-3.12.0.tar.gz", hash = "sha256:25d91927ba48188d638eed3a1da639d3b5869918e562de93c1855cb91b47ecf2", size = 51936, upload-time = "2026-09-11T16:45:29.828Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a1/98/eccd5dd4e25996209ddb623c74c219f0961c92cd6fed1b630483bc872039/openedx_filters-3.9.0-py2.py3-none-any.whl", hash = "sha256:a29bfd0c897d53f5567bf6205ffbb3ea2688aacbbb9c3f5071010d3ab3534412", size = 50085, upload-time = "2026-08-07T00:39:06.47Z" },
+    { url = "https://files.pythonhosted.org/packages/f4/89/64b3246072c75ee2ab45a04b0e8f0679fbdb4d11a4b8e5e61d8a788e84c2/openedx_filters-3.12.0-py2.py3-none-any.whl", hash = "sha256:b5ebd2ad516b77f194d2204902ae7c1ec694532b152b45fbfb5576567b8404bf", size = 50816, upload-time = "2026-09-11T16:45:28.833Z" },
 ]
 
 [[package]]
