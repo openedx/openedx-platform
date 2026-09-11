@@ -19,8 +19,6 @@
          */
         modules: getModulesList([
             'course_bookmarks/js/course_bookmarks_factory',
-            'course_search/js/course_search_factory',
-            'course_search/js/dashboard_search_factory',
             'discussion/js/discussion_board_factory',
             'discussion/js/discussion_profile_page_factory',
             'js/api_admin/catalog_preview_factory',
