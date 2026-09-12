@@ -356,6 +356,13 @@ SPECTACULAR_SETTINGS = {
     'SERVE_INCLUDE_SCHEMA': False,
     # restrict spectacular to CMS API endpoints (cms/lib/spectacular.py):
     'PREPROCESSING_HOOKS': ['cms.lib.spectacular.cms_api_filter'],
+    # Mark migrated legacy addresses deprecated and BFF surfaces x-internal.
+    # The enum hook is drf-spectacular's default, restated because setting
+    # this key replaces the default list.
+    'POSTPROCESSING_HOOKS': [
+        'drf_spectacular.hooks.postprocess_schema_enums',
+        'cms.lib.spectacular.cms_mark_migrated_paths',
+    ],
     # remove the default schema path prefix to replace it with server-specific base paths:
     'SCHEMA_PATH_PREFIX': '/api/contentstore',
     'SCHEMA_PATH_PREFIX_TRIM': '/api/contentstore',

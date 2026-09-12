@@ -200,7 +200,12 @@ class XblockViewSet(StandardizedErrorMixin, viewsets.ViewSet):
         bytes) rather than request.data to avoid consuming the WSGI stream
         before @expect_json_in_class_view runs.
         """
-        usage_key_string = kwargs.get("usage_key_string")
+        # The conforming route passes a parsed UsageKey; the legacy route
+        # passes the raw string. Coerce to the string the actions expect —
+        # ``self.kwargs`` is the dict ``dispatch()`` unpacks into the handler.
+        if isinstance(self.kwargs.get("usage_key_string"), UsageKey):
+            self.kwargs["usage_key_string"] = str(self.kwargs["usage_key_string"])
+        usage_key_string = self.kwargs.get("usage_key_string")
         if usage_key_string:
             try:
                 self.course_key = UsageKey.from_string(usage_key_string).course_key

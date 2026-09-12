@@ -10,7 +10,7 @@ This is intentionally *scoped to v3* — the project-wide DRF
 ``EXCEPTION_HANDLER`` setting is unchanged, so v0/v1/v2 endpoints continue
 to return the legacy error shape.
 """
-from django.urls import reverse
+from django.urls import resolve, reverse
 from rest_framework import status
 from rest_framework.test import APIClient, APITestCase
 
@@ -84,3 +84,30 @@ class TestHomeViewSetErrorShape(APITestCase):
         # v1 still uses the project-default handler → ADR 0029 fields absent.
         assert "type" not in response.data
         assert "instance" not in response.data
+
+
+class TestHomeViewSetUrlStructure(APITestCase):
+    """The conforming /api/authoring/v3/home/ routes serve the same view as the legacy ones."""
+
+    def test_conforming_urls_reverse_to_expected_paths(self):
+        assert reverse("authoring_v3:home") == "/api/authoring/v3/home/"
+        assert reverse("authoring_v3:home_courses") == "/api/authoring/v3/home/courses/"
+        assert reverse("authoring_v3:home_libraries") == "/api/authoring/v3/home/libraries/"
+
+    def test_conforming_and_legacy_routes_share_view(self):
+        pairs = (
+            ("cms.djangoapps.contentstore:v3:home-list", "authoring_v3:home"),
+            ("cms.djangoapps.contentstore:v3:home-courses", "authoring_v3:home_courses"),
+            ("cms.djangoapps.contentstore:v3:home-libraries", "authoring_v3:home_libraries"),
+        )
+        for legacy_name, conforming_name in pairs:
+            legacy_cls = resolve(reverse(legacy_name)).func.cls
+            conforming_cls = resolve(reverse(conforming_name)).func.cls
+            assert conforming_cls is legacy_cls, f"{conforming_name} must serve the same view as {legacy_name}"
+
+    def test_unauthenticated_conforming_route_returns_standardized_401(self):
+        """The conforming mount carries the same contract — ADR 0029 envelope included."""
+        response = APIClient().get(reverse("authoring_v3:home"))
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        for field in _REQUIRED_ERROR_FIELDS:
+            assert field in response.data, f"ADR 0029: missing field '{field}'"
