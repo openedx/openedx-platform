@@ -14,10 +14,11 @@ from unittest.mock import patch
 
 from django.test import override_settings
 from django.urls import reverse
+from opaque_keys.edx.keys import CourseKey
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from common.djangoapps.student.tests.factories import AdminFactory, UserFactory
+from common.djangoapps.student.tests.factories import AdminFactory, CourseEnrollmentFactory, UserFactory
 from openedx.core.djangoapps.enrollments.v2.views import EnrollmentViewSet
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 
@@ -287,3 +288,79 @@ class TestEnrollmentViewSetMinimalView(APITestCase):
         assert {r["course_id"] for r in response.data["results"]} == {
             "course-v1:org+a+r", "course-v1:org+b+r",
         }
+
+
+# ---------------------------------------------------------------------------
+# EnrollmentsAdminListView (GET /enrollments/)
+# ---------------------------------------------------------------------------
+@skip_unless_lms
+class TestEnrollmentsAdminListView(APITestCase):
+    """
+    Regression tests for the admin enrollment list.
+
+    Covers endpoint access, the pass-through queryset scoping, the query-param
+    filters (applied in ``filter_queryset``, so form validation still yields a
+    400), and the ADR 0033 ``Deprecation`` header. Uses real
+    ``CourseEnrollment`` rows (SQL, MongoDB-free).
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.admin = AdminFactory.create(password="test")
+        self.user = UserFactory.create(password="test")
+        self.url = reverse("v2:enrollment-v2-admin-list")
+        self.course_a = CourseKey.from_string("course-v1:edX+A+run")
+        self.course_b = CourseKey.from_string("course-v1:edX+B+run")
+        self.learner_a = UserFactory.create()
+        self.learner_b = UserFactory.create()
+        CourseEnrollmentFactory.create(user=self.learner_a, course_id=self.course_a)
+        CourseEnrollmentFactory.create(user=self.learner_b, course_id=self.course_b)
+
+    def test_unauthenticated_gets_401(self):
+        assert self.client.get(self.url).status_code == status.HTTP_401_UNAUTHORIZED
+
+    def test_non_admin_gets_403(self):
+        """Endpoint-access layer: IsAdminUser rejects a regular user."""
+        self.client.force_authenticate(user=self.user)
+        assert self.client.get(self.url).status_code == status.HTTP_403_FORBIDDEN
+
+    def test_admin_sees_all_rows(self):
+        """Record-visibility layer is a pass-through: admin sees every enrollment."""
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["count"] == 2
+
+    def test_filter_by_course_key_narrows(self):
+        """User-driven filter (filter_queryset) still narrows by course_key."""
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.get(self.url, {"course_key": str(self.course_a)})
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["count"] == 1
+
+    def test_filter_by_username_narrows(self):
+        """User-driven filter (filter_queryset) still narrows by username."""
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.get(self.url, {"username": self.learner_b.username})
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["count"] == 1
+
+    def test_non_admin_cannot_list_another_users_enrollments(self):
+        """A regular user cannot read someone else's enrollments by naming them in the filter."""
+        self.client.force_authenticate(user=self.learner_a)
+        response = self.client.get(self.url, {"username": self.learner_b.username})
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert "results" not in response.data
+
+    def test_invalid_course_key_gets_400(self):
+        """Form validation moved to filter_queryset must still surface as a 400."""
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.get(self.url, {"course_key": "not-a-course-key"})
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_legacy_course_id_emits_deprecation_header(self):
+        """ADR 0033: the legacy ``course_id`` alias still emits the Deprecation header."""
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.get(self.url, {"course_id": str(self.course_a)})
+        assert response.status_code == status.HTTP_200_OK
+        assert "Deprecation" in response.headers

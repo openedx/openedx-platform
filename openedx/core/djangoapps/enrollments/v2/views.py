@@ -47,6 +47,7 @@ from drf_spectacular.utils import (
 from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
 from edx_rest_framework_extensions.mixins import StandardizedErrorMixin
 from edx_rest_framework_extensions.paginators import DefaultPagination, IterablePaginationMixin
+from edx_rest_framework_extensions.scoping import FullScopePolicy, ScopedQuerysetMixin
 from edx_rest_framework_extensions.shaping import MinimalViewMixin
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey
@@ -671,8 +672,15 @@ class CourseEnrollmentDetailView(StandardizedErrorMixin, APIView):
         403: _RESP_FORBIDDEN,
     },
 )
-class EnrollmentsAdminListView(StandardizedErrorMixin, ListAPIView):
-    """Admin-only paginated enrollment list with OEP-68 filter aliases."""
+class EnrollmentsAdminListView(ScopedQuerysetMixin, StandardizedErrorMixin, ListAPIView):
+    """
+    Admin-only paginated enrollment list with OEP-68 filter aliases.
+
+    Authorization is layered: ``permission_classes`` gates access to the
+    endpoint, ``ScopedQuerysetMixin`` applies ``scoping_policy`` to the base
+    ``queryset``, and ``filter_queryset`` narrows the scoped rows by the
+    caller's query parameters.
+    """
 
     # ADR 0034 — JWT + cross-domain session (BearerAuthenticationAllowInactiveUser
     # removed per OEP-0042). EnrollmentCrossDomainSessionAuth retained because the
@@ -687,6 +695,12 @@ class EnrollmentsAdminListView(StandardizedErrorMixin, ListAPIView):
     serializer_class = CourseEnrollmentsApiListSerializer
     pagination_class = EnrollmentsAdminListPagination
 
+    queryset = CourseEnrollment.objects.all().select_related("user", "course")
+    # Platform admins may see every enrollment, so the policy is a pass-through. The
+    # scoping layer stays wired so a narrower policy can be dropped in without touching
+    # the filtering below.
+    scoping_policy = FullScopePolicy()
+
     # ADR 0033 §3 — whitelist of allowed values for the ``ordering`` param.
     ALLOWED_ORDERING_FIELDS = frozenset({"created", "-created", "id", "-id"})
 
@@ -696,12 +710,12 @@ class EnrollmentsAdminListView(StandardizedErrorMixin, ListAPIView):
         ("course_ids", "course_keys"),
     )
 
-    def get_queryset(self):
+    def filter_queryset(self, queryset):
+        """Narrow the scoped queryset by the caller-supplied query parameters."""
         form = EnrollmentsAdminListForm(self.request.query_params)
         if not form.is_valid():
             raise ValidationError(form.errors)
 
-        queryset = CourseEnrollment.objects.all().select_related("user", "course")
         course_id = form.cleaned_data.get("course_id")
         course_ids = form.cleaned_data.get("course_ids")
         usernames = form.cleaned_data.get("username")
