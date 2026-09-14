@@ -25,7 +25,10 @@ from xmodule.modulestore.tests.django_utils import (
 
 @skip_unless_lms
 @ddt.ddt
-@override_settings(EMBARGO=True)
+# ENABLE_AUTHN_MICROFRONTEND defaults to True, which sends /login and /register on to the
+# authn MFE. Most of this class covers the legacy page these URLs still render when the MFE
+# is off, so pin the flag here; the handful of MFE-redirect tests re-enable it per-method.
+@override_settings(EMBARGO=True, ENABLE_AUTHN_MICROFRONTEND=False)
 class LoginAndRegistrationTest(ThirdPartyAuthTestMixin, UrlResetMixin, ModuleStoreTestCase):
     """ Tests for Login and Registration. """
     USERNAME = "bob"
@@ -417,6 +420,7 @@ class LoginAndRegistrationTest(ThirdPartyAuthTestMixin, UrlResetMixin, ModuleSto
 
 
 @skip_unless_lms
+@override_settings(ENABLE_AUTHN_MICROFRONTEND=False)
 class AccountCreationTestCaseWithSiteOverrides(SiteMixin, TestCase):
     """
     Test cases for Feature flag ALLOW_PUBLIC_ACCOUNT_CREATION which when

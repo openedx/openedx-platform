@@ -20,9 +20,14 @@ from openedx.core.djangolib.testing.utils import skip_unless_lms
 LOGGER_NAME = 'common.djangoapps.student.management.commands.recover_account'
 
 
+@override_settings(ENABLE_AUTHN_MICROFRONTEND=False)
 class RecoverAccountTests(TestCase):
     """
     Test account recovery and exception handling
+
+    The reset link the command mails out points at the authn MFE when
+    ENABLE_AUTHN_MICROFRONTEND is on, so the legacy-path cases pin it off and
+    test_authn_mfe_url_in_reset_link turns it back on.
     """
 
     request_factory = RequestFactory()

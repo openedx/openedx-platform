@@ -466,6 +466,7 @@ class RegistrationFormFiltersTest(UserAPITestCase):
 
 
 @skip_unless_lms
+@override_settings(ENABLE_AUTHN_MICROFRONTEND=False)
 class LogistrationPageFiltersTest(UserAPITestCase):
     """
     Tests for the Open edX Filters associated with the legacy logistration page.
