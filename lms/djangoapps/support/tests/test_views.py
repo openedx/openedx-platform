@@ -240,7 +240,7 @@ class SupportViewAccessTests(SupportViewTestCase):
             login_url=reverse("signin_user"),
             original_url=quote(url),
         )
-        self.assertRedirects(response, redirect_url)
+        self.assertRedirects(response, redirect_url, fetch_redirect_response=False)
 
 
 class SupportViewIndexTests(SupportViewTestCase):
