@@ -1,0 +1,228 @@
+## coding=utf-8
+<%page expression_filter="h"/>
+<%namespace name="static" file="static_content.html"/>
+<%!
+import json
+from urllib.parse import urlencode
+%>
+<%
+    pagination_filters = {key: value for key, value in course_filters.items() if value not in ('', None, False)}
+    pagination_filters['latest'] = '1' if course_filters.get('latest') else '0'
+    visibility_labels = {'both': 'Каталог и страница курса', 'about': 'Только страница курса', 'none': 'Скрыт'}
+%>
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Управление курсами — Studio</title>
+  <style>
+    :root { color-scheme: light; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #203047; background: #f3f5f8; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-size: 15px; line-height: 1.5; }
+    main { max-width: 1480px; margin: auto; padding: 36px 28px 64px; }
+    h1 { margin: 8px 0; font-size: 32px; line-height: 1.2; letter-spacing: -.5px; }
+    h2 { font-size: 21px; margin: 0 0 8px; }
+    p { margin: 0 0 14px; }
+    a { color: #1556a1; text-underline-offset: 3px; }
+    .eyebrow { color: #50647d; font-size: 12px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+    .intro { max-width: 920px; color: #506078; margin: 12px 0 24px; }
+    .panel { background: #fff; border: 1px solid #dce2e9; border-radius: 12px; padding: 24px; margin: 20px 0; }
+    .section-heading { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+    .muted, .hint { color: #58687c; }
+    .hint { font-size: 13px; margin: 6px 0 0; }
+    .grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; }
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field > span, legend { font-weight: 600; }
+    input:not([type=checkbox]), select { width: 100%; min-height: 42px; padding: 8px 11px; border: 1px solid #b8c4d2; border-radius: 6px; color: #203047; background: #fff; font: inherit; }
+    input[type=checkbox] { width: 18px; height: 18px; margin: 0; accent-color: #1556a1; flex-shrink: 0; }
+    .check { display: inline-flex; align-items: center; gap: 9px; font-weight: 400; }
+    .check.small { font-size: 13px; }
+    .toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 16px; margin-top: 18px; }
+    button, .page-link { display: inline-flex; align-items: center; justify-content: center; min-height: 42px; padding: 9px 16px; background: #fff; color: #1556a1; border: 1px solid #9badc3; border-radius: 6px; font: inherit; font-weight: 600; cursor: pointer; text-decoration: none; }
+    button.primary { background: #1556a1; border-color: #1556a1; color: #fff; }
+    button:hover:not(:disabled), .page-link:hover { filter: brightness(.92); }
+    button:disabled { opacity: .48; cursor: not-allowed; }
+    :focus-visible { outline: 3px solid #d39219; outline-offset: 3px; }
+    input:disabled { background: #eef1f5; }
+    .table-wrap { overflow-x: auto; margin: 18px -24px 0; }
+    table { border-collapse: collapse; width: 100%; text-align: left; font-size: 14px; }
+    caption { text-align: left; padding: 0 24px 10px; }
+    th { color: #526178; background: #f5f7fa; font-weight: 600; }
+    th, td { padding: 13px 16px; border-bottom: 1px solid #e5e9ef; vertical-align: top; }
+    th:first-child, td:first-child { padding-left: 24px; }
+    td:last-child, th:last-child { padding-right: 24px; }
+    .course-name { min-width: 250px; }
+    .course-name a { font-weight: 600; }
+    code { display: block; font-size: 12px; overflow-wrap: anywhere; color: #59687a; margin-top: 4px; }
+    .dates { min-width: 175px; }
+    .dates span { display: block; }
+    .pagination { display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-top: 18px; }
+    fieldset { padding: 0; margin: 22px 0 0; border: 0; min-width: 0; }
+    legend { padding: 0; margin: 0 0 12px; }
+    .note { padding: 14px 16px; background: #f2f6fc; border-left: 3px solid #557aab; border-radius: 3px; color: #425773; font-size: 14px; margin: 18px 0; }
+    .actions { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-top: 20px; }
+    .save-action { border-top: 1px solid #e1e6ed; margin-top: 24px; padding-top: 22px; }
+    .save-action p { margin-bottom: 12px; }
+    .notice { margin-top: 16px; padding: 12px 15px; border-radius: 6px; background: #edf4fc; overflow-wrap: anywhere; }
+    .notice.error { color: #9b2626; background: #fff0f0; }
+    .notice.success { color: #226642; background: #edf8f1; }
+    [hidden] { display: none !important; }
+    .status { display: inline-block; border-radius: 20px; padding: 3px 10px; font-size: 12px; font-weight: 600; background: #edf1f7; white-space: nowrap; }
+    .status-succeeded, .status-saved { color: #226642; background: #e7f5ec; }
+    .status-failed { color: #9b2626; background: #ffeded; }
+    .status-queued, .status-in_progress { color: #895e06; background: #fff4d9; }
+    .result-id { min-width: 235px; }
+    .result-message { min-width: 210px; overflow-wrap: anywhere; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); border: 0; }
+    @media (max-width: 1000px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 600px) { main { padding: 22px 14px 40px; } .panel { padding: 18px; } h1 { font-size: 27px; } .grid { grid-template-columns: 1fr; } .table-wrap { margin-left: -18px; margin-right: -18px; } .actions button { width: 100%; } }
+  </style>
+  <script src="${static.url('js/course_admin.js')}" defer></script>
+</head>
+<body>
+<main id="course-admin" data-endpoint="${endpoint_url}" data-status-url="${status_url}"
+      data-filters="${json.dumps(course_filters)}" data-initial-results="${json.dumps(initial_results)}" data-total="${total}">
+  <header>
+    <div class="eyebrow">Studio · Только для администраторов</div>
+    <h1>Управление курсами</h1>
+    <p class="intro">Выберите курсы, проверьте новые номера запусков и создайте их с общими настройками.
+      Здесь же можно изменить даты, видимость, режимы обучения и сертификаты существующих курсов.</p>
+  </header>
+  <noscript><p class="notice error">Для массового управления курсами включите JavaScript в браузере.</p></noscript>
+
+  <section class="panel" aria-labelledby="courses-heading">
+    <div class="section-heading"><h2 id="courses-heading">1. Выберите курсы</h2><span class="muted">Найдено: ${total}</span></div>
+    <form id="course-filters" method="get">
+      <div class="grid">
+        <label class="field"><span>Название или ID</span><input name="q" type="search" value="${course_filters.get('q', '')}" placeholder="Название, FBB или course-v1:…"></label>
+        <label class="field"><span>Организация</span><input name="org" value="${course_filters.get('org', '')}" placeholder="Например, FBB"></label>
+        <label class="field"><span>Запуск</span><input name="run" value="${course_filters.get('run', '')}" placeholder="Например, 2026_C1"></label>
+        <label class="field"><span>Год запуска</span><input name="year" type="number" min="1900" max="9999" value="${course_filters.get('year', '')}" placeholder="2026"></label>
+      </div>
+      <div class="toolbar">
+        <input type="hidden" name="latest" value="0">
+        <label class="check"><input type="checkbox" name="latest" value="1" ${'checked' if course_filters.get('latest') else ''}> Только последний запуск каждого курса</label>
+        <button type="submit">Найти курсы</button>
+      </div>
+    </form>
+    <div class="toolbar">
+      <label class="check"><input id="select-page" type="checkbox"> Выбрать на этой странице</label>
+      <label class="check"><input id="all-matching" type="checkbox" ${'disabled' if not total else ''}> Все найденные курсы (${total})</label>
+      <span id="selection-count" class="muted" aria-live="polite">Выбрано: 0</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <caption class="sr-only">Курсы, соответствующие применённым фильтрам</caption>
+        <thead><tr><th><span class="sr-only">Выбор</span></th><th>Курс</th><th>Организация / запуск</th><th>Обучение (${timezone_label})</th><th>Запись (${timezone_label})</th><th>Видимость</th></tr></thead>
+        <tbody>
+        % for course in courses:
+          <tr>
+            <td><input type="checkbox" name="course_ids" value="${course['id']}" aria-label="Выбрать курс ${course['name']}"></td>
+            <td class="course-name"><a href="${course['details_url']}" target="_blank" rel="noopener noreferrer">${course['name']}</a><code>${course['id']}</code>
+              % if course.get('mode_labels'):
+                <div class="hint">Режимы: ${course['mode_labels']}</div>
+              % endif
+              % if course.get('certificate_generation'):
+                <div class="hint">Генерация сертификатов: ${course['certificate_generation']}</div>
+              % endif
+              % if course.get('self_paced_label'):
+                <div class="hint">${course['self_paced_label']}</div>
+              % endif
+              % if course.get('invitation_only_label'):
+                <div class="hint">${course['invitation_only_label']}</div>
+              % endif
+              % if course.get('certificate_available_date'):
+                <div class="hint">Сертификаты с: ${course['certificate_available_date']} UTC</div>
+              % endif
+            </td>
+            <td>${course['org']}<br>${course['run']}
+              % if course.get('faculty'):
+                <div class="hint">${course['faculty']}</div>
+              % endif
+            </td>
+            <td class="dates"><span>С: ${course.get('start') or '—'}</span><span>До: ${course.get('end') or '—'}</span></td>
+            <td class="dates"><span>С: ${course.get('enrollment_start') or '—'}</span><span>До: ${course.get('enrollment_end') or '—'}</span></td>
+            <td>${visibility_labels.get(course.get('visibility'), course.get('visibility') or '—')}</td>
+          </tr>
+        % endfor
+        % if not courses:
+          <tr><td colspan="6">Курсы не найдены. Измените фильтры.</td></tr>
+        % endif
+        </tbody>
+      </table>
+    </div>
+    % if num_pages > 1:
+    <nav class="pagination" aria-label="Страницы списка курсов">
+      % if page > 1:
+      <a class="page-link" href="?${urlencode(dict(pagination_filters, page=page - 1))}">Назад</a>
+      % endif
+      <span>Страница ${page} из ${num_pages}</span>
+      % if page < num_pages:
+      <a class="page-link" href="?${urlencode(dict(pagination_filters, page=page + 1))}">Далее</a>
+      % endif
+    </nav>
+    % endif
+    <p class="hint">Выбор отдельных курсов действует на текущей странице. «Все найденные курсы» охватывает все страницы применённых фильтров.</p>
+  </section>
+
+  <section class="panel" aria-labelledby="settings-heading">
+    <h2 id="settings-heading">2. Задайте общие настройки</h2>
+    <p class="muted">При сохранении существующих курсов пустые поля и «Без изменений» сохраняют текущие настройки. Для нового запуска обязательны начало и конец курса.</p>
+    <form id="course-settings">
+      <input type="hidden" name="csrfmiddlewaretoken" value="${csrf_token}">
+      <fieldset>
+        <legend>Расписание · ${timezone_label}</legend>
+        <div class="grid">
+          <label class="field"><span>Начало курса</span><input type="datetime-local" name="start" step="60"><span class="hint">Обязательно для перезапуска</span></label>
+          <label class="field"><span>Конец курса</span><input type="datetime-local" name="end" step="60"><span class="hint">Обязательно для перезапуска</span></label>
+          <div class="field"><label for="enrollment-start">Начало записи</label><input id="enrollment-start" type="datetime-local" name="enrollment_start" step="60"><label class="check small"><input type="checkbox" name="clear_enrollment_start"> Убрать ограничение даты</label></div>
+          <div class="field"><label for="enrollment-end">Конец записи</label><input id="enrollment-end" type="datetime-local" name="enrollment_end" step="60"><label class="check small"><input type="checkbox" name="clear_enrollment_end"> Убрать ограничение даты</label></div>
+        </div>
+        <p class="hint">Введите время в UTC. Например, 09:00 по времени Алматы (UTC+5) = 04:00 UTC.</p>
+        <p class="hint">В новом запуске пустые даты записи и доступности сертификатов снимают прежние ограничения по датам.</p>
+      </fieldset>
+      <fieldset>
+        <legend>Доступ и обучение</legend>
+        <div class="grid">
+          <label class="field"><span>Видимость</span><select name="catalog_visibility"><option value="">Без изменений</option><option value="both">Каталог и страница курса</option><option value="about">Только страница курса</option><option value="none">Скрыт</option></select></label>
+          <label class="field"><span>Режим зачисления</span><select name="mode"><option value="">Без изменений / копировать</option><option value="honor">Honor — бесплатный режим</option><option value="audit">Audit — без сертификата</option></select></label>
+          <label class="field"><span>Генерация сертификатов</span><select name="certificate_mode"><option value="">Без изменений / копировать</option><option value="enabled">Включить</option><option value="disabled">Выключить</option></select></label>
+          <label class="field"><span>Темп обучения</span><select name="self_paced"><option value="">Без изменений</option><option value="true">В своём темпе</option><option value="false">По расписанию преподавателя</option></select></label>
+          <label class="field"><span>Запись по приглашению</span><select name="invitation_only"><option value="">Без изменений</option><option value="true">Только по приглашению</option><option value="false">Открытая запись</option></select></label>
+          <div class="field"><label for="certificate-available-date">Дата доступности сертификатов (UTC)</label><input id="certificate-available-date" type="datetime-local" name="certificate_available_date" step="60"><label class="check small"><input type="checkbox" name="clear_certificate_available_date"> Убрать ограничение даты</label></div>
+        </div>
+        <p class="hint">Включение генерации требует активного настроенного сертификата курса, а также включённых системных настроек HTML-сертификатов и генерации. Выбор режима Honor сам по себе не настраивает сертификат.</p>
+        <p class="hint">Видимость управляет каталогом и страницей описания курса. Она не закрывает учебные материалы для уже записанных студентов.</p>
+      </fieldset>
+      <fieldset>
+        <legend>Расписание содержимого при перезапуске</legend>
+        <label class="check"><input type="checkbox" name="shift_content_dates" checked> Перенести даты разделов и заданий относительно нового начала</label>
+        <p class="hint">Действует только при создании нового запуска. Календари внешних инструментов и задания ORA могут требовать отдельной проверки.</p>
+      </fieldset>
+      <div class="note">Новый ID сохраняет организацию и код курса. Год берётся из даты начала в UTC, а номер C выбирается следующим свободным: например, 2026_C1 → 2026_C2. Материалы копируются штатным перезапуском Studio. Если отключить перенос, даты разделов и заданий останутся прежними.</div>
+      <div class="actions">
+        <button id="preview-rerun" type="button" disabled>Проверить новые запуски</button>
+        <button id="rerun-courses" type="button" class="primary" disabled>Создать новые запуски</button>
+      </div>
+      <p id="preview-hint" class="hint">Сначала выберите курсы и проверьте новые ID. После изменения настроек проверку нужно повторить.</p>
+      <div class="save-action">
+        <p><strong>Изменить выбранные существующие курсы</strong><br><span class="muted">Применяет заполненные поля к выбранным курсам. Новые запуски не создаются.</span></p>
+        <button id="save-settings" type="button" disabled>Сохранить все настройки</button>
+      </div>
+    </form>
+    <p id="action-message" class="notice" role="status" aria-live="polite" hidden></p>
+  </section>
+
+  <section class="panel" id="results-panel" aria-labelledby="results-heading" hidden>
+    <div class="section-heading"><h2 id="results-heading">3. Результаты операций</h2><span id="results-summary" class="muted" aria-live="polite"></span></div>
+    <p class="hint">Перезапуск выполняется в фоне. Состояние обновляется автоматически; после обновления страницы незавершённые операции появятся снова.</p>
+    <p id="poll-message" class="notice error" role="status" hidden></p>
+    <div class="table-wrap">
+      <table><caption class="sr-only">Предварительная проверка и состояние массовых операций</caption><thead><tr><th>Исходный курс</th><th>Курс / новый запуск</th><th>Состояние</th><th>Сообщение</th></tr></thead><tbody id="operation-results"></tbody></table>
+    </div>
+  </section>
+</main>
+</body>
+</html>

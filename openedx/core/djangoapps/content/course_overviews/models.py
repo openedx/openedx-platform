@@ -59,6 +59,11 @@ class CourseOverview(TimeStampedModel):
 
     .. no_pii:
     """
+    COMPLEXITY_CHOICES = [
+        ("easy", "Easy"),
+        ("medium", "Medium"),
+        ("hard", "Hard"),
+    ]
 
     class Meta:
         app_label = 'course_overviews'
@@ -126,6 +131,17 @@ class CourseOverview(TimeStampedModel):
     short_description = models.TextField(null=True)
     course_video_url = models.TextField(null=True)
     effort = models.TextField(null=True)
+    # New column
+    complexity = models.CharField(
+        max_length=10,
+        choices=COMPLEXITY_CHOICES,
+        default="medium",
+        null=False,
+        blank=False,
+    )
+    faculty = models.TextField(null=True)
+    directions = models.TextField(null=True)
+
     self_paced = models.BooleanField(default=False)
     marketing_url = models.TextField(null=True)
     eligible_for_financial_aid = models.BooleanField(default=True)

@@ -1,0 +1,244 @@
+<%page expression_filter="h"/>
+<%! from django.utils.translation import gettext as _ %>
+<%inherit file="../main.html" />
+
+<%block name="pagetitle">${_("Detect")}</%block>
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-dark: #1a263c;
+            --primary-accent: #d3985c;
+            --primary-light: #f5f7fa;
+            --secondary-dark: #142034;
+            --text-dark: #333;
+            --text-light: #fff;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            --border-radius: 8px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--text-dark);
+            background-color: var(--primary-light);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Header styles */
+        .hero {
+            background: linear-gradient(rgba(26, 38, 60, 0.85), rgba(26, 38, 60, 0.9)), url('https://open.kaznu.kz/static/kaznu/images/header.png') center/cover no-repeat;
+            height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            position: relative;
+            margin-bottom: 40px;
+        }
+
+        .hero-content {
+            max-width: 800px;
+            padding: 20px;
+            color: var(--text-light);
+        }
+
+        .hero h1 {
+            font-size: 2.8rem;
+            margin-bottom: 20px;
+            font-weight: 700;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Content Section */
+        .content-section {
+            margin-bottom: 60px;
+        }
+
+        .section-title {
+            text-align: center;
+            margin-bottom: 40px;
+            color: var(--primary-dark);
+            position: relative;
+        }
+
+        .section-title h2 {
+            font-size: 2.2rem;
+            display: inline-block;
+            padding-bottom: 10px;
+        }
+
+        .section-title h2::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 4px;
+            background: var(--primary-accent);
+            border-radius: 2px;
+        }
+
+        .content-card {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            padding: 30px;
+            margin-bottom: 30px;
+            transition: transform 0.3s ease;
+        }
+
+        .content-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .content-card h3 {
+            color: var(--primary-dark);
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+        }
+
+        /* Iframe Container */
+        .iframe-container {
+            position: relative;
+            width: 100%;
+            overflow: hidden;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            margin: 40px 0;
+        }
+
+        .iframe-container iframe {
+            width: 100%;
+            height: 600px;
+            border: none;
+        }
+
+        .iframe-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(26, 38, 60, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .iframe-overlay:hover {
+            opacity: 1;
+        }
+
+        .iframe-overlay-text {
+            background: var(--primary-accent);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        /* Contact Section */
+        .contact-info {
+            background: var(--primary-dark);
+            color: white;
+            padding: 30px;
+            border-radius: var(--border-radius);
+            text-align: center;
+            margin-top: 40px;
+        }
+
+        .contact-info p {
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.8;
+        }
+
+        /* Responsive styles */
+        @media (max-width: 768px) {
+            .hero {
+                height: 300px;
+            }
+
+            .hero h1 {
+                font-size: 2rem;
+            }
+
+            .iframe-container iframe {
+                height: 400px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1 style="color: white !important;">${_("Chatbot Usage Verification System")}</h1>
+            <p style="font-size: 1.2rem;">${_("Al-Farabi Kazakh National University")}</p>
+        </div>
+    </section>
+
+    <div class="container">
+        <!-- Main Content Section -->
+        <section class="content-section">
+            <div class="section-title">
+                <h2>${_("Content Verification")}</h2>
+            </div>
+
+            <div class="content-card">
+                <h3>${_("Content Analysis Tool")}</h3>
+                <p>${_("Use the built-in verification system to analyze text content and determine the likelihood of it being created with chatbots or artificial intelligence.")}</p>
+
+                <div class="iframe-container">
+                    <iframe src="https://app.illuminarty.ai/" frameborder="0"></iframe>
+                    <div class="iframe-overlay">
+                        <div class="iframe-overlay-text">${_("Open in full size")}</div>
+                    </div>
+                </div>
+
+                <p>${_("This tool allows you to check texts for AI-generated content, which is especially important for ensuring academic integrity in the educational process.")}</p>
+            </div>
+        </section>
+
+        <!-- Contact Section -->
+        <div class="contact-info">
+            <h3 style="color: white !important;">${_("Contacts")}</h3>
+            <p>${_("For all inquiries, please contact the Office of Academic and Digital Innovations: Building - Rectorate, Office 207, phone")} +7 727 377 33 30 ${_("(ext.")} 31-24, 11-33, 16-47)</p>
+        </div>
+    </div>
+
+    <script>
+        // Add functionality to open the iframe in full size
+        document.addEventListener('DOMContentLoaded', function() {
+            const iframeContainer = document.querySelector('.iframe-container');
+            const iframe = document.querySelector('iframe');
+
+            iframeContainer.addEventListener('click', function() {
+                window.open(iframe.src, '_blank');
+            });
+        });
+    </script>
+</body>
+
+</html>

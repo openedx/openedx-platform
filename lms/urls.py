@@ -16,6 +16,7 @@ from edx_django_utils.plugins import get_plugin_url_patterns
 from common.djangoapps.student import views as student_views
 from common.djangoapps.util import views as util_views
 from lms.djangoapps.branding import views as branding_views
+from lms.djangoapps.course_admin import views as course_admin_views
 from lms.djangoapps.courseware.masquerade import MasqueradeView
 from lms.djangoapps.courseware.block_render import (
     handle_xblock_callback,
@@ -49,7 +50,8 @@ from openedx.core.djangoapps.programs.models import ProgramsApiConfig
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.core.djangoapps.user_authn.views.login import redirect_to_lms_login
 from openedx.features.enterprise_support.api import enterprise_enabled
-
+from lms.djangoapps.univerapi import views as univer_views
+from lms.djangoapps.news import views as news_views
 RESET_COURSE_DEADLINES_NAME = 'reset_course_deadlines'
 RENDER_XBLOCK_NAME = 'render_xblock'
 RENDER_VIDEO_XBLOCK_NAME = 'render_public_video_xblock'
@@ -93,6 +95,15 @@ notification_prefs_urls = [
 
 
 urlpatterns = [
+    re_path(r'^course-admin/?$', course_admin_views.course_admin, name='course_admin'),
+    path('news/', news_views.news_list, name='news_list'),
+    path('news/<int:news_id>/', news_views.news_detail, name='news_detail'),
+    path('news/create/', news_views.news_create, name='news_create'),
+    path('analyze/', news_views.analyze, name='analyze'),
+    path('analyze/course_details/<path:course_id>/', news_views.course_details, name='course_details'),
+    path('go-to-exam/', news_views.go_to_exam, name='exam'),
+    path('finish-exam/', news_views.finish_exam, name='finish_exam'),
+    path('api/univertest/', univer_views.UniverTestView.as_view(), name='univer_test'),
     path('', branding_views.index, name='root'),  # Main marketing page, or redirect to courseware
 
     path('', include('common.djangoapps.student.urls')),

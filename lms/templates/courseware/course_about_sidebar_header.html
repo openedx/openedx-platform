@@ -48,14 +48,24 @@ from django.conf import settings
             body=six.moves.urllib.parse.quote(email_body.encode('UTF-8'))
         )
       %>
+      <!-- NEW IN INDIGO socialnetworks is improved with better SVGs icons -->
       <a href="${tweet_action}" class="share">
-        <span class="icon fa fa-twitter" aria-hidden="true"></span><span class="sr">${_("Tweet that you've enrolled in this course")}</span>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M18.8996 1H22.5816L14.5398 10.3183L24 23H16.5945L10.7901 15.3106L4.15646 23H0.469358L9.06911 13.0313L0 1H7.59323L12.8344 8.02837L18.8996 1ZM17.6063 20.7683H19.6454L6.48241 3.11538H4.29206L17.6063 20.7683Z" fill="#9CA3AF"/>
+        </svg>
+        <span class="sr">${_("Tweet that you've enrolled in this course")}</span>
       </a>
       <a href="${facebook_link}" class="share">
-        <span class="icon fa fa-facebook" aria-hidden="true"></span><span class="sr">${_("Post a Facebook message to say you've enrolled in this course")}</span>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path fill-rule="evenodd" clip-rule="evenodd" d="M24 12.0737C24 5.40537 18.6276 2.9848e-07 12 0C5.3724 -2.98481e-07 -3.81165e-07 5.40537 0 12.0737C3.44449e-07 18.0996 4.3884 23.0945 10.1256 24V15.5641H7.0776V12.0737H10.1256V9.41383C10.1256 6.38817 11.916 4.71717 14.658 4.71717C15.9708 4.71717 17.3436 4.95261 17.3436 4.95261V7.92273H15.8316C14.34 7.92273 13.8756 8.8536 13.8756 9.80863V12.0737H17.2032L16.6716 15.5629H13.8756V24C19.6116 23.0945 24 18.0996 24 12.0737Z" fill="#9CA3AF"/>
+        </svg>
+        <span class="sr">${_("Post a Facebook message to say you've enrolled in this course")}</span>
       </a>
       <a href="${email_link}" class="share">
-        <span class="icon fa fa-envelope" aria-hidden="true"></span><span class="sr">${_("Email someone to say you've enrolled in this course")}</span>
+        <svg width="32" height="24" viewBox="0 0 32 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M31 3.75001C31 2.2375 29.65 1 28 1H4C2.35 1 1 2.2375 1 3.75001M31 3.75001V20.25C31 21.7625 29.65 23 28 23H4C2.35 23 1 21.7625 1 20.25V3.75001M31 3.75001L16 13.375L1 3.75001" stroke="#9CA3AF" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span class="sr">${_("Email someone to say you've enrolled in this course")}</span>
       </a>
   </div>
   % endif

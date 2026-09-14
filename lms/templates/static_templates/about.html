@@ -4,13 +4,549 @@
 
 <%block name="pagetitle">${_("About")}</%block>
 
-<main id="main" aria-label="Content" tabindex="-1">
-    <section class="container about">
-        <h1>
-            <%block name="pageheader">${page_header or _("About")}</%block>
-        </h1>
-        <p>
-            <%block name="pagecontent">${page_content or _("This page left intentionally blank. Feel free to add your own content.")}</%block>
-        </p>
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-dark: #1a263c;
+            --primary-accent: #d3985c;
+            --primary-light: #f5f7fa;
+            --secondary-dark: #142034;
+            --text-dark: #333;
+            --text-light: #fff;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            --border-radius: 8px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--text-dark);
+            background-color: var(--primary-light);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Header styles */
+        .hero {
+            background: linear-gradient(rgba(26, 38, 60, 0.85), rgba(26, 38, 60, 0.9)), url('https://open.kaznu.kz/static/kaznu/images/header.png') center/cover no-repeat;
+            height: 350px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            position: relative;
+            margin-bottom: 40px;
+        }
+
+        .hero-content {
+            max-width: 800px;
+            padding: 20px;
+            color: var(--text-light);
+        }
+
+        .hero h1 {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            font-weight: 700;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Section styling */
+        section {
+            margin-bottom: 60px;
+        }
+
+        .section-title {
+            text-align: center;
+            margin-bottom: 40px;
+            color: var(--primary-dark);
+            position: relative;
+        }
+
+        .section-title h2 {
+            font-size: 2rem;
+            display: inline-block;
+            padding-bottom: 10px;
+        }
+
+        .section-title h2::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 4px;
+            background: var(--primary-accent);
+            border-radius: 2px;
+        }
+
+        .content-card {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            padding: 30px;
+            margin-bottom: 30px;
+            transition: transform 0.3s ease;
+        }
+
+        .content-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .content-card h3 {
+            color: var(--primary-dark);
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+        }
+
+        .timeline {
+            position: relative;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: var(--primary-accent);
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .timeline-item {
+            position: relative;
+            width: 50%;
+            padding: 20px 40px;
+        }
+
+        .timeline-item:nth-child(odd) {
+            left: 0;
+        }
+
+        .timeline-item:nth-child(even) {
+            left: 50%;
+        }
+
+        .timeline-item::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: var(--primary-accent);
+            border: 4px solid white;
+            border-radius: 50%;
+            top: 30px;
+        }
+
+        .timeline-item:nth-child(odd)::after {
+            right: -10px;
+        }
+
+        .timeline-item:nth-child(even)::after {
+            left: -10px;
+        }
+
+        .timeline-content {
+            background: white;
+            padding: 25px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            position: relative;
+        }
+
+        .timeline-date {
+            font-weight: 700;
+            color: var(--primary-accent);
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        /* Team section */
+        .team-section {
+            margin: 60px 0;
+        }
+
+        .team-category {
+            margin-bottom: 40px;
+        }
+
+        .team-category h3 {
+            color: var(--primary-dark);
+            border-bottom: 2px solid var(--primary-accent);
+            padding-bottom: 10px;
+            margin-bottom: 25px;
+            font-size: 1.5rem;
+        }
+
+        .team-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 25px;
+        }
+
+        .team-card {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            padding: 25px;
+            text-align: center;
+            transition: all 0.3s ease;
+            border-top: 4px solid var(--primary-accent);
+        }
+
+        .team-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+        }
+
+        .team-icon {
+            font-size: 2.5rem;
+            color: var(--primary-dark);
+            margin-bottom: 15px;
+        }
+
+        .team-card h4 {
+            color: var(--primary-dark);
+            margin-bottom: 10px;
+            font-size: 1.3rem;
+        }
+
+        .team-card p {
+            color: #666;
+            font-size: 1rem;
+        }
+
+        /* Highlight box */
+        .highlight-box {
+            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--secondary-dark) 100%);
+            border-radius: var(--border-radius);
+            color: white;
+            padding: 30px;
+            margin: 40px 0;
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .highlight-box::before {
+            content: "🎓";
+            position: absolute;
+            font-size: 6rem;
+            opacity: 0.1;
+            right: 20px;
+            top: 20px;
+            transform: rotate(15deg);
+        }
+
+        .highlight-box h3 {
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+            position: relative;
+        }
+
+        .highlight-box h3::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 0;
+            width: 60px;
+            height: 4px;
+            background: var(--primary-accent);
+            border-radius: 2px;
+        }
+
+        /* Link styling */
+        a {
+            color: var(--primary-accent);
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.3s;
+        }
+
+        a:hover {
+            color: var(--primary-dark);
+            text-decoration: underline;
+        }
+
+        /* Responsive styles */
+        @media (max-width: 768px) {
+            .hero {
+                height: 250px;
+            }
+
+            .hero h1 {
+                font-size: 1.8rem;
+            }
+
+            .timeline::before {
+                left: 30px;
+            }
+
+            .timeline-item {
+                width: 100%;
+                padding-left: 70px;
+                padding-right: 20px;
+                left: 0 !important;
+            }
+
+            .timeline-item::after {
+                left: 20px !important;
+            }
+
+            .team-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .highlight-box {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1 style="color: white !important;">О нас - Open Kaznu</h1>
+            <p style="font-size: 1.2rem">Казахский национальный университет им. аль-Фараби</p>
+        </div>
     </section>
-</main>
+
+    <div class="container">
+        <!-- About Section -->
+        <section>
+            <div class="section-title">
+                <h2>О платформе</h2>
+            </div>
+
+            <div class="content-card">
+                <p>Казахский национальный университет им. аль-Фараби является лидером среди казахстанских университетов по внедрению MOOC на открытой платформе OpenEdx.</p>
+
+                <p>С 2014-2015 учебного года Центр дистанционного образования КазНУ им. аль-Фараби совместно с преподавательским составом начал работу по созданию MOOC, и в настоящее время на <a href="http://open.kaznu.kz">http://open.kaznu.kz</a> существует собственная платформа MOOC на основе системы Open edX.</p>
+            </div>
+
+            <div class="highlight-box">
+                <h3 style="color: white !important;">История развития</h3>
+                <p>1 октября 2015 года были запущены первые открытые курсы от ведущих преподавателей КазНУ им. аль-Фараби - "Теория вероятностей" и "Физические задачи" с доцентом В. Кашкаровым, на которые записались около 250 и 500 студентов из разных регионов Казахстана соответственно.</p>
+            </div>
+
+            <div class="content-card">
+                <p>Эти курсы в основном посещали студенты 1-2 курсов КазНУ им. аль-Фараби, старшие классы Назарбаев интеллектуальных школ, профильные физико-математические и средние школы. Анализ данных показал большой интерес к этим курсам, что дает стимул преподавательскому составу и сотрудникам университета продолжать работу в этом направлении. К концу июня 2016 года в системе было зарегистрировано более двух тысяч слушателей.</p>
+
+                <p>При активном содействии КазНУ им. аль-Фараби была запущена Национальная платформа открытого образования Казахстана (далее - НПОК).</p>
+            </div>
+        </section>
+
+        <!-- Development Timeline -->
+        <section>
+            <div class="section-title">
+                <h2>Этапы развития</h2>
+            </div>
+
+            <div class="timeline">
+                <div class="timeline-item">
+                    <div class="timeline-content">
+                        <span class="timeline-date">2014-2015</span>
+                        <h3>Начало работы</h3>
+                        <p>Центр дистанционного образования КазНУ начинает работу по созданию MOOC</p>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-content">
+                        <span class="timeline-date">Октябрь 2015</span>
+                        <h3>Первый запуск</h3>
+                        <p>Запущены первые открытые курсы от ведущих преподавателей университета</p>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-content">
+                        <span class="timeline-date">Январь 2016</span>
+                        <h3>Реорганизация</h3>
+                        <p>Центр дистанционного образования преобразован в Институт дистанционного образования</p>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-content">
+                        <span class="timeline-date">Февраль 2016</span>
+                        <h3>Новый этап</h3>
+                        <p>Институт дистанционного образования преобразован в Институт новых образовательных технологий</p>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-content">
+                        <span class="timeline-date">Июнь 2016</span>
+                        <h3>Достижение</h3>
+                        <p>В системе зарегистрировано более двух тысяч слушателей</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Institutional Development -->
+        <section>
+            <div class="content-card">
+                <h3>Институциональное развитие</h3>
+                <p>В рамках реализации комплекса мер по развитию электронного обучения и организации работы НПОК для подготовки кадров на основе технологий дистанционного обучения (ДОТ) и усиления работы Центра дистанционного образования (ЦДО), с целью повышения мобильности предоставления образовательных услуг университета по новым образовательным программам, руководство университета приняло решение (приказ ректора №45 от 29.01.2016) о преобразовании структурного подразделения Центра дистанционного образования в Институт дистанционного образования (ИДО), в который вошел Центр массовых открытых онлайн-курсов (ЦМООК) в статусе проектного офиса национальной платформы.</p>
+
+                <p>Были разработаны и утверждены вице-ректором по учебной работе Ахмет-Заки Д.Ж. Положение о ЦМООК, а также должностные инструкции руководителя, ведущего специалиста и специалиста Центра ЦМООК (от 14 марта 2016 г.).</p>
+
+                <p>В феврале 2016 года Институт дистанционного образования был преобразован в Институт новых образовательных технологий, который продолжает работу ЦМООК.</p>
+            </div>
+        </section>
+
+        <!-- Team Section -->
+        <section class="team-section">
+            <div class="section-title">
+                <h2>Наша команда</h2>
+            </div>
+
+            <div class="team-category">
+                <h3>Руководство офиса</h3>
+                <div class="team-grid">
+                    <div class="team-card">
+                        <div class="team-icon">
+                            <i class="fas fa-user-tie"></i>
+                        </div>
+                        <h4>Мусинова Асель</h4>
+                        <p>Заместитель директора Департамента по академическим вопросам</p>
+                    </div>
+
+                    <div class="team-card">
+                        <div class="team-icon">
+                            <i class="fas fa-user-tie"></i>
+                        </div>
+                        <h4>Круговых Илья</h4>
+                        <p>Руководитель Офиса академических и цифровых инноваций</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="team-category">
+                <h3>Специалисты open.kaznu.kz</h3>
+                <div class="team-grid">
+                    <div class="team-card">
+                        <div class="team-icon">
+                            <i class="fas fa-laptop-code"></i>
+                        </div>
+                        <h4>Арыстанова Айнур</h4>
+                        <p>Главный специалист</p>
+                    </div>
+
+                    <div class="team-card">
+                        <div class="team-icon">
+                            <i class="fas fa-laptop-code"></i>
+                        </div>
+                        <h4>Канафина Диана</h4>
+                        <p>Ведущий специалист</p>
+                    </div>
+
+                    <div class="team-card">
+                        <div class="team-icon">
+                            <i class="fas fa-laptop-code"></i>
+                        </div>
+                        <h4>Абылкасым Ерарыс</h4>
+                        <p>Умный-программист</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="team-category">
+                <h3>Специалисты dl.kaznu.kz</h3>
+                <div class="team-grid">
+                    <div class="team-card">
+                        <div class="team-icon">
+                            <i class="fas fa-chalkboard-teacher"></i>
+                        </div>
+                        <h4>Смагулова Шынар</h4>
+                        <p>Главный специалист</p>
+                    </div>
+
+                    <div class="team-card">
+                        <div class="team-icon">
+                            <i class="fas fa-chalkboard-teacher"></i>
+                        </div>
+                        <h4>Малик Нурлы</h4>
+                        <p>Главный специалист</p>
+                    </div>
+
+                    <div class="team-card">
+                        <div class="team-icon">
+                            <i class="fas fa-chalkboard-teacher"></i>
+                        </div>
+                        <h4>Жабаев Талгат</h4>
+                        <p>Инженер-программист</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="team-category">
+                <h3>Видеоинженер офиса</h3>
+                <div class="team-grid">
+                    <div class="team-card">
+                        <div class="team-icon">
+                            <i class="fas fa-video"></i>
+                        </div>
+                        <h4>Асылхан Аниятолла</h4>
+                        <p>Главный специалист</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        // Simple animation for timeline items
+        document.addEventListener('DOMContentLoaded', function() {
+            const timelineItems = document.querySelectorAll('.timeline-item');
+            const teamCards = document.querySelectorAll('.team-card');
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.opacity = 1;
+                        entry.target.style.transform = 'translateY(0)';
+                    }
+                });
+            }, { threshold: 0.1 });
+
+            timelineItems.forEach(item => {
+                item.style.opacity = 0;
+                item.style.transform = 'translateY(20px)';
+                item.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                observer.observe(item);
+            });
+
+            teamCards.forEach(card => {
+                card.style.opacity = 0;
+                card.style.transform = 'translateY(20px)';
+                card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                observer.observe(card);
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,231 @@
+<%page expression_filter="h"/>
+<%! from django.utils.translation import gettext as _ %>
+<%inherit file="../main.html" />
+
+<%def name="pagetitle()">${_("Course analytics")} — ${course.display_name or course.id}</%def>
+
+<%block name="head_extra">
+<style>
+    .course-analytics { background: #f6f8fb; color: #172033; padding: 32px 20px 48px; }
+    .course-analytics * { box-sizing: border-box; }
+    .course-analytics .details-shell { max-width: 1240px; margin: 0 auto; }
+    .course-analytics a { color: #245777; }
+    .course-analytics .details-nav { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 28px; font-size: 14px; }
+    .course-analytics .details-muted { color: #667085; font-size: 13px; line-height: 1.6; }
+    .course-analytics .details-hero { background: #244b66; color: #fff; padding: 30px; border-radius: 12px; margin-bottom: 22px; }
+    .course-analytics .details-kicker { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; margin: 0 0 12px; color: #c6deee; }
+    .course-analytics h1 { color: inherit; font-size: 32px; font-weight: 700; line-height: 1.2; margin: 0 0 14px; overflow-wrap: anywhere; }
+    .course-analytics .details-course-id { color: #d4e5f0; font-size: 13px; overflow-wrap: anywhere; margin: 0 0 20px; }
+    .course-analytics .details-hero-bottom { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 18px; }
+    .course-analytics .details-hero-bottom p { margin: 0; color: #e0ebf2; font-size: 14px; }
+    .course-analytics .details-open { display: inline-block; background: #fff; color: #244b66; padding: 10px 16px; border-radius: 6px; font-size: 14px; font-weight: 700; text-decoration: none; }
+    .course-analytics .details-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-bottom: 22px; }
+    .course-analytics .details-card, .course-analytics .details-panel { background: #fff; border: 1px solid #e0e7ef; border-radius: 10px; box-shadow: 0 2px 8px rgba(16,24,40,.04); padding: 22px; min-width: 0; }
+    .course-analytics .details-card-label { font-size: 14px; color: #475467; margin-bottom: 12px; }
+    .course-analytics .details-card-value { font-size: 36px; font-weight: 700; line-height: 1.15; margin-bottom: 8px; font-variant-numeric: tabular-nums; }
+    .course-analytics .details-card-value.good { color: #34775e; }
+    .course-analytics .details-card p { margin: 0; }
+    .course-analytics .details-columns { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 20px; margin-bottom: 20px; }
+    .course-analytics h2 { color: #172033; font-size: 19px; font-weight: 700; margin: 0 0 8px; }
+    .course-analytics .details-panel > .details-muted { margin: 0 0 24px; }
+    .course-analytics .details-chart-scroll { overflow-x: auto; }
+    .course-analytics .details-chart { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(50px, 1fr); gap: 10px; margin: 0; padding: 0; list-style: none; }
+    .course-analytics .details-chart li { min-width: 0; text-align: center; }
+    .course-analytics .details-chart-number { font-size: 12px; font-weight: 700; margin-bottom: 8px; }
+    .course-analytics .details-chart-track { height: 150px; background: #f5f8fb; display: flex; align-items: flex-end; border-bottom: 1px solid #cdd8e3; }
+    .course-analytics .details-chart-fill { width: 100%; background: #39799f; border-radius: 4px 4px 0 0; }
+    .course-analytics .details-chart-month { margin-top: 10px; font-size: 10px; color: #667085; white-space: nowrap; }
+    .course-analytics .details-facts { margin: 0; }
+    .course-analytics .details-fact { display: flex; justify-content: space-between; align-items: baseline; gap: 18px; padding: 13px 0; border-bottom: 1px solid #edf1f6; }
+    .course-analytics .details-fact:last-child { border-bottom: 0; }
+    .course-analytics dt { color: #667085; font-size: 14px; }
+    .course-analytics dd { margin: 0; text-align: right; color: #172033; font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
+    .course-analytics .details-outcome { border-bottom: 1px solid #edf1f6; padding: 16px 0; }
+    .course-analytics .details-outcome:first-of-type { padding-top: 0; }
+    .course-analytics .details-outcome:last-child { border-bottom: 0; padding-bottom: 0; }
+    .course-analytics .details-outcome-row { display: flex; justify-content: space-between; align-items: baseline; gap: 18px; margin-bottom: 6px; }
+    .course-analytics .details-outcome-row strong { font-size: 23px; white-space: nowrap; }
+    .course-analytics .details-outcome p { margin: 0; }
+    .course-analytics .details-empty { padding: 18px; background: #f5f8fb; border-radius: 6px; color: #667085; margin-bottom: 16px; }
+    .course-analytics a:focus-visible { outline: 3px solid #62a9d5; outline-offset: 4px; }
+    .course-analytics .details-runs { margin-bottom: 22px; }
+    .course-analytics .details-runs summary { cursor: pointer; font-weight: 700; padding: 8px 0; }
+    .course-analytics .details-run-list { max-height: 320px; overflow-y: auto; padding: 0; border: 0; margin: 16px 0; }
+    .course-analytics .details-run { display: flex; align-items: baseline; gap: 14px; padding: 12px 0; border-bottom: 1px solid #edf1f6; }
+    .course-analytics .details-run label { flex: 1; overflow-wrap: anywhere; cursor: pointer; }
+    .course-analytics .details-run input { margin-right: 8px; }
+    .course-analytics .details-run a { flex-shrink: 0; }
+    .course-analytics .details-run-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+    .course-analytics .details-run-actions button { background: #244b66; color: #fff; padding: 10px 16px; border: 0; border-radius: 6px; text-shadow: none; box-shadow: none; }
+    .course-analytics .details-run-actions button:disabled { opacity: .5; cursor: not-allowed; }
+    @media (max-width: 900px) {
+        .course-analytics .details-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .course-analytics .details-columns { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 480px) {
+        .course-analytics { padding: 22px 12px 32px; }
+        .course-analytics .details-hero { padding: 22px; }
+        .course-analytics h1 { font-size: 25px; }
+        .course-analytics .details-card, .course-analytics .details-panel { padding: 16px; }
+        .course-analytics .details-summary { gap: 10px; }
+        .course-analytics .details-card-value { font-size: 29px; }
+    }
+</style>
+</%block>
+
+<main class="course-analytics">
+    <div class="details-shell">
+        <nav class="details-nav" aria-label="${_('Analytics navigation')}">
+            <a href="${analysis_url}">← ${_("Back to all courses")}</a>
+            <span class="details-muted">${_("Updated")}: ${generated_at}</span>
+        </nav>
+
+        <header class="details-hero">
+            <p class="details-kicker">${_("Course analytics")}</p>
+            <h1>${course.display_name or course.id}</h1>
+            <p class="details-course-id">${course.id}</p>
+            <div class="details-hero-bottom">
+                <p>${_("Selected runs")}: ${len(selected_runs)} / ${len(available_runs)} · ${_("Entire period")}</p>
+                <a class="details-open" href="${course_url}">${_("Go to course")} →</a>
+            </div>
+        </header>
+
+        <section class="details-panel details-runs">
+            <details>
+                <summary>${_("Choose course runs")}</summary>
+                <p class="details-muted">${_("Select one or more runs, or view all runs for the entire lifetime of the course.")}</p>
+                <form method="get" action="${selection_url}" id="runSelectionForm">
+                    <input type="hidden" name="selection" value="1" />
+                    <fieldset class="details-run-list">
+                        <legend>${_("Course runs")}</legend>
+                        % for run in available_runs:
+                            <div class="details-run">
+                                <label>
+                                    <input type="checkbox" name="run" value="${run.id}" ${'checked' if str(run.id) in selected_ids else ''} />
+                                    <strong>${run.id.run}</strong> — ${run.display_name or run.id}
+                                    <span class="details-muted">(${run.start.strftime('%d.%m.%Y') if run.start else _('Start date not specified')} — ${run.end.strftime('%d.%m.%Y') if run.end else _('End date not specified')})</span>
+                                </label>
+                                <a href="${selection_url}?run=${str(run.id) | u}">${_("Only this run")}</a>
+                            </div>
+                        % endfor
+                    </fieldset>
+                    <div class="details-run-actions">
+                        <button type="submit" id="applyRuns">${_("Apply selection")}</button>
+                        <button type="submit" name="scope" value="all">${_("All runs for the entire period")}</button>
+                    </div>
+                </form>
+            </details>
+            <p class="details-muted">${_("Selected runs")}:
+                ${', '.join(str(run.id.run) for run in selected_runs)}
+            </p>
+        </section>
+
+        <section class="details-summary" aria-label="${_('Course summary')}">
+            <article class="details-card">
+                <div class="details-card-label">${_("Total enrolled users")}</div>
+                <div class="details-card-value">${stats['total']}</div>
+                <p class="details-muted">${_("Unique users across selected runs, including inactive enrollments.")}</p>
+            </article>
+            <article class="details-card">
+                <div class="details-card-label">${_("Active enrollments")}</div>
+                <div class="details-card-value">${stats['active']}</div>
+                <p class="details-muted">${_("Users currently enrolled in at least one selected run; does not measure learning activity.")}</p>
+            </article>
+            <article class="details-card">
+                <div class="details-card-label">${_("Certificate recipients")}</div>
+                <div class="details-card-value good">${stats['certificates']}</div>
+                <p class="details-muted">${_("Users with an issued, available certificate.")}</p>
+            </article>
+            <article class="details-card">
+                <div class="details-card-label">${_("Certificate rate")}</div>
+                <div class="details-card-value good">${stats['certificate_rate']}%</div>
+                <p class="details-muted">${_("Certificate recipients divided by all enrolled users.")}</p>
+            </article>
+        </section>
+
+        <div class="details-columns">
+            <section class="details-panel">
+                <h2>${_("Enrollment history")}</h2>
+                <p class="details-muted">${_("Enrollment records across selected runs for the entire period. A user enrolled in two runs is counted twice. The current month is incomplete.")}</p>
+                % if not history_total:
+                    <div class="details-empty">${_("No new enrollments in this period.")}</div>
+                % endif
+                <div class="details-chart-scroll" tabindex="0" role="region" aria-label="${_('Monthly enrollments')}">
+                    <ol class="details-chart">
+                        % for month in enrollment_history:
+                            <li>
+                                <div class="details-chart-number">${month['total']}</div>
+                                <div class="details-chart-track" aria-hidden="true">
+                                    <div class="details-chart-fill" style="height: ${month['height']}%"></div>
+                                </div>
+                                <div class="details-chart-month">${month['label']}</div>
+                            </li>
+                        % endfor
+                    </ol>
+                </div>
+            </section>
+
+            <section class="details-panel">
+                <h2>${_("Enrollment status")}</h2>
+                <p class="details-muted">${_("Each user is counted once across selected runs. Inactive means no active enrollment in any selected run.")}</p>
+                <dl class="details-facts">
+                    <div class="details-fact"><dt>${_("Active")}</dt><dd>${stats['active']}</dd></div>
+                    <div class="details-fact"><dt>${_("Inactive")}</dt><dd>${stats['inactive']}</dd></div>
+                    <div class="details-fact"><dt>${_("New in the last 30 days")}</dt><dd>${stats['recent']}</dd></div>
+                    <div class="details-fact"><dt>${_("Total enrollment records")}</dt><dd>${stats['enrollment_records']}</dd></div>
+                </dl>
+            </section>
+        </div>
+
+        <div class="details-columns">
+            <section class="details-panel">
+                <h2>${_("Learning outcomes")}</h2>
+                <p class="details-muted">${_("Based on saved grades and certificate records for enrolled users.")}</p>
+                <div class="details-outcome">
+                    <div class="details-outcome-row"><span>${_("Earned a passing grade at least once")}</span><strong>${stats['passed']}</strong></div>
+                    <p class="details-muted">${_("A recorded passing date does not guarantee a currently valid certificate.")}</p>
+                </div>
+                <div class="details-outcome">
+                    <div class="details-outcome-row">
+                        <span>${_("Average saved grade")}</span>
+                        <strong>${str(stats['average_grade']) + '%' if stats['average_grade'] is not None else '—'}</strong>
+                    </div>
+                    <p class="details-muted">${_("Users with a saved grade")}: ${stats['grades_recorded']}. ${_("Missing grades are not counted as zero.")}</p>
+                    <p class="details-muted">${_("The average includes each saved grade in each selected run.")}</p>
+                </div>
+                <div class="details-outcome">
+                    <div class="details-outcome-row"><span>${_("Certificate recipients")}</span><strong>${stats['certificates']}</strong></div>
+                    <p class="details-muted">${_("Issued certificates across selected runs")}: ${stats['issued_certificates']}</p>
+                    <p class="details-muted">${_("Only issued, available certificates are counted. Revoked certificates and generation errors are excluded. This is not a download count.")}</p>
+                </div>
+            </section>
+
+            <section class="details-panel">
+                <h2>${_("Course information")}</h2>
+                <p class="details-muted">${_("Information for the displayed run")}: ${course.id.run}</p>
+                <dl class="details-facts">
+                    <div class="details-fact"><dt>${_("Organization")}</dt><dd>${course.org or '—'}</dd></div>
+                    <div class="details-fact"><dt>${_("Faculty")}</dt><dd>${faculty or '—'}</dd></div>
+                    <div class="details-fact"><dt>${_("Direction")}</dt><dd>${directions or '—'}</dd></div>
+                    <div class="details-fact"><dt>${_("Language")}</dt><dd>${course.language or '—'}</dd></div>
+                    <div class="details-fact"><dt>${_("Start date")}</dt><dd>${course.start.strftime('%d.%m.%Y') if course.start else '—'}</dd></div>
+                    <div class="details-fact"><dt>${_("End date")}</dt><dd>${course.end.strftime('%d.%m.%Y') if course.end else '—'}</dd></div>
+                </dl>
+            </section>
+        </div>
+    </div>
+</main>
+
+<%block name="extrajs">
+<script>
+    (function () {
+        var form = document.getElementById("runSelectionForm");
+        var applyButton = document.getElementById("applyRuns");
+        function updateSelection() {
+            applyButton.disabled = !form.querySelector('input[name="run"]:checked');
+        }
+        form.addEventListener("change", updateSelection);
+        updateSelection();
+    })();
+</script>
+</%block>

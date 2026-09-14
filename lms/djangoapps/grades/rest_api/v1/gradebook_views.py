@@ -507,6 +507,8 @@ class GradebookView(GradeViewMixin, PaginatedAPIView):
             kwargs=dict(course_id=str(course.id), student_id=user.id)
         )
         user_entry['user_id'] = user.id
+        profile = getattr(user, 'profile', None)
+        user_entry['profile_name'] = getattr(profile, 'name', None)
 
         def is_masters_student():
             # If this is a multiple-user lookup (didn't use the username param) we insert
@@ -654,7 +656,7 @@ class GradebookView(GradeViewMixin, PaginatedAPIView):
                 # TODO: In django 3.0+, we can directly filter on this 'exists' rather than annotating
                 q_objects.append(Q(has_excluded_role=False))
             entries = []
-            related_models = ['user']
+            related_models = ['user', 'user__profile']
             users = self._paginate_users(course_key, q_objects, related_models, annotations=annotations)
 
             users_counts = self._get_users_counts(course_key, q_objects, annotations=annotations)
