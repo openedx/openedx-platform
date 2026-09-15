@@ -43,12 +43,12 @@ from xblock.fields import (
 )
 from xblock.progress import Progress
 from xblock.scorable import ScorableXBlockMixin, Score, ShowCorrectness
-from xblocks_contrib.problem import ProblemBlock as _ExtractedProblemBlock
-from xblocks_contrib.problem.capa import responsetypes
-from xblocks_contrib.problem.capa.capa_problem import LoncapaProblem, LoncapaSystem
-from xblocks_contrib.problem.capa.inputtypes import Status
-from xblocks_contrib.problem.capa.responsetypes import LoncapaProblemError, ResponseError, StudentInputError
-from xblocks_contrib.problem.capa.util import convert_files_to_filenames, get_inner_html_from_xpath
+from xblock_problem import ProblemBlock as _ExtractedProblemBlock
+from xblock_problem.capa import responsetypes
+from xblock_problem.capa.capa_problem import LoncapaProblem, LoncapaSystem
+from xblock_problem.capa.inputtypes import Status
+from xblock_problem.capa.responsetypes import LoncapaProblemError, ResponseError, StudentInputError
+from xblock_problem.capa.util import convert_files_to_filenames, get_inner_html_from_xpath
 
 from common.djangoapps.xblock_django.constants import (
     ATTR_KEY_DEPRECATED_ANONYMOUS_USER_ID,
@@ -156,7 +156,7 @@ class _BuiltInProblemBlock(  # pylint: disable=too-many-public-methods,too-many-
     An XBlock representing a "problem".
 
     A problem contains zero or more respondable items, such as multiple choice,
-    numeric response, true/false, etc. See xblocks_contrib/problem/capa/responsetypes.py
+    numeric response, true/false, etc. In xblocks-core, see xblock_problem/capa/responsetypes.py
     for the full ensemble.
 
     The rendering logic of a problem is largely encapsulated within
