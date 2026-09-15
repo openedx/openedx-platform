@@ -264,11 +264,10 @@ class MFEConfigTestCase(APITestCase):
         configuration_helpers_mock.get_value.side_effect = side_effect
 
         with override_settings(
-            HOMEPAGE_COURSE_MAX=3,  # Plain settings (lowest precedence)
-            FEATURES={              # Settings FEATURES
-                "ENABLE_COURSE_SORTING_BY_START_DATE": True,
-                "ENABLE_COURSE_DISCOVERY": True,
-            }
+            # Plain settings (lowest precedence)
+            HOMEPAGE_COURSE_MAX=3,
+            ENABLE_COURSE_SORTING_BY_START_DATE=True,
+            ENABLE_COURSE_DISCOVERY=True,
         ):
             response = self.client.get(f"{self.mfe_config_api_url}?mfe=catalog")
 
