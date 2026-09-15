@@ -1323,7 +1323,7 @@ MEILISEARCH_INDEX_PREFIX = ""
 MEILISEARCH_API_KEY = "devkey"
 
 # .. setting_name: LIBRARY_ENABLED_BLOCKS
-# .. setting_default: ['problem', 'video', 'html', 'drag-and-drop-v2']
+# .. setting_default: ['problem', 'video', 'html', 'drag-and-drop-v2', 'openassessment', 'conditional', 'done', 'edx_sga', 'freetextresponse', 'google-calendar', 'google-document', 'invideoquiz', 'lti', 'lti_consumer', 'pdf', 'poll', 'survey', 'word_cloud']  # noqa: E501
 # .. setting_description: List of block types that are ready/enabled to be created/used
 # .. in libraries. Both basic blocks and advanced blocks can be included.
 # .. In the future, we will support individual configuration per library - see
