@@ -68,7 +68,7 @@ ${static.get_page_title_breadcrumbs(course_name())}
   <%static:js group='courseware'/>
 
   % if enable_mathjax:
-    <%include file="/mathjax_include.html" args="disable_fast_preview=True"/>
+    <%include file="/mathjax_include.html" />
   % endif
   % if staff_access:
   	<%include file="xqa_interface.html"/>
