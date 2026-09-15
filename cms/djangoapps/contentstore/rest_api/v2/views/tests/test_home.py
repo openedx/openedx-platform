@@ -233,6 +233,7 @@ class HomePageCoursesViewV2Test(CourseTestCase):
         ("search", "sample"),
         ("order", "org"),
         ("page", 1),
+        ("start_date_on_or_after", "2099-01-01"),
     )
     @ddt.unpack
     def test_if_empty_list_of_courses(self, query_param, value):
@@ -248,6 +249,26 @@ class HomePageCoursesViewV2Test(CourseTestCase):
 
         self.assertEqual(len(response.data['results']['courses']), 0)  # noqa: PT009
         self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+
+    def test_start_date_on_or_after_invalid_format_returns_400(self):
+        """Get list of courses when start_date_on_or_after is not a valid date.
+
+        Expected result:
+        - An HTTP 400 "Bad Request" response.
+        """
+        response = self.client.get(self.api_v2_url, {"start_date_on_or_after": "not-a-date"})
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)  # noqa: PT009
+
+    def test_start_date_on_or_after_datetime_rejected(self):
+        """Get list of courses when start_date_on_or_after is a datetime instead of a date.
+
+        Expected result:
+        - An HTTP 400 "Bad Request" response.
+        """
+        response = self.client.get(self.api_v2_url, {"start_date_on_or_after": "2024-01-01T10:00:00"})
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)  # noqa: PT009
 
     @ddt.data(
         ("active_only", "true", 2, 0),

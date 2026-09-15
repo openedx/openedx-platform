@@ -2,8 +2,10 @@
 Test CMS's upstream->downstream syncing system
 """
 import datetime
+from unittest.mock import patch
 
 import ddt
+from openedx_content.models_api import Unit
 from organizations.api import ensure_organization
 from organizations.models import Organization
 
@@ -17,10 +19,12 @@ from cms.lib.xblock.upstream_sync import (
     sever_upstream_link,
 )
 from cms.lib.xblock.upstream_sync_block import fetch_customizable_fields_from_block, sync_from_upstream_block
+from cms.lib.xblock.upstream_sync_container import sync_from_upstream_container
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.content_libraries import api as libs
 from openedx.core.djangoapps.content_tagging import api as tagging_api
 from openedx.core.djangoapps.xblock import api as xblock
+from openedx.core.djangoapps.xblock.data import CheckPerm
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 
@@ -651,3 +655,55 @@ class UpstreamTestCase(ModuleStoreTestCase):
         # data is overridden
         assert downstream.data == "<html><body>Upstream content V2</body></html>"
         assert downstream.downstream_customized == ["display_name"]
+
+    def test_load_upstream_block_legacy_does_not_bypass_library_permission(self):
+        """
+        When AuthZ is not enabled, _load_upstream_block falls through to the
+        library-level CAN_READ_AS_AUTHOR check.
+        """
+        downstream = BlockFactory.create(
+            category="html", parent=self.unit, upstream=str(self.upstream_key)
+        )
+
+        # Get upstream xblock before patching
+        real_upstream = xblock.load_block(self.upstream_key, self.user)
+
+        with patch("openedx.core.djangoapps.xblock.api.load_block") as mock_load_block:
+            mock_load_block.return_value = real_upstream
+            sync_from_upstream_block(downstream, self.user)
+
+        mock_load_block.assert_called_once()
+        _, lb_kwargs = mock_load_block.call_args
+        assert lb_kwargs["check_permission"] == CheckPerm.CAN_READ_AS_AUTHOR, (
+            "When the course-level permission is denied, the library block "
+            "should be loaded with CAN_READ_AS_AUTHOR, not with check_permission=None"
+        )
+
+    def test_sync_container_legacy_does_not_bypass_library_permission(self):
+        """
+        When AuthZ is not enabled, sync_from_upstream_container falls through
+        to the library-level CAN_VIEW_THIS_CONTENT_LIBRARY check.
+        """
+        upstream_container = libs.create_container(
+            self.library.key, Unit, "test-container", "Test Container Title", self.user.id,
+        )
+        libs.publish_changes(self.library.key, self.user.id)
+
+        downstream = BlockFactory.create(
+            category="vertical",
+            parent=self.unit,
+            upstream=str(upstream_container.container_key),
+        )
+
+        with patch(
+            "cms.lib.xblock.upstream_sync_container.lib_api.require_permission_for_library_key"
+        ) as mock_require_perm:
+            sync_from_upstream_container(downstream, self.user)
+
+        mock_require_perm.assert_called_once()
+        _, rp_kwargs = mock_require_perm.call_args
+        assert rp_kwargs.get("permission") == libs.permissions.CAN_VIEW_THIS_CONTENT_LIBRARY, (
+            "When the course-level permission is denied, the container sync "
+            "should enforce CAN_VIEW_THIS_CONTENT_LIBRARY via "
+            "require_permission_for_library_key"
+        )

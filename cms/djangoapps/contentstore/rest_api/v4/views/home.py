@@ -6,6 +6,7 @@ from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthenticat
 from edx_rest_framework_extensions.auth.session.authentication import (
     SessionAuthenticationAllowInactiveUser,
 )
+from edx_rest_framework_extensions.mixins import StandardizedErrorMixin
 from edx_rest_framework_extensions.paginators import DefaultPagination
 from rest_framework import serializers as _serializers
 from rest_framework import viewsets
@@ -17,7 +18,6 @@ from cms.djangoapps.contentstore.rest_api.v4.serializers.home import (
     CourseHomeTabSerializerV4,
 )
 from cms.djangoapps.contentstore.utils import get_course_context_v2
-from openedx.core.lib.api.mixins import StandardizedErrorMixin
 
 
 class _HomeCoursesAutoSchema(AutoSchema):

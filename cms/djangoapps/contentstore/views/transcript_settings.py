@@ -108,8 +108,11 @@ def transcript_upload_handler(request):
     Transcript file should be in SRT(SubRip) format.
 
     Returns
-        - A 400 if any of the validation fails
-        - A 200 if transcript has been uploaded successfully
+        - A 400 if any of the validation fails: a required parameter or the file is
+          missing, ``new_language_code`` already has a transcript when it differs from
+          ``language_code``, or the file is not valid SRT / UTF-8.
+        - A 201 if a transcript was created for a language that had none.
+        - A 200 if an existing transcript for that language was replaced.
     """
     error = validate_transcript_upload_data(data=request.POST, files=request.FILES)
     if error:

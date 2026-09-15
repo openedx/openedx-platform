@@ -12,9 +12,12 @@ import typing as t
 from django.core.exceptions import PermissionDenied
 from django.utils.translation import gettext_lazy as _
 from opaque_keys.edx.locator import LibraryUsageLocatorV2
+from openedx_authz.constants.permissions import COURSES_MANAGE_LIBRARY_UPDATES
 from rest_framework.exceptions import NotFound
 from xblock.core import XBlock
 from xblock.fields import Scope
+
+from openedx.core.djangoapps.authz.decorators import user_has_course_permission
 
 from .upstream_sync import BadDownstream, BadUpstream, UpstreamLink
 
@@ -94,6 +97,10 @@ def _load_upstream_block(downstream: XBlock, user: User) -> XBlock:
     library. This assumption may need to be relaxed in the future (see module docstring).
 
     If `downstream` lacks a valid+supported upstream link, this raises an UpstreamLinkException.
+
+    If the user holds ``courses.manage_library_updates`` for the course that
+    owns ``downstream``, the library-level permission check is bypassed.
+    Otherwise the default ``CAN_READ_AS_AUTHOR`` check is applied.
     """
     # We import load_block here b/c UpstreamSyncMixin is used by cms/envs, which loads before the djangoapps are ready.
     from openedx.core.djangoapps.xblock.api import (  # pylint: disable=wrong-import-order
@@ -101,11 +108,23 @@ def _load_upstream_block(downstream: XBlock, user: User) -> XBlock:
         LatestVersion,
         load_block,
     )
+
+    # Try course-level permission first; fall back to library-level check.
+    course_key = downstream.usage_key.context_key
+    if course_key and user_has_course_permission(
+        user,
+        COURSES_MANAGE_LIBRARY_UPDATES.identifier,
+        course_key,
+    ):
+        check_perm = None
+    else:
+        check_perm = CheckPerm.CAN_READ_AS_AUTHOR
+
     try:
         lib_block: XBlock = load_block(
             LibraryUsageLocatorV2.from_string(downstream.upstream),
             user,
-            check_permission=CheckPerm.CAN_READ_AS_AUTHOR,
+            check_permission=check_perm,
             version=LatestVersion.PUBLISHED,
         )
     except (NotFound, PermissionDenied) as exc:

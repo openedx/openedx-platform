@@ -36,6 +36,9 @@ from django.http import JsonResponse
 from drf_spectacular.utils import OpenApiParameter, OpenApiRequest, OpenApiResponse, extend_schema
 from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
 from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
+from edx_rest_framework_extensions.mixins import StandardizedErrorMixin
+from edx_rest_framework_extensions.routers import USAGE_KEY_LOOKUP_REGEX
+from edx_rest_framework_extensions.shaping import project
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import UsageKey
 from rest_framework import viewsets
@@ -51,7 +54,6 @@ from cms.djangoapps.contentstore.xblock_storage_handlers.view_handlers import (
     update_xblock_response,
 )
 from common.djangoapps.util.json_request import expect_json_in_class_view
-from openedx.core.lib.api.mixins import StandardizedErrorMixin
 
 log = logging.getLogger(__name__)
 
@@ -151,7 +153,7 @@ def _apply_minimal_view(response):
         # which returns the grader-type value directly), there's nothing to
         # filter — return the response untouched.
         return response
-    return JsonResponse({k: v for k, v in body.items() if k in _MINIMAL_VIEW_FIELDS})
+    return JsonResponse(project(body, _MINIMAL_VIEW_FIELDS))
 
 
 @extend_schema(tags=["openedx-platform-sdk"])
@@ -180,7 +182,7 @@ class XblockViewSet(StandardizedErrorMixin, viewsets.ViewSet):
     permission_classes = (IsAuthenticated, HasCourseAuthorAccess)
     serializer_class = XblockSerializer
     lookup_field = "usage_key_string"
-    lookup_value_regex = r'(?:i4x://?[^/]+/[^/]+/[^/]+/[^@]+(?:@[^/]+)?)|(?:[^/]+)'
+    lookup_value_regex = USAGE_KEY_LOOKUP_REGEX
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

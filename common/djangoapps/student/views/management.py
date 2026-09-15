@@ -489,7 +489,8 @@ def change_enrollment(request, check_access=True):
         except UnenrollmentNotAllowed as exc:
             return HttpResponseBadRequest(str(exc))
 
-        log.info("User %s unenrolled from %s; sending REFUND_ORDER", user.username, course_id)
+        user_identifier_for_log = user.id if getattr(settings, 'SQUELCH_PII_IN_LOGS', False) else user.username
+        log.info("User %s unenrolled from %s; sending REFUND_ORDER", user_identifier_for_log, course_id)
         REFUND_ORDER.send(sender=None, course_enrollment=enrollment)
         return HttpResponse()
     else:
@@ -554,14 +555,19 @@ def disable_account_ajax(request):
         user_account, _success = UserStanding.objects.get_or_create(
             user=user, defaults={'changed_by': request.user},
         )
+        request_user_identifier_for_log, user_identifier_for_log = (
+            (request.user.id, user.id)
+            if getattr(settings, 'SQUELCH_PII_IN_LOGS', False)
+            else (request.user, username)
+        )
         if account_action == 'disable':
             user_account.account_status = UserStanding.ACCOUNT_DISABLED
             context['message'] = _("Successfully disabled {}'s account").format(username)
-            log.info("%s disabled %s's account", request.user, username)
+            log.info("%s disabled %s's account", request_user_identifier_for_log, user_identifier_for_log)
         elif account_action == 'reenable':
             user_account.account_status = UserStanding.ACCOUNT_ENABLED
             context['message'] = _("Successfully reenabled {}'s account").format(username)
-            log.info("%s reenabled %s's account", request.user, username)
+            log.info("%s reenabled %s's account", request_user_identifier_for_log, user_identifier_for_log)
         else:
             context['message'] = _("Unexpected account status")
             return JsonResponse(context, status=400)
@@ -692,7 +698,7 @@ def activate_account(request, key):
     if request.GET.get('next'):
         redirect_to, root_login_url = get_next_url_for_login_page(request, include_host=True)
 
-        # Don't automatically redirect authenticated users to the redirect_url
+        # Don't automatically redirect to the redirect_url
         # if the `next` value is either:
         # 1. "/dashboard" or
         # 2. "https://{LMS_ROOT_URL}/dashboard" (which we might provide as a value from the AuthN MFE)
@@ -702,14 +708,23 @@ def activate_account(request, key):
         ):
             redirect_url = get_redirect_url_with_host(root_login_url, redirect_to)
 
-    if should_redirect_to_authn_microfrontend() and not request.user.is_authenticated:
-        params = {'account_activation_status': activation_message_type}
+    # Visitors who are not signed in have to authenticate before they can use their
+    # destination, so force a detour to the login page.
+    if not request.user.is_authenticated:
+        params = {}
+        if should_redirect_to_authn_microfrontend():
+            login_url = settings.AUTHN_MICROFRONTEND_URL + '/login'
+            params['account_activation_status'] = activation_message_type
+        else:
+            login_url = reverse('signin_user')
+
         if redirect_url:
             params['next'] = redirect_url
-        url_path = '/login?{}'.format(urllib.parse.urlencode(params))  # noqa: UP032
-        return redirect(settings.AUTHN_MICROFRONTEND_URL + url_path)
+        if params:
+            login_url = f'{login_url}?{urllib.parse.urlencode(params)}'
+        redirect_url = login_url
 
-    response = redirect(redirect_url) if redirect_url and is_enterprise_learner(request.user) else redirect('dashboard')
+    response = redirect(redirect_url or 'dashboard')
     if show_account_activation_popup:
         response.delete_cookie(
             settings.SHOW_ACTIVATE_CTA_POPUP_COOKIE_NAME,
@@ -847,11 +862,12 @@ def do_email_change_request(user, new_email, activation_key=None, secondary_emai
 
     try:
         ace.send(msg)
-        log.info("Email activation link sent to user [%s].", new_email)
-    except Exception:
+        user_identifier_for_log = user.id if getattr(settings, 'SQUELCH_PII_IN_LOGS', False) else new_email
+        log.info("Email activation link sent to user [%s].", user_identifier_for_log)
+    except Exception as err:
         from_address = configuration_helpers.get_value('email_from_address', settings.DEFAULT_FROM_EMAIL)
         log.error('Unable to send email activation link to user from "%s"', from_address, exc_info=True)
-        raise ValueError(_('Unable to send email activation link. Please try again later.'))  # pylint: disable=raise-missing-from  # noqa: B904
+        raise ValueError(_('Unable to send email activation link. Please try again later.')) from err
 
     if not secondary_email_change_request:
         # When the email address change is complete, a "edx.user.settings.changed" event will be emitted.

@@ -5,6 +5,7 @@ from datetime import datetime
 from unittest.mock import patch
 from uuid import uuid4
 
+import ddt
 from django.conf import settings
 from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.test import TestCase, override_settings
@@ -15,10 +16,10 @@ from common.djangoapps.student.models import Registration
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.core.djangolib.testing.utils import skip_unless_lms
-from openedx.features.enterprise_support.tests.factories import EnterpriseCustomerUserFactory
 
 
 @skip_unless_lms
+@ddt.ddt
 class TestActivateAccount(TestCase):
     """Tests for account creation"""
 
@@ -136,10 +137,7 @@ class TestActivateAccount(TestCase):
         Verify that logistration page displays success/error/info messages
         about account activation.
         """
-        login_page_url = "{login_url}?next={redirect_url}".format(
-            login_url=reverse('signin_user'),
-            redirect_url=reverse('dashboard'),
-        )
+        login_page_url = reverse('signin_user')
         self._assert_user_active_state(expected_active_state=False)
 
         # Access activation link, message should say that account has been activated.
@@ -177,15 +175,14 @@ class TestActivateAccount(TestCase):
         self.assertContains(response, 'Your email could not be confirmed')
 
     @override_settings(LOGIN_REDIRECT_WHITELIST=['localhost:1991'])
-    @override_settings(ENABLE_AUTHN_MICROFRONTEND=True, ENABLE_ENTERPRISE_INTEGRATION=True)
+    @override_settings(ENABLE_AUTHN_MICROFRONTEND=True)
     def test_authenticated_account_activation_with_valid_next_url(self):
         """
         Verify that an activation link with a valid next URL will redirect
-        the activated enterprise user to that next URL, even if the AuthN
-        MFE is active and redirects to it are enabled.
+        the activated user to that next URL, even if the AuthN MFE is active
+        and redirects to it are enabled.
         """
         self._assert_user_active_state(expected_active_state=False)
-        EnterpriseCustomerUserFactory(user_id=self.user.id)
 
         # Make sure the user is authenticated before activation.
         self.login()
@@ -205,13 +202,41 @@ class TestActivateAccount(TestCase):
         self.assertRedirects(response, redirect_url, target_status_code=404)
         self._assert_user_active_state(expected_active_state=True)
 
+    @override_settings(LOGIN_REDIRECT_WHITELIST=['localhost:1991'])
+    def test_unauthenticated_user_redirects_to_login_with_valid_next_url(self):
+        """
+        Verify that when the AuthN MFE is disabled, an unauthenticated user activating
+        with a valid next URL is sent to the legacy login page with that URL preserved
+        as the `next` parameter, rather than having it dropped in favour of the
+        dashboard. The legacy login page renders the activation message itself.
+        """
+        self._assert_user_active_state(expected_active_state=False)
+
+        redirect_url = 'http://localhost:1991/pied-piper/learn'
+        base_activation_url = reverse('activate', args=[self.registration.activation_key])
+        activation_url = '{base}?{params}'.format(
+            base=base_activation_url,
+            params=urlencode({'next': redirect_url}),
+        )
+
+        # HTTP_ACCEPT is needed so the safe redirect checks pass.
+        response = self.client.get(activation_url, HTTP_ACCEPT='*/*')
+
+        expected_destination = '{login_url}?{params}'.format(
+            login_url=reverse('signin_user'),
+            params=urlencode({'next': redirect_url}),
+        )
+        assert response.url == expected_destination
+        self._assert_user_active_state(expected_active_state=True)
+
     @override_settings(LOGIN_REDIRECT_WHITELIST=['localhost:9876'])
-    def test_account_activation_invalid_next_url_redirects_dashboard(self):
+    def test_account_activation_invalid_next_url_redirects_login(self):
         """
         Verify that an activation link with an invalid next URL (i.e. it's for a domain
-        not in the allowed list of redirect destinations) will redirect
-        the activated, but unauthenticated, user to a login URL
-        that points to 'dashboard' as the next URL.
+        not in the allowed list of redirect destinations) will redirect the activated,
+        but unauthenticated, user to a bare login URL. The unsafe destination is dropped
+        rather than being replaced by an explicit 'next' of 'dashboard', leaving the
+        login page free to apply its own default destination.
         """
         self._assert_user_active_state(expected_active_state=False)
 
@@ -224,11 +249,7 @@ class TestActivateAccount(TestCase):
 
         response = self.client.get(activation_url, follow=True, HTTP_ACCEPT='*/*')
 
-        expected_destination = "{login_url}?next={redirect_url}".format(
-            login_url=reverse('signin_user'),
-            redirect_url=reverse('dashboard'),
-        )
-        self.assertRedirects(response, expected_destination)
+        self.assertRedirects(response, reverse('signin_user'))
         self._assert_user_active_state(expected_active_state=True)
 
     @override_settings(ENABLE_AUTHN_MICROFRONTEND=True)
@@ -285,6 +306,33 @@ class TestActivateAccount(TestCase):
         # Access activation link again, the user is redirected to login page with info query param
         response = self.client.get(activation_url, HTTP_ACCEPT='*/*')
         assert response.url == (login_page_url + 'info&' + encoded_next_param)
+
+    @ddt.data(
+        {'authn_mfe_enabled': True, 'is_authenticated': True},
+        {'authn_mfe_enabled': True, 'is_authenticated': False},
+        {'authn_mfe_enabled': False, 'is_authenticated': True},
+        {'authn_mfe_enabled': False, 'is_authenticated': False},
+    )
+    @ddt.unpack
+    def test_activation_clears_cta_cookie(self, authn_mfe_enabled, is_authenticated):
+        """
+        Verify that a successful activation always deletes the account activation CTA
+        cookie, regardless of whether or not the AuthN MFE is enabled, and regardless of
+        whether or not the learner is logged-in. The cookie means "this learner still
+        needs to activate", which can't ever be true after successful activation.
+        """
+        if is_authenticated:
+            self.login()
+        self.client.cookies[settings.SHOW_ACTIVATE_CTA_POPUP_COOKIE_NAME] = 'True'
+        self._assert_user_active_state(expected_active_state=False)
+
+        with override_settings(ENABLE_AUTHN_MICROFRONTEND=authn_mfe_enabled):
+            response = self.client.get(reverse('activate', args=[self.registration.activation_key]))
+
+        cta_cookie = response.cookies[settings.SHOW_ACTIVATE_CTA_POPUP_COOKIE_NAME]
+        assert cta_cookie.value == ''
+        assert cta_cookie['max-age'] == 0
+        self._assert_user_active_state(expected_active_state=True)
 
     def test_authenticated_user_cannot_activate_another_account(self):
         """

@@ -5,7 +5,6 @@ import logging
 from celery import shared_task
 from celery_utils.logged_task import LoggedTask
 from django.core.exceptions import ObjectDoesNotExist
-from edx_django_utils.monitoring import set_code_owner_attribute
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import UsageKey
 from xblock.completable import XBlockCompletionMode
@@ -21,7 +20,6 @@ log = logging.getLogger(__name__)
 
 
 @shared_task(base=LoggedTask, ignore_result=True)
-@set_code_owner_attribute
 def update_exam_completion_task(user_identifier: str, content_id: str, completion: float) -> None:
     """
     Marks all completable children of content_id as complete for the user.

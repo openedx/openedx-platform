@@ -57,3 +57,4 @@ class CourseGroupConfigurationsSerializer(serializers.Serializer):
     )
     should_show_enrollment_track = serializers.BooleanField()
     should_show_experiment_groups = serializers.BooleanField()
+    can_manage = serializers.BooleanField(default=False, read_only=True)

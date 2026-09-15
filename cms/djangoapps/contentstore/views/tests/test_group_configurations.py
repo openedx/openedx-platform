@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 import ddt
 from django.test import Client
-from openedx_authz.constants.roles import COURSE_DATA_RESEARCHER, COURSE_STAFF
+from openedx_authz.constants.roles import COURSE_AUDITOR, COURSE_DATA_RESEARCHER, COURSE_EDITOR, COURSE_STAFF
 from rest_framework import status
 
 from cms.djangoapps.contentstore.api.tests.base import BaseCourseViewTest
@@ -1235,6 +1235,7 @@ class GroupConfigurationsValidationTestCase(CourseTestCase, HelperMethods):
         """
         self.verify_validation_update_usage_info(None, None)  # pylint: disable=no-value-for-parameter
 
+@ddt.ddt
 class PostGroupConfigurationsListHandlerAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
     """
     Tests endpoint used to create new Course Group Configurations
@@ -1342,6 +1343,43 @@ class PostGroupConfigurationsListHandlerAuthzTest(CourseAuthzTestMixin, BaseCour
             HTTP_ACCEPT='application/json',
         )
         self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)  # noqa: PT009
+
+    def test_editor_can_write(self):
+        """
+        Course editor has manage_group_configurations and can POST (create).
+        This is the write-side counterpart to the editor's view access.
+        """
+        editor = UserFactory(password=self.password)
+        self.add_user_to_role(editor, COURSE_EDITOR.external_key)
+        client = Client()
+        client.login(username=editor.username, password=self.password)
+
+        resp = client.post(
+            self.get_url(self.course_key),
+            data=json.dumps(GROUP_CONFIGURATION_JSON),
+            content_type='application/json',
+            HTTP_ACCEPT='application/json',
+        )
+        assert resp.status_code == status.HTTP_201_CREATED
+
+    def test_auditor_cannot_write(self):
+        """
+        Course auditor has only view_group_configurations (no manage), so it can
+        read the list but must be denied POST (create). This is the write-side
+        counterpart to the auditor's view access.
+        """
+        auditor = UserFactory(password=self.password)
+        self.add_user_to_role(auditor, COURSE_AUDITOR.external_key)
+        client = Client()
+        client.login(username=auditor.username, password=self.password)
+
+        resp = client.post(
+            self.get_url(self.course_key),
+            data=json.dumps(GROUP_CONFIGURATION_JSON),
+            content_type='application/json',
+            HTTP_ACCEPT='application/json',
+        )
+        assert resp.status_code == status.HTTP_403_FORBIDDEN
 
 
 class PutGroupConfigurationsDetailHandlerAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):

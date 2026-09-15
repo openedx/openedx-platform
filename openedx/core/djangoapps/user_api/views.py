@@ -1,10 +1,13 @@
 """HTTP end-points for the User API. """
 
+from django.contrib import messages as django_messages
 from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.http import HttpResponse
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django_filters.rest_framework import DjangoFilterBackend
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx import locator
@@ -12,6 +15,7 @@ from opaque_keys.edx.keys import CourseKey
 from rest_framework import generics, status, viewsets
 from rest_framework.exceptions import ParseError
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from openedx.core.djangoapps.django_comment_common.models import Role
@@ -161,3 +165,67 @@ class CountryTimeZoneListView(generics.ListAPIView):
     def get_queryset(self):
         country_code = self.request.GET.get("country_code", None)
         return get_country_time_zones(country_code)
+
+
+third_party_auth_error_message_schema = openapi.Schema(
+    type=openapi.TYPE_OBJECT,
+    properties={
+        "user_message": openapi.Schema(
+            type=openapi.TYPE_STRING,
+            x_nullable=True,
+            description=(
+                "Human-readable, translated message describing the pending "
+                "third-party-auth error, or null if there is none pending."
+            ),
+        ),
+    },
+)
+
+
+class ThirdPartyAuthErrorMessageView(APIView):
+    """
+    Surfaces the pending third-party-auth error message, if any, that
+    social_django's SocialAuthExceptionMiddleware (see
+    common.djangoapps.third_party_auth.middleware.ExceptionMiddleware) left
+    in the request's Django messages.
+
+    The Account MFE is a separate single-page app and can't render Django's
+    session-based messages framework directly, so it calls this endpoint
+    once on mount instead of receiving the error via redirect query params.
+    Messages are consumed on read, matching Django's messages flash
+    semantics: a second call right after the first returns
+    ``user_message: null``.
+    """
+
+    authentication_classes = (SessionAuthenticationAllowInactiveUser,)
+    permission_classes = (IsAuthenticated,)
+
+    @swagger_auto_schema(
+        responses={
+            status.HTTP_200_OK: third_party_auth_error_message_schema,
+            status.HTTP_401_UNAUTHORIZED: "",
+            status.HTTP_403_FORBIDDEN: "",
+        },
+    )
+    def get(self, request):
+        """
+        GET /api/user/v1/accounts/third_party_auth_error/
+
+        Returns the pending third-party-auth error message for the current
+        user, consuming it (it will not be returned again on the next call).
+        """
+        user_message = None
+        other_messages = []
+        # Iterating the storage at all marks it fully read, so any messages
+        # we don't claim here must be explicitly re-queued below -- otherwise
+        # they'd be silently dropped for whichever view next tries to render
+        # Django messages (e.g. an unrelated notice queued in the same
+        # session).
+        for message in django_messages.get_messages(request):
+            if user_message is None and "social-auth" in (message.extra_tags or "").split():
+                user_message = str(message)
+            else:
+                other_messages.append(message)
+        for message in other_messages:
+            django_messages.add_message(request, message.level, message.message, extra_tags=message.extra_tags)
+        return Response({"user_message": user_message})

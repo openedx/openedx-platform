@@ -2,7 +2,7 @@
 Unit tests for the course's setting group configuration.
 """
 from django.urls import reverse
-from openedx_authz.constants.roles import COURSE_DATA_RESEARCHER, COURSE_STAFF
+from openedx_authz.constants.roles import COURSE_AUDITOR, COURSE_DATA_RESEARCHER, COURSE_EDITOR, COURSE_STAFF
 from rest_framework import status
 from rest_framework.test import APIClient
 
@@ -111,3 +111,31 @@ class CourseGroupConfigurationsAuthzTest(CourseAuthzTestMixin, BaseCourseViewTes
 
         resp = non_staff_client.get(self.get_url(self.course_key))
         self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)  # noqa: PT009
+
+    def test_staff_has_can_manage_true(self):
+        """User with COURSE_STAFF role gets can_manage=True in response."""
+        resp = self.authorized_client.get(self.get_url(self.course_key))
+        assert resp.status_code == status.HTTP_200_OK
+        assert resp.data["can_manage"] is True
+
+    def test_editor_can_view_group_configurations(self):
+        """User with COURSE_EDITOR role can view group configurations."""
+        editor_user = UserFactory()
+        editor_client = APIClient()
+        self.add_user_to_role(editor_user, COURSE_EDITOR.external_key)
+        editor_client.force_authenticate(user=editor_user)
+
+        resp = editor_client.get(self.get_url(self.course_key))
+        assert resp.status_code == status.HTTP_200_OK
+        assert resp.data["can_manage"] is True  # editor has manage_group_configurations
+
+    def test_auditor_can_view_group_configurations(self):
+        """User with COURSE_AUDITOR role can view group configurations."""
+        auditor_user = UserFactory()
+        auditor_client = APIClient()
+        self.add_user_to_role(auditor_user, COURSE_AUDITOR.external_key)
+        auditor_client.force_authenticate(user=auditor_user)
+
+        resp = auditor_client.get(self.get_url(self.course_key))
+        assert resp.status_code == status.HTTP_200_OK
+        assert resp.data["can_manage"] is False  # auditor has view only

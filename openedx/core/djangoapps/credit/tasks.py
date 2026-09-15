@@ -6,7 +6,6 @@ This file contains celery tasks for credit course views.
 from celery import shared_task
 from celery.utils.log import get_task_logger
 from django.conf import settings
-from edx_django_utils.monitoring import set_code_owner_attribute
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey, UsageKey
 
@@ -20,7 +19,6 @@ LOGGER = get_task_logger(__name__)
 
 
 @shared_task(default_retry_delay=settings.CREDIT_TASK_DEFAULT_RETRY_DELAY, max_retries=settings.CREDIT_TASK_MAX_RETRIES)
-@set_code_owner_attribute
 def update_credit_course_requirements(course_id):
     """
     Updates course requirements table for a course.

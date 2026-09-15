@@ -1210,7 +1210,6 @@ MIDDLEWARE = [
 
     # Various monitoring middleware
     'edx_django_utils.monitoring.CachedCustomMonitoringMiddleware',
-    'edx_django_utils.monitoring.CodeOwnerMonitoringMiddleware',
     'edx_django_utils.monitoring.CookieMonitoringMiddleware',
     'edx_django_utils.monitoring.DeploymentMonitoringMiddleware',
     'edx_django_utils.monitoring.FrontendMonitoringMiddleware',
@@ -2121,6 +2120,9 @@ INSTALLED_APPS = [
 
     # Core models to represent courses
     "openedx_catalog",
+
+    # Competency criteria and student progress models
+    "openedx_learning",
 
     # Core apps that power libraries
     "openedx_content",

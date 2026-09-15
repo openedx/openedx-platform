@@ -18,6 +18,7 @@ from edx_django_utils.cache import RequestCache
 from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator, LibraryCollectionLocator, LibraryContainerLocator
 from openedx_authz.constants import permissions as authz_permissions
 from openedx_authz.constants.roles import COURSE_AUDITOR, COURSE_EDITOR, COURSE_STAFF
+from openedx_learning.models_api import CompetencyTaxonomy
 from openedx_tagging.models import Tag, Taxonomy
 from openedx_tagging.rest_api.v1.serializers import TaxonomySerializer
 from organizations.models import Organization
@@ -519,6 +520,68 @@ class TestTaxonomyListCreateViewSet(TestTaxonomyObjectsMixin, APITestCase):
             # Also checks if the taxonomy was associated with the org
             if user_attr == "staffA":
                 assert response.data["orgs"] == [self.orgA.short_name]
+
+    def test_create_competency_taxonomy(self) -> None:
+        """
+        Posting taxonomy_type="competency" creates a CompetencyTaxonomy linked to
+        the new Taxonomy.
+        """
+        self.client.force_authenticate(user=self.staff)
+        response = self.client.post(
+            TAXONOMY_ORG_LIST_URL,
+            {"name": "Nursing Competencies", "export_id": "nursing-competencies", "taxonomy_type": "competency"},
+            format="json",
+        )
+        assert response.status_code == status.HTTP_201_CREATED
+        assert CompetencyTaxonomy.objects.filter(pk=response.data["id"]).exists()
+
+    def test_create_competency_taxonomy_duplicate_export_id_returns_400(self) -> None:
+        """
+        A validation failure in the competency branch (duplicate export_id, via
+        full_clean()) returns a 400, like the "tags" branch, not an unhandled 500.
+        """
+        self.client.force_authenticate(user=self.staff)
+        self.client.post(
+            TAXONOMY_ORG_LIST_URL,
+            {"name": "Existing", "export_id": "duplicate-export-id"},
+            format="json",
+        )
+        response = self.client.post(
+            TAXONOMY_ORG_LIST_URL,
+            {"name": "Nursing Competencies", "export_id": "duplicate-export-id", "taxonomy_type": "competency"},
+            format="json",
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    @ddt.data("tags", None)
+    def test_create_taxonomy_tags_or_omitted_creates_no_competency_row(self, taxonomy_type: str | None) -> None:
+        """
+        Posting taxonomy_type="tags", or omitting it, creates a plain Taxonomy and
+        no CompetencyTaxonomy row.
+        """
+        create_data = {"name": "Plain Taxonomy", "export_id": "plain-taxonomy"}
+        if taxonomy_type is not None:
+            create_data["taxonomy_type"] = taxonomy_type
+
+        self.client.force_authenticate(user=self.staff)
+        response = self.client.post(TAXONOMY_ORG_LIST_URL, create_data, format="json")
+
+        assert response.status_code == status.HTTP_201_CREATED
+        assert not CompetencyTaxonomy.objects.filter(pk=response.data["id"]).exists()
+
+    def test_create_taxonomy_rejects_invalid_type(self) -> None:
+        """
+        An unsupported taxonomy_type (e.g. "system") 400s and names taxonomy_type
+        as the invalid field.
+        """
+        self.client.force_authenticate(user=self.staff)
+        response = self.client.post(
+            TAXONOMY_ORG_LIST_URL,
+            {"name": "Rejected", "export_id": "rejected", "taxonomy_type": "system"},
+            format="json",
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "taxonomy_type" in response.data
 
     @ddt.data(
         ('staff', 10),
@@ -2501,6 +2564,68 @@ class TestCreateImportView(ImportTaxonomyMixin, APITestCase):
 
         # Check if the taxonomy was not created
         assert not Taxonomy.objects.filter(name="Imported Taxonomy name").exists()
+
+    def test_import_competency_taxonomy(self) -> None:
+        """
+        Importing with taxonomy_type="competency" creates a CompetencyTaxonomy
+        linked to the new Taxonomy.
+        """
+        file = self._get_file([{"id": "tag_1", "value": "Tag 1"}], "json")
+        self.client.force_authenticate(user=self.staff)
+        response = self.client.post(
+            TAXONOMY_CREATE_IMPORT_URL,
+            {
+                "taxonomy_name": "Imported Competency",
+                "taxonomy_description": "Imported Competency description",
+                "taxonomy_export_id": "imported-competency",
+                "taxonomy_type": "competency",
+                "file": file,
+            },
+            format="multipart",
+        )
+        assert response.status_code == status.HTTP_201_CREATED
+        assert CompetencyTaxonomy.objects.filter(pk=response.data["id"]).exists()
+
+    def test_import_without_type_creates_no_competency_row(self) -> None:
+        """
+        Importing without taxonomy_type creates a plain Taxonomy and no
+        CompetencyTaxonomy row.
+        """
+        file = self._get_file([{"id": "tag_1", "value": "Tag 1"}], "json")
+        self.client.force_authenticate(user=self.staff)
+        response = self.client.post(
+            TAXONOMY_CREATE_IMPORT_URL,
+            {
+                "taxonomy_name": "Imported Plain",
+                "taxonomy_description": "Imported Plain description",
+                "taxonomy_export_id": "imported-plain",
+                "file": file,
+            },
+            format="multipart",
+        )
+        assert response.status_code == status.HTTP_201_CREATED
+        assert not CompetencyTaxonomy.objects.filter(pk=response.data["id"]).exists()
+
+    def test_import_rejects_invalid_type(self) -> None:
+        """
+        An unsupported taxonomy_type (e.g. "system") 400s on import and names
+        taxonomy_type as the invalid field.
+        """
+        file = self._get_file([{"id": "tag_1", "value": "Tag 1"}], "json")
+        self.client.force_authenticate(user=self.staff)
+        response = self.client.post(
+            TAXONOMY_CREATE_IMPORT_URL,
+            {
+                "taxonomy_name": "Imported Rejected",
+                "taxonomy_description": "Imported Rejected description",
+                "taxonomy_export_id": "imported-rejected",
+                "taxonomy_type": "system",
+                "file": file,
+            },
+            format="multipart",
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "taxonomy_type" in response.data
 
     @ddt.data(
         "csv",

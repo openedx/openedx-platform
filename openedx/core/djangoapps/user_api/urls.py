@@ -115,6 +115,11 @@ urlpatterns = [
         ProfileImageView.as_view(),
         name='accounts_profile_image_api'
     ),
+    path(
+        'v1/accounts/third_party_auth_error/',
+        user_api_views.ThirdPartyAuthErrorMessageView.as_view(),
+        name='third_party_auth_error_message'
+    ),
     re_path(
         fr'^v1/accounts/{settings.USERNAME_PATTERN}/deactivate/$',
         AccountDeactivationView.as_view(),

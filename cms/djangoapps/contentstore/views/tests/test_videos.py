@@ -787,7 +787,7 @@ class VideosHandlerTestCase(
                 return self.assertEqual(video['status'], status)  # noqa: PT009
 
         # Test should fail if video not found
-        self.assertEqual(True, False, 'Invalid edx_video_id')  # noqa: PT009
+        self.fail('Invalid edx_video_id')
 
     @patch('cms.djangoapps.contentstore.video_storage_handlers.LOGGER')
     def test_video_status_update_request(self, mock_logger):

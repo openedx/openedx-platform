@@ -5,7 +5,6 @@ import logging
 
 from celery import shared_task
 from django.contrib.auth import get_user_model
-from edx_django_utils.monitoring import set_code_owner_attribute
 from eventtracking import tracker
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey
@@ -20,7 +19,6 @@ log = logging.getLogger(__name__)
 
 
 @shared_task
-@set_code_owner_attribute
 def collect_progress_for_user_in_course(course_id: str, user_id: str) -> None:
     """
     Celery task that retrieves a learner's progress in a given course.
