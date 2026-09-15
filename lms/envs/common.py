@@ -806,7 +806,14 @@ RETRY_CALENDAR_SYNC_EMAIL_MAX_ATTEMPTS = 5
 ############################# SET PATH INFORMATION #############################
 
 PROJECT_ROOT = path(__file__).abspath().dirname().dirname()  # /edx-platform/lms
+REPO_ROOT = PROJECT_ROOT.dirname()
+COMMON_ROOT = REPO_ROOT / "common"
+OPENEDX_ROOT = REPO_ROOT / "openedx"
+XMODULE_ROOT = REPO_ROOT / "xmodule"
+ENV_ROOT = REPO_ROOT.dirname()  # virtualenv dir /edx-platform is in
+COURSES_ROOT = ENV_ROOT / "data"
 NODE_MODULES_ROOT = REPO_ROOT / "node_modules"  # noqa: F405
+MEDIA_ROOT = ENV_ROOT / "media_root"
 
 # Where to look for a status message
 STATUS_MESSAGE_PATH = ENV_ROOT / "status_message.json"  # noqa: F405
@@ -925,8 +932,11 @@ CERT_QUEUE = 'test-pull'
 
 ALTERNATE_WORKER_QUEUES = 'cms'
 
-DATA_DIR = '/edx/var/edxapp/data'
-
+# .. setting_name: MAINTENANCE_BANNER_TEXT
+# .. setting_default: None
+# .. setting_description: Specifies the text that is rendered on the maintenance banner.
+# .. setting_warning: Depends on the `open_edx_util.display_maintenance_warning` waffle switch.
+#   The banner is only rendered when the switch is activated.
 MAINTENANCE_BANNER_TEXT = None
 
 # Set certificate issued date format. It supports all formats supported by
