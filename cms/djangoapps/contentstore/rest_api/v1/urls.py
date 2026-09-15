@@ -28,6 +28,7 @@ from .views import (
     VideoDownloadView,
     VideoUsageView,
     XblockViewSet,
+    YoutubeTranscriptsViewSet,
     vertical_container_children_redirect_view,
 )
 
@@ -143,6 +144,22 @@ urlpatterns = _router.urls + [
         fr'^course_waffle_flags(?:/{COURSE_ID_PATTERN})?$',
         CourseWaffleFlagsView.as_view(),
         name="course_waffle_flags"
+    ),
+
+    # YouTube transcripts (ADR 0038-conformant: mandatory trailing slash, no
+    # optional-`?` regex anti-pattern like the v0 equivalent). Registered as
+    # explicit routes (rather than DefaultRouter dynamic `@action` discovery)
+    # to keep the URL shape unambiguous and independently reviewable; the
+    # view itself remains a standard DRF ViewSet per ADR 0028.
+    re_path(
+        fr'^youtube_transcripts/{COURSE_ID_PATTERN}/check/$',
+        YoutubeTranscriptsViewSet.as_view({'get': 'check'}),
+        name="youtube_transcripts_check"
+    ),
+    re_path(
+        fr'^youtube_transcripts/{COURSE_ID_PATTERN}/upload/$',
+        YoutubeTranscriptsViewSet.as_view({'post': 'upload'}),
+        name="youtube_transcripts_upload"
     ),
 
     # Authoring API
