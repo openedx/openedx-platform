@@ -1,0 +1,65 @@
+# generate_openapi_schemas.yml
+#
+# Purpose: Generate OpenAPI schemas for the LMS and CMS using drf-spectacular,
+# then open a pull request if either schema changed. The generated schema files
+# are consumed by the openedx-platform-sdk repo's regen_sdk.sh script to keep
+# the SDK in sync with the platform's tagged API views.
+
+name: Generate OpenAPI Schemas
+
+permissions:
+  contents: write
+  pull-requests: write
+
+on:
+  workflow_dispatch:
+
+  schedule:
+    # Regenerate and commit the full OpenAPI schemas every Monday at 09:00 UTC.
+    - cron: "0 9 * * 1"
+
+jobs:
+  generate-schemas:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Generate LMS OpenAPI schema
+        run: uv run python manage.py lms spectacular --file lms_schema.yml
+
+      - name: Generate CMS OpenAPI schema
+        run: uv run python manage.py cms spectacular --file cms_schema.yml
+
+      - name: Open pull request if schemas changed
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8
+        with:
+          branch: chore/update-openapi-schemas
+          commit-message: 'chore: regenerate OpenAPI schemas'
+          title: 'chore: update OpenAPI schemas for SDK generation'
+          team-reviewers: wg-maintenance-openedx-platform-oncall
+          body: |
+            ## Auto-generated OpenAPI schema update
+
+            This PR was opened automatically by the **Generate OpenAPI Schemas** workflow.
+            It contains regenerated `lms_schema.yml` and/or `cms_schema.yml` files
+            reflecting the latest state of the platform's tagged API views.
+
+            These schema files are used by the
+            [openedx-platform-sdk](https://github.com/edly-io/openedx-platform-sdk)
+            repository's `regen_sdk.sh` script to keep the SDK client in sync with
+            the platform.
+
+            **Do not edit these files by hand** — they will be overwritten on the next run.
+          add-paths: |
+            lms_schema.yml
+            cms_schema.yml
