@@ -123,6 +123,6 @@
     "squirejs": "^0.1",
     "string-replace-loader": "^3",
     "stylelint-formatter-pretty": "^4",
-    "webpack-cli": "^5"
+    "webpack-cli": "^7.0.0"
   }
 }
