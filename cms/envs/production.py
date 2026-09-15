@@ -416,13 +416,25 @@ SPECTACULAR_SETTINGS = {
     'SERVE_INCLUDE_SCHEMA': False,
     # restrict spectacular to CMS API endpoints (cms/lib/spectacular.py):
     'PREPROCESSING_HOOKS': ['cms.lib.spectacular.cms_api_filter'],
-    # remove the default schema path prefix to replace it with server-specific base paths:
+    # Setting this replaces drf-spectacular's default hook list, so the default
+    # enum post-processing has to be listed again to keep running:
+    'POSTPROCESSING_HOOKS': [
+        'drf_spectacular.hooks.postprocess_schema_enums',
+        'cms.lib.spectacular.cms_mark_superseded_paths',
+    ],
+    # Paths are published in full, so one server URL serves every operation of the
+    # document. The prefix below is not removed from the paths; it only keeps the
+    # service prefix out of generated operation ids and tags:
     'SCHEMA_PATH_PREFIX': '/api/contentstore',
-    'SCHEMA_PATH_PREFIX_TRIM': '/api/contentstore',
+    'SCHEMA_PATH_PREFIX_TRIM': False,
+    # The public host is optional, so an unset URL is left out of the list:
     'SERVERS': [
-        {'url': AUTHORING_API_URL, 'description': 'Public'},  # noqa: F405
-        {'url': f'https://{CMS_BASE}', 'description': 'Local'},  # noqa: F405
-        {'url': f'https://{CMS_BASE}/api/contentstore', 'description': 'CMS-contentstore'}  # noqa: F405
+        {'url': url, 'description': description}
+        for url, description in [
+            (AUTHORING_API_URL, 'Public'),  # noqa: F405
+            (f'https://{CMS_BASE}', 'Local'),  # noqa: F405
+        ]
+        if url
     ],
 }
 
