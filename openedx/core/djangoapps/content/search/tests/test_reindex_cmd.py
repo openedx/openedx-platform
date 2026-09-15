@@ -14,7 +14,7 @@ from openedx.core.djangolib.testing.utils import skip_unless_cms
 
 try:
     from .. import api
-    from ..tasks import rebuild_index_incremental
+    from ..tasks import rebuild_index_incremental, rebuild_library_index
 except RuntimeError:
     pass
 
@@ -49,6 +49,17 @@ class TestReindexStudioCommand(TestCase):
 
         assert mock_log.warning.call_count == 4
         mock_delay.assert_called_once_with()
+
+    @patch("openedx.core.djangoapps.content.search.tasks.rebuild_index_incremental.delay")
+    @patch("openedx.core.djangoapps.content.search.tasks.rebuild_library_index.delay")
+    def test_libraries_only(self, mock_library_delay, mock_incremental_delay):
+        """--libraries-only enqueues the library index rebuild and not the full incremental rebuild."""
+        mock_library_delay.return_value = Mock(id="fake-task-id")
+
+        call_command("reindex_studio", "--libraries-only")
+
+        mock_library_delay.assert_called_once_with()
+        mock_incremental_delay.assert_not_called()
 
 
 @skip_unless_cms
@@ -94,3 +105,41 @@ class TestRebuildIndexIncrementalTask(TestCase):
         rebuild_index_incremental()
 
         assert mock_rebuild.call_count == 2
+
+
+@skip_unless_cms
+@override_settings(MEILISEARCH_ENABLED=True)
+@patch("openedx.core.djangoapps.content.search.api._wait_for_meili_task", new=MagicMock(return_value=None))
+@patch("openedx.core.djangoapps.content.search.api.MeilisearchClient")
+class TestRebuildLibraryIndexTask(TestCase):
+    """Tests for the rebuild_library_index Celery task."""
+
+    def setUp(self):
+        super().setUp()
+        api.clear_meilisearch_client()
+
+    @patch("openedx.core.djangoapps.content.search.api.rebuild_index")
+    def test_rebuilds_libraries_only(self, mock_rebuild, mock_meilisearch):
+        """Task rebuilds the library index without reindexing courses."""
+        rebuild_library_index()
+
+        mock_rebuild.assert_called_once()
+        _, kwargs = mock_rebuild.call_args
+        assert kwargs["include_courses"] is False
+        assert kwargs.get("incremental", False) is False
+
+    @patch("openedx.core.djangoapps.content.search.api.rebuild_index")
+    def test_rebuild_already_in_progress(self, mock_rebuild, mock_meilisearch):
+        """Task exits gracefully if the library index rebuild lock is already held."""
+        mock_rebuild.side_effect = RuntimeError("Rebuild already in progress")
+
+        # Should not raise
+        rebuild_library_index()
+
+    @patch("openedx.core.djangoapps.content.search.api.rebuild_index")
+    def test_other_runtime_error_raised(self, mock_rebuild, mock_meilisearch):
+        """Task re-raises RuntimeError if it's not about lock contention."""
+        mock_rebuild.side_effect = RuntimeError("Something else went wrong")
+
+        with pytest.raises(RuntimeError, match="Something else went wrong"):
+            rebuild_library_index()

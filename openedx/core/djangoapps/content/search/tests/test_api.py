@@ -4,6 +4,7 @@ Tests for the Studio content search API.
 from __future__ import annotations
 
 import copy
+from collections import defaultdict
 from datetime import UTC, datetime
 from unittest.mock import MagicMock, Mock, call, patch
 
@@ -12,8 +13,8 @@ import pytest
 from django.test import override_settings
 from freezegun import freeze_time
 from meilisearch.errors import MeilisearchApiError
-from opaque_keys.edx.keys import UsageKey
-from opaque_keys.edx.locator import LibraryCollectionLocator, LibraryContainerLocator
+from opaque_keys.edx.keys import CourseKey, UsageKey
+from opaque_keys.edx.locator import LibraryCollectionLocator, LibraryContainerLocator, LibraryLocatorV2
 from openedx_content import api as content_api
 from openedx_content import models_api as content_models
 from organizations.tests.factories import OrganizationFactory
@@ -337,6 +338,20 @@ class TestSearchApi(ModuleStoreTestCase):
         content_models.Container.reset_cache()
         return super().tearDown()
 
+    def _mock_indexes(self, mock_meilisearch) -> defaultdict:
+        """
+        Give each index name its own mock, so tests can assert which index a call went to.
+        """
+        indexes = defaultdict(MagicMock)
+        mock_meilisearch.return_value.index.side_effect = lambda name: indexes[name]
+        return indexes
+
+    def _indexes_used(self, mock_meilisearch) -> set[str]:
+        """
+        Names of all indexes that were written to via client.index(name).
+        """
+        return {c.args[0] for c in mock_meilisearch.return_value.index.call_args_list}
+
     @override_settings(MEILISEARCH_ENABLED=False)
     def test_reindex_meilisearch_disabled(self, mock_meilisearch) -> None:
         with self.assertRaises(RuntimeError):  # noqa: PT027
@@ -374,17 +389,51 @@ class TestSearchApi(ModuleStoreTestCase):
         doc_section["tags"] = copy.deepcopy(EMPTY_TAGS)
         doc_section["collections"] = {'display_name': [], 'key': []}
 
+        indexes = self._mock_indexes(mock_meilisearch)
         api.rebuild_index()
-        assert mock_meilisearch.return_value.index.return_value.add_documents.call_count == 4
-        mock_meilisearch.return_value.index.return_value.add_documents.assert_has_calls(
+
+        # Library content goes to a temporary library index, course content to a temporary course index
+        library_temp_index = indexes[api.STUDIO_LIBRARY_INDEX_NAME + "_new"]
+        course_temp_index = indexes[api.STUDIO_COURSE_INDEX_NAME + "_new"]
+        assert library_temp_index.add_documents.call_count == 3
+        library_temp_index.add_documents.assert_has_calls(
             [
-                call([doc_sequential, doc_vertical]),
                 call([doc_problem1, doc_problem2]),
                 call([doc_collection]),
                 call([doc_unit, doc_subsection, doc_section]),
             ],
             any_order=True,
         )
+        course_temp_index.add_documents.assert_called_once_with([doc_sequential, doc_vertical])
+        library_temp_index.update_filterable_attributes.assert_called_once_with(api.INDEX_FILTERABLE_ATTRIBUTES)
+        course_temp_index.update_filterable_attributes.assert_called_once_with(api.INDEX_FILTERABLE_ATTRIBUTES)
+        # Each temporary index is swapped into its own live index
+        assert mock_meilisearch.return_value.swap_indexes.call_args_list == [
+            call([{"indexes": [api.STUDIO_LIBRARY_INDEX_NAME + "_new", api.STUDIO_LIBRARY_INDEX_NAME]}]),
+            call([{"indexes": [api.STUDIO_COURSE_INDEX_NAME + "_new", api.STUDIO_COURSE_INDEX_NAME]}]),
+        ]
+        # Library documents left over from the single shared index are removed from the course index
+        indexes[api.STUDIO_COURSE_INDEX_NAME].delete_documents.assert_called_once_with(
+            filter='type != "course_block"'
+        )
+        indexes[api.STUDIO_LIBRARY_INDEX_NAME].delete_documents.assert_not_called()
+
+    @override_settings(MEILISEARCH_ENABLED=True)
+    def test_reindex_meilisearch_libraries_only(self, mock_meilisearch) -> None:
+        """
+        include_courses=False rebuilds the library index and cleans up the course index without reindexing courses.
+        """
+        indexes = self._mock_indexes(mock_meilisearch)
+        api.rebuild_index(include_courses=False)
+
+        assert indexes[api.STUDIO_LIBRARY_INDEX_NAME + "_new"].add_documents.call_count == 3
+        mock_meilisearch.return_value.swap_indexes.assert_called_once_with(
+            [{"indexes": [api.STUDIO_LIBRARY_INDEX_NAME + "_new", api.STUDIO_LIBRARY_INDEX_NAME]}]
+        )
+        assert api.STUDIO_COURSE_INDEX_NAME + "_new" not in indexes
+        course_index = indexes[api.STUDIO_COURSE_INDEX_NAME]
+        course_index.add_documents.assert_not_called()
+        course_index.delete_documents.assert_called_once_with(filter='type != "course_block"')
 
     @override_settings(MEILISEARCH_ENABLED=True)
     def test_reindex_meilisearch_incremental(self, mock_meilisearch) -> None:
@@ -416,17 +465,24 @@ class TestSearchApi(ModuleStoreTestCase):
         doc_section["tags"] = copy.deepcopy(EMPTY_TAGS)
         doc_section["collections"] = {'display_name': [], 'key': []}
 
+        indexes = self._mock_indexes(mock_meilisearch)
+        library_index = indexes[api.STUDIO_LIBRARY_INDEX_NAME]
+        course_index = indexes[api.STUDIO_COURSE_INDEX_NAME]
+
         api.rebuild_index(incremental=True)
-        assert mock_meilisearch.return_value.index.return_value.add_documents.call_count == 4
-        mock_meilisearch.return_value.index.return_value.add_documents.assert_has_calls(
+        # Incremental rebuilds write straight into the live indexes
+        mock_meilisearch.return_value.swap_indexes.assert_not_called()
+        assert library_index.add_documents.call_count == 3
+        library_index.add_documents.assert_has_calls(
             [
-                call([doc_sequential, doc_vertical]),
                 call([doc_problem1, doc_problem2]),
                 call([doc_collection]),
                 call([doc_unit, doc_subsection, doc_section]),
             ],
             any_order=True,
         )
+        course_index.add_documents.assert_called_once_with([doc_sequential, doc_vertical])
+        course_index.delete_documents.assert_called_once_with(filter='type != "course_block"')
 
         # Now we simulate interruption by passing this function to the status_cb argument
         def simulated_interruption(message):
@@ -437,21 +493,27 @@ class TestSearchApi(ModuleStoreTestCase):
         with pytest.raises(Exception, match="Simulated interruption"):
             api.rebuild_index(simulated_interruption, incremental=True)
 
-        # three more calls due to collections and containers
-        assert mock_meilisearch.return_value.index.return_value.add_documents.call_count == 7
+        # The library was indexed again (blocks, collections and containers); no courses were
+        assert library_index.add_documents.call_count == 6
+        assert course_index.add_documents.call_count == 1
         assert IncrementalIndexCompleted.objects.all().count() == 1
         api.rebuild_index(incremental=True)
         assert IncrementalIndexCompleted.objects.all().count() == 0
-        # one missing course indexed
-        assert mock_meilisearch.return_value.index.return_value.add_documents.call_count == 8
+        # one missing course indexed, the already-indexed library skipped
+        assert course_index.add_documents.call_count == 2
+        assert library_index.add_documents.call_count == 6
 
     @override_settings(MEILISEARCH_ENABLED=True)
     def test_reset_meilisearch_index(self, mock_meilisearch) -> None:
-        api.reset_index()
-        mock_meilisearch.return_value.swap_indexes.assert_called_once()
-        mock_meilisearch.return_value.create_index.assert_called_once()
+        api.reset_index(api.STUDIO_LIBRARY_INDEX_NAME)
+        mock_meilisearch.return_value.swap_indexes.assert_called_once_with(
+            [{"indexes": [api.STUDIO_LIBRARY_INDEX_NAME + "_new", api.STUDIO_LIBRARY_INDEX_NAME]}]
+        )
+        mock_meilisearch.return_value.create_index.assert_called_once_with(
+            api.STUDIO_LIBRARY_INDEX_NAME + "_new", {"primaryKey": "id"}
+        )
         mock_meilisearch.return_value.delete_index.call_count = 2
-        api.reset_index()
+        api.reset_index(api.STUDIO_LIBRARY_INDEX_NAME)
         mock_meilisearch.return_value.delete_index.call_count = 4
 
     @override_settings(MEILISEARCH_ENABLED=True)
@@ -481,18 +543,22 @@ class TestSearchApi(ModuleStoreTestCase):
         mock_meilisearch.return_value.create_index.assert_not_called()
         mock_meilisearch.return_value.delete_index.assert_not_called()
 
-        # Test index does not exist — should create it
-        mock_meilisearch.return_value.get_index.side_effect = [
-            MeilisearchApiError("Testing reindex", Mock(text='{"code":"index_not_found"}')),
-            MeilisearchApiError("Testing reindex", Mock(text='{"code":"index_not_found"}')),
-            Mock(created_at=1),
-            Mock(created_at=1),
-            Mock(created_at=1),
-        ]
+        # Test the library index does not exist (upgrade from a single shared index) — should create only that one
+        created_indexes = set()
+
+        def get_index(name):
+            if name == api.STUDIO_COURSE_INDEX_NAME or name in created_indexes:
+                return mock_index
+            raise MeilisearchApiError("Testing reindex", Mock(text='{"code":"index_not_found"}'))
+
+        mock_meilisearch.return_value.get_index.side_effect = get_index
+        mock_meilisearch.return_value.create_index.side_effect = lambda name, *args: created_indexes.add(name)
         api.init_index()
-        mock_meilisearch.return_value.swap_indexes.assert_called_once()
-        mock_meilisearch.return_value.create_index.assert_called_once()
-        mock_meilisearch.return_value.delete_index.call_count = 2
+        mock_meilisearch.return_value.swap_indexes.assert_called_once_with(
+            [{"indexes": [api.STUDIO_LIBRARY_INDEX_NAME + "_new", api.STUDIO_LIBRARY_INDEX_NAME]}]
+        )
+        assert created_indexes == {api.STUDIO_LIBRARY_INDEX_NAME + "_new", api.STUDIO_LIBRARY_INDEX_NAME}
+        mock_meilisearch.return_value.delete_index.assert_called_once_with(api.STUDIO_LIBRARY_INDEX_NAME + "_new")
 
     @override_settings(MEILISEARCH_ENABLED=True)
     @patch(
@@ -597,6 +663,7 @@ class TestSearchApi(ModuleStoreTestCase):
             expected_docs = [self.doc_sequential]
 
         mock_meilisearch.return_value.index.return_value.update_documents.assert_called_once_with(expected_docs)
+        assert self._indexes_used(mock_meilisearch) == {api.STUDIO_COURSE_INDEX_NAME}
 
     @override_settings(MEILISEARCH_ENABLED=True)
     def test_no_index_excluded_xblocks(self, mock_meilisearch) -> None:
@@ -643,6 +710,7 @@ class TestSearchApi(ModuleStoreTestCase):
             ],
             any_order=True,
         )
+        assert self._indexes_used(mock_meilisearch) == {api.STUDIO_COURSE_INDEX_NAME}
 
     @override_settings(MEILISEARCH_ENABLED=True)
     def test_remove_xblock_tag_clears_index_tags(self, mock_meilisearch) -> None:
@@ -693,6 +761,7 @@ class TestSearchApi(ModuleStoreTestCase):
         mock_meilisearch.return_value.index.return_value.delete_documents.assert_called_once_with(
             filter=f'breadcrumbs.usage_key = "{self.sequential.usage_key}"'
         )
+        assert self._indexes_used(mock_meilisearch) == {api.STUDIO_COURSE_INDEX_NAME}
 
     @override_settings(MEILISEARCH_ENABLED=True)
     def test_index_library_block_metadata(self, mock_meilisearch) -> None:
@@ -702,6 +771,7 @@ class TestSearchApi(ModuleStoreTestCase):
         api.upsert_library_block_index_doc(self.problem1.usage_key)
 
         mock_meilisearch.return_value.index.return_value.update_documents.assert_called_once_with([self.doc_problem1])
+        assert self._indexes_used(mock_meilisearch) == {api.STUDIO_LIBRARY_INDEX_NAME}
 
     @override_settings(MEILISEARCH_ENABLED=True)
     def test_index_library_block_tags(self, mock_meilisearch) -> None:
@@ -743,6 +813,7 @@ class TestSearchApi(ModuleStoreTestCase):
             ],
             any_order=True,
         )
+        assert self._indexes_used(mock_meilisearch) == {api.STUDIO_LIBRARY_INDEX_NAME}
 
     @override_settings(MEILISEARCH_ENABLED=True)
     def test_index_library_block_and_collections(self, mock_meilisearch) -> None:
@@ -885,6 +956,7 @@ class TestSearchApi(ModuleStoreTestCase):
             ],
             any_order=True,
         )
+        assert self._indexes_used(mock_meilisearch) == {api.STUDIO_LIBRARY_INDEX_NAME}
 
     @override_settings(MEILISEARCH_ENABLED=True)
     def test_delete_index_library_block(self, mock_meilisearch) -> None:
@@ -896,16 +968,23 @@ class TestSearchApi(ModuleStoreTestCase):
         mock_meilisearch.return_value.index.return_value.delete_document.assert_called_once_with(
             self.doc_problem1['id']
         )
+        assert self._indexes_used(mock_meilisearch) == {api.STUDIO_LIBRARY_INDEX_NAME}
 
     @override_settings(MEILISEARCH_ENABLED=True)
     def test_delete_docs_with_context_key(self, mock_meilisearch) -> None:
         """
         Test deleting a all Block docs from the index using context_key.
         """
-        api.delete_docs_with_context_key(self.course.id)
+        indexes = self._mock_indexes(mock_meilisearch)
 
-        mock_meilisearch.return_value.index.return_value.delete_documents.assert_called_once_with(
+        api.delete_docs_with_context_key(self.course.id)
+        api.delete_docs_with_context_key(self.library.key)
+
+        indexes[api.STUDIO_COURSE_INDEX_NAME].delete_documents.assert_called_once_with(
             filter=f'context_key = "{self.course.id}"'
+        )
+        indexes[api.STUDIO_LIBRARY_INDEX_NAME].delete_documents.assert_called_once_with(
+            filter=f'context_key = "{self.library.key}"'
         )
 
     @override_settings(MEILISEARCH_ENABLED=True)
@@ -918,6 +997,7 @@ class TestSearchApi(ModuleStoreTestCase):
         mock_meilisearch.return_value.index.return_value.update_documents.assert_called_once_with(
             [self.doc_problem1, self.doc_problem2]
         )
+        assert self._indexes_used(mock_meilisearch) == {api.STUDIO_LIBRARY_INDEX_NAME}
 
     @override_settings(MEILISEARCH_ENABLED=True)
     def test_index_tags_in_collections(self, mock_meilisearch) -> None:
@@ -1083,6 +1163,7 @@ class TestSearchApi(ModuleStoreTestCase):
             ],
             any_order=True,
         )
+        assert self._indexes_used(mock_meilisearch) == {api.STUDIO_LIBRARY_INDEX_NAME}
 
     @ddt.data(
         "unit",
@@ -1188,6 +1269,7 @@ class TestSearchApi(ModuleStoreTestCase):
         api.upsert_library_container_index_doc(container.container_key)
 
         mock_meilisearch.return_value.index.return_value.update_documents.assert_called_once_with([container_dict])
+        assert self._indexes_used(mock_meilisearch) == {api.STUDIO_LIBRARY_INDEX_NAME}
 
     @ddt.data(
         ("unit", "lctorg1libunitunit-1-e4527f7c"),
@@ -1276,6 +1358,7 @@ class TestSearchApi(ModuleStoreTestCase):
             ],
             any_order=True,
         )
+        assert self._indexes_used(mock_meilisearch) == {api.STUDIO_LIBRARY_INDEX_NAME}
 
     @override_settings(MEILISEARCH_ENABLED=True)
     def test_units_in_subsection(self, mock_meilisearch) -> None:
@@ -1379,6 +1462,7 @@ class TestSearchApi(ModuleStoreTestCase):
         mock_index = mock_meilisearch.return_value.get_index.return_value
         fetch_block_types('context_key = test')
 
+        mock_meilisearch.return_value.get_index.assert_called_once_with(api.STUDIO_COURSE_INDEX_NAME)
         mock_index.search.assert_called_once_with(
             "",
             {
@@ -1436,3 +1520,52 @@ class TestSearchApi(ModuleStoreTestCase):
                 "attributesToRetrieve": ["usage_key", "display_name"],
             }
         )
+        mock_meilisearch.return_value.get_index.assert_called_once_with(api.STUDIO_COURSE_INDEX_NAME)
+
+    @ddt.data(
+        (CourseKey, "course-v1:org1+test_course+test_run", "course"),
+        (UsageKey, "block-v1:org1+test_course+test_run+type@sequential+block@test_sequential", "course"),
+        (CourseKey, "library-v1:org1+legacy_lib", "course"),
+        (LibraryLocatorV2, "lib:org1:lib", "library"),
+        (UsageKey, "lb:org1:lib:problem:p1", "library"),
+        (LibraryCollectionLocator, "lib-collection:org1:lib:MYCOL", "library"),
+        (LibraryContainerLocator, "lct:org1:lib:unit:unit-1", "library"),
+    )
+    @ddt.unpack
+    def test_index_name_for_key(self, key_type, key_str, expected, mock_meilisearch) -> None:
+        """
+        Modulestore content (courses, legacy libraries) routes to the course index, Libraries V2 content to the
+        library index.
+        """
+        expected_index = {"course": api.STUDIO_COURSE_INDEX_NAME, "library": api.STUDIO_LIBRARY_INDEX_NAME}[expected]
+        assert api._index_name_for_key(key_type.from_string(key_str)) == expected_index  # pylint: disable=protected-access
+
+    @override_settings(MEILISEARCH_ENABLED=True)
+    def test_update_during_rebuild_uses_that_index_temp_index(self, mock_meilisearch) -> None:
+        """
+        While the library index is being rebuilt, library writes also go to its temporary index.
+        Course writes are unaffected by the library rebuild lock.
+        """
+        indexes = self._mock_indexes(mock_meilisearch)
+
+        with api._index_rebuild_lock(api.STUDIO_LIBRARY_INDEX_NAME):  # pylint: disable=protected-access
+            api.upsert_library_block_index_doc(self.problem1.usage_key)
+            api.upsert_xblock_index_doc(self.sequential.usage_key, recursive=False)
+
+        indexes[api.STUDIO_LIBRARY_INDEX_NAME + "_new"].update_documents.assert_called_once_with([self.doc_problem1])
+        indexes[api.STUDIO_LIBRARY_INDEX_NAME].update_documents.assert_called_once_with([self.doc_problem1])
+        indexes[api.STUDIO_COURSE_INDEX_NAME].update_documents.assert_called_once_with([self.doc_sequential])
+        assert api.STUDIO_COURSE_INDEX_NAME + "_new" not in indexes
+
+    @override_settings(MEILISEARCH_ENABLED=True)
+    def test_delete_library_docs_from_missing_course_index(self, mock_meilisearch) -> None:
+        """
+        Cleaning up the course index does nothing if there is no course index yet.
+        """
+        mock_meilisearch.return_value.get_index.side_effect = MeilisearchApiError(
+            "Not found", Mock(text='{"code":"index_not_found"}')
+        )
+
+        api.delete_library_docs_from_course_index()
+
+        mock_meilisearch.return_value.index.assert_not_called()
