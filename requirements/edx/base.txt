@@ -552,7 +552,7 @@ edx-toggles==6.0.0
     #   openedx-platform
     #   ora2
     #   xblocks-contrib
-edx-when==4.0.0
+edx-when==4.1.0
     # via
     #   edx-proctoring
     #   openedx-platform

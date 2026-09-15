@@ -2370,7 +2370,7 @@ wheels = [
 
 [[package]]
 name = "edx-when"
-version = "4.0.0"
+version = "4.1.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "django", version = "4.2.30", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'group-16-openedx-platform-django42'" },
@@ -2381,9 +2381,9 @@ dependencies = [
     { name = "edx-opaque-keys" },
     { name = "xblock" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/18/61/8ff624ac9ff109f31f2a8dd27c20aa0ece6a41daeb68ac5d452592b077a5/edx_when-4.0.0.tar.gz", hash = "sha256:fbc78b688f8ce64abc46dbfbe639aa815eb5358f9a13ad3af1cbef1bb0afd537", size = 43888, upload-time = "2026-04-07T16:26:46.552Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/37/07/8520e1dd2f6f3a46716dba18d31cdb3805d54ccdb3f22f3cbcb1c87f2230/edx_when-4.1.0.tar.gz", hash = "sha256:72a7eb7ae2ceedbe688be6ca916e518270f42f3b2d5131ff259aeb5953877ddf", size = 46665, upload-time = "2026-09-02T19:29:52.645Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e6/f8/d43a2bf78094ca8e2698605908ccbaba78b15f8fa65a3e6efe6a18cd54f3/edx_when-4.0.0-py2.py3-none-any.whl", hash = "sha256:2ff5bed1d1942346bc5ca9cf1dd9a6f932b62756edda961578b16c94f17f8c4f", size = 35782, upload-time = "2026-04-07T16:26:45.208Z" },
+    { url = "https://files.pythonhosted.org/packages/cf/fa/e6adfe0253a9ac7ebcf4892997104fa9c2823409317e7f4007c3b9fb07bc/edx_when-4.1.0-py2.py3-none-any.whl", hash = "sha256:e40d9093233beea00b717d38ac70a974b6d7b443e8dc5847579da144387f06ee", size = 36754, upload-time = "2026-09-02T19:29:51.447Z" },
 ]
 
 [[package]]
