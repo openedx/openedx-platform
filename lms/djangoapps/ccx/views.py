@@ -8,9 +8,7 @@ import json
 import logging
 from copy import deepcopy
 
-import pytz
 from ccx_keys.locator import CCXLocator
-from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.db import transaction
@@ -35,10 +33,10 @@ from lms.djangoapps.ccx.overrides import (
 )
 from lms.djangoapps.ccx.permissions import VIEW_CCX_COACH_DASHBOARD
 from lms.djangoapps.ccx.utils import (
-    add_master_course_staff_to_ccx,
     assign_staff_role_to_ccx,
     ccx_course,
     ccx_students_enrolling_center,
+    create_ccx_course,
     get_ccx_by_ccx_id,
     get_ccx_creation_dict,
     get_ccx_for_coach,
@@ -48,10 +46,8 @@ from lms.djangoapps.ccx.utils import (
 )
 from lms.djangoapps.courseware.field_overrides import disable_overrides
 from lms.djangoapps.grades.api import CourseGradeFactory
-from lms.djangoapps.instructor.enrollment import enroll_email, get_email_params
+from lms.djangoapps.instructor.enrollment import get_email_params
 from lms.djangoapps.instructor.views.gradebook_api import get_grade_book_page
-from openedx.core.djangoapps.django_comment_common.models import FORUM_ROLE_ADMINISTRATOR, assign_role
-from openedx.core.djangoapps.django_comment_common.utils import seed_permissions_roles
 from openedx.core.lib.courses import get_course_by_id
 from xmodule.modulestore.django import SignalHandler  # pylint: disable=wrong-import-order
 
@@ -183,60 +179,10 @@ def create_ccx(request, course, ccx=None):
         url = reverse('ccx_coach_dashboard', kwargs={'course_id': course.id})
         return redirect(url)
 
-    ccx = CustomCourseForEdX(
-        course_id=course.id,
-        coach=request.user,
-        display_name=name)
-    ccx.save()
-
-    # Make sure start/due are overridden for entire course
-    start = TODAY().replace(tzinfo=pytz.UTC)
-    override_field_for_ccx(ccx, course, 'start', start)
-    override_field_for_ccx(ccx, course, 'due', None)
-
-    # Enforce a static limit for the maximum amount of students that can be enrolled
-    override_field_for_ccx(ccx, course, 'max_student_enrollments_allowed', settings.CCX_MAX_STUDENTS_ALLOWED)
-    # Save display name explicitly
-    override_field_for_ccx(ccx, course, 'display_name', name)
-
-    # Hide anything that can show up in the schedule
-    hidden = 'visible_to_staff_only'
-    for chapter in course.get_children():
-        override_field_for_ccx(ccx, chapter, hidden, True)
-        for sequential in chapter.get_children():
-            override_field_for_ccx(ccx, sequential, hidden, True)
-            for vertical in sequential.get_children():
-                override_field_for_ccx(ccx, vertical, hidden, True)
+    ccx = create_ccx_course(course, request.user, name)
 
     ccx_id = CCXLocator.from_course_locator(course.id, str(ccx.id))
-
-    # Create forum roles
-    seed_permissions_roles(ccx_id)
-    # Assign administrator forum role to CCX coach
-    assign_role(ccx_id, request.user, FORUM_ROLE_ADMINISTRATOR)
-
     url = reverse('ccx_coach_dashboard', kwargs={'course_id': ccx_id})
-
-    # Enroll the coach in the course
-    email_params = get_email_params(course, auto_enroll=True, course_key=ccx_id, display_name=ccx.display_name)
-    enroll_email(
-        course_id=ccx_id,
-        student_email=request.user.email,
-        auto_enroll=True,
-        message_students=True,
-        message_params=email_params,
-    )
-
-    assign_staff_role_to_ccx(ccx_id, request.user, course.id)
-    add_master_course_staff_to_ccx(course, ccx_id, ccx.display_name)
-
-    # using CCX object as sender here.
-    responses = SignalHandler.course_published.send(
-        sender=ccx,
-        course_key=CCXLocator.from_course_locator(course.id, str(ccx.id))
-    )
-    for rec, response in responses:
-        log.info('Signal fired when course is published. Receiver: %s. Response: %s', rec, response)
 
     return redirect(url)
 

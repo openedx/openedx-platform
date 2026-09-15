@@ -11,6 +11,8 @@ from contextlib import contextmanager
 from smtplib import SMTPException
 
 import pytz
+from ccx_keys.locator import CCXLocator
+from django.conf import settings
 from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
@@ -21,15 +23,19 @@ from common.djangoapps.student.models import CourseEnrollment, CourseEnrollmentE
 from common.djangoapps.student.roles import CourseCcxCoachRole, CourseInstructorRole, CourseStaffRole
 from lms.djangoapps.ccx.custom_exception import CCXUserValidationException
 from lms.djangoapps.ccx.models import CustomCourseForEdX
-from lms.djangoapps.ccx.overrides import get_override_for_ccx
+from lms.djangoapps.ccx.overrides import get_override_for_ccx, override_field_for_ccx
 from lms.djangoapps.instructor.access import allow_access, list_with_level, revoke_access
 from lms.djangoapps.instructor.enrollment import enroll_email, get_email_params, unenroll_email
 from lms.djangoapps.instructor.views.api import _split_input_list
 from lms.djangoapps.instructor.views.tools import get_student_from_identifier
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
+from openedx.core.djangoapps.django_comment_common.models import FORUM_ROLE_ADMINISTRATOR, assign_role
+from openedx.core.djangoapps.django_comment_common.utils import seed_permissions_roles
 from openedx.core.lib.courses import get_course_by_id
+from xmodule.modulestore.django import SignalHandler
 
 log = logging.getLogger("edx.ccx")
+TODAY = datetime.datetime.today  # alias for patching in tests
 
 
 def get_ccx_creation_dict(course):
@@ -439,3 +445,72 @@ def remove_master_course_staff_from_ccx(master_course, ccx_key, display_name, se
                     message_students=send_email,
                     message_params=email_params,
                 )
+
+
+def create_ccx_course(course, coach, display_name):
+    """
+    Create and persist a CustomCourseForEdX for `course` owned by `coach`.
+
+    Arguments:
+        course (CourseBlock): the master course the CCX is derived from.
+        coach (User): the user who will own/coach the CCX.
+        display_name (str): the CCX display name.
+
+    Returns:
+        CustomCourseForEdX: the newly created CCX instance.
+    """
+    ccx = CustomCourseForEdX(
+        course_id=course.id,
+        coach=coach,
+        display_name=display_name,
+    )
+    ccx.save()
+
+    # Make sure start/due are overridden for entire course
+    start = TODAY().replace(tzinfo=pytz.UTC)
+    override_field_for_ccx(ccx, course, 'start', start)
+    override_field_for_ccx(ccx, course, 'due', None)
+
+    # Enforce a static limit for the maximum number of students that can be enrolled
+    override_field_for_ccx(ccx, course, 'max_student_enrollments_allowed', settings.CCX_MAX_STUDENTS_ALLOWED)
+    # Save display name explicitly
+    override_field_for_ccx(ccx, course, 'display_name', display_name)
+
+    # Hide anything that can show up in the schedule
+    hidden = 'visible_to_staff_only'
+    for chapter in course.get_children():
+        override_field_for_ccx(ccx, chapter, hidden, True)
+        for sequential in chapter.get_children():
+            override_field_for_ccx(ccx, sequential, hidden, True)
+            for vertical in sequential.get_children():
+                override_field_for_ccx(ccx, vertical, hidden, True)
+
+    ccx_id = CCXLocator.from_course_locator(course.id, str(ccx.id))
+
+    # Create forum roles
+    seed_permissions_roles(ccx_id)
+    # Assign administrator forum role to CCX coach
+    assign_role(ccx_id, coach, FORUM_ROLE_ADMINISTRATOR)
+
+    # Enroll the coach in the course
+    email_params = get_email_params(course, auto_enroll=True, course_key=ccx_id, display_name=ccx.display_name)
+    enroll_email(
+        course_id=ccx_id,
+        student_email=coach.email,
+        auto_enroll=True,
+        message_students=True,
+        message_params=email_params,
+    )
+
+    assign_staff_role_to_ccx(ccx_id, coach, course.id)
+    add_master_course_staff_to_ccx(course, ccx_id, ccx.display_name)
+
+    # using CCX object as sender here.
+    responses = SignalHandler.course_published.send(
+        sender=ccx,
+        course_key=CCXLocator.from_course_locator(course.id, str(ccx.id)),
+    )
+    for rec, response in responses:
+        log.info('Signal fired when course is published. Receiver: %s. Response: %s', rec, response)
+
+    return ccx
