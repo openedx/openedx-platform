@@ -22,7 +22,15 @@ def edxnotes(cls):
         Returns raw html for the component.
         """
         # Import is placed here to avoid model import at project startup.
-        from .helpers import generate_uid, get_edxnotes_id_token, get_public_endpoint, get_token_url, is_feature_enabled
+        from .helpers import (
+            generate_uid,
+            get_ccx_master_course_key,
+            get_ccx_master_usage_key,
+            get_edxnotes_id_token,
+            get_public_endpoint,
+            get_token_url,
+            is_feature_enabled,
+        )
 
         if not settings.ENABLE_EDXNOTES:
             return original_get_html(self, *args, **kwargs)
@@ -47,6 +55,14 @@ def edxnotes(cls):
         if is_studio or not is_feature_enabled(course, user):
             return original_get_html(self, *args, **kwargs)
         else:
+            # Notes are recorded against the master course (and its own block ids),
+            # not the CCX, so a note taken in any CCX section shows up in every CCX
+            # section derived from the same master course. `tokenUrl` deliberately
+            # keeps the real (CCX) course id: that URL is routed/access-checked
+            # against the course actually being viewed, not the note's data key.
+            notes_course_id = get_ccx_master_course_key(course.id)
+            notes_usage_id = get_ccx_master_usage_key(self.scope_ids.usage_id)
+
             return render_to_string("edxnotes_wrapper.html", {
                 "content": original_get_html(self, *args, **kwargs),
                 "uid": generate_uid(),
@@ -55,8 +71,8 @@ def edxnotes(cls):
                 ),
                 "params": {
                     # Use camelCase to name keys.
-                    "usageId": self.scope_ids.usage_id,
-                    "courseId": course.id,
+                    "usageId": notes_usage_id,
+                    "courseId": notes_course_id,
                     "token": get_edxnotes_id_token(user),
                     "tokenUrl": get_token_url(course.id),
                     "endpoint": get_public_endpoint(),
