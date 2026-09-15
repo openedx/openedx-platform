@@ -15,6 +15,7 @@ from django.test.utils import override_settings
 from django.utils.timezone import now
 from edx_toggles.toggles.testutils import override_waffle_flag
 from freezegun import freeze_time
+from lxml import etree
 from web_fragments.fragment import Fragment
 
 from openedx.features.content_type_gating.models import ContentTypeGatingConfig
@@ -572,3 +573,43 @@ class SequenceBlockTestCase(XModuleXmlImportTest):
         assert metadata["items"] == "rendered_blocks"
         assert metadata["next_url"] == "next_url"
         assert metadata["prev_url"] == "prev_url"
+
+    @patch("openedx.core.lib.gating.api.get_required_content")
+    def test_export_sequence_with_prerequisites(self, mock_get_required_content):
+        """
+        Test that add_prerequisite_to_xml adds prerequisite information correctly.
+        """
+        xml_object = etree.Element('sequential')
+
+        mock_get_required_content.return_value = (
+            "block-v1:TestX+TestCourse+1+type@sequential+block@required_sequential",
+            80,
+            90,
+        )
+        self.sequence_3_1.add_prerequisite_to_xml(xml_object)
+        mock_get_required_content.assert_called_once_with(
+            self.sequence_3_1.location.course_key,
+            self.sequence_3_1.location
+        )
+        assert xml_object.get('required_content') == 'required_sequential'
+        assert xml_object.get('min_score') == '80'
+        assert xml_object.get('min_completion') == '90'
+
+    @patch("openedx.core.lib.gating.api.get_required_content")
+    def test_export_sequence_no_prerequisites(self, mock_get_required_content):
+        """
+        Test that add_prerequisite_to_xml adds No prerequisite information if
+        current sequential is not gated.
+        """
+        xml_object = etree.Element('sequential')
+
+        mock_get_required_content.return_value = (None, None, None)
+
+        self.sequence_3_1.add_prerequisite_to_xml(xml_object)
+        mock_get_required_content.assert_called_once_with(
+            self.sequence_3_1.location.course_key,
+            self.sequence_3_1.location
+        )
+        assert 'required_content' not in xml_object.attrib
+        assert 'min_score' not in xml_object.attrib
+        assert 'min_completion' not in xml_object.attrib
