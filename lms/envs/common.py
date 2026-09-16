@@ -478,18 +478,6 @@ ENABLE_COURSEWARE_SEARCH = False
 # .. toggle_tickets: https://openedx.atlassian.net/browse/TNL-6931
 ENABLE_COURSEWARE_SEARCH_FOR_COURSE_STAFF = False
 
-# Dashboard search feature
-# .. toggle_name: settings.ENABLE_DASHBOARD_SEARCH
-# .. toggle_implementation: DjangoSetting
-# .. toggle_default: False
-# .. toggle_description: When enabled, this adds a Search Your Courses widget on the dashboard page for searching
-#   courseware data.
-# .. toggle_use_cases: open_edx
-# .. toggle_creation_date: 2015-01-29
-# .. toggle_warning: In order to get this working, your courses data should be indexed in Elasticsearch.
-# .. toggle_tickets: https://github.com/openedx/edx-platform/pull/6506
-ENABLE_DASHBOARD_SEARCH = False
-
 # log all information from cybersource callbacks
 LOG_POSTPAY_CALLBACKS = True
 
