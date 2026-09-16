@@ -881,9 +881,6 @@ INSTALLED_APPS = [
     # Asset management for mako templates
     'common.djangoapps.pipeline_mako',
 
-    # API Documentation
-    'drf_yasg',
-
     # Tagging
     'openedx_tagging',
     'openedx.core.djangoapps.content_tagging',

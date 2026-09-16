@@ -29,8 +29,8 @@ SWAGGER = docs/lms-openapi.yaml
 docs: swagger guides technical-docs ## build the documentation for this repository
 	$(MAKE) -C docs html
 
-swagger: ## generate the swagger.yaml file
-	DJANGO_SETTINGS_MODULE=docs.docs_settings uv run python manage.py lms generate_swagger --generator-class=edx_api_doc_tools.ApiSchemaGenerator -o $(SWAGGER)
+swagger: ## generate the OpenAPI schema file
+	DJANGO_SETTINGS_MODULE=docs.docs_settings uv run python manage.py lms spectacular --file $(SWAGGER)
 
 extract_translations: ## extract localizable strings from sources
 	uv run i18n_tool extract --no-segment -v

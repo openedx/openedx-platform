@@ -415,9 +415,7 @@ drf-yasg==1.21.15
 edx-ace==1.15.0
     # via openedx-platform
 edx-api-doc-tools==3.0.0
-    # via
-    #   openedx-authz
-    #   openedx-platform
+    # via openedx-authz
 edx-auth-backends==5.0.0
     # via openedx-platform
 edx-bulk-grades==2.0.0
