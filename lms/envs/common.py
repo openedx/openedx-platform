@@ -2064,7 +2064,6 @@ INSTALLED_APPS = [
     'django_filters',
 
     # API Documentation
-    'drf_yasg',
     'drf_spectacular',
 
     # edx-drf-extensions
@@ -2149,10 +2148,6 @@ add_optional_apps(OPTIONAL_APPS, INSTALLED_APPS)  # noqa: F405
 
 ######################### Django Rest Framework ########################
 
-SWAGGER_SETTINGS = {
-    'DEFAULT_INFO': 'openedx.core.apidocs.api_info',
-    'DEEP_LINKING': True,
-}
 
 ###################### drf-spectacular (LMS enrollment schema) ######################
 SPECTACULAR_SETTINGS = {

@@ -10,8 +10,7 @@ from django.contrib.admin import autodiscover as django_autodiscover
 from django.urls import include, path, re_path
 from django.utils.translation import gettext_lazy as _
 from django.views.generic.base import RedirectView
-from drf_spectacular.views import SpectacularAPIView
-from edx_api_doc_tools import make_docs_urls
+from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 from edx_django_utils.plugins import get_plugin_url_patterns
 from submissions import urls as submissions_urls
 
@@ -37,7 +36,7 @@ from lms.djangoapps.instructor_task import views as instructor_task_views
 from lms.djangoapps.mfe_config_api.urls import frontend_site_config_urls, mfe_config_urls
 from lms.djangoapps.static_template_view import views as static_template_view_views
 from lms.djangoapps.staticbook import views as staticbook_views
-from openedx.core.apidocs import api_info
+from openedx.core.apidocs import get_api_docs_settings
 from openedx.core.djangoapps.auth_exchange.views import LoginWithAccessTokenView
 from openedx.core.djangoapps.catalog.models import CatalogIntegration
 from openedx.core.djangoapps.common_views.xblock import xblock_resource
@@ -983,8 +982,46 @@ if settings.ENABLE_FINANCIAL_ASSISTANCE_FORM:
         )
     ]
 
-# API docs.
-urlpatterns += make_docs_urls(api_info)
+# API docs, served by drf-spectacular.
+#
+# Route names and paths are preserved from the edx-api-doc-tools implementation
+# these replaced, since reverse() calls and existing links depend on them.
+#
+# ``swagger.json`` / ``swagger.yaml`` serve the schema. drf-spectacular picks
+# the renderer by content negotiation, so the extension is passed through as
+# DRF's standard ``format`` suffix kwarg (without the leading dot) to select
+# JSON or YAML explicitly.
+#
+# The Swagger and ReDoc views reverse their schema URL with no arguments, so
+# ``api-docs/schema/`` exists alongside the format-suffixed routes for them to
+# point at.
+urlpatterns += [
+    re_path(
+        r'^swagger\.(?P<format>json|yaml)$',
+        SpectacularAPIView.as_view(custom_settings=get_api_docs_settings()),
+        name='apidocs-data',
+    ),
+    path(
+        'api-docs/schema/',
+        SpectacularAPIView.as_view(custom_settings=get_api_docs_settings()),
+        name='apidocs-schema',
+    ),
+    path(
+        'api-docs/',
+        SpectacularSwaggerView.as_view(url_name='apidocs-schema'),
+        name='apidocs-ui',
+    ),
+    path(
+        'api-docs/redoc/',
+        SpectacularRedocView.as_view(url_name='apidocs-schema'),
+        name='apidocs-ui-redoc',
+    ),
+    path(
+        'swagger/',
+        RedirectView.as_view(pattern_name='apidocs-ui', permanent=False),
+        name='apidocs-ui-swagger',
+    ),
+]
 
 # edx-drf-extensions csrf app
 urlpatterns += [
