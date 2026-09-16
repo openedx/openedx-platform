@@ -522,6 +522,36 @@ def sync_discussion_settings(course_key, user):
         LOGGER.info(f'Course import {course.id}: DiscussionsConfiguration sync failed: {exc}')
 
 
+def course_import_working_dir(courselike_key, unique_id):
+    """
+    Return a private scratch directory for one course import.
+
+    ``unique_id`` must be unique per import (a task id, an upload id, ...). Every
+    import needs its own directory: they used to share a single directory derived
+    from the course key alone, so two imports of the same course would overwrite
+    each other's archive, and whichever import finished first deleted the other's
+    extracted OLX mid-run.
+    """
+    subdir = base64.urlsafe_b64encode(repr(courselike_key).encode('utf-8')).decode('utf-8')
+    return path(settings.GITHUB_REPO_ROOT) / subdir / str(unique_id)
+
+
+def remove_course_import_working_dir(course_dir):
+    """
+    Delete a working directory created by :func:`course_import_working_dir`.
+
+    Also drops the per-course parent directory once the last import using it is
+    gone. Both steps tolerate the directory already being missing, so that
+    cleanup never masks the error that triggered it.
+    """
+    shutil.rmtree(course_dir, ignore_errors=True)
+    try:
+        os.rmdir(os.path.dirname(course_dir))
+    except OSError:
+        # Still holds another import's working directory, or is already gone.
+        pass
+
+
 @shared_task(base=CourseImportTask, bind=True)
 # Note: The decorator @set_code_owner_attribute cannot be used here because the UserTaskMixin
 #   does stack inspection and can't handle additional decorators.
@@ -538,8 +568,7 @@ def import_olx(self, user_id, course_key_string, archive_path, archive_name, lan
     self.status.set_state(current_step)
 
     data_root = path(settings.GITHUB_REPO_ROOT)
-    subdir = base64.urlsafe_b64encode(repr(courselike_key).encode('utf-8')).decode('utf-8')
-    course_dir = data_root / subdir
+    course_dir = course_import_working_dir(courselike_key, self.request.id)
 
     def validate_user():
         """Validate if the user exists otherwise log error. """
@@ -647,8 +676,7 @@ def import_olx(self, user_id, course_key_string, archive_path, archive_name, lan
         LOGGER.info(f'{log_prefix}: unpacking step started')
 
         temp_filepath = course_dir / get_valid_filename(archive_name)
-        if not course_dir.isdir():
-            os.mkdir(course_dir)
+        os.makedirs(course_dir, exist_ok=True)
 
         LOGGER.info(f'{log_prefix}: importing course to {temp_filepath}')
 
@@ -684,9 +712,8 @@ def import_olx(self, user_id, course_key_string, archive_path, archive_name, lan
                 LOGGER.info(f'{log_prefix}: entrance exam milestone content reference has been removed')
     # Send errors to client with stage at which error occurred.
     except Exception as exception:  # pylint: disable=broad-except
-        if course_dir.isdir():
-            shutil.rmtree(course_dir)
-            LOGGER.info(f'{log_prefix}: Temp data cleared')
+        remove_course_import_working_dir(course_dir)
+        LOGGER.info(f'{log_prefix}: Temp data cleared')
 
         self.status.fail(UserErrors.UNKNOWN_ERROR_IN_UNPACKING)
         LOGGER.exception(f'{log_prefix}: Unknown error while unpacking', exc_info=True)
@@ -742,9 +769,8 @@ def import_olx(self, user_id, course_key_string, archive_path, archive_name, lan
     except Exception as exception:  # pylint: disable=broad-except
         handle_course_import_exception(courselike_key, exception, self.status, known=False)
     finally:
-        if course_dir.isdir():
-            shutil.rmtree(course_dir)
-            LOGGER.info(f'{log_prefix}: Temp data cleared')
+        remove_course_import_working_dir(course_dir)
+        LOGGER.info(f'{log_prefix}: Temp data cleared')
 
         if self.status.state == 'Updating' and is_course:
             # Reload the course so we have the latest state
