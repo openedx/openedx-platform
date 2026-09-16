@@ -1,7 +1,8 @@
 """ API Views for course advanced settings """
 
-import edx_api_doc_tools as apidocs
 from django import forms
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from opaque_keys.edx.keys import CourseKey
 from rest_framework.exceptions import ValidationError
 from rest_framework.request import Request
@@ -36,25 +37,27 @@ class AdvancedCourseSettingsView(DeveloperErrorViewMixin, APIView):
                 return set(self.cleaned_data['filter_fields'].split(','))
             return None
 
-    @apidocs.schema(
+    @extend_schema(
         parameters=[
-            apidocs.string_parameter("course_id", apidocs.ParameterLocation.PATH, description="Course ID"),
-            apidocs.string_parameter(
+            OpenApiParameter("course_id", OpenApiTypes.STR, OpenApiParameter.PATH, description="Course ID"),
+            OpenApiParameter(
                 "filter_fields",
-                apidocs.ParameterLocation.QUERY,
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
                 description="Comma separated list of fields to filter",
             ),
-            apidocs.string_parameter(
+            OpenApiParameter(
                 "fetch_all",
-                apidocs.ParameterLocation.QUERY,
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
                 description="Specifies whether to fetch all settings or only enabled ones",
             ),
         ],
         responses={
             200: CourseAdvancedSettingsSerializer,
-            401: "The requester is not authenticated.",
-            403: "The requester cannot access the specified course.",
-            404: "The requested course does not exist.",
+            401: OpenApiResponse(description="The requester is not authenticated."),
+            403: OpenApiResponse(description="The requester cannot access the specified course."),
+            404: OpenApiResponse(description="The requested course does not exist."),
         },
     )
     @verify_course_exists()
@@ -130,14 +133,14 @@ class AdvancedCourseSettingsView(DeveloperErrorViewMixin, APIView):
             filter_fields=filter_query_data.cleaned_data['filter_fields'],
         ))
 
-    @apidocs.schema(
-        body=CourseAdvancedSettingsSerializer,
-        parameters=[apidocs.string_parameter("course_id", apidocs.ParameterLocation.PATH, description="Course ID")],
+    @extend_schema(
+        request=CourseAdvancedSettingsSerializer,
+        parameters=[OpenApiParameter("course_id", OpenApiTypes.STR, OpenApiParameter.PATH, description="Course ID")],
         responses={
             200: CourseAdvancedSettingsSerializer,
-            401: "The requester is not authenticated.",
-            403: "The requester cannot access the specified course.",
-            404: "The requested course does not exist.",
+            401: OpenApiResponse(description="The requester is not authenticated."),
+            403: OpenApiResponse(description="The requester cannot access the specified course."),
+            404: OpenApiResponse(description="The requested course does not exist."),
         },
     )
     @verify_course_exists()
