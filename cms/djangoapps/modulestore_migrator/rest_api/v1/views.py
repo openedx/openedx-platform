@@ -4,7 +4,8 @@ API v1 views.
 import logging
 from uuid import UUID
 
-import edx_api_doc_tools as apidocs
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema, extend_schema_view
 from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
 from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
 from opaque_keys import InvalidKeyError
@@ -51,30 +52,28 @@ log = logging.getLogger(__name__)
 
 
 _error_responses = {
-    400: "Request malformed.",
-    401: "Requester is not authenticated.",
-    403: "Permission denied",
+    400: OpenApiResponse(description="Request malformed."),
+    401: OpenApiResponse(description="Requester is not authenticated."),
+    403: OpenApiResponse(description="Permission denied"),
 }
 
 
-@apidocs.schema_for(
-    "list",
-    """
-    List all migration and bulk-migration tasks started by the current user.
-
-    The response is a paginated series of migration task status objects, ordered
-    by the time at which the migration was started, newest first.
-    See `POST /api/modulestore_migrator/v1/migrations` for details of each object's schema.
-    """,
-)
-@apidocs.schema_for(
-    "retrieve",
-    """
-    Get the status of particular migration or bulk-migration task by its UUID.
-
-    The response is a migration task status object.
-    See `POST /api/modulestore_migrator/v1/migrations` for details on its schema.
-    """,
+@extend_schema_view(
+    list=extend_schema(
+        summary="List all migration and bulk-migration tasks started by the current user.",
+        description=(
+            "The response is a paginated series of migration task status objects, ordered\n"
+            "by the time at which the migration was started, newest first.\n"
+            "See `POST /api/modulestore_migrator/v1/migrations` for details of each object's schema."
+        ),
+    ),
+    retrieve=extend_schema(
+        summary="Get the status of particular migration or bulk-migration task by its UUID.",
+        description=(
+            "The response is a migration task status object.\n"
+            "See `POST /api/modulestore_migrator/v1/migrations` for details on its schema."
+        ),
+    ),
 )
 class MigrationViewSet(StatusViewSet):
     """
@@ -107,7 +106,7 @@ class MigrationViewSet(StatusViewSet):
             user=self.request.user
         ).distinct().order_by("-created")
 
-    @apidocs.schema()
+    @extend_schema()
     @action(detail=True, methods=['post'])
     def cancel(self, request, *args, **kwargs):
         """
@@ -125,8 +124,8 @@ class MigrationViewSet(StatusViewSet):
             raise PermissionDenied("Only site administrators can cancel migration tasks.")
         return super().cancel(request, *args, **kwargs)
 
-    @apidocs.schema(
-        body=ModulestoreMigrationSerializer,
+    @extend_schema(
+        request=ModulestoreMigrationSerializer,
         responses={
             201: StatusWithModulestoreMigrationsSerializer,
             **_error_responses,
@@ -279,8 +278,8 @@ class BulkMigrationViewSet(StatusViewSet):
     # That just leaves us with POST.
     http_method_names = ["post"]
 
-    @apidocs.schema(
-        body=BulkModulestoreMigrationSerializer,
+    @extend_schema(
+        request=BulkModulestoreMigrationSerializer,
         responses={
             201: StatusWithModulestoreMigrationsSerializer,
             **_error_responses,
@@ -448,18 +447,19 @@ class MigrationInfoViewSet(APIView):
         SessionAuthenticationAllowInactiveUser,
     )
 
-    @apidocs.schema(
+    @extend_schema(
         parameters=[
-            apidocs.string_parameter(
+            OpenApiParameter(
                 "source_keys",
-                apidocs.ParameterLocation.QUERY,
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
                 description="List of source keys to consult",
             ),
         ],
         responses={
             200: MigrationInfoResponseSerializer,
-            400: "Missing required parameter: source_keys",
-            401: "The requester is not authenticated.",
+            400: OpenApiResponse(description="Missing required parameter: source_keys"),
+            401: OpenApiResponse(description="The requester is not authenticated."),
         },
     )
     def get(self, request):
@@ -493,14 +493,15 @@ class MigrationInfoViewSet(APIView):
         return Response(serializer.data)
 
 
-@apidocs.schema_for(
-    "list",
-    "List all course migrations to a library.",
-    responses={
-        201: LibraryMigrationCourseSerializer,
-        401: "The requester is not authenticated.",
-        403: "The requester does not have permission to access the library.",
-    },
+@extend_schema_view(
+    list=extend_schema(
+        summary="List all course migrations to a library.",
+        responses={
+            201: LibraryMigrationCourseSerializer,
+            401: OpenApiResponse(description="The requester is not authenticated."),
+            403: OpenApiResponse(description="The requester does not have permission to access the library."),
+        },
+    ),
 )
 class LibraryCourseMigrationViewSet(GenericViewSet, ListModelMixin):
     """
@@ -579,38 +580,43 @@ class BlockMigrationInfo(APIView):
         SessionAuthenticationAllowInactiveUser,
     )
 
-    @apidocs.schema(
+    @extend_schema(
         parameters=[
-            apidocs.string_parameter(
+            OpenApiParameter(
                 "target_key",
-                apidocs.ParameterLocation.QUERY,
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
                 description="Filter blocks by target key",
             ),
-            apidocs.string_parameter(
+            OpenApiParameter(
                 "source_key",
-                apidocs.ParameterLocation.QUERY,
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
                 description="Filter blocks by source key",
             ),
-            apidocs.string_parameter(
+            OpenApiParameter(
                 "target_collection_key",
-                apidocs.ParameterLocation.QUERY,
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
                 description="Filter blocks by target_collection_key",
             ),
-            apidocs.string_parameter(
+            OpenApiParameter(
                 "task_uuid",
-                apidocs.ParameterLocation.QUERY,
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
                 description="Filter blocks by task_uuid",
             ),
-            apidocs.string_parameter(
+            OpenApiParameter(
                 "is_failed",
-                apidocs.ParameterLocation.QUERY,
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
                 description="Filter blocks based on its migration status",
             ),
         ],
         responses={
             200: MigrationInfoResponseSerializer,
-            400: "Missing required parameter: target_key",
-            401: "The requester is not authenticated.",
+            400: OpenApiResponse(description="Missing required parameter: target_key"),
+            401: OpenApiResponse(description="The requester is not authenticated."),
         },
     )
     def get(self, request: Request):
@@ -704,23 +710,25 @@ class PreviewMigration(APIView):
         SessionAuthenticationAllowInactiveUser,
     )
 
-    @apidocs.schema(
+    @extend_schema(
         parameters=[
-            apidocs.string_parameter(
+            OpenApiParameter(
                 "target_key",
-                apidocs.ParameterLocation.QUERY,
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
                 description="Target key of the migration",
             ),
-            apidocs.string_parameter(
+            OpenApiParameter(
                 "source_key",
-                apidocs.ParameterLocation.QUERY,
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
                 description="Source key of the migration",
             ),
         ],
         responses={
             200: PreviewMigrationSerializer,
-            400: "Missing required parameter: target_key/source_key",
-            401: "The requester is not authenticated.",
+            400: OpenApiResponse(description="Missing required parameter: target_key/source_key"),
+            401: OpenApiResponse(description="The requester is not authenticated."),
         },
     )
     def get(self, request: Request):
