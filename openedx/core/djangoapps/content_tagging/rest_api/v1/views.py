@@ -11,7 +11,7 @@ from django.db.models import Count
 from django.http import StreamingHttpResponse
 from openedx_authz import api as authz_api
 from openedx_authz.constants.permissions import COURSES_MANAGE_TAGS, COURSES_VIEW_COURSE
-from openedx_learning.api import create_competency_taxonomy
+from openedx_learning.api import create_competency_taxonomy, select_competency_taxonomies
 from openedx_tagging import rules as oel_tagging_rules
 from openedx_tagging.api import TagDoesNotExist, TaxonomyType
 from openedx_tagging.models import Taxonomy
@@ -105,6 +105,10 @@ class TaxonomyOrgView(TaxonomyView):
 
         # Annotate with tags_count to avoid selecting all the tags
         queryset = queryset.annotate(tags_count=Count("tag", distinct=True))
+
+        # Select the competency taxonomy relation (if any) so is_competency_taxonomy()
+        # costs no extra query per row when serializing taxonomy_type.
+        queryset = select_competency_taxonomies(queryset)
 
         return queryset
 
