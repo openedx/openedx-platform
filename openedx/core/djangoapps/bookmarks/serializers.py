@@ -3,13 +3,26 @@ Serializers for Bookmarks.
 """
 
 
-from edx_api_doc_tools import is_schema_request
 from rest_framework import serializers
 
 from openedx.core.lib.api.serializers import CourseKeyField, UsageKeyField
 
 from . import DEFAULT_FIELDS, OPTIONAL_FIELDS
 from .models import Bookmark
+
+
+def is_schema_request(request):
+    """
+    Return whether this request is serving an OpenAPI schema.
+
+    Schema generators set a swagger_fake_view attribute on the view; that is
+    the drf-spectacular-compatible signal. ``format=openapi`` is drf-yasg's
+    convention, kept while it still serves ``/api-docs``.
+    """
+    view = (getattr(request, 'parser_context', None) or {}).get('view')
+    if getattr(view, 'swagger_fake_view', False):
+        return True
+    return request.query_params.get('format') == 'openapi'
 
 
 class BookmarkSerializer(serializers.ModelSerializer):

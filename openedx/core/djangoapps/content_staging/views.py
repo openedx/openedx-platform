@@ -3,11 +3,11 @@ REST API views for content staging
 """
 from __future__ import annotations
 
-import edx_api_doc_tools as apidocs
 from django.db import transaction
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
+from drf_spectacular.utils import OpenApiResponse, extend_schema
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import UsageKey
 from opaque_keys.edx.locator import CourseLocator, LibraryLocatorV2
@@ -61,10 +61,10 @@ class ClipboardEndpoint(APIView):
     clipboard or to POST some content to the clipboard.
     """
 
-    @apidocs.schema(
+    @extend_schema(
         responses={
             200: UserClipboardSerializer,
-        }
+        },
     )
     def get(self, request):
         """
@@ -72,12 +72,12 @@ class ClipboardEndpoint(APIView):
         """
         return Response(api.get_user_clipboard_json(request.user.id, request))
 
-    @apidocs.schema(
-        body=PostToClipboardSerializer,
+    @extend_schema(
+        request=PostToClipboardSerializer,
         responses={
             200: UserClipboardSerializer,
-            403: "You do not have permission to read the specified usage key.",
-            404: "The requested usage key does not exist.",
+            403: OpenApiResponse(description="You do not have permission to read the specified usage key."),
+            404: OpenApiResponse(description="The requested usage key does not exist."),
         },
     )
     def post(self, request):

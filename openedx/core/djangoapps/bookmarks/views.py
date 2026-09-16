@@ -8,12 +8,13 @@ https://openedx.atlassian.net/wiki/display/TNL/Bookmarks+API
 
 import logging
 
-import edx_api_doc_tools as apidocs
 import eventtracking
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_noop
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from edx_rest_framework_extensions.paginators import DefaultPagination
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey, UsageKey
@@ -105,16 +106,18 @@ class BookmarksListView(ListCreateAPIView, BookmarksViewMixin):
     permission_classes = (permissions.IsAuthenticated,)
     serializer_class = BookmarkSerializer
 
-    @apidocs.schema(
+    @extend_schema(
         parameters=[
-            apidocs.string_parameter(
+            OpenApiParameter(
                 'course_id',
-                apidocs.ParameterLocation.QUERY,
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
                 description="The id of the course to limit the list",
             ),
-            apidocs.string_parameter(
+            OpenApiParameter(
                 'fields',
-                apidocs.ParameterLocation.QUERY,
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
                 description="The fields to return: display_name, path.",
             ),
         ],
@@ -201,7 +204,7 @@ class BookmarksListView(ListCreateAPIView, BookmarksViewMixin):
 
         return page
 
-    @apidocs.schema()
+    @extend_schema()
     def post(self, request, *unused_args, **unused_kwargs):  # pylint: disable=unused-argument
         """Create a new bookmark for a user.
 
@@ -311,7 +314,7 @@ class BookmarksDetailView(APIView, BookmarksViewMixin):
             log.error(error_message)
             return self.error_response(error_message, error_status=status.HTTP_404_NOT_FOUND)
 
-    @apidocs.schema()
+    @extend_schema()
     def get(self, request, username=None, usage_id=None):  # pylint: disable=unused-argument
         """
         Get a specific bookmark for a user.
