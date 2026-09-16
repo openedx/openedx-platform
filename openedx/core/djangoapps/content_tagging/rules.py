@@ -23,6 +23,7 @@ from common.djangoapps.student.roles import (
     OrgStaffRole,
 )
 
+from .auth import should_use_course_authz_for_object
 from .models import TaxonomyOrg
 from .utils import check_taxonomy_context_key_org, get_context_key_from_key_string, rules_cache
 
@@ -216,8 +217,12 @@ def can_change_object_tag_objectid(user: UserType, object_id: str) -> bool:
     For Content Libraries V2, this requires either explicit library tagging permission
     (MANAGE_LIBRARY_TAGS) or org-level admin access for the library's org.
 
-    For other contexts (courses, xblocks, etc.), this requires studio write access or
-    org-level admin access for the object's org.
+    For a course (or an object within one) that has been switched to the openedx-authz
+    service, this requires courses.manage_tags through that service alone; studio write
+    access and org-level admin access are not consulted as a fallback.
+
+    For any other course, xblock, etc. not yet switched, this requires studio write
+    access or org-level admin access for the object's org.
     """
     if not object_id:
         return True
@@ -236,6 +241,14 @@ def can_change_object_tag_objectid(user: UserType, object_id: str) -> bool:
         str(context_key),
     ):
         return True
+
+    # Once a course is switched to openedx-authz, it is the sole source of truth for this
+    # permission; legacy roles are not consulted as a fallback.
+    should_use_authz, course_key = should_use_course_authz_for_object(object_id)
+    if should_use_authz:
+        return authz_api.is_user_allowed(
+            user.username, authz_permissions.COURSES_MANAGE_TAGS.identifier, str(course_key)
+        )
 
     # For other contexts (courses, xblocks, etc.), use general write or org-admin access
     if has_studio_write_access(user, context_key):

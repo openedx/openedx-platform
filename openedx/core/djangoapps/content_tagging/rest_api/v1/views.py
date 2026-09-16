@@ -10,7 +10,7 @@ from django.core import exceptions
 from django.db.models import Count
 from django.http import StreamingHttpResponse
 from openedx_authz import api as authz_api
-from openedx_authz.constants.permissions import COURSES_MANAGE_TAGS, COURSES_VIEW_COURSE
+from openedx_authz.constants.permissions import COURSES_VIEW_COURSE
 from openedx_learning.api import create_competency_taxonomy
 from openedx_tagging import rules as oel_tagging_rules
 from openedx_tagging.api import TagDoesNotExist, TaxonomyType
@@ -206,6 +206,12 @@ class ObjectTagOrgView(ObjectTagView):
         Cache the authz toggle + key-parsing result for the current object_id.
 
         Safe to cache per-instance because DRF creates a new view instance per request.
+
+        Kept (unlike the now-deleted ensure_user_has_can_tag_object_permissions override)
+        because ensure_has_view_object_tag_permission below and
+        ObjectTagTaxonomyOrgFilterBackend.filter_queryset (filters.py) both still read it
+        directly; can_change_object_tag_objectid's own authz branch only made the tagging
+        permission override redundant, not this.
         """
         object_id = self.kwargs.get('object_id')
         if object_id:
@@ -239,24 +245,6 @@ class ObjectTagOrgView(ObjectTagView):
         if not should_use_authz:
             # Fall back to parent implementation
             super().ensure_has_view_object_tag_permission(user, taxonomy, object_id)
-
-    def ensure_user_has_can_tag_object_permissions(self, user, tags_data, object_id):
-        """
-        Check if user has permission to tag object for each taxonomy in tags_data.
-
-        This method is overridden to conditionally use openedx-authz when the toggle is enabled.
-
-        When using openedx-authz, if the user has manage tags permission for the course,
-        they can tag the object regardless of the taxonomy.
-        """
-        should_use_authz, course_key = self._authz_check
-        if should_use_authz and not authz_api.is_user_allowed(
-            user.username, COURSES_MANAGE_TAGS.identifier, str(course_key)
-        ):
-            raise PermissionDenied("You do not have permission to manage object tags.")
-        if not should_use_authz:
-            # Fall back to parent implementation
-            super().ensure_user_has_can_tag_object_permissions(user, tags_data, object_id)
 
     def _apply_updated_tags(self, data: dict, object_id: str):
         """
