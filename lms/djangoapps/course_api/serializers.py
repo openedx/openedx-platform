@@ -17,7 +17,6 @@ from openedx.core.djangoapps.content.course_overviews.models import \
 from openedx.core.djangoapps.models.course_details import CourseDetails
 from openedx.core.lib.api.fields import AbsoluteURLField
 
-
 class _MediaSerializer(serializers.Serializer):  # pylint: disable=abstract-method
     """
     Nested serializer to represent a media object.
@@ -100,6 +99,7 @@ class CourseSerializer(serializers.Serializer):  # pylint: disable=abstract-meth
 
     blocks_url = serializers.SerializerMethodField()
     effort = serializers.CharField()
+    # complexity = serializers.SerializerMethodField()
     end = serializers.DateTimeField()
     enrollment_start = serializers.DateTimeField()
     enrollment_end = serializers.DateTimeField()
@@ -119,6 +119,9 @@ class CourseSerializer(serializers.Serializer):  # pylint: disable=abstract-meth
 
     # 'course_id' is a deprecated field, please use 'id' instead.
     course_id = serializers.CharField(source='id', read_only=True)
+
+    def get_complexity(self, obj):
+        return CourseDetails.fetch_about_attribute(obj.id, 'complexity')
 
     def get_hidden(self, course_overview):
         """

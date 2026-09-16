@@ -24,6 +24,9 @@ from openedx.core.djangoapps.user_api.serializers import (
 )
 from openedx.core.lib.api.permissions import ApiKeyHeaderPermission
 from openedx.core.lib.api.view_utils import require_post_params
+from django.views.decorators.csrf import csrf_protect
+from django.views.decorators.debug import sensitive_post_parameters
+
 
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):

@@ -197,7 +197,7 @@ class AccountCreationForm(forms.Form):
             "level_of_education": _("A level of education is required"),
             "gender": _("Your gender is required"),
             "year_of_birth": _("Your year of birth is required"),
-            "mailing_address": _("Your mailing address is required"),
+            "mailing_address": _("Your educational institution is required"),
             "goals": _("A description of your goals is required"),
             "city": _("A city is required"),
             "country": _("A country is required")
@@ -557,7 +557,7 @@ class RegistrationFormFactory:
 
         # Translators: These instructions appear on the registration form, immediately
         # below a field meant to hold the user's full name.
-        name_instructions = _("This name will be used on any certificates that you earn.")
+        name_instructions = _("Surname and Name")
 
         form_desc.add_field(
             "name",
@@ -795,7 +795,7 @@ class RegistrationFormFactory:
         """
         # Translators: This label appears above a field on the registration form
         # meant to hold the user's mailing address.
-        mailing_address_label = _("Mailing address")
+        mailing_address_label = _("Educational institution")
         error_msg = accounts.REQUIRED_FIELD_MAILING_ADDRESS_MSG
 
         form_desc.add_field(

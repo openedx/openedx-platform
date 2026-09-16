@@ -255,7 +255,7 @@ def add_mailing_address_field(is_field_required=False):
     """
     # Translators: This label appears above a field
     # meant to hold the user's mailing address.
-    mailing_address_label = _("Mailing address")
+    mailing_address_label = _("Educational institution")
 
     return {
         'name': 'mailing_address',

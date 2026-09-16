@@ -9,157 +9,109 @@
 <% footer = get_footer(is_secure=is_secure) %>
 <% icp_license_info = getattr(settings, 'ICP_LICENSE_INFO', {})%>
 <%namespace name='static' file='static_content.html'/>
-
-% if uses_bootstrap:
-  <div class="container-fluid wrapper-footer">
-    <footer>
-      <div class="row">
-        <div class="col-md-9">
-          <nav class="navbar site-nav navbar-expand-sm" aria-label="${_('About')}">
-            <ul class="navbar-nav">
-              % for item_num, link in enumerate(footer['navigation_links'], start=1):
-                <li class="nav-item">
-                  <a class="nav-link" href="${link['url']}">${link['title']}</a>
-                </li>
-              % endfor
-            </ul>
-          </nav>
-
-          <div class="wrapper-logo">
-            <p>
-              <a href="/">
-                ## The default logo is a placeholder.
-                ## You can either replace this link entirely or update
-                ## can be included in the footer on other sites
-                ## (e.g. a blog or marketing front-end) to provide a consistent
-                ## user experience.  See the branding app for details.
-                <img alt="${_('organization logo')}" src="${footer['logo_image']}">
-              </a>
-            </p>
-          </div>  
-          ## Site operators: Please do not remove this paragraph! This attributes back to edX and makes your acknowledgement of edX's trademarks clear.
-          <p class="copyright">${footer['copyright']}
-               % if icp_license_info.get('icp_license'):
-                ${u" | {text}".format(text=icp_license_info.get('text'))}
-                <a href="${icp_license_info.get('icp_license_link', '#')}">
-                    ${u" {icp}".format(icp=icp_license_info.get('icp_license'))}
-                </a>
-              % endif
-          </p>
-
-          <nav class="navbar legal-nav navbar-expand-sm" aria-label="${_('Legal')}">
-            <ul class="navbar-nav">
-              % for item_num, link in enumerate(footer['legal_links'], start=1):
-                <li class="nav-item">
-                  <a class="nav-link" href="${link['url']}">${link['title']}</a>
-                </li>
-              % endfor
-              <li class="nav-item">
-                <a class="nav-link" href="${footer['edx_org_link']['url']}">${footer['edx_org_link']['text']}</a>
-              </li>
-            </ul>
-          </nav>
-        </div>
-        <div class="col-md-3">
-          ## Please leave this link and use one of the logos provided
-          ## The OpenEdX link may be hidden when this view is served
-          ## through an API to partner sites (such as marketing sites or blogs),
-          ## which are not technically powered by Open edX.
-          % if not hide_openedx_link:
-            <div class="footer-about-openedx">
-              <p>
-                <a href="${footer['openedx_link']['url']}">
-                  <img src="${footer['openedx_link']['image']}" alt="${footer['openedx_link']['title']}" width="175" />
-                </a>
-              </p>
-            </div>
-          % endif
-        </div>
-      </div>
-    </footer>
-  </div>
-% else:
-  <div class="wrapper wrapper-footer">
-    <footer id="footer-openedx" class="grid-container"
-      ## When rendering the footer through the branding API,
-      ## the direction may not be set on the parent element,
-      ## so we set it here.
-      % if bidi:
-        dir=${bidi}
-      % endif
-    >
-      <div class="colophon">
-        <nav class="nav-colophon" aria-label="${_('About')}">
-          <ol>
-              % for item_num, link in enumerate(footer['navigation_links'], start=1):
-              <li class="nav-colophon-0${item_num}">
-                <a id="${link['name']}" href="${link['url']}">${link['title']}</a>
-              </li>
-              % endfor
-          </ol>
-        </nav>
-
-        % if context.get('include_language_selector', footer_language_selector_is_enabled()):
-            <%include file="${static.get_template_path('widgets/footer-language-selector.html')}"/>
-        % endif
-        <div class="wrapper-logo">
-          <p>
-            <a href="/">
-              ## The default logo is a placeholder.
-              ## You can either replace this link entirely or update
-              ## can be included in the footer on other sites
-              ## (e.g. a blog or marketing front-end) to provide a consistent
-              ## user experience.  See the branding app for details.
-              <img alt="${_('organization logo')}" src="${footer['logo_image']}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<footer class="footer" style="background-color: #1a263c !important; color: white !important; padding: 40px 0 20px !important; font-family: Arial, sans-serif !important;">
+    <div class="footer-container" style="max-width: 1200px !important; margin: 0 auto !important; display: flex !important; justify-content: space-between !important; flex-wrap: wrap !important; padding: 0 20px !important;">
+        <div class="footer-column logo-column" style="flex: 1 !important; min-width: 250px !important; margin: 15px !important;">
+            <a href="https://farabi.university/" style="text-decoration: none;">
+                <img src="https://farabi.university/front/assets/img/icons/logonew1.png" alt="Open.kaznu Logo" style="width: 200px !important; margin-bottom: 20px !important;">
             </a>
-          </p>
+            <div class="contact-list">
+
+                <p style="display: flex !important; align-items: center !important; margin: 15px 0 !important;">
+                    <i class="" style="margin-right: 15px !important; font-size: 20px !important; color: #D3985C !important;"></i>
+                    Круговых Илья Игоревич <br>(Руководитель отдела) <br> +7 (705) 544 59 30<br>(вн. 31-24, 11-33, 16-47)
+
+                </p>
+                <p>
+
+                </p>
+
+            </div>
         </div>
-        ## Site operators: Please do not remove this paragraph! This attributes back to edX and makes your acknowledgement of edX's trademarks clear.
-          <p class="copyright">${footer['copyright']}
-              % if icp_license_info.get('icp_license'):
-                ${u" | {text}".format(text=icp_license_info.get('text'))}
-                <a href="${icp_license_info.get('icp_license_link', '#')}">
-                    ${u" {icp}".format(icp=icp_license_info.get('icp_license'))}
-                </a>
-              % endif
-          </p>
 
-        <nav class="nav-legal" aria-label="${_('Legal')}">
-          <ul>
-            % for item_num, link in enumerate(footer['legal_links'], start=1):
-              <li class="nav-legal-0${item_num}">
-                <a href="${link['url']}">${link['title']}</a>
-              </li>
-            % endfor
-            <li><a href="${footer['edx_org_link']['url']}">${footer['edx_org_link']['text']}</a></li>
-          </ul>
-        </nav>
-      </div>
+        <div class="footer-column" style="flex: 1 !important; min-width: 250px !important; margin: 15px !important;">
+            <h3 style="color: #D3985C !important; margin-bottom: 25px !important;">${_('Quick Links')}</h3>
+            <ul class="quick-links" style="list-style: none !important; padding: 0 !important;">
+                <li style="margin: 12px 0 !important;"><a href="/about" style="color: white !important; text-decoration: none !important; transition: color 0.3s !important;">${_('About Us')}</a></li>
+                <li style="margin: 12px 0 !important;"><a href="/courses" style="color: white !important; text-decoration: none !important; transition: color 0.3s !important;">${_('Courses')}</a></li>
+                <li style="margin: 12px 0 !important;"><a href="/author" style="color: white !important; text-decoration: none !important; transition: color 0.3s !important;">${_('For Authors')}</a></li>
+                <li style="margin: 12px 0 !important;"><a href="/detect" style="color: white !important; text-decoration: none !important; transition: color 0.3s !important;">${_('News')}</a></li>
+                <li style="margin: 12px 0 !important;"><a href="/honor_code" style="color: white !important; text-decoration: none !important; transition: color 0.3s !important;">${_('Honor Code')}</a></li>
+                <li style="margin: 12px 0 !important;"><a href="/tos" style="color: white !important; text-decoration: none !important; transition: color 0.3s !important;">${_('Terms of service')}</a></li>
+                <li style="margin: 12px 0 !important;"><a href="/privacy" style="color: white !important; text-decoration: none !important; transition: color 0.3s !important;">${_('Privacy policy')}</a></li>
+            </ul>
+        </div>
 
-      ## Please leave this link and use one of the logos provided
-      ## The OpenEdX link may be hidden when this view is served
-      ## through an API to partner sites (such as marketing sites or blogs),
-      ## which are not technically powered by OpenEdX.
-      % if not hide_openedx_link:
-      <div class="footer-about-openedx">
-        <p>
-          <a href="${footer['openedx_link']['url']}">
-            <img src="${footer['openedx_link']['image']}" alt="${footer['openedx_link']['title']}" width="175" />
-          </a>
-        </p>
-      </div>
-      % endif
-    </footer>
-  </div>
-% endif
-% if include_dependencies:
-  <%static:js group='base_vendor'/>
-  <%static:css group='style-vendor'/>
-  <%include file="widgets/segment-io.html" />
-  <%include file="widgets/segment-io-footer.html" />
-% endif
-% if footer_css_urls:
-  % for url in footer_css_urls:
-    <link rel="stylesheet" type="text/css" href="${url}"></link>
-  % endfor
-% endif
+        <div class="footer-column" style="flex: 1 !important; min-width: 250px !important; margin: 15px !important;">
+            <h3 style="color: #D3985C !important; margin-bottom: 25px !important;">${_('Statistics')}</h3>
+            <div class="stats-container" style="display: flex !important; flex-wrap: wrap !important; gap: 20px !important;">
+                <div class="stat-card" style="background: rgba(255, 255, 255, 0.1) !important; padding: 15px !important; border-radius: 8px !important; text-align: center !important; flex: 1 !important; min-width: 120px !important;">
+                    <i class="fas fa-book-open" style="font-size: 30px !important; color: #D3985C !important; margin-bottom: 10px !important;"></i>
+                    <div class="stat-number" data-target="90" style="font-size: 28px !important; font-weight: bold !important; margin: 10px 0 !important; color: #D3985C !important;">0</div>
+                    <span>${_('Courses')}</span>
+                </div>
+                <div class="stat-card" style="background: rgba(255, 255, 255, 0.1) !important; padding: 15px !important; border-radius: 8px !important; text-align: center !important; flex: 1 !important; min-width: 120px !important;">
+                    <i class="fas fa-users" style="font-size: 30px !important; color: #D3985C !important; margin-bottom: 10px !important;"></i>
+                    <div class="stat-number" data-target="77000" style="font-size: 28px !important; font-weight: bold !important; margin: 10px 0 !important; color: #D3985C !important;">0</div>
+                    <span>${_('Users')}</span>
+                </div>
+                <div class="stat-card" style="background: rgba(255, 255, 255, 0.1) !important; padding: 15px !important; border-radius: 8px !important; text-align: center !important; flex: 1 !important; min-width: 120px !important;">
+                    <i class="fas fa-certificate" style="font-size: 30px !important; color: #D3985C !important; margin-bottom: 10px !important;"></i>
+                    <div class="stat-number" data-target="6500" style="font-size: 28px !important; font-weight: bold !important; margin: 10px 0 !important; color: #D3985C !important;">0</div>
+                    <span>${_('Certificates')}</span>
+                </div>
+            </div>
+
+            <h3 style="color: #D3985C !important; margin-top: 30px !important;">${_('We are on social media')}</h3>
+            <div class="social-icons" style="display: flex !important; margin-top: 15px !important;">
+                <a href="#" style="color: white !important; font-size: 24px !important; margin-right: 20px !important; transition: color 0.3s !important;"><i class="fab fa-facebook"></i></a>
+                <a href="#" style="color: white !important; font-size: 24px !important; margin-right: 20px !important; transition: color 0.3s !important;"><i class="fab fa-twitter"></i></a>
+                <a href="#" style="color: white !important; font-size: 24px !important; margin-right: 20px !important; transition: color 0.3s !important;"><i class="fab fa-instagram"></i></a>
+                <a href="#" style="color: white !important; font-size: 24px !important; margin-right: 20px !important; transition: color 0.3s !important;"><i class="fab fa-linkedin"></i></a>
+                <a href="#" style="color: white !important; font-size: 24px !important; margin-right: 20px !important; transition: color 0.3s !important;"><i class="fab fa-youtube"></i></a>
+            </div>
+        </div>
+    </div>
+<div class="copyright" style="text-align: center !important; margin-top: 40px !important; padding-top: 20px !important; border-top: 1px solid #3e5b7a !important;">
+        <p>© 2025 Open KazNU. ${_('All rights reserved')}</p>
+        <p>${_('Developed by the OAICI team')}</p>
+    </div>
+</footer>
+
+    <script>
+        // Анимация чисел
+        function animateNumber(element, start, end, duration) {
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                const number = Math.floor(progress * (end - start) + start);
+                element.textContent = number + "+"; // добавляем + в конец числа
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                }
+            };
+            window.requestAnimationFrame(step);
+        }
+
+        // Запуск анимации при скролле
+        function startCounters() {
+            document.querySelectorAll('.stat-number').forEach(element => {
+                const target = parseInt(element.getAttribute('data-target'));
+                animateNumber(element, 0, target, 2000);
+            });
+        }
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    startCounters();
+                    observer.unobserve(entry.target);
+                }
+            });
+        });
+
+        observer.observe(document.querySelector('.footer'));
+    </script>
+

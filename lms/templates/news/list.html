@@ -1,0 +1,255 @@
+<%page expression_filter="h"/>
+<%! from django.utils.translation import gettext as _ %>
+<%inherit file="../main.html" />
+
+<%block name="pagetitle">${_("News")}</%block>
+
+<%block name="extrahead">
+    <style>
+        :root {
+            --primary-dark: #1a263c;
+            --primary-accent: #d3985c;
+            --primary-light: #f5f7fa;
+            --secondary-dark: #142034;
+            --text-dark: #333;
+            --text-light: #fff;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            --border-radius: 8px;
+        }
+
+        .news-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .page-header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: var(--primary-dark);
+            position: relative;
+            padding-bottom: 15px;
+        }
+
+        .page-header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .page-header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 4px;
+            background: var(--primary-accent);
+            border-radius: 2px;
+        }
+
+        .news-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 30px;
+            margin-top: 30px;
+        }
+
+        .news-card {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .news-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .news-image {
+            width: 100%;
+            height: auto; /* автоматически подстраивает высоту */
+            max-height: 400px; /* при желании ограничиваем максимальную высоту */
+            object-fit: contain; /* картинка полностью видна */
+            background-color: #f0f0f0;
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .news-content {
+            padding: 25px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .news-title {
+            margin-bottom: 15px;
+        }
+
+        .news-title a {
+            color: var(--primary-dark);
+            text-decoration: none;
+            font-size: 1.4rem;
+            font-weight: 600;
+            line-height: 1.3;
+            transition: color 0.3s ease;
+        }
+
+        .news-title a:hover {
+            color: var(--primary-accent);
+        }
+
+        .news-date {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+
+        .news-date::before {
+            content: "📅";
+            margin-right: 8px;
+        }
+
+        .news-excerpt {
+            color: var(--text-dark);
+            line-height: 1.6;
+            margin-bottom: 20px;
+            flex-grow: 1;
+        }
+
+        .read-more {
+            align-self: flex-start;
+            background: var(--primary-accent);
+            color: white;
+            padding: 8px 20px;
+            border-radius: 4px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: background 0.3s;
+            font-size: 0.9rem;
+        }
+
+        .read-more:hover {
+            background: var(--primary-dark);
+        }
+
+        .no-image-placeholder {
+            width: 100%;
+            height: 200px;
+            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--secondary-dark) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 3rem;
+        }
+
+        .no-news {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+
+        .no-news-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        /* Responsive styles */
+        @media (max-width: 768px) {
+            .news-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .page-header h1 {
+                font-size: 2rem;
+            }
+
+            .news-content {
+                padding: 20px;
+            }
+        }
+    </style>
+</%block>
+
+<div class="news-container">
+    <div class="page-header">
+        <h1>${_("News")}</h1>
+        <p>${_("Stay updated with the latest news and announcements")}</p>
+    </div>
+
+    % if news_list:
+        <div class="news-grid">
+            % for news in news_list:
+                <div class="news-card">
+                    % if news.image:
+                        <img src="${news.image.url}" alt="${news.title}" class="news-image">
+                    % else:
+                        <div class="no-image-placeholder">
+                            <i class="fas fa-newspaper"></i>
+                        </div>
+                    % endif
+
+                    <div class="news-content">
+                        <div class="news-title">
+                            <a href="/news/${news.pk}/">${news.title}</a>
+                        </div>
+
+                        <div class="news-date">
+                            ${news.created_at.date()}
+                        </div>
+
+                        <div class="news-excerpt">
+                            ${news.content[:100]}...
+                        </div>
+
+                        <a href="/news/${news.pk}/" class="read-more">
+                            ${_("Read more")} →
+                        </a>
+                    </div>
+                </div>
+            % endfor
+        </div>
+    % else:
+        <div class="no-news">
+            <div class="no-news-icon">📰</div>
+            <h3>${_("No news available")}</h3>
+            <p>${_("Check back later for updates")}</p>
+        </div>
+    % endif
+</div>
+
+<%block name="extrajs">
+    <script>
+        // Add subtle animation when news cards come into view
+        document.addEventListener('DOMContentLoaded', function() {
+            const newsCards = document.querySelectorAll('.news-card');
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.opacity = 1;
+                        entry.target.style.transform = 'translateY(0)';
+                    }
+                });
+            }, { threshold: 0.1 });
+
+            newsCards.forEach(card => {
+                card.style.opacity = 0;
+                card.style.transform = 'translateY(20px)';
+                card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                observer.observe(card);
+            });
+        });
+    </script>
+</%block>

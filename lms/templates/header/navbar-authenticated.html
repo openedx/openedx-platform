@@ -26,39 +26,108 @@ from openedx.core.djangoapps.site_configuration import helpers as configuration_
     help_link = doc_link
 %>
 
+<style>
+/* Десктопы и ноутбуки (по умолчанию) */
+.mobile-nav-item a,
+.nav-tab a {
+  font-size: 14px !important;
+  font-weight: bold !important;
+  color: white !important;
+}
+
+/* Планшеты и телефоны */
+@media (max-width: 1024px) {
+  .mobile-nav-item a,
+  .nav-tab a {
+    color: #1a263c !important;
+  }
+}
+/* делаем .main flex, чтобы gap работал */
+.nav-links .main {
+  display: flex !important;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px !important;
+}
+
+/* одинаковые отступы для всех пунктов */
+.nav-links .main .nav-item,
+.nav-links .main .mobile-nav-item {
+  margin: 0 !important;
+  margin-top: 3px !important;
+  padding: 0 !important;      /* чтобы inline не нужен был */
+}
+
+/* “воздух” внутри клика */
+.nav-links .main a {
+  padding: 0 6px !important;
+  line-height: 1.2 !important;
+}
+</style>
+
 <div class="nav-links">
   <div class="main">
     % if show_dashboard_tabs:
       <div class="mobile-nav-item hidden-mobile nav-item nav-tab">
-        <a class="${'active ' if reverse('dashboard') == request.path else ''}tab-nav-link" href="${reverse('dashboard')}"
-             aria-current="${'page' if reverse('dashboard') == request.path else 'false'}">
-             ${_("Courses")}
+        <a class="${'active ' if reverse('dashboard') == request.path else ''}tab-nav-link"
+           href="${reverse('dashboard')}"
+           aria-current="${'page' if reverse('dashboard') == request.path else 'false'}">
+          ${_("Courses")}
         </a>
       </div>
       % if show_program_listing:
         <div class="mobile-nav-item hidden-mobile nav-item nav-tab">
-          <a class="${'active ' if reverse('program_listing_view') in request.path else ''}tab-nav-link" href="${reverse('program_listing_view')}"
+          <a class="${'active ' if reverse('program_listing_view') in request.path else ''}tab-nav-link"
+             href="${reverse('program_listing_view')}"
              aria-current="${'page' if reverse('program_listing_view') == request.path else 'false'}">
-             ${_("Programs")}
+            ${_("Programs")}
           </a>
         </div>
       % endif
     % endif
+
     % if show_explore_courses:
-      <div class="mobile-nav-item hidden-mobile nav-item nav-tab">
-          <a class="tab-nav-link discover-new-link" href="${marketing_link('COURSES')}"
-             aria-current="${'page' if '/courses' in request.path else 'false'}">
-             ${_("Discover New")}
-          </a>
+       <div class="mobile-nav-item hidden-mobile nav-item" style="padding: 0 !important;margin-top: 3px !important;">
+        <a href="/courses">
+          ${_("Courses")}
+        </a>
       </div>
+      <div class="mobile-nav-item hidden-mobile nav-item" style="margin-top: 3px !important; padding: 0 !important;">
+        <a href="/competition">
+          ${_("Competition")}
+        </a>
+      </div>
+      <div class="mobile-nav-item hidden-mobile nav-item" style="margin-top: 3px !important; padding: 0 !important;">
+        <a href="/catalog_transfer">
+          ${_("Catalog MOOC for Transfer")}
+        </a>
+      </div>
+      <div class="mobile-nav-item hidden-mobile nav-item" style="margin-top: 3px !important; padding: 0 !important;">
+        <a href="/author">
+          ${_("For Authors")}
+        </a>
+      </div>
+      <div class="mobile-nav-item hidden-mobile nav-item" style="margin-top: 3px !important; padding: 0 !important;">
+        <a href="/detect">
+          ${_("The System of Checking")}
+        </a>
+      </div>
+      <div class="mobile-nav-item hidden-mobile nav-item" style="margin-top: 3px !important; padding: 0 !important;">
+        <a href="/news">
+          ${_("News")}
+        </a>
+      </div>
+      % if self.real_user.is_staff:
+        <div class="mobile-nav-item hidden-mobile nav-item" style="margin-top: 3px !important; padding: 0 !important;">
+          <a href="${reverse('analyze')}">
+            ${_("Analyze")}
+          </a>
+        </div>
+      % endif
+
     % endif
   </div>
-  <div class="secondary">
-    % if enable_help_link:
-      <div class="mobile-nav-item hidden-mobile nav-item">
-        <a class="help-link" href="${help_link}" rel="noopener" target="_blank">${_("Help")}</a>
-      </div>
-    % endif
-    <%include file="user_dropdown.html"/>
+ <div class="secondary">
+   <%include file="user_dropdown.html" args="online_help_token=online_help_token"/>
   </div>
 </div>

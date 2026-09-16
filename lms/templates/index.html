@@ -11,8 +11,7 @@ from openedx.core.djangolib.markup import HTML, Text
 <main id="main" aria-label="Content" tabindex="-1">
     <section class="home">
       <header>
-        <div class="outer-wrapper">
-          <div class="title">
+        
             <div class="heading-group">
               % if homepage_overlay_html:
                 ${homepage_overlay_html | n, decode.utf8}
@@ -20,37 +19,16 @@ from openedx.core.djangolib.markup import HTML, Text
                 <%include file="index_overlay.html" />
               % endif
             </div>
-            % if settings.FEATURES.get('ENABLE_COURSE_DISCOVERY'):
-              <div class="course-search">
-                <form method="get" action="/courses">
-                  <label><span class="sr">${_("Search for a course")}</span>
-                    <input class="search-input" name="search_query" type="text" placeholder="${_("Search for a course")}"></input>
-                  </label>
-                  <button class="search-button" type="submit">
-                    <span class="icon fa fa-search" aria-hidden="true"></span><span class="sr">${_("Search")}</span>
-                  </button>
-                </form>
-              </div>
-            % endif
+        
 
-          </div>
-
-          <%include file="index_promo_video.html" />
-        </div>
 
       </header>
-      <%include file="${courses_list}" />
+      
 
     </section>
 </main>
 
-% if show_homepage_promo_video:
-  <section id="video-modal" class="modal home-page-video-modal video-modal">
-    <div class="inner-wrapper">
-      <iframe title="YouTube Video" width="640" height="360" src="//www.youtube.com/embed/${homepage_promo_video_youtube_id}?showinfo=0" frameborder="0" allowfullscreen></iframe>
-    </div>
-  </section>
-% endif
+
 
 <%block name="js_extra">
    <script type="text/javascript">
