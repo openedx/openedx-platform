@@ -124,6 +124,19 @@ class CourseAdminRunTests(SimpleTestCase):
 
         self.assertTrue(result['self_generation_enabled'])
 
+    def test_hide_source_keeps_about_page_available(self):
+        source = SimpleNamespace(id=SOURCE, catalog_visibility='both')
+        store = Mock()
+
+        with patch.object(course_admin, '_source_course', return_value=source), \
+                patch.object(course_admin, 'modulestore', return_value=store), \
+                patch.object(course_admin.CourseOverview, 'load_from_module_store') as load_overview:
+            course_admin.hide_source_course(SOURCE, 7)
+
+        self.assertEqual(source.catalog_visibility, 'about')
+        store.update_item.assert_called_once_with(source, 7)
+        load_overview.assert_called_once_with(SOURCE)
+
     def test_shift_content_dates_updates_published_and_draft_branches_independently(self):
         source_start = datetime(2026, 1, 1, tzinfo=timezone.utc)
         published = self._block(datetime(2026, 2, 1, tzinfo=timezone.utc))

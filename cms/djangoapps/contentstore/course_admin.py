@@ -405,13 +405,13 @@ must be provisioned separately for a new course run.
 
 
 def hide_source_course(source_key, user_id):
-    """Hide a successfully replaced source run from course discovery."""
+    """Remove a replaced source run from discovery while keeping its about page available."""
     course = _source_course(source_key)
-    if course.catalog_visibility == 'none':
+    if course.catalog_visibility == 'about':
         return
     previous_visibility = course.catalog_visibility
     try:
-        course.catalog_visibility = 'none'
+        course.catalog_visibility = 'about'
         modulestore().update_item(course, user_id)
         CourseOverview.load_from_module_store(course.id)
     except Exception:
