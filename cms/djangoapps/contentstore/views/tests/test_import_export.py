@@ -808,9 +808,9 @@ class ConcurrentImportTestCase(CourseTestCase):
         return UserTaskStatus.objects.get(task_id=result.id)
 
     @staticmethod
-    def error_of(status):
+    def error_of(task_status):
         """The error message a failed task showed the user, if any."""
-        artifact = UserTaskArtifact.objects.filter(status=status, name='Error').first()
+        artifact = UserTaskArtifact.objects.filter(status=task_status, name='Error').first()
         return artifact.text if artifact else None
 
     def test_concurrent_imports_of_same_course_both_succeed(self):
