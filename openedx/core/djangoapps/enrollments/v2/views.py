@@ -481,6 +481,11 @@ class EnrollmentRetrieveView(StandardizedErrorMixin, _EnrollmentMinimalViewMixin
         ``has_api_key`` or staff privileges raises ``NotFound`` (so the
         caller cannot probe for the existence of other users' enrollments).
         """
+        # The conforming route passes a parsed CourseKey; the legacy route
+        # passes the raw string. Coerce to the string form used below.
+        if course_id is not None and not isinstance(course_id, str):
+            course_id = str(course_id)
+
         if username is None:
             username = request.user.username
 
@@ -620,6 +625,10 @@ class CourseEnrollmentDetailView(StandardizedErrorMixin, APIView):
         course schedule and supported enrollment modes; pass
         ``?include_expired=1`` to include expired enrollment modes.
         """
+        # The conforming route passes a parsed CourseKey; the legacy route
+        # passes the raw string.
+        if course_id is not None and not isinstance(course_id, str):
+            course_id = str(course_id)
         try:
             course_key = CourseKey.from_string(course_id)
         except InvalidKeyError as exc:
