@@ -246,7 +246,13 @@ class SaveScheduleView(DeveloperErrorViewMixin, APIView):
             return _error_response('invalid_schedule_payload', status.HTTP_400_BAD_REQUEST)
 
         try:
-            schedule, policy = save_ccx_schedule(master_course, ccx, schedule_data)
+            # Explicit atomic block: the exception is caught below and converted
+            # into a response, which would otherwise let the ATOMIC_REQUESTS
+            # transaction commit. `save_ccx_schedule` writes overrides as it
+            # walks the tree, so a failure part-way through would leave the
+            # schedule half-applied. Exiting via the exception rolls it back.
+            with transaction.atomic():
+                schedule, policy = save_ccx_schedule(master_course, ccx, schedule_data)
         except (KeyError, ValueError, TypeError):
             # Unknown block location, missing required keys, or malformed dates
             # in the payload. Return a structured JSON error rather than a 500.
@@ -286,7 +292,12 @@ class RemoveScheduleView(DeveloperErrorViewMixin, APIView):
         location = request_serializer.validated_data['location']
 
         try:
-            schedule = remove_block_from_ccx_schedule(ccx, master_course, location)
+            # Explicit atomic block, for the same reason as the save endpoint:
+            # the caught exception suppresses the ATOMIC_REQUESTS rollback, and
+            # `remove_block_from_ccx_schedule` clears overrides as it walks the
+            # block's descendants.
+            with transaction.atomic():
+                schedule = remove_block_from_ccx_schedule(ccx, master_course, location)
         except ValueError:
             return _error_response('schedule_block_not_found', status.HTTP_400_BAD_REQUEST)
 

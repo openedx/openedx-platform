@@ -9,6 +9,7 @@ from rest_framework import status
 from rest_framework.test import APIClient
 
 from common.djangoapps.student.tests.factories import UserFactory
+from lms.djangoapps.ccx.models import CcxFieldOverride
 from lms.djangoapps.ccx.tests.utils import CcxTestCase
 
 
@@ -117,6 +118,33 @@ class CCXCoachV2SaveScheduleViewTest(ScheduleTestMixin, CcxTestCase):
         response = self.api_client.post(self._url(self.ccx_key), {'not': 'a list'}, format='json')
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert response.data.get('error_code') == 'invalid_schedule_payload'
+
+    def test_partial_failure_rolls_back_overrides(self):
+        """
+        A payload that fails part-way through leaves no overrides applied.
+
+        The first entry is valid and would be written, the second references an
+        unknown block and raises. Because the view catches that exception to
+        return JSON, the ATOMIC_REQUESTS rollback is suppressed, so the save
+        runs inside an explicit atomic block. This guards that rollback.
+        """
+        good_location = str(self.chapters[0].location)
+        bogus_location = str(self.course.id.make_usage_key('chapter', 'does_not_exist'))
+        payload = [
+            {'location': good_location, 'hidden': True, 'start': ''},
+            {'location': bogus_location, 'hidden': True, 'start': ''},
+        ]
+
+        response = self.api_client.post(self._url(self.ccx_key), payload, format='json')
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.data.get('error_code') == 'invalid_schedule_payload'
+        # The valid entry's override must not have been committed. (Note the CCX
+        # fixture itself creates an override on the course, so this assertion is
+        # scoped to the section touched by this payload.)
+        assert not CcxFieldOverride.objects.filter(
+            ccx=self.ccx, location=self.chapters[0].location
+        ).exists()
 
     def test_unknown_location_returns_json_400(self):
         bogus = str(self.course.id.make_usage_key('chapter', 'does_not_exist'))
