@@ -277,7 +277,6 @@ class MFEConfigTestCase(APITestCase):
         configuration_helpers_mock.get_value.side_effect = side_effect
 
         with override_settings(
-            # Plain settings (lowest precedence)
             HOMEPAGE_COURSE_MAX=3,
             ENABLE_COURSE_SORTING_BY_START_DATE=True,
             ENABLE_COURSE_DISCOVERY=True,
