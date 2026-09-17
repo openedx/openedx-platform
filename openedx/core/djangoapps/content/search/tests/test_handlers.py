@@ -86,6 +86,7 @@ class TestUpdateIndexHandlers(ModuleStoreTestCase, LiveServerTestCase):
         }
 
         meilisearch_client.return_value.index.return_value.update_documents.assert_called_with([doc_sequential])
+        meilisearch_client.return_value.index.assert_called_with(api.STUDIO_COURSE_INDEX_NAME)
 
         with freeze_time(created_date), self.captureOnCommitCallbacks(execute=True):
             vertical = self.store.create_child(self.user_id, sequential.location, "vertical", "test_vertical")
@@ -138,6 +139,9 @@ class TestUpdateIndexHandlers(ModuleStoreTestCase, LiveServerTestCase):
         meilisearch_client.return_value.index.return_value.delete_document.assert_called_with(
             "block-v1orgatest_coursetest_runtypeverticalblocktest_vertical-011f143b"
         )
+        assert {c.args[0] for c in meilisearch_client.return_value.index.call_args_list} == {
+            api.STUDIO_COURSE_INDEX_NAME
+        }
 
     def test_library_creation_creates_search_access(self, meilisearch_client):
         """
@@ -229,3 +233,6 @@ class TestUpdateIndexHandlers(ModuleStoreTestCase, LiveServerTestCase):
         with self.captureOnCommitCallbacks(execute=True):
             library_api.restore_library_block(problem.usage_key)
         meilisearch_client.return_value.index.return_value.update_documents.assert_any_call([doc_problem])
+        assert {c.args[0] for c in meilisearch_client.return_value.index.call_args_list} == {
+            api.STUDIO_LIBRARY_INDEX_NAME
+        }
