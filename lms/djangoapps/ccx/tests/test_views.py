@@ -25,6 +25,7 @@ from common.djangoapps.edxmako.shortcuts import render_to_response
 from common.djangoapps.student.models import CourseEnrollment, CourseEnrollmentAllowed
 from common.djangoapps.student.roles import CourseCcxCoachRole, CourseInstructorRole, CourseStaffRole
 from common.djangoapps.student.tests.factories import AdminFactory, CourseEnrollmentFactory, UserFactory
+from common.djangoapps.util.file import course_filename_prefix_generator
 from lms.djangoapps.ccx.models import CustomCourseForEdX
 from lms.djangoapps.ccx.overrides import get_override_for_ccx, override_field_for_ccx
 from lms.djangoapps.ccx.tests.factories import CcxFactory
@@ -36,7 +37,7 @@ from lms.djangoapps.courseware.tests.factories import StudentModuleFactory
 from lms.djangoapps.courseware.tests.helpers import LoginEnrollmentTestCase
 from lms.djangoapps.courseware.testutils import FieldOverrideTestMixin
 from lms.djangoapps.discussion.django_comment_client.utils import has_forum_access
-from lms.djangoapps.grades.api import task_compute_all_grades_for_course
+from lms.djangoapps.grades.api import prefetch_course_and_subsection_grades, task_compute_all_grades_for_course
 from lms.djangoapps.instructor.access import allow_access, list_with_level
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from openedx.core.djangoapps.django_comment_common.models import FORUM_ROLE_ADMINISTRATOR
@@ -1050,9 +1051,20 @@ class TestCCXGrades(FieldOverrideTestMixin, SharedModuleStoreTestCase, LoginEnro
         )
         response = self.client.get(url)
         assert response.status_code == 200
-        # Are the grades downloaded as an attachment?
-        assert response['content-disposition'] == 'attachment'
-        rows = response.content.decode('utf-8').strip().split('\r')
+        # The grades download as an attachment named after the course, matching
+        # the naming used by the asynchronous course grade report.
+        expected_prefix = course_filename_prefix_generator(self.ccx_key)
+        assert re.match(
+            rf'attachment; filename="{re.escape(expected_prefix)}_grade_report_'
+            r'\d{4}-\d{2}-\d{2}-\d{4}\.csv"$',
+            response['content-disposition']
+        )
+        body = response.content.decode('utf-8')
+        # Emails and usernames are written as plain text, not as a bytes repr.
+        assert "b'" not in body
+        assert self.student.email in body
+        assert self.student2.username in body
+        rows = body.strip().split('\r')
         headers = rows[0]
         # picking first student records
         data = dict(list(zip(headers.strip().split(','), rows[1].strip().split(','))))  # noqa: B905
@@ -1061,6 +1073,32 @@ class TestCCXGrades(FieldOverrideTestMixin, SharedModuleStoreTestCase, LoginEnro
         assert data['HW 02'] == '0.5'
         assert data['HW 03'] == '0.25'
         assert data['HW Avg'] == '0.5'
+
+    def test_grades_csv_prefetches_persisted_grades(self):
+        """
+        The report bulk-prefetches persisted course/subsection grades once for
+        the whole class instead of reading them one student at a time (N+1).
+        """
+        self.course.enable_ccx = True
+        RequestCache.clear_all_namespaces()
+
+        url = reverse(
+            'ccx_grades_csv',
+            kwargs={'course_id': self.ccx_key}
+        )
+        with patch(
+            'lms.djangoapps.ccx.views.prefetch_course_and_subsection_grades',
+            wraps=prefetch_course_and_subsection_grades,
+        ) as mock_prefetch:
+            response = self.client.get(url)
+
+        assert response.status_code == 200
+        # A single bulk prefetch is issued for the CCX, covering every enrolled student.
+        mock_prefetch.assert_called_once()
+        called_course_key, called_users = mock_prefetch.call_args[0]
+        assert called_course_key == self.ccx_key
+        prefetched_ids = {user.id for user in called_users}
+        assert {self.student.id, self.student2.id} <= prefetched_ids
 
     @patch('lms.djangoapps.courseware.views.views.render_to_response', intercept_renderer)
     def test_student_progress(self):
