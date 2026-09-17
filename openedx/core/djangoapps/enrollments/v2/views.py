@@ -402,6 +402,10 @@ class EnrollmentViewSet(
         url_path="enrollment_allowed",
         permission_classes=[permissions.IsAdminUser],
         throttle_classes=[EnrollmentUserThrottle],
+        # GET returns a plain list. Actions inherit the viewset's
+        # pagination_class, which would otherwise make drf-spectacular publish
+        # a paginated envelope this endpoint never returns.
+        pagination_class=None,
     )
     def allowed(self, request):
         """Retrieve, create, or delete CourseEnrollmentAllowed records. Admin-only."""
