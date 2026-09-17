@@ -419,6 +419,11 @@ SPECTACULAR_SETTINGS = {
     # remove the default schema path prefix to replace it with server-specific base paths:
     'SCHEMA_PATH_PREFIX': '/api/contentstore',
     'SCHEMA_PATH_PREFIX_TRIM': '/api/contentstore',
+    # Serve the Swagger UI and ReDoc assets from drf-spectacular-sidecar rather
+    # than drf-spectacular's default unpinned jsdelivr CDN URLs.
+    'SWAGGER_UI_DIST': 'SIDECAR',
+    'SWAGGER_UI_FAVICON_HREF': 'SIDECAR',
+    'REDOC_DIST': 'SIDECAR',
     'SERVERS': [
         {'url': AUTHORING_API_URL, 'description': 'Public'},  # noqa: F405
         {'url': f'https://{CMS_BASE}', 'description': 'Local'},  # noqa: F405

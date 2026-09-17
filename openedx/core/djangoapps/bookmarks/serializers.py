@@ -15,14 +15,11 @@ def is_schema_request(request):
     """
     Return whether this request is serving an OpenAPI schema.
 
-    Schema generators set a swagger_fake_view attribute on the view; that is
-    the drf-spectacular-compatible signal. ``format=openapi`` is drf-yasg's
-    convention, kept while it still serves ``/api-docs``.
+    drf-spectacular sets ``swagger_fake_view`` on the view before building the
+    mock request it introspects with, so that attribute is the signal here.
     """
     view = (getattr(request, 'parser_context', None) or {}).get('view')
-    if getattr(view, 'swagger_fake_view', False):
-        return True
-    return request.query_params.get('format') == 'openapi'
+    return getattr(view, 'swagger_fake_view', False)
 
 
 class BookmarkSerializer(serializers.ModelSerializer):

@@ -12,8 +12,13 @@ from rest_framework import serializers
 # a deliberately narrow schema in each service -- the Authoring API
 # (``/authoring-api/``) in CMS and the Enrollment API (``/lms-api/``) in LMS.
 # Both filter the surface down via ``PREPROCESSING_HOOKS`` and trim a path
-# prefix. ``/api-docs`` is the opposite: the full, untrimmed API surface, so it
-# must switch that filtering off explicitly.
+# prefix, so ``/api-docs`` must switch that filtering off explicitly to cover
+# the whole service.
+#
+# Note this is wider than what edx-api-doc-tools produced: its
+# ``ApiSchemaGenerator`` kept only paths under ``/api/`` and pinned the path
+# prefix there, so ``/api-docs`` now documents every DRF endpoint in the
+# service rather than just the versioned ``/api/*`` surface.
 # Note: ``SERVE_*`` settings cannot be overridden through ``custom_settings``
 # (drf-spectacular raises AttributeError); SpectacularAPIView takes dedicated
 # constructor arguments for those instead.
@@ -34,8 +39,7 @@ def get_api_docs_settings():
     """
     Build the ``/api-docs`` schema settings, adding contact details if available.
 
-    ``API_ACCESS_MANAGER_EMAIL`` is an LMS-only setting, so it is included only
-    where it is defined.
+    The contact email is included when ``API_ACCESS_MANAGER_EMAIL`` is set.
     """
     api_docs_settings = dict(API_DOCS_SETTINGS)
     contact_email = getattr(settings, 'API_ACCESS_MANAGER_EMAIL', None)

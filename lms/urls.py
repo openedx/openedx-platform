@@ -9,6 +9,8 @@ from django.contrib import admin
 from django.contrib.admin import autodiscover as django_autodiscover
 from django.urls import include, path, re_path
 from django.utils.translation import gettext_lazy as _
+from django.views.decorators.cache import cache_page
+from django.views.decorators.vary import vary_on_headers
 from django.views.generic.base import RedirectView
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 from edx_django_utils.plugins import get_plugin_url_patterns
@@ -995,15 +997,25 @@ if settings.ENABLE_FINANCIAL_ASSISTANCE_FORM:
 # The Swagger and ReDoc views reverse their schema URL with no arguments, so
 # ``api-docs/schema/`` exists alongside the format-suffixed routes for them to
 # point at.
+#
+# Schema generation is expensive and these endpoints are public, so both schema
+# routes are cached for OPENAPI_CACHE_TIMEOUT, as edx-api-doc-tools did via
+# SchemaView.as_cached_view.
+_apidocs_schema_view = cache_page(settings.OPENAPI_CACHE_TIMEOUT)(
+    vary_on_headers("Cookie", "Authorization")(
+        SpectacularAPIView.as_view(custom_settings=get_api_docs_settings())
+    )
+)
+
 urlpatterns += [
     re_path(
         r'^swagger\.(?P<format>json|yaml)$',
-        SpectacularAPIView.as_view(custom_settings=get_api_docs_settings()),
+        _apidocs_schema_view,
         name='apidocs-data',
     ),
     path(
         'api-docs/schema/',
-        SpectacularAPIView.as_view(custom_settings=get_api_docs_settings()),
+        _apidocs_schema_view,
         name='apidocs-schema',
     ),
     path(
