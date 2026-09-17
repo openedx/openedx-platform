@@ -5,9 +5,9 @@ drf-spectacular extensions for serializers it cannot introspect on its own.
 ``AttributeError`` when it tries to walk them. Each extension below declares
 the type its serializer actually produces.
 
-The extensions self-register on import; ``lms.lib.spectacular`` and
-``cms.lib.spectacular`` import this module so that they are loaded whenever a
-schema is generated.
+The extensions self-register on import. ``CommonInitializationConfig.ready()``
+(``openedx.core.djangoapps.common_initialization.apps``) imports this module,
+so they are registered at startup in both the LMS and the CMS.
 """
 
 from drf_spectacular.extensions import OpenApiSerializerExtension

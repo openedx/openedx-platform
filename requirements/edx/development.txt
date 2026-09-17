@@ -248,6 +248,7 @@ django==5.2.17
     #   done-xblock
     #   drf-jwt
     #   drf-spectacular
+    #   drf-spectacular-sidecar
     #   drf-yasg
     #   edx-ace
     #   edx-api-doc-tools
@@ -460,6 +461,8 @@ done-xblock==3.0.1
 drf-jwt==1.19.2
     # via edx-drf-extensions
 drf-spectacular==0.30.0
+    # via openedx-platform
+drf-spectacular-sidecar==2026.9.1
     # via openedx-platform
 drf-yasg==1.21.15
     # via

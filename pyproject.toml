@@ -44,6 +44,7 @@ dependencies = [
     "django-webpack-loader", # Used to wire webpack bundles into the django asset pipeline
     "djangorestframework",
     "drf-spectacular",
+    "drf-spectacular-sidecar",
     "edx-ace",
     "edx-auth-backends", # Allow Studio to use LMS SSO
     "edx-bulk-grades", # LMS REST API for managing bulk grading operations
