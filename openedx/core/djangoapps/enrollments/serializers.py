@@ -38,10 +38,13 @@ class CourseSerializer(serializers.Serializer):  # pylint: disable=abstract-meth
 
     course_id = serializers.CharField(source="id")
     course_name = serializers.CharField(source="display_name_with_default")
-    enrollment_start = serializers.DateTimeField(format=None)
-    enrollment_end = serializers.DateTimeField(format=None)
-    course_start = serializers.DateTimeField(source="start", format=None)
-    course_end = serializers.DateTimeField(source="end", format=None)
+    # These are null for courses with no dates set, so they must be declared
+    # nullable — otherwise the published schema tells every generated client
+    # the fields are always present and parsing null raises.
+    enrollment_start = serializers.DateTimeField(format=None, allow_null=True)
+    enrollment_end = serializers.DateTimeField(format=None, allow_null=True)
+    course_start = serializers.DateTimeField(source="start", format=None, allow_null=True)
+    course_end = serializers.DateTimeField(source="end", format=None, allow_null=True)
     invite_only = serializers.BooleanField(source="invitation_only")
     course_modes = serializers.SerializerMethodField()
     pacing_type = serializers.SerializerMethodField()
