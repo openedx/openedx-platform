@@ -5,7 +5,11 @@ from django.test import RequestFactory, TestCase
 from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator
 
 from openedx.core.djangoapps.authz.constants import LegacyAuthoringPermission
-from openedx.core.djangoapps.authz.decorators import authz_permission_required, get_course_key
+from openedx.core.djangoapps.authz.decorators import (
+    authz_permission_required,
+    get_course_key,
+    user_has_course_permission_from_query_param,
+)
 from openedx.core.lib.api.view_utils import DeveloperErrorResponseException
 
 
@@ -154,3 +158,76 @@ class GetCourseKeyTests(TestCase):
         result = get_course_key(str(usage_key))
 
         self.assertEqual(result, self.course_key)  # noqa: PT009
+
+
+class UserHasCoursePermissionFromQueryParamTests(TestCase):
+    """Tests for user_has_course_permission_from_query_param."""
+
+    def setUp(self):
+        self.factory = RequestFactory()
+        self.course_key = CourseLocator("TestX", "TST101", "2025")
+        self.user = Mock()
+
+    def test_missing_param_denies_without_checking_permission(self):
+        """No query param at all means the bypass doesn't apply."""
+        request = self.factory.get("/test")
+
+        with patch("openedx.core.djangoapps.authz.decorators.user_has_course_permission") as mock_check:
+            result = user_has_course_permission_from_query_param(request, "courses.view_library_updates")
+
+        assert result is False
+        mock_check.assert_not_called()
+
+    def test_invalid_course_id_denies_without_checking_permission(self):
+        """A malformed course/usage id is treated as absent, not as an error."""
+        request = self.factory.get("/test", {"course_id": "not-a-real-key"})
+
+        with patch("openedx.core.djangoapps.authz.decorators.user_has_course_permission") as mock_check:
+            result = user_has_course_permission_from_query_param(request, "courses.view_library_updates")
+
+        assert result is False
+        mock_check.assert_not_called()
+
+    def test_valid_course_id_delegates_to_permission_check(self):
+        """A valid course id is parsed and passed through to the real permission check."""
+        request = self.factory.get("/test", {"course_id": str(self.course_key)})
+        request.user = self.user
+
+        with patch(
+            "openedx.core.djangoapps.authz.decorators.user_has_course_permission",
+            return_value=True,
+        ) as mock_check:
+            result = user_has_course_permission_from_query_param(request, "courses.view_library_updates")
+
+        assert result is True
+        mock_check.assert_called_once_with(self.user, "courses.view_library_updates", self.course_key)
+
+    def test_usage_key_in_param_resolves_to_its_course(self):
+        """A usage key (not just a bare course key) resolves to the course it belongs to."""
+        usage_key = BlockUsageLocator(self.course_key, "html", "block1")
+        request = self.factory.get("/test", {"course_id": str(usage_key)})
+        request.user = self.user
+
+        with patch(
+            "openedx.core.djangoapps.authz.decorators.user_has_course_permission",
+            return_value=True,
+        ) as mock_check:
+            result = user_has_course_permission_from_query_param(request, "courses.view_library_updates")
+
+        assert result is True
+        mock_check.assert_called_once_with(self.user, "courses.view_library_updates", self.course_key)
+
+    def test_custom_param_name(self):
+        """The query param name can be overridden."""
+        request = self.factory.get("/test", {"downstream_course_id": str(self.course_key)})
+        request.user = self.user
+
+        with patch(
+            "openedx.core.djangoapps.authz.decorators.user_has_course_permission",
+            return_value=True,
+        ):
+            result = user_has_course_permission_from_query_param(
+                request, "courses.view_library_updates", param_name="downstream_course_id",
+            )
+
+        assert result is True

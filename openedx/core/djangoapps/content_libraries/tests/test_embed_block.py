@@ -9,9 +9,11 @@ import ddt
 import pytest
 from django.core.exceptions import ValidationError
 from django.test.utils import override_settings
+from openedx_authz.constants.roles import COURSE_AUDITOR
 from xblock.core import XBlock
 
-from openedx.core.djangoapps.content_libraries.tests.base import ContentLibrariesRestApiTest
+from openedx.core.djangoapps.authz.tests.mixins import CourseAuthoringAuthzTestMixin
+from openedx.core.djangoapps.content_libraries.tests.base import URL_BLOCK_EMBED_VIEW, ContentLibrariesRestApiTest
 from openedx.core.djangolib.testing.utils import skip_unless_cms
 
 from .fields_test_block import FieldsTestBlock
@@ -227,3 +229,48 @@ class LibrariesEmbedViewTestCase(ContentLibrariesRestApiTest):
 
     # TODO: if we are ever able to run these tests in the LMS, test that the LMS only allows accessing the published
     # version.
+
+
+@skip_unless_cms
+@override_settings(CORS_ORIGIN_WHITELIST=[])  # For some reason, this setting isn't defined in our test environment?
+class EmbedViewAuthzBypassTest(CourseAuthoringAuthzTestMixin, ContentLibrariesRestApiTest):
+    """
+    A course auditor has no direct permissions on the library backing a block they're
+    reviewing, but does hold `courses.view_library_updates` in the course. Passing that
+    course as `course_id` should let them view the block's embed anyway.
+
+    See openedx-authz#441.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.course_id = "course-v1:CL-TEST+TST101+2025"
+        self.add_user_to_role_in_course(self.authorized_user, COURSE_AUDITOR.external_key, self.course_id)
+
+        lib = self._create_library(slug="embed-authz-bypass-lib", title="Embed AuthZ Bypass Test Library")
+        create_response = self._add_block_to_library(lib["id"], "html", "block1")
+        self.block_id = create_response["id"]
+        self._set_library_block_olx(self.block_id, "<html>Hello world</html>")
+        self._commit_library_changes(lib["id"])
+
+    def test_embed_denied_without_course_id(self):
+        with self.as_user(self.authorized_user):
+            response = self.client.get(URL_BLOCK_EMBED_VIEW.format(block_key=self.block_id, view_name="student_view"))
+        assert response.status_code == 403
+
+    def test_embed_allowed_with_course_id(self):
+        with self.as_user(self.authorized_user):
+            response = self.client.get(
+                URL_BLOCK_EMBED_VIEW.format(block_key=self.block_id, view_name="student_view"),
+                {"course_id": self.course_id},
+            )
+        assert response.status_code == 200
+
+    def test_unrelated_course_id_is_denied(self):
+        """A course_id where the user holds no role at all must not grant access."""
+        with self.as_user(self.authorized_user):
+            response = self.client.get(
+                URL_BLOCK_EMBED_VIEW.format(block_key=self.block_id, view_name="student_view"),
+                {"course_id": "course-v1:CL-TEST+OTHER101+2025"},
+            )
+        assert response.status_code == 403

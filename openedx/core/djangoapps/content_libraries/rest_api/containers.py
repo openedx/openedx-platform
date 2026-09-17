@@ -19,6 +19,7 @@ from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_204_NO_CONTENT
 from rest_framework.views import APIView
 
+from openedx.core.djangoapps.authz.decorators import user_has_course_permission_from_query_param
 from openedx.core.djangoapps.content_libraries import api, permissions
 from openedx.core.lib.api.view_utils import view_auth_classes
 from openedx.core.types.http import RestRequest
@@ -80,11 +81,14 @@ class LibraryContainerView(GenericAPIView):
         """
         Get information about a container
         """
-        api.require_permission_for_library_key(
-            container_key.lib_key,
-            request.user,
-            permissions.CAN_VIEW_THIS_CONTENT_LIBRARY,
-        )
+        if not user_has_course_permission_from_query_param(
+            request, authz_permissions.COURSES_VIEW_LIBRARY_UPDATES.identifier
+        ):
+            api.require_permission_for_library_key(
+                container_key.lib_key,
+                request.user,
+                permissions.CAN_VIEW_THIS_CONTENT_LIBRARY,
+            )
         container = api.get_container(container_key, include_collections=True)
         return Response(serializers.LibraryContainerMetadataSerializer(container).data)
 
@@ -185,11 +189,14 @@ class LibraryContainerChildrenView(GenericAPIView):
         ]
         """
         published = request.GET.get('published', 'false').lower() == 'true'
-        api.require_permission_for_library_key(
-            container_key.lib_key,
-            request.user,
-            permissions.CAN_VIEW_THIS_CONTENT_LIBRARY,
-        )
+        if not user_has_course_permission_from_query_param(
+            request, authz_permissions.COURSES_VIEW_LIBRARY_UPDATES.identifier
+        ):
+            api.require_permission_for_library_key(
+                container_key.lib_key,
+                request.user,
+                permissions.CAN_VIEW_THIS_CONTENT_LIBRARY,
+            )
         child_entities = api.get_container_children(container_key, published=published)
         if container_key.container_type == content_models.Unit.type_code:
             data = serializers.LibraryXBlockMetadataSerializer(child_entities, many=True).data

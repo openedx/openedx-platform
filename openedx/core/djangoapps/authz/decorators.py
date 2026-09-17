@@ -117,3 +117,30 @@ def get_course_key(course_id: str) -> CourseKey:
         # Attempt to parse it as such and extract the course key.
         usage_key = UsageKey.from_string(course_id)
         return usage_key.course_key
+
+
+def user_has_course_permission_from_query_param(
+    request,
+    authz_permission: str,
+    param_name: str = "course_id",
+) -> bool:
+    """
+    Check an AuthZ course permission using a course/usage id taken from a request query param.
+
+    Meant for endpoints that are normally scoped to a library (or another non-course resource)
+    but that should also grant access to a user who holds a course-level permission, e.g. a
+    Course Auditor reviewing a library's pending changes from within a course they can't
+    otherwise view the library from. The caller is expected to fall back to its regular
+    resource-level permission check when this returns False.
+
+    Returns False (never raises) if the query param is absent or not a valid course/usage id,
+    since that just means the bypass doesn't apply, not that the request is malformed.
+    """
+    course_id = request.GET.get(param_name)
+    if not course_id:
+        return False
+    try:
+        course_key = get_course_key(course_id)
+    except InvalidKeyError:
+        return False
+    return user_has_course_permission(request.user, authz_permission, course_key)

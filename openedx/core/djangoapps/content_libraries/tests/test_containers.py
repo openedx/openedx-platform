@@ -8,10 +8,16 @@ from datetime import UTC, datetime
 import ddt
 from freezegun import freeze_time
 from opaque_keys.edx.locator import LibraryContainerLocator, LibraryLocatorV2, LibraryUsageLocatorV2
+from openedx_authz.constants.roles import COURSE_AUDITOR
 
 from common.djangoapps.student.tests.factories import UserFactory
+from openedx.core.djangoapps.authz.tests.mixins import CourseAuthoringAuthzTestMixin
 from openedx.core.djangoapps.content_libraries import api
-from openedx.core.djangoapps.content_libraries.tests.base import ContentLibrariesRestApiTest
+from openedx.core.djangoapps.content_libraries.tests.base import (
+    URL_LIB_CONTAINER,
+    URL_LIB_CONTAINER_CHILDREN,
+    ContentLibrariesRestApiTest,
+)
 from openedx.core.djangoapps.content_tagging import api as tagging_api
 from openedx.core.djangolib.testing.utils import skip_unless_cms
 
@@ -1322,3 +1328,55 @@ class ContainersTestCase(ContentLibrariesRestApiTest):
         unauthorized = UserFactory.create(username="noauth-container-hist", password="edx")
         with self.as_user(unauthorized):
             self._get_container_draft_history(unit["id"], expect_response=403)
+
+
+@skip_unless_cms
+class ContainerLibraryUpdatesAuthzBypassTest(CourseAuthoringAuthzTestMixin, ContentLibrariesRestApiTest):
+    """
+    A course auditor has no direct permissions on the library backing a unit they're
+    reviewing, but does hold `courses.view_library_updates` in the course. Passing that
+    course as `course_id` should let them view the container/children anyway.
+
+    See openedx-authz#441.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.course_id = "course-v1:CL-TEST+TST101+2025"
+        self.add_user_to_role_in_course(self.authorized_user, COURSE_AUDITOR.external_key, self.course_id)
+
+        self.lib = self._create_library(slug="library-updates-lib", title="Library Updates Test Library")
+        self.unit = self._create_container(self.lib["id"], "unit", display_name="Reviewable Unit", slug=None)
+
+    def test_container_detail_denied_without_course_id(self):
+        with self.as_user(self.authorized_user):
+            response = self.client.get(URL_LIB_CONTAINER.format(container_key=self.unit["id"]))
+        assert response.status_code == 403
+
+    def test_container_detail_allowed_with_course_id(self):
+        with self.as_user(self.authorized_user):
+            response = self.client.get(
+                URL_LIB_CONTAINER.format(container_key=self.unit["id"]), {"course_id": self.course_id},
+            )
+        assert response.status_code == 200
+
+    def test_container_children_denied_without_course_id(self):
+        with self.as_user(self.authorized_user):
+            response = self.client.get(URL_LIB_CONTAINER_CHILDREN.format(container_key=self.unit["id"]))
+        assert response.status_code == 403
+
+    def test_container_children_allowed_with_course_id(self):
+        with self.as_user(self.authorized_user):
+            response = self.client.get(
+                URL_LIB_CONTAINER_CHILDREN.format(container_key=self.unit["id"]), {"course_id": self.course_id},
+            )
+        assert response.status_code == 200
+
+    def test_unrelated_course_id_is_denied(self):
+        """A course_id where the user holds no role at all must not grant access."""
+        with self.as_user(self.authorized_user):
+            response = self.client.get(
+                URL_LIB_CONTAINER.format(container_key=self.unit["id"]),
+                {"course_id": "course-v1:CL-TEST+OTHER101+2025"},
+            )
+        assert response.status_code == 403
