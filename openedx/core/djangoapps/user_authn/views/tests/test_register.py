@@ -15,6 +15,7 @@ from django.test import TransactionTestCase
 from django.test.client import RequestFactory
 from django.test.utils import override_settings
 from django.urls import reverse
+from django_countries import countries
 from openedx_events.testing import OpenEdxEventsTestMixin
 from social_django.models import Partial, UserSocialAuth
 from testfixtures import LogCapture
@@ -60,7 +61,6 @@ from openedx.core.djangoapps.user_api.accounts.tests.retirement_helpers import (
     fake_requested_retirement,
     setup_retirement_states,  # noqa: F401
 )
-from openedx.core.djangoapps.user_api.tests.test_constants import SORTED_COUNTRIES
 from openedx.core.djangoapps.user_api.tests.test_helpers import TestCaseForm
 from openedx.core.djangoapps.user_api.tests.test_views import UserAPITestCase
 from openedx.core.djangolib.testing.utils import CacheIsolationTestCase, skip_unless_lms
@@ -746,7 +746,7 @@ class RegistrationViewTestV1(
                     "name": str(country_name),
                     "default": country_code == expected_country_code
                 }
-                for country_code, country_name in SORTED_COUNTRIES
+                for country_code, country_name in countries
             ]
         )
 
@@ -1101,7 +1101,7 @@ class RegistrationViewTestV1(
                     "name": str(country_name),
                     "default": False
                 }
-                for country_code, country_name in SORTED_COUNTRIES
+                for country_code, country_name in countries
             ]
         )
         self._assert_reg_field(
