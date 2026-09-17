@@ -50,7 +50,10 @@ class TestCourseUpdatesPage(BaseCourseUpdatesTestCase):
 
         # Fetch the view and verify that the query counts haven't changed
         # TODO: decrease query count as part of REVO-28
-        with self.assertNumQueries(54, table_ignorelist=QUERY_COUNT_TABLE_IGNORELIST):
+        # 55, not 54: EmbargoMiddleware now always resolves GlobalRestrictedCountry's cached
+        # country list (one query on a cold cache) even when the course has no RestrictedCourse
+        # row, so a global block applies without needing a per-course row.
+        with self.assertNumQueries(55, table_ignorelist=QUERY_COUNT_TABLE_IGNORELIST):
             with check_mongo_calls(3):
                 url = course_updates_url(self.course)
                 self.client.get(url)
