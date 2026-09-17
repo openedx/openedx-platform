@@ -1,7 +1,8 @@
 """ API Views for course settings """
 
-import edx_api_doc_tools as apidocs
 from django.conf import settings
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from opaque_keys.edx.keys import CourseKey
 from openedx_authz.constants.permissions import COURSES_VIEW_COURSE
 from rest_framework.request import Request
@@ -24,15 +25,15 @@ class CourseSettingsView(DeveloperErrorViewMixin, APIView):
     View for getting the settings for a course.
     """
 
-    @apidocs.schema(
+    @extend_schema(
         parameters=[
-            apidocs.string_parameter("course_id", apidocs.ParameterLocation.PATH, description="Course ID"),
+            OpenApiParameter("course_id", OpenApiTypes.STR, OpenApiParameter.PATH, description="Course ID"),
         ],
         responses={
             200: CourseSettingsSerializer,
-            401: "The requester is not authenticated.",
-            403: "The requester cannot access the specified course.",
-            404: "The requested course does not exist.",
+            401: OpenApiResponse(description="The requester is not authenticated."),
+            403: OpenApiResponse(description="The requester cannot access the specified course."),
+            404: OpenApiResponse(description="The requested course does not exist."),
         },
     )
     @verify_course_exists()

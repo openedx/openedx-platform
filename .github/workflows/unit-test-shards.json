@@ -242,7 +242,8 @@
       "cms/djangoapps/pipeline_js/",
       "cms/djangoapps/xblock_config/",
       "cms/envs/",
-      "cms/lib/"
+      "cms/lib/",
+      "cms/tests.py"
     ]
   },
   "cms-2": {

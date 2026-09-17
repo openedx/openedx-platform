@@ -5,7 +5,8 @@ from ccx_keys.locator import CCXLocator
 from django.conf import settings
 from django.core.management import call_command
 from django.db import transaction
-from edx_api_doc_tools import path_parameter, query_parameter, schema
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from edx_rest_framework_extensions import permissions
 from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
 from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
@@ -794,30 +795,30 @@ class UserProgramCourseEnrollmentView(
     serializer_class = CourseRunOverviewSerializer
     pagination_class = UserProgramCourseEnrollmentPagination
 
-    @schema(
+    @extend_schema(
         parameters=[
-            path_parameter('username', str, description=(
+            OpenApiParameter('username', OpenApiTypes.STR, OpenApiParameter.PATH, description=(
                 'The username of the user for which enrollment overviews will be fetched. '
                 'For now, this must be the requesting user; otherwise, 403 will be returned. '
                 'In the future, global staff users may be able to supply other usernames.'
             )),
-            path_parameter('program_uuid', str, description=(
+            OpenApiParameter('program_uuid', OpenApiTypes.STR, OpenApiParameter.PATH, description=(
                 'UUID of a program. '
                 'Enrollments will be returned for course runs in this program.'
             )),
-            query_parameter('page_size', int, description=(
+            OpenApiParameter('page_size', OpenApiTypes.INT, OpenApiParameter.QUERY, description=(
                 'Number of results to return per page. '
                 'Defaults to 10. Maximum is 25.'
             )),
         ],
         responses={
             200: cursor_paginate_serializer(CourseRunOverviewSerializer),
-            401: 'The requester is not authenticated.',
-            403: (
+            401: OpenApiResponse(description='The requester is not authenticated.'),
+            403: OpenApiResponse(description=(
                 'The requester cannot access the specified program and/or '
                 'the requester may not retrieve this data for the specified user.'
-            ),
-            404: 'The requested program does not exist.'
+            )),
+            404: OpenApiResponse(description='The requested program does not exist.'),
         },
     )
     @verify_program_exists

@@ -1,6 +1,7 @@
 """API Views for Course Optimizer."""
 
-import edx_api_doc_tools as apidocs
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey
 from rest_framework import status
@@ -31,15 +32,15 @@ class LinkCheckView(DeveloperErrorViewMixin, APIView):
     """
     View for queueing a celery task to scan a course for broken links.
     """
-    @apidocs.schema(
+    @extend_schema(
         parameters=[
-            apidocs.string_parameter("course_id", apidocs.ParameterLocation.PATH, description="Course ID"),
+            OpenApiParameter("course_id", OpenApiTypes.STR, OpenApiParameter.PATH, description="Course ID"),
         ],
         responses={
-            200: "Celery task queued.",
-            401: "The requester is not authenticated.",
-            403: "The requester cannot access the specified course.",
-            404: "The requested course does not exist.",
+            200: OpenApiResponse(description="Celery task queued."),
+            401: OpenApiResponse(description="The requester is not authenticated."),
+            403: OpenApiResponse(description="The requester cannot access the specified course."),
+            404: OpenApiResponse(description="The requested course does not exist."),
         },
     )
     @verify_course_exists()
@@ -70,15 +71,15 @@ class LinkCheckStatusView(DeveloperErrorViewMixin, APIView):
     """
     View for checking the status of the celery task and returning the results.
     """
-    @apidocs.schema(
+    @extend_schema(
         parameters=[
-            apidocs.string_parameter("course_id", apidocs.ParameterLocation.PATH, description="Course ID"),
+            OpenApiParameter("course_id", OpenApiTypes.STR, OpenApiParameter.PATH, description="Course ID"),
         ],
         responses={
-            200: "OK",
-            401: "The requester is not authenticated.",
-            403: "The requester cannot access the specified course.",
-            404: "The requested course does not exist.",
+            200: OpenApiResponse(description="OK"),
+            401: OpenApiResponse(description="The requester is not authenticated."),
+            403: OpenApiResponse(description="The requester cannot access the specified course."),
+            404: OpenApiResponse(description="The requested course does not exist."),
         },
     )
     def get(self, request: Request, course_id: str):
@@ -222,19 +223,19 @@ class RerunLinkUpdateView(DeveloperErrorViewMixin, APIView):
     View for queueing a celery task to update course links to the latest re-run.
     """
 
-    @apidocs.schema(
+    @extend_schema(
         parameters=[
-            apidocs.string_parameter(
-                "course_id", apidocs.ParameterLocation.PATH, description="Course ID"
+            OpenApiParameter(
+                "course_id", OpenApiTypes.STR, OpenApiParameter.PATH, description="Course ID"
             )
         ],
-        body=CourseRerunLinkUpdateRequestSerializer,
+        request=CourseRerunLinkUpdateRequestSerializer,
         responses={
-            200: "Celery task queued.",
-            400: "Bad request - invalid action or missing data.",
-            401: "The requester is not authenticated.",
-            403: "The requester cannot access the specified course.",
-            404: "The requested course does not exist.",
+            200: OpenApiResponse(description="Celery task queued."),
+            400: OpenApiResponse(description="Bad request - invalid action or missing data."),
+            401: OpenApiResponse(description="The requester is not authenticated."),
+            403: OpenApiResponse(description="The requester cannot access the specified course."),
+            404: OpenApiResponse(description="The requested course does not exist."),
         },
     )
     @verify_course_exists()
@@ -326,17 +327,17 @@ class RerunLinkUpdateStatusView(DeveloperErrorViewMixin, APIView):
     View for checking the status of the course link update task and returning the results.
     """
 
-    @apidocs.schema(
+    @extend_schema(
         parameters=[
-            apidocs.string_parameter(
-                "course_id", apidocs.ParameterLocation.PATH, description="Course ID"
+            OpenApiParameter(
+                "course_id", OpenApiTypes.STR, OpenApiParameter.PATH, description="Course ID"
             ),
         ],
         responses={
-            200: "OK",
-            401: "The requester is not authenticated.",
-            403: "The requester cannot access the specified course.",
-            404: "The requested course does not exist.",
+            200: OpenApiResponse(description="OK"),
+            401: OpenApiResponse(description="The requester is not authenticated."),
+            403: OpenApiResponse(description="The requester cannot access the specified course."),
+            404: OpenApiResponse(description="The requested course does not exist."),
         },
     )
     def get(self, request: Request, course_id: str):

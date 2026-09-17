@@ -1,8 +1,9 @@
 """
 REST API views for content group configurations.
 """
-import edx_api_doc_tools as apidocs
 from django.conf import settings
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey
 from rest_framework import status
@@ -30,20 +31,21 @@ class GroupConfigurationsListView(DeveloperErrorViewMixin, APIView):
     permission_classes = (IsAuthenticated, permissions.InstructorPermission)
     permission_name = permissions.VIEW_DASHBOARD
 
-    @apidocs.schema(
+    @extend_schema(
         parameters=[
-            apidocs.string_parameter(
+            OpenApiParameter(
                 "course_id",
-                apidocs.ParameterLocation.PATH,
+                OpenApiTypes.STR,
+                OpenApiParameter.PATH,
                 description="The course key (e.g., course-v1:org+course+run)",
             ),
         ],
         responses={
-            200: "Successfully retrieved content groups",
-            400: "Invalid course key",
-            401: "Authentication required",
-            403: "User does not have permission to access this course",
-            404: "Course not found",
+            200: OpenApiResponse(description="Successfully retrieved content groups"),
+            400: OpenApiResponse(description="Invalid course key"),
+            401: OpenApiResponse(description="Authentication required"),
+            403: OpenApiResponse(description="User does not have permission to access this course"),
+            404: OpenApiResponse(description="Course not found"),
         },
     )
     def get(self, request, course_id):
@@ -98,25 +100,27 @@ class GroupConfigurationDetailView(DeveloperErrorViewMixin, APIView):
     permission_classes = (IsAuthenticated, permissions.InstructorPermission)
     permission_name = permissions.VIEW_DASHBOARD
 
-    @apidocs.schema(
+    @extend_schema(
         parameters=[
-            apidocs.string_parameter(
+            OpenApiParameter(
                 "course_id",
-                apidocs.ParameterLocation.PATH,
+                OpenApiTypes.STR,
+                OpenApiParameter.PATH,
                 description="The course key",
             ),
-            apidocs.path_parameter(
+            OpenApiParameter(
                 "configuration_id",
-                int,
+                OpenApiTypes.INT,
+                OpenApiParameter.PATH,
                 description="The ID of the content group configuration",
             ),
         ],
         responses={
-            200: "Content group configuration details",
-            400: "Invalid course key",
-            401: "Authentication required",
-            403: "User does not have permission to access this course",
-            404: "Content group configuration not found",
+            200: OpenApiResponse(description="Content group configuration details"),
+            400: OpenApiResponse(description="Invalid course key"),
+            401: OpenApiResponse(description="Authentication required"),
+            403: OpenApiResponse(description="User does not have permission to access this course"),
+            404: OpenApiResponse(description="Content group configuration not found"),
         },
     )
     def get(self, request, course_id, configuration_id):

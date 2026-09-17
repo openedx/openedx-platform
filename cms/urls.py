@@ -10,9 +10,10 @@ from django.contrib.admin import autodiscover as django_autodiscover
 from django.shortcuts import redirect
 from django.urls import include, path, re_path
 from django.utils.translation import gettext_lazy as _
+from django.views.decorators.cache import cache_page
+from django.views.decorators.vary import vary_on_headers
 from django.views.generic import RedirectView
-from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
-from edx_api_doc_tools import make_docs_urls
+from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 
 import openedx.core.djangoapps.common_views.xblock
 import openedx.core.djangoapps.debug.views
@@ -22,7 +23,7 @@ from cms.djangoapps.contentstore import views as contentstore_views
 from cms.djangoapps.contentstore.views.block import xblock_edit_view
 from cms.djangoapps.contentstore.views.organization import OrganizationListView
 from openedx.core import toggles as core_toggles
-from openedx.core.apidocs import api_info
+from openedx.core.apidocs import get_api_docs_settings
 from openedx.core.djangoapps.password_policy import compliance as password_policy_compliance
 from openedx.core.djangoapps.password_policy.forms import PasswordPolicyAwareAdminAuthForm
 
@@ -331,8 +332,60 @@ urlpatterns += [
     path('500', handler500),
 ]
 
-# API docs.
-urlpatterns += make_docs_urls(api_info)
+# API docs, served by drf-spectacular.
+#
+# Route names and paths are preserved from the edx-api-doc-tools implementation
+# these replaced, since reverse() calls and existing links depend on them.
+#
+# ``swagger.json`` / ``swagger.yaml`` serve the schema. drf-spectacular picks
+# the renderer by content negotiation, so the extension is passed through as
+# DRF's standard ``format`` suffix kwarg (without the leading dot) to select
+# JSON or YAML explicitly.
+#
+# These use ``custom_settings`` for the full API surface. SPECTACULAR_SETTINGS
+# is reserved for the narrower Authoring API schema at ``/authoring-api/``
+# registered below.
+#
+# The Swagger and ReDoc views reverse their schema URL with no arguments, so
+# ``api-docs/schema/`` exists alongside the format-suffixed routes for them to
+# point at.
+#
+# Schema generation is expensive and these endpoints are public, so both schema
+# routes are cached for OPENAPI_CACHE_TIMEOUT, as edx-api-doc-tools did via
+# SchemaView.as_cached_view.
+_apidocs_schema_view = cache_page(settings.OPENAPI_CACHE_TIMEOUT)(
+    vary_on_headers("Cookie", "Authorization")(
+        SpectacularAPIView.as_view(custom_settings=get_api_docs_settings())
+    )
+)
+
+urlpatterns += [
+    re_path(
+        r'^swagger\.(?P<format>json|yaml)$',
+        _apidocs_schema_view,
+        name='apidocs-data',
+    ),
+    path(
+        'api-docs/schema/',
+        _apidocs_schema_view,
+        name='apidocs-schema',
+    ),
+    path(
+        'api-docs/',
+        SpectacularSwaggerView.as_view(url_name='apidocs-schema'),
+        name='apidocs-ui',
+    ),
+    path(
+        'api-docs/redoc/',
+        SpectacularRedocView.as_view(url_name='apidocs-schema'),
+        name='apidocs-ui-redoc',
+    ),
+    path(
+        'swagger/',
+        RedirectView.as_view(pattern_name='apidocs-ui', permanent=False),
+        name='apidocs-ui-swagger',
+    ),
+]
 
 # edx-drf-extensions csrf app
 urlpatterns += [

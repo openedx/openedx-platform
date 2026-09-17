@@ -874,9 +874,6 @@ INSTALLED_APPS = [
     # Asset management for mako templates
     'common.djangoapps.pipeline_mako',
 
-    # API Documentation
-    'drf_yasg',
-
     # Tagging
     'openedx_tagging',
     'openedx.core.djangoapps.content_tagging',
@@ -924,6 +921,7 @@ INSTALLED_APPS = [
 
     # alternative swagger generator for CMS API
     'drf_spectacular',
+    'drf_spectacular_sidecar',
 
     # Authz
     'openedx.core.djangoapps.authz',
