@@ -321,12 +321,12 @@ OAUTH_EXPIRE_DELTA = datetime.timedelta(days=OAUTH_EXPIRE_CONFIDENTIAL_CLIENT_DA
 OAUTH_EXPIRE_DELTA_PUBLIC = datetime.timedelta(days=OAUTH_EXPIRE_PUBLIC_CLIENT_DAYS)  # noqa: F405
 
 if (
-   ENABLE_COURSEWARE_SEARCH or  # noqa: F405
-   ENABLE_DASHBOARD_SEARCH or  # noqa: F405
-   ENABLE_COURSE_DISCOVERY or  # noqa: F405
-   ENABLE_TEAMS  # noqa: F405
-   ):
-    # Use ElasticSearch as the search engine herein
+    ENABLE_COURSEWARE_SEARCH  # noqa: F405
+    or ENABLE_DASHBOARD_SEARCH  # noqa: F405
+    or ENABLE_COURSE_DISCOVERY  # noqa: F405
+    or ENABLE_TEAMS  # noqa: F405
+) and SEARCH_ENGINE is None:  # noqa: F405
+    # Use Elasticsearch as the default search engine when none was configured.
     SEARCH_ENGINE = "search.elastic.ElasticSearchEngine"
 
 # TODO: Once we have successfully upgraded to ES7, switch this back to ELASTIC_SEARCH_CONFIG.
