@@ -74,6 +74,37 @@ def get_token_url(course_id):
     })
 
 
+def get_ccx_master_course_key(course_key):
+    """
+    If `course_key` identifies a CCX (Custom Course for edX), return the CourseKey
+    of the CCX's master course. Otherwise return `course_key` unchanged.
+
+    This lets notes/annotations created while viewing a CCX be recorded against the
+    shared master course rather than that one CCX section, so the same user sees the
+    same notes on every CCX section (and the master course itself) derived from it.
+    """
+    ccx_id = getattr(course_key, 'ccx', None)
+    if not ccx_id:
+        return course_key
+
+    # Imported locally to avoid a hard import-time dependency between the edxnotes
+    # and ccx apps.
+    from lms.djangoapps.ccx.utils import get_ccx_from_ccx_locator  # pylint: disable=import-outside-toplevel
+    ccx = get_ccx_from_ccx_locator(course_key)
+    return ccx.course_id if ccx else course_key
+
+
+def get_ccx_master_usage_key(usage_key):
+    """
+    If `usage_key` identifies a block within a CCX, return the equivalent UsageKey
+    for the same block within the CCX's master course (CCX field overrides and
+    scheduling don't change the underlying content, so the block ids line up).
+    Otherwise return `usage_key` unchanged.
+    """
+    to_block_locator = getattr(usage_key, 'to_block_locator', None)
+    return to_block_locator() if to_block_locator else usage_key
+
+
 def send_request(user, course_id, page, page_size, path="", text=None):
     """
     Sends a request to notes api with appropriate parameters and headers.
@@ -332,7 +363,10 @@ def get_notes(request, course, page=DEFAULT_PAGE, page_size=DEFAULT_PAGE_SIZE, t
             results: list with notes info dictionary. each item in this list will be a dict
     """
     path = 'search' if text else 'annotations'
-    response = send_request(request.user, course.id, page, page_size, path, text)
+    # Resolve to the master course so notes taken inside any CCX section are
+    # recorded against (and read back from) the shared master course.
+    notes_course_id = get_ccx_master_course_key(course.id)
+    response = send_request(request.user, notes_course_id, page, page_size, path, text)
 
     try:
         collection = json.loads(response.content.decode('utf-8'))
