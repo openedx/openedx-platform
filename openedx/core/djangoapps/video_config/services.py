@@ -3,7 +3,7 @@ Video Configuration Service for XBlock runtime.
 
 This service provides video-related configuration and feature flags
 that are specific to the edx-platform implementation
-for the extracted video block in xblocks-contrib repository.
+for the extracted video block in xblocks-core repository.
 """
 
 import logging
@@ -16,7 +16,7 @@ from edxval.api import create_external_video, create_or_update_video_transcript,
 from opaque_keys.edx.keys import CourseKey, UsageKey
 from opaque_keys.edx.locator import LibraryLocatorV2
 from organizations.api import get_course_organization
-from xblocks_contrib.video.exceptions import TranscriptNotFoundError
+from xblock_video.exceptions import TranscriptNotFoundError
 
 from openedx.core.djangoapps.content_libraries.api import (
     add_library_block_static_asset_file,
