@@ -341,7 +341,6 @@ class _BuiltInVideoBlock(
         # If the user comes from China use China CDN for html5 videos.
         # 'CN' is China ISO 3166-1 country code.
         # Video caching is disabled for Studio. User_location is always None in Studio.
-        # CountryMiddleware disabled for Studio.
         if getattr(self, 'video_speed_optimizations', True) and cdn_url:
 
             if self.edx_video_id and edxval_api and video_status != 'external':
