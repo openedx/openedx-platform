@@ -803,7 +803,7 @@ class ViewsTestCase(BaseViewsTestCase):
         ):
             self.client.logout()
             response = self.client.get(url)
-            self.assertRedirects(response, reverse('signin_user') + '?next=' + url)
+            self.assertRedirects(response, reverse('signin_user') + '?next=' + url, fetch_redirect_response=False)
 
     def test_financial_assistance_form_uses_site_config_account_mfe_url(self):
         """

@@ -20,6 +20,10 @@ from openedx.core.djangolib.testing.utils import skip_unless_lms
 
 @skip_unless_lms
 @ddt.ddt
+# Activation redirects and messaging differ depending on whether logistration is served by
+# the legacy page or the authn MFE. Pin the flag off for the legacy cases; the MFE cases
+# turn it back on per-method.
+@override_settings(ENABLE_AUTHN_MICROFRONTEND=False)
 class TestActivateAccount(TestCase):
     """Tests for account creation"""
 
