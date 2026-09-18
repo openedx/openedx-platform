@@ -318,10 +318,9 @@ def _studio_wrap_xblock(xblock, view, frag, context, display_name_only=False):
         can_edit = context.get('can_edit', True)
         can_add = context.get('can_add', True)
         can_move = context.get('can_move', True)
-        # Set by block.py; default False so callers that don't set it are unaffected.
-        is_authz_authoring_enabled = context.get('is_authz_authoring_enabled', False)
-        authz_can_edit_course_content = context.get('authz_can_edit_course_content', True)
-        authz_can_manage_tags = context.get('authz_can_manage_tags', True)
+        # Set by block.py as an already-final boolean. Default True so callers
+        # that don't set it preserve pre-RBAC behaviour (matching can_edit).
+        can_manage_tags = context.get('can_manage_tags', True)
         root_upstream_link = UpstreamLink.try_get_for_block(root_xblock, log_error=False)
         upstream_link = UpstreamLink.try_get_for_block(xblock, log_error=False)
         if (
@@ -337,6 +336,13 @@ def _studio_wrap_xblock(xblock, view, frag, context, display_name_only=False):
 
         if upstream_link.error_message is None and upstream_link.upstream_ref:
             can_edit = xblock.category in editable_library_components
+
+        # All content-modifying actions require edit access. A user may reach
+        # the actions menu with only tag-management rights (can_manage_tags),
+        # so gate the edit-type flags on can_edit to keep Move/Add/Delete and
+        # (via can_edit_visibility below) Manage Access out of their reach.
+        can_add = can_add and can_edit
+        can_move = can_move and can_edit
 
         # Is this a course or a library?
         is_course = xblock.context_key.is_course
@@ -366,10 +372,12 @@ def _studio_wrap_xblock(xblock, view, frag, context, display_name_only=False):
             'language': getattr(course, 'language', None),
             'is_course': is_course,
             'tags_count': tags_count,
-            'can_edit_title': True,  # This is always true even for imported components
-            'is_authz_authoring_enabled': is_authz_authoring_enabled,
-            'authz_can_edit_course_content': authz_can_edit_course_content,
-            'authz_can_manage_tags': authz_can_manage_tags,
+            # Set by block.py as an already-final boolean. Defaults True so
+            # callers that don't set it preserve pre-RBAC behaviour (the "Edit
+            # Title" affordance was historically always available, including for
+            # imported components).
+            'can_edit_title': context.get('can_edit_title', True),
+            'can_manage_tags': can_manage_tags,
         }
 
         add_webpack_js_to_fragment(frag, "js/factories/xblock_validation")
