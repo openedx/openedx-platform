@@ -20,3 +20,16 @@
 @import 'vendor/bi-app/bi-app-ltr'; // set the layout for left to right languages
 @import 'build-v1'; // shared app style assets/rendering
 @import '_builtin-block-variables';
+
+
+mjx-container {
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
+table>tbody>tr>td>mjx-container {
+    max-width: inherit;
+    overflow-x: auto;
+    overflow-y: hidden;
+}
