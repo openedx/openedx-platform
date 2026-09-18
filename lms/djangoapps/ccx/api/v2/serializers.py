@@ -101,3 +101,9 @@ class CreateCCXRequestSerializer(serializers.Serializer):  # pylint: disable=abs
     """Validate the `create_ccx` POST body: `{ "name": str }`."""
 
     name = serializers.CharField(max_length=255, allow_blank=False, trim_whitespace=True)
+
+
+class RemoveScheduleRequestSerializer(serializers.Serializer):  # pylint: disable=abstract-method
+    """Validate the `remove_schedule` POST body: `{ "location": str }`."""
+
+    location = serializers.CharField(allow_blank=False, trim_whitespace=True)

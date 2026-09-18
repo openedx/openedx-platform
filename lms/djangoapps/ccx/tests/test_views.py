@@ -29,8 +29,7 @@ from lms.djangoapps.ccx.models import CustomCourseForEdX
 from lms.djangoapps.ccx.overrides import get_override_for_ccx, override_field_for_ccx
 from lms.djangoapps.ccx.tests.factories import CcxFactory
 from lms.djangoapps.ccx.tests.utils import CcxTestCase, flatten
-from lms.djangoapps.ccx.utils import ccx_course, create_ccx_course, is_email
-from lms.djangoapps.ccx.views import get_date
+from lms.djangoapps.ccx.utils import ccx_course, create_ccx_course, get_date, is_email
 from lms.djangoapps.courseware.tabs import get_course_tab_list
 from lms.djangoapps.courseware.tests.factories import StudentModuleFactory
 from lms.djangoapps.courseware.tests.helpers import LoginEnrollmentTestCase
@@ -339,7 +338,7 @@ class TestCoachDashboard(CcxTestCase, LoginEnrollmentTestCase):
 
     def test_create_ccx_with_ccx_connector_set(self):
         """
-        Assert that coach cannot create ccx when ``ccx_connector`` url is set.
+        Assert that coach cannot create ccx when `ccx_connector` url is set.
         """
         role = CourseCcxCoachRole(self.course_with_ccx_connect_set.id)
         role.add_users(self.coach)
@@ -358,9 +357,9 @@ class TestCoachDashboard(CcxTestCase, LoginEnrollmentTestCase):
 
     def test_create_ccx_course_service(self):
         """
-        The extracted ``create_ccx_course`` service performs the full CCX
+        The extracted `create_ccx_course` service performs the full CCX
         creation side effects independently of the legacy view. This guards the
-        refactor that moved the creation logic out of ``create_ccx`` so the v2
+        refactor that moved the creation logic out of `create_ccx` so the v2
         API can reuse it.
         """
         ccx_name = 'Service CCX'

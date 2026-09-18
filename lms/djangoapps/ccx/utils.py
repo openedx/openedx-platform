@@ -8,6 +8,7 @@ Does not include any access control, be sure to check access before calling.
 import datetime
 import logging
 from contextlib import contextmanager
+from copy import deepcopy
 from smtplib import SMTPException
 
 import pytz
@@ -23,7 +24,14 @@ from common.djangoapps.student.models import CourseEnrollment, CourseEnrollmentE
 from common.djangoapps.student.roles import CourseCcxCoachRole, CourseInstructorRole, CourseStaffRole
 from lms.djangoapps.ccx.custom_exception import CCXUserValidationException
 from lms.djangoapps.ccx.models import CustomCourseForEdX
-from lms.djangoapps.ccx.overrides import get_override_for_ccx, override_field_for_ccx
+from lms.djangoapps.ccx.overrides import (
+    bulk_delete_ccx_override_fields,
+    clear_ccx_field_info_from_ccx_map,
+    clear_override_for_ccx,
+    get_override_for_ccx,
+    override_field_for_ccx,
+)
+from lms.djangoapps.courseware.field_overrides import disable_overrides
 from lms.djangoapps.instructor.access import allow_access, list_with_level, revoke_access
 from lms.djangoapps.instructor.enrollment import enroll_email, get_email_params, unenroll_email
 from lms.djangoapps.instructor.views.api import _split_input_list
@@ -514,3 +522,232 @@ def create_ccx_course(course, coach, display_name):
         log.info('Signal fired when course is published. Receiver: %s. Response: %s', rec, response)
 
     return ccx
+
+
+def get_ccx_schedule(course, ccx):
+    """
+    Generate a JSON serializable CCX schedule.
+
+    Visits student-visible nodes only; children of hidden nodes are skipped.
+    Dates are converted to strings for the JS date widgets. Only start dates
+    apply to sections; subsections have both start and due; units inherit their
+    subsection's dates when not overridden.
+    """
+    def visit(node, depth=1):
+        """
+        Recursive generator function which yields CCX schedule nodes.
+        """
+        for child in node.get_children():
+            # in case the children are visible to staff only, skip them
+            if child.visible_to_staff_only:
+                continue
+
+            hidden = get_override_for_ccx(
+                ccx, child, 'visible_to_staff_only',
+                child.visible_to_staff_only)
+
+            start = get_date(ccx, child, 'start')
+            if depth > 1:
+                # Subsection has both start and due dates and unit inherit dates from their subsections
+                if depth == 2:
+                    due = get_date(ccx, child, 'due')
+                elif depth == 3:
+                    # Get start and due date of subsection in case unit has not override dates.
+                    due = get_date(ccx, child, 'due', node)
+                    start = get_date(ccx, child, 'start', node)
+
+                visited = {
+                    'location': str(child.location),
+                    'display_name': child.display_name,
+                    'category': child.category,
+                    'start': start,
+                    'due': due,
+                    'hidden': hidden,
+                }
+            else:
+                visited = {
+                    'location': str(child.location),
+                    'display_name': child.display_name,
+                    'category': child.category,
+                    'start': start,
+                    'hidden': hidden,
+                }
+            if depth < 3:
+                children = tuple(visit(child, depth + 1))
+                if children:
+                    visited['children'] = children
+                    yield visited
+            else:
+                yield visited
+
+    with disable_overrides():
+        return tuple(visit(course))
+
+
+def save_ccx_schedule(course, ccx, schedule):  # pylint: disable=too-many-statements
+    """
+    Apply an edited CCX `schedule` tree to the CCX and republish it.
+
+    Recursively overrides the `visible_to_staff_only`, `start` and `due`
+    fields for units in the course from the supplied schedule data, adjusts the
+    grading policy's `min_count` values when graded sections were hidden, and
+    fires the `course_published` signal.
+
+    This is the shared logic behind the legacy `save_ccx` view and the CCX
+    Coach v2 save-schedule endpoint. Callers are responsible for access control.
+
+    Arguments:
+        course (CourseBlock): the master course.
+        ccx (CustomCourseForEdX): the CCX being edited.
+        schedule (list): the schedule tree (list of block dicts with
+            `location`, `hidden`, `start`, optional `due` and
+            `children`).
+
+    Returns:
+        tuple: `(schedule, grading_policy)` where `schedule` is the
+        regenerated schedule (see :func:`get_ccx_schedule`) and
+        `grading_policy` is the (possibly adjusted) grading policy dict.
+    """
+    def override_fields(parent, data, graded, earliest=None, ccx_ids_to_delete=None):
+        """
+        Recursively apply CCX schedule data to CCX by overriding the
+        `visible_to_staff_only`, `start` and `due` fields for units in the
+        course.
+        """
+        if ccx_ids_to_delete is None:
+            ccx_ids_to_delete = []
+        blocks = {
+            str(child.location): child
+            for child in parent.get_children()}
+
+        for unit in data:
+            block = blocks[unit['location']]
+            override_field_for_ccx(
+                ccx, block, 'visible_to_staff_only', unit['hidden'])
+
+            start = parse_date(unit['start'])
+            if start:
+                if not earliest or start < earliest:
+                    earliest = start
+                override_field_for_ccx(ccx, block, 'start', start)
+            else:
+                ccx_ids_to_delete.append(get_override_for_ccx(ccx, block, 'start_id'))
+                clear_ccx_field_info_from_ccx_map(ccx, block, 'start')
+
+            # Only subsection (aka sequential) and unit (aka vertical) have due dates.
+            if 'due' in unit:  # checking that the key (due) exist in dict (unit).
+                due = parse_date(unit['due'])
+                if due:
+                    override_field_for_ccx(ccx, block, 'due', due)
+                else:
+                    ccx_ids_to_delete.append(get_override_for_ccx(ccx, block, 'due_id'))
+                    clear_ccx_field_info_from_ccx_map(ccx, block, 'due')
+            else:
+                # In case of section aka chapter we do not have due date.
+                ccx_ids_to_delete.append(get_override_for_ccx(ccx, block, 'due_id'))
+                clear_ccx_field_info_from_ccx_map(ccx, block, 'due')
+
+            if not unit['hidden'] and block.graded:
+                graded[block.format] = graded.get(block.format, 0) + 1
+
+            children = unit.get('children', None)
+            # For a vertical, override start and due dates of all its problems.
+            if unit.get('category', None) == 'vertical':
+                for component in block.get_children():
+                    # override start and due date of problem (Copy dates of vertical into problems)
+                    if start:
+                        override_field_for_ccx(ccx, component, 'start', start)
+
+                    if due:
+                        override_field_for_ccx(ccx, component, 'due', due)
+
+            if children:
+                override_fields(block, children, graded, earliest, ccx_ids_to_delete)
+        return earliest, ccx_ids_to_delete
+
+    graded = {}
+    earliest, ccx_ids_to_delete = override_fields(course, schedule, graded, [])
+    bulk_delete_ccx_override_fields(ccx, ccx_ids_to_delete)
+    if earliest:
+        override_field_for_ccx(ccx, course, 'start', earliest)
+
+    # Attempt to automatically adjust grading policy
+    changed = False
+    policy = get_override_for_ccx(
+        ccx, course, 'grading_policy', course.grading_policy
+    )
+    policy = deepcopy(policy)
+    grader = policy['GRADER']
+    for section in grader:
+        count = graded.get(section.get('type'), 0)
+        if count < section.get('min_count', 0):
+            changed = True
+            section['min_count'] = count
+    if changed:
+        override_field_for_ccx(ccx, course, 'grading_policy', policy)
+
+    # using CCX object as sender here.
+    responses = SignalHandler.course_published.send(
+        sender=ccx,
+        course_key=CCXLocator.from_course_locator(course.id, str(ccx.id))
+    )
+    for rec, response in responses:
+        log.info('Signal fired when course is published. Receiver: %s. Response: %s', rec, response)
+
+    return get_ccx_schedule(course, ccx), policy
+
+
+def remove_block_from_ccx_schedule(ccx, course, location):
+    """
+    Remove a block (and its descendants) from the CCX schedule.
+
+    Hides the block identified by `location` and all of its descendants from
+    learners (`visible_to_staff_only=True`) and clears any CCX start/due date
+    overrides on them, then republishes the CCX. This is the inverse of adding
+    a block to the schedule and mirrors what the legacy `save_ccx` flow does
+    when a unit is hidden.
+
+    Arguments:
+        ccx (CustomCourseForEdX): the CCX being edited.
+        course (CourseBlock): the master course.
+        location (str): the usage-key string of the block to remove.
+
+    Returns:
+        list: the regenerated schedule (see :func:`get_ccx_schedule`).
+
+    Raises:
+        ValueError: if `location` does not identify a block in the course.
+    """
+    def find_block(node):
+        """Depth-first search for the block whose location matches `location`."""
+        for child in node.get_children():
+            if str(child.location) == location:
+                return child
+            found = find_block(child)
+            if found is not None:
+                return found
+        return None
+
+    def hide(block):
+        """Hide `block` and its descendants and clear their date overrides."""
+        override_field_for_ccx(ccx, block, 'visible_to_staff_only', True)
+        clear_override_for_ccx(ccx, block, 'start')
+        clear_override_for_ccx(ccx, block, 'due')
+        for child in block.get_children():
+            hide(child)
+
+    block = find_block(course)
+    if block is None:
+        raise ValueError(f'Block "{location}" is not part of course "{course.id}"')
+
+    hide(block)
+
+    # using CCX object as sender here.
+    responses = SignalHandler.course_published.send(
+        sender=ccx,
+        course_key=CCXLocator.from_course_locator(course.id, str(ccx.id))
+    )
+    for rec, response in responses:
+        log.info('Signal fired when course is published. Receiver: %s. Response: %s', rec, response)
+
+    return get_ccx_schedule(course, ccx)
