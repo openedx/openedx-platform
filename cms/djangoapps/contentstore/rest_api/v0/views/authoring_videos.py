@@ -1,5 +1,12 @@
 """
 Public rest API endpoints for the Authoring API video assets.
+
+.. deprecated::
+    The video upload endpoints in this module are superseded by
+    ``CourseVideoUploadsViewSet`` in
+    ``cms.djangoapps.contentstore.rest_api.v1.views.video_uploads``.
+    Use ``/api/authoring/v1/courses/{course_key}/videos/`` going forward.
+    These v0 endpoints will be removed in a future release.
 """
 import logging
 
@@ -27,6 +34,10 @@ log = logging.getLogger(__name__)
 @view_auth_classes()
 class VideosUploadsView(DeveloperErrorViewMixin, RetrieveAPIView, DestroyAPIView):
     """
+    **DEPRECATED** — use ``GET /api/authoring/v1/courses/{course_key}/videos/`` for the listing
+    this GET returns, and ``DELETE /api/authoring/v1/courses/{course_key}/videos/{edx_video_id}/``
+    to remove one video from the course. These v0 endpoints will be removed in a future release.
+
     public rest API endpoints for the CMS API video assets.
     course_key: required argument, needed to authorize course authors and identify the video.
     video_id: required argument, needed to identify the video.
@@ -35,17 +46,34 @@ class VideosUploadsView(DeveloperErrorViewMixin, RetrieveAPIView, DestroyAPIView
 
     @course_author_access_required
     def retrieve(self, request, course_key, edx_video_id=None):  # pylint: disable=arguments-differ
+        """
+        **DEPRECATED** — use ``GET /api/authoring/v1/courses/{course_key}/videos/`` instead.
+
+        This GET ignores ``edx_video_id`` and returns the whole course listing;
+        ``/api/authoring/v1/courses/{course_key}/videos/`` is the successor for that listing.
+        It will be removed in a future release.
+        """
         return handle_videos(request, course_key.html_id(), edx_video_id)
 
     @course_author_access_required
     @expect_json_in_class_view
     def destroy(self, request, course_key, edx_video_id):  # pylint: disable=arguments-differ
+        """
+        **DEPRECATED** — use
+        ``DELETE /api/authoring/v1/courses/{course_key}/videos/{edx_video_id}/`` instead.
+
+        It will be removed in a future release.
+        """
         return handle_videos(request, course_key.html_id(), edx_video_id)
 
 
 @view_auth_classes()
 class VideosCreateUploadView(DeveloperErrorViewMixin, CreateAPIView):
     """
+    **DEPRECATED** — use ``POST /api/authoring/v1/courses/{course_key}/videos/`` instead.
+
+    These v0 endpoints will be removed in a future release.
+
     public rest API endpoints for the CMS API video assets.
     course_key: required argument, needed to authorize course authors and identify the video.
     """
