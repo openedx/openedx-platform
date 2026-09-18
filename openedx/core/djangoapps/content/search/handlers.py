@@ -47,6 +47,7 @@ from openedx.core.djangoapps.content_libraries import api as lib_api
 from xmodule.modulestore.django import SignalHandler
 
 from .api import (
+    is_course_indexing_enabled,
     is_meilisearch_enabled,
     only_if_meilisearch_enabled,
     reconcile_index,
@@ -125,6 +126,9 @@ def xblock_created_handler(**kwargs) -> None:
         log.error("Received null or incorrect data for event")
         return
 
+    if not is_course_indexing_enabled():
+        return
+
     upsert_xblock_index_doc.delay(
         str(xblock_info.usage_key),
         recursive=False,
@@ -140,6 +144,9 @@ def xblock_updated_handler(**kwargs) -> None:
     xblock_info = kwargs.get("xblock_info", None)
     if not xblock_info or not isinstance(xblock_info, XBlockData):  # pragma: no cover
         log.error("Received null or incorrect data for event")
+        return
+
+    if not is_course_indexing_enabled():
         return
 
     upsert_xblock_index_doc.delay(
@@ -396,6 +403,9 @@ def handle_reindex_on_signal(**kwargs):
     course_data = kwargs.get("course", None)
     if not course_data or not isinstance(course_data, CourseData):
         log.error("Received null or incorrect data for event")
+        return
+
+    if not is_course_indexing_enabled():
         return
 
     upsert_course_blocks_docs.delay(str(course_data.course_key))

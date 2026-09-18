@@ -80,6 +80,15 @@ MAX_ORGS_IN_FILTER = 1_000
 
 EXCLUDED_XBLOCK_TYPES = ["course", "course_info"]
 
+# Values for the MEILISEARCH_COURSE_INDEXING setting, which controls how much course
+# content is written to the Studio index. Library content is always indexed.
+COURSE_INDEXING_ALL = "all"
+COURSE_INDEXING_LIBRARY_DOWNSTREAM_ONLY = "library_downstream_only"
+COURSE_INDEXING_NONE = "none"
+COURSE_INDEXING_MODES = frozenset(
+    {COURSE_INDEXING_ALL, COURSE_INDEXING_LIBRARY_DOWNSTREAM_ONLY, COURSE_INDEXING_NONE}
+)
+
 
 @contextmanager
 def _index_rebuild_lock() -> Generator[str, None, None]:
@@ -355,6 +364,48 @@ def is_meilisearch_enabled() -> bool:
     return False
 
 
+def get_course_indexing_mode() -> str:
+    """
+    Returns the configured MEILISEARCH_COURSE_INDEXING mode.
+
+    Falls back to indexing everything, which is the historical behaviour, when the
+    setting is absent or holds an unrecognised value.
+    """
+    mode = getattr(settings, "MEILISEARCH_COURSE_INDEXING", COURSE_INDEXING_ALL)
+    if mode not in COURSE_INDEXING_MODES:
+        log.warning(
+            "Unrecognised MEILISEARCH_COURSE_INDEXING value %r; falling back to %r.",
+            mode,
+            COURSE_INDEXING_ALL,
+        )
+        return COURSE_INDEXING_ALL
+    return mode
+
+
+def is_course_indexing_enabled() -> bool:
+    """
+    Returns whether any course content is written to the Studio index.
+    """
+    return get_course_indexing_mode() != COURSE_INDEXING_NONE
+
+
+def should_index_course_block(block) -> bool:
+    """
+    Returns whether the given course XBlock should get a document in the Studio index.
+
+    Under ``library_downstream_only`` only blocks linked to a library upstream are
+    indexed. That is the set the course-libraries Review tab hydrates its out-of-sync
+    list from, so gating here keeps Libraries V2 workflows intact while dropping the
+    course-content bulk that dominates the index.
+    """
+    mode = get_course_indexing_mode()
+    if mode == COURSE_INDEXING_ALL:
+        return True
+    if mode == COURSE_INDEXING_NONE:
+        return False
+    return bool(getattr(block, "upstream", None))
+
+
 def reset_index(status_cb: Callable[[str], None] | None = None) -> None:
     """
     Reset the Meilisearch index, deleting all documents and reconfiguring it
@@ -564,9 +615,11 @@ def index_course(
 
     def add_with_children(block):
         """Recursively index the given XBlock/component"""
-        doc = searchable_doc_for_course_block(block)
-        doc.update(searchable_doc_tags(block.usage_key))
-        docs.append(doc)  # pylint: disable=cell-var-from-loop
+        # Recurse regardless: a skipped section can still contain indexable children.
+        if should_index_course_block(block):
+            doc = searchable_doc_for_course_block(block)
+            doc.update(searchable_doc_tags(block.usage_key))
+            docs.append(doc)  # pylint: disable=cell-var-from-loop
         _recurse_children(block, add_with_children)  # pylint: disable=cell-var-from-loop
 
     # Index course children
@@ -604,8 +657,12 @@ def rebuild_index(  # pylint: disable=too-many-statements
     num_libraries = len(lib_keys)
 
     # Get the list of courses
-    status_cb("Counting courses...")
-    num_courses = CourseOverview.objects.count()
+    index_courses = is_course_indexing_enabled()
+    if index_courses:
+        status_cb("Counting courses...")
+        num_courses = CourseOverview.objects.count()
+    else:
+        num_courses = 0
 
     # Some counters so we can track our progress as indexing progresses:
     num_libs_skipped = len(keys_indexed)
@@ -742,23 +799,27 @@ def rebuild_index(  # pylint: disable=too-many-statements
             num_contexts_done += 1
 
         ############## Courses ##############
-        status_cb("Indexing courses...")
-        # To reduce memory usage on large instances, split up the CourseOverviews into pages of 1,000 courses:
+        if index_courses:
+            status_cb("Indexing courses...")
+            # To reduce memory usage on large instances, split up the CourseOverviews into pages of 1,000 courses:
 
-        paginator = Paginator(CourseOverview.objects.only("id", "display_name").order_by("-created", "id"), 1000)
-        for p in paginator.page_range:
-            for course in paginator.page(p).object_list:
-                status_cb(
-                    f"{num_contexts_done + 1}/{num_contexts}. Now indexing course {course.display_name} ({course.id})"
-                )
-                if course.id in keys_indexed:
+            paginator = Paginator(CourseOverview.objects.only("id", "display_name").order_by("-created", "id"), 1000)
+            for p in paginator.page_range:
+                for course in paginator.page(p).object_list:
+                    status_cb(
+                        f"{num_contexts_done + 1}/{num_contexts}. "
+                        f"Now indexing course {course.display_name} ({course.id})"
+                    )
+                    if course.id in keys_indexed:
+                        num_contexts_done += 1
+                        continue
+                    course_docs = index_course(course.id, index_name, status_cb)
+                    if incremental:
+                        IncrementalIndexCompleted.objects.get_or_create(context_key=course.id)
                     num_contexts_done += 1
-                    continue
-                course_docs = index_course(course.id, index_name, status_cb)
-                if incremental:
-                    IncrementalIndexCompleted.objects.get_or_create(context_key=course.id)
-                num_contexts_done += 1
-                num_blocks_done += len(course_docs)
+                    num_blocks_done += len(course_docs)
+        else:
+            status_cb("Skipping courses: MEILISEARCH_COURSE_INDEXING is 'none'.")
 
     IncrementalIndexCompleted.objects.all().delete()
     status_cb(f"Done! {num_blocks_done} blocks indexed across {num_contexts_done} courses, collections and libraries.")
@@ -773,6 +834,9 @@ def upsert_xblock_index_doc(usage_key: UsageKey, recursive: bool = True) -> None
         usage_key (UsageKey): The usage key of the XBlock to index
         recursive (bool): If True, also index all children of the XBlock
     """
+    if not is_course_indexing_enabled():
+        return
+
     xblock = modulestore().get_item(usage_key)
     xblock_type = xblock.scope_ids.block_type
 
@@ -783,12 +847,16 @@ def upsert_xblock_index_doc(usage_key: UsageKey, recursive: bool = True) -> None
 
     def add_with_children(block):
         """Recursively index the given XBlock/component"""
-        doc = searchable_doc_for_course_block(block)
-        docs.append(doc)
+        # Recurse regardless: a skipped section can still contain indexable children.
+        if should_index_course_block(block):
+            docs.append(searchable_doc_for_course_block(block))
         if recursive:
             _recurse_children(block, add_with_children)
 
     add_with_children(xblock)
+
+    if not docs:
+        return
 
     _update_index_docs(docs)
 

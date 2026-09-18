@@ -135,6 +135,39 @@ class TestUpdateIndexHandlers(ModuleStoreTestCase, LiveServerTestCase):
             "block-v1orgatest_coursetest_runtypeverticalblocktest_vertical-011f143b"
         )
 
+    @override_settings(MEILISEARCH_COURSE_INDEXING="none")
+    def test_course_indexing_none_skips_xblock_events(self, meilisearch_client):
+        """
+        With MEILISEARCH_COURSE_INDEXING='none', XBlock create/update events never
+        reach the index. Deletes stay ungated so a later re-enable does not inherit
+        stale documents.
+        """
+        course = self.store.create_course(
+            self.orgA.short_name,
+            "no_index_course",
+            "test_run",
+            self.user_id,
+            fields={"display_name": "Test Course"},
+        )
+        SearchAccess.objects.get_or_create(context_key=course.id)
+
+        with self.captureOnCommitCallbacks(execute=True):
+            sequential = self.store.create_child(self.user_id, course.location, "sequential", "test_sequential")
+
+        meilisearch_client.return_value.index.return_value.update_documents.assert_not_called()
+
+        sequential = self.store.get_item(sequential.location, self.user_id)
+        sequential.display_name = "Updated Sequential"
+        with self.captureOnCommitCallbacks(execute=True):
+            self.store.update_item(sequential, self.user_id)
+
+        meilisearch_client.return_value.index.return_value.update_documents.assert_not_called()
+
+        with self.captureOnCommitCallbacks(execute=True):
+            self.store.delete_item(sequential.location, self.user_id)
+
+        meilisearch_client.return_value.index.return_value.delete_document.assert_called()
+
     def test_library_creation_creates_search_access(self, meilisearch_client):
         """
         Test that creating a library automatically creates a SearchAccess record.
