@@ -15,7 +15,7 @@ from openedx.core.djangoapps.course_date_signals.models import SelfPacedRelative
 from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 
-from . import utils
+from .. import utils
 
 
 class SelfPacedDueDatesTests(ModuleStoreTestCase):  # pylint: disable=missing-class-docstring
