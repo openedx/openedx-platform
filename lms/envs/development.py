@@ -2,8 +2,10 @@
 This settings file is optimized for local development.  It should work equally well for bare-metal development and for
 running inside of development environments such as tutor.
 
-This file is currently in development itself and so may not work for everyone out of the box.  More updates, including
-updated documentation will be added as we get closer to removing devstack.py
+WARNING: THIS FILE IS EXPERIMENTAL
+These settings are currently in development themselves. They may not work for everyone out of the box.
+More updates, including updated documentation will be added as we get closer to removing devstack.py.
+Breaking changes are likely.
 """
 
 #Helpers for loading plugins and their settings.
