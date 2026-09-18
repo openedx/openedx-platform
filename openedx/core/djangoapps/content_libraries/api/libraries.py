@@ -415,7 +415,7 @@ def get_library(library_key: LibraryLocatorV2) -> ContentLibraryMetadata:
 
 
 def create_library(
-    org: str,
+    org: Organization,
     slug: str,
     title: str,
     description: str = "",
