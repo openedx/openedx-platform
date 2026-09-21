@@ -536,6 +536,18 @@ def get_ccx_schedule(course, ccx):
     def visit(node, depth=1):
         """
         Recursive generator function which yields CCX schedule nodes.
+        We convert dates to string to get them ready for use by the js date
+        widgets, which use text inputs.
+        Visits students visible nodes only; nodes children of hidden ones
+        are skipped as well.
+
+        Dates:
+        Only start date is applicable to a section. If ccx coach did not override start date then
+        getting it from the master course.
+        Both start and due dates are applicable to a subsection (aka sequential). If ccx coach did not override
+        these dates then getting these dates from corresponding subsection in master course.
+        Unit inherits start date and due date from its subsection. If ccx coach did not override these dates
+        then getting them from corresponding subsection in master course.
         """
         for child in node.get_children():
             # in case the children are visible to staff only, skip them

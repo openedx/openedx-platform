@@ -78,11 +78,11 @@ class CCXCoachMetadataView(DeveloperErrorViewMixin, APIView):
     """
     Return CCX Coach metadata for a master course or CCX course.
 
-    *Example Request*
+    **Example Request**
 
         GET /api/ccx_coach/v2/courses/{course_id|ccx_course_id}/metadata
 
-    *Response Values*
+    **Response Values**
 
         {
             "course_id": "course-v1:edX+DemoX+Demo_Course",
@@ -131,7 +131,7 @@ class CreateCCXView(DeveloperErrorViewMixin, APIView):
     """
     Create a CCX course for a master course and return its metadata payload.
 
-    *Example Request*
+    **Example Request**
 
         POST /api/ccx_coach/v2/courses/{course_id}/create_ccx
         { "name": "My CCX" }
@@ -192,11 +192,11 @@ class CCXScheduleView(DeveloperErrorViewMixin, APIView):
     """
     Return the CCX schedule for a CCX course.
 
-    *Example Request*
+    **Example Request**
 
         GET /api/ccx_coach/v2/courses/{ccx_course_id}/schedule
 
-    *Response Values*
+    **Response Values**
 
         A JSON array of schedule blocks (sections -> subsections -> units), each
         with `location`, `display_name`, `category`, `start`, optional
@@ -219,12 +219,12 @@ class SaveScheduleView(DeveloperErrorViewMixin, APIView):
     """
     Apply an edited schedule tree to a CCX course.
 
-    *Example Request*
+    **Example Request**
 
         POST /api/ccx_coach/v2/courses/{ccx_course_id}/save_schedule
         [ { "location": "...", "hidden": false, "start": "...", "due": "...", "children": [...] }, ... ]
 
-    *Response Values*
+    **Response Values**
 
         { "schedule": [...], "grading_policy": "<json string>" }
 
@@ -268,7 +268,7 @@ class RemoveScheduleView(DeveloperErrorViewMixin, APIView):
     """
     Remove a block (and its descendants) from a CCX schedule.
 
-    *Example Request*
+    **Example Request**
 
         POST /api/ccx_coach/v2/courses/{ccx_course_id}/remove_schedule
         { "location": "block-v1:edX+DemoX+Demo_Course+type@chapter+block@week1" }
