@@ -14,6 +14,7 @@ from common.djangoapps.student.tests.factories import CourseEnrollmentFactory
 from openedx.core.djangoapps.content.block_structure.api import clear_course_from_cache
 from openedx.core.djangoapps.content.block_structure.factory import BlockStructureFactory
 from openedx.core.djangoapps.content.block_structure.transformers import BlockStructureTransformers
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 
 from ...api import get_course_blocks
 from ..library_content import (
@@ -22,7 +23,6 @@ from ..library_content import (
     _load_block_class,
 )
 from .helpers import CourseStructureTestCase
-from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 
 
 class MockedModule:
@@ -482,4 +482,3 @@ class LoadBlockClassTestCase(TestCase):
         and aborted the block structure build for the whole course.
         """
         assert _load_block_class('p') is None
-
