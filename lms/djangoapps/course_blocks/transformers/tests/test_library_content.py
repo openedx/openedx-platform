@@ -5,15 +5,24 @@ Tests for ContentLibraryTransformer.
 from unittest import mock
 
 from ddt import data, ddt
+from django.test import TestCase
+from xblock.core import XBlock
+from xblock.plugin import PluginMissingError
 
 import openedx.core.djangoapps.content.block_structure.api as bs_api
 from common.djangoapps.student.tests.factories import CourseEnrollmentFactory
 from openedx.core.djangoapps.content.block_structure.api import clear_course_from_cache
+from openedx.core.djangoapps.content.block_structure.factory import BlockStructureFactory
 from openedx.core.djangoapps.content.block_structure.transformers import BlockStructureTransformers
 
 from ...api import get_course_blocks
-from ..library_content import ContentLibraryOrderTransformer, ContentLibraryTransformer
+from ..library_content import (
+    ContentLibraryOrderTransformer,
+    ContentLibraryTransformer,
+    _load_block_class,
+)
 from .helpers import CourseStructureTestCase
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 
 
 class MockedModule:
@@ -176,6 +185,73 @@ class ContentLibraryTransformerTestCase(CourseStructureTestCase):
                                                                                          f'{block_type}1',
                                                                                          selected_vertical,
                                                                                          selected_child), f"Expected 'selected' equality failed in iteration {i}."  # pylint: disable=line-too-long
+
+
+    def _collect_with_uninstalled(self, uninstalled_type):
+        """
+        Run collect() with uninstalled_type behaving as though its XBlock is missing.
+
+        Only calls that pass no default are made to raise, which is what distinguishes
+        collect() from the modulestore: the modulestore passes its default_class and so
+        loads an unknown type as a HiddenBlock, while collect() passed none and raised.
+
+        Arguments:
+            uninstalled_type (str): block type to treat as having no installed XBlock.
+
+        Returns:
+            The collected BlockStructure.
+        """
+        block_structure = BlockStructureFactory.create_from_modulestore(
+            self.course.location, modulestore()
+        )
+        real_load_class = XBlock.load_class
+
+        def load_class(identifier, default=None, select=None):
+            """Raise for the target type only when no default was supplied."""
+            if identifier == uninstalled_type and default is None:
+                raise PluginMissingError(identifier)
+            return real_load_class(identifier, default, select)
+
+        with mock.patch.object(XBlock, 'load_class', side_effect=load_class):
+            ContentLibraryTransformer.collect(block_structure)
+
+        return block_structure
+
+    def test_collect_skips_block_with_uninstalled_type(self):
+        """
+        collect() completes instead of letting PluginMissingError escape.
+
+        The item bank is skipped, so its children get no analytics summary, but the
+        structure is still built and can be stored. Before this, the exception aborted
+        the build for the entire course and nothing was ever cached, so every request
+        repeated the failure and the course stayed inaccessible.
+        """
+        block_structure = self._collect_with_uninstalled('library_content')
+
+        library_block_key = self.blocks['library_content1'].location
+        children = block_structure.get_children(library_block_key)
+        assert children
+        for child_key in children:
+            assert block_structure.get_transformer_block_field(
+                child_key, ContentLibraryTransformer, 'block_analytics_summary'
+            ) is None
+
+    def test_collect_summarizes_when_type_is_installed(self):
+        """
+        Skipping is limited to the uninstalled type; normal collection is unchanged.
+        """
+        block_structure = BlockStructureFactory.create_from_modulestore(
+            self.course.location, modulestore()
+        )
+        ContentLibraryTransformer.collect(block_structure)
+
+        library_block_key = self.blocks['library_content1'].location
+        children = block_structure.get_children(library_block_key)
+        assert children
+        for child_key in children:
+            assert block_structure.get_transformer_block_field(
+                child_key, ContentLibraryTransformer, 'block_analytics_summary'
+            ) is not None
 
 
 @ddt
@@ -384,3 +460,26 @@ class ContentLibraryOrderTransformerTestCase(CourseStructureTestCase):
                     break
 
             assert expected_children_without_hiding_or_gating != [child.block_id for child in children]
+
+
+class LoadBlockClassTestCase(TestCase):
+    """
+    Tests for _load_block_class.
+    """
+
+    def test_installed_block_type_loads(self):
+        """
+        A block type with an installed XBlock resolves to its class.
+        """
+        assert _load_block_class('vertical') is not None
+
+    def test_uninstalled_block_type_returns_none(self):
+        """
+        A block type with no installed XBlock yields None rather than raising.
+
+        Courses can end up holding a block of type 'p' after a bad OLX import. Before
+        this returned None, PluginMissingError escaped ContentLibraryTransformer.collect
+        and aborted the block structure build for the whole course.
+        """
+        assert _load_block_class('p') is None
+
