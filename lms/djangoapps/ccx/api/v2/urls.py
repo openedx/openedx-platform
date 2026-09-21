@@ -27,11 +27,6 @@ urlpatterns = [
         name='schedule',
     ),
     re_path(
-        fr'^courses/{settings.COURSE_ID_PATTERN}/save_schedule$',
-        views.SaveScheduleView.as_view(),
-        name='save_schedule',
-    ),
-    re_path(
         fr'^courses/{settings.COURSE_ID_PATTERN}/remove_schedule$',
         views.RemoveScheduleView.as_view(),
         name='remove_schedule',

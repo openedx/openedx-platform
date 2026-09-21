@@ -97,16 +97,16 @@ class CCXCoachV2RemoveScheduleViewTest(ScheduleTestMixin, CcxTestCase):
 
 
 @override_settings(CUSTOM_COURSES_EDX=True)
-class CCXCoachV2SaveScheduleViewTest(ScheduleTestMixin, CcxTestCase):
-    """Tests for `POST /api/ccx_coach/v2/courses/{ccxId}/save_schedule`."""
+class CCXCoachV2SchedulePutViewTest(ScheduleTestMixin, CcxTestCase):
+    """Tests for `PUT /api/ccx_coach/v2/courses/{ccxId}/schedule`."""
 
-    endpoint_name = 'save_schedule'
+    endpoint_name = 'schedule'
 
     def test_save_hides_section_and_returns_payload(self):
         location = str(self.chapters[0].location)
         payload = [{'location': location, 'hidden': True, 'start': ''}]
 
-        response = self.api_client.post(self._url(self.ccx_key), payload, format='json')
+        response = self.api_client.put(self._url(self.ccx_key), payload, format='json')
 
         assert response.status_code == status.HTTP_200_OK
         assert 'schedule' in response.data
@@ -115,7 +115,7 @@ class CCXCoachV2SaveScheduleViewTest(ScheduleTestMixin, CcxTestCase):
         assert node['hidden'] is True
 
     def test_invalid_payload_returns_400(self):
-        response = self.api_client.post(self._url(self.ccx_key), {'not': 'a list'}, format='json')
+        response = self.api_client.put(self._url(self.ccx_key), {'not': 'a list'}, format='json')
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert response.data.get('error_code') == 'invalid_schedule_payload'
 
@@ -135,7 +135,7 @@ class CCXCoachV2SaveScheduleViewTest(ScheduleTestMixin, CcxTestCase):
             {'location': bogus_location, 'hidden': True, 'start': ''},
         ]
 
-        response = self.api_client.post(self._url(self.ccx_key), payload, format='json')
+        response = self.api_client.put(self._url(self.ccx_key), payload, format='json')
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert response.data.get('error_code') == 'invalid_schedule_payload'
@@ -149,6 +149,6 @@ class CCXCoachV2SaveScheduleViewTest(ScheduleTestMixin, CcxTestCase):
     def test_unknown_location_returns_json_400(self):
         bogus = str(self.course.id.make_usage_key('chapter', 'does_not_exist'))
         payload = [{'location': bogus, 'hidden': True, 'start': ''}]
-        response = self.api_client.post(self._url(self.ccx_key), payload, format='json')
+        response = self.api_client.put(self._url(self.ccx_key), payload, format='json')
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert response.data.get('error_code') == 'invalid_schedule_payload'

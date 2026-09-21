@@ -5,8 +5,11 @@ Endpoints consumed by the Instructor Dashboard MFE (CCX Coach experience):
 
 * `GET  /api/ccx_coach/v2/courses/{course_id|ccx_course_id}/metadata`
 * `POST /api/ccx_coach/v2/courses/{course_id}/create_ccx`
+* `GET  /api/ccx_coach/v2/courses/{ccx_course_id}/schedule`
+* `PUT  /api/ccx_coach/v2/courses/{ccx_course_id}/schedule`
+* `POST /api/ccx_coach/v2/courses/{ccx_course_id}/remove_schedule`
 
-Both follow the Instructor Dashboard v2 conventions (DRF `APIView` +
+These follow the Instructor Dashboard v2 conventions (DRF `APIView` +
 `DeveloperErrorViewMixin`, JWT/session auth) and reuse existing CCX logic.
 """
 
@@ -190,18 +193,23 @@ class CreateCCXView(DeveloperErrorViewMixin, APIView):
 
 class CCXScheduleView(DeveloperErrorViewMixin, APIView):
     """
-    Return the CCX schedule for a CCX course.
+    Read or replace the schedule of a CCX course.
 
-    **Example Request**
+    **Example Requests**
 
         GET /api/ccx_coach/v2/courses/{ccx_course_id}/schedule
 
+        PUT /api/ccx_coach/v2/courses/{ccx_course_id}/schedule
+        [ { "location": "...", "hidden": false, "start": "...", "due": "...", "children": [...] }, ... ]
+
     **Response Values**
 
-        A JSON array of schedule blocks (sections -> subsections -> units), each
-        with `location`, `display_name`, `category`, `start`, optional
-        `due`, `hidden` and optional `children`. This mirrors the legacy
-        `ccx_schedule` output.
+        `GET` returns a JSON array of schedule blocks (sections -> subsections
+        -> units), each with `location`, `display_name`, `category`, `start`,
+        optional `due`, `hidden` and optional `children`. This mirrors the
+        legacy `ccx_schedule` output.
+
+        `PUT` returns `{ "schedule": [...], "grading_policy": "<json string>" }`.
     """
 
     authentication_classes = (JwtAuthentication, SessionAuthenticationAllowInactiveUser)
@@ -214,29 +222,8 @@ class CCXScheduleView(DeveloperErrorViewMixin, APIView):
             return error_response
         return Response(get_ccx_schedule(master_course, ccx), status=status.HTTP_200_OK)
 
-
-class SaveScheduleView(DeveloperErrorViewMixin, APIView):
-    """
-    Apply an edited schedule tree to a CCX course.
-
-    **Example Request**
-
-        POST /api/ccx_coach/v2/courses/{ccx_course_id}/save_schedule
-        [ { "location": "...", "hidden": false, "start": "...", "due": "...", "children": [...] }, ... ]
-
-    **Response Values**
-
-        { "schedule": [...], "grading_policy": "<json string>" }
-
-    Mirrors the legacy `save_ccx` behavior (including automatic grading-policy
-    adjustment) but with DRF/JWT auth and JSON in/out.
-    """
-
-    authentication_classes = (JwtAuthentication, SessionAuthenticationAllowInactiveUser)
-    permission_classes = (IsAuthenticated, IsCCXCoach)
-
-    def post(self, request, course_id):
-        """Save the supplied schedule tree to the CCX course."""
+    def put(self, request, course_id):
+        """Replace the CCX course's schedule with the supplied schedule tree."""
         master_course, ccx, error_response = _resolve_ccx_course(course_id)
         if error_response:
             return error_response
