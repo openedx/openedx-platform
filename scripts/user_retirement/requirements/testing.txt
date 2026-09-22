@@ -9,11 +9,11 @@ attrs==26.1.0
     # via zeep
 backoff==2.2.1
     # via edx-platform-user-retirement-scripts
-boto3==1.43.96
+boto3==1.43.99
     # via
     #   edx-platform-user-retirement-scripts
     #   moto
-botocore==1.43.96
+botocore==1.43.99
     # via
     #   boto3
     #   moto
@@ -49,9 +49,9 @@ django-waffle==5.0.0
     # via edx-django-utils
 edx-django-utils==8.0.2
     # via edx-rest-api-client
-edx-rest-api-client==7.0.0
+edx-rest-api-client==7.1.0
     # via edx-platform-user-retirement-scripts
-google-api-core==2.37.0
+google-api-core==2.38.0
     # via google-api-python-client
 google-api-python-client==2.200.0
     # via edx-platform-user-retirement-scripts
@@ -92,13 +92,13 @@ opentelemetry-api==1.44.0
     # via google-api-core
 packaging==26.3
     # via pytest
-platformdirs==4.11.9
+platformdirs==4.11.12
     # via zeep
 pluggy==1.6.0
     # via pytest
 proto-plus==1.28.4
     # via google-api-core
-protobuf==7.36.1
+protobuf==7.36.2
     # via
     #   google-api-core
     #   googleapis-common-protos
@@ -119,7 +119,7 @@ pyjwt==2.14.0
     #   simple-salesforce
 pynacl==1.6.2
     # via edx-django-utils
-pyparsing==3.3.2
+pyparsing==3.3.3
     # via httplib2
 pytest==9.1.1
 python-dateutil==2.9.0.post0
