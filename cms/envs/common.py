@@ -1314,6 +1314,20 @@ EVENT_BUS_PRODUCER_CONFIG.update({  # noqa: F405
 # This affects the Authoring API swagger docs but not the legacy swagger docs under /api-docs/.
 REST_FRAMEWORK['DEFAULT_SCHEMA_CLASS'] = 'drf_spectacular.openapi.AutoSchema'  # noqa: F405
 
+# Identity of the generated Authoring API schema. The full configuration —
+# endpoint filtering, path prefixes and SERVERS — lives in devstack.py and
+# production.py, because SERVERS depends on CMS_BASE and AUTHORING_API_URL,
+# which are only populated there. These three fields do not, so they are
+# defined here to give any settings module that does not define its own
+# SPECTACULAR_SETTINGS (notably cms.envs.development, used to generate the
+# committed schema in CI) a titled, versioned document rather than
+# drf-spectacular's empty-title, 0.0.0 default.
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Authoring API',
+    'DESCRIPTION': 'Experimental API to edit xblocks and course content.',
+    'VERSION': '0.1.0',
+}
+
 ################### Studio Search (beta), using Meilisearch ###################
 
 # Enable Studio search features (powered by Meilisearch) (beta, off by default)
