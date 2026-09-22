@@ -598,32 +598,32 @@ def get_ccx_schedule(course, ccx):
 
 def save_ccx_schedule(course, ccx, schedule):  # pylint: disable=too-many-statements
     """
-    Apply an edited CCX `schedule` tree to the CCX and republish it.
+    Apply an edited CCX ``schedule`` tree to the CCX and republish it.
 
-    Recursively overrides the `visible_to_staff_only`, `start` and `due`
+    Recursively overrides the ``visible_to_staff_only``, ``start`` and ``due``
     fields for units in the course from the supplied schedule data, adjusts the
-    grading policy's `min_count` values when graded sections were hidden, and
-    fires the `course_published` signal.
+    grading policy's ``min_count`` values when graded sections were hidden, and
+    fires the ``course_published`` signal.
 
-    This is the shared logic behind the legacy `save_ccx` view and the CCX
+    This is the shared logic behind the legacy ``save_ccx`` view and the CCX
     Coach v2 save-schedule endpoint. Callers are responsible for access control.
 
     Arguments:
         course (CourseBlock): the master course.
         ccx (CustomCourseForEdX): the CCX being edited.
         schedule (list): the schedule tree (list of block dicts with
-            `location`, `hidden`, `start`, optional `due` and
-            `children`).
+            ``location``, ``hidden``, ``start``, optional ``due`` and
+            ``children``).
 
     Returns:
-        tuple: `(schedule, grading_policy)` where `schedule` is the
+        tuple: ``(schedule, grading_policy)`` where ``schedule`` is the
         regenerated schedule (see :func:`get_ccx_schedule`) and
-        `grading_policy` is the (possibly adjusted) grading policy dict.
+        ``grading_policy`` is the (possibly adjusted) grading policy dict.
     """
     def override_fields(parent, data, graded, earliest=None, ccx_ids_to_delete=None):
         """
         Recursively apply CCX schedule data to CCX by overriding the
-        `visible_to_staff_only`, `start` and `due` fields for units in the
+        ``visible_to_staff_only``, ``start`` and ``due`` fields for units in the
         course.
         """
         if ccx_ids_to_delete is None:
@@ -713,10 +713,10 @@ def remove_block_from_ccx_schedule(ccx, course, location):
     """
     Remove a block (and its descendants) from the CCX schedule.
 
-    Hides the block identified by `location` and all of its descendants from
-    learners (`visible_to_staff_only=True`) and clears any CCX start/due date
+    Hides the block identified by ``location`` and all of its descendants from
+    learners (``visible_to_staff_only=True``) and clears any CCX start/due date
     overrides on them, then republishes the CCX. This is the inverse of adding
-    a block to the schedule and mirrors what the legacy `save_ccx` flow does
+    a block to the schedule and mirrors what the legacy ``save_ccx`` flow does
     when a unit is hidden.
 
     Arguments:
@@ -728,10 +728,10 @@ def remove_block_from_ccx_schedule(ccx, course, location):
         list: the regenerated schedule (see :func:`get_ccx_schedule`).
 
     Raises:
-        ValueError: if `location` does not identify a block in the course.
+        ValueError: if ``location`` does not identify a block in the course.
     """
     def find_block(node):
-        """Depth-first search for the block whose location matches `location`."""
+        """Depth-first search for the block whose location matches ``location``."""
         for child in node.get_children():
             if str(child.location) == location:
                 return child
@@ -741,7 +741,7 @@ def remove_block_from_ccx_schedule(ccx, course, location):
         return None
 
     def hide(block):
-        """Hide `block` and its descendants and clear their date overrides."""
+        """Hide ``block`` and its descendants and clear their date overrides."""
         override_field_for_ccx(ccx, block, 'visible_to_staff_only', True)
         clear_override_for_ccx(ccx, block, 'start')
         clear_override_for_ccx(ccx, block, 'due')
