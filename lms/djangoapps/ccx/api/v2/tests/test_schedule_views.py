@@ -102,16 +102,18 @@ class CCXCoachV2SchedulePutViewTest(ScheduleTestMixin, CcxTestCase):
 
     endpoint_name = 'schedule'
 
-    def test_save_hides_section_and_returns_payload(self):
+    def test_save_hides_section_and_returns_schedule(self):
         location = str(self.chapters[0].location)
         payload = [{'location': location, 'hidden': True, 'start': ''}]
 
         response = self.api_client.put(self._url(self.ccx_key), payload, format='json')
 
         assert response.status_code == status.HTTP_200_OK
-        assert 'schedule' in response.data
-        assert 'grading_policy' in response.data
-        node = next(n for n in response.data['schedule'] if n['location'] == location)
+        # The response is the updated schedule itself, matching the GET payload
+        # (a sequence of blocks, not a dict); the grading policy is read from its
+        # own endpoint.
+        assert isinstance(response.data, (list, tuple))
+        node = next(n for n in response.data if n['location'] == location)
         assert node['hidden'] is True
 
     def test_invalid_payload_returns_400(self):

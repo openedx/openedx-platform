@@ -13,7 +13,6 @@ These follow the Instructor Dashboard v2 conventions (DRF `APIView` +
 `DeveloperErrorViewMixin`, JWT/session auth) and reuse existing CCX logic.
 """
 
-import json
 import logging
 
 from ccx_keys.locator import CCXLocator
@@ -204,12 +203,11 @@ class CCXScheduleView(DeveloperErrorViewMixin, APIView):
 
     **Response Values**
 
-        `GET` returns a JSON array of schedule blocks (sections -> subsections
-        -> units), each with `location`, `display_name`, `category`, `start`,
-        optional `due`, `hidden` and optional `children`. This mirrors the
-        legacy `ccx_schedule` output.
-
-        `PUT` returns `{ "schedule": [...], "grading_policy": "<json string>" }`.
+        Both ``GET`` and ``PUT`` return the same payload: a JSON array of
+        schedule blocks (sections -> subsections -> units), each with
+        ``location``, ``display_name``, ``category``, ``start``, optional
+        ``due``, ``hidden`` and optional ``children``. This mirrors the legacy
+        ``ccx_schedule`` output.
     """
 
     authentication_classes = (JwtAuthentication, SessionAuthenticationAllowInactiveUser)
@@ -239,16 +237,15 @@ class CCXScheduleView(DeveloperErrorViewMixin, APIView):
             # walks the tree, so a failure part-way through would leave the
             # schedule half-applied. Exiting via the exception rolls it back.
             with transaction.atomic():
-                schedule, policy = save_ccx_schedule(master_course, ccx, schedule_data)
+                # save_ccx_schedule() also returns the (possibly adjusted) grading
+                # policy The FE can read it from the grading_policy endpoint if necessary.
+                schedule, _policy = save_ccx_schedule(master_course, ccx, schedule_data)
         except (KeyError, ValueError, TypeError):
             # Unknown block location, missing required keys, or malformed dates
             # in the payload. Return a structured JSON error rather than a 500.
             return _error_response('invalid_schedule_payload', status.HTTP_400_BAD_REQUEST)
 
-        return Response(
-            {'schedule': schedule, 'grading_policy': json.dumps(policy, indent=4)},
-            status=status.HTTP_200_OK,
-        )
+        return Response(schedule, status=status.HTTP_200_OK)
 
 
 class RemoveScheduleView(DeveloperErrorViewMixin, APIView):
