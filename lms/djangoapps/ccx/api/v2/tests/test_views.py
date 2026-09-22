@@ -256,7 +256,7 @@ class CCXCoachV2GradingPolicyViewTest(CcxTestCase):
     def test_requires_authentication(self):
         self.api_client.force_authenticate(user=None)
         response = self.api_client.get(self._url(self.ccx_key))
-        assert response.status_code in (status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN)
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     def test_non_coach_forbidden(self):
         self.api_client.force_authenticate(user=UserFactory.create())
@@ -351,7 +351,7 @@ class CCXCoachV2GradingPolicyPutViewTest(CcxTestCase):
         response = self.api_client.put(
             self._url(self.ccx_key), {'policy': self.NEW_POLICY}, format='json'
         )
-        assert response.status_code in (status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN)
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     def test_put_non_coach_forbidden(self):
         self.api_client.force_authenticate(user=UserFactory.create())

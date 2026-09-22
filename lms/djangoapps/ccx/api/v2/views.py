@@ -46,7 +46,7 @@ from lms.djangoapps.ccx.utils import (
 from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin
 from openedx.core.lib.courses import get_course_by_id
 from lms.djangoapps.ccx.overrides import get_override_for_ccx, override_field_for_ccx
-from xmodule.modulestore.django import SignalHandler  # pylint: disable=wrong-import-order
+from xmodule.modulestore.django import SignalHandler
 
 log = logging.getLogger(__name__)
 
