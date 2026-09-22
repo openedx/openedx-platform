@@ -10,8 +10,6 @@ from django.contrib.admin import autodiscover as django_autodiscover
 from django.shortcuts import redirect
 from django.urls import include, path, re_path
 from django.utils.translation import gettext_lazy as _
-from django.views.decorators.cache import cache_page
-from django.views.decorators.vary import vary_on_headers
 from django.views.generic import RedirectView
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 
@@ -23,7 +21,7 @@ from cms.djangoapps.contentstore import views as contentstore_views
 from cms.djangoapps.contentstore.views.block import xblock_edit_view
 from cms.djangoapps.contentstore.views.organization import OrganizationListView
 from openedx.core import toggles as core_toggles
-from openedx.core.apidocs import get_api_docs_settings
+from openedx.core.apidocs import cached_schema_view
 from openedx.core.djangoapps.password_policy import compliance as password_policy_compliance
 from openedx.core.djangoapps.password_policy.forms import PasswordPolicyAwareAdminAuthForm
 
@@ -352,12 +350,9 @@ urlpatterns += [
 #
 # Schema generation is expensive and these endpoints are public, so both schema
 # routes are cached for OPENAPI_CACHE_TIMEOUT, as edx-api-doc-tools did via
-# SchemaView.as_cached_view.
-_apidocs_schema_view = cache_page(settings.OPENAPI_CACHE_TIMEOUT)(
-    vary_on_headers("Cookie", "Authorization")(
-        SpectacularAPIView.as_view(custom_settings=get_api_docs_settings())
-    )
-)
+# SchemaView.as_cached_view. The document is too large for cache_page to store
+# -- see cached_schema_view() for why it caches the compressed body instead.
+_apidocs_schema_view = cached_schema_view()
 
 urlpatterns += [
     re_path(

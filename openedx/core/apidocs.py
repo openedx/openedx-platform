@@ -2,8 +2,18 @@
 Open API support.
 """
 
+import logging
+
 from django.conf import settings
+from django.core.cache import cache
+from django.http import HttpResponse
+from django.utils.cache import add_never_cache_headers
+from edx_django_utils.cache import get_cache_key
 from rest_framework import serializers
+
+from openedx.core.lib.cache_utils import zpickle, zunpickle
+
+log = logging.getLogger(__name__)
 
 # Settings for the service-wide ``/api-docs`` schema, served by drf-spectacular.
 #
@@ -46,6 +56,75 @@ def get_api_docs_settings():
     if contact_email:
         api_docs_settings['CONTACT'] = {'email': contact_email}
     return api_docs_settings
+
+
+def cached_schema_view():
+    """
+    Build the ``/api-docs`` schema view, caching the rendered document compressed.
+
+    ``cache_page`` stores the pickled ``Response``, which for this schema is over
+    memcached's default 1MB item limit. ``CACHES['default']`` sets
+    ``ignore_exc: True``, so that oversized ``set`` fails silently and Django
+    deletes the key -- the endpoint would look cached while regenerating the
+    whole schema on every request. Storing the zlib-compressed body instead
+    brings it to roughly a tenth of the limit.
+
+    The document is identical for every requester, so the key covers only the
+    path and the negotiated representation. Nothing in it varies by user:
+    ``SERVE_PUBLIC`` defaults to ``True``, ``SERVE_*`` cannot be set through
+    ``custom_settings``, and ``API_DOCS_SETTINGS`` sets ``'SERVERS': []`` so no
+    ``servers`` block is emitted.
+
+    ``drf_spectacular.views`` is imported inside the function rather than at
+    module scope: this module is imported from the settings, and importing DRF
+    views that early freezes ``api_settings`` before ``DEFAULT_SCHEMA_CLASS`` is
+    set, which makes schema generation fail with ``Incompatible AutoSchema used
+    on View``.
+    """
+    from drf_spectacular.views import SpectacularAPIView  # pylint: disable=import-outside-toplevel
+
+    view = SpectacularAPIView.as_view(custom_settings=get_api_docs_settings())
+
+    def _response(content_type, body):
+        """Build the response, marking it uncacheable downstream as drf-yasg did."""
+        response = HttpResponse(body, content_type=content_type)
+        add_never_cache_headers(response)
+        return response
+
+    def schema_view(request, *args, **kwargs):
+        """Serve the schema, from the cache when a fresh copy is stored."""
+        if not settings.OPENAPI_CACHE_TIMEOUT:
+            return view(request, *args, **kwargs)
+
+        cache_key = get_cache_key(
+            resource='apidocs-schema',
+            path=request.get_full_path(),
+            accept=request.META.get('HTTP_ACCEPT', ''),
+        ) + '.zpickled'
+
+        cached = cache.get(cache_key)
+        if cached:
+            try:
+                content_type, body = zunpickle(cached)
+            except Exception:  # pylint: disable=broad-except
+                log.warning("Data for cache is corrupt for cache key %s", cache_key)
+                cache.delete(cache_key)
+            else:
+                return _response(content_type, body)
+
+        response = view(request, *args, **kwargs).render()
+        if response.status_code != 200:
+            return response
+
+        content_type = response['Content-Type']
+        cache.set(
+            cache_key,
+            zpickle((content_type, response.content)),
+            settings.OPENAPI_CACHE_TIMEOUT,
+        )
+        return _response(content_type, response.content)
+
+    return schema_view
 
 
 def cursor_paginate_serializer(inner_serializer_class):

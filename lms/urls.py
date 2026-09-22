@@ -9,8 +9,6 @@ from django.contrib import admin
 from django.contrib.admin import autodiscover as django_autodiscover
 from django.urls import include, path, re_path
 from django.utils.translation import gettext_lazy as _
-from django.views.decorators.cache import cache_page
-from django.views.decorators.vary import vary_on_headers
 from django.views.generic.base import RedirectView
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 from edx_django_utils.plugins import get_plugin_url_patterns
@@ -38,7 +36,7 @@ from lms.djangoapps.instructor_task import views as instructor_task_views
 from lms.djangoapps.mfe_config_api.urls import frontend_site_config_urls, mfe_config_urls
 from lms.djangoapps.static_template_view import views as static_template_view_views
 from lms.djangoapps.staticbook import views as staticbook_views
-from openedx.core.apidocs import get_api_docs_settings
+from openedx.core.apidocs import cached_schema_view
 from openedx.core.djangoapps.auth_exchange.views import LoginWithAccessTokenView
 from openedx.core.djangoapps.catalog.models import CatalogIntegration
 from openedx.core.djangoapps.common_views.xblock import xblock_resource
@@ -1004,12 +1002,9 @@ if settings.ENABLE_FINANCIAL_ASSISTANCE_FORM:
 #
 # Schema generation is expensive and these endpoints are public, so both schema
 # routes are cached for OPENAPI_CACHE_TIMEOUT, as edx-api-doc-tools did via
-# SchemaView.as_cached_view.
-_apidocs_schema_view = cache_page(settings.OPENAPI_CACHE_TIMEOUT)(
-    vary_on_headers("Cookie", "Authorization")(
-        SpectacularAPIView.as_view(custom_settings=get_api_docs_settings())
-    )
-)
+# SchemaView.as_cached_view. The document is too large for cache_page to store
+# -- see cached_schema_view() for why it caches the compressed body instead.
+_apidocs_schema_view = cached_schema_view()
 
 urlpatterns += [
     re_path(
