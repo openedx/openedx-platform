@@ -32,10 +32,11 @@ from lms.djangoapps.ccx.api.v0.views import get_valid_course
 from lms.djangoapps.ccx.api.v2.permissions import IsCCXCoach
 from lms.djangoapps.ccx.api.v2.serializers import (
     CCXCoachMetadataSerializer,
+    CCXGradingPolicyRequestSerializer,
     CreateCCXRequestSerializer,
     RemoveScheduleRequestSerializer,
-    CCXGradingPolicyRequestSerializer,
 )
+from lms.djangoapps.ccx.overrides import get_override_for_ccx, override_field_for_ccx
 from lms.djangoapps.ccx.utils import (
     create_ccx_course,
     get_ccx_for_coach,
@@ -45,7 +46,6 @@ from lms.djangoapps.ccx.utils import (
 )
 from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin
 from openedx.core.lib.courses import get_course_by_id
-from lms.djangoapps.ccx.overrides import get_override_for_ccx, override_field_for_ccx
 from xmodule.modulestore.django import SignalHandler
 
 log = logging.getLogger(__name__)
@@ -354,51 +354,34 @@ class CCXGradingPolicyView(DeveloperErrorViewMixin, APIView):
     authentication_classes = (JwtAuthentication, SessionAuthenticationAllowInactiveUser)
     permission_classes = (IsAuthenticated, IsCCXCoach)
 
-    def _resolve_ccx(self, course_id):
-        """Resolve `course_id` to `(ccx, master_course)` or return an error response."""
-        try:
-            course_key = CourseKey.from_string(course_id)
-        except InvalidKeyError:
-            return None, None, _error_response('course_id_not_valid', status.HTTP_400_BAD_REQUEST)
-
-        if not isinstance(course_key, CCXLocator):
-            return None, None, _error_response(
-                'course_id_not_valid_ccx_id', status.HTTP_400_BAD_REQUEST
-            )
-
-        ccx_obj, ccx_course_key, error_code, http_status = get_valid_course(course_id, is_ccx=True)
-        if error_code:
-            return None, None, _error_response(error_code, http_status)
-
-        master_course = get_course_by_id(ccx_course_key.to_course_locator())
-        return ccx_obj, master_course, None
-
     def get(self, request, course_id):
         """Return the effective grading policy for the given CCX course id."""
-        ccx_obj, master_course, error_response = self._resolve_ccx(course_id)
-        if error_response is not None:
-            return error_response
+        try:
+            master_course, ccx = _resolve_ccx_course(course_id)
+        except _CCXResolutionError as exc:
+            return _error_response(exc.error_code, exc.http_status)
 
         grading_policy = get_override_for_ccx(
-            ccx_obj, master_course, 'grading_policy', master_course.grading_policy
+            ccx, master_course, 'grading_policy', master_course.grading_policy
         )
         return Response(grading_policy, status=status.HTTP_200_OK)
 
     def put(self, request, course_id):
         """Replace the CCX grading policy override with the provided policy."""
-        ccx_obj, master_course, error_response = self._resolve_ccx(course_id)
-        if error_response is not None:
-            return error_response
+        try:
+            master_course, ccx = _resolve_ccx_course(course_id)
+        except _CCXResolutionError as exc:
+            return _error_response(exc.error_code, exc.http_status)
 
         request_serializer = CCXGradingPolicyRequestSerializer(data=request.data)
         request_serializer.is_valid(raise_exception=True)
         policy = request_serializer.validated_data['policy']
 
-        override_field_for_ccx(ccx_obj, master_course, 'grading_policy', policy)
+        override_field_for_ccx(ccx, master_course, 'grading_policy', policy)
 
         # Match the legacy view: notify listeners so caches are invalidated.
-        ccx_course_key = CCXLocator.from_course_locator(master_course.id, str(ccx_obj.id))
-        responses = SignalHandler.course_published.send(sender=ccx_obj, course_key=ccx_course_key)
+        ccx_course_key = CCXLocator.from_course_locator(master_course.id, str(ccx.id))
+        responses = SignalHandler.course_published.send(sender=ccx, course_key=ccx_course_key)
         for rec, response in responses:
             log.info('Signal fired when course is published. Receiver: %s. Response: %s', rec, response)
 
