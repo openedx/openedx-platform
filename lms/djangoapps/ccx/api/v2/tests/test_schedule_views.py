@@ -78,6 +78,13 @@ class CCXCoachV2RemoveScheduleViewTest(ScheduleTestMixin, CcxTestCase):
         for child in node.get('children', []):
             assert child['hidden'] is True
 
+    def test_master_course_id_rejected(self):
+        """Removal requires a CCX id; a master course id is rejected by the resolver."""
+        response = self.api_client.post(
+            self._url(self.course.id), {'location': str(self.chapters[0].location)}, format='json'
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
     def test_missing_location_returns_400(self):
         response = self.api_client.post(self._url(self.ccx_key), {}, format='json')
         assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -101,6 +108,12 @@ class CCXCoachV2SchedulePutViewTest(ScheduleTestMixin, CcxTestCase):
     """Tests for `PUT /api/ccx_coach/v2/courses/{ccxId}/schedule`."""
 
     endpoint_name = 'schedule'
+
+    def test_master_course_id_rejected(self):
+        """Writing requires a CCX id; a master course id is rejected by the resolver."""
+        payload = [{'location': str(self.chapters[0].location), 'hidden': True, 'start': ''}]
+        response = self.api_client.put(self._url(self.course.id), payload, format='json')
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     def test_save_hides_section_and_returns_schedule(self):
         location = str(self.chapters[0].location)

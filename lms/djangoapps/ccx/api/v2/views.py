@@ -60,20 +60,40 @@ def _error_response(error_code, http_status, field_errors=None):
     return Response(payload, status=http_status)
 
 
+class _CCXResolutionError(Exception):
+    """
+    Raised when a CCX course id cannot be resolved to a CCX course.
+
+    Carries the machine-readable ``error_code`` and the HTTP status so the
+    calling view can translate the failure into this API's standard JSON error
+    response, keeping the resolver itself free of HTTP-layer concerns.
+    """
+
+    def __init__(self, error_code, http_status):
+        super().__init__(error_code)
+        self.error_code = error_code
+        self.http_status = http_status
+
+
 def _resolve_ccx_course(course_id):
     """
-    Resolve a CCX course id to `(master_course, ccx, error_response)`.
+    Resolve a CCX course id to ``(master_course, ccx)``.
 
-    `master_course` is the master :class:`CourseBlock` (loaded with full
-    depth for schedule traversal) and `ccx` is the
-    :class:`CustomCourseForEdX`. On failure, `error_response` is a DRF
-    `Response` and the first two values are `None`.
+    ``master_course`` is the master :class:`CourseBlock` (loaded with full depth
+    for schedule traversal) and ``ccx`` is the :class:`CustomCourseForEdX`.
+
+    Deliberately free of any HTTP-layer dependency: it raises rather than
+    returning a DRF ``Response``, so each caller owns the translation to a
+    response and this helper stays reusable outside the view layer.
+
+    :raises _CCXResolutionError: if ``course_id`` is not a valid, existing CCX
+        course id.
     """
     ccx, ccx_key, error_code, http_status = get_valid_course(course_id, is_ccx=True)
     if error_code:
-        return None, None, _error_response(error_code, http_status)
+        raise _CCXResolutionError(error_code, http_status)
     master_course = get_course_by_id(ccx_key.to_course_locator(), depth=None)
-    return master_course, ccx, None
+    return master_course, ccx
 
 
 class CCXCoachMetadataView(DeveloperErrorViewMixin, APIView):
@@ -215,16 +235,19 @@ class CCXScheduleView(DeveloperErrorViewMixin, APIView):
 
     def get(self, request, course_id):
         """Return the CCX schedule for the given CCX course id."""
-        master_course, ccx, error_response = _resolve_ccx_course(course_id)
-        if error_response:
-            return error_response
+        try:
+            master_course, ccx = _resolve_ccx_course(course_id)
+        except _CCXResolutionError as exc:
+            return _error_response(exc.error_code, exc.http_status)
+
         return Response(get_ccx_schedule(master_course, ccx), status=status.HTTP_200_OK)
 
     def put(self, request, course_id):
         """Replace the CCX course's schedule with the supplied schedule tree."""
-        master_course, ccx, error_response = _resolve_ccx_course(course_id)
-        if error_response:
-            return error_response
+        try:
+            master_course, ccx = _resolve_ccx_course(course_id)
+        except _CCXResolutionError as exc:
+            return _error_response(exc.error_code, exc.http_status)
 
         schedule_data = request.data
         if not isinstance(schedule_data, list):
@@ -266,10 +289,11 @@ class RemoveScheduleView(DeveloperErrorViewMixin, APIView):
     permission_classes = (IsAuthenticated, IsCCXCoach)
 
     def post(self, request, course_id):
-        """Remove the block identified by `location` from the CCX schedule."""
-        master_course, ccx, error_response = _resolve_ccx_course(course_id)
-        if error_response:
-            return error_response
+        """Remove the block identified by ``location`` from the CCX schedule."""
+        try:
+            master_course, ccx = _resolve_ccx_course(course_id)
+        except _CCXResolutionError as exc:
+            return _error_response(exc.error_code, exc.http_status)
 
         request_serializer = RemoveScheduleRequestSerializer(data=request.data)
         request_serializer.is_valid(raise_exception=True)
