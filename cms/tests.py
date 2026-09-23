@@ -1,6 +1,7 @@
 """Tests for the cms module itself."""
 
-from django.test import TestCase
+from django.core.cache import cache
+from django.test import TestCase, override_settings
 
 
 class CmsModuleTests(TestCase):
@@ -24,3 +25,26 @@ class CmsModuleTests(TestCase):
         """
         response = self.client.get('/api-docs/schema/')
         assert response.status_code == 200
+
+    @override_settings(
+        OPENAPI_CACHE_TIMEOUT=60,
+        CACHES={'default': {'BACKEND': 'django.core.cache.backends.locmem.LocMemCache'}},
+    )
+    def test_api_docs_schema_cache(self):
+        """
+        The schema cache is keyed on method and language, so neither an OPTIONS
+        response nor another language's document is served to a later GET.
+
+        The suite runs with OPENAPI_CACHE_TIMEOUT = 0 and a DummyCache, so the
+        cached branch is only reachable with both overridden.
+        """
+        cache.clear()
+        options = self.client.options('/api-docs/schema/')
+        spanish = self.client.get('/api-docs/schema/', HTTP_ACCEPT_LANGUAGE='es-419')
+        english = self.client.get('/api-docs/schema/', HTTP_ACCEPT_LANGUAGE='en')
+        cached = self.client.get('/api-docs/schema/', HTTP_ACCEPT_LANGUAGE='en')
+        assert options.status_code == 200
+        assert english.status_code == 200
+        assert english.content.startswith(b'openapi:')
+        assert english.content != spanish.content
+        assert english.content == cached.content

@@ -7,6 +7,7 @@ import logging
 from django.conf import settings
 from django.core.cache import cache
 from django.http import HttpResponse
+from django.utils import translation
 from django.utils.cache import add_never_cache_headers
 from edx_django_utils.cache import get_cache_key
 from rest_framework import serializers
@@ -69,11 +70,18 @@ def cached_schema_view():
     whole schema on every request. Storing the zlib-compressed body instead
     brings it to roughly a tenth of the limit.
 
-    The document is identical for every requester, so the key covers only the
-    path and the negotiated representation. Nothing in it varies by user:
+    The key covers the path, the negotiated representation and the active
+    language. The document is not identical for every requester: drf-spectacular
+    renders it under whatever language is active, and ``LocaleMiddleware`` sets
+    that from the request's cookie or ``Accept-Language`` before this runs, so
+    two locales produce different documents. Nothing else in it varies by user --
     ``SERVE_PUBLIC`` defaults to ``True``, ``SERVE_*`` cannot be set through
     ``custom_settings``, and ``API_DOCS_SETTINGS`` sets ``'SERVERS': []`` so no
     ``servers`` block is emitted.
+
+    Only GET and HEAD are cached, as ``cache_page`` did: DRF answers OPTIONS on
+    this view with a 200 metadata document, which would otherwise be stored and
+    served to the next GET.
 
     ``drf_spectacular.views`` is imported inside the function rather than at
     module scope: this module is imported from the settings, and importing DRF
@@ -93,13 +101,14 @@ def cached_schema_view():
 
     def schema_view(request, *args, **kwargs):
         """Serve the schema, from the cache when a fresh copy is stored."""
-        if not settings.OPENAPI_CACHE_TIMEOUT:
+        if not settings.OPENAPI_CACHE_TIMEOUT or request.method not in ('GET', 'HEAD'):
             return view(request, *args, **kwargs)
 
         cache_key = get_cache_key(
             resource='apidocs-schema',
             path=request.get_full_path(),
             accept=request.META.get('HTTP_ACCEPT', ''),
+            language=translation.get_language(),
         ) + '.zpickled'
 
         cached = cache.get(cache_key)
