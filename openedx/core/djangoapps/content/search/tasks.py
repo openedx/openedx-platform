@@ -203,3 +203,28 @@ def rebuild_index_incremental() -> None:
         raise
 
     log.info("Incremental Studio search index population complete.")
+
+
+@shared_task(
+    base=LoggedTask,
+    autoretry_for=(MeilisearchError, ConnectionError),
+    max_retries=3,
+    retry_backoff=True,
+)
+def rebuild_library_index() -> None:
+    """
+    Celery task to rebuild the Studio library index and remove library documents from the course index.
+
+    Run once when upgrading from the single shared index. Courses are not reindexed.
+    """
+    log.info("Starting Studio library index rebuild...")
+
+    try:
+        api.rebuild_index(status_cb=log.info, include_courses=False)
+    except RuntimeError as exc:
+        if "already in progress" in str(exc).lower():
+            log.warning("Studio library index rebuild skipped: a rebuild is already in progress.")
+            return
+        raise
+
+    log.info("Studio library index rebuild complete.")

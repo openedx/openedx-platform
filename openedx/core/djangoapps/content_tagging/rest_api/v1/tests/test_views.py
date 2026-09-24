@@ -18,6 +18,7 @@ from edx_django_utils.cache import RequestCache
 from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator, LibraryCollectionLocator, LibraryContainerLocator
 from openedx_authz.constants import permissions as authz_permissions
 from openedx_authz.constants.roles import COURSE_AUDITOR, COURSE_EDITOR, COURSE_STAFF
+from openedx_learning.api import create_competency_taxonomy
 from openedx_learning.models_api import CompetencyTaxonomy
 from openedx_tagging.models import Tag, Taxonomy
 from openedx_tagging.rest_api.v1.serializers import TaxonomySerializer
@@ -611,6 +612,24 @@ class TestTaxonomyListCreateViewSet(TestTaxonomyObjectsMixin, APITestCase):
             assert taxonomy["can_delete_taxonomy"] == user.is_staff  # not the metadata about the taxonomy.
             assert taxonomy["can_tag_object"]
 
+    def test_list_taxonomy_type_mixed(self) -> None:
+        """
+        The list endpoint reports "taxonomy_type" per row for a mixed set of taxonomies:
+        plain taxonomies as "tags", a competency taxonomy as "competency", and never null.
+        """
+        competency_taxonomy = create_competency_taxonomy(name="Nursing Competencies", export_id="nursing-competencies")
+        set_taxonomy_orgs(taxonomy=competency_taxonomy, all_orgs=False, orgs=[self.orgA])
+
+        self.client.force_authenticate(user=self.staff)
+        response = self.client.get(TAXONOMY_ORG_LIST_URL, {"org": self.orgA.short_name, "page_size": 20})
+        assert response.status_code == status.HTTP_200_OK
+
+        taxonomy_types_by_name = {t["name"]: t["taxonomy_type"] for t in response.data["results"]}
+        assert taxonomy_types_by_name["t1"] == "tags"
+        assert taxonomy_types_by_name["ro1"] == "tags"
+        assert taxonomy_types_by_name["Nursing Competencies"] == "competency"
+        assert None not in taxonomy_types_by_name.values()
+
 
 @ddt.ddt
 class TestTaxonomyDetailExportMixin(TestTaxonomyObjectsMixin):
@@ -930,6 +949,39 @@ class TestTaxonomyDetailViewSet(TestTaxonomyDetailExportMixin, APITestCase):
                 taxonomy.pk,
                 **(TaxonomySerializer(taxonomy, context=context)).data,
             )
+
+    def test_detail_taxonomy_type_tags_for_plain_taxonomy(self) -> None:
+        """
+        A plain taxonomy's detail response reports taxonomy_type "tags".
+        """
+        self.client.force_authenticate(user=self.staff)
+        response = self.client.get(TAXONOMY_ORG_DETAIL_URL.format(pk=self.t1.pk))
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["taxonomy_type"] == "tags"
+
+    def test_detail_taxonomy_type_tags_for_read_only_taxonomy(self) -> None:
+        """
+        A read-only taxonomy (maintained by the system or an external integration, per
+        Taxonomy.read_only's docstring) still reports taxonomy_type "tags": is_competency_taxonomy()
+        keys off the presence of a CompetencyTaxonomy row, not off read_only.
+        """
+        self.client.force_authenticate(user=self.staff)
+        response = self.client.get(TAXONOMY_ORG_DETAIL_URL.format(pk=self.ro1.pk))
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["taxonomy_type"] == "tags"
+        assert response.data["read_only"] is True
+
+    def test_detail_taxonomy_type_competency(self) -> None:
+        """
+        A competency taxonomy's detail response reports taxonomy_type "competency".
+        """
+        competency_taxonomy = create_competency_taxonomy(name="Nursing Competencies", export_id="nursing-competencies")
+        set_taxonomy_orgs(taxonomy=competency_taxonomy, all_orgs=True)
+
+        self.client.force_authenticate(user=self.staff)
+        response = self.client.get(TAXONOMY_ORG_DETAIL_URL.format(pk=competency_taxonomy.pk))
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["taxonomy_type"] == "competency"
 
 
 @skip_unless_cms

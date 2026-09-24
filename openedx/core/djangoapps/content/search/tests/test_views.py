@@ -53,6 +53,16 @@ def mock_meilisearch(enabled=True):
     return decorator
 
 
+def search_rules_for_both_indexes(rule: dict) -> dict:
+    """
+    The tenant token applies the same access rule to the course index and the library index.
+    """
+    return {
+        "studio_content": rule,
+        "studio_library_content": rule,
+    }
+
+
 @ddt.ddt
 @skip_unless_cms
 @patch("openedx.core.djangoapps.content.search.api._wait_for_meili_task", new=MagicMock(return_value=None))
@@ -113,6 +123,9 @@ class StudioSearchViewTest(StudioSearchTestMixin, SharedModuleStoreTestCase):
         mock_generate_tenant_token = self._mock_generate_tenant_token(mock_search_client)  # noqa: F841
         result = self.client.get(STUDIO_SEARCH_ENDPOINT_URL)
         assert result.status_code == 200
+        assert result.data["course_index_name"] == "studio_content"
+        assert result.data["library_index_name"] == "studio_library_content"
+        # Deprecated key, kept for frontends that predate the index split
         assert result.data["index_name"] == "studio_content"
         assert result.data["url"] == "http://meilisearch.url"
         assert result.data["api_key"] and isinstance(result.data["api_key"], str)  # noqa: PT018
@@ -129,11 +142,9 @@ class StudioSearchViewTest(StudioSearchTestMixin, SharedModuleStoreTestCase):
         assert result.status_code == 200
         mock_generate_tenant_token.assert_called_once_with(
             api_key_uid=MOCK_API_KEY_UID,
-            search_rules={
-                "studio_content": {
-                    "filter": "org IN [] OR access_id IN []",
-                }
-            },
+            search_rules=search_rules_for_both_indexes({
+                "filter": "org IN [] OR access_id IN []",
+            }),
             expires_at=ANY,
         )
 
@@ -149,9 +160,7 @@ class StudioSearchViewTest(StudioSearchTestMixin, SharedModuleStoreTestCase):
         assert result.status_code == 200
         mock_generate_tenant_token.assert_called_once_with(
             api_key_uid=MOCK_API_KEY_UID,
-            search_rules={
-                "studio_content": {}
-            },
+            search_rules=search_rules_for_both_indexes({}),
             expires_at=ANY,
         )
 
@@ -173,11 +182,9 @@ class StudioSearchViewTest(StudioSearchTestMixin, SharedModuleStoreTestCase):
 
         mock_generate_tenant_token.assert_called_once_with(
             api_key_uid=MOCK_API_KEY_UID,
-            search_rules={
-                "studio_content": {
-                    "filter": f"org IN [] OR access_id IN {expected_access_ids}",
-                }
-            },
+            search_rules=search_rules_for_both_indexes({
+                "filter": f"org IN [] OR access_id IN {expected_access_ids}",
+            }),
             expires_at=ANY,
         )
 
@@ -197,11 +204,9 @@ class StudioSearchViewTest(StudioSearchTestMixin, SharedModuleStoreTestCase):
         assert result.status_code == 200
         mock_generate_tenant_token.assert_called_once_with(
             api_key_uid=MOCK_API_KEY_UID,
-            search_rules={
-                "studio_content": {
-                    "filter": "org IN ['org1'] OR access_id IN []",
-                }
-            },
+            search_rules=search_rules_for_both_indexes({
+                "filter": "org IN ['org1'] OR access_id IN []",
+            }),
             expires_at=ANY,
         )
 
@@ -224,11 +229,9 @@ class StudioSearchViewTest(StudioSearchTestMixin, SharedModuleStoreTestCase):
 
         mock_generate_tenant_token.assert_called_once_with(
             api_key_uid=MOCK_API_KEY_UID,
-            search_rules={
-                "studio_content": {
-                    "filter": f"org IN ['org1'] OR access_id IN {expected_access_ids}",
-                }
-            },
+            search_rules=search_rules_for_both_indexes({
+                "filter": f"org IN ['org1'] OR access_id IN {expected_access_ids}",
+            }),
             expires_at=ANY,
         )
 
@@ -259,10 +262,8 @@ class StudioSearchViewTest(StudioSearchTestMixin, SharedModuleStoreTestCase):
         mock_get_access_ids.assert_called_once()
         mock_generate_tenant_token.assert_called_once_with(
             api_key_uid=MOCK_API_KEY_UID,
-            search_rules={
-                "studio_content": {
-                    "filter": f"org IN {expected_user_orgs} OR access_id IN {expected_access_ids}",
-                }
-            },
+            search_rules=search_rules_for_both_indexes({
+                "filter": f"org IN {expected_user_orgs} OR access_id IN {expected_access_ids}",
+            }),
             expires_at=ANY,
         )

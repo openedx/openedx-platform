@@ -7,11 +7,11 @@ from django.conf import settings
 from django.http import Http404
 from django.shortcuts import redirect
 from django.views.generic import View
+from openedx_filters.learning.filters import SupportContactContextRequested
 
 from common.djangoapps.edxmako.shortcuts import marketing_link, render_to_response
 from common.djangoapps.student.models import CourseEnrollment
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
-from openedx.features.enterprise_support import api as enterprise_api
 
 
 class ContactUsView(View):
@@ -36,21 +36,19 @@ class ContactUsView(View):
         }
 
         # Tag all issues with LMS to distinguish channel which received the request
-        tags = ['LMS']
+        context['tags'] = ['LMS']
 
         # Per edX support, we would like to be able to route feedback items by site via tagging
         current_site_name = configuration_helpers.get_value("SITE_NAME")
         if current_site_name:
             current_site_name = current_site_name.replace(".", "_")
-            tags.append(f"site_name_{current_site_name}")
+            context['tags'].append(f"site_name_{current_site_name}")
 
         if request.user.is_authenticated:
             context['course_id'] = request.session.get('course_id', '')
             context['user_enrollments'] = CourseEnrollment.enrollments_for_user_with_overviews_preload(request.user)
-            enterprise_customer = enterprise_api.enterprise_customer_for_request(request)
-            if enterprise_customer:
-                tags.append('enterprise_learner')
 
-        context['tags'] = tags
+        if request.user.is_authenticated:
+            context = SupportContactContextRequested.run_filter(context=context)
 
         return render_to_response("support/contact_us.html", context)

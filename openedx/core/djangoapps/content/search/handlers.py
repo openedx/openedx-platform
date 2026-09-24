@@ -49,7 +49,7 @@ from xmodule.modulestore.django import SignalHandler
 from .api import (
     is_meilisearch_enabled,
     only_if_meilisearch_enabled,
-    reconcile_index,
+    reconcile_indexes,
     upsert_content_object_tags_index_doc,
     upsert_item_collections_index_docs,
     upsert_item_containers_index_docs,
@@ -86,7 +86,7 @@ def handle_post_migrate(sender, **kwargs):
         return
 
     try:
-        reconcile_index(status_cb=log.info, warn_cb=log.warning)
+        reconcile_indexes(status_cb=log.info, warn_cb=log.warning)
     except ConnectionError as exc:
         log.warning(
             "Meilisearch reconciliation skipped during post_migrate: %s. "

@@ -7,9 +7,9 @@ certifi==2026.7.22
     # via requests
 charset-normalizer==3.5.1
     # via requests
-idna==3.19
+idna==3.20
     # via requests
 requests==2.34.2
     # via edx-platform-xblock-scripts
-urllib3==2.7.0
+urllib3==2.8.0
     # via requests

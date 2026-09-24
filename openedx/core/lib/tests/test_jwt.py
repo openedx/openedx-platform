@@ -7,7 +7,7 @@ from time import time
 
 import pytest
 from freezegun import freeze_time
-from jwt.exceptions import ExpiredSignatureError, InvalidSignatureError, MissingRequiredClaimError
+from jwt.exceptions import DecodeError, ExpiredSignatureError, InvalidSignatureError, MissingRequiredClaimError
 
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 from openedx.core.lib.jwt import _encode_and_sign, create_jwt, unpack_and_verify, unpack_jwt
@@ -53,7 +53,7 @@ class TestSign(unittest.TestCase):
         token = create_jwt(test_user_id, test_timeout, test_claims, test_now)
         token = token + "a"
 
-        with pytest.raises(InvalidSignatureError):
+        with pytest.raises(DecodeError):
             unpack_and_verify(token)
 
 
@@ -84,7 +84,7 @@ class TestUnpack(unittest.TestCase):
         token = create_jwt(test_user_id, test_timeout, test_claims, test_now)
         token = token + "a"
 
-        with pytest.raises(InvalidSignatureError):
+        with pytest.raises(DecodeError):
             unpack_jwt(token, test_user_id, test_now)
 
     def test_unpack_token_with_invalid_user(self):
