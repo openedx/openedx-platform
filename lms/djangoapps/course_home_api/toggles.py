@@ -51,6 +51,21 @@ COURSE_HOME_SEND_COURSE_PROGRESS_ANALYTICS_FOR_STUDENT = CourseWaffleFlag(
 )
 
 
+# Waffle flag to hide the graded problem count suffix (e.g. "(2 Questions)") from sequential names.
+#
+# .. toggle_name: course_home.disable_sequence_question_count
+# .. toggle_implementation: CourseWaffleFlag
+# .. toggle_default: False
+# .. toggle_description: When enabled, the outline serializer will not append the "(N Questions)" suffix to
+#   graded sequential display names.
+# .. toggle_use_cases: open_edx
+# .. toggle_creation_date: 2026-06-12
+# .. toggle_target_removal_date: None
+COURSE_HOME_DISABLE_SEQUENCE_QUESTION_COUNT = CourseWaffleFlag(
+    f'{WAFFLE_FLAG_NAMESPACE}.disable_sequence_question_count', __name__
+)
+
+
 def course_home_mfe_progress_tab_is_active(course_key):
     # Avoiding a circular dependency
     from .models import DisableProgressPageStackedConfig
@@ -73,3 +88,10 @@ def send_course_progress_analytics_for_student_is_enabled(course_key):
     Returns True if the course completion analytics feature is enabled for a given course.
     """
     return COURSE_HOME_SEND_COURSE_PROGRESS_ANALYTICS_FOR_STUDENT.is_enabled(course_key)
+
+
+def show_sequence_question_count(course_key):
+    """
+    Returns True if the "(N Questions)" suffix should be appended to sequential names for the given course.
+    """
+    return not COURSE_HOME_DISABLE_SEQUENCE_QUESTION_COUNT.is_enabled(course_key)

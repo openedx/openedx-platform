@@ -3,11 +3,13 @@ Outline Tab Serializers.
 """
 
 from django.utils.translation import ngettext
+from opaque_keys.edx.keys import UsageKey
 from rest_framework import serializers
 
 from lms.djangoapps.course_home_api.dates.serializers import DateSummarySerializer
 from lms.djangoapps.course_home_api.progress.serializers import CertificateDataSerializer
 from lms.djangoapps.course_home_api.serializers import DatesBannerSerializer, VerifiedModeSerializer
+from lms.djangoapps.course_home_api.toggles import show_sequence_question_count
 
 
 class CourseBlockSerializer(serializers.Serializer):
@@ -30,8 +32,10 @@ class CourseBlockSerializer(serializers.Serializer):
         scored = block.get('scored')
 
         if num_graded_problems and block_type == 'sequential':
-            questions = ngettext('({number} Question)', '({number} Questions)', num_graded_problems)
-            display_name += ' ' + questions.format(number=num_graded_problems)
+            course_key = UsageKey.from_string(block_key).course_key
+            if show_sequence_question_count(course_key):
+                questions = ngettext('({number} Question)', '({number} Questions)', num_graded_problems)
+                display_name += ' ' + questions.format(number=num_graded_problems)
 
         if graded and scored:
             icon = 'fa-pencil-square-o'
