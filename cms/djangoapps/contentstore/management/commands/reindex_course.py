@@ -175,7 +175,15 @@ class Command(BaseCommand):
         for course_key in course_keys:
             try:
                 count += 1
-                CoursewareSearchIndexer.do_course_reindex(store, course_key)
+                # Wrap each course in bulk_operations so the split modulestore
+                # fetches the course structure from MongoDB once and caches it for
+                # the whole reindex, instead of re-fetching it on every block
+                # access as the indexer walks the course. This mirrors the Studio
+                # reindex HTTP handler (contentstore/views/course.py
+                # course_search_index_handler) and gives a large speedup on big
+                # courses. See https://github.com/openedx/edx-platform/issues/36868
+                with store.bulk_operations(course_key):
+                    CoursewareSearchIndexer.do_course_reindex(store, course_key)
                 success += 1
                 if count % 10 == 0 or count == total:
                     t = time() - start
