@@ -183,6 +183,23 @@ def get_ccx_for_coach(course, coach):
     return None
 
 
+def get_ccx_coach_dashboard_url(course_key):
+    """
+    Return the CCX Coach MFE URL for the given course locator.
+
+    Accepts either a master course key
+    (the MFE then shows its create/empty state) or a :class:`CCXLocator` (the MFE
+    shows that CCX), since the MFE routes on ``/ccx-coach/{course_id}``.
+
+    Arguments:
+        course_key (CourseKey): the master course or CCX course key.
+
+    Returns:
+        str: the absolute MFE URL.
+    """
+    return f'{settings.CCX_COACH_MICROFRONTEND_URL}/{course_key}'
+
+
 def get_ccx_by_ccx_id(course, coach, ccx_id):
     """
     Finds a CCX of given coach on given master course.
