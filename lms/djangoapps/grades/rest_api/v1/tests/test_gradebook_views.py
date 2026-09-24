@@ -18,9 +18,12 @@ from freezegun import freeze_time
 from opaque_keys.edx.locator import BlockUsageLocator
 from pytz import UTC
 from rest_framework import status
-from rest_framework.test import APITestCase
+from rest_framework.response import Response
+from rest_framework.test import APIRequestFactory, APITestCase, force_authenticate
+from rest_framework.views import APIView
 
 import openedx.core.djangoapps.content.block_structure.api as bs_api
+from ccx_keys.locator import CCXLocator
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.student.models.course_enrollment import CourseEnrollment
 from common.djangoapps.student.roles import (
@@ -49,9 +52,12 @@ from lms.djangoapps.grades.models import (
     PersistentSubsectionGrade,
     PersistentSubsectionGradeOverride,
 )
+from lms.djangoapps.grades.rest_api.v1.gradebook_views import course_author_access_required
 from lms.djangoapps.grades.rest_api.v1.tests.mixins import GradeViewTestMixin
+from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin
 from lms.djangoapps.grades.rest_api.v1.views import CourseEnrollmentPagination
 from lms.djangoapps.grades.subsection_grade import ReadSubsectionGrade
+from lms.djangoapps.ccx.tests.utils import CcxTestCase
 from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory
 from openedx.core.djangoapps.course_groups.tests.helpers import CohortFactory
 from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
@@ -2257,3 +2263,82 @@ class SubsectionGradeViewTest(GradebookViewTestBase):
             'history': []
         }
         assert expected_data == resp.data
+
+
+class _StubGradebookAuthView(DeveloperErrorViewMixin, APIView):
+    """Minimal APIView used to exercise `course_author_access_required` in isolation."""
+
+    @course_author_access_required
+    def get(self, request, course_key):  # pylint: disable=arguments-differ
+        return Response({'course_key': str(course_key)}, status=status.HTTP_200_OK)
+
+
+@ddt.ddt
+class CourseAuthorAccessRequiredCCXTests(CcxTestCase):
+    """
+    Tests for the CCX branch added to `course_author_access_required`.
+
+    For CCX ids `has_course_author_access` always returns False (Studio does
+    not support CCX), so access is instead granted to: Django site staff, a
+    staff/instructor on the CCX, or a CCX coach on the underlying master course.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.make_coach()
+        self.ccx = self.make_ccx()
+        self.ccx_key = CCXLocator.from_course_locator(self.course.id, str(self.ccx.id))
+        self.factory = APIRequestFactory()
+        self.view = _StubGradebookAuthView.as_view()
+
+    def _call(self, user, course_id=None):
+        """Invoke the stub view as `user` against a CCX id (default) or the given id."""
+        request = self.factory.get('/fake-gradebook-endpoint/')
+        force_authenticate(request, user=user)
+        return self.view(request, course_id=course_id or str(self.ccx_key))
+
+    def _make_user_with_ccx_access(self, kind):
+        """Build a user with the requested flavor of access to `self.ccx_key`."""
+        if kind == 'coach':
+            return self.coach
+        if kind == 'site_staff':
+            return UserFactory.create(is_staff=True)
+        user = UserFactory.create()
+        if kind == 'ccx_staff':
+            CourseStaffRole(self.ccx_key).add_users(user)
+        elif kind == 'ccx_instructor':
+            CourseInstructorRole(self.ccx_key).add_users(user)
+        else:
+            raise ValueError(f'unknown actor kind: {kind}')
+        return user
+
+    @ddt.data('coach', 'ccx_staff', 'ccx_instructor', 'site_staff')
+    def test_ccx_access_allowed(self, actor):
+        """Each supported CCX-access flavor is granted 200 on a CCX id."""
+        user = self._make_user_with_ccx_access(actor)
+
+        response = self._call(user)
+
+        assert response.status_code == status.HTTP_200_OK
+
+    def test_unrelated_user_is_forbidden(self):
+        """A user with no CCX-related access is rejected with 403 `user_permissions`."""
+        outsider = UserFactory.create()
+
+        response = self._call(outsider)
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert response.data.get('error_code') == 'user_permissions'
+
+    def test_master_course_id_still_uses_studio_access_check(self):
+        """Non-CCX ids must keep going through `has_course_author_access`."""
+        outsider = UserFactory.create()
+
+        with patch(
+            'lms.djangoapps.grades.rest_api.v1.gradebook_views.has_course_author_access',
+            return_value=True,
+        ) as mock_has_access:
+            response = self._call(outsider, course_id=str(self.course.id))
+
+        assert response.status_code == status.HTTP_200_OK
+        mock_has_access.assert_called_once_with(outsider, self.course.id)
