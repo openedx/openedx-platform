@@ -7,12 +7,19 @@ from datetime import timedelta
 
 import ddt
 from django.utils.timezone import now
+from edx_toggles.toggles.testutils import override_waffle_flag
 from edx_when.api import get_dates_for_course, set_date_for_block
 from edx_when.field_data import DateOverrideTransformer
 
 from common.djangoapps.student.tests.factories import UserFactory
+from lms.djangoapps.course_blocks.api import get_course_blocks
+from lms.djangoapps.course_blocks.toggles import SHOW_HIDDEN_CONTENT_WITHOUT_LINKS
 from lms.djangoapps.course_blocks.transformers.hidden_content import HiddenContentTransformer
-from lms.djangoapps.course_blocks.transformers.tests.helpers import BlockParentsMapTestCase, update_block
+from lms.djangoapps.course_blocks.transformers.tests.helpers import (
+    BlockParentsMapTestCase,
+    publish_course,
+    update_block,
+)
 from openedx.core.djangoapps.content.block_structure.tests.helpers import mock_registered_transformers
 from openedx.core.djangoapps.content.block_structure.transformers import BlockStructureTransformers
 
@@ -138,6 +145,42 @@ class HiddenContentTransformerTestCase(BlockParentsMapTestCase):
             blocks_with_differing_access=None,
             transformers=self.transformers,
         )
+
+    @override_waffle_flag(SHOW_HIDDEN_CONTENT_WITHOUT_LINKS, active=True)
+    def test_hidden_content_is_flagged_instead_of_removed(self):
+        """
+        Tests that with SHOW_HIDDEN_CONTENT_WITHOUT_LINKS enabled, past-due content stays in the
+        block structure and is flagged, so that callers can list it without linking to it.
+        """
+        block = self.get_block(1)
+        block.due = self.DateType.PAST_DATE
+        block.hide_after_due = True
+        update_block(block)
+        publish_course(self.course)
+
+        block_structure = get_course_blocks(self.student, self.course.location, self.transformers)
+
+        # Nothing was removed. Block 6 is visible because it is also reachable through block 2, which is not past due.
+        assert set(block_structure.get_block_keys()) == set(self.xblock_keys)
+        for index in self.ALL_BLOCKS:
+            is_flagged = HiddenContentTransformer.is_hidden_after_due(block_structure, self.xblock_keys[index])
+            assert is_flagged == (index in {1, 3, 4}), f"block {index}"
+
+    def test_hidden_content_is_removed_by_default(self):
+        """
+        Tests that without the toggle, past-due content is removed and is never flagged.
+        """
+        block = self.get_block(1)
+        block.due = self.DateType.PAST_DATE
+        block.hide_after_due = True
+        update_block(block)
+        publish_course(self.course)
+
+        block_structure = get_course_blocks(self.student, self.course.location, self.transformers)
+
+        assert set(block_structure.get_block_keys()) == {self.xblock_keys[i] for i in self.ALL_BLOCKS - {1, 3, 4}}
+        for block_key in block_structure.get_block_keys():
+            assert not HiddenContentTransformer.is_hidden_after_due(block_structure, block_key)
 
     def test_hidden_content_with_transformer_override(self):
         """
