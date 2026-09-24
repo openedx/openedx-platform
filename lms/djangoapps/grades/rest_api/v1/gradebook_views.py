@@ -22,7 +22,12 @@ from rest_framework.views import APIView
 
 from common.djangoapps.student.auth import has_course_author_access, is_ccx_course
 from common.djangoapps.student.models import CourseAccessRole, CourseEnrollment, CourseMode
-from common.djangoapps.student.roles import BulkRoleCache, CourseInstructorRole, CourseStaffRole
+from common.djangoapps.student.roles import (
+    BulkRoleCache,
+    CourseCcxCoachRole,
+    CourseInstructorRole,
+    CourseStaffRole,
+)
 from common.djangoapps.track.event_transaction_utils import (
     create_new_event_transaction_id,
     get_event_transaction_id,
@@ -234,12 +239,15 @@ def course_author_access_required(view):
         if is_ccx_course(course_key):
             # Studio does not support CCX, so `has_course_author_access` always
             # returns False for CCX ids. Fall back to CCX-course role checks:
-            # site staff, or a staff/instructor on the CCX (coaches are granted
-            # the CCX staff role when the CCX is created).
+            # site staff, a staff/instructor on the CCX (coaches are granted the
+            # CCX staff role when the CCX is created), or a CCX coach on the
+            # underlying master course.
+            master_course_key = course_key.to_course_locator()
             has_access = (
                 request.user.is_staff
                 or CourseStaffRole(course_key).has_user(request.user)
                 or CourseInstructorRole(course_key).has_user(request.user)
+                or CourseCcxCoachRole(master_course_key).has_user(request.user)
             )
         else:
             has_access = has_course_author_access(request.user, course_key)
