@@ -20,9 +20,9 @@ from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from common.djangoapps.student.auth import has_course_author_access
+from common.djangoapps.student.auth import has_course_author_access, is_ccx_course
 from common.djangoapps.student.models import CourseAccessRole, CourseEnrollment, CourseMode
-from common.djangoapps.student.roles import BulkRoleCache
+from common.djangoapps.student.roles import BulkRoleCache, CourseInstructorRole, CourseStaffRole
 from common.djangoapps.track.event_transaction_utils import (
     create_new_event_transaction_id,
     get_event_transaction_id,
@@ -231,7 +231,19 @@ def course_author_access_required(view):
         Calls the view function if has access, otherwise raises a 403.
         """
         course_key = CourseKey.from_string(course_id)
-        if not has_course_author_access(request.user, course_key):
+        if is_ccx_course(course_key):
+            # Studio does not support CCX, so `has_course_author_access` always
+            # returns False for CCX ids. Fall back to CCX-course role checks:
+            # site staff, or a staff/instructor on the CCX (coaches are granted
+            # the CCX staff role when the CCX is created).
+            has_access = (
+                request.user.is_staff
+                or CourseStaffRole(course_key).has_user(request.user)
+                or CourseInstructorRole(course_key).has_user(request.user)
+            )
+        else:
+            has_access = has_course_author_access(request.user, course_key)
+        if not has_access:
             raise DeveloperErrorViewMixin.api_error(
                 status_code=status.HTTP_403_FORBIDDEN,
                 developer_message='The requesting user does not have course author permissions.',
