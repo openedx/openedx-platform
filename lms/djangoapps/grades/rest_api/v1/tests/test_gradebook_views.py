@@ -11,6 +11,7 @@ from unittest.mock import MagicMock, patch
 
 import ddt
 import pytest
+from ccx_keys.locator import CCXLocator
 from django.test.utils import override_settings
 from django.urls import reverse
 from edx_toggles.toggles.testutils import override_waffle_flag
@@ -23,7 +24,6 @@ from rest_framework.test import APIRequestFactory, APITestCase, force_authentica
 from rest_framework.views import APIView
 
 import openedx.core.djangoapps.content.block_structure.api as bs_api
-from ccx_keys.locator import CCXLocator
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.student.models.course_enrollment import CourseEnrollment
 from common.djangoapps.student.roles import (
@@ -39,6 +39,7 @@ from common.djangoapps.student.tests.factories import (
     StaffFactory,
     UserFactory,
 )
+from lms.djangoapps.ccx.tests.utils import CcxTestCase
 from lms.djangoapps.certificates.api import create_or_update_eligible_certificate_for_user, get_certificate_for_user_id
 from lms.djangoapps.certificates.data import CertificateStatuses
 from lms.djangoapps.grades.config.waffle import BULK_MANAGEMENT, WRITABLE_GRADEBOOK
@@ -54,12 +55,11 @@ from lms.djangoapps.grades.models import (
 )
 from lms.djangoapps.grades.rest_api.v1.gradebook_views import course_author_access_required
 from lms.djangoapps.grades.rest_api.v1.tests.mixins import GradeViewTestMixin
-from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin
 from lms.djangoapps.grades.rest_api.v1.views import CourseEnrollmentPagination
 from lms.djangoapps.grades.subsection_grade import ReadSubsectionGrade
-from lms.djangoapps.ccx.tests.utils import CcxTestCase
 from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory
 from openedx.core.djangoapps.course_groups.tests.helpers import CohortFactory
+from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin
 from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
 from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 
