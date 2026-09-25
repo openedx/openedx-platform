@@ -29,6 +29,7 @@ from openedx.core.djangoapps.catalog.cache import (
     SITE_PROGRAM_UUIDS_CACHE_KEY_TPL,
 )
 from openedx.core.djangoapps.catalog.models import CatalogIntegration
+from openedx.core.djangoapps.geoinfo.api import country_code_for_request
 from openedx.core.djangoapps.oauth_dispatch.jwt import create_jwt_for_user
 from openedx.core.lib.edx_api_utils import get_api_data
 
@@ -366,8 +367,7 @@ def get_localized_price_text(price, request):
     """
     user_currency = {"symbol": "$", "rate": 1, "code": "USD"}
 
-    # session.country_code is added via CountryMiddleware in the LMS
-    user_location = getattr(request, "session", {}).get("country_code")
+    user_location = country_code_for_request(request)
 
     # Override default user_currency if location is available
     if user_location and get_currency_data:
