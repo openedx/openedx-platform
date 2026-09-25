@@ -29,12 +29,14 @@ from lms.djangoapps.ccx.overrides import (
     override_field_for_ccx,
 )
 from lms.djangoapps.ccx.permissions import VIEW_CCX_COACH_DASHBOARD
+from lms.djangoapps.ccx.toggles import use_ccx_coach_mfe
 from lms.djangoapps.ccx.utils import (
     assign_staff_role_to_ccx,
     ccx_course,
     ccx_students_enrolling_center,
     create_ccx_course,
     get_ccx_by_ccx_id,
+    get_ccx_coach_dashboard_url,
     get_ccx_creation_dict,
     get_ccx_for_coach,
     get_ccx_schedule,
@@ -104,7 +106,20 @@ def coach_dashboard(view):
 def dashboard(request, course, ccx=None):
     """
     Display the CCX Coach Dashboard.
+
+    When the CCX Coach MFE is enabled for this course, redirect there instead of
+    rendering the legacy dashboard.
     """
+    if use_ccx_coach_mfe(course.id):
+        # Send the coach to their CCX when one exists, otherwise to the master
+        # course so the MFE can show its create/empty state.
+        if ccx is None:
+            ccx = get_ccx_for_coach(course, request.user)
+        mfe_course_key = (
+            CCXLocator.from_course_locator(course.id, str(ccx.id)) if ccx else course.id
+        )
+        return redirect(get_ccx_coach_dashboard_url(mfe_course_key))
+
     # right now, we can only have one ccx per user and course
     # so, if no ccx is passed in, we can sefely redirect to that
     if ccx is None:
