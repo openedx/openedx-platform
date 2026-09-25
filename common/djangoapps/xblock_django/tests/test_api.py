@@ -1,7 +1,12 @@
 """
 Tests related to XBlock support API.
 """
-from common.djangoapps.xblock_django.api import authorable_xblocks, deprecated_xblocks, disabled_xblocks
+from common.djangoapps.xblock_django.api import (
+    authorable_xblocks,
+    default_advanced_xblocks,
+    deprecated_xblocks,
+    disabled_xblocks,
+)
 from common.djangoapps.xblock_django.models import (  # pylint: disable=line-too-long
     XBlockConfiguration,
     XBlockStudioConfiguration,
@@ -64,6 +69,50 @@ class XBlockSupportTestCase(CacheIsolationTestCase):
 
         disabled_xblock_names = [block.name for block in disabled_xblocks()]
         self.assertCountEqual(["survey", "poll"], disabled_xblock_names)  # noqa: PT009
+
+    def test_default_advanced_blocks(self):
+        """ Tests the default_advanced_xblocks method """
+
+        # None of the xblocks configured in setUp are advanced by default.
+        assert [] == [block.name for block in default_advanced_xblocks()]
+
+        XBlockStudioConfiguration(
+            name="done", template="", enabled=True, support_level=XBlockStudioConfiguration.FULL_SUPPORT,
+            advanced_by_default=True
+        ).save()
+        # Note that support level is not taken into account: it is enforced by Studio (and only when
+        # XBlockStudioConfigurationFlag is enabled), not by this method.
+        XBlockStudioConfiguration(
+            name="split_module", template="", enabled=True, support_level=XBlockStudioConfiguration.UNSUPPORTED,
+            advanced_by_default=True
+        ).save()
+        default_advanced_xblock_names = [block.name for block in default_advanced_xblocks()]
+        self.assertCountEqual(["done", "split_module"], default_advanced_xblock_names)  # noqa: PT009
+
+        # An xblock which is disabled in XBlockStudioConfiguration cannot be created in Studio at all,
+        # so it is not advanced by default either.
+        XBlockStudioConfiguration(
+            name="done", template="", enabled=False, support_level=XBlockStudioConfiguration.FULL_SUPPORT,
+            advanced_by_default=True
+        ).save()
+        default_advanced_xblock_names = [block.name for block in default_advanced_xblocks()]
+        self.assertCountEqual(["split_module"], default_advanced_xblock_names)  # noqa: PT009
+
+    def test_default_advanced_blocks_ignores_studio_configuration_flag(self):
+        """
+        Tests that default_advanced_xblocks is independent of XBlockStudioConfigurationFlag, which governs
+        whether support levels are enforced rather than whether an operator has opted an xblock into all courses.
+        """
+        XBlockStudioConfiguration(
+            name="done", template="", enabled=True, support_level=XBlockStudioConfiguration.FULL_SUPPORT,
+            advanced_by_default=True
+        ).save()
+
+        assert not XBlockStudioConfigurationFlag.is_enabled()
+        assert ["done"] == [block.name for block in default_advanced_xblocks()]
+
+        XBlockStudioConfigurationFlag(enabled=True).save()
+        assert ["done"] == [block.name for block in default_advanced_xblocks()]
 
     def test_authorable_blocks_empty_model(self):
         """
