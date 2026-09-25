@@ -111,7 +111,7 @@ class Command(BaseCommand):
         for args in all_args:
             yield {
                 'course_key': args[0],
-                'offset': args[1],
+                'start_id': args[1],
                 'batch_size': args[2],
                 'estimate_first_attempted': estimate_first_attempted,
             }
