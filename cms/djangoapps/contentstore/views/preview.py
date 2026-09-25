@@ -29,6 +29,7 @@ from common.djangoapps.static_replace.wrapper import replace_urls_wrapper
 from common.djangoapps.student.models import anonymous_id_for_user
 from common.djangoapps.xblock_django.user_service import DjangoXBlockUserService
 from lms.djangoapps.lms_xblock.field_data import LmsFieldData
+from openedx.core.djangoapps.content.services import StudioPermissionsService
 from openedx.core.djangoapps.discussions.services import DiscussionConfigService
 from openedx.core.djangoapps.video_config.services import VideoConfigService
 from openedx.core.lib.cache_utils import CacheService
@@ -44,7 +45,7 @@ from xmodule.util.builtin_assets import add_webpack_js_to_fragment
 from xmodule.util.sandboxing import SandboxService
 from xmodule.x_module import AUTHOR_VIEW, PREVIEW_VIEWS, STUDENT_VIEW, XModuleMixin
 
-from ..utils import StudioPermissionsService, get_visibility_partition_info
+from ..utils import get_visibility_partition_info
 from .access import get_user_role
 from .session_kv_store import SessionKeyValueStore
 
