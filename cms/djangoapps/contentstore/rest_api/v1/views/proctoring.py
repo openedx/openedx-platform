@@ -4,8 +4,9 @@ import copy
 import edx_api_doc_tools as apidocs
 from django.conf import settings
 from opaque_keys.edx.keys import CourseKey
+from openedx_authz.constants.permissions import COURSES_MANAGE_PAGES_AND_RESOURCES
 from rest_framework import status
-from rest_framework.exceptions import NotFound
+from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -14,6 +15,8 @@ from cms.djangoapps.contentstore.utils import get_proctored_exam_settings_url
 from cms.djangoapps.contentstore.views.course import get_course_and_check_access
 from cms.djangoapps.models.settings.course_metadata import CourseMetadata
 from common.djangoapps.student.auth import check_course_advanced_settings_access
+from openedx.core.djangoapps.authz.constants import LegacyAuthoringPermission
+from openedx.core.djangoapps.authz.decorators import user_has_course_permission
 from openedx.core.djangoapps.course_apps.toggles import exams_ida_enabled
 from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin, verify_course_exists, view_auth_classes
 from xmodule.course_block import (  # pylint: disable=wrong-import-order
@@ -198,6 +201,14 @@ class ProctoredExamSettingsView(APIView):
             raise NotFound(
                 f'Course with course_id {course_id} does not exist.'
             )
+
+        if not user_has_course_permission(
+            user,
+            COURSES_MANAGE_PAGES_AND_RESOURCES.identifier,
+            course_key,
+            LegacyAuthoringPermission.WRITE,
+        ):
+            raise PermissionDenied
 
         return course_block
 

@@ -7,7 +7,7 @@ import ddt
 from django.test.utils import override_settings
 from django.urls import reverse
 from edx_toggles.toggles.testutils import override_waffle_flag
-from openedx_authz.constants.permissions import COURSES_VIEW_ADVANCED_SETTINGS
+from openedx_authz.constants.permissions import COURSES_MANAGE_PAGES_AND_RESOURCES, COURSES_VIEW_ADVANCED_SETTINGS
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -41,6 +41,26 @@ class ProctoringExamSettingsTestcase(AuthorizeStaffTestCase):
         assert response.data == {
             "detail": f"Course with course_id {course_id} does not exist."
         }
+
+    @patch.object(core_toggles.AUTHZ_COURSE_AUTHORING_FLAG, 'is_enabled', return_value=True)
+    @patch('openedx.core.djangoapps.authz.decorators.authz_api.is_user_allowed')
+    def test_authz_user_allowed(self, mock_is_user_allowed, mock_flag):
+        """A user holding the authz manage_pages_and_resources permission can access."""
+        mock_is_user_allowed.return_value = True
+        self.client.login(username=self.global_staff.username, password=self.password)
+        response = self.make_request()
+        assert response.status_code == status.HTTP_200_OK
+        called_permission = mock_is_user_allowed.call_args[0][1]
+        assert called_permission == COURSES_MANAGE_PAGES_AND_RESOURCES.identifier
+
+    @patch.object(core_toggles.AUTHZ_COURSE_AUTHORING_FLAG, 'is_enabled', return_value=True)
+    @patch('openedx.core.djangoapps.authz.decorators.authz_api.is_user_allowed')
+    def test_authz_user_not_allowed(self, mock_is_user_allowed, mock_flag):
+        """Without the authz manage_pages_and_resources permission, access is denied, even for staff."""
+        mock_is_user_allowed.return_value = False
+        self.client.login(username=self.global_staff.username, password=self.password)
+        response = self.make_request()
+        assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
 class ProctoringExamSettingsGetTests(
