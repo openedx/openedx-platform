@@ -361,6 +361,11 @@ urlpatterns += [
     path('api/content_tagging/', include(('openedx.core.djangoapps.content_tagging.urls', 'content_tagging'))),
 ]
 
+# openedx-core: competency-based education (CBE)
+urlpatterns += [
+    path('api/', include('openedx_learning.urls')),
+]
+
 # Authoring-api specific API docs (using drf-spectacular and openapi-v3).
 # This is separate from and in addition to the full studio swagger documentation already existing at /api-docs.
 # Custom settings are provided in SPECTACULAR_SETTINGS as environment variables
