@@ -35,9 +35,10 @@ class StagedContent(models.Model):
     currently part of any course or library, but which is available to be copied
     into a course or library.
 
-    Use as a clipboard: for any given user, the most recent row with
-    purpose=CLIPBOARD is the "current" clipboard content. But it can only be
-    pasted if its status is READY.
+    Use as a clipboard: UserClipboard selects the user's current StagedContent.
+    The selected content can only be pasted if its status is READY. Other
+    StagedContent rows may exist temporarily while a replacement is being
+    prepared or retired.
 
     .. no_pii:
     """
