@@ -10021,6 +10021,170 @@ paths:
       tags:
       - user
     parameters: []
+
+  /user/v1/modify:
+    post:
+      operationId: user_v1_modify_post
+      summary: Create a new user account.
+      description: |-
+        Creates a user with the provided account details.
+
+        The request body must include the required account fields
+        `username` and `email`. This endpoint is restricted
+        to admin users.
+
+        **Example Requests**
+
+            POST /api/user/v1/modify/
+
+            {
+              "name": "Test User",
+              "username": "testuser",
+              "password": "Password1234",
+              "email": "e@mail.com",
+              "is_staff": false,
+              "is_superuser": false
+            }
+      parameters:
+      - in: body
+        name: data
+        required: true
+        schema:
+          type: object
+          required:
+          - username
+          - email
+          properties:
+            name:
+              type: string
+            username:
+              type: string
+            password:
+              type: string
+            email:
+              type: string
+              format: email
+            is_active:
+              type: boolean
+            is_staff:
+              type: boolean
+            is_superuser:
+              type: boolean
+            year_of_birth:
+              type: integer
+            gender:
+              type: string
+            level_of_education:
+              type: string
+            country:
+              type: string
+          additionalProperties: false
+      responses:
+        '201':
+          description: User was created successfully.
+          schema:
+            type: object
+            required:
+            - user_id
+            - username
+            properties:
+              user_id:
+                type: integer
+              username:
+                type: string
+        '400':
+          description: Invalid registration data, duplicate account information, or validation failure.
+          schema:
+            type: object
+            properties:
+              error:
+                description: Error details returned by the account validation layer.
+                x-nullable: true
+      tags:
+      - user
+    patch:
+      operationId: user_v1_modify_patch
+      summary: Update user information by username or email.
+      description: |-
+        Updates an existing user's account or profile information using a
+        `username_or_email` lookup value. The request body may contain any
+        editable user/profile fields supported by the serializer.
+
+        **Example Requests**
+
+            PATCH /api/user/v1/modify/
+
+            {
+              "username_or_email": "user@example.com",
+              "name": "Updated Name"
+            }
+      consumes:
+      - application/json
+      parameters:
+      - in: body
+        name: data
+        required: true
+        schema:
+          type: object
+          required:
+          - username_or_email
+          properties:
+            username_or_email:
+              type: string
+              description: Username or email identifying the user to update.
+            email:
+              type: string
+              format: email
+            password:
+              type: string
+            name:
+              type: string
+            is_active:
+              type: boolean
+            is_staff:
+              type: boolean
+            is_superuser:
+              type: boolean
+            year_of_birth:
+              type: integer
+            gender:
+              type: string
+            level_of_education:
+              type: string
+            country:
+              type: string
+          additionalProperties: false
+      responses:
+        '200':
+          description: User information was updated successfully.
+          schema:
+            type: object
+            required:
+            - user_id
+            - username
+            properties:
+              user_id:
+                type: integer
+              username:
+                type: string
+        '400':
+          description: Validation failed or an unexpected field was supplied.
+          schema:
+            type: object
+            properties:
+              error:
+                description: Error details for the failed update.
+                x-nullable: true
+        '404':
+          description: No user matched the supplied username or email.
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+      tags:
+      - user
+
   /user/v1/preferences/email_opt_in/:
     post:
       operationId: user_v1_preferences_email_opt_in_create

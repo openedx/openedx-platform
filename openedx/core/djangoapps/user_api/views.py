@@ -1,31 +1,37 @@
 """HTTP end-points for the User API. """
 
 from django.contrib import messages as django_messages
-from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.http import HttpResponse
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
+from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
 from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx import locator
 from opaque_keys.edx.keys import CourseKey
 from rest_framework import generics, status, viewsets
-from rest_framework.exceptions import ParseError
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.exceptions import ParseError, PermissionDenied, ValidationError
+from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from common.djangoapps.student.helpers import AccountValidationError
+from common.djangoapps.student.models.user import get_user_by_username_or_email
 from openedx.core.djangoapps.django_comment_common.models import Role
 from openedx.core.djangoapps.user_api.models import UserPreference
 from openedx.core.djangoapps.user_api.preferences.api import get_country_time_zones, update_email_opt_in
 from openedx.core.djangoapps.user_api.serializers import (
     CountryTimeZoneSerializer,
     UserPreferenceSerializer,
+    UserProfileSerializer,
     UserSerializer,
 )
+from openedx.core.lib.api.authentication import BearerAuthenticationAllowInactiveUser
 from openedx.core.lib.api.permissions import ApiKeyHeaderPermission
 from openedx.core.lib.api.view_utils import require_post_params
 
@@ -229,3 +235,142 @@ class ThirdPartyAuthErrorMessageView(APIView):
         for message in other_messages:
             django_messages.add_message(request, message.level, message.message, extra_tags=message.extra_tags)
         return Response({"user_message": user_message})
+
+
+class UserModifyView(APIView):
+    """
+    **Use Cases**
+
+        Creates a user with email and username, or updates user information by
+        email or username.
+
+    **Example Requests**
+
+        POST /api/user/v1/modify/
+
+        PATCH /api/user/v1/modify/
+
+    **Example POST Response**
+
+        If the request is successful, an HTTP 201 "Created" response is
+        returned along with the user id and username, e.g.:
+
+        {
+            "user_id": 5,
+            "username": "newuser"
+        }
+
+    """
+
+    authentication_classes = (
+        JwtAuthentication,
+        BearerAuthenticationAllowInactiveUser,
+        SessionAuthenticationAllowInactiveUser,
+    )
+    permission_classes = (IsAdminUser,)
+
+    def post(self, request):
+        """
+        Create a user with email and username.
+        """
+        data = request.data.copy()
+        allowed_fields = UserProfileSerializer.Meta.fields
+        try:
+            for key in data:
+                if key not in allowed_fields:
+                    raise ValidationError(f"Unexpected field: {key}")
+            serializer = UserProfileSerializer(data=data)
+            serializer.is_valid(raise_exception=True)
+            self._check_superuser(serializer, request)
+            user = serializer.save()
+        except (
+            AccountValidationError,
+            ValueError,
+            ValidationError,
+            DjangoValidationError,
+            PermissionDenied,
+        ) as e:
+            return self._build_error_response(e)
+
+        return Response(
+            data={"user_id": user.id, "username": user.username},
+            status=status.HTTP_201_CREATED,
+        )
+
+    def patch(self, request):
+        """
+        Update user information by email or username.
+        """
+        try:
+            data = request.data.copy()
+            username_or_email = data.pop("username_or_email", None)
+            if not username_or_email:
+                return Response(
+                    data={"error": ["username_or_email is required."]},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            for key in data:
+                if key not in UserProfileSerializer.Meta.fields:
+                    raise ValidationError(f"Unexpected field: {key}")
+                if key in UserProfileSerializer.Meta.read_only_fields:
+                    raise ValidationError(f"Read-only field: {key}")
+            try:
+                # Fetch user based on username or email
+                user = get_user_by_username_or_email(
+                    username_or_email=username_or_email
+                )
+            except User.MultipleObjectsReturned:
+                return Response(
+                    data={"error": ["Multiple users found."]},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            except User.DoesNotExist:
+                return Response(
+                    data={"error": ["User not found."]},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+
+            serializer = UserProfileSerializer(
+                instance=user, data=data, partial=True
+            )
+            serializer.is_valid(raise_exception=True)
+            self._check_superuser(serializer, request)
+            serializer.save()
+
+            return Response(
+                data={"user_id": user.id, "username": user.username},
+                status=status.HTTP_200_OK,
+            )
+        except (
+            AccountValidationError,
+            ValueError,
+            ValidationError,
+            DjangoValidationError,
+            PermissionDenied,
+        ) as e:
+            return self._build_error_response(e)
+
+    def _check_superuser(self, serializer, request):
+        """Check if the current user is allowed to set the superuser flag."""
+        is_superuser = serializer.validated_data.get("is_superuser")
+        if is_superuser and not request.user.is_superuser:
+            raise PermissionDenied("You must be a superuser to perform this action.")
+
+    def _build_error_response(self, e: Exception) -> Response:
+        """Build an appropriate error response based on the type of exception."""
+        if isinstance(e, ValidationError):
+            message = e.detail
+        elif isinstance(e, DjangoValidationError):
+            message = e.messages
+        elif isinstance(e, PermissionDenied):
+            return Response(
+                data={"error": [e.detail]},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        else:
+            message = str(e)
+        return Response(
+            data={"error": message},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
