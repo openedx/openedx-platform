@@ -172,6 +172,29 @@ class TestGatingApi(ModuleStoreTestCase, MilestonesTestCaseMixin):
         assert min_score is None
         assert min_completion is None
 
+    def test_get_prerequisite_settings(self):
+        """ Test test_get_prerequisite_settings """
+
+        no_settings = gating_api.PrerequisiteSettings(
+            is_prerequisite=False, prereq_content_key=None, min_score=None, min_completion=None
+        )
+        assert gating_api.get_prerequisite_settings(self.course.id, self.seq1.location) == no_settings
+        assert gating_api.get_prerequisite_settings(self.course.id, self.seq2.location) == no_settings
+
+        gating_api.add_prerequisite(self.course.id, self.seq1.location)
+        gating_api.set_required_content(self.course.id, self.seq2.location, self.seq1.location, 100, 50)
+
+        assert gating_api.get_prerequisite_settings(self.course.id, self.seq1.location) == (True, None, None, None)
+        assert gating_api.get_prerequisite_settings(self.course.id, self.seq2.location) == (
+            False, str(self.seq1.location), 100, 50
+        )
+
+        # A subsection can be gated and be a prerequisite at the same time.
+        gating_api.add_prerequisite(self.course.id, self.seq2.location)
+        assert gating_api.get_prerequisite_settings(self.course.id, self.seq2.location) == (
+            True, str(self.seq1.location), 100, 50
+        )
+
     def test_get_gated_content(self):
         """
         Verify staff bypasses gated content and student gets list of unfulfilled prerequisites.
