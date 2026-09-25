@@ -9,6 +9,7 @@ from completion.models import BlockCompletion
 from completion.utilities import get_key_to_last_completed_block  # pylint: disable=wrong-import-order
 from django.conf import settings  # pylint: disable=wrong-import-order
 from django.core.cache import cache
+from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404  # pylint: disable=wrong-import-order
 from django.urls import reverse  # pylint: disable=wrong-import-order
 from django.utils.translation import gettext as _  # pylint: disable=wrong-import-order
@@ -207,8 +208,17 @@ class OutlineTabView(RetrieveAPIView):
             staff_access=has_access(request.user, 'staff', course_key),
             reset_masquerade_data=True,
         )
-
+        masquerade_user = request.user
         user_is_masquerading = is_masquerading(request.user, course_key, course_masquerade=masquerade_object)
+        # Check if the user is masquerading as a student and get the masqueraded user object
+        if user_is_masquerading and masquerade_object.role == 'student':
+            try:
+                User = get_user_model()
+                # If the masqueraded user does not exist, we will continue with the original user object.
+                username = masquerade_object.user_name
+                masquerade_user = User.objects.get(username=username)
+            except User.DoesNotExist:
+                pass
 
         course_overview = get_course_overview_or_404(course_key)
         enrollment = CourseEnrollment.get_enrollment(request.user, course_key)
@@ -254,7 +264,7 @@ class OutlineTabView(RetrieveAPIView):
         show_enrolled = is_enrolled or is_staff
         enable_proctored_exams = False
         if show_enrolled:
-            course_blocks = get_course_outline_block_tree(request, course_key_string, request.user)
+            course_blocks = get_course_outline_block_tree(request, course_key_string, masquerade_user)
             date_blocks = get_course_date_blocks(course, request.user, request, num_assignments=1)
             course_date_blocks = (
                 [block for block in date_blocks if not isinstance(block, TodaysDate)]
@@ -321,7 +331,7 @@ class OutlineTabView(RetrieveAPIView):
         # so this is a tiny first step in that migration.
         if course_blocks:
             user_course_outline = get_user_course_outline(
-                course_key, request.user, datetime.now(tz=timezone.utc)  # noqa: UP017
+                course_key, masquerade_user, datetime.now(tz=timezone.utc)  # noqa: UP017
             )
             available_seq_ids = {str(usage_key) for usage_key in user_course_outline.sequences}
 
