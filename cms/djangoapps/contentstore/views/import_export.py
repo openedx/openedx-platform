@@ -385,20 +385,27 @@ def export_status_handler(request, course_key_string):
         except KeyError:
             status = 0
     elif task_status.state == UserTaskStatus.SUCCEEDED:
-        status = 3
-        artifact = UserTaskArtifact.objects.get(status=task_status, name='Output')
-        if isinstance(artifact.file.storage, FileSystemStorage):
-            output_url = reverse_course_url('export_output_handler', course_key)
-        elif isinstance(artifact.file.storage, S3Boto3Storage):
-            filename = os.path.basename(artifact.file.name)
-            disposition = f'attachment; filename="{filename}"'
-            output_url = artifact.file.storage.url(artifact.file.name, parameters={
-                'ResponseContentDisposition': disposition,
-                'ResponseContentEncoding': 'application/octet-stream',
-                'ResponseContentType': 'application/x-tgz'
-            })
+        artifact = UserTaskArtifact.objects.filter(status=task_status, name='Output').first()
+        if artifact is None:
+            # The task is marked as succeeded but its output isn't visible to
+            # this request yet; report it as still compressing so the client
+            # polls again instead of treating the export as failed.
+            log.warning('Export of %s succeeded but its Output artifact is not available yet', course_key_string)
+            status = 2
         else:
-            output_url = artifact.file.storage.url(artifact.file.name)
+            status = 3
+            if isinstance(artifact.file.storage, FileSystemStorage):
+                output_url = reverse_course_url('export_output_handler', course_key)
+            elif isinstance(artifact.file.storage, S3Boto3Storage):
+                filename = os.path.basename(artifact.file.name)
+                disposition = f'attachment; filename="{filename}"'
+                output_url = artifact.file.storage.url(artifact.file.name, parameters={
+                    'ResponseContentDisposition': disposition,
+                    'ResponseContentEncoding': 'application/octet-stream',
+                    'ResponseContentType': 'application/x-tgz'
+                })
+            else:
+                output_url = artifact.file.storage.url(artifact.file.name)
     elif task_status.state in (UserTaskStatus.FAILED, UserTaskStatus.CANCELED):
         status = max(-(task_status.completed_steps + 1), -2)
         errors = UserTaskArtifact.objects.filter(status=task_status, name='Error')

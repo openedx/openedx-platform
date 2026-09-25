@@ -21,6 +21,7 @@ from bson import ObjectId
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.exceptions import SuspiciousOperation
+from django.core.files.base import ContentFile
 from django.core.files.storage import FileSystemStorage
 from django.test.utils import override_settings
 from milestones.tests.utils import MilestonesTestCaseMixin
@@ -30,11 +31,12 @@ from path import Path as path
 from rest_framework import status
 from rest_framework.test import APIClient
 from storages.backends.s3boto3 import S3Boto3Storage
-from user_tasks.models import UserTaskStatus
+from user_tasks.models import UserTaskArtifact, UserTaskStatus
 
 from cms.djangoapps.contentstore import errors as import_error
 from cms.djangoapps.contentstore.api.tests.base import BaseCourseViewTest
 from cms.djangoapps.contentstore.storage import course_import_export_storage
+from cms.djangoapps.contentstore.tasks import CourseExportTask
 from cms.djangoapps.contentstore.tests.test_libraries import LibraryTestCase
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase
 from cms.djangoapps.contentstore.utils import reverse_course_url
@@ -1012,10 +1014,10 @@ class ExportTestCase(CourseTestCase):
         return mock_artifact
 
     @patch('cms.djangoapps.contentstore.views.import_export._latest_task_status')
-    @patch('user_tasks.models.UserTaskArtifact.objects.get')
+    @patch('user_tasks.models.UserTaskArtifact.objects.filter')
     def test_export_status_handler_other(
         self,
-        mock_get_user_task_artifact,
+        mock_filter_user_task_artifact,
         mock_latest_task_status,
     ):
         """
@@ -1024,7 +1026,7 @@ class ExportTestCase(CourseTestCase):
         ``S3Boto3Storage``
         """
         mock_latest_task_status.return_value = Mock(state=UserTaskStatus.SUCCEEDED)
-        mock_get_user_task_artifact.return_value = self._mock_artifact(
+        mock_filter_user_task_artifact.return_value.first.return_value = self._mock_artifact(
             file_url='/path/to/testfile.tar.gz',
         )
         resp = self.client.get(self.status_url)
@@ -1033,11 +1035,11 @@ class ExportTestCase(CourseTestCase):
 
     @ddt.data(S3Boto3Storage)
     @patch('cms.djangoapps.contentstore.views.import_export._latest_task_status')
-    @patch('user_tasks.models.UserTaskArtifact.objects.get')
+    @patch('user_tasks.models.UserTaskArtifact.objects.filter')
     def test_export_status_handler_s3(
         self,
         s3_storage,
-        mock_get_user_task_artifact,
+        mock_filter_user_task_artifact,
         mock_latest_task_status,
     ):
         """
@@ -1045,7 +1047,7 @@ class ExportTestCase(CourseTestCase):
         for the ``S3Boto3Storage`` storage provider
         """
         mock_latest_task_status.return_value = Mock(state=UserTaskStatus.SUCCEEDED)
-        mock_get_user_task_artifact.return_value = self._mock_artifact(
+        mock_filter_user_task_artifact.return_value.first.return_value = self._mock_artifact(
             spec=s3_storage,
             file_url='/s3/file/path/testfile.tar.gz',
         )
@@ -1054,10 +1056,10 @@ class ExportTestCase(CourseTestCase):
         self.assertEqual(result['ExportOutput'], '/s3/file/path/testfile.tar.gz')  # noqa: PT009
 
     @patch('cms.djangoapps.contentstore.views.import_export._latest_task_status')
-    @patch('user_tasks.models.UserTaskArtifact.objects.get')
+    @patch('user_tasks.models.UserTaskArtifact.objects.filter')
     def test_export_status_handler_filesystem(
         self,
-        mock_get_user_task_artifact,
+        mock_filter_user_task_artifact,
         mock_latest_task_status,
     ):
         """
@@ -1065,11 +1067,45 @@ class ExportTestCase(CourseTestCase):
         for the ``FileSystemStorage`` storage provider
         """
         mock_latest_task_status.return_value = Mock(state=UserTaskStatus.SUCCEEDED)
-        mock_get_user_task_artifact.return_value = self._mock_artifact(spec=FileSystemStorage)
+        mock_filter_user_task_artifact.return_value.first.return_value = self._mock_artifact(spec=FileSystemStorage)
         resp = self.client.get(self.status_url)
         result = json.loads(resp.content.decode('utf-8'))
         file_export_output_url = reverse_course_url('export_output_handler', self.course.id)
         self.assertEqual(result['ExportOutput'], file_export_output_url)  # noqa: PT009
+
+    def _create_export_status(self, state):
+        """
+        Creates a real export UserTaskStatus for this course, owned by the test user.
+        """
+        return UserTaskStatus.objects.create(
+            user=self.user,
+            task_id=str(uuid4()),
+            task_class='cms.djangoapps.contentstore.tasks.export_olx',
+            name=CourseExportTask.generate_name({'course_key_string': str(self.course.id)}),
+            total_steps=2,
+            completed_steps=2,
+            state=state,
+        )
+
+    def test_export_status_handler_succeeded_without_output_artifact(self):
+        """
+        Verify that a succeeded export whose Output artifact isn't visible yet is
+        reported as still in progress (Compressing) rather than raising a 500, and
+        that it's reported as successful once the artifact appears.
+        """
+        task_status = self._create_export_status(UserTaskStatus.SUCCEEDED)
+
+        resp = self.client.get(self.status_url)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
+        self.assertEqual(json.loads(resp.content.decode('utf-8')), {'ExportStatus': 2})  # noqa: PT009
+
+        artifact = UserTaskArtifact(status=task_status, name='Output')
+        artifact.file.save(name='testfile.tar.gz', content=ContentFile(b'tarball'))
+
+        resp = self.client.get(self.status_url)
+        result = json.loads(resp.content.decode('utf-8'))
+        self.assertEqual(result['ExportStatus'], 3)  # noqa: PT009
+        self.assertIn('ExportOutput', result)  # noqa: PT009
 
 
 @override_settings(CONTENTSTORE=TEST_DATA_CONTENTSTORE)
