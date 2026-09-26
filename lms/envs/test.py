@@ -244,9 +244,6 @@ NOTES_DISABLED_TABS = []
 # Enable courseware search for tests
 ENABLE_COURSEWARE_SEARCH = True
 
-# Enable dashboard search for tests
-ENABLE_DASHBOARD_SEARCH = True
-
 FACEBOOK_APP_SECRET = "Test"
 FACEBOOK_APP_ID = "Test"
 FACEBOOK_API_VERSION = "v2.8"

@@ -180,9 +180,6 @@ ELASTIC_SEARCH_CONFIG = [
     }
 ]
 
-########################## Dashboard Search #######################
-ENABLE_DASHBOARD_SEARCH = False
-
 
 ########################## Certificates Web/HTML View #######################
 CERTIFICATES_HTML_VIEW = True
