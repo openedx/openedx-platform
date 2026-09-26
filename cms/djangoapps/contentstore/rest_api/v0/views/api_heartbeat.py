@@ -1,5 +1,5 @@
 """ View For Getting the Status of The Authoring API """
-import edx_api_doc_tools as apidocs
+from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import status
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -13,12 +13,12 @@ class APIHeartBeatView(DeveloperErrorViewMixin, APIView):
     View for getting the Authoring API's status
     """
 
-    @apidocs.schema(
+    @extend_schema(
         parameters=[],
         responses={
-            200: "The API is online",
-            401: "The requester is not authenticated.",
-            403: "The API is not availible",
+            200: OpenApiResponse(description="The API is online"),
+            401: OpenApiResponse(description="The requester is not authenticated."),
+            403: OpenApiResponse(description="The API is not availible"),
         },
     )
     @view_auth_classes(is_authenticated=True)

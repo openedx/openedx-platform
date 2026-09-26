@@ -206,6 +206,7 @@ django==5.2.17
     #   done-xblock
     #   drf-jwt
     #   drf-spectacular
+    #   drf-spectacular-sidecar
     #   drf-yasg
     #   edx-ace
     #   edx-api-doc-tools
@@ -408,6 +409,8 @@ drf-jwt==1.19.2
     # via edx-drf-extensions
 drf-spectacular==0.30.0
     # via openedx-platform
+drf-spectacular-sidecar==2026.9.1
+    # via openedx-platform
 drf-yasg==1.21.15
     # via
     #   django-user-tasks
@@ -415,9 +418,7 @@ drf-yasg==1.21.15
 edx-ace==1.15.0
     # via openedx-platform
 edx-api-doc-tools==3.0.0
-    # via
-    #   openedx-authz
-    #   openedx-platform
+    # via openedx-authz
 edx-auth-backends==5.0.0
     # via openedx-platform
 edx-bulk-grades==2.0.0

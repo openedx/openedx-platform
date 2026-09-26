@@ -2,8 +2,9 @@
 
 import logging
 
-import edx_api_doc_tools as apidocs
 from django.conf import settings
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from opaque_keys.edx.keys import CourseKey
 from openedx_authz.constants.permissions import COURSES_VIEW_COURSE
 from rest_framework.fields import BooleanField
@@ -33,19 +34,20 @@ from xmodule.modulestore.exceptions import ItemNotFoundError  # pylint: disable=
 class CourseIndexView(DeveloperErrorViewMixin, APIView):
     """View for Course Index"""
 
-    @apidocs.schema(
+    @extend_schema(
         parameters=[
-            apidocs.string_parameter("course_id", apidocs.ParameterLocation.PATH, description="Course ID"),
-            apidocs.string_parameter(
+            OpenApiParameter("course_id", OpenApiTypes.STR, OpenApiParameter.PATH, description="Course ID"),
+            OpenApiParameter(
                 "show",
-                apidocs.ParameterLocation.QUERY,
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
                 description="Query param to set initial state which fully expanded to see the item",
             )],
         responses={
             200: CourseIndexSerializer,
-            401: "The requester is not authenticated.",
-            403: "The requester cannot access the specified course.",
-            404: "The requested course does not exist.",
+            401: OpenApiResponse(description="The requester is not authenticated."),
+            403: OpenApiResponse(description="The requester cannot access the specified course."),
+            404: OpenApiResponse(description="The requested course does not exist."),
         },
     )
     @verify_course_exists()
@@ -126,23 +128,25 @@ class ContainerChildrenView(APIView, ContainerHandlerMixin):
     View for container xblock requests to get state and children data.
     """
 
-    @apidocs.schema(
+    @extend_schema(
         parameters=[
-            apidocs.string_parameter(
+            OpenApiParameter(
                 "usage_key_string",
-                apidocs.ParameterLocation.PATH,
+                OpenApiTypes.STR,
+                OpenApiParameter.PATH,
                 description="Container usage key",
             ),
-            apidocs.string_parameter(
+            OpenApiParameter(
                 "get_upstream_info",
-                apidocs.ParameterLocation.QUERY,
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
                 description="Gets the info of all ready to sync children",
             ),
         ],
         responses={
             200: ContainerChildrenSerializer,
-            401: "The requester is not authenticated.",
-            404: "The requested locator does not exist.",
+            401: OpenApiResponse(description="The requester is not authenticated."),
+            404: OpenApiResponse(description="The requested locator does not exist."),
         },
     )
     def get(self, request: Request, usage_key_string: str):

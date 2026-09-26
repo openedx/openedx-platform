@@ -18,13 +18,12 @@ from django.core.cache import cache
 from django.db import transaction
 from django.utils.translation import gettext as _
 from django_ratelimit.core import is_ratelimited
-from drf_yasg import openapi
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import OpenApiResponse, extend_schema, inline_serializer
 from edx_ace import ace
 from edx_ace.recipient import Recipient
 from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
 from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
-from rest_framework import permissions, status
+from rest_framework import permissions, serializers, status
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.exceptions import UnsupportedMediaType
 from rest_framework.parsers import JSONParser
@@ -130,10 +129,10 @@ def request_requires_username(function):
     return wrapper
 
 
-account_get_me_return_schema = openapi.Schema(
-    type=openapi.TYPE_OBJECT,
-    properties={
-        "username": openapi.Schema(type=openapi.TYPE_STRING),
+account_get_me_return_schema = inline_serializer(
+    name="AccountGetMe",
+    fields={
+        "username": serializers.CharField(),
     },
 )
 
@@ -154,10 +153,10 @@ class AccountViewSet(ViewSet):
     )
     account_user_get_responses = {
         status.HTTP_200_OK: account_get_me_return_schema,
-        status.HTTP_401_UNAUTHORIZED: "",
+        status.HTTP_401_UNAUTHORIZED: OpenApiResponse(description=""),
     }
 
-    @swagger_auto_schema(
+    @extend_schema(
         responses=account_user_get_responses,
     )
     def get(self, request):

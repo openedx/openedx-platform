@@ -15,7 +15,6 @@ import re
 import string
 
 import dateutil
-import edx_api_doc_tools as apidocs
 import pytz
 from django.conf import settings
 from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
@@ -32,6 +31,8 @@ from django.utils.translation import gettext as _
 from django.views.decorators.cache import cache_control
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_POST
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
 from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
 from edx_when.api import get_date_for_block
@@ -1284,23 +1285,24 @@ class ProblemResponseReportInitiate(DeveloperErrorViewMixin, APIView):
     to a given problem.
     """
 
-    @apidocs.schema(
+    @extend_schema(
         parameters=[
-            apidocs.path_parameter(
+            OpenApiParameter(
                 'course_id',
-                str,
+                OpenApiTypes.STR,
+                OpenApiParameter.PATH,
                 description="ID of the course for which report is to be generate.",
             ),
         ],
-        body=ProblemResponseReportPostParamsSerializer,
+        request=ProblemResponseReportPostParamsSerializer,
         responses={
             200: ProblemResponsesReportStatusSerializer,
-            400: _(
+            400: OpenApiResponse(description=_(
                 "The provided parameters were invalid. Make sure you've provided at least "
                 "one valid usage key for `problem_locations`."
-            ),
-            401: _("The requesting user is not authenticated."),
-            403: _("The requesting user lacks access to the course."),
+            )),
+            401: OpenApiResponse(description=_("The requesting user is not authenticated.")),
+            403: OpenApiResponse(description=_("The requesting user lacks access to the course.")),
         }
     )
     @transaction.non_atomic_requests
@@ -2608,30 +2610,33 @@ class InstructorTasks(DeveloperErrorViewMixin, APIView):
         }
     """
 
-    @apidocs.schema(
+    @extend_schema(
         parameters=[
-            apidocs.string_parameter(
+            OpenApiParameter(
                 'course_id',
-                apidocs.ParameterLocation.PATH,
+                OpenApiTypes.STR,
+                OpenApiParameter.PATH,
                 description="ID for the course whose tasks need to be listed.",
             ),
-            apidocs.string_parameter(
+            OpenApiParameter(
                 'problem_location_str',
-                apidocs.ParameterLocation.QUERY,
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
                 description="Filter instructor tasks to this problem location.",
             ),
-            apidocs.string_parameter(
+            OpenApiParameter(
                 'unique_student_identifier',
-                apidocs.ParameterLocation.QUERY,
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
                 description="Filter tasks to a singe problem and a single student. "
                             "Must be used in combination with `problem_location_str`.",
             ),
         ],
         responses={
             200: InstructorTasksListSerializer,
-            401: _("The requesting user is not authenticated."),
-            403: _("The requesting user lacks access to the course."),
-            404: _("The requested course does not exist."),
+            401: OpenApiResponse(description=_("The requesting user is not authenticated.")),
+            403: OpenApiResponse(description=_("The requesting user lacks access to the course.")),
+            404: OpenApiResponse(description=_("The requested course does not exist.")),
         }
     )
     def get(self, request, course_id):
@@ -2824,24 +2829,26 @@ class ReportDownloads(DeveloperErrorViewMixin, APIView):
     API view to list report downloads for a course.
     """
 
-    @apidocs.schema(parameters=[
-        apidocs.string_parameter(
+    @extend_schema(parameters=[
+        OpenApiParameter(
             'course_id',
-            apidocs.ParameterLocation.PATH,
+            OpenApiTypes.STR,
+            OpenApiParameter.PATH,
             description=_("ID for the course whose reports need to be listed."),
         ),
-        apidocs.string_parameter(
+        OpenApiParameter(
             'report_name',
-            apidocs.ParameterLocation.QUERY,
+            OpenApiTypes.STR,
+            OpenApiParameter.QUERY,
             description=_(
                 "Filter results to only return details of for the report with the specified name."
             ),
         ),
     ], responses={
         200: ReportDownloadsListSerializer,
-        401: _("The requesting user is not authenticated."),
-        403: _("The requesting user lacks access to the course."),
-        404: _("The requested course does not exist."),
+        401: OpenApiResponse(description=_("The requesting user is not authenticated.")),
+        403: OpenApiResponse(description=_("The requesting user lacks access to the course.")),
+        404: OpenApiResponse(description=_("The requested course does not exist.")),
     })
     def get(self, request, course_id):
         """
