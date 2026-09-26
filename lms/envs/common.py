@@ -2170,8 +2170,15 @@ SPECTACULAR_SETTINGS = {
     'VERSION': '0.1.0',
     'SERVE_INCLUDE_SCHEMA': False,
     'PREPROCESSING_HOOKS': ['lms.lib.spectacular.lms_api_filter'],
+    # Mark legacy slashless enrollment addresses deprecated. The enum hook is
+    # drf-spectacular's default, restated because setting this key replaces
+    # the default list.
+    'POSTPROCESSING_HOOKS': [
+        'drf_spectacular.hooks.postprocess_schema_enums',
+        'lms.lib.spectacular.lms_mark_legacy_paths_deprecated',
+    ],
+    # Used for tag extraction only; paths are emitted in full.
     'SCHEMA_PATH_PREFIX': '/api/enrollment',
-    'SCHEMA_PATH_PREFIX_TRIM': '/api/enrollment',
     # SERVERS is environment-specific (LMS_ROOT_URL differs per env) and is
     # set in devstack.py / production.py.
 }
