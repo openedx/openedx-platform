@@ -13,6 +13,7 @@ from django.utils.translation import gettext_lazy as _
 from django.views.generic import RedirectView
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from edx_api_doc_tools import make_docs_urls
+from edx_rest_framework_extensions.url_converters import register_url_converters
 
 import openedx.core.djangoapps.common_views.xblock
 import openedx.core.djangoapps.debug.views
@@ -27,6 +28,7 @@ from openedx.core.djangoapps.password_policy import compliance as password_polic
 from openedx.core.djangoapps.password_policy.forms import PasswordPolicyAwareAdminAuthForm
 
 django_autodiscover()
+register_url_converters()
 admin.site.site_header = _('Studio Administration')
 admin.site.site_title = admin.site.site_header
 
@@ -354,6 +356,11 @@ urlpatterns.extend(get_plugin_url_patterns(ProjectType.CMS))
 # Contentstore REST APIs
 urlpatterns += [
     path('api/contentstore/', include('cms.djangoapps.contentstore.rest_api.urls'))
+]
+
+# Authoring REST APIs
+urlpatterns += [
+    path('api/authoring/v1/', include('cms.djangoapps.contentstore.rest_api.v1.authoring_urls')),
 ]
 
 # Content tagging
