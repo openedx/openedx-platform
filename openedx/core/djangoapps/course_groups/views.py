@@ -34,6 +34,7 @@ from openedx.core.djangoapps.course_groups.models import (
     CohortMembership,
 )
 from openedx.core.djangoapps.course_groups.permissions import IsStaffOrAdmin
+from openedx.core.djangoapps.course_groups.rest_api.deprecation import DeprecatedAPIViewMixin
 from openedx.core.lib.api.authentication import BearerAuthenticationAllowInactiveUser
 from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin
 
@@ -482,7 +483,7 @@ class APIPermissions(GenericAPIView):
     serializer_class = Serializer
 
 
-class CohortSettings(DeveloperErrorViewMixin, APIPermissions):
+class CohortSettings(DeprecatedAPIViewMixin, DeveloperErrorViewMixin, APIPermissions):
     """
     **Use Cases**
 
@@ -498,6 +499,7 @@ class CohortSettings(DeveloperErrorViewMixin, APIPermissions):
 
         * is_cohorted: current status of the cohort setting
     """
+    successor_path = '/api/cohorts/v2/courses/{course_key}/cohort_settings/'
 
     def get(self, request, course_key_string):
         """
@@ -522,7 +524,7 @@ class CohortSettings(DeveloperErrorViewMixin, APIPermissions):
         return _get_cohort_settings_response(course_key)
 
 
-class CohortHandler(DeveloperErrorViewMixin, APIPermissions):
+class CohortHandler(DeprecatedAPIViewMixin, DeveloperErrorViewMixin, APIPermissions):
     """
     **Use Cases**
 
@@ -574,6 +576,7 @@ class CohortHandler(DeveloperErrorViewMixin, APIPermissions):
             * user_partition_id: The integer identifier of the UserPartition.
             * group_id: The integer identifier of the specific group in the partition.
     """
+    successor_path = '/api/cohorts/v2/courses/{course_key}/cohorts/'
     queryset = []
 
     def get(self, request, course_key_string, cohort_id=None):
@@ -672,7 +675,7 @@ class CohortHandler(DeveloperErrorViewMixin, APIPermissions):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class CohortUsers(DeveloperErrorViewMixin, APIPermissions):
+class CohortUsers(DeprecatedAPIViewMixin, DeveloperErrorViewMixin, APIPermissions):
     """
     **Use Cases**
         List users in a cohort
@@ -759,6 +762,7 @@ class CohortUsers(DeveloperErrorViewMixin, APIPermissions):
             * The user corresponding to the given username could not be found.
         Returns a HTTP 204 No Content response status code to indicate success.
     """
+    successor_path = '/api/cohorts/v2/courses/{course_key}/cohorts/{cohort_id}/users/'
     serializer_class = CohortUsersAPISerializer
 
     def _get_course_and_cohort(self, request, course_key_string, cohort_id):
