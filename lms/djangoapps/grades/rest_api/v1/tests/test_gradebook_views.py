@@ -2342,3 +2342,25 @@ class CourseAuthorAccessRequiredCCXTests(CcxTestCase):
 
         assert response.status_code == status.HTTP_200_OK
         mock_has_access.assert_called_once_with(outsider, self.course.id)
+
+    def test_ccx_access_denied_when_custom_courses_edx_disabled(self):
+        """The CCX branch respects the platform-level `CUSTOM_COURSES_EDX` toggle."""
+        with override_settings(CUSTOM_COURSES_EDX=False):
+            response = self._call(self.coach)
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert response.data.get('error_code') == 'user_permissions'
+
+    def test_ccx_access_denied_when_master_course_disables_ccx(self):
+        """If the master course has `enable_ccx=False`, even the coach is rejected."""
+        master_course = self.store.get_course(self.course.id)
+        master_course.enable_ccx = False
+
+        with patch(
+            'lms.djangoapps.grades.rest_api.v1.gradebook_views.get_course_by_id',
+            return_value=master_course,
+        ):
+            response = self._call(self.coach)
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert response.data.get('error_code') == 'user_permissions'
