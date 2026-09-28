@@ -377,7 +377,7 @@ def add_master_course_staff_to_ccx(master_course, ccx_key, display_name, send_em
                 except CourseEnrollmentException:
                     log.warning(
                         "Unable to enroll staff %s to course with id %s",
-                        staff.email,
+                        staff.id if getattr(settings, 'SQUELCH_PII_IN_LOGS', False) else staff.email,
                         ccx_key
                     )
                     continue
@@ -402,7 +402,7 @@ def add_master_course_staff_to_ccx(master_course, ccx_key, display_name, send_em
                 except CourseEnrollmentException:
                     log.warning(
                         "Unable to enroll instructor %s to course with id %s",
-                        instructor.email,
+                        instructor.id if getattr(settings, 'SQUELCH_PII_IN_LOGS', False) else instructor.email,
                         ccx_key
                     )
                     continue

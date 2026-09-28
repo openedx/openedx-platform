@@ -100,6 +100,7 @@ from openedx.core.djangoapps.user_api.accounts.utils import username_suffix_gene
 from openedx.core.djangoapps.user_authn import cookies as user_authn_cookies
 from openedx.core.djangoapps.user_authn.toggles import is_auto_generated_username_enabled
 from openedx.core.djangoapps.user_authn.utils import is_safe_login_or_logout_redirect
+from openedx.core.lib.log_utils import get_username_or_pii_safe_user_id_for_log
 
 from . import provider
 
@@ -661,7 +662,7 @@ def ensure_user_information(strategy, auth_entry, backend=None, user=None, socia
             # However, we will log a warning for this case:
             logger.warning(
                 '[THIRD_PARTY_AUTH] User is using third_party_auth to login but has not yet activated their account. '  # noqa: UP032  # pylint: disable=line-too-long
-                'Username: {username}'.format(username=user.username)
+                'Username: {username}'.format(username=get_username_or_pii_safe_user_id_for_log(user))
             )
 
 
@@ -854,7 +855,7 @@ def user_details_force_sync(auth_entry, strategy, details, user=None, *args, **k
             logger.info(
                 '[THIRD_PARTY_AUTH] User performed SSO and data was synchronized. '  # noqa: UP032
                 'Username: {username}, Provider: {provider}, UpdatedKeys: {updated_keys}'.format(
-                    username=user.username,
+                    username=get_username_or_pii_safe_user_id_for_log(user),
                     provider=current_provider.name,
                     updated_keys=list(changed.keys())
                 )
