@@ -128,6 +128,7 @@ from openedx.core.djangoapps.zendesk_proxy.utils import create_zendesk_ticket
 from openedx.core.djangolib.markup import HTML, Text
 from openedx.core.lib.courses import get_course_by_id
 from openedx.core.lib.jwt import unpack_jwt
+from openedx.core.lib.log_utils import get_username_or_pii_safe_user_id_for_log
 from openedx.core.lib.mobile_utils import is_request_from_mobile_app
 from openedx.features.course_duration_limits.access import generate_course_expired_fragment
 from openedx.features.course_experience import course_home_url
@@ -780,7 +781,7 @@ class EnrollStaffView(View):
             add_enrollment(request.user.username, course_id)
             log.info(
                 "User %s enrolled in %s via `enroll_staff` view",
-                request.user.username,
+                get_username_or_pii_safe_user_id_for_log(request.user),
                 course_id
             )
             return redirect(_next)
@@ -1471,9 +1472,7 @@ def generate_user_cert(request, course_id):
         return HttpResponseBadRequest(str(e))
 
     if not is_course_passed(student, course):
-        user_identifier_for_log = (
-            student.id if getattr(settings, 'SQUELCH_PII_IN_LOGS', False) else student.username
-        )
+        user_identifier_for_log = get_username_or_pii_safe_user_id_for_log(student)
         log.info("User %s has not passed the course: %s", user_identifier_for_log, course_id)
         return HttpResponseBadRequest(_("Your certificate will be available when you pass the course."))
 
@@ -1481,7 +1480,7 @@ def generate_user_cert(request, course_id):
 
     log.info(
         "User %s has requested for certificate in %s, current status: is_downloadable: %s, is_generating: %s",
-        student.username,
+        get_username_or_pii_safe_user_id_for_log(student),
         course_id,
         certificate_status["is_downloadable"],
         certificate_status["is_generating"],

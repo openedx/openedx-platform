@@ -58,6 +58,7 @@ from openedx.core.djangoapps.content.block_structure.exceptions import UsageKeyN
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.core.djangoapps.theming.helpers import get_themes
 from openedx.core.djangoapps.user_authn.utils import is_safe_login_or_logout_redirect
+from openedx.core.lib.log_utils import get_username_or_pii_safe_user_id_for_log
 from openedx.core.lib.time_zone_utils import get_time_zone_offset
 from xmodule.data import CertificatesDisplayBehaviors  # pylint: disable=wrong-import-order
 
@@ -576,7 +577,7 @@ def _cert_info(user, enrollment, cert_status):
         elif 'download_url' not in cert_status:
             log.warning(
                 "User %s has a downloadable cert for %s, but no download url",
-                user.username,
+                get_username_or_pii_safe_user_id_for_log(user),
                 course_overview.id
             )
             return default_info

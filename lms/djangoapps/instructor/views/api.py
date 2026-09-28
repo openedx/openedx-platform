@@ -131,6 +131,7 @@ from openedx.core.lib.api.authentication import BearerAuthenticationAllowInactiv
 from openedx.core.lib.api.serializers import CourseKeyField
 from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin, view_auth_classes
 from openedx.core.lib.courses import get_course_by_id
+from openedx.core.lib.log_utils import get_username_or_pii_safe_user_id_for_log
 from openedx.features.course_experience.url_helpers import get_learning_mfe_home_url
 from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 from xmodule.modulestore.exceptions import ItemNotFoundError  # pylint: disable=wrong-import-order
@@ -629,7 +630,7 @@ def create_manual_course_enrollment(user, course_id, mode, enrolled_by, reason, 
         enrolled_by, user.email, state_transition, reason, enrollment_obj
     )
 
-    log.info('user %s enrolled in the course %s', user.username, course_id)
+    log.info('user %s enrolled in the course %s', get_username_or_pii_safe_user_id_for_log(user), course_id)
     return enrollment_obj
 
 

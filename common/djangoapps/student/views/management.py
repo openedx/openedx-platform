@@ -113,6 +113,7 @@ from openedx.core.djangoapps.user_authn.toggles import (
 )
 from openedx.core.djangolib.markup import HTML, Text
 from openedx.core.lib.api.authentication import BearerAuthenticationAllowInactiveUser
+from openedx.core.lib.log_utils import get_username_or_pii_safe_user_id_for_log
 from openedx.features.course_experience.url_helpers import make_learning_mfe_courseware_url
 from openedx.features.discounts.applicability import FIRST_PURCHASE_DISCOUNT_OVERRIDE_FLAG
 from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
@@ -404,7 +405,7 @@ def change_enrollment(request, check_access=True):
     except InvalidKeyError:
         log.warning(
             "User %s tried to %s with invalid course id: %s",
-            user.username,
+            get_username_or_pii_safe_user_id_for_log(user),
             action,
             request.POST.get("course_id"),
         )
@@ -420,7 +421,7 @@ def change_enrollment(request, check_access=True):
         if not modulestore().has_course(course_id):
             log.warning(
                 "User %s tried to enroll in non-existent course %s",
-                user.username,
+                get_username_or_pii_safe_user_id_for_log(user),
                 course_id
             )
             return HttpResponseBadRequest(_("Course id is invalid"))
@@ -493,7 +494,7 @@ def change_enrollment(request, check_access=True):
         except UnenrollmentNotAllowed as exc:
             return HttpResponseBadRequest(str(exc))
 
-        user_identifier_for_log = user.id if getattr(settings, 'SQUELCH_PII_IN_LOGS', False) else user.username
+        user_identifier_for_log = get_username_or_pii_safe_user_id_for_log(user)
         log.info("User %s unenrolled from %s; sending REFUND_ORDER", user_identifier_for_log, course_id)
         REFUND_ORDER.send(sender=None, course_enrollment=enrollment)
         return HttpResponse()

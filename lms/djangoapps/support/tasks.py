@@ -5,6 +5,7 @@ from datetime import datetime
 
 from celery import shared_task
 from completion.models import BlockCompletion
+from django.conf import settings
 from django.contrib.sites.models import Site
 from edx_ace import ace
 from edx_ace.recipient import Recipient
@@ -55,9 +56,14 @@ def send_reset_course_completion_email(course, user):
         'course_title': course.display_name,
     })
 
+    user_identifier_for_log = (
+        f"user ID {user.id}" if getattr(settings, 'SQUELCH_PII_IN_LOGS', False)
+        else f"{user.profile.name} (Email: {user.email})"
+    )
+
     try:
         log.info(
-            f"Sending whole course reset email to {user.profile.name} (Email: {user.email}) "
+            f"Sending whole course reset email to {user_identifier_for_log} "
             f"from course {course.display_name} (CourseId: {course.id})"
         )
         with emulate_http_request(site=site, user=user):
@@ -69,14 +75,14 @@ def send_reset_course_completion_email(course, user):
             ace.send(msg)
     except Exception as exc:  # pylint: disable=broad-except
         log.exception(
-            f"Whole course reset email to {user.profile.name} (Email: {user.email}) "
+            f"Whole course reset email to {user_identifier_for_log} "
             f"from course {course.display_name} (CourseId: {course.id}) failed."
             f"Error: {exc.response['Error']['Code']}"
         )
         return False
     else:
         log.info(
-            f"Whole course reset email sent successfully to {user.profile.name} (Email: {user.email}) "
+            f"Whole course reset email sent successfully to {user_identifier_for_log} "
             f"from course {course.display_name} (CourseId: {course.id})"
         )
         return True

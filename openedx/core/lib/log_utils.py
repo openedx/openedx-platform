@@ -4,7 +4,31 @@ Helper functions for logging.
 
 import logging
 
+from django.conf import settings
+
 log = logging.getLogger(__name__)
+
+
+def get_username_or_pii_safe_user_id_for_log(user):
+    """
+    Return the identifier to use for ``user`` in a log message.
+
+    Returns ``user.id`` when the ``SQUELCH_PII_IN_LOGS`` setting is enabled, and
+    ``user.username`` otherwise.
+
+    A numeric user id is not PII and can always be logged directly without this
+    function. Use this function only where the username is preferred in logs for
+    deployments that allow PII in logs.
+
+    Arguments:
+        user (User): the user to identify in the log message.
+
+    Returns:
+        int or str: the user id or the username.
+    """
+    if getattr(settings, 'SQUELCH_PII_IN_LOGS', False):
+        return user.id
+    return user.username
 
 
 def audit_log(name, **kwargs):
