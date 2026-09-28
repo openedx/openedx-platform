@@ -662,7 +662,9 @@ def ensure_user_information(strategy, auth_entry, backend=None, user=None, socia
             # However, we will log a warning for this case:
             logger.warning(
                 '[THIRD_PARTY_AUTH] User is using third_party_auth to login but has not yet activated their account. '  # noqa: UP032  # pylint: disable=line-too-long
-                'Username: {username}'.format(username=get_username_or_pii_safe_user_id_for_log(user))
+                'User Identifier: {user_identifier}'.format(
+                    user_identifier=get_username_or_pii_safe_user_id_for_log(user)
+                )
             )
 
 
@@ -854,8 +856,8 @@ def user_details_force_sync(auth_entry, strategy, details, user=None, *args, **k
         if changed:
             logger.info(
                 '[THIRD_PARTY_AUTH] User performed SSO and data was synchronized. '  # noqa: UP032
-                'Username: {username}, Provider: {provider}, UpdatedKeys: {updated_keys}'.format(
-                    username=get_username_or_pii_safe_user_id_for_log(user),
+                'User Identifier: {user_identifier}, Provider: {provider}, UpdatedKeys: {updated_keys}'.format(
+                    user_identifier=get_username_or_pii_safe_user_id_for_log(user),
                     provider=current_provider.name,
                     updated_keys=list(changed.keys())
                 )
@@ -884,7 +886,9 @@ def user_details_force_sync(auth_entry, strategy, details, user=None, *args, **k
                     email.send()
                 except SMTPException:
                     logger.exception('[THIRD_PARTY_AUTH] Error sending IdP learner data sync-initiated email change '  # noqa: UP032  # pylint: disable=line-too-long
-                                     'notification email. Username: {username}'.format(username=user.username))
+                                     'notification email. User Identifier: {user_identifier}'.format(
+                                         user_identifier=get_username_or_pii_safe_user_id_for_log(user)
+                                     ))
 
 
 def set_id_verification_status(auth_entry, strategy, details, user=None, *args, **kwargs):  # pylint: disable=keyword-arg-before-vararg
