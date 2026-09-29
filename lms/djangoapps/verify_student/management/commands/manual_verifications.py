@@ -13,6 +13,7 @@ from django.core.management.base import BaseCommand, CommandError
 
 from lms.djangoapps.verify_student.models import ManualVerification
 from lms.djangoapps.verify_student.utils import earliest_allowed_verification_date
+from openedx.core.lib.log_utils import get_email_or_pii_safe_user_id_for_log
 
 log = logging.getLogger(__name__)
 
@@ -129,7 +130,7 @@ class Command(BaseCommand):
                     status='approved',
                 ))
             else:
-                user_identifier_for_log = user.id if getattr(settings, 'SQUELCH_PII_IN_LOGS', False) else user.email
+                user_identifier_for_log = get_email_or_pii_safe_user_id_for_log(user)
                 log.info('Skipping user %s, existing verification found.', user_identifier_for_log)
         ManualVerification.objects.bulk_create(verifications_to_create)
         failed_emails = set(email_ids) - set(users.values_list('email', flat=True))

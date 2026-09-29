@@ -1017,14 +1017,17 @@ def change_email_settings(request):
     receive_emails = request.data.get("receive_emails")
     course_key = CourseKey.from_string(course_id)
 
+    user_identifier_for_log = (
+        user.id if getattr(settings, 'SQUELCH_PII_IN_LOGS', False) else f'{user.username} ({user.email})'
+    )
+
     if receive_emails:
         optout_object = Optout.objects.filter(user=user, course_id=course_key)
         if optout_object:
             optout_object.delete()
         log.info(
-            "User %s (%s) opted in to receive emails from course %s",
-            user.username,
-            user.email,
+            "User %s opted in to receive emails from course %s",
+            user_identifier_for_log,
             course_id,
         )
         track_views.server_track(
@@ -1036,9 +1039,8 @@ def change_email_settings(request):
     else:
         Optout.objects.get_or_create(user=user, course_id=course_key)
         log.info(
-            "User %s (%s) opted out of receiving emails from course %s",
-            user.username,
-            user.email,
+            "User %s opted out of receiving emails from course %s",
+            user_identifier_for_log,
             course_id,
         )
         track_views.server_track(

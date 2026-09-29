@@ -257,7 +257,7 @@ class ResetStudentCourse(TestSubmittingProblems):
 @patch('lms.djangoapps.support.tasks.ace')
 class SendResetCourseCompletionEmailLogTest(TestCase):
     """
-    The course reset email logs identify the user by id, without name or email, when SQUELCH_PII_IN_LOGS is enabled.
+    The course reset email logs identify the user by id when SQUELCH_PII_IN_LOGS is enabled, and by email otherwise.
     """
 
     def setUp(self):
@@ -266,9 +266,7 @@ class SendResetCourseCompletionEmailLogTest(TestCase):
         self.course = Mock(display_name='Demo Course', id='course-v1:edX+Demo+2026')
 
     def _expected_identifier(self, squelch_pii):
-        if squelch_pii:
-            return f'user ID {self.user.id}'
-        return f'{self.user.profile.name} (Email: {self.user.email})'
+        return f'user {self.user.id if squelch_pii else self.user.email}'
 
     @ddt.data(True, False)
     def test_success_logs(self, squelch_pii, mock_ace, mock_log):
