@@ -189,6 +189,60 @@ class XBlockSerializationTestCase(SharedModuleStoreTestCase):
             """
         )
 
+    def test_html_with_include_theme(self):
+        """ Test that the extracted HTML block's include_theme setting is serialized. """
+        course = CourseFactory.create(display_name='test course', run="Testing_course")
+        html_block = BlockFactory.create(
+            parent_location=course.location,
+            category="html",
+            display_name="Themed HTML Block",
+            include_theme=True,
+            data="🍔",
+        )
+        serialized = api.serialize_xblock_to_olx(html_block)
+        self.assertXmlEqual(
+            serialized.olx_str,
+            f"""
+            <html
+                copied_from_block="{str(html_block.location)}"
+                url_name="Themed_HTML_Block"
+                display_name="Themed HTML Block"
+                include_theme="true"
+            ><![CDATA[
+                🍔
+            ]]></html>
+            """
+        )
+
+    def test_html_without_include_theme_is_not_serialized(self):
+        """ Blocks that leave the setting unset must not gain the attribute. """
+        course = CourseFactory.create(display_name='test course', run="Testing_course")
+        html_block = BlockFactory.create(
+            parent_location=course.location,
+            category="html",
+            data="🍔",
+        )
+        serialized = api.serialize_xblock_to_olx(html_block)
+        assert "include_theme" not in serialized.olx_str
+
+    def test_html_with_include_theme_false_is_not_serialized(self):
+        """ A block carrying the default value must not gain the attribute either.
+
+        Syncing a library into a course copies every declared field into the
+        block's field data, so the setting arrives present and False rather than
+        absent. Writing it out would put include_theme="false" on every synced
+        HTML block.
+        """
+        course = CourseFactory.create(display_name='test course', run="Testing_course")
+        html_block = BlockFactory.create(
+            parent_location=course.location,
+            category="html",
+            data="🍔",
+            include_theme=False,
+        )
+        serialized = api.serialize_xblock_to_olx(html_block)
+        assert "include_theme" not in serialized.olx_str
+
     def test_export_sequential(self):
         """
         Export a sequential from the toy course, including all of its children.
