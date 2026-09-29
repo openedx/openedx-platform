@@ -214,8 +214,8 @@ class TestCourseListing(ModuleStoreTestCase):
         )
 
         request = self.factory.get('/course', {
-            'start_date_on_or_after': (today - timedelta(days=1)).date().isoformat(),
-            'start_date_on_or_before': (today + timedelta(days=1)).date().isoformat(),
+            'start_date_on_or_after': (today - timedelta(days=1)).isoformat(),
+            'start_date_on_or_before': (today + timedelta(days=1)).isoformat(),
         })
         request.user = self.user
         # Since a date param is present, _apply_course_query_filters also runs get_bool_param,

@@ -4,8 +4,9 @@ Common utilities for Contentstore APIs.
 
 
 from contextlib import contextmanager
-from datetime import date
+from datetime import datetime
 
+from django.utils.dateparse import parse_datetime
 from opaque_keys.edx.keys import CourseKey
 from rest_framework import serializers, status
 from rest_framework.generics import GenericAPIView
@@ -110,21 +111,30 @@ def get_bool_param(request, param_name, default):
         return bool_value
 
 
-def get_date_param(request, param_name, default=None) -> date | None:
+def get_datetime_param(request, param_name, default=None) -> datetime | None:
     """
-    Given a request, parameter name, and default value, returns
-    either a ``date`` value parsed from the query param, or the default
+    Returns a timezone-aware ``datetime`` parsed from the query param, or the default
     if the param wasn't provided.
 
     Raises:
-        rest_framework.exceptions.ValidationError: If the param was provided
-            but isn't a valid ``YYYY-MM-DD`` date (including if a datetime,
-            rather than a date, was given).
+        rest_framework.exceptions.ValidationError: If the param isn't an ISO 8601 datetime
+            that carries a UTC offset or ``Z``.
     """
     param_value = request.GET.get(param_name, None)
     if param_value is None:
         return default
-    return serializers.DateField().run_validation(param_value)
+    try:
+        value = parse_datetime(param_value)
+    except ValueError:
+        value = None
+    if value is None or value.tzinfo is None:
+        raise serializers.ValidationError({
+            param_name: (
+                "Enter an ISO 8601 datetime with a UTC offset or 'Z', e.g. 2024-01-01T00:00:00+04:00. "
+                "Percent-encode '+' as %2B in the query string."
+            ),
+        })
+    return value
 
 
 def course_author_access_required(view):
