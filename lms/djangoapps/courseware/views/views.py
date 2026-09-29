@@ -1466,7 +1466,7 @@ def generate_user_cert(request, course_id):
     except CertificateGenerationNotAllowed as e:
         log.exception(
             "Certificate generation not allowed for user %s in course %s",
-            str(student),
+            get_username_or_pii_safe_user_id_for_log(student),
             course_key,
         )
         return HttpResponseBadRequest(str(e))
