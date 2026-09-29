@@ -22,9 +22,37 @@ jobs:
   generate-schemas:
     runs-on: ubuntu-latest
 
+    # Schema generation needs a migrated database: drf-spectacular evaluates a
+    # queryset while building a warning for edxval's VideoList, so the tables
+    # have to exist, not just the server. Credentials match the defaults in
+    # openedx/envs/common.py. Mongo is not needed.
+    services:
+      mysql:
+        image: mysql:8
+        ports:
+          - 3306:3306
+        env:
+          MYSQL_DATABASE: "edxapp"
+          MYSQL_USER: "edxapp001"
+          MYSQL_PASSWORD: "password"
+          MYSQL_RANDOM_ROOT_PASSWORD: true
+        options: >-
+          --health-cmd "mysqladmin ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 3
+
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      # mysqlclient ships no wheels, so pip builds it from source and needs the
+      # MySQL and xmlsec headers. migrations-check.yml and unit-tests.yml do the
+      # same before installing Python dependencies.
+      - name: Install system packages
+        run: |
+          sudo apt-get update
+          make ubuntu-requirements
 
       - name: Install uv
         uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
@@ -38,6 +66,11 @@ jobs:
       # install.
       - name: Install dependencies
         run: uv sync --no-default-groups --group docs --frozen
+
+      - name: Run migrations
+        run: |
+          uv run ./manage.py lms migrate
+          uv run ./manage.py cms migrate
 
       # `docs.docs_settings` is what `make swagger` uses: it applies the
       # unfiltered /api-docs configuration instead of the narrow, SDK-facing
@@ -57,8 +90,9 @@ jobs:
       # cms.envs.devstack, which imports production.py and so requires a
       # CMS_CFG file that does not exist in CI — settings raise
       # ImproperlyConfigured before the command is even registered.
-      # cms.envs.development needs no such file. Its schema is the Authoring
-      # API's contentstore-scoped surface, the same one Studio publishes at
+      # cms.envs.development needs no such file, and inherits the Authoring
+      # API's SPECTACULAR_SETTINGS from cms/envs/common.py, so this emits the
+      # same contentstore-scoped surface Studio publishes at
       # /authoring-api/schema/.
       - name: Generate CMS OpenAPI schema
         run: |
