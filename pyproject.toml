@@ -290,7 +290,7 @@ constraint-dependencies = [
     "sphinx-autoapi<3.6.1",
     "setuptools<82",
     "astroid==4.0.4",
-    "edx-enterprise==8.17.0",
+    "edx-enterprise==8.18.0",
     "djangorestframework<3.18",
 ]
 [tool.edx_lint]
@@ -407,7 +407,7 @@ uv_constraints = [
     # The team that owns this package will manually bump this package rather than
     # having it pulled in automatically. This is to allow them to better control its
     # deployment and to do it in a process that works better for them.
-    "edx-enterprise==8.17.0",
+    "edx-enterprise==8.18.0",
     # Date: 2026-08-31
     # DRF 3.18.0 changes many=True validation errors from a list to a dict keyed by
     # item index, which breaks the error response shape of several write endpoints.
@@ -773,12 +773,6 @@ ignore_imports = [
     #  -> openedx.core.djangoapps.content.learning_sequences.api.permissions
     #  -> lms.djangoapps.courseware.access
     "openedx.core.djangoapps.content.learning_sequences.api.permissions -> lms.djangoapps.courseware.access",
-    # cms.djangoapps.contentstore.[various]
-    #  -> openedx.features.content_type_gating.partitions
-    #  -> openedx.features.discounts.utils
-    #  -> openedx.features.discounts.applicability
-    #  -> openedx.features.enterprise_support.utils
-    "openedx.features.enterprise_support.utils -> lms.djangoapps.branding.api",
     "cms.djangoapps.contentstore.rest_api.v1.views.settings -> lms.djangoapps.certificates.api",
     # We are ignoring this existing import until we can refactor contenstore/helpers.
     # https://github.com/openedx/edx-platform/issues/37637

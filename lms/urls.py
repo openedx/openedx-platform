@@ -3,6 +3,7 @@ URLs for LMS
 """
 
 from config_models.views import ConfigurationModelCurrentAPIView
+from django.apps import apps as django_apps
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
@@ -51,7 +52,6 @@ from openedx.core.djangoapps.plugins.constants import ProjectType
 from openedx.core.djangoapps.programs.models import ProgramsApiConfig
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.core.djangoapps.user_authn.views.login import redirect_to_lms_login
-from openedx.features.enterprise_support.api import enterprise_enabled
 
 RESET_COURSE_DEADLINES_NAME = 'reset_course_deadlines'
 RENDER_XBLOCK_NAME = 'render_xblock'
@@ -880,8 +880,24 @@ if settings.ENABLE_THIRD_PARTY_AUTH:
         path('api/third_party_auth/', include('common.djangoapps.third_party_auth.api.urls')),
     ]
 
+
+def _enterprise_enabled():
+    """
+    Whether the enterprise feature is installed and enabled.
+
+    Temporary duplicate of the helper that now lives in edx-enterprise
+    (``enterprise.platform_support.api.enterprise_enabled``), kept here only
+    because ``channel_integrations.urls`` still has to be included by the
+    platform. Remove this function and the whole block below once
+    enterprise-integrated-channels is modernized into a true plugin that
+    injects its own URLs via ``url_config``, at which point ``enterprise.urls``
+    moves there too.
+    """
+    return django_apps.is_installed('enterprise') and getattr(settings, 'ENABLE_ENTERPRISE_INTEGRATION', False)
+
+
 # Enterprise
-if enterprise_enabled():
+if _enterprise_enabled():
     urlpatterns += [
         path('', include('enterprise.urls')),
         path('', include('channel_integrations.urls')),
