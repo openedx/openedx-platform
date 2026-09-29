@@ -482,7 +482,7 @@ edx-drf-extensions==10.9.0
     #   openedx-authz
     #   openedx-core
     #   openedx-platform
-edx-enterprise==8.17.0
+edx-enterprise==9.0.0
     # via openedx-platform
 edx-event-bus-kafka==6.1.0
     # via openedx-platform
