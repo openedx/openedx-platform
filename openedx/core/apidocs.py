@@ -70,14 +70,16 @@ def cached_schema_view():
     whole schema on every request. Storing the zlib-compressed body instead
     brings it to roughly a tenth of the limit.
 
-    The key covers the path, the negotiated representation and the active
-    language. The document is not identical for every requester: drf-spectacular
-    renders it under whatever language is active, and ``LocaleMiddleware`` sets
-    that from the request's cookie or ``Accept-Language`` before this runs, so
-    two locales produce different documents. Nothing else in it varies by user --
-    ``SERVE_PUBLIC`` defaults to ``True``, ``SERVE_*`` cannot be set through
-    ``custom_settings``, and ``API_DOCS_SETTINGS`` sets ``'SERVERS': []`` so no
-    ``servers`` block is emitted.
+    The key covers the URLconf, the path, the negotiated representation and the
+    active language. The URLconf because the LMS and the CMS serve this view at
+    the same path and share one cache by default, so without it whichever
+    service generated first would serve its document at the other's URL. The
+    language because drf-spectacular renders the document under whatever
+    language is active, and ``LocaleMiddleware`` sets that from the request's
+    cookie or ``Accept-Language`` before this runs. Nothing else in it varies by
+    requester -- ``SERVE_PUBLIC`` defaults to ``True``, ``SERVE_*`` cannot be set
+    through ``custom_settings``, and ``API_DOCS_SETTINGS`` sets ``'SERVERS': []``
+    so no ``servers`` block is emitted.
 
     Only GET and HEAD are cached, as ``cache_page`` did: DRF answers OPTIONS on
     this view with a 200 metadata document, which would otherwise be stored and
@@ -106,6 +108,7 @@ def cached_schema_view():
 
         cache_key = get_cache_key(
             resource='apidocs-schema',
+            urlconf=settings.ROOT_URLCONF,
             path=request.get_full_path(),
             accept=request.META.get('HTTP_ACCEPT', ''),
             language=translation.get_language(),
