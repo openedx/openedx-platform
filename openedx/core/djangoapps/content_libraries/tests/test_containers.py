@@ -8,12 +8,20 @@ from datetime import UTC, datetime
 import ddt
 from freezegun import freeze_time
 from opaque_keys.edx.locator import LibraryContainerLocator, LibraryLocatorV2, LibraryUsageLocatorV2
+from openedx_authz.constants.roles import COURSE_AUDITOR
 
 from common.djangoapps.student.tests.factories import UserFactory
+from openedx.core.djangoapps.authz.tests.mixins import CourseAuthoringAuthzTestMixin
 from openedx.core.djangoapps.content_libraries import api
-from openedx.core.djangoapps.content_libraries.tests.base import ContentLibrariesRestApiTest
+from openedx.core.djangoapps.content_libraries.tests.base import (
+    URL_LIB_CONTAINER,
+    URL_LIB_CONTAINER_CHILDREN,
+    ContentLibrariesRestApiTest,
+)
 from openedx.core.djangoapps.content_tagging import api as tagging_api
 from openedx.core.djangolib.testing.utils import skip_unless_cms
+from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 
 
 @skip_unless_cms
@@ -1322,3 +1330,101 @@ class ContainersTestCase(ContentLibrariesRestApiTest):
         unauthorized = UserFactory.create(username="noauth-container-hist", password="edx")
         with self.as_user(unauthorized):
             self._get_container_draft_history(unit["id"], expect_response=403)
+
+
+@skip_unless_cms
+class ContainerLibraryUpdatesAuthzBypassTest(
+    CourseAuthoringAuthzTestMixin, ContentLibrariesRestApiTest, ModuleStoreTestCase,
+):
+    """
+    A course auditor has no direct permissions on the library backing a unit they're
+    reviewing, but does hold `courses.view_library_updates` in the course. Passing the
+    linked downstream unit's usage key as `course_id` should let them view the upstream
+    container/children anyway, but only because that specific downstream is actually
+    linked to it: holding the permission in the course alone isn't enough.
+
+    See openedx-authz#441.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.course = CourseFactory.create()
+        self.add_user_to_role_in_course(self.authorized_user, COURSE_AUDITOR.external_key, str(self.course.id))
+
+        self.lib = self._create_library(slug="library-updates-lib", title="Library Updates Test Library")
+        self.container_key = self._create_container(
+            self.lib["id"], "unit", display_name="Reviewable Unit", slug=None,
+        )["id"]
+
+        # Linked to self.container_key: this is the downstream that should grant access.
+        self.linked_downstream_id = str(
+            BlockFactory.create(category="vertical", parent=self.course, upstream=self.container_key).location
+        )
+        # In the same (accessible) course, but not linked to self.container_key at all: this
+        # is what openedx-authz#441 was actually about, holding the course permission must
+        # not be enough on its own, the resource has to be linked to that specific downstream.
+        self.unrelated_downstream_id = str(
+            BlockFactory.create(category="vertical", parent=self.course).location
+        )
+
+    def test_container_detail_denied_without_course_id(self):
+        """A course auditor with no library access is denied when course_id isn't given."""
+        with self.as_user(self.authorized_user), self.allow_transaction_exception():
+            response = self.client.get(URL_LIB_CONTAINER.format(container_key=self.container_key))
+        assert response.status_code == 403
+
+    def test_container_detail_allowed_with_linked_downstream(self):
+        """The same course auditor is allowed once course_id points at the linked downstream."""
+        with self.as_user(self.authorized_user):
+            response = self.client.get(
+                URL_LIB_CONTAINER.format(container_key=self.container_key),
+                {"course_id": self.linked_downstream_id},
+            )
+        assert response.status_code == 200
+
+    def test_container_children_denied_without_course_id(self):
+        """Same as test_container_detail_denied_without_course_id, for the children endpoint."""
+        with self.as_user(self.authorized_user), self.allow_transaction_exception():
+            response = self.client.get(URL_LIB_CONTAINER_CHILDREN.format(container_key=self.container_key))
+        assert response.status_code == 403
+
+    def test_container_children_allowed_with_linked_downstream(self):
+        """Same as test_container_detail_allowed_with_linked_downstream, for the children endpoint."""
+        with self.as_user(self.authorized_user):
+            response = self.client.get(
+                URL_LIB_CONTAINER_CHILDREN.format(container_key=self.container_key),
+                {"course_id": self.linked_downstream_id},
+            )
+        assert response.status_code == 200
+
+    def test_unrelated_course_id_is_denied(self):
+        """A course_id where the user holds no role at all must not grant access."""
+        with self.as_user(self.authorized_user), self.allow_transaction_exception():
+            response = self.client.get(
+                URL_LIB_CONTAINER.format(container_key=self.container_key),
+                {"course_id": "course-v1:CL-TEST+OTHER101+2025"},
+            )
+        assert response.status_code == 403
+
+    def test_downstream_not_linked_to_this_container_is_denied(self):
+        """
+        A downstream in a course the user can review, but that isn't linked to this
+        container, must not grant access. Regression test for openedx-authz#441: the
+        original implementation trusted the course_id alone, so holding the permission in
+        any course was enough to read any library resource, whether or not that course
+        actually used it.
+        """
+        with self.as_user(self.authorized_user), self.allow_transaction_exception():
+            response = self.client.get(
+                URL_LIB_CONTAINER.format(container_key=self.container_key),
+                {"course_id": self.unrelated_downstream_id},
+            )
+        assert response.status_code == 403
+
+    def test_library_permission_alone_still_works_without_course_id(self):
+        """
+        Backward compatibility: a user with direct library access (self.user, who created
+        the library) keeps working exactly as before, without ever passing course_id.
+        """
+        response = self.client.get(URL_LIB_CONTAINER.format(container_key=self.container_key))
+        assert response.status_code == 200

@@ -117,3 +117,76 @@ def get_course_key(course_id: str) -> CourseKey:
         # Attempt to parse it as such and extract the course key.
         usage_key = UsageKey.from_string(course_id)
         return usage_key.course_key
+
+
+def user_has_course_permission_for_upstream(
+    request,
+    authz_permission: str,
+    upstream_key,
+    param_name: str = "course_id",
+) -> bool:
+    """
+    Check an AuthZ course permission for the course of a downstream block, but only if
+    that downstream's upstream link actually points at ``upstream_key``.
+
+    Meant for endpoints that are normally scoped to a library resource (``upstream_key``,
+    a ``LibraryUsageLocatorV2`` or ``LibraryContainerLocator``) but should also grant
+    access to a user reviewing that exact resource from a course they can't otherwise
+    view the library from, e.g. a Course Auditor reviewing pending library updates. The
+    caller is expected to fall back to its regular resource-level permission check when
+    this returns False.
+
+    The query param must be the *downstream block's* usage key, not a bare course id: we
+    resolve its real upstream link and compare it against ``upstream_key`` ourselves,
+    rather than trusting the caller's claim that the two are related. Otherwise, holding
+    the permission in any course would grant access to any library resource, whether or
+    not that course actually uses it.
+
+    Returns False (never raises) for any reason the bypass doesn't apply: the param is
+    absent, not a valid usage key, the downstream doesn't exist, has no upstream link, or
+    that link doesn't match ``upstream_key``.
+
+    Deliberately doesn't use cms.lib.xblock.upstream_sync.UpstreamLink: this module is a
+    dependency of low-level apps like content_libraries and xblock (per the "low-level
+    apps should not depend on high-level apps" import-linter contract), so it can't import
+    from upstream_sync without creating a cycle. We only need the raw upstream reference,
+    so we read the block's ``upstream`` field directly (relying on it having the mixin
+    that provides that field applied elsewhere, not on importing that mixin ourselves) and
+    parse it ourselves, the same way UpstreamLink.get_for_block does internally.
+    """
+    # Imported locally: this pulls in xmodule-only code, which isn't available to every
+    # process that imports this module (e.g. a pure LMS process without Studio installed).
+    from opaque_keys.edx.locator import (  # pylint: disable=import-outside-toplevel
+        LibraryContainerLocator,
+        LibraryUsageLocatorV2,
+    )
+
+    from xmodule.modulestore.django import modulestore  # pylint: disable=import-outside-toplevel
+    from xmodule.modulestore.exceptions import ItemNotFoundError  # pylint: disable=import-outside-toplevel
+
+    downstream_id = request.GET.get(param_name)
+    if not downstream_id:
+        return False
+    try:
+        downstream_key = UsageKey.from_string(downstream_id)
+    except InvalidKeyError:
+        return False
+    try:
+        downstream = modulestore().get_item(downstream_key)
+    except ItemNotFoundError:
+        return False
+
+    upstream_ref = getattr(downstream, "upstream", None)
+    if not upstream_ref:
+        return False
+    try:
+        downstream_upstream_key = LibraryUsageLocatorV2.from_string(upstream_ref)
+    except InvalidKeyError:
+        try:
+            downstream_upstream_key = LibraryContainerLocator.from_string(upstream_ref)
+        except InvalidKeyError:
+            return False
+
+    if downstream_upstream_key != upstream_key:
+        return False
+    return user_has_course_permission(request.user, authz_permission, downstream_key.course_key)

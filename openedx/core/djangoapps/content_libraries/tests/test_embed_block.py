@@ -8,18 +8,20 @@ import re
 import ddt
 import pytest
 from django.core.exceptions import ValidationError
-from django.test.utils import override_settings
+from openedx_authz.constants.roles import COURSE_AUDITOR
 from xblock.core import XBlock
 
-from openedx.core.djangoapps.content_libraries.tests.base import ContentLibrariesRestApiTest
+from openedx.core.djangoapps.authz.tests.mixins import CourseAuthoringAuthzTestMixin
+from openedx.core.djangoapps.content_libraries.tests.base import URL_BLOCK_EMBED_VIEW, ContentLibrariesRestApiTest
 from openedx.core.djangolib.testing.utils import skip_unless_cms
+from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 
 from .fields_test_block import FieldsTestBlock
 
 
 @skip_unless_cms
 @ddt.ddt
-@override_settings(CORS_ORIGIN_WHITELIST=[])  # For some reason, this setting isn't defined in our test environment?
 class LibrariesEmbedViewTestCase(ContentLibrariesRestApiTest):
     """
     Tests for embed_view and interacting with draft/published/past versions of
@@ -227,3 +229,84 @@ class LibrariesEmbedViewTestCase(ContentLibrariesRestApiTest):
 
     # TODO: if we are ever able to run these tests in the LMS, test that the LMS only allows accessing the published
     # version.
+
+
+@skip_unless_cms
+class EmbedViewAuthzBypassTest(CourseAuthoringAuthzTestMixin, ContentLibrariesRestApiTest, ModuleStoreTestCase):
+    """
+    A course auditor has no direct permissions on the library backing a block they're
+    reviewing, but does hold `courses.view_library_updates` in the course. Passing the
+    linked downstream block's usage key as `course_id` should let them view the upstream
+    block's embed anyway, but only because that specific downstream is actually linked to
+    it: holding the permission in the course alone isn't enough.
+
+    See openedx-authz#441.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.course = CourseFactory.create()
+        self.add_user_to_role_in_course(self.authorized_user, COURSE_AUDITOR.external_key, str(self.course.id))
+
+        lib = self._create_library(slug="embed-authz-bypass-lib", title="Embed AuthZ Bypass Test Library")
+        create_response = self._add_block_to_library(lib["id"], "html", "block1")
+        self.block_id = create_response["id"]
+        self._set_library_block_olx(self.block_id, "<html>Hello world</html>")
+        self._commit_library_changes(lib["id"])
+
+        # Linked to self.block_id: this is the downstream that should grant access.
+        self.linked_downstream_id = str(
+            BlockFactory.create(category="html", parent=self.course, upstream=self.block_id).location
+        )
+        # In the same (accessible) course, but not linked to self.block_id at all: this is
+        # what openedx-authz#441 was actually about, holding the course permission must not
+        # be enough on its own, the resource has to be linked to that specific downstream.
+        self.unrelated_downstream_id = str(
+            BlockFactory.create(category="html", parent=self.course).location
+        )
+
+    def test_embed_denied_without_course_id(self):
+        """A course auditor with no library access is denied when course_id isn't given."""
+        with self.as_user(self.authorized_user), self.allow_transaction_exception():
+            response = self.client.get(URL_BLOCK_EMBED_VIEW.format(block_key=self.block_id, view_name="student_view"))
+        assert response.status_code == 403
+
+    def test_embed_allowed_with_linked_downstream(self):
+        """The same course auditor is allowed once course_id points at the linked downstream."""
+        with self.as_user(self.authorized_user):
+            response = self.client.get(
+                URL_BLOCK_EMBED_VIEW.format(block_key=self.block_id, view_name="student_view"),
+                {"course_id": self.linked_downstream_id},
+            )
+        assert response.status_code == 200
+
+    def test_unrelated_course_id_is_denied(self):
+        """A course_id where the user holds no role at all must not grant access."""
+        with self.as_user(self.authorized_user), self.allow_transaction_exception():
+            response = self.client.get(
+                URL_BLOCK_EMBED_VIEW.format(block_key=self.block_id, view_name="student_view"),
+                {"course_id": "course-v1:CL-TEST+OTHER101+2025"},
+            )
+        assert response.status_code == 403
+
+    def test_downstream_not_linked_to_this_block_is_denied(self):
+        """
+        A downstream in a course the user can review, but that isn't linked to this block,
+        must not grant access. Regression test for openedx-authz#441: the original
+        implementation trusted the course_id alone, so holding the permission in any course
+        was enough to read any library resource, whether or not that course actually used it.
+        """
+        with self.as_user(self.authorized_user), self.allow_transaction_exception():
+            response = self.client.get(
+                URL_BLOCK_EMBED_VIEW.format(block_key=self.block_id, view_name="student_view"),
+                {"course_id": self.unrelated_downstream_id},
+            )
+        assert response.status_code == 403
+
+    def test_library_permission_alone_still_works_without_course_id(self):
+        """
+        Backward compatibility: a user with direct library access (self.user, who created
+        the library) keeps working exactly as before, without ever passing course_id.
+        """
+        response = self.client.get(URL_BLOCK_EMBED_VIEW.format(block_key=self.block_id, view_name="student_view"))
+        assert response.status_code == 200
