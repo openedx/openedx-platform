@@ -1,5 +1,5 @@
-Concepts and Guides
-###################
+Concepts and "How-To" Guides
+############################
 
 .. toctree::
     :maxdepth: 2
@@ -11,3 +11,6 @@ Concepts and Guides
     frontend/bootstrap
     frontend/static_assets
     rest_apis
+    ../extensions/tinymce_plugins
+    celery
+    use_the_api
