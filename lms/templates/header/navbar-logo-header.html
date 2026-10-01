@@ -2,40 +2,30 @@
 
 <%page expression_filter="h" args="online_help_token"/>
 
-<%namespace name='static' file='../static_content.html'/>
 <%!
 from django.urls import reverse
-from django.utils.translation import gettext as _
 from lms.djangoapps.ccx.overrides import get_current_ccx
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
-from openedx.features.enterprise_support.utils import get_enterprise_learner_generic_name, get_enterprise_learner_portal
 
 # App that handles subdomain specific branding
 from lms.djangoapps.branding import api as branding_api
 %>
 
 <%
-enterprise_customer_link = get_enterprise_learner_portal(request)
+header_logo = branding_api.get_header_logo(is_secure)
 %>
 
 <h1 class="header-logo">
-  % if enterprise_customer_link:
-    <a href="${settings.ENTERPRISE_LEARNER_PORTAL_BASE_URL}/${enterprise_customer_link.get('slug')}">
-      <img class="logo" src="${enterprise_customer_link.get('logo')}" alt="${_('{name} Dashboard').format(name=enterprise_customer_link.get('name'))}"/>
-        % if settings.LOGO_IMAGE_EXTRA_TEXT == 'edge':
-            <span class="font-italic"> | EDGE</span>
-        % endif
-    </a>
-  % else:
-    <a href="${branding_api.get_home_url()}">
-      <%block name="navigation_logo">
-        <img  class="logo" src="${branding_api.get_logo_url(is_secure)}" alt="${_("{platform_name} Home Page").format(platform_name=static.get_platform_name())}"/>
-      </%block>
-        % if settings.LOGO_IMAGE_EXTRA_TEXT == 'edge':
-            <span class="font-italic"> | EDGE</span>
-        % endif
-    </a>
-  % endif
+  <a href="${header_logo['url']}">
+    ## The navigation_logo block allows comprehensive themes to override the logo.
+    <%block name="navigation_logo">
+      <% header_logo = branding_api.get_header_logo(is_secure) %>
+      <img class="logo" src="${header_logo['image']}" alt="${header_logo['alt']}"/>
+    </%block>
+    % if settings.LOGO_IMAGE_EXTRA_TEXT == 'edge':
+        <span class="font-italic"> | EDGE</span>
+    % endif
+  </a>
   % if course:
     <div class="course-header">
       <span class="provider">${course.display_org_with_default}:</span>
