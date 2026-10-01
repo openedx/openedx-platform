@@ -477,7 +477,6 @@ class PersistentSubsectionGrade(TimeStampedModel):
             grade.first_attempted = first_attempted
             grade.save()
 
-        cls._emit_grade_calculated_event(grade)
         return grade
 
     @classmethod
@@ -498,8 +497,6 @@ class PersistentSubsectionGrade(TimeStampedModel):
 
         grades = [PersistentSubsectionGrade(**params) for params in grade_params_iter]
         grades = cls.objects.bulk_create(grades)
-        for grade in grades:
-            cls._emit_grade_calculated_event(grade)
         return grades
 
     @classmethod
@@ -524,10 +521,6 @@ class PersistentSubsectionGrade(TimeStampedModel):
         """
         params['visible_blocks_id'] = params['visible_blocks'].hash_value
         del params['visible_blocks']
-
-    @staticmethod
-    def _emit_grade_calculated_event(grade):
-        events.subsection_grade_calculated(grade)
 
     @classmethod
     def _cache_key(cls, course_id):

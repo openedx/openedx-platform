@@ -286,16 +286,6 @@ class PersistentSubsectionGradeTest(GradesModelTestCase):
         assert isinstance(grade.first_attempted, datetime)
         assert grade.earned_all == 6.0
 
-    def test_update_or_create_event(self):
-        with patch('lms.djangoapps.grades.events.tracker') as tracker_mock:
-            grade = PersistentSubsectionGrade.update_or_create_grade(**self.params)
-        self._assert_tracker_emitted_event(tracker_mock, grade)
-
-    def test_create_event(self):
-        with patch('lms.djangoapps.grades.events.tracker') as tracker_mock:
-            grade = PersistentSubsectionGrade.update_or_create_grade(**self.params)
-        self._assert_tracker_emitted_event(tracker_mock, grade)
-
     def test_grade_override(self):
         """
         Creating a subsection grade override should NOT change the score values
@@ -321,30 +311,6 @@ class PersistentSubsectionGradeTest(GradesModelTestCase):
         assert 0 == override.earned_graded_override
         assert grade.possible_all == override.possible_all_override
         assert grade.possible_graded == override.possible_graded_override
-
-    def _assert_tracker_emitted_event(self, tracker_mock, grade):
-        """
-        Helper function to ensure that the mocked event tracker
-        was called with the expected info based on the passed grade.
-        """
-        tracker_mock.emit.assert_called_with(
-            'edx.grades.subsection.grade_calculated',
-            {
-                'user_id': str(grade.user_id),
-                'course_id': str(grade.course_id),
-                'block_id': str(grade.usage_key),
-                'course_version': str(grade.course_version),
-                'weighted_total_earned': grade.earned_all,
-                'weighted_total_possible': grade.possible_all,
-                'weighted_graded_earned': grade.earned_graded,
-                'weighted_graded_possible': grade.possible_graded,
-                'first_attempted': str(grade.first_attempted),
-                'subtree_edited_timestamp': str(grade.subtree_edited_timestamp),
-                'event_transaction_id': str(get_event_transaction_id()),
-                'event_transaction_type': str(get_event_transaction_type()),
-                'visible_blocks_hash': str(grade.visible_blocks_id),
-            }
-        )
 
     def test_clear_subsection_grade(self):
         PersistentSubsectionGrade.update_or_create_grade(**self.params)
