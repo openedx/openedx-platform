@@ -5345,7 +5345,7 @@ bundled = [
     { name = "xblock-drag-and-drop-v2" },
     { name = "xblock-google-drive" },
     { name = "xblock-poll" },
-    { name = "xblocks-contrib" },
+    { name = "xblocks-contrib", git = "https://github.com/open-craft/xblocks-core.git?rev=rpenido%2Ftext-xblock-include-theme" },
 ]
 ci = [
     { name = "tox" },
@@ -5419,7 +5419,7 @@ development = [
     { name = "xblock-drag-and-drop-v2" },
     { name = "xblock-google-drive" },
     { name = "xblock-poll" },
-    { name = "xblocks-contrib" },
+    { name = "xblocks-contrib", git = "https://github.com/open-craft/xblocks-core.git?rev=rpenido%2Ftext-xblock-include-theme" },
 ]
 django42 = [
     { name = "beautifulsoup4" },
@@ -5467,7 +5467,7 @@ django42 = [
     { name = "xblock-drag-and-drop-v2" },
     { name = "xblock-google-drive" },
     { name = "xblock-poll" },
-    { name = "xblocks-contrib" },
+    { name = "xblocks-contrib", git = "https://github.com/open-craft/xblocks-core.git?rev=rpenido%2Ftext-xblock-include-theme" },
 ]
 django52 = [
     { name = "beautifulsoup4" },
@@ -5515,7 +5515,7 @@ django52 = [
     { name = "xblock-drag-and-drop-v2" },
     { name = "xblock-google-drive" },
     { name = "xblock-poll" },
-    { name = "xblocks-contrib" },
+    { name = "xblocks-contrib", git = "https://github.com/open-craft/xblocks-core.git?rev=rpenido%2Ftext-xblock-include-theme" },
 ]
 docs = [
     { name = "code-annotations" },
@@ -5541,7 +5541,7 @@ docs = [
     { name = "xblock-drag-and-drop-v2" },
     { name = "xblock-google-drive" },
     { name = "xblock-poll" },
-    { name = "xblocks-contrib" },
+    { name = "xblocks-contrib", git = "https://github.com/open-craft/xblocks-core.git?rev=rpenido%2Ftext-xblock-include-theme" },
 ]
 testing = [
     { name = "beautifulsoup4" },
@@ -5588,7 +5588,7 @@ testing = [
     { name = "xblock-drag-and-drop-v2" },
     { name = "xblock-google-drive" },
     { name = "xblock-poll" },
-    { name = "xblocks-contrib" },
+    { name = "xblocks-contrib", git = "https://github.com/open-craft/xblocks-core.git?rev=rpenido%2Ftext-xblock-include-theme" },
 ]
 
 [[package]]
@@ -8620,8 +8620,8 @@ wheels = [
 
 [[package]]
 name = "xblocks-contrib"
-version = "1.0.8"
-source = { registry = "https://pypi.org/simple" }
+version = "0.0"
+source = { git = "https://github.com/open-craft/xblocks-core.git?rev=rpenido%2Ftext-xblock-include-theme#cf783e1499559ff1bdb8855e93c10ab01b8363fe" }
 dependencies = [
     { name = "beautifulsoup4" },
     { name = "chem" },
@@ -8652,10 +8652,6 @@ dependencies = [
     { name = "webob" },
     { name = "wrapt" },
     { name = "xblock" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/1a/6a/789fc00b182da369312230086506111d14f7e97bb4ec08bf441c76f0fd5f/xblocks_contrib-1.0.8.tar.gz", hash = "sha256:b8c7c4b3f4de99fc0197e3950b8d606579c84a946be76dd417fac2ece62fea2f", size = 22143336, upload-time = "2026-10-29T17:24:31.414Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/e4/d7/a859239c97b8691ab37d5f0562267fbda381f4b50a991c74a004907d8a1c/xblocks_contrib-1.0.8-py3-none-any.whl", hash = "sha256:704015799cbb1eac2b81f981d7284c3eadc0bbc9900d9522f735c9403bb00b85", size = 3769108, upload-time = "2026-10-29T17:24:28.693Z" },
 ]
 
 [[package]]
