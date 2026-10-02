@@ -9,7 +9,13 @@ from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
+from lms.djangoapps.grades.api import is_writable_gradebook_enabled
+from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
+
 log = logging.getLogger(__name__)
+
+# Tab that depends on the writable gradebook being available.
+STUDENT_GRADES_TAB_ID = 'student_grades'
 
 # CCX Coach navigation tabs, in display order. Each entry is
 # `(tab_id, title, sort_order)`. `tab_id` values must match the route
@@ -22,6 +28,36 @@ CCX_COACH_TABS = (
     ('student_grades', _('Student Grades'), 30),
     ('grading_policy', _('Grading Policy'), 40),
 )
+
+
+def is_student_grades_tab_available(ccx_course_key):
+    """
+    Return whether the Student Grades tab should be offered for this CCX.
+
+    The tab is backed by the writable gradebook, which requires both the
+    ``grades.writable_gradebook`` waffle flag and a configured
+    ``WRITABLE_GRADEBOOK_URL``. This mirrors the check the Instructor Dashboard
+    uses to decide whether to expose its gradebook link
+    (``instructor.views.serializers_v2.get_gradebook_url``), including reading the
+    URL through site configuration so per-site overrides are honored.
+
+    The flag is evaluated against the **CCX** key rather than the master course
+    key, because that is the key the gradebook endpoints are called with. A
+    course-scoped override on the master course does not apply to the CCX key, so
+    checking the CCX key keeps the tab's presence an accurate predictor of
+    whether the gradebook will actually work.
+
+    Arguments:
+        ccx_course_key (CCXLocator): the CCX course key.
+
+    Returns:
+        bool
+    """
+    gradebook_url = configuration_helpers.get_value(
+        'WRITABLE_GRADEBOOK_URL',
+        getattr(settings, 'WRITABLE_GRADEBOOK_URL', None),
+    )
+    return bool(gradebook_url) and is_writable_gradebook_enabled(ccx_course_key)
 
 
 def build_ccx_coach_tab_url(ccx_course_key, tab_id):
@@ -82,10 +118,20 @@ class CCXCoachMetadataSerializer(serializers.Serializer):  # pylint: disable=abs
         return str(ccx_course_key) if ccx_course_key else ''
 
     def get_tabs(self, data):
-        """The CCX Coach tabs, or an empty list when no CCX exists."""
+        """
+        The CCX Coach tabs, or an empty list when no CCX exists.
+
+        The Student Grades tab is omitted when the writable gradebook is not
+        available for this CCX, so the MFE does not render a tab that cannot
+        work. Remaining tabs keep their original ``sort_order`` values, leaving a
+        gap in the sequence — the MFE orders by ``sort_order``, so gaps are
+        harmless.
+        """
         ccx_course_key = data.get('ccx_course_key')
         if not ccx_course_key:
             return []
+
+        include_student_grades = is_student_grades_tab_available(ccx_course_key)
         return [
             {
                 'tab_id': tab_id,
@@ -94,6 +140,7 @@ class CCXCoachMetadataSerializer(serializers.Serializer):  # pylint: disable=abs
                 'sort_order': sort_order,
             }
             for tab_id, title, sort_order in CCX_COACH_TABS
+            if include_student_grades or tab_id != STUDENT_GRADES_TAB_ID
         ]
 
 
