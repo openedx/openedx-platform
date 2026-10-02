@@ -18,6 +18,7 @@ from cms.envs.common import (  # pylint: disable=unused-import
     VIDEO_TRANSCRIPT_MIGRATIONS_JOB_QUEUE,  # noqa: F401
 )
 from lms.envs.common import *  # pylint: disable=wildcard-import  # noqa: F403
+from openedx.core.apidocs import get_api_docs_settings
 from openedx.core.lib.derived import derive_settings
 
 # Turn on all the boolean feature flags, so that conditionally included
@@ -74,22 +75,32 @@ openapi_security_info_jwt = dedent(
 openapi_security_info_csrf = (
     "Obtain by making a `GET` request to `/csrf/api/v1/token`. The token will be in the response cookie `csrftoken`."
 )
-SWAGGER_SETTINGS["SECURITY_DEFINITIONS"] = {  # noqa: F405
-    "Basic": {
-        "type": "basic",
-        "description": openapi_security_info_basic,
-    },
-    "jwt": {
-        "type": "apiKey",
-        "name": "Authorization",
-        "in": "header",
-        "description": openapi_security_info_jwt,
-    },
-    "csrf": {
-        "type": "apiKey",
-        "name": "X-CSRFToken",
-        "in": "header",
-        "description": openapi_security_info_csrf,
+# The docs build publishes the whole API surface, so use the same unfiltered
+# configuration that /api-docs does rather than the narrow, SDK-facing schema
+# that SPECTACULAR_SETTINGS carries by default.
+SPECTACULAR_SETTINGS.update(get_api_docs_settings())  # noqa: F405
+
+# OpenAPI 3 security schemes, consumed by drf-spectacular. "Basic" uses the
+# OpenAPI 3 http/basic form rather than Swagger 2.0's type: basic.
+SPECTACULAR_SETTINGS["APPEND_COMPONENTS"] = {  # noqa: F405
+    "securitySchemes": {
+        "Basic": {
+            "type": "http",
+            "scheme": "basic",
+            "description": openapi_security_info_basic,
+        },
+        "jwt": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header",
+            "description": openapi_security_info_jwt,
+        },
+        "csrf": {
+            "type": "apiKey",
+            "name": "X-CSRFToken",
+            "in": "header",
+            "description": openapi_security_info_csrf,
+        },
     },
 }
 

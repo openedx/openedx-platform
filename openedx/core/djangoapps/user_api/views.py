@@ -6,13 +6,12 @@ from django.http import HttpResponse
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django_filters.rest_framework import DjangoFilterBackend
-from drf_yasg import openapi
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import OpenApiResponse, extend_schema, inline_serializer
 from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx import locator
 from opaque_keys.edx.keys import CourseKey
-from rest_framework import generics, status, viewsets
+from rest_framework import generics, serializers, status, viewsets
 from rest_framework.exceptions import ParseError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -167,13 +166,12 @@ class CountryTimeZoneListView(generics.ListAPIView):
         return get_country_time_zones(country_code)
 
 
-third_party_auth_error_message_schema = openapi.Schema(
-    type=openapi.TYPE_OBJECT,
-    properties={
-        "user_message": openapi.Schema(
-            type=openapi.TYPE_STRING,
-            x_nullable=True,
-            description=(
+third_party_auth_error_message_schema = inline_serializer(
+    name="ThirdPartyAuthErrorMessage",
+    fields={
+        "user_message": serializers.CharField(
+            allow_null=True,
+            help_text=(
                 "Human-readable, translated message describing the pending "
                 "third-party-auth error, or null if there is none pending."
             ),
@@ -200,11 +198,11 @@ class ThirdPartyAuthErrorMessageView(APIView):
     authentication_classes = (SessionAuthenticationAllowInactiveUser,)
     permission_classes = (IsAuthenticated,)
 
-    @swagger_auto_schema(
+    @extend_schema(
         responses={
             status.HTTP_200_OK: third_party_auth_error_message_schema,
-            status.HTTP_401_UNAUTHORIZED: "",
-            status.HTTP_403_FORBIDDEN: "",
+            status.HTTP_401_UNAUTHORIZED: OpenApiResponse(description=""),
+            status.HTTP_403_FORBIDDEN: OpenApiResponse(description=""),
         },
     )
     def get(self, request):

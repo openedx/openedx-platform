@@ -1,6 +1,7 @@
 """ API Views for course advanced settings """
 
-import edx_api_doc_tools as apidocs
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from opaque_keys.edx.keys import CourseKey
 from openedx_authz.constants.permissions import COURSES_EDIT_GRADING_SETTINGS
 from rest_framework.request import Request
@@ -21,16 +22,16 @@ class AuthoringGradingView(DeveloperErrorViewMixin, APIView):
     """
     View for getting and setting the advanced settings for a course.
     """
-    @apidocs.schema(
-        body=CourseGradingModelSerializer,
+    @extend_schema(
+        request=CourseGradingModelSerializer,
         parameters=[
-            apidocs.string_parameter("course_id", apidocs.ParameterLocation.PATH, description="Course ID"),
+            OpenApiParameter("course_id", OpenApiTypes.STR, OpenApiParameter.PATH, description="Course ID"),
         ],
         responses={
             200: CourseGradingModelSerializer,
-            401: "The requester is not authenticated.",
-            403: "The requester cannot access the specified course.",
-            404: "The requested course does not exist.",
+            401: OpenApiResponse(description="The requester is not authenticated."),
+            403: OpenApiResponse(description="The requester cannot access the specified course."),
+            404: OpenApiResponse(description="The requested course does not exist."),
         },
     )
     @verify_course_exists()

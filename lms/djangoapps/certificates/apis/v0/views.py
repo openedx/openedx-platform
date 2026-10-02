@@ -3,8 +3,9 @@
 
 import logging
 
-import edx_api_doc_tools as apidocs
 from django.contrib.auth import get_user_model
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from edx_rest_framework_extensions import permissions
 from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
 from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
@@ -170,10 +171,11 @@ class CertificatesListView(APIView):
 
     required_scopes = ['certificates:read']
 
-    @apidocs.schema(parameters=[
-        apidocs.string_parameter(
+    @extend_schema(parameters=[
+        OpenApiParameter(
             'username',
-            apidocs.ParameterLocation.PATH,
+            OpenApiTypes.STR,
+            OpenApiParameter.PATH,
             description="The users to get certificates for",
         )
     ])

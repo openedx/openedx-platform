@@ -65,14 +65,14 @@ the api module instead.
 import logging
 import warnings
 
-import edx_api_doc_tools as apidocs
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.db.transaction import atomic, non_atomic_requests
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from opaque_keys.edx.locator import LibraryLocatorV2, LibraryUsageLocatorV2
 from openedx_authz.constants import permissions as authz_permissions
 from organizations.api import ensure_organization
@@ -132,19 +132,22 @@ class LibraryApiPaginationDocs:
     API docs for query params related to paginating ContentLibraryMetadata objects.
     """
     apidoc_params = [
-        apidocs.query_parameter(
+        OpenApiParameter(
             'pagination',
-            bool,
+            OpenApiTypes.BOOL,
+            OpenApiParameter.QUERY,
             description="Enables paginated schema",
         ),
-        apidocs.query_parameter(
+        OpenApiParameter(
             'page',
-            int,
+            OpenApiTypes.INT,
+            OpenApiParameter.QUERY,
             description="Page number of result. Defaults to 1",
         ),
-        apidocs.query_parameter(
+        OpenApiParameter(
             'page_size',
-            int,
+            OpenApiTypes.INT,
+            OpenApiParameter.QUERY,
             description="Page size of the result. Defaults to 50",
         ),
     ]
@@ -158,23 +161,26 @@ class LibraryRootView(GenericAPIView):
     """
     serializer_class = ContentLibraryMetadataSerializer
 
-    @apidocs.schema(
+    @extend_schema(
         responses={200: ContentLibraryMetadataSerializer(many=True)},
         parameters=[
             *LibraryApiPaginationDocs.apidoc_params,
-            apidocs.query_parameter(
+            OpenApiParameter(
                 'org',
-                str,
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
                 description="The organization short-name used to filter libraries",
             ),
-            apidocs.query_parameter(
+            OpenApiParameter(
                 'text_search',
-                str,
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
                 description="The string used to filter libraries by searching in title, id, org, or description",
             ),
-            apidocs.query_parameter(
+            OpenApiParameter(
                 'order',
-                str,
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
                 description=(
                     "Name of the content library field to sort the results by. Prefix with a '-' to sort descending."
                 ),
@@ -548,8 +554,8 @@ class LibraryPasteClipboardView(GenericAPIView):
     serializer_class = PublishableItemSerializer
 
     @convert_exceptions
-    @swagger_auto_schema(
-        responses={200: PublishableItemSerializer}
+    @extend_schema(
+        responses={200: PublishableItemSerializer},
     )
     def post(self, request, lib_key_str):
         """
@@ -574,17 +580,19 @@ class LibraryBlocksView(GenericAPIView):
     """
     serializer_class = LibraryXBlockMetadataSerializer
 
-    @apidocs.schema(
+    @extend_schema(
         parameters=[
             *LibraryApiPaginationDocs.apidoc_params,
-            apidocs.query_parameter(
+            OpenApiParameter(
                 'text_search',
-                str,
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
                 description="The string used to filter libraries by searching in title, id, org, or description",
             ),
-            apidocs.query_parameter(
+            OpenApiParameter(
                 'block_type',
-                str,
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
                 description="The block type to search for. If omitted or blank, searches for all types. "
                             "May be specified multiple times to match multiple types."
             )
@@ -610,9 +618,9 @@ class LibraryBlocksView(GenericAPIView):
         return self.get_paginated_response(serializer.data)
 
     @convert_exceptions
-    @swagger_auto_schema(
-        request_body=LibraryXBlockCreationSerializer,
-        responses={200: LibraryXBlockMetadataSerializer}
+    @extend_schema(
+        request=LibraryXBlockCreationSerializer,
+        responses={200: LibraryXBlockMetadataSerializer},
     )
     def post(self, request, lib_key_str):
         """
@@ -731,9 +739,9 @@ class LibraryBackupView(APIView):
 
     """
 
-    @apidocs.schema(
-        body=None,
-        responses={200: LibraryBackupResponseSerializer}
+    @extend_schema(
+        request=None,
+        responses={200: LibraryBackupResponseSerializer},
     )
     @convert_exceptions
     def post(self, request, lib_key_str):
@@ -749,15 +757,16 @@ class LibraryBackupView(APIView):
 
         return Response(LibraryBackupResponseSerializer(result).data)
 
-    @apidocs.schema(
+    @extend_schema(
         parameters=[
-            apidocs.query_parameter(
+            OpenApiParameter(
                 'task_id',
-                str,
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
                 description="The ID of the backup task to retrieve."
             ),
         ],
-        responses={200: LibraryBackupTaskStatusSerializer}
+        responses={200: LibraryBackupTaskStatusSerializer},
     )
     @convert_exceptions
     def get(self, request, lib_key_str):
@@ -805,9 +814,9 @@ class LibraryRestoreView(APIView):
 
         * task_id: (required) The UUID of a restore task.
     """
-    @apidocs.schema(
-        body=LibraryRestoreFileSerializer,
-        responses={200: LibraryRestoreFileSerializer}
+    @extend_schema(
+        request=LibraryRestoreFileSerializer,
+        responses={200: LibraryRestoreFileSerializer},
     )
     def post(self, request):
         """
@@ -828,15 +837,16 @@ class LibraryRestoreView(APIView):
 
         return Response(LibraryRestoreFileSerializer({'task_id': async_result.task_id}).data)
 
-    @apidocs.schema(
+    @extend_schema(
         parameters=[
-            apidocs.query_parameter(
+            OpenApiParameter(
                 'task_id',
-                str,
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
                 description="The ID of the restore library task to retrieve."
             ),
         ],
-        responses={200: LibraryRestoreTaskResultSerializer}
+        responses={200: LibraryRestoreTaskResultSerializer},
     )
     def get(self, request):
         """

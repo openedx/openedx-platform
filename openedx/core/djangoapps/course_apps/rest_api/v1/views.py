@@ -3,7 +3,8 @@ import logging
 from typing import Dict  # noqa: UP035
 
 from django.contrib.auth import get_user_model
-from edx_api_doc_tools import path_parameter, schema
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from edx_django_utils.plugins import PluginError
 from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
 from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
@@ -100,15 +101,15 @@ class CourseAppsView(DeveloperErrorViewMixin, views.APIView):
     )
     permission_classes = (HasPagesAndResourcesAccess,)
 
-    @schema(
+    @extend_schema(
         parameters=[
-            path_parameter("course_id", str, description="Course Key"),
+            OpenApiParameter("course_id", OpenApiTypes.STR, OpenApiParameter.PATH, description="Course Key"),
         ],
         responses={
             200: CourseAppSerializer,
-            401: "The requester is not authenticated.",
-            403: "The requester does not have staff access access to the specified course",
-            404: "The requested course does not exist.",
+            401: OpenApiResponse(description="The requester is not authenticated."),
+            403: OpenApiResponse(description="The requester does not have staff access access to the specified course"),
+            404: OpenApiResponse(description="The requested course does not exist."),
         },
     )
     @verify_course_exists("Requested apps for unknown course {course}")
@@ -160,15 +161,15 @@ class CourseAppsView(DeveloperErrorViewMixin, views.APIView):
         )
         return Response(serializer.data)
 
-    @schema(
+    @extend_schema(
         parameters=[
-            path_parameter("course_id", str, description="Course Key"),
+            OpenApiParameter("course_id", OpenApiTypes.STR, OpenApiParameter.PATH, description="Course Key"),
         ],
         responses={
             200: CourseAppSerializer,
-            401: "The requester is not authenticated.",
-            403: "The requester does not have staff access access to the specified course",
-            404: "The requested course does not exist.",
+            401: OpenApiResponse(description="The requester is not authenticated."),
+            403: OpenApiResponse(description="The requester does not have staff access access to the specified course"),
+            404: OpenApiResponse(description="The requested course does not exist."),
         },
     )
     @verify_course_exists("Requested apps for unknown course {course}")

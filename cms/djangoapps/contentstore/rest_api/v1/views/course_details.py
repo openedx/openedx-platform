@@ -1,12 +1,13 @@
 """ API Views for course details """
 
-import edx_api_doc_tools as apidocs
 from django.core.exceptions import ValidationError
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from opaque_keys.edx.keys import CourseKey
 from openedx_authz.constants.permissions import (
-        COURSES_EDIT_DETAILS,
-        COURSES_EDIT_SCHEDULE,
-        COURSES_VIEW_SCHEDULE_AND_DETAILS,
+    COURSES_EDIT_DETAILS,
+    COURSES_EDIT_SCHEDULE,
+    COURSES_VIEW_SCHEDULE_AND_DETAILS,
 )
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -101,15 +102,15 @@ class CourseDetailsView(DeveloperErrorViewMixin, APIView):
     """
     View for getting and setting the course details.
     """
-    @apidocs.schema(
+    @extend_schema(
         parameters=[
-            apidocs.string_parameter("course_id", apidocs.ParameterLocation.PATH, description="Course ID"),
+            OpenApiParameter("course_id", OpenApiTypes.STR, OpenApiParameter.PATH, description="Course ID"),
         ],
         responses={
             200: CourseDetailsSerializer,
-            401: "The requester is not authenticated.",
-            403: "The requester cannot access the specified course.",
-            404: "The requested course does not exist.",
+            401: OpenApiResponse(description="The requester is not authenticated."),
+            403: OpenApiResponse(description="The requester cannot access the specified course."),
+            404: OpenApiResponse(description="The requested course does not exist."),
         },
     )
     @verify_course_exists()
@@ -190,16 +191,16 @@ class CourseDetailsView(DeveloperErrorViewMixin, APIView):
         serializer = CourseDetailsSerializer(course_details)
         return Response(serializer.data)
 
-    @apidocs.schema(
-        body=CourseDetailsSerializer,
+    @extend_schema(
+        request=CourseDetailsSerializer,
         parameters=[
-            apidocs.string_parameter("course_id", apidocs.ParameterLocation.PATH, description="Course ID"),
+            OpenApiParameter("course_id", OpenApiTypes.STR, OpenApiParameter.PATH, description="Course ID"),
         ],
         responses={
             200: CourseDetailsSerializer,
-            401: "The requester is not authenticated.",
-            403: "The requester cannot access the specified course.",
-            404: "The requested course does not exist.",
+            401: OpenApiResponse(description="The requester is not authenticated."),
+            403: OpenApiResponse(description="The requester cannot access the specified course."),
+            404: OpenApiResponse(description="The requested course does not exist."),
         },
     )
     @verify_course_exists()

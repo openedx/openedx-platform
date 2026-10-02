@@ -2,9 +2,9 @@
 Views served by the Agreements app
 """
 
-import edx_api_doc_tools as apidocs
 from django.conf import settings
-from drf_yasg import openapi
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from opaque_keys.edx.keys import CourseKey
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
@@ -29,6 +29,13 @@ from openedx.core.djangoapps.agreements.serializers import (
     UserAgreementSerializer,
 )
 from openedx.core.lib.api.view_utils import view_auth_classes
+
+AGREEMENT_TYPE_PATH_PARAMETER = OpenApiParameter(
+    "agreement_type",
+    OpenApiTypes.STR,
+    OpenApiParameter.PATH,
+    description="Agreement ID/Type",
+)
 
 
 def is_user_course_or_global_staff(user, course_id):
@@ -179,18 +186,12 @@ class UserAgreementRecordsView(APIView):
     Endpoint for the user agreement records API.
     """
 
-    @apidocs.schema(
-        parameters=[
-            apidocs.string_parameter(
-                "agreement_type",
-                apidocs.ParameterLocation.PATH,
-                description="Agreement ID/Type",
-            ),
-        ],
+    @extend_schema(
+        parameters=[AGREEMENT_TYPE_PATH_PARAMETER],
         responses={
             200: UserAgreementRecordSerializer,
-            400: "Bad Request",
-            404: "Not Found",
+            400: OpenApiResponse(description="Bad Request"),
+            404: OpenApiResponse(description="Not Found"),
         },
     )
     def get(self, request, agreement_type):
@@ -201,17 +202,11 @@ class UserAgreementRecordsView(APIView):
         serializer = UserAgreementRecordSerializer(record)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    @apidocs.schema(
-        parameters=[
-            apidocs.string_parameter(
-                "agreement_type",
-                apidocs.ParameterLocation.PATH,
-                description="Agreement ID/Type",
-            ),
-        ],
+    @extend_schema(
+        parameters=[AGREEMENT_TYPE_PATH_PARAMETER],
         responses={
             200: UserAgreementRecordSerializer,
-            400: "Bad Request",
+            400: OpenApiResponse(description="Bad Request"),
         },
     )
     def post(self, request, agreement_type):
@@ -233,18 +228,12 @@ class UserAgreementsViewSet(viewsets.GenericViewSet):
     lookup_field = "type"
     lookup_url_kwarg = "agreement_type"
 
-    @apidocs.schema(
-        parameters=[
-            apidocs.string_parameter(
-                "agreement_type",
-                apidocs.ParameterLocation.PATH,
-                description="Agreement ID/Type",
-            ),
-        ],
+    @extend_schema(
+        parameters=[AGREEMENT_TYPE_PATH_PARAMETER],
         responses={
             200: UserAgreementSerializer,
-            400: "Bad Request",
-            404: "Not Found",
+            400: OpenApiResponse(description="Bad Request"),
+            404: OpenApiResponse(description="Not Found"),
         },
     )
     def retrieve(self, request, agreement_type=None, **kwargs):
@@ -258,18 +247,12 @@ class UserAgreementsViewSet(viewsets.GenericViewSet):
         serializer = UserAgreementSerializer(agreement)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    @apidocs.schema(
-        parameters=[
-            apidocs.string_parameter(
-                "agreement_type",
-                apidocs.ParameterLocation.PATH,
-                description="Agreement ID/Type",
-            ),
-        ],
+    @extend_schema(
+        parameters=[AGREEMENT_TYPE_PATH_PARAMETER],
         responses={
             200: UserAgreementSerializer,
-            400: "Bad Request",
-            404: "Not Found",
+            400: OpenApiResponse(description="Bad Request"),
+            404: OpenApiResponse(description="Not Found"),
         },
     )
     @action(methods=["get"], detail=True)
@@ -283,20 +266,20 @@ class UserAgreementsViewSet(viewsets.GenericViewSet):
             return Response(status=status.HTTP_404_NOT_FOUND)
         return Response(agreement.text, status=status.HTTP_200_OK)
 
-    @apidocs.schema(
+    @extend_schema(
         parameters=[
-            openapi.Parameter(
+            OpenApiParameter(
                 "agreement_type",
-                apidocs.ParameterLocation.QUERY,
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
                 required=False,
-                type=openapi.TYPE_ARRAY,
-                items=openapi.Items(type=openapi.TYPE_STRING),
+                many=True,
                 description="Agreement ID/Type",
             ),
         ],
         responses={
             200: UserAgreementSerializer,
-            400: "Bad Request",
+            400: OpenApiResponse(description="Bad Request"),
         },
     )
     def list(self, request):
