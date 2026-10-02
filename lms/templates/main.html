@@ -200,7 +200,9 @@ from common.djangoapps.pipeline_mako import render_require_js_path_overrides
   <div class="window-wrap" dir="${static.dir_rtl()}">
 % endif
     <%block name="skip_links"/>
+    % if not disable_header:
     <a class="nav-skip sr-only sr-only-focusable" href="#main">${_("Skip to main content")}</a>
+    % endif
 
     % if not disable_header:
         <%include file="${static.get_template_path('header.html')}" args="online_help_token=online_help_token" />
