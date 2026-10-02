@@ -102,6 +102,15 @@ class CourseGradesView(GradeViewMixin, PaginatedAPIView):
             "percent": 0.19,
             "letter_grade": null,
         }]
+
+    **Deprecated**
+
+    Superseded by:
+
+    * ``GET /api/grade/v2/course_grades/?course_key={course_key}``
+    * ``GET /api/grade/v2/course_grades/{username},{course_key}/``
+
+    This version is deprecated and will be removed; see https://github.com/openedx/openedx-platform/issues/DEPR_TBD
     """
     authentication_classes = (
         JwtAuthentication,
@@ -180,6 +189,14 @@ class CourseGradingPolicy(GradeViewMixin, ListAPIView):
 
         * weight: The weight, or effect, of the assignment type on the learner's
           final grade.
+
+    **Deprecated**
+
+    Superseded by:
+
+    * ``GET /api/grade/v2/courses/{course_key}/grading_policy/?view=minimal``
+
+    This version is deprecated and will be removed; see https://github.com/openedx/openedx-platform/issues/DEPR_TBD
     """
     allow_empty = False
 
@@ -226,6 +243,14 @@ class CourseGradingPolicy(GradeViewMixin, ListAPIView):
 class SectionGradesBreakdown(GradeViewMixin, PaginatedAPIView):
     """ Section grades breakdown gives out the overall grade for a user in a course
         accompanied by grades for each section of the course for the user.
+
+    **Deprecated**
+
+    Superseded by:
+
+    * ``GET /api/grade/v2/course_grades/?view=full``
+
+    This version is deprecated and will be removed; see https://github.com/openedx/openedx-platform/issues/DEPR_TBD
     """
     authentication_classes = (
         JwtAuthentication,
@@ -365,6 +390,14 @@ class SectionGradesBreakdown(GradeViewMixin, PaginatedAPIView):
 class SubmissionHistoryView(GradeViewMixin, PaginatedAPIView):
     """
     Submission history corresponding to ProblemBlocks present in the course.
+
+    **Deprecated**
+
+    Superseded by:
+
+    * ``GET /api/grade/v2/courses/{course_key}/submission_histories/``
+
+    This version is deprecated and will be removed; see https://github.com/openedx/openedx-platform/issues/DEPR_TBD
     """
     authentication_classes = (
         JwtAuthentication,

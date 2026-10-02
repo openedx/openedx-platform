@@ -317,6 +317,14 @@ class CourseGradingView(BaseCourseView):
             * short_label - A short label for graded assignments (e.g. 'HW 01').
             * assignment_type - The assignment type of this subsection (for graded assignments only).
 
+
+    **Deprecated**
+
+    Superseded by:
+
+    * ``GET /api/grade/v2/courses/{course_key}/grading_policy/``
+
+    This version is deprecated and will be removed; see https://github.com/openedx/openedx-platform/issues/DEPR_TBD
     """
     @course_author_access_required
     def get(self, request, course_key):
@@ -482,6 +490,15 @@ class GradebookView(GradeViewMixin, PaginatedAPIView):
 
     Note: It's important that `GradeViewMixin` is the first inherited class here, so that
     self.api_error returns error responses as expected.
+
+    **Deprecated**
+
+    Superseded by:
+
+    * ``GET /api/grade/v2/courses/{course_key}/gradebook_entries/``
+    * ``GET /api/grade/v2/courses/{course_key}/gradebook_entries/{username}/``
+
+    This version is deprecated and will be removed; see https://github.com/openedx/openedx-platform/issues/DEPR_TBD
     """
 
     pagination_class = CourseEnrollmentPagination
@@ -860,6 +877,14 @@ class GradebookBulkUpdateView(GradeViewMixin, PaginatedAPIView):
             "reason": "User matching query does not exist."
           }
         ]
+
+    **Deprecated**
+
+    Superseded by:
+
+    * ``POST /api/grade/v2/courses/{course_key}/subsection_grade_overrides/``
+
+    This version is deprecated and will be removed; see https://github.com/openedx/openedx-platform/issues/DEPR_TBD
     """
 
     @verify_course_exists("Requested grade for unknown course {course}")
@@ -1092,6 +1117,15 @@ class SubsectionGradeView(GradeViewMixin, APIView):
                 }
             ]
         }
+
+    **Deprecated**
+
+    Superseded by:
+
+    * ``GET /api/grade/v2/subsection_grades/{username},{usage_key}/``
+    * ``GET /api/grade/v2/subsection_grades/{username},{usage_key}/override_history_records/``
+
+    This version is deprecated and will be removed; see https://github.com/openedx/openedx-platform/issues/DEPR_TBD
     """
 
     def get(self, request, subsection_id):

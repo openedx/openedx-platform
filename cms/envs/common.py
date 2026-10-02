@@ -1312,7 +1312,7 @@ EVENT_BUS_PRODUCER_CONFIG.update({  # noqa: F405
 ################### Authoring API ######################
 
 # This affects the Authoring API swagger docs but not the legacy swagger docs under /api-docs/.
-REST_FRAMEWORK['DEFAULT_SCHEMA_CLASS'] = 'drf_spectacular.openapi.AutoSchema'  # noqa: F405
+REST_FRAMEWORK['DEFAULT_SCHEMA_CLASS'] = 'cms.lib.spectacular.CmsAutoSchema'  # noqa: F405
 
 ################### Studio Search (beta), using Meilisearch ###################
 
