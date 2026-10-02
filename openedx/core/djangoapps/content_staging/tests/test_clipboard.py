@@ -4,16 +4,23 @@ Tests for the clipboard functionality
 """
 from textwrap import dedent
 from typing import cast
+from unittest import mock
 from xml.etree import ElementTree
 
 import ddt
+import pytest
+from django.db import OperationalError
 from openedx_authz.constants.roles import COURSE_ADMIN, COURSE_AUDITOR, COURSE_EDITOR, COURSE_STAFF
 from rest_framework.test import APIClient
 
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.authz.tests.mixins import CourseAuthoringAuthzTestMixin
 from openedx.core.djangoapps.content_staging import api as python_api
+from openedx.core.djangoapps.content_staging.data import CLIPBOARD_PURPOSE, StagedContentStatus
+from openedx.core.djangoapps.content_staging.models import StagedContent, UserClipboard
+from openedx.core.djangoapps.content_staging.tasks import delete_expired_clipboards
 from xmodule.contentstore.django import contentstore
+from xmodule.modulestore.django import modulestore
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase, upload_file_to_course
 from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory, ToyCourseFactory
 
@@ -279,6 +286,149 @@ class ClipboardTestCase(ModuleStoreTestCase):
 
         # The OLX link from the video will no longer work:
         assert client.get(old_olx_url).status_code == 404
+
+    def test_clipboard_publish_retries_mysql_deadlock_without_restaging(self) -> None:
+        """A deadlock retries only publication; the staged candidate is created once."""
+        course_key, _client = self._setup_course()
+        video_key = course_key.make_usage_key("video", "sample_video")
+        block = modulestore().get_item(video_key)
+
+        original_publish_pointer = python_api._get_or_create_locked_user_clipboard
+        attempts = 0
+
+        def deadlock_once(*args, **kwargs):
+            nonlocal attempts
+            attempts += 1
+            if attempts == 1:
+                raise OperationalError(1213, "Deadlock found when trying to get lock; try restarting transaction")
+            return original_publish_pointer(*args, **kwargs)
+
+        with mock.patch.object(python_api, "_get_or_create_locked_user_clipboard", side_effect=deadlock_once):
+            clipboard = python_api.save_xblock_to_user_clipboard(block, self.user.id)
+
+        assert attempts == 2
+        assert clipboard.content.status == StagedContentStatus.READY
+        assert StagedContent.objects.filter(user=self.user, purpose=CLIPBOARD_PURPOSE).count() == 1
+
+    def test_failed_clipboard_publish_preserves_previous_authoritative_content(self) -> None:
+        """If every publication attempt deadlocks, OLD remains selected and READY."""
+        course_key, client = self._setup_course()
+        video_key = course_key.make_usage_key("video", "sample_video")
+        html_key = course_key.make_usage_key("html", "toyhtml")
+
+        response = client.post(CLIPBOARD_ENDPOINT, {"usage_key": str(video_key)}, format="json")
+        assert response.status_code == 200
+        old_content_id = response.json()["content"]["id"]
+        html_block = modulestore().get_item(html_key)
+
+        with (
+            mock.patch.object(
+                python_api,
+                "_get_or_create_locked_user_clipboard",
+                side_effect=OperationalError(
+                    1213,
+                    "Deadlock found when trying to get lock; try restarting transaction",
+                ),
+            ) as publish_pointer,
+            mock.patch("openedx.core.djangoapps.content_staging.api.delete_expired_clipboards.delay") as cleanup,
+        ):
+            with pytest.raises(OperationalError):
+                python_api.save_xblock_to_user_clipboard(html_block, self.user.id)
+
+        assert publish_pointer.call_count == python_api.CLIPBOARD_PUBLISH_MAX_ATTEMPTS
+        current = UserClipboard.objects.get(user=self.user)
+        assert current.content_id == old_content_id
+        assert StagedContent.objects.get(id=old_content_id).status == StagedContentStatus.READY
+        cleanup.assert_not_called()
+
+    def test_non_deadlock_database_error_is_not_retried(self) -> None:
+        """Only MySQL 1213 is treated as a retryable publication conflict."""
+        course_key, _client = self._setup_course()
+        video_key = course_key.make_usage_key("video", "sample_video")
+        block = modulestore().get_item(video_key)
+
+        with mock.patch.object(
+            python_api,
+            "_get_or_create_locked_user_clipboard",
+            side_effect=OperationalError(2006, "MySQL server has gone away"),
+        ) as publish_pointer:
+            with pytest.raises(OperationalError):
+                python_api.save_xblock_to_user_clipboard(block, self.user.id)
+
+        assert publish_pointer.call_count == 1
+
+    def test_publication_retires_only_the_previous_authoritative_content(self) -> None:
+        """A publication must not expire another READY candidate that has not published yet."""
+        course_key, client = self._setup_course()
+        video_key = course_key.make_usage_key("video", "sample_video")
+        html_key = course_key.make_usage_key("html", "toyhtml")
+
+        response = client.post(CLIPBOARD_ENDPOINT, {"usage_key": str(video_key)}, format="json")
+        assert response.status_code == 200
+        old_content_id = response.json()["content"]["id"]
+
+        html_block = modulestore().get_item(html_key)
+        video_block = modulestore().get_item(video_key)
+        candidate_a = python_api._save_xblock_to_staged_content(  # pylint: disable=protected-access
+            html_block, self.user.id, CLIPBOARD_PURPOSE
+        )
+        candidate_b = python_api._save_xblock_to_staged_content(  # pylint: disable=protected-access
+            video_block, self.user.id, CLIPBOARD_PURPOSE
+        )
+
+        python_api._publish_staged_content_to_user_clipboard(  # pylint: disable=protected-access
+            candidate_a, html_key
+        )
+
+        assert StagedContent.objects.get(id=old_content_id).status == StagedContentStatus.EXPIRED
+        assert StagedContent.objects.get(id=candidate_b.id).status == StagedContentStatus.READY
+        assert UserClipboard.objects.get(user=self.user).content_id == candidate_a.id
+
+        python_api._publish_staged_content_to_user_clipboard(  # pylint: disable=protected-access
+            candidate_b, video_key
+        )
+
+        assert StagedContent.objects.get(id=candidate_a.id).status == StagedContentStatus.EXPIRED
+        assert UserClipboard.objects.get(user=self.user).content_id == candidate_b.id
+
+        # An old Python instance still says READY; publication must use the
+        # locked database state instead of allowing it to become current again.
+        with pytest.raises(ValueError, match="Only READY staged content"):
+            python_api._publish_staged_content_to_user_clipboard(candidate_a, html_key)
+        assert UserClipboard.objects.get(user=self.user).content_id == candidate_b.id
+
+    def test_clipboard_cleanup_never_deletes_selected_content(self) -> None:
+        """The GC boundary must not CASCADE-delete a still-selected clipboard."""
+        course_key, client = self._setup_course()
+        video_key = course_key.make_usage_key("video", "sample_video")
+        response = client.post(CLIPBOARD_ENDPOINT, {"usage_key": str(video_key)}, format="json")
+        assert response.status_code == 200
+
+        content_id = response.json()["content"]["id"]
+        StagedContent.objects.filter(id=content_id).update(status=StagedContentStatus.EXPIRED)
+
+        delete_expired_clipboards.run([content_id])
+
+        assert UserClipboard.objects.filter(user=self.user, content_id=content_id).exists()
+        assert StagedContent.objects.filter(id=content_id).exists()
+
+    def test_clipboard_cleanup_is_idempotent(self) -> None:
+        """Retrying the asynchronous cleanup task after deletion is harmless."""
+        stale = StagedContent.objects.create(
+            user=self.user,
+            purpose=CLIPBOARD_PURPOSE,
+            status=StagedContentStatus.EXPIRED,
+            block_type="html",
+            olx="<html />",
+            display_name="stale",
+            suggested_url_name="stale",
+            tags={},
+        )
+
+        delete_expired_clipboards.run([stale.id])
+        delete_expired_clipboards.run([stale.id])
+
+        assert not StagedContent.objects.filter(id=stale.id).exists()
 
     def test_copy_static_assets(self) -> None:
         """

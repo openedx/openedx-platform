@@ -7,7 +7,7 @@ import hashlib
 import logging
 
 from django.core.files.base import ContentFile
-from django.db import transaction
+from django.db import OperationalError, transaction
 from django.http import HttpRequest
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import AssetKey, ContainerKey, UsageKey
@@ -34,6 +34,9 @@ from .serializers import UserClipboardSerializer as _UserClipboardSerializer
 from .tasks import delete_expired_clipboards
 
 log = logging.getLogger(__name__)
+
+MYSQL_DEADLOCK_ERROR_CODE = 1213
+CLIPBOARD_PUBLISH_MAX_ATTEMPTS = 3
 
 
 def _save_xblock_to_staged_content(
@@ -81,24 +84,13 @@ def _save_data_to_staged_content(
     Save arbitrary OLX data to staged content.
     This is used by the library sync functionality to save OLX data
     that is not associated with any XBlock.
+
+    This function only materializes staged content. Clipboard publication,
+    retirement of previously selected content, and cleanup scheduling are
+    handled by _publish_staged_content_to_user_clipboard().
     """
 
-    expired_ids = []
     with transaction.atomic():
-        if purpose == CLIPBOARD_PURPOSE:
-            # Mark all of the user's existing StagedContent rows as EXPIRED
-            to_expire = _StagedContent.objects.filter(
-                user_id=user_id,
-                purpose=purpose,
-            ).exclude(
-                status=StagedContentStatus.EXPIRED,
-            )
-            for sc in to_expire:
-                expired_ids.append(sc.id)
-                sc.status = StagedContentStatus.EXPIRED
-                sc.save()
-
-        # Insert a new StagedContent row for this
         staged_content = _StagedContent.objects.create(
             user_id=user_id,
             purpose=purpose,
@@ -118,13 +110,6 @@ def _save_data_to_staged_content(
             _save_static_assets_to_staged_content(static_files, copied_from, staged_content)
         except Exception:  # pylint: disable=broad-except
             log.exception(f"Unable to copy static files to staged content for component {copied_from}")
-
-    if expired_ids:
-        # Enqueue a (potentially slow) task to delete the old staged content
-        try:
-            delete_expired_clipboards.delay(expired_ids)
-        except Exception:  # pylint: disable=broad-except
-            log.exception(f"Unable to enqueue cleanup task for StagedContents: {','.join(str(x) for x in expired_ids)}")
 
     return staged_content
 
@@ -178,6 +163,112 @@ def _save_static_assets_to_staged_content(
             log.exception(f"Unable to copy static file {f.name} to clipboard for component {usage_key}")
 
 
+
+def _is_mysql_deadlock(error: OperationalError) -> bool:
+    """Return whether ``error`` is MySQL's retryable deadlock error."""
+    return bool(error.args and error.args[0] == MYSQL_DEADLOCK_ERROR_CODE)
+
+
+def _schedule_expired_clipboard_cleanup(expired_ids: list[StagedContentID]) -> None:
+    """Schedule cleanup only after the transaction retiring these rows commits."""
+    if not expired_ids:
+        return
+
+    def enqueue_cleanup():
+        try:
+            delete_expired_clipboards.delay(expired_ids)
+        except Exception:  # pylint: disable=broad-except
+            log.exception(
+                "Unable to enqueue cleanup task for StagedContents: %s",
+                ','.join(str(x) for x in expired_ids),
+            )
+
+    transaction.on_commit(enqueue_cleanup)
+
+
+def _get_or_create_locked_user_clipboard(
+    staged_content: _StagedContent,
+    source_usage_key: UsageKey | ContainerKey,
+) -> tuple[_UserClipboard, bool]:
+    """Lock or create the per-user authority pointer used for publication."""
+    return _UserClipboard.objects.select_for_update().get_or_create(
+        user_id=staged_content.user_id,
+        defaults={
+            "content": staged_content,
+            "source_usage_key": source_usage_key,
+        },
+    )
+
+
+def _publish_staged_content_to_user_clipboard_once(
+    staged_content: _StagedContent,
+    source_usage_key: UsageKey | ContainerKey,
+) -> _UserClipboard:
+    """
+    Atomically publish ``staged_content`` as the user's current clipboard.
+
+    Publication is the authority transition. The new content becomes selected
+    first; only then are prior clipboard contents retired. Cleanup is scheduled
+    after commit, so a failed publication leaves the previous clipboard usable.
+    """
+    expired_ids: list[StagedContentID] = []
+
+    with transaction.atomic():
+        # UserClipboard is the authority pointer. Lock it first and capture the
+        # exact content revision it selected before moving the pointer.
+        # select_for_update() also survives get_or_create()'s create-race
+        # recovery path, so concurrent first publications for one user serialize.
+        clipboard, created = _get_or_create_locked_user_clipboard(staged_content, source_usage_key)
+
+        # The caller's instance may have become stale while waiting for PTR.
+        # Lock and re-read the candidate before making the selection durable.
+        candidate = _StagedContent.objects.select_for_update().get(pk=staged_content.pk)
+        if candidate.status != StagedContentStatus.READY:
+            raise ValueError("Only READY staged content can be published to the clipboard")
+        if candidate.purpose != CLIPBOARD_PURPOSE or candidate.user_id != staged_content.user_id:
+            raise ValueError("Clipboard content must belong to the user and have clipboard purpose")
+
+        old_content_id = None
+        if not created:
+            old_content_id = clipboard.content_id
+            clipboard.content = candidate
+            clipboard.source_usage_key = source_usage_key
+            clipboard.save()
+
+        # NEW never mutates unrelated candidates. PTR identifies the one OLD
+        # revision that actually lost authority; only that object is retired.
+        if old_content_id is not None and old_content_id != staged_content.id:
+            old_content = _StagedContent.objects.select_for_update().get(id=old_content_id)
+            expired_ids.append(old_content.id)
+            if old_content.status != StagedContentStatus.EXPIRED:
+                old_content.status = StagedContentStatus.EXPIRED
+                old_content.save(update_fields=["status"])
+
+        _schedule_expired_clipboard_cleanup(expired_ids)
+
+    return clipboard
+
+
+def _publish_staged_content_to_user_clipboard(
+    staged_content: _StagedContent,
+    source_usage_key: UsageKey | ContainerKey,
+) -> _UserClipboard:
+    """Publish a clipboard candidate, retrying only MySQL deadlock victims."""
+    for attempt in range(1, CLIPBOARD_PUBLISH_MAX_ATTEMPTS + 1):
+        try:
+            return _publish_staged_content_to_user_clipboard_once(staged_content, source_usage_key)
+        except OperationalError as error:
+            if not _is_mysql_deadlock(error) or attempt == CLIPBOARD_PUBLISH_MAX_ATTEMPTS:
+                raise
+            log.warning(
+                "Retrying clipboard publication after MySQL deadlock (attempt %s/%s, user_id=%s)",
+                attempt + 1,
+                CLIPBOARD_PUBLISH_MAX_ATTEMPTS,
+                staged_content.user_id,
+            )
+
+    raise AssertionError("unreachable")
+
 def save_xblock_to_user_clipboard(block: XBlock, user_id: int, version_num: int | None = None) -> UserClipboardData:
     """
     Copy an XBlock's OLX to the user's clipboard.
@@ -185,14 +276,7 @@ def save_xblock_to_user_clipboard(block: XBlock, user_id: int, version_num: int 
     staged_content = _save_xblock_to_staged_content(block, user_id, CLIPBOARD_PURPOSE, version_num)
     usage_key = block.usage_key
 
-    # Create/update the clipboard entry
-    (clipboard, _created) = _UserClipboard.objects.update_or_create(
-        user_id=user_id,
-        defaults={
-            "content": staged_content,
-            "source_usage_key": usage_key,
-        },
-    )
+    clipboard = _publish_staged_content_to_user_clipboard(staged_content, usage_key)
 
     return _user_clipboard_model_to_data(clipboard)
 
@@ -224,14 +308,7 @@ def save_content_to_user_clipboard(
         static_files=static_files,
     )
 
-    # Create/update the clipboard entry
-    (clipboard, _created) = _UserClipboard.objects.update_or_create(
-        user_id=user_id,
-        defaults={
-            "content": staged_content,
-            "source_usage_key": copied_from,
-        },
-    )
+    clipboard = _publish_staged_content_to_user_clipboard(staged_content, copied_from)
 
     return _user_clipboard_model_to_data(clipboard)
 
