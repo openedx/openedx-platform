@@ -30,15 +30,13 @@ class UnsignedBigIntAutoFieldTests(unittest.TestCase):
         internal_type = UnsignedBigIntAutoField().get_internal_type()
         low, high = mysql_ops.integer_field_range(internal_type)
 
-        self.assertIsNotNone(high)
-        self.assertGreaterEqual(
-            high,
-            LARGE_PK,
+        assert high is not None
+        assert high >= LARGE_PK, (
             f"MySQL's range for get_internal_type()={internal_type!r} tops out at {high}, "
             f"which excludes valid primary keys like {LARGE_PK}. Django 5.2's "
             "IntegerFieldOverflow check will silently treat exact-match lookups on such values "
-            "as EmptyResultSet instead of querying the database.",
+            "as EmptyResultSet instead of querying the database."
         )
 
     def test_internal_type_is_big_auto_field(self):
-        self.assertEqual(UnsignedBigIntAutoField().get_internal_type(), 'BigAutoField')
+        assert UnsignedBigIntAutoField().get_internal_type() == 'BigAutoField'
