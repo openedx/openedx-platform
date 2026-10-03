@@ -1,2 +1,0 @@
-<span class="icon fa fa-spinner fa-spin" aria-hidden="true"></span> <%- gettext("Loading") %>
-
