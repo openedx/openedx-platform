@@ -4,6 +4,7 @@ Content index and search API using Meilisearch
 
 from __future__ import annotations
 
+import json
 import logging
 import time
 from collections.abc import Iterator
@@ -16,6 +17,7 @@ from attrs import define
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
+from django.core.exceptions import ObjectDoesNotExist
 from django.core.paginator import Paginator
 from meilisearch import Client as MeilisearchClient
 from meilisearch.errors import MeilisearchApiError, MeilisearchError
@@ -38,11 +40,16 @@ from openedx.core.djangoapps.content.search.index_config import (
     INDEX_SEARCHABLE_ATTRIBUTES,
     INDEX_SORTABLE_ATTRIBUTES,
 )
-from openedx.core.djangoapps.content.search.models import IncrementalIndexCompleted, get_access_ids_for_request
+from openedx.core.djangoapps.content.search.models import (
+    IncrementalIndexCompleted,
+    SearchAccess,
+    get_access_ids_for_request,
+)
 from openedx.core.djangoapps.content_libraries import api as lib_api
 from xmodule.modulestore.django import modulestore
 from xmodule.modulestore.exceptions import ItemNotFoundError
 
+from .content_reconciliation import reconcile_components, validate_reconciliation_limits
 from .documents import (
     DocType,
     Fields,
@@ -1319,20 +1326,9 @@ def reconcile_library_components(
     Content publication must be quiesced for strict repair correctness; source
     and index rereads reduce races but cannot provide cross-system atomicity.
     """
-    import json  # pylint: disable=import-outside-toplevel
-
-    from django.core.exceptions import ObjectDoesNotExist  # pylint: disable=import-outside-toplevel
-
-    from .content_reconciliation import reconcile_components  # pylint: disable=import-outside-toplevel
-    from .models import SearchAccess  # pylint: disable=import-outside-toplevel
-
     if not isinstance(library_key, LibraryLocatorV2):
         raise ValueError("A single Libraries V2 key is required")
-    if (
-        type(batch_size) is not int or not 1 <= batch_size <= 1000
-        or type(max_documents) is not int or max_documents < 1
-    ):
-        raise ValueError("Invalid batch_size or max_documents")
+    validate_reconciliation_limits(batch_size, max_documents)
     # Validate the source library before any engine requests, and require the
     # pre-existing access row so dry-run serialization doesn't create one.
     lib_api.get_library(library_key)
@@ -1390,7 +1386,10 @@ def reconcile_library_components(
         # truncation. JSON quoting prevents filter interpolation.
         while offset <= max_documents:
             response = index.get_documents({
-                "filter": f"context_key = {json.dumps(str(library_key))} AND type = {json.dumps(DocType.library_block)}",
+                "filter": (
+                    f"context_key = {json.dumps(str(library_key))} "
+                    f"AND type = {json.dumps(DocType.library_block)}"
+                ),
                 "offset": offset,
                 "limit": min(batch_size, max_documents + 1 - offset),
             })

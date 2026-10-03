@@ -6,6 +6,8 @@ from django.core.management import BaseCommand, CommandError
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.locator import LibraryLocatorV2
 
+from openedx.core.djangoapps.content_libraries.api import ContentLibraryNotFound
+
 from ... import api
 
 
@@ -29,6 +31,6 @@ class Command(BaseCommand):
                 key, repair=options["repair"], batch_size=options["batch_size"],
                 max_documents=options["max_documents"],
             )
-        except (InvalidKeyError, ValueError, RuntimeError) as err:
+        except (InvalidKeyError, ContentLibraryNotFound, ValueError, RuntimeError) as err:
             raise CommandError(str(err)) from err
         self.stdout.write(json.dumps({"repair": options["repair"], **report.as_dict()}, sort_keys=True))

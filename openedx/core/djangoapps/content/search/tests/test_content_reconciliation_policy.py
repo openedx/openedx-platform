@@ -24,7 +24,11 @@ def document(key="a", **fields):
 class ReconcilePolicyTest(unittest.TestCase):
     """Exercise bounded writes, ambiguous identity and observed mutation races."""
 
+    def setUp(self):
+        self.writes = []
+
     def run_reconcile(self, sources=None, indexed=None, **kwargs):
+        """Run the policy against in-memory source/index boundaries."""
         sources = {"a": document()} if sources is None else sources
         indexed = {} if indexed is None else indexed
         self.writes = []
@@ -40,6 +44,12 @@ class ReconcilePolicyTest(unittest.TestCase):
         }
         options.update(kwargs)
         return reconcile_components(**options)
+
+    def test_indexed_usage_key_with_noncanonical_id_is_unknown(self):
+        report = self.run_reconcile(indexed={"noncanonical": document(id="noncanonical")}, repair=True)
+        self.assertEqual(report.unknown, 1)
+        self.assertEqual(report.repaired, 1)  # Restore the absent canonical ID only.
+        self.assertEqual(self.writes, [[document()]])
 
     def test_dry_run_default(self):
         report = self.run_reconcile()

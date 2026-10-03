@@ -82,14 +82,34 @@ Validation and contribution sequencing
 
 The dependency-free policy suite tests batching, truncation, dry-run, no-delete,
 identity collisions, removed fields, failures and source/index mutation races.
-The isolated API adapter suite executes the actual function body with mocked
-platform services and the pinned Meilisearch 0.43.0 Document/exception classes.
-It checks filter scoping, page offsets/limits, full replacement, permission fields,
-missing-document versus missing-index errors, rebuild checks and access metadata.
-These are not full Django/database or live-engine integration tests.
+CMS integration tests create real libraries, components, a collection and tags,
+and exercise Django command discovery and canonical serializers. Only the
+external engine boundary is replaced in those cases. They cover missing access
+metadata, invalid/missing library keys, rebuild refusal, scan caps, wrong primary
+keys, corrupt identities, collisions and engine failures.
 
-Before proposing an upstream PR, add Django library fixture tests and run the
-existing search suite with a real Meilisearch. Reproduce a missed indexing event,
-verify repaired content through Studio, and confirm publication quiescence
-procedures with maintainers. Start with this bounded operator-only scope; propose
-container/collection repair and revision-fenced background operation separately.
+An opt-in live-engine test uses the same real CMS fixtures and a unique disposable
+index. Fixture creation disables indexing events; content stays unchanged after
+initialization and all engine tasks are awaited. It checks a missing document,
+a stale payload with an obsolete field, an index-only record and another
+library. Dry-run performs no writes, repair restores both canonical records,
+a second audit is clean, and the unrelated records are preserved. The temporary
+index is removed in a finally block.
+
+Focused validation passed against the platform master base with Meilisearch
+1.36.0: 18 policy cases, 14 CMS integration cases, one live-engine case,
+34 existing index-settings reconciliation cases, and the library creation and
+component creation/deletion handler cases (69 distinct tests). After bounds and indexed-identity fixes, only the
+33 affected policy/CMS/live cases were rerun.
+Repository-configured Ruff and Pylint, and git diff --check, passed.
+
+Run the targeted tests using the CMS test settings. The live test is skipped
+unless OPENEDX_SEARCH_LIVE_URL is supplied. Set OPENEDX_SEARCH_LIVE_KEY privately
+to an engine key that can create, update and delete disposable indexes; do not
+use a production service. No frontend, LMS or load suite is needed for this
+operator-only contribution.
+
+Maintainer review should confirm publication quiescence procedures. Collection
+and container repair and revision-fenced background operation should be proposed
+separately. These tests establish controlled repair behavior, not production
+concurrency guarantees or performance claims.

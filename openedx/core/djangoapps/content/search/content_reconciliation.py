@@ -28,6 +28,39 @@ class ContentDriftReport:
         return asdict(self)
 
 
+def validate_reconciliation_limits(batch_size, max_documents):
+    """Require integer scan/batch limits and reject booleans explicitly."""
+    if not isinstance(batch_size, int) or isinstance(batch_size, bool) or not 1 <= batch_size <= 1000:
+        raise ValueError("batch_size must be between 1 and 1000")
+    if not isinstance(max_documents, int) or isinstance(max_documents, bool) or max_documents < 1:
+        raise ValueError("max_documents must be positive")
+
+
+def _valid_component_identity(doc, context_key):
+    """Require a component identity scoped to the selected library."""
+    return (
+        doc is not None and doc.get("context_key") == context_key
+        and doc.get("type") == "library_block" and bool(doc.get("id"))
+        and bool(doc.get("usage_key"))
+    )
+
+
+def _inspect_indexed_components(report, *, context_key, indexed_documents, read_source, max_documents):
+    """Inspect bounded indexed identities without authorizing any deletion."""
+    for position, doc in enumerate(islice(indexed_documents, max_documents + 1)):
+        if position == max_documents:
+            report.index_truncated = True
+            break
+        if not _valid_component_identity(doc, context_key):
+            report.unknown += 1
+        else:
+            canonical = read_source(doc["usage_key"])
+            if canonical is None:
+                report.index_only += 1
+            elif canonical["id"] != doc["id"]:
+                report.unknown += 1
+
+
 def reconcile_components(
     *, context_key, source_keys, read_source, read_index, indexed_documents,
     write_batch, repair=False, batch_size=100, max_documents=10000,
@@ -40,19 +73,9 @@ def reconcile_components(
     lazy bounded streams. Full-document equality detects removed fields as drift.
     Index-only documents are reported, never deleted. Each scan has its own cap.
     """
-    if type(batch_size) is not int or not 1 <= batch_size <= 1000:
-        raise ValueError("batch_size must be between 1 and 1000")
-    if type(max_documents) is not int or max_documents < 1:
-        raise ValueError("max_documents must be positive")
+    validate_reconciliation_limits(batch_size, max_documents)
     report = ContentDriftReport()
     pending = []
-
-    def valid(doc):
-        return (
-            doc is not None and doc.get("context_key") == context_key
-            and doc.get("type") == "library_block" and bool(doc.get("id"))
-            and bool(doc.get("usage_key"))
-        )
 
     def flush():
         docs = []
@@ -75,13 +98,13 @@ def reconcile_components(
             break
         report.scanned += 1
         expected = read_source(key)
-        if not valid(expected) or expected["usage_key"] != str(key):
+        if not _valid_component_identity(expected, context_key) or expected["usage_key"] != str(key):
             report.unknown += 1
             continue
         observed = read_index(expected["id"])
         # A colliding/corrupt primary key must not replace another context/type.
         if observed is not None and (
-            not valid(observed) or observed["usage_key"] != expected["usage_key"]
+            not _valid_component_identity(observed, context_key) or observed["usage_key"] != expected["usage_key"]
         ):
             report.unknown += 1
             continue
@@ -99,12 +122,8 @@ def reconcile_components(
     if pending:
         flush()
 
-    for position, doc in enumerate(islice(indexed_documents, max_documents + 1)):
-        if position == max_documents:
-            report.index_truncated = True
-            break
-        if not valid(doc):
-            report.unknown += 1
-        elif read_source(doc["usage_key"]) is None:
-            report.index_only += 1
+    _inspect_indexed_components(
+        report, context_key=context_key, indexed_documents=indexed_documents,
+        read_source=read_source, max_documents=max_documents,
+    )
     return report
