@@ -90,6 +90,7 @@ from openedx.core.djangoapps.models.course_details import CourseDetails
 from openedx.core.djangolib.js_utils import dump_js_escaped_json
 from openedx.core.lib.api.view_utils import view_auth_classes
 from openedx.core.lib.course_tabs import CourseTabPluginManager
+from openedx.core.lib.log_utils import get_username_or_pii_safe_user_id_for_log
 from xmodule.course_block import CourseBlock, CourseFields  # pylint: disable=wrong-import-order
 from xmodule.error_block import ErrorBlock  # pylint: disable=wrong-import-order
 from xmodule.modulestore import EdxJSONEncoder  # pylint: disable=wrong-import-order
@@ -2085,7 +2086,7 @@ def bulk_enable_disable_discussions(request, course_key_string):
     discussion_enabled = request.json['discussion_enabled']
     log.info(
         "User %s is attempting to %s discussions for all verticals in course %s",
-        user.username,
+        get_username_or_pii_safe_user_id_for_log(user),
         "enable" if discussion_enabled else "disable",
         course_key
     )
