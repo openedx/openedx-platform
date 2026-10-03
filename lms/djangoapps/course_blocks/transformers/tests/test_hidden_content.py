@@ -6,12 +6,14 @@ Tests for HiddenContentTransformer.
 from datetime import timedelta
 
 import ddt
+from django.test.utils import override_settings
 from django.utils.timezone import now
 from edx_when.api import get_dates_for_course, set_date_for_block
 from edx_when.field_data import DateOverrideTransformer
 
 from common.djangoapps.student.tests.factories import UserFactory
 from lms.djangoapps.course_blocks.transformers.hidden_content import HiddenContentTransformer
+from lms.djangoapps.course_blocks.transformers.start_date import StartDateTransformer
 from lms.djangoapps.course_blocks.transformers.tests.helpers import BlockParentsMapTestCase, update_block
 from openedx.core.djangoapps.content.block_structure.tests.helpers import mock_registered_transformers
 from openedx.core.djangoapps.content.block_structure.transformers import BlockStructureTransformers
@@ -187,3 +189,25 @@ class HiddenContentTransformerTestCase(BlockParentsMapTestCase):
             blocks_with_differing_access=None,
             transformers=transformers,
         )
+
+    @override_settings(DISABLE_START_DATES=False)
+    def test_hidden_content_with_course_block_removed(self):
+        """
+        Tests no error is raised when an earlier transformer removed the course block
+        and the DateOverrideTransformer then set a date on it.
+        """
+        course = self.get_block(0)
+        course.start = self.DateType.FUTURE_DATE
+        update_block(course)
+        set_date_for_block(self.course.id, course.location, 'start', self.DateType.FUTURE_DATE)
+
+        with mock_registered_transformers([StartDateTransformer, DateOverrideTransformer, HiddenContentTransformer]):
+            transformers = BlockStructureTransformers(
+                [StartDateTransformer(), DateOverrideTransformer(self.student), HiddenContentTransformer()]
+            )
+            self.assert_transform_results(
+                self.student,
+                set(),
+                blocks_with_differing_access=None,
+                transformers=transformers,
+            )
