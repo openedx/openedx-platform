@@ -23,7 +23,7 @@ from xblock.plugin import PluginMissingError
 from xblock.runtime import Mixologist
 
 from cms.djangoapps.contentstore.helpers import get_parent_if_split_test, is_library_content, is_unit
-from cms.djangoapps.contentstore.toggles import libraries_v2_enabled, use_new_unit_page
+from cms.djangoapps.contentstore.toggles import libraries_v2_enabled
 from cms.djangoapps.contentstore.xblock_storage_handlers.view_handlers import load_services_for_studio
 from common.djangoapps.edxmako.shortcuts import render_to_response
 from common.djangoapps.student.auth import has_course_author_access
@@ -133,44 +133,36 @@ def _load_mixed_class(category):
 
 @require_GET
 @login_required
-def container_handler(request, usage_key_string):  # pylint: disable=too-many-statements
+def container_handler(request, usage_key_string):
     """
-    The restful handler for container xblock requests.
+    Redirects to the MFE unit editor.
 
-    GET
-        html: returns the HTML page for editing a container
-        json: not currently supported
+    The legacy Django-template-based unit editor has been removed.
+    This view exists for backward compatibility with any existing links to /container/<usage_key>.
     """
+    from ..utils import get_unit_url
 
-    from ..utils import get_container_handler_context, get_unit_url
-
-    if 'text/html' in request.META.get('HTTP_ACCEPT', 'text/html'):
-
-        try:
-            usage_key = UsageKey.from_string(usage_key_string)
-        except InvalidKeyError:  # Raise Http404 on invalid 'usage_key_string'
-            raise Http404  # pylint: disable=raise-missing-from  # noqa: B904
-        with modulestore().bulk_operations(usage_key.course_key):
-            try:
-                course, xblock, lms_link, preview_lms_link = _get_item_in_course(request, usage_key)
-            except ItemNotFoundError:
-                return HttpResponseBadRequest()
-
-            if use_new_unit_page(course.id):
-                if is_unit(xblock) or is_library_content(xblock):
-                    return redirect(get_unit_url(course.id, xblock.location))
-
-                if split_xblock := get_parent_if_split_test(xblock):
-                    return redirect(get_unit_url(course.id, split_xblock.location))
-
-            container_handler_context = get_container_handler_context(request, usage_key, course, xblock)
-            container_handler_context.update({
-                'draft_preview_link': preview_lms_link,
-                'published_preview_link': lms_link,
-            })
-            return render_to_response('container.html', container_handler_context)
-    else:
+    if 'text/html' not in request.META.get('HTTP_ACCEPT', 'text/html'):
         return HttpResponseBadRequest("Only supports HTML requests")
+
+    try:
+        usage_key = UsageKey.from_string(usage_key_string)
+    except InvalidKeyError:
+        raise Http404  # pylint: disable=raise-missing-from  # noqa: B904
+
+    with modulestore().bulk_operations(usage_key.course_key):
+        try:
+            course, xblock, lms_link, preview_lms_link = _get_item_in_course(request, usage_key)
+        except ItemNotFoundError:
+            return HttpResponseBadRequest()
+
+        if is_unit(xblock) or is_library_content(xblock):
+            return redirect(get_unit_url(course.id, xblock.location))
+
+        if split_xblock := get_parent_if_split_test(xblock):
+            return redirect(get_unit_url(course.id, split_xblock.location))
+
+    raise Http404
 
 
 @require_GET
@@ -179,7 +171,8 @@ def container_handler(request, usage_key_string):  # pylint: disable=too-many-st
 def container_embed_handler(request, usage_key_string):  # pylint: disable=too-many-statements
     """
     Returns an HttpResponse with HTML content for the container XBlock.
-    The returned HTML is a chromeless rendering of the XBlock.
+    The returned HTML is a chromeless rendering of the XBlock, used by the
+    Authoring MFE to display xblock content in iframes.
 
     GET
         html: returns the HTML page for editing a container

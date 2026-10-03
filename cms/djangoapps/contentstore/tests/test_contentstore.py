@@ -1,10 +1,5 @@
 # pylint: disable=missing-module-docstring
 
-# TODO: Rewrite several of these assertions so that they check the output of the REST or Python
-# APIs rather than parsing HTML from the deprecated legacy frontend pages. In particular, any
-# test case using override_waffle_flag(toggles.LEGACY_STUDIO_*, True) will need to be fixed.
-# Part of https://github.com/openedx/edx-platform/issues/36275.
-
 import copy
 import re
 import shutil
@@ -21,7 +16,7 @@ from django.contrib.auth.models import User  # pylint: disable=imported-auth-use
 from django.test import TestCase
 from django.test.utils import override_settings
 from django.urls import reverse
-from edx_toggles.toggles.testutils import override_waffle_flag, override_waffle_switch
+from edx_toggles.toggles.testutils import override_waffle_switch
 from edxval.api import create_video, get_videos_for_course
 from fs.osfs import OSFS
 from lxml import etree
@@ -30,11 +25,9 @@ from opaque_keys.edx.keys import AssetKey, CourseKey, UsageKey
 from opaque_keys.edx.locations import CourseLocator
 from path import Path as path
 
-from cms.djangoapps.contentstore import toggles
 from cms.djangoapps.contentstore.config import waffle
 from cms.djangoapps.contentstore.tests.utils import AjaxEnabledTestClient, CourseTestCase, get_url, parse_json
 from cms.djangoapps.contentstore.utils import delete_course, reverse_course_url, reverse_url
-from cms.djangoapps.contentstore.views.component import ADVANCED_COMPONENT_TYPES
 from common.djangoapps.course_action_state.managers import CourseActionStateItemNotFoundError
 from common.djangoapps.course_action_state.models import CourseRerunState, CourseRerunUIStateManager
 from common.djangoapps.student import auth
@@ -568,44 +561,6 @@ class MiscCourseTests(ContentStoreTestCase):
         )
         self.course = self.store.publish(self.course.location, self.user.id)
 
-    def check_components_on_page(self, component_types, expected_types):
-        """
-        Ensure that the right types end up on the page.
-
-        component_types is the list of advanced components.
-
-        expected_types is the list of elements that should appear on the page.
-
-        expected_types and component_types should be similar, but not
-        exactly the same -- for example, 'video' in
-        component_types should cause 'Video' to be present.
-        """
-        self.course.advanced_modules = component_types
-        self.store.update_item(self.course, self.user.id)
-
-        # just pick one vertical
-        resp = self.client.get_html(get_url('container_handler', self.vert_loc))
-        for expected in expected_types:
-            self.assertContains(resp, expected)
-
-    @override_waffle_flag(toggles.LEGACY_STUDIO_UNIT_EDITOR, True)
-    @ddt.data("<script>alert(1)</script>", "alert('hi')", "</script><script>alert(1)</script>")
-    def test_container_handler_xss_prevent(self, malicious_code):
-        """
-        Test that XSS attack is prevented
-        """
-        resp = self.client.get_html(get_url('container_handler', self.vert_loc) + '?action=' + malicious_code)
-        # Test that malicious code does not appear in html
-        self.assertNotContains(resp, malicious_code)
-
-    @override_waffle_flag(toggles.LEGACY_STUDIO_UNIT_EDITOR, True)
-    def test_advanced_components_in_edit_unit(self):
-        # This could be made better, but for now let's just assert that we see the advanced modules mentioned in the
-        # page response HTML
-        self.check_components_on_page(
-            ADVANCED_COMPONENT_TYPES,
-            ['Word cloud', 'Annotation', 'split_test'],
-        )
 
     @ddt.data('/Fake/asset/displayname', '\\Fake\\asset\\displayname')
     def test_export_on_invalid_displayname(self, invalid_displayname):
@@ -700,14 +655,6 @@ class MiscCourseTests(ContentStoreTestCase):
         # Remove tempdir
         shutil.rmtree(root_dir)
 
-    @override_waffle_flag(toggles.LEGACY_STUDIO_UNIT_EDITOR, True)
-    def test_advanced_components_require_two_clicks(self):
-        self.check_components_on_page(['word_cloud'], ['Word cloud'])
-
-    @override_waffle_flag(toggles.LEGACY_STUDIO_UNIT_EDITOR, True)
-    def test_edit_unit(self):
-        """Verifies rendering the editor in all the verticals in the given test course"""
-        self._check_verticals([self.vert_loc])
 
     def _get_draft_counts(self, item):  # pylint: disable=missing-function-docstring
         cnt = 1 if not self.store.has_published_version(item) else 0
@@ -1520,11 +1467,10 @@ class ContentStoreTest(ContentStoreTestCase):
         )
         self.assertEqual(resp.status_code, 200)  # noqa: PT009
 
-        # go look at the Edit page
+        # go look at the Edit page — now redirects to MFE unit editor
         unit_key = course_key.make_usage_key('vertical', 'test_vertical')
-        with override_waffle_flag(toggles.LEGACY_STUDIO_UNIT_EDITOR, True):
-            resp = self.client.get_html(get_url('container_handler', unit_key))
-        self.assertEqual(resp.status_code, 200)  # noqa: PT009
+        resp = self.client.get_html(get_url('container_handler', unit_key))
+        self.assertEqual(resp.status_code, 302)  # noqa: PT009
 
         def delete_item(category, name):
             """ Helper method for testing the deletion of an xblock item. """

@@ -57,7 +57,7 @@ class CourseWaffleFlagsView(APIView):
             "use_new_files_uploads_page": true,
             "use_new_video_uploads_page": false,
             "use_new_course_outline_page": true,
-            "use_new_unit_page": false,
+            "use_new_unit_page": true,
             "use_new_course_team_page": true,
             "use_new_certificates_page": true,
             "use_new_textbooks_page": true,
