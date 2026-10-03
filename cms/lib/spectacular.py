@@ -9,7 +9,7 @@ def cms_api_filter(endpoints):
     course-level endpoints.
     """
     filtered = []
-    CMS_PATH_PATTERN = re.compile(r"^/api/contentstore/v\d+/")
+    CMS_PATH_PATTERN = re.compile(r"^/api/(contentstore|authoring)/v\d+/")
 
     for path, path_regex, method, callback in endpoints:
         if (
