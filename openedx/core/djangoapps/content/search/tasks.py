@@ -18,6 +18,7 @@ from opaque_keys.edx.locator import (
 )
 
 from . import api
+from .library_indexing import process_library_index_request  # noqa: F401 - register during task autodiscovery
 
 log = logging.getLogger(__name__)
 
