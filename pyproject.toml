@@ -293,6 +293,12 @@ constraint-dependencies = [
     "edx-enterprise==8.17.0",
     "djangorestframework<3.18",
 ]
+
+# TODO: drop this once xblocks-contrib ships a release carrying the Text
+# (HTML) block's include_theme field. Tracked by openedx/xblocks-core#308.
+[tool.uv.sources]
+xblocks-contrib = { git = "https://github.com/open-craft/xblocks-core.git", rev = "rpenido/text-xblock-include-theme" }
+
 [tool.edx_lint]
 uv_constraints = [
     # Date: 2025-10-07
