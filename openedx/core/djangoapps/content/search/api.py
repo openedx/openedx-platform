@@ -20,7 +20,7 @@ from django.core.paginator import Paginator
 from meilisearch import Client as MeilisearchClient
 from meilisearch.errors import MeilisearchApiError, MeilisearchError
 from meilisearch.models.task import TaskInfo
-from opaque_keys import OpaqueKey
+from opaque_keys import InvalidKeyError, OpaqueKey
 from opaque_keys.edx.keys import CourseKey, LearningContextKey, UsageKey
 from opaque_keys.edx.locator import LibraryCollectionLocator, LibraryContainerLocator, LibraryLocatorV2
 from openedx_content import api as content_api
@@ -1306,3 +1306,120 @@ def get_all_blocks_from_context(
             break
 
         offset += limit
+
+
+def reconcile_library_components(
+    library_key: LibraryLocatorV2, *, repair: bool = False,
+    batch_size: int = 100, max_documents: int = 10000,
+):
+    """Inspect/repair one library's component documents without resetting an index.
+
+    Containers/collections and index-only documents are not mutated. Call from a
+    management command, never a request handler (Meilisearch tasks are awaited).
+    Content publication must be quiesced for strict repair correctness; source
+    and index rereads reduce races but cannot provide cross-system atomicity.
+    """
+    import json  # pylint: disable=import-outside-toplevel
+
+    from django.core.exceptions import ObjectDoesNotExist  # pylint: disable=import-outside-toplevel
+
+    from .content_reconciliation import reconcile_components  # pylint: disable=import-outside-toplevel
+    from .models import SearchAccess  # pylint: disable=import-outside-toplevel
+
+    if not isinstance(library_key, LibraryLocatorV2):
+        raise ValueError("A single Libraries V2 key is required")
+    if (
+        type(batch_size) is not int or not 1 <= batch_size <= 1000
+        or type(max_documents) is not int or max_documents < 1
+    ):
+        raise ValueError("Invalid batch_size or max_documents")
+    # Validate the source library before any engine requests, and require the
+    # pre-existing access row so dry-run serialization doesn't create one.
+    lib_api.get_library(library_key)
+    if not SearchAccess.objects.filter(context_key=str(library_key)).exists():
+        raise ValueError("Library search access metadata is missing; populate the index first")
+    client = _get_meilisearch_client()
+    index = client.get_index(STUDIO_LIBRARY_INDEX_NAME)
+    if index.primary_key != INDEX_PRIMARY_KEY:
+        raise ValueError("Reconcile index settings before reconciling content")
+
+    def check_rebuild():
+        if _get_running_rebuild_index_name(STUDIO_LIBRARY_INDEX_NAME):
+            raise RuntimeError("Library index rebuild in progress; retry reconciliation afterwards")
+
+    check_rebuild()
+
+    def source_keys():
+        components = lib_api.get_library_components(library_key).order_by("pk")
+        for component in components.iterator(chunk_size=batch_size):
+            yield lib_api.LibraryXBlockMetadata.from_component(library_key, component).usage_key
+
+    def read_source(key):
+        key = UsageKey.from_string(str(key))
+        if key.context_key != library_key:
+            raise ValueError("Component does not belong to selected library")
+        try:
+            component = lib_api.get_component_from_usage_key(key)
+            # Published-only entities are deliberately outside this draft index.
+            if not lib_api.get_library_components(library_key).filter(pk=component.pk).exists():
+                return None
+        except (ObjectDoesNotExist, lib_api.ContentLibraryBlockNotFound):
+            return None
+        metadata = lib_api.LibraryXBlockMetadata.from_component(library_key, component)
+        doc = searchable_doc_for_library_block(metadata)
+        doc.update(searchable_doc_tags(key))
+        doc.update(searchable_doc_collections(key))
+        doc.update(searchable_doc_containers(key, "units"))
+        return doc
+
+    def as_dict(document):
+        # The Meilisearch SDK returns Document instances with dynamic fields.
+        return dict(document) if isinstance(document, dict) else vars(document)
+
+    def read_index(document_id):
+        try:
+            return as_dict(index.get_document(document_id))
+        except MeilisearchApiError as err:
+            if err.code == "document_not_found":
+                return None
+            raise
+
+    def indexed_documents():
+        offset = 0
+        # Documents endpoint avoids search maxTotalHits and distinct-attribute
+        # truncation. JSON quoting prevents filter interpolation.
+        while offset <= max_documents:
+            response = index.get_documents({
+                "filter": f"context_key = {json.dumps(str(library_key))} AND type = {json.dumps(DocType.library_block)}",
+                "offset": offset,
+                "limit": min(batch_size, max_documents + 1 - offset),
+            })
+            if not response.results:
+                return
+            for document in response.results:
+                doc = as_dict(document)
+                # Corrupt indexed keys are unknown, not evidence of deletion.
+                # Only key parsing errors are swallowed; source/engine failures
+                # still abort the audit or repair.
+                try:
+                    value = doc.get(Fields.usage_key)
+                    key = UsageKey.from_string(value) if isinstance(value, str) else None
+                except (InvalidKeyError, ValueError):
+                    key = None
+                if key is None or key.context_key != library_key:
+                    doc = {**doc, Fields.usage_key: None}
+                yield doc
+            offset += len(response.results)
+
+    def write_batch(docs):
+        check_rebuild()
+        # add_documents replaces entire records; update_documents would retain
+        # obsolete fields and leave drift behind. No deletion tasks are issued.
+        _wait_for_meili_task(index.add_documents(docs))
+        check_rebuild()
+
+    return reconcile_components(
+        context_key=str(library_key), source_keys=source_keys(), read_source=read_source,
+        read_index=read_index, indexed_documents=indexed_documents(), write_batch=write_batch,
+        repair=repair, batch_size=batch_size, max_documents=max_documents,
+    )
