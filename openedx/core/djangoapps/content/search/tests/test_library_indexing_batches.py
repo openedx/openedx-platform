@@ -14,6 +14,7 @@ from ..models import LibraryIndexRequest
 
 
 class LibraryIndexBatchTests(TestCase):
+    """Exercise lazy batches and replay after partial engine failures."""
     library_key = "lib:org:library"
 
     def setUp(self):
@@ -101,7 +102,7 @@ class LibraryIndexBatchTests(TestCase):
         self.write.side_effect = [None, ConnectionError("second batch failed")]
         with self.settings(LIBRARY_SEARCH_INDEX_BATCH_SIZE=2):
             with pytest.raises(ConnectionError):
-                process_library_index_request._orig_run(self.library_key)
+                process_library_index_request._orig_run(self.library_key)  # pylint: disable=protected-access
             assert LibraryIndexRequest.objects.get().completed_revision == 0
             first_batch = self.write.call_args_list[0].args[1]
             self.write.reset_mock(side_effect=True)

@@ -8,6 +8,7 @@ from ...models import LibraryIndexRequest
 
 
 class Command(BaseCommand):
+    """Dispatch only the requested bounded number of pending revisions."""
     help = "Redispatch a bounded batch of pending library indexing requests."
 
     def add_arguments(self, parser):

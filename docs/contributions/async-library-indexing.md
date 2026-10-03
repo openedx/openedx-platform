@@ -33,6 +33,18 @@ SQLite does not enforce select_for_update. The isolated tests prove persistence/
 
 Document batches are bounded, but document byte size, nested metadata construction, and database-driver buffering are not. End-to-end process memory therefore requires measurement on the production database. Engine failure after an accepted batch leaves the revision pending; recovery rebuilds batches from current content and replays accepted earlier batches. Library disappearance after a partial write cancels the request, but does not clean up partially indexed documents. Library deletion/reconciliation must handle that existing lifecycle gap.
 
-Per-item durable intents, source versions, cross-engine support, telemetry, job dead-letter UI, library-wide deletion repair, retention cleanup, and deployment benchmarks remain open. This is a concrete initial contribution, not completion of the unavailable 39-page design package.
+Per-item durable intents, source versions, cross-engine support, telemetry, job dead-letter UI, library-wide deletion repair, retention cleanup, and deployment benchmarks remain open. This is an initial contribution for library-wide indexing requests.
 
 Disabling the setting restores synchronous future events but does not cancel already pending requests. Drain/recover pending rows before rollback; workers can continue draining with the setting false. Do not drop the table with pending work.
+
+## Local validation evidence
+
+17 focused tests passed with complete CMS dependencies. Django reported no missing
+search migrations. The actual additive migration applied and rolled back on a
+dedicated MySQL 8.4.11 database using the existing migration dependency state.
+That same database preserved four concurrent same-library enqueues, serialized
+duplicate deliveries into one indexing call, and recovered a pending revision
+after its task process was killed. A real Redis broker connection outage left
+the intent pending; a Celery worker consumed it after recovery and ignored a
+duplicate. Those fault scenarios mock the indexing/engine boundary. They prove
+outbox and broker behavior, not complete source-to-engine concurrency safety.

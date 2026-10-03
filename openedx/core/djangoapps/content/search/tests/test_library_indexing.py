@@ -15,6 +15,7 @@ from ..models import LibraryIndexRequest
 
 
 class LibraryIndexingTests(TestCase):
+    """Verify durable revisions and dispatch across transaction boundaries."""
     library_key = "lib:org:library"
 
     def request(self):
@@ -23,14 +24,18 @@ class LibraryIndexingTests(TestCase):
                 request_library_index(self.library_key)
 
     def test_dispatch_only_after_commit(self):
-        with patch("openedx.core.djangoapps.content.search.library_indexing.process_library_index_request.delay") as delay:
+        with patch(
+            "openedx.core.djangoapps.content.search.library_indexing.process_library_index_request.delay",
+        ) as delay:
             with self.captureOnCommitCallbacks(execute=True):
                 request_library_index(self.library_key)
                 delay.assert_not_called()
             delay.assert_called_once_with(self.library_key)
 
     def test_rollback_discards_intent_and_dispatch(self):
-        with patch("openedx.core.djangoapps.content.search.library_indexing.process_library_index_request.delay") as delay:
+        with patch(
+            "openedx.core.djangoapps.content.search.library_indexing.process_library_index_request.delay",
+        ) as delay:
             with self.captureOnCommitCallbacks(execute=True):
                 with pytest.raises(RuntimeError), transaction.atomic():  # noqa: PT012
                     request_library_index(self.library_key)
@@ -63,7 +68,7 @@ class LibraryIndexingTests(TestCase):
         upsert.side_effect = ConnectionError("engine unavailable")
         # Call the original task body so this assertion tests persistence, not Celery retry machinery.
         with pytest.raises(ConnectionError):
-            process_library_index_request._orig_run(self.library_key)
+            process_library_index_request._orig_run(self.library_key)  # pylint: disable=protected-access
         assert LibraryIndexRequest.objects.get().completed_revision == 0
         upsert.side_effect = None
         process_library_index_request.run(self.library_key)
@@ -96,7 +101,9 @@ class LibraryIndexingTests(TestCase):
         self.request()
         LibraryIndexRequest.objects.create(library_key="lib:org:complete", requested_revision=1, completed_revision=1)
         LibraryIndexRequest.objects.create(library_key="lib:org:other", requested_revision=1)
-        with patch("openedx.core.djangoapps.content.search.library_indexing.process_library_index_request.delay") as delay:
+        with patch(
+            "openedx.core.djangoapps.content.search.library_indexing.process_library_index_request.delay",
+        ) as delay:
             call_command("retry_library_index_requests", limit=1)
         assert delay.call_count == 1
 
