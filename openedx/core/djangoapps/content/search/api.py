@@ -20,11 +20,12 @@ from django.core.paginator import Paginator
 from meilisearch import Client as MeilisearchClient
 from meilisearch.errors import MeilisearchApiError, MeilisearchError
 from meilisearch.models.task import TaskInfo
-from opaque_keys import OpaqueKey
+from opaque_keys import InvalidKeyError, OpaqueKey
 from opaque_keys.edx.keys import CourseKey, LearningContextKey, UsageKey
 from opaque_keys.edx.locator import LibraryCollectionLocator, LibraryContainerLocator, LibraryLocatorV2
 from openedx_content import api as content_api
 from openedx_content import models_api as content_models
+from rest_framework.exceptions import APIException, PermissionDenied, ValidationError
 from rest_framework.request import Request
 
 from common.djangoapps.student.role_helpers import get_course_roles
@@ -38,11 +39,24 @@ from openedx.core.djangoapps.content.search.index_config import (
     INDEX_SEARCHABLE_ATTRIBUTES,
     INDEX_SORTABLE_ATTRIBUTES,
 )
-from openedx.core.djangoapps.content.search.models import IncrementalIndexCompleted, get_access_ids_for_request
+from openedx.core.djangoapps.content.search.models import (
+    IncrementalIndexCompleted,
+    get_access_ids_for_request,
+    has_library_search_access,
+)
 from openedx.core.djangoapps.content_libraries import api as lib_api
 from xmodule.modulestore.django import modulestore
 from xmodule.modulestore.exceptions import ItemNotFoundError
 
+from .access_rules import (
+    MAX_ACCESS_IDS_IN_FILTER,
+    MAX_ORGS_IN_FILTER,
+    MAX_TENANT_TOKEN_BYTES,
+    TOKEN_LIFETIME_SECONDS,
+    SearchScopeTooLarge,
+    complete_access_rule,
+    library_access_rule,
+)
 from .documents import (
     DocType,
     Fields,
@@ -81,8 +95,6 @@ _MEILI_API_KEY_UID = None
 
 LOCK_EXPIRE = 24 * 60 * 60  # Lock expires in 24 hours
 
-MAX_ACCESS_IDS_IN_FILTER = 1_000
-MAX_ORGS_IN_FILTER = 1_000
 
 EXCLUDED_XBLOCK_TYPES = ["course", "course_info"]
 
@@ -1175,26 +1187,51 @@ def _get_meili_access_filter(request: Request) -> dict:
         return {}
 
     # Everyone else is limited to their org staff roles...
-    user_orgs = _get_user_orgs(request)[:MAX_ORGS_IN_FILTER]
+    user_orgs = _get_user_orgs(request)
+    if len(user_orgs) > MAX_ORGS_IN_FILTER:
+        raise SearchScopeTooLarge("Organization permissions require an explicit library scope.")
 
-    # ...or the N most recent courses and libraries they can access.
-    access_ids = get_access_ids_for_request(request, omit_orgs=user_orgs)[:MAX_ACCESS_IDS_IN_FILTER]
-    return {
-        "filter": f"org IN {user_orgs} OR access_id IN {access_ids}",
+    access_ids = get_access_ids_for_request(request, omit_orgs=user_orgs, limit=MAX_ACCESS_IDS_IN_FILTER)
+    return complete_access_rule(user_orgs, access_ids)
+
+
+class StudioSearchScopeRequired(APIException):
+    """A complete unscoped token cannot fit; callers must select a library."""
+    status_code = 409
+    default_code = "search_scope_required"
+    default_detail = {
+        "code": "search_scope_required",
+        "detail": "Search permissions exceed the token budget. Retry with an authorized library_key.",
+        "required_scope": "library_key",
     }
 
 
-def generate_user_token_for_studio_search(request):
+def generate_user_token_for_studio_search(request, library_key: str | None = None):
     """
     Returns a Meilisearch API key that only allows the user to search content that they have permission to view
     """
-    expires_at = datetime.now(tz=timezone.utc) + timedelta(days=7)  # noqa: UP017
+    # Existing unscoped clients have no demonstrated automatic token refresh.
+    lifetime = timedelta(seconds=TOKEN_LIFETIME_SECONDS) if library_key is not None else timedelta(days=7)
+    expires_at = datetime.now(tz=timezone.utc) + lifetime  # noqa: UP017
 
-    access_filter = _get_meili_access_filter(request)
-    search_rules = {
-        STUDIO_COURSE_INDEX_NAME: access_filter,
-        STUDIO_LIBRARY_INDEX_NAME: access_filter,
-    }
+    try:
+        if library_key is not None:
+            try:
+                key = LibraryLocatorV2.from_string(library_key)
+            except InvalidKeyError as exc:
+                raise ValidationError({"library_key": "Expected a Libraries V2 key."}) from exc
+            # SQL authorization for one context, independent of total authorized-library count.
+            if not has_library_search_access(request.user, key):
+                raise PermissionDenied("You cannot search this library.")
+            search_rules = {STUDIO_LIBRARY_INDEX_NAME: library_access_rule(str(key))}
+        else:
+            access_filter = _get_meili_access_filter(request)
+            search_rules = {
+                STUDIO_COURSE_INDEX_NAME: access_filter,
+                STUDIO_LIBRARY_INDEX_NAME: access_filter,
+            }
+    except SearchScopeTooLarge as exc:
+        raise StudioSearchScopeRequired() from exc
     # Note: the following is just generating a JWT. It doesn't actually make an API call to Meilisearch.
     restricted_api_key = _get_meilisearch_client().generate_tenant_token(
         api_key_uid=_get_meili_api_key_uid(),
@@ -1202,7 +1239,13 @@ def generate_user_token_for_studio_search(request):
         expires_at=expires_at,
     )
 
+    if len(restricted_api_key.encode("utf-8")) > MAX_TENANT_TOKEN_BYTES:
+        raise StudioSearchScopeRequired()
+
     return {
+        "expires_at": expires_at.isoformat(),
+        "scope": {"library_key": library_key} if library_key is not None else {"all_contexts": True},
+        "authorized_indexes": list(search_rules),
         "url": settings.MEILISEARCH_PUBLIC_URL,
         "course_index_name": STUDIO_COURSE_INDEX_NAME,
         "library_index_name": STUDIO_LIBRARY_INDEX_NAME,
