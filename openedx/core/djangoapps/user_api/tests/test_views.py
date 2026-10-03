@@ -1,8 +1,11 @@
 """Tests for the user API at the HTTP request level. """
 
+import json
+
 import ddt
 import pytest
 from django.contrib import messages as django_messages
+from django.contrib.auth import get_user_model
 from django.contrib.messages.storage.session import SessionStorage
 from django.http import HttpResponse
 from django.test import RequestFactory
@@ -10,22 +13,16 @@ from django.test.utils import override_settings
 from django.urls import reverse
 from opaque_keys.edx.keys import CourseKey
 from pytz import common_timezones, common_timezones_set, country_timezones
+from rest_framework import status
 
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.django_comment_common import models
 from openedx.core.djangolib.testing.utils import CacheIsolationTestCase, skip_unless_lms
 from openedx.core.lib.api.test_utils import TEST_API_KEY, ApiTestCase
 from openedx.core.lib.time_zone_utils import get_display_time_zone
-from xmodule.modulestore.tests.django_utils import (
-    SharedModuleStoreTestCase,  # pylint: disable=wrong-import-order
-)
+from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase  # pylint: disable=wrong-import-order
 from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
-from ..accounts.tests.retirement_helpers import (  # pylint: disable=unused-import
-    RetirementTestCase,  # noqa: F401
-    fake_requested_retirement,  # noqa: F401
-    setup_retirement_states,  # noqa: F401
-)
 from ..models import UserOrgTag
 from ..tests.factories import UserPreferenceFactory
 
@@ -33,6 +30,7 @@ USER_LIST_URI = "/api/user/v1/users/"
 USER_PREFERENCE_LIST_URI = "/api/user/v1/user_prefs/"
 ROLE_LIST_URI = "/api/user/v1/forum_roles/Moderator/users/"
 
+User = get_user_model()
 
 class UserAPITestCase(ApiTestCase):
     """
@@ -764,3 +762,299 @@ class CountryTimeZoneListViewTest(UserApiTestCase):
         assert len(results) == len(common_timezones)
         for time_zone_info in results:
             self._assert_time_zone_is_valid(time_zone_info)
+
+
+@override_settings(ENABLE_AUTHN_REGISTER_HIBP_POLICY=False)
+@ddt.ddt
+class TestUserModifyAPI(ApiTestCase):
+    """Test cases covering the user modification API"""
+
+    PATH = "/api/user/v1/modify/"
+
+    DATA = {
+        "name": "Test User",
+        "username": "testuser",
+        "password": "Password1234",
+        "email": "e@mail.com",
+        "is_staff": False,
+        "is_superuser": False,
+    }
+
+    def setUp(self):
+        """Create a test user and log in with that user"""
+        super().setUp()
+
+        self.test_user = UserFactory.create(
+            username="user",
+            email="user@example.com",
+            password="pass",
+            is_staff=True,
+            is_superuser=True,
+        )
+        self.client.login(username="user", password="pass")
+
+    @override_settings(ENFORCE_SAFE_SESSIONS=False)
+    def test_create_new_user_success(self):
+        """Test creating a user with valid information"""
+        response = self.client.post(self.PATH, self.DATA)
+        assert response.status_code == status.HTTP_201_CREATED
+        created_user = User.objects.get(username=self.DATA["username"])
+        assert response.json() == {
+            "user_id": created_user.id,
+            "username": created_user.username,
+        }
+
+    def test_create_new_user_forbidden_when_superuser_flag_is_set_by_non_superuser(self):
+        """Test a non-superuser cannot set the superuser flag on a new user."""
+        self.test_user.is_superuser = False
+        self.test_user.save(update_fields=["is_superuser"])
+
+        data = self.DATA.copy()
+        data["is_superuser"] = True
+        response = self.client.post(self.PATH, data)
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert response.json() == {"error": ["You must be a superuser to perform this action."]}
+
+    @ddt.data(True, False)
+    def test_create_new_user_superuser_success(self, is_superuser):
+        """Test creating a new superuser successfully"""
+
+        self.test_user.is_superuser = is_superuser
+        self.test_user.save(update_fields=["is_superuser"])
+
+        data = self.DATA.copy()
+        data["is_superuser"] = is_superuser
+        response = self.client.post(self.PATH, data)
+
+        assert response.status_code == status.HTTP_201_CREATED
+        user = User.objects.get(username=data["username"])
+        assert user.is_superuser == is_superuser
+
+    @ddt.data("username", "email")
+    def test_create_new_user_error_missing_info(self, missing_field):
+        """Test creating a user with missing required information"""
+        data = self.DATA.copy()
+        data.pop(missing_field)
+        response = self.client.post(self.PATH, data)
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "error" in response.json()
+        assert missing_field in str(response.json()["error"]).lower()
+
+    def test_create_new_user_error_invalid_attribute(self):
+        """Test creating a user with an invalid attribute"""
+        data = self.DATA.copy()
+        data["email"] = "invalid-email"
+        response = self.client.post(self.PATH, data)
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "error" in response.json()
+        assert "email" in str(response.json()["error"])
+
+    @ddt.data(
+        ("email", "user@example.com", "User already exists with this email"),
+        ("username", "user", "already exists"),
+    )
+    @ddt.unpack
+    def test_create_new_user_error_already_exists(self, field, value, error):
+        """Test creating a user with an invalid attribute"""
+        data = self.DATA.copy()
+        data[field] = value
+        response = self.client.post(self.PATH, data)
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "error" in response.json()
+        assert error in str(response.json()["error"])
+
+    def test_patch_user_success(self):
+        """Test updating a user with a valid lookup field"""
+        user = UserFactory.create(
+            username="patch-user",
+            email="patch@example.com",
+        )
+
+        response = self.client.patch(
+            self.PATH,
+            data=json.dumps(
+                {"username_or_email": user.email, "name": "Updated Name"}),
+            content_type="application/json",
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json() == {"user_id": user.id, "username": user.username}
+        user = User.objects.get(id=user.id)
+        assert user.profile.name == "Updated Name"
+
+    def test_patch_user_success_by_username(self):
+        """Test updating a user using their username as the lookup field"""
+        user = UserFactory.create(
+            username="patch-user",
+            email="patch@example.com",
+        )
+
+        response = self.client.patch(
+            self.PATH,
+            data=json.dumps(
+                {"username_or_email": user.username, "name": "Updated Name"}
+            ),
+            content_type="application/json",
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        user.profile.refresh_from_db()
+        assert user.profile.name == "Updated Name"
+
+    def test_patch_user_updates_user_and_profile_fields(self):
+        """Test updating fields stored on both the user and profile models"""
+        user = UserFactory.create(
+            username="patch-user",
+            email="patch@example.com",
+            profile__name="Original Name",
+        )
+        data = {
+            "username_or_email": user.email,
+            "email": "updated@example.com",
+            "name": "Updated Name",
+            "password": "new-password",
+            "year_of_birth": 2000,
+            "gender": "f",
+            "level_of_education": "b",
+            "country": "US",
+        }
+
+        response = self.client.patch(
+            self.PATH,
+            data=json.dumps(data),
+            content_type="application/json",
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        user.refresh_from_db()
+        user.profile.refresh_from_db()
+        assert user.email == data["email"]
+        assert user.check_password(data["password"])
+        assert user.profile.name == data["name"]
+        assert user.profile.year_of_birth == data["year_of_birth"]
+        assert user.profile.gender == data["gender"]
+        assert user.profile.level_of_education == data["level_of_education"]
+        assert user.profile.country == data["country"]
+
+    def test_patch_user_missing_username_or_email(self):
+        """Test patch returns 400 when username_or_email is missing"""
+        response = self.client.patch(
+            self.PATH,
+            data=json.dumps({"name": "Updated Name"}),
+            content_type="application/json",
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.json() == {"error": ["username_or_email is required."]}
+
+    def test_patch_user_invalid_profile_field_does_not_update_user(self):
+        """Test invalid profile data does not partially update the user"""
+        user = UserFactory.create(
+            username="test-user",
+            email="patch-error@example.com",
+        )
+
+        response = self.client.patch(
+            self.PATH,
+            data=json.dumps(
+                {
+                    "username_or_email": user.email,
+                    "email": "updated@example.com",
+                    "gender": "invalid",
+                }
+            ),
+            content_type="application/json",
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        user.refresh_from_db()
+        assert user.email == "patch-error@example.com"
+
+    def test_patch_user_invalid_email(self):
+        """Test invalid user data is returned as a validation error"""
+        user = UserFactory.create(
+            username="test-user",
+            email="patch-error@example.com",
+        )
+
+        response = self.client.patch(
+            self.PATH,
+            data=json.dumps(
+                {"username_or_email": user.email, "email": "invalid-email"}
+            ),
+            content_type="application/json",
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "email" in str(response.json()["error"])
+
+    def test_patch_user_not_found(self):
+        """Test patch returns 404 when no user matches the lookup fields"""
+        response = self.client.patch(
+            self.PATH,
+            data=json.dumps(
+                {"username_or_email": "missing@example.com", "name": "Updated Name"}
+            ),
+            content_type="application/json",
+        )
+
+        assert response.json() == {"error": ["User not found."]}
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_patch_user_validation_read_only_field(self):
+        """Test serializer validation errors are returned with status 400"""
+        user = UserFactory.create(
+            username="test-user",
+            email="patch-error@example.com",
+        )
+
+        response = self.client.patch(
+            self.PATH,
+            data=json.dumps(
+                {"username_or_email": user.email, "username": "modifieduser"}
+            ),
+            content_type="application/json",
+        )
+
+        assert response.json() == {'error': ['Username cannot be changed.']}
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_patch_user_validation_inexistent_field(self):
+        """Test serializer validation errors are returned with status 400"""
+        user = UserFactory.create(
+            username="test-user",
+            email="patch-error@example.com",
+        )
+
+        response = self.client.patch(
+            self.PATH,
+            data=json.dumps(
+                {"username_or_email": user.email, "non_existent_field": "value"}
+            ),
+            content_type="application/json",
+        )
+
+        assert response.json() == {'error': ['Unexpected field: non_existent_field']}
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_patch_superuser_without_permission(self):
+        """Test that a non-superuser cannot set the superuser flag"""
+        self.test_user.is_superuser = False
+        self.test_user.save(update_fields=["is_superuser"])
+
+        user = UserFactory.create(
+            username="test-user",
+            email="patch-error@example.com",
+        )
+
+        response = self.client.patch(
+            self.PATH,
+            data=json.dumps(
+                {"username_or_email": user.email, "is_superuser": True}
+            ),
+            content_type="application/json",
+        )
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert response.json() == {"error": ["You must be a superuser to perform this action."]}
