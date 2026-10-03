@@ -9,7 +9,7 @@ from rest_framework.views import APIView
 from common.djangoapps.student.models import UserProfile
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.core.djangoapps.user_authn.api import form_fields
-from openedx.core.djangoapps.user_authn.views.registration_form import get_registration_extension_form
+from openedx.core.djangoapps.user_authn.views.registration_form import get_profile_extension_form
 
 
 class RegistrationFieldsContext(APIView):
@@ -74,7 +74,7 @@ class RegistrationFieldsContext(APIView):
             field for field in ordered_extra_fields if self._fields_setting.get(field) == self.field_type
         ]
 
-        custom_form = get_registration_extension_form()
+        custom_form = get_profile_extension_form()
         if custom_form:
             for field_name, field in custom_form.fields.items():
                 # If the field_type is required make sure the custom field is required in the form and if the
@@ -101,8 +101,7 @@ class RegistrationFieldsContext(APIView):
         Returns the required or optional fields configured in REGISTRATION_EXTRA_FIELDS settings.
         """
         # Custom form fields can be added via the form set in settings.PROFILE_EXTENSION_FORM
-        # (or deprecated settings.REGISTRATION_EXTENSION_FORM)
-        custom_form = get_registration_extension_form() or {}
+        custom_form = get_profile_extension_form() or {}
         response = {}
         for field in self.valid_fields:
             if field == 'confirm_email' and self.field_type == 'optional' or not self._field_can_be_saved(field):
