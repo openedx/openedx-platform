@@ -28,11 +28,13 @@ import os
 import re
 from abc import abstractmethod
 from datetime import datetime, timezone
+from typing import NamedTuple
 
 import xblock
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils.translation import gettext as _
 from lxml import etree
+from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import UsageKey
 from opaque_keys.edx.locator import LibraryLocator
 from openedx_events.content_authoring.data import CourseData
@@ -44,6 +46,8 @@ from xblock.runtime import DictKeyValueStore, KvsFieldData
 
 from common.djangoapps.util.monitoring import monitor_import_failure
 from openedx.core.djangoapps.content_tagging.api import import_course_tags_from_csv
+from openedx.core.lib.gating import api as gating_api
+from openedx.core.lib.gating.exceptions import GatingValidationError
 from xmodule.assetstore import AssetMetadata
 from xmodule.contentstore.content import StaticContent
 from xmodule.errortracker import make_error_tracker
@@ -53,6 +57,13 @@ from xmodule.modulestore.exceptions import DuplicateCourseError
 from xmodule.modulestore.mongo.base import MongoRevisionKey
 from xmodule.modulestore.store_utilities import draft_node_constructor, get_draft_subtree_roots
 from xmodule.modulestore.xml import LibraryXMLModuleStore, XMLImportingModuleStoreRuntime, XMLModuleStore
+from xmodule.seq_block import (
+    PREREQ_IS_PREREQ_ATTR,
+    PREREQ_MIN_COMPLETION_ATTR,
+    PREREQ_MIN_SCORE_ATTR,
+    PREREQ_OLX_ATTRIBUTES,
+    PREREQ_URL_NAME_ATTR,
+)
 from xmodule.tabs import CourseTabList
 from xmodule.util.misc import escape_invalid_characters
 from xmodule.x_module import XModuleMixin
@@ -63,6 +74,17 @@ from .store_utilities import rewrite_nonportable_content_links
 log = logging.getLogger(__name__)
 
 DEFAULT_STATIC_CONTENT_SUBDIR = 'static'
+
+# XML attributes that only exist to carry information from an export to an import. They are consumed by the
+# importer and must not be persisted in the `xml_attributes` of the imported blocks.
+IMPORT_ONLY_XML_ATTRIBUTES = (
+    # Used to wire together draft imports.
+    'parent_url',
+    'parent_sequential_url',
+    'index_in_children_list',
+    # Applied via the gating API, see `CourseImportManager.import_subsection_prerequisites`.
+    *PREREQ_OLX_ATTRIBUTES,
+)
 
 
 class CourseImportException(Exception):
@@ -95,6 +117,18 @@ class BlockFailedToImport(CourseImportException):
 
     def __init__(self, display_name, location, **kwargs):
         self.description = self.MESSAGE_TEMPLATE.format(display_name, location)
+        super().__init__(**kwargs)
+
+
+class InvalidSubsectionPrerequisite(CourseImportException):
+    """
+    Raised when the prerequisite settings of a subsection cannot be applied.
+    """
+
+    MESSAGE_TEMPLATE = _('Invalid prerequisite settings of the subsection "{}" ({}): {}')
+
+    def __init__(self, display_name, location, reason, **kwargs):
+        self.description = self.MESSAGE_TEMPLATE.format(display_name, location, reason)
         super().__init__(**kwargs)
 
 
@@ -487,6 +521,13 @@ class ImportManager:
         """
         raise NotImplementedError
 
+    @abstractmethod
+    def import_subsection_prerequisites(self, courselike_key, dest_id):
+        """
+        To be overloaded with a method that applies the subsection prerequisites to already imported blocks
+        """
+        raise NotImplementedError
+
     def recursive_build(self, source_courselike, courselike, courselike_key, dest_id):
         """
         Recursively imports all child blocks from the temporary modulestore into the
@@ -597,6 +638,8 @@ class ImportManager:
                     logging.info(f'Course import {dest_id}: No tags.csv file present.')
                 except ValueError as e:
                     logging.info(f'Course import {dest_id}: {str(e)}')
+
+            self.import_subsection_prerequisites(courselike_key, dest_id)
             self.post_course_import(dest_id)
             yield courselike
 
@@ -726,6 +769,13 @@ class CourseImportManager(ImportManager):
         csv_path = path(data_path) / 'tags.csv'
         import_course_tags_from_csv(csv_path, dest_id)
 
+    def import_subsection_prerequisites(self, courselike_key, dest_id):
+        """
+        Applies the subsection prerequisite (gating) settings from the OLX to the imported subsections.
+        """
+        sequentials = self.xml_module_store.get_items(courselike_key, qualifiers={'category': 'sequential'})
+        _import_subsection_prerequisites(sequentials, dest_id)
+
     def post_course_import(self, dest_id):
         """
         Trigger celery task to create upstream links for newly imported blocks.
@@ -817,6 +867,11 @@ class LibraryImportManager(ImportManager):
         # We don't support tags in v1 libraries, and v2 libraries don't have
         # an import/export format defined yet. No action needed here for now.
 
+    def import_subsection_prerequisites(self, courselike_key, dest_id):
+        """
+        Libraries have no subsections, so there are no prerequisites to import.
+        """
+
 
 def import_course_from_xml(*args, **kwargs):
     """
@@ -832,6 +887,130 @@ def import_library_from_xml(*args, **kwargs):
     """
     manager = LibraryImportManager(*args, **kwargs)
     return list(manager.run_imports())
+
+
+class _SubsectionPrerequisite(NamedTuple):
+    """
+    The prerequisite settings of a subsection, read from its OLX attributes.
+    """
+    usage_key: UsageKey  # The usage key of the subsection in the destination course
+    display_name: str
+    has_settings: bool  # Whether the OLX carries any prerequisite attribute for the subsection
+    is_prereq: bool
+    prereq_key: UsageKey | None  # The usage key of the prerequisite in the destination course
+    min_score: str
+    min_completion: str
+
+
+def _get_subsection_prerequisite(sequential, dest_id):
+    """
+    Reads the prerequisite settings of the given source subsection from its OLX attributes.
+
+    The attributes are validated when they are applied by the gating API, except for the `url_name` of
+    the prerequisite subsection, which is resolved into a usage key in the destination course here, the same way
+    as the `url_name` of the child pointers.
+    """
+    attributes = sequential.xml_attributes
+    usage_key = sequential.location.map_into_course(dest_id)
+    prereq_key = None
+    if prereq := attributes.get(PREREQ_URL_NAME_ATTR):
+        try:
+            prereq_key = dest_id.make_usage_key(usage_key.block_type, prereq)
+        except InvalidKeyError as exc:
+            raise InvalidSubsectionPrerequisite(
+                sequential.display_name, usage_key, _('"{}" is not a valid subsection url_name').format(prereq)
+            ) from exc
+    return _SubsectionPrerequisite(
+        usage_key=usage_key,
+        display_name=sequential.display_name,
+        has_settings=any(attr in attributes for attr in PREREQ_OLX_ATTRIBUTES),
+        is_prereq=str(attributes.get(PREREQ_IS_PREREQ_ATTR, '')).lower() == 'true',
+        prereq_key=prereq_key,
+        min_score=attributes.get(PREREQ_MIN_SCORE_ATTR, ''),
+        min_completion=attributes.get(PREREQ_MIN_COMPLETION_ATTR, ''),
+    )
+
+
+def _import_subsection_prerequisites(sequentials, dest_id):
+    """
+    Applies the subsection prerequisite (gating) settings from the OLX attributes of the given source subsections
+    to their imported counterparts in the destination course, via the gating API.
+
+    The prerequisite settings that the destination course already has are reconciled with the OLX:
+
+    * The subsections that are not part of the OLX are no longer in the course, so their settings are removed.
+      This also removes the requirements of the imported subsections that pointed at them.
+    * The imported subsections get the settings from their OLX attributes, and lose the settings that the OLX
+      does not describe. The exception is an OLX without any prerequisite attribute at all, which predates this
+      feature: the imported subsections keep their existing settings, so that restoring an old export does not
+      silently drop them.
+
+    Requirements on subsections that are not part of the OLX cannot be met, so they are skipped with a warning.
+
+    Raises:
+        InvalidSubsectionPrerequisite: If the prerequisite settings of a subsection are invalid, i.e. malformed or
+            requiring the subsection itself. Such references are detected before any settings are applied.
+    """
+    prerequisites = {}
+    for sequential in sequentials:
+        prerequisite = _get_subsection_prerequisite(sequential, dest_id)
+        prerequisites[prerequisite.usage_key] = prerequisite
+
+    # A subsection may only require another subsection of the same course. The required subsection must be
+    # a prerequisite, even if the OLX does not flag it as such.
+    prereq_keys = {usage_key for usage_key, prerequisite in prerequisites.items() if prerequisite.is_prereq}
+    for usage_key, prerequisite in prerequisites.items():
+        if prerequisite.prereq_key is None:
+            continue
+        if prerequisite.prereq_key == usage_key:
+            raise InvalidSubsectionPrerequisite(
+                prerequisite.display_name, usage_key, _('a subsection cannot be its own prerequisite')
+            )
+        if prerequisite.prereq_key not in prerequisites:
+            # A requirement that cannot be met, e.g. exported from a course where the prerequisite subsection was
+            # removed without removing the requirements pointing at it. The subsection is imported without it.
+            log.warning(
+                'Course import %s: skipping the requirement of the subsection %s on %s, which is not a subsection '
+                'of this course.',
+                dest_id, usage_key, prerequisite.prereq_key,
+            )
+            prerequisites[usage_key] = prerequisite._replace(prereq_key=None)
+            continue
+        prereq_keys.add(prerequisite.prereq_key)
+
+    # The existing settings only need to be removed from the subsections that have some. This also keeps the import
+    # of courses without any prerequisites free of unnecessary milestone queries.
+    keys_with_milestones = {milestone['content_id'] for milestone in gating_api.find_gating_milestones(dest_id)}
+
+    imported_keys = {str(usage_key) for usage_key in prerequisites}
+    for content_key in sorted(keys_with_milestones - imported_keys):
+        gating_api.remove_prerequisite(content_key)
+        gating_api.set_required_content(dest_id, content_key, None)
+
+    if not any(prerequisite.has_settings for prerequisite in prerequisites.values()):
+        return
+
+    # The gating API requires a prerequisite to exist before another subsection can require it.
+    for usage_key in prerequisites:
+        if usage_key in prereq_keys:
+            gating_api.add_prerequisite(dest_id, usage_key)
+        elif str(usage_key) in keys_with_milestones:
+            gating_api.remove_prerequisite(usage_key)
+
+    for usage_key, prerequisite in prerequisites.items():
+        if prerequisite.prereq_key is not None:
+            try:
+                gating_api.set_required_content(
+                    dest_id,
+                    usage_key,
+                    str(prerequisite.prereq_key),
+                    prerequisite.min_score,
+                    prerequisite.min_completion,
+                )
+            except GatingValidationError as exc:
+                raise InvalidSubsectionPrerequisite(prerequisite.display_name, usage_key, str(exc)) from exc
+        elif str(usage_key) in keys_with_milestones:
+            gating_api.set_required_content(dest_id, usage_key, None)
 
 
 def _update_and_import_block(  # pylint: disable=too-many-statements
@@ -882,17 +1061,16 @@ def _update_and_import_block(  # pylint: disable=too-many-statements
                         in reference_dict.items()
                     }
                 elif field_name == 'xml_attributes':
-                    value = field.read_from(block)
-                    # remove any export/import only xml_attributes
-                    # which are used to wire together draft imports
-                    if 'parent_url' in value:
-                        del value['parent_url']
-                    if 'parent_sequential_url' in value:
-                        del value['parent_sequential_url']
-
-                    if 'index_in_children_list' in value:
-                        del value['index_in_children_list']
-                    fields[field_name] = value
+                    # Remove any export/import-only xml_attributes from the fields that are saved in the destination
+                    # modulestore. `block` is the source block, parsed from the OLX into the temporary XML
+                    # modulestore of the importer, and `read_from` returns its own `xml_attributes` dict. The
+                    # attributes are filtered into a new dict instead of being deleted from that one, because
+                    # `CourseImportManager.import_subsection_prerequisites` reads the prerequisite attributes from
+                    # the source blocks after all of them have been imported.
+                    fields[field_name] = {
+                        key: value for key, value in field.read_from(block).items()
+                        if key not in IMPORT_ONLY_XML_ATTRIBUTES
+                    }
                 else:
                     fields[field_name] = field.read_from(block)
         return fields

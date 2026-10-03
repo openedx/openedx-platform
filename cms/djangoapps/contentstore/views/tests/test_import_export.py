@@ -17,6 +17,7 @@ from zipfile import ZipFile
 
 import ddt
 import lxml
+import pytest
 from bson import ObjectId
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -45,6 +46,7 @@ from common.djangoapps.student.tests.factories import UserFactory
 from common.djangoapps.util import milestones_helpers
 from openedx.core.djangoapps.authz.tests.mixins import CourseAuthzTestMixin
 from openedx.core.lib.extract_archive import safe_extractall
+from openedx.core.lib.gating import api as gating_api
 from xmodule.contentstore.django import contentstore
 from xmodule.modulestore import LIBRARY_ROOT, ModuleStoreEnum
 from xmodule.modulestore.django import modulestore
@@ -56,9 +58,11 @@ from xmodule.modulestore.xml_importer import (
     BlockFailedToImport,
     CourseImportManager,
     ErrorReadingFileException,
+    InvalidSubsectionPrerequisite,
     import_course_from_xml,
     import_library_from_xml,
 )
+from xmodule.seq_block import PREREQ_OLX_ATTRIBUTES
 
 TASK_LOGGER = 'cms.djangoapps.contentstore.tasks.LOGGER'
 TEST_DATA_CONTENTSTORE = copy.deepcopy(settings.CONTENTSTORE)
@@ -1383,6 +1387,224 @@ class TestCourseExportImportProblem(CourseTestCase):
         )
 
         self.assert_problem_definition(dest_course.location, expected_problem_content)
+
+
+class TestCourseExportImportSubsectionPrerequisites(CourseTestCase, MilestonesTestCaseMixin):
+    """
+    Tests that the subsection prerequisites (gating) survive a course export and import.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.export_dir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.export_dir, ignore_errors=True)
+
+        self.source_course = CourseFactory.create(default_store=ModuleStoreEnum.Type.split)
+        chapter = BlockFactory.create(parent_location=self.source_course.location, category='chapter')
+        self.prereq = BlockFactory.create(
+            parent_location=chapter.location, category='sequential', display_name='Prerequisite'
+        )
+        self.gated = BlockFactory.create(parent_location=chapter.location, category='sequential', display_name='Gated')
+        self.plain = BlockFactory.create(parent_location=chapter.location, category='sequential', display_name='Plain')
+        gating_api.add_prerequisite(self.source_course.id, self.prereq.location)
+        gating_api.set_required_content(self.source_course.id, self.gated.location, str(self.prereq.location), 80, 90)
+
+    def _export(self, course_key, course_dir):
+        export_course_to_xml(self.store, contentstore(), course_key, self.export_dir, course_dir)
+
+    def _import(self, course_dir, course_key):
+        import_course_from_xml(
+            self.store,
+            self.user.id,
+            self.export_dir,
+            [course_dir],
+            static_content_store=contentstore(),
+            target_id=course_key,
+            load_error_blocks=False,
+            raise_on_failure=True,
+            create_if_not_present=True,
+        )
+
+    def _exported_sequential_path(self, course_dir, sequential):
+        return os.path.join(self.export_dir, course_dir, 'sequential', f'{sequential.location.block_id}.xml')
+
+    def _exported_prerequisite_attributes(self, course_dir, sequential):
+        """
+        Returns the prerequisite attributes of the exported sequential.
+        """
+        xml_object = lxml.etree.parse(self._exported_sequential_path(course_dir, sequential)).getroot()
+        return {attr: xml_object.get(attr) for attr in PREREQ_OLX_ATTRIBUTES if attr in xml_object.attrib}
+
+    def _remove_prerequisite_attributes(self, course_dir):
+        """
+        Removes the prerequisite attributes from the exported sequentials, to simulate an export made before
+        they existed.
+        """
+        for sequential in (self.prereq, self.gated, self.plain):
+            sequential_path = self._exported_sequential_path(course_dir, sequential)
+            if not os.path.exists(sequential_path):
+                continue
+            tree = lxml.etree.parse(sequential_path)
+            for attr in PREREQ_OLX_ATTRIBUTES:
+                tree.getroot().attrib.pop(attr, None)
+            tree.write(sequential_path)
+
+    def _assert_no_prerequisites(self, course_key, *sequentials):
+        for sequential in sequentials:
+            usage_key = sequential.location.map_into_course(course_key)
+            assert gating_api.get_prerequisite_settings(course_key, usage_key) == (False, None, None, None)
+
+    def _assert_prerequisites_imported(self, course_key):
+        """
+        Asserts that the prerequisites of the source course have been imported into the given course.
+        """
+        prereq_key = self.prereq.location.map_into_course(course_key)
+        gated_key = self.gated.location.map_into_course(course_key)
+        plain_key = self.plain.location.map_into_course(course_key)
+        assert gating_api.get_prerequisite_settings(course_key, prereq_key) == (True, None, None, None)
+        assert gating_api.get_prerequisite_settings(course_key, gated_key) == (False, str(prereq_key), '80', '90')
+        assert gating_api.get_prerequisite_settings(course_key, plain_key) == (False, None, None, None)
+        # The prerequisite settings are not persisted in the imported blocks.
+        for usage_key in (prereq_key, gated_key, plain_key):
+            assert not set(PREREQ_OLX_ATTRIBUTES) & set(self.store.get_item(usage_key).xml_attributes)
+
+    def test_prerequisites_are_exported(self):
+        """
+        The prerequisite settings are exported as attributes of the sequential elements.
+        """
+        self._export(self.source_course.id, 'exported_course')
+
+        assert self._exported_prerequisite_attributes('exported_course', self.prereq) == {'is_prereq': 'true'}
+        assert self._exported_prerequisite_attributes('exported_course', self.gated) == {
+            'prereq': self.prereq.location.block_id,
+            'prereq_min_score': '80',
+            'prereq_min_completion': '90',
+        }
+        assert self._exported_prerequisite_attributes('exported_course', self.plain) == {}
+
+    def test_prerequisites_are_imported(self):
+        """
+        The prerequisite settings are imported into another course, and they survive another export.
+        """
+        dest_course = CourseFactory.create(default_store=ModuleStoreEnum.Type.split)
+
+        self._export(self.source_course.id, 'exported_course')
+        self._import('exported_course', dest_course.id)
+
+        self._assert_prerequisites_imported(dest_course.id)
+
+        self._export(dest_course.id, 'exported_dest_course')
+        assert self._exported_prerequisite_attributes('exported_dest_course', self.gated) == {
+            'prereq': self.prereq.location.block_id,
+            'prereq_min_score': '80',
+            'prereq_min_completion': '90',
+        }
+
+    def test_prerequisites_are_replaced(self):
+        """
+        Importing a course replaces the existing prerequisite settings with the ones from the OLX.
+        """
+        dest_course = CourseFactory.create(default_store=ModuleStoreEnum.Type.split)
+        self._export(self.source_course.id, 'exported_course')
+        self._import('exported_course', dest_course.id)
+        self._assert_prerequisites_imported(dest_course.id)
+
+        # Make the plain subsection the only prerequisite of the source course, and import it again.
+        gating_api.set_required_content(self.source_course.id, self.gated.location, None)
+        gating_api.remove_prerequisite(self.prereq.location)
+        gating_api.add_prerequisite(self.source_course.id, self.plain.location)
+        self._export(self.source_course.id, 'exported_course_with_other_prerequisites')
+        self._import('exported_course_with_other_prerequisites', dest_course.id)
+
+        self._assert_no_prerequisites(dest_course.id, self.prereq, self.gated)
+        plain_key = self.plain.location.map_into_course(dest_course.id)
+        assert gating_api.get_prerequisite_settings(dest_course.id, plain_key) == (True, None, None, None)
+
+    def test_old_export_keeps_prerequisites(self):
+        """
+        Importing an export without any prerequisite attributes keeps the existing prerequisites of its subsections.
+        """
+        self._export(self.source_course.id, 'exported_course')
+        self._remove_prerequisite_attributes('exported_course')
+
+        self._import('exported_course', self.source_course.id)
+
+        assert gating_api.get_prerequisite_settings(self.source_course.id, self.prereq.location) == (
+            True, None, None, None
+        )
+        assert gating_api.get_prerequisite_settings(self.source_course.id, self.gated.location) == (
+            False, str(self.prereq.location), 80, 90
+        )
+
+    def test_prerequisites_of_removed_subsections_are_cleared(self):
+        """
+        Importing an export that no longer contains a prerequisite subsection removes its prerequisite settings
+        and the requirements pointing at it, even when the export has no prerequisite attributes.
+        """
+        self.store.delete_item(self.prereq.location, self.user.id)
+        self._export(self.source_course.id, 'exported_course')
+        self._remove_prerequisite_attributes('exported_course')
+
+        self._import('exported_course', self.source_course.id)
+
+        self._assert_no_prerequisites(self.source_course.id, self.prereq, self.gated)
+
+    def test_prerequisites_of_replaced_course_are_cleared(self):
+        """
+        Importing another course over a course with prerequisites removes all of them.
+        """
+        other_course = CourseFactory.create(default_store=ModuleStoreEnum.Type.split)
+        chapter = BlockFactory.create(parent_location=other_course.location, category='chapter')
+        BlockFactory.create(parent_location=chapter.location, category='sequential', display_name='Other')
+
+        self._export(other_course.id, 'exported_other_course')
+        self._import('exported_other_course', self.source_course.id)
+
+        assert not gating_api.find_gating_milestones(self.source_course.id)
+
+    def _replace_in_exported_sequential(self, course_dir, sequential, old, new):
+        """
+        Replace occurrences of `old` with `new` in the exported XML of a sequential block.
+        """
+        sequential_path = self._exported_sequential_path(course_dir, sequential)
+        with open(sequential_path) as sequential_file:
+            sequential_xml = sequential_file.read()
+        with open(sequential_path, "w") as sequential_file:
+            sequential_file.write(sequential_xml.replace(old, new))
+
+    def test_unknown_prerequisite_is_skipped(self):
+        """
+        A requirement on a subsection that does not exist in the course is skipped, and the import succeeds.
+        """
+        self._export(self.source_course.id, "exported_course")
+        self._replace_in_exported_sequential("exported_course", self.gated, self.prereq.location.block_id, "missing")
+
+        self._import("exported_course", self.source_course.id)
+
+        assert gating_api.get_prerequisite_settings(self.source_course.id, self.prereq.location) == (
+            True,
+            None,
+            None,
+            None,
+        )
+        self._assert_no_prerequisites(self.source_course.id, self.gated)
+
+    def test_invalid_prerequisite_fails_import(self):
+        """
+        A malformed prerequisite fails the import with a clear error.
+        """
+        self._export(self.source_course.id, 'exported_course')
+        self._replace_in_exported_sequential(
+            "exported_course", self.gated, 'prereq_min_score="80"', 'prereq_min_score="abc"'
+        )
+
+        with pytest.raises(InvalidSubsectionPrerequisite) as context:
+            self._import('exported_course', self.source_course.id)
+
+        assert str(context.value) == (
+            f'Invalid prerequisite settings of the subsection "Gated" ({self.gated.location}): '
+            "abc is not a valid grade percentage"
+        )
 
 
 class ImportAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
