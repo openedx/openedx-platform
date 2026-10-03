@@ -7,7 +7,7 @@ from django.db.models import Exists, OuterRef, Q
 from rest_framework.filters import BaseFilterBackend
 
 from ...models import TaxonomyOrg
-from ...rules import get_admin_orgs, get_user_orgs
+from ...rules import get_admin_orgs, get_authz_manage_tags_orgs, get_user_orgs
 from ...utils import rules_cache
 
 
@@ -25,7 +25,10 @@ class UserOrgFilterBackend(BaseFilterBackend):
             return queryset
 
         user_admin_orgs = get_admin_orgs(request.user)
-        user_orgs = get_user_orgs(request.user)  # Orgs that the user is a content creator or instructor
+        # Orgs that the user is a content creator or instructor in, either through a legacy
+        # role or, additively, through an openedx-authz role like course_editor that grants
+        # courses.manage_tags with no legacy equivalent (see get_authz_manage_tags_orgs).
+        user_orgs = list(set(get_user_orgs(request.user)) | set(get_authz_manage_tags_orgs(request.user)))
 
         if len(user_orgs) == 0 and len(user_admin_orgs) == 0:
             return queryset.none()

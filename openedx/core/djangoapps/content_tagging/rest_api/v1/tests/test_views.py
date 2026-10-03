@@ -36,6 +36,7 @@ from common.djangoapps.student.roles import (
     OrgStaffRole,
 )
 from common.djangoapps.student.tests.factories import StaffFactory, UserFactory
+from openedx.core import toggles as core_toggles
 from openedx.core.djangoapps.authz.tests.mixins import CourseAuthzTestMixin
 from openedx.core.djangoapps.content_libraries.api import AccessLevel, create_library, set_library_user_permissions
 from openedx.core.djangoapps.content_tagging import api as tagging_api
@@ -586,12 +587,14 @@ class TestTaxonomyListCreateViewSet(TestTaxonomyObjectsMixin, APITestCase):
 
     @ddt.data(
         ('staff', 10),
-        ("content_creatorA", 22),
-        ("library_staffA", 22),
-        ("library_userA", 22),
-        ("instructorA", 22),
-        ("course_instructorA", 22),
-        ("course_staffA", 22),
+        # Non-admin users now also cost one extra query to check for orgs granted through
+        # openedx-authz's courses.manage_tags (get_authz_manage_tags_orgs).
+        ("content_creatorA", 23),
+        ("library_staffA", 23),
+        ("library_userA", 23),
+        ("instructorA", 23),
+        ("course_instructorA", 23),
+        ("course_staffA", 23),
     )
     @ddt.unpack
     def test_list_taxonomy_query_count(self, user_attr: str, expected_queries: int):
@@ -2445,6 +2448,78 @@ class TestObjectTagOrgViewWithAuthz(CourseAuthzTestMixin, SharedModuleStoreTestC
         response = self.authorized_client.get(url)
         # Should succeed via legacy permissions, not authz
         assert response.status_code == status.HTTP_200_OK
+
+
+class TestTaxonomyOrgViewWithAuthz(CourseAuthzTestMixin, SharedModuleStoreTestCase, APITestCase):
+    """
+    Test TaxonomyOrgView (GET /taxonomies/?org=X) with authz permissions.
+
+    Regression tests for openedx-authz#448: a user who only holds an openedx-authz role
+    (e.g. course_editor) with no legacy org role used to get an empty list, even for
+    global taxonomies, because UserOrgFilterBackend only knew about legacy roles.
+    """
+
+    authz_roles_to_assign = [COURSE_EDITOR.external_key]
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.course = CourseFactory.create()
+        cls.course_key = cls.course.id
+
+    def setUp(self):
+        super().setUp()
+        self.course_org, _ = Organization.objects.get_or_create(short_name=self.course_key.org)
+
+        self.org_taxonomy = tagging_api.create_taxonomy(
+            name="Org Taxonomy", description="Taxonomy scoped to the course org", orgs=[self.course_org],
+        )
+        self.disabled_org_taxonomy = tagging_api.create_taxonomy(
+            name="Disabled Org Taxonomy", description="Disabled taxonomy scoped to the course org",
+            enabled=False, orgs=[self.course_org],
+        )
+
+    def _list_url(self, org=None):
+        url = TAXONOMY_ORG_LIST_URL
+        return f"{url}?org={org}" if org else url
+
+    def test_course_editor_sees_org_taxonomies(self):
+        """A course editor (authz-only, no legacy org role) sees enabled taxonomies for their course's org."""
+        response = self.authorized_client.get(self._list_url(self.course_org.short_name))
+        assert response.status_code == status.HTTP_200_OK
+        taxonomy_ids = {t["id"] for t in response.data["results"]}
+        assert self.org_taxonomy.pk in taxonomy_ids
+        assert self.disabled_org_taxonomy.pk not in taxonomy_ids
+
+    def test_course_editor_doesnt_see_other_org_taxonomies(self):
+        """A course editor doesn't get access to a different org's taxonomies through this permission."""
+        other_org_taxonomy = tagging_api.create_taxonomy(
+            name="Other Org Taxonomy", description="Taxonomy scoped to an unrelated org",
+        )
+        other_org, _ = Organization.objects.get_or_create(short_name="OtherOrgForTaxonomy")
+        set_taxonomy_orgs(other_org_taxonomy, orgs=[other_org])
+
+        response = self.authorized_client.get(self._list_url(other_org.short_name))
+        assert response.status_code == status.HTTP_200_OK
+        taxonomy_ids = {t["id"] for t in response.data["results"]}
+        assert other_org_taxonomy.pk not in taxonomy_ids
+
+    def test_no_role_user_still_denied(self):
+        """A user with no role at all, legacy or authz, still gets nothing for the org."""
+        response = self.unauthorized_client.get(self._list_url(self.course_org.short_name))
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["results"] == []
+
+    def test_authz_role_ignored_when_course_toggle_disabled(self):
+        """
+        A course_editor assignment doesn't grant access ahead of that course's own authz
+        toggle being enabled: legacy access stays authoritative until it flips.
+        """
+        with patch.object(core_toggles.AUTHZ_COURSE_AUTHORING_FLAG, "is_enabled", return_value=False):
+            response = self.authorized_client.get(self._list_url(self.course_org.short_name))
+        assert response.status_code == status.HTTP_200_OK
+        taxonomy_ids = {t["id"] for t in response.data["results"]}
+        assert self.org_taxonomy.pk not in taxonomy_ids
 
 
 @skip_unless_cms

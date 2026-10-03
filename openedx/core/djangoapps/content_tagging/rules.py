@@ -9,6 +9,7 @@ import openedx_tagging.rules as oel_tagging
 import rules
 from opaque_keys.edx.locator import LibraryLocatorV2
 from openedx_authz import api as authz_api
+from openedx_authz.api.data import CourseOverviewData
 from openedx_authz.constants import permissions as authz_permissions
 from organizations.models import Organization
 
@@ -21,6 +22,7 @@ from common.djangoapps.student.roles import (
     OrgInstructorRole,
     OrgLibraryUserRole,
     OrgStaffRole,
+    enable_authz_course_authoring,
 )
 
 from .auth import should_use_course_authz_for_object
@@ -125,6 +127,31 @@ def get_user_orgs(user: UserType, orgs: list[Organization] | None = None) -> lis
     user_orgs = list(set(content_creator_orgs) | set(course_user_orgs) | set(library_user_orgs))
 
     return user_orgs
+
+
+def get_authz_manage_tags_orgs(user: UserType) -> list[Organization]:
+    """
+    Return the orgs where the user holds courses.manage_tags through openedx-authz.
+
+    This is the authz equivalent of _get_course_user_orgs: roles like course_editor,
+    course_staff, and course_admin only exist in openedx-authz, with no legacy
+    CourseAccessRole for get_user_orgs to find, so callers that need to recognize them
+    have to check authz separately and add the result on top of get_user_orgs.
+
+    A scope is only counted if the course has actually switched to openedx-authz: a
+    policy assignment can exist ahead of that course's own toggle, and until it flips,
+    legacy access stays authoritative for it (see should_use_course_authz_for_object).
+    """
+    scopes = authz_api.get_scopes_for_user_and_permission(
+        user.username, authz_permissions.COURSES_MANAGE_TAGS.identifier
+    )
+
+    org_names = set()
+    for scope in scopes:
+        if isinstance(scope, CourseOverviewData) and enable_authz_course_authoring(scope.course_key):
+            org_names.add(scope.org)
+
+    return rules_cache.get_orgs(list(org_names)) if org_names else []
 
 
 @rules.predicate
