@@ -7,6 +7,7 @@ from datetime import datetime
 
 from pytz import utc
 
+from lms.djangoapps.course_blocks.toggles import SHOW_HIDDEN_CONTENT_WITHOUT_LINKS
 from openedx.core.djangoapps.content.block_structure.transformer import BlockStructureTransformer
 from xmodule.seq_block import SequenceBlock  # pylint: disable=wrong-import-order
 
@@ -35,6 +36,7 @@ class HiddenContentTransformer(BlockStructureTransformer):
     READ_VERSION = 4
     MERGED_HIDE_AFTER_DUE = 'merged_hide_after_due'
     MERGED_END_DATE = 'merged_end_date'
+    HIDDEN_AFTER_DUE = "hidden_after_due"
 
     @classmethod
     def name(cls):
@@ -54,6 +56,15 @@ class HiddenContentTransformer(BlockStructureTransformer):
         return block_structure.get_transformer_block_field(
             block_key, cls, cls.MERGED_HIDE_AFTER_DUE, False
         )
+
+    @classmethod
+    def is_hidden_after_due(cls, block_structure, block_key):
+        """
+        Returns whether the block with the given block_key was kept in the given block_structure but flagged as hidden,
+        which only happens while SHOW_HIDDEN_CONTENT_WITHOUT_LINKS is enabled. Callers can use this to present the
+        block without linking to it.
+        """
+        return block_structure.get_transformer_block_field(block_key, cls, cls.HIDDEN_AFTER_DUE, False)
 
     @classmethod
     def _get_merged_end_date(cls, block_structure, block_key):
@@ -92,7 +103,22 @@ class HiddenContentTransformer(BlockStructureTransformer):
         if usage_info.has_staff_access:
             return [block_structure.create_universal_filter()]
 
-        block_structure.remove_block_traversal(lambda block_key: self._is_block_hidden(block_structure, block_key))
+        hidden_block_keys = {
+            block_key for block_key in block_structure if self._is_block_hidden(block_structure, block_key)
+        }
+        if not hidden_block_keys:
+            # Nothing to hide, so we can skip checking the toggle and traversing the block structure again.
+            return
+
+        if SHOW_HIDDEN_CONTENT_WITHOUT_LINKS.is_enabled(usage_info.course_key):
+            # Keep hidden blocks in the structure and flag them, so that consumers can list them without linking to
+            # them. Leaving them in place also keeps aggregated completion accurate - a section whose subsections were
+            # removed is reported as complete whether or not the learner did the work.
+            for block_key in hidden_block_keys:
+                block_structure.set_transformer_block_field(block_key, self, self.HIDDEN_AFTER_DUE, True)
+            return
+
+        block_structure.remove_block_traversal(lambda block_key: block_key in hidden_block_keys)
 
     def _is_block_hidden(self, block_structure, block_key):
         """
