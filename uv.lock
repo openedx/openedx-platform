@@ -20,7 +20,7 @@ constraints = [
     { name = "django-oauth-toolkit", specifier = "==1.7.1" },
     { name = "django-stubs", specifier = "<6" },
     { name = "djangorestframework", specifier = "<3.18" },
-    { name = "edx-enterprise", specifier = "==8.17.0" },
+    { name = "edx-enterprise", specifier = "==8.18.0" },
     { name = "elasticsearch", specifier = "==7.9.1" },
     { name = "libsass", specifier = "==0.10.0" },
     { name = "lxml", specifier = "==5.3.2" },
@@ -2047,7 +2047,7 @@ wheels = [
 
 [[package]]
 name = "edx-enterprise"
-version = "8.17.0"
+version = "8.18.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "bleach" },
