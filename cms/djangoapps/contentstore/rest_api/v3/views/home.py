@@ -28,7 +28,6 @@ to apply the FC-0118 ADRs:
 
 import edx_api_doc_tools as apidocs
 from django.conf import settings
-from drf_spectacular.openapi import AutoSchema
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
 from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
@@ -47,9 +46,10 @@ from cms.djangoapps.contentstore.rest_api.v1.serializers import (
     StudioHomeSerializer,
 )
 from cms.djangoapps.contentstore.utils import get_course_context, get_home_context, get_library_context
+from cms.lib.spectacular import CmsAutoSchema
 
 
-class _HomeAutoSchema(AutoSchema):
+class _HomeAutoSchema(CmsAutoSchema):
     """Custom AutoSchema that treats the 'list' action as a single-object response."""
 
     def _is_list_view(self, serializer=None):

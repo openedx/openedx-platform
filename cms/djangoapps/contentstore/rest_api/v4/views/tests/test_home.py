@@ -8,15 +8,17 @@ from unittest.mock import patch
 
 import ddt
 from django.conf import settings
-from django.urls import reverse
+from django.urls import resolve, reverse
 from rest_framework import status
 from rest_framework.test import APIClient, APITestCase
 
 from cms.djangoapps.contentstore.rest_api.v4.views.home import (
     _LEGACY_ORDER_DEPRECATION_HEADER,
+    HomeCoursesViewSet,
 )
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase
 from cms.djangoapps.contentstore.utils import reverse_course_url
+from cms.lib.spectacular import CmsAutoSchema
 from openedx.core.djangoapps.content.course_overviews.tests.factories import (
     CourseOverviewFactory,
 )
@@ -32,6 +34,10 @@ class TestHomeCoursesViewSetPermissions(APITestCase):
     def setUp(self):
         super().setUp()
         self.list_url = reverse("cms.djangoapps.contentstore:v4:home-courses-list")
+
+    def test_view_schema_chains_the_cms_schema_class(self):
+        """A per-view ``schema`` bypasses DEFAULT_SCHEMA_CLASS, so it must subclass CmsAutoSchema itself."""
+        assert isinstance(HomeCoursesViewSet.schema, CmsAutoSchema)
 
     def test_unauthenticated_returns_401(self):
         """Unauthenticated GET /v4/home/courses/ must return 401."""
@@ -277,3 +283,33 @@ class TestHomeCoursesViewSetOrderingDeprecation(CourseTestCase):
             response = self.client.get(self.list_url)
 
         self.assertNotIn("Deprecation", response)  # noqa: PT009
+
+
+class TestHomeCoursesViewSetUrlStructure(APITestCase):
+    """The conforming /api/authoring/v4/courses/ route serves the same view as the legacy one."""
+
+    def test_conforming_url_reverses_to_expected_path(self):
+        assert reverse("authoring_v4:course_list") == "/api/authoring/v4/courses/"
+
+    def test_conforming_and_legacy_routes_share_view_and_actions(self):
+        legacy = resolve(reverse("cms.djangoapps.contentstore:v4:home-courses-list")).func
+        conforming = resolve(reverse("authoring_v4:course_list")).func
+        assert conforming.cls is legacy.cls
+        assert conforming.actions == legacy.actions
+
+    def test_unauthenticated_returns_401(self):
+        response = APIClient().get(reverse("authoring_v4:course_list"))
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)  # noqa: PT009
+
+    def test_authenticated_staff_gets_200(self):
+        """Same contract on the conforming mount as on the legacy one."""
+        from django.contrib.auth import get_user_model
+
+        User = get_user_model()
+        user = User.objects.create_user(
+            username="teststaff-authoring", password="pass", is_staff=True
+        )
+        self.client.force_authenticate(user=user)
+        with patch(_MOCK_GET_COURSE_CONTEXT_V2, return_value=([], [])):
+            response = self.client.get(reverse("authoring_v4:course_list"))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
