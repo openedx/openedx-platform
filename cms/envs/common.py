@@ -1314,6 +1314,29 @@ EVENT_BUS_PRODUCER_CONFIG.update({  # noqa: F405
 # This affects the Authoring API swagger docs but not the legacy swagger docs under /api-docs/.
 REST_FRAMEWORK['DEFAULT_SCHEMA_CLASS'] = 'drf_spectacular.openapi.AutoSchema'  # noqa: F405
 
+# The Authoring API schema, for any settings module that does not define its
+# own SPECTACULAR_SETTINGS -- notably cms.envs.development, which generates the
+# committed docs/cms-openapi.yaml in CI. Without these the document has no
+# title, version 0.0.0, and every endpoint in the service rather than the
+# Authoring API's own surface.
+#
+# devstack.py and production.py replace this wholesale, adding SERVERS and a
+# longer DESCRIPTION. Those are the only parts that depend on CMS_BASE and
+# AUTHORING_API_URL, which are empty here; the filtering and the path prefix do
+# not, so they belong at this level.
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Authoring API',
+    'DESCRIPTION': 'Experimental API to edit xblocks and course content.',
+    'VERSION': '0.1.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    # Restrict the schema to the Authoring API's endpoints (cms/lib/spectacular.py).
+    'PREPROCESSING_HOOKS': ['cms.lib.spectacular.cms_api_filter'],
+    # Trim the shared prefix from the published paths; consumers supply it
+    # through their base URL.
+    'SCHEMA_PATH_PREFIX': '/api/contentstore',
+    'SCHEMA_PATH_PREFIX_TRIM': '/api/contentstore',
+}
+
 ################### Studio Search (beta), using Meilisearch ###################
 
 # Enable Studio search features (powered by Meilisearch) (beta, off by default)
