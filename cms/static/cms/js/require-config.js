@@ -47,19 +47,33 @@
                 }
             });
 
-            // MathJax Fast Preview was introduced in 2.5. However, it
-            // causes undesirable flashing/font size changes when
-            // MathJax is used for interactive preview (equation editor).
-            // Setting processSectionDelay to 0 (see below) fully eliminates
-            // fast preview, but to reduce confusion, we are also setting
-            // the option as displayed in the context menu to false.
-            // When upgrading to 2.6, check if this variable name changed.
             window.MathJax = {
-                menuSettings: {
-                    CHTMLpreview: false,
-                    collapsible: true,
-                    autocollapse: false,
-                    explorer: true
+                tex: {
+                    inlineMath: [
+                        ['\\(', '\\)'],
+                        ['[mathjaxinline]', '[/mathjaxinline]']
+                    ],
+                    displayMath: [
+                        ['\\[', '\\]'],
+                        ['[mathjax]', '[/mathjax]']
+                    ],
+                    autoload: {
+                        color: [],
+                        colorv2: ['color']
+                    },
+                    packages: {'[+]': ['noerrors']}
+                },
+                options: {
+                    ignoreHtmlClass: 'tex2jax_ignore',
+                    processHtmlClass: 'tex2jax_process',
+                    menuOptions: {
+                        settings: {
+                            collapsible: true
+                        },
+                    },
+                },
+                loader: {
+                    load: ['input/asciimath', '[tex]/noerrors']
                 }
             };
         };
@@ -137,7 +151,7 @@
             'jquery_extend_patch': 'js/src/jquery_extend_patch',
 
             // externally hosted files
-            mathjax: 'https://cdn.jsdelivr.net/npm/mathjax@2.7.5/MathJax.js?config=TeX-MML-AM_SVG&delayStartupUntil=configured', // eslint-disable-line max-len
+            mathjax: 'https://cdn.jsdelivr.net/npm/mathjax@4.1.2/tex-mml-chtml.js?noext',
             'youtube': [
                 // youtube URL does not end in '.js'. We add '?noext' to the path so
                 // that require.js adds the '.js' to the query component of the URL,
@@ -249,27 +263,6 @@
             },
             'mathjax': {
                 exports: 'MathJax',
-                init: function() {
-                    window.MathJax.Hub.Config({
-                        tex2jax: {
-                            inlineMath: [
-                                ['\\(', '\\)'],
-                                ['[mathjaxinline]', '[/mathjaxinline]']
-                            ],
-                            displayMath: [
-                                ['\\[', '\\]'],
-                                ['[mathjax]', '[/mathjax]']
-                            ]
-                        }
-                    });
-                    // In order to eliminate all flashing during interactive
-                    // preview, it is necessary to set processSectionDelay to 0
-                    // (remove delay between input and output phases). This
-                    // effectively disables fast preview, regardless of
-                    // the fast preview setting as shown in the context menu.
-                    window.MathJax.Hub.processSectionDelay = 0;
-                    window.MathJax.Hub.Configured();
-                }
             },
             'URI': {
                 exports: 'URI'
