@@ -16,7 +16,7 @@ from xblock.core import XBlock
 from xblock.fields import UNIQUE_ID, Scope, String
 from xblock.utils.resources import ResourceLoader
 from xblock.utils.studio_editable import StudioEditableXBlockMixin
-from xblocks_contrib.discussion import DiscussionXBlock as _ExtractedDiscussionXBlock
+from xblock_discussion import DiscussionXBlock as _ExtractedDiscussionXBlock
 
 from openedx.core.djangolib.markup import HTML, Text
 from openedx.core.lib.xblock_utils import get_css_dependencies, get_js_dependencies
