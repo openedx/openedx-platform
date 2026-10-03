@@ -160,9 +160,13 @@ class SupportViewManageUserTests(SupportViewTestCase):
         response = self.client.get(url)
         assert response.status_code == 302
 
+    @override_settings(ENABLE_AUTHN_MICROFRONTEND=False)
     def test_get_password_assistance(self):
         """
         Tests password assistance
+
+        /password_assistance is the legacy logistration page in reset mode, so it only
+        renders when the authn MFE is off.
         """
         # Ensure that user is not logged in if they need
         # password assistance.
@@ -275,7 +279,7 @@ class SupportViewAccessTests(SupportViewTestCase):
             login_url=reverse("signin_user"),
             original_url=quote(url),
         )
-        self.assertRedirects(response, redirect_url)
+        self.assertRedirects(response, redirect_url, fetch_redirect_response=False)
 
 
 class SupportViewIndexTests(SupportViewTestCase):

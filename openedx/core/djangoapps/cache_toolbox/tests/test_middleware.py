@@ -43,7 +43,7 @@ class CachedAuthMiddlewareTestCase(TestCase):
                 response = self.client.get(dashboard_url)
 
         redirect_url = reverse('signin_user') + '?next=' + dashboard_url
-        self.assertRedirects(response, redirect_url, target_status_code=200)
+        self.assertRedirects(response, redirect_url, fetch_redirect_response=False)
         mock_set_custom_attribute.assert_any_call('failed_session_verification', True)
 
     @skip_unless_cms

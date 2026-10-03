@@ -149,7 +149,8 @@ class SurveyViewsTests(LoginEnrollmentTestCase, SharedModuleStoreTestCase, XssTe
         )
         self.assertRedirects(
             resp,
-            f'/login?next=/courses/{quote(str(self.course.id))}/courseware'
+            f'/login?next=/courses/{quote(str(self.course.id))}/courseware',
+            fetch_redirect_response=False
         )
 
     def test_visiting_course_with_existing_answers(self):

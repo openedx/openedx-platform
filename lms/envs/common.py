@@ -629,7 +629,7 @@ ENABLE_ACCOUNT_DELETION = True
 
 # .. toggle_name: settings.ENABLE_AUTHN_MICROFRONTEND
 # .. toggle_implementation: DjangoSetting
-# .. toggle_default: False
+# .. toggle_default: True
 # .. toggle_description: Supports staged rollout of a new micro-frontend-based implementation of the logistration.
 # .. toggle_use_cases: temporary, open_edx
 # .. toggle_creation_date: 2020-09-08
@@ -637,7 +637,7 @@ ENABLE_ACCOUNT_DELETION = True
 # .. toggle_tickets: 'https://github.com/openedx/edx-platform/pull/24908'
 # .. toggle_warning: Also set settings.AUTHN_MICROFRONTEND_URL for rollout. This temporary feature
 #   toggle does not have a target removal date.
-ENABLE_AUTHN_MICROFRONTEND = os.environ.get("EDXAPP_ENABLE_AUTHN_MFE", False)
+ENABLE_AUTHN_MICROFRONTEND = os.environ.get("EDXAPP_ENABLE_AUTHN_MFE", True)
 
 # .. toggle_name: settings.ENABLE_CATALOG_MICROFRONTEND
 # .. toggle_implementation: DjangoSetting
