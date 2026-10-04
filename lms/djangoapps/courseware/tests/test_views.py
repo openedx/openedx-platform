@@ -2029,7 +2029,7 @@ class GenerateUserCertTests(ModuleStoreTestCase):
         assert resp.status_code == HttpResponseBadRequest.status_code
         mock_log.exception.assert_called_once_with(
             "Certificate generation not allowed for user %s in course %s",
-            self.student.id if squelch_pii else self.student.username,
+            str(self.student.id) if squelch_pii else self.student.username,
             self.course.id,
         )
 

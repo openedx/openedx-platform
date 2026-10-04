@@ -901,7 +901,7 @@ class EnrollInCourseTest(EnrollmentEventTestMixin, CacheIsolationTestCase):
                     str(course_id)
                 )
 
-        test_and_assert_case(True, user.id)
+        test_and_assert_case(True, str(user.id))
         test_and_assert_case(False, user.username)
 
     @skip_unless_lms

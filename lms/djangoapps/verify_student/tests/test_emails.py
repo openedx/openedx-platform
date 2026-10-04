@@ -27,7 +27,7 @@ class VerificationEmailLogTest(TestCase):
         self.context = {'user': self.user}
 
     def _expected_identifier(self, squelch_pii):
-        return self.user.id if squelch_pii else self.user.username
+        return str(self.user.id) if squelch_pii else self.user.username
 
     @ddt.data(
         (True, send_verification_confirmation_email, 'Verification confirmation email sent to user: %r'),

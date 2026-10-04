@@ -138,12 +138,12 @@ class TestStaffOnCCX(CcxTestCase):
 
         mock_log.warning.assert_any_call(
             "Unable to enroll staff %s to course with id %s",
-            staff.id if squelch_pii else staff.email,
+            str(staff.id) if squelch_pii else staff.email,
             self.ccx_locator,
         )
         mock_log.warning.assert_any_call(
             "Unable to enroll instructor %s to course with id %s",
-            instructor.id if squelch_pii else instructor.email,
+            str(instructor.id) if squelch_pii else instructor.email,
             self.ccx_locator,
         )
 

@@ -8,54 +8,62 @@ from django.conf import settings
 
 log = logging.getLogger(__name__)
 
+ANONYMOUS_USER_FOR_LOG = '<AnonymousUser>'
+
+
+def _pii_safe_user_identifier_for_log(user, pii_attribute):
+    """
+    Return ``user``'s id, or its ``pii_attribute`` value, as a string for a log message.
+
+    Never raises for a missing attribute, since it is called from inside log statements.
+    """
+    if getattr(user, 'is_anonymous', False) is True:
+        return ANONYMOUS_USER_FOR_LOG
+    if getattr(settings, 'SQUELCH_PII_IN_LOGS', False):
+        return str(user.id)
+    return str(getattr(user, pii_attribute, ''))
+
 
 def get_username_or_pii_safe_user_id_for_log(user):
     """
     Return the identifier to use for ``user`` in a log message.
 
-    Returns ``user.id`` when the ``SQUELCH_PII_IN_LOGS`` setting is enabled, and
-    ``user.username`` otherwise.
+    Returns the user id when the ``SQUELCH_PII_IN_LOGS`` setting is enabled, and
+    the username otherwise. The result is always a string, and an
+    ``AnonymousUser`` is returned as ``'<AnonymousUser>'``.
 
     A numeric user id is not PII and can always be logged directly without this
     function. Use this function only where the username is preferred in logs for
     deployments that allow PII in logs.
 
-    For an ``AnonymousUser`` this returns ``None`` (squelched) or ``''`` (its username).
-
     Arguments:
         user (User): the user to identify in the log message.
 
     Returns:
-        int or str: the user id or the username.
+        str: the user id or the username.
     """
-    if getattr(settings, 'SQUELCH_PII_IN_LOGS', False):
-        return user.id
-    return user.username
+    return _pii_safe_user_identifier_for_log(user, 'username')
 
 
 def get_email_or_pii_safe_user_id_for_log(user):
     """
     Return the identifier to use for ``user`` in a log message.
 
-    Returns ``user.id`` when the ``SQUELCH_PII_IN_LOGS`` setting is enabled, and
-    ``user.email`` otherwise.
+    Returns the user id when the ``SQUELCH_PII_IN_LOGS`` setting is enabled, and
+    the email otherwise. The result is always a string, and an
+    ``AnonymousUser`` is returned as ``'<AnonymousUser>'``.
 
     A numeric user id is not PII and can always be logged directly without this
     function. Use this function only where the email is preferred in logs for
     deployments that allow PII in logs.
 
-    For an ``AnonymousUser``, which has no email, this returns ``None`` (squelched)
-    or ``''`` rather than raising from inside a log call.
-
     Arguments:
         user (User): the user to identify in the log message.
 
     Returns:
-        int or str: the user id or the email.
+        str: the user id or the email.
     """
-    if getattr(settings, 'SQUELCH_PII_IN_LOGS', False):
-        return user.id
-    return getattr(user, 'email', '')
+    return _pii_safe_user_identifier_for_log(user, 'email')
 
 
 def audit_log(name, **kwargs):
