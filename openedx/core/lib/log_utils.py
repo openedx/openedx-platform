@@ -14,14 +14,12 @@ ANONYMOUS_USER_FOR_LOG = '<AnonymousUser>'
 def _pii_safe_user_identifier_for_log(user, pii_attribute):
     """
     Return ``user``'s id, or its ``pii_attribute`` value, as a string for a log message.
-
-    Never raises for a missing attribute, since it is called from inside log statements.
     """
     if getattr(user, 'is_anonymous', False) is True:
         return ANONYMOUS_USER_FOR_LOG
     if getattr(settings, 'SQUELCH_PII_IN_LOGS', False):
         return str(user.id)
-    return str(getattr(user, pii_attribute, ''))
+    return str(getattr(user, pii_attribute))
 
 
 def get_username_or_pii_safe_user_id_for_log(user):

@@ -64,10 +64,3 @@ class PiiSafeUserIdForLogTest(SimpleTestCase):
     def test_lazy_anonymous_user(self, helper):
         """request.user is a SimpleLazyObject; an anonymous one must still be detected."""
         assert helper(SimpleLazyObject(AnonymousUser)) == ANONYMOUS_USER_FOR_LOG
-
-    @ddt.data(get_username_or_pii_safe_user_id_for_log, get_email_or_pii_safe_user_id_for_log)
-    def test_missing_attribute_does_not_raise(self, helper):
-        """A user object without the PII attribute logs an empty string instead of raising."""
-        user = Mock(spec=['id', 'is_anonymous'], id=42, is_anonymous=False)
-        with override_settings(SQUELCH_PII_IN_LOGS=False):
-            assert helper(user) == ''
