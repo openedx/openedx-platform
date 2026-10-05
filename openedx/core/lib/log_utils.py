@@ -12,7 +12,7 @@ ANONYMOUS_USER_FOR_LOG = '<AnonymousUser>'
 REDACTED_FOR_LOG = '[REDACTED]'
 
 
-def get_pii_or_redacted_for_log(value):
+def get_unrecognized_pii_or_redacted_for_log(value):
     """
     Return ``value`` as a string for a log message, or ``'[REDACTED]'`` when the
     ``SQUELCH_PII_IN_LOGS`` setting is enabled.

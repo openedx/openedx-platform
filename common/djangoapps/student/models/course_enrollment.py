@@ -51,7 +51,10 @@ from openedx.core.djangoapps.enrollments.api import (
     set_enrollment_attributes,
 )
 from openedx.core.djangolib.model_mixins import DeletableByUserValue
-from openedx.core.lib.log_utils import get_pii_or_redacted_for_log, get_username_or_pii_safe_user_id_for_log
+from openedx.core.lib.log_utils import (
+    get_unrecognized_pii_or_redacted_for_log,
+    get_username_or_pii_safe_user_id_for_log,
+)
 
 log = logging.getLogger(__name__)
 AUDIT_LOG = logging.getLogger("audit")
@@ -840,7 +843,7 @@ class CourseEnrollment(models.Model):
         except User.DoesNotExist:
             log.error(
                 "Tried to enroll email %s into course %s, but user not found",
-                get_pii_or_redacted_for_log(email),
+                get_unrecognized_pii_or_redacted_for_log(email),
                 course_id,
             )
             if ignore_errors:
@@ -900,7 +903,7 @@ class CourseEnrollment(models.Model):
         except User.DoesNotExist:
             log.error(
                 "Tried to unenroll email %s from course %s, but user not found",
-                get_pii_or_redacted_for_log(email),
+                get_unrecognized_pii_or_redacted_for_log(email),
                 course_id
             )
 
