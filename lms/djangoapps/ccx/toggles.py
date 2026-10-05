@@ -21,8 +21,11 @@ WAFFLE_FLAG_NAMESPACE = 'ccx'
 #   MFE is never linked to at an unusable URL.
 # .. toggle_use_cases: opt_out, temporary
 # .. toggle_creation_date: 2026-09-23
-# .. toggle_target_removal_date: None
-# .. toggle_tickets: https://github.com/openedx/openedx-platform/issues/39142
+# .. toggle_target_removal_date: 2027-04-01
+# .. toggle_warning: Requires CCX_COACH_MICROFRONTEND_URL to be set for the MFE to be reachable.
+#   That setting defaults to None, so when it is unset the legacy dashboard is served regardless of
+#   this flag.
+# .. toggle_tickets: https://github.com/openedx/openedx-platform/issues/39142, https://github.com/openedx/openedx-platform/issues/38432
 LEGACY_CCX_COACH_DASHBOARD = CourseWaffleFlag(
     f'{WAFFLE_FLAG_NAMESPACE}.legacy_ccx_coach_dashboard', __name__
 )

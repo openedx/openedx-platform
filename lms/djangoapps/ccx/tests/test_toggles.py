@@ -72,6 +72,9 @@ class CCXCoachMFEFlagTest(CcxTestCase, LoginEnrollmentTestCase):
         assert response.status_code == 403
 
     # -- opting out to legacy (flag on) ------------------------------------
+    # These exercise the legacy CCX Coach dashboard. When DEPR-38432 (remove the
+    # legacy instructor dashboard, which explicitly covers the legacy CCX
+    # dashboard) is executed, they can be removed along with the flag itself.
 
     @override_waffle_flag(LEGACY_CCX_COACH_DASHBOARD, active=True)
     def test_dashboard_renders_legacy_when_opted_out(self):
@@ -85,6 +88,9 @@ class CCXCoachMFEFlagTest(CcxTestCase, LoginEnrollmentTestCase):
         assert tab.link_func(self.course, reverse) == self._dashboard_url(self.course.id)
 
     # -- unset MFE URL keeps the legacy experience -------------------------
+    # This also exercises the legacy dashboard, so it belongs to the same
+    # DEPR-38432 cleanup. It will need refactoring rather than deletion if the
+    # CCX_COACH_MICROFRONTEND_URL guard outlives the legacy dashboard.
 
     @override_settings(CCX_COACH_MICROFRONTEND_URL=None)
     def test_legacy_served_when_mfe_url_unset(self):
