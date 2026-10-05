@@ -7,13 +7,12 @@ import logging
 import os
 from pprint import pformat
 
-from django.conf import settings
 from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.core.management.base import BaseCommand, CommandError
 
 from lms.djangoapps.verify_student.models import ManualVerification
 from lms.djangoapps.verify_student.utils import earliest_allowed_verification_date
-from openedx.core.lib.log_utils import get_email_or_pii_safe_user_id_for_log
+from openedx.core.lib.log_utils import get_email_or_pii_safe_user_id_for_log, get_pii_or_redacted_for_log
 
 log = logging.getLogger(__name__)
 
@@ -55,10 +54,7 @@ class Command(BaseCommand):
         if single_email:
             successfully_verified = self._add_user_to_manual_verification(single_email)
             if successfully_verified is False:
-                user_identifier_for_log = (
-                    '[REDACTED]' if getattr(settings, 'SQUELCH_PII_IN_LOGS', False) else single_email
-                )
-                log.error('Manual verification of %s failed', user_identifier_for_log)
+                log.error('Manual verification of %s failed', get_pii_or_redacted_for_log(single_email))
             return
 
         email_ids_file = options['email_ids_file']
@@ -75,10 +71,7 @@ class Command(BaseCommand):
                 len(failed_emails),
                 total_emails
             ))
-            failed_emails_for_log = (
-                '[REDACTED]' if getattr(settings, 'SQUELCH_PII_IN_LOGS', False) else pformat(failed_emails)
-            )
-            log.error('Failed emails for manual verification:%s', failed_emails_for_log)
+            log.error('Failed emails for manual verification:%s', get_pii_or_redacted_for_log(pformat(failed_emails)))
         else:
             log.info(f'Successfully generated manual verification for {total_emails} emails.')
 
@@ -156,6 +149,5 @@ class Command(BaseCommand):
             )
             return True
         except User.DoesNotExist:
-            email_for_log = '[REDACTED]' if getattr(settings, 'SQUELCH_PII_IN_LOGS', False) else email_id
-            log.error('Tried to verify email %s, but user not found', email_for_log)
+            log.error('Tried to verify email %s, but user not found', get_pii_or_redacted_for_log(email_id))
             return False

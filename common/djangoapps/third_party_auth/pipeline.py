@@ -100,7 +100,7 @@ from openedx.core.djangoapps.user_api.accounts.utils import username_suffix_gene
 from openedx.core.djangoapps.user_authn import cookies as user_authn_cookies
 from openedx.core.djangoapps.user_authn.toggles import is_auto_generated_username_enabled
 from openedx.core.djangoapps.user_authn.utils import is_safe_login_or_logout_redirect
-from openedx.core.lib.log_utils import get_username_or_pii_safe_user_id_for_log
+from openedx.core.lib.log_utils import get_pii_or_redacted_for_log, get_username_or_pii_safe_user_id_for_log
 
 from . import provider
 
@@ -986,16 +986,16 @@ def get_username(strategy, details, backend, user=None, *args, **kwargs):  # pyl
             final_username = slug_func(clean_func(username[:max_length]))
             logger.info(
                 '[THIRD_PARTY_AUTH] New username candidnate generated: '
-                f'input_username={input_username}, '
+                f'input_username={get_pii_or_redacted_for_log(input_username)}, '
                 f'suffix_length={this_uuid_length}, '
-                f'final_username={final_username}'
+                f'final_username={get_pii_or_redacted_for_log(final_username)}'
             )
     else:
         final_username = storage.user.get_username(user)
     logger.info(
         '[THIRD_PARTY_AUTH] get_username complete: '
-        f'details={details}, '
-        f'final_username={final_username}'
+        f'details={get_pii_or_redacted_for_log(details)}, '
+        f'final_username={get_pii_or_redacted_for_log(final_username)}'
     )
     return {'username': final_username}
 

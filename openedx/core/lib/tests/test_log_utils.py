@@ -10,7 +10,9 @@ from django.utils.functional import SimpleLazyObject
 
 from openedx.core.lib.log_utils import (
     ANONYMOUS_USER_FOR_LOG,
+    REDACTED_FOR_LOG,
     get_email_or_pii_safe_user_id_for_log,
+    get_pii_or_redacted_for_log,
     get_username_or_pii_safe_user_id_for_log,
 )
 
@@ -64,3 +66,32 @@ class PiiSafeUserIdForLogTest(SimpleTestCase):
     def test_lazy_anonymous_user(self, helper):
         """request.user is a SimpleLazyObject; an anonymous one must still be detected."""
         assert helper(SimpleLazyObject(AnonymousUser)) == ANONYMOUS_USER_FOR_LOG
+
+
+@ddt.ddt
+class GetPiiOrRedactedForLogTest(SimpleTestCase):
+    """
+    Tests for get_pii_or_redacted_for_log.
+    """
+
+    @ddt.data('jane@example.com', 'jane_doe', {'email': 'jane@example.com', 'fullname': 'Jane Doe'})
+    def test_redacted_when_squelching_pii(self, value):
+        with override_settings(SQUELCH_PII_IN_LOGS=True):
+            assert get_pii_or_redacted_for_log(value) == REDACTED_FOR_LOG
+
+    @ddt.data(
+        ('jane@example.com', 'jane@example.com'),
+        ('jane_doe', 'jane_doe'),
+        ({'email': 'jane@example.com'}, "{'email': 'jane@example.com'}"),
+    )
+    @ddt.unpack
+    def test_value_as_string_when_not_squelching_pii(self, value, expected):
+        """The value is returned as a string, matching how it renders in an f-string or %s log."""
+        with override_settings(SQUELCH_PII_IN_LOGS=False):
+            assert get_pii_or_redacted_for_log(value) == expected
+
+    def test_value_when_setting_is_missing(self):
+        with self.settings():
+            from django.conf import settings  # pylint: disable=import-outside-toplevel
+            del settings.SQUELCH_PII_IN_LOGS
+            assert get_pii_or_redacted_for_log('jane@example.com') == 'jane@example.com'

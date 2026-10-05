@@ -839,7 +839,7 @@ class SoftwareSecurePhotoVerification(PhotoVerification):
             log.info(
                 ('Software Secure attempt for user: %r and receipt ID: %r used the same photo ID data as the '
                  'receipt with ID %r.'),
-                self.user.username,
+                get_username_or_pii_safe_user_id_for_log(self.user),
                 self.receipt_id,
                 copy_id_photo_from.receipt_id,
             )

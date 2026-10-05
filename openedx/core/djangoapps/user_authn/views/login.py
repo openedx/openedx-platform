@@ -58,7 +58,7 @@ from openedx.core.djangoapps.user_authn.views.password_reset import send_passwor
 from openedx.core.djangoapps.user_authn.views.utils import API_V1
 from openedx.core.djangoapps.util.user_messages import PageLevelMessages
 from openedx.core.djangolib.markup import HTML, Text
-from openedx.core.lib.log_utils import get_email_or_pii_safe_user_id_for_log
+from openedx.core.lib.log_utils import get_email_or_pii_safe_user_id_for_log, get_pii_or_redacted_for_log
 
 log = logging.getLogger("edx.student")
 AUDIT_LOG = logging.getLogger("audit")
@@ -82,7 +82,10 @@ def _do_third_party_auth(request):
     except USER_MODEL.DoesNotExist:
         AUDIT_LOG.info(
             "Login failed - user with username {username} has no social auth "  # noqa: UP032
-            "with backend_name {backend_name}".format(username=username, backend_name=backend_name)
+            "with backend_name {backend_name}".format(
+                username=get_pii_or_redacted_for_log(username),
+                backend_name=backend_name,
+            )
         )
         message = Text(
             _(

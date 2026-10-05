@@ -744,6 +744,31 @@ class ViewsTestCase(BaseViewsTestCase):
         assert 'Client IP' in additional_info
         assert group_name == 'Financial Assistance'
 
+    @ddt.data(
+        ('submit_financial_assistance_request', 'FA_v1', True),
+        ('submit_financial_assistance_request', 'FA_v1', False),
+        ('submit_financial_assistance_request_v2', 'FA_v2', True),
+        ('submit_financial_assistance_request_v2', 'FA_v2', False),
+    )
+    @ddt.unpack
+    @patch('lms.djangoapps.courseware.views.views.logging')
+    def test_financial_assistance_inactive_user_log_squelches_pii(self, submit_url, prefix, squelch_pii, mock_logging):
+        """
+        The inactive-account warning identifies the user by id when SQUELCH_PII_IN_LOGS is enabled.
+        """
+        self.user.is_active = False
+        self.user.save()
+        with self.settings(SQUELCH_PII_IN_LOGS=squelch_pii):
+            response = self._submit_financial_assistance_form(
+                {'username': self.user.username, 'course': str(self.course.id)}, submit_url=submit_url
+            )
+
+        assert response.status_code == 403
+        mock_logging.warning.assert_called_once_with(
+            f'{prefix}: User %s tried to submit app without activating their account.',
+            str(self.user.id) if squelch_pii else self.user.username,
+        )
+
     @patch.object(views, 'create_zendesk_ticket', return_value=500)
     def test_zendesk_submission_failed(self, _mock_create_zendesk_ticket):  # noqa: PT019
         response = self._submit_financial_assistance_form({

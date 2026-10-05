@@ -9,6 +9,27 @@ from django.conf import settings
 log = logging.getLogger(__name__)
 
 ANONYMOUS_USER_FOR_LOG = '<AnonymousUser>'
+REDACTED_FOR_LOG = '[REDACTED]'
+
+
+def get_pii_or_redacted_for_log(value):
+    """
+    Return ``value`` as a string for a log message, or ``'[REDACTED]'`` when the
+    ``SQUELCH_PII_IN_LOGS`` setting is enabled.
+
+    Use this for PII that has no associated user to identify by id, such as an email
+    or username that failed a lookup. When a ``User`` object is available, prefer
+    ``get_username_or_pii_safe_user_id_for_log`` or ``get_email_or_pii_safe_user_id_for_log``.
+
+    Arguments:
+        value: the PII value to log, such as an email address or username.
+
+    Returns:
+        str: ``'[REDACTED]'`` or the value as a string.
+    """
+    if getattr(settings, 'SQUELCH_PII_IN_LOGS', False):
+        return REDACTED_FOR_LOG
+    return str(value)
 
 
 def _pii_safe_user_identifier_for_log(user, pii_attribute):
