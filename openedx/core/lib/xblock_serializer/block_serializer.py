@@ -171,7 +171,6 @@ class XBlockSerializer:
             olx_node.attrib["editor"] = block.editor
         if block.use_latex_compiler:
             olx_node.attrib["use_latex_compiler"] = "true"
-        # The deprecated built-in html block does not declare this field.
         if "include_theme" in block.fields and block.include_theme:
             olx_node.attrib["include_theme"] = "true"
         for field_name in block.fields:
