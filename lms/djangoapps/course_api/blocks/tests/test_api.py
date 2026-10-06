@@ -3,19 +3,26 @@ Tests for Blocks api.py
 """
 
 
+from datetime import UTC, datetime, timedelta
 from unittest.mock import patch
 
 import ddt
+from completion.models import BlockCompletion
 from django.test.client import RequestFactory
+from edx_toggles.toggles.testutils import override_waffle_flag
 
 from common.djangoapps.student.tests.factories import UserFactory
+from lms.djangoapps.course_blocks.toggles import SHOW_HIDDEN_CONTENT_WITHOUT_LINKS
 from openedx.core.djangoapps.content.block_structure.api import clear_course_from_cache
 from openedx.core.djangolib.testing.utils import AUTHZ_TABLES
 from xmodule.modulestore import ModuleStoreEnum  # pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.django_utils import (
-    SharedModuleStoreTestCase,  # pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (  # pylint: disable=wrong-import-order
+    ModuleStoreTestCase,
+    SharedModuleStoreTestCase,
 )
 from xmodule.modulestore.tests.factories import (  # pylint: disable=wrong-import-order
+    BlockFactory,
+    CourseFactory,
     SampleCourseFactory,
     check_mongo_calls,
 )
@@ -236,3 +243,93 @@ class TestGetBlocksQueryCounts(TestGetBlocksQueryCountsBase):
             expected_mongo_queries,
             expected_sql_queries=num_sql_queries,
         )
+
+
+class TestGetBlocksHiddenContentWithoutLinks(ModuleStoreTestCase):
+    """
+    Tests SHOW_HIDDEN_CONTENT_WITHOUT_LINKS, which keeps past-due `hide_after_due` content in the course outline but
+    without links to it.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.user = UserFactory.create()
+        self.request = RequestFactory().get("/dummy")
+        self.request.user = self.user
+
+        past_due = datetime.now(UTC) - timedelta(days=1)
+        self.course = CourseFactory.create(start=datetime(2020, 1, 1, tzinfo=UTC))
+
+        with self.store.bulk_operations(self.course.id):
+            # A section the learner finished before its subsection went past due.
+            self.finished_chapter = BlockFactory.create(parent_location=self.course.location, category="chapter")
+            self.finished_sequential, self.completed_problem = self._make_hidden_subsection(
+                self.finished_chapter, past_due
+            )
+
+            # A section the learner never finished.
+            self.unfinished_chapter = BlockFactory.create(parent_location=self.course.location, category="chapter")
+            self.unfinished_sequential, self.untouched_problem = self._make_hidden_subsection(
+                self.unfinished_chapter, past_due
+            )
+
+        BlockCompletion.objects.create(
+            user=self.user,
+            context_key=self.completed_problem.context_key,
+            block_type="problem",
+            block_key=self.completed_problem.location,
+            completion=1.0,
+        )
+        clear_course_from_cache(self.course.id)
+
+    def _make_hidden_subsection(self, chapter, due):
+        """
+        Adds a graded subsection that hides itself once `due` has passed.
+
+        Returns the subsection and the problem underneath it.
+        """
+        sequential = BlockFactory.create(
+            parent_location=chapter.location,
+            category="sequential",
+            graded=True,
+            due=due,
+            hide_after_due=True,
+        )
+        vertical = BlockFactory.create(parent_location=sequential.location, category="vertical")
+        problem = BlockFactory.create(parent_location=vertical.location, category="problem")
+        return sequential, problem
+
+    def _get_blocks(self):
+        return get_blocks(
+            self.request,
+            self.course.location,
+            self.user,
+            requested_fields=["completion", "complete"],
+        )["blocks"]
+
+    def test_hidden_subsections_are_removed_by_default(self):
+        blocks = self._get_blocks()
+
+        assert str(self.finished_sequential.location) not in blocks
+        assert str(self.unfinished_sequential.location) not in blocks
+
+    @override_waffle_flag(SHOW_HIDDEN_CONTENT_WITHOUT_LINKS, active=True)
+    def test_hidden_subsections_are_listed_without_links(self):
+        blocks = self._get_blocks()
+
+        subsection = blocks[str(self.unfinished_sequential.location)]
+        assert subsection["lms_web_url"] is None
+        assert subsection["legacy_web_url"] is None
+        # The descendants are hidden too, and the section holding them is not.
+        assert blocks[str(self.untouched_problem.location)]["lms_web_url"] is None
+        assert blocks[str(self.unfinished_chapter.location)]["lms_web_url"] is not None
+
+    @override_waffle_flag(SHOW_HIDDEN_CONTENT_WITHOUT_LINKS, active=True)
+    def test_completion_reflects_the_hidden_subsections(self):
+        blocks = self._get_blocks()
+
+        # `complete` is only serialized when it has data, so an incomplete section omits it.
+        assert not blocks[str(self.unfinished_chapter.location)].get("complete")
+        assert not blocks[str(self.unfinished_sequential.location)].get("complete")
+        assert blocks[str(self.finished_chapter.location)]["complete"] is True
+        assert blocks[str(self.finished_sequential.location)]["complete"] is True
