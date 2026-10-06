@@ -21,15 +21,14 @@ from django.views.decorators.csrf import csrf_exempt, csrf_protect, ensure_csrf_
 from django.views.decorators.debug import sensitive_post_parameters
 from django.views.decorators.http import require_http_methods
 from django_ratelimit.decorators import ratelimit
-from drf_yasg import openapi
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import extend_schema, inline_serializer
 from edx_django_utils.monitoring import set_custom_attribute
 from eventtracking import tracker
 from openedx_events.learning.data import UserData, UserPersonalData
 from openedx_events.learning.signals import SESSION_LOGIN_COMPLETED
 from openedx_filters.authentication.filters import LoginAltRedirectURLRequested
 from openedx_filters.learning.filters import StudentLoginRequested
-from rest_framework import status
+from rest_framework import serializers, status
 from rest_framework.views import APIView
 
 from common.djangoapps import third_party_auth
@@ -733,20 +732,20 @@ def redirect_to_lms_login(request):
     return redirect("/login?next=/admin")
 
 
-login_user_schema = openapi.Schema(
-    type=openapi.TYPE_OBJECT,
-    properties={
-        "email": openapi.Schema(type=openapi.TYPE_STRING),
-        "password": openapi.Schema(type=openapi.TYPE_STRING),
+login_user_schema = inline_serializer(
+    name="LoginUserRequest",
+    fields={
+        "email": serializers.CharField(),
+        "password": serializers.CharField(),
     },
 )
 
-login_user_return_schema = openapi.Schema(
-    type=openapi.TYPE_OBJECT,
-    properties={
-        "success": openapi.Schema(type=openapi.TYPE_BOOLEAN),
-        "value": openapi.Schema(type=openapi.TYPE_STRING),
-        "error_code": openapi.Schema(type=openapi.TYPE_STRING),
+login_user_return_schema = inline_serializer(
+    name="LoginUserResponse",
+    fields={
+        "success": serializers.BooleanField(),
+        "value": serializers.CharField(),
+        "error_code": serializers.CharField(),
     },
 )
 
@@ -768,12 +767,10 @@ class LoginSessionView(APIView):
     def get(self, request, *args, **kwargs):
         return HttpResponse(get_login_session_form(request).to_json(), content_type="application/json")  # pylint: disable=http-response-with-content-type-json
 
-    @swagger_auto_schema(
-        request_body=login_user_schema,
+    @extend_schema(
+        request=login_user_schema,
         responses=login_user_responses,
-        security=[
-            {"csrf": []},
-        ],
+        auth=[{"csrf": []}],
     )
     @method_decorator(csrf_protect)
     def post(self, request, api_version):

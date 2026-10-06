@@ -13,14 +13,14 @@ from pytz import UTC
 from xblock.scorable import ShowCorrectness
 
 from common.djangoapps.course_modes.models import CourseMode
+from lms.djangoapps.branding.api import get_learner_display_username
 from lms.djangoapps.certificates.data import CertificateStatuses
 from lms.djangoapps.grades.api import constants as grades_constants
 from openedx.core.djangolib.markup import HTML, Text
-from openedx.features.enterprise_support.utils import get_enterprise_learner_generic_name
 %>
 
 <%
-username = get_enterprise_learner_generic_name(request) or student.username
+username = get_learner_display_username(user=student)
 %>
 
 <%block name="bodyclass">view-in-course view-progress</%block>

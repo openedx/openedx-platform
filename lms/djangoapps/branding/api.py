@@ -14,12 +14,15 @@ the marketing site and blog).
 """
 
 import logging
+from typing import TypedDict
 
 import six
 from django.conf import settings
+from django.contrib.auth.base_user import AbstractBaseUser
 from django.contrib.staticfiles.storage import staticfiles_storage
 from django.urls import reverse
 from django.utils.translation import gettext as _
+from edx_django_utils.plugins import pluggable_override
 from six.moves.urllib.parse import urljoin
 
 from common.djangoapps.edxmako.shortcuts import marketing_link
@@ -643,6 +646,95 @@ def get_home_url():
     Return Dashboard page url
     """
     return reverse('dashboard')
+
+
+@pluggable_override('OVERRIDE_GET_LEARNER_DISPLAY_USERNAME')
+def get_learner_display_username(user: AbstractBaseUser) -> str:
+    """
+    Return the username to display for ``user``.
+
+    One possible use case of this override: render an obfuscated username when
+    it contains sensitive information fed by SSO.
+    """
+    return user.username
+
+
+class EnterpriseLearnerPortalLink(TypedDict):
+    """Contract for the OVERRIDE_GET_ENTERPRISE_LEARNER_PORTAL_LINK return value."""
+    url: str  # Absolute URL of the portal home page.
+    logo: str  # URL of the logo image to render in place of the site logo.
+    name: str  # Display name of the portal, used in link alternative text.
+
+
+@pluggable_override('OVERRIDE_GET_ENTERPRISE_LEARNER_PORTAL_LINK')
+def get_enterprise_learner_portal_link() -> EnterpriseLearnerPortalLink | None:
+    """
+    Return a link to the enterprise learner portal that stands in for the platform
+    dashboard for the current viewer.
+
+
+    Enterprise plugins should override this function.
+    """
+    return None
+
+
+class HeaderLogo(TypedDict):
+    """Contract for the site header's logo block, as ``get_header_logo`` returns it."""
+    url: str  # Destination the logo links to.
+    image: str  # URL of the logo image.
+    alt: str  # Alternative text, already formatted and translated.
+
+
+def get_header_logo(is_secure: bool = True) -> HeaderLogo:
+    """
+    Return the logo block for the site header.
+
+    If the learner is associated with an enterprise customer, the logo will come
+    from that customer's configuration.
+
+    Arguments:
+        is_secure (bool): If true, use HTTPS as the protocol for the site logo.
+    """
+    portal_link = get_enterprise_learner_portal_link()
+    if portal_link:
+        return HeaderLogo(
+            url=portal_link['url'],
+            image=portal_link['logo'],
+            alt=_('{name} Dashboard').format(name=portal_link['name']),
+        )
+
+    platform_name = configuration_helpers.get_value('platform_name', settings.PLATFORM_NAME)
+    return HeaderLogo(
+        url=get_home_url(),
+        image=get_logo_url(is_secure),
+        alt=_('{platform_name} Home Page').format(platform_name=platform_name),
+    )
+
+
+def get_learner_dashboard_url() -> str:
+    """
+    Return the URL of the current viewer's dashboard.
+
+    If the learner is associated with an enterprise customer, the url will come
+    from that customer's configured portal.
+    """
+    portal_link = get_enterprise_learner_portal_link()
+    if portal_link:
+        return portal_link['url']
+    return get_home_url()
+
+
+def should_show_order_history() -> bool:
+    """
+    Return whether the order history link applies to the current viewer.
+    """
+    if not settings.ORDER_HISTORY_MICROFRONTEND_URL:
+        # There is no order history microfrontend to send anyone to.
+        return False
+    # Learners associated with an enterprise customer obtain content through that
+    # customer's portal rather than by purchasing it directly, so order history
+    # does not apply to them.
+    return not get_enterprise_learner_portal_link()
 
 
 def get_logo_url_for_email():

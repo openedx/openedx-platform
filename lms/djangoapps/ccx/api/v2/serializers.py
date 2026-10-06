@@ -101,3 +101,27 @@ class CreateCCXRequestSerializer(serializers.Serializer):  # pylint: disable=abs
     """Validate the `create_ccx` POST body: `{ "name": str }`."""
 
     name = serializers.CharField(max_length=255, allow_blank=False, trim_whitespace=True)
+
+
+class RemoveScheduleRequestSerializer(serializers.Serializer):  # pylint: disable=abstract-method
+    """Validate the `remove_schedule` POST body: `{ "location": str }`."""
+
+    location = serializers.CharField(allow_blank=False, trim_whitespace=True)
+
+class CCXGradingPolicyRequestSerializer(serializers.Serializer):  # pylint: disable=abstract-method
+    """
+    Validate the `grading_policy` PUT body: `{ "policy": { ... } }`.
+
+    `policy` must contain a `GRADER` list and a `GRADE_CUTOFFS` dict, matching
+    the shape produced by Studio for a course grading policy.
+    """
+
+    policy = serializers.DictField()
+
+    def validate_policy(self, value):
+        """Ensure the policy has the expected top-level shape."""
+        if not isinstance(value.get('GRADER'), list):
+            raise serializers.ValidationError(_('`GRADER` must be a list.'))
+        if not isinstance(value.get('GRADE_CUTOFFS'), dict):
+            raise serializers.ValidationError(_('`GRADE_CUTOFFS` must be an object.'))
+        return value

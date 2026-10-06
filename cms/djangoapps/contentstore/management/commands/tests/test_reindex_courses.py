@@ -112,6 +112,27 @@ class TestReindexCourse(ModuleStoreTestCase):
             expected_calls = self._build_calls(self.first_course, self.second_course)
             self.assertEqual(patched_index.mock_calls, expected_calls)  # noqa: PT009
 
+    def test_reindex_wraps_each_course_in_bulk_operations(self):
+        """
+        Each course reindex must run inside modulestore().bulk_operations(course_key)
+        so the course structure is fetched from the modulestore once and cached for
+        the whole reindex instead of being re-fetched on every block access.
+        Regression guard for https://github.com/openedx/edx-platform/issues/36868
+        """
+        with mock.patch(self.REINDEX_PATH_LOCATION), \
+                mock.patch(self.MODULESTORE_PATCH_LOCATION, mock.Mock(return_value=self.store)), \
+                mock.patch.object(
+                    self.store, 'bulk_operations', wraps=self.store.bulk_operations
+                ) as patched_bulk:
+            call_command(
+                'reindex_course',
+                str(self.first_course.id),
+                str(self.second_course.id),
+            )
+            bulk_keys = [c.args[0] for c in patched_bulk.call_args_list]
+            self.assertIn(self.first_course.id, bulk_keys)  # noqa: PT009
+            self.assertIn(self.second_course.id, bulk_keys)  # noqa: PT009
+
     def test_given_all_key_prompts_and_reindexes_all_courses(self):
         """ Test that reindexes all courses when --all key is given and confirmed """
         with mock.patch(self.YESNO_PATCH_LOCATION) as patched_yes_no:

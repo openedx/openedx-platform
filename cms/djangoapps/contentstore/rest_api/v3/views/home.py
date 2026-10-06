@@ -26,10 +26,10 @@ to apply the FC-0118 ADRs:
     instead of the default ``SessionAuthentication``.
 """
 
-import edx_api_doc_tools as apidocs
 from django.conf import settings
 from drf_spectacular.openapi import AutoSchema
-from drf_spectacular.utils import OpenApiParameter, extend_schema
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
 from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
 from edx_rest_framework_extensions.mixins import StandardizedErrorMixin
@@ -131,16 +131,17 @@ class HomeViewSet(StandardizedErrorMixin, viewsets.ViewSet):
         # ADR 0036 — drop top-level keys not requested via ?fields=.
         return Response(project(serializer.data, request.query_params.get("fields")))
 
-    @apidocs.schema(
+    @extend_schema(
         parameters=[
-            apidocs.string_parameter(
+            OpenApiParameter(
                 "org",
-                apidocs.ParameterLocation.QUERY,
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
                 description="Query param to filter by course org",
             )],
         responses={
             200: CourseHomeTabSerializer,
-            401: "The requester is not authenticated.",
+            401: OpenApiResponse(description="The requester is not authenticated."),
         },
     )
     @action(detail=False, methods=['get'], url_path='courses', url_name='courses')
@@ -161,16 +162,18 @@ class HomeViewSet(StandardizedErrorMixin, viewsets.ViewSet):
         serializer = self.get_serializer(courses_context)
         return Response(serializer.data)
 
-    @apidocs.schema(
+    @extend_schema(
         parameters=[
-            apidocs.string_parameter(
+            OpenApiParameter(
                 "org",
-                apidocs.ParameterLocation.QUERY,
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
                 description="Query param to filter by course org",
             ),
-            apidocs.query_parameter(
+            OpenApiParameter(
                 "is_migrated",
-                bool,
+                OpenApiTypes.BOOL,
+                OpenApiParameter.QUERY,
                 description=(
                     "Query param to filter by migrated status of library."
                     " If present (true or false), it will filter by migration status"
@@ -180,7 +183,7 @@ class HomeViewSet(StandardizedErrorMixin, viewsets.ViewSet):
         ],
         responses={
             200: LibraryTabSerializer,
-            401: "The requester is not authenticated.",
+            401: OpenApiResponse(description="The requester is not authenticated."),
         },
     )
     @action(detail=False, methods=['get'], url_path='libraries', url_name='libraries')

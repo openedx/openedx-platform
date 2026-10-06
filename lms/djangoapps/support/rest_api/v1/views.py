@@ -5,6 +5,8 @@ API Views for course team management in support app.
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from opaque_keys.edx.keys import CourseKey
 from rest_framework import status
 from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
@@ -163,30 +165,27 @@ class CourseTeamManageAPIView(GenericAPIView):
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
-    from drf_yasg import openapi
-    from drf_yasg.utils import swagger_auto_schema
-
-    @swagger_auto_schema(
-        manual_parameters=[
-            openapi.Parameter(
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
                 "email",
-                openapi.IN_QUERY,
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
                 description="User's email address",
-                type=openapi.TYPE_STRING,
             ),
-            openapi.Parameter(
+            OpenApiParameter(
                 "username",
-                openapi.IN_QUERY,
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
                 description="User's username",
-                type=openapi.TYPE_STRING,
             ),
-            openapi.Parameter(
+            OpenApiParameter(
                 "user_id",
-                openapi.IN_QUERY,
+                OpenApiTypes.INT,
+                OpenApiParameter.QUERY,
                 description="User's ID",
-                type=openapi.TYPE_INTEGER,
             ),
-        ]
+        ],
     )
     def get(self, request, *args, **kwargs):
         """

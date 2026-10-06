@@ -149,13 +149,6 @@ COURSE_AUTHORING_MICROFRONTEND_URL = "http://apps.local.openedx.io:2001/authorin
 DISCUSSIONS_MICROFRONTEND_URL = "http://apps.local.openedx.io:2002/discussions"
 ADMIN_CONSOLE_MICROFRONTEND_URL = "http://apps.local.openedx.io:2025/admin-console"
 
-# Temporarily enable the MFE Config API so the dev MFEs can fetch their runtime config from the
-# LMS. It is off by default in common.py (ENABLE_MFE_CONFIG_API), which makes /api/mfe_config/v1
-# return a 404. The flag itself is being deprecated -- see
-# https://github.com/openedx/openedx-platform/issues/38959. Remove this override once that DEPR
-# lands, or fold its removal into the DEPR if this development.py work merges first.
-ENABLE_MFE_CONFIG_API = True
-
 # Shared backend URLs served to all MFEs via the MFE Config API (GET /api/mfe_config/v1). An MFE
 # that sets MFE_CONFIG_API_URL fetches this at startup and merges it *over* its build-time .env
 # defaults (which point at localhost), so we don't have to hand-edit each MFE's env to use the

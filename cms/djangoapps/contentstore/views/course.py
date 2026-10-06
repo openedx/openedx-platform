@@ -187,16 +187,33 @@ def get_course_and_check_manage_group_configurations_access(course_key, user, de
     return _get_course_block(course_key, depth)
 
 
-def reindex_course_and_check_access(course_key, user):
+def user_can_reindex_course(course_key, user):
     """
-    Internal method used to restart indexing on a course.
+    Returns True if `user` is allowed to trigger a search reindex for `course_key`.
+
+    Mirrors the access rules enforced by `course_search_index_handler`, so callers that only
+    need to know whether the action is allowed (e.g. to decide whether to show a reindex link)
+    stay in sync with the rules enforced when the reindex is actually triggered.
     """
-    if not user_has_course_permission(
+    is_authz_enabled = core_toggles.AUTHZ_COURSE_AUTHORING_FLAG.is_enabled(course_key)
+    if not is_authz_enabled and not GlobalStaff().has_user(user):
+        # When AuthZ is disabled, restrict to global staff (legacy behavior).
+        # When AuthZ is enabled, access control is enforced by the AuthZ layer,
+        # which includes staff/superuser checks and course-level permissions.
+        return False
+    return user_has_course_permission(
         user=user,
         authz_permission=COURSES_PUBLISH_COURSE_CONTENT.identifier,
         course_key=course_key,
         legacy_permission=LegacyAuthoringPermission.WRITE
-    ):
+    )
+
+
+def reindex_course_and_check_access(course_key, user):
+    """
+    Internal method used to restart indexing on a course.
+    """
+    if not user_can_reindex_course(course_key, user):
         raise PermissionDenied()
     return CoursewareSearchIndexer.do_course_reindex(modulestore(), course_key)
 
@@ -373,12 +390,6 @@ def course_search_index_handler(request, course_key_string):
         json: return status of indexing task
     """
     course_key = CourseKey.from_string(course_key_string)
-    is_authz_enabled = core_toggles.AUTHZ_COURSE_AUTHORING_FLAG.is_enabled(course_key)
-    if not is_authz_enabled and not GlobalStaff().has_user(request.user):
-        # When AuthZ is disabled, restrict to global staff (legacy behavior).
-        # When AuthZ is enabled, access control is enforced by the AuthZ layer,
-        # which includes staff/superuser checks and course-level permissions.
-        raise PermissionDenied()
     content_type = request.META.get('CONTENT_TYPE', None)
     if content_type is None:
         content_type = "application/json; charset=utf-8"

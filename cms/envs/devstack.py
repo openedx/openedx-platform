@@ -365,6 +365,11 @@ SPECTACULAR_SETTINGS = {
     # Used for tag extraction only. Paths are emitted in full so they resolve
     # against the service-root SERVERS below.
     'SCHEMA_PATH_PREFIX': r'/api/(contentstore|authoring)',
+    # Serve the Swagger UI and ReDoc assets from drf-spectacular-sidecar rather
+    # than drf-spectacular's default unpinned jsdelivr CDN URLs.
+    'SWAGGER_UI_DIST': 'SIDECAR',
+    'SWAGGER_UI_FAVICON_HREF': 'SIDECAR',
+    'REDOC_DIST': 'SIDECAR',
     'SERVERS': [
         {'url': AUTHORING_API_URL, 'description': 'Public'},  # noqa: F405
         {'url': f'http://{CMS_BASE}', 'description': 'Local'},

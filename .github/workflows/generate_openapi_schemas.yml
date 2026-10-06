@@ -1,0 +1,174 @@
+# generate_openapi_schemas.yml
+#
+# Purpose: Generate OpenAPI schemas for the LMS and CMS using drf-spectacular,
+# then open a pull request if either schema changed. The generated schema files
+# are consumed by the openedx-platform-sdk repo's regen_sdk.sh script to keep
+# the SDK in sync with the platform's tagged API views.
+
+name: Generate OpenAPI Schemas
+
+permissions:
+  contents: write
+  pull-requests: write
+
+on:
+  workflow_dispatch:
+
+  schedule:
+    # Regenerate and commit the full OpenAPI schemas every Monday at 09:00 UTC.
+    - cron: "0 9 * * 1"
+
+jobs:
+  generate-schemas:
+    runs-on: ubuntu-latest
+
+    # Schema generation needs a migrated database: drf-spectacular evaluates a
+    # queryset while building a warning for edxval's VideoList, so the tables
+    # have to exist, not just the server. Mongo is needed for the migration
+    # itself rather than for generation -- split_modulestore_django's
+    # 0002_data_migration reads the modulestore. Credentials match the defaults
+    # in openedx/envs/common.py.
+    services:
+      mongo:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        # Note: Calling mongo here only works with mongo 4, in newer versions of mongo
+        # we'll have to use `mongosh`, hence the 'which mongosh mongo'.
+        options: >-
+          --health-cmd "$(which mongosh mongo) --quiet --eval 'db.runCommand(\"ping\")'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 3
+      mysql:
+        image: mysql:8
+        ports:
+          - 3306:3306
+        env:
+          MYSQL_DATABASE: "edxapp"
+          MYSQL_USER: "edxapp001"
+          MYSQL_PASSWORD: "password"
+          MYSQL_RANDOM_ROOT_PASSWORD: true
+        options: >-
+          --health-cmd "mysqladmin ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 3
+
+    steps:
+      - name: Setup mongodb user
+        run: |
+          docker exec ${{ job.services.mongo.id }} mongosh edxapp --eval '
+            db.createUser(
+              {
+                user: "edxapp",
+                pwd:  "password",
+                roles: [
+                     { role: "readWrite", db: "edxapp" },
+                ]
+              }
+            );
+          '
+
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      # mysqlclient ships no wheels, so pip builds it from source and needs the
+      # MySQL and xmlsec headers. migrations-check.yml and unit-tests.yml do the
+      # same before installing Python dependencies.
+      - name: Install system packages
+        run: |
+          sudo apt-get update
+          make ubuntu-requirements
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          enable-cache: true
+
+      # `default-groups = []` in pyproject.toml means a bare `uv sync` installs
+      # no groups at all, which leaves out ora2 and makes both schema steps fail
+      # with ModuleNotFoundError. `docs` includes `bundled`, which carries the
+      # bundled XBlocks — the same set .readthedocs.yaml and the other workflows
+      # install.
+      - name: Install dependencies
+        run: uv sync --no-default-groups --group docs --frozen
+
+      # Each migrate runs under the same settings as the generate step below
+      # it, so the tables land in the database that step reads. Without the
+      # settings module manage.py falls back to devstack, whose DATABASES is
+      # empty without an LMS_CFG, and the step fails before reaching the
+      # service.
+      - name: Run migrations
+        run: |
+          DJANGO_SETTINGS_MODULE=docs.docs_settings uv run ./manage.py lms migrate
+          DJANGO_SETTINGS_MODULE=cms.envs.development uv run ./manage.py cms migrate
+
+      # `docs.docs_settings` is what `make swagger` uses: it applies the
+      # unfiltered /api-docs configuration instead of the narrow, SDK-facing
+      # schema that SPECTACULAR_SETTINGS carries by default. Without it this
+      # step would overwrite the published LMS reference with the
+      # enrollment-only subset.
+      #
+      # NOTE: docs_settings only carries that unfiltered configuration as of
+      # https://github.com/openedx/openedx-platform/pull/39108, which must merge
+      # before this workflow runs.
+      - name: Generate LMS OpenAPI schema
+        run: |
+          DJANGO_SETTINGS_MODULE=docs.docs_settings \
+          uv run python manage.py lms spectacular --file docs/lms-openapi.yaml
+
+      # Studio has no docs_settings equivalent. `manage.py cms` defaults to
+      # cms.envs.devstack, which imports production.py and so requires a
+      # CMS_CFG file that does not exist in CI — settings raise
+      # ImproperlyConfigured before the command is even registered.
+      # cms.envs.development needs no such file, and inherits the Authoring
+      # API's SPECTACULAR_SETTINGS from cms/envs/common.py, so this emits the
+      # same contentstore-scoped surface Studio publishes at
+      # /authoring-api/schema/.
+      - name: Generate CMS OpenAPI schema
+        run: |
+          DJANGO_SETTINGS_MODULE=cms.envs.development \
+          uv run python manage.py cms spectacular --file docs/cms-openapi.yaml
+
+      - name: Open pull request if schemas changed
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8
+        with:
+          # The default GITHUB_TOKEN is scoped to this repository and cannot
+          # resolve org teams, so requesting team-reviewers with it fails this
+          # step after the PR is already open; PRs it opens also start no CI.
+          # upgrade-python-requirements.yml uses the requirements bot token for
+          # the same reason. Forks have no such secret and fall back to the
+          # default token.
+          token: ${{ secrets.REQUIREMENTS_BOT_GITHUB_TOKEN || github.token }}
+          branch: chore/update-openapi-schemas
+          # Without a suffix, a run that happens while the previous PR is
+          # still open pushes onto that same branch. Matches
+          # compile-python-requirements.yml and upgrade-one-python-dependency.yml.
+          branch-suffix: short-commit-hash
+          commit-message: |
+            chore: regenerate OpenAPI schemas
+
+            Commit generated by workflow `${{ github.workflow_ref }}`
+          title: 'chore: update OpenAPI schemas for SDK generation'
+          team-reviewers: wg-maintenance-openedx-platform-oncall
+          body: |
+            ## Auto-generated OpenAPI schema update
+
+            PR generated by workflow `${{ github.workflow_ref }}`.
+            It contains regenerated `docs/lms-openapi.yaml` and/or `docs/cms-openapi.yaml`
+            files reflecting the latest state of the platform's API views.
+
+            `docs/lms-openapi.yaml` is the full LMS API surface — the same schema
+            `make swagger` produces, which the docs build publishes.
+            `docs/cms-openapi.yaml` is Studio's tagged schema.
+
+            Both are consumed by the
+            [openedx-platform-sdk](https://github.com/edly-io/openedx-platform-sdk)
+            repository's `regen_sdk.sh`, which filters them down to the tagged
+            operations it generates a client for.
+
+            **Do not edit these files by hand** — they will be overwritten on the next run.
+          add-paths: |
+            docs/lms-openapi.yaml
+            docs/cms-openapi.yaml

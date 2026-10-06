@@ -44,8 +44,8 @@ dependencies = [
     "django-webpack-loader", # Used to wire webpack bundles into the django asset pipeline
     "djangorestframework",
     "drf-spectacular",
+    "drf-spectacular-sidecar",
     "edx-ace",
-    "edx-api-doc-tools",
     "edx-auth-backends", # Allow Studio to use LMS SSO
     "edx-bulk-grades", # LMS REST API for managing bulk grading operations
     "edx-ccx-keys",
@@ -290,7 +290,7 @@ constraint-dependencies = [
     "sphinx-autoapi<3.6.1",
     "setuptools<82",
     "astroid==4.0.4",
-    "edx-enterprise==8.14.0",
+    "edx-enterprise==8.17.0",
     "djangorestframework<3.18",
 ]
 [tool.edx_lint]
@@ -407,7 +407,7 @@ uv_constraints = [
     # The team that owns this package will manually bump this package rather than
     # having it pulled in automatically. This is to allow them to better control its
     # deployment and to do it in a process that works better for them.
-    "edx-enterprise==8.14.0",
+    "edx-enterprise==8.17.0",
     # Date: 2026-08-31
     # DRF 3.18.0 changes many=True validation errors from a list to a dict keyed by
     # item index, which breaks the error response shape of several write endpoints.

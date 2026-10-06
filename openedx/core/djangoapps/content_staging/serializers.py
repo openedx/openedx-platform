@@ -2,6 +2,7 @@
 Serializers for the content libraries REST API
 """
 from rest_framework import serializers
+from xblock.plugin import PluginMissingError
 
 from common.djangoapps.student.auth import has_studio_read_access
 from xmodule.modulestore.django import modulestore
@@ -36,7 +37,15 @@ class StagedContentSerializer(serializers.ModelSerializer):
         """ Get the friendly name for this XBlock/component type """
         from cms.djangoapps.contentstore.helpers import xblock_type_display_name
 
-        return xblock_type_display_name(obj.block_type)
+        try:
+            return xblock_type_display_name(obj.block_type)
+        except PluginMissingError:
+            # The clipboard holds a *copy* of a block, so the XBlock may no longer be installed (e.g. its
+            # plugin was removed from the platform after the content was copied).  Fall back to the raw block
+            # type instead of raising, so that one stale clipboard cannot break unrelated requests (the
+            # clipboard is embedded in the course index response for every course).  This mirrors
+            # openedx.core.djangoapps.xblock.api.xblock_type_display_name, which already does this.
+            return obj.block_type
 
 
 class UserClipboardSerializer(serializers.Serializer):

@@ -2,7 +2,7 @@
 import logging
 
 import dateutil
-import edx_api_doc_tools as apidocs
+from drf_spectacular.utils import OpenApiResponse, extend_schema
 from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
 from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
 from openedx_authz.constants.permissions import COURSES_VIEW_COURSE
@@ -378,10 +378,10 @@ class CourseLegacyLibraryContentMigratorView(DeveloperErrorViewMixin, StatusView
     )
     serializer_class = StatusSerializerWithUuid
 
-    @apidocs.schema(
+    @extend_schema(
         responses={
             200: CourseLegacyLibraryContentSerializer(many=True),
-            401: "The requester is not authenticated.",
+            401: OpenApiResponse(description="The requester is not authenticated."),
         },
     )
     @authz_permission_required(COURSES_VIEW_COURSE.identifier, LegacyAuthoringPermission.WRITE)
@@ -393,10 +393,10 @@ class CourseLegacyLibraryContentMigratorView(DeveloperErrorViewMixin, StatusView
         serializer = CourseLegacyLibraryContentSerializer(blocks, many=True)
         return Response(serializer.data)
 
-    @apidocs.schema(
+    @extend_schema(
         responses={
-            200: "In case of success, a 200.",
-            401: "The requester is not authenticated.",
+            200: OpenApiResponse(description="In case of success, a 200."),
+            401: OpenApiResponse(description="The requester is not authenticated."),
         },
     )
     @course_author_access_required

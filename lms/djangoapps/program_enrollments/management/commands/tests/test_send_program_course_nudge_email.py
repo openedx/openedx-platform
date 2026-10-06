@@ -3,8 +3,10 @@ Tests for the send_program_course_nudge_email management command.
 """
 from datetime import timedelta
 from unittest.mock import patch
+from urllib.parse import urljoin
 
 import ddt
+from django.conf import settings
 from django.core.management import call_command
 from django.test.utils import override_settings
 from django.utils import timezone
@@ -17,11 +19,18 @@ from lms.djangoapps.certificates.tests.factories import GeneratedCertificateFact
 from lms.djangoapps.grades.models import PersistentCourseGrade
 from openedx.core.djangoapps.catalog.tests.factories import CourseFactory as CatalogCourseFactory
 from openedx.core.djangoapps.catalog.tests.factories import CourseRunFactory, ProgramFactory
-from openedx.features.enterprise_support.tests.factories import EnterpriseCustomerUserFactory
 from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory
 
 LOG_PATH = 'lms.djangoapps.program_enrollments.management.commands.send_program_course_nudge_email'
+TEST_MODULE_PATH = __name__
+
+
+def replacement_suggested_course_url(prev_fn, user, suggested_course, suggested_course_run):
+    """
+    Test override that builds its own URL instead of delegating to ``prev_fn``.
+    """
+    return f'https://example.com/{user.username}/{suggested_course["key"]}'
 
 
 @ddt.ddt
@@ -39,10 +48,6 @@ class TestSendProgramCourseNudgeEmailCommand(SharedModuleStoreTestCase):
         super().setUp()
         self.user_1 = UserFactory()
         self.user_2 = UserFactory()
-
-        self.enterprise_customer_user = EnterpriseCustomerUserFactory.create(
-            user_id=self.user_1.id, enterprise_customer__enable_learner_portal=True
-        )
 
         completed_course = CourseFactory.create()
         self.completed_course_run = CourseRunFactory(key=str(completed_course.id))
@@ -108,7 +113,6 @@ class TestSendProgramCourseNudgeEmailCommand(SharedModuleStoreTestCase):
     @patch('common.djangoapps.student.models.course_enrollment.segment.track')
     @patch('lms.djangoapps.program_enrollments.management.commands.send_program_course_nudge_email.get_programs')
     @patch('lms.djangoapps.certificates.api.certificates_viewable_for_course', return_value=True)
-    @override_settings(ENABLE_ENTERPRISE_INTEGRATION=True)
     def test_email_send(self, add_no_commit, __, get_programs_mock, mock_track):  # noqa: PT019
         """
         Test Segment fired as expected.
@@ -145,7 +149,6 @@ class TestSendProgramCourseNudgeEmailCommand(SharedModuleStoreTestCase):
     )
     @patch('common.djangoapps.student.models.course_enrollment.segment.track')
     @patch('lms.djangoapps.program_enrollments.management.commands.send_program_course_nudge_email.get_programs')
-    @override_settings(ENABLE_ENTERPRISE_INTEGRATION=True)
     def test_email_no_course_recommendation(self, add_no_commit, get_programs_mock, mock_track):
         """
         Test Segment fired as expected.
@@ -164,3 +167,39 @@ class TestSendProgramCourseNudgeEmailCommand(SharedModuleStoreTestCase):
                 )
             )
             assert mock_track.call_count == 0
+
+    @ddt.data(
+        {
+            'override_setting': (),
+            'expected_url_template': '{default_url}',
+        },
+        {
+            'override_setting': f'{TEST_MODULE_PATH}.replacement_suggested_course_url',
+            'expected_url_template': 'https://example.com/{username}/{course_key}',
+        },
+    )
+    @ddt.unpack
+    @patch('common.djangoapps.student.models.course_enrollment.segment.track')
+    @patch('lms.djangoapps.program_enrollments.management.commands.send_program_course_nudge_email.get_programs')
+    @patch('lms.djangoapps.certificates.api.certificates_viewable_for_course', return_value=True)
+    def test_suggested_course_url(
+        self, __, get_programs_mock, mock_track, override_setting, expected_url_template,  # noqa: PT019
+    ):
+        """
+        Test the suggested course link, with no override configured and with one that replaces it.
+        """
+        get_programs_mock.return_value = [self.partially_completed_program_1]
+        with override_settings(OVERRIDE_PROGRAM_NUDGE_SUGGESTED_COURSE_URL=override_setting):
+            call_command(self.command)
+
+        default_url = urljoin(settings.MKTG_URLS.get('ROOT'), self.not_started_course_run_1['marketing_url'])
+        course_key = self.catalog_not_started_course_1['key']
+        tracked_urls = {call.args[0]: call.args[2]['COURSE_TWO_LINK'] for call in mock_track.call_args_list}
+        assert tracked_urls == {
+            user.id: expected_url_template.format(
+                default_url=default_url,
+                username=user.username,
+                course_key=course_key,
+            )
+            for user in (self.user_1, self.user_2)
+        }
