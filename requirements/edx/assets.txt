@@ -6,6 +6,6 @@
 #    uv export --frozen --no-hashes --only-group assets --no-emit-project
 click==8.5.0
 libsass==0.10.0
-nodeenv==1.10.0
+nodeenv==1.11.0
 six==1.17.0
     # via libsass

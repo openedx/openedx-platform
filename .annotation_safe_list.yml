@@ -410,6 +410,12 @@ openedx_content.Unit:
   ".. no_pii:": "No PII"
 openedx_content.UnitVersion:
   ".. no_pii:": "No PII"
+openedx_learning.HistoricalCompetencyCriteriaGroup:
+  ".. no_pii:": "No PII"
+openedx_learning.HistoricalCompetencyCriterion:
+  ".. no_pii:": "No PII"
+openedx_learning.HistoricalCompetencyRuleProfile:
+  ".. no_pii:": "No PII"
 organizations.HistoricalOrganization:
   ".. no_pii:": "No PII"
 organizations.HistoricalOrganizationCourse:

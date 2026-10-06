@@ -23,7 +23,7 @@ cycler==0.12.1
     # via matplotlib
 defusedxml==0.7.1
     # via nltk
-fonttools==4.65.0
+fonttools==4.66.0
     # via matplotlib
 joblib==1.6.0
     # via nltk
@@ -75,7 +75,7 @@ python-dateutil==2.9.0.post0
     # via matplotlib
 random2==1.0.2
     # via edx-sandbox
-regex==2026.9.10
+regex==2026.9.29
     # via nltk
 scipy==1.17.1
     # via

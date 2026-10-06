@@ -9,9 +9,9 @@ attrs==26.1.0
     # via zeep
 backoff==2.2.1
     # via edx-platform-user-retirement-scripts
-boto3==1.43.99
+boto3==1.43.104
     # via edx-platform-user-retirement-scripts
-botocore==1.43.99
+botocore==1.43.104
     # via
     #   boto3
     #   s3transfer
@@ -44,18 +44,18 @@ edx-django-utils==8.0.2
     # via edx-rest-api-client
 edx-rest-api-client==7.1.0
     # via edx-platform-user-retirement-scripts
-google-api-core==2.38.0
+google-api-core==2.39.0
     # via google-api-python-client
 google-api-python-client==2.200.0
     # via edx-platform-user-retirement-scripts
-google-auth==2.58.0
+google-auth==2.59.0
     # via
     #   google-api-core
     #   google-api-python-client
     #   google-auth-httplib2
 google-auth-httplib2==0.4.2
     # via google-api-python-client
-googleapis-common-protos==1.75.3
+googleapis-common-protos==1.75.4
     # via google-api-core
 httplib2==0.32.0
     # via
@@ -75,9 +75,9 @@ lxml==5.3.2
     # via zeep
 more-itertools==11.1.0
     # via simple-salesforce
-opentelemetry-api==1.44.0
+opentelemetry-api==1.45.0
     # via google-api-core
-platformdirs==4.11.12
+platformdirs==4.12.1
     # via zeep
 proto-plus==1.28.4
     # via google-api-core
@@ -94,7 +94,7 @@ pyasn1-modules==0.4.2
     # via google-auth
 pycparser==3.0 ; implementation_name != 'PyPy' and platform_python_implementation != 'PyPy'
     # via cffi
-pyjwt==2.14.0
+pyjwt==2.15.1
     # via
     #   edx-rest-api-client
     #   simple-salesforce
@@ -104,7 +104,7 @@ pyparsing==3.3.3
     # via httplib2
 python-dateutil==2.9.0.post0
     # via botocore
-pytz==2026.3.post1
+pytz==2026.4
     # via jenkinsapi
 pyyaml==6.0.3
     # via edx-platform-user-retirement-scripts

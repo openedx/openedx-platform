@@ -1,7 +1,8 @@
 """ API Views for course tabs """
 
-import edx_api_doc_tools as apidocs
 from django.utils.translation import gettext_lazy as _
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from opaque_keys.edx.keys import CourseKey
 from openedx_authz.constants.permissions import (
     COURSES_MANAGE_PAGES_AND_RESOURCES,
@@ -28,13 +29,13 @@ class CourseTabListView(DeveloperErrorViewMixin, APIView):
     API view to list course tabs.
     """
 
-    @apidocs.schema(
-        parameters=[apidocs.string_parameter("course_id", apidocs.ParameterLocation.PATH, description="Course ID")],
+    @extend_schema(
+        parameters=[OpenApiParameter("course_id", OpenApiTypes.STR, OpenApiParameter.PATH, description="Course ID")],
         responses={
             200: CourseTabSerializer,
-            401: "The requester is not authenticated.",
-            403: "The requester cannot access the specified course.",
-            404: "The requested course does not exist.",
+            401: OpenApiResponse(description="The requester is not authenticated."),
+            403: OpenApiResponse(description="The requester cannot access the specified course."),
+            404: OpenApiResponse(description="The requested course does not exist."),
         },
     )
     @verify_course_exists()
@@ -119,18 +120,18 @@ class CourseTabSettingsView(DeveloperErrorViewMixin, APIView):
             return self._make_error_response(400, str(exc))
         return super().handle_exception(exc)
 
-    @apidocs.schema(
-        body=CourseTabUpdateSerializer(help_text=_("Change the visibility of tabs in a course.")),
+    @extend_schema(
+        request=CourseTabUpdateSerializer(help_text=_("Change the visibility of tabs in a course.")),
         parameters=[
-            apidocs.string_parameter("course_id", apidocs.ParameterLocation.PATH, description="Course ID"),
-            apidocs.string_parameter("tab_id", apidocs.ParameterLocation.QUERY, description="Tab ID"),
-            apidocs.string_parameter("tab_location", apidocs.ParameterLocation.QUERY, description="Tab usage key"),
+            OpenApiParameter("course_id", OpenApiTypes.STR, OpenApiParameter.PATH, description="Course ID"),
+            OpenApiParameter("tab_id", OpenApiTypes.STR, OpenApiParameter.QUERY, description="Tab ID"),
+            OpenApiParameter("tab_location", OpenApiTypes.STR, OpenApiParameter.QUERY, description="Tab usage key"),
         ],
         responses={
-            204: "In case of success, a 204 is returned with no content.",
-            401: "The requester is not authenticated.",
-            403: "The requester cannot access the specified course.",
-            404: "The requested course does not exist.",
+            204: OpenApiResponse(description="In case of success, a 204 is returned with no content."),
+            401: OpenApiResponse(description="The requester is not authenticated."),
+            403: OpenApiResponse(description="The requester cannot access the specified course."),
+            404: OpenApiResponse(description="The requested course does not exist."),
         },
     )
     @verify_course_exists()
@@ -200,16 +201,16 @@ class CourseTabReorderView(DeveloperErrorViewMixin, APIView):
             return self._make_error_response(400, str(exc))
         return super().handle_exception(exc)
 
-    @apidocs.schema(
-        body=TabIDLocatorSerializer(many=True),
+    @extend_schema(
+        request=TabIDLocatorSerializer(many=True),
         parameters=[
-            apidocs.string_parameter("course_id", apidocs.ParameterLocation.PATH, description="Course ID"),
+            OpenApiParameter("course_id", OpenApiTypes.STR, OpenApiParameter.PATH, description="Course ID"),
         ],
         responses={
-            204: "In case of success, a 204 is returned with no content.",
-            401: "The requester is not authenticated.",
-            403: "The requester cannot access the specified course.",
-            404: "The requested course does not exist.",
+            204: OpenApiResponse(description="In case of success, a 204 is returned with no content."),
+            401: OpenApiResponse(description="The requester is not authenticated."),
+            403: OpenApiResponse(description="The requester cannot access the specified course."),
+            404: OpenApiResponse(description="The requested course does not exist."),
         },
     )
     @verify_course_exists()

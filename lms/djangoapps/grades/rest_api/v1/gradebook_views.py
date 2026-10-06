@@ -8,9 +8,11 @@ from collections import namedtuple
 from contextlib import contextmanager
 from functools import wraps
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.db.models import Case, Exists, F, OuterRef, Q, When
+from django.http import Http404
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from opaque_keys import InvalidKeyError
@@ -20,9 +22,14 @@ from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from common.djangoapps.student.auth import has_course_author_access
+from common.djangoapps.student.auth import has_course_author_access, is_ccx_course
 from common.djangoapps.student.models import CourseAccessRole, CourseEnrollment, CourseMode
-from common.djangoapps.student.roles import BulkRoleCache
+from common.djangoapps.student.roles import (
+    BulkRoleCache,
+    CourseCcxCoachRole,
+    CourseInstructorRole,
+    CourseStaffRole,
+)
 from common.djangoapps.track.event_transaction_utils import (
     create_new_event_transaction_id,
     get_event_transaction_id,
@@ -30,6 +37,7 @@ from common.djangoapps.track.event_transaction_utils import (
     set_event_transaction_type,
 )
 from common.djangoapps.util.date_utils import to_timestamp
+from lms.djangoapps.ccx.permissions import VIEW_CCX_COACH_DASHBOARD
 from lms.djangoapps.course_blocks.api import get_course_blocks
 from lms.djangoapps.grades.api import (
     CourseGradeFactory,
@@ -212,6 +220,39 @@ def get_bool_param(request, param_name, default):
         return bool_value
 
 
+def _has_ccx_gradebook_access(user, course_key):
+    """
+    Return True if `user` is allowed to hit the gradebook for a CCX course.
+
+    Mirrors the platform-level and course-level guards from
+    `lms.djangoapps.ccx.api.v2.permissions.IsCCXCoach` so both surfaces agree:
+
+    * `CUSTOM_COURSES_EDX` must be enabled.
+    * The master course must have `enable_ccx = True`.
+    * The user must either have the canonical staff perm on the master
+      (`VIEW_CCX_COACH_DASHBOARD`, which resolves to `HasAccessRule('staff')`),
+      hold the CCX coach role on the master, or be site staff / hold a
+      staff/instructor role directly on the CCX (which `create_ccx_course`
+      grants to the coach via `assign_staff_role_to_ccx`).
+    """
+    if not settings.CUSTOM_COURSES_EDX:
+        return False
+    master_course_key = course_key.to_course_locator()
+    try:
+        master_course = get_course_by_id(master_course_key)
+    except Http404:
+        return False
+    if not master_course.enable_ccx:
+        return False
+    return (
+        user.is_staff
+        or user.has_perm(VIEW_CCX_COACH_DASHBOARD, master_course)
+        or CourseCcxCoachRole(master_course_key).has_user(user)
+        or CourseStaffRole(course_key).has_user(user)
+        or CourseInstructorRole(course_key).has_user(user)
+    )
+
+
 def course_author_access_required(view):
     """
     Ensure the user making the API request has course author access to the given course.
@@ -231,7 +272,11 @@ def course_author_access_required(view):
         Calls the view function if has access, otherwise raises a 403.
         """
         course_key = CourseKey.from_string(course_id)
-        if not has_course_author_access(request.user, course_key):
+        if is_ccx_course(course_key):
+            has_access = _has_ccx_gradebook_access(request.user, course_key)
+        else:
+            has_access = has_course_author_access(request.user, course_key)
+        if not has_access:
             raise DeveloperErrorViewMixin.api_error(
                 status_code=status.HTTP_403_FORBIDDEN,
                 developer_message='The requesting user does not have course author permissions.',

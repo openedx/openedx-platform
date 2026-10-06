@@ -1,29 +1,16 @@
-"""Tests for the lms module itself."""
+"""Tests for the cms module itself."""
 
-
-import logging
-import mimetypes
-
-from django.conf import settings  # pylint: disable=unused-import  # noqa: F401
 from django.core.cache import cache
 from django.test import TestCase, override_settings
 from django.urls import path
 
 from openedx.core.apidocs import cached_schema_view
 
-log = logging.getLogger(__name__)
 
-
-class LmsModuleTests(TestCase):
+class CmsModuleTests(TestCase):
     """
-    Tests for lms module itself.
+    Tests for cms module itself.
     """
-
-    def test_new_mimetypes(self):
-        extensions = ['eot', 'otf', 'ttf', 'woff']
-        for extension in extensions:
-            mimetype, _ = mimetypes.guess_type('test.' + extension)
-            assert mimetype is not None
 
     def test_api_docs(self):
         """
@@ -77,7 +64,7 @@ class LmsModuleTests(TestCase):
         """
         cache.clear()
         full = self.client.get('/api-docs/schema/')
-        with override_settings(ROOT_URLCONF='lms.tests'):
+        with override_settings(ROOT_URLCONF='cms.tests'):
             other = self.client.get('/api-docs/schema/')
         again = self.client.get('/api-docs/schema/')
         assert full.status_code == 200

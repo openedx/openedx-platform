@@ -8,12 +8,13 @@ import logging
 from django.contrib.auth import get_user_model
 from django.db.transaction import non_atomic_requests
 from django.utils.decorators import method_decorator
-from drf_yasg import openapi
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiResponse, extend_schema, inline_serializer
 from opaque_keys.edx.locator import LibraryContainerLocator, LibraryLocatorV2
 from openedx_authz.constants import permissions as authz_permissions
 from openedx_content import api as content_api
 from openedx_content import models_api as content_models
+from rest_framework import serializers as drf_serializers
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_204_NO_CONTENT
@@ -39,9 +40,9 @@ class LibraryContainersView(GenericAPIView):
     serializer_class = serializers.LibraryContainerMetadataSerializer
 
     @convert_exceptions
-    @swagger_auto_schema(
-        request_body=serializers.LibraryContainerMetadataSerializer,
-        responses={200: serializers.LibraryContainerMetadataSerializer}
+    @extend_schema(
+        request=serializers.LibraryContainerMetadataSerializer,
+        responses={200: serializers.LibraryContainerMetadataSerializer},
     )
     def post(self, request, lib_key_str):
         """
@@ -73,8 +74,8 @@ class LibraryContainerView(GenericAPIView):
     serializer_class = serializers.LibraryContainerMetadataSerializer
 
     @convert_exceptions
-    @swagger_auto_schema(
-        responses={200: serializers.LibraryContainerMetadataSerializer}
+    @extend_schema(
+        responses={200: serializers.LibraryContainerMetadataSerializer},
     )
     def get(self, request, container_key: LibraryContainerLocator):
         """
@@ -89,9 +90,9 @@ class LibraryContainerView(GenericAPIView):
         return Response(serializers.LibraryContainerMetadataSerializer(container).data)
 
     @convert_exceptions
-    @swagger_auto_schema(
-        request_body=serializers.LibraryContainerUpdateSerializer,
-        responses={200: serializers.LibraryContainerMetadataSerializer}
+    @extend_schema(
+        request=serializers.LibraryContainerUpdateSerializer,
+        responses={200: serializers.LibraryContainerMetadataSerializer},
     )
     def patch(self, request, container_key: LibraryContainerLocator):
         """
@@ -140,10 +141,10 @@ class LibraryContainerChildrenView(GenericAPIView):
     serializer_class = serializers.LibraryXBlockMetadataSerializer
 
     @convert_exceptions
-    @swagger_auto_schema(
+    @extend_schema(
         responses={
             HTTP_200_OK: serializers.UnionLibraryMetadataSerializer()
-        }
+        },
     )
     def get(self, request, container_key: LibraryContainerLocator):
         """
@@ -223,9 +224,9 @@ class LibraryContainerChildrenView(GenericAPIView):
         return Response(serializers.LibraryContainerMetadataSerializer(container).data)
 
     @convert_exceptions
-    @swagger_auto_schema(
-        request_body=serializers.ContentLibraryItemContainerKeysSerializer,
-        responses={200: serializers.LibraryContainerMetadataSerializer}
+    @extend_schema(
+        request=serializers.ContentLibraryItemContainerKeysSerializer,
+        responses={200: serializers.LibraryContainerMetadataSerializer},
     )
     def post(self, request, container_key: LibraryContainerLocator):
         """
@@ -242,9 +243,9 @@ class LibraryContainerChildrenView(GenericAPIView):
         )
 
     @convert_exceptions
-    @swagger_auto_schema(
-        request_body=serializers.ContentLibraryItemContainerKeysSerializer,
-        responses={200: serializers.LibraryContainerMetadataSerializer}
+    @extend_schema(
+        request=serializers.ContentLibraryItemContainerKeysSerializer,
+        responses={200: serializers.LibraryContainerMetadataSerializer},
     )
     def delete(self, request, container_key: LibraryContainerLocator):
         """
@@ -261,9 +262,9 @@ class LibraryContainerChildrenView(GenericAPIView):
         )
 
     @convert_exceptions
-    @swagger_auto_schema(
-        request_body=serializers.ContentLibraryItemContainerKeysSerializer,
-        responses={200: serializers.LibraryContainerMetadataSerializer}
+    @extend_schema(
+        request=serializers.ContentLibraryItemContainerKeysSerializer,
+        responses={200: serializers.LibraryContainerMetadataSerializer},
     )
     def patch(self, request, container_key: LibraryContainerLocator):
         """
@@ -288,13 +289,11 @@ class LibraryContainerRestore(GenericAPIView):
     """
 
     @convert_exceptions
-    @swagger_auto_schema(
-        request_body=openapi.Schema(
-            type=openapi.TYPE_OBJECT,
-        ),
+    @extend_schema(
+        request=OpenApiTypes.OBJECT,
         responses={
-            HTTP_204_NO_CONTENT: "No content"
-        }
+            HTTP_204_NO_CONTENT: OpenApiResponse(description="No content"),
+        },
     )
     def post(self, request, container_key: LibraryContainerLocator) -> Response:
         """
@@ -317,18 +316,14 @@ class LibraryContainerCollectionsView(GenericAPIView):
     """
 
     @convert_exceptions
-    @swagger_auto_schema(
-        request_body=openapi.Schema(
-            type=openapi.TYPE_OBJECT,
-        ),
+    @extend_schema(
+        request=OpenApiTypes.OBJECT,
         responses={
-            HTTP_200_OK: openapi.Schema(
-                type=openapi.TYPE_OBJECT,
-                properties={
-                    'count': openapi.Schema(type=openapi.TYPE_INTEGER)
-                }
-            )
-        }
+            HTTP_200_OK: inline_serializer(
+                name="ContainerCollectionsUpdateCount",
+                fields={"count": drf_serializers.IntegerField()},
+            ),
+        },
     )
     def patch(self, request: RestRequest, container_key: LibraryContainerLocator) -> Response:
         """
@@ -364,15 +359,9 @@ class LibraryContainerPublishView(GenericAPIView):
     """
 
     @convert_exceptions
-    @swagger_auto_schema(
-        request_body=openapi.Schema(
-            type=openapi.TYPE_OBJECT,
-        ),
-        responses={
-            HTTP_200_OK: openapi.Schema(
-                type=openapi.TYPE_OBJECT,
-            )
-        }
+    @extend_schema(
+        request=OpenApiTypes.OBJECT,
+        responses={HTTP_200_OK: OpenApiTypes.OBJECT},
     )
     def post(self, request: RestRequest, container_key: LibraryContainerLocator) -> Response:
         """
@@ -423,8 +412,8 @@ class LibraryContainerHierarchy(GenericAPIView):
     serializer_class = serializers.ContainerHierarchySerializer
 
     @convert_exceptions
-    @swagger_auto_schema(
-        responses={200: serializers.ContainerHierarchySerializer}
+    @extend_schema(
+        responses={200: serializers.ContainerHierarchySerializer},
     )
     def get(self, request: RestRequest, container_key: LibraryContainerLocator) -> Response:
         """

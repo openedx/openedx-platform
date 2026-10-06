@@ -13,6 +13,7 @@ from rest_framework.test import APIClient
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.authz.tests.mixins import CourseAuthoringAuthzTestMixin
 from openedx.core.djangoapps.content_staging import api as python_api
+from openedx.core.djangoapps.content_staging.models import StagedContent
 from xmodule.contentstore.django import contentstore
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase, upload_file_to_course
 from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory, ToyCourseFactory
@@ -132,6 +133,34 @@ class ClipboardTestCase(ModuleStoreTestCase):
         olx_data = python_api.get_staged_content_olx(clipboard_data.content.id)
         assert olx_data is not None
         self.assertXmlEqual(olx_data, SAMPLE_VIDEO_OLX)
+
+    def test_uninstalled_xblock_in_clipboard(self) -> None:
+        """
+        A clipboard may hold a *copy* of a block whose XBlock plugin is no longer installed.  Reading the
+        clipboard must still work (it is embedded in the course index response for every course), falling
+        back to the raw block type for the display name.
+        """
+        course_key, client = self._setup_course()
+
+        # Copy the video to the clipboard:
+        video_key = course_key.make_usage_key("video", "sample_video")
+        response = client.post(CLIPBOARD_ENDPOINT, {"usage_key": str(video_key)}, format="json")
+        assert response.status_code == 200
+        staged_content_id = response.json()["content"]["id"]
+        assert response.json()["content"]["block_type_display"] == "Video"
+
+        # Pretend the plugin for this block type was uninstalled after the content was copied:
+        StagedContent.objects.filter(pk=staged_content_id).update(block_type="an_uninstalled_xblock")
+
+        # The REST API should answer 200, using the raw block type as the display name:
+        response = client.get(CLIPBOARD_ENDPOINT)
+        assert response.status_code == 200
+        response_data = response.json()
+        assert response_data["content"]["block_type"] == "an_uninstalled_xblock"
+        assert response_data["content"]["block_type_display"] == "an_uninstalled_xblock"
+
+        # ...and so should the python API, which is what the course index response uses:
+        assert python_api.get_user_clipboard_json(self.user.id, response.wsgi_request) == response_data
 
     def test_copy_html(self) -> None:
         """
