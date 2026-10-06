@@ -17,6 +17,7 @@ from django.test.utils import override_settings
 from django.urls import resolve, reverse
 from django.utils.translation import gettext as _
 from edx_django_utils.cache import RequestCache
+from edx_toggles.toggles.testutils import override_waffle_flag
 from opaque_keys.edx.keys import CourseKey
 from pytz import UTC
 from xblocks_contrib.problem.capa.testing.response_xml_factory import StringResponseXMLFactory
@@ -29,6 +30,7 @@ from lms.djangoapps.ccx.models import CustomCourseForEdX
 from lms.djangoapps.ccx.overrides import get_override_for_ccx, override_field_for_ccx
 from lms.djangoapps.ccx.tests.factories import CcxFactory
 from lms.djangoapps.ccx.tests.utils import CcxTestCase, flatten
+from lms.djangoapps.ccx.toggles import LEGACY_CCX_COACH_DASHBOARD
 from lms.djangoapps.ccx.utils import ccx_course, create_ccx_course, get_date, is_email
 from lms.djangoapps.courseware.tabs import get_course_tab_list
 from lms.djangoapps.courseware.tests.factories import StudentModuleFactory
@@ -119,6 +121,11 @@ def unhide(unit):
         unhide(child)
 
 
+# These exercise the legacy CCX Coach dashboard, which is no longer the default experience.
+# The flag is pinned on so they keep testing the legacy view rather than the MFE redirect.
+# When DEPR-38432 (remove the legacy instructor dashboard, which covers the legacy CCX
+# dashboard) is executed, these can be removed along with the flag.
+@override_waffle_flag(LEGACY_CCX_COACH_DASHBOARD, active=True)
 class TestAdminAccessCoachDashboard(CcxTestCase, LoginEnrollmentTestCase):
     """
     Tests for Custom Courses views.
@@ -162,6 +169,11 @@ class TestAdminAccessCoachDashboard(CcxTestCase, LoginEnrollmentTestCase):
         assert response.status_code == 403
 
 
+# These exercise the legacy CCX Coach dashboard, which is no longer the default experience.
+# The flag is pinned on so they keep testing the legacy view rather than the MFE redirect.
+# When DEPR-38432 (remove the legacy instructor dashboard, which covers the legacy CCX
+# dashboard) is executed, these can be removed along with the flag.
+@override_waffle_flag(LEGACY_CCX_COACH_DASHBOARD, active=True)
 @override_settings(
     XBLOCK_FIELD_DATA_WRAPPERS=['lms.djangoapps.courseware.field_overrides:OverrideModulestoreFieldData.wrap'],
     MODULESTORE_FIELD_OVERRIDE_PROVIDERS=['lms.djangoapps.ccx.overrides.CustomCoursesForEdxOverrideProvider'],
@@ -274,6 +286,11 @@ class TestCCXProgressChanges(CcxTestCase, LoginEnrollmentTestCase):
         self.assert_progress_summary(ccx_course_key, due)
 
 
+# These exercise the legacy CCX Coach dashboard, which is no longer the default experience.
+# The flag is pinned on so they keep testing the legacy view rather than the MFE redirect.
+# When DEPR-38432 (remove the legacy instructor dashboard, which covers the legacy CCX
+# dashboard) is executed, these can be removed along with the flag.
+@override_waffle_flag(LEGACY_CCX_COACH_DASHBOARD, active=True)
 @override_settings(
     XBLOCK_FIELD_DATA_WRAPPERS=['lms.djangoapps.courseware.field_overrides:OverrideModulestoreFieldData.wrap'],
     MODULESTORE_FIELD_OVERRIDE_PROVIDERS=['lms.djangoapps.ccx.overrides.CustomCoursesForEdxOverrideProvider'],
@@ -824,6 +841,11 @@ class TestCoachDashboard(CcxTestCase, LoginEnrollmentTestCase):
         assert not CourseEnrollmentAllowed.objects.filter(course_id=course_key, email=identifier).exists()
 
 
+# These exercise the legacy CCX Coach dashboard, which is no longer the default experience.
+# The flag is pinned on so they keep testing the legacy view rather than the MFE redirect.
+# When DEPR-38432 (remove the legacy instructor dashboard, which covers the legacy CCX
+# dashboard) is executed, these can be removed along with the flag.
+@override_waffle_flag(LEGACY_CCX_COACH_DASHBOARD, active=True)
 class TestCoachDashboardSchedule(CcxTestCase, LoginEnrollmentTestCase, ModuleStoreTestCase):
     """
     Tests of the CCX Coach Dashboard which need to modify the course content.
