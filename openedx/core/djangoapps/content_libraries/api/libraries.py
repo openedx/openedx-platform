@@ -157,7 +157,7 @@ class AccessLevel:
     READ_LEVEL = ContentLibraryPermission.READ_LEVEL
     NO_ACCESS = None
 
-
+# DiscoveryCollection-BB-9218-OEX: Library access levels
 ACCESS_LEVEL_TO_LIBRARY_ROLE = {
     AccessLevel.ADMIN_LEVEL: "library_admin",
     AccessLevel.AUTHOR_LEVEL: "library_author",
@@ -259,7 +259,7 @@ def user_can_create_library(user: AbstractUser) -> bool:
     )
     return has_perms
 
-
+# DiscoveryCollection-BB-9218-OEX: List libraries associated with a user
 def get_libraries_for_user(user, org=None, text_search=None, order=None) -> QuerySet[ContentLibrary]:
     """
     Return content libraries that the user has permission to view.
@@ -363,6 +363,7 @@ def require_permission_for_library_key(
     return library_obj
 
 
+# DiscoveryCollection-BB-9218-OEX: Get a library by ID
 def get_library(library_key: LibraryLocatorV2) -> ContentLibraryMetadata:
     """
     Get the library with the specified key. Does not check permissions.
@@ -414,6 +415,7 @@ def get_library(library_key: LibraryLocatorV2) -> ContentLibraryMetadata:
     )
 
 
+# DiscoveryCollection-BB-9218-OEX: Create a content library
 def create_library(
     org: str,
     slug: str,
@@ -497,7 +499,7 @@ def create_library(
         learning_package_id=ref.learning_package.id,  # type: ignore[union-attr]
     )
 
-
+# DiscoveryCollection-BB-9218-OEX: List existing library team members and groups
 def get_library_team(library_key: LibraryLocatorV2) -> list[ContentLibraryPermissionEntry]:
     """
     Get the list of users/groups granted permission to use this library.
@@ -516,7 +518,7 @@ def get_library_team(library_key: LibraryLocatorV2) -> list[ContentLibraryPermis
         for entry in ref.permission_grants.all()
     ]
 
-
+# DiscoveryCollection-BB-9218-OEX: List user roles for a specified library
 def get_library_user_permissions(library_key: LibraryLocatorV2, user: UserType) -> ContentLibraryPermissionEntry | None:
     """
     Fetch the specified user's access information. Will return None if no
@@ -542,7 +544,7 @@ def get_library_user_permissions(library_key: LibraryLocatorV2, user: UserType) 
         access_level=grant.access_level,
     )
 
-
+# DiscoveryCollection-BB-9218-OEX: Modify/update a team member's role
 def set_library_user_permissions(library_key: LibraryLocatorV2, user: UserType, access_level: str | None):
     """
     Change the specified user's level of access to this library.
@@ -575,6 +577,7 @@ def set_library_user_permissions(library_key: LibraryLocatorV2, user: UserType, 
         )
 
 
+# DiscoveryCollection-BB-9218-OEX: Add a new team member by email
 def assign_library_role_to_user(library_key: LibraryLocatorV2, user: UserType, access_level: str):
     """Grant a role to the specified user for this library.
 
@@ -599,6 +602,7 @@ def assign_library_role_to_user(library_key: LibraryLocatorV2, user: UserType, a
         log.warning(f"Failed to assign role '{role}' to user '{user.username}' for library '{library_key}'")
 
 
+# DiscoveryCollection-BB-9218-OEX: AddGroupToLibrary
 def set_library_group_permissions(library_key: LibraryLocatorV2, group, access_level: str):
     """
     Change the specified group's level of access to this library.
@@ -624,7 +628,7 @@ def set_library_group_permissions(library_key: LibraryLocatorV2, group, access_l
             defaults={"access_level": access_level},
         )
 
-
+# DiscoveryCollection-BB-9218-OEX: Update a Content Library
 def update_library(
     library_key: LibraryLocatorV2,
     title=None,
@@ -683,6 +687,7 @@ def update_library(
     return content_lib
 
 
+# DiscoveryCollection-BB-9218-OEX: Delete specified a Content Library
 def delete_library(library_key: LibraryLocatorV2) -> None:
     """
     Delete a content library
