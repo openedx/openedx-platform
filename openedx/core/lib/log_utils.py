@@ -12,14 +12,16 @@ ANONYMOUS_USER_FOR_LOG = '<AnonymousUser>'
 REDACTED_FOR_LOG = '[REDACTED]'
 
 
-def get_unrecognized_pii_or_redacted_for_log(value):
+def get_standalone_pii_or_redacted_for_log(value):
     """
     Return ``value`` as a string for a log message, or ``'[REDACTED]'`` when the
     ``SQUELCH_PII_IN_LOGS`` setting is enabled.
 
-    Use this for PII that has no associated user to identify by id, such as an email
-    or username that failed a lookup. When a ``User`` object is available, prefer
-    ``get_username_or_pii_safe_user_id_for_log`` or ``get_email_or_pii_safe_user_id_for_log``.
+    Use this for standalone PII, when there is no access to a ``User`` object whose id
+    could be logged instead: for example, an email or username that failed a lookup,
+    or a username that is still being generated. When a ``User`` object is available,
+    use ``get_username_or_pii_safe_user_id_for_log`` or
+    ``get_email_or_pii_safe_user_id_for_log`` instead.
 
     Arguments:
         value: the PII value to log, such as an email address or username.
@@ -30,17 +32,6 @@ def get_unrecognized_pii_or_redacted_for_log(value):
     if getattr(settings, 'SQUELCH_PII_IN_LOGS', False):
         return REDACTED_FOR_LOG
     return str(value)
-
-
-def _pii_safe_user_identifier_for_log(user, pii_attribute):
-    """
-    Return ``user``'s id, or its ``pii_attribute`` value, as a string for a log message.
-    """
-    if getattr(user, 'is_anonymous', False) is True:
-        return ANONYMOUS_USER_FOR_LOG
-    if getattr(settings, 'SQUELCH_PII_IN_LOGS', False):
-        return str(user.id)
-    return str(getattr(user, pii_attribute))
 
 
 def get_username_or_pii_safe_user_id_for_log(user):
@@ -61,7 +52,11 @@ def get_username_or_pii_safe_user_id_for_log(user):
     Returns:
         str: the user id or the username.
     """
-    return _pii_safe_user_identifier_for_log(user, 'username')
+    if getattr(user, 'is_anonymous', False) is True:
+        return ANONYMOUS_USER_FOR_LOG
+    if getattr(settings, 'SQUELCH_PII_IN_LOGS', False):
+        return str(user.id)
+    return str(user.username)
 
 
 def get_email_or_pii_safe_user_id_for_log(user):
@@ -82,7 +77,11 @@ def get_email_or_pii_safe_user_id_for_log(user):
     Returns:
         str: the user id or the email.
     """
-    return _pii_safe_user_identifier_for_log(user, 'email')
+    if getattr(user, 'is_anonymous', False) is True:
+        return ANONYMOUS_USER_FOR_LOG
+    if getattr(settings, 'SQUELCH_PII_IN_LOGS', False):
+        return str(user.id)
+    return str(user.email)
 
 
 def audit_log(name, **kwargs):

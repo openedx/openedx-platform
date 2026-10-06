@@ -831,12 +831,11 @@ class TestInstructorAPIBulkAccountCreationAndEnrollment(SharedModuleStoreTestCas
         assert manual_enrollments.count() == 1
         assert manual_enrollments[0].state_transition, UNENROLLED_TO_ENROLLED
 
-    @ddt.data((True, '[REDACTED]'), (False, 'test_student@example.com'))
-    @ddt.unpack
+    @ddt.data(True, False)
     @patch('lms.djangoapps.instructor.views.api.log.warning')
-    def test_user_with_retired_email_in_csv_log_squelches_pii(self, squelch_pii, expected_email_for_log, warning_log):
+    def test_user_with_retired_email_in_csv_does_not_log_email(self, squelch_pii, warning_log):
         """
-        The retired-email warning redacts the email address when SQUELCH_PII_IN_LOGS is enabled.
+        The retired-email warning never includes the email address, whatever SQUELCH_PII_IN_LOGS is set to.
         """
         user = UserFactory.create(username='old_test_student', email='test_student@example.com')
         user.email = get_retired_email_by_email(user.email)
@@ -851,9 +850,9 @@ class TestInstructorAPIBulkAccountCreationAndEnrollment(SharedModuleStoreTestCas
             )
         assert response.status_code == 200
         warning_log.assert_any_call(
-            'Email address %s is associated with a retired user, so course enrollment was blocked.',
-            expected_email_for_log,
+            'Email address is associated with a retired user, so course enrollment was blocked.'
         )
+        assert all('test_student@example.com' not in str(call) for call in warning_log.call_args_list)
 
     @override_settings(SQUELCH_PII_IN_LOGS=True)
     @patch('lms.djangoapps.instructor.views.api.log.info')

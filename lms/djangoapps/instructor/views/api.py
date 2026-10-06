@@ -133,7 +133,6 @@ from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin, view_auth_c
 from openedx.core.lib.courses import get_course_by_id
 from openedx.core.lib.log_utils import (
     get_email_or_pii_safe_user_id_for_log,
-    get_unrecognized_pii_or_redacted_for_log,
     get_username_or_pii_safe_user_id_for_log,
 )
 from openedx.features.course_experience.url_helpers import get_learning_mfe_home_url
@@ -518,8 +517,9 @@ class RegisterAndEnrollStudents(APIView):
                             'email': email,
                             'response': _('Invalid email {email_address}.').format(email_address=email),
                         })
-                        log.warning('Email address %s is associated with a retired user, so course enrollment was ' +  # pylint: disable=logging-not-lazy
-                                    'blocked.', get_unrecognized_pii_or_redacted_for_log(email))
+                        log.warning(
+                            'Email address is associated with a retired user, so course enrollment was blocked.'
+                        )
                     else:
                         # This email does not yet exist, so we need to create a new account
                         # If username already exists in the database, then create_and_enroll_user

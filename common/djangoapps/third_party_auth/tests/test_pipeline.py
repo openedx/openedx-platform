@@ -122,7 +122,7 @@ class PipelineOverridesTest(SamlIntegrationTestUtilities, IntegrationTestMixin, 
             pipeline.get_username(strategy, details, self.provider.backend_class())
 
         logged = ' '.join(call.args[0] for call in mock_logger.info.call_args_list)
-        assert 'New username candidnate generated' in logged
+        assert 'New username candidate generated' in logged
         assert 'get_username complete' in logged
         for pii in ('pii_username', 'pii@example.com'):
             assert (pii in logged) is not squelch_pii
