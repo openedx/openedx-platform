@@ -26,7 +26,11 @@ from lms.djangoapps.certificates.api import get_certificates_for_course_and_user
 from lms.djangoapps.course_blocks.api import get_course_block_access_transformers, get_course_blocks
 from lms.djangoapps.course_blocks.transformers import library_content
 from lms.djangoapps.courseware.user_state_client import DjangoXBlockUserStateClient
-from lms.djangoapps.grades.api import CourseGradeFactory, prefetch_course_and_subsection_grades
+from lms.djangoapps.grades.api import (
+    CourseGradeFactory,
+    clear_prefetched_grade_overrides_and_visible_blocks,
+    prefetch_course_and_subsection_grades,
+)
 from lms.djangoapps.grades.api import context as grades_context
 from lms.djangoapps.instructor_analytics.basic import list_problem_responses
 from lms.djangoapps.instructor_analytics.csvs import format_dictlist
@@ -206,7 +210,12 @@ class _ProblemGradeReportContext:
         headers in the final report.
         """
         scorable_blocks_map = OrderedDict()
-        grading_context = grades_context.grading_context_for_course(self.course)
+        # Pass the already-loaded structure rather than using
+        # grading_context_for_course, which calls get_course_in_cache again.
+        # BlockStructureManager.get_collected() deserializes fresh from the cache
+        # backend on every call, so the convenience helper would make a large
+        # course pay that cost -- and its peak allocation -- a second time.
+        grading_context = grades_context.grading_context(self.course, self.course_structure)
         for assignment_type_name, subsection_infos in grading_context['all_graded_subsections_by_type'].items():
             for subsection_index, subsection_info in enumerate(subsection_infos, start=1):
                 for scorable_block in subsection_info['scored_descendants']:
@@ -264,6 +273,23 @@ class _EnrollmentBulkContext:
     def __init__(self, context, users):
         CourseEnrollment.bulk_fetch_enrollment_states(users, context.course_id)
         self.verified_users = set(IDVerificationService.get_verified_user_ids(users))
+
+
+class _ProblemGradeBulkContext:
+    """
+    Bulk-loads the per-learner data the problem grade report reads, so that a
+    batch costs a fixed number of queries instead of scaling with batch size.
+
+    Deliberately narrower than _CourseGradeBulkContext: the problem report emits
+    no cohort, team, certificate or course-tag columns, so prefetching those
+    would be wasted work. It does read persisted course and subsection grades
+    (via course_grade.problem_scores, which walks every graded subsection) and
+    each learner's enrollment status.
+    """
+
+    def __init__(self, context, users):
+        prefetch_course_and_subsection_grades(context.course_id, users)
+        CourseEnrollment.bulk_fetch_enrollment_states(users, context.course_id)
 
 
 class _CourseGradeBulkContext:  # pylint: disable=missing-class-docstring
@@ -418,6 +444,8 @@ class GradeReportBase:
     """
     Base class for grade reports (ProblemGradeReport and CourseGradeReport).
     """
+    # Batch size for chunking the list of enrollees in the course.
+    USER_BATCH_SIZE = 100
 
     def __init__(self, context):
         self.context = context
@@ -451,7 +479,7 @@ class GradeReportBase:
         """
         Returns a generator of batches of users.
         """
-        def grouper(iterable, chunk_size=100, fillvalue=None):
+        def grouper(iterable, chunk_size=self.USER_BATCH_SIZE, fillvalue=None):
             args = [iter(iterable)] * chunk_size
             return zip_longest(*args, fillvalue=fillvalue)
 
@@ -496,9 +524,19 @@ class GradeReportBase:
 
     def _clear_caches(self):
         """
-        Override if a report type wants to clear caches after a batch of learners has
-        been processed
+        Clear per-learner caches after a batch of learners has been processed.
+
+        RequestCache is only flushed when the task ends, so anything keyed per
+        learner accumulates for the whole run. The grade prefetches are keyed
+        per course and replaced on each batch, but the visible-blocks and
+        subsection-override caches are keyed per (user, course) and are only
+        ever added to -- and nothing reads an entry again once that learner's
+        row has been written.
+
+        Subclasses that need to drop additional caches should override this and
+        call super().
         """
+        clear_prefetched_grade_overrides_and_visible_blocks()
 
     def _batched_rows(self):
         """
@@ -513,8 +551,6 @@ class CourseGradeReport(GradeReportBase):
     """
     Class to encapsulate functionality related to generating user/row had header data for Corse Grade Reports.
     """
-    # Batch size for chunking the list of enrollees in the course.
-    USER_BATCH_SIZE = 100
 
     @classmethod
     def generate(cls, _xblock_instance_args, _entry_id, course_id, _task_input, action_name):
@@ -753,6 +789,8 @@ class ProblemGradeReport(GradeReportBase):
         """
         Returns a list of rows for the given users for this report.
         """
+        _ProblemGradeBulkContext(self.context, users)
+
         success_rows, error_rows = [], []
         for student, course_grade, error in CourseGradeFactory().iter(
             users,
@@ -793,6 +831,7 @@ class ProblemGradeReport(GradeReportBase):
         return success_rows, error_rows
 
     def _clear_caches(self):
+        super()._clear_caches()
         get_cache('get_enrollment').clear()
         get_cache(CourseEnrollment.MODE_CACHE_NAMESPACE).clear()
 

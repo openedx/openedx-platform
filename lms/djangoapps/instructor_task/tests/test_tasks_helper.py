@@ -897,6 +897,29 @@ class TestProblemGradeReport(TestReportMixin, InstructorTaskModuleTestCase):
         self.student_2 = self.create_student('üser_2')
         self.csv_header_row = ['Student ID', 'Email', 'Username', 'Enrollment Status', 'Grade']
 
+    def test_query_counts_do_not_scale_with_learner_count(self):
+        """
+        The report's query count should be independent of how many learners are
+        enrolled, because _ProblemGradeBulkContext prefetches once per batch
+        rather than reading per learner.
+
+        Asserting the same count at two cohort sizes is the point of the test.
+        Before the bulk prefetch the count fit 2N + 10 -- 20 queries at 5
+        learners, 110 at 50 -- so a single-size assertion would pass while the
+        per-learner read crept back in. Measured after: a flat 13 at 5, 10, 25
+        and 50 learners.
+        """
+        for extra_learners in (3, 20):
+            for i in range(extra_learners):
+                self.create_student(f'query_count_üser_{extra_learners}_{i}')
+
+            bs_api.update_course_in_cache(self.course.id)
+            RequestCache.clear_all_namespaces()
+
+            with patch('lms.djangoapps.instructor_task.tasks_helper.runner._get_current_task'):
+                with self.assertNumQueries(13, table_ignorelist=QUERY_COUNT_TABLE_IGNORELIST):
+                    ProblemGradeReport.generate(None, None, self.course.id, {}, 'graded')
+
     @patch('lms.djangoapps.instructor_task.tasks_helper.runner._get_current_task')
     @ddt.data(True, False)
     def test_no_problems(self, use_tempfile, _):  # noqa: PT019
