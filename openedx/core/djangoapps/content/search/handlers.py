@@ -4,6 +4,7 @@ Signal/event handlers for content search
 
 import logging
 
+from django.conf import settings
 from django.db.models.signals import post_delete
 from django.dispatch import receiver
 from opaque_keys import InvalidKeyError
@@ -42,7 +43,7 @@ from openedx_events.content_authoring.signals import (
 )
 
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
-from openedx.core.djangoapps.content.search.models import SearchAccess
+from openedx.core.djangoapps.content.search.models import LibraryIndexRequest, SearchAccess
 from openedx.core.djangoapps.content_libraries import api as lib_api
 from xmodule.modulestore.django import SignalHandler
 
@@ -54,6 +55,7 @@ from .api import (
     upsert_item_collections_index_docs,
     upsert_item_containers_index_docs,
 )
+from .library_indexing import request_library_index
 from .tasks import (
     delete_course_index_docs,
     delete_library_block_index_doc,
@@ -111,6 +113,7 @@ def delete_course_search_access(sender, instance, **kwargs):  # pylint: disable=
 @receiver(CONTENT_LIBRARY_DELETED)
 def delete_library_search_access(content_library: ContentLibraryData, **kwargs):
     """Deletes the SearchAccess instance for deleted content libraries"""
+    LibraryIndexRequest.objects.filter(library_key=str(content_library.library_key)).delete()
     SearchAccess.objects.filter(context_key=content_library.library_key).delete()
 
 
@@ -237,7 +240,10 @@ def content_library_created_handler(**kwargs) -> None:
     # right after creation. Without this, the JWT token won't include the new library's
     # access_id until it's added by the document indexing process or the page is refreshed.
     SearchAccess.objects.get_or_create(context_key=library_key)
-    update_content_library_index_docs.apply(args=[str(library_key), True])
+    if getattr(settings, "LIBRARY_SEARCH_ASYNC_INDEXING", False):
+        request_library_index(library_key)
+    else:
+        update_content_library_index_docs.apply(args=[str(library_key), True])
 
 
 @receiver(CONTENT_LIBRARY_UPDATED)
@@ -257,7 +263,10 @@ def content_library_updated_handler(**kwargs) -> None:
     # Update ALL items in the library, because their breadcrumbs will be outdated.
     # TODO: just patch the "breadcrumbs" field? It's the same on every one.
     # TODO: check if the library display_name has actually changed before updating all items?
-    update_content_library_index_docs.apply(args=[str(library_key)])
+    if getattr(settings, "LIBRARY_SEARCH_ASYNC_INDEXING", False):
+        request_library_index(library_key)
+    else:
+        update_content_library_index_docs.apply(args=[str(library_key)])
 
 
 @receiver(LIBRARY_COLLECTION_CREATED)

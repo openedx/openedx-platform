@@ -81,3 +81,15 @@ class IncrementalIndexCompleted(models.Model):  # noqa: DJ008
         unique=True,
         null=False,
     )
+
+
+class LibraryIndexRequest(models.Model):  # noqa: DJ008
+    """Durable, coalesced library-wide indexing intent. Contains no learner data.
+
+    .. no_pii:
+    """
+
+    library_key = models.CharField(max_length=255, unique=True)
+    requested_revision = models.PositiveBigIntegerField(default=0)
+    completed_revision = models.PositiveBigIntegerField(default=0)
+    updated_at = models.DateTimeField(auto_now=True)
