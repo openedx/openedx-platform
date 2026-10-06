@@ -71,6 +71,7 @@ from openedx.core.djangoapps.crawlers.models import CrawlersConfig
 from openedx.core.djangoapps.credit.services import CreditService
 from openedx.core.djangoapps.discussions.services import DiscussionConfigService
 from openedx.core.djangoapps.enrollments.services import EnrollmentsService
+from openedx.core.djangoapps.geoinfo.api import country_code_for_request
 from openedx.core.djangoapps.util.user_utils import SystemUser
 from openedx.core.djangoapps.video_config.services import VideoConfigService
 from openedx.core.djangolib.markup import HTML
@@ -409,7 +410,7 @@ def get_block_for_descriptor(
     """
     if request:
         track_function = track_function or make_track_function(request)
-        user_location = user_location or getattr(request, 'session', {}).get('country_code')
+        user_location = user_location or country_code_for_request(request) or None
         request_token = request_token or xblock_request_token(request)
 
     if not student_data:
