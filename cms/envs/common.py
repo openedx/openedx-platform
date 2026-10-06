@@ -1329,10 +1329,10 @@ SPECTACULAR_SETTINGS = {
     'SERVE_INCLUDE_SCHEMA': False,
     # Restrict the schema to the Authoring API's endpoints (cms/lib/spectacular.py).
     'PREPROCESSING_HOOKS': ['cms.lib.spectacular.cms_api_filter'],
-    # Trim the shared prefix from the published paths; consumers supply it
-    # through their base URL.
-    'SCHEMA_PATH_PREFIX': '/api/contentstore',
-    'SCHEMA_PATH_PREFIX_TRIM': '/api/contentstore',
+    # Used for tag extraction only. Paths are published in full, from the
+    # service root, so /api/contentstore and /api/authoring resolve against the
+    # same base URL.
+    'SCHEMA_PATH_PREFIX': r'/api/(contentstore|authoring)',
 }
 
 ################### Studio Search (beta), using Meilisearch ###################

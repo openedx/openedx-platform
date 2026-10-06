@@ -21,6 +21,10 @@ class CourseTextbookPagination(DefaultPagination):
     ``DefaultPagination`` returns seven keys but inherits a response schema
     that documents only four, so generated clients would drop ``num_pages``,
     ``current_page`` and ``start``.
+
+    Delete this subclass and use ``DefaultPagination`` directly once
+    edx-drf-extensions documents all seven keys in
+    ``DefaultPagination.get_paginated_response_schema``.
     """
 
     def get_paginated_response_schema(self, schema):
