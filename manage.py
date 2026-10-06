@@ -23,6 +23,35 @@ defuse_xml_libs()
 import os
 import sys
 from argparse import ArgumentParser
+from contextlib import nullcontext
+
+from openedx_filters.tooling import OpenEdxPublicFilter
+
+
+class ManagementCommandContextmanagerRequested(OpenEdxPublicFilter):
+    """
+    Filter triggered before a management command is executed.
+
+    Pipeline steps may provide a context manager to wrap command execution.
+    """
+
+    filter_type = 'org.openedx.platform.management.command.contextmanager.requested.v1'
+
+    @classmethod
+    def run_filter(cls, command_contextmanager, command_name, service_variant):
+        """
+        Run the management command context manager pipeline.
+        """
+        data = super().run_pipeline(
+            command_contextmanager=command_contextmanager,
+            command_name=command_name,
+            service_variant=service_variant,
+        )
+        return (
+            data.get('command_contextmanager', command_contextmanager),
+            data.get('command_name', command_name),
+            data.get('service_variant', service_variant),
+        )
 
 
 def parse_args():
@@ -90,4 +119,17 @@ if __name__ == "__main__":
         django_args.append('--help')
 
     from django.core.management import execute_from_command_line
-    execute_from_command_line([sys.argv[0]] + django_args)
+
+    # First unconsumed argument is treated as the Django command name (e.g. 'migrate', 'runserver').
+    # Falls back to 'no-argument' if django_args is empty.
+    command_name = django_args[0] if django_args else 'no-argument'
+    service_variant = edx_args.settings_base.split('/', maxsplit=1)[0]
+
+    command_contextmanager, _, _ = ManagementCommandContextmanagerRequested.run_filter(
+        command_contextmanager=nullcontext(),
+        command_name=command_name,
+        service_variant=service_variant,
+    )
+
+    with command_contextmanager:
+        execute_from_command_line([sys.argv[0]] + django_args)
