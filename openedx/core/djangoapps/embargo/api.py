@@ -7,7 +7,7 @@ This API is exposed via the middleware(emabargo/middileware.py) layer but may be
 """
 
 import logging
-from typing import List, Optional  # noqa: UP035
+from typing import List, NamedTuple, Optional  # noqa: UP035
 
 from django.conf import settings
 from django.core.cache import cache
@@ -21,7 +21,7 @@ from common.djangoapps.student.auth import has_course_author_access
 from openedx.core import types
 from openedx.core.djangoapps.geoinfo.api import country_code_from_ip
 
-from .models import CountryAccessRule, RestrictedCourse
+from .models import CountryAccessRule, GlobalRestrictedCountry, RestrictedCourse
 
 log = logging.getLogger(__name__)
 
@@ -36,7 +36,8 @@ def redirect_if_blocked(
     Redirect if the user does not have access to the course.
 
     Even if the user would normally be blocked, if the given access_point is 'courseware' and the course has enabled
-    the `is_disabled_access_check` flag, then the user can still view that course.
+    the `is_disabled_access_check` flag, then the user can still view that course - unless the block is coming from
+    `GlobalRestrictedCountry`, which `is_disabled_access_check` (a per-course override) can never bypass.
 
     Arguments:
         request: The current request to be checked.
@@ -50,10 +51,10 @@ def redirect_if_blocked(
     if settings.EMBARGO:
         client_ips = ip.get_all_client_ips(request)
         user = user or request.user
-        is_blocked = not check_course_access(course_key, user=user, ip_addresses=client_ips, url=request.path)
-        if is_blocked:
+        result = _check_course_access(course_key, user=user, ip_addresses=client_ips, url=request.path)
+        if not result.allowed:
             if access_point == "courseware":
-                if not RestrictedCourse.is_disabled_access_check(course_key):
+                if not RestrictedCourse.is_disabled_access_check(course_key) or result.blocked_globally:
                     return message_url_path(course_key, access_point)
             else:
                 return message_url_path(course_key, access_point)
@@ -68,6 +69,10 @@ def check_course_access(
     """
     Check is the user with this ip_addresses chain has access to the given course
 
+    A country listed in `GlobalRestrictedCountry` blocks every course, regardless
+    of whether the course has a `RestrictedCourse` entry. `CountryAccessRule`
+    checks only apply on top of that for courses that do have one.
+
     Arguments:
         course_key: Location of the course the user is trying to access.
         user: The user making the request. Can be None, in which case the user's profile country will not be checked.
@@ -78,59 +83,113 @@ def check_course_access(
         True if the user has access to the course; False otherwise
 
     """
+    return _check_course_access(course_key, user=user, ip_addresses=ip_addresses, url=url).allowed
+
+
+class _AccessCheckResult(NamedTuple):
+    """
+    Result of `_check_course_access`.
+
+    `blocked_globally` reflects only whether the request's country matched
+    `GlobalRestrictedCountry` - it's set independently of `allowed` (a staff
+    user can have `allowed=True` and `blocked_globally=True` at once, since
+    staff bypass every block). Callers that care "was this actually denied,
+    and for which reason" should check `blocked_globally` together with
+    `not allowed`, not on its own.
+    """
+    allowed: bool
+    blocked_globally: bool
+
+
+def _check_course_access(
+        course_key: CourseKey,
+        user: Optional[types.User] = None,  # noqa: UP045
+        ip_addresses: Optional[List[str]] = None,  # noqa: UP006, UP045
+        url: Optional[str] = None,  # noqa: UP045
+) -> _AccessCheckResult:
+    """
+    Does the real work for `check_course_access`, also reporting whether a block came from
+    `GlobalRestrictedCountry` - `redirect_if_blocked` needs that to know whether a per-course
+    `disable_access_check` override may apply (it may only override a `CountryAccessRule` block,
+    never a global one).
+
+    The global check runs across the profile country and every IP address before any
+    per-course `CountryAccessRule` check is considered, so a global match is never missed
+    just because an earlier signal happened to also fail a per-course rule first. The
+    (cached) profile country goes first so a globally blocked user never pays for GeoIP.
+    """
     # No-op if the country access feature is not enabled
     if not settings.EMBARGO:
-        return True
+        return _AccessCheckResult(True, False)
 
-    # First, check whether there are any restrictions on the course.
-    # If not, then we do not need to do any further checks
+    # Check whether there are any per-course or global restrictions at all.
+    # If neither applies, skip the (non-free) IP/profile country lookups below.
     course_is_restricted = RestrictedCourse.is_restricted_course(course_key)
+    globally_restricted_countries = GlobalRestrictedCountry.get_countries()
 
-    if not course_is_restricted:
-        return True
+    if not course_is_restricted and not globally_restricted_countries:
+        return _AccessCheckResult(True, False)
 
-    # Always give global and course staff access, regardless of embargo settings.
-    if user is not None and has_course_author_access(user, course_key):
-        return True
+    # The profile country is cached (see `_get_user_country_from_profile`), so it's the
+    # cheapest signal we have: check it against the global list first, and a globally
+    # blocked user costs no GeoIP lookups at all.
+    profile_country = _get_user_country_from_profile(user) if user is not None else None
 
-    if ip_addresses is not None:
-        # Check every IP address provided and deny access if ANY of them fail our country checks
-        for ip_address in ip_addresses:
-            # Retrieve the country code from the IP address
-            # and check it against the allowed countries list for a course
-            user_country_from_ip = country_code_from_ip(ip_address)
+    if profile_country is not None and profile_country in globally_restricted_countries:
+        return _AccessCheckResult(_deny_unless_staff(
+            user, course_key,
+            (
+                "Blocking user %s from accessing course %s at %s "
+                "because the user's profile country %s is globally restricted."
+            ),
+            user.id, course_key, url, profile_country,
+        ), True)
 
-            if not CountryAccessRule.check_country_access(course_key, user_country_from_ip):
-                log.info(
-                    (
-                        "Blocking user %s from accessing course %s at %s "
-                        "because the user's IP address %s appears to be "
-                        "located in %s."
-                    ),
-                    getattr(user, 'id', '<Not Authenticated>'),
-                    course_key,
-                    url,
-                    ip_address,
-                    user_country_from_ip
-                )
-                return False
-
-    if user is not None:
-        # Retrieve the country code from the user's profile
-        # and check it against the allowed countries list for a course.
-        user_country_from_profile = _get_user_country_from_profile(user)
-
-        if not CountryAccessRule.check_country_access(course_key, user_country_from_profile):
-            log.info(
+    # Resolve each IP's country lazily and cache it in `ip_countries`, so a global
+    # block on an early IP skips GeoIP lookups for the rest of the chain, while the
+    # per-course pass further down still reuses whatever was already resolved here.
+    ip_countries = []
+    for ip_address in (ip_addresses or []):
+        country = country_code_from_ip(ip_address)
+        ip_countries.append((ip_address, country))
+        if country in globally_restricted_countries:
+            return _AccessCheckResult(_deny_unless_staff(
+                user, course_key,
                 (
                     "Blocking user %s from accessing course %s at %s "
-                    "because the user's profile country is %s."
+                    "because the user's IP address %s appears to be "
+                    "located in globally restricted country %s."
                 ),
-                user.id, course_key, url, user_country_from_profile
-            )
-            return False
+                getattr(user, 'id', '<Not Authenticated>'), course_key, url, ip_address, country,
+            ), True)
 
-    return True
+    if not course_is_restricted:
+        return _AccessCheckResult(True, False)
+
+    # Per-course pass: only relevant once we know the request isn't globally blocked.
+    for ip_address, country in ip_countries:
+        if not CountryAccessRule.check_country_access(course_key, country):
+            return _AccessCheckResult(_deny_unless_staff(
+                user, course_key,
+                (
+                    "Blocking user %s from accessing course %s at %s "
+                    "because the user's IP address %s appears to be "
+                    "located in %s."
+                ),
+                getattr(user, 'id', '<Not Authenticated>'), course_key, url, ip_address, country,
+            ), False)
+
+    if profile_country is not None and not CountryAccessRule.check_country_access(course_key, profile_country):
+        return _AccessCheckResult(_deny_unless_staff(
+            user, course_key,
+            (
+                "Blocking user %s from accessing course %s at %s "
+                "because the user's profile country is %s."
+            ),
+            user.id, course_key, url, profile_country,
+        ), False)
+
+    return _AccessCheckResult(True, False)
 
 
 def message_url_path(course_key: CourseKey, access_point: str) -> str:
@@ -152,6 +211,25 @@ def message_url_path(course_key: CourseKey, access_point: str) -> str:
 
     """
     return RestrictedCourse.message_url_path(course_key, access_point)
+
+
+def _deny_unless_staff(
+    user: Optional[types.User],  # noqa: UP045
+    course_key: CourseKey,
+    log_message: str,
+    *log_args,
+) -> bool:
+    """
+    Deny access (after logging why), unless the user is global or course staff.
+
+    Global and course staff always get access, regardless of embargo settings.
+    Callers should only invoke this once a block would otherwise occur - the
+    underlying role lookup is not free, and most requests are never blocked.
+    """
+    if user is not None and has_course_author_access(user, course_key):
+        return True
+    log.info(log_message, *log_args)
+    return False
 
 
 def _get_user_country_from_profile(user: types.User) -> str:

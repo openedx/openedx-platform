@@ -6,7 +6,9 @@ It allows us to share code between access.py and block transformers.
 from datetime import datetime, timedelta
 from logging import getLogger
 
+from crum import get_current_request
 from django.conf import settings
+from edx_django_utils import ip
 from openedx_filters.learning.filters import CourseStartDateValidationFailed
 from pytz import UTC
 
@@ -15,10 +17,12 @@ from common.djangoapps.student.roles import CourseBetaTesterRole
 from lms.djangoapps.courseware.access_response import (
     AccessResponse,
     AuthenticationRequiredAccessError,
+    EmbargoAccessError,
     EnrollmentRequiredAccessError,
     StartDateError,
 )
 from lms.djangoapps.courseware.masquerade import get_course_masquerade, is_masquerading_as_student
+from openedx.core.djangoapps.embargo import api as embargo_api
 from openedx.features.course_experience import (
     COURSE_ENABLE_UNENROLLED_ACCESS_FLAG,
     COURSE_PRE_START_ACCESS_FLAG,
@@ -157,6 +161,32 @@ def check_authentication(user, course):
         return ACCESS_GRANTED
 
     return AuthenticationRequiredAccessError()
+
+
+def check_embargo_access(user, course):
+    """
+    Deny access if the user's country is blocked by embargo rules.
+
+    Currently called only from the course_metadata BFF view, to report embargo denial
+    via its `course_access` JSON field - not from the shared `check_course_access()`
+    that other course-home BFF views (outline, dates, progress, navigation) route
+    through, so those still serve content to an embargoed learner. Legacy courseware
+    pages are covered separately by `EmbargoMiddleware` for URLs it recognizes.
+
+    Callers should only reach for this once access is otherwise granted: a more specific
+    denial keeps its own error code, and the country lookups behind this check are not free.
+
+    Returns:
+        AccessResponse: Either ACCESS_GRANTED or EmbargoAccessError.
+    """
+    request = get_current_request()
+    ip_addresses = ip.get_all_client_ips(request) if request is not None else None
+    url = request.path if request is not None else None
+
+    if embargo_api.check_course_access(course.id, user=user, ip_addresses=ip_addresses, url=url):
+        return ACCESS_GRANTED
+
+    return EmbargoAccessError()
 
 
 def check_public_access(course, visibilities):
