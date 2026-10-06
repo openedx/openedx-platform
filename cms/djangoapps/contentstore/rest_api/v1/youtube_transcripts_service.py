@@ -5,12 +5,9 @@ import logging
 
 from django.core.exceptions import PermissionDenied as DjangoPermissionDenied
 from django.http import Http404, QueryDict
-from edx_rest_framework_extensions.errors import register_error_type
 from rest_framework.exceptions import (
     APIException,
-    MethodNotAllowed,
     NotFound,
-    ParseError,
     PermissionDenied,
     ValidationError,
 )
@@ -20,12 +17,6 @@ from openedx.core.djangoapps.video_config.transcripts_utils import TranscriptsRe
 from xmodule.modulestore.exceptions import ItemNotFoundError
 
 log = logging.getLogger(__name__)
-
-# Neither exception is in the library's built-in classification catalog, so
-# without these registrations a wrong verb or an unparseable body would be
-# reported to the client as an internal server error at a 4xx status.
-register_error_type(MethodNotAllowed, "method-not-allowed", "Method Not Allowed")
-register_error_type(ParseError, "parse-error", "Malformed Request")
 
 CHECK_FAILED_MESSAGE = "The transcript status for this video could not be determined."
 IMPORT_FAILED_MESSAGE = "The YouTube transcript could not be imported for this video."

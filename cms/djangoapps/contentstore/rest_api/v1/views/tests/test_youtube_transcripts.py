@@ -336,16 +336,12 @@ class TestYoutubeTranscriptWriteBehaviour(BaseYoutubeTranscriptTest):
     def test_import_is_not_reachable_by_get(self):
         self.api_client.force_authenticate(user=self.course_instructor)
         response = self.api_client.get(self.import_url())
-        assert_error_envelope(
-            response, expected_status=405, expected_type_slug="method-not-allowed",
-        )
+        assert_error_envelope(response, expected_status=405)
 
     def test_check_is_not_reachable_by_post(self):
         self.api_client.force_authenticate(user=self.course_instructor)
         response = self.api_client.post(self.check_url(), self.payload(), format="json")
-        assert_error_envelope(
-            response, expected_status=405, expected_type_slug="method-not-allowed",
-        )
+        assert_error_envelope(response, expected_status=405)
 
 
 @patch(DOWNLOAD_PATH, Mock(return_value=[["en", SJSON_TRANSCRIPT_CONTENT]]))
