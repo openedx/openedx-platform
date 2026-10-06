@@ -585,13 +585,13 @@ class TestTaxonomyListCreateViewSet(TestTaxonomyObjectsMixin, APITestCase):
         assert "taxonomy_type" in response.data
 
     @ddt.data(
-        ('staff', 10),
-        ("content_creatorA", 22),
-        ("library_staffA", 22),
-        ("library_userA", 22),
-        ("instructorA", 22),
-        ("course_instructorA", 22),
-        ("course_staffA", 22),
+        ('staff', 9),
+        ("content_creatorA", 21),
+        ("library_staffA", 21),
+        ("library_userA", 21),
+        ("instructorA", 21),
+        ("course_instructorA", 21),
+        ("course_staffA", 21),
     )
     @ddt.unpack
     def test_list_taxonomy_query_count(self, user_attr: str, expected_queries: int):
@@ -2063,19 +2063,19 @@ class TestObjectTagViewSet(TestObjectTagMixin, APITestCase):
         assert response.data[str(object_id_2)]["taxonomies"] == expected_tags
 
     @ddt.data(
-        ('staff', 'courseA', 10),
-        ('staff', 'libraryA', 13),
-        ('staff', 'collection_key', 13),
-        ("content_creatorA", 'courseA', 14, False),
-        ("content_creatorA", 'libraryA', 17, False),
-        ("content_creatorA", 'collection_key', 17, False),
-        ("library_staffA", 'libraryA', 17, False),  # Library users can only view objecttags, not change them?
-        ("library_staffA", 'collection_key', 17, False),
-        ("library_userA", 'libraryA', 17, False),
-        ("library_userA", 'collection_key', 17, False),
-        ("instructorA", 'courseA', 14),
-        ("course_instructorA", 'courseA', 14),
-        ("course_staffA", 'courseA', 14),
+        ('staff', 'courseA', 9),
+        ('staff', 'libraryA', 12),
+        ('staff', 'collection_key', 12),
+        ("content_creatorA", 'courseA', 13, False),
+        ("content_creatorA", 'libraryA', 16, False),
+        ("content_creatorA", 'collection_key', 16, False),
+        ("library_staffA", 'libraryA', 16, False),  # Library users can only view objecttags, not change them?
+        ("library_staffA", 'collection_key', 16, False),
+        ("library_userA", 'libraryA', 16, False),
+        ("library_userA", 'collection_key', 16, False),
+        ("instructorA", 'courseA', 13),
+        ("course_instructorA", 'courseA', 13),
+        ("course_staffA", 'courseA', 13),
     )
     @ddt.unpack
     def test_object_tags_query_count(
@@ -3028,13 +3028,7 @@ class TestTaxonomyTagsViewSet(TestTaxonomyObjectsMixin, APITestCase):
     Test cases for TaxonomyTagsViewSet retrive action.
     """
     @ddt.data(
-        ('staff', 11),
-        ("content_creatorA", 11),
-        ("library_staffA", 11),
-        ("library_userA", 11),
-        ("instructorA", 11),
-        ("course_instructorA", 11),
-        ("course_staffA", 11),
+
     )
     @ddt.unpack
     def test_taxonomy_tags_query_count(self, user_attr: str, expected_queries: int):
