@@ -1,6 +1,6 @@
 """API views for a course's video upload and transcript settings."""
 
-from drf_spectacular.utils import OpenApiResponse, PolymorphicProxySerializer, extend_schema
+from drf_spectacular.utils import OpenApiResponse, extend_schema
 from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
 from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
 from edx_rest_framework_extensions.errors import ErrorResponseSerializer
@@ -9,15 +9,9 @@ from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from cms.djangoapps.contentstore.rest_api.v2.serializers.video_settings import (
-    CourseVideoSettingsFullSerializer,
-    CourseVideoSettingsQuerySerializer,
-    CourseVideoSettingsSerializer,
-)
+from cms.djangoapps.contentstore.rest_api.v2.serializers.video_settings import CourseVideoSettingsSerializer
 from cms.djangoapps.contentstore.rest_api.v2.video_settings_service import get_course_video_settings
 from cms.djangoapps.contentstore.views.permissions import HasStudioReadAccess
-
-FULL_VIEW = "full"
 
 
 @extend_schema(tags=["openedx-platform-sdk"])
@@ -25,9 +19,9 @@ class CourseVideoSettingsViewSet(StandardizedErrorMixin, viewsets.ViewSet):
     """
     The video upload and transcript settings of one course.
 
-    By default only the settings are returned. ``?view=full`` adds every video
-    uploaded to the course, which grows with the course and costs queries per
-    video, so it is never part of the default representation.
+    Only the settings are returned. The course's uploaded videos, which legacy
+    v1 embedded as ``previous_uploads``, are listed by their own paginated
+    collection at ``/api/authoring/v1/courses/{course_key}/videos/``.
 
     Callable by anyone with Studio read access to the course. Permission is
     checked before the course is looked up, so a caller without access is
@@ -51,22 +45,13 @@ class CourseVideoSettingsViewSet(StandardizedErrorMixin, viewsets.ViewSet):
         summary="Retrieve a course's video settings",
         description=(
             "Returns the course's video upload limits, thumbnail image limits, transcript settings "
-            "and the Studio addresses that act on them. Add `view=full` to also receive every video "
-            "uploaded to the course under `previous_uploads`, newest first."
+            "and the Studio addresses that act on them. The course's uploaded videos are listed by "
+            "`GET /api/authoring/v1/courses/{course_key}/videos/`."
         ),
-        parameters=[CourseVideoSettingsQuerySerializer],
         responses={
             200: OpenApiResponse(
-                response=PolymorphicProxySerializer(
-                    component_name="CourseVideoSettingsRepresentation",
-                    serializers=[CourseVideoSettingsSerializer, CourseVideoSettingsFullSerializer],
-                    resource_type_field_name=None,
-                ),
-                description="The course's video settings, with its uploaded videos when `view=full` is given.",
-            ),
-            400: OpenApiResponse(
-                response=ErrorResponseSerializer,
-                description="The `view` parameter has a value other than `full`.",
+                response=CourseVideoSettingsSerializer,
+                description="The course's video settings.",
             ),
             401: OpenApiResponse(
                 response=ErrorResponseSerializer,
@@ -83,10 +68,5 @@ class CourseVideoSettingsViewSet(StandardizedErrorMixin, viewsets.ViewSet):
         },
     )
     def retrieve(self, request, course_key):
-        """Return the course's video settings, with its uploads under ``view=full``."""
-        query = CourseVideoSettingsQuerySerializer(data=request.query_params)
-        query.is_valid(raise_exception=True)
-        full = query.validated_data.get("view") == FULL_VIEW
-        video_settings = get_course_video_settings(course_key, include_uploads=full)
-        serializer_class = CourseVideoSettingsFullSerializer if full else CourseVideoSettingsSerializer
-        return Response(serializer_class(video_settings).data)
+        """Return the course's video settings."""
+        return Response(CourseVideoSettingsSerializer(get_course_video_settings(course_key)).data)

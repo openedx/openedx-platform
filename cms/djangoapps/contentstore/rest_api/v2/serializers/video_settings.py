@@ -97,56 +97,6 @@ class TranscriptLanguageSerializer(serializers.Serializer):
         ref_name = "TranscriptLanguage"
 
 
-class PreviousVideoUploadSerializer(serializers.Serializer):
-    """A video uploaded to the course, as listed on the course's video uploads page."""
-
-    client_video_id = serializers.CharField(help_text="File name the video was uploaded with.")
-    course_video_image_url = serializers.CharField(
-        allow_null=True,
-        help_text="Address of the video's thumbnail image in this course. Null when it has none.",
-    )
-    created = serializers.CharField(
-        help_text=(
-            "When the video was created, as a date, a space, a time and a UTC offset, "
-            "for example '2026-01-31 14:05:09.123456+00:00'."
-        ),
-    )
-    duration = serializers.FloatField(help_text="Length of the video, in seconds.")
-    edx_video_id = serializers.CharField(help_text="Identifier of the video.")
-    error_description = serializers.CharField(
-        allow_null=True,
-        help_text="Why processing the video failed. Null when it has not failed.",
-    )
-    status = serializers.CharField(
-        help_text=(
-            "Upload and processing status, in English, for example 'Uploading', 'Ready' or 'Failed'. "
-            "A video left uploading for more than a day is reported as 'Failed'."
-        ),
-    )
-    file_size = serializers.IntegerField(
-        help_text="Size of the video's desktop MP4 encoding, in bytes. 0 when it has none.",
-    )
-    download_link = serializers.CharField(
-        allow_blank=True,
-        help_text="Address of the video's desktop MP4 encoding. Empty when it has none.",
-    )
-    transcript_urls = serializers.DictField(
-        child=serializers.CharField(),
-        help_text="Address of each of the video's transcripts, keyed by language code.",
-    )
-    transcription_status = serializers.CharField(
-        allow_blank=True,
-        help_text="Status of the video's automatic transcription. Empty when none is under way.",
-    )
-    transcripts = serializers.ListField(
-        child=serializers.CharField(),
-        help_text="Language codes of the video's transcripts.",
-    )
-
-    class Meta:
-        ref_name = "PreviousVideoUpload"
-
-
 class CourseVideoSettingsSerializer(serializers.Serializer):
     """The course's video upload and transcript settings."""
 
@@ -193,28 +143,3 @@ class CourseVideoSettingsSerializer(serializers.Serializer):
 
     class Meta:
         ref_name = "CourseVideoSettings"
-
-
-class CourseVideoSettingsFullSerializer(CourseVideoSettingsSerializer):
-    """The course's video settings together with every video uploaded to the course."""
-
-    previous_uploads = PreviousVideoUploadSerializer(
-        many=True,
-        help_text="Every video uploaded to the course and not deleted from it, newest first.",
-    )
-
-    class Meta:
-        ref_name = "CourseVideoSettingsFull"
-
-
-class CourseVideoSettingsQuerySerializer(serializers.Serializer):
-    """Query parameters of the course video settings endpoint."""
-
-    view = serializers.ChoiceField(
-        choices=["full"],
-        required=False,
-        help_text="'full' adds the course's uploaded videos as 'previous_uploads'. Omit it for the settings alone.",
-    )
-
-    class Meta:
-        ref_name = "CourseVideoSettingsQuery"

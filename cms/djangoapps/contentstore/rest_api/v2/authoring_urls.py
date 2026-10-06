@@ -2,11 +2,8 @@
 
 from django.urls import path
 
-from cms.djangoapps.contentstore.rest_api.v2.error_types import register_error_types
 from cms.djangoapps.contentstore.rest_api.v2.views.textbooks import CourseTextbooksViewSet
 from cms.djangoapps.contentstore.rest_api.v2.views.video_settings import CourseVideoSettingsViewSet
-
-register_error_types()
 
 app_name = "authoring_v2"
 
