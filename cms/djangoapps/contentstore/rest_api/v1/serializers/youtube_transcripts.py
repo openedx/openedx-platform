@@ -51,6 +51,12 @@ class YoutubeTranscriptImportRequestSerializer(serializers.Serializer):
         help_text='Video sources declared on the block. An entry of type "youtube" is required.',
     )
 
+    def validate_videos(self, value):
+        """Require the YouTube source the transcript is imported from."""
+        if not any(video.get("type") == "youtube" for video in value):
+            raise serializers.ValidationError('An entry of type "youtube" is required.')
+        return value
+
     class Meta:
         ref_name = "YoutubeTranscriptImportRequest"
 

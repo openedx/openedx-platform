@@ -47,6 +47,8 @@ CHECK_URL_NAME = "authoring_v1:youtube_transcript_check_list"
 IMPORT_URL_NAME = "authoring_v1:youtube_transcript_import_list"
 LEGACY_CHECK_URL_NAME = "cms.djangoapps.contentstore:v0:cms_api_youtube_transcripts_check"
 LEGACY_IMPORT_URL_NAME = "cms.djangoapps.contentstore:v0:cms_api_youtube_transcripts_upload"
+# A V1 content library block: neither a course nor a V2 library context.
+UNSUPPORTED_CONTEXT_LOCATOR = "lib-block-v1:edX+Lib+2024+type@video+block@abc"
 
 YOUTUBE_ID = "test_yt_id"
 
@@ -370,7 +372,9 @@ class TestYoutubeTranscriptErrors(BaseYoutubeTranscriptTest):
         assert response.json()["errors"] == {"locator": ["This field is required."]}
 
     def test_import_rejects_a_payload_without_a_locator(self):
-        response = self.post_import(user=self.course_instructor, payload={"videos": []})
+        payload = self.payload()
+        del payload["locator"]
+        response = self.post_import(user=self.course_instructor, payload=payload)
         assert_error_envelope(response, expected_status=400, expected_type_slug="validation")
         assert response.json()["errors"] == {"locator": ["This field is required."]}
 
@@ -434,6 +438,27 @@ class TestYoutubeTranscriptErrors(BaseYoutubeTranscriptTest):
             payload=self.payload(videos=[{"type": "html5", "video": "v1", "mode": "mp4"}]),
         )
         assert_error_envelope(response, expected_status=400, expected_type_slug="validation")
+        assert response.json()["errors"] == {"videos": ['An entry of type "youtube" is required.']}
+
+    def test_check_reports_a_block_in_an_unsupported_context_as_a_rejected_request(self):
+        """A locator that is neither a course nor a V2 library block cannot be handled."""
+        response = self.get_check(
+            user=self.course_instructor, payload=self.payload(locator=UNSUPPORTED_CONTEXT_LOCATOR),
+        )
+        assert_error_envelope(response, expected_status=400, expected_type_slug="validation")
+        assert response.json()["errors"] == {
+            "locator": ["The transcript status for this video could not be determined."],
+        }
+
+    def test_import_reports_a_block_in_an_unsupported_context_as_a_rejected_request(self):
+        """A locator that is neither a course nor a V2 library block cannot be handled."""
+        response = self.post_import(
+            user=self.course_instructor, payload=self.payload(locator=UNSUPPORTED_CONTEXT_LOCATOR),
+        )
+        assert_error_envelope(response, expected_status=400, expected_type_slug="validation")
+        assert response.json()["errors"] == {
+            "locator": ["The YouTube transcript could not be imported for this video."],
+        }
 
     def test_a_youtube_download_failure_does_not_leak_its_message(self):
         from openedx.core.djangoapps.video_config.transcripts_utils import (  # noqa: PLC0415
