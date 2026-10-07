@@ -107,6 +107,9 @@ def _run(handler, request, payload, course_key, failure_message):
             course_key,
             body.get("status"),
         )
+        # A failure on YouTube's side is a 400 here, deliberately, as in v0.
+        # It can become a 502 once edx-drf-extensions registers an error type
+        # for upstream failures.
         raise ValidationError({"locator": [failure_message]})
     return body
 
