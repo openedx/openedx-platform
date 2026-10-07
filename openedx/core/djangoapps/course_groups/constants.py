@@ -11,3 +11,6 @@ CONTENT_GROUP_CONFIGURATION_NAME = _('Content Groups')
 CONTENT_GROUP_CONFIGURATION_DESCRIPTION = _(
     'Use this group configuration to control access to content.'
 )
+
+# Usernames as accepted by the platform: letters, digits and . @ + - _
+USERNAME_LOOKUP_REGEX = r"[\w.@+-]+"
