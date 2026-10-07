@@ -5,7 +5,11 @@ from django.test import RequestFactory, TestCase
 from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator
 
 from openedx.core.djangoapps.authz.constants import LegacyAuthoringPermission
-from openedx.core.djangoapps.authz.decorators import authz_permission_required, get_course_key
+from openedx.core.djangoapps.authz.decorators import (
+    authz_permission_required,
+    get_course_key,
+    user_has_course_permission,
+)
 from openedx.core.lib.api.view_utils import DeveloperErrorResponseException
 
 
@@ -129,6 +133,88 @@ class AuthzPermissionRequiredDecoratorTests(TestCase):
         decorated = authz_permission_required("courses.view")(sample_view)
 
         self.assertEqual(decorated.__name__, "sample_view")  # noqa: PT009
+
+
+class UserHasCoursePermissionTests(TestCase):
+    """
+    Tests for user_has_course_permission, focused on the ``default_fallback``
+    behaviour: the value returned when AuthZ is disabled for the course and no
+    ``legacy_permission`` grant applies.
+    """
+
+    ENABLE_AUTHZ_PATH = "openedx.core.djangoapps.authz.decorators.enable_authz_course_authoring"
+    IS_USER_ALLOWED_PATH = "openedx.core.djangoapps.authz.decorators.authz_api.is_user_allowed"
+
+    def setUp(self):
+        self.course_key = CourseLocator("TestX", "TST101", "2025")
+        self.user = Mock()
+        self.user.username = "testuser"
+        self.user.id = 1
+
+    def test_flag_off_no_legacy_defaults_to_false(self):
+        """
+        Flag off and no legacy_permission: the default fallback is False (deny),
+        preserving the safe default for callers that don't opt in.
+        """
+        with patch(self.ENABLE_AUTHZ_PATH, return_value=False):
+            result = user_has_course_permission(
+                self.user, "courses.manage_tags", self.course_key
+            )
+
+        assert result is False
+
+    def test_flag_off_no_legacy_respects_default_fallback_true(self):
+        """
+        Flag off and no legacy_permission: passing default_fallback=True returns
+        True, preserving pre-RBAC behaviour for affordances with no legacy
+        concept (e.g. tag management).
+        """
+        with patch(self.ENABLE_AUTHZ_PATH, return_value=False):
+            result = user_has_course_permission(
+                self.user,
+                "courses.manage_tags",
+                self.course_key,
+                default_fallback=True,
+            )
+
+        assert result is True
+
+    def test_flag_off_legacy_grant_wins_over_default_fallback(self):
+        """
+        Flag off with a granted legacy_permission returns True before the
+        default fallback is considered, even if default_fallback is False.
+        """
+        with patch(self.ENABLE_AUTHZ_PATH, return_value=False), patch(
+            "openedx.core.djangoapps.authz.constants.has_studio_write_access",
+            return_value=True,
+        ):
+            result = user_has_course_permission(
+                self.user,
+                "courses.edit",
+                self.course_key,
+                legacy_permission=LegacyAuthoringPermission.WRITE,
+                default_fallback=False,
+            )
+
+        assert result is True
+
+    def test_flag_on_ignores_default_fallback(self):
+        """
+        When the flag is on, the AuthZ result is authoritative and
+        default_fallback is never consulted: AuthZ denial returns False even
+        with default_fallback=True.
+        """
+        with patch(self.ENABLE_AUTHZ_PATH, return_value=True), patch(
+            self.IS_USER_ALLOWED_PATH, return_value=False
+        ):
+            result = user_has_course_permission(
+                self.user,
+                "courses.manage_tags",
+                self.course_key,
+                default_fallback=True,
+            )
+
+        assert result is False
 
 
 class GetCourseKeyTests(TestCase):

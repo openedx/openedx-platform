@@ -50,3 +50,4 @@ class CourseCertificatesSerializer(serializers.Serializer):
     course_number = serializers.CharField(source="context_course.number")
     course_title = serializers.CharField(source="context_course.display_name_with_default")
     course_number_override = serializers.CharField(source="context_course.display_coursenumber")
+    can_manage = serializers.BooleanField(default=False, read_only=True)

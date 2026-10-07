@@ -14,13 +14,17 @@ from openedx_authz.api.data import (
     ContentLibraryData,
     CourseOverviewData,
     OrgCourseOverviewGlobData,
+    PlatformCourseOverviewGlobData,
     RoleAssignmentData,
     RoleData,
     ScopeData,
     UserData,
 )
+from openedx_authz.api.users import assign_role_to_user_in_scope
 from openedx_authz.constants.roles import COURSE_ADMIN, COURSE_STAFF
 from openedx_authz.engine.enforcer import AuthzEnforcer
+from organizations.api import add_organization
+from organizations.tests.factories import OrganizationFactory
 
 from common.djangoapps.student.admin import CourseAccessRoleHistoryAdmin
 from common.djangoapps.student.models import CourseAccessRoleHistory, User
@@ -313,6 +317,61 @@ class RolesTestCase(TestCase):
             result = role.get_orgs_for_user(self.student)
             self.assertCountEqual(result, [self.course_key.org, other_org])  # noqa: PT009
 
+    @override_waffle_flag(AUTHZ_COURSE_AUTHORING_FLAG, active=True)
+    def test_get_orgs_for_user_authz_platform_glob(self):
+        """
+        A platform-wide glob assignment (course-v1:*) has no `.org` attribute, unlike
+        course/org-glob scopes. get_orgs_for_user must special-case it and return every
+        registered org instead of crashing with an AttributeError.
+        """
+        role = CourseStaffRole(self.course_key)
+
+        for org in self.orgs:
+            OrganizationFactory(short_name=org, name=org)
+
+        assign_role_to_user_in_scope(
+            self.student.username,
+            COURSE_STAFF.external_key,
+            PlatformCourseOverviewGlobData.build_external_key(),
+        )
+        AuthzEnforcer.get_enforcer().load_policy()
+
+        result = role.get_orgs_for_user(self.student)
+        assert sorted(result) == sorted(self.orgs)
+        assert role.has_org_for_user(self.student)
+        assert role.has_org_for_user(self.student, org=self.orgs[0])
+
+    @override_waffle_flag(AUTHZ_COURSE_AUTHORING_FLAG, active=True)
+    def test_get_orgs_for_user_authz_platform_glob_vs_org_scoped(self):
+        """
+        Side-by-side check that the platform-glob branch (return every registered org)
+        and the regular branch (return only the orgs with a concrete assignment) produce
+        the same list[str] shape, over the same pool of registered orgs: an org-scoped
+        grant returns a subset, a platform-wide grant returns all of them.
+        """
+        role = CourseStaffRole(self.course_key)
+        third_org = "Universal"
+        all_orgs = [*self.orgs, third_org]
+
+        for org in all_orgs:
+            OrganizationFactory(short_name=org, name=org)
+
+        subset_user = UserFactory()
+        assign_role_to_user_in_scope(
+            subset_user.username,
+            COURSE_STAFF.external_key,
+            OrgCourseOverviewGlobData.build_external_key(self.orgs[0]),
+        )
+        assign_role_to_user_in_scope(
+            self.student.username,
+            COURSE_STAFF.external_key,
+            PlatformCourseOverviewGlobData.build_external_key(),
+        )
+        AuthzEnforcer.get_enforcer().load_policy()
+
+        assert sorted(role.get_orgs_for_user(subset_user)) == [self.orgs[0]]
+        assert sorted(role.get_orgs_for_user(self.student)) == sorted(all_orgs)
+
     def test_get_authz_compat_course_access_roles_for_user(self):
         """
         Test that get_authz_compat_course_access_roles_for_user doesn't crash when the user
@@ -379,6 +438,62 @@ class RolesTestCase(TestCase):
         self.assertTrue(OrgInstructorRole("OpenedX").has_user(self.student))  # noqa: PT009
         self.assertTrue(self.student.has_perm(instructor_permissions.VIEW_DASHBOARD, course_key))  # noqa: PT009
         self.assertTrue(self.student.has_perm(instructor_permissions.SHOW_TASKS, course_key))  # noqa: PT009
+
+    def test_get_authz_compat_course_access_roles_for_user_platform_glob(self):
+        """
+        A platform-wide (course-v1:*) AuthZ assignment should map to one legacy
+        org-level course access role per registered org, since it applies to all of them.
+        """
+        for org in self.orgs:
+            add_organization({"name": org, "short_name": org, "description": ""})
+
+        assign_role_to_user_in_scope(
+            self.student.username,
+            COURSE_ADMIN.external_key,
+            PlatformCourseOverviewGlobData.build_external_key(),
+        )
+        AuthzEnforcer.get_enforcer().load_policy()
+
+        result = get_authz_compat_course_access_roles_for_user(self.student)
+
+        assert result == {
+            AuthzCompatCourseAccessRole(
+                user_id=self.student.id,
+                username=self.student.username,
+                org=org,
+                course_id=None,
+                role="instructor",
+            )
+            for org in self.orgs
+        }
+
+    def test_platform_glob_authz_role_grants_instructor_dashboard_permissions(self):
+        """
+        A platform-wide (course-v1:*) AuthZ course_admin should grant legacy instructor
+        access for courses in *any* org, the same way an org-wide grant does for its org.
+        """
+        # pylint: disable=protected-access
+        for org in self.orgs:
+            add_organization({"name": org, "short_name": org, "description": ""})
+        marvel_course_key = CourseKey.from_string(f"course-v1:{self.orgs[0]}+DemoX+DemoCourse")
+        dc_course_key = CourseKey.from_string(f"course-v1:{self.orgs[1]}+DemoX+DemoCourse")
+
+        assign_role_to_user_in_scope(
+            self.student.username,
+            COURSE_ADMIN.external_key,
+            PlatformCourseOverviewGlobData.build_external_key(),
+        )
+        AuthzEnforcer.get_enforcer().load_policy()
+
+        if hasattr(self.student, "_roles"):
+            del self.student._roles
+        self.student._roles = RoleCache(self.student)
+
+        for org in self.orgs:
+            assert self.student._roles.has_role("instructor", None, org)
+            assert OrgInstructorRole(org).has_user(self.student)
+        assert self.student.has_perm(instructor_permissions.VIEW_DASHBOARD, marvel_course_key)
+        assert self.student.has_perm(instructor_permissions.VIEW_DASHBOARD, dc_course_key)
 
 
 @ddt.ddt

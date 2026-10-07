@@ -3,6 +3,7 @@
 import edx_api_doc_tools as apidocs
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey
+from openedx_authz.constants.permissions import COURSES_EDIT_COURSE_CONTENT
 from rest_framework import status
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -21,8 +22,9 @@ from cms.djangoapps.contentstore.rest_api.v0.serializers.course_optimizer import
 )
 from cms.djangoapps.contentstore.tasks import check_broken_links, update_course_rerun_links
 from cms.djangoapps.contentstore.toggles import enable_course_optimizer_check_prev_run_links
-from common.djangoapps.student.auth import has_course_author_access, has_studio_read_access
 from common.djangoapps.util.json_request import JsonResponse
+from openedx.core.djangoapps.authz.constants import LegacyAuthoringPermission
+from openedx.core.djangoapps.authz.decorators import user_has_course_permission
 from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin, verify_course_exists, view_auth_classes
 
 
@@ -58,7 +60,12 @@ class LinkCheckView(DeveloperErrorViewMixin, APIView):
         """
         course_key = CourseKey.from_string(course_id)
 
-        if not has_studio_read_access(request.user, course_key):
+        if not user_has_course_permission(
+            request.user,
+            COURSES_EDIT_COURSE_CONTENT.identifier,
+            course_key,
+            LegacyAuthoringPermission.READ,
+        ):
             self.permission_denied(request)
 
         check_broken_links.delay(request.user.id, course_id, request.LANGUAGE_CODE)
@@ -206,7 +213,12 @@ class LinkCheckStatusView(DeveloperErrorViewMixin, APIView):
         }
         """
         course_key = CourseKey.from_string(course_id)
-        if not has_course_author_access(request.user, course_key):
+        if not user_has_course_permission(
+            request.user,
+            COURSES_EDIT_COURSE_CONTENT.identifier,
+            course_key,
+            LegacyAuthoringPermission.WRITE,
+        ):
             self.permission_denied(request)
 
         link_check_data = get_link_check_data(request, course_id)
@@ -280,8 +292,12 @@ class RerunLinkUpdateView(DeveloperErrorViewMixin, APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        # Check course author permissions
-        if not has_course_author_access(request.user, course_key):
+        if not user_has_course_permission(
+            request.user,
+            COURSES_EDIT_COURSE_CONTENT.identifier,
+            course_key,
+            LegacyAuthoringPermission.WRITE,
+        ):
             self.permission_denied(request)
 
         if not enable_course_optimizer_check_prev_run_links(course_key):
@@ -401,8 +417,12 @@ class RerunLinkUpdateStatusView(DeveloperErrorViewMixin, APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        # Check course author permissions
-        if not has_course_author_access(request.user, course_key):
+        if not user_has_course_permission(
+            request.user,
+            COURSES_EDIT_COURSE_CONTENT.identifier,
+            course_key,
+            LegacyAuthoringPermission.WRITE,
+        ):
             self.permission_denied(request)
 
         if not enable_course_optimizer_check_prev_run_links(course_key):

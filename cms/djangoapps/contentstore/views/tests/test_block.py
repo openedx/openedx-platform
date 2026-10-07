@@ -19,6 +19,11 @@ from opaque_keys import InvalidKeyError
 from opaque_keys.edx.asides import AsideUsageKeyV2
 from opaque_keys.edx.keys import CourseKey, UsageKey
 from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator
+from openedx_authz.constants.permissions import (
+    COURSES_EDIT_COURSE_CONTENT,
+    COURSES_MANAGE_TAGS,
+    COURSES_VIEW_COURSE,
+)
 from openedx_authz.constants.roles import COURSE_ADMIN, COURSE_AUDITOR, COURSE_EDITOR, COURSE_STAFF
 from openedx_events.content_authoring.data import DuplicatedXBlockData
 from openedx_events.content_authoring.signals import XBLOCK_DUPLICATED
@@ -543,6 +548,466 @@ class GetItemTest(ItemTest):
                 self.assertNotIn("ancestors", response)  # noqa: PT009
                 xblock_info = get_block_info(xblock)
                 self.assertEqual(xblock_info, response)  # noqa: PT009
+
+
+class TestXBlockViewHandlerHeaderActionsAuthz(ItemTest):
+    """
+    Regression tests for the ``header-actions`` div gating introduced to
+    conditionally render the component card action menu based on the RBAC
+    ``courses.edit_course_content`` and ``courses.manage_tags`` permissions.
+
+    ``block.py`` resolves two already-final booleans server-side:
+    - ``can_edit``: whether the user may edit course content. Delegates to
+      ``user_has_course_permission`` which checks AuthZ when the flag is on and
+      falls back to the legacy studio WRITE permission when the flag is off.
+    - ``can_manage_tags``: whether the user may manage tags. True when the flag
+      is off (tags have no legacy-permission concept), otherwise the
+      ``courses.manage_tags`` AuthZ permission.
+
+    The template opens the div on:
+        ``can_edit or can_manage_tags or can_edit_title``
+
+    ``can_edit_title`` is also resolved server-side: True when the flag is off
+    (preserving the historically-always-available "Edit Title" affordance) and
+    equal to ``courses.edit_course_content`` when the flag is on.
+
+    So the div is shown when the flag is off (all three default to permissive)
+    or when the flag is on and the user has edit or tag-management access.
+    """
+
+    AUTHZ_FLAG_PATH = (
+        "openedx.core.djangoapps.authz.decorators.enable_authz_course_authoring"
+    )
+    # Patch user_has_course_permission at the block.py binding so the
+    # can_edit value is fully controlled by the test.
+    #
+    # NOTE: xblock_view_handler gates the *whole* request on
+    # ``courses.view_course`` via this same binding before the template is ever
+    # rendered.  A blanket return_value=False would make that view-access gate
+    # fail and the handler would raise PermissionDenied (403) before reaching
+    # the header-actions logic.  We therefore drive the mock with a
+    # permission-aware side effect that always grants view access and only
+    # toggles the ``courses.edit_course_content`` permission.
+    AUTHZ_PERMISSION_PATH = (
+        "cms.djangoapps.contentstore.views.block.user_has_course_permission"
+    )
+    HEADER_ACTIONS_DIV = 'class="header-actions"'
+    # The component (content) "Edit" button is rendered only when
+    # ``not show_inline and can_edit`` in studio_xblock_wrapper.html.  Match on
+    # its full class string so this does NOT collide with the separate
+    # "Edit Title" button (``title-edit-button``), which is rendered on the
+    # opposite condition (``can_edit_title and not can_edit``) and would
+    # otherwise match a bare ``edit-button`` substring.
+    CONTENT_EDIT_BUTTON = 'class="btn-default edit-button action-button"'
+
+    @staticmethod
+    def _permission_side_effect(*, can_edit_course_content, can_manage_tags=True):
+        """
+        Build a ``user_has_course_permission`` side effect that always grants
+        ``courses.view_course`` (so the handler returns 200), returns
+        ``can_edit_course_content`` for ``courses.edit_course_content`` and
+        ``can_manage_tags`` for ``courses.manage_tags``.
+
+        The permission identifier is passed as the second positional argument
+        by every call site in ``block.py``.
+        """
+        def _side_effect(_user, permission_identifier, *_args, **_kwargs):
+            if permission_identifier == COURSES_VIEW_COURSE.identifier:
+                return True
+            if permission_identifier == COURSES_EDIT_COURSE_CONTENT.identifier:
+                return can_edit_course_content
+            if permission_identifier == COURSES_MANAGE_TAGS.identifier:
+                return can_manage_tags
+            return False
+
+        return _side_effect
+
+    def _get_container_preview_html(self):
+        """
+        Return the rendered HTML for a child vertical card inside a parent vertical.
+
+        ``header-actions`` only appears on non-root blocks (``is_root=False``).
+        We replicate the setup used by ``test_draft_container_preview_html`` in
+        ``test_container_page.py``: create a parent vertical, add a child
+        vertical inside it, then request ``reorderable_container_child_preview``
+        for that child.  A vertical renders cleanly in the test environment
+        without needing any external services, and its card includes the full
+        ``header-actions`` section.
+        """
+        parent_usage_key = self._create_vertical()
+        child_usage_key = self._create_vertical(parent_usage_key=parent_usage_key)
+
+        preview_url = reverse_usage_url(
+            "xblock_view_handler",
+            child_usage_key,
+            {"view_name": "reorderable_container_child_preview"},
+        )
+        resp = self.client.get(preview_url, HTTP_ACCEPT="application/json")
+        assert resp.status_code == 200
+        return json.loads(resp.content.decode("utf-8"))["html"]
+
+    def _get_leaf_component_preview_html(self):
+        """
+        Return the rendered HTML for a leaf ``html`` component card.
+
+        The component (content) "Edit" button is gated on
+        ``not show_inline and can_edit`` in studio_xblock_wrapper.html, where
+        ``show_inline = xblock.has_children and not xblock_url``.  A vertical has
+        children, so its card is rendered inline and never shows that edit
+        button regardless of ``can_edit``.  We therefore create a leaf ``html``
+        component (no children -> ``show_inline`` is False) inside a vertical and
+        request ``container_child_preview`` for it, which is the branch that the
+        ``can_edit`` fix actually controls.
+        """
+        parent_usage_key = self._create_vertical()
+        resp = self.create_xblock(
+            parent_usage_key=parent_usage_key, category="html"
+        )
+        assert resp.status_code == 200
+        child_usage_key = self.response_usage_key(resp)
+
+        preview_url = reverse_usage_url(
+            "xblock_view_handler",
+            child_usage_key,
+            {"view_name": "container_child_preview"},
+        )
+        resp = self.client.get(preview_url, HTTP_ACCEPT="application/json")
+        assert resp.status_code == 200
+        return json.loads(resp.content.decode("utf-8"))["html"]
+
+    def test_header_actions_visible_when_flag_off(self):
+        """
+        When enable_authz_course_authoring is off, both can_edit (legacy WRITE
+        fallback) and can_manage_tags (defaults True) are permissive, so the
+        ``can_edit or can_manage_tags`` gate is True and the div must be present.
+        Preserves existing behaviour for courses not yet on the authz rollout.
+        """
+        with patch(self.AUTHZ_FLAG_PATH, return_value=False):
+            html = self._get_container_preview_html()
+
+        assert self.HEADER_ACTIONS_DIV in html
+
+    def test_header_actions_visible_when_flag_on_and_user_allowed(self):
+        """
+        When the flag is on and the user holds courses.edit_course_content,
+        can_edit is True, so the ``can_edit or can_manage_tags`` gate is True and
+        the div must be rendered.
+        """
+        with patch(self.AUTHZ_FLAG_PATH, return_value=True), \
+                patch(
+                    self.AUTHZ_PERMISSION_PATH,
+                    side_effect=self._permission_side_effect(can_edit_course_content=True),
+                ):
+            html = self._get_container_preview_html()
+
+        assert self.HEADER_ACTIONS_DIV in html
+
+    def test_header_actions_hidden_when_flag_on_and_user_denied(self):
+        """
+        When the flag is on and the user holds NEITHER courses.edit_course_content
+        NOR courses.manage_tags, can_edit, can_manage_tags AND can_edit_title are
+        all False (can_edit_title tracks courses.edit_course_content when the flag
+        is on), so the ``can_edit or can_manage_tags or can_edit_title`` gate is
+        False and the entire header-actions div must be absent from the rendered
+        HTML.
+        This is a core regression test: without the fix the div would always
+        render even for read-only users when the authz flag is on.
+        """
+        with patch(self.AUTHZ_FLAG_PATH, return_value=True), \
+                patch(
+                    self.AUTHZ_PERMISSION_PATH,
+                    side_effect=self._permission_side_effect(
+                        can_edit_course_content=False, can_manage_tags=False
+                    ),
+                ):
+            html = self._get_container_preview_html()
+
+        assert self.HEADER_ACTIONS_DIV not in html
+
+    def test_header_actions_visible_when_flag_on_and_only_manage_tags(self):
+        """
+        Regression test for the "Manage Tags" nesting bug.
+
+        The header-actions div previously opened only on the edit permission, so
+        a role granted courses.manage_tags but NOT courses.edit_course_content
+        could never reach the "Manage Tags" item nested inside.  The div now
+        opens on ``can_edit or can_manage_tags``, so with only manage_tags
+        granted the div must still render.
+        """
+        with patch(self.AUTHZ_FLAG_PATH, return_value=True), \
+                patch(
+                    self.AUTHZ_PERMISSION_PATH,
+                    side_effect=self._permission_side_effect(
+                        can_edit_course_content=False, can_manage_tags=True
+                    ),
+                ):
+            html = self._get_container_preview_html()
+
+        assert self.HEADER_ACTIONS_DIV in html
+
+    def test_can_edit_true_via_authz_without_legacy_write_access(self):
+        """
+        Regression test for the ``can_edit`` fix in xblock_view_handler.
+
+        ``can_edit`` delegates entirely to ``user_has_course_permission`` with a
+        legacy WRITE fallback.  When the authz flag is on that helper checks the
+        ``courses.edit_course_content`` AuthZ permission and ignores legacy
+        access entirely.  A user granted the AuthZ permission through the
+        rollout (but without legacy studio write access) must therefore still
+        get ``can_edit=True`` and see the per-block "Edit" button.
+        """
+        with patch(self.AUTHZ_FLAG_PATH, return_value=True), \
+                patch(
+                    self.AUTHZ_PERMISSION_PATH,
+                    side_effect=self._permission_side_effect(can_edit_course_content=True),
+                ):
+            html = self._get_leaf_component_preview_html()
+
+        assert self.CONTENT_EDIT_BUTTON in html
+
+    def test_can_edit_false_without_legacy_write_access_or_authz_permission(self):
+        """
+        When the authz flag is on and the user is not granted
+        ``courses.edit_course_content``, ``user_has_course_permission`` returns
+        False without consulting legacy access.  ``can_edit`` must therefore be
+        False and the per-block "Edit" button must be absent.
+        """
+        with patch(self.AUTHZ_FLAG_PATH, return_value=True), \
+                patch(
+                    self.AUTHZ_PERMISSION_PATH,
+                    side_effect=self._permission_side_effect(can_edit_course_content=False),
+                ):
+            html = self._get_leaf_component_preview_html()
+
+        assert self.CONTENT_EDIT_BUTTON not in html
+
+    def test_can_edit_true_via_legacy_write_access_when_flag_off(self):
+        """
+        Legacy fallback path for ``can_edit``.
+
+        When enable_authz_course_authoring is off, ``user_has_course_permission``
+        ignores AuthZ and falls back to the legacy studio WRITE permission.  The
+        course-author test user (``CourseTestCase.user``) holds that access, so
+        ``can_edit`` must be True and the per-block "Edit" button must render.
+
+        This is the complement of ``test_can_edit_true_via_authz_...``: together
+        they cover both branches of the ``can_edit`` computation (AuthZ-on and
+        AuthZ-off/legacy).  Nothing is patched on ``user_has_course_permission``
+        here so the real legacy check runs end to end.
+        """
+        with patch(self.AUTHZ_FLAG_PATH, return_value=False):
+            html = self._get_leaf_component_preview_html()
+
+        assert self.CONTENT_EDIT_BUTTON in html
+
+
+class TestXBlockViewHandlerManageTagsAuthz(ItemTest):
+    """
+    Regression tests for the "Manage Tags" action-menu item gating based on the
+    RBAC ``courses.manage_tags`` permission.
+
+    ``block.py`` resolves ``can_manage_tags`` server-side as a single final
+    boolean: True when enable_authz_course_authoring is off (tags have no
+    legacy-permission concept), otherwise the ``courses.manage_tags`` AuthZ
+    permission.
+
+    The template condition is:
+        ``use_tagging and can_manage_tags``
+
+    So the "Manage Tags" link is shown when tagging is enabled and either the
+    authz flag is off (preserving existing behaviour) or the flag is on and the
+    user holds the permission.
+
+    The outer ``header-actions`` div opens on ``can_edit or can_manage_tags``.
+    These tests grant ``courses.edit_course_content`` so the menu renders for
+    the visible/hidden cases and only the "Manage Tags" item is toggled; the
+    edit-independent case is covered by
+    ``TestXBlockViewHandlerHeaderActionsAuthz`` and by
+    ``test_manage_tags_visible_without_edit_permission`` below.
+    """
+
+    AUTHZ_FLAG_PATH = (
+        "openedx.core.djangoapps.authz.decorators.enable_authz_course_authoring"
+    )
+    AUTHZ_PERMISSION_PATH = (
+        "cms.djangoapps.contentstore.views.block.user_has_course_permission"
+    )
+    MANAGE_TAGS_LINK = 'class="manage-tags-button"'
+    # Edit-type action-menu links. A tags-only user (can_manage_tags without
+    # can_edit) reaches the actions menu but must NOT see any of these.
+    MANAGE_ACCESS_LINK = 'class="access-button"'
+    MOVE_LINK = 'class="move-button"'
+    COPY_LINK = 'class="copy-button"'
+    DUPLICATE_LINK = 'class="duplicate-button"'
+    DELETE_LINK = 'class="delete-button"'
+
+    @staticmethod
+    def _permission_side_effect(*, can_manage_tags, can_edit_course_content=True):
+        """
+        Build a ``user_has_course_permission`` side effect that always grants
+        ``courses.view_course`` (200 response), returns ``can_edit_course_content``
+        for ``courses.edit_course_content`` (defaulting True so the header-actions
+        menu renders), and returns ``can_manage_tags`` for ``courses.manage_tags``.
+        """
+        def _side_effect(_user, permission_identifier, *_args, **_kwargs):
+            if permission_identifier == COURSES_VIEW_COURSE.identifier:
+                return True
+            if permission_identifier == COURSES_EDIT_COURSE_CONTENT.identifier:
+                return can_edit_course_content
+            if permission_identifier == COURSES_MANAGE_TAGS.identifier:
+                return can_manage_tags
+            return False
+
+        return _side_effect
+
+    def _get_container_preview_html(self):
+        """
+        Return the rendered HTML for a leaf ``html`` component card inside a
+        parent vertical.
+
+        The "Manage Tags" action lives inside the ``% if not show_inline:``
+        block of the card template, where ``show_inline = xblock.has_children
+        and not xblock_url``.  A vertical has children and no studio URL, so it
+        is rendered inline and its "Manage Tags" item is never emitted.  A leaf
+        ``html`` component has no children and does have a studio URL, so
+        ``show_inline`` is False and the action menu (including "Manage Tags")
+        is rendered.  Requesting ``reorderable_container_child_preview`` for the
+        component yields a non-root card that includes the full action menu.
+        """
+        parent_usage_key = self._create_vertical()
+        resp = self.create_xblock(
+            parent_usage_key=parent_usage_key, category="html"
+        )
+        assert resp.status_code == 200
+        child_usage_key = self.response_usage_key(resp)
+
+        preview_url = reverse_usage_url(
+            "xblock_view_handler",
+            child_usage_key,
+            {"view_name": "reorderable_container_child_preview"},
+        )
+        resp = self.client.get(preview_url, HTTP_ACCEPT="application/json")
+        assert resp.status_code == 200
+        return json.loads(resp.content.decode("utf-8"))["html"]
+
+    def test_manage_tags_visible_when_flag_off(self):
+        """
+        When enable_authz_course_authoring is off, can_manage_tags defaults to
+        True, so the ``use_tagging and can_manage_tags`` clause is True and the
+        "Manage Tags" link must be present (tagging is enabled in the test
+        environment).  Preserves existing behaviour for courses not yet on the
+        authz rollout.
+        """
+        with patch(self.AUTHZ_FLAG_PATH, return_value=False):
+            html = self._get_container_preview_html()
+
+        assert self.MANAGE_TAGS_LINK in html
+
+    def test_manage_tags_visible_when_flag_on_and_user_allowed(self):
+        """
+        When the flag is on and the user holds courses.manage_tags,
+        can_manage_tags=True, so the template condition is True and the "Manage
+        Tags" link must be rendered.
+        """
+        with patch(self.AUTHZ_FLAG_PATH, return_value=True), \
+                patch(
+                    self.AUTHZ_PERMISSION_PATH,
+                    side_effect=self._permission_side_effect(can_manage_tags=True),
+                ):
+            html = self._get_container_preview_html()
+
+        assert self.MANAGE_TAGS_LINK in html
+
+    def test_manage_tags_hidden_when_flag_on_and_user_denied(self):
+        """
+        When the flag is on and the user does NOT hold courses.manage_tags,
+        can_manage_tags=False, so the template condition is False and the
+        "Manage Tags" link must be absent from the rendered HTML, even though
+        the surrounding header-actions menu still renders (the user retains
+        courses.edit_course_content).
+        This is the core regression test: without the fix the link would always
+        render for any user who can see the actions menu when the flag is on.
+        """
+        with patch(self.AUTHZ_FLAG_PATH, return_value=True), \
+                patch(
+                    self.AUTHZ_PERMISSION_PATH,
+                    side_effect=self._permission_side_effect(can_manage_tags=False),
+                ):
+            html = self._get_container_preview_html()
+
+        assert self.MANAGE_TAGS_LINK not in html
+
+    def test_manage_tags_visible_without_edit_permission(self):
+        """
+        Regression test for the "Manage Tags" nesting bug.
+
+        A role granted courses.manage_tags but NOT courses.edit_course_content
+        must still see the "Manage Tags" link.  Previously the item was nested
+        inside a div gated solely on the edit permission, so such a role could
+        never reach it.  The div now opens on ``can_edit or can_manage_tags``
+        and the item itself is gated on ``use_tagging and can_manage_tags``, so
+        the link must be present even with edit access denied.
+        """
+        with patch(self.AUTHZ_FLAG_PATH, return_value=True), \
+                patch(
+                    self.AUTHZ_PERMISSION_PATH,
+                    side_effect=self._permission_side_effect(
+                        can_manage_tags=True, can_edit_course_content=False
+                    ),
+                ):
+            html = self._get_container_preview_html()
+
+        assert self.MANAGE_TAGS_LINK in html
+
+    def test_edit_actions_hidden_for_tags_only_user(self):
+        """
+        A user granted courses.manage_tags but NOT courses.edit_course_content
+        reaches the actions menu (to use "Manage Tags"), but every
+        content-modifying action must be absent.  Opening the menu on
+        ``can_edit or can_manage_tags`` must not leak edit-type items: Manage
+        Access, Move, Copy to Clipboard, and Duplicate are all gated on
+        ``can_edit`` (directly in the template or via the ``can_edit``-derived
+        ``can_add`` / ``can_move`` / ``can_edit_visibility`` flags).
+        """
+        with patch(self.AUTHZ_FLAG_PATH, return_value=True), \
+                patch(
+                    self.AUTHZ_PERMISSION_PATH,
+                    side_effect=self._permission_side_effect(
+                        can_manage_tags=True, can_edit_course_content=False
+                    ),
+                ):
+            html = self._get_container_preview_html()
+
+        # The menu is reachable via Manage Tags...
+        assert self.MANAGE_TAGS_LINK in html
+        # ...but no edit-type action leaks through.
+        assert self.MANAGE_ACCESS_LINK not in html
+        assert self.MOVE_LINK not in html
+        assert self.COPY_LINK not in html
+        assert self.DUPLICATE_LINK not in html
+        assert self.DELETE_LINK not in html
+
+    def test_all_actions_visible_for_full_edit_user(self):
+        """
+        Non-RBAC regression: gating the edit-type flags on ``can_edit`` must not
+        over-restrict a user who *does* have edit access.
+
+        With enable_authz_course_authoring off, ``can_edit`` resolves via the
+        legacy WRITE fallback, which the course-author test user holds.  Every
+        edit-type action (Manage Access, Move, Copy, Duplicate, Delete) must
+        still render alongside Manage Tags, confirming the ``can_add and
+        can_edit`` / ``can_move and can_edit`` guards left the full-access path
+        untouched.
+        """
+        with patch(self.AUTHZ_FLAG_PATH, return_value=False):
+            html = self._get_container_preview_html()
+
+        assert self.MANAGE_TAGS_LINK in html
+        assert self.MANAGE_ACCESS_LINK in html
+        assert self.MOVE_LINK in html
+        assert self.COPY_LINK in html
+        assert self.DUPLICATE_LINK in html
+        assert self.DELETE_LINK in html
 
 
 @ddt.ddt
@@ -3624,6 +4089,101 @@ class TestXBlockOutlineHandlerAuthz(CourseAuthoringAuthzTestMixin, ItemTest):
 
         self.client.login(username=self.unauthorized_user.username, password=self.password)
         resp = self.client.get(outline_url, HTTP_ACCEPT="application/json")
+
+        assert resp.status_code == 403
+
+
+@ddt.ddt
+class TestXBlockContainerAndViewHandlerAuthz(CourseAuthoringAuthzTestMixin, ItemTest):
+    """
+    Unit tests for xblock_container_handler and xblock_view_handler authorization.
+
+    Regression test for openedx-authz#384: navigating to a unit (the container page,
+    which in turn renders each child block via the view handler) returned 403 for
+    roles like course_auditor that have no legacy role equivalent, because these two
+    handlers checked the legacy-only has_studio_read_access instead of the AuthZ-aware
+    user_has_course_permission already used by xblock_outline_handler.
+    """
+
+    def setUp(self):
+        super().setUp()
+        user_id = self.user.id
+        self.chapter = BlockFactory.create(
+            parent_location=self.course.location,
+            category="chapter",
+            display_name="Week 1",
+            user_id=user_id,
+        )
+        self.sequential = BlockFactory.create(
+            parent_location=self.chapter.location,
+            category="sequential",
+            display_name="Lesson 1",
+            user_id=user_id,
+        )
+        self.vertical = BlockFactory.create(
+            parent_location=self.sequential.location,
+            category="vertical",
+            display_name="Unit 1",
+            user_id=user_id,
+        )
+
+    @ddt.data(
+        COURSE_STAFF.external_key,
+        COURSE_ADMIN.external_key,
+        COURSE_AUDITOR.external_key,
+        COURSE_EDITOR.external_key,
+    )
+    def test_course_roles_can_view_unit_container(self, role_key):
+        """
+        Any role with COURSES_VIEW_COURSE, including the legacy-less course_auditor
+        and course_editor roles, can open the unit (container) page.
+        """
+        role_user = UserFactory(password=self.password)
+        self.add_user_to_role_in_course(role_user, role_key, self.course.id)
+
+        container_url = reverse_usage_url("xblock_container_handler", self.vertical.location)
+        self.client.login(username=role_user.username, password=self.password)
+        resp = self.client.get(container_url, HTTP_ACCEPT="application/json")
+
+        assert resp.status_code == 200
+
+    @ddt.data(
+        COURSE_STAFF.external_key,
+        COURSE_ADMIN.external_key,
+        COURSE_AUDITOR.external_key,
+        COURSE_EDITOR.external_key,
+    )
+    def test_course_roles_can_render_unit_preview(self, role_key):
+        """
+        Any role with COURSES_VIEW_COURSE can render the unit's preview fragment,
+        which is what the frontend fetches for each block shown on the unit page.
+        """
+        role_user = UserFactory(password=self.password)
+        self.add_user_to_role_in_course(role_user, role_key, self.course.id)
+
+        preview_url = reverse_usage_url(
+            "xblock_view_handler", self.vertical.location, {"view_name": "container_preview"}
+        )
+        self.client.login(username=role_user.username, password=self.password)
+        resp = self.client.get(preview_url, HTTP_ACCEPT="application/json")
+
+        assert resp.status_code == 200
+
+    def test_unauthorized_user_gets_permission_denied_on_unit_container(self):
+        container_url = reverse_usage_url("xblock_container_handler", self.vertical.location)
+
+        self.client.login(username=self.unauthorized_user.username, password=self.password)
+        resp = self.client.get(container_url, HTTP_ACCEPT="application/json")
+
+        assert resp.status_code == 403
+
+    def test_unauthorized_user_gets_permission_denied_on_unit_preview(self):
+        preview_url = reverse_usage_url(
+            "xblock_view_handler", self.vertical.location, {"view_name": "container_preview"}
+        )
+
+        self.client.login(username=self.unauthorized_user.username, password=self.password)
+        resp = self.client.get(preview_url, HTTP_ACCEPT="application/json")
 
         assert resp.status_code == 403
 

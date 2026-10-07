@@ -12,11 +12,13 @@ from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import UsageKey
 from opaque_keys.edx.locator import CourseLocator, LibraryLocatorV2
 from openedx_authz.constants import permissions as authz_permissions
+from openedx_authz.constants.permissions import COURSES_VIEW_COURSE
 from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from common.djangoapps.student.auth import has_studio_read_access
+from openedx.core.djangoapps.authz.constants import LegacyAuthoringPermission
+from openedx.core.djangoapps.authz.decorators import user_has_course_permission
 from openedx.core.djangoapps.xblock import api as xblock_api
 from openedx.core.lib.api.view_utils import view_auth_classes
 from xmodule.modulestore.django import modulestore
@@ -102,7 +104,12 @@ class ClipboardEndpoint(APIView):
         try:
             if isinstance(course_key, CourseLocator):
                 # Make sure the user has permission on that course
-                if not has_studio_read_access(request.user, course_key):
+                if not user_has_course_permission(
+                    request.user,
+                    COURSES_VIEW_COURSE.identifier,
+                    course_key,
+                    LegacyAuthoringPermission.READ,
+                ):
                     raise PermissionDenied(
                         "You must be a member of the course team in Studio to export OLX using this API."
                     )
