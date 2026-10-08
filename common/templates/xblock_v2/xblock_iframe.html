@@ -122,22 +122,36 @@
   <script type="text/javascript" src="{{ lms_root_url }}/static/dist{{ oa_manifest.oa_ltr_js }}"></script>
 
   <!-- Configure and load MathJax -->
-  <script type="text/x-mathjax-config">
-    MathJax.Hub.Config({
-      CommonHTML: { linebreaks: { automatic: true } },
-      SVG: { linebreaks: { automatic: true } },
-      "HTML-CSS": { linebreaks: { automatic: true } },
-      tex2jax: {
+  <script type="text/javascript">
+    window.MathJax = {
+      tex: {
         inlineMath: [
-          ["\\(","\\)"],
-          ['[mathjaxinline]','[/mathjaxinline]']
-        ],
+            ["\\(","\\)"],
+            ['[mathjaxinline]','[/mathjaxinline]']
+          ],
         displayMath: [
-          ["\\[","\\]"],
-          ['[mathjax]','[/mathjax]']
-        ]
+            ["\\[","\\]"],
+            ['[mathjax]','[/mathjax]']
+          ],
+        autoload: {
+          color: [],
+          colorv2: ['color']
+        },
+        packages: {'[+]': ['noerrors']}
+      },
+      options: {
+        ignoreHtmlClass: 'tex2jax_ignore',
+        processHtmlClass: 'tex2jax_process',
+        menuOptions: {
+          settings: {
+            collapsible: true
+          },
+        },
+      },
+      loader: {
+        load: ['input/asciimath', '[tex]/noerrors']
       }
-    });
+    };
     window.addEventListener('resize', MJrenderer);
 
     let t = -1;
@@ -151,43 +165,21 @@
       if (oldWidth !== document.documentElement.scrollWidth) {
         t = window.setTimeout(function() {
           oldWidth = document.documentElement.scrollWidth;
-          MathJax.Hub.Queue(
-            ["Rerender", MathJax.Hub],
-          );
+          if (typeof MathJax !== 'undefined' && MathJax !== null &&
+              typeof MathJax.typesetClear === 'function' &&
+              typeof MathJax.typesetPromise === 'function') {
+            MathJax.typesetClear();
+            MathJax.typesetPromise();
+          }
           t = -1;
         }, delay);
       }
     };
   </script>
-  <script type="text/x-mathjax-config">
-    MathJax.Hub.signal.Interest(function(message) {
-      if(message[0] === "End Math") {
-          set_mathjax_display_div_settings();
-      }
-    });
-    function set_mathjax_display_div_settings() {
-      $('.MathJax_Display').each(function( index ) {
-        this.setAttribute('tabindex', '0');
-        this.setAttribute('aria-live', 'off');
-        this.removeAttribute('role');
-        this.removeAttribute('aria-readonly');
-      });
-    }
-  </script>
-  <script type="text/javascript">
-      // Activating Mathjax accessibility files
-      window.MathJax = {
-          menuSettings: {
-              collapsible: true,
-              autocollapse: false,
-              explorer: true
-          }
-      };
-  </script>
   <!-- This must appear after all mathjax-config blocks, so it is after the imports from the other templates.
        It can't be run through static.url because MathJax uses crazy url introspection to do lazy loading of
        MathJax extension libraries -->
-  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/MathJax.js?config=TeX-MML-AM_SVG"></script>
+<script type="text/javascript" id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@4.1.2/tex-mml-chtml.js"> </script>
   <!-- fragment head -->
   {{ fragment.head_html | safe }}
 </head>
