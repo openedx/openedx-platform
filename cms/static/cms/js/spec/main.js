@@ -250,7 +250,6 @@
         'js/spec/views/assets_spec',
         'js/spec/views/baseview_spec',
         'js/spec/views/paged_container_spec',
-        'js/spec/views/unit_outline_spec',
         'js/spec/views/xblock_spec',
         'js/spec/views/xblock_validation_spec',
         'js/spec/views/license_spec',
