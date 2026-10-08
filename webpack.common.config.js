@@ -323,15 +323,6 @@ module.exports = Merge.merge({
                     ]
                 },
                 {
-                    test: /xmodule\/js\/src\/annotatable\/display.js/,
-                    use: [
-                        {
-                            loader: 'imports-loader',
-                            options: 'this=>window'
-                        }
-                    ]
-                },
-                {
                     test: /xmodule\/js\/src\/capa\/display.js/,
                     use: [
                         {
