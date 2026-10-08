@@ -35,7 +35,7 @@ class ManagementCommandContextmanagerRequested(OpenEdxPublicFilter):
     Pipeline steps may provide a context manager to wrap command execution.
     """
 
-    filter_type = 'org.openedx.platform.management.command.contextmanager.requested.v1'
+    filter_type = 'org.openedx.management.command.contextmanager.requested.v1'
 
     @classmethod
     def run_filter(cls, command_contextmanager, command_name, service_variant):
