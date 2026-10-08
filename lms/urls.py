@@ -12,6 +12,7 @@ from django.utils.translation import gettext_lazy as _
 from django.views.generic.base import RedirectView
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 from edx_django_utils.plugins import get_plugin_url_patterns
+from edx_rest_framework_extensions.url_converters import register_url_converters
 from submissions import urls as submissions_urls
 
 from common.djangoapps.student import views as student_views
@@ -51,6 +52,9 @@ from openedx.core.djangoapps.programs.models import ProgramsApiConfig
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.core.djangoapps.user_authn.views.login import redirect_to_lms_login
 from openedx.features.enterprise_support.api import enterprise_enabled
+
+# Shared opaque-key path converters, registered before any pattern using them.
+register_url_converters()
 
 RESET_COURSE_DEADLINES_NAME = 'reset_course_deadlines'
 RENDER_XBLOCK_NAME = 'render_xblock'
@@ -118,6 +122,9 @@ urlpatterns = [
     # Enrollment API RESTful endpoints
     path('api/enrollment/v1/', include('openedx.core.djangoapps.enrollments.urls')),
     path('api/enrollment/v2/', include('openedx.core.djangoapps.enrollments.v2.urls')),
+
+    # Grades API v2. Grades v1 stays mounted by the grades plugin at api/grades/v1/.
+    path('api/grade/v2/', include('lms.djangoapps.grades.rest_api.v2.urls')),
 
     # Agreements API RESTful endpoints
     path('api/agreements/v1/', include('openedx.core.djangoapps.agreements.urls')),

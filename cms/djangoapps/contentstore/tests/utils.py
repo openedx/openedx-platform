@@ -244,3 +244,13 @@ def get_url(handler_name, key_value, key_name='usage_key_string', kwargs=None):
     Helper function for getting HTML for a page in Studio and checking that it does not error.
     """
     return reverse_url(handler_name, key_name, key_value, kwargs)
+
+
+def routed_actions(view_func):
+    """
+    Return the method-to-action map a viewset mount was registered with.
+
+    DRF adds a ``head`` entry to a mount's ``actions`` the first time it serves
+    a GET, so two mounts compared directly differ by which was requested first.
+    """
+    return {method: action for method, action in view_func.actions.items() if method != 'head'}
