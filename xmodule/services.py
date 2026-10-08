@@ -16,7 +16,7 @@ from eventtracking import tracker
 from requests.auth import HTTPBasicAuth
 from xblock.reference.plugins import Service
 from xblock.runtime import KvsFieldData
-from xblocks_contrib.problem.capa.xqueue_interface import XQueueInterface
+from xblock_problem.capa.xqueue_interface import XQueueInterface
 
 from common.djangoapps.track import contexts
 from lms.djangoapps.courseware.field_overrides import OverrideFieldData

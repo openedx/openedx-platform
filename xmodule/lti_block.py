@@ -75,7 +75,7 @@ from web_fragments.fragment import Fragment
 from webob import Response
 from xblock.core import List, Scope, String, XBlock
 from xblock.fields import Boolean, Float
-from xblocks_contrib.lti import LTIBlock as _ExtractedLTIBlock
+from xblock_lti import LTIBlock as _ExtractedLTIBlock
 
 from common.djangoapps.xblock_django.constants import ATTR_KEY_ANONYMOUS_USER_ID, ATTR_KEY_USER_ROLE
 from openedx.core.djangolib.markup import HTML, Text
@@ -285,7 +285,7 @@ class _BuiltInLTIBlock(
 
     .. deprecated:: 2026-03
        This built-in LTI block is deprecated. Please use the extracted ``LTIBlock``
-       from ``xblocks_contrib.lti`` instead.
+       from ``xblock_lti`` instead.
 
     Except usual Xmodule structure it proceeds with OAuth signing.
     How it works::
@@ -1008,7 +1008,7 @@ if not settings.USE_EXTRACTED_LTI_BLOCK:
     warnings.warn(
         "The built-in `xmodule.lti_block` LTIBlock implementation is deprecated. "
         "To fix this warning, enable `USE_EXTRACTED_LTI_BLOCK` (set it to True) to use "
-        "`xblocks_contrib.lti.LTIBlock` instead. "
+        "`xblock_lti.LTIBlock` instead. "
         "Support for the built-in implementation, and the `USE_EXTRACTED_LTI_BLOCK` setting, "
         "will be removed in Willow.",
         DeprecationWarning,

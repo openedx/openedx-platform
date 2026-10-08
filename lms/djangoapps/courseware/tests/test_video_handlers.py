@@ -512,7 +512,7 @@ class TestTranscriptDownloadDispatch(TestVideo):  # pylint: disable=test-inherit
         assert response.status == '404 Not Found'
 
     @patch(
-        'xblocks_contrib.video.video_handlers.get_transcript',
+        'xblock_video.video_handlers.get_transcript',
         return_value=('Subs!', 'test_filename.srt', 'application/x-subrip; charset=utf-8')
     )
     def test_download_srt_exist(self, __):  # noqa: PT019
@@ -523,7 +523,7 @@ class TestTranscriptDownloadDispatch(TestVideo):  # pylint: disable=test-inherit
         assert response.headers['Content-Language'] == 'en'
 
     @patch(
-        'xblocks_contrib.video.video_handlers.get_transcript',
+        'xblock_video.video_handlers.get_transcript',
         return_value=('Subs!', 'txt', 'text/plain; charset=utf-8')
     )
     def test_download_txt_exist(self, __):  # noqa: PT019

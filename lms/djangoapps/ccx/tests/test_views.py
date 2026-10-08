@@ -20,7 +20,7 @@ from edx_django_utils.cache import RequestCache
 from edx_toggles.toggles.testutils import override_waffle_flag
 from opaque_keys.edx.keys import CourseKey
 from pytz import UTC
-from xblocks_contrib.problem.capa.testing.response_xml_factory import StringResponseXMLFactory
+from xblock_problem.capa.testing.response_xml_factory import StringResponseXMLFactory
 
 from common.djangoapps.edxmako.shortcuts import render_to_response
 from common.djangoapps.student.models import CourseEnrollment, CourseEnrollmentAllowed
