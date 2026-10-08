@@ -11,6 +11,7 @@ import logging
 
 from eventtracking import tracker
 from xblock.core import XBlock
+from xblock.plugin import PluginMissingError
 
 from common.djangoapps.track import contexts
 from lms.djangoapps.courseware.models import StudentModule
@@ -24,6 +25,28 @@ from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-impo
 from ..utils import get_student_module_as_dict
 
 logger = logging.getLogger(__name__)
+
+
+def _load_block_class(block_type):
+    """
+    Load the XBlock class for a block type, or None when no such XBlock is installed.
+
+    A course can contain a block whose type has no installed XBlock, e.g. from a bad
+    OLX import or a plugin that has since been removed. The modulestore already
+    tolerates this: it loads such a block as its configured default_class. This does
+    the same for callers that only need to know what kind of block it is, rather than
+    letting PluginMissingError abort the block structure build for the whole course.
+
+    Arguments:
+        block_type (str): XBlock type identifier, e.g. "itembank".
+
+    Returns:
+        The XBlock class, or None when no XBlock is installed for block_type.
+    """
+    try:
+        return XBlock.load_class(block_type)
+    except PluginMissingError:
+        return None
 
 
 class ContentLibraryTransformer(FilteringTransformerMixin, BlockStructureTransformer):
@@ -68,10 +91,34 @@ class ContentLibraryTransformer(FilteringTransformerMixin, BlockStructureTransfo
                 "original_usage_version": str(orig_version) if orig_version else None,
             }
 
+        def is_item_bank(block_key):
+            """
+            Whether the block uses ItemBankMixin (e.g. library_content, itembank).
+
+            Blocks whose XBlock type is not installed are skipped rather than raising.
+            Traversal still descends into their children, since the caller passes
+            yield_descendants_of_unyielded=True.
+
+            Arguments:
+                block_key (BlockUsageLocator): the block under consideration.
+
+            Returns:
+                True when the block's children need an analytics summary.
+            """
+            block_class = _load_block_class(block_key.block_type)
+            if block_class is None:
+                logger.warning(
+                    'Skipping block %s: no XBlock installed for type %s.',
+                    block_key,
+                    block_key.block_type,
+                )
+                return False
+            return issubclass(block_class, ItemBankMixin)
+
         # For each block check if block uses ItemBankMixin (e.g., library_content, itembank).
         # If so add block analytics summary for each of its children.
         for block_key in block_structure.topological_traversal(
-                filter_func=lambda block_key: issubclass(XBlock.load_class(block_key.block_type), ItemBankMixin),
+                filter_func=is_item_bank,
                 yield_descendants_of_unyielded=True,
         ):
             xblock = block_structure.get_xblock(block_key)
@@ -83,7 +130,7 @@ class ContentLibraryTransformer(FilteringTransformerMixin, BlockStructureTransfo
         all_library_children = set()
         all_selected_children = set()
         for block_key in block_structure:
-            block_class = XBlock.load_class(block_key.block_type)
+            block_class = _load_block_class(block_key.block_type)
 
             if block_class is None or not issubclass(block_class, ItemBankMixin):
                 continue
@@ -108,7 +155,7 @@ class ContentLibraryTransformer(FilteringTransformerMixin, BlockStructureTransfo
                 # Update selected
                 previous_count = len(selected)
                 # Get the cached block class to call make_selection
-                block_class = XBlock.load_class(block_key.block_type)
+                block_class = _load_block_class(block_key.block_type)
                 if block_class is None:
                     logger.error('Failed to load block class for %s', block_key)
                     continue
@@ -171,7 +218,7 @@ class ContentLibraryTransformer(FilteringTransformerMixin, BlockStructureTransfo
             return json_result
 
         # Get the cached block class to call publish_selected_children_events
-        block_class = XBlock.load_class(location.block_type)
+        block_class = _load_block_class(location.block_type)
         if block_class is None:
             logger.error('Failed to load block class for publishing events: %s', location)
             return
@@ -240,7 +287,7 @@ class ContentLibraryOrderTransformer(BlockStructureTransformer):
         to match the order of the selections made and stored in the XBlock 'selected' field.
         """
         for block_key in block_structure:
-            block_class = XBlock.load_class(block_key.block_type)
+            block_class = _load_block_class(block_key.block_type)
             if block_class is None or not issubclass(block_class, ItemBankMixin):
                 continue
 
