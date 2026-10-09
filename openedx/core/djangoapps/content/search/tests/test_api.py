@@ -400,13 +400,15 @@ class TestSearchApi(ModuleStoreTestCase):
         assert library_temp_index.add_documents.call_count == 3
         library_temp_index.add_documents.assert_has_calls(
             [
-                call([doc_problem1, doc_problem2]),
-                call([doc_collection]),
-                call([doc_unit, doc_subsection, doc_section]),
+                call([doc_problem1, doc_problem2], primary_key=api.INDEX_PRIMARY_KEY),
+                call([doc_collection], primary_key=api.INDEX_PRIMARY_KEY),
+                call([doc_unit, doc_subsection, doc_section], primary_key=api.INDEX_PRIMARY_KEY),
             ],
             any_order=True,
         )
-        course_temp_index.add_documents.assert_called_once_with([doc_sequential, doc_vertical])
+        course_temp_index.add_documents.assert_called_once_with(
+            [doc_sequential, doc_vertical], primary_key=api.INDEX_PRIMARY_KEY
+        )
         library_temp_index.update_filterable_attributes.assert_called_once_with(api.INDEX_FILTERABLE_ATTRIBUTES)
         course_temp_index.update_filterable_attributes.assert_called_once_with(api.INDEX_FILTERABLE_ATTRIBUTES)
         # Each temporary index is swapped into its own live index
@@ -505,13 +507,15 @@ class TestSearchApi(ModuleStoreTestCase):
         assert library_index.add_documents.call_count == 3
         library_index.add_documents.assert_has_calls(
             [
-                call([doc_problem1, doc_problem2]),
-                call([doc_collection]),
-                call([doc_unit, doc_subsection, doc_section]),
+                call([doc_problem1, doc_problem2], primary_key=api.INDEX_PRIMARY_KEY),
+                call([doc_collection], primary_key=api.INDEX_PRIMARY_KEY),
+                call([doc_unit, doc_subsection, doc_section], primary_key=api.INDEX_PRIMARY_KEY),
             ],
             any_order=True,
         )
-        course_index.add_documents.assert_called_once_with([doc_sequential, doc_vertical])
+        course_index.add_documents.assert_called_once_with(
+            [doc_sequential, doc_vertical], primary_key=api.INDEX_PRIMARY_KEY
+        )
         course_index.delete_documents.assert_called_once_with(filter='type != "course_block"')
 
         # Now we simulate interruption by passing this function to the status_cb argument
@@ -653,9 +657,9 @@ class TestSearchApi(ModuleStoreTestCase):
 
         mock_meilisearch.return_value.index.return_value.add_documents.assert_has_calls(
             [
-                call([doc_sequential, doc_vertical]),
+                call([doc_sequential, doc_vertical], primary_key=api.INDEX_PRIMARY_KEY),
                 # Problem 1 should not be indexed
-                call([doc_problem2]),
+                call([doc_problem2], primary_key=api.INDEX_PRIMARY_KEY),
             ],
             any_order=True,
         )
@@ -676,6 +680,15 @@ class TestSearchApi(ModuleStoreTestCase):
             "exactness",
         ])
 
+    @override_settings(MEILISEARCH_ENABLED=True)
+    def test_first_write_specifies_primary_key(self, mock_meilisearch) -> None:
+        """A missing index is created with the Studio search primary key."""
+        api._update_index_docs(api.STUDIO_COURSE_INDEX_NAME, [self.doc_sequential])  # pylint: disable=protected-access
+
+        mock_meilisearch.return_value.index.return_value.update_documents.assert_called_once_with(
+            [self.doc_sequential], primary_key=api.INDEX_PRIMARY_KEY
+        )
+
     @ddt.data(
         True,
         False
@@ -692,7 +705,9 @@ class TestSearchApi(ModuleStoreTestCase):
         else:
             expected_docs = [self.doc_sequential]
 
-        mock_meilisearch.return_value.index.return_value.update_documents.assert_called_once_with(expected_docs)
+        mock_meilisearch.return_value.index.return_value.update_documents.assert_called_once_with(
+            expected_docs, primary_key=api.INDEX_PRIMARY_KEY
+        )
         assert self._indexes_used(mock_meilisearch) == {api.STUDIO_COURSE_INDEX_NAME}
 
     @override_settings(MEILISEARCH_ENABLED=True)
@@ -735,8 +750,8 @@ class TestSearchApi(ModuleStoreTestCase):
         assert mock_meilisearch.return_value.index.return_value.update_documents.call_count == 2
         mock_meilisearch.return_value.index.return_value.update_documents.assert_has_calls(
             [
-                call([doc_sequential_with_tags1]),
-                call([doc_sequential_with_tags2]),
+                call([doc_sequential_with_tags1], primary_key=api.INDEX_PRIMARY_KEY),
+                call([doc_sequential_with_tags2], primary_key=api.INDEX_PRIMARY_KEY),
             ],
             any_order=True,
         )
@@ -771,8 +786,8 @@ class TestSearchApi(ModuleStoreTestCase):
         assert mock_meilisearch.return_value.index.return_value.update_documents.call_count == 2
         mock_meilisearch.return_value.index.return_value.update_documents.assert_has_calls(
             [
-                call([doc_with_tag]),
-                call([doc_without_tags]),
+                call([doc_with_tag], primary_key=api.INDEX_PRIMARY_KEY),
+                call([doc_without_tags], primary_key=api.INDEX_PRIMARY_KEY),
             ],
             any_order=True,
         )
@@ -800,7 +815,9 @@ class TestSearchApi(ModuleStoreTestCase):
         """
         api.upsert_library_block_index_doc(self.problem1.usage_key)
 
-        mock_meilisearch.return_value.index.return_value.update_documents.assert_called_once_with([self.doc_problem1])
+        mock_meilisearch.return_value.index.return_value.update_documents.assert_called_once_with(
+            [self.doc_problem1], primary_key=api.INDEX_PRIMARY_KEY
+        )
         assert self._indexes_used(mock_meilisearch) == {api.STUDIO_LIBRARY_INDEX_NAME}
 
     @override_settings(MEILISEARCH_ENABLED=True)
@@ -838,8 +855,8 @@ class TestSearchApi(ModuleStoreTestCase):
         assert mock_meilisearch.return_value.index.return_value.update_documents.call_count == 2
         mock_meilisearch.return_value.index.return_value.update_documents.assert_has_calls(
             [
-                call([doc_problem_with_tags1]),
-                call([doc_problem_with_tags2]),
+                call([doc_problem_with_tags1], primary_key=api.INDEX_PRIMARY_KEY),
+                call([doc_problem_with_tags2], primary_key=api.INDEX_PRIMARY_KEY),
             ],
             any_order=True,
         )
@@ -977,12 +994,12 @@ class TestSearchApi(ModuleStoreTestCase):
         assert mock_meilisearch.return_value.index.return_value.update_documents.call_count == 6
         mock_meilisearch.return_value.index.return_value.update_documents.assert_has_calls(
             [
-                call([doc_collection1_created]),
-                call([doc_collection2_created]),
-                call([doc_collection2_updated]),
-                call([doc_collection1_updated]),
-                call([doc_problem_with_collection1]),
-                call([doc_problem_with_collection2]),
+                call([doc_collection1_created], primary_key=api.INDEX_PRIMARY_KEY),
+                call([doc_collection2_created], primary_key=api.INDEX_PRIMARY_KEY),
+                call([doc_collection2_updated], primary_key=api.INDEX_PRIMARY_KEY),
+                call([doc_collection1_updated], primary_key=api.INDEX_PRIMARY_KEY),
+                call([doc_problem_with_collection1], primary_key=api.INDEX_PRIMARY_KEY),
+                call([doc_problem_with_collection2], primary_key=api.INDEX_PRIMARY_KEY),
             ],
             any_order=True,
         )
@@ -1026,7 +1043,7 @@ class TestSearchApi(ModuleStoreTestCase):
 
         mock_meilisearch.return_value.index.return_value.update_documents.assert_called_once_with(
             [self.doc_problem1, self.doc_problem2]
-        )
+        , primary_key=api.INDEX_PRIMARY_KEY)
         assert self._indexes_used(mock_meilisearch) == {api.STUDIO_LIBRARY_INDEX_NAME}
 
     @override_settings(MEILISEARCH_ENABLED=True)
@@ -1060,8 +1077,8 @@ class TestSearchApi(ModuleStoreTestCase):
         assert mock_meilisearch.return_value.index.return_value.update_documents.call_count == 2
         mock_meilisearch.return_value.index.return_value.update_documents.assert_has_calls(
             [
-                call([doc_collection_with_tags1]),
-                call([doc_collection_with_tags2]),
+                call([doc_collection_with_tags1], primary_key=api.INDEX_PRIMARY_KEY),
+                call([doc_collection_with_tags2], primary_key=api.INDEX_PRIMARY_KEY),
             ],
             any_order=True,
         )
@@ -1107,9 +1124,9 @@ class TestSearchApi(ModuleStoreTestCase):
         assert mock_meilisearch.return_value.index.return_value.update_documents.call_count == 3
         mock_meilisearch.return_value.index.return_value.update_documents.assert_has_calls(
             [
-                call([doc_collection]),
-                call([doc_problem_with_collection]),
-                call([doc_unit_with_collection]),
+                call([doc_collection], primary_key=api.INDEX_PRIMARY_KEY),
+                call([doc_problem_with_collection], primary_key=api.INDEX_PRIMARY_KEY),
+                call([doc_unit_with_collection], primary_key=api.INDEX_PRIMARY_KEY),
             ],
             any_order=True,
         )
@@ -1138,8 +1155,8 @@ class TestSearchApi(ModuleStoreTestCase):
         # ...and update the component's "collections" field
         mock_meilisearch.return_value.index.return_value.update_documents.assert_has_calls(
             [
-                call([doc_problem_without_collection]),
-                call([doc_unit_without_collection]),
+                call([doc_problem_without_collection], primary_key=api.INDEX_PRIMARY_KEY),
+                call([doc_unit_without_collection], primary_key=api.INDEX_PRIMARY_KEY),
             ],
             any_order=True,
         )
@@ -1165,9 +1182,9 @@ class TestSearchApi(ModuleStoreTestCase):
         assert mock_meilisearch.return_value.index.return_value.update_documents.call_count == 3
         mock_meilisearch.return_value.index.return_value.update_documents.assert_has_calls(
             [
-                call([doc_collection]),
-                call([doc_problem_with_collection]),
-                call([doc_unit_with_collection]),
+                call([doc_collection], primary_key=api.INDEX_PRIMARY_KEY),
+                call([doc_problem_with_collection], primary_key=api.INDEX_PRIMARY_KEY),
+                call([doc_unit_with_collection], primary_key=api.INDEX_PRIMARY_KEY),
             ],
             any_order=True,
         )
@@ -1188,8 +1205,8 @@ class TestSearchApi(ModuleStoreTestCase):
         # ...and cascade delete updates the "collections" field for the associated components
         mock_meilisearch.return_value.index.return_value.update_documents.assert_has_calls(
             [
-                call([doc_problem_without_collection]),
-                call([doc_unit_without_collection]),
+                call([doc_problem_without_collection], primary_key=api.INDEX_PRIMARY_KEY),
+                call([doc_unit_without_collection], primary_key=api.INDEX_PRIMARY_KEY),
             ],
             any_order=True,
         )
@@ -1224,21 +1241,21 @@ class TestSearchApi(ModuleStoreTestCase):
             }
         if container_type == "unit":
             # The parent subsection's "child_usage_keys" and "child_display_names" should be cleared:
-            update_doc_calls.append(call([clear_contents(self.subsection_dict)]))
+            update_doc_calls.append(call([clear_contents(self.subsection_dict)], primary_key=api.INDEX_PRIMARY_KEY))
         elif container_type == "subsection":
             # The parent section's "child_usage_keys" and "child_display_names" should be cleared:
-            update_doc_calls.append(call([clear_contents(self.section_dict)]))
+            update_doc_calls.append(call([clear_contents(self.section_dict)], primary_key=api.INDEX_PRIMARY_KEY))
             # The subsection gets removed from the child unit's "subsections this is used in":
             update_doc_calls.append(call([{
                 'id': self.unit_dict['id'],
                 'subsections': {'display_name': [], 'key': []},
-            }]))
+            }], primary_key=api.INDEX_PRIMARY_KEY))
         elif container_type == "section":
             # The subsection gets removed from the child unit's "subsections this is used in":
             update_doc_calls.append(call([{
                 'id': self.subsection_dict['id'],
                 'sections': {'display_name': [], 'key': []},
-            }]))
+            }], primary_key=api.INDEX_PRIMARY_KEY))
 
         # Note: because TestCase keeps the transaction open, we need self.captureOnCommitCallbacks(execute=True) to
         # ensure events get emitted here as if this part were its own transaction as it normally would be.
@@ -1259,16 +1276,16 @@ class TestSearchApi(ModuleStoreTestCase):
         with self.captureOnCommitCallbacks(execute=True):
             library_api.restore_container(container.container_key)
         if container_type == "unit":
-            update_doc_calls.append(call([self.subsection_dict]))
+            update_doc_calls.append(call([self.subsection_dict], primary_key=api.INDEX_PRIMARY_KEY))
         elif container_type == "subsection":
-            update_doc_calls.append(call([self.section_dict]))
+            update_doc_calls.append(call([self.section_dict], primary_key=api.INDEX_PRIMARY_KEY))
             update_doc_calls.append(call([{
                 'id': self.unit_dict['id'],
                 'subsections': {
                     'display_name': [self.subsection_dict['display_name']],
                     'key': [self.subsection_key],
                 },
-            }]))
+            }], primary_key=api.INDEX_PRIMARY_KEY))
         elif container_type == "section":
             update_doc_calls.append(call([{
                 'id': self.subsection_dict['id'],
@@ -1276,7 +1293,7 @@ class TestSearchApi(ModuleStoreTestCase):
                     'display_name': [self.section_dict['display_name']],
                     'key': [self.section_key],
                 },
-            }]))
+            }], primary_key=api.INDEX_PRIMARY_KEY))
         # Parent containers index data is updated on restore again.
         if update_doc_calls:
             mock_meilisearch.return_value.index.return_value.update_documents.assert_has_calls(
@@ -1298,7 +1315,9 @@ class TestSearchApi(ModuleStoreTestCase):
         container_dict = getattr(self, f"{container_type}_dict")
         api.upsert_library_container_index_doc(container.container_key)
 
-        mock_meilisearch.return_value.index.return_value.update_documents.assert_called_once_with([container_dict])
+        mock_meilisearch.return_value.index.return_value.update_documents.assert_called_once_with(
+            [container_dict], primary_key=api.INDEX_PRIMARY_KEY
+        )
         assert self._indexes_used(mock_meilisearch) == {api.STUDIO_LIBRARY_INDEX_NAME}
 
     @ddt.data(
@@ -1340,8 +1359,8 @@ class TestSearchApi(ModuleStoreTestCase):
         assert mock_meilisearch.return_value.index.return_value.update_documents.call_count == 2
         mock_meilisearch.return_value.index.return_value.update_documents.assert_has_calls(
             [
-                call([doc_unit_with_tags1]),
-                call([doc_unit_with_tags2]),
+                call([doc_unit_with_tags1], primary_key=api.INDEX_PRIMARY_KEY),
+                call([doc_unit_with_tags2], primary_key=api.INDEX_PRIMARY_KEY),
             ],
             any_order=True,
         )
@@ -1378,13 +1397,13 @@ class TestSearchApi(ModuleStoreTestCase):
         mock_meilisearch.return_value.index.return_value.update_documents.assert_has_calls(
             [
                 # The problem block's index document gets updated so that its "[parent] units" field lists the new unit
-                call([doc_block_with_units]),
+                call([doc_block_with_units], primary_key=api.INDEX_PRIMARY_KEY),
                 # Update the parent unit so that the problem block is in "child_usage_keys" and "child_display_names"
-                call([new_unit_dict]),
+                call([new_unit_dict], primary_key=api.INDEX_PRIMARY_KEY),
                 # The ancestor containers are updated too, because they're included as dependencies in the event.
                 # We don't really need this.
-                call([self.subsection_dict]),
-                call([self.section_dict]),
+                call([self.subsection_dict], primary_key=api.INDEX_PRIMARY_KEY),
+                call([self.section_dict], primary_key=api.INDEX_PRIMARY_KEY),
             ],
             any_order=True,
         )
@@ -1430,11 +1449,11 @@ class TestSearchApi(ModuleStoreTestCase):
         mock_meilisearch.return_value.index.return_value.update_documents.assert_has_calls(
             [
                 # The unit isn't directly modified but its "parent subsections: ..." field must be updated:
-                call([doc_block_with_subsections]),
+                call([doc_block_with_subsections], primary_key=api.INDEX_PRIMARY_KEY),
                 # Update the parent subsection so that the new unit is in "child_usage_keys" and "child_display_names"
-                call([new_subsection_dict]),
+                call([new_subsection_dict], primary_key=api.INDEX_PRIMARY_KEY),
                 # The ancestor section is updated too because it's included in the event. We don't really need this.
-                call([self.section_dict]),
+                call([self.section_dict], primary_key=api.INDEX_PRIMARY_KEY),
             ],
             any_order=True,
         )
@@ -1478,9 +1497,9 @@ class TestSearchApi(ModuleStoreTestCase):
         mock_meilisearch.return_value.index.return_value.update_documents.assert_has_calls(
             [
                 # The subsection isn't directly modified but its "parent sections: ..." field must be updated:
-                call([doc_block_with_sections]),
+                call([doc_block_with_sections], primary_key=api.INDEX_PRIMARY_KEY),
                 # Update the parent section so that the new subsection is in "child_usage_keys" & "child_display_names"
-                call([new_section_dict]),
+                call([new_section_dict], primary_key=api.INDEX_PRIMARY_KEY),
             ],
             any_order=True,
         )
@@ -1582,9 +1601,15 @@ class TestSearchApi(ModuleStoreTestCase):
             api.upsert_library_block_index_doc(self.problem1.usage_key)
             api.upsert_xblock_index_doc(self.sequential.usage_key, recursive=False)
 
-        indexes[api.STUDIO_LIBRARY_INDEX_NAME + "_new"].update_documents.assert_called_once_with([self.doc_problem1])
-        indexes[api.STUDIO_LIBRARY_INDEX_NAME].update_documents.assert_called_once_with([self.doc_problem1])
-        indexes[api.STUDIO_COURSE_INDEX_NAME].update_documents.assert_called_once_with([self.doc_sequential])
+        indexes[api.STUDIO_LIBRARY_INDEX_NAME + "_new"].update_documents.assert_called_once_with(
+            [self.doc_problem1], primary_key=api.INDEX_PRIMARY_KEY
+        )
+        indexes[api.STUDIO_LIBRARY_INDEX_NAME].update_documents.assert_called_once_with(
+            [self.doc_problem1], primary_key=api.INDEX_PRIMARY_KEY
+        )
+        indexes[api.STUDIO_COURSE_INDEX_NAME].update_documents.assert_called_once_with(
+            [self.doc_sequential], primary_key=api.INDEX_PRIMARY_KEY
+        )
         assert api.STUDIO_COURSE_INDEX_NAME + "_new" not in indexes
 
     @override_settings(MEILISEARCH_ENABLED=True)
