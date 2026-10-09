@@ -11,13 +11,13 @@ acid-xblock==0.4.1
     # via openedx-platform
 aiohappyeyeballs==2.7.1
     # via aiohttp
-aiohttp==3.14.3
+aiohttp==3.14.4
     # via geoip2
 aiosignal==1.4.0
     # via aiohttp
 alabaster==1.0.0
     # via sphinx
-amqp==5.4.0
+amqp==5.4.1
     # via kombu
 analytics-python==1.4.post1
     # via openedx-platform
@@ -70,7 +70,7 @@ beautifulsoup4==4.15.0
     #   pydata-sphinx-theme
     #   pynliner
     #   xblocks-contrib
-billiard==4.3.0
+billiard==4.3.1
     # via celery
 bleach==6.4.0
     # via
@@ -80,14 +80,14 @@ bleach==6.4.0
     #   ora2
     #   xblock-drag-and-drop-v2
     #   xblock-poll
-boto3==1.43.104
+boto3==1.43.108
     # via
     #   django-ses
     #   fs-s3fs
     #   openedx-platform
     #   ora2
     #   snowflake-connector-python
-botocore==1.43.104
+botocore==1.43.108
     # via
     #   boto3
     #   openedx-platform
@@ -99,7 +99,7 @@ bridgekeeper==0.9
     # via openedx-platform
 cachecontrol==0.14.4
     # via firebase-admin
-cachetools==7.2.0
+cachetools==7.2.1
     # via
     #   edxval
     #   tox
@@ -123,6 +123,7 @@ certifi==2026.7.22
     #   httpcore
     #   httpx
     #   requests
+    #   signxml
     #   snowflake-connector-python
 cffi==2.1.1
     # via
@@ -134,11 +135,11 @@ chardet==7.6.0
     #   diff-cover
     #   encutils
     #   pysrt
-charset-normalizer==3.5.1
+charset-normalizer==3.5.2
     # via
     #   requests
     #   snowflake-connector-python
-chem==2.0.0
+chem==2.0.1
     # via
     #   openedx-platform
     #   xblocks-contrib
@@ -160,7 +161,7 @@ click-log==0.4.0
     # via edx-lint
 click-plugins==1.1.1.2
     # via celery
-click-repl==0.4.0
+click-repl==0.4.1
     # via celery
 cloudpickle==3.1.2
     # via joblib
@@ -169,7 +170,7 @@ code-annotations==3.0.0
     #   edx-enterprise
     #   edx-lint
     #   edx-toggles
-codejail-includes==2.0.0
+codejail-includes==3.0.1
     # via openedx-platform
 colorama==0.4.6
     # via
@@ -181,7 +182,7 @@ colorama==0.4.6
 coverage==7.16.2
     # via pytest-cov
 crowdsourcehinter-xblock==1.0.2
-cryptography==50.0.1
+cryptography==50.0.2
     # via
     #   django-fernet-fields-v2
     #   edx-enterprise
@@ -192,6 +193,7 @@ cryptography==50.0.1
     #   pgpy
     #   pyjwt
     #   pyopenssl
+    #   signxml
     #   snowflake-connector-python
     #   social-auth-core
 cssselect==1.5.0
@@ -331,7 +333,7 @@ django-fernet-fields-v2==0.9
     # via
     #   edx-enterprise
     #   enterprise-integrated-channels
-django-filter==26.1
+django-filter==26.2
     # via
     #   edx-enterprise
     #   lti-consumer-xblock
@@ -397,6 +399,7 @@ django-simple-history==3.12.0
     #   edx-organizations
     #   edx-proctoring
     #   enterprise-integrated-channels
+    #   openedx-core
     #   openedx-platform
     #   ora2
 django-statici18n==2.8.0
@@ -411,7 +414,7 @@ django-storages==1.14.6
     #   openedx-platform
 django-stubs==5.2.9
     # via djangorestframework-stubs
-django-stubs-ext==6.1.1
+django-stubs-ext==6.1.2
     # via django-stubs
 django-user-tasks==4.0.0
     # via openedx-platform
@@ -463,9 +466,9 @@ drf-jwt==1.19.2
     # via edx-drf-extensions
 drf-spectacular==0.30.0
     # via openedx-platform
-drf-spectacular-sidecar==2026.9.1
+drf-spectacular-sidecar==2026.10.1
     # via openedx-platform
-drf-yasg==1.21.15
+drf-yasg==1.21.17
     # via
     #   django-user-tasks
     #   edx-api-doc-tools
@@ -473,13 +476,13 @@ edx-ace==1.15.0
     # via openedx-platform
 edx-api-doc-tools==3.0.0
     # via openedx-authz
-edx-auth-backends==5.0.0
+edx-auth-backends==5.1.0
     # via openedx-platform
 edx-bulk-grades==2.0.0
     # via
     #   openedx-platform
     #   staff-graded-xblock
-edx-ccx-keys==2.0.2
+edx-ccx-keys==2.1.0
     # via
     #   lti-consumer-xblock
     #   openedx-authz
@@ -502,7 +505,7 @@ edx-django-release-util==1.5.0
     #   openedx-platform
 edx-django-sites-extensions==6.0.0
     # via openedx-platform
-edx-django-utils==8.0.2
+edx-django-utils==8.1.0
     # via
     #   django-config-models
     #   edx-ace
@@ -537,16 +540,16 @@ edx-drf-extensions==10.9.0
     #   openedx-platform
 edx-enterprise==8.17.0
     # via openedx-platform
-edx-event-bus-kafka==6.1.0
+edx-event-bus-kafka==6.2.0
     # via openedx-platform
 edx-event-bus-redis==1.1.2
     # via openedx-platform
-edx-i18n-tools==2.0.0
+edx-i18n-tools==2.1.0
     # via ora2
 edx-lint==6.2.0
 edx-milestones==2.0.0
     # via openedx-platform
-edx-opaque-keys==4.0.0
+edx-opaque-keys==4.0.1
     # via
     #   edx-bulk-grades
     #   edx-ccx-keys
@@ -622,9 +625,9 @@ elasticsearch==7.9.1
     #   openedx-forum
 encutils==1.0.0
     # via cssutils
-enmerkar-underscore==2.4.1
+enmerkar-underscore==2.4.2
     # via openedx-platform
-enterprise-integrated-channels==0.1.70
+enterprise-integrated-channels==0.1.74
 event-tracking==4.1.5
     # via
     #   edx-completion
@@ -634,9 +637,9 @@ event-tracking==4.1.5
 execnet==2.1.2
     # via pytest-xdist
 factory-boy==3.3.3
-faker==40.40.0
+faker==40.41.0
     # via factory-boy
-fastavro==1.12.2
+fastavro==1.13.0
     # via openedx-events
 filelock==3.32.7
     # via
@@ -666,36 +669,36 @@ geoip2==5.3.0
     # via openedx-platform
 gitdb==4.0.12
     # via gitpython
-gitpython==3.1.62
+gitpython==3.2.0
 glob2==0.7
     # via openedx-platform
-google-api-core==2.39.0
+google-api-core==2.41.0
     # via
     #   firebase-admin
     #   google-cloud-core
     #   google-cloud-firestore
     #   google-cloud-storage
-google-auth==2.59.0
+google-auth==2.60.0
     # via
     #   google-api-core
     #   google-cloud-core
     #   google-cloud-firestore
     #   google-cloud-storage
-google-cloud-core==2.7.0
+google-cloud-core==2.8.0
     # via
     #   google-cloud-firestore
     #   google-cloud-storage
-google-cloud-firestore==2.32.0 ; platform_python_implementation != 'PyPy'
+google-cloud-firestore==2.34.0 ; platform_python_implementation != 'PyPy'
     # via firebase-admin
-google-cloud-storage==3.15.0
+google-cloud-storage==3.16.0
     # via firebase-admin
 google-crc32c==1.9.0
     # via
     #   google-cloud-storage
     #   google-resumable-media
-google-resumable-media==2.10.2
+google-resumable-media==2.11.0
     # via google-cloud-storage
-googleapis-common-protos==1.75.4
+googleapis-common-protos==1.75.5
     # via
     #   google-api-core
     #   grpcio-status
@@ -747,6 +750,8 @@ imagesize==2.0.1
 import-linter==2.15
 importlib-metadata==9.0.1
     # via openedx-platform
+importlib-resources==7.1.0
+    # via swagger-spec-validator
 inflection==0.5.1
     # via
     #   drf-spectacular
@@ -791,6 +796,7 @@ jsonschema==4.26.0
     #   drf-spectacular
     #   optimizely-sdk
     #   sphinxcontrib-openapi
+    #   swagger-spec-validator
 jsonschema-specifications==2025.9.1
     # via jsonschema
 jwcrypto==1.6.1
@@ -812,7 +818,7 @@ legacy-cgi==2.6.4 ; python_full_version >= '3.13'
 librt==0.16.0 ; platform_python_implementation != 'PyPy'
     # via mypy
 libsass==0.10.0
-lti-consumer-xblock==11.4.1
+lti-consumer-xblock==11.4.2
     # via openedx-platform
 lxml==5.3.2
     # via
@@ -827,6 +833,7 @@ lxml==5.3.2
     #   ora2
     #   pyquery
     #   python3-saml
+    #   signxml
     #   xblock
     #   xblocks-contrib
     #   xmlsec
@@ -847,7 +854,7 @@ markdown==3.11
     #   xblock-poll
 markdown-it-py==4.2.0
     # via rich
-markupsafe==3.0.3
+markupsafe==3.0.4
     # via
     #   chem
     #   jinja2
@@ -876,7 +883,7 @@ more-itertools==11.1.0
     # via cssutils
 mpmath==1.3.0
     # via sympy
-msgpack==1.2.2
+msgpack==1.2.3
     # via cachecontrol
 multidict==6.9.1
     # via
@@ -917,20 +924,20 @@ oauthlib==4.0.0
     #   xblocks-contrib
 olxcleaner==0.3.0
     # via openedx-platform
-openedx-atlas==0.7.1
+openedx-atlas==0.7.2
     # via
     #   edx-enterprise
     #   enterprise-integrated-channels
     #   openedx-authz
     #   openedx-forum
     #   openedx-platform
-openedx-authz==1.23.0
+openedx-authz==1.26.0
     # via openedx-platform
-openedx-calc==5.0.0
+openedx-calc==5.1.0
     # via
     #   openedx-platform
     #   xblocks-contrib
-openedx-core==1.4.0
+openedx-core==1.6.0
     # via openedx-platform
 openedx-django-pyfs==4.0.0
     # via xblock
@@ -949,13 +956,13 @@ openedx-events==11.2.0
     #   openedx-core
     #   openedx-platform
     #   ora2
-openedx-filters==3.14.0
+openedx-filters==3.15.0
     # via
     #   edx-enterprise
     #   lti-consumer-xblock
     #   openedx-platform
     #   ora2
-openedx-forum==0.4.7
+openedx-forum==0.4.8
     # via openedx-platform
 opentelemetry-api==1.45.0
     # via google-api-core
@@ -971,6 +978,7 @@ packaging==26.3
     #   sphinx
     #   tox
     #   tox-uv-bare
+    #   virtualenv
     #   wheel
 pact-python==3.4.1
 pact-python-ffi==0.5.8.0
@@ -1002,7 +1010,7 @@ pillow==12.3.0
     #   edx-organizations
     #   edxval
     #   openedx-platform
-platformdirs==4.12.1
+platformdirs==4.12.3
     # via
     #   pylint
     #   snowflake-connector-python
@@ -1022,7 +1030,7 @@ propcache==0.5.4
     # via
     #   aiohttp
     #   yarl
-proto-plus==1.28.4
+proto-plus==1.29.0
     # via
     #   google-api-core
     #   google-cloud-firestore
@@ -1055,7 +1063,7 @@ pycountry==26.2.16
     # via openedx-platform
 pycparser==3.0 ; implementation_name != 'PyPy'
     # via cffi
-pycryptodomex==3.23.0
+pycryptodomex==3.24.0
     # via
     #   edx-proctoring
     #   lti-consumer-xblock
@@ -1071,6 +1079,7 @@ pygments==2.21.0
     #   accessible-pygments
     #   diff-cover
     #   pydata-sphinx-theme
+    #   pytest
     #   rich
     #   sphinx
     #   sphinx-mdinclude
@@ -1089,7 +1098,7 @@ pyjwt==2.15.1
     #   social-auth-core
 pylatexenc==2.11
     # via olxcleaner
-pylint==4.0.9
+pylint==4.0.10
     # via
     #   edx-lint
     #   pylint-celery
@@ -1104,7 +1113,7 @@ pylint-plugin-utils==0.9.0
     # via
     #   pylint-celery
     #   pylint-django
-pylint-pytest==1.1.8
+pylint-pytest==1.1.9.post1
 pylti1p3==2.0.0
     # via openedx-platform
 pymemcache==4.0.0
@@ -1129,7 +1138,7 @@ pyparsing==3.3.3
     #   chem
     #   openedx-calc
     #   xblocks-contrib
-pyproject-api==1.11.2
+pyproject-api==1.11.3
     # via tox
 pyquery==2.1.0
 pyrsistent==0.20.0
@@ -1138,7 +1147,7 @@ pysrt==1.1.2
     # via
     #   edxval
     #   openedx-platform
-pytest==8.2.0
+pytest==9.1.1
     # via
     #   pylint-pytest
     #   pytest-attrib
@@ -1176,7 +1185,7 @@ python-discovery==1.6.1
     # via
     #   tox
     #   virtualenv
-python-ipware==4.1.0
+python-ipware==4.1.1
     # via django-ipware
 python-slugify==9.1.2
     # via code-annotations
@@ -1190,7 +1199,7 @@ python3-saml==1.16.0
     # via
     #   edx-enterprise
     #   openedx-platform
-pytz==2026.4
+pytz==2026.5
     # via
     #   drf-yasg
     #   edx-completion
@@ -1221,6 +1230,7 @@ pyyaml==6.0.3
     #   openedx-platform
     #   sphinx-autoapi
     #   sphinxcontrib-openapi
+    #   swagger-spec-validator
     #   xblock
 random2==1.0.2
     # via
@@ -1273,11 +1283,11 @@ rich==15.0.0
     # via import-linter
 roman-numerals==4.1.0
     # via sphinx
-rpds-py==2026.6.3
+rpds-py==2026.9.1
     # via
     #   jsonschema
     #   referencing
-ruff==0.16.9
+ruff==0.16.10
 rules==3.5
     # via
     #   edx-enterprise
@@ -1307,9 +1317,11 @@ shapely==2.1.2
     # via
     #   openedx-platform
     #   xblocks-contrib
+signxml==5.1.0
+    # via enterprise-integrated-channels
 simpleeval==1.0.8
     # via pycasbin
-simplejson==4.1.2
+simplejson==4.2.0
     # via
     #   openedx-platform
     #   sailthru-client
@@ -1334,6 +1346,7 @@ six==1.17.0
     #   fs-s3fs
     #   html5lib
     #   libsass
+    #   openedx-calc
     #   openedx-platform
     #   python-dateutil
 slumber==0.7.1
@@ -1346,7 +1359,7 @@ smmap==5.0.3
     # via gitdb
 snowballstemmer==3.1.1
     # via sphinx
-snowflake-connector-python==4.7.5
+snowflake-connector-python==4.8.0
     # via enterprise-integrated-channels
 social-auth-app-django==5.4.1
     # via
@@ -1391,7 +1404,7 @@ sphinxcontrib-devhelp==2.0.0
     # via sphinx
 sphinxcontrib-htmlhelp==2.1.0
     # via sphinx
-sphinxcontrib-httpdomain==2.0.0
+sphinxcontrib-httpdomain==2.1.0
     # via sphinxcontrib-openapi
 sphinxcontrib-jsmath==1.0.1
     # via sphinx
@@ -1416,9 +1429,11 @@ stevedore==5.9.1
     #   openedx-platform
 super-csv==5.0.0
     # via edx-bulk-grades
+swagger-spec-validator==3.0.4
+    # via drf-yasg
 sympy==1.14.0
     # via openedx-calc
-testfixtures==12.3.0
+testfixtures==12.4.0
     # via edx-enterprise
 text-unidecode==1.3
     # via python-slugify
@@ -1434,10 +1449,10 @@ tomlkit==0.15.1
     #   openedx-core
     #   pylint
     #   snowflake-connector-python
-tox==4.64.4
+tox==4.64.9
     # via tox-uv-bare
-tox-uv==1.36.0
-tox-uv-bare==1.36.0
+tox-uv==1.36.1
+tox-uv-bare==1.36.1
     # via tox-uv
 tqdm==4.70.1
     # via nltk
@@ -1475,13 +1490,14 @@ typing-extensions==4.16.0
     #   pyopenssl
     #   referencing
     #   snowflake-connector-python
+    #   swagger-spec-validator
     #   testfixtures
     #   tox
     #   typesense
     #   typing-inspection
 typing-inspection==0.4.4
     # via pydantic
-tzdata==2026.4
+tzdata==2026.5
     # via
     #   django
     #   faker
@@ -1508,14 +1524,14 @@ urllib3==2.8.0
     #   elasticsearch
     #   requests
     #   types-requests
-uv==0.12.20
+uv==0.12.23
     # via tox-uv
 vine==5.1.0
     # via
     #   amqp
     #   celery
     #   kombu
-virtualenv==21.13.0
+virtualenv==21.14.5
     # via tox
 voluptuous==0.16.0
     # via ora2
@@ -1525,7 +1541,7 @@ walrus==0.9.8
 watchdog==6.0.0
 wcmatch==11.0.1
     # via pycasbin
-wcwidth==0.9.1
+wcwidth==0.9.2
     # via prompt-toolkit
 web-fragments==4.0.0
     # via openedx-platform
@@ -1561,17 +1577,17 @@ xblock==6.3.3
     #   xblock-google-drive
     #   xblock-poll
     #   xblocks-contrib
-xblock-drag-and-drop-v2==5.1.1
+xblock-drag-and-drop-v2==5.1.2
 xblock-google-drive==0.8.2
 xblock-poll==1.16.1
 xblocks-contrib==1.0.6
 xmlsec==1.3.14
     # via python3-saml
-xss-utils==1.0.0
+xss-utils==1.1.0
     # via openedx-platform
 yarl==1.25.1
     # via
     #   aiohttp
     #   pact-python
-zipp==4.1.0
+zipp==4.1.1
     # via importlib-metadata

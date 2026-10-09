@@ -9,9 +9,9 @@ attrs==26.1.0
     # via zeep
 backoff==2.2.1
     # via edx-platform-user-retirement-scripts
-boto3==1.43.104
+boto3==1.43.108
     # via edx-platform-user-retirement-scripts
-botocore==1.43.104
+botocore==1.43.108
     # via
     #   boto3
     #   s3transfer
@@ -21,13 +21,13 @@ cffi==2.1.1 ; platform_python_implementation != 'PyPy'
     # via
     #   cryptography
     #   pynacl
-charset-normalizer==3.5.1
+charset-normalizer==3.5.2
     # via requests
 click==8.5.0
     # via
     #   edx-django-utils
     #   edx-platform-user-retirement-scripts
-cryptography==50.0.1
+cryptography==50.0.2
     # via
     #   google-auth
     #   pyjwt
@@ -40,22 +40,22 @@ django-crum==0.7.9
     # via edx-django-utils
 django-waffle==5.0.0
     # via edx-django-utils
-edx-django-utils==8.0.2
+edx-django-utils==8.1.0
     # via edx-rest-api-client
 edx-rest-api-client==7.1.0
     # via edx-platform-user-retirement-scripts
-google-api-core==2.39.0
+google-api-core==2.41.0
     # via google-api-python-client
-google-api-python-client==2.200.0
+google-api-python-client==2.201.0
     # via edx-platform-user-retirement-scripts
-google-auth==2.59.0
+google-auth==2.60.0
     # via
     #   google-api-core
     #   google-api-python-client
     #   google-auth-httplib2
-google-auth-httplib2==0.4.2
+google-auth-httplib2==0.4.4
     # via google-api-python-client
-googleapis-common-protos==1.75.4
+googleapis-common-protos==1.75.5
     # via google-api-core
 httplib2==0.32.0
     # via
@@ -77,9 +77,9 @@ more-itertools==11.1.0
     # via simple-salesforce
 opentelemetry-api==1.45.0
     # via google-api-core
-platformdirs==4.12.1
+platformdirs==4.12.3
     # via zeep
-proto-plus==1.28.4
+proto-plus==1.29.0
     # via google-api-core
 protobuf==7.36.2
     # via
@@ -104,7 +104,7 @@ pyparsing==3.3.3
     # via httplib2
 python-dateutil==2.9.0.post0
     # via botocore
-pytz==2026.4
+pytz==2026.5
     # via jenkinsapi
 pyyaml==6.0.3
     # via edx-platform-user-retirement-scripts
@@ -126,7 +126,7 @@ s3transfer==0.19.2
     # via boto3
 simple-salesforce==1.12.10
     # via edx-platform-user-retirement-scripts
-simplejson==4.1.2
+simplejson==4.2.0
     # via edx-platform-user-retirement-scripts
 six==1.17.0
     # via python-dateutil
@@ -138,7 +138,7 @@ typing-extensions==4.16.0
     # via
     #   opentelemetry-api
     #   simple-salesforce
-tzdata==2026.4 ; sys_platform == 'win32'
+tzdata==2026.5 ; sys_platform == 'win32'
     # via django
 unicodecsv==0.14.1
     # via edx-platform-user-retirement-scripts

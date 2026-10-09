@@ -11,7 +11,7 @@ click-log==0.4.0
     # via edx-platform-structures-pruning-scripts
 dnspython==2.8.0
     # via pymongo
-edx-opaque-keys==4.0.0
+edx-opaque-keys==4.0.1
     # via edx-platform-structures-pruning-scripts
 pymongo==4.4.0
     # via

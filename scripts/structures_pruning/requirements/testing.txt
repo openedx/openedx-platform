@@ -14,7 +14,7 @@ colorama==0.4.6 ; sys_platform == 'win32'
 ddt==1.7.2
 dnspython==2.8.0
     # via pymongo
-edx-opaque-keys==4.0.0
+edx-opaque-keys==4.0.1
     # via edx-platform-structures-pruning-scripts
 iniconfig==2.3.0
     # via pytest

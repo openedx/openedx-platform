@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.12"
 
 [manifest]
@@ -62,16 +62,16 @@ wheels = [
 
 [[package]]
 name = "edx-opaque-keys"
-version = "4.0.0"
+version = "4.0.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pymongo" },
     { name = "stevedore" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/78/12/eeb5e5431f7e600875e620bd2592f77f04ee509f474f52cc6b0ab1f4312b/edx_opaque_keys-4.0.0.tar.gz", hash = "sha256:d9c06793cf99629836432f2a9f34b0bb24ad7a66a1e397ffa716f714aa43b269", size = 68222, upload-time = "2026-04-02T19:00:56.247Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/fe/85/dd6b189ace4cdeae939baca4d42b6c4a99bf58a227269b0aea24f0531866/edx_opaque_keys-4.0.1.tar.gz", hash = "sha256:38f9541534dc67b96a631b34bda5dc4328f64270f642f238a694dee046323424", size = 147491, upload-time = "2026-09-30T15:27:01.541Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/39/1b/e9edebd12fd461b605691759a01c12e73a78cb50a4cd0b04ab58bb8303d9/edx_opaque_keys-4.0.0-py3-none-any.whl", hash = "sha256:dab0fd985b13d6d6515049606f93684d1eb284207b6d5e8da0721e29efdd0088", size = 77651, upload-time = "2026-04-02T19:00:55.259Z" },
+    { url = "https://files.pythonhosted.org/packages/a2/87/c76f99f062b20586015f70575af412cf2636bc0a7ded06160df5c61a0c14/edx_opaque_keys-4.0.1-py3-none-any.whl", hash = "sha256:889323a63ba8106a82b080483a65d9fcecaf4bfae3f36a0eaf9c40185c6acad3", size = 76323, upload-time = "2026-09-30T15:27:00.072Z" },
 ]
 
 [[package]]
