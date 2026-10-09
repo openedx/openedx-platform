@@ -44,6 +44,7 @@ from lms.djangoapps.verify_student.ssencrypt import (
 from lms.djangoapps.verify_student.statuses import VerificationAttemptStatus
 from openedx.core.djangoapps.signals.signals import LEARNER_SSO_VERIFIED, PHOTO_VERIFICATION_APPROVED
 from openedx.core.djangolib.model_mixins import DeletableByUserValue
+from openedx.core.lib.log_utils import get_username_or_pii_safe_user_id_for_log
 
 from .utils import auto_verify_for_testing_enabled, earliest_allowed_verification_date, submit_request_to_ss
 
@@ -255,7 +256,7 @@ class SSOVerification(IDVerificationAttempt):
         Send a signal indicating that this verification was approved.
         """
         log.info("Verification for user '{user_id}' approved by '{reviewer}' SSO.".format(  # noqa: UP032
-            user_id=self.user, reviewer=approved_by
+            user_id=get_username_or_pii_safe_user_id_for_log(self.user), reviewer=approved_by
         ))
 
         # Emit signal to find and generate eligible certificates
@@ -265,7 +266,7 @@ class SSOVerification(IDVerificationAttempt):
         )
 
         message = 'LEARNER_SSO_VERIFIED signal fired for {user} from SSOVerification'
-        log.info(message.format(user=self.user.username))
+        log.info(message.format(user=get_username_or_pii_safe_user_id_for_log(self.user)))
 
 
 class PhotoVerification(IDVerificationAttempt):
@@ -469,7 +470,7 @@ class PhotoVerification(IDVerificationAttempt):
         )
 
         message = 'PHOTO_VERIFICATION_APPROVED signal fired for {user} from PhotoVerification'
-        log.info(message.format(user=self.user.username))
+        log.info(message.format(user=get_username_or_pii_safe_user_id_for_log(self.user)))
 
     @status_before_must_be("ready", "must_retry")
     def mark_submit(self):
@@ -838,7 +839,7 @@ class SoftwareSecurePhotoVerification(PhotoVerification):
             log.info(
                 ('Software Secure attempt for user: %r and receipt ID: %r used the same photo ID data as the '
                  'receipt with ID %r.'),
-                self.user.username,
+                get_username_or_pii_safe_user_id_for_log(self.user),
                 self.receipt_id,
                 copy_id_photo_from.receipt_id,
             )

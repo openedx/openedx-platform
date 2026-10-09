@@ -58,6 +58,7 @@ from openedx.core.djangoapps.user_authn.views.password_reset import send_passwor
 from openedx.core.djangoapps.user_authn.views.utils import API_V1
 from openedx.core.djangoapps.util.user_messages import PageLevelMessages
 from openedx.core.djangolib.markup import HTML, Text
+from openedx.core.lib.log_utils import get_email_or_pii_safe_user_id_for_log, get_standalone_pii_or_redacted_for_log
 
 log = logging.getLogger("edx.student")
 AUDIT_LOG = logging.getLogger("audit")
@@ -81,7 +82,10 @@ def _do_third_party_auth(request):
     except USER_MODEL.DoesNotExist:
         AUDIT_LOG.info(
             "Login failed - user with username {username} has no social auth "  # noqa: UP032
-            "with backend_name {backend_name}".format(username=username, backend_name=backend_name)
+            "with backend_name {backend_name}".format(
+                username=get_standalone_pii_or_redacted_for_log(username),
+                backend_name=backend_name,
+            )
         )
         message = Text(
             _(
@@ -197,7 +201,7 @@ def _enforce_password_policy_compliance(request, user):  # pylint: disable=missi
         if LoginFailures.is_feature_enabled():
             LoginFailures.increment_lockout_counter(user)
 
-        user_identifier_for_log = user.id if getattr(settings, 'SQUELCH_PII_IN_LOGS', False) else user.email
+        user_identifier_for_log = get_email_or_pii_safe_user_id_for_log(user)
         AUDIT_LOG.info("Password reset initiated for email %s.", user_identifier_for_log)
         tracker.emit(
             PASSWORD_RESET_INITIATED,

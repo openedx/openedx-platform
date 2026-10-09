@@ -7,6 +7,7 @@ from unittest.mock import patch
 from ccx_keys.locator import CCXLocator
 from django.test.utils import override_settings
 from django.urls import reverse
+from edx_toggles.toggles.testutils import override_waffle_flag
 from rest_framework import status
 from rest_framework.test import APIClient
 
@@ -16,8 +17,10 @@ from common.djangoapps.student.tests.factories import UserFactory
 from lms.djangoapps.ccx.models import CustomCourseForEdX
 from lms.djangoapps.ccx.overrides import get_override_for_ccx, override_field_for_ccx
 from lms.djangoapps.ccx.tests.utils import CcxTestCase
+from lms.djangoapps.grades.config.waffle import WRITABLE_GRADEBOOK
 
 CCX_COACH_MFE_URL = 'http://localhost:2003/ccx-coach'
+WRITABLE_GRADEBOOK_URL = 'http://localhost:1994/gradebook'
 
 
 @override_settings(CUSTOM_COURSES_EDX=True)
@@ -42,7 +45,10 @@ class CCXCoachV2MetadataViewTest(CcxTestCase):
         assert response.data['ccx_course_id'] == ''
         assert response.data['tabs'] == []
 
-    @override_settings(CCX_COACH_MICROFRONTEND_URL=CCX_COACH_MFE_URL)
+    @override_waffle_flag(WRITABLE_GRADEBOOK, active=True)
+    @override_settings(
+        CCX_COACH_MICROFRONTEND_URL=CCX_COACH_MFE_URL, WRITABLE_GRADEBOOK_URL=WRITABLE_GRADEBOOK_URL
+    )
     def test_master_course_with_ccx_returns_tabs(self):
         """When the coach has a CCX, the master id resolves to it (legacy behavior)."""
         ccx = self.make_ccx()
@@ -55,7 +61,10 @@ class CCXCoachV2MetadataViewTest(CcxTestCase):
         assert response.data['ccx_course_id'] == str(ccx_key)
         self._assert_tabs(response.data['tabs'], ccx_key)
 
-    @override_settings(CCX_COACH_MICROFRONTEND_URL=CCX_COACH_MFE_URL)
+    @override_waffle_flag(WRITABLE_GRADEBOOK, active=True)
+    @override_settings(
+        CCX_COACH_MICROFRONTEND_URL=CCX_COACH_MFE_URL, WRITABLE_GRADEBOOK_URL=WRITABLE_GRADEBOOK_URL
+    )
     def test_ccx_course_id_returns_tabs(self):
         """Passing the CCX id directly resolves and returns its tabs."""
         ccx = self.make_ccx()
@@ -78,6 +87,8 @@ class CCXCoachV2MetadataViewTest(CcxTestCase):
             assert set(tab.keys()) == {'tab_id', 'title', 'url', 'sort_order'}
             assert tab['url'] == f'/ccx-coach/{ccx_key}/{tab["tab_id"]}'
 
+    @override_waffle_flag(WRITABLE_GRADEBOOK, active=True)
+    @override_settings(WRITABLE_GRADEBOOK_URL=WRITABLE_GRADEBOOK_URL)
     def test_tabs_without_mfe_url_setting(self):
         """With the MFE URL unset, tabs are still returned as relative links."""
         self.make_ccx()
@@ -86,6 +97,50 @@ class CCXCoachV2MetadataViewTest(CcxTestCase):
         assert response.status_code == status.HTTP_200_OK
         assert len(response.data['tabs']) == 4
         assert all(tab['url'].startswith('/') for tab in response.data['tabs'])
+
+    # -- Student Grades tab depends on writable gradebook availability ------
+
+    @override_settings(
+        CCX_COACH_MICROFRONTEND_URL=CCX_COACH_MFE_URL, WRITABLE_GRADEBOOK_URL=WRITABLE_GRADEBOOK_URL
+    )
+    def test_student_grades_tab_omitted_when_gradebook_flag_off(self):
+        """Without the writable-gradebook flag the tab is not advertised."""
+        self.make_ccx()
+
+        response = self.api_client.get(self._url(self.course.id))
+
+        assert response.status_code == status.HTTP_200_OK
+        tab_ids = [tab['tab_id'] for tab in response.data['tabs']]
+        assert tab_ids == ['enrollments', 'schedule', 'grading_policy']
+        # Remaining tabs keep their original sort_order values (gap at 30).
+        assert [tab['sort_order'] for tab in response.data['tabs']] == [10, 20, 40]
+
+    @override_waffle_flag(WRITABLE_GRADEBOOK, active=True)
+    @override_settings(
+        CCX_COACH_MICROFRONTEND_URL=CCX_COACH_MFE_URL, WRITABLE_GRADEBOOK_URL=None
+    )
+    def test_student_grades_tab_omitted_when_gradebook_url_unset(self):
+        """An enabled flag is not enough; the gradebook URL must be configured."""
+        self.make_ccx()
+
+        response = self.api_client.get(self._url(self.course.id))
+
+        assert response.status_code == status.HTTP_200_OK
+        tab_ids = [tab['tab_id'] for tab in response.data['tabs']]
+        assert 'student_grades' not in tab_ids
+
+    @override_waffle_flag(WRITABLE_GRADEBOOK, active=True)
+    @override_settings(
+        CCX_COACH_MICROFRONTEND_URL=CCX_COACH_MFE_URL, WRITABLE_GRADEBOOK_URL=WRITABLE_GRADEBOOK_URL
+    )
+    def test_student_grades_tab_present_when_gradebook_available(self):
+        """With both signals present the tab is advertised."""
+        self.make_ccx()
+
+        response = self.api_client.get(self._url(self.course.id))
+
+        assert response.status_code == status.HTTP_200_OK
+        assert 'student_grades' in [tab['tab_id'] for tab in response.data['tabs']]
 
     def test_nonexistent_master_course_returns_404(self):
         response = self.api_client.get(self._url('course-v1:edX+Missing+Missing'))
@@ -127,7 +182,10 @@ class CCXCoachV2CreateViewTest(CcxTestCase):
     def _url(self, course_id):
         return reverse('ccx_coach_api_v2:create_ccx', kwargs={'course_id': str(course_id)})
 
-    @override_settings(CCX_COACH_MICROFRONTEND_URL=CCX_COACH_MFE_URL)
+    @override_waffle_flag(WRITABLE_GRADEBOOK, active=True)
+    @override_settings(
+        CCX_COACH_MICROFRONTEND_URL=CCX_COACH_MFE_URL, WRITABLE_GRADEBOOK_URL=WRITABLE_GRADEBOOK_URL
+    )
     def test_create_returns_full_payload_not_redirect(self):
         """Create returns 201 with the full metadata payload, not a 302 redirect."""
         response = self.api_client.post(self._url(self.course.id), {'name': 'My CCX'}, format='json')

@@ -831,6 +831,41 @@ class TestInstructorAPIBulkAccountCreationAndEnrollment(SharedModuleStoreTestCas
         assert manual_enrollments.count() == 1
         assert manual_enrollments[0].state_transition, UNENROLLED_TO_ENROLLED
 
+    @ddt.data(True, False)
+    @patch('lms.djangoapps.instructor.views.api.log.warning')
+    def test_user_with_retired_email_in_csv_does_not_log_email(self, squelch_pii, warning_log):
+        """
+        The retired-email warning never includes the email address, whatever SQUELCH_PII_IN_LOGS is set to.
+        """
+        user = UserFactory.create(username='old_test_student', email='test_student@example.com')
+        user.email = get_retired_email_by_email(user.email)
+        user.username = get_retired_username_by_username(user.username)
+        user.is_active = False
+        user.save()
+
+        csv_content = "test_student@example.com,new_test_student,tester,USA"
+        with override_settings(SQUELCH_PII_IN_LOGS=squelch_pii):
+            response = self.client.post(
+                self.url, {'students_list': SimpleUploadedFile("temp.csv", csv_content.encode())}
+            )
+        assert response.status_code == 200
+        warning_log.assert_any_call(
+            'Email address is associated with a retired user, so course enrollment was blocked.'
+        )
+        assert all('test_student@example.com' not in str(call) for call in warning_log.call_args_list)
+
+    @override_settings(SQUELCH_PII_IN_LOGS=True)
+    @patch('lms.djangoapps.instructor.views.api.log.info')
+    def test_account_creation_email_log_squelches_pii(self, info_log):
+        """
+        The email-sent log identifies the new user by id when SQUELCH_PII_IN_LOGS is enabled.
+        """
+        uploaded_file = SimpleUploadedFile("temp.csv", b"test_student@example.com,test_student_1,tester1,USA")
+        response = self.client.post(self.url, {'students_list': uploaded_file, 'email-students': True})
+        assert response.status_code == 200
+        user = User.objects.get(email='test_student@example.com')
+        info_log.assert_called_with('email sent to new created user at %s', str(user.id))
+
     def test_user_with_retired_email_in_csv(self):
         """
         If the CSV contains email addresses which correspond with users which

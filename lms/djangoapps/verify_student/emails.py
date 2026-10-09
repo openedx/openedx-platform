@@ -12,6 +12,7 @@ from openedx.core.djangoapps.ace_common.template_context import get_base_templat
 from openedx.core.djangoapps.lang_pref import LANGUAGE_KEY
 from openedx.core.djangoapps.user_api.preferences.api import get_user_preference
 from openedx.core.lib.celery.task_utils import emulate_http_request
+from openedx.core.lib.log_utils import get_username_or_pii_safe_user_id_for_log
 
 log = logging.getLogger(__name__)
 
@@ -30,10 +31,13 @@ def send_verification_confirmation_email(context):
                 user_context={'full_name': user.profile.name}
             )
             ace.send(msg)
-            log.info('Verification confirmation email sent to user: %r', user.username)
+            log.info('Verification confirmation email sent to user: %r', get_username_or_pii_safe_user_id_for_log(user))
             return True
     except Exception:  # pylint: disable=broad-except
-        log.exception('Could not send email for verification confirmation to user %s', user.username)
+        log.exception(
+            'Could not send email for verification confirmation to user %s',
+            get_username_or_pii_safe_user_id_for_log(user),
+        )
         return False
 
 
@@ -53,8 +57,11 @@ def send_verification_approved_email(context):
                 user_context={'full_name': user.profile.name}
             )
             ace.send(msg)
-            log.info('Verification approved email sent to user: %r', user.username)
+            log.info('Verification approved email sent to user: %r', get_username_or_pii_safe_user_id_for_log(user))
             return True
     except Exception:  # pylint: disable=broad-except
-        log.exception('Could not send email for verification approved to user %s', user.username)
+        log.exception(
+            'Could not send email for verification approved to user %s',
+            get_username_or_pii_safe_user_id_for_log(user),
+        )
         return False

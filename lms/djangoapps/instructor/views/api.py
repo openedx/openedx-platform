@@ -131,6 +131,10 @@ from openedx.core.lib.api.authentication import BearerAuthenticationAllowInactiv
 from openedx.core.lib.api.serializers import CourseKeyField
 from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin, view_auth_classes
 from openedx.core.lib.courses import get_course_by_id
+from openedx.core.lib.log_utils import (
+    get_email_or_pii_safe_user_id_for_log,
+    get_username_or_pii_safe_user_id_for_log,
+)
 from openedx.features.course_experience.url_helpers import get_learning_mfe_home_url
 from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 from xmodule.modulestore.exceptions import ItemNotFoundError  # pylint: disable=wrong-import-order
@@ -513,8 +517,9 @@ class RegisterAndEnrollStudents(APIView):
                             'email': email,
                             'response': _('Invalid email {email_address}.').format(email_address=email),
                         })
-                        log.warning('Email address %s is associated with a retired user, so course enrollment was ' +  # pylint: disable=logging-not-lazy
-                                    'blocked.', email)
+                        log.warning(
+                            'Email address is associated with a retired user, so course enrollment was blocked.'
+                        )
                     else:
                         # This email does not yet exist, so we need to create a new account
                         # If username already exists in the database, then create_and_enroll_user
@@ -629,7 +634,7 @@ def create_manual_course_enrollment(user, course_id, mode, enrolled_by, reason, 
         enrolled_by, user.email, state_transition, reason, enrollment_obj
     )
 
-    log.info('user %s enrolled in the course %s', user.username, course_id)
+    log.info('user %s enrolled in the course %s', get_username_or_pii_safe_user_id_for_log(user), course_id)
     return enrollment_obj
 
 
@@ -719,7 +724,7 @@ def create_and_enroll_user(
                         ),
                 })
             else:
-                log.info('email sent to new created user at %s', email)
+                log.info('email sent to new created user at %s', get_email_or_pii_safe_user_id_for_log(user))
 
     return errors
 

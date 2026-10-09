@@ -108,6 +108,26 @@ class PipelineOverridesTest(SamlIntegrationTestUtilities, IntegrationTestMixin, 
                 final_username = pipeline.get_username(strategy, details, self.provider.backend_class())
                 assert expected_username == final_username['username']
 
+    @ddt.data(True, False)
+    @mock.patch('common.djangoapps.third_party_auth.pipeline.logger')
+    @mock.patch('common.djangoapps.third_party_auth.pipeline.user_exists')
+    def test_get_username_logs_squelch_pii(self, squelch_pii, mock_user_exists, mock_logger):
+        """
+        The get_username logs redact usernames and IdP details when SQUELCH_PII_IN_LOGS is enabled.
+        """
+        details = {"username": "pii_username", "email": "pii@example.com"}
+        mock_user_exists.side_effect = [True, False]  # first candidate taken, so a new one is generated and logged
+        __, strategy = self.get_request_and_strategy()
+        with self.settings(SQUELCH_PII_IN_LOGS=squelch_pii):
+            pipeline.get_username(strategy, details, self.provider.backend_class())
+
+        logged = ' '.join(call.args[0] for call in mock_logger.info.call_args_list)
+        assert 'New username candidate generated' in logged
+        assert 'get_username complete' in logged
+        for pii in ('pii_username', 'pii@example.com'):
+            assert (pii in logged) is not squelch_pii
+        assert ('[REDACTED]' in logged) is squelch_pii
+
     def test_get_username(self):
         """
         Test get_username method when the first username candidate is available

@@ -6100,7 +6100,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginatedCourseEnrollmentList'
+                $ref: '#/components/schemas/PaginatedCourseEnrollmentsApiListList'
           description: ''
   /api/enrollment/v1/roles/:
     get:
@@ -6535,7 +6535,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginatedCourseEnrollmentList'
+                $ref: '#/components/schemas/PaginatedCourseEnrollmentsApiListList'
           description: Paginated list of course enrollments.
         '400':
           description: Invalid request data or parameters.
@@ -18982,8 +18982,10 @@ components:
     CourseEnrollment:
       type: object
       description: |-
-        Serializes CourseEnrollment model and returns a subset of fields returned
-        by the CourseEnrollmentSerializer.
+        Serializes CourseEnrollment models
+
+        Aggregates all data from the Course Enrollment table, and pulls in the serialization for
+        the Course block and course modes, to give a complete representation of course enrollment.
       properties:
         created:
           type: string
@@ -18995,13 +18997,13 @@ components:
           maxLength: 100
         is_active:
           type: boolean
+        course_details:
+          $ref: '#/components/schemas/enrollment.Course'
         user:
           type: string
           readOnly: true
-        course_id:
-          type: string
       required:
-      - course_id
+      - course_details
       - created
       - user
     CourseEnrollmentAllowed:
@@ -19061,6 +19063,31 @@ components:
       - is_beta_tester
       - mode
       - username
+    CourseEnrollmentsApiList:
+      type: object
+      description: |-
+        Serializes CourseEnrollment model and returns a subset of fields returned
+        by the CourseEnrollmentSerializer.
+      properties:
+        created:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        mode:
+          type: string
+          maxLength: 100
+        is_active:
+          type: boolean
+        user:
+          type: string
+          readOnly: true
+        course_id:
+          type: string
+      required:
+      - course_id
+      - created
+      - user
     CourseEntitlement:
       type: object
       description: Serialize a learner's course entitlement and related information.
@@ -21847,18 +21874,22 @@ components:
     PaginatedCourseEnrollmentList:
       type: object
       required:
+      - count
       - results
       properties:
+        count:
+          type: integer
+          example: 123
         next:
           type: string
           nullable: true
           format: uri
-          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+          example: http://api.example.org/accounts/?page=4
         previous:
           type: string
           nullable: true
           format: uri
-          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+          example: http://api.example.org/accounts/?page=2
         results:
           type: array
           items:
@@ -21886,6 +21917,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/CourseEnrollmentSerializerV2'
+    PaginatedCourseEnrollmentsApiListList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/CourseEnrollmentsApiList'
     PaginatedCourseEntitlementList:
       type: object
       required:

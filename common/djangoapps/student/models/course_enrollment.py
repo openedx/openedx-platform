@@ -51,6 +51,10 @@ from openedx.core.djangoapps.enrollments.api import (
     set_enrollment_attributes,
 )
 from openedx.core.djangolib.model_mixins import DeletableByUserValue
+from openedx.core.lib.log_utils import (
+    get_standalone_pii_or_redacted_for_log,
+    get_username_or_pii_safe_user_id_for_log,
+)
 
 log = logging.getLogger(__name__)
 AUDIT_LOG = logging.getLogger("audit")
@@ -664,9 +668,7 @@ class CourseEnrollment(models.Model):
 
         except Exception:  # pylint: disable=broad-except
             if event_name and self.course_id:
-                user_identifier_for_log = (
-                    self.user.id if getattr(settings, 'SQUELCH_PII_IN_LOGS', False) else self.user.username
-                )
+                user_identifier_for_log = get_username_or_pii_safe_user_id_for_log(self.user)
                 log.exception(
                     'Unable to emit event %s for user %s and course %s',
                     event_name,
@@ -741,9 +743,7 @@ class CourseEnrollment(models.Model):
                 course_key=course_key,
             )
             if check_access:
-                user_identifier_for_log = (
-                    user.id if getattr(settings, 'SQUELCH_PII_IN_LOGS', False) else user.username
-                )
+                user_identifier_for_log = get_username_or_pii_safe_user_id_for_log(user)
                 log.warning(
                     "User %s failed to enroll in non-existent course %s",
                     user_identifier_for_log,
@@ -753,9 +753,7 @@ class CourseEnrollment(models.Model):
 
         if check_access:
             if cls.is_enrollment_closed(user, course) and not can_upgrade:
-                user_identifier_for_log = (
-                    user.id if getattr(settings, 'SQUELCH_PII_IN_LOGS', False) else user.username
-                )
+                user_identifier_for_log = get_username_or_pii_safe_user_id_for_log(user)
                 log.warning(
                     "User %s failed to enroll in course %s because enrollment is closed (can_upgrade=%s).",
                     user_identifier_for_log,
@@ -765,9 +763,7 @@ class CourseEnrollment(models.Model):
                 raise EnrollmentClosedError
 
             if cls.objects.is_course_full(course):
-                user_identifier_for_log = (
-                    user.id if getattr(settings, 'SQUELCH_PII_IN_LOGS', False) else user.username
-                )
+                user_identifier_for_log = get_username_or_pii_safe_user_id_for_log(user)
                 log.warning(
                     "Course %s has reached its maximum enrollment of %d learners. User %s failed to enroll.",
                     str(course_key),
@@ -776,9 +772,7 @@ class CourseEnrollment(models.Model):
                 )
                 raise CourseFullError
         if cls.is_enrolled(user, course_key):
-            user_identifier_for_log = (
-                user.id if getattr(settings, 'SQUELCH_PII_IN_LOGS', False) else user.username
-            )
+            user_identifier_for_log = get_username_or_pii_safe_user_id_for_log(user)
             log.warning(
                 "User %s attempted to enroll in %s, but they were already enrolled",
                 user_identifier_for_log,
@@ -847,8 +841,11 @@ class CourseEnrollment(models.Model):
             user = User.objects.get(email=email)
             return cls.enroll(user, course_id, mode)
         except User.DoesNotExist:
-            email_for_log = "[REDACTED]" if getattr(settings, 'SQUELCH_PII_IN_LOGS', False) else email
-            log.error("Tried to enroll email %s into course %s, but user not found", email_for_log, course_id)
+            log.error(
+                "Tried to enroll email %s into course %s, but user not found",
+                get_standalone_pii_or_redacted_for_log(email),
+                course_id,
+            )
             if ignore_errors:
                 return None
             raise
@@ -906,7 +903,7 @@ class CourseEnrollment(models.Model):
         except User.DoesNotExist:
             log.error(
                 "Tried to unenroll email %s from course %s, but user not found",
-                email,
+                get_standalone_pii_or_redacted_for_log(email),
                 course_id
             )
 

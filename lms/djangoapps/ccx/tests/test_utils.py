@@ -7,6 +7,7 @@ import uuid
 from smtplib import SMTPException
 from unittest import mock
 
+import ddt
 from ccx_keys.locator import CCXLocator
 
 from common.djangoapps.student.models import CourseEnrollment, CourseEnrollmentException
@@ -51,6 +52,7 @@ class TestGetCCXFromCCXLocator(ModuleStoreTestCase):
         assert result == ccx
 
 
+@ddt.ddt
 class TestStaffOnCCX(CcxTestCase):
     """
     Tests for staff on ccx courses.
@@ -118,6 +120,32 @@ class TestStaffOnCCX(CcxTestCase):
 
             assert not CourseEnrollment.objects.filter(course_id=self.ccx_locator, user=staff).exists()
             assert not CourseEnrollment.objects.filter(course_id=self.ccx_locator, user=instructor).exists()
+
+    @ddt.data(True, False)
+    @mock.patch('lms.djangoapps.ccx.utils.log')
+    def test_add_master_course_staff_to_ccx_exception_log_squelches_pii(self, squelch_pii, mock_log):
+        """
+        When enrollment fails, staff and instructors are logged by user id if SQUELCH_PII_IN_LOGS is enabled,
+        and by email otherwise.
+        """
+        staff = self.make_staff()
+        instructor = self.make_instructor()
+
+        with self.settings(SQUELCH_PII_IN_LOGS=squelch_pii), mock.patch.object(
+            CourseEnrollment, 'enroll_by_email', side_effect=CourseEnrollmentException()
+        ):
+            add_master_course_staff_to_ccx(self.course, self.ccx_locator, self.ccx.display_name)
+
+        mock_log.warning.assert_any_call(
+            "Unable to enroll staff %s to course with id %s",
+            str(staff.id) if squelch_pii else staff.email,
+            self.ccx_locator,
+        )
+        mock_log.warning.assert_any_call(
+            "Unable to enroll instructor %s to course with id %s",
+            str(instructor.id) if squelch_pii else instructor.email,
+            self.ccx_locator,
+        )
 
     def test_remove_master_course_staff_from_ccx(self):
         """

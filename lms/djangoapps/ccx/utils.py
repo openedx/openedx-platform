@@ -40,6 +40,7 @@ from openedx.core.djangoapps.content.course_overviews.models import CourseOvervi
 from openedx.core.djangoapps.django_comment_common.models import FORUM_ROLE_ADMINISTRATOR, assign_role
 from openedx.core.djangoapps.django_comment_common.utils import seed_permissions_roles
 from openedx.core.lib.courses import get_course_by_id
+from openedx.core.lib.log_utils import get_email_or_pii_safe_user_id_for_log
 from xmodule.modulestore.django import SignalHandler
 
 log = logging.getLogger("edx.ccx")
@@ -394,7 +395,7 @@ def add_master_course_staff_to_ccx(master_course, ccx_key, display_name, send_em
                 except CourseEnrollmentException:
                     log.warning(
                         "Unable to enroll staff %s to course with id %s",
-                        staff.email,
+                        get_email_or_pii_safe_user_id_for_log(staff),
                         ccx_key
                     )
                     continue
@@ -419,7 +420,7 @@ def add_master_course_staff_to_ccx(master_course, ccx_key, display_name, send_em
                 except CourseEnrollmentException:
                     log.warning(
                         "Unable to enroll instructor %s to course with id %s",
-                        instructor.email,
+                        get_email_or_pii_safe_user_id_for_log(instructor),
                         ccx_key
                     )
                     continue

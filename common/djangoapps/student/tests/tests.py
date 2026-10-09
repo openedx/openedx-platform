@@ -778,6 +778,7 @@ class EnrollmentEventTestMixin(EventTestMixin):
         return properties, traits
 
 
+@ddt.ddt
 class EnrollInCourseTest(EnrollmentEventTestMixin, CacheIsolationTestCase):
     """Tests enrolling and unenrolling in courses."""
 
@@ -901,7 +902,7 @@ class EnrollInCourseTest(EnrollmentEventTestMixin, CacheIsolationTestCase):
                     str(course_id)
                 )
 
-        test_and_assert_case(True, user.id)
+        test_and_assert_case(True, str(user.id))
         test_and_assert_case(False, user.username)
 
     @skip_unless_lms
@@ -924,6 +925,20 @@ class EnrollInCourseTest(EnrollmentEventTestMixin, CacheIsolationTestCase):
 
         test_and_assert_case(True, "[REDACTED]")
         test_and_assert_case(False, email)
+
+    @skip_unless_lms
+    @ddt.data((True, "[REDACTED]"), (False, "non_existent_user@example.com"))
+    @ddt.unpack
+    @patch('common.djangoapps.student.models.course_enrollment.log')
+    def test_unenroll_by_email_non_existent_user_squelch_logs(self, squelch_pii, expected_email_for_log, mock_log):
+        course_id = CourseLocator("edX", "Test101", "2013")
+        with self.settings(SQUELCH_PII_IN_LOGS=squelch_pii):
+            CourseEnrollment.unenroll_by_email("non_existent_user@example.com", course_id)
+        mock_log.error.assert_called_once_with(
+            "Tried to unenroll email %s from course %s, but user not found",
+            expected_email_for_log,
+            course_id
+        )
 
     @skip_unless_lms
     def test_enrollment_multiple_classes(self):

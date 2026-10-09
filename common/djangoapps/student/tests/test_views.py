@@ -13,6 +13,7 @@ from zoneinfo import ZoneInfo
 import ddt
 from completion.test_utils import CompletionWaffleTestMixin, submit_completions_for_testing
 from django.conf import settings
+from django.test import TestCase
 from django.test.utils import override_settings
 from django.urls import reverse
 from django.utils.timezone import now
@@ -27,7 +28,7 @@ from common.djangoapps.entitlements.tests.factories import CourseEntitlementFact
 from common.djangoapps.student.helpers import DISABLE_UNENROLL_CERT_STATES
 from common.djangoapps.student.models import CourseEnrollment, UserProfile
 from common.djangoapps.student.signals import REFUND_ORDER
-from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory
+from common.djangoapps.student.tests.factories import TEST_PASSWORD, CourseEnrollmentFactory, UserFactory
 from common.djangoapps.student.views.dashboard import check_for_unacknowledged_notices
 from common.djangoapps.util.milestones_helpers import (
     get_course_milestones,
@@ -1121,3 +1122,38 @@ class TestCourseDashboardNoticesRedirects(SharedModuleStoreTestCase):
 
         assert response.status_code == 200
         mock_notices.assert_not_called()
+
+
+@ddt.ddt
+@skip_unless_lms
+@patch('common.djangoapps.student.views.management.log')
+class ChangeEmailSettingsLogTest(TestCase):
+    """
+    The change_email_settings logs identify the user by id, without username or email, when
+    SQUELCH_PII_IN_LOGS is enabled.
+    """
+
+    COURSE_ID = 'course-v1:edX+Demo+2026'
+
+    def setUp(self):
+        super().setUp()
+        self.user = UserFactory.create()
+        assert self.client.login(username=self.user.username, password=TEST_PASSWORD)
+
+    @ddt.data(
+        (True, True, 'User %s opted in to receive emails from course %s'),
+        (False, True, 'User %s opted in to receive emails from course %s'),
+        (True, False, 'User %s opted out of receiving emails from course %s'),
+        (False, False, 'User %s opted out of receiving emails from course %s'),
+    )
+    @ddt.unpack
+    def test_log_squelches_pii(self, squelch_pii, receive_emails, message, mock_log):
+        data = {'course_id': self.COURSE_ID}
+        if receive_emails:
+            data['receive_emails'] = 'on'
+        with override_settings(SQUELCH_PII_IN_LOGS=squelch_pii):
+            response = self.client.post(reverse('change_email_settings'), data)
+
+        assert response.status_code == 200
+        expected_identifier = self.user.id if squelch_pii else f'{self.user.username} ({self.user.email})'
+        mock_log.info.assert_called_once_with(message, expected_identifier, self.COURSE_ID)

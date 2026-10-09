@@ -1329,6 +1329,12 @@ SPECTACULAR_SETTINGS = {
     'SERVE_INCLUDE_SCHEMA': False,
     # Restrict the schema to the Authoring API's endpoints (cms/lib/spectacular.py).
     'PREPROCESSING_HOOKS': ['cms.lib.spectacular.cms_api_filter'],
+    # The enum hook is drf-spectacular's default, restated because setting this
+    # key replaces the default list.
+    'POSTPROCESSING_HOOKS': [
+        'drf_spectacular.hooks.postprocess_schema_enums',
+        'cms.lib.spectacular.cms_mark_superseded_paths',
+    ],
     # Used for tag extraction only. Paths are published in full, from the
     # service root, so /api/contentstore and /api/authoring resolve against the
     # same base URL.

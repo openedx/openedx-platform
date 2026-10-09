@@ -107,6 +107,9 @@ class CourseEnrollmentsApiListSerializer(CourseEnrollmentSerializer):
 
     class Meta(CourseEnrollmentSerializer.Meta):
         fields = CourseEnrollmentSerializer.Meta.fields + ("course_id",)
+        # The parent's ref_name would otherwise be inherited, publishing this
+        # serializer under the same schema component name as its parent.
+        ref_name = "CourseEnrollmentsApiList"
 
 
 class ModeSerializer(serializers.Serializer):  # pylint: disable=abstract-method
