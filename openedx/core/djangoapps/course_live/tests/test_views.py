@@ -292,6 +292,38 @@ class TestCourseLiveConfigurationView(ModuleStoreTestCase, APITestCase):
         self.assertEqual(content, expected_data)  # noqa: PT009
         self.assertEqual(response.status_code, 400)  # noqa: PT009
 
+    def test_post_missing_provider_type_without_pii_flag(self):
+        """
+        Test a missing provider_type is reported as a 400, with no PII sharing flag set.
+
+        Distinct from `test_post_error_messages`, which enables `CourseAllowPIISharingInLTIFlag`.
+        That flag makes `pii_sharing_allowed` true, which short-circuits the `and` in the view's
+        PII check before the unresolved (None) provider is dereferenced. Without the flag the
+        provider *is* dereferenced, and the view used to raise an AttributeError -- a 500 on the
+        documented 400 path.
+        """
+        response = self._post({})
+
+        self.assertEqual(response.status_code, 400)  # noqa: PT009
+        content = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(content, {'provider_type': ['This field is required.']})  # noqa: PT009
+
+    def test_post_unknown_provider_type_without_pii_flag(self):
+        """
+        Test a provider_type that names no enabled provider is reported as a 400.
+
+        Same unresolved-provider path as above, reached with a provider_type that is present but
+        does not match an enabled provider.
+        """
+        response = self._post({
+            'enabled': True,
+            'provider_type': 'not_a_real_provider',
+        })
+
+        self.assertEqual(response.status_code, 400)  # noqa: PT009
+        content = json.loads(response.content.decode('utf-8'))
+        self.assertIn('does not exist', str(content))  # noqa: PT009
+
     def test_non_staff_user_access(self):
         """
         Test non staff user has no access to API
