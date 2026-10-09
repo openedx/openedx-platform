@@ -7,8 +7,11 @@ from typing import Union
 import django.contrib.auth.models
 import openedx_tagging.rules as oel_tagging
 import rules
+from opaque_keys import InvalidKeyError
+from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locator import LibraryLocatorV2
 from openedx_authz import api as authz_api
+from openedx_authz.api.data import CourseOverviewData, OrgCourseOverviewGlobData, PlatformCourseOverviewGlobData
 from openedx_authz.constants import permissions as authz_permissions
 from organizations.models import Organization
 
@@ -21,6 +24,7 @@ from common.djangoapps.student.roles import (
     OrgInstructorRole,
     OrgLibraryUserRole,
     OrgStaffRole,
+    enable_authz_course_authoring,
 )
 
 from .auth import should_use_course_authz_for_object
@@ -79,16 +83,34 @@ def _get_course_user_orgs(user: UserType, orgs: list[Organization]) -> list[Orga
     if not orgs:
         return []
 
+    authz_course_cache: dict[str, bool] = {}
+
+    def course_uses_authz(course_id) -> bool:
+        """
+        True if the course has switched to openedx-authz, where legacy course roles are no longer
+        authoritative: tagging there requires courses.manage_tags (see can_change_object_tag_objectid),
+        so those users are picked up by _get_authz_manage_tags_orgs instead.
+        """
+        key = str(course_id)
+        if key not in authz_course_cache:
+            try:
+                authz_course_cache[key] = enable_authz_course_authoring(CourseKey.from_string(key))
+            except InvalidKeyError:
+                authz_course_cache[key] = False
+        return authz_course_cache[key]
+
     def user_has_role_ignore_course_id(user, role_name, org_name) -> bool:
         """
-        Returns True if the given user has the given role for the given org, OR for any courses in this org.
+        Returns True if the given user has the given role for the given org, OR for any courses in this org
+        that have not switched to openedx-authz.
         """
         # We use the user's RoleCache here to avoid re-querying.
         roles_cache = get_role_cache(user)
         course_roles = get_course_roles(user)
         return any(
             access_role.role in roles_cache.get_roles(role_name) and
-            access_role.org == org_name
+            access_role.org == org_name and
+            not (access_role.course_id and course_uses_authz(access_role.course_id))
             for access_role in course_roles
         )
 
@@ -117,14 +139,58 @@ def get_user_orgs(user: UserType, orgs: list[Organization] | None = None) -> lis
     """
     Return a list of orgs that the given user is a member of (instructor or content creator),
     from the given list of orgs.
+
+    Membership comes from legacy roles and, additively, from openedx-authz roles that grant
+    courses.manage_tags (see _get_authz_manage_tags_orgs).
     """
     org_list = rules_cache.get_orgs() if orgs is None else orgs
     content_creator_orgs = _get_content_creator_orgs(user, org_list)
     course_user_orgs = _get_course_user_orgs(user, org_list)
     library_user_orgs = _get_library_user_orgs(user, org_list)
-    user_orgs = list(set(content_creator_orgs) | set(course_user_orgs) | set(library_user_orgs))
+    authz_orgs = _get_authz_manage_tags_orgs(user, org_list)
+    return list(set(content_creator_orgs) | set(course_user_orgs) | set(library_user_orgs) | set(authz_orgs))
 
-    return user_orgs
+
+def _get_authz_manage_tags_orgs(user: UserType, orgs: list[Organization]) -> list[Organization]:
+    """
+    Return the orgs, from the given list, where the user holds courses.manage_tags through openedx-authz.
+
+    This is the authz equivalent of _get_course_user_orgs: roles like course_editor,
+    course_staff, and course_admin only exist in openedx-authz, with no legacy
+    CourseAccessRole for the legacy helpers to find.
+
+    Course scopes only count if that course has switched to openedx-authz: a policy assignment
+    can exist ahead of the course's own toggle, and until it flips, legacy access stays
+    authoritative for it (see should_use_course_authz_for_object). Org-wide and platform-wide
+    glob scopes have no single course to check, so they count when the flag is on globally.
+    """
+    if not orgs:
+        return []
+
+    scopes = rules_cache.get_authz_manage_tags_scopes(user)
+
+    org_names = set()
+    all_orgs = False
+    glob_authz_enabled = None
+    for scope in scopes:
+        if isinstance(scope, CourseOverviewData):
+            # Skip the per-course flag lookup when the org is already known.
+            if scope.org not in org_names and enable_authz_course_authoring(scope.course_key):
+                org_names.add(scope.org)
+        elif isinstance(scope, OrgCourseOverviewGlobData | PlatformCourseOverviewGlobData):
+            if glob_authz_enabled is None:
+                glob_authz_enabled = enable_authz_course_authoring()
+            if not glob_authz_enabled:
+                continue
+            if isinstance(scope, PlatformCourseOverviewGlobData):
+                all_orgs = True
+                break
+            if scope.org:
+                org_names.add(scope.org)
+
+    if all_orgs:
+        return list(orgs)
+    return [org for org in orgs if org.short_name in org_names]
 
 
 @rules.predicate

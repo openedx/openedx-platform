@@ -7,6 +7,7 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from edx_toggles.toggles.testutils import override_waffle_flag
 from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator, LibraryLocatorV2
+from openedx_authz.api.data import CourseOverviewData, OrgCourseOverviewGlobData, PlatformCourseOverviewGlobData
 from openedx_authz.constants import permissions as authz_permissions
 from openedx_tagging.models import Tag
 from openedx_tagging.rules import ObjectTagPermissionItem
@@ -16,7 +17,8 @@ from common.djangoapps.student.roles import CourseStaffRole, OrgStaffRole
 from openedx.core.toggles import AUTHZ_COURSE_AUTHORING_FLAG
 
 from .. import api
-from ..rules import can_change_object_tag_objectid, can_remove_object_tag_objectid
+from ..rules import can_change_object_tag_objectid, can_remove_object_tag_objectid, can_view_taxonomy, get_user_orgs
+from ..utils import rules_cache
 from .test_api import TestTaxonomyMixin
 
 User = get_user_model()
@@ -850,3 +852,98 @@ class TestRulesCourseAuthzPermissions(TestTaxonomyMixin, TestCase):
             authz_permissions.MANAGE_LIBRARY_TAGS.identifier,
             str(library_key),
         )
+
+
+@patch("openedx_authz.api.get_scopes_for_user_and_permission")
+class TestRulesAuthzManageTagsOrgs(TestTaxonomyMixin, TestCase):
+    """
+    Tests for how get_user_orgs and can_view_taxonomy resolve orgs granted through openedx-authz
+    courses.manage_tags, which have no legacy CourseAccessRole equivalent.
+    """
+
+    def setUp(self):
+        super().setUp()
+        rules_cache.clear()  # authz scopes are cached per request
+        self.superuser = User.objects.create(username="superuser", email="superuser@example.com", is_superuser=True)
+        self.authz_user = User.objects.create(username="authz_user", email="authz_user@example.com")
+        self.legacy_user = User.objects.create(username="legacy_user", email="legacy_user@example.com")
+        # org1's short_name ("OeX") matches this course's org.
+        self.course_key = CourseLocator.from_string("course-v1:OeX+DemoX+Demo_Course")
+        self.org2_only_taxonomy = api.create_taxonomy(name="Axim only")
+        api.set_taxonomy_orgs(self.org2_only_taxonomy, orgs=[self.org2])
+
+    @staticmethod
+    def _course_scope(course_key):
+        return CourseOverviewData(external_key=str(course_key))
+
+    @override_waffle_flag(AUTHZ_COURSE_AUTHORING_FLAG, active=True)
+    def test_course_scope_grants_its_org(self, mock_get_scopes):
+        mock_get_scopes.return_value = [self._course_scope(self.course_key)]
+        assert get_user_orgs(self.authz_user) == [self.org1]
+
+    @override_waffle_flag(AUTHZ_COURSE_AUTHORING_FLAG, active=False)
+    def test_course_scope_ignored_when_course_not_switched(self, mock_get_scopes):
+        mock_get_scopes.return_value = [self._course_scope(self.course_key)]
+        assert not get_user_orgs(self.authz_user)
+
+    @override_waffle_flag(AUTHZ_COURSE_AUTHORING_FLAG, active=True)
+    def test_org_glob_scope_grants_its_org(self, mock_get_scopes):
+        mock_get_scopes.return_value = [OrgCourseOverviewGlobData(external_key="course-v1:OeX+*")]
+        assert get_user_orgs(self.authz_user) == [self.org1]
+
+    @override_waffle_flag(AUTHZ_COURSE_AUTHORING_FLAG, active=False)
+    def test_org_glob_scope_ignored_when_flag_off(self, mock_get_scopes):
+        mock_get_scopes.return_value = [OrgCourseOverviewGlobData(external_key="course-v1:OeX+*")]
+        assert not get_user_orgs(self.authz_user)
+
+    @override_waffle_flag(AUTHZ_COURSE_AUTHORING_FLAG, active=True)
+    def test_platform_glob_scope_grants_all_orgs(self, mock_get_scopes):
+        mock_get_scopes.return_value = [PlatformCourseOverviewGlobData(external_key="course-v1:*")]
+        assert set(get_user_orgs(self.authz_user)) == {self.org1, self.org2}
+
+    def test_flag_checked_once_per_org(self, mock_get_scopes):
+        mock_get_scopes.return_value = [
+            self._course_scope(CourseLocator.from_string("course-v1:OeX+A+1")),
+            self._course_scope(CourseLocator.from_string("course-v1:OeX+B+2")),
+            self._course_scope(CourseLocator.from_string("course-v1:OeX+C+3")),
+        ]
+        with patch("openedx.core.djangoapps.content_tagging.rules.enable_authz_course_authoring") as mock_flag:
+            mock_flag.return_value = True
+            assert get_user_orgs(self.authz_user) == [self.org1]
+        assert mock_flag.call_count == 1
+
+    @override_waffle_flag(AUTHZ_COURSE_AUTHORING_FLAG, active=True)
+    def test_can_view_taxonomy_for_authz_only_user(self, mock_get_scopes):
+        """The per-taxonomy check agrees with the list filter: authz-only users can open their org's taxonomies."""
+        mock_get_scopes.return_value = [self._course_scope(self.course_key)]
+        assert can_view_taxonomy(self.authz_user, self.taxonomy_one_org)
+        assert can_view_taxonomy(self.authz_user, self.taxonomy_both_orgs)
+        assert not can_view_taxonomy(self.authz_user, self.org2_only_taxonomy)
+
+    @override_waffle_flag(AUTHZ_COURSE_AUTHORING_FLAG, active=False)
+    def test_legacy_course_role_counts_before_course_switches(self, mock_get_scopes):
+        mock_get_scopes.return_value = []
+        add_users(self.superuser, CourseStaffRole(self.course_key), self.legacy_user)
+        assert get_user_orgs(self.legacy_user) == [self.org1]
+
+    def test_legacy_course_role_ignored_once_course_switches(self, mock_get_scopes):
+        """
+        Legacy course staff with no authz role in a switched course don't see the org's taxonomies, matching
+        can_change_object_tag_objectid, which requires courses.manage_tags there.
+        """
+        mock_get_scopes.return_value = []
+        with override_waffle_flag(AUTHZ_COURSE_AUTHORING_FLAG, active=False):
+            add_users(self.superuser, CourseStaffRole(self.course_key), self.legacy_user)
+        with override_waffle_flag(AUTHZ_COURSE_AUTHORING_FLAG, active=True):
+            legacy_user = User.objects.get(pk=self.legacy_user.pk)  # fresh instance, no cached role cache
+            assert not get_user_orgs(legacy_user)
+            assert not can_view_taxonomy(legacy_user, self.taxonomy_one_org)
+
+    def test_legacy_course_role_kept_with_authz_manage_tags(self, mock_get_scopes):
+        """A switched-course staff member who also holds manage_tags through authz still resolves the org."""
+        mock_get_scopes.return_value = [self._course_scope(self.course_key)]
+        with override_waffle_flag(AUTHZ_COURSE_AUTHORING_FLAG, active=False):
+            add_users(self.superuser, CourseStaffRole(self.course_key), self.legacy_user)
+        with override_waffle_flag(AUTHZ_COURSE_AUTHORING_FLAG, active=True):
+            legacy_user = User.objects.get(pk=self.legacy_user.pk)
+            assert get_user_orgs(legacy_user) == [self.org1]
