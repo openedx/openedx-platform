@@ -95,13 +95,21 @@ class HomePageCoursesViewV2(APIView):
                 "start_date_on_or_after",
                 OpenApiTypes.STR,
                 OpenApiParameter.QUERY,
-                description="Query param to filter courses with a start date on or after this date (YYYY-MM-DD).",
+                description=(
+                    "Query param to filter courses with a start on or after this instant. Must be an ISO 8601 "
+                    "datetime with a UTC offset or Z, e.g. 2024-01-01T00:00:00+04:00. "
+                    "Percent-encode '+' as %2B in the URL."
+                ),
             ),
             OpenApiParameter(
                 "start_date_on_or_before",
                 OpenApiTypes.STR,
                 OpenApiParameter.QUERY,
-                description="Query param to filter courses with a start date on or before this date (YYYY-MM-DD).",
+                description=(
+                    "Query param to filter courses with a start on or before this instant. Must be an ISO 8601 "
+                    "datetime with a UTC offset or Z, e.g. 2024-12-31T23:59:59.999999+04:00. "
+                    "Percent-encode '+' as %2B in the URL."
+                ),
             ),
         ],
         responses={
@@ -123,8 +131,8 @@ class HomePageCoursesViewV2(APIView):
             GET /api/contentstore/v2/home/courses?archived_only=true
             GET /api/contentstore/v2/home/courses?page=2
             GET /api/contentstore/v2/home/courses?page_size=20
-            GET /api/contentstore/v2/home/courses?start_date_on_or_after=2024-01-01
-            GET /api/contentstore/v2/home/courses?start_date_on_or_before=2024-12-31
+            GET /api/contentstore/v2/home/courses?start_date_on_or_after=2024-01-01T00:00:00%2B04:00
+            GET /api/contentstore/v2/home/courses?start_date_on_or_before=2024-12-31T23:59:59.999999Z
 
         **Response Values**
 

@@ -3,7 +3,7 @@ Unit tests for home page view.
 """
 
 from collections import OrderedDict
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta, timezone
 
 import ddt
 from django.conf import settings
@@ -233,7 +233,7 @@ class HomePageCoursesViewV2Test(CourseTestCase):
         ("search", "sample"),
         ("order", "org"),
         ("page", 1),
-        ("start_date_on_or_after", "2099-01-01"),
+        ("start_date_on_or_after", "2099-01-01T00:00:00Z"),
     )
     @ddt.unpack
     def test_if_empty_list_of_courses(self, query_param, value):
@@ -250,25 +250,117 @@ class HomePageCoursesViewV2Test(CourseTestCase):
         self.assertEqual(len(response.data['results']['courses']), 0)  # noqa: PT009
         self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
 
-    def test_start_date_on_or_after_invalid_format_returns_400(self):
-        """Get list of courses when start_date_on_or_after is not a valid date.
+    @ddt.data(
+        ("start_date_on_or_after", "not-a-date"),
+        ("start_date_on_or_after", "2024-01-01"),
+        ("start_date_on_or_after", "2024-01-01T10:00:00"),
+        ("start_date_on_or_before", "not-a-date"),
+        ("start_date_on_or_before", "2024-01-01"),
+        ("start_date_on_or_before", "2024-01-01T10:00:00"),
+        ("start_date_on_or_after", "2024-01-01 10:00"),
+        ("start_date_on_or_before", "2024-01-01 10:00"),
+    )
+    @ddt.unpack
+    def test_start_date_invalid_format_returns_400(self, query_param, value):
+        """Get list of courses when a start date param is garbage, a bare date, or a datetime without an offset.
 
         Expected result:
         - An HTTP 400 "Bad Request" response.
         """
-        response = self.client.get(self.api_v2_url, {"start_date_on_or_after": "not-a-date"})
+        response = self.client.get(self.api_v2_url, {query_param: value})
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)  # noqa: PT009
 
-    def test_start_date_on_or_after_datetime_rejected(self):
-        """Get list of courses when start_date_on_or_after is a datetime instead of a date.
+    def test_start_date_invalid_returns_400_when_user_has_no_courses(self):
+        """Get list of courses with a bare-date start param as a user without accessible courses.
 
         Expected result:
         - An HTTP 400 "Bad Request" response.
         """
-        response = self.client.get(self.api_v2_url, {"start_date_on_or_after": "2024-01-01T10:00:00"})
+        response = self.non_staff_client.get(self.api_v2_url, {"start_date_on_or_after": "2024-01-01"})
 
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)  # noqa: PT009
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_start_date_unencoded_plus_is_read_as_offset(self):
+        """Get list of courses with a start param whose '+' arrived as a space.
+
+        Expected result:
+        - An HTTP 200 "OK" response with the same courses as the '+04:00' request.
+        """
+        course_key = self.store.make_course_key("tz-org", "tz-plus", "tz-run")
+        CourseOverviewFactory.create(id=course_key, org=course_key.org, start=datetime(2027, 7, 1, 6, 0, tzinfo=UTC))
+
+        def get_course_keys(after):
+            response = self.client.get(self.api_v2_url, {"start_date_on_or_after": after})
+            assert response.status_code == status.HTTP_200_OK
+            return {course["course_key"] for course in response.data["results"]["courses"]}
+
+        # 06:00Z is 10:00+04:00 local, so only a +04:00 reading of the bound is on or before it.
+        plus_keys = get_course_keys("2027-07-01T10:00:00 04:00")
+        assert str(course_key) in plus_keys
+        assert plus_keys == get_course_keys("2027-07-01T10:00:00+04:00")
+        assert str(course_key) not in get_course_keys("2027-07-01T10:00:00Z")
+
+    def test_start_date_with_utc_offset_returns_200(self):
+        """Get list of courses when start date params are datetimes with a UTC offset.
+
+        Expected result:
+        - An HTTP 200 "OK" response.
+        """
+        response = self.client.get(self.api_v2_url, {
+            "start_date_on_or_after": "2024-01-01T00:00:00+04:00",
+            "start_date_on_or_before": "2099-01-01T23:59:59.999999Z",
+        })
+
+        assert response.status_code == status.HTTP_200_OK
+
+    def test_start_date_with_space_separator_and_offset_returns_200(self):
+        """Get list of courses when the start date uses a space between date and time.
+
+        Expected result:
+        - An HTTP 200 "OK" response.
+        """
+        response = self.client.get(self.api_v2_url, {"start_date_on_or_after": "2024-01-01 10:00:00+04:00"})
+
+        assert response.status_code == status.HTTP_200_OK
+
+    def test_start_date_range_compares_instants_using_offset(self):
+        """Get list of courses for a one-day start date range sent with a UTC offset and again as UTC.
+
+        Course starts, as UTC and as UTC+04:00 local times:
+        - A: 2027-06-30T22:00Z is 2027-07-01T02:00 local.
+        - B: 2027-07-01T02:00Z is 2027-07-01T06:00 local.
+        - C: 2027-07-01T20:30Z is 2027-07-02T00:30 local.
+
+        Expected result:
+        - July 1 in UTC+04:00 returns courses A and B.
+        - The same wall-clock range in UTC returns courses B and C.
+        """
+        starts = {
+            "a": datetime(2027, 6, 30, 22, 0, tzinfo=UTC),
+            "b": datetime(2027, 7, 1, 2, 0, tzinfo=UTC),
+            "c": datetime(2027, 7, 1, 20, 30, tzinfo=UTC),
+        }
+        course_keys = {}
+        for name, start in starts.items():
+            course_key = self.store.make_course_key("tz-org", f"tz-{name}", "tz-run")
+            CourseOverviewFactory.create(id=course_key, org=course_key.org, start=start)
+            course_keys[name] = str(course_key)
+
+        def get_course_keys(after, before):
+            response = self.client.get(self.api_v2_url, {
+                "start_date_on_or_after": after,
+                "start_date_on_or_before": before,
+            })
+            assert response.status_code == status.HTTP_200_OK
+            return {course["course_key"] for course in response.data["results"]["courses"]}
+
+        assert get_course_keys(
+            "2027-07-01T00:00:00+04:00", "2027-07-01T23:59:59.999999+04:00"
+        ) == {course_keys["a"], course_keys["b"]}
+        assert get_course_keys(
+            "2027-07-01T00:00:00Z", "2027-07-01T23:59:59.999999Z"
+        ) == {course_keys["b"], course_keys["c"]}
 
     @ddt.data(
         ("active_only", "true", 2, 0),

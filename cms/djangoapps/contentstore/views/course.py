@@ -52,7 +52,7 @@ from organizations.models import Organization
 from rest_framework.decorators import api_view
 from rest_framework.exceptions import ValidationError
 
-from cms.djangoapps.contentstore.api.views.utils import get_bool_param, get_date_param
+from cms.djangoapps.contentstore.api.views.utils import get_bool_param, get_datetime_param
 from cms.djangoapps.contentstore.xblock_storage_handlers.view_handlers import create_xblock_info
 from cms.djangoapps.course_creators.models import CourseCreator
 from cms.djangoapps.course_creators.views import add_user_with_status_unrequested, get_course_creator_status
@@ -1043,6 +1043,10 @@ def get_courses_accessible_to_user(request) -> tuple[Iterable[CourseOverview], l
             - Iterable[CourseOverview]: Accessible courses.
             - list: In-process course actions (staff only).
     """
+    # Validate params before any early return so validity doesn't depend on the user's course access.
+    start_date_on_or_after = get_datetime_param(request, 'start_date_on_or_after', None)
+    start_date_on_or_before = get_datetime_param(request, 'start_date_on_or_before', None)
+
     user = request.user
     is_staff_user = GlobalStaff().has_user(user) or user.is_superuser
     in_process_actions = []
@@ -1077,8 +1081,6 @@ def get_courses_accessible_to_user(request) -> tuple[Iterable[CourseOverview], l
         return [], in_process_actions
 
     # Step 3: Batch fetch valid courses with a single query, ordered by creation date
-    start_date_on_or_after = get_date_param(request, 'start_date_on_or_after', None)
-    start_date_on_or_before = get_date_param(request, 'start_date_on_or_before', None)
     courses = CourseOverview.get_all_courses(
         filter_={'id__in': list(valid_course_keys)},
         start_date_on_or_after=start_date_on_or_after,
