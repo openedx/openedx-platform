@@ -5,6 +5,7 @@ import re
 from collections.abc import Callable
 from unittest import mock
 
+import ddt
 from django.conf import settings
 from django.contrib.auth.base_user import AbstractBaseUser
 from django.test import RequestFactory, TestCase
@@ -23,6 +24,7 @@ from ..api import (
     get_header_logo,
     get_home_url,
     get_learner_dashboard_url,
+    get_learner_display_name_override,
     get_learner_display_username,
     get_logo_url,
     should_show_order_history,
@@ -55,13 +57,37 @@ def override_learner_display_username(
     user: AbstractBaseUser,  # pylint: disable=unused-argument
 ) -> str:
     """
-    Alternative implementation of ``get_learner_display_username`` used by the tests below.
+    Alternative implementation of ``get_learner_display_name_override`` used by the tests below.
 
     A real override is expected to return ``prev_fn(user=user)`` for any learner it does not
     claim; this one claims every learner, because whether the chain falls through correctly is
     ``pluggable_override``'s behavior rather than this repo's.
     """
     return OVERRIDDEN_DISPLAY_USERNAME
+
+
+def delegate_learner_display_name(
+    prev_fn: Callable[..., str | None],
+    user: AbstractBaseUser,
+) -> str | None:
+    """
+    Alternative implementation of ``get_learner_display_name_override`` that claims no learner.
+
+    This is what a real override does for every learner it does not claim, so it shows what
+    callers receive in that case.
+    """
+    return prev_fn(user=user)
+
+
+def blank_learner_display_name(
+    prev_fn: Callable[..., str | None],  # pylint: disable=unused-argument
+    user: AbstractBaseUser,  # pylint: disable=unused-argument
+) -> str | None:
+    """
+    Alternative implementation of ``get_learner_display_name_override`` that claims every learner
+    but supplies an empty name.
+    """
+    return ""
 
 
 def override_enterprise_learner_portal_link(
@@ -251,6 +277,8 @@ class TestFooter(TestCase):
 
 
 DISPLAY_USERNAME_OVERRIDE = "lms.djangoapps.branding.tests.test_api.override_learner_display_username"
+DISPLAY_NAME_DELEGATE = "lms.djangoapps.branding.tests.test_api.delegate_learner_display_name"
+DISPLAY_NAME_BLANK = "lms.djangoapps.branding.tests.test_api.blank_learner_display_name"
 PORTAL_LINK_OVERRIDE = "lms.djangoapps.branding.tests.test_api.override_enterprise_learner_portal_link"
 
 # ``should_show_order_history()`` is False whenever no order history MFE is configured, so the
@@ -260,6 +288,7 @@ PORTAL_LINK_OVERRIDE = "lms.djangoapps.branding.tests.test_api.override_enterpri
 ORDER_HISTORY_URL = "https://orders.example.com"
 
 
+@ddt.ddt
 class TestLearnerHeaderHelpers(TestCase):
     """Test the pluggable header helpers consumed by the navigation templates."""
 
@@ -267,13 +296,31 @@ class TestLearnerHeaderHelpers(TestCase):
         super().setUp()
         self.portal_user = UserFactory.create(username=PORTAL_USERNAME)
 
-    def test_learner_display_username_default(self):
-        """Without an override the helper returns the learner's own username."""
-        assert get_learner_display_username(user=self.portal_user) == PORTAL_USERNAME
+    @ddt.data(
+        # Without an override the helper returns the learner's own username.
+        {'overrides': [], 'expected': PORTAL_USERNAME},
+        {'overrides': [DISPLAY_USERNAME_OVERRIDE], 'expected': OVERRIDDEN_DISPLAY_USERNAME},
+        # An override that claims no learner leaves the learner's own username in place.
+        {'overrides': [DISPLAY_NAME_DELEGATE], 'expected': PORTAL_USERNAME},
+        # Only None falls back to the username; an override's empty name is returned as is.
+        {'overrides': [DISPLAY_NAME_BLANK], 'expected': ''},
+    )
+    @ddt.unpack
+    def test_learner_display_username(self, overrides, expected):
+        with override_settings(OVERRIDE_GET_LEARNER_DISPLAY_USERNAME=overrides):
+            assert get_learner_display_username(user=self.portal_user) == expected
 
-    @override_settings(OVERRIDE_GET_LEARNER_DISPLAY_USERNAME=DISPLAY_USERNAME_OVERRIDE)
-    def test_learner_display_username_overridden(self):
-        assert get_learner_display_username(user=self.portal_user) == OVERRIDDEN_DISPLAY_USERNAME
+    @ddt.data(
+        # Without an override there is no name to display in place of the learner's own.
+        {'overrides': [], 'expected': None},
+        {'overrides': [DISPLAY_USERNAME_OVERRIDE], 'expected': OVERRIDDEN_DISPLAY_USERNAME},
+        # An override that claims no learner leaves the caller to choose its own default.
+        {'overrides': [DISPLAY_NAME_DELEGATE], 'expected': None},
+    )
+    @ddt.unpack
+    def test_learner_display_name_override(self, overrides, expected):
+        with override_settings(OVERRIDE_GET_LEARNER_DISPLAY_USERNAME=overrides):
+            assert get_learner_display_name_override(user=self.portal_user) == expected
 
     def test_enterprise_learner_portal_link_default(self):
         assert get_enterprise_learner_portal_link() is None
