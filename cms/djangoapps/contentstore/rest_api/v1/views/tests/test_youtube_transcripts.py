@@ -517,7 +517,10 @@ class TestYoutubeTranscriptUrls(BaseYoutubeTranscriptTest):
     def test_the_conforming_url_names_are_unique_in_their_namespace(self):
         from cms.djangoapps.contentstore.rest_api.v1 import authoring_urls  # noqa: PLC0415
         names = [pattern.name for pattern in authoring_urls.urlpatterns]
-        assert sorted(names) == ["youtube_transcript_check_list", "youtube_transcript_import_list"]
+        # Other APIs share this namespace, so check uniqueness and presence
+        # rather than the exact set of names.
+        assert len(names) == len(set(names))
+        assert {"youtube_transcript_check_list", "youtube_transcript_import_list"} <= set(names)
 
     def test_a_malformed_course_key_does_not_reach_the_view(self):
         """An unparseable key fails to route, so no handler runs."""

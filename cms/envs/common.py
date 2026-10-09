@@ -1309,8 +1309,8 @@ EVENT_BUS_PRODUCER_CONFIG.update({  # noqa: F405
 
 ################### Authoring API ######################
 
-# This affects the Authoring API swagger docs but not the legacy swagger docs under /api-docs/.
-REST_FRAMEWORK['DEFAULT_SCHEMA_CLASS'] = 'drf_spectacular.openapi.AutoSchema'  # noqa: F405
+# Used by every drf-spectacular schema Studio serves, /api-docs/ included.
+REST_FRAMEWORK['DEFAULT_SCHEMA_CLASS'] = 'cms.lib.spectacular.CmsAutoSchema'  # noqa: F405
 
 # The Authoring API schema, for any settings module that does not define its
 # own SPECTACULAR_SETTINGS -- notably cms.envs.development, which generates the
@@ -1320,7 +1320,7 @@ REST_FRAMEWORK['DEFAULT_SCHEMA_CLASS'] = 'drf_spectacular.openapi.AutoSchema'  #
 #
 # devstack.py and production.py replace this wholesale, adding SERVERS and a
 # longer DESCRIPTION. Those are the only parts that depend on CMS_BASE and
-# AUTHORING_API_URL, which are empty here; the filtering and the path prefix do
+# AUTHORING_API_URL, which are empty here; the hooks and the path prefix do
 # not, so they belong at this level.
 SPECTACULAR_SETTINGS = {
     'TITLE': 'Authoring API',
@@ -1329,13 +1329,16 @@ SPECTACULAR_SETTINGS = {
     'SERVE_INCLUDE_SCHEMA': False,
     # Restrict the schema to the Authoring API's endpoints (cms/lib/spectacular.py).
     'PREPROCESSING_HOOKS': ['cms.lib.spectacular.cms_api_filter'],
-    # The enum hook is drf-spectacular's default, restated because setting this
-    # key replaces the default list.
+    # Mark superseded and migrated legacy addresses deprecated, and BFF surfaces
+    # x-internal. The enum hook is drf-spectacular's default, restated because
+    # setting this key replaces the default list.
     'POSTPROCESSING_HOOKS': [
         'drf_spectacular.hooks.postprocess_schema_enums',
         'cms.lib.spectacular.cms_mark_superseded_paths',
+        'cms.lib.spectacular.cms_mark_migrated_paths',
     ],
-    # Used for tag extraction only. Paths are published in full, from the
+    # Stripped from each path to derive its tags and operationId, so changing
+    # it renames every operationId. Paths are published in full, from the
     # service root, so /api/contentstore and /api/authoring resolve against the
     # same base URL.
     'SCHEMA_PATH_PREFIX': r'/api/(contentstore|authoring)',

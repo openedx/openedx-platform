@@ -1,14 +1,32 @@
-"""Tests for the CMS drf-spectacular hooks."""
+"""Tests for the CMS drf-spectacular hooks and schema class."""
 
 from pathlib import Path
-from unittest import TestCase
+from unittest import TestCase, mock
 
-from cms.lib.spectacular import SUPERSEDED_PATHS, cms_api_filter, cms_mark_superseded_paths
+from django.test import SimpleTestCase
+from django.urls import path as url_path
+from drf_spectacular.generators import SchemaGenerator
+from drf_spectacular.settings import spectacular_settings
+from rest_framework import serializers, viewsets
+from rest_framework.response import Response
+from rest_framework.settings import api_settings
+
+from cms.lib.spectacular import (
+    SUPERSEDED_PATHS,
+    CmsAutoSchema,
+    cms_api_filter,
+    cms_mark_migrated_paths,
+    cms_mark_superseded_paths,
+)
 
 
 def _endpoint(path):
     """Return an endpoint tuple shaped as the pre-processing hook receives it."""
     return (path, path, "GET", object())
+
+
+def _schema(*routes):
+    return {"paths": {route: {"get": {"operationId": route}} for route in routes}}
 
 
 class CmsApiFilterTest(TestCase):
@@ -81,6 +99,41 @@ class CmsMarkSupersededPathsTest(TestCase):
         assert self._run(schema) == {"paths": {}}
 
 
+class CmsMarkMigratedPathsTest(SimpleTestCase):
+    """The post-processing hook works on full paths, so both prefixes coexist in one schema."""
+
+    def test_legacy_paths_deprecated_conforming_paths_not(self):
+        result = cms_mark_migrated_paths(_schema(
+            "/api/contentstore/v1/xblock/{usage_key_string}/",
+            "/api/authoring/v1/xblocks/{usage_key_string}/",
+            "/api/contentstore/v3/course_details/{course_id}/",
+            "/api/authoring/v3/courses/{course_key}/details/",
+        ), None, None, False)
+        paths = result["paths"]
+        assert paths["/api/contentstore/v1/xblock/{usage_key_string}/"]["get"]["deprecated"] is True
+        assert paths["/api/contentstore/v3/course_details/{course_id}/"]["get"]["deprecated"] is True
+        assert "deprecated" not in paths["/api/authoring/v1/xblocks/{usage_key_string}/"]["get"]
+        assert "deprecated" not in paths["/api/authoring/v3/courses/{course_key}/details/"]["get"]
+
+    def test_bff_surfaces_internal_on_both_mounts(self):
+        result = cms_mark_migrated_paths(_schema(
+            "/api/contentstore/v3/home/",
+            "/api/authoring/v3/home/",
+            "/api/authoring/v4/courses/",
+        ), None, None, False)
+        paths = result["paths"]
+        assert paths["/api/contentstore/v3/home/"]["get"]["x-internal"] is True
+        assert paths["/api/contentstore/v3/home/"]["get"]["deprecated"] is True
+        assert paths["/api/authoring/v3/home/"]["get"]["x-internal"] is True
+        assert "deprecated" not in paths["/api/authoring/v3/home/"]["get"]
+        assert "x-internal" not in paths["/api/authoring/v4/courses/"]["get"]
+
+    def test_paths_are_left_as_full_urls(self):
+        """Paths are not trimmed, so every key resolves against a service-root server."""
+        result = cms_mark_migrated_paths(_schema("/api/contentstore/v1/xblock/"), None, None, False)
+        assert list(result["paths"]) == ["/api/contentstore/v1/xblock/"]
+
+
 class SpectacularSettingsTest(TestCase):
     """
     The service settings the hooks depend on.
@@ -99,6 +152,7 @@ class SpectacularSettingsTest(TestCase):
             source = self._source(module)
             assert "'PREPROCESSING_HOOKS': ['cms.lib.spectacular.cms_api_filter']" in source, module
             assert "'cms.lib.spectacular.cms_mark_superseded_paths'," in source, module
+            assert "'cms.lib.spectacular.cms_mark_migrated_paths'," in source, module
 
     def test_the_default_enum_hook_is_kept_alongside_the_new_one(self):
         """Setting the key replaces drf-spectacular's default list, so it is restated."""
@@ -118,3 +172,41 @@ class SpectacularSettingsTest(TestCase):
     def test_no_server_advertises_a_single_mount_as_its_root(self):
         for module in self.SETTINGS_MODULES:
             assert "CMS-contentstore" not in self._source(module), module
+
+
+class _EmptySerializer(serializers.Serializer):  # pylint: disable=abstract-method
+    pass
+
+
+class _HomeViewSet(viewsets.GenericViewSet):
+    """Stand-in for a viewset served on both a legacy and a conforming mount."""
+
+    schema = CmsAutoSchema()
+    serializer_class = _EmptySerializer
+
+    def list(self, request):
+        return Response([])
+
+
+class CmsAutoSchemaTest(SimpleTestCase):
+    """Dual mounts get deterministic operationIds instead of registration-order numeral suffixes."""
+
+    def test_is_the_default_schema_class(self):
+        """Views without their own ``schema`` pick this up via REST_FRAMEWORK settings."""
+        assert api_settings.DEFAULT_SCHEMA_CLASS is CmsAutoSchema
+
+    def test_only_the_colliding_legacy_address_is_suffixed(self):
+        patterns = [
+            url_path("api/contentstore/v3/home/", _HomeViewSet.as_view({"get": "list"})),
+            url_path("api/authoring/v3/home/", _HomeViewSet.as_view({"get": "list"})),
+            url_path("api/contentstore/v4/home/courses/", _HomeViewSet.as_view({"get": "list"})),
+            url_path("api/authoring/v4/courses/", _HomeViewSet.as_view({"get": "list"})),
+        ]
+        with mock.patch.object(spectacular_settings, "SCHEMA_PATH_PREFIX", r"/api/(contentstore|authoring)"):
+            schema = SchemaGenerator(patterns=patterns).get_schema(request=None, public=True)
+        ids = {p: op["operationId"] for p, item in schema["paths"].items() for op in item.values()}
+        assert ids["/api/authoring/v3/home/"] == "v3_home_list"
+        assert ids["/api/contentstore/v3/home/"] == "v3_home_list_legacy"
+        # Already distinct from its conforming twin's id, so it keeps its name.
+        assert ids["/api/authoring/v4/courses/"] == "v4_courses_list"
+        assert ids["/api/contentstore/v4/home/courses/"] == "v4_home_courses_list"
