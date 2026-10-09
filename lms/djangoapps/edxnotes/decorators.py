@@ -56,7 +56,9 @@ def edxnotes(cls):
                 "params": {
                     # Use camelCase to name keys.
                     "usageId": self.scope_ids.usage_id,
-                    "courseId": course.id,
+                    # Normalize to the canonical course key (branch=None) for all course types.
+                    # This avoids mismatches when IDs include branch-specific variants (e.g. CCX)
+                    "courseId": course.id.for_branch(branch=None),
                     "token": get_edxnotes_id_token(user),
                     "tokenUrl": get_token_url(course.id),
                     "endpoint": get_public_endpoint(),
