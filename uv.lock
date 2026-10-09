@@ -4390,13 +4390,14 @@ wheels = [
 
 [[package]]
 name = "openedx-core"
-version = "1.4.0"
+version = "1.6.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "attrs" },
     { name = "celery" },
     { name = "django", version = "4.2.30", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'group-16-openedx-platform-django42'" },
     { name = "django", version = "5.2.17", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'group-16-openedx-platform-django52' or extra != 'group-16-openedx-platform-django42'" },
+    { name = "django-simple-history" },
     { name = "djangorestframework" },
     { name = "edx-drf-extensions" },
     { name = "edx-organizations" },
@@ -4404,9 +4405,9 @@ dependencies = [
     { name = "rules" },
     { name = "tomlkit" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/4d/3e/ed8e012f309cea40ed2e95bf62e24437d61b78b985a653bad77eba28793e/openedx_core-1.4.0.tar.gz", hash = "sha256:b14a6dba9daf641d5b59cc6d96352c60f56960e620d57a48978762bfdb43db71", size = 235679, upload-time = "2026-09-11T18:52:40.51Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/fa/6c/9c3e00d6f890c6c079fc9e5cc3ae87d3eb74e30ea29d6f9a3f713b7c2d81/openedx_core-1.6.0.tar.gz", hash = "sha256:ded2fc35b3cc25aa21e7ab3a7b601b4cb8eb25d72326d67c572919d2fe69b2a6", size = 842796, upload-time = "2026-10-01T18:12:28.158Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/7e/53/51c7f89d7ce719aacf4f75d8a4b2dbda4cb7502f243606e25ea8daf5597e/openedx_core-1.4.0-py2.py3-none-any.whl", hash = "sha256:972471eb6f80250ce25f049fa56d6629f5c2a22a9c9382863c9d876462561183", size = 321965, upload-time = "2026-09-11T18:52:38.934Z" },
+    { url = "https://files.pythonhosted.org/packages/c6/79/ae216cdc93c9b4c1a42fec6b2d47c6b584448e52f47b04e8b9e66768a261/openedx_core-1.6.0-py3-none-any.whl", hash = "sha256:380d690895eec621d7c5bcfa5b389485e8411a86ab69038c5d64d8a643f7e615", size = 346699, upload-time = "2026-10-01T18:12:26.289Z" },
 ]
 
 [[package]]
