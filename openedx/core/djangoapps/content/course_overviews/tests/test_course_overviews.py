@@ -134,6 +134,7 @@ class CourseOverviewTestCase(CatalogIntegrationMixin, ModuleStoreTestCase, Cache
             'invitation_only',
             'max_student_enrollments_allowed',
             'catalog_visibility',
+            'course_theme_variant',
         ]
         for attribute_name in fields_to_test:
             course_value = getattr(course, attribute_name)
@@ -224,6 +225,7 @@ class CourseOverviewTestCase(CatalogIntegrationMixin, ModuleStoreTestCase, Cache
                 ],
                 "static_asset_path": "/my/abs/path",        # Absolute path
                 "certificates_show_before_end": True,
+                "course_theme_variant": "custom-theme",     # Has a custom course theme variant
             },
             {
                 "display_name": "",                         # Empty display name
@@ -312,6 +314,20 @@ class CourseOverviewTestCase(CatalogIntegrationMixin, ModuleStoreTestCase, Cache
         DarkLangConfig(released_languages=released_languages, enabled=True, changed_by=self.user).save()
         course_overview = CourseOverviewFactory.create(language=course_language)
         assert course_overview.closest_released_language == expected_language
+
+    @ddt.data(None, "", "theme1")
+    def test_course_theme_variant_field(self, theme_variant):
+        """
+        Tests that the course_theme_variant field is correctly set on CourseOverview.
+        """
+        overview_theme_variant = theme_variant or ""
+        course = CourseFactory.create(course_theme_variant=theme_variant)
+        course_overview = CourseOverview.get_from_id(course.id)
+        assert CourseOverview.objects.filter(
+            id=course.id,
+            course_theme_variant=overview_theme_variant,
+        ).exists()
+        assert course_overview.course_theme_variant == overview_theme_variant
 
     def test_get_non_existent_course(self):
         """

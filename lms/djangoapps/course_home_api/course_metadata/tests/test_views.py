@@ -95,6 +95,13 @@ class CourseHomeMetadataTests(BaseCourseHomeTests):
             response = self.client.get(url)
         assert response.status_code == 404
 
+    def test_get_course_theme(self):
+        CourseEnrollment.enroll(self.user, self.course.id, CourseMode.VERIFIED)
+        self.client.logout()
+        response = self.client.get(self.url)
+        assert response.status_code == 200
+        assert response.data.get('course_theme_variant', None) == ""
+
     def _assert_course_access_response(self, response, expect_course_access, expected_error_code):
         """
         Responsible to asset the course_access response with expected values.
