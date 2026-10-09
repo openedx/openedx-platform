@@ -853,7 +853,7 @@ openedx-filters==3.14.0
     #   lti-consumer-xblock
     #   openedx-platform
     #   ora2
-openedx-forum==0.4.7
+openedx-forum==0.4.8
     # via openedx-platform
 opentelemetry-api==1.45.0
     # via google-api-core

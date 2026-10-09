@@ -4487,7 +4487,7 @@ wheels = [
 
 [[package]]
 name = "openedx-forum"
-version = "0.4.7"
+version = "0.4.8"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "beautifulsoup4" },
@@ -4502,9 +4502,9 @@ dependencies = [
     { name = "requests" },
     { name = "typesense" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/6f/c0/2ff05d20e655d7ce9231ff8cbe1a5b239cf587c5aa59a302e39d2286b700/openedx_forum-0.4.7.tar.gz", hash = "sha256:3cd46fcbb43ea49ceea224ad522ec5cc861acba56a0146cbc26c725dfa025690", size = 230174, upload-time = "2026-09-08T16:56:47.621Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d9/e2/b24427817298096bba2401d99d0ea6b0c020cb00317b10e6b4a8449193dd/openedx_forum-0.4.8.tar.gz", hash = "sha256:25356a84b8728fa9148144644aa154e58da8911267db9cd0448f309b81eb965a", size = 231236, upload-time = "2026-09-30T12:43:00.518Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a1/cd/0ffb1cc0b305c9dbfa48eb5e87c6b4abc08aee9796be945f6dd017fdbace/openedx_forum-0.4.7-py3-none-any.whl", hash = "sha256:97c5b34c1e89ad5fab1d71e7355c7a83ceaa90bfe9aac0afb1f9510253a703f0", size = 115886, upload-time = "2026-09-08T16:56:46.312Z" },
+    { url = "https://files.pythonhosted.org/packages/59/b8/cb2290dfc765eec5b777761673a393a4d9aea5a0360c59c63e4734bc7561/openedx_forum-0.4.8-py3-none-any.whl", hash = "sha256:5fb43d95aaff95c263a9eeb2f4368ee71afc26df8840d70db4bcdc733aed2518", size = 115880, upload-time = "2026-09-30T12:42:58.972Z" },
 ]
 
 [[package]]
