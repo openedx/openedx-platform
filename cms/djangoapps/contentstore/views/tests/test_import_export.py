@@ -1,6 +1,7 @@
 """
 Unit tests for course import and export
 """
+import base64
 import copy
 import itertools
 import json
@@ -21,7 +22,9 @@ from bson import ObjectId
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.exceptions import SuspiciousOperation
+from django.core.files import File
 from django.core.files.storage import FileSystemStorage
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test.utils import override_settings
 from milestones.tests.utils import MilestonesTestCaseMixin
 from opaque_keys.edx.locator import LibraryLocator
@@ -30,14 +33,17 @@ from path import Path as path
 from rest_framework import status
 from rest_framework.test import APIClient
 from storages.backends.s3boto3 import S3Boto3Storage
-from user_tasks.models import UserTaskStatus
+from user_tasks.models import UserTaskArtifact, UserTaskStatus
 
 from cms.djangoapps.contentstore import errors as import_error
+from cms.djangoapps.contentstore import tasks
 from cms.djangoapps.contentstore.api.tests.base import BaseCourseViewTest
 from cms.djangoapps.contentstore.storage import course_import_export_storage
+from cms.djangoapps.contentstore.tasks import import_olx
 from cms.djangoapps.contentstore.tests.test_libraries import LibraryTestCase
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase
 from cms.djangoapps.contentstore.utils import reverse_course_url
+from cms.djangoapps.contentstore.views import import_export as import_export_views
 from cms.djangoapps.models.settings.course_metadata import CourseMetadata
 from common.djangoapps.student import auth
 from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRole
@@ -746,6 +752,191 @@ class ImportTestCase(CourseTestCase):
             )
         )
         self.assertEqual(resp.headers['Cache-Control'], 'no-cache, no-store, must-revalidate')  # noqa: PT009
+
+
+@override_settings(CONTENTSTORE=TEST_DATA_CONTENTSTORE)
+class ConcurrentImportTestCase(CourseTestCase):
+    """
+    Tests for two imports of the same course overlapping in time.
+
+    Regression tests for a bug where every import of a given course shared one
+    working directory, so whichever import finished first deleted the other's
+    archive and extracted OLX mid-run. The surviving task then failed with a
+    bare filesystem error (`[Errno 116] Stale file handle` on NFS-backed
+    ``GITHUB_REPO_ROOT``, `[Errno 2]` on a local disk).
+    """
+    ARCHIVE_NAME = 'course.tar.gz'
+
+    def setUp(self):
+        super().setUp()
+        self.content_dir = path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.content_dir, True)
+
+        source_dir = tempfile.mkdtemp(dir=self.content_dir)
+        os.makedirs(os.path.join(source_dir, 'course'))
+        with open(os.path.join(source_dir, 'course.xml'), 'w') as course_xml:
+            course_xml.write('<course url_name="2013_Spring" org="EDx" course="0.00x"/>')
+        with open(os.path.join(source_dir, 'course', '2013_Spring.xml'), 'w') as run_xml:
+            run_xml.write('<course></course>')
+
+        self.archive = os.path.join(self.content_dir, self.ARCHIVE_NAME)
+        with tarfile.open(self.archive, 'w:gz') as archive:
+            archive.add(source_dir, arcname='exported_course')
+
+        self.data_root = path(settings.GITHUB_REPO_ROOT)
+        if not self.data_root.isdir():
+            os.makedirs(self.data_root)
+        self.course_dir_prefix = base64.urlsafe_b64encode(
+            repr(self.course.id).encode('utf-8')
+        ).decode('utf-8') + '-'
+        self.addCleanup(self.remove_working_dirs)
+
+    def working_dirs(self):
+        """The import working directories currently on disk for this course."""
+        return [name for name in os.listdir(self.data_root) if name.startswith(self.course_dir_prefix)]
+
+    def remove_working_dirs(self):
+        """Delete whatever working directories a test left behind."""
+        for name in self.working_dirs():
+            shutil.rmtree(self.data_root / name, ignore_errors=True)
+
+    def stage_upload(self):
+        """Park a copy of the archive in storage, the way the upload view does."""
+        with open(self.archive, 'rb') as archive:
+            return course_import_export_storage.save(
+                'olx_import/' + self.ARCHIVE_NAME, File(archive)
+            )
+
+    def run_import(self, storage_path):
+        """Run one import_olx task to completion (celery is eager under test)."""
+        return import_olx.delay(
+            self.user.id, str(self.course.id), storage_path, self.ARCHIVE_NAME, 'en'
+        )
+
+    @staticmethod
+    def status_of(result):
+        """The UserTaskStatus recorded for a finished task."""
+        return UserTaskStatus.objects.get(task_id=result.id)
+
+    @staticmethod
+    def error_of(task_status):
+        """The error message a failed task showed the user, if any."""
+        artifact = UserTaskArtifact.objects.filter(status=task_status, name='Error').first()
+        return artifact.text if artifact else None
+
+    def test_concurrent_imports_of_same_course_both_succeed(self):
+        """
+        An import that finishes while a second one is still unpacking must not
+        disturb it.
+
+        Only the timing is simulated: the first import is run at the exact
+        moment the second one reaches its extraction step. Every filesystem
+        effect is real.
+        """
+        first_upload = self.stage_upload()
+        second_upload = self.stage_upload()
+        self.assertNotEqual(first_upload, second_upload)  # noqa: PT009
+
+        real_extractall = tasks.safe_extractall
+        observed = {}
+
+        def extract_with_a_concurrent_import(file_name, output_path):
+            """Runs as the second import extracts; the first import lands here."""
+            if not observed.get('fired'):
+                observed['fired'] = True  # the first import must not re-enter
+                observed['archive_before'] = os.path.exists(file_name)
+                observed['first_result'] = self.run_import(first_upload)
+                observed['archive_after'] = os.path.exists(file_name)
+                observed['dir_after'] = os.path.isdir(output_path)
+            return real_extractall(file_name, output_path)
+
+        with patch.object(tasks, 'safe_extractall', extract_with_a_concurrent_import):
+            second_result = self.run_import(second_upload)
+
+        first_status = self.status_of(observed['first_result'])
+        second_status = self.status_of(second_result)
+
+        self.assertEqual(first_status.state, UserTaskStatus.SUCCEEDED)  # noqa: PT009
+        # The first import's cleanup left the second import's files alone.
+        self.assertTrue(observed['archive_before'])  # noqa: PT009
+        self.assertTrue(observed['archive_after'])  # noqa: PT009
+        self.assertTrue(observed['dir_after'])  # noqa: PT009
+        self.assertEqual(  # noqa: PT009
+            second_status.state, UserTaskStatus.SUCCEEDED, self.error_of(second_status)
+        )
+        # ...and between them they left no scratch data behind.
+        self.assertEqual(self.working_dirs(), [])  # noqa: PT009
+
+    def test_import_working_dirs_are_not_shared(self):
+        """Two imports of one course never get the same working directory."""
+        self.assertNotEqual(  # noqa: PT009
+            tasks.course_import_working_dir(self.course.id, 'task-1'),
+            tasks.course_import_working_dir(self.course.id, 'task-2'),
+        )
+        self.assertTrue(  # noqa: PT009
+            os.path.basename(tasks.course_import_working_dir(self.course.id, 'task-1')).startswith(
+                self.course_dir_prefix
+            )
+        )
+
+    def test_cleanup_does_not_race_another_import_creating_its_dir(self):
+        """
+        One import cleaning up must not remove a directory that another import of
+        the same course is about to create its working directory in.
+
+        The cleanup is run at the exact moment the second import's ``os.mkdir``
+        is called, after ``os.makedirs`` has already checked that the parent exists.
+        """
+        first_dir = tasks.course_import_working_dir(self.course.id, 'task-1')
+        second_dir = tasks.course_import_working_dir(self.course.id, 'task-2')
+        os.makedirs(first_dir)
+
+        real_mkdir = os.mkdir
+
+        def mkdir_while_first_import_cleans_up(name, *args, **kwargs):
+            if os.path.normpath(name) == os.path.normpath(second_dir):
+                tasks.remove_course_import_working_dir(first_dir)
+            return real_mkdir(name, *args, **kwargs)
+
+        with patch('os.mkdir', mkdir_while_first_import_cleans_up):
+            os.makedirs(second_dir, exist_ok=True)
+
+        self.assertTrue(os.path.isdir(second_dir))  # noqa: PT009
+        self.assertFalse(os.path.exists(first_dir))  # noqa: PT009
+
+    def post_chunk(self, data, start, total):
+        """POST one chunk of a chunked upload, the way Studio's uploader sends it."""
+        stop = start + len(data) - 1
+        return self.client.post(
+            reverse_course_url('import_handler', self.course.id),
+            {'course-data': SimpleUploadedFile(self.ARCHIVE_NAME, data)},
+            HTTP_CONTENT_RANGE=f'bytes {start}-{stop}/{total}',
+        )
+
+    def test_repeated_final_chunk_is_accepted(self):
+        """
+        The last chunk of an upload is sometimes sent twice (nginx 499 on a slow
+        response). The repeat must be acknowledged rather than rejected as a
+        missing chunk, even though the first copy already cleared the staging file.
+        """
+        with open(self.archive, 'rb') as archive:
+            data = archive.read()
+        middle = len(data) // 2
+
+        with patch.object(import_export_views.import_olx, 'delay') as delay:
+            first = self.post_chunk(data[:middle], 0, len(data))
+            self.assertEqual(first.status_code, 200, first.content)  # noqa: PT009
+            last = self.post_chunk(data[middle:], middle, len(data))
+            self.assertEqual(last.status_code, 200, last.content)  # noqa: PT009
+            self.assertEqual(delay.call_count, 1)  # noqa: PT009
+            self.assertEqual(self.working_dirs(), [])  # noqa: PT009
+
+            repeat = self.post_chunk(data[middle:], middle, len(data))
+
+        self.assertEqual(repeat.status_code, 200, repeat.content)  # noqa: PT009
+        self.assertEqual(json.loads(repeat.content), {'ImportStatus': 1})  # noqa: PT009
+        # The repeat did not start a second import.
+        self.assertEqual(delay.call_count, 1)  # noqa: PT009
 
 
 @override_settings(CONTENTSTORE=TEST_DATA_CONTENTSTORE)

@@ -4,16 +4,16 @@ courses
 """
 
 
-import base64
+import hashlib
 import json
 import logging
 import os
 import re
-import shutil
 from wsgiref.util import FileWrapper
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
+from django.core.cache import cache
 from django.core.exceptions import PermissionDenied
 from django.core.files import File
 from django.core.files.storage import FileSystemStorage
@@ -28,7 +28,6 @@ from edx_django_utils.monitoring import set_custom_attribute, set_custom_attribu
 from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locator import LibraryLocator
 from openedx_authz.constants.permissions import COURSES_EXPORT_COURSE, COURSES_IMPORT_COURSE
-from path import Path as path
 from storages.backends.s3boto3 import S3Boto3Storage
 from user_tasks.conf import settings as user_tasks_settings
 from user_tasks.models import UserTaskArtifact, UserTaskStatus
@@ -42,7 +41,15 @@ from openedx.core.djangoapps.authz.decorators import user_has_course_permission
 from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 
 from ..storage import course_import_export_storage
-from ..tasks import CourseExportTask, CourseImportTask, create_export_tarball, export_olx, import_olx
+from ..tasks import (
+    CourseExportTask,
+    CourseImportTask,
+    course_import_working_dir,
+    create_export_tarball,
+    export_olx,
+    import_olx,
+    remove_course_import_working_dir,
+)
 from ..utils import IMPORTABLE_FILE_TYPES, get_export_url, get_import_url, reverse_course_url
 
 __all__ = [
@@ -54,6 +61,9 @@ log = logging.getLogger(__name__)
 
 # Regex to capture Content-Range header ranges.
 CONTENT_RE = re.compile(r"(?P<start>\d{1,11})-(?P<stop>\d{1,11})/(?P<end>\d{1,11})")
+
+# How long to remember a finished chunked upload, so a repeat of its last chunk is recognised.
+COMPLETED_UPLOAD_TIMEOUT = 60 * 60
 
 STATUS_FILTERS = user_tasks_settings.USER_TASKS_STATUS_FILTERS
 
@@ -110,15 +120,35 @@ def _save_request_status(request, key, status):
     request.session.save()
 
 
+def _upload_id(request, filename):
+    """
+    Identify one chunked upload, so that its staging directory is not shared.
+
+    Chunks of a single upload all have to land in the same directory, so the id
+    is derived from the session and the file name rather than being random.
+    """
+    session_key = request.session.session_key or ''
+    digest = hashlib.sha256(f'{session_key}:{filename}'.encode()).hexdigest()
+    return f'upload-{digest[:32]}'
+
+
+def _completed_upload_cache_key(courselike_key, upload_id):
+    """Cache key remembering the size of a chunked upload that has been handed to the import task."""
+    return f'contentstore.course_import.completed_upload.{courselike_key}.{upload_id}'
+
+
 def _write_chunk(request, courselike_key):  # pylint: disable=too-many-statements
     """
     Write the OLX file data chunk from the given request to the local filesystem.
     """
-    # Upload .tar.gz or .zip to local filesystem for one-server installations not using S3 or Swift
-    data_root = path(settings.GITHUB_REPO_ROOT)
-    subdir = base64.urlsafe_b64encode(repr(courselike_key).encode('utf-8')).decode('utf-8')
-    course_dir = data_root / subdir
     filename = request.FILES['course-data'].name
+    # Upload .tar.gz or .zip to local filesystem for one-server installations not using S3 or Swift.
+    # The staging directory is private to this upload: it has to survive between chunks of the same
+    # upload, but must not be shared with another author's upload or with a running import task,
+    # which would delete it out from under us on its way out.
+    upload_id = _upload_id(request, filename)
+    course_dir = course_import_working_dir(courselike_key, upload_id)
+    completed_upload_key = _completed_upload_cache_key(courselike_key, upload_id)
     set_custom_attributes_for_course_key(courselike_key)
     current_step = 'Uploading'
 
@@ -139,8 +169,7 @@ def _write_chunk(request, courselike_key):  # pylint: disable=too-many-statement
             return error_response(error_message, 415, 0)
 
         temp_filepath = course_dir / filename
-        if not course_dir.isdir():
-            os.mkdir(course_dir)
+        os.makedirs(course_dir, exist_ok=True)
 
         logging.info(f'Course import {courselike_key}: importing course to {temp_filepath}')
 
@@ -158,17 +187,23 @@ def _write_chunk(request, courselike_key):  # pylint: disable=too-many-statement
         if is_initial_import_request:
             mode = "wb+"
             set_custom_attribute('course_import_init', True)
+            cache.delete(completed_upload_key)
         else:
             mode = "ab+"
             # Appending to fail would fail if the file doesn't exist.
-            if not temp_filepath.exists():
+            try:
+                size = os.path.getsize(temp_filepath)
+            except FileNotFoundError:
+                # The last request sometimes comes twice (see below). By then the first copy
+                # may have finished and deleted the staging file, so check whether it did.
+                if cache.get(completed_upload_key) == int(content_range['end']):
+                    return JsonResponse({'ImportStatus': 1})
                 error_message = _('Some chunks missed during file upload. Please try again')
                 _save_request_status(request, courselike_string, -1)
                 log.error(f'Course Import {courselike_key}: {error_message}')
                 monitor_import_failure(courselike_key, current_step, message=error_message)
                 return error_response(error_message, 409, 0)
 
-            size = os.path.getsize(temp_filepath)
             # Check to make sure we haven't missed a chunk
             # This shouldn't happen, even if different instances are handling
             # the same session, but it's always better to catch errors earlier.
@@ -207,15 +242,20 @@ def _write_chunk(request, courselike_key):  # pylint: disable=too-many-statement
         with open(temp_filepath, 'rb') as local_file:
             django_file = File(local_file)
             storage_path = course_import_export_storage.save('olx_import/' + filename, django_file)
+        # The archive now lives in storage; the import task downloads it into its own
+        # working directory, so this staging copy is no longer needed. Record the upload
+        # as finished first, so a repeat of this last chunk is still recognised once the
+        # staging file is gone.
+        cache.set(completed_upload_key, int(content_range['end']), COMPLETED_UPLOAD_TIMEOUT)
+        remove_course_import_working_dir(course_dir)
         import_olx.delay(
             request.user.id, str(courselike_key), storage_path, filename, request.LANGUAGE_CODE)
 
     # Send errors to client with stage at which error occurred.
     except Exception as exception:  # pylint: disable=broad-except
         _save_request_status(request, courselike_string, -1)
-        if course_dir.isdir():
-            shutil.rmtree(course_dir)
-            log.info("Course import %s: Temp data cleared", courselike_key)
+        remove_course_import_working_dir(course_dir)
+        log.info("Course import %s: Temp data cleared", courselike_key)
 
         monitor_import_failure(courselike_key, current_step, exception=exception)
         log.exception(f'Course import {courselike_key}: error importing course.')
