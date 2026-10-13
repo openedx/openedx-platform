@@ -1,187 +1,175 @@
-"""
-API Views for course grading settings — v3.
+"""API views for a course's grading policy (v3)."""
 
-This module is the v3 incarnation of the v0 ``AuthoringGradingView`` endpoint,
-restructured to apply the FC-0118 ADRs from the start:
-
-  * ADR 0025 – ``serializer_class`` on the viewset
-  * ADR 0026 – explicit ``authentication_classes`` + ``permission_classes``
-  * ADR 0027 – ``drf_spectacular`` for OpenAPI schema generation
-  * ADR 0028 – consolidated into a single DRF ``ViewSet`` registered via
-    ``DefaultRouter`` (replaces ``AuthoringGradingView`` ``APIView``)
-  * ADR 0029 – standardized error envelope via :class:`StandardizedErrorMixin`
-    (v3-scoped — does not change the project-wide DRF ``EXCEPTION_HANDLER``
-    setting)
-  * ADR 0033 / OEP-68 – the URL kwarg, action parameter, and OpenAPI parameter
-    are named ``course_key`` (the OEP-68-standardized name) rather than the
-    legacy ``course_id``. Since this is a brand-new versioned API, no
-    deprecated alias is needed — clients on the v0 endpoint continue to use
-    ``course_id`` there.
-  * ADR 0036 – **largely out of scope.** The ``CourseGradingModelSerializer``
-    response is a single top-level ``graders`` list of small fixed-shape
-    objects (type, min_count, drop_count, short_label, weight, id) — no
-    tree nesting, no embedded sub-objects, no ``children`` field, no wide
-    flat object that would benefit from ``?view=minimal`` / ``?fields=``.
-
-    The one ADR 0036 concern is anti-pattern #3 (unbounded child list): the
-    ``graders`` array has no upper bound in the serializer. In practice each
-    course has typically ≤8 graders (Homework, Lab, Exam, etc.) and the
-    update flow is exercised only by course-authoring staff, so the
-    real-world payload is always small. A hard cap is enforced upstream of
-    this endpoint by :func:`CourseGradingModel.update_from_json`; we surface
-    that as a documentation note rather than re-implement the bound here.
-  * ADR 0034 – auth standardization (OEP-0042).
-    ``authentication_classes`` is ``(JwtAuthentication, SessionAuthenticationAllowInactiveUser)``;
-    ``BearerAuthenticationAllowInactiveUser`` has been removed per the
-    deprecation policy. ``SessionAuthenticationAllowInactiveUser`` is
-    retained (rather than relying on the platform-default
-    ``SessionAuthentication``) so Studio authors whose accounts are
-    temporarily inactive can still update grading.
-
-Permission model note:
-    PR #38363 proposed a class-level ``HasStudioReadAccess`` permission. The
-    current v0 view has since evolved to use the ``openedx_authz`` permission
-    framework (``COURSES_EDIT_GRADING_SETTINGS``), which is more specific to
-    grading and aligns with the platform-wide authz direction.
-
-    The v3 viewset preserves the openedx_authz model via an *inline*
-    ``user_has_course_permission`` check inside the action body (rather than
-    the ``@authz_permission_required`` decorator). The decorator raises
-    ``DeveloperErrorResponseException`` — a plain ``Exception`` subclass that
-    does not flow through DRF's exception handler, so it would bypass
-    :class:`StandardizedErrorMixin` and surface as an unstructured 500.
-    Raising ``rest_framework.exceptions.PermissionDenied`` directly keeps the
-    ADR 0029 envelope intact.
-"""
-
-from drf_spectacular.utils import OpenApiParameter, OpenApiRequest, OpenApiResponse, extend_schema
+from drf_spectacular.utils import (
+    OpenApiParameter,
+    OpenApiResponse,
+    PolymorphicProxySerializer,
+    extend_schema,
+)
 from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
 from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
+from edx_rest_framework_extensions.errors import ErrorResponseSerializer
 from edx_rest_framework_extensions.mixins import StandardizedErrorMixin
 from edx_rest_framework_extensions.routers import COURSE_KEY_LOOKUP_REGEX
-from openedx_authz.constants.permissions import COURSES_EDIT_GRADING_SETTINGS
 from rest_framework import viewsets
-from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 
-from cms.djangoapps.contentstore.rest_api.v0.serializers import CourseGradingModelSerializer
-from cms.djangoapps.contentstore.rest_api.v3.utils import COMMON_ERROR_RESPONSES, resolve_course_key
-from cms.djangoapps.models.settings.course_grading import CourseGradingModel
-from openedx.core.djangoapps.authz.constants import LegacyAuthoringPermission
-from openedx.core.djangoapps.authz.decorators import user_has_course_permission
-from openedx.core.djangoapps.credit.tasks import update_credit_course_requirements
+from cms.djangoapps.contentstore.rest_api.v3.grading_service import (
+    get_full_grading_settings,
+    get_grading_policy,
+    update_grading_policy,
+)
+from cms.djangoapps.contentstore.rest_api.v3.permissions import CanEditGradingSettings, CanViewGradingSettings
+from cms.djangoapps.contentstore.rest_api.v3.serializers.grading import (
+    GRADING_FULL_VIEW,
+    CourseGradingFullSerializer,
+    CourseGradingSerializer,
+    CourseGradingUpdateSerializer,
+    GradingViewQuerySerializer,
+    grading_policy_update_serializer,
+)
+from cms.djangoapps.contentstore.rest_api.v3.utils import resolve_course_key
 
 _COURSE_KEY_PARAMETER = OpenApiParameter(
     name="course_key",
-    description="OEP-68 course key (e.g. course-v1:org+course+run).",
+    description="Key of the course, for example course-v1:edX+DemoX+Demo_Course.",
     required=True,
     type=str,
     location=OpenApiParameter.PATH,
 )
 
+_VIEW_PARAMETER = OpenApiParameter(
+    name="view",
+    description=GradingViewQuerySerializer().fields["view"].help_text,
+    required=False,
+    type=str,
+    enum=[GRADING_FULL_VIEW],
+    location=OpenApiParameter.QUERY,
+)
+
+
+# The full shape is listed first: the default shape allows extra keys, so a
+# client trying each shape in order would otherwise read a full response as the
+# default one and lose the view=full fields. As the shapes overlap, the CMS
+# schema hooks publish this component as anyOf (cms.lib.spectacular.ANY_OF_COMPONENTS).
+_READ_RESPONSE = PolymorphicProxySerializer(
+    component_name="authoring_grading.CourseGradingRead.v3",
+    serializers=[CourseGradingFullSerializer, CourseGradingSerializer],
+    resource_type_field_name=None,
+)
+
+
+def _error(description):
+    return OpenApiResponse(response=ErrorResponseSerializer, description=description)
+
 
 @extend_schema(tags=["openedx-platform-sdk"])
 class AuthoringGradingViewSet(StandardizedErrorMixin, viewsets.ViewSet):
     """
-    ViewSet for course grading settings (v3). Registered via DefaultRouter
-    (basename ``authoring_grading``).
+    The grading policy of one course: its assignment types and their weights,
+    letter-grade cutoffs, grace period, and minimum grade for course credit.
 
-    Router-generated URL::
+    Reading the policy needs permission to view the course's grading settings,
+    changing it permission to edit them. The course is looked up first, so a
+    signed-in caller learns that a course does not exist (404) before being
+    refused (403).
 
-        PATCH /api/contentstore/v3/authoring_grading/{course_key}/  → partial_update
-
-    Supersedes ``AuthoringGradingView`` at ``POST /api/contentstore/v0/grading/{course_id}``.
+    A plain ``ViewSet``: the policy is a settings field of the course in the
+    modulestore, not database rows.
     """
 
-    # ADR 0034 — JWT + session-with-inactive-user (BearerAuthenticationAllowInactiveUser
-    # removed per OEP-0042). SessionAuthenticationAllowInactiveUser is retained
-    # (instead of relying on the platform-default SessionAuthentication) so Studio
-    # authors whose accounts are temporarily inactive can still update grading.
-    authentication_classes = (
-        JwtAuthentication,
-        SessionAuthenticationAllowInactiveUser,
-    )
+    # Studio authors whose account is not yet activated use this endpoint from
+    # the authoring app; the default session class would reject them.
+    authentication_classes = (JwtAuthentication, SessionAuthenticationAllowInactiveUser)
     permission_classes = (IsAuthenticated,)
-    serializer_class = CourseGradingModelSerializer
+    action_permission_classes = {
+        "retrieve": CanViewGradingSettings,
+        "partial_update": CanEditGradingSettings,
+    }
+    serializer_class = CourseGradingSerializer
 
-    # DefaultRouter lookup: matches course-v1:org+course+run (+ or / separators).
-    # OEP-68: the kwarg name is ``course_key`` (not the legacy ``course_id``).
     lookup_field = "course_key"
     lookup_value_regex = COURSE_KEY_LOOKUP_REGEX
 
+    _course_key = None
+
+    def get_permissions(self):
+        """Add the permission of the requested action to the authentication check."""
+        permissions = super().get_permissions()
+        action_permission = self.action_permission_classes.get(self.action)
+        if action_permission is not None:
+            permissions.append(action_permission())
+        return permissions
+
+    def get_course_key(self):
+        """Return the course in the path, parsed and checked to exist (404 otherwise)."""
+        if self._course_key is None:
+            self._course_key = resolve_course_key(self.kwargs["course_key"])
+        return self._course_key
+
     def get_serializer(self, *args, **kwargs):
-        """Instantiate and return the configured serializer class."""
+        """Instantiate the policy serializer declared on this viewset."""
         return self.serializer_class(*args, **kwargs)
 
     @extend_schema(
+        summary="Get a course's grading settings",
+        description=(
+            "Returns the course's grading policy. With view=full the response also lists the graded "
+            "subsections of each assignment type, the default letter grade names, and the course's "
+            "credit and proctoring context."
+        ),
+        parameters=[_COURSE_KEY_PARAMETER, _VIEW_PARAMETER],
+        responses={
+            200: OpenApiResponse(
+                response=_READ_RESPONSE,
+                description="The grading policy, in the full shape with view=full and the default shape otherwise.",
+            ),
+            400: _error("The view parameter has an unknown value."),
+            401: _error("The requester is not authenticated."),
+            403: _error("The requester cannot view the grading settings of this course."),
+            404: _error("The course does not exist."),
+        },
+    )
+    # The legacy router also routes "<course key>.json" here, passing ``format``.
+    def retrieve(
+        self, request: Request, course_key: str, format=None,  # pylint: disable=unused-argument,redefined-builtin
+    ):
+        """Return the grading policy, with the grading page's context when ``view=full``."""
+        query = GradingViewQuerySerializer(data=request.query_params)
+        query.is_valid(raise_exception=True)
+        if query.validated_data.get("view") == GRADING_FULL_VIEW:
+            full = get_full_grading_settings(self.get_course_key())
+            return Response(CourseGradingFullSerializer(full).data)
+        return Response(self.get_serializer(get_grading_policy(self.get_course_key())).data)
+
+    @extend_schema(
         summary="Update a course's grading settings",
-        description="Partially update the grading settings for the specified course.",
-        request=OpenApiRequest(request=CourseGradingModelSerializer),
+        description=(
+            "Changes the fields present in the body and leaves the others as stored. graders replaces "
+            "every assignment type. A null grace_period or minimum_grade_credit leaves that field "
+            "unchanged. Unknown fields are ignored. Returns the stored policy."
+        ),
+        request={"application/json": CourseGradingUpdateSerializer},
         parameters=[_COURSE_KEY_PARAMETER],
         responses={
             200: OpenApiResponse(
-                response=CourseGradingModelSerializer,
-                description="Grading settings updated successfully.",
+                response=CourseGradingSerializer,
+                description="The grading policy as stored after the update.",
             ),
-            **COMMON_ERROR_RESPONSES,
+            400: _error("The body is not a valid grading policy update."),
+            401: _error("The requester is not authenticated."),
+            403: _error("The requester cannot edit the grading settings of this course."),
+            404: _error("The course does not exist."),
         },
     )
-    def partial_update(self, request: Request, course_key: str):
-        """
-        Update a course's grading settings.
-
-        **Example Request**
-
-            PATCH /api/contentstore/v3/authoring_grading/{course_key}/
-
-        **PATCH Parameters**
-
-        The request body should follow the ``CourseGradingModelSerializer``
-        schema. Example::
-
-            {
-                "graders": [
-                    {
-                        "type": "Homework",
-                        "min_count": 1,
-                        "drop_count": 0,
-                        "short_label": "",
-                        "weight": 100,
-                        "id": 0
-                    }
-                ],
-                "grade_cutoffs": {"A": 0.75, "B": 0.63, "C": 0.57, "D": 0.5},
-                "grace_period": {"hours": 12, "minutes": 0},
-                "minimum_grade_credit": 0.7,
-                "is_credit_course": true
-            }
-
-        **Response Values**
-
-        If the request is successful, an HTTP 200 "OK" response is returned
-        with the updated grading data serialized via
-        :class:`CourseGradingModelSerializer`.
-        """
-        parsed_course_key = resolve_course_key(course_key)
-
-        # Per-action authorization (ADR 0026): kept inline rather than
-        # behind ``@authz_permission_required`` because that decorator
-        # raises ``DeveloperErrorResponseException`` (not a DRF exception),
-        # which bypasses :class:`StandardizedErrorMixin`. Raising
-        # ``PermissionDenied`` directly flows through the ADR 0029 envelope.
-        if not user_has_course_permission(
-            request.user,
-            COURSES_EDIT_GRADING_SETTINGS.identifier,
-            parsed_course_key,
-            LegacyAuthoringPermission.READ,
-        ):
-            raise PermissionDenied("You do not have permission to perform this action.")
-
-        if "minimum_grade_credit" in request.data:
-            update_credit_course_requirements.delay(str(parsed_course_key))
-
-        updated_data = CourseGradingModel.update_from_json(parsed_course_key, request.data, request.user)
-        serializer = self.get_serializer(updated_data)
-        return Response(serializer.data)
+    def partial_update(
+        self, request: Request, course_key: str, format=None,  # pylint: disable=unused-argument,redefined-builtin
+    ):
+        """Change the grading policy fields present in the body."""
+        grading_policy_update_serializer(request.data).is_valid(raise_exception=True)
+        # The model receives the body as sent: it does its own conversions, and
+        # converting here first would change what it stores.
+        policy = update_grading_policy(self.get_course_key(), request.data, request.user)
+        return Response(self.get_serializer(policy).data)
