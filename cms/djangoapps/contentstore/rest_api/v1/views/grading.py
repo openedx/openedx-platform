@@ -25,6 +25,9 @@ from ..serializers import CourseGradingModelSerializer, CourseGradingSerializer
 class CourseGradingView(DeveloperErrorViewMixin, APIView):
     """
     View for Course Grading policy configuration.
+
+    Deprecated: use ``GET`` and ``PATCH /api/authoring/v3/courses/{course_key}/grading/``
+    instead. See https://github.com/openedx/openedx-platform/issues/39128.
     """
 
     @extend_schema(
@@ -43,6 +46,10 @@ class CourseGradingView(DeveloperErrorViewMixin, APIView):
     def get(self, request: Request, course_key: CourseKey):
         """
         Get an object containing course grading settings with model.
+
+        Deprecated: use ``GET /api/authoring/v3/courses/{course_key}/grading/?view=full``,
+        which returns the same fields with the grading policy at the top level.
+        See https://github.com/openedx/openedx-platform/issues/39128.
 
         **Example Request**
 
@@ -123,6 +130,9 @@ class CourseGradingView(DeveloperErrorViewMixin, APIView):
     def post(self, request: Request, course_key: CourseKey):
         """
         Update a course's grading.
+
+        Deprecated: use ``PATCH /api/authoring/v3/courses/{course_key}/grading/``,
+        which accepts this body unchanged. See https://github.com/openedx/openedx-platform/issues/39128.
 
         **Example Request**
 
