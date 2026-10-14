@@ -2,7 +2,7 @@
 
 import re
 from contextlib import contextmanager
-from datetime import datetime
+from datetime import UTC, datetime
 from functools import cache
 from importlib import import_module
 from unittest.mock import patch
@@ -12,7 +12,6 @@ import ddt
 import jsonschema
 import pymongo
 import pytest
-import pytz
 from django.conf import settings
 from django.db import connection
 from django.db.models.signals import post_save
@@ -75,7 +74,7 @@ VERSION_GUID = "0123456789abcdef01234567"
 COURSE_NOT_FOUND = "The requested course does not exist."
 NOT_AN_OUTLINE_CONTAINER = "No container in this course's outline has this key."
 VIEWS = ("default", "full")
-PRE_1900 = datetime(1800, 1, 1, tzinfo=pytz.UTC)
+PRE_1900 = datetime(1800, 1, 1, tzinfo=UTC)
 
 
 def outline_url(course_key):
@@ -995,7 +994,7 @@ class OutlineFullViewParityTest(_FullViewParityMixin, ModuleStoreTestCase):
         assert body["reindex_link"] is None
 
     def test_course_with_a_start_date(self):
-        self.course = build_course(sections=1, subsections=1, units=1, start=datetime(2021, 3, 4, tzinfo=pytz.UTC))
+        self.course = build_course(sections=1, subsections=1, units=1, start=datetime(2021, 3, 4, tzinfo=UTC))
         body = self.assert_parity(self._course_staff())
         assert body["course_release_date"] == "Mar 04, 2021 at 00:00 UTC"
 
