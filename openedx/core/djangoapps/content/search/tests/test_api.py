@@ -12,7 +12,7 @@ from unittest.mock import MagicMock, Mock, call, patch
 import ddt
 import pytest
 from django.apps import apps
-from django.test import override_settings
+from django.test import TestCase, override_settings
 from freezegun import freeze_time
 from meilisearch.errors import MeilisearchApiError, MeilisearchError
 from opaque_keys.edx.keys import CourseKey, UsageKey
@@ -1599,3 +1599,83 @@ class TestSearchApi(ModuleStoreTestCase):
         api.delete_library_docs_from_course_index()
 
         mock_meilisearch.return_value.index.assert_not_called()
+
+
+@skip_unless_cms
+@override_settings(MEILISEARCH_ENABLED=True)
+@patch("openedx.core.djangoapps.content.search.api.time")
+@patch("openedx.core.djangoapps.content.search.api.MeilisearchClient")
+class TestWaitForMeiliTask(TestCase):
+    """
+    Tests for how long the API waits on Meilisearch tasks.
+    """
+    # pylint: disable=protected-access
+
+    def setUp(self) -> None:
+        super().setUp()
+        api.clear_meilisearch_client()
+        self.addCleanup(api.clear_meilisearch_client)
+
+    def _statuses(self, mock_meilisearch, *statuses: str) -> None:
+        mock_meilisearch.return_value.get_task.side_effect = [Mock(status=status, error=None) for status in statuses]
+
+    def test_waits_until_done_without_timeout(self, mock_meilisearch, mock_time) -> None:
+        """
+        With no timeout, it polls until the task leaves the queue, however long that takes.
+        """
+        self._statuses(mock_meilisearch, "enqueued", "processing", "processing", "succeeded")
+
+        api._wait_for_meili_task(Mock(task_uid=1))
+
+        assert mock_meilisearch.return_value.get_task.call_count == 4
+        mock_time.monotonic.assert_not_called()
+
+    def test_stops_waiting_at_timeout(self, mock_meilisearch, mock_time) -> None:
+        """
+        A task still queued when the timeout runs out is logged and left to Meilisearch, not raised.
+        """
+        self._statuses(mock_meilisearch, "enqueued", "enqueued", "processing", "succeeded")
+        mock_time.monotonic.side_effect = [100.0, 102.0, 106.0]
+
+        with self.assertLogs("openedx.core.djangoapps.content.search.api", level="WARNING") as logs:
+            api._wait_for_meili_task(Mock(task_uid=7, index_uid="studio_library_content"), timeout=5)
+
+        assert mock_meilisearch.return_value.get_task.call_count == 2
+        assert "Stopped waiting for Meilisearch task 7 on index studio_library_content after 5s" in logs.output[0]
+
+    def test_raises_on_failed_task_within_timeout(self, mock_meilisearch, mock_time) -> None:
+        """
+        A task that fails before the timeout still raises.
+        """
+        mock_meilisearch.return_value.get_task.side_effect = [
+            Mock(status="processing"),
+            Mock(status="failed", error={"message": "index_not_found"}),
+        ]
+        mock_time.monotonic.side_effect = [100.0, 101.0]
+
+        with pytest.raises(MeilisearchError, match="index_not_found"):
+            api._wait_for_meili_task(Mock(task_uid=1), timeout=5)
+
+    @override_settings(MEILISEARCH_WRITE_WAIT_TIMEOUT=5)
+    def test_document_writes_use_write_wait_timeout(self, mock_meilisearch, mock_time) -> None:
+        """
+        Incremental document writes and deletes wait at most MEILISEARCH_WRITE_WAIT_TIMEOUT.
+        """
+        with patch("openedx.core.djangoapps.content.search.api._wait_for_meili_task") as mock_wait:
+            api._update_index_docs("idx", [{"id": "a"}])
+            api._delete_index_doc("idx", "a")
+            api._delete_documents("idx", 'context_key = "x"')
+
+        assert mock_wait.call_count == 3
+        for wait_call in mock_wait.call_args_list:
+            assert wait_call.kwargs == {"timeout": 5}
+
+    def test_document_writes_wait_indefinitely_by_default(self, mock_meilisearch, mock_time) -> None:
+        """
+        Without MEILISEARCH_WRITE_WAIT_TIMEOUT, document writes wait as long as Meilisearch takes.
+        """
+        with patch("openedx.core.djangoapps.content.search.api._wait_for_meili_task") as mock_wait:
+            api._update_index_docs("idx", [{"id": "a"}])
+
+        mock_wait.assert_called_once()
+        assert mock_wait.call_args.kwargs == {"timeout": None}

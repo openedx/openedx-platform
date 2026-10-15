@@ -165,11 +165,15 @@ def _get_meili_api_key_uid():
     return _MEILI_API_KEY_UID
 
 
-def _wait_for_meili_task(info: TaskInfo) -> None:
+def _wait_for_meili_task(info: TaskInfo, timeout: float | None = None) -> None:
     """
     Simple helper method to wait for a Meilisearch task to complete
     This method will block until the task is completed, so it should only be used in celery tasks
     or management commands.
+
+    If `timeout` (in seconds) is given and the task is still enqueued or processing when it runs out, this logs a
+    warning and returns instead of raising. The task stays in Meilisearch's queue and will still be applied; only the
+    caller stops waiting for it.
 
     ✨ Note: "Meilisearch processes tasks in the order they were added to the queue."
        per https://www.meilisearch.com/docs/capabilities/indexing/tasks_and_batches/monitor_tasks#monitoring-task-status
@@ -180,9 +184,20 @@ def _wait_for_meili_task(info: TaskInfo) -> None:
     # of at least 15ms is warranted, as the task is almost never done in less than 10ms. We are using 20ms which seems
     # to work well without requiring an additional wait in most cases.
     sleep_delay = 0.020  # Initial wait is only 20ms but we will back off exponentially
+    deadline = None if timeout is None else time.monotonic() + timeout
     time.sleep(sleep_delay)
     current_status = client.get_task(info.task_uid)
     while current_status.status in ("enqueued", "processing"):
+        if deadline is not None and time.monotonic() >= deadline:
+            log.warning(
+                "Stopped waiting for Meilisearch task %s on index %s after %ss; it is still %s and will be applied "
+                "when Meilisearch reaches it in the queue.",
+                info.task_uid,
+                info.index_uid,
+                timeout,
+                current_status.status,
+            )
+            return
         time.sleep(sleep_delay)
         sleep_delay = min(sleep_delay * 1.5, 2.0)  # Increase delay up to 2s
         current_status = client.get_task(info.task_uid)
@@ -192,6 +207,14 @@ def _wait_for_meili_task(info: TaskInfo) -> None:
         except (TypeError, KeyError):
             err_reason = "Unknown error"
         raise MeilisearchError(err_reason)
+
+
+def _write_wait_timeout() -> float | None:
+    """
+    How long the incremental document write helpers wait for Meilisearch to apply a write. See
+    MEILISEARCH_WRITE_WAIT_TIMEOUT.
+    """
+    return getattr(settings, "MEILISEARCH_WRITE_WAIT_TIMEOUT", None)
 
 
 def _index_exists(index_name: str) -> bool:
@@ -350,7 +373,7 @@ def _update_index_docs(index_name: str, docs) -> None:
     if current_rebuild_index_name:
         # If there is a rebuild in progress, the document will also be added to the new index.
         client.index(current_rebuild_index_name).update_documents(docs)
-    _wait_for_meili_task(client.index(index_name).update_documents(docs))
+    _wait_for_meili_task(client.index(index_name).update_documents(docs), timeout=_write_wait_timeout())
 
 
 def only_if_meilisearch_enabled(f):
@@ -920,7 +943,7 @@ def _delete_documents(index_name: str, filter_query: str) -> None:
     if current_rebuild_index_name:
         # If there is a rebuild in progress, the document will also be removed from the new index.
         client.index(current_rebuild_index_name).delete_documents(filter=filter_query)
-    _wait_for_meili_task(client.index(index_name).delete_documents(filter=filter_query))
+    _wait_for_meili_task(client.index(index_name).delete_documents(filter=filter_query), timeout=_write_wait_timeout())
 
 
 def _delete_index_doc(index_name: str, doc_id) -> None:
@@ -939,7 +962,7 @@ def _delete_index_doc(index_name: str, doc_id) -> None:
         # If there is a rebuild in progress, the document will also be removed from the new index.
         client.index(current_rebuild_index_name).delete_document(doc_id)
 
-    _wait_for_meili_task(client.index(index_name).delete_document(doc_id))
+    _wait_for_meili_task(client.index(index_name).delete_document(doc_id), timeout=_write_wait_timeout())
 
 
 def upsert_library_block_index_doc(usage_key: UsageKey) -> None:
