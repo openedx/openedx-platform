@@ -130,7 +130,7 @@ def _save_data_to_staged_content(
     return staged_content
 
 
-def _enqueue_clipboard_cleanup(expired_ids: list[int]) -> None:
+def _enqueue_clipboard_cleanup(expired_ids: list[_StagedContent.ID]) -> None:
     """
     Enqueue the task that deletes expired clipboard StagedContent rows.
     """
