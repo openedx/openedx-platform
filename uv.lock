@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.12"
 resolution-markers = [
     "python_full_version >= '3.14'",
@@ -20,7 +20,7 @@ constraints = [
     { name = "django-oauth-toolkit", specifier = "==1.7.1" },
     { name = "django-stubs", specifier = "<6" },
     { name = "djangorestframework", specifier = "<3.18" },
-    { name = "edx-enterprise", specifier = "==8.17.0" },
+    { name = "edx-enterprise", specifier = "==8.18.0" },
     { name = "elasticsearch", specifier = "==7.9.1" },
     { name = "libsass", specifier = "==0.10.0" },
     { name = "lxml", specifier = "==5.3.2" },
@@ -2060,7 +2060,7 @@ wheels = [
 
 [[package]]
 name = "edx-enterprise"
-version = "8.17.0"
+version = "8.18.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "bleach" },
@@ -2114,9 +2114,9 @@ dependencies = [
     { name = "tincan" },
     { name = "unicodecsv" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/a2/54/31db36f91b649309c6f17d3f8a159eb1512440f3e55a2546118ced27bc08/edx_enterprise-8.17.0.tar.gz", hash = "sha256:a5d0904cc6c8b1341bf9322079d1931187626e6cad21deecc2799d87c0983dc7", size = 5170017, upload-time = "2026-09-29T02:13:00.827Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/9f/c3/711c5e9cb14699f1508426078b54aa28583aa21564f17f3360e5c94a5799/edx_enterprise-8.18.0.tar.gz", hash = "sha256:b5a30d743f2b1fcbbac78a5a1f0dceddd6f64f557ca73c576cd06a0bec90c1e4", size = 5173156, upload-time = "2026-10-15T13:31:25.899Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b0/ee/c3bacc3b82caa65eba6b3e479b7f5c1d6d5da8a74466b1b57e39e7dc7779/edx_enterprise-8.17.0-py3-none-any.whl", hash = "sha256:d79b4456e0f27edb6c1817b5ef26b0c4f2e285336572cc7e27ad98bed6b0cb0d", size = 5563867, upload-time = "2026-09-29T02:12:57.662Z" },
+    { url = "https://files.pythonhosted.org/packages/48/06/49bcfe632c522a05d674ac30598c9a04a423d7937e18d87e93fc2f6e4eed/edx_enterprise-8.18.0-py3-none-any.whl", hash = "sha256:4aaf7f1f7b37283850f778074a4d5dc13151713473ed76d7d777ca8df7695735", size = 5567463, upload-time = "2026-10-15T13:31:22.159Z" },
 ]
 
 [[package]]
@@ -4512,6 +4512,7 @@ wheels = [
 name = "openedx-platform"
 version = "0.13"
 source = { editable = "." }
+default-groups = []
 dependencies = [
     { name = "acid-xblock" },
     { name = "analytics-python" },
