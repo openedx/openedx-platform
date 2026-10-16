@@ -423,8 +423,8 @@ xmodule = ["js/module/*"]
 
 [project.entry-points."xblock.v1"]
 about = "xmodule.html_block:AboutBlock"
+annotatable = "xblocks_contrib:AnnotatableBlock"
 book = "xmodule.template_block:TranslateCustomTagBlock"
-annotatable = "xmodule.annotatable_block:AnnotatableBlock"
 chapter = "xmodule.seq_block:SectionBlock"
 conditional = "xmodule.conditional_block:ConditionalBlock"
 course = "xmodule.course_block:CourseBlock"
