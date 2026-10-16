@@ -87,6 +87,24 @@ _AGGREGATION_SCENARIOS = [
         ],
         {'avg': 0.0, 'weighted': 0.0, 'hidden': 'all', 'final': 0.0, 'last_grade_publish_date_days': 7},
     ),
+    (
+        'string_int_typed_policy_counts',
+        {'type': 'Homework', 'weight': '1.0', 'drop_count': '1', 'min_count': '2', 'short_label': 'HW'},
+        [
+            _make_subsection('Homework', 1, 1, ShowCorrectness.ALWAYS),
+            _make_subsection('Homework', 0, 1, ShowCorrectness.ALWAYS),
+        ],
+        {'avg': 1.0, 'weighted': 1.0, 'hidden': 'none', 'final': 1.0},
+    ),
+    (
+        'string_float_typed_policy_counts',
+        {'type': 'Homework', 'weight': '1.0', 'drop_count': '1.0', 'min_count': '2.0', 'short_label': 'HW'},
+        [
+            _make_subsection('Homework', 1, 1, ShowCorrectness.ALWAYS),
+            _make_subsection('Homework', 0, 1, ShowCorrectness.ALWAYS),
+        ],
+        {'avg': 1.0, 'weighted': 1.0, 'hidden': 'none', 'final': 1.0},
+    ),
 ]
 
 
@@ -187,7 +205,7 @@ class ProgressApiTests(TestCase):
                 assert row['average_grade'] == expected['avg']
                 assert row['weighted_grade'] == expected['weighted']
                 assert row['has_hidden_contribution'] == expected['hidden']
-                assert row['num_droppable'] == policy['drop_count']
+                assert row['num_droppable'] == int(float(policy['drop_count']))
                 assert (row['last_grade_publish_date'] is not None) == (
                     'last_grade_publish_date_days' in expected
                 )
