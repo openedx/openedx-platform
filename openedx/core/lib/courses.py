@@ -9,7 +9,6 @@ from opaque_keys import InvalidKeyError
 from opaque_keys.edx.locator import CourseKey
 from organizations.models import Organization
 
-from xmodule.assetstore.assetmgr import AssetManager
 from xmodule.contentstore.content import StaticContent
 from xmodule.contentstore.django import contentstore
 from xmodule.modulestore.django import modulestore
@@ -51,7 +50,7 @@ def create_course_image_thumbnail(course, dimensions):
     - dimensions is a tuple of (width, height)
     """
     course_image_asset_key = StaticContent.compute_location(course.id, course.course_image)
-    course_image = AssetManager.find(course_image_asset_key)  # a StaticContent obj
+    course_image = contentstore().find(course_image_asset_key)  # a StaticContent obj
 
     _content, thumb_loc = contentstore().generate_thumbnail(course_image, dimensions=dimensions)
 
