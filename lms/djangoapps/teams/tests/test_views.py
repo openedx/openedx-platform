@@ -84,7 +84,7 @@ class TestDashboard(SharedModuleStoreTestCase):
         anonymous_client = APIClient()
         response = anonymous_client.get(self.teams_url)
         redirect_url = f'{settings.LOGIN_URL}?next={quote(self.teams_url)}'
-        self.assertRedirects(response, redirect_url)
+        self.assertRedirects(response, redirect_url, fetch_redirect_response=False)
 
     def test_not_enrolled_not_staff(self):
         """ Verifies that a student who is not enrolled cannot access the team dashboard. """
