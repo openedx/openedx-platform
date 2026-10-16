@@ -23,7 +23,6 @@ from cms.djangoapps.contentstore.views.course import (
     _accessible_courses_iter_for_tests,
     _accessible_courses_list_from_groups,
     _accessible_courses_summary_iter,
-    _get_course_keys_from_scopes,
     get_courses_accessible_to_user,
 )
 from common.djangoapps.course_action_state.models import CourseRerunState
@@ -39,6 +38,7 @@ from common.djangoapps.student.roles import (
 )
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core import toggles as core_toggles
+from openedx.core.djangoapps.authz.scopes import get_course_keys_from_scopes
 from openedx.core.djangoapps.authz.tests.mixins import CourseAuthoringAuthzTestMixin
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory
@@ -976,7 +976,7 @@ class TestCourseListingAuthz(CourseAuthoringAuthzTestMixin, ModuleStoreTestCase)
             "is_enabled",
             side_effect=self._mock_authz_toggle(enabled_keys),
         ):
-            course_keys = _get_course_keys_from_scopes([
+            course_keys = get_course_keys_from_scopes([
                 PlatformCourseOverviewGlobData(external_key=PlatformCourseOverviewGlobData.build_external_key())
             ])
 
@@ -995,7 +995,7 @@ class TestCourseListingAuthz(CourseAuthoringAuthzTestMixin, ModuleStoreTestCase)
             "is_enabled",
             side_effect=self._mock_authz_toggle(enabled_keys, global_enabled=True),
         ):
-            course_keys = _get_course_keys_from_scopes([
+            course_keys = get_course_keys_from_scopes([
                 PlatformCourseOverviewGlobData(external_key=PlatformCourseOverviewGlobData.build_external_key())
             ])
 
@@ -1014,7 +1014,7 @@ class TestCourseListingAuthz(CourseAuthoringAuthzTestMixin, ModuleStoreTestCase)
             "is_enabled",
             side_effect=self._mock_authz_toggle(enabled_keys),
         ):
-            course_keys = _get_course_keys_from_scopes(
+            course_keys = get_course_keys_from_scopes(
                 [
                     OrgCourseOverviewGlobData(external_key=OrgCourseOverviewGlobData.build_external_key("Org1")),
                     PlatformCourseOverviewGlobData(external_key=PlatformCourseOverviewGlobData.build_external_key()),
