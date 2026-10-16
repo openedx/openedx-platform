@@ -70,13 +70,43 @@ class CmsMarkSupersededPathsTest(TestCase):
         for path in SUPERSEDED_PATHS:
             assert result["paths"][path]["get"]["deprecated"] is True
 
-    def test_both_spellings_of_each_superseded_path_are_listed(self):
+    def test_the_superseded_paths_are_exactly_these(self):
         assert set(SUPERSEDED_PATHS) == {
             "/api/contentstore/v0/youtube_transcripts/{course_id}/chec",
             "/api/contentstore/v0/youtube_transcripts/{course_id}/check",
             "/api/contentstore/v0/youtube_transcripts/{course_id}/uploa",
             "/api/contentstore/v0/youtube_transcripts/{course_id}/upload",
+            "/api/contentstore/v1/home/libraries",
+            "/api/authoring/v3/home/libraries/",
         }
+
+    def test_the_legacy_library_lists_are_marked_and_their_neighbours_are_not(self):
+        superseded = ("/api/contentstore/v1/home/libraries", "/api/authoring/v3/home/libraries/")
+        neighbours = (
+            "/api/contentstore/v1/home",
+            "/api/contentstore/v1/home/libraries/",
+            "/api/authoring/v3/home/",
+            "/api/authoring/v3/home/courses/",
+            "/api/authoring/v3/home/libraries/{library_key}/",
+            "/api/authoring/v4/courses/",
+            "/api/authoring/v4/legacy_libraries/",
+        )
+        result = self._run(_schema(*superseded, *neighbours))
+        for path in superseded:
+            assert result["paths"][path]["get"]["deprecated"] is True, path
+        for path in neighbours:
+            assert result["paths"][path]["get"] == {"operationId": path}, path
+
+    def test_a_superseded_home_path_keeps_its_internal_mark_and_the_home_screen_stays_current(self):
+        schema = _schema(
+            "/api/authoring/v3/home/libraries/", "/api/authoring/v3/home/", "/api/authoring/v3/home/courses/",
+        )
+        result = cms_mark_migrated_paths(self._run(schema), None, None, False)
+        libraries = result["paths"]["/api/authoring/v3/home/libraries/"]["get"]
+        assert (libraries["deprecated"], libraries["x-internal"]) == (True, True)
+        for path in ("/api/authoring/v3/home/", "/api/authoring/v3/home/courses/"):
+            assert "deprecated" not in result["paths"][path]["get"], path
+            assert result["paths"][path]["get"]["x-internal"] is True, path
 
     def test_the_conforming_paths_are_left_unmarked(self):
         conforming = "/api/authoring/v1/courses/{course_key}/youtube_transcript_checks/"
