@@ -7,6 +7,7 @@ get_expected_duration: return the expected duration of a course (absent any user
 from datetime import timedelta
 
 from django.conf import settings
+from edx_when.api import Assignment
 
 from openedx.core.djangoapps.catalog.models import CatalogIntegration
 from openedx.core.djangoapps.catalog.utils import get_course_run_details
@@ -21,6 +22,33 @@ def _catalog_integration_enabled():
     """
     catalog_integration = CatalogIntegration.current()
     return catalog_integration.is_enabled()
+
+
+def to_edx_when_assignments(assignments):
+    """
+    Convert ``get_course_assignments`` output into ``edx_when.api.Assignment`` instances.
+
+    Only subsection-level (``sequential``) assignments are kept. ``get_course_assignments``
+    also returns one entry per ORA step, all sharing the ORA block's key with different
+    due dates; since edx-when upserts on ``(course, location, 'due')`` they would collapse
+    into a single row that overrides the ORA's own ``due`` field.
+
+    Arguments:
+        assignments: iterable of ``_Assignment`` namedtuples.
+
+    Returns:
+        list of ``edx_when.api.Assignment`` instances.
+    """
+    return [
+        Assignment(
+            title=assignment.title,
+            date=assignment.date,
+            block_key=assignment.block_key,
+            subsection_name=assignment.title,
+        )
+        for assignment in assignments
+        if assignment.block_key.block_type == 'sequential'
+    ]
 
 
 def get_expected_duration(course_id):
