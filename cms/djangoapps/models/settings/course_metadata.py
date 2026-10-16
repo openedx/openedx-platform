@@ -7,12 +7,14 @@ import logging
 from datetime import datetime
 
 import pytz
+import xblock.fields
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext as _
-from xblock.fields import Scope
+from opaque_keys.edx.keys import CourseKey
 
 from cms.djangoapps.contentstore import toggles
+from cms.lib.xblock.upstream_sync import UpstreamSyncMixin
 from common.djangoapps.util.db import MYSQL_MAX_INT, generate_int_id
 from common.djangoapps.util.proctoring import requires_escalation_email
 from common.djangoapps.xblock_django.models import XBlockStudioConfigurationFlag
@@ -39,7 +41,7 @@ class CourseMetadata:
     # The list of fields that wouldn't be shown in Advanced Settings.
     # Should not be used directly. Instead the get_exclude_list_of_fields method should
     # be used if the field needs to be filtered depending on the feature flag.
-    FIELDS_EXCLUDE_LIST = [
+    _FIELDS_EXCLUDE_LIST = [
         'cohort_config',
         'xml_attributes',
         'start',
@@ -83,20 +85,19 @@ class CourseMetadata:
         'is_onboarding_exam',
         'discussions_settings',
         'copied_from_block',
-        "upstream",
-        "upstream_version",
-        "upstream_version_declined",
-        "upstream_display_name",
     ]
 
     @classmethod
-    def get_exclude_list_of_fields(cls, course_key):
+    def get_exclude_list_of_fields(cls, course_key: CourseKey | None = None) -> list[str]:
         """
         Returns a list of fields to exclude from the Studio Advanced settings based on a
         feature flag (i.e. enabled or disabled).
+
+        If course_key is provided, then take into account course-specific waffle overrides
+        when excluding fields for disabled features.
         """
         # Copy the filtered list to avoid permanently changing the class attribute.
-        exclude_list = list(cls.FIELDS_EXCLUDE_LIST)
+        exclude_list = list(cls._FIELDS_EXCLUDE_LIST)
 
         # Do not show giturl if feature is not enabled.
         if not toggles.EXPORT_GIT.is_enabled():
@@ -155,6 +156,17 @@ class CourseMetadata:
         if not escalation_email_required:
             exclude_list.append("proctoring_escalation_email")
 
+        # Do not show any XBlock fields which are defined on the UpstreamSyncMixin, as these are
+        # implementation details of the library-to-course-block sync system and do not need to
+        # be editable by Studio users. (Furthermore, these fields are only present on the Course object
+        # because Course is still an XBlock. The sync fields are only semantically meaningful on
+        # objects which can be synced from libraries--Section and below. When Course is no longer an
+        # XBlock, this can be removed.)
+        for field_name in dir(UpstreamSyncMixin):
+            field = getattr(UpstreamSyncMixin, field_name)
+            if isinstance(field, xblock.fields.Field):
+                exclude_list.append(field_name)
+
         if not legacy_discussion_experience_enabled(course_key):
             exclude_list.append('discussion_blackouts')
             exclude_list.append('allow_anonymous')
@@ -185,7 +197,7 @@ class CourseMetadata:
         """
         result = {}
         for field in block.fields.values():
-            if field.scope != Scope.settings:
+            if field.scope != xblock.fields.Scope.settings:
                 continue
 
             if filter_fields and field.name not in filter_fields:

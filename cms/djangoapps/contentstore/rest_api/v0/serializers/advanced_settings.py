@@ -79,7 +79,7 @@ class CourseAdvancedSettingsSerializer(serializers.Serializer):  # pylint: disab
         """
         fields = {}
         for field, field_type in vars(CourseFields).items():
-            if isinstance(field_type, XBlockField) and field not in CourseMetadata.FIELDS_EXCLUDE_LIST:
+            if isinstance(field_type, XBlockField) and field not in CourseMetadata.get_exclude_list_of_fields():
                 fields[field] = AdvancedSettingsFieldSerializer(
                     required=False,
                     label=field_type.name,
