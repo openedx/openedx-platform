@@ -62,7 +62,7 @@ class CourseWaffleFlag(WaffleFlag):
             course_key (CourseKey): The course to check for override before checking waffle.
         """
         # Import is placed here to avoid model import at project startup.
-        from .models import WaffleFlagCourseOverrideModel, WaffleFlagOrgOverrideModel
+        from .models import WaffleFlagCourseOverrideModel
 
         course_cache_key = f"{self.name}.cwaffle.{str(course_key)}"
         course_override = self.cached_flags().get(course_cache_key)
@@ -80,20 +80,34 @@ class CourseWaffleFlag(WaffleFlag):
 
         # Since no course-specific override was found, fall back to checking at the org-level.
         if course_key:
-            org = course_key.org
-            org_cache_key = f"{self.name}.owaffle.{org}"
-            org_override = self.cached_flags().get(org_cache_key)
+            return self._get_org_override_value(course_key.org)
 
-            if org_override is None:
-                org_override = WaffleFlagOrgOverrideModel.override_value(
-                    self.name, org
-                )
-                self.cached_flags()[org_cache_key] = org_override
+        return None
 
-            if org_override == WaffleFlagOrgOverrideModel.ALL_CHOICES.on:
-                return True
-            if org_override == WaffleFlagOrgOverrideModel.ALL_CHOICES.off:
-                return False
+    def _get_org_override_value(self, org):
+        """
+        Check whether the flag was overridden for an entire org.
+
+        Returns True/False if the flag was forced on or off for the provided org.
+        Returns None if the flag was not overridden at the org level.
+
+        Arguments:
+            org (str): The org short_name to check for an override.
+        """
+        # Import is placed here to avoid model import at project startup.
+        from .models import WaffleFlagOrgOverrideModel
+
+        org_cache_key = f"{self.name}.owaffle.{org}"
+        org_override = self.cached_flags().get(org_cache_key)
+
+        if org_override is None:
+            org_override = WaffleFlagOrgOverrideModel.override_value(self.name, org)
+            self.cached_flags()[org_cache_key] = org_override
+
+        if org_override == WaffleFlagOrgOverrideModel.ALL_CHOICES.on:
+            return True
+        if org_override == WaffleFlagOrgOverrideModel.ALL_CHOICES.off:
+            return False
 
         return None
 
@@ -120,3 +134,58 @@ class CourseWaffleFlag(WaffleFlag):
                 # act like a normal waffle flag. We currently don't support library-specific overrides.
                 assert isinstance(course_key, LearningContextKey), "expected a course key or other learning context key"
         return super().is_enabled()
+
+    def is_enabled_for_org(self, org):
+        """
+        Returns whether the flag is enabled for an entire org.
+
+        Resolves at the org tier: an org override (force-on / force-off) takes
+        precedence, otherwise falls back to the global waffle switch. A result
+        here does not reflect any per-course override within the org; use
+        :meth:`is_enabled` to check a specific course.
+
+        Arguments:
+            org (str): The org short_name to check.
+        """
+        org_override = self._get_org_override_value(org)
+        if org_override is not None:
+            return org_override
+        return super().is_enabled()
+
+    def get_force_on_orgs(self):
+        """
+        Return the set of org short_names that force this flag ON via an org
+        override.
+
+        Reflects only force-on org overrides -- not the global switch and not
+        force-off overrides.
+        """
+        # Import is placed here to avoid model import at project startup.
+        from .models import WaffleFlagOrgOverrideModel
+
+        force_on_orgs = (
+            WaffleFlagOrgOverrideModel.objects
+            .current_set()
+            .filter(waffle_flag=self.name, override_choice=WaffleFlagOrgOverrideModel.ALL_CHOICES.on)
+            .values_list("org", flat=True)
+        )
+        return {org for org in force_on_orgs if org}
+
+    def get_force_on_course_keys(self):
+        """
+        Return the set of ``CourseKey`` that force this flag ON via a course
+        override.
+
+        Reflects only force-on course overrides -- not the global switch, org-level
+        overrides, or force-off overrides.
+        """
+        # Import is placed here to avoid model import at project startup.
+        from .models import WaffleFlagCourseOverrideModel
+
+        force_on_courses = (
+            WaffleFlagCourseOverrideModel.objects
+            .current_set()
+            .filter(waffle_flag=self.name, override_choice=WaffleFlagCourseOverrideModel.ALL_CHOICES.on)
+            .values_list("course_id", flat=True)
+        )
+        return {CourseKey.from_string(str(course_id)) for course_id in force_on_courses if course_id}
