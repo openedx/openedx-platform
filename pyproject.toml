@@ -873,3 +873,6 @@ ignore_imports = [
     # https://github.com/openedx/edx-platform/issues/33428
     "openedx.core.djangoapps.video_config.services -> openedx.core.djangoapps.content_libraries.api",
 ]
+
+[tool.vercel]
+entrypoint = "sweagent.inspector.server:Handler"
