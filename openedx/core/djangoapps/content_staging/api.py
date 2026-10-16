@@ -120,13 +120,24 @@ def _save_data_to_staged_content(
             log.exception(f"Unable to copy static files to staged content for component {copied_from}")
 
     if expired_ids:
-        # Enqueue a (potentially slow) task to delete the old staged content
-        try:
-            delete_expired_clipboards.delay(expired_ids)
-        except Exception:  # pylint: disable=broad-except
-            log.exception(f"Unable to enqueue cleanup task for StagedContents: {','.join(str(x) for x in expired_ids)}")
+        # Enqueue a (potentially slow) task to delete the old staged content, but only once the
+        # surrounding transaction has committed. Deleting an expired row also deletes (by cascade)
+        # a UserClipboard that still points at it, and the caller is about to update that same
+        # row; a worker that picked the task up straight away would take the two rows' locks in
+        # the opposite order and deadlock the request.
+        transaction.on_commit(lambda: _enqueue_clipboard_cleanup(expired_ids))
 
     return staged_content
+
+
+def _enqueue_clipboard_cleanup(expired_ids: list[int]) -> None:
+    """
+    Enqueue the task that deletes expired clipboard StagedContent rows.
+    """
+    try:
+        delete_expired_clipboards.delay(expired_ids)
+    except Exception:  # pylint: disable=broad-except
+        log.exception(f"Unable to enqueue cleanup task for StagedContents: {','.join(str(x) for x in expired_ids)}")
 
 
 def _save_static_assets_to_staged_content(
@@ -178,6 +189,7 @@ def _save_static_assets_to_staged_content(
             log.exception(f"Unable to copy static file {f.name} to clipboard for component {usage_key}")
 
 
+@transaction.atomic
 def save_xblock_to_user_clipboard(block: XBlock, user_id: int, version_num: int | None = None) -> UserClipboardData:
     """
     Copy an XBlock's OLX to the user's clipboard.
@@ -197,6 +209,7 @@ def save_xblock_to_user_clipboard(block: XBlock, user_id: int, version_num: int 
     return _user_clipboard_model_to_data(clipboard)
 
 
+@transaction.atomic
 def save_content_to_user_clipboard(
     user_id: int,
     block_type: str,
