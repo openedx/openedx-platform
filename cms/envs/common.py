@@ -667,9 +667,11 @@ EXTENDED_VIDEO_TRANSCRIPT_LANGUAGES = []
 # .. setting_name: VIDEO_DOWNLOAD_RATE_LIMIT
 # .. setting_default: '12/hour'
 # .. setting_description: Per-user rate limit applied to the Studio
-#    video-download endpoint
-#    (``PUT /api/contentstore/v1/videos/{course_id}/download``). Bounds how
-#    often a single course author can initiate a multi-video zip download.
+#    video-download endpoints
+#    (``PUT /api/contentstore/v1/videos/{course_id}/download`` and
+#    ``POST /api/authoring/v2/courses/{course_key}/video_archives/``, which
+#    share one budget). Bounds how often a single course author can initiate a
+#    multi-video zip download.
 # Rate format: DRF ``UserRateThrottle`` rate string. See
 # https://www.django-rest-framework.org/api-guide/throttling/#setting-the-throttling-policy
 VIDEO_DOWNLOAD_RATE_LIMIT = '12/hour'

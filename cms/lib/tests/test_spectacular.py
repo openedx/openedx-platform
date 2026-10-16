@@ -70,12 +70,16 @@ class CmsMarkSupersededPathsTest(TestCase):
         for path in SUPERSEDED_PATHS:
             assert result["paths"][path]["get"]["deprecated"] is True
 
-    def test_both_spellings_of_each_superseded_path_are_listed(self):
+    def test_every_superseded_path_is_listed(self):
         assert set(SUPERSEDED_PATHS) == {
+            # The youtube_transcripts routes make the final character optional,
+            # so each of them is listed in both spellings.
             "/api/contentstore/v0/youtube_transcripts/{course_id}/chec",
             "/api/contentstore/v0/youtube_transcripts/{course_id}/check",
             "/api/contentstore/v0/youtube_transcripts/{course_id}/uploa",
             "/api/contentstore/v0/youtube_transcripts/{course_id}/upload",
+            "/api/contentstore/v1/videos/{course_id}/{edx_video_id}/usage",
+            "/api/contentstore/v1/videos/{course_id}/download",
         }
 
     def test_the_conforming_paths_are_left_unmarked(self):

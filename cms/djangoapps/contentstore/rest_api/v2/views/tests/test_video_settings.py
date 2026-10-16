@@ -458,13 +458,20 @@ class CourseVideoSettingsSchemaTest(CourseTestCase):
                 "$ref": "#/components/schemas/ErrorResponse"
             }, code
 
-    def test_the_legacy_video_operations_are_unchanged(self):
+    def test_the_legacy_videos_listing_is_unchanged(self):
         operation = self.schema["paths"][LEGACY_VIDEOS_PATH]["get"]
         assert operation["operationId"] == "v1_videos_retrieve"
         assert "deprecated" not in operation
+
+    # The usage and download operations beside the listing have conforming
+    # successors of their own, so they carry the mark. The listing does not,
+    # which is what the assertion above guards: a change that marked the whole
+    # legacy videos prefix rather than the two exact paths would sweep it up.
+    def test_the_legacy_siblings_of_the_listing_are_deprecated(self):
         for path, view in self._legacy_sibling_paths():
             for operation in self.schema["paths"][path].values():
-                assert "deprecated" not in operation, (path, view)
+                if isinstance(operation, dict):
+                    assert operation["deprecated"] is True, (path, view)
 
     def _legacy_sibling_paths(self):
         """Return the legacy usage and download paths published beside the legacy videos path."""
