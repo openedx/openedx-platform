@@ -1,26 +1,33 @@
 """
-Asset Manager
+Very old Asset Manager API.
 
-Interface allowing course asset saving/retrieving.
-Handles:
-  - saving asset in the BlobStore -and- saving asset metadata in course modulestore.
-  - retrieving asset metadata from course modulestore -and- returning URL to asset -or- asset bytes.
+Has not done anything other than wrap ``contentstore().find(...)`` since 2015.
 
-Phase 1: Checks to see if an asset's metadata can be found in the course's modulestore.
-    If not found, fails over to access the asset from the contentstore.
-    At first, the asset metadata will never be found, since saving isn't implemented yet.
-Note: Hotfix (PLAT-734) No asset calls find_asset_metadata, and directly accesses from contentstore.
-
+Deprecated: use ``xmodule.contentstore.django.contentstore().find()`` instead.
 """
+
+import sys
 
 from xmodule.contentstore.django import contentstore
 
+if sys.version_info >= (3, 13):
+    from warnings import deprecated
+else:
+    from typing_extensions import deprecated
 
+DEPRECATION_MESSAGE = (
+    "AssetManager is deprecated and will be removed. "
+    "Use xmodule.contentstore.django.contentstore().find() instead."
+)
+
+
+@deprecated(DEPRECATION_MESSAGE)
 class AssetManager:
     """
     Manager for saving/loading course assets.
     """
     @staticmethod
+    @deprecated(DEPRECATION_MESSAGE)  # The class decorator only warns on instantiation, so also warn here.
     def find(asset_key, throw_on_not_found=True, as_stream=False):
         """
         Finds course asset in the deprecated contentstore.
