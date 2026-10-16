@@ -187,6 +187,7 @@ class LibraryRootView(GenericAPIView):
             ),
         ],
     )
+    # DiscoveryCollection-BB-9218-OEX: wrapper function to get libraries list
     def get(self, request):
         """
         Return a list of all content libraries that the user has permission to view.
@@ -213,6 +214,7 @@ class LibraryRootView(GenericAPIView):
             return self.get_paginated_response(serializer.data)
         return Response(serializer.data)
 
+    # DiscoveryCollection-BB-9218-OEX: wrapper function to create a content library
     def post(self, request):
         """
         Create a new content library.
@@ -269,6 +271,7 @@ class LibraryDetailsView(APIView):
     """
     Views to work with a specific content library
     """
+    # DiscoveryCollection-BB-9218-OEX: Get a library by ID
     @convert_exceptions
     def get(self, request, lib_key_str):
         """
@@ -280,6 +283,7 @@ class LibraryDetailsView(APIView):
         serializer = ContentLibraryMetadataSerializer(result, context={'request': self.request})
         return Response(serializer.data)
 
+    # DiscoveryCollection-BB-9218-OEX: Update a content library
     @convert_exceptions
     def patch(self, request, lib_key_str):
         """
@@ -323,6 +327,7 @@ class LibraryTeamView(APIView):
 
     Deprecated https://github.com/openedx/openedx-platform/issues/37409
     """
+    # DiscoveryCollection-BB-9218-OEX: Add a new team member by email
     @convert_exceptions
     def post(self, request, lib_key_str):
         """
@@ -356,6 +361,7 @@ class LibraryTeamView(APIView):
         grant = api.get_library_user_permissions(key, user)
         return Response(ContentLibraryPermissionSerializer(grant).data)
 
+    # DiscoveryCollection-BB-9218-OEX: List existing library team members and groups
     @convert_exceptions
     def get(self, request, lib_key_str):
         """
@@ -383,6 +389,7 @@ class LibraryTeamUserView(APIView):
 
     Deprecated https://github.com/openedx/openedx-platform/issues/37409
     """
+    # DiscoveryCollection-BB-9218-OEX: Add library team member
     @convert_exceptions
     def put(self, request, lib_key_str, username):
         """
@@ -407,6 +414,7 @@ class LibraryTeamUserView(APIView):
         grant = api.get_library_user_permissions(key, user)
         return Response(ContentLibraryPermissionSerializer(grant).data)
 
+    # DiscoveryCollection-BB-9218-OEX: List user roles
     @convert_exceptions
     def get(self, request, lib_key_str, username):
         """
@@ -426,6 +434,7 @@ class LibraryTeamUserView(APIView):
             raise NotFound
         return Response(ContentLibraryPermissionSerializer(grant).data)
 
+    # DiscoveryCollection-BB-9218-OEX: Remove a user from a library content team membership
     @convert_exceptions
     def delete(self, request, lib_key_str, username):
         """
@@ -456,6 +465,7 @@ class LibraryTeamGroupView(APIView):
 
     Deprecated https://github.com/openedx/openedx-platform/issues/37409
     """
+    # DiscoveryCollection-BB-9218-OEX: AddGroupToLibrary
     @convert_exceptions
     def put(self, request, lib_key_str, group_name):
         """
@@ -476,6 +486,7 @@ class LibraryTeamGroupView(APIView):
         api.set_library_group_permissions(key, group, access_level=serializer.validated_data["access_level"])
         return Response({})
 
+    # DiscoveryCollection-BB-9218-OEX: Revoke specified user's access level to the specified Content Library
     @convert_exceptions
     def delete(self, request, lib_key_str, username):
         """
