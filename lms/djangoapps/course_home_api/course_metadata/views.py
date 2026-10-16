@@ -63,6 +63,7 @@ class CourseHomeMetadataView(RetrieveAPIView):
         celebrations: (dict) a dict of celebration data
         user_timezone: (str) The timezone of the given user
         can_view_certificate: Flag to determine whether or not the learner can view their course certificate.
+        course_theme_variant: (str) The course theme variant
 
     **Returns**
 
@@ -155,6 +156,7 @@ class CourseHomeMetadataView(RetrieveAPIView):
             # "Course Editor" as described in the permission matrix here:
             # https://github.com/openedx/platform-roadmap/issues/246
             'has_course_author_access': has_course_author_access(request.user, course_key, 'cms'),
+            'course_theme_variant': course.course_theme_variant,
         }
         context = self.get_serializer_context()
         context['course'] = course
