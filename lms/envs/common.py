@@ -673,6 +673,17 @@ ENABLE_ORA_USERNAMES_ON_DATA_EXPORT = False
 # .. toggle_tickets: https://openedx.atlassian.net/browse/ENT-3818
 ENABLE_COURSE_ASSESSMENT_GRADE_CHANGE_SIGNAL = False
 
+# .. toggle_name: settings.ENABLE_COMPETENCY_MASTERY_TRACKING
+# .. toggle_implementation: DjangoSetting
+# .. toggle_default: False
+# .. toggle_description: Set to True to update a learner's competency criterion status in the same transaction that
+#   persists a subsection grade. Also a safety valve: turning it off stops competency code from running on grade writes.
+# .. toggle_warning: When enabled, a competency storage failure makes the grade write fail, and each grade write that
+#   changes a status queues a roll-up task.
+# .. toggle_use_cases: opt_in
+# .. toggle_creation_date: 2026-10-01
+ENABLE_COMPETENCY_MASTERY_TRACKING = False
+
 # .. toggle_name: settings.ALLOW_ADMIN_ENTERPRISE_COURSE_ENROLLMENT_DELETION
 # .. toggle_implementation: DjangoSetting
 # .. toggle_default: False

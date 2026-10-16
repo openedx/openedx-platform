@@ -7,6 +7,7 @@ import json
 from collections import OrderedDict, namedtuple
 from contextlib import contextmanager
 from datetime import datetime
+from decimal import Decimal
 from unittest.mock import MagicMock, patch
 
 import ddt
@@ -17,6 +18,7 @@ from django.urls import reverse
 from edx_toggles.toggles.testutils import override_waffle_flag
 from freezegun import freeze_time
 from opaque_keys.edx.locator import BlockUsageLocator
+from openedx_learning.api import GradedObjectScore
 from pytz import UTC
 from rest_framework import status
 from rest_framework.response import Response
@@ -1720,6 +1722,28 @@ class GradebookBulkUpdateViewTest(GradebookViewTestBase):
             ]
             assert status.HTTP_422_UNPROCESSABLE_ENTITY == resp.status_code
             assert expected_data == resp.data
+
+    @override_settings(ENABLE_COMPETENCY_MASTERY_TRACKING=True)
+    def test_new_subsection_grade_records_competency_status(self):
+        subsection = self.subsections[self.chapter_1.location][0]
+        score = GradedObjectScore(object_id=str(subsection.location), fraction=Decimal('0.5'))
+        post_data = [{
+            'user_id': self.student.id,
+            'usage_id': str(subsection.location),
+            'grade': {'earned_graded_override': 1, 'possible_graded_override': 2},
+        }]
+
+        with override_waffle_flag(self.waffle_flag, active=True):
+            self.login_staff()
+            # The fixture subsections have no scorable children, so a score needs this patch.
+            with patch(
+                'lms.djangoapps.grades.subsection_grade.CreateSubsectionGrade.graded_object_score',
+                return_value=score,
+            ), patch('lms.djangoapps.grades.subsection_grade.record_graded_object_statuses') as mock_record:
+                resp = self.client.post(self.get_url(), data=json.dumps(post_data), content_type='application/json')
+
+        assert status.HTTP_202_ACCEPTED == resp.status_code
+        mock_record.assert_any_call(user_id=self.student.id, scores=[score])
 
     @ddt.data('login_staff', 'login_course_staff', 'login_course_admin')
     def test_override_is_created(self, login_method):

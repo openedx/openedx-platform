@@ -6,17 +6,45 @@ SubsectionGrade Class
 from abc import ABCMeta
 from collections import OrderedDict
 from datetime import datetime, timezone
+from decimal import Decimal
 from logging import getLogger
 
+from django.conf import settings
+from django.db import transaction
 from lazy import lazy
+from openedx_learning.api import GradedObjectScore, record_graded_object_statuses
 from xblock.scorable import ShowCorrectness
 
+from lms.djangoapps.grades import events
 from lms.djangoapps.grades.models import BlockRecord, PersistentSubsectionGrade
 from lms.djangoapps.grades.scores import compute_percent, get_score, possibly_scored
 from xmodule import block_metadata_utils, graders  # pylint: disable=wrong-import-order
 from xmodule.graders import AggregatedScore  # pylint: disable=wrong-import-order
 
 log = getLogger(__name__)
+
+
+def _enqueue_competency_rollup(user_id, object_ids):
+    """
+    Queues the competency rollup for the scored objects once their grade transaction has committed.
+    """
+    # Imported here because tasks.py imports this module through the subsection grade factory.
+    from lms.djangoapps.grades.tasks import roll_up_competency_statuses_for_user
+
+    roll_up_competency_statuses_for_user.apply_async(kwargs={"user_id": user_id, "object_ids": object_ids})
+
+
+def _record_competency_status(student, grades):
+    """
+    Records competency status inside the caller's transaction and returns the object ids to roll up, or an empty
+    list when tracking is off, nothing is scored, or no rows changed.
+    """
+    if not settings.ENABLE_COMPETENCY_MASTERY_TRACKING:
+        return []
+    scores = [score for score in (grade.graded_object_score() for grade in grades) if score]
+    if not scores or not record_graded_object_statuses(user_id=student.id, scores=scores):
+        return []
+    return [score.object_id for score in scores]
 
 
 class SubsectionGradeBase(metaclass=ABCMeta):  # noqa: B024
@@ -285,7 +313,10 @@ class CreateSubsectionGrade(NonZeroSubsectionGrade):
         """
         Saves or updates the subsection grade in a persisted model.
         """
-        if self._should_persist_per_attempted(score_deleted, force_update_subsections):
+        if not self._should_persist_per_attempted(score_deleted, force_update_subsections):
+            return None
+
+        with transaction.atomic():
             model = PersistentSubsectionGrade.update_or_create_grade(**self._persisted_model_params(student))
 
             if hasattr(model, 'override'):
@@ -296,20 +327,52 @@ class CreateSubsectionGrade(NonZeroSubsectionGrade):
                 self.all_total = self._aggregated_score_from_model(model, is_graded=False)
                 self.graded_total = self._aggregated_score_from_model(model, is_graded=True)
 
-            return model
+            object_ids = _record_competency_status(student, [self])
+            if object_ids:
+                # robust: a broker failure after the grade committed must not skip the event or fail the save.
+                transaction.on_commit(lambda: _enqueue_competency_rollup(student.id, object_ids), robust=True)
+
+        events.subsection_grade_calculated(model)
+        return model
 
     @classmethod
     def bulk_create_models(cls, student, subsection_grades, course_key):
         """
         Saves the subsection grade in a persisted model.
         """
-        params = [
-            subsection_grade._persisted_model_params(student)  # pylint: disable=protected-access
+        persisted_grades = [
+            subsection_grade
             for subsection_grade in subsection_grades
             if subsection_grade
             if subsection_grade._should_persist_per_attempted()  # pylint: disable=protected-access
         ]
-        return PersistentSubsectionGrade.bulk_create_grades(params, student.id, course_key)
+        params = [
+            subsection_grade._persisted_model_params(student)  # pylint: disable=protected-access
+            for subsection_grade in persisted_grades
+        ]
+        if not persisted_grades:
+            return None
+
+        with transaction.atomic():
+            grades = PersistentSubsectionGrade.bulk_create_grades(params, student.id, course_key)
+            object_ids = _record_competency_status(student, persisted_grades)
+            if object_ids:
+                # robust: a broker failure after the grades committed must not skip the events or fail the save.
+                transaction.on_commit(lambda: _enqueue_competency_rollup(student.id, object_ids), robust=True)
+
+        for grade in grades or []:
+            events.subsection_grade_calculated(grade)
+        return grades
+
+    def graded_object_score(self):
+        """
+        Returns the graded fraction as a score, or None when nothing was attempted or nothing could be earned.
+        """
+        if not self.attempted_graded or not self.graded_total.possible:
+            return None
+        # An override can push earned outside [0, possible]; core rejects fractions outside [0, 1].
+        fraction = min(max(Decimal(str(self.percent_graded)), Decimal(0)), Decimal(1))
+        return GradedObjectScore(object_id=str(self.location), fraction=fraction)
 
     def _should_persist_per_attempted(self, score_deleted=False, force_update_subsections=False):
         """
