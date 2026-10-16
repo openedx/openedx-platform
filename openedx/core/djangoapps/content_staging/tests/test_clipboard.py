@@ -4,6 +4,7 @@ Tests for the clipboard functionality
 """
 from textwrap import dedent
 from typing import cast
+from unittest.mock import patch
 from xml.etree import ElementTree
 
 import ddt
@@ -308,6 +309,38 @@ class ClipboardTestCase(ModuleStoreTestCase):
 
         # The OLX link from the video will no longer work:
         assert client.get(old_olx_url).status_code == 404
+
+    def test_expired_content_cleanup_waits_for_commit(self) -> None:
+        """
+        Test that the user's previous clipboard content is only queued for
+        deletion once the copy that replaced it has committed, by which point
+        the user's clipboard no longer points at it.
+
+        Queuing it from inside the transaction let an idle worker delete the
+        old content (and, by cascade, the clipboard row the copy was about to
+        update) while the copy was still running, deadlocking the copy.
+        """
+        course_key, client = self._setup_course()
+        video_key = course_key.make_usage_key("video", "sample_video")
+        response = client.post(CLIPBOARD_ENDPOINT, {"usage_key": str(video_key)}, format="json")
+        assert response.status_code == 200
+        old_content_id = response.json()["content"]["id"]
+
+        def check_clipboard_has_moved_on(expired_ids):
+            assert expired_ids == [old_content_id]
+            clipboard = python_api.get_user_clipboard(self.user.id)
+            assert clipboard is not None
+            assert clipboard.content.id != old_content_id
+
+        html_key = course_key.make_usage_key("html", "toyhtml")
+        with patch.object(
+            python_api.delete_expired_clipboards, "delay", side_effect=check_clipboard_has_moved_on,
+        ) as mock_delay:
+            with self.captureOnCommitCallbacks(execute=True):
+                response = client.post(CLIPBOARD_ENDPOINT, {"usage_key": str(html_key)}, format="json")
+                assert response.status_code == 200
+                mock_delay.assert_not_called()
+            mock_delay.assert_called_once_with([old_content_id])
 
     def test_copy_static_assets(self) -> None:
         """
