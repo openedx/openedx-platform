@@ -201,7 +201,15 @@ class CourseMetadata:
                 'display_name': _(field.display_name),  # pylint: disable=translation-of-non-string
                 'help': field_help,
                 'deprecated': field.runtime_options.get('deprecated', False),
-                'hide_on_enabled_publisher': field.runtime_options.get('hide_on_enabled_publisher', False)
+                'hide_on_enabled_publisher': field.runtime_options.get('hide_on_enabled_publisher', False),
+                # The field's class name (e.g. "String", "Boolean", "Integer", "List", "Dict") lets the
+                # frontend pick the right input type without inferring it from the value's shape.
+                'type': field.__class__.__name__,
+                # The field's declared choices, when it has any. For enum-like settings this is a list of
+                # {"display_name", "value"} dicts; for numeric ranges it may be a {"min"/"max"} dict; for
+                # free-form settings it is None. Exposing it here keeps the valid options as a single source
+                # of truth in the backend instead of being hardcoded in the frontend.
+                'options': field.values,
             }
         return result
 
