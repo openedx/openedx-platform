@@ -463,9 +463,9 @@ class CoursewareMeta:
         """
         Returns the ecommerce checkout link for the course.
         """
-        if self.single_paid_mode and self.single_paid_mode.sku:
+        if self.single_paid_mode and self.single_paid_mode.get("sku"):
             return self.ecomm_service.get_checkout_page_url(
-                self.single_paid_mode.sku, course_run_keys=[self.course_key]
+                self.single_paid_mode["sku"], course_run_keys=[self.course_key]
             )
         return None
 
