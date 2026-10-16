@@ -631,12 +631,16 @@ def get_video_encodings_download(request, course_key_string):
     return FileResponse(buffer, as_attachment=True, filename=filename, content_type="text/csv")
 
 
-def _get_and_validate_course(course_key_string, user):
+def _get_and_validate_course(course_key, user):
     """
     Given a course key, return the course if it exists, the given user has
     access to it, and it is properly configured for video uploads
+
+    Accepts the raw string the legacy routes carry or the parsed key the
+    conforming routes' path converter hands their views.
     """
-    course_key = CourseKey.from_string(course_key_string)
+    if not isinstance(course_key, CourseKey):
+        course_key = CourseKey.from_string(course_key)
 
     # For now, assume all studio users that have access to the course can upload videos.
     # In the future, we plan to add a new org-level role for video uploaders.

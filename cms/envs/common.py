@@ -1342,6 +1342,19 @@ SPECTACULAR_SETTINGS = {
     # service root, so /api/contentstore and /api/authoring resolve against the
     # same base URL.
     'SCHEMA_PATH_PREFIX': r'/api/(contentstore|authoring)',
+    # ``content_type`` appears on FileSpecSerializer as well, and a bare enum
+    # name is only used while one serializer claims it: a second one makes
+    # drf-spectacular rename both after their serializers, moving the existing
+    # ContentTypeEnum off the name the generated SDK already uses. Naming this
+    # one keeps the other where it is.
+    'ENUM_NAME_OVERRIDES': {
+        # FileSpecSerializer's content_type held the unprefixed name while it was
+        # the only such field. Both names are pinned here so adding the second
+        # one does not move the first.
+        'ContentTypeEnum': ['video/mp4', 'video/webm', 'video/ogg'],
+        'VideoUploadContentTypeEnum':
+            'cms.djangoapps.contentstore.rest_api.v1.serializers.video_uploads.SUPPORTED_UPLOAD_CONTENT_TYPES',
+    },
 }
 
 ################### Studio Search (beta), using Meilisearch ###################
