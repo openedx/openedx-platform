@@ -160,6 +160,7 @@ from .serializers_v2 import (
     RegenerateCertificatesSerializer,
     RemoveCertificateExceptionSerializer,
     RemoveCertificateInvalidationSerializer,
+    ReportGenerationResultSerializer,
     ScoreOverrideRequestSerializer,
     SpecialExamSerializer,
     SyncOperationResultSerializer,
@@ -901,8 +902,12 @@ class GenerateReportView(DeveloperErrorViewMixin, APIView):
     **Response Values**
 
         {
-            "status": "The report is being created. Please check the data downloads section for the status."
+            "status": "The report is being created.",
+            "task_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+            "status_url": "/api/instructor/v2/courses/{course_key}/tasks/{task_id}"
         }
+
+        Synchronous issued-certificate reports return only "status".
 
     **Parameters**
 
@@ -960,7 +965,7 @@ class GenerateReportView(DeveloperErrorViewMixin, APIView):
             ),
         ],
         responses={
-            200: OpenApiResponse(description="Report generation task has been submitted successfully."),
+            200: ReportGenerationResultSerializer,
             400: OpenApiResponse(description="The requested task is already running or invalid report type."),
             401: OpenApiResponse(description="The requesting user is not authenticated."),
             403: OpenApiResponse(description="The requesting user lacks instructor access to the course."),
@@ -996,7 +1001,7 @@ class GenerateReportView(DeveloperErrorViewMixin, APIView):
             )
 
         try:
-            success_message = handler(request, course_key)
+            success_message, instructor_task = handler(request, course_key)
         except AlreadyRunningError as error:
             log.warning("Task already running for %s report: %s", report_type, error)
             return Response(
@@ -1016,7 +1021,14 @@ class GenerateReportView(DeveloperErrorViewMixin, APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        return Response({'status': success_message}, status=status.HTTP_200_OK)
+        result = {'status': success_message}
+        if instructor_task is not None:
+            task_id = str(instructor_task.task_id)
+            result.update(task_id=task_id, status_url=reverse(
+                'instructor_api_v2:task_status',
+                kwargs={'course_id': course_id, 'task_id': task_id},
+            ))
+        return Response(result, status=status.HTTP_200_OK)
 
     def _generate_enrolled_students_report(self, request, course_key):
         """Generate enrolled students report."""
@@ -1084,35 +1096,35 @@ class GenerateReportView(DeveloperErrorViewMixin, APIView):
         query_features.append('city')
         query_features.append('country')
 
-        task_api.submit_calculate_students_features_csv(request, course_key, query_features)
-        return _('The enrolled student report is being created.')
+        instructor_task = task_api.submit_calculate_students_features_csv(request, course_key, query_features)
+        return _('The enrolled student report is being created.'), instructor_task
 
     def _generate_pending_enrollments_report(self, request, course_key):
         """Generate pending enrollments report."""
         query_features = ['email']
-        task_api.submit_calculate_may_enroll_csv(request, course_key, query_features)
-        return _('The pending enrollments report is being created.')
+        instructor_task = task_api.submit_calculate_may_enroll_csv(request, course_key, query_features)
+        return _('The pending enrollments report is being created.'), instructor_task
 
     def _generate_pending_activations_report(self, request, course_key):
         """Generate pending activations report."""
         query_features = ['email']
-        task_api.submit_calculate_inactive_enrolled_students_csv(request, course_key, query_features)
-        return _('The pending activations report is being created.')
+        instructor_task = task_api.submit_calculate_inactive_enrolled_students_csv(request, course_key, query_features)
+        return _('The pending activations report is being created.'), instructor_task
 
     def _generate_anonymized_ids_report(self, request, course_key):
         """Generate anonymized student IDs report."""
-        task_api.generate_anonymous_ids(request, course_key)
-        return _('The anonymized student IDs report is being created.')
+        instructor_task = task_api.generate_anonymous_ids(request, course_key)
+        return _('The anonymized student IDs report is being created.'), instructor_task
 
     def _generate_grade_report(self, request, course_key):
         """Generate grade report."""
-        task_api.submit_calculate_grades_csv(request, course_key)
-        return _('The grade report is being created.')
+        instructor_task = task_api.submit_calculate_grades_csv(request, course_key)
+        return _('The grade report is being created.'), instructor_task
 
     def _generate_problem_grade_report(self, request, course_key):
         """Generate problem grade report."""
-        task_api.submit_problem_grade_report(request, course_key)
-        return _('The problem grade report is being created.')
+        instructor_task = task_api.submit_problem_grade_report(request, course_key)
+        return _('The problem grade report is being created.'), instructor_task
 
     def _generate_problem_responses_report(self, request, course_key):
         """
@@ -1142,25 +1154,25 @@ class GenerateReportView(DeveloperErrorViewMixin, APIView):
 
         problem_locations_str = problem_location
 
-        task_api.submit_calculate_problem_responses_csv(
+        instructor_task = task_api.submit_calculate_problem_responses_csv(
             request, course_key, problem_locations_str, problem_types_filter
         )
-        return _('The problem responses report is being created.')
+        return _('The problem responses report is being created.'), instructor_task
 
     def _generate_ora2_summary_report(self, request, course_key):
         """Generate ORA2 summary report."""
-        task_api.submit_export_ora2_summary(request, course_key)
-        return _('The ORA2 summary report is being created.')
+        instructor_task = task_api.submit_export_ora2_summary(request, course_key)
+        return _('The ORA2 summary report is being created.'), instructor_task
 
     def _generate_ora2_data_report(self, request, course_key):
         """Generate ORA2 data report."""
-        task_api.submit_export_ora2_data(request, course_key)
-        return _('The ORA2 data report is being created.')
+        instructor_task = task_api.submit_export_ora2_data(request, course_key)
+        return _('The ORA2 data report is being created.'), instructor_task
 
     def _generate_ora2_submission_files_report(self, request, course_key):
         """Generate ORA2 submission files archive."""
-        task_api.submit_export_ora2_submission_files(request, course_key)
-        return _('The ORA2 submission files archive is being created.')
+        instructor_task = task_api.submit_export_ora2_submission_files(request, course_key)
+        return _('The ORA2 submission files archive is being created.'), instructor_task
 
     def _generate_issued_certificates_report(self, request, course_key):
         """Generate issued certificates report."""
@@ -1203,7 +1215,7 @@ class GenerateReportView(DeveloperErrorViewMixin, APIView):
             config_name='GRADES_DOWNLOAD'
         )
 
-        return _('The issued certificates report has been created.')
+        return _('The issued certificates report has been created.'), None
 
 
 class ORASummaryView(GenericAPIView):
