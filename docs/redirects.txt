@@ -1,2 +1,4 @@
 "featuretoggles.rst" "references/featuretoggles.rst"
 "settings.rst" "references/settings.rst"
+"how-tos/celery.rst" "concepts/celery.rst"
+"how-tos/use_the_api.rst" "concepts/use_the_api.rst"
