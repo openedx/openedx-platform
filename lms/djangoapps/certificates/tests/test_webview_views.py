@@ -612,6 +612,26 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
         self.assertContains(response, str(self.cert.verify_uuid))
 
     @override_settings(CERTIFICATES_HTML_VIEW=True)
+    def test_render_html_view_without_about_url(self):
+        """
+        Tests that the certificate renders when no About page URL is configured
+        anywhere: not in the HTML view configuration, the site configuration or
+        the marketing URLs. The "Learn more" link is left out rather than the
+        template failing on an undefined name.
+        """
+        CertificateHtmlViewConfigurationFactory.create(enabled=False)
+        self._add_course_certificates(count=1, signatory_count=1)
+        test_url = get_certificate_url(
+            user_id=self.user.id,
+            course_id=str(self.course.id),
+            uuid=self.cert.verify_uuid
+        )
+        response = self.client.get(test_url)
+        self.assertContains(response, str(self.cert.verify_uuid))
+        self.assertContains(response, 'class="about-item about-edx"')
+        self.assertNotContains(response, 'Learn more about')
+
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_render_certificate_only_for_downloadable_status(self):
         """
         Tests that Certificate HTML Web View returns Certificate only if certificate status is 'downloadable',
