@@ -76,12 +76,23 @@ class CmsMarkSupersededPathsTest(TestCase):
             "/api/contentstore/v0/youtube_transcripts/{course_id}/check",
             "/api/contentstore/v0/youtube_transcripts/{course_id}/uploa",
             "/api/contentstore/v0/youtube_transcripts/{course_id}/upload",
+            "/api/contentstore/v1/course_index/{course_id}",
         }
 
     def test_the_conforming_paths_are_left_unmarked(self):
-        conforming = "/api/authoring/v1/courses/{course_key}/youtube_transcript_checks/"
-        result = self._run({"paths": {conforming: {"get": {"operationId": "x"}}}})
-        assert result["paths"][conforming]["get"] == {"operationId": "x"}
+        for conforming in (
+            "/api/authoring/v1/courses/{course_key}/youtube_transcript_checks/",
+            "/api/authoring/v2/courses/{course_key}/outline/",
+        ):
+            result = self._run({"paths": {conforming: {"get": {"operationId": "x"}}}})
+            assert result["paths"][conforming]["get"] == {"operationId": "x"}
+
+    def test_the_course_index_read_is_marked_and_its_sibling_container_route_is_not(self):
+        index = "/api/contentstore/v1/course_index/{course_id}"
+        container = "/api/contentstore/v1/container/{usage_key_string}/children"
+        result = self._run({"paths": {index: {"get": {}}, container: {"get": {}}}})
+        assert result["paths"][index]["get"] == {"deprecated": True}
+        assert result["paths"][container]["get"] == {}
 
     def test_an_unrelated_contentstore_path_is_left_unmarked(self):
         other = "/api/contentstore/v0/advanced_settings/{course_id}"
