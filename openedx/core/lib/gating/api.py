@@ -4,6 +4,7 @@ API for the gating djangoapp
 
 import json
 import logging
+from typing import NamedTuple
 
 from completion.models import BlockCompletion
 from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
@@ -25,6 +26,22 @@ log = logging.getLogger(__name__)
 
 # This is used to namespace gating-specific milestones
 GATING_NAMESPACE_QUALIFIER = '.gating'
+
+
+class PrerequisiteSettings(NamedTuple):
+    """
+    The subsection prerequisite settings of a single piece of content.
+
+    Attributes:
+        is_prerequisite (bool): Whether the content can be used as a prerequisite for other content
+        prereq_content_key (str|None): The usage key of the content that gates this content, if any
+        min_score (str|int|None): The minimum score required on the prerequisite content
+        min_completion (str|int|None): The minimum completion percentage required on the prerequisite content
+    """
+    is_prerequisite: bool
+    prereq_content_key: str | None
+    min_score: str | int | None
+    min_completion: str | int | None
 
 
 def _get_prerequisite_milestone(prereq_content_key):
@@ -286,6 +303,41 @@ def get_required_content(course_key, gated_content_key):
         )
     else:
         return None, None, None
+
+
+def get_prerequisite_settings(course_key, content_key):
+    """
+    Returns all the subsection prerequisite settings of the given content: whether it is a prerequisite itself and,
+    if it is gated, the prerequisite content usage key together with the minimum score and completion percentage.
+
+    This combines ``is_prerequisite`` and ``get_required_content`` into a single query, which does not filter
+    the milestones by their relationship type. The relationship is derived from the milestone namespace instead:
+    the ``fulfills`` milestone of a piece of content is the only gating milestone namespaced with its own usage key,
+    so any other gating milestone linked to the content is the one it ``requires``.
+
+    Arguments:
+        course_key (str|CourseKey): The course key
+        content_key (str|UsageKey): The content usage key
+
+    Returns:
+        PrerequisiteSettings: The prerequisite settings of the content
+    """
+    is_prereq = False
+    prereq_content_key = None
+    requirements = {}
+    for milestone in find_gating_milestones(course_key, content_key):
+        gating_block_id = _get_gating_block_id(milestone)
+        if gating_block_id == str(content_key):
+            is_prereq = True
+        else:
+            prereq_content_key = gating_block_id
+            requirements = milestone.get('requirements') or {}
+    return PrerequisiteSettings(
+        is_prerequisite=is_prereq,
+        prereq_content_key=prereq_content_key,
+        min_score=requirements.get('min_score'),
+        min_completion=requirements.get('min_completion'),
+    )
 
 
 @gating_enabled(default=[])

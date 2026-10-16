@@ -35,6 +35,22 @@ from .xml_block import XmlMixin
 
 log = logging.getLogger(__name__)
 
+# OLX attributes of the `<sequential>` element that carry the subsection prerequisite (gating) settings across
+# course export and import. These settings are stored by the gating API (as milestones) rather than in XBlock fields.
+# The exporter writes these attributes from the gating API, and the course importer applies them back to it, so
+# they must never be persisted in the `xml_attributes` of a block.
+PREREQ_IS_PREREQ_ATTR = 'is_prereq'
+# Like the child pointers, the prerequisite subsection is referenced by its `url_name`, i.e. its block ID.
+PREREQ_URL_NAME_ATTR = 'prereq'
+PREREQ_MIN_SCORE_ATTR = 'prereq_min_score'
+PREREQ_MIN_COMPLETION_ATTR = 'prereq_min_completion'
+PREREQ_OLX_ATTRIBUTES = (
+    PREREQ_IS_PREREQ_ATTR,
+    PREREQ_URL_NAME_ATTR,
+    PREREQ_MIN_SCORE_ATTR,
+    PREREQ_MIN_COMPLETION_ATTR,
+)
+
 # HACK: This shouldn't be hard-coded to two types
 # OBSOLETE: This obsoletes 'type'
 class_priority = ['video', 'problem']
@@ -969,7 +985,35 @@ class SequenceBlock(
         xml_object = etree.Element('sequential')
         for child in self.get_children():
             self.runtime.add_block_as_child_node(child, xml_object)
+        if self.category == 'sequential':
+            # Chapters share this class, but only subsections can have prerequisites.
+            self._add_prerequisite_settings_to_xml(xml_object)
         return xml_object
+
+    def _add_prerequisite_settings_to_xml(self, xml_object):
+        """
+        Adds the subsection prerequisite (gating) settings of this subsection as attributes of the given XML element.
+
+        Nothing is added if the subsection is neither a prerequisite nor gated. Empty minimum score and completion
+        values are omitted; the gating API stores whatever Studio sent, so they are exported as-is otherwise.
+        """
+        # The gating API depends on the LMS and the modulestore, which cannot be imported at the module level here.
+        from openedx.core.lib.gating import api as gating_api  # pylint: disable=import-outside-toplevel
+
+        prerequisite_settings = gating_api.get_prerequisite_settings(
+            self.scope_ids.usage_id.context_key, self.scope_ids.usage_id
+        )
+        if prerequisite_settings.is_prerequisite:
+            xml_object.set(PREREQ_IS_PREREQ_ATTR, 'true')
+        if prerequisite_settings.prereq_content_key:
+            prereq_key = UsageKey.from_string(prerequisite_settings.prereq_content_key)
+            xml_object.set(PREREQ_URL_NAME_ATTR, prereq_key.block_id)
+            for attr, value in (
+                (PREREQ_MIN_SCORE_ATTR, prerequisite_settings.min_score),
+                (PREREQ_MIN_COMPLETION_ATTR, prerequisite_settings.min_completion),
+            ):
+                if value not in (None, ''):
+                    xml_object.set(attr, str(value))
 
     @property
     def non_editable_metadata_fields(self):
