@@ -2157,22 +2157,21 @@ OPTIONAL_APPS += [  # noqa: F405
 
 add_optional_apps(OPTIONAL_APPS, INSTALLED_APPS)  # noqa: F405
 
-###################### drf-spectacular (LMS enrollment schema) ######################
+###################### drf-spectacular (LMS API schema) ######################
 SPECTACULAR_SETTINGS = {
-    'TITLE': 'LMS Enrollment API',
+    'TITLE': 'LMS API',
     'VERSION': '0.1.0',
     'SERVE_INCLUDE_SCHEMA': False,
     'PREPROCESSING_HOOKS': ['lms.lib.spectacular.lms_api_filter'],
-    # Mark legacy slashless enrollment addresses deprecated. The enum hook is
-    # drf-spectacular's default, restated because setting this key replaces
-    # the default list.
+    # Mark superseded addresses deprecated. The enum hook is drf-spectacular's
+    # default, restated because setting this key replaces the default list.
     'POSTPROCESSING_HOOKS': [
         'drf_spectacular.hooks.postprocess_schema_enums',
         'lms.lib.spectacular.lms_mark_legacy_paths_deprecated',
     ],
     # Stripped from each path to derive its tags and operationId, so changing
     # it renames every operationId. Paths themselves are emitted in full.
-    'SCHEMA_PATH_PREFIX': '/api/enrollment',
+    'SCHEMA_PATH_PREFIX': r'/api/(enrollment|user)',
     # Serve the Swagger UI and ReDoc assets from drf-spectacular-sidecar rather
     # than drf-spectacular's default unpinned jsdelivr CDN URLs, keeping them
     # self-hosted and version-pinned as the drf-yasg bundles were.
