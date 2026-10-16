@@ -349,8 +349,8 @@ def _update_index_docs(index_name: str, docs) -> None:
 
     if current_rebuild_index_name:
         # If there is a rebuild in progress, the document will also be added to the new index.
-        client.index(current_rebuild_index_name).update_documents(docs)
-    _wait_for_meili_task(client.index(index_name).update_documents(docs))
+        client.index(current_rebuild_index_name).update_documents(docs, primary_key=INDEX_PRIMARY_KEY)
+    _wait_for_meili_task(client.index(index_name).update_documents(docs, primary_key=INDEX_PRIMARY_KEY))
 
 
 def only_if_meilisearch_enabled(f):
@@ -618,7 +618,7 @@ def index_course(
 
     if docs:
         # Add all the docs in this course at once (usually faster than adding one at a time):
-        _wait_for_meili_task(client.index(index_name).add_documents(docs))
+        _wait_for_meili_task(client.index(index_name).add_documents(docs, primary_key=INDEX_PRIMARY_KEY))
     return docs
 
 
@@ -698,7 +698,7 @@ def rebuild_index(  # pylint: disable=too-many-statements
             if docs:
                 try:
                     # Add all the docs in this library at once (usually faster than adding one at a time):
-                    _wait_for_meili_task(client.index(index_name).add_documents(docs))
+                    _wait_for_meili_task(client.index(index_name).add_documents(docs, primary_key=INDEX_PRIMARY_KEY))
                 except (TypeError, KeyError) as err:
                     status_cb(f"Error indexing library {lib_key}: {err}")
             return docs
@@ -719,7 +719,7 @@ def rebuild_index(  # pylint: disable=too-many-statements
             if docs:
                 try:
                     # Add docs in batch of 100 at once (usually faster than adding one at a time):
-                    _wait_for_meili_task(client.index(index_name).add_documents(docs))
+                    _wait_for_meili_task(client.index(index_name).add_documents(docs, primary_key=INDEX_PRIMARY_KEY))
                 except (TypeError, KeyError) as err:
                     status_cb(f"Error indexing collection batch {p}: {err}")
             return num_done
@@ -750,7 +750,7 @@ def rebuild_index(  # pylint: disable=too-many-statements
             if docs:
                 try:
                     # Add docs in batch of 100 at once (usually faster than adding one at a time):
-                    _wait_for_meili_task(client.index(index_name).add_documents(docs))
+                    _wait_for_meili_task(client.index(index_name).add_documents(docs, primary_key=INDEX_PRIMARY_KEY))
                 except (TypeError, KeyError) as err:
                     status_cb(f"Error indexing container batch {p}: {err}")
             return num_done
