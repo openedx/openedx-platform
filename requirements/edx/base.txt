@@ -966,7 +966,7 @@ pylti1p3==2.0.0
     # via openedx-platform
 pymemcache==4.0.0
     # via openedx-platform
-pymongo==4.4.0
+pymongo==4.19.0
     # via
     #   edx-opaque-keys
     #   event-tracking

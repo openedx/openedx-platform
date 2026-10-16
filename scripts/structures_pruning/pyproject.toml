@@ -31,11 +31,4 @@ constraint-dependencies = [
     "social-auth-app-django<6.0.0",
     "social-auth-core<5.0.0",
     "pip<26.2.1",
-    "pymongo<4.4.1",
-]
-[tool.edx_lint]
-# Adding pin to avoid any major upgrade -- see the root pyproject.toml's
-# [tool.edx_lint].uv_constraints for the full rationale.
-uv_constraints = [
-    "pymongo<4.4.1",
 ]

@@ -24,7 +24,7 @@ pluggy==1.7.0
     # via pytest
 pygments==2.21.0
     # via pytest
-pymongo==4.4.0
+pymongo==4.19.0
     # via
     #   edx-opaque-keys
     #   edx-platform-structures-pruning-scripts
