@@ -61,10 +61,17 @@ def user_has_course_permission(
     authz_permission: str,
     course_key: CourseKey,
     legacy_permission: LegacyAuthoringPermission | None = None,
+    default_fallback: bool = False,
 ) -> bool:
     """
     Checks if the user has the specified AuthZ permission for the course,
     with optional fallback to legacy permissions.
+
+    ``default_fallback`` is the result when AuthZ is disabled for the course and
+    no ``legacy_permission`` grant applies. It defaults to ``False`` (deny), but
+    callers guarding an affordance that has no legacy-permission concept and was
+    historically always available (e.g. tag management) can pass ``True`` to
+    preserve that pre-RBAC behaviour without a separate flag check.
     """
     if enable_authz_course_authoring(course_key):
         # If AuthZ is enabled for this course, check the permission via AuthZ only.
@@ -102,7 +109,7 @@ def user_has_course_permission(
             "course_key": str(course_key),
         },
     )
-    return False
+    return default_fallback
 
 
 def get_course_key(course_id: str) -> CourseKey:

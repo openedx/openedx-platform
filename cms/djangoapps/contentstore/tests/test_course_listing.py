@@ -936,7 +936,9 @@ class TestCourseListingAuthz(CourseAuthoringAuthzTestMixin, ModuleStoreTestCase)
             "is_enabled",
             side_effect=self._mock_authz_toggle(enabled_keys),
         ):
-            course_keys = _get_course_keys_from_scopes([PlatformCourseOverviewGlobData(external_key="course-v1:*")])
+            course_keys = _get_course_keys_from_scopes([
+                PlatformCourseOverviewGlobData(external_key=PlatformCourseOverviewGlobData.build_external_key())
+            ])
 
         assert course_keys == set(authz_keys) | set(legacy_keys)
 
@@ -953,7 +955,9 @@ class TestCourseListingAuthz(CourseAuthoringAuthzTestMixin, ModuleStoreTestCase)
             "is_enabled",
             side_effect=self._mock_authz_toggle(enabled_keys, global_enabled=True),
         ):
-            course_keys = _get_course_keys_from_scopes([PlatformCourseOverviewGlobData(external_key="course-v1:*")])
+            course_keys = _get_course_keys_from_scopes([
+                PlatformCourseOverviewGlobData(external_key=PlatformCourseOverviewGlobData.build_external_key())
+            ])
 
         assert course_keys == set(CourseOverview.get_all_courses().values_list("id", flat=True))
 
@@ -972,8 +976,8 @@ class TestCourseListingAuthz(CourseAuthoringAuthzTestMixin, ModuleStoreTestCase)
         ):
             course_keys = _get_course_keys_from_scopes(
                 [
-                    OrgCourseOverviewGlobData(external_key="course-v1:Org1+*"),
-                    PlatformCourseOverviewGlobData(external_key="course-v1:*"),
+                    OrgCourseOverviewGlobData(external_key=OrgCourseOverviewGlobData.build_external_key("Org1")),
+                    PlatformCourseOverviewGlobData(external_key=PlatformCourseOverviewGlobData.build_external_key()),
                 ]
             )
 

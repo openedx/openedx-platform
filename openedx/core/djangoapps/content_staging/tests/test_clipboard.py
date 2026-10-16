@@ -6,8 +6,12 @@ from textwrap import dedent
 from typing import cast
 from xml.etree import ElementTree
 
+import ddt
+from openedx_authz.constants.roles import COURSE_ADMIN, COURSE_AUDITOR, COURSE_EDITOR, COURSE_STAFF
 from rest_framework.test import APIClient
 
+from common.djangoapps.student.tests.factories import UserFactory
+from openedx.core.djangoapps.authz.tests.mixins import CourseAuthoringAuthzTestMixin
 from openedx.core.djangoapps.content_staging import api as python_api
 from xmodule.contentstore.django import contentstore
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase, upload_file_to_course
@@ -378,3 +382,40 @@ class ClipboardTestCase(ModuleStoreTestCase):
         a = ElementTree.canonicalize(xml_str_a, strip_text=True)
         b = ElementTree.canonicalize(xml_str_b, strip_text=True)
         assert a == b
+
+
+@ddt.ddt
+class ClipboardAuthzTest(CourseAuthoringAuthzTestMixin, ModuleStoreTestCase):
+    """
+    Regression test for openedx-authz#403: ClipboardEndpoint.post() required legacy read
+    access via has_studio_read_access(), so AuthZ-native roles with no legacy equivalent
+    (course_auditor, course_editor) got a 403 when copying a unit to the clipboard despite
+    holding COURSES_VIEW_COURSE.
+    """
+
+    @ddt.data(
+        COURSE_STAFF.external_key,
+        COURSE_ADMIN.external_key,
+        COURSE_AUDITOR.external_key,
+        COURSE_EDITOR.external_key,
+    )
+    def test_course_roles_can_copy_unit_to_clipboard(self, role_key):
+        course_key = ToyCourseFactory.create().id
+        html_key = course_key.make_usage_key("html", "toyhtml")
+
+        role_user = UserFactory(password=self.password)
+        self.add_user_to_role_in_course(role_user, role_key, course_key)
+
+        client = APIClient()
+        client.force_authenticate(user=role_user)
+        response = client.post(CLIPBOARD_ENDPOINT, {"usage_key": str(html_key)}, format="json")
+
+        assert response.status_code == 200
+
+    def test_unauthorized_user_gets_permission_denied(self):
+        course_key = ToyCourseFactory.create().id
+        html_key = course_key.make_usage_key("html", "toyhtml")
+
+        with self.allow_transaction_exception():
+            response = self.unauthorized_client.post(CLIPBOARD_ENDPOINT, {"usage_key": str(html_key)}, format="json")
+            assert response.status_code == 403
