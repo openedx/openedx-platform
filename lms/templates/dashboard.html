@@ -75,11 +75,6 @@ from common.djangoapps.student.models import CourseEnrollment
       });
     });
   </%static:webpack>
-  % if settings.FEATURES.get('ENABLE_DASHBOARD_SEARCH'):
-    <%static:require_module module_name="course_search/js/dashboard_search_factory" class_name="DashboardSearchFactory">
-        DashboardSearchFactory();
-    </%static:require_module>
-  % endif
   % if redirect_message:
     <%static:require_module module_name="js/views/message_banner" class_name="MessageBannerView">
         var banner = new MessageBannerView({urgency: 'low', type: 'warning'});
@@ -275,24 +270,6 @@ from common.djangoapps.student.models import CourseEnrollment
             <%include file="${static.get_template_path('registration/account_activation_sidebar_notice.html')}" />
           </div>
         %endif
-
-        % if settings.FEATURES.get('ENABLE_DASHBOARD_SEARCH'):
-          <div id="dashboard-search-bar" class="search-bar dashboard-search-bar" role="search" aria-label="Dashboard">
-            <form class="search-form">
-              <label for="dashboard-search-input">${_('Search Your Courses')}</label>
-              <div class="search-field-wrapper">
-                <input id="dashboard-search-input" type="text" class="search-field"/>
-                <button type="submit" class="search-button" title="${_('Search')}">
-                  <span class="icon fa fa-search" aria-hidden="true"></span>
-                </button>
-                <button type="button" class="cancel-button" title="${_('Clear search')}">
-                  <span class="icon fa fa-remove" aria-hidden="true"></span>
-                </button>
-              </div>
-            </form>
-          </div>
-          <div id="dashboard-search-results" class="search-results dashboard-search-results"></div>
-        % endif
       </div>
     </div>
 </main>
