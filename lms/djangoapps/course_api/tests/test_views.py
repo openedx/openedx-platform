@@ -4,17 +4,20 @@ Tests for Course API views.
 
 from datetime import datetime, timedelta
 from hashlib import md5
-from unittest import TestCase
+from unittest import TestCase, mock
 
 import ddt
 import pytest
+from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 from django.core.exceptions import ImproperlyConfigured
 from django.test import RequestFactory, SimpleTestCase
 from django.test.utils import override_settings
 from django.urls import reverse
 from edx_django_utils.cache import RequestCache
 from edx_toggles.toggles.testutils import override_waffle_switch
+from oauth2_provider.models import Application
 from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locator import LibraryLocator
 from search.tests.test_course_discovery import DemoCourse
@@ -26,7 +29,13 @@ from common.djangoapps.course_modes.tests.factories import CourseModeFactory
 from common.djangoapps.student.auth import add_users
 from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRole
 from common.djangoapps.student.tests.factories import AdminFactory
-from lms.djangoapps.course_api import USE_RATE_LIMIT_2_FOR_COURSE_LIST_API, USE_RATE_LIMIT_10_FOR_COURSE_LIST_API
+from lms.djangoapps.course_api import (
+    USE_RATE_LIMIT_2_FOR_COURSE_LIST_API,
+    USE_RATE_LIMIT_10_FOR_COURSE_LIST_API,
+)
+from openedx.core.djangoapps.oauth_dispatch.adapters import DOTAdapter
+from openedx.core.djangoapps.oauth_dispatch.jwt import create_jwt_from_token
+from openedx.core.djangoapps.oauth_dispatch.tests.factories import AccessTokenFactory, ApplicationFactory
 from openedx.core.djangoapps.waffle_utils.testutils import WAFFLE_TABLES
 from openedx.core.lib.api.view_utils import LazySequence
 from openedx.features.content_type_gating.models import ContentTypeGatingConfig
@@ -719,3 +728,104 @@ class CourseThrottleCacheKeyTests(SimpleTestCase):
         shared_bucket = CourseListUserThrottle.cache_format % {"scope": "staff", "ident": self.user.pk}
         keys.append(shared_bucket)
         assert len(set(keys)) == len(keys)
+
+
+@ddt.ddt
+@override_settings(REST_FRAMEWORK={
+    **settings.REST_FRAMEWORK,
+    'DEFAULT_THROTTLE_RATES': {**settings.REST_FRAMEWORK['DEFAULT_THROTTLE_RATES'], 'service_user': '5/minute'},
+})
+@mock.patch.object(CourseListUserThrottle, 'THROTTLE_RATES', {'user': '1/minute', 'staff': '2/minute'})
+@mock.patch.object(CourseIdListUserThrottle, 'THROTTLE_RATES', {'user': '1/minute', 'staff': '2/minute'})
+class CourseListServiceUserRateTests(CourseApiFactoryMixin, SharedModuleStoreTestCase):
+    """
+    Requests made by staff with a client-credentials token get the ``service_user`` rate on
+    the course list and course ID list APIs.
+
+    The rates are patched to user 1/minute, staff 2/minute and service_user 5/minute, so the
+    number of requests that get through shows which rate applied.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.course = cls.create_course()
+
+    def setUp(self):
+        super().setUp()
+        cache.clear()
+        self.service_user = self.create_user(username='service_worker', is_staff=True)
+
+    def _bearer_header(self, grant_type, user=None):
+        """Authorization header with a DOT bearer token issued under the given grant type."""
+        user = user or self.service_user
+        application = ApplicationFactory(user=user, authorization_grant_type=grant_type)
+        token = AccessTokenFactory(user=user, application=application)
+        return f'Bearer {token.token}'
+
+    def _jwt_header(self, grant_type, user=None):
+        """Authorization header with a JWT created from a token issued under the given grant type."""
+        user = user or self.service_user
+        application = ApplicationFactory(user=user, authorization_grant_type=grant_type)
+        token = AccessTokenFactory(user=user, application=application)
+        token_dict = {'access_token': token.token, 'scope': token.scope, 'token_type': 'Bearer', 'expires_in': 3600}
+        return f'JWT {create_jwt_from_token(token_dict, DOTAdapter())}'
+
+    def _allowed_request_count(self, auth_header, url_name='course-list', attempts=7, username=None):
+        """Send requests until one is throttled and return how many got through."""
+        url = reverse(url_name)
+        params = {'username': username or self.service_user.username}
+        if url_name == 'course-id-list':
+            params['role'] = 'staff'
+        for count in range(attempts):
+            response = self.client.get(url, params, HTTP_AUTHORIZATION=auth_header)
+            if response.status_code == 429:
+                return count
+            assert response.status_code == 200, response.content
+        return attempts
+
+    @ddt.data('_bearer_header', '_jwt_header')
+    def test_client_credentials_gets_service_user_rate(self, make_header):
+        auth_header = getattr(self, make_header)(Application.GRANT_CLIENT_CREDENTIALS)
+        assert self._allowed_request_count(auth_header) == 5
+
+    def test_course_id_list_client_credentials_gets_service_user_rate(self):
+        auth_header = self._jwt_header(Application.GRANT_CLIENT_CREDENTIALS)
+        assert self._allowed_request_count(auth_header, url_name='course-id-list') == 5
+
+    @ddt.data('_bearer_header', '_jwt_header')
+    def test_non_staff_client_credentials_keeps_user_rate(self, make_header):
+        # Any logged-in user can register their own client-credentials application.
+        learner = self.create_user(username='learner', is_staff=False)
+        auth_header = getattr(self, make_header)(Application.GRANT_CLIENT_CREDENTIALS, user=learner)
+        assert self._allowed_request_count(auth_header, username=learner.username) == 1
+
+    @ddt.data('_bearer_header', '_jwt_header')
+    def test_authorization_code_keeps_staff_rate(self, make_header):
+        auth_header = getattr(self, make_header)(Application.GRANT_AUTHORIZATION_CODE)
+        assert self._allowed_request_count(auth_header) == 2
+
+    @override_waffle_switch(USE_RATE_LIMIT_2_FOR_COURSE_LIST_API, active=True)
+    def test_circuit_breaker_overrides_service_user_rate(self):
+        auth_header = self._jwt_header(Application.GRANT_CLIENT_CREDENTIALS)
+        # The rate_limit_2 circuit breaker sets the staff rate to 10/minute.
+        assert self._allowed_request_count(auth_header, attempts=12) == 10
+
+    def test_session_user_keeps_staff_rate(self):
+        assert self.client.login(username=self.service_user.username, password=TEST_PASSWORD)
+        assert self._allowed_request_count(auth_header='') == 2
+
+    def test_missing_service_user_rate_keeps_staff_rate(self):
+        rates = {k: v for k, v in settings.REST_FRAMEWORK['DEFAULT_THROTTLE_RATES'].items() if k != 'service_user'}
+        auth_header = self._jwt_header(Application.GRANT_CLIENT_CREDENTIALS)
+        with override_settings(REST_FRAMEWORK={**settings.REST_FRAMEWORK, 'DEFAULT_THROTTLE_RATES': rates}):
+            assert self._allowed_request_count(auth_header) == 2
+
+    def test_throttled_response_has_retry_after(self):
+        auth_header = self._bearer_header(Application.GRANT_AUTHORIZATION_CODE)
+        assert self._allowed_request_count(auth_header) == 2
+        response = self.client.get(
+            reverse('course-list'), {'username': self.service_user.username}, HTTP_AUTHORIZATION=auth_header
+        )
+        assert response.status_code == 429
+        assert 0 < int(response['Retry-After']) <= 60
