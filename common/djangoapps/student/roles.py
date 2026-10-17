@@ -329,7 +329,7 @@ class BulkRoleCache:  # pylint: disable=missing-class-docstring
             for role in compat_roles:
                 course_id = get_role_cache_key_for_course(role.course_id)
                 user_roles_set_for_course = roles_by_user[user.id][course_id]
-                user_roles_set_for_course.add(compat_role)
+                user_roles_set_for_course.add(role)
 
         users_without_roles = [u for u in users if u.id not in roles_by_user]
         for user in users_without_roles:
