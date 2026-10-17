@@ -6,6 +6,8 @@ too.
 
 import unittest
 from datetime import datetime, timedelta
+from shutil import rmtree
+from tempfile import mkdtemp
 from zoneinfo import ZoneInfo
 
 import ddt
@@ -19,7 +21,14 @@ from xmodule.assetstore import AssetMetadata
 from xmodule.modulestore import IncorrectlySortedList, ModuleStoreEnum, SortedAssetList
 from xmodule.modulestore.exceptions import ItemNotFoundError
 from xmodule.modulestore.tests.factories import CourseFactory
-from xmodule.modulestore.tests.utils import SPLIT_MODULESTORE_SETUP, MixedModulestoreBuilder, XmlModulestoreBuilder
+from xmodule.modulestore.tests.utils import (
+    SPLIT_MODULESTORE_SETUP,
+    TEST_DATA_DIR,
+    MixedModulestoreBuilder,
+    XmlModulestoreBuilder,
+)
+from xmodule.modulestore.xml_exporter import export_course_to_xml
+from xmodule.modulestore.xml_importer import import_course_from_xml
 
 
 class AssetStoreTestData:
@@ -569,6 +578,43 @@ class TestMongoAssetMetadataStorage(TestCase):
             store.save_asset_metadata(new_asset_thumbnail, ModuleStoreEnum.UserID.test)
 
             assert len(store.get_all_asset_metadata(course.id, 'different')) == 1
+
+    @ddt.data(SPLIT_MODULESTORE_SETUP)
+    def test_import_ignores_asset_metadata(self, storebuilder):
+        """
+        Importing a course whose assets/assets.xml lists assets does not store
+        any asset metadata.
+
+        We deliberately ignore it because assetstore is deprecated and
+        assets.xml has been unused for years.
+        """
+        with storebuilder.build() as (contentstore, store):
+            courses = import_course_from_xml(
+                store, ModuleStoreEnum.UserID.test, TEST_DATA_DIR, source_dirs=['manual-testing-complete'],
+                static_content_store=contentstore, create_if_not_present=True, raise_on_failure=True,
+            )
+            assert len(courses) == 1
+            assert store.get_all_asset_metadata(courses[0].id, None) == []
+
+    @ddt.data(SPLIT_MODULESTORE_SETUP)
+    def test_export_writes_empty_asset_metadata(self, storebuilder):
+        """
+        Exporting a course always writes an empty assets/assets.xml.
+
+        We do this just for backwards compatibility, but the assets.xml file
+        hasn't been used in any meaningful way in years.
+        """
+        with storebuilder.build() as (contentstore, store):
+            course = CourseFactory.create(modulestore=store)
+            self.setup_assets(course.id, None, store)
+            assert len(store.get_all_asset_metadata(course.id, 'asset')) == 2
+
+            export_dir = mkdtemp()
+            self.addCleanup(rmtree, export_dir)
+            export_course_to_xml(store, contentstore, course.id, export_dir, 'exported_course')
+
+            with open(f'{export_dir}/exported_course/assets/assets.xml', 'rb') as assets_xml:
+                assert assets_xml.read() == b'<assets/>'
 
     @ddt.data('XML_MODULESTORE_BUILDER', 'MIXED_MODULESTORE_BUILDER')
     def test_xml_not_yet_implemented(self, storebuilderName):
