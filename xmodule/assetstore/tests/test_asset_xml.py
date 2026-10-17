@@ -5,12 +5,16 @@ Test for asset XML generation / parsing.
 
 import unittest
 
+import pytest
 from lxml import etree
 from opaque_keys.edx.locator import CourseLocator
 from path import Path as path
 
 from xmodule.assetstore import AssetMetadata
 from xmodule.modulestore.tests.test_assetstore import AssetStoreTestData
+
+# These tests exercise the deprecated AssetMetadata class directly.
+pytestmark = pytest.mark.filterwarnings("ignore:xmodule.assetstore is deprecated:DeprecationWarning")
 
 
 class TestAssetXml(unittest.TestCase):

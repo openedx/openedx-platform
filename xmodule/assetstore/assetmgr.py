@@ -6,14 +6,8 @@ Has not done anything other than wrap ``contentstore().find(...)`` since 2015.
 Deprecated: use ``xmodule.contentstore.django.contentstore().find()`` instead.
 """
 
-import sys
-
 from xmodule.contentstore.django import contentstore
-
-if sys.version_info >= (3, 13):
-    from warnings import deprecated
-else:
-    from typing_extensions import deprecated
+from xmodule.util.deprecation import deprecated
 
 DEPRECATION_MESSAGE = (
     "AssetManager is deprecated and will be removed. "
