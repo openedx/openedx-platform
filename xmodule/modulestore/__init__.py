@@ -27,6 +27,7 @@ from xblock.runtime import Mixologist
 from openedx.core.lib.json_utils import EdxJSONEncoder  # noqa: F401
 from xmodule.assetstore import AssetMetadata
 from xmodule.errortracker import make_error_tracker
+from xmodule.util.deprecation import deprecated
 from xmodule.util.misc import get_library_or_course_attribute
 
 from .exceptions import InsufficientSpecificationError, InvalidLocationError  # noqa: F401
@@ -585,9 +586,17 @@ class SortedAssetList(SortedKeyList):  # pylint: disable=abstract-method
         self.add(metadata_to_insert)
 
 
+ASSET_METADATA_DEPRECATION_MESSAGE = (
+    "Asset metadata in the modulestore is deprecated and will be removed. It is never populated by Studio; "
+    "use xmodule.contentstore.django.contentstore() to access course assets instead."
+)
+
+
 class ModuleStoreAssetBase:
     """
     The methods for accessing assets and their metadata
+
+    The asset metadata methods are deprecated; use ``contentstore()`` to access course assets instead.
     """
     def _find_course_asset(self, asset_key):
         """
@@ -608,6 +617,7 @@ class ModuleStoreAssetBase:
 
         return course_assets, idx
 
+    @deprecated(ASSET_METADATA_DEPRECATION_MESSAGE)
     def find_asset_metadata(self, asset_key, **kwargs):
         """
         Find the metadata for a particular course asset.
@@ -627,6 +637,7 @@ class ModuleStoreAssetBase:
         mdata.from_storable(all_assets[asset_idx])
         return mdata
 
+    @deprecated(ASSET_METADATA_DEPRECATION_MESSAGE)
     def get_all_asset_metadata(self, course_key, asset_type, start=0, maxresults=-1, sort=None, **kwargs):  # pylint: disable=unused-argument
         """
         Returns a list of asset metadata for all assets of the given asset_type in the course.
@@ -725,6 +736,7 @@ class ModuleStoreAssetWriteInterface(ModuleStoreAssetBase):
             all_assets.insert_or_update(asset_md)
         return assets_by_type
 
+    @deprecated(ASSET_METADATA_DEPRECATION_MESSAGE)
     def save_asset_metadata(self, asset_metadata, user_id, import_only):
         """
         Saves the asset metadata for a particular course's asset.
@@ -739,6 +751,7 @@ class ModuleStoreAssetWriteInterface(ModuleStoreAssetBase):
         """
         raise NotImplementedError()
 
+    @deprecated(ASSET_METADATA_DEPRECATION_MESSAGE)
     def save_asset_metadata_list(self, asset_metadata_list, user_id, import_only):
         """
         Saves a list of asset metadata for a particular course's asset.
@@ -753,18 +766,21 @@ class ModuleStoreAssetWriteInterface(ModuleStoreAssetBase):
         """
         raise NotImplementedError()
 
+    @deprecated(ASSET_METADATA_DEPRECATION_MESSAGE)
     def set_asset_metadata_attrs(self, asset_key, attrs, user_id):
         """
         Base method to over-ride in modulestore.
         """
         raise NotImplementedError()
 
+    @deprecated(ASSET_METADATA_DEPRECATION_MESSAGE)
     def delete_asset_metadata(self, asset_key, user_id):
         """
         Base method to over-ride in modulestore.
         """
         raise NotImplementedError()
 
+    @deprecated(ASSET_METADATA_DEPRECATION_MESSAGE)
     def set_asset_metadata_attr(self, asset_key, attr, value, user_id):
         """
         Add/set the given attr on the asset at the given location. Value can be any type which pymongo accepts.
@@ -781,6 +797,7 @@ class ModuleStoreAssetWriteInterface(ModuleStoreAssetBase):
         """
         return self.set_asset_metadata_attrs(asset_key, {attr: value}, user_id)
 
+    @deprecated(ASSET_METADATA_DEPRECATION_MESSAGE)
     def copy_all_asset_metadata(self, source_course_key, dest_course_key, user_id):
         """
         Copy all the course assets from source_course_key to dest_course_key.

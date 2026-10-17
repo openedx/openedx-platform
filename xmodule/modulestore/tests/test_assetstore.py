@@ -30,6 +30,12 @@ from xmodule.modulestore.tests.utils import (
 from xmodule.modulestore.xml_exporter import export_course_to_xml
 from xmodule.modulestore.xml_importer import import_course_from_xml
 
+# These tests exercise the deprecated asset metadata APIs directly.
+pytestmark = [
+    pytest.mark.filterwarnings("ignore:Asset metadata in the modulestore is deprecated:DeprecationWarning"),
+    pytest.mark.filterwarnings("ignore:xmodule.assetstore is deprecated:DeprecationWarning"),
+]
+
 
 class AssetStoreTestData:
     """
@@ -578,6 +584,21 @@ class TestMongoAssetMetadataStorage(TestCase):
             store.save_asset_metadata(new_asset_thumbnail, ModuleStoreEnum.UserID.test)
 
             assert len(store.get_all_asset_metadata(course.id, 'different')) == 1
+
+    @ddt.data(SPLIT_MODULESTORE_SETUP)
+    def test_asset_metadata_api_is_deprecated(self, storebuilder):
+        """
+        The modulestore asset metadata APIs and AssetMetadata emit DeprecationWarnings.
+        """
+        with storebuilder.build() as (__, store):
+            course = CourseFactory.create(modulestore=store)
+            asset_key = course.id.make_asset_key('asset', 'pic1.jpg')
+            with self.assertWarnsRegex(DeprecationWarning, 'Asset metadata in the modulestore is deprecated'):
+                store.get_all_asset_metadata(course.id, 'asset')
+            with self.assertWarnsRegex(DeprecationWarning, 'Asset metadata in the modulestore is deprecated'):
+                store.find_asset_metadata(asset_key)
+            with self.assertWarnsRegex(DeprecationWarning, 'xmodule.assetstore is deprecated'):
+                AssetMetadata(asset_key)
 
     @ddt.data(SPLIT_MODULESTORE_SETUP)
     def test_import_ignores_asset_metadata(self, storebuilder):
