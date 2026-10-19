@@ -152,9 +152,11 @@ class ObjectTagOrgByTaxonomySerializer(ObjectTagsByTaxonomySerializer):
         taxonomies = {obj_tag.taxonomy_id: obj_tag.taxonomy for obj_tag in instance}
         for by_object in data.values():
             for entry in by_object["taxonomies"]:
+                # A tag whose taxonomy was deleted has no taxonomy, so it can't be a competency.
+                taxonomy = taxonomies[entry["taxonomy_id"]]
                 entry["taxonomy_type"] = (
                     TaxonomyType.COMPETENCY.value
-                    if is_competency_taxonomy(taxonomies[entry["taxonomy_id"]])
+                    if taxonomy is not None and is_competency_taxonomy(taxonomy)
                     else TaxonomyType.TAGS.value
                 )
         return data
