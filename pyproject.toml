@@ -296,7 +296,7 @@ constraint-dependencies = [
 ]
 
 # TODO: drop this once xblocks-contrib ships a release carrying the Text
-# (HTML) block's include_theme field. Tracked by openedx/xblocks-core#308.
+# (HTML) block's use_mfe_theming field. Tracked by openedx/xblocks-core#308.
 [tool.uv.sources]
 xblocks-contrib = { git = "https://github.com/open-craft/xblocks-core.git", rev = "rpenido/text-xblock-include-theme" }
 

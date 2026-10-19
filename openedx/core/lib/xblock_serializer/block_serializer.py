@@ -171,8 +171,8 @@ class XBlockSerializer:
             olx_node.attrib["editor"] = block.editor
         if block.use_latex_compiler:
             olx_node.attrib["use_latex_compiler"] = "true"
-        if "include_theme" in block.fields and block.include_theme:
-            olx_node.attrib["include_theme"] = "true"
+        if "use_mfe_theming" in block.fields and block.use_mfe_theming:
+            olx_node.attrib["use_mfe_theming"] = "true"
         for field_name in block.fields:
             if (
                 field_name.startswith(("upstream", "downstream")) or field_name == "top_level_downstream_parent_key"
