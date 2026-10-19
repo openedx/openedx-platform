@@ -13,6 +13,8 @@ from urllib.parse import parse_qs, urlparse
 import ddt
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 from edx_django_utils.cache import RequestCache
 from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator, LibraryCollectionLocator, LibraryContainerLocator
@@ -1998,6 +2000,7 @@ class TestObjectTagViewSet(TestObjectTagMixin, APITestCase):
             'export_id': '13-multiple-taxonomy',
             'taxonomy_id': taxonomy.pk,
             'can_tag_object': True,
+            'taxonomy_type': 'tags',
             'tags': [
                 {
                     'value': 'Tag 1',
@@ -2041,6 +2044,7 @@ class TestObjectTagViewSet(TestObjectTagMixin, APITestCase):
             'taxonomy_id': self.t1.pk,
             'can_tag_object': True,
             'export_id': self.t1.export_id,
+            'taxonomy_type': 'tags',
             'tags': [
                 {
                     'value': 'android',
@@ -2119,6 +2123,78 @@ class TestObjectTagViewSet(TestObjectTagMixin, APITestCase):
         assert len(response.data[object_id]["taxonomies"]) == 1
         assert response.data[object_id]["taxonomies"][0]["can_tag_object"] == expected_perm
         assert response.data[object_id]["taxonomies"][0]["tags"] == expected_tags
+
+    def _create_competency_taxonomy(self) -> Taxonomy:
+        """
+        Create a competency taxonomy with one tag, owned by all orgs so the org filter shows it.
+        """
+        taxonomy = create_competency_taxonomy(name="Nursing Competencies", export_id="nursing-competencies")
+        Tag.objects.create(taxonomy=taxonomy, value="Triage")
+        TaxonomyOrg.objects.create(taxonomy=taxonomy, org=None, rel_type=TaxonomyOrg.RelType.OWNER)
+        return taxonomy
+
+    def _get_taxonomy_entries(self, object_id, user=None) -> list[dict]:
+        """
+        GET the object's tags (as staffA unless another user is given) and return the taxonomy entries.
+        """
+        self.client.force_authenticate(user=user or self.staffA)
+        response = self.client.get(OBJECT_TAGS_URL.format(object_id=object_id))
+        assert response.status_code == 200
+        return response.data[str(object_id)]["taxonomies"]
+
+    def test_get_tags_taxonomy_type_competency(self):
+        competency = self._create_competency_taxonomy()
+        tagging_api.tag_object(object_id=str(self.courseA), taxonomy=competency, tags=["Triage"])
+
+        entries = self._get_taxonomy_entries(self.courseA)
+
+        assert [e["taxonomy_type"] for e in entries] == ["competency"]
+
+    def test_get_tags_taxonomy_type_ordinary(self):
+        tagging_api.tag_object(object_id=str(self.courseA), taxonomy=self.t1, tags=["android"])
+
+        entries = self._get_taxonomy_entries(self.courseA)
+
+        assert [e["taxonomy_type"] for e in entries] == ["tags"]
+
+    def test_get_tags_taxonomy_type_mixed(self):
+        competency = self._create_competency_taxonomy()
+        tagging_api.tag_object(object_id=str(self.courseA), taxonomy=competency, tags=["Triage"])
+        tagging_api.tag_object(object_id=str(self.courseA), taxonomy=self.t1, tags=["android"])
+
+        entries = self._get_taxonomy_entries(self.courseA)
+
+        types_by_taxonomy_id = {e["taxonomy_id"]: e["taxonomy_type"] for e in entries}
+        assert types_by_taxonomy_id == {competency.pk: "competency", self.t1.pk: "tags"}
+
+    def test_get_tags_untagged_object(self):
+        assert self._get_taxonomy_entries(self.courseA) == []
+
+    def test_get_tags_query_count_independent_of_taxonomy_type_check(self):
+        """
+        The query count does not grow with the number of taxonomies, competency ones included.
+
+        All taxonomies here are all-org on purpose. For org-owned taxonomies, ``can_tag_object`` makes its own
+        organization lookups, a separate cost that this test leaves out so it isolates the cost of ``taxonomy_type``.
+        """
+        competency = self._create_competency_taxonomy()
+        extra = tagging_api.create_taxonomy(name="Extra all-org taxonomy", enabled=True)
+        Tag.objects.create(taxonomy=extra, value="Extra")
+        TaxonomyOrg.objects.create(taxonomy=extra, org=None, rel_type=TaxonomyOrg.RelType.OWNER)
+        tagging_api.tag_object(object_id=str(self.courseB), taxonomy=self.t1, tags=["android"])
+        for taxonomy, tag in ((self.t1, "android"), (competency, "Triage"), (extra, "Extra")):
+            tagging_api.tag_object(object_id=str(self.courseA), taxonomy=taxonomy, tags=[tag])
+
+        query_counts = []
+        for course, expected_taxonomies in ((self.courseB, 1), (self.courseA, 3)):
+            # Warm up the site and waffle flag caches, as test_object_tags_query_count does.
+            self._get_taxonomy_entries(course, self.staff)
+            with CaptureQueriesContext(connection) as queries:
+                entries = self._get_taxonomy_entries(course, self.staff)
+            assert len(entries) == expected_taxonomies
+            query_counts.append(len(queries))
+
+        assert query_counts[0] == query_counts[1]
 
 
 @skip_unless_cms

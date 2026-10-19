@@ -8,6 +8,7 @@ from openedx_authz import api as authz_api
 from openedx_authz.constants.permissions import COURSES_MANAGE_TAGS
 from openedx_learning.api import is_competency_taxonomy
 from openedx_tagging.api import TaxonomyType
+from openedx_tagging.models import ObjectTag
 from openedx_tagging.rest_api.v1.serializers import (
     ObjectTagMinimalSerializer,
     ObjectTagsByTaxonomySerializer,
@@ -118,7 +119,8 @@ class TaxonomyOrgSerializer(TaxonomySerializer):
 
 class ObjectTagOrgByTaxonomySerializer(ObjectTagsByTaxonomySerializer):
     """
-    Extend ObjectTagsByTaxonomySerializer to conditionally use openedx-authz for can_tag_object.
+    Extend ObjectTagsByTaxonomySerializer to conditionally use openedx-authz for can_tag_object,
+    and to report each taxonomy's ``taxonomy_type`` ("competency" or "tags").
     """
 
     def can_tag_object(self, obj_tag) -> bool | None:
@@ -137,6 +139,25 @@ class ObjectTagOrgByTaxonomySerializer(ObjectTagsByTaxonomySerializer):
 
         # Fall back to parent implementation
         return super().can_tag_object(obj_tag)
+
+    def to_representation(self, instance: list[ObjectTag]) -> dict:
+        """
+        Serialize the object tags grouped by taxonomy, adding ``taxonomy_type`` to each taxonomy entry.
+
+        ``taxonomy_type`` is "competency" when ``is_competency_taxonomy`` (the CBE public API) says the
+        taxonomy is competency-backed, and "tags" otherwise. That check costs no extra query only if the
+        taxonomies were loaded with their competency row joined, as ``ObjectTagOrgView`` does.
+        """
+        data = super().to_representation(instance)
+        taxonomies = {obj_tag.taxonomy_id: obj_tag.taxonomy for obj_tag in instance}
+        for by_object in data.values():
+            for entry in by_object["taxonomies"]:
+                entry["taxonomy_type"] = (
+                    TaxonomyType.COMPETENCY.value
+                    if is_competency_taxonomy(taxonomies[entry["taxonomy_id"]])
+                    else TaxonomyType.TAGS.value
+                )
+        return data
 
 
 class ObjectTagCopiedMinimalSerializer(ObjectTagMinimalSerializer):
