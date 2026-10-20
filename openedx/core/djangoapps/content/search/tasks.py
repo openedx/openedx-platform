@@ -65,15 +65,18 @@ def delete_xblock_index_doc(usage_key_str: str) -> None:
 
 @shared_task(base=LoggedTask, autoretry_for=(MeilisearchError, ConnectionError))
 @set_code_owner_attribute
-def upsert_library_block_index_doc(usage_key_str: str) -> None:
+def upsert_library_block_index_doc(usage_key_str: str, wait_timeout: float | None = None) -> None:
     """
     Celery task to update the content index document for a library block
+
+    ``wait_timeout`` bounds how long to wait for Meilisearch to apply the update. Callers running
+    this eagerly inside a request should pass it; a real celery worker can leave it as None.
     """
     usage_key = LibraryUsageLocatorV2.from_string(usage_key_str)
 
     log.info("Updating content index document for library block with id: %s", usage_key)
 
-    api.upsert_library_block_index_doc(usage_key)
+    api.upsert_library_block_index_doc(usage_key, wait_timeout=wait_timeout)
 
 
 @shared_task(base=LoggedTask, autoretry_for=(MeilisearchError, ConnectionError))
