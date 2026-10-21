@@ -7,6 +7,7 @@ from django.utils.decorators import method_decorator
 from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
 from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
 from opaque_keys.edx.keys import CourseKey
+from openedx_filters.learning.filters import CourseHomeMetadataAPIRenderStarted
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.generics import RetrieveAPIView
 from rest_framework.response import Response
@@ -161,4 +162,7 @@ class CourseHomeMetadataView(RetrieveAPIView):
         context['course_overview'] = course
         context['enrollment'] = enrollment
         serializer = self.get_serializer_class()(data, context=context)
-        return Response(serializer.data)
+        data = CourseHomeMetadataAPIRenderStarted.run_filter(
+            course_key=course_key, user=request.user, data=serializer.data
+        )
+        return Response(data)

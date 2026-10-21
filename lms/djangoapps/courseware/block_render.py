@@ -34,6 +34,7 @@ from edx_when.field_data import DateLookupFieldData
 from eventtracking import tracker
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey, UsageKey
+from openedx_filters.learning.filters import LearnerXBlockBound
 from rest_framework.decorators import api_view
 from rest_framework.exceptions import APIException
 from web_fragments.fragment import Fragment
@@ -462,6 +463,9 @@ def get_block_for_descriptor(
 
     block.runtime.set('position', position)
 
+    # bind_for_student is a no-op for a block already bound to this user, which
+    # has then already been through LearnerXBlockBound.
+    already_bound = block.scope_ids.user_id is not None and block.scope_ids.user_id == user.id
     block.bind_for_student(
         user.id,
         [
@@ -488,9 +492,22 @@ def get_block_for_descriptor(
         )
         if access or caller_will_handle_access_error:
             block.has_access_error = bool(caller_will_handle_access_error)
-            return block
+            return _run_learner_xblock_bound(block, user, course_key, already_bound)
         return None
-    return block
+    return _run_learner_xblock_bound(block, user, course_key, already_bound)
+
+
+def _run_learner_xblock_bound(block, user, course_key, already_bound):
+    """
+    Run the LearnerXBlockBound filter once per binding, for known users only.
+
+    Unknown users are block structure collection (whose result is cached and
+    shared by every learner) and no-auth callbacks, so their blocks are left as
+    authored.
+    """
+    if already_bound or not getattr(user, 'known', True):
+        return block
+    return LearnerXBlockBound.run_filter(block=block, user=user, course_key=course_key)
 
 
 def prepare_runtime_for_user(
