@@ -195,6 +195,7 @@ testing = [
     "pytest-randomly", # pytest plugin to randomly order tests
     "pytest-reportlog", # Per-test timing data including setup/teardown (used for shard rebalancing)
     "pytest-xdist[psutil]", # Parallel execution of tests on multiple CPU cores or hosts
+    "responses", # Mocks HTTP responses at the requests library level, used in many tests
     "singledispatch", # Backport of functools.singledispatch from Python 3.4+, used in tests of XBlock rendering
     "testfixtures", # Provides a LogCapture utility used by several tests
     "unidiff", # Required by coverage_pytest_plugin
