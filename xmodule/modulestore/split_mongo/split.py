@@ -59,6 +59,7 @@ import copy
 import datetime
 import logging
 from collections import defaultdict
+from contextlib import contextmanager
 from importlib import import_module
 from zoneinfo import ZoneInfo
 
@@ -222,15 +223,52 @@ class SplitBulkWriteMixin(BulkOperationsMixin):
         """
         Clear the record for this course
         """
+        del self._active_bulk_ops.records[self._bulk_ops_record_key(course_key)]
+
+    def _bulk_ops_record_key(self, course_key):
+        """
+        Return the key of this course's record in the active bulk operations.
+        """
         if not isinstance(course_key, (CourseLocator, LibraryLocator)):
             raise TypeError(f'{course_key!r} is not a CourseLocator or LibraryLocator')
 
         if course_key.org and get_library_or_course_attribute(course_key) and course_key.run:
-            del self._active_bulk_ops.records[course_key.replace(branch=None, version_guid=None)]
-        else:
-            del self._active_bulk_ops.records[
-                course_key.replace(org=None, course=None, run=None, branch=None)
-            ]
+            return course_key.replace(branch=None, version_guid=None)
+        return course_key.replace(org=None, course=None, run=None, branch=None)
+
+    @contextmanager
+    def fresh_block_reads(self, course_key):
+        """
+        A context manager for loading the course's blocks as new instances, ignoring block
+        instances that this thread has already loaded (and may have changed in memory).
+
+        Set aside, and restored on exit:
+
+        * the blocks cached by the course's active bulk operation, which hand back
+          already-loaded instances;
+        * the request's runtimes (for every course), which may have been prepared for a
+          user and then bind each child block they load to that user.
+
+        Cached structures and definitions are still used. Meant for reads: blocks cached
+        by writes made inside the context are dropped on exit.
+        """
+        # Looked up without indexing, which would add a record to the defaultdict.
+        bulk_ops_record = self._active_bulk_ops.records.get(self._bulk_ops_record_key(course_key))
+        cache_data = self.request_cache.data if self.request_cache is not None else {}
+        saved_modules = bulk_ops_record.modules if bulk_ops_record is not None else None
+        saved_runtimes = cache_data.get('course_cache')
+        if bulk_ops_record is not None:
+            bulk_ops_record.modules = defaultdict(dict)
+        cache_data['course_cache'] = {}
+        try:
+            yield
+        finally:
+            if bulk_ops_record is not None:
+                bulk_ops_record.modules = saved_modules
+            if saved_runtimes is None:
+                cache_data.pop('course_cache', None)
+            else:
+                cache_data['course_cache'] = saved_runtimes
 
     def _start_outermost_bulk_operation(self, bulk_write_record, course_key, ignore_case=False):  # pylint: disable=arguments-differ
         """

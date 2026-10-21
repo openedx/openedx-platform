@@ -1039,6 +1039,16 @@ class ModuleStoreRead(ModuleStoreAssetBase, metaclass=ABCMeta):
         """
         yield
 
+    @contextmanager
+    def fresh_block_reads(self, course_key):  # pylint: disable=unused-argument
+        """
+        A context manager for loading the course's blocks as new instances, ignoring block
+        instances that this thread has already loaded (and may have changed in memory).
+
+        The default is a no-op, for stores that do not reuse loaded block instances.
+        """
+        yield
+
     def ensure_indexes(self):
         """
         Ensure that all appropriate indexes are created that are needed by this modulestore, or raise
