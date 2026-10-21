@@ -9,7 +9,6 @@ import unittest
 from datetime import datetime, timedelta
 
 import ddt
-import httpretty
 from django.test import TestCase
 from django.test.utils import override_settings
 from django.urls import reverse
@@ -115,7 +114,6 @@ class AccessTokenExchangeViewTest(AccessTokenExchangeTestMixin):
 
 
 @unittest.skipUnless(TPA_FEATURE_ENABLED, TPA_FEATURES_KEY + " not enabled")
-@httpretty.activate
 class DOTAccessTokenExchangeViewTestFacebook(
         DOTAdapterMixin,
         AccessTokenExchangeViewTest,
@@ -130,7 +128,6 @@ class DOTAccessTokenExchangeViewTestFacebook(
 
 # This is necessary because cms does not implement third party auth
 @unittest.skipUnless(TPA_FEATURE_ENABLED, TPA_FEATURES_KEY + " not enabled")
-@httpretty.activate
 class DOTAccessTokenExchangeViewTestGoogle(
         DOTAdapterMixin,
         AccessTokenExchangeViewTest,

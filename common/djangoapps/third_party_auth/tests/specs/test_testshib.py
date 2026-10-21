@@ -11,7 +11,7 @@ from unittest.mock import MagicMock, patch
 from urllib.parse import parse_qs, quote, urlparse
 
 import ddt
-import httpretty
+import responses
 from django.contrib import auth
 from freezegun import freeze_time
 from social_core import actions
@@ -38,6 +38,13 @@ TESTSHIB_METADATA_URL_WITH_CACHE_DURATION = "https://mock.testshib.org/metadata/
 TESTSHIB_SSO_URL = "https://idp.testshib.org/idp/profile/SAML2/Redirect/SSO"
 
 
+def _body_bytes(request):
+    """Return the mocked request's body as bytes, whichever form the client sent it in."""
+    body = request.body or b""
+    return body if isinstance(body, bytes) else body.encode("utf-8")
+
+
+
 class SamlIntegrationTestUtilities:
     """
     Class contains methods particular to SAML integration testing so that they
@@ -61,34 +68,44 @@ class SamlIntegrationTestUtilities:
             entity_id="https://saml.example.none",
         )
         # Mock out HTTP requests that may be made to TestShib:
-        httpretty.enable()
-        httpretty.reset()
-        self.addCleanup(httpretty.reset)  # pylint: disable=no-member
-        self.addCleanup(httpretty.disable)  # pylint: disable=no-member
+        responses.start()
+        responses.reset()
+        self.addCleanup(responses.reset)  # pylint: disable=no-member
+        self.addCleanup(responses.stop)  # pylint: disable=no-member
 
-        def metadata_callback(_request, _uri, headers):
+        def metadata_callback(_request):
             """Return a cached copy of TestShib's metadata by reading it from disk"""
             return (
                 200,
-                headers,
+                {},
                 self.read_data_file("testshib_metadata.xml"),
             )  # pylint: disable=no-member
 
-        httpretty.register_uri(httpretty.GET, TESTSHIB_METADATA_URL, content_type="text/xml", body=metadata_callback)
+        responses.add_callback(
 
-        def cache_duration_metadata_callback(_request, _uri, headers):
+            responses.GET,
+
+            TESTSHIB_METADATA_URL,
+
+            callback=metadata_callback,
+
+            content_type="text/xml",
+
+        )
+
+        def cache_duration_metadata_callback(_request):
             """Return a cached copy of TestShib's metadata with a cacheDuration attribute"""
             return (
                 200,
-                headers,
+                {},
                 self.read_data_file("testshib_metadata_with_cache_duration.xml"),
             )  # pylint: disable=no-member
 
-        httpretty.register_uri(
-            httpretty.GET,
+        responses.add_callback(
+            responses.GET,
             TESTSHIB_METADATA_URL_WITH_CACHE_DURATION,
+            callback=cache_duration_metadata_callback,
             content_type="text/xml",
-            body=cache_duration_metadata_callback,
         )
 
         # Configure the SAML library to use the same request ID for every request.
@@ -123,7 +140,6 @@ class SamlIntegrationTestUtilities:
         saml_provider = self.configure_saml_provider(**kwargs)  # pylint: disable=no-member
 
         if fetch_metadata:
-            assert httpretty.is_enabled()  # pylint: disable=no-member
             num_total, num_skipped, num_attempted, num_updated, num_failed, failure_messages = fetch_saml_metadata()
             if assert_metadata_updates:
                 assert num_total == 1  # pylint: disable=no-member
@@ -375,7 +391,6 @@ class TestShibIntegrationTest(SamlIntegrationTestUtilities, IntegrationTestMixin
         kwargs.setdefault("icon_class", "fa-university")
         kwargs.setdefault("attr_email", "urn:oid:1.3.6.1.4.1.5923.1.1.1.6")  # eduPersonPrincipalName
         self.configure_saml_provider(**kwargs)
-        assert httpretty.is_enabled()
         num_total, num_skipped, num_attempted, num_updated, num_failed, failure_messages = fetch_saml_metadata()
         assert num_total == 1
         assert num_skipped == 0
@@ -420,62 +435,93 @@ class SuccessFactorsIntegrationTest(SamlIntegrationTestUtilities, IntegrationTes
 
     def setUp(self):
         """
-        Mock out HTTP calls to various endpoints using httpretty.
+        Mock out HTTP calls to various endpoints using responses.
         """
         super().setUp()
 
         # Mock the call to the SAP SuccessFactors assertion endpoint
         SAPSF_ASSERTION_URL = "http://successfactors.com/oauth/idp"
 
-        def assertion_callback(_request, _uri, headers):
+        def assertion_callback(_request):
             """
             Return a fake assertion after checking that the input is what we expect.
             """
-            assert b"private_key=fake_private_key_here" in _request.body
-            assert b"user_id=myself" in _request.body
-            assert b"token_url=http%3A%2F%2Fsuccessfactors.com%2Foauth%2Ftoken" in _request.body
-            assert b"client_id=TatVotSEiCMteSNWtSOnLanCtBGwNhGB" in _request.body
-            return (200, headers, "fake_saml_assertion")
+            assert b"private_key=fake_private_key_here" in _body_bytes(_request)
+            assert b"user_id=myself" in _body_bytes(_request)
+            assert b"token_url=http%3A%2F%2Fsuccessfactors.com%2Foauth%2Ftoken" in _body_bytes(_request)
+            assert b"client_id=TatVotSEiCMteSNWtSOnLanCtBGwNhGB" in _body_bytes(_request)
+            return (200, {}, "fake_saml_assertion")
 
-        httpretty.register_uri(httpretty.POST, SAPSF_ASSERTION_URL, content_type="text/plain", body=assertion_callback)
+        responses.add_callback(
+
+            responses.POST,
+
+            SAPSF_ASSERTION_URL,
+
+            callback=assertion_callback,
+
+            content_type="text/plain",
+
+        )
 
         SAPSF_BAD_ASSERTION_URL = "http://successfactors.com/oauth-fake/idp"
 
-        def bad_callback(_request, _uri, headers):
+        def bad_callback(_request):
             """
             Return a 404 error when someone tries to call the URL.
             """
-            return (404, headers, "NOT AN ASSERTION")
+            return (404, {}, "NOT AN ASSERTION")
 
-        httpretty.register_uri(httpretty.POST, SAPSF_BAD_ASSERTION_URL, content_type="text/plain", body=bad_callback)
+        responses.add_callback(
+
+            responses.POST,
+
+            SAPSF_BAD_ASSERTION_URL,
+
+            callback=bad_callback,
+
+            content_type="text/plain",
+
+        )
 
         # Mock the call to the SAP SuccessFactors token endpoint
         SAPSF_TOKEN_URL = "http://successfactors.com/oauth/token"
 
-        def token_callback(_request, _uri, headers):
+        def token_callback(_request):
             """
             Return a fake assertion after checking that the input is what we expect.
             """
-            assert b"assertion=fake_saml_assertion" in _request.body
-            assert b"company_id=NCC1701D" in _request.body
-            assert b"grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Asaml2-bearer" in _request.body
-            assert b"client_id=TatVotSEiCMteSNWtSOnLanCtBGwNhGB" in _request.body
-            return (200, headers, '{"access_token": "faketoken"}')
+            assert b"assertion=fake_saml_assertion" in _body_bytes(_request)
+            assert b"company_id=NCC1701D" in _body_bytes(_request)
+            assert b"grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Asaml2-bearer" in _body_bytes(_request)
+            assert b"client_id=TatVotSEiCMteSNWtSOnLanCtBGwNhGB" in _body_bytes(_request)
+            return (200, {}, '{"access_token": "faketoken"}')
 
-        httpretty.register_uri(httpretty.POST, SAPSF_TOKEN_URL, content_type="application/json", body=token_callback)
+        responses.add_callback(
+
+            responses.POST,
+
+            SAPSF_TOKEN_URL,
+
+            callback=token_callback,
+
+            content_type="application/json",
+
+        )
 
         # Mock the call to the SAP SuccessFactors OData user endpoint
         ODATA_USER_URL = (
             "http://api.successfactors.com/odata/v2/User(userId='myself')"
             "?$select=firstName,lastName,defaultFullName,email"
         )
+        self.odata_user_url = ODATA_USER_URL
 
-        def user_callback(request, _uri, headers):
+        def user_callback(request):
             auth_header = request.headers.get("Authorization")
             assert auth_header == "Bearer faketoken"
             return (
                 200,
-                headers,
+                {},
                 json.dumps(
                     {
                         "d": {
@@ -490,28 +536,32 @@ class SuccessFactorsIntegrationTest(SamlIntegrationTestUtilities, IntegrationTes
                 ),
             )
 
-        httpretty.register_uri(httpretty.GET, ODATA_USER_URL, content_type="application/json", body=user_callback)
+        responses.add_callback(responses.GET, ODATA_USER_URL, callback=user_callback, content_type="application/json")
 
     def _mock_odata_api_for_error(self, odata_api_root_url, username):
         """
         Mock an error response when calling the OData API for user details.
         """
 
-        def callback(request, uri, headers):  # pylint: disable=unused-argument
+        def callback(request):
             """
             Return a 500 error when someone tries to call the URL.
             """
-            headers["CorrelationId"] = "aefd38b7-c92c-445a-8c7a-487a3f0c7a9d"
-            headers["RequestNo"] = "[787177]"  # This is the format SAPSF returns for the transaction request number
+            headers = {
+                "CorrelationId": "aefd38b7-c92c-445a-8c7a-487a3f0c7a9d",
+                "RequestNo": "[787177]",  # This is the format SAPSF returns for the transaction request number
+            }
             return 500, headers, "Failure!"
 
+        # Replace the default OData user mock from setUp; responses serves registrations in order.
+        responses.remove(responses.GET, self.odata_user_url)
         fields = ",".join(SapSuccessFactorsIdentityProvider.default_field_mapping.copy())
         url = "{root_url}User(userId='{user_id}')?$select={fields}".format(  # noqa: UP032
             root_url=odata_api_root_url,
             user_id=username,
             fields=fields,
         )
-        httpretty.register_uri(httpretty.GET, url, body=callback, content_type="application/json")
+        responses.add_callback(responses.GET, url, callback=callback, content_type="application/json")
         return url
 
     def test_register_insufficient_sapsf_metadata(self):
@@ -571,12 +621,12 @@ class SuccessFactorsIntegrationTest(SamlIntegrationTestUtilities, IntegrationTes
             "?$select=firstName,country,lastName,defaultFullName,email"
         )
 
-        def user_callback(request, _uri, headers):
+        def user_callback(request):
             auth_header = request.headers.get("Authorization")
             assert auth_header == "Bearer faketoken"
             return (
                 200,
-                headers,
+                {},
                 json.dumps(
                     {
                         "d": {
@@ -590,7 +640,9 @@ class SuccessFactorsIntegrationTest(SamlIntegrationTestUtilities, IntegrationTes
                 ),
             )
 
-        httpretty.register_uri(httpretty.GET, ODATA_USER_URL, content_type="application/json", body=user_callback)
+        # Replace the default OData user mock from setUp; responses serves registrations in order.
+        responses.remove(responses.GET, self.odata_user_url)
+        responses.add_callback(responses.GET, ODATA_USER_URL, callback=user_callback, content_type="application/json")
 
         provider_settings = {
             "sapsf_oauth_root_url": "http://successfactors.com/oauth/",
