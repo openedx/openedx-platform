@@ -501,25 +501,30 @@ class BlockRenderTestCase(SharedModuleStoreTestCase, LoginEnrollmentTestCase):
             course=self.toy_course
         )
 
-    @ddt.data(True, False)
+    @ddt.data(
+        ([True, True], 1),
+        ([False, False], 0),
+        ([False, True, True], 1),
+    )
+    @ddt.unpack
     @patch(
         'lms.djangoapps.courseware.block_render.LearnerXBlockBound.run_filter',
         side_effect=lambda **kwargs: kwargs['block'],
     )
-    def test_learner_xblock_bound_filter(self, known, run_filter):
-        """The bound filter runs once per binding, and only for known users."""
+    def test_learner_xblock_bound_filter(self, known_per_call, expected_calls, run_filter):
+        """The bound filter runs once per block and user, and only for known users."""
         request = self.request_factory.get('')
         request.user = self.mock_user
-        self.mock_user.known = known
         block = BlockFactory(category='html', parent=CourseFactory())
         field_data_cache = FieldDataCache([self.toy_course, block], self.toy_course.id, self.mock_user)
 
-        for _ in range(2):
+        for known in known_per_call:
+            self.mock_user.known = known
             render.get_block_for_descriptor(
                 self.mock_user, request, block, field_data_cache, self.toy_course.id, course=self.toy_course
             )
 
-        assert run_filter.call_count == (1 if known else 0)
+        assert run_filter.call_count == expected_calls
 
     @override_settings(FIELD_OVERRIDE_PROVIDERS=(
         'lms.djangoapps.courseware.student_field_overrides.IndividualStudentOverrideProvider',

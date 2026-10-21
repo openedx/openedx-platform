@@ -463,9 +463,6 @@ def get_block_for_descriptor(
 
     block.runtime.set('position', position)
 
-    # bind_for_student is a no-op for a block already bound to this user, which
-    # has then already been through LearnerXBlockBound.
-    already_bound = block.scope_ids.user_id is not None and block.scope_ids.user_id == user.id
     block.bind_for_student(
         user.id,
         [
@@ -492,22 +489,25 @@ def get_block_for_descriptor(
         )
         if access or caller_will_handle_access_error:
             block.has_access_error = bool(caller_will_handle_access_error)
-            return _run_learner_xblock_bound(block, user, course_key, already_bound)
+            return _run_learner_xblock_bound(block, user, course_key)
         return None
-    return _run_learner_xblock_bound(block, user, course_key, already_bound)
+    return _run_learner_xblock_bound(block, user, course_key)
 
 
-def _run_learner_xblock_bound(block, user, course_key, already_bound):
+def _run_learner_xblock_bound(block, user, course_key):
     """
-    Run the LearnerXBlockBound filter once per binding, for known users only.
+    Run the LearnerXBlockBound filter once per block and user, for known users only.
 
     Unknown users are block structure collection (whose result is cached and
     shared by every learner) and no-auth callbacks, so their blocks are left as
-    authored.
+    authored. A block that was bound to this user while unknown is filtered the
+    first time it is returned to the known user.
     """
-    if already_bound or not getattr(user, 'known', True):
+    if not getattr(user, 'known', True) or getattr(block, '_learner_xblock_bound_user_id', None) == user.id:
         return block
-    return LearnerXBlockBound.run_filter(block=block, user=user, course_key=course_key)
+    block = LearnerXBlockBound.run_filter(block=block, user=user, course_key=course_key)
+    block._learner_xblock_bound_user_id = user.id  # pylint: disable=protected-access
+    return block
 
 
 def prepare_runtime_for_user(
