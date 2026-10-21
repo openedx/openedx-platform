@@ -7,15 +7,32 @@ from unittest.mock import Mock, patch
 
 import ddt
 from django.http.request import HttpRequest
+from django.test import override_settings
+from openedx_filters import PipelineStep
 
 from common.djangoapps.student.tests.factories import UserFactory
 from lms.djangoapps.course_blocks.api import get_course_blocks
+from lms.djangoapps.course_blocks.transformers.load_override_data import OverrideDataTransformer
 from lms.djangoapps.course_blocks.transformers.tests.helpers import CourseStructureTestCase
 from lms.djangoapps.course_blocks.transformers.tests.test_user_partitions import UserPartitionTestMixin
 from lms.djangoapps.courseware.block_render import make_track_function, prepare_runtime_for_user
+from openedx.core.djangoapps.content.block_structure.api import get_block_structure_manager
 from openedx.core.djangoapps.content.block_structure.transformers import BlockStructureTransformers
 from openedx.core.djangoapps.course_groups.cohorts import add_user_to_cohort
 from xmodule.modulestore.django import modulestore
+
+FILTERED_USERNAME = 'filtered_user'
+
+
+class TestOverrideDisplayNameStep(PipelineStep):
+    """
+    Pipeline step that overrides the course display name for a single user.
+    """
+
+    def run_filter(self, block_structure, user, starting_block_usage_key):  # pylint: disable=arguments-differ
+        if user.username == FILTERED_USERNAME:
+            block_structure.override_xblock_field(starting_block_usage_key, 'display_name', 'Changed')
+        return {'block_structure': block_structure}
 
 
 def get_block_side_effect(block_locator, user_known):
@@ -147,3 +164,36 @@ class TestGetCourseBlocks(UserPartitionTestMixin, CourseStructureTestCase):
             set(block_structure.get_block_keys()),
             self.get_block_key_set(self.blocks, *expected_blocks)
         )
+
+    @override_settings(
+        OPEN_EDX_FILTERS_CONFIG={
+            'org.openedx.learning.course_blocks.transform.completed.v1': {
+                'pipeline': ['lms.djangoapps.course_blocks.tests.test_api.TestOverrideDisplayNameStep'],
+                'fail_silently': False,
+            },
+        },
+    )
+    # Register a transformer that collects display_name so the collected structure carries the authored value.
+    @patch(
+        'openedx.core.djangoapps.content.block_structure.transformer_registry.'
+        'TransformerRegistry.get_registered_transformers',
+        Mock(return_value={OverrideDataTransformer}),
+    )
+    def test_filter_overrides_do_not_leak_into_collected_structure(self):
+        """
+        Tests that changes made by the transform completed filter are returned on cold and warm caches
+        without modifying the collected block structure or the blocks returned to other users.
+        """
+        self.setup_partitions_and_course()
+        root_key = self.course.location
+        authored_name = self.course.display_name
+        filtered_user = UserFactory.create(username=FILTERED_USERNAME)
+
+        for _ in range(2):  # the first call collects the structure, the second reads it from the cache
+            block_structure = get_course_blocks(filtered_user, root_key, BlockStructureTransformers([]))
+            assert block_structure.get_xblock_field(root_key, 'display_name') == 'Changed'
+
+        collected = get_block_structure_manager(self.course.id).get_collected()
+        assert collected.get_xblock_field(root_key, 'display_name') == authored_name
+        block_structure = get_course_blocks(self.user, root_key, BlockStructureTransformers([]))
+        assert block_structure.get_xblock_field(root_key, 'display_name') == authored_name

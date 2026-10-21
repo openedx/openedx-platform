@@ -13,7 +13,9 @@ from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
 from django.test import override_settings
 from django.urls import reverse
+from django.utils.translation import get_language
 from edx_toggles.toggles.testutils import override_waffle_flag
+from openedx_filters import PipelineStep
 
 from cms.djangoapps.contentstore.outlines import update_outline_from_modulestore
 from common.djangoapps.course_modes.models import CourseMode
@@ -37,6 +39,22 @@ from openedx.features.course_experience import COURSE_ENABLE_UNENROLLED_ACCESS_F
 from openedx.features.discounts.applicability import DISCOUNT_APPLICABILITY_FLAG, FIRST_PURCHASE_DISCOUNT_OVERRIDE_FLAG
 from xmodule.course_block import COURSE_VISIBILITY_PUBLIC, COURSE_VISIBILITY_PUBLIC_OUTLINE
 from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
+
+block_filter_languages = []
+
+
+class TestLanguageBlockNamesStep(PipelineStep):
+    """
+    Pipeline step that appends the active language to every block display name.
+    """
+
+    def run_filter(self, block_structure, user, starting_block_usage_key):  # pylint: disable=arguments-differ
+        language = get_language()
+        block_filter_languages.append(language)
+        for block_key in block_structure:
+            display_name = block_structure.get_xblock_field(block_key, 'display_name')
+            block_structure.override_xblock_field(block_key, 'display_name', f'{display_name} [{language}]')
+        return {'block_structure': block_structure}
 
 
 @ddt.ddt
@@ -958,3 +976,30 @@ class SidebarBlocksTestViews(BaseCourseHomeTests):
         assert response.status_code == 200
         sequential_data = response.data['blocks'][str(self.sequential.location)]
         assert str(self.vertical.location) not in sequential_data['children']
+
+    @override_settings(OPEN_EDX_FILTERS_CONFIG={
+        'org.openedx.learning.course_blocks.transform.completed.v1': {
+            'pipeline': [f'{__name__}.TestLanguageBlockNamesStep'],
+            'fail_silently': False,
+        },
+    })
+    def test_navigation_cache_is_separate_per_language(self):
+        """
+        Test that block data that depends on the active language is cached separately for each language.
+        """
+        self.add_blocks_to_course()
+        CourseEnrollment.enroll(self.user, self.course.id, CourseMode.VERIFIED)
+        # Build the block structure up front so its version, part of the cache key, stays the same.
+        update_course_in_cache(self.course.id)
+        block_filter_languages.clear()
+
+        titles = {}
+        for language in ('en', 'es-419', 'en', 'es-419'):
+            response = self.client.get(self.url, HTTP_ACCEPT_LANGUAGE=language)
+            assert response.status_code == 200
+            title = response.data['blocks'][str(self.sequential.location)]['display_name']
+            assert titles.setdefault(language, title) == title
+
+        assert titles == {'en': 'Test [en]', 'es-419': 'Test [es-419]'}
+        # Repeated requests in the same language are served from the cache.
+        assert block_filter_languages == ['en', 'es-419']

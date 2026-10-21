@@ -16,7 +16,9 @@ from this app, edx-when's set_dates_for_course).
 from datetime import datetime, timezone
 
 import ddt
+from django.test import override_settings
 from opaque_keys.edx.keys import CourseKey
+from openedx_filters import PipelineStep
 from rest_framework.test import APIClient, APITestCase
 
 from common.djangoapps.student.models import CourseEnrollment
@@ -29,6 +31,21 @@ from openedx.core.djangolib.testing.utils import CacheIsolationTestCase, skip_un
 from ..api import replace_course_outline
 from ..api.tests.test_data import generate_sections
 from ..data import CourseOutlineData, CourseVisibility
+
+
+class TestCourseOutlineRenderStep(PipelineStep):
+    """
+    Utility pipeline step that records the user and changes sequence titles in place.
+    """
+
+    users = []
+
+    def run_filter(self, course_key, user, data):  # pylint: disable=arguments-differ
+        """Record the user and override every sequence title."""
+        self.users.append(user)
+        for sequence in data["outline"]["sequences"].values():
+            sequence["title"] = "Filtered title"
+        return {"data": data}
 
 
 @skip_unless_lms
@@ -118,6 +135,41 @@ class CourseOutlineViewTest(CacheIsolationTestCase, APITestCase):
         assert len(data['outline']['sections'][0]['sequence_ids']) == 2
         assert len(data['outline']['sections'][1]['sequence_ids']) == 2
         assert len(data['outline']['sequences']) == 4
+
+    def test_outline_render_filter(self):
+        """
+        The render filter can modify the response, receives the effective user, and does not change cached data.
+        """
+        filters_config = {
+            "org.openedx.learning.course_outline.api.render.started.v1": {
+                "pipeline": [
+                    "openedx.core.djangoapps.content.learning_sequences.tests.test_views.TestCourseOutlineRenderStep",
+                ],
+                "fail_silently": False,
+            },
+        }
+        CourseOverviewFactory(id=self.course_key)
+        CourseEnrollment.enroll(self.student, self.course_key)
+        TestCourseOutlineRenderStep.users = []
+        with override_settings(OPEN_EDX_FILTERS_CONFIG=filters_config):
+            self.client.login(username='student', password='student_pass')
+            student_result = self.client.get(self.course_url)
+            self.client.login(username='staff', password='staff_pass')
+            staff_as_student_result = self.client.get(self.course_url, {'user': 'student'})
+
+        for result in [student_result, staff_as_student_result]:
+            assert result.status_code == 200
+            titles = {seq['title'] for seq in result.data['outline']['sequences'].values()}
+            assert titles == {"Filtered title"}
+        assert TestCourseOutlineRenderStep.users == [self.student, self.student]
+
+        unfiltered_result = self.client.get(self.course_url)
+        authored_titles = {
+            str(seq.usage_key): seq.title for section in self.outline.sections for seq in section.sequences
+        }
+        assert {
+            key: seq['title'] for key, seq in unfiltered_result.data['outline']['sequences'].items()
+        } == authored_titles
 
 
 @ddt.ddt
