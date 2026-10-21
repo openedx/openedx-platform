@@ -1045,7 +1045,9 @@ class ModuleStoreRead(ModuleStoreAssetBase, metaclass=ABCMeta):
         A context manager for loading the course's blocks as new instances, ignoring block
         instances that this thread has already loaded (and may have changed in memory).
 
-        The default is a no-op, for stores that do not reuse loaded block instances.
+        The default is a no-op, which is only correct for stores that build new block instances on
+        every read. A store that hands back already-loaded instances and serves learners must override
+        it.
         """
         yield
 
