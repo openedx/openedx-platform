@@ -9,9 +9,9 @@ from unittest import mock
 from zoneinfo import ZoneInfo
 
 import ddt
-import httpretty
 import pytest
 import requests
+import responses
 from celery.exceptions import MaxRetriesExceededError
 from django.conf import settings
 from django.test import TestCase, override_settings
@@ -83,7 +83,7 @@ class AwardProgramCertificateTestCase(TestCase):
     Test the award_program_certificate function
     """
 
-    @httpretty.activate
+    @responses.activate
     @mock.patch("openedx.core.djangoapps.programs.tasks.get_credentials_api_base_url")
     def test_award_program_certificate(self, mock_get_api_base_url):
         """
@@ -95,8 +95,8 @@ class AwardProgramCertificateTestCase(TestCase):
         test_client = requests.Session()
         test_client.auth = SuppliedJwtAuth("test-token")
 
-        httpretty.register_uri(
-            httpretty.POST,
+        responses.add(
+            responses.POST,
             "http://test-server/credentials/",
         )
 
@@ -110,7 +110,7 @@ class AwardProgramCertificateTestCase(TestCase):
                 "type": tasks.PROGRAM_CERTIFICATE,
             },
         }
-        last_request_body = httpretty.last_request().body.decode("utf-8")
+        last_request_body = responses.calls[-1].request.body
         assert json.loads(last_request_body) == expected_body
 
 
@@ -473,7 +473,7 @@ class PostCourseCertificateTestCase(TestCase):
             status="downloadable",
         )
 
-    @httpretty.activate
+    @responses.activate
     @mock.patch("openedx.core.djangoapps.programs.tasks.get_credentials_api_base_url")
     def test_post_course_certificate(self, mock_get_api_base_url):
         """
@@ -483,8 +483,8 @@ class PostCourseCertificateTestCase(TestCase):
         test_client = requests.Session()
         test_client.auth = SuppliedJwtAuth("test-token")
 
-        httpretty.register_uri(
-            httpretty.POST,
+        responses.add(
+            responses.POST,
             "http://test-server/credentials/",
         )
 
@@ -500,7 +500,7 @@ class PostCourseCertificateTestCase(TestCase):
             },
             "date_override": None,
         }
-        last_request_body = httpretty.last_request().body.decode("utf-8")
+        last_request_body = responses.calls[-1].request.body
         assert json.loads(last_request_body) == expected_body
 
 
@@ -665,7 +665,7 @@ class RevokeProgramCertificateTestCase(TestCase):
     Test the revoke_program_certificate function
     """
 
-    @httpretty.activate
+    @responses.activate
     @mock.patch("openedx.core.djangoapps.programs.tasks.get_credentials_api_base_url")
     def test_revoke_program_certificate(self, mock_get_api_base_url):
         """
@@ -676,8 +676,8 @@ class RevokeProgramCertificateTestCase(TestCase):
         test_client = requests.Session()
         test_client.auth = SuppliedJwtAuth("test-token")
 
-        httpretty.register_uri(
-            httpretty.POST,
+        responses.add(
+            responses.POST,
             "http://test-server/credentials/",
         )
 
@@ -691,7 +691,7 @@ class RevokeProgramCertificateTestCase(TestCase):
                 "type": tasks.PROGRAM_CERTIFICATE,
             },
         }
-        last_request_body = httpretty.last_request().body.decode("utf-8")
+        last_request_body = responses.calls[-1].request.body
         assert json.loads(last_request_body) == expected_body
 
 
@@ -986,7 +986,7 @@ class PostCourseCertificateConfigurationTestCase(TestCase):
             "course_id": "testCourse",
         }
 
-    @httpretty.activate
+    @responses.activate
     @mock.patch("openedx.core.djangoapps.programs.tasks.get_credentials_api_base_url")
     def test_post_course_certificate_configuration(self, mock_get_api_base_url):
         """
@@ -996,8 +996,8 @@ class PostCourseCertificateConfigurationTestCase(TestCase):
         test_client = requests.Session()
         test_client.auth = SuppliedJwtAuth("test-token")
 
-        httpretty.register_uri(
-            httpretty.POST,
+        responses.add(
+            responses.POST,
             "http://test-server/course_certificates/",
         )
 
@@ -1011,7 +1011,7 @@ class PostCourseCertificateConfigurationTestCase(TestCase):
             "certificate_available_date": available_date,
             "is_active": True,
         }
-        last_request_body = httpretty.last_request().body.decode("utf-8")
+        last_request_body = responses.calls[-1].request.body
         assert json.loads(last_request_body) == expected_body
 
 
