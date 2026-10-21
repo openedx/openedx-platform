@@ -3365,12 +3365,6 @@ wheels = [
 ]
 
 [[package]]
-name = "httpretty"
-version = "1.1.4"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/6e/19/850b7ed736319d0c4088581f4fc34f707ef14461947284026664641e16d4/httpretty-1.1.4.tar.gz", hash = "sha256:20de0e5dd5a18292d36d928cc3d6e52f8b2ac73daec40d41eb62dee154933b68", size = 442389, upload-time = "2021-08-16T19:35:31.4Z" }
-
-[[package]]
 name = "httpx"
 version = "0.28.1"
 source = { registry = "https://pypi.org/simple" }
@@ -4968,7 +4962,6 @@ development = [
     { name = "factory-boy" },
     { name = "freezegun" },
     { name = "gitpython" },
-    { name = "httpretty" },
     { name = "import-linter" },
     { name = "libsass" },
     { name = "mailsnake" },
@@ -5032,7 +5025,6 @@ django42 = [
     { name = "enterprise-integrated-channels" },
     { name = "factory-boy" },
     { name = "freezegun" },
-    { name = "httpretty" },
     { name = "import-linter" },
     { name = "mailsnake" },
     { name = "mock" },
@@ -5081,7 +5073,6 @@ django52 = [
     { name = "enterprise-integrated-channels" },
     { name = "factory-boy" },
     { name = "freezegun" },
-    { name = "httpretty" },
     { name = "import-linter" },
     { name = "mailsnake" },
     { name = "mock" },
@@ -5156,7 +5147,6 @@ testing = [
     { name = "enterprise-integrated-channels" },
     { name = "factory-boy" },
     { name = "freezegun" },
-    { name = "httpretty" },
     { name = "import-linter" },
     { name = "mailsnake" },
     { name = "mock" },
@@ -5380,7 +5370,6 @@ development = [
     { name = "factory-boy" },
     { name = "freezegun" },
     { name = "gitpython" },
-    { name = "httpretty" },
     { name = "import-linter" },
     { name = "libsass" },
     { name = "mailsnake" },
@@ -5443,7 +5432,6 @@ django42 = [
     { name = "enterprise-integrated-channels" },
     { name = "factory-boy" },
     { name = "freezegun" },
-    { name = "httpretty" },
     { name = "import-linter" },
     { name = "mailsnake" },
     { name = "mock" },
@@ -5492,7 +5480,6 @@ django52 = [
     { name = "enterprise-integrated-channels" },
     { name = "factory-boy" },
     { name = "freezegun" },
-    { name = "httpretty" },
     { name = "import-linter" },
     { name = "mailsnake" },
     { name = "mock" },
@@ -5566,7 +5553,6 @@ testing = [
     { name = "enterprise-integrated-channels" },
     { name = "factory-boy" },
     { name = "freezegun" },
-    { name = "httpretty" },
     { name = "import-linter" },
     { name = "mailsnake" },
     { name = "mock" },

@@ -734,7 +734,6 @@ html5lib==1.1
     #   xblocks-contrib
 httpcore==1.0.9
     # via httpx
-httpretty==1.1.4
 httpx==0.28.1
     # via
     #   firebase-admin
