@@ -44,6 +44,11 @@ class InstructorAuthzPermission(BasePermission):
         legacy_permission_check (Callable[[User, CourseKey], bool]): Optional.
             Replaces the ``permission_name`` check, for legacy rules that are
             not a bridgekeeper permission.
+        course_id_url_kwarg (str): Optional. The name of the URL kwarg holding
+            the course key. Defaults to ``"course_id"``, the one every
+            Instructor Dashboard v2 view uses; set it on the view when a
+            migrated endpoint uses a different name (e.g. the cohorts API's
+            ``course_key_string``).
     """
 
     def has_permission(self, request, view):
@@ -59,15 +64,16 @@ class InstructorAuthzPermission(BasePermission):
             bool: True if access is granted.
 
         Raises:
-            Http404: If the ``course_id`` kwarg of the view is not a valid
-                course key.
+            Http404: If the course key URL kwarg of the view is missing or not
+                a valid course key.
             ImproperlyConfigured: If the view does not define
                 ``authz_permissions``, or defines a bare string instead of a
                 collection.
         """
+        course_id_url_kwarg = getattr(view, "course_id_url_kwarg", "course_id")
         try:
-            course_key = CourseKey.from_string(view.kwargs.get("course_id"))
-        except InvalidKeyError as exc:
+            course_key = CourseKey.from_string(view.kwargs.get(course_id_url_kwarg))
+        except (InvalidKeyError, TypeError) as exc:
             raise Http404("Invalid course key") from exc
 
         authz_permissions = getattr(view, "authz_permissions", None)

@@ -19,6 +19,7 @@ from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthenticat
 from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
 from edx_rest_framework_extensions.paginators import NamespacedPageNumberPagination
 from opaque_keys.edx.keys import CourseKey
+from openedx_authz.authz import COURSES_MANAGE_COHORTS, COURSES_VIEW_COHORTS
 from rest_framework import permissions, status
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
@@ -28,12 +29,13 @@ from common.djangoapps.edxmako.shortcuts import render_to_response
 from common.djangoapps.student.auth import has_course_author_access
 from common.djangoapps.util.json_request import JsonResponse, expect_json
 from lms.djangoapps.courseware.courses import get_course, get_course_with_access
+from lms.djangoapps.instructor.authz.api import user_has_instructor_permission
+from lms.djangoapps.instructor.authz.permissions import InstructorAuthzPermission
 from openedx.core.djangoapps.course_groups.models import (
     CohortAssignmentNotAllowed,
     CohortChangeNotAllowed,
     CohortMembership,
 )
-from openedx.core.djangoapps.course_groups.permissions import IsStaffOrAdmin
 from openedx.core.lib.api.authentication import BearerAuthenticationAllowInactiveUser
 from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin
 
@@ -117,6 +119,18 @@ def _get_cohort_representation(cohort, course):
     }
 
 
+def _legacy_cohort_staff_access(user, course_key):
+    """
+    Reproduce this view's pre-AuthZ access check (course staff, for both GET and PATCH),
+    used as the fallback when ``authz.enable_course_authoring`` is disabled for the course.
+    """
+    try:
+        get_course_with_access(user, 'staff', course_key)
+    except Http404:
+        return False
+    return True
+
+
 @require_http_methods(("GET", "PATCH"))
 @ensure_csrf_cookie
 @expect_json
@@ -131,8 +145,12 @@ def course_cohort_settings_handler(request, course_key_string):
         Updates the cohort settings for the course. Returns the JSON representation of updated settings.
     """
     course_key = CourseKey.from_string(course_key_string)
-    # Although this course data is not used this method will return 404 is user is not staff
-    get_course_with_access(request.user, 'staff', course_key)
+    authz_permission = (
+        COURSES_MANAGE_COHORTS.identifier if request.method == 'PATCH'
+        else COURSES_VIEW_COHORTS.identifier
+    )
+    if not user_has_instructor_permission(request.user, authz_permission, course_key, _legacy_cohort_staff_access):
+        raise Http404('The requesting user does not have course staff permissions.')
 
     if request.method == 'PATCH':
         if 'is_cohorted' not in request.json:
@@ -478,7 +496,10 @@ class APIPermissions(GenericAPIView):
         BearerAuthenticationAllowInactiveUser,
         SessionAuthenticationAllowInactiveUser,
     )
-    permission_classes = (permissions.IsAuthenticated, IsStaffOrAdmin)
+    permission_classes = (permissions.IsAuthenticated, InstructorAuthzPermission)
+    # The cohorts API uses course_key_string, not the course_id every other
+    # Instructor Dashboard v2 view uses.
+    course_id_url_kwarg = "course_key_string"
     serializer_class = Serializer
 
 
@@ -498,6 +519,10 @@ class CohortSettings(DeveloperErrorViewMixin, APIPermissions):
 
         * is_cohorted: current status of the cohort setting
     """
+    authz_permissions = {
+        "GET": (COURSES_VIEW_COHORTS.identifier,),
+        "PUT": (COURSES_MANAGE_COHORTS.identifier,),
+    }
 
     def get(self, request, course_key_string):
         """
@@ -575,6 +600,11 @@ class CohortHandler(DeveloperErrorViewMixin, APIPermissions):
             * group_id: The integer identifier of the specific group in the partition.
     """
     queryset = []
+    authz_permissions = {
+        "GET": (COURSES_VIEW_COHORTS.identifier,),
+        "POST": (COURSES_MANAGE_COHORTS.identifier,),
+        "PATCH": (COURSES_MANAGE_COHORTS.identifier,),
+    }
 
     def get(self, request, course_key_string, cohort_id=None):
         """
@@ -760,6 +790,11 @@ class CohortUsers(DeveloperErrorViewMixin, APIPermissions):
         Returns a HTTP 204 No Content response status code to indicate success.
     """
     serializer_class = CohortUsersAPISerializer
+    authz_permissions = {
+        "GET": (COURSES_VIEW_COHORTS.identifier,),
+        "POST": (COURSES_MANAGE_COHORTS.identifier,),
+        "DELETE": (COURSES_MANAGE_COHORTS.identifier,),
+    }
 
     def _get_course_and_cohort(self, request, course_key_string, cohort_id):
         """
