@@ -180,7 +180,6 @@ testing = [
     "edx-lint", # pylint extensions for Open edX repositories
     "factory-boy", # Library for creating test fixtures, used in many tests
     "freezegun", # Pinning the freezegun version because 0.3.13 is causing failures which have also been reported on the git repo by public.; Allows tests to mock the output of assorted datetime module functions
-    "httpretty", # Library for mocking HTTP requests, used in many tests
     "import-linter", # Tool for making assertions about which modules can import which others
     "mock", # Deprecated alias to standard library `unittest.mock`
     "ruff", # Fast Python linter and formatter
