@@ -84,11 +84,12 @@ class CmsMarkSupersededPathsTest(TestCase):
         }
         assert len(SUPERSEDED_PATHS) == len(set(SUPERSEDED_PATHS))
 
-    def test_v1_home_is_marked_deprecated(self):
-        """The studio-home metadata path becomes deprecated: true after the hook runs."""
-        path = "/api/contentstore/v1/home"
-        result = self._run({"paths": {path: {"get": {}}}})
-        assert result["paths"][path]["get"]["deprecated"] is True
+    def test_v1_home_is_marked_deprecated_in_generated_schema(self):
+        """The URL router emits the path key without a trailing slash, matching SUPERSEDED_PATHS."""
+        patterns = [url_path("api/contentstore/v1/home", _HomeViewSet.as_view({"get": "list"}))]
+        schema = SchemaGenerator(patterns=patterns).get_schema(request=None, public=True)
+        result = self._run(schema)
+        assert result["paths"]["/api/contentstore/v1/home"]["get"]["deprecated"] is True
 
     def test_v1_home_libraries_sibling_is_not_marked_deprecated(self):
         """Exact-path lookup must not spill onto the sibling libraries path."""
@@ -101,11 +102,11 @@ class CmsMarkSupersededPathsTest(TestCase):
         assert result["paths"][home_path]["get"]["deprecated"] is True
         assert "deprecated" not in result["paths"][libraries_path]["get"]
 
-    def test_an_xblock_path_is_not_affected_by_home_deprecation(self):
-        """A path from another resource is unchanged when the home path is deprecated."""
-        xblock_path = "/api/contentstore/v1/xblock/{usage_key_string}/"
-        result = self._run({"paths": {xblock_path: {"get": {}}}})
-        assert "deprecated" not in result["paths"][xblock_path]["get"]
+    def test_a_conforming_sibling_path_is_not_marked_deprecated(self):
+        """A real path near the replacement that no entry in SUPERSEDED_PATHS covers is unchanged."""
+        sibling_path = "/api/authoring/v3/home/courses/"
+        result = self._run({"paths": {sibling_path: {"get": {}}}})
+        assert "deprecated" not in result["paths"][sibling_path]["get"]
 
     def test_the_conforming_paths_are_left_unmarked(self):
         conforming = "/api/authoring/v1/courses/{course_key}/youtube_transcript_checks/"
