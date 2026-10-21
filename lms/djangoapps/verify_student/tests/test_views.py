@@ -11,7 +11,7 @@ from unittest.mock import Mock, patch
 from uuid import uuid4
 
 import ddt
-import httpretty
+import responses
 import simplejson as json
 from bs4 import BeautifulSoup
 from django.conf import settings
@@ -102,10 +102,10 @@ def _mock_payment_processors():
     """
     Mock out the payment processors endpoint, since we don't run ecommerce for unit tests here.
     Used in tests where ``mock_payment_processors`` can't be easily used, for example the whole
-    test is an httpretty context or the mock may or may not be called depending on ddt parameters.
+    test is a responses context or the mock may or may not be called depending on ddt parameters.
     """
-    httpretty.register_uri(
-        httpretty.GET,
+    responses.add(
+        responses.GET,
         f"{TEST_API_URL}/payment/processors/",
         body=json.dumps(['foo', 'bar']),
         content_type="application/json",
@@ -154,6 +154,9 @@ class TestPayAndVerifyView(UrlResetMixin, ModuleStoreTestCase, XssTestMixin, Tes
 
     def setUp(self):
         super().setUp()
+        responses.start()
+        self.addCleanup(responses.stop)
+        self.addCleanup(responses.reset)
         self.user = UserFactory.create(username=self.USERNAME, password=self.PASSWORD)
         result = self.client.login(username=self.USERNAME, password=self.PASSWORD)
         assert result, 'Could not log in'
@@ -892,7 +895,6 @@ class TestPayAndVerifyView(UrlResetMixin, ModuleStoreTestCase, XssTestMixin, Tes
         }
         session.save()
 
-    @httpretty.activate
     @override_settings(ECOMMERCE_API_URL=TEST_API_URL)
     def _get_page(self, url_name, course_key, expected_status_code=200, skip_first_step=False, assert_headers=False):
         """Retrieve one of the verification pages. """
@@ -909,7 +911,7 @@ class TestPayAndVerifyView(UrlResetMixin, ModuleStoreTestCase, XssTestMixin, Tes
             # ensure the mock api call was made.  NOTE: the following line
             # approximates the check - if the headers were empty it means
             # there was no last request.
-            assert httpretty.last_request().headers
+            assert responses.calls
         return response
 
     def _assert_displayed_mode(self, response, expected_mode):
@@ -1300,11 +1302,11 @@ class TestSubmitPhotosForVerification(MockS3Boto3Mixin, TestVerificationBase):
         },
         "DAYS_GOOD_FOR": 10,
     })
-    @httpretty.activate
+    @responses.activate
     def test_submit_photos_for_reverification(self):
-        httpretty.register_uri(
-            httpretty.POST, settings.VERIFY_STUDENT["SOFTWARE_SECURE"]["API_URL"],
-            status=200, body={},
+        responses.add(
+            responses.POST, settings.VERIFY_STUDENT["SOFTWARE_SECURE"]["API_URL"],
+            status=200, json={},
             content_type='application/json'
         )
 
@@ -1453,7 +1455,7 @@ class TestSubmitPhotosForVerification(MockS3Boto3Mixin, TestVerificationBase):
 
     def _get_post_data(self):
         """Retrieve POST data from the last request. """
-        last_request = httpretty.last_request()
+        last_request = responses.calls[-1].request
         return json.loads(last_request.body)
 
 
