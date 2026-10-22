@@ -21,6 +21,10 @@ from edx_rest_framework_extensions.auth.session.authentication import (
     SessionAuthenticationAllowInactiveUser,  # pylint: disable=wrong-import-order
 )
 from opaque_keys.edx.keys import CourseKey  # pylint: disable=wrong-import-order
+from openedx_filters.learning.filters import (  # pylint: disable=wrong-import-order
+    CourseHomeOutlineAPIRenderStarted,
+    CourseNavigationAPIRenderStarted,
+)
 from rest_framework.decorators import (  # pylint: disable=wrong-import-order
     api_view,
     authentication_classes,
@@ -384,7 +388,8 @@ class OutlineTabView(RetrieveAPIView):
         if send_course_progress_analytics_for_student_is_enabled(course_key) and not user_is_masquerading:
             collect_progress_for_user_in_course.delay(course_key_string, request.user.id)
 
-        return Response(serializer.data)
+        data = CourseHomeOutlineAPIRenderStarted.run_filter(course_key=course_key, user=request.user, data=serializer.data)
+        return Response(data)
 
     def finalize_response(self, request, response, *args, **kwargs):
         """
@@ -507,8 +512,12 @@ class CourseNavigationBlocksView(RetrieveAPIView):
         })
 
         serializer = self.get_serializer_class()(course_blocks, context=context)
+        # Runs on the serialized response, after the cache, so the cached blocks stay as built.
+        data = CourseNavigationAPIRenderStarted.run_filter(
+            course_key=course_key, user=request.user, data=serializer.data
+        )
 
-        return Response(serializer.data)
+        return Response(data)
 
     def filter_inaccessible_blocks(self, course_blocks, course_key):
         """

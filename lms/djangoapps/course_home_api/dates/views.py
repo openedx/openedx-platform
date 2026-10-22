@@ -6,6 +6,7 @@ from edx_django_utils import monitoring as monitoring_utils
 from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
 from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
 from opaque_keys.edx.keys import CourseKey
+from openedx_filters.learning.filters import CourseHomeDatesAPIRenderStarted
 from rest_framework.generics import RetrieveAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -130,5 +131,6 @@ class DatesTabView(RetrieveAPIView):
         context = self.get_serializer_context()
         context['learner_is_full_access'] = learner_is_full_access
         serializer = self.get_serializer_class()(data, context=context)
+        data = CourseHomeDatesAPIRenderStarted.run_filter(course_key=course_key, user=request.user, data=serializer.data)
 
-        return Response(serializer.data)
+        return Response(data)

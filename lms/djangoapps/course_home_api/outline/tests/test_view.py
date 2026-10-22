@@ -57,6 +57,30 @@ class TestLanguageBlockNamesStep(PipelineStep):
         return {'block_structure': block_structure}
 
 
+filter_users = []
+
+
+class TestReplaceOutlineDataStep(PipelineStep):
+    """
+    Pipeline step that records the user and replaces the response data.
+    """
+
+    def run_filter(self, course_key, user, data):  # pylint: disable=arguments-differ
+        filter_users.append(user)
+        return {'data': {'course_key': str(course_key)}}
+
+
+class TestRenameNavigationBlocksStep(PipelineStep):
+    """
+    Pipeline step that renames every block in place.
+    """
+
+    def run_filter(self, course_key, user, data):  # pylint: disable=arguments-differ
+        for block in data['blocks'].values():
+            block['display_name'] = 'Changed'
+        return {'data': data}
+
+
 @ddt.ddt
 class OutlineTabTestViews(BaseCourseHomeTests):
     """
@@ -495,6 +519,28 @@ class OutlineTabTestViews(BaseCourseHomeTests):
         """
         self.client.get(self.url)
         mock_task.assert_not_called()
+
+    @override_settings(OPEN_EDX_FILTERS_CONFIG={
+        'org.openedx.learning.course_home_outline.api.render.started.v1': {
+            'pipeline': [f'{__name__}.TestReplaceOutlineDataStep'],
+            'fail_silently': False,
+        },
+    })
+    def test_render_filter_receives_masqueraded_user(self):
+        """
+        Test that the render filter can replace the response and receives the masqueraded user.
+        """
+        learner = UserFactory()
+        CourseEnrollment.enroll(learner, self.course.id)
+        self.switch_to_staff()
+        self.update_masquerade(username=learner.username)
+        filter_users.clear()
+
+        response = self.client.get(self.url)
+
+        assert response.status_code == 200
+        assert response.data == {'course_key': str(self.course.id)}
+        assert filter_users == [learner]
 
 
 @ddt.ddt
@@ -1003,3 +1049,44 @@ class SidebarBlocksTestViews(BaseCourseHomeTests):
         assert titles == {'en': 'Test [en]', 'es-419': 'Test [es-419]'}
         # Repeated requests in the same language are served from the cache.
         assert block_filter_languages == ['en', 'es-419']
+
+    def test_render_filter_replaces_response(self):
+        """
+        Test that the render filter can replace the response and receives the requesting user.
+        """
+        CourseEnrollment.enroll(self.user, self.course.id)
+        filter_users.clear()
+
+        with override_settings(OPEN_EDX_FILTERS_CONFIG={
+            'org.openedx.learning.course_navigation.api.render.started.v1': {
+                'pipeline': [f'{__name__}.TestReplaceOutlineDataStep'],
+                'fail_silently': False,
+            },
+        }):
+            response = self.client.get(self.url)
+
+        assert response.status_code == 200
+        assert response.data == {'course_key': str(self.course.id)}
+        assert filter_users == [self.user]
+
+    def test_render_filter_changes_are_not_cached(self):
+        """
+        Test that changes made by the render filter do not reach the cached blocks.
+        """
+        self.add_blocks_to_course()
+        CourseEnrollment.enroll(self.user, self.course.id, CourseMode.VERIFIED)
+        # Build the block structure up front so its version, part of the cache key, stays the same.
+        update_course_in_cache(self.course.id)
+        sequential_key = str(self.sequential.location)
+
+        with override_settings(OPEN_EDX_FILTERS_CONFIG={
+            'org.openedx.learning.course_navigation.api.render.started.v1': {
+                'pipeline': [f'{__name__}.TestRenameNavigationBlocksStep'],
+                'fail_silently': False,
+            },
+        }):
+            response = self.client.get(self.url)
+        assert response.data['blocks'][sequential_key]['display_name'] == 'Changed'
+
+        response = self.client.get(self.url)
+        assert response.data['blocks'][sequential_key]['display_name'] == 'Test'
