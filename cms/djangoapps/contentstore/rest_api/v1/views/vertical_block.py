@@ -25,6 +25,9 @@ log = logging.getLogger(__name__)
 class ContainerHandlerView(APIView, ContainerHandlerMixin):
     """
     View for container xblock requests to get vertical data.
+
+    Deprecated: use ``GET /api/authoring/v2/containers/{usage_key}/?view=full``
+    instead. See https://github.com/openedx/openedx-platform/issues/39128.
     """
 
     @extend_schema(
@@ -45,6 +48,11 @@ class ContainerHandlerView(APIView, ContainerHandlerMixin):
     def get(self, request: Request, usage_key_string: str):
         """
         Get an object containing vertical data.
+
+        Deprecated: use ``GET /api/authoring/v2/containers/{usage_key}/?view=full``,
+        which returns these fields except ``user_clipboard`` and ``action``. The clipboard
+        is read from ``GET /api/content-staging/v1/clipboard/``.
+        See https://github.com/openedx/openedx-platform/issues/39128.
 
         **Example Request**
 
