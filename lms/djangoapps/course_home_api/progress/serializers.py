@@ -128,7 +128,8 @@ class GradingPolicySerializer(ReadOnlySerializer):
         } for assignment_policy in grading_policy['GRADER']]
 
     def get_assignment_colors(self, obj):
-        return self.ASSIGNMENT_COLORS
+        # A copy, so a change to one response does not reach the shared class list.
+        return list(self.ASSIGNMENT_COLORS)
 
 
 class CertificateDataSerializer(ReadOnlySerializer):

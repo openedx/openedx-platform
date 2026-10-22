@@ -50,6 +50,16 @@ class TestReplaceProgressDataStep(PipelineStep):
         return {'data': {'username': data['username'], 'course_key': str(course_key)}}
 
 
+class TestRecolorProgressStep(PipelineStep):
+    """
+    Pipeline step that changes the assignment colors in place.
+    """
+
+    def run_filter(self, course_key, user, data):  # pylint: disable=arguments-differ
+        data['grading_policy']['assignment_colors'][0] = '#000000'
+        return {'data': data}
+
+
 @ddt.ddt
 @override_waffle_flag(COURSE_HOME_MICROFRONTEND_PROGRESS_TAB, active=True)
 class ProgressTabTestViews(BaseCourseHomeTests):
@@ -400,3 +410,20 @@ class ProgressTabTestViews(BaseCourseHomeTests):
         assert response.status_code == 200
         assert response.data == {'username': learner.username, 'course_key': str(self.course.id)}
         assert filter_users == [learner, learner]
+
+    def test_render_filter_changes_do_not_reach_later_responses(self):
+        """
+        Test that changing the response in place does not change the responses that follow.
+        """
+        CourseEnrollment.enroll(self.user, self.course.id)
+        with override_settings(OPEN_EDX_FILTERS_CONFIG={
+            'org.openedx.learning.course_home_progress.api.render.started.v1': {
+                'pipeline': [f'{__name__}.TestRecolorProgressStep'],
+                'fail_silently': False,
+            },
+        }):
+            filtered = self.client.get(self.url)
+        assert filtered.data['grading_policy']['assignment_colors'][0] == '#000000'
+
+        response = self.client.get(self.url)
+        assert response.data['grading_policy']['assignment_colors'][0] == '#D24242'
