@@ -81,6 +81,7 @@ class CmsMarkSupersededPathsTest(TestCase):
             "/api/contentstore/v0/youtube_transcripts/{course_id}/upload",
             "/api/contentstore/v1/help_urls",
             "/api/contentstore/v1/course_index/{course_id}",
+            "/api/contentstore/v0/advanced_settings/{course_id}",
         }
         assert len(SUPERSEDED_PATHS) == len(set(SUPERSEDED_PATHS))
 
@@ -99,8 +100,18 @@ class CmsMarkSupersededPathsTest(TestCase):
         assert result["paths"][index]["get"] == {"deprecated": True}
         assert result["paths"][container]["get"] == {}
 
+    def test_the_advanced_settings_operations_are_marked_and_their_successor_is_not(self):
+        legacy = "/api/contentstore/v0/advanced_settings/{course_id}"
+        conforming = "/api/authoring/v1/courses/{course_key}/advanced_settings/"
+        result = self._run({"paths": {
+            legacy: {"get": {}, "patch": {}},
+            conforming: {"get": {}, "patch": {}},
+        }})
+        assert result["paths"][legacy] == {"get": {"deprecated": True}, "patch": {"deprecated": True}}
+        assert result["paths"][conforming] == {"get": {}, "patch": {}}
+
     def test_an_unrelated_contentstore_path_is_left_unmarked(self):
-        other = "/api/contentstore/v0/advanced_settings/{course_id}"
+        other = "/api/contentstore/v0/heartbeat"
         result = self._run({"paths": {other: {"get": {}}}})
         assert "deprecated" not in result["paths"][other]["get"]
 
