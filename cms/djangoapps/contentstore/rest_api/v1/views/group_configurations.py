@@ -20,6 +20,9 @@ from xmodule.modulestore.django import modulestore
 class CourseGroupConfigurationsView(DeveloperErrorViewMixin, APIView):
     """
     View for course's settings group configurations.
+
+    Deprecated: use ``GET /api/authoring/v2/courses/{course_key}/group_configurations/`` instead.
+    See https://github.com/openedx/openedx-platform/issues/39128.
     """
 
     @extend_schema(
@@ -43,6 +46,14 @@ class CourseGroupConfigurationsView(DeveloperErrorViewMixin, APIView):
     def get(self, request: Request, course_key: CourseKey):
         """
         Get an object containing course's settings group configurations.
+
+        Deprecated: use ``GET /api/authoring/v2/courses/{course_key}/group_configurations/``, which
+        returns ``all_group_configurations`` followed by ``experiment_group_configurations`` as one
+        paginated list, each with ``can_manage``; ``usage`` only with ``view=full``. An
+        ``enrollment_track`` item is listed exactly when ``should_show_enrollment_track`` is true.
+        ``should_show_experiment_groups`` and ``mfe_proctored_exam_settings_url`` describe the
+        course, not its group configurations, and are not part of that resource.
+        See https://github.com/openedx/openedx-platform/issues/39128.
 
         **Example Request**
 
