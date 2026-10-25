@@ -2,7 +2,7 @@
 Custom permissions for the content store views.
 """
 
-from openedx_authz.authz import COURSES_VIEW_COURSE, COURSES_VIEW_PAGES_AND_RESOURCES
+from openedx_authz.authz import COURSES_EDIT_COURSE_CONTENT, COURSES_VIEW_COURSE, COURSES_VIEW_PAGES_AND_RESOURCES
 from rest_framework.exceptions import NotFound
 from rest_framework.permissions import BasePermission
 
@@ -154,3 +154,47 @@ class CanManageAdvancedSettings(BasePermission):
         if course_key is None:
             return False
         return check_course_advanced_settings_access(request.user, course_key, access_type="write")
+
+
+class CanStartLinkCheck(BasePermission):
+    """
+    Allow callers who may start a check of the links in the course in the path.
+
+    Reads the parsed ``course_key`` URL argument. On courses where
+    policy-based authoring permissions are enabled, only the permission to
+    edit course content is consulted; elsewhere Studio read access to the
+    course is enough, while reading a check's result needs write access
+    (``CanEditCourseContent``).
+    """
+
+    def has_permission(self, request, view):
+        course_key = view.kwargs.get("course_key")
+        if course_key is None:
+            return False
+        return user_has_course_permission(
+            request.user,
+            COURSES_EDIT_COURSE_CONTENT.identifier,
+            course_key,
+            LegacyAuthoringPermission.READ,
+        )
+
+
+class CanEditCourseContent(BasePermission):
+    """
+    Allow callers who may edit the content of the course in the path.
+
+    Reads the parsed ``course_key`` URL argument. On courses where
+    policy-based authoring permissions are enabled, only that policy is
+    consulted; elsewhere the caller needs Studio write access to the course.
+    """
+
+    def has_permission(self, request, view):
+        course_key = view.kwargs.get("course_key")
+        if course_key is None:
+            return False
+        return user_has_course_permission(
+            request.user,
+            COURSES_EDIT_COURSE_CONTENT.identifier,
+            course_key,
+            LegacyAuthoringPermission.WRITE,
+        )
