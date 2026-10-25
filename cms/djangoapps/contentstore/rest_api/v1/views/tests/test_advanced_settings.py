@@ -2,24 +2,17 @@
 
 import json
 import uuid
-from contextlib import contextmanager
 from datetime import UTC, datetime, timedelta
-from functools import cache
 from types import SimpleNamespace
 from unittest.mock import patch
 
 import ddt
-import jsonschema
-import pymongo
 import pytest
-from crum import signals as crum_signals
-from django.core import signals as core_signals
 from django.core.exceptions import ImproperlyConfigured
-from django.db import connection, transaction
-from django.db.models import signals as model_signals
+from django.db import transaction
 from django.dispatch import Signal
 from django.test import SimpleTestCase, TestCase
-from django.test.utils import CaptureQueriesContext, override_settings
+from django.test.utils import override_settings
 from django.urls import Resolver404, resolve, reverse
 from edx_rest_framework_extensions.permissions import NotJwtRestrictedApplication
 from edx_rest_framework_extensions.testing import assert_error_envelope
@@ -34,7 +27,6 @@ from openedx_authz.constants.roles import (
     COURSE_STAFF,
 )
 from openedx_authz.models.engine import PolicyCacheControl
-from openedx_events.tooling import OpenEdxPublicSignal
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.test import APIClient, APIRequestFactory, force_authenticate
 from rest_framework.utils.encoders import JSONEncoder
@@ -44,7 +36,21 @@ from cms.djangoapps.contentstore.rest_api.v1.advanced_settings_service import (
     SETTINGS_NOT_SAVED_MESSAGE,
 )
 from cms.djangoapps.contentstore.rest_api.v1.views.advanced_settings import CourseAdvancedSettingsViewSet
-from cms.djangoapps.contentstore.rest_api.v2.views.tests.helpers import generate_cms_schema
+from cms.djangoapps.contentstore.rest_api.v1.views.tests.helpers import (
+    FIRST_LOOKUP_SIGNALS,
+    FIRST_LOOKUP_WRITES,
+    UNKNOWN_COURSE_KEY,
+    VERSION_ONLY_KEY,
+    api_client,
+    assert_matches_published_schema,
+    assert_refused,
+    changed_paths,
+    measure,
+    published_schema,
+    record_effects,
+    session_client,
+    undeclared_paths,
+)
 from cms.djangoapps.contentstore.tests.utils import routed_actions
 from cms.djangoapps.contentstore.views.permissions import (
     CanManageAdvancedSettings,
@@ -76,9 +82,6 @@ URL_NAME = "authoring_v1:course_advanced_settings"
 LEGACY_URL_NAME = "cms.djangoapps.contentstore:v0:course_advanced_settings"
 LEGACY_VIEW = ("cms.djangoapps.contentstore.rest_api.v0.views.advanced_settings", "AdvancedCourseSettingsView")
 SERVICE_LOGGER = "cms.djangoapps.contentstore.rest_api.v1.advanced_settings_service"
-UNKNOWN_COURSE_KEY = "course-v1:NoSuchOrg+NoSuchCourse+NoSuchRun"
-VERSION_ONLY_KEY = "course-v1:version@0123456789abcdef01234567"
-COURSE_NOT_FOUND = "The requested course does not exist."
 FULL = {"view": "full"}
 LEGACY_DEFAULT = {"fetch_all": "0"}
 # An integer setting authors edit, so a non-numeric value is refused by its field.
@@ -95,24 +98,6 @@ def url(course_key):
 def legacy_url(course_key):
     """Return the deprecated advanced settings address of ``course_key``."""
     return reverse(LEGACY_URL_NAME, kwargs={"course_id": str(course_key)})
-
-
-def _client(user=None):
-    """An API client that returns server errors as responses, authenticated as ``user`` if given."""
-    client = APIClient()
-    client.raise_request_exception = False
-    if user is not None:
-        client.force_authenticate(user=user)
-    return client
-
-
-def _session_client(user):
-    """A client signed in to a browser session as ``user``."""
-    user.set_password("password")
-    user.save()
-    client = APIClient()
-    assert client.login(username=user.username, password="password")
-    return client
 
 
 def stored_course(course_key):
@@ -135,41 +120,9 @@ def every_setting(course_key):
     return CourseMetadata.fetch_all(stored_course(course_key))
 
 
-def _assert_refused(response, status):
-    """Assert ``response`` is the error envelope for ``status``; a 404 names the missing course."""
-    slug = {401: "authn", 403: "authz", 404: "not-found"}[status]
-    envelope = assert_error_envelope(response, expected_status=status, expected_type_slug=slug)
-    if status == 404:
-        assert envelope["detail"] == COURSE_NOT_FOUND
-    return envelope
-
-
 # ---------------------------------------------------------------------------
 # The published schema
 # ---------------------------------------------------------------------------
-
-@cache
-def _published_schema():
-    """The CMS authoring schema, generated once per test process."""
-    return generate_cms_schema()
-
-
-def _as_json_schema(node):
-    """An OpenAPI 3.0 schema as JSON Schema: ``nullable`` becomes a null alternative."""
-    if isinstance(node, list):
-        return [_as_json_schema(item) for item in node]
-    if not isinstance(node, dict):
-        return node
-    converted = {key: _as_json_schema(value) for key, value in node.items() if key != "nullable"}
-    if node.get("nullable"):
-        return {"anyOf": [converted, {"type": "null"}]}
-    return converted
-
-
-def assert_matches_published_schema(body, component):
-    """Assert ``body`` is valid against the published schema component ``component``."""
-    components = _as_json_schema(_published_schema()["components"]["schemas"])
-    jsonschema.validate(body, {"$ref": f"#/components/schemas/{component}", "components": {"schemas": components}})
 
 
 # ---------------------------------------------------------------------------
@@ -185,13 +138,13 @@ class _AccessMixin:
     def assert_read(self, user, expected, course_key=None):
         """Assert the status of a read by ``user``, its body or envelope, and agreement with v0."""
         course_key = course_key or self.course.id
-        response = _client(user).get(url(course_key))
-        legacy = _client(user).get(legacy_url(course_key), LEGACY_DEFAULT)
+        response = api_client(user).get(url(course_key))
+        legacy = api_client(user).get(legacy_url(course_key), LEGACY_DEFAULT)
         assert response.status_code == expected, response.content
         if expected == 200:
             assert list(response.json()) == list(editable_settings(course_key))
         else:
-            _assert_refused(response, expected)
+            assert_refused(response, expected)
         assert legacy.status_code == expected, f"v0 decided {legacy.status_code} for the same caller"
 
     def assert_update(self, user, expected, course_key=None):
@@ -200,17 +153,17 @@ class _AccessMixin:
         course = stored_course(course_key)
         before = course.display_name if course is not None else None
         new_name = f"Renamed {uuid.uuid4().hex[:8]}"
-        response = _client(user).patch(url(course_key), {"display_name": {"value": new_name}}, format="json")
+        response = api_client(user).patch(url(course_key), {"display_name": {"value": new_name}}, format="json")
         assert response.status_code == expected, response.content
         if expected == 200:
             assert response.json()["display_name"]["value"] == new_name
             assert stored_display_name(course_key) == new_name
         else:
-            _assert_refused(response, expected)
+            assert_refused(response, expected)
             if course is not None:
                 assert stored_display_name(course_key) == before
         legacy_name = f"Legacy {uuid.uuid4().hex[:8]}"
-        legacy = _client(user).patch(legacy_url(course_key), {"display_name": {"value": legacy_name}}, format="json")
+        legacy = api_client(user).patch(legacy_url(course_key), {"display_name": {"value": legacy_name}}, format="json")
         assert legacy.status_code == expected, f"v0 decided {legacy.status_code} for the same caller"
 
     def assert_access(self, user, action, expected, course_key=None):
@@ -283,16 +236,16 @@ class AdvancedSettingsAccessLegacyPermissionsTest(_AccessMixin, SharedModuleStor
     def test_a_version_only_course_key_is_404(self):
         """The key parses but names no course run; v0 has no address that takes it."""
         user = UserFactory(is_staff=True)
-        _assert_refused(_client(user).get(url(VERSION_ONLY_KEY)), 404)
-        _assert_refused(
-            _client(user).patch(url(VERSION_ONLY_KEY), {"display_name": {"value": "x"}}, format="json"), 404,
+        assert_refused(api_client(user).get(url(VERSION_ONLY_KEY)), 404)
+        assert_refused(
+            api_client(user).patch(url(VERSION_ONLY_KEY), {"display_name": {"value": "x"}}, format="json"), 404,
         )
 
     def test_a_library_is_not_a_course(self):
         library_key = LibraryFactory.create().location.library_key
         user = UserFactory(is_staff=True)
-        _assert_refused(_client(user).get(url(library_key)), 404)
-        _assert_refused(_client(user).patch(url(library_key), {}, format="json"), 404)
+        assert_refused(api_client(user).get(url(library_key)), 404)
+        assert_refused(api_client(user).patch(url(library_key), {}, format="json"), 404)
 
 
 @ddt.ddt
@@ -366,7 +319,7 @@ class AdvancedSettingsAccessAuthzTest(CourseAuthoringAuthzTestMixin, _AccessMixi
     def test_an_inactive_session_with_a_role_is_accepted(self):
         """The policy does not look at whether the account is activated, on v1 as on v0."""
         user = self._user_with(COURSE_AUDITOR.external_key)
-        client = _session_client(user)
+        client = session_client(user)
         user.is_active = False
         user.save()
         assert client.get(url(self.course.id)).status_code == 200
@@ -519,7 +472,7 @@ class AdvancedSettingsAuthenticationTest(SharedModuleStoreTestCase):
         assert stored_display_name(self.course.id) == "By JWT"
 
     def test_a_session_caller_may_read_and_update(self):
-        client = _session_client(self._course_staff())
+        client = session_client(self._course_staff())
         assert client.get(url(self.course.id)).status_code == 200
         response = client.patch(url(self.course.id), {"display_name": {"value": "By session"}}, format="json")
         assert response.status_code == 200
@@ -532,13 +485,13 @@ class AdvancedSettingsAuthenticationTest(SharedModuleStoreTestCase):
         course role does not count while the account is inactive.
         """
         for user, expected in ((UserFactory(is_staff=True), 200), (self._course_staff(), 403)):
-            client = _session_client(user)
+            client = session_client(user)
             user.is_active = False
             user.save()
             response = client.get(url(self.course.id))
             assert response.status_code == expected, response.content
             if expected == 403:
-                _assert_refused(response, 403)
+                assert_refused(response, 403)
             assert client.get(legacy_url(self.course.id)).status_code == expected
 
     def test_a_bearer_token_is_refused(self):
@@ -546,7 +499,7 @@ class AdvancedSettingsAuthenticationTest(SharedModuleStoreTestCase):
         user = UserFactory(is_staff=True)
         token = AccessTokenFactory(user=user, application=ApplicationFactory(user=user)).token
         header = {"HTTP_AUTHORIZATION": f"Bearer {token}"}
-        _assert_refused(APIClient().get(url(self.course.id), **header), 401)
+        assert_refused(APIClient().get(url(self.course.id), **header), 401)
         assert APIClient().get(legacy_url(self.course.id), **header).status_code == 200
 
 
@@ -567,7 +520,7 @@ class AdvancedSettingsReadTest(SharedModuleStoreTestCase):
         super().setUp()
         reader = UserFactory()
         CourseStaffRole(self.course.id).add_users(reader)
-        self.client = _client(reader)
+        self.client = api_client(reader)
 
     def get(self, **params):
         response = self.client.get(url(self.course.id), params)
@@ -645,7 +598,6 @@ class AdvancedSettingsReadTest(SharedModuleStoreTestCase):
             assert response.content == b""
 
 
-
 # ---------------------------------------------------------------------------
 # Updates
 # ---------------------------------------------------------------------------
@@ -659,7 +611,7 @@ class AdvancedSettingsUpdateTest(ModuleStoreTestCase):
         writer = UserFactory()
         CourseStaffRole(self.course.id).add_users(writer)
         self.writer = writer
-        self.client = _client(writer)
+        self.client = api_client(writer)
 
     def patch(self, body):
         return self.client.patch(url(self.course.id), body, format="json")
@@ -802,7 +754,7 @@ class AdvancedSettingsResponseDifferencesTest(ModuleStoreTestCase):
         self.course = CourseFactory.create(display_name="Original")
         writer = UserFactory()
         CourseStaffRole(self.course.id).add_users(writer)
-        self.client = _client(writer)
+        self.client = api_client(writer)
 
     def both(self, method, body=None, **params):
         """The v0 and v1 responses to the same request."""
@@ -819,7 +771,7 @@ class AdvancedSettingsResponseDifferencesTest(ModuleStoreTestCase):
             for method, body in (("get", None), ("patch", {"display_name": {"value": "x"}})):
                 legacy, new = self.both(method, body)
                 assert legacy.status_code == 500, method
-                _assert_refused(new, 404)
+                assert_refused(new, 404)
 
     def test_an_update_whose_body_is_not_an_object(self):
         legacy, new = self.both("patch", [1, 2])
@@ -844,10 +796,10 @@ class AdvancedSettingsResponseDifferencesTest(ModuleStoreTestCase):
         token = AccessTokenFactory(user=user, application=ApplicationFactory(user=user)).token
         header = {"HTTP_AUTHORIZATION": f"Bearer {token}"}
         assert APIClient().get(legacy_url(self.course.id), **header).status_code == 200
-        _assert_refused(APIClient().get(url(self.course.id), **header), 401)
+        assert_refused(APIClient().get(url(self.course.id), **header), 401)
         body = {"display_name": {"value": "By Bearer"}}
         assert APIClient().patch(legacy_url(self.course.id), body, format="json", **header).status_code == 200
-        _assert_refused(APIClient().patch(url(self.course.id), body, format="json", **header), 401)
+        assert_refused(APIClient().patch(url(self.course.id), body, format="json", **header), 401)
 
     def test_a_slash_separated_course_key(self):
         """v0 routes the slash form and reports the course unknown in JSON; v1 has no route for it."""
@@ -883,7 +835,7 @@ class AdvancedSettingsProctoringProviderTest(ModuleStoreTestCase):
 
     def _patch(self, version, user, course):
         address = url(course.id) if version == "v1" else legacy_url(course.id)
-        return _client(user).patch(address, self.CHANGE, format="json")
+        return api_client(user).patch(address, self.CHANGE, format="json")
 
     @ddt.data("v1", "v0")
     def test_course_staff_may_not_change_it_after_the_course_starts(self, version):
@@ -932,7 +884,6 @@ INTENTIONAL_DIFFERENCES = [
     ("developer_message", "the v0 error body carries developer_message; the envelope does not"),
     ("error_code", "the v0 not-found body carries error_code; the envelope does not"),
 ]
-VOLATILE_FIELDS = {"instance"}
 
 # Reads of the two addresses that return the same settings. Their parameters
 # differ by design: the default view is v0's fetch_all=0 response, view=full
@@ -947,57 +898,20 @@ EQUIVALENT_READS = [
     ({**FULL, "fields": "tabs,display_name"}, {"filter_fields": "tabs,display_name"}),
 ]
 
-_ABSENT = object()
-
-
-def _flatten(obj, prefix=""):
-    """
-    A ``{json_path: value}`` map of every leaf of ``obj``, without volatile
-    members. An empty object or array is a leaf, so a container that empties
-    or changes kind is seen.
-    """
-    flat = {}
-    if isinstance(obj, dict) and obj:
-        for key in sorted(obj):
-            if key in VOLATILE_FIELDS:
-                continue
-            flat.update(_flatten(obj[key], f"{prefix}.{key}" if prefix else key))
-    elif isinstance(obj, list) and obj:
-        for index, item in enumerate(obj):
-            flat.update(_flatten(item, f"{prefix}[{index}]"))
-    else:
-        flat[prefix] = obj
-    return flat
-
-
-def _same(a, b):
-    """Whether two leaves are equal and of the same JSON type: true is not 1, 1.0 is not 1, {} is not []."""
-    return type(a) is type(b) and a == b
-
-
-def _changed(legacy, new):
-    """The json paths whose leaf differs between the two bodies."""
-    a, b = _flatten(legacy), _flatten(new)
-    return {key for key in set(a) | set(b) if not _same(a.get(key, _ABSENT), b.get(key, _ABSENT))}
-
 
 def _undeclared(changed):
     """The changed paths no declared intentional difference covers."""
-    declared = [path for path, _ in INTENTIONAL_DIFFERENCES]
-    return {
-        key for key in changed
-        if not any(key == path or key.startswith(f"{path}.") or key.startswith(f"{path}[") for path in declared)
-    }
+    return undeclared_paths(changed, INTENTIONAL_DIFFERENCES)
 
 
 def test_the_comparison_sees_types_order_free_members_and_empty_containers():
-    assert _changed({"a": {"b": []}}, {"a": {}}) == {"a", "a.b"}
-    assert _changed({"x": True}, {"x": 1}) == {"x"}
-    assert _changed({"x": 1.0}, {"x": 1}) == {"x"}
-    assert _changed({"x": {}}, {"x": []}) == {"x"}
-    assert _changed({"x": None, "y": 1}, {"y": 1}) == {"x"}
-    assert _changed({"instance": "/a"}, {"instance": "/b"}) == set()
-    assert _changed({"x": [1, {"y": False}]}, {"x": [1, {"y": False}]}) == set()
+    assert changed_paths({"a": {"b": []}}, {"a": {}}) == {"a", "a.b"}
+    assert changed_paths({"x": True}, {"x": 1}) == {"x"}
+    assert changed_paths({"x": 1.0}, {"x": 1}) == {"x"}
+    assert changed_paths({"x": {}}, {"x": []}) == {"x"}
+    assert changed_paths({"x": None, "y": 1}, {"y": 1}) == {"x"}
+    assert changed_paths({"instance": "/a"}, {"instance": "/b"}) == set()
+    assert changed_paths({"x": [1, {"y": False}]}, {"x": [1, {"y": False}]}) == set()
 
 
 def test_only_declared_differences_are_tolerated():
@@ -1030,26 +944,26 @@ class _ParityMixin:
         assert legacy.status_code == expected_status, legacy.content
         assert new.status_code == expected_status, new.content
         legacy_body, new_body = json.loads(legacy.content or b"null"), json.loads(new.content or b"null")
-        changed = _changed(legacy_body, new_body)
+        changed = changed_paths(legacy_body, new_body)
         assert _undeclared(changed) == set(), f"undeclared differences: legacy={legacy_body} new={new_body}"
         self.observed |= changed
         return legacy_body, new_body
 
     def test_equivalent_reads_return_identical_bodies(self):
-        client = _client(self.reader)
+        client = api_client(self.reader)
         for new_params, legacy_params in EQUIVALENT_READS:
             legacy_body, new_body = self.compare(
                 client.get(legacy_url(self.course.id), legacy_params),
                 client.get(url(self.course.id), new_params),
                 200,
             )
-            assert _changed(legacy_body, new_body) == set(), (new_params, legacy_params)
+            assert changed_paths(legacy_body, new_body) == set(), (new_params, legacy_params)
             assert list(new_body) == list(legacy_body)
             assert new_body != {}
 
     def test_the_same_parameters_return_different_settings(self):
         """The default view is not v0's default: the difference is exactly the excluded settings."""
-        client = _client(self.reader)
+        client = api_client(self.reader)
         legacy_body = client.get(legacy_url(self.course.id)).json()
         new_body = client.get(url(self.course.id)).json()
         assert set(legacy_body) - set(new_body) == set(every_setting(self.course.id)) - set(
@@ -1060,21 +974,21 @@ class _ParityMixin:
 
     def test_an_update_returns_an_identical_body(self):
         body = {"display_name": {"value": "Changed by both"}, "days_early_for_beta": {"value": 2.0}}
-        client = _client(self.reader)
+        client = api_client(self.reader)
         new = client.patch(url(self.course.id), body, format="json")
         legacy = client.patch(legacy_url(self.course.id), body, format="json")
         legacy_body, new_body = self.compare(legacy, new, 200)
-        assert _changed(legacy_body, new_body) == set()
+        assert changed_paths(legacy_body, new_body) == set()
         assert new_body["display_name"]["value"] == "Changed by both"
 
     def _error_pairs(self):
         """``(legacy, new, status)`` for each error both addresses produce."""
         refused = {INTEGER_SETTING: {"value": "lots"}}
         cases = [
-            (_client(), self.course.id, "get", None, 401),
-            (_client(self.outsider()), self.course.id, "get", None, 403),
-            (_client(self.outsider()), UNKNOWN_COURSE_KEY, "get", None, 404),
-            (_client(self.reader), self.course.id, "patch", refused, 400),
+            (api_client(), self.course.id, "get", None, 401),
+            (api_client(self.outsider()), self.course.id, "get", None, 403),
+            (api_client(self.outsider()), UNKNOWN_COURSE_KEY, "get", None, 404),
+            (api_client(self.reader), self.course.id, "patch", refused, 400),
         ]
         for client, course_key, method, body, status in cases:
             call = getattr(client, method)
@@ -1096,12 +1010,12 @@ class _ParityMixin:
         assert [text for text in validator_texts.values() if text in new.content.decode()] == []
 
     def test_a_malformed_entry_of_a_setting_authors_do_not_edit_is_ignored_by_both(self):
-        client = _client(self.reader)
+        client = api_client(self.reader)
         for body in ({"tabs": "not tabs"}, {"start": {}}, {"tabs": "not tabs", "display_name": {"value": "Both"}}):
             new = client.patch(url(self.course.id), body, format="json")
             legacy = client.patch(legacy_url(self.course.id), body, format="json")
             legacy_body, new_body = self.compare(legacy, new, 200)
-            assert _changed(legacy_body, new_body) == set(), body
+            assert changed_paths(legacy_body, new_body) == set(), body
 
     def test_every_declared_difference_occurs(self):
         for legacy, new, status in self._error_pairs():
@@ -1141,110 +1055,8 @@ class AdvancedSettingsParityAuthzTest(_ParityMixin, CourseAuthoringAuthzTestMixi
 # Side effects of reads
 # ---------------------------------------------------------------------------
 
-# The one write the permission library makes on a database's first role or
-# permission lookup, and the model signals its save sends.
-FIRST_LOOKUP_WRITES = [("INSERT", PolicyCacheControl._meta.db_table)]  # pylint: disable=protected-access
-FIRST_LOOKUP_SIGNALS = [("pre_save", "PolicyCacheControl"), ("post_save", "PolicyCacheControl")]
-
-# Signals every request sends without writing anything.
-_NEUTRAL_SIGNALS = (
-    core_signals.request_started,
-    core_signals.request_finished,
-    model_signals.pre_init,
-    model_signals.post_init,
-    crum_signals.current_user_getter,
-    crum_signals.current_user_setter,
-)
-_MODEL_SIGNAL_NAMES = {
-    model_signals.pre_save: "pre_save",
-    model_signals.post_save: "post_save",
-    model_signals.pre_delete: "pre_delete",
-    model_signals.post_delete: "post_delete",
-    model_signals.m2m_changed: "m2m_changed",
-}
 
 READS = [("get", {}), ("get", FULL), ("get", {"fields": "display_name"}), ("head", {}), ("head", FULL)]
-
-
-@contextmanager
-def count_mongo_calls():
-    """Count Mongo reads and writes made inside the block."""
-    reads = ("find", "find_one", "count_documents", "aggregate")
-    writes = ("insert_one", "insert_many", "replace_one", "update_one", "update_many", "bulk_write",
-              "delete_one", "delete_many", "find_one_and_update", "find_one_and_replace", "find_one_and_delete")
-    counts = {"reads": 0, "writes": 0}
-
-    def counting(kind, original):
-        def wrapper(self, *args, **kwargs):
-            counts[kind] += 1
-            return original(self, *args, **kwargs)
-        return wrapper
-
-    collection = pymongo.collection.Collection
-    with patch.multiple(collection, **{
-        name: counting("reads" if name in reads else "writes", getattr(collection, name)) for name in reads + writes
-    }):
-        yield counts
-
-
-def sql_writes(queries):
-    """``(statement, table)`` for each INSERT, UPDATE and DELETE among the captured ``queries``."""
-    found = []
-    for query in queries.captured_queries:
-        words = query["sql"].split()
-        statement = words[0].upper()
-        if statement in ("INSERT", "DELETE"):
-            found.append((statement, words[2].strip('"`')))
-        elif statement == "UPDATE":
-            found.append((statement, words[1].strip('"`')))
-    return found
-
-
-@contextmanager
-def record_effects(test_case):
-    """
-    Record, inside the block, SQL writes, Mongo writes, modulestore updates,
-    every Django signal other than the neutral ones (as ``(name, sender)``) and
-    every openedx-event. Commit callbacks registered inside the block are run,
-    so anything sent on commit is seen.
-    """
-    effects = {"signals": [], "events": [], "update_item": []}
-    send, send_robust, send_event = Signal.send, Signal.send_robust, OpenEdxPublicSignal.send_event
-    update_item = MixedModuleStore.update_item
-
-    def record(signal, sender):
-        if any(signal is neutral for neutral in _NEUTRAL_SIGNALS):
-            return
-        name = _MODEL_SIGNAL_NAMES.get(signal, repr(signal))
-        effects["signals"].append((name, getattr(sender, "__name__", repr(sender))))
-
-    def spy_send(signal, sender, **named):
-        record(signal, sender)
-        return send(signal, sender, **named)
-
-    def spy_send_robust(signal, sender, **named):
-        record(signal, sender)
-        return send_robust(signal, sender, **named)
-
-    def spy_send_event(signal, *args, **kwargs):
-        effects["events"].append(signal.event_type)
-        return send_event(signal, *args, **kwargs)
-
-    def spy_update_item(store, xblock, *args, **kwargs):
-        effects["update_item"].append(str(xblock.location))
-        return update_item(store, xblock, *args, **kwargs)
-
-    with CaptureQueriesContext(connection) as queries, \
-            count_mongo_calls() as mongo, \
-            patch.object(Signal, "send", spy_send), \
-            patch.object(Signal, "send_robust", spy_send_robust), \
-            patch.object(OpenEdxPublicSignal, "send_event", spy_send_event), \
-            patch.object(MixedModuleStore, "update_item", spy_update_item):
-        # Innermost, so the callbacks run on its exit while every spy above is installed.
-        with test_case.captureOnCommitCallbacks(execute=True):
-            yield effects
-    effects["sql_writes"] = sql_writes(queries)
-    effects["mongo_writes"] = mongo["writes"]
 
 
 class _ReadsAreSideEffectFreeMixin:
@@ -1266,7 +1078,7 @@ class _ReadsAreSideEffectFreeMixin:
         self.course = CourseFactory.create()
 
     def test_reads_have_no_side_effects(self):
-        client = _client(self.reader_for(self.course))
+        client = api_client(self.reader_for(self.course))
         assert not PolicyCacheControl.objects.exists()
         for index, (method, params) in enumerate(READS):
             with record_effects(self) as effects:
@@ -1281,7 +1093,7 @@ class _ReadsAreSideEffectFreeMixin:
             assert effects["update_item"] == [], read
 
     def test_the_v0_read_makes_the_same_first_lookup_write(self):
-        client = _client(self.reader_for(self.course))
+        client = api_client(self.reader_for(self.course))
         with record_effects(self) as effects:
             response = client.get(legacy_url(self.course.id), LEGACY_DEFAULT)
         assert response.status_code == 200, response.content
@@ -1345,14 +1157,6 @@ class AdvancedSettingsReadSideEffectsAuthzTest(
 # Query counts
 # ---------------------------------------------------------------------------
 
-def _measure(request):
-    """SQL queries, Mongo reads and Mongo writes of the second of two identical requests."""
-    request()
-    with CaptureQueriesContext(connection) as queries, count_mongo_calls() as mongo:
-        response = request()
-    assert response.status_code == 200, response.content
-    return len(queries.captured_queries), mongo["reads"], mongo["writes"]
-
 
 class _QueryCountMixin:
     """Each read costs no more SQL queries or Mongo reads than the v0 read returning the same settings."""
@@ -1362,10 +1166,10 @@ class _QueryCountMixin:
 
     def test_reads_cost_no_more_than_the_equivalent_v0_reads(self):
         course = CourseFactory.create()
-        client = _client(self.reader_for(course))
+        client = api_client(self.reader_for(course))
         for new_params, legacy_params in EQUIVALENT_READS[:2]:
-            legacy = _measure(lambda params=legacy_params: client.get(legacy_url(course.id), params))
-            new = _measure(lambda params=new_params: client.get(url(course.id), params))
+            legacy = measure(lambda params=legacy_params: client.get(legacy_url(course.id), params))
+            new = measure(lambda params=new_params: client.get(url(course.id), params))
             assert new[0] <= legacy[0], (new_params, new, legacy)
             assert new[1] <= legacy[1], (new_params, new, legacy)
             assert new[2] == legacy[2] == 0, (new_params, new, legacy)
@@ -1435,11 +1239,11 @@ class AdvancedSettingsRoutingTest(SharedModuleStoreTestCase):
 
     @ddt.data("post", "put", "delete")
     def test_other_methods_are_not_allowed(self, method):
-        response = getattr(_client(UserFactory(is_staff=True)), method)(url(self.course.id), {}, format="json")
+        response = getattr(api_client(UserFactory(is_staff=True)), method)(url(self.course.id), {}, format="json")
         assert_error_envelope(response, expected_status=405, expected_type_slug="internal")
 
     def test_unsupported_accept_is_refused_with_406(self):
-        response = _client(UserFactory(is_staff=True)).get(url(self.course.id), HTTP_ACCEPT="application/xml")
+        response = api_client(UserFactory(is_staff=True)).get(url(self.course.id), HTTP_ACCEPT="application/xml")
         assert_error_envelope(response, expected_status=406, expected_type_slug="internal")
 
     # Nor ParseError or UnsupportedMediaType: a malformed or unsupported body is
@@ -1447,14 +1251,14 @@ class AdvancedSettingsRoutingTest(SharedModuleStoreTestCase):
     # here once the library catalogues them.
 
     def test_a_malformed_json_body_is_a_400_typed_internal(self):
-        response = _client(UserFactory(is_staff=True)).patch(
+        response = api_client(UserFactory(is_staff=True)).patch(
             url(self.course.id), data="{", content_type="application/json",
         )
         envelope = assert_error_envelope(response, expected_status=400, expected_type_slug="internal")
         assert envelope["title"] == "Internal Server Error"
 
     def test_an_unsupported_media_type_is_a_415_typed_internal(self):
-        response = _client(UserFactory(is_staff=True)).patch(
+        response = api_client(UserFactory(is_staff=True)).patch(
             url(self.course.id), data="display_name=Renamed", content_type="text/plain",
         )
         envelope = assert_error_envelope(response, expected_status=415, expected_type_slug="internal")
@@ -1467,14 +1271,14 @@ class AdvancedSettingsRoutingTest(SharedModuleStoreTestCase):
 
     @ddt.data("not-a-course-key", "edX/DemoX/Demo_Course", "edX+DemoX+Demo_Course")
     def test_an_unparsable_or_slash_form_key_is_an_html_404(self, key):
-        response = _client(UserFactory(is_staff=True)).get(f"/api/authoring/v1/courses/{key}/advanced_settings/")
+        response = api_client(UserFactory(is_staff=True)).get(f"/api/authoring/v1/courses/{key}/advanced_settings/")
         assert response.status_code == 404
         assert response["Content-Type"].startswith("text/html")
 
     def test_the_address_without_its_trailing_slash_redirects_to_it(self):
         """No route answers the address without its slash; the service redirects a read to the slashed one."""
         address = f"/api/authoring/v1/courses/{self.course.id}/advanced_settings"
-        response = _client(UserFactory(is_staff=True)).get(address)
+        response = api_client(UserFactory(is_staff=True)).get(address)
         assert response.status_code == 301
         assert response["Location"] == url(self.course.id)
         with pytest.raises(Resolver404):
@@ -1494,7 +1298,7 @@ class AdvancedSettingsSchemaTest(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.schema = _published_schema()
+        cls.schema = published_schema()
         cls.components = cls.schema["components"]["schemas"]
 
     @staticmethod
