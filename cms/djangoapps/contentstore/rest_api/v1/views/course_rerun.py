@@ -18,6 +18,9 @@ from xmodule.modulestore.django import modulestore
 class CourseRerunView(DeveloperErrorViewMixin, APIView):
     """
     View for course rerun.
+
+    Deprecated: use ``GET /api/authoring/v2/courses/{course_key}/rerun_defaults/``
+    instead. See https://github.com/openedx/openedx-platform/issues/39128.
     """
 
     @extend_schema(
@@ -35,6 +38,9 @@ class CourseRerunView(DeveloperErrorViewMixin, APIView):
     def get(self, request: Request, course_id: str):
         """
         Get an object containing course rerun.
+
+        Deprecated: use ``GET /api/authoring/v2/courses/{course_key}/rerun_defaults/``,
+        which returns the same fields. See https://github.com/openedx/openedx-platform/issues/39128.
 
         **Example Request**
 
