@@ -82,6 +82,10 @@ class CmsMarkSupersededPathsTest(TestCase):
             "/api/contentstore/v1/help_urls",
             "/api/contentstore/v1/course_index/{course_id}",
             "/api/contentstore/v0/advanced_settings/{course_id}",
+            "/api/contentstore/v0/link_check/{course_id}",
+            "/api/contentstore/v0/link_check_status/{course_id}",
+            "/api/contentstore/v0/rerun_link_update/{course_id}",
+            "/api/contentstore/v0/rerun_link_update_status/{course_id}",
         }
         assert len(SUPERSEDED_PATHS) == len(set(SUPERSEDED_PATHS))
 
@@ -109,6 +113,26 @@ class CmsMarkSupersededPathsTest(TestCase):
         }})
         assert result["paths"][legacy] == {"get": {"deprecated": True}, "patch": {"deprecated": True}}
         assert result["paths"][conforming] == {"get": {}, "patch": {}}
+
+    def test_the_course_optimizer_operations_are_marked_and_their_successors_are_not(self):
+        legacy = {
+            "/api/contentstore/v0/link_check/{course_id}": "post",
+            "/api/contentstore/v0/link_check_status/{course_id}": "get",
+            "/api/contentstore/v0/rerun_link_update/{course_id}": "post",
+            "/api/contentstore/v0/rerun_link_update_status/{course_id}": "get",
+        }
+        conforming = (
+            "/api/authoring/v1/courses/{course_key}/link_check/",
+            "/api/authoring/v1/courses/{course_key}/previous_run_link_update/",
+        )
+        result = self._run({"paths": {
+            **{path: {method: {}} for path, method in legacy.items()},
+            **{path: {"get": {}, "post": {}} for path in conforming},
+        }})
+        for path, method in legacy.items():
+            assert result["paths"][path] == {method: {"deprecated": True}}, path
+        for path in conforming:
+            assert result["paths"][path] == {"get": {}, "post": {}}, path
 
     def test_an_unrelated_contentstore_path_is_left_unmarked(self):
         other = "/api/contentstore/v0/heartbeat"
