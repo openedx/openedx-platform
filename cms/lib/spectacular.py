@@ -23,6 +23,8 @@ SUPERSEDED_PATHS = (
     "/api/contentstore/v0/tabs/{course_id}/reorder",
     # → /api/authoring/v1/courses/{course_key}/tabs/{tab_id}/
     "/api/contentstore/v0/tabs/{course_id}/settings",
+    # → /api/authoring/v2/courses/{course_key}/team_members/ (and team_members/me/)
+    "/api/contentstore/v1/course_team/{course_id}",
 )
 
 # Legacy addresses of APIs migrated to /api/authoring/, marked deprecated for
