@@ -85,6 +85,7 @@ class CmsMarkSupersededPathsTest(TestCase):
             "/api/contentstore/v0/tabs/{course_id}",
             "/api/contentstore/v0/tabs/{course_id}/reorder",
             "/api/contentstore/v0/tabs/{course_id}/settings",
+            "/api/contentstore/v1/course_team/{course_id}",
         }
         assert len(SUPERSEDED_PATHS) == len(set(SUPERSEDED_PATHS))
 
@@ -132,6 +133,16 @@ class CmsMarkSupersededPathsTest(TestCase):
         assert {path: result["paths"][path] for path in conforming} == {
             path: {method: {}} for path, method in conforming.items()
         }
+
+    def test_the_course_team_operation_is_marked_and_its_successors_are_not(self):
+        legacy = "/api/contentstore/v1/course_team/{course_id}"
+        conforming = (
+            "/api/authoring/v2/courses/{course_key}/team_members/",
+            "/api/authoring/v2/courses/{course_key}/team_members/me/",
+        )
+        result = self._run({"paths": {path: {"get": {}} for path in (legacy, *conforming)}})
+        assert result["paths"][legacy] == {"get": {"deprecated": True}}
+        assert {path: result["paths"][path] for path in conforming} == {path: {"get": {}} for path in conforming}
 
     def test_an_unrelated_contentstore_path_is_left_unmarked(self):
         other = "/api/contentstore/v0/heartbeat"
