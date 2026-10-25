@@ -21,6 +21,7 @@ from django.dispatch import Signal
 from django.test import SimpleTestCase, TestCase
 from django.test.utils import CaptureQueriesContext, override_settings
 from django.urls import Resolver404, resolve, reverse
+from edx_rest_framework_extensions.permissions import NotJwtRestrictedApplication
 from edx_rest_framework_extensions.testing import assert_error_envelope
 from opaque_keys.edx.keys import CourseKey
 from openedx_authz.constants.roles import (
@@ -275,9 +276,9 @@ class AdvancedSettingsAccessLegacyPermissionsTest(_AccessMixin, SharedModuleStor
         self.assert_access(UserFactory(is_staff=True), action, 200)
 
     @ddt.data(*ACTIONS)
-    def test_a_superuser_who_is_not_global_staff_is_refused(self, action):
-        """Without policy-based permissions, Studio grants global staff and course roles, not the superuser flag."""
-        self.assert_access(UserFactory(is_superuser=True, is_staff=False), action, 403)
+    def test_a_superuser_who_is_not_global_staff_is_allowed(self, action):
+        """The role checks consult the policy engine even here, and it admits superusers, as on v0."""
+        self.assert_access(UserFactory(is_superuser=True, is_staff=False), action, 200)
 
     def test_a_version_only_course_key_is_404(self):
         """The key parses but names no course run; v0 has no address that takes it."""
@@ -448,7 +449,12 @@ class AdvancedSettingsPermissionWiringTest(SimpleTestCase):
             ("metadata", [IsAuthenticated, IsExistingCourse]),
         ):
             view.action = action
-            assert [type(permission) for permission in view.get_permissions()] == expected, action
+            # The JWT middleware appends NotJwtRestrictedApplication to views that take JWTs.
+            declared = [
+                type(permission) for permission in view.get_permissions()
+                if not isinstance(permission, NotJwtRestrictedApplication)
+            ]
+            assert declared == expected, action
 
     def test_an_action_without_a_declared_permission_is_refused(self):
         view = CourseAdvancedSettingsViewSet()
@@ -854,6 +860,7 @@ class AdvancedSettingsResponseDifferencesTest(ModuleStoreTestCase):
 
 @ddt.ddt
 @override_settings(
+    ENABLE_PROCTORED_EXAMS=True,
     PROCTORING_BACKENDS={"DEFAULT": "test_proctoring_provider", "valid_provider": {}},
     PARTNER_SUPPORT_EMAIL="support@example.com",
 )
