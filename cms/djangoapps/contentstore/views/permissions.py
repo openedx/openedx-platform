@@ -11,7 +11,9 @@ from rest_framework.exceptions import NotFound
 from rest_framework.permissions import BasePermission
 
 from common.djangoapps.student.auth import (
+    STUDIO_VIEW_USERS,
     check_course_advanced_settings_access,
+    get_user_permissions,
     has_studio_read_access,
     has_studio_write_access,
 )
@@ -179,3 +181,25 @@ class CanManagePagesAndResources(BasePermission):
             course_key,
             LegacyAuthoringPermission.WRITE,
         )
+
+
+class CanViewCourseTeam(BasePermission):
+    """
+    Allow callers who may see who is on the team of the course in the path.
+
+    Reads the parsed ``course_key`` URL argument. Global staff, and the
+    instructors and staff of the course or of its organization, may; limited
+    staff may not. The decision rests on Studio's course roles whether or not
+    policy-based authoring permissions are enabled for the course. A role
+    assigned through those permissions counts only as the Studio course role
+    it stands for: course admin as instructor, course staff as staff. A
+    policy role that stands for no Studio course role, such as course editor
+    or course auditor, is refused even though the policy lets it view the
+    team.
+    """
+
+    def has_permission(self, request, view):
+        course_key = view.kwargs.get("course_key")
+        if course_key is None:
+            return False
+        return bool(get_user_permissions(request.user, course_key) & STUDIO_VIEW_USERS)
