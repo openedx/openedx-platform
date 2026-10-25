@@ -82,6 +82,7 @@ class CmsMarkSupersededPathsTest(TestCase):
             "/api/contentstore/v1/help_urls",
             "/api/contentstore/v1/course_index/{course_id}",
             "/api/contentstore/v0/advanced_settings/{course_id}",
+            "/api/contentstore/v1/course_rerun/{course_id}",
         }
         assert len(SUPERSEDED_PATHS) == len(set(SUPERSEDED_PATHS))
 
@@ -109,6 +110,13 @@ class CmsMarkSupersededPathsTest(TestCase):
         }})
         assert result["paths"][legacy] == {"get": {"deprecated": True}, "patch": {"deprecated": True}}
         assert result["paths"][conforming] == {"get": {}, "patch": {}}
+
+    def test_the_course_rerun_read_is_marked_and_its_successor_is_not(self):
+        legacy = "/api/contentstore/v1/course_rerun/{course_id}"
+        conforming = "/api/authoring/v2/courses/{course_key}/rerun_defaults/"
+        result = self._run({"paths": {legacy: {"get": {}}, conforming: {"get": {}}}})
+        assert result["paths"][legacy] == {"get": {"deprecated": True}}
+        assert result["paths"][conforming] == {"get": {}}
 
     def test_an_unrelated_contentstore_path_is_left_unmarked(self):
         other = "/api/contentstore/v0/heartbeat"
