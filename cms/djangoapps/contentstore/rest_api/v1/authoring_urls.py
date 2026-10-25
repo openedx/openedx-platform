@@ -8,6 +8,11 @@ from cms.djangoapps.contentstore.rest_api.v1.views import (
     YoutubeTranscriptImportsViewSet,
 )
 from cms.djangoapps.contentstore.rest_api.v1.views.advanced_settings import CourseAdvancedSettingsViewSet
+from cms.djangoapps.contentstore.rest_api.v1.views.custom_pages import (
+    CourseCustomPageOrderViewSet,
+    CourseCustomPagesViewSet,
+    CourseTabsViewSet,
+)
 from cms.djangoapps.contentstore.rest_api.v1.views.video_uploads import CourseVideoUploadsViewSet
 
 app_name = "authoring_v1"
@@ -55,5 +60,21 @@ urlpatterns = [
         "courses/<course_key:course_key>/advanced_settings/",
         CourseAdvancedSettingsViewSet.as_view({"get": "retrieve", "patch": "partial_update"}),
         name="course_advanced_settings",
+    ),
+    # The course is named by the required course_key query parameter.
+    path(
+        "custom_pages/",
+        CourseCustomPagesViewSet.as_view({"get": "list"}),
+        name="custom_page_list",
+    ),
+    path(
+        "courses/<course_key:course_key>/custom_page_order/",
+        CourseCustomPageOrderViewSet.as_view({"put": "update"}),
+        name="course_custom_page_order",
+    ),
+    path(
+        "courses/<course_key:course_key>/tabs/<str:tab_id>/",
+        CourseTabsViewSet.as_view({"patch": "partial_update"}),
+        name="course_tab_detail",
     ),
 ]
