@@ -38,7 +38,6 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.test import APIClient, APIRequestFactory, force_authenticate
 from rest_framework.utils.encoders import JSONEncoder
 
-from cms.djangoapps.contentstore.rest_api.v1 import authoring_urls
 from cms.djangoapps.contentstore.rest_api.v1.advanced_settings_service import (
     INVALID_SETTING_MESSAGE,
     SETTINGS_NOT_SAVED_MESSAGE,
@@ -748,7 +747,10 @@ class AdvancedSettingsUpdateTest(ModuleStoreTestCase):
 
     def test_a_failure_saving_the_tabs_is_reported_without_its_text(self):
         target = "cms.djangoapps.contentstore.views.course._refresh_course_tabs"
-        with patch(target, side_effect=InvalidTabsException("tab internals")), self.assertLogs(SERVICE_LOGGER, "WARNING"):
+        with (
+            patch(target, side_effect=InvalidTabsException("tab internals")),
+            self.assertLogs(SERVICE_LOGGER, "WARNING"),
+        ):
             response = self.patch({"display_name": {"value": "Not stored"}})
         envelope = assert_error_envelope(response, expected_status=400, expected_type_slug="validation")
         assert envelope["errors"] == {"non_field_errors": [SETTINGS_NOT_SAVED_MESSAGE]}
@@ -1414,6 +1416,8 @@ class AdvancedSettingsRoutingTest(SharedModuleStoreTestCase):
             resolve("/api/authoring/v1/courses/edX/DemoX/Demo_Course/advanced_settings/")
 
     def test_the_url_names_are_unique_in_the_namespace(self):
+        # Imported here: at module import the URL converters are not registered yet.
+        from cms.djangoapps.contentstore.rest_api.v1 import authoring_urls  # noqa: PLC0415
         names = [pattern.name for pattern in authoring_urls.urlpatterns]
         assert len(names) == len(set(names))
         assert "course_advanced_settings" in names
