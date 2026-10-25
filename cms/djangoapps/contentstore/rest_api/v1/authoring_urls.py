@@ -8,6 +8,10 @@ from cms.djangoapps.contentstore.rest_api.v1.views import (
     YoutubeTranscriptImportsViewSet,
 )
 from cms.djangoapps.contentstore.rest_api.v1.views.advanced_settings import CourseAdvancedSettingsViewSet
+from cms.djangoapps.contentstore.rest_api.v1.views.course_optimizer import (
+    CourseLinkCheckViewSet,
+    CoursePreviousRunLinkUpdateViewSet,
+)
 from cms.djangoapps.contentstore.rest_api.v1.views.video_uploads import CourseVideoUploadsViewSet
 
 app_name = "authoring_v1"
@@ -55,5 +59,15 @@ urlpatterns = [
         "courses/<course_key:course_key>/advanced_settings/",
         CourseAdvancedSettingsViewSet.as_view({"get": "retrieve", "patch": "partial_update"}),
         name="course_advanced_settings",
+    ),
+    path(
+        "courses/<course_key:course_key>/link_check/",
+        CourseLinkCheckViewSet.as_view({"get": "retrieve", "post": "create"}),
+        name="course_link_check",
+    ),
+    path(
+        "courses/<course_key:course_key>/previous_run_link_update/",
+        CoursePreviousRunLinkUpdateViewSet.as_view({"get": "retrieve", "post": "create"}),
+        name="course_previous_run_link_update",
     ),
 ]
