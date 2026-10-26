@@ -161,7 +161,8 @@ class CourseCustomPagesViewSet(StandardizedErrorMixin, IterablePaginationMixin, 
     modulestore, not database rows.
     """
 
-    # Kept from the legacy endpoint: inactive accounts' sessions are accepted and the course permission decides.
+    # An inactive account's browser session stays authenticated, so the course permission decides: staff status
+    # admits it, and its roles count only on courses where policy-based permissions are on.
     authentication_classes = (JwtAuthentication, SessionAuthenticationAllowInactiveUser)
     permission_classes = (IsAuthenticated, _CourseKeyFromQuery, IsExistingCourse, CanViewPagesAndResources)
     # The actions the permissions above were written for. A method with no
@@ -219,7 +220,8 @@ class CourseCustomPageOrderViewSet(StandardizedErrorMixin, viewsets.ViewSet):
     modulestore, not of database rows.
     """
 
-    # Kept from the legacy endpoint: inactive accounts' sessions are accepted and the course permission decides.
+    # An inactive account's browser session stays authenticated, so the course permission decides: staff status
+    # admits it, and its roles count only on courses where policy-based permissions are on.
     authentication_classes = (JwtAuthentication, SessionAuthenticationAllowInactiveUser)
     permission_classes = (IsAuthenticated, IsExistingCourse, CanManagePagesAndResources)
 
@@ -272,7 +274,8 @@ class CourseTabsViewSet(StandardizedErrorMixin, viewsets.ViewSet):
     modulestore, not database rows.
     """
 
-    # Kept from the legacy endpoint: inactive accounts' sessions are accepted and the course permission decides.
+    # An inactive account's browser session stays authenticated, so the course permission decides: staff status
+    # admits it, and its roles count only on courses where policy-based permissions are on.
     authentication_classes = (JwtAuthentication, SessionAuthenticationAllowInactiveUser)
     permission_classes = (IsAuthenticated, IsExistingCourse, CanManagePagesAndResources)
     serializer_class = CourseTabSerializer
