@@ -124,7 +124,7 @@ class YoutubeTranscriptChecksViewSet(StandardizedErrorMixin, _CourseScopedMixin,
             **_ERROR_RESPONSES,
         },
     )
-    def list(self, request, course_key):
+    def retrieve(self, request, course_key):
         """Return the transcript availability of the requested video."""
         payload = self._payload_from_query(request, YoutubeTranscriptCheckRequestSerializer)
         result = get_transcript_check_result(request, payload, course_key)

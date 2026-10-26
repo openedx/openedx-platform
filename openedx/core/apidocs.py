@@ -59,6 +59,31 @@ def get_api_docs_settings():
     return api_docs_settings
 
 
+# Tag that marks an operation for the generated platform SDK.
+SDK_TAG = "openedx-platform-sdk"
+
+
+def untag_deprecated_operations(result, generator, request, public):  # pylint: disable=unused-argument
+    """
+    Post-processing hook: drop the SDK tag from deprecated operations.
+
+    A legacy address kept for its deprecation window is served by the same
+    view as its replacement, so it inherits the view's SDK tag. Leaving it
+    tagged would generate a client for an address callers should move off.
+    Registered after the hooks that mark operations deprecated.
+    """
+    for path_item in result.get("paths", {}).values():
+        for operation in path_item.values():
+            if not isinstance(operation, dict) or not operation.get("deprecated"):
+                continue
+            tags = [tag for tag in operation.get("tags", []) if tag != SDK_TAG]
+            if tags:
+                operation["tags"] = tags
+            else:
+                operation.pop("tags", None)
+    return result
+
+
 def cached_schema_view():
     """
     Build the ``/api-docs`` schema view, caching the rendered document compressed.

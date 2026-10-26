@@ -2169,6 +2169,7 @@ SPECTACULAR_SETTINGS = {
     'POSTPROCESSING_HOOKS': [
         'drf_spectacular.hooks.postprocess_schema_enums',
         'lms.lib.spectacular.lms_mark_legacy_paths_deprecated',
+        'openedx.core.apidocs.untag_deprecated_operations',
     ],
     # Stripped from each path to derive its tags and operationId, so changing
     # it renames every operationId. Paths themselves are emitted in full.
