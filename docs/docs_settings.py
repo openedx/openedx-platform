@@ -82,9 +82,36 @@ SPECTACULAR_SETTINGS.update(get_api_docs_settings())  # noqa: F405
 
 # OpenAPI 3 security schemes, consumed by drf-spectacular. "Basic" uses the
 # OpenAPI 3 http/basic form rather than Swagger 2.0's type: basic.
+# The retirement-status model a partial update of a version 1 retirement reads
+# is the only place this component was ever referenced, and that operation now
+# publishes the object its handler really reads. A client generated from this
+# document names a class after each component, so the name is kept here rather
+# than disappearing with its last reference.
+PATCHED_USER_RETIREMENT_STATUS = {
+    "type": "object",
+    "description": "Perform serialization for the RetirementStatus model",
+    "properties": {
+        "id": {"type": "integer", "readOnly": True},
+        "user": {"allOf": [{"$ref": "#/components/schemas/RetirementUser"}], "readOnly": True},
+        "current_state": {"allOf": [{"$ref": "#/components/schemas/RetirementState"}], "readOnly": True},
+        "last_state": {"allOf": [{"$ref": "#/components/schemas/RetirementState"}], "readOnly": True},
+        "created": {"type": "string", "format": "date-time", "readOnly": True},
+        "modified": {"type": "string", "format": "date-time", "readOnly": True},
+        "original_username": {"type": "string", "maxLength": 150},
+        "original_email": {"type": "string", "format": "email", "maxLength": 254},
+        "original_name": {"type": "string", "maxLength": 255},
+        "retired_username": {"type": "string", "maxLength": 150},
+        "retired_email": {"type": "string", "format": "email", "maxLength": 254},
+    },
+}
+
 # Components the service settings already append are kept.
 SPECTACULAR_SETTINGS["APPEND_COMPONENTS"] = {  # noqa: F405
     **SPECTACULAR_SETTINGS.get("APPEND_COMPONENTS", {}),  # noqa: F405
+    "schemas": {
+        **SPECTACULAR_SETTINGS.get("APPEND_COMPONENTS", {}).get("schemas", {}),  # noqa: F405
+        "PatchedUserRetirementStatus": PATCHED_USER_RETIREMENT_STATUS,
+    },
     "securitySchemes": {
         "Basic": {
             "type": "http",

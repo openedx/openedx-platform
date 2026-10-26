@@ -7,6 +7,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.urls import NoReverseMatch, Resolver404, get_resolver, resolve, reverse
 from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
 from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
+from rest_framework import status
 from rest_framework.request import Request
 from rest_framework.settings import api_settings
 from rest_framework.test import APIRequestFactory, APITestCase
@@ -22,6 +23,10 @@ from openedx.core.djangoapps.user_api.v2.views import (
     IDVerificationStatusView,
     IDVerificationViewSet,
     NameChangeViewSet,
+    RetirementCleanupView,
+    RetirementPartnerReportCleanupView,
+    RetirementPartnerReportViewSet,
+    RetirementViewSet,
     UserPreferenceViewSet,
     UserViewSet,
 )
@@ -81,6 +86,22 @@ EXPECTED_ADDRESSES = {
         "/api/user/v2/user_preferences/alice,time_zone/",
     ),
     "user_v2:time_zone_list": ({}, "/api/user/v2/time_zones/"),
+    "user_v2:retirement_list": ({}, "/api/user/v2/retirements/"),
+    "user_v2:retirement_detail": ({"username": "alice"}, "/api/user/v2/retirements/alice/"),
+    "user_v2:retirement_erasure": (
+        {"username": "alice"},
+        "/api/user/v2/retirements/alice/erasures/",
+    ),
+    "user_v2:retirement_cleanup": ({}, "/api/user/v2/retirement_cleanups/"),
+    "user_v2:retirement_partner_report_list": ({}, "/api/user/v2/retirement_partner_reports/"),
+    "user_v2:retirement_partner_report_detail": (
+        {"username": "alice"},
+        "/api/user/v2/retirement_partner_reports/alice/",
+    ),
+    "user_v2:retirement_partner_report_cleanup": (
+        {},
+        "/api/user/v2/retirement_partner_report_cleanups/",
+    ),
 }
 
 
@@ -169,6 +190,19 @@ class UrlLiteralTests(APITestCase):
             ("/api/user/v2/user_preferences/", "user_preference_list"),
             ("/api/user/v2/user_preferences/alice,time_zone/", "user_preference_detail"),
             ("/api/user/v2/time_zones/", "time_zone_list"),
+            ("/api/user/v2/retirements/", "retirement_list"),
+            ("/api/user/v2/retirements/alice/", "retirement_detail"),
+            ("/api/user/v2/retirements/alice/erasures/", "retirement_erasure"),
+            ("/api/user/v2/retirement_cleanups/", "retirement_cleanup"),
+            ("/api/user/v2/retirement_partner_reports/", "retirement_partner_report_list"),
+            (
+                "/api/user/v2/retirement_partner_reports/alice/",
+                "retirement_partner_report_detail",
+            ),
+            (
+                "/api/user/v2/retirement_partner_report_cleanups/",
+                "retirement_partner_report_cleanup",
+            ),
         ):
             match = resolve(address)
             assert match.url_name == name, address
@@ -420,6 +454,13 @@ class RouteShapeTests(APITestCase):
             "email_search_list",
             "name_change_confirmation",
             "name_change_list",
+            "retirement_cleanup",
+            "retirement_detail",
+            "retirement_erasure",
+            "retirement_list",
+            "retirement_partner_report_cleanup",
+            "retirement_partner_report_detail",
+            "retirement_partner_report_list",
             "time_zone_list",
             "user_detail",
             "user_list",
@@ -457,6 +498,11 @@ class RouteShapeTests(APITestCase):
             "user_detail",
             "user_preference_list",
             "time_zone_list",
+            "retirement_list",
+            "retirement_detail",
+            "retirement_erasure",
+            "retirement_partner_report_list",
+            "retirement_partner_report_detail",
         ]
         with pytest.raises(ImproperlyConfigured):
             v2_urls.without_route(routes, "user_preference_detail_renamed")
@@ -593,3 +639,164 @@ class LegacyAddressTests(APITestCase):
     def test_unversioned_twins_still_resolve(self):
         match = resolve("/user_api/v1/users/")
         assert view_identity(match.func) == (V1_VIEW_MODULE, "UserViewSet")
+
+
+#: The addresses of the retirement pipeline, with the view each is mounted on
+#: and the methods it serves.
+RETIREMENT_ROUTES = {
+    "/api/user/v2/retirements/": (RetirementViewSet, {"get": "list"}),
+    "/api/user/v2/retirements/alice/": (
+        RetirementViewSet,
+        {"get": "retrieve", "patch": "partial_update", "delete": "destroy"},
+    ),
+    "/api/user/v2/retirements/alice/erasures/": (RetirementViewSet, {"post": "erasures"}),
+    "/api/user/v2/retirement_partner_reports/": (
+        RetirementPartnerReportViewSet, {"post": "create"},
+    ),
+    "/api/user/v2/retirement_partner_reports/alice/": (
+        RetirementPartnerReportViewSet, {"put": "update"},
+    ),
+}
+
+#: The addresses of the version 1 pipeline, with the view class each still
+#: reaches and the actions each is still bound to.
+LEGACY_RETIREMENT_ROUTES = {
+    "/api/user/v1/accounts/alice/retirement_status/": (
+        "AccountRetirementStatusView", {"get": "retrieve"},
+    ),
+    "/api/user/v1/accounts/retirement_queue/": (
+        "AccountRetirementStatusView", {"get": "retirement_queue"},
+    ),
+    "/api/user/v1/accounts/retirements_by_status_and_date/": (
+        "AccountRetirementStatusView", {"get": "retirements_by_status_and_date"},
+    ),
+    "/api/user/v1/accounts/update_retirement_status/": (
+        "AccountRetirementStatusView", {"patch": "partial_update"},
+    ),
+    "/api/user/v1/accounts/retirement_cleanup/": (
+        "AccountRetirementStatusView", {"post": "cleanup"},
+    ),
+    "/api/user/v1/accounts/retirement_partner_report/": (
+        "AccountRetirementPartnerReportView",
+        {"post": "retirement_partner_report", "put": "retirement_partner_status_create"},
+    ),
+    "/api/user/v1/accounts/retirement_partner_report_cleanup/": (
+        "AccountRetirementPartnerReportView", {"post": "retirement_partner_cleanup"},
+    ),
+    "/api/user/v1/accounts/cancel_retirement/": (
+        "CancelAccountRetirementStatusView", {"post": "cancel_retirement"},
+    ),
+    "/api/user/v1/accounts/retire/": ("AccountRetirementView", {"post": "post"}),
+    "/api/user/v1/accounts/retire_misc/": ("LMSAccountRetirementView", {"post": "post"}),
+}
+
+#: The names the version 1 pipeline is reversed by, which out-of-tree callers
+#: hold, with the address each still builds.
+LEGACY_RETIREMENT_NAMES = {
+    "accounts_retirement_retrieve": (
+        {"username": "alice"}, "/api/user/v1/accounts/alice/retirement_status/",
+    ),
+    "accounts_retirement_queue": ({}, "/api/user/v1/accounts/retirement_queue/"),
+    "accounts_retirements_by_status_and_date": (
+        {}, "/api/user/v1/accounts/retirements_by_status_and_date/",
+    ),
+    "accounts_retirement_update": ({}, "/api/user/v1/accounts/update_retirement_status/"),
+    "accounts_retirement_cleanup": ({}, "/api/user/v1/accounts/retirement_cleanup/"),
+    "accounts_retirement_partner_report": (
+        {}, "/api/user/v1/accounts/retirement_partner_report/",
+    ),
+    "accounts_retirement_partner_report_cleanup": (
+        {}, "/api/user/v1/accounts/retirement_partner_report_cleanup/",
+    ),
+    "cancel_account_retirement": ({}, "/api/user/v1/accounts/cancel_retirement/"),
+    "accounts_retire": ({}, "/api/user/v1/accounts/retire/"),
+    "accounts_retire_misc": ({}, "/api/user/v1/accounts/retire_misc/"),
+}
+
+
+@skip_unless_lms
+class RetirementRouteTests(APITestCase):
+    """Where the retirement addresses are mounted, and what each one serves."""
+
+    def test_each_address_is_mounted_on_the_view_that_serves_it(self):
+        for address, (view, actions) in RETIREMENT_ROUTES.items():
+            match = resolve(address)
+            assert view_identity(match.func) == (V2_VIEW_MODULE, view.__name__), address
+            assert routed_actions(match.func) == actions, address
+
+    def test_each_batch_address_is_mounted_on_a_view_of_its_own(self):
+        for address, view in (
+            ("/api/user/v2/retirement_cleanups/", RetirementCleanupView),
+            ("/api/user/v2/retirement_partner_report_cleanups/", RetirementPartnerReportCleanupView),
+        ):
+            match = resolve(address)
+            assert view_identity(match.func) == (V2_VIEW_MODULE, view.__name__), address
+            assert served_methods(match.func) == {"POST", "OPTIONS"}, address
+
+    def test_a_name_carrying_every_character_a_username_may_hold_addresses_a_member(self):
+        for username in ("a.b", "a b", "a@b", "a+b", "a-b", "a_b", "Mixed.Case+1"):
+            with self.subTest(username=username):
+                match = resolve(f"/api/user/v2/retirements/{username}/")
+                assert match.url_name == "retirement_detail"
+                assert match.kwargs == {"username": username}
+                erasure = resolve(f"/api/user/v2/retirements/{username}/erasures/")
+                assert erasure.url_name == "retirement_erasure"
+                assert erasure.kwargs == {"username": username}
+
+    def test_a_name_that_reads_like_a_batch_address_is_read_as_a_name(self):
+        """A user may register any name, so no fixed word sits where a name goes."""
+        match = resolve("/api/user/v2/retirements/cleanups/")
+        assert match.url_name == "retirement_detail"
+        assert match.kwargs == {"username": "cleanups"}
+        assert resolve("/api/user/v2/retirement_cleanups/").url_name == "retirement_cleanup"
+
+    def test_the_batch_addresses_are_not_members_of_the_collections_they_dispose_of(self):
+        assert reverse("user_v2:retirement_cleanup") == "/api/user/v2/retirement_cleanups/"
+        assert reverse("user_v2:retirement_partner_report_cleanup") == (
+            "/api/user/v2/retirement_partner_report_cleanups/"
+        )
+
+    def test_the_viewsets_build_their_action_addresses_under_this_mount(self):
+        retirements = RetirementViewSet(basename="retirement")
+        assert retirements.reverse_action("list") == "/api/user/v2/retirements/"
+        assert retirements.reverse_action(
+            "detail", kwargs={"username": "alice"},
+        ) == "/api/user/v2/retirements/alice/"
+        assert retirements.reverse_action(
+            "erasure", kwargs={"username": "alice"},
+        ) == "/api/user/v2/retirements/alice/erasures/"
+        reports = RetirementPartnerReportViewSet(basename="retirement_partner_report")
+        assert reports.reverse_action("list") == "/api/user/v2/retirement_partner_reports/"
+        assert reports.reverse_action(
+            "detail", kwargs={"username": "alice"},
+        ) == "/api/user/v2/retirement_partner_reports/alice/"
+
+    def test_an_address_near_one_this_version_serves_is_refused_in_the_body_it_answers_with(self):
+        """No route serves it, so it is answered as an address outside this prefix is."""
+        with pytest.raises(Resolver404):
+            resolve("/api/user/v2/retirement/")
+        response = self.client.get("/api/user/v2/retirement/")
+        outside = self.client.get("/api/not_a_service/v2/retirement/")
+        assert response.status_code == outside.status_code == status.HTTP_404_NOT_FOUND
+        assert response["Content-Type"] == outside["Content-Type"]
+
+
+@skip_unless_lms
+class LegacyRetirementAddressTests(APITestCase):
+    """Mounting the conforming pipeline leaves the version 1 pipeline exactly where it was."""
+
+    def test_every_version_one_address_still_reaches_the_view_and_actions_it_always_did(self):
+        for address, (class_name, actions) in LEGACY_RETIREMENT_ROUTES.items():
+            match = resolve(address)
+            assert view_identity(match.func) == (V1_ACCOUNT_VIEW_MODULE, class_name), address
+            assert routed_actions(match.func) == actions, address
+
+    def test_every_name_the_version_one_pipeline_is_reversed_by_still_reverses(self):
+        for name, (kwargs, address) in LEGACY_RETIREMENT_NAMES.items():
+            assert reverse(name, kwargs=kwargs) == address, name
+
+    def test_no_version_one_name_is_shadowed_by_a_version_two_one(self):
+        """The two sets live in different namespaces, so the same word names two addresses."""
+        assert reverse("accounts_retirement_queue") != reverse("user_v2:retirement_list")
+        with pytest.raises(NoReverseMatch):
+            reverse("retirement_list")

@@ -1,6 +1,8 @@
 """Filter sets for version 2 of the User API."""
 
+import datetime
 import logging
+from zoneinfo import ZoneInfo
 
 from django import forms
 from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
@@ -11,7 +13,7 @@ from opaque_keys.edx.keys import CourseKey
 from rest_framework.exceptions import ValidationError
 from rest_framework.filters import OrderingFilter
 
-from openedx.core.djangoapps.user_api.models import UserPreference
+from openedx.core.djangoapps.user_api.models import RetirementState, UserPreference, UserRetirementStatus
 
 from .view_utils import names_in
 
@@ -198,3 +200,77 @@ class UserPreferenceFilterSet(filters.FilterSet):
     def filter_usernames(self, queryset, name, value):
         """Keep the preferences of the users the value names, read as a comma-separated list."""
         return queryset.filter(**{f"{name}__in": names_in(value)})
+
+
+class _WholeNumberFilter(filters.NumberFilter):
+    """Reads a count of whole units, refusing a fraction."""
+
+    field_class = forms.IntegerField
+
+
+class RetirementFilterSet(filters.FilterSet):
+    """
+    Narrows the retirement pipeline's queue.
+
+    ``cool_off_days`` is kept as a filter of its own rather than expressed as
+    a point in time, because it is the operator concept the pipeline is
+    configured in and a caller computing the equivalent timestamp would have
+    to agree with this server's clock to the second. The two date bounds say
+    which end they include, which the pair they replace left to the reader.
+    """
+
+    state = filters.CharFilter(
+        method="filter_states",
+        help_text=(
+            "Comma-separated names of pipeline steps. Only retirements standing at one of them "
+            "are returned, and a name no configured step holds is refused."
+        ),
+    )
+    cool_off_days = _WholeNumberFilter(
+        method="filter_cool_off_days",
+        min_value=0,
+        help_text=(
+            "Return only retirements requested at least this many days ago. The pipeline uses "
+            "this to leave a learner time to change their mind."
+        ),
+    )
+    created_after = filters.DateTimeFilter(
+        field_name="created",
+        lookup_expr="gte",
+        help_text=(
+            "Return only retirements requested at or after this moment, as a date or a date and "
+            "time. A date alone means the start of that day."
+        ),
+    )
+    created_before = filters.DateTimeFilter(
+        field_name="created",
+        lookup_expr="lt",
+        help_text=(
+            "Return only retirements requested before this moment, as a date or a date and time. "
+            "A date alone means the start of that day, so that day is left out."
+        ),
+    )
+
+    class Meta:
+        model = UserRetirementStatus
+        fields = ("state", "cool_off_days", "created_after", "created_before")
+
+    def filter_states(self, queryset, name, value):  # pylint: disable=unused-argument
+        """Keep the retirements standing at one of the steps the value names."""
+        names = names_in(value)
+        configured = set(RetirementState.get_state_names_list())
+        unknown = [name for name in names if name not in configured]
+        if unknown:
+            log.info("Retirement queue filtered by unconfigured steps: %r", unknown)
+            raise ValidationError({
+                "state": [
+                    f"No such pipeline step: {', '.join(unknown)}. "
+                    f"This deployment runs: {', '.join(sorted(configured))}.",
+                ],
+            })
+        return queryset.filter(current_state__state_name__in=names)
+
+    def filter_cool_off_days(self, queryset, name, value):  # pylint: disable=unused-argument
+        """Keep the retirements requested at least ``value`` days ago."""
+        requested_before = datetime.datetime.now(ZoneInfo("UTC")) - datetime.timedelta(days=value)
+        return queryset.filter(created__lt=requested_before)

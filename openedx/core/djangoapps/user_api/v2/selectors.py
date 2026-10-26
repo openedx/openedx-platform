@@ -6,7 +6,11 @@ from zoneinfo import ZoneInfo
 from django.conf import settings
 from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 
-from openedx.core.djangoapps.user_api.models import UserRetirementStatus
+from common.djangoapps.student.models import get_potentially_retired_user_by_username
+from openedx.core.djangoapps.user_api.models import (
+    UserRetirementPartnerReportingStatus,
+    UserRetirementStatus,
+)
 
 
 def accounts_holding_emails(emails):
@@ -89,3 +93,70 @@ def cancellable_retirement_for_email(email):
         .order_by("-created")
         .first()
     )
+
+
+def retirements():
+    """Return every retirement, with the account and the steps a retirement record reports."""
+    return UserRetirementStatus.objects.select_related(
+        "user", "user__profile", "current_state", "last_state",
+    )
+
+
+def retirement_of_the_account_named(username):
+    """
+    Return the retirement of the account this name addresses, or ``None``.
+
+    A retired account is stored under a hashed name, so the name a caller
+    holds may be either the one the account was registered under or the one it
+    was moved to; both address the same account and so the same retirement.
+    """
+    try:
+        user = get_potentially_retired_user_by_username(username)
+    except User.DoesNotExist:
+        return None
+    return retirements().filter(user=user).first()
+
+
+def retirements_requested_as(usernames):
+    """
+    Return the retirements requested under exactly these names, keyed by name.
+
+    Stored names are compared without regard to case in some deployments,
+    which once let a learner register a retired name again by changing its
+    capitalisation, so the rows the database offers are compared again here
+    character for character. A name no row was requested under is absent from
+    the result.
+    """
+    asked_for = set(usernames)
+    return {
+        row.original_username: row
+        for row in retirements().filter(original_username__in=usernames)
+        if row.original_username in asked_for
+    }
+
+
+def unclaimed_partner_reports():
+    """
+    Return the partner reports no caller has taken for processing yet.
+
+    The organizations of each are read from the user's enrolments, which are
+    fetched with the rows so that the cost of the answer does not grow with
+    the number of rows in it.
+    """
+    return (
+        UserRetirementPartnerReportingStatus.objects
+        .filter(is_being_processed=False)
+        .select_related("user")
+        .prefetch_related("user__courseenrollment_set")
+        .order_by("id")
+    )
+
+
+def partner_reports_requested_as(usernames):
+    """Return the partner reports of the accounts registered under exactly these names, keyed by name."""
+    asked_for = set(usernames)
+    return {
+        row.original_username: row
+        for row in UserRetirementPartnerReportingStatus.objects.filter(original_username__in=usernames)
+        if row.original_username in asked_for
+    }

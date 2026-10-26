@@ -12,7 +12,7 @@ from rest_framework.settings import api_settings
 from rest_framework.validators import ProhibitSurrogateCharactersValidator
 
 from lms.djangoapps.verify_student.models import ManualVerification, SoftwareSecurePhotoVerification
-from openedx.core.djangoapps.user_api.models import UserOrgTag, UserPreference
+from openedx.core.djangoapps.user_api.models import RetirementState, UserOrgTag, UserPreference
 from openedx.core.djangoapps.user_authn.views.registration_form import contains_html, contains_url
 from openedx.core.lib.api.serializers import CourseKeyField
 
@@ -1108,3 +1108,283 @@ class EmailOptInSerializer(serializers.Serializer):  # pylint: disable=abstract-
         if len(value.org) > ORGANIZATION_MAX_LENGTH:
             raise serializers.ValidationError(ORGANIZATION_TOO_LONG)
         return value
+
+
+#: Properties the ``minimal`` preset keeps of a retirement. None of them is
+#: anything the account's owner entered, so a caller that only needs to know
+#: which retirements are waiting reads none of their personal data.
+RETIREMENT_MINIMAL_FIELDS = ("id", "original_username", "current_state")
+
+#: The set of personal data an erasure clears, named by the scope that clears
+#: it. The core scope clears what the platform itself holds about a person;
+#: the miscellaneous scope clears what the features built on top of it hold.
+ERASURE_CORE_SCOPE = "lms_core"
+ERASURE_MISC_SCOPE = "lms_misc"
+ERASURE_SCOPES = (ERASURE_CORE_SCOPE, ERASURE_MISC_SCOPE)
+
+#: What a batch operation reports about each name it was given.
+OUTCOME_DELETED = "deleted"
+OUTCOME_ALREADY_ABSENT = "already_absent"
+BATCH_OUTCOMES = (OUTCOME_DELETED, OUTCOME_ALREADY_ABSENT)
+
+#: The largest number of names one batch may carry, which is the number of
+#: rows a page of any collection of this version holds.
+BATCH_MAX_NAMES = UserApiPagination.max_page_size
+
+
+def why_a_state_is_not_configured(name):
+    """Return why this deployment has no such pipeline step, or ``None`` when it has one."""
+    if RetirementState.objects.filter(state_name=name).exists():
+        return None
+    configured = ", ".join(sorted(RetirementState.get_state_names_list()))
+    return f"No such pipeline step. This deployment runs: {configured}."
+
+
+class RetirementAccountProfileSerializer(serializers.Serializer):  # pylint: disable=abstract-method
+    """The part of a retiring user's profile a retirement record carries."""
+
+    id = serializers.IntegerField(read_only=True, help_text="Database identifier of the profile.")
+    name = serializers.CharField(
+        read_only=True,
+        allow_blank=True,
+        help_text="Full name recorded on the profile at the time it is read.",
+    )
+
+
+class RetirementAccountSerializer(serializers.Serializer):  # pylint: disable=abstract-method
+    """The part of a retiring user's account a retirement record carries."""
+
+    id = serializers.IntegerField(read_only=True, help_text="Database identifier of the user.")
+    username = serializers.CharField(
+        read_only=True,
+        help_text=(
+            "Name the account is stored under now, which is the hashed replacement once the "
+            "erasure of core data has run."
+        ),
+    )
+    email = serializers.EmailField(
+        read_only=True,
+        help_text=(
+            "Address the account is stored under now, which is the hashed replacement once the "
+            "account has been locked."
+        ),
+    )
+    profile = RetirementAccountProfileSerializer(
+        read_only=True,
+        help_text="The profile of the account, or null for an account that has none.",
+    )
+
+
+class RetirementSerializer(serializers.Serializer):  # pylint: disable=abstract-method
+    """
+    One account's progress through the retirement pipeline, addressed by the name it held.
+
+    ``current_state`` and ``last_state`` are the names of the steps rather
+    than objects: a step's execution order and identifier are configured by
+    the operator and say nothing a caller of this API can act on. The log of
+    the transitions a retirement has been through grows without bound and is
+    left out for that reason.
+    """
+
+    id = serializers.IntegerField(
+        read_only=True,
+        help_text="Database identifier of the retirement. Addresses in this API use the username instead.",
+    )
+    user = RetirementAccountSerializer(read_only=True, help_text="The account being retired, as it stands now.")
+    original_username = serializers.CharField(
+        read_only=True,
+        help_text="Name the account was stored under when retirement was requested.",
+    )
+    original_email = serializers.EmailField(
+        read_only=True,
+        help_text="Address the account was stored under when retirement was requested.",
+    )
+    original_name = serializers.CharField(
+        read_only=True,
+        allow_blank=True,
+        help_text="Full name on the profile when retirement was requested.",
+    )
+    retired_username = serializers.CharField(
+        read_only=True,
+        allow_blank=True,
+        help_text="Hashed name the account is moved to once its core data is erased.",
+    )
+    retired_email = serializers.EmailField(
+        read_only=True,
+        allow_blank=True,
+        help_text="Hashed address the account is moved to once it is locked.",
+    )
+    current_state = serializers.CharField(
+        source="current_state.state_name",
+        read_only=True,
+        help_text="Name of the pipeline step this retirement stands at.",
+    )
+    last_state = serializers.CharField(
+        source="last_state.state_name",
+        read_only=True,
+        help_text="Name of the pipeline step this retirement stood at before the one it is at now.",
+    )
+    created = serializers.DateTimeField(read_only=True, help_text="When retirement was requested.")
+    modified = serializers.DateTimeField(read_only=True, help_text="When this retirement last moved.")
+
+
+class RetirementMinimalSerializer(_KeptFieldsMixin, RetirementSerializer):
+    """A retirement reduced to which account it is for and where it stands."""
+
+    kept_fields = RETIREMENT_MINIMAL_FIELDS
+
+
+class RetirementProjectionSerializer(_OptionalFieldsMixin, RetirementSerializer):
+    """A retirement reduced to the properties the caller selected."""
+
+
+class RetirementUpdateSerializer(serializers.Serializer):  # pylint: disable=abstract-method
+    """
+    A move of one retirement to another step of the pipeline.
+
+    Which steps exist and in what order is configured by the operator, so
+    ``new_state`` is checked against the configured steps rather than against
+    a fixed list.
+    """
+
+    new_state = serializers.CharField(help_text="Name of the pipeline step to move this retirement to.")
+    response = serializers.CharField(
+        allow_blank=True,
+        help_text="What happened at the step being left, appended to the retirement's log.",
+    )
+    force = serializers.BooleanField(
+        required=False,
+        default=False,
+        help_text=(
+            "Move the retirement even where the step asked for is not a later one. Operators use "
+            "this to send a retirement back through a step that has to be repeated."
+        ),
+    )
+
+    def validate_new_state(self, value):
+        """Return the step named, refusing a name no configured step holds."""
+        reason = why_a_state_is_not_configured(value)
+        if reason is not None:
+            raise serializers.ValidationError(reason)
+        return value
+
+
+class RetirementErasureSerializer(serializers.Serializer):  # pylint: disable=abstract-method
+    """
+    Which set of a retiring user's personal data to erase.
+
+    The erasure cannot be undone, and each scope clears a different set, so
+    the scope is named in the body rather than defaulted.
+    """
+
+    scope = serializers.ChoiceField(
+        choices=[
+            (ERASURE_CORE_SCOPE, "Profile, images, certificates, entitlements and the account itself."),
+            (ERASURE_MISC_SCOPE, "Wiki revisions, enrollment audits, credit and API access records."),
+        ],
+        help_text=(
+            f"`{ERASURE_CORE_SCOPE}` erases the account's own data: its profile, its images, the "
+            "name on its certificates and entitlement notes, and the username and address on the "
+            f"account. `{ERASURE_MISC_SCOPE}` erases what the features around it hold: wiki "
+            "revisions, pending name changes, enrollment audits, credit records and API access "
+            "requests."
+        ),
+    )
+
+
+class RetirementBatchSerializer(serializers.Serializer):  # pylint: disable=abstract-method
+    """
+    The accounts a batch operation acts on, named as they were before retirement.
+
+    A name repeated in the list names one account, so it is acted on and
+    reported once.
+    """
+
+    usernames = serializers.ListField(
+        child=serializers.CharField(),
+        allow_empty=False,
+        max_length=BATCH_MAX_NAMES,
+        help_text=(
+            "Names the accounts were stored under before retirement was requested. At most "
+            f"{BATCH_MAX_NAMES} names, compared exactly as spelled."
+        ),
+    )
+
+    def validate_usernames(self, value):
+        """Return the names given, each once, in the order they were first given."""
+        return list(dict.fromkeys(value))
+
+
+class RetirementBatchResultSerializer(serializers.Serializer):  # pylint: disable=abstract-method
+    """What a batch operation did about one of the names it was given."""
+
+    username = serializers.CharField(help_text="The name this result is about, as it was given.")
+    outcome = serializers.ChoiceField(
+        choices=[
+            (OUTCOME_DELETED, "The record was deleted by this request."),
+            (OUTCOME_ALREADY_ABSENT, "There was no such record, so this request left nothing to do."),
+        ],
+        help_text=(
+            f"`{OUTCOME_DELETED}` where this request deleted the record, and "
+            f"`{OUTCOME_ALREADY_ABSENT}` where there was none to delete, which is what a repeat "
+            "of a request that has already been carried out reports for every name."
+        ),
+    )
+
+
+class RetirementBatchOutcomeSerializer(serializers.Serializer):  # pylint: disable=abstract-method
+    """
+    What a batch operation did, reported for each name it was given.
+
+    Every name is reported, so a caller repeating a request that has already
+    been carried out can tell that from a request that did the work.
+    """
+
+    results = RetirementBatchResultSerializer(
+        many=True,
+        help_text="One result per name given, in the order the names were given.",
+    )
+
+
+class RetirementPartnerReportRecordSerializer(serializers.Serializer):  # pylint: disable=abstract-method
+    """
+    What a partner needs in order to forget one retired user.
+
+    ``student_id`` and ``orgs_config`` are carried only by a deployment that
+    records them, and are left out of the answer otherwise.
+    """
+
+    user_id = serializers.IntegerField(help_text="Database identifier of the retired user.")
+    student_id = serializers.CharField(
+        required=False,
+        help_text="Identifier the deployment knows the user by, where it records one.",
+    )
+    original_username = serializers.CharField(help_text="Name the account was stored under before retirement.")
+    original_email = serializers.EmailField(help_text="Address the account was stored under before retirement.")
+    original_name = serializers.CharField(
+        allow_blank=True,
+        help_text="Full name on the profile before retirement.",
+    )
+    orgs = serializers.ListField(
+        child=serializers.CharField(),
+        help_text="Short names of the organizations running the courses this user was enrolled in.",
+    )
+    orgs_config = serializers.ListField(
+        required=False,
+        help_text="Per-organization reporting configuration, where the deployment records any.",
+    )
+    created = serializers.DateTimeField(help_text="When this user was added to the partner reporting queue.")
+
+
+class RetirementPartnerReportQuerySerializer(serializers.Serializer):  # pylint: disable=abstract-method
+    """The query string of a request that takes partner reports for processing."""
+
+    limit = serializers.IntegerField(
+        required=False,
+        min_value=1,
+        help_text=(
+            "Take at most this many entries. Omit it to take every entry waiting, which is what "
+            "the pipeline does: nothing releases an entry once it is taken, so a caller that "
+            "takes fewer than it processes cannot hand the rest back."
+        ),
+    )

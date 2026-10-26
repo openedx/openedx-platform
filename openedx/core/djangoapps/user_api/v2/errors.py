@@ -1,6 +1,6 @@
 """Error types this version of the User API classifies for itself."""
 
-from edx_rest_framework_extensions.errors import register_error_type
+from edx_rest_framework_extensions.errors import Conflict, register_error_type
 from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.settings import api_settings
 
@@ -33,8 +33,26 @@ class RetiredAccount(NotFound):
         }
 
 
+class RetirementStateConflict(Conflict):
+    """
+    An operation asked of a retirement whose state does not admit it.
+
+    Which operation a retirement admits depends on how far through the
+    pipeline it is, and the order of those steps is configured by the
+    operator rather than fixed here. A refusal names the retirements at fault
+    and why, so a caller acting on several of them at once learns which ones
+    to look at; nothing is changed when one is refused.
+    """
+
+    def __init__(self, detail=None, errors=None):
+        super().__init__(detail)
+        if errors:
+            self.extension_members = {"errors": errors}
+
+
 register_error_type(RetiredAccount, "user/retired-account", "Retired Account")
 register_error_type(AmbiguousAccountName, "user/ambiguous-account-name", "Ambiguous Account Name")
+register_error_type(RetirementStateConflict, "user/retirement-state-conflict", "Retirement State Conflict")
 
 
 def refusal_sentence(refusals):
@@ -98,6 +116,18 @@ def _named_by_item(detail):
     return named
 
 
+def _came_with_the_records_at_fault(exc):
+    """
+    Whether this refusal arrived carrying the records at fault, and a line of its own.
+
+    Such a refusal was raised with both: a sentence about the request as a
+    whole, and the record-by-record list that goes beside it. A refusal that
+    arrived with a line alone has its list derived from that line, and the
+    line written back from the list says the same thing.
+    """
+    return isinstance(getattr(exc, "extension_members", {}).get("errors"), dict)
+
+
 class ReadableErrorDetailMixin:
     """
     Writes the one-line message of a refused request as a sentence.
@@ -116,6 +146,11 @@ class ReadableErrorDetailMixin:
     list's name. Each refused item is listed under a name of its own instead
     -- ``social_links[0].social_link`` -- so that the list and the line both say in words
     which item was refused and why.
+
+    A refusal that names the records at fault wrote that line itself, as a
+    sentence about the request as a whole -- that a set of records was left
+    alone, and nothing deleted -- which the list of records cannot be read to
+    say. That line is kept, and the records stay in the list beside it.
     """
 
     def handle_exception(self, exc):
@@ -123,6 +158,8 @@ class ReadableErrorDetailMixin:
         if isinstance(exc, ValidationError):
             exc.detail = _named_by_item(exc.detail)
         response = super().handle_exception(exc)
+        if _came_with_the_records_at_fault(exc):
+            return response
         body = getattr(response, "data", None)
         if isinstance(body, dict) and isinstance(body.get("errors"), dict):
             sentence = refusal_sentence(body["errors"])

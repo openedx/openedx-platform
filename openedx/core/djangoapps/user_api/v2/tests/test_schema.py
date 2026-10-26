@@ -3,6 +3,7 @@
 import copy
 import json
 from importlib import import_module
+from pathlib import Path
 from unittest import mock
 
 import jsonschema
@@ -36,6 +37,8 @@ from openedx.core.djangoapps.user_api.tests.factories import UserPreferenceFacto
 from openedx.core.djangoapps.user_api.v2.serializers import (
     ACCOUNT_DEFAULT_SORT,
     ACCOUNT_MINIMAL_FIELDS,
+    BATCH_OUTCOMES,
+    ERASURE_SCOPES,
     EXPIRATION_DAY_PATTERN,
     PREFERENCE_NAME_MAX_LENGTH,
     AccountPreferenceChangesField,
@@ -44,7 +47,10 @@ from openedx.core.djangoapps.user_api.v2.serializers import (
     TimeZoneQuerySerializer,
     VerificationQuerySerializer,
 )
-from openedx.core.djangoapps.user_api.v2.views import PREFERENCE_KEY_PATTERN_PARTIAL
+from openedx.core.djangoapps.user_api.v2.views import (
+    PREFERENCE_KEY_PATTERN_PARTIAL,
+    RETIREMENT_SORT_FIELDS,
+)
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 
 PASSWORD = "Password1234"
@@ -79,6 +85,24 @@ USER_MEMBER_PATH = "/api/user/v2/users/{username}/"
 PREFERENCE_LIST_PATH = "/api/user/v2/user_preferences/"
 PREFERENCE_MEMBER_PATH = "/api/user/v2/user_preferences/{username},{key}/"
 TIME_ZONE_LIST_PATH = "/api/user/v2/time_zones/"
+RETIREMENT_LIST_PATH = "/api/user/v2/retirements/"
+RETIREMENT_MEMBER_PATH = "/api/user/v2/retirements/{username}/"
+RETIREMENT_ERASURE_PATH = "/api/user/v2/retirements/{username}/erasures/"
+RETIREMENT_CLEANUP_PATH = "/api/user/v2/retirement_cleanups/"
+PARTNER_REPORT_LIST_PATH = "/api/user/v2/retirement_partner_reports/"
+PARTNER_REPORT_MEMBER_PATH = "/api/user/v2/retirement_partner_reports/{username}/"
+PARTNER_REPORT_CLEANUP_PATH = "/api/user/v2/retirement_partner_report_cleanups/"
+
+#: The meaning published for the part of a retirement's address that carries
+#: the name the account was registered under.
+RETIREMENT_USERNAME_DESCRIPTION = (
+    "Name the account being retired was registered under. A retired account is stored under a "
+    "hashed name, and either name addresses the same retirement when one is read; a write "
+    "addresses the registered name alone, spelled exactly as it was registered."
+)
+PARTNER_REPORT_USERNAME_DESCRIPTION = (
+    "Name the account was registered under, spelled exactly as it was registered."
+)
 
 #: The addresses that answer with a page of rows, and the ones that answer with
 #: a single record.
@@ -88,6 +112,7 @@ LIST_PATHS = {
     USER_LIST_PATH,
     PREFERENCE_LIST_PATH,
     TIME_ZONE_LIST_PATH,
+    RETIREMENT_LIST_PATH,
 }
 MEMBER_PATHS = {
     ACCOUNT_MEMBER_PATH,
@@ -96,6 +121,8 @@ MEMBER_PATHS = {
     PREFERENCE_MEMBER_PATH,
     PREFERENCE_DOCUMENT_PATH,
     PREFERENCE_NAME_PATH,
+    RETIREMENT_MEMBER_PATH,
+    PARTNER_REPORT_MEMBER_PATH,
 }
 
 #: The addresses that act on a resource rather than answer with one.
@@ -106,9 +133,16 @@ ACTION_PATHS = {
     PROFILE_IMAGE_PATH,
     NAME_CHANGE_PATH,
     NAME_CHANGE_CONFIRMATION_PATH,
+    RETIREMENT_ERASURE_PATH,
+    RETIREMENT_CLEANUP_PATH,
+    PARTNER_REPORT_LIST_PATH,
+    PARTNER_REPORT_CLEANUP_PATH,
 }
 
-#: The addresses a generated client library is built from.
+#: The addresses a generated client library is built from. The retirement
+#: pipeline's are deliberately not among them: one service calls them by path
+#: literal, and a library for irreversible destruction of personal data invites
+#: a caller who has not read what the steps do.
 SDK_PATHS = {
     ACCOUNT_LIST_PATH,
     ACCOUNT_MEMBER_PATH,
@@ -116,7 +150,13 @@ SDK_PATHS = {
     VERIFICATION_LIST_PATH,
     PREFERENCE_DOCUMENT_PATH,
     PREFERENCE_NAME_PATH,
-} | ACTION_PATHS
+    EMAIL_SEARCH_PATH,
+    EMAIL_OPT_IN_PATH,
+    ACCOUNT_DEACTIVATION_PATH,
+    PROFILE_IMAGE_PATH,
+    NAME_CHANGE_PATH,
+    NAME_CHANGE_CONFIRMATION_PATH,
+}
 
 VERSION_TWO_PATHS = LIST_PATHS | MEMBER_PATHS | ACTION_PATHS
 
@@ -146,6 +186,21 @@ VERSION_TWO_COMPONENTS = (
     "PaginatedEmailSearchResultList",
     "PaginatedVerificationList",
     "PatchedAccountUpdate",
+    "OutcomeEnum",
+    "PaginatedRetirementResponseList",
+    "PatchedRetirementUpdate",
+    "Retirement",
+    "RetirementAccount",
+    "RetirementAccountProfile",
+    "RetirementBatch",
+    "RetirementBatchOutcome",
+    "RetirementBatchResult",
+    "RetirementErasure",
+    "RetirementMinimal",
+    "RetirementPartnerReportRecord",
+    "RetirementProjection",
+    "RetirementResponse",
+    "ScopeEnum",
     "PaginatedTimeZoneList",
     "PaginatedUserDirectoryResponseList",
     "PaginatedUserPreferenceRecordResponseList",
@@ -349,6 +404,16 @@ SUPERSEDED_USER_ADDRESSES = {
     "/api/user/v1/preferences/{pref_key}/users/": "/api/user/v2/users/",
     "/api/user/v1/forum_roles/{name}/users/": "/api/user/v2/users/",
     "/api/user/v1/preferences/time_zones/": "/api/user/v2/time_zones/",
+    "/api/user/v1/accounts/{username}/retirement_status/": RETIREMENT_MEMBER_PATH,
+    "/api/user/v1/accounts/retirement_queue/": RETIREMENT_LIST_PATH,
+    "/api/user/v1/accounts/retirements_by_status_and_date/": RETIREMENT_LIST_PATH,
+    "/api/user/v1/accounts/update_retirement_status/": RETIREMENT_MEMBER_PATH,
+    "/api/user/v1/accounts/retirement_cleanup/": RETIREMENT_CLEANUP_PATH,
+    "/api/user/v1/accounts/retirement_partner_report/": PARTNER_REPORT_LIST_PATH,
+    "/api/user/v1/accounts/retirement_partner_report_cleanup/": PARTNER_REPORT_CLEANUP_PATH,
+    "/api/user/v1/accounts/cancel_retirement/": RETIREMENT_MEMBER_PATH,
+    "/api/user/v1/accounts/retire/": RETIREMENT_ERASURE_PATH,
+    "/api/user/v1/accounts/retire_misc/": RETIREMENT_ERASURE_PATH,
 }
 
 def user_patterns():
@@ -385,6 +450,12 @@ def schema_fixture(generated_documents):
 def service_wide_fixture(generated_documents):
     """The document the service publishes for browsing its whole surface."""
     return copy.deepcopy(generated_documents["service-wide"])
+
+
+def service_wide_from_user_mounts(**overrides):
+    """Generate the service-wide document again from the user mounts, with some of its settings replaced."""
+    with patched_settings({**get_api_docs_settings(), "SCHEMA_PATH_PREFIX": "/", **overrides}):
+        return SchemaGenerator(patterns=user_patterns()).get_schema(request=None, public=True)
 
 
 def operations(schema):
@@ -437,6 +508,15 @@ def test_every_operation_of_this_version_is_published_under_one_group(schema):
         "v2_user_preferences_list": ["user"],
         "v2_user_preferences_retrieve": ["user"],
         "v2_time_zones_list": ["user"],
+        "v2_retirements_list": ["user"],
+        "v2_retirements_retrieve": ["user"],
+        "v2_retirements_partial_update": ["user"],
+        "v2_retirements_destroy": ["user"],
+        "v2_retirements_erasures_create": ["user"],
+        "v2_retirement_cleanups_create": ["user"],
+        "v2_retirement_partner_reports_create": ["user"],
+        "v2_retirement_partner_reports_update": ["user"],
+        "v2_retirement_partner_report_cleanups_create": ["user"],
     }
 
 
@@ -460,7 +540,7 @@ def test_addresses_owned_by_other_apps_are_not_published(schema):
     """Neighbours of the superseded addresses, served from the same mount and left out."""
     for path in (
         "/api/user/v1/accounts/deactivate_logout/",
-        "/api/user/v1/accounts/{username}/retirement_status/",
+        "/api/user/v1/accounts/replace_usernames/",
     ):
         assert path not in schema["paths"], path
 
@@ -474,7 +554,7 @@ def test_pagination_envelope_is_published_in_full(schema, service_wide):
     to link to, so each one is published as required in both documents.
     """
     paged = [name for name in VERSION_TWO_COMPONENTS if name.startswith("Paginated")]
-    assert len(paged) == 6
+    assert len(paged) == 7
     for document in (schema, service_wide):
         for component in paged:
             published = document["components"]["schemas"][component]
@@ -540,6 +620,8 @@ def test_an_operation_that_takes_a_response_preset_publishes_the_refusal(schema)
         (ACCOUNT_LIST_PATH, "get"),
         (ACCOUNT_MEMBER_PATH, "get"),
         (ACCOUNT_MEMBER_PATH, "patch"),
+        ("/api/user/v2/retirements/", "get"),
+        ("/api/user/v2/retirements/{username}/", "get"),
         ("/api/user/v2/user_preferences/", "get"),
         ("/api/user/v2/user_preferences/{username},{key}/", "get"),
         ("/api/user/v2/users/", "get"),
@@ -853,6 +935,7 @@ def test_every_list_publishes_the_page_that_does_not_exist(schema):
         "/api/user/v2/users/": ["200", "400", "401", "403", "404", "406"],
         "/api/user/v2/user_preferences/": ["200", "400", "401", "403", "404", "406"],
         TIME_ZONE_LIST_PATH: ["200", "400", "404", "406"],
+        RETIREMENT_LIST_PATH: ["200", "400", "401", "403", "404", "406"],
     }
 
 
@@ -930,6 +1013,20 @@ def test_member_addresses_describe_the_parts_they_are_built_from(schema):
             "schema": username_schema,
             "description": ACCOUNT_PREFERENCES_USERNAME_DESCRIPTION,
         },
+        (RETIREMENT_MEMBER_PATH, "username"): {
+            "in": "path",
+            "name": "username",
+            "required": True,
+            "schema": username_schema,
+            "description": RETIREMENT_USERNAME_DESCRIPTION,
+        },
+        (PARTNER_REPORT_MEMBER_PATH, "username"): {
+            "in": "path",
+            "name": "username",
+            "required": True,
+            "schema": username_schema,
+            "description": PARTNER_REPORT_USERNAME_DESCRIPTION,
+        },
         (PREFERENCE_NAME_PATH, "key"): {
             "in": "path",
             "name": "key",
@@ -996,6 +1093,9 @@ USERNAME_ADDRESS_PARTS = (
     NAME_CHANGE_CONFIRMATION_PATH,
     USER_MEMBER_PATH,
     PREFERENCE_MEMBER_PATH,
+    RETIREMENT_MEMBER_PATH,
+    RETIREMENT_ERASURE_PATH,
+    PARTNER_REPORT_MEMBER_PATH,
 )
 
 
@@ -2283,3 +2383,212 @@ def test_asking_for_a_name_change_publishes_the_refusal_of_a_session_without_its
     assert "403" in asked
     assert asked["403"]["description"] == recorded["403"]["description"]
     assert asked["403"]["content"] == recorded["403"]["content"]
+def dereferenced(schema, node):
+    """
+    Return a published node with its reference followed, if it carries one.
+
+    A node describing a fixed set of values is published as a component whose
+    name the generator derives from the field, and that name holds only while
+    one field of the service claims it, so what the node points at is read
+    here rather than named. A property carrying a description of its own is
+    published as the one alternative it may match, which is followed too.
+    """
+    alternatives = node.get("allOf")
+    if alternatives is not None and len(alternatives) == 1:
+        node = alternatives[0]
+    reference = node.get("$ref")
+    if reference is None:
+        return node
+    return schema["components"]["schemas"][reference.rsplit("/", 1)[-1]]
+
+
+def published_property(schema, path, method, name):
+    """Return the published description of one property of a request body."""
+    body = schema["paths"][path][method]["requestBody"]["content"]["application/json"]["schema"]
+    return dereferenced(schema, dereferenced(schema, body)["properties"][name])
+
+
+@skip_unless_lms
+def test_the_erasure_publishes_the_sets_of_data_it_can_erase(schema):
+    """A caller picks one of them in the body, so each is named in the document."""
+    scope = published_property(schema, RETIREMENT_ERASURE_PATH, "post", "scope")
+    assert scope["enum"] == list(ERASURE_SCOPES)
+    body = schema["paths"][RETIREMENT_ERASURE_PATH]["post"]["requestBody"]
+    assert body["required"] is True
+    assert dereferenced(
+        schema, body["content"]["application/json"]["schema"],
+    )["required"] == ["scope"]
+
+
+@skip_unless_lms
+def test_a_batch_publishes_what_it_can_report_about_each_name_it_is_given(schema):
+    result = schema["components"]["schemas"]["RetirementBatchResult"]
+    outcome = dereferenced(schema, result["properties"]["outcome"])
+    assert outcome["enum"] == list(BATCH_OUTCOMES)
+    assert sorted(result["properties"]) == ["outcome", "username"]
+    assert sorted(result["required"]) == ["outcome", "username"]
+
+
+@skip_unless_lms
+def test_both_batch_addresses_publish_the_same_exchange(schema):
+    """They act on different records, and a caller reads and writes the same shapes at both."""
+    exchanges = {
+        path: (
+            schema["paths"][path]["post"]["requestBody"]["content"]["application/json"]["schema"],
+            schema["paths"][path]["post"]["responses"]["200"]["content"]["application/json"]["schema"],
+        )
+        for path in (RETIREMENT_CLEANUP_PATH, PARTNER_REPORT_CLEANUP_PATH)
+    }
+    assert exchanges[RETIREMENT_CLEANUP_PATH] == exchanges[PARTNER_REPORT_CLEANUP_PATH]
+    assert exchanges[RETIREMENT_CLEANUP_PATH] == (
+        {"$ref": "#/components/schemas/RetirementBatch"},
+        {"$ref": "#/components/schemas/RetirementBatchOutcome"},
+    )
+
+
+@skip_unless_lms
+def test_the_queue_publishes_the_filters_it_narrows_by(schema):
+    parameters = {
+        parameter["name"]: parameter
+        for parameter in schema["paths"][RETIREMENT_LIST_PATH]["get"]["parameters"]
+    }
+    assert set(parameters) == {
+        "cool_off_days", "created_after", "created_before", "state",
+        "fields", "ordering", "page", "page_size", "view",
+    }
+    for name in ("cool_off_days", "created_after", "created_before", "state"):
+        assert parameters[name]["in"] == "query"
+        assert parameters[name].get("required", False) is False, name
+        assert parameters[name]["description"], name
+    assert parameters["cool_off_days"]["schema"]["type"] == "integer"
+    assert parameters["created_after"]["schema"]["format"] == "date-time"
+    assert parameters["created_before"]["schema"]["format"] == "date-time"
+    assert parameters["state"]["schema"]["type"] == "string"
+    assert parameters["ordering"]["schema"]["items"]["enum"] == sorted(
+        [*RETIREMENT_SORT_FIELDS, *(f"-{field}" for field in RETIREMENT_SORT_FIELDS)],
+    )
+    assert "default" not in parameters["ordering"]["schema"]
+
+
+@skip_unless_lms
+def test_the_claim_publishes_how_many_entries_it_can_be_held_to(schema):
+    parameters = {
+        parameter["name"]: parameter
+        for parameter in schema["paths"][PARTNER_REPORT_LIST_PATH]["post"]["parameters"]
+    }
+    assert set(parameters) == {"limit"}
+    assert parameters["limit"]["schema"]["type"] == "integer"
+    assert parameters["limit"].get("required", False) is False
+    assert "requestBody" not in schema["paths"][PARTNER_REPORT_LIST_PATH]["post"]
+
+
+@skip_unless_lms
+def test_the_claim_answers_with_an_array_rather_than_a_page(schema):
+    """The entries answered are the entries taken, so the answer is not cut into pages."""
+    body = schema["paths"][PARTNER_REPORT_LIST_PATH]["post"]["responses"]["200"]
+    assert body["content"]["application/json"]["schema"] == {
+        "type": "array",
+        "items": {"$ref": "#/components/schemas/RetirementPartnerReportRecord"},
+    }
+
+
+@skip_unless_lms
+def test_the_queue_answers_with_a_page(schema):
+    body = schema["paths"][RETIREMENT_LIST_PATH]["get"]["responses"]["200"]
+    assert body["content"]["application/json"]["schema"] == {
+        "$ref": "#/components/schemas/PaginatedRetirementResponseList",
+    }
+    page = schema["components"]["schemas"]["PaginatedRetirementResponseList"]
+    assert set(page["properties"]) == PAGINATION_MEMBERS
+    assert page["properties"]["results"] == {
+        "type": "array",
+        "items": {"$ref": "#/components/schemas/RetirementResponse"},
+    }
+
+
+@skip_unless_lms
+def test_a_retirement_record_publishes_the_step_as_a_name(schema):
+    record = schema["components"]["schemas"]["Retirement"]
+    for name in ("current_state", "last_state"):
+        assert record["properties"][name]["type"] == "string", name
+    assert set(record["properties"]) == {
+        "id", "user", "original_username", "original_email", "original_name",
+        "retired_username", "retired_email", "current_state", "last_state", "created", "modified",
+    }
+    assert "responses" not in record["properties"]
+
+
+@pytest.mark.django_db
+@skip_unless_lms
+def test_the_component_the_corrected_request_body_leaves_behind_is_pinned_in_the_document(schema, service_wide):
+    """
+    The partial update of a version 1 retirement was the component's only reference.
+
+    A client generated from the service-wide document names a class after each
+    component, so a name that loses its last reference is kept by naming it in
+    the configuration that document is built with, rather than disappearing
+    with the body that was wrong.
+    """
+    assert "PatchedUserRetirementStatus" not in schema["components"]["schemas"]
+    assert "PatchedUserRetirementStatus" not in service_wide["components"]["schemas"]
+
+    configured = (Path(settings.REPO_ROOT) / "docs" / "docs_settings.py").read_text()
+    assert '"PatchedUserRetirementStatus": PATCHED_USER_RETIREMENT_STATUS' in configured
+    assert '"schemas": {' in configured
+
+    pinned = {"PatchedUserRetirementStatus": {"type": "object"}}
+    with_the_pin = service_wide_from_user_mounts(APPEND_COMPONENTS={"schemas": pinned})
+    assert with_the_pin["components"]["schemas"]["PatchedUserRetirementStatus"] == {
+        "type": "object",
+    }
+    assert "UserRetirementStatus" in with_the_pin["components"]["schemas"]
+
+
+#: The two addresses whose published name the body correction would otherwise
+#: move, with the name the service-wide document publishes for each.
+CORRECTED_QUEUE_READS = {
+    "/api/user/v1/accounts/retirement_queue/": "api_user_v1_accounts_retirement_queue_retrieve",
+    "/api/user/v1/accounts/retirements_by_status_and_date/": (
+        "api_user_v1_accounts_retirements_by_status_and_date_retrieve"
+    ),
+}
+
+
+@pytest.mark.django_db
+@skip_unless_lms
+def test_the_corrected_queue_reads_keep_the_names_the_service_wide_document_publishes(schema, service_wide):
+    """
+    Correcting a body to the array it answers with would otherwise move its name.
+
+    The generator names an operation for what it answers with, so an operation
+    whose body is corrected from one record to the array of them is named for a
+    list where it was named for a single record. Both of these have been
+    published under the single-record name for years and a client imports a
+    module by that name, so each is pinned; the document that has published
+    neither keeps the name it derives.
+    """
+    published = {
+        path: service_wide["paths"][path]["get"]["operationId"] for path in CORRECTED_QUEUE_READS
+    }
+    assert published == CORRECTED_QUEUE_READS
+
+    with mock.patch.dict("openedx.core.djangoapps.user_api.schema.RENAMED_OPERATION_IDS", {}, clear=True):
+        unpinned = service_wide_from_user_mounts()
+    assert {
+        path: unpinned["paths"][path]["get"]["operationId"] for path in CORRECTED_QUEUE_READS
+    } == {
+        "/api/user/v1/accounts/retirement_queue/": "api_user_v1_accounts_retirement_queue_list",
+        "/api/user/v1/accounts/retirements_by_status_and_date/": (
+            "api_user_v1_accounts_retirements_by_status_and_date_list"
+        ),
+    }
+    # The document this area's version is published in has carried neither
+    # address before, so each keeps the name derived there.
+    assert {
+        path: schema["paths"][path]["get"]["operationId"] for path in CORRECTED_QUEUE_READS
+    } == {
+        "/api/user/v1/accounts/retirement_queue/": "v1_accounts_retirement_queue_list",
+        "/api/user/v1/accounts/retirements_by_status_and_date/": (
+            "v1_accounts_retirements_by_status_and_date_list"
+        ),
+    }

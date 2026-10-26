@@ -6,6 +6,7 @@ from functools import cache
 
 from drf_spectacular.utils import OpenApiResponse
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
+from rest_framework.settings import api_settings
 
 # Addresses superseded by a conforming address this schema also publishes, spelled
 # out rather than matched by prefix so an address with no replacement is never marked.
@@ -30,6 +31,16 @@ SUPERSEDED_USER_PATHS = (
     "/api/user/v1/preferences/{pref_key}/users/",
     "/api/user/v1/forum_roles/{name}/users/",
     "/api/user/v1/preferences/time_zones/",
+    "/api/user/v1/accounts/{username}/retirement_status/",
+    "/api/user/v1/accounts/retirement_queue/",
+    "/api/user/v1/accounts/retirements_by_status_and_date/",
+    "/api/user/v1/accounts/update_retirement_status/",
+    "/api/user/v1/accounts/retirement_cleanup/",
+    "/api/user/v1/accounts/retirement_partner_report/",
+    "/api/user/v1/accounts/retirement_partner_report_cleanup/",
+    "/api/user/v1/accounts/cancel_retirement/",
+    "/api/user/v1/accounts/retire/",
+    "/api/user/v1/accounts/retire_misc/",
 )
 
 # Ids pinned over the one a document derives, keyed by (path, method, derived id): the
@@ -37,8 +48,19 @@ SUPERSEDED_USER_PATHS = (
 # member read drops the bare "," token its two path parameters leave. The read of one
 # account preference is named for what it reads rather than for the numeral its sort
 # position earns it, in each document that has not already published that numeral.
+# The two v1 retirement queue reads keep the id they are already published under.
 RENAMED_OPERATION_IDS = {
     ("/api/user/v1/accounts", "GET", "api_user_v1_accounts_list"): "api_user_v1_accounts_retrieve",
+    (
+        "/api/user/v1/accounts/retirement_queue/",
+        "GET",
+        "api_user_v1_accounts_retirement_queue_list",
+    ): "api_user_v1_accounts_retirement_queue_retrieve",
+    (
+        "/api/user/v1/accounts/retirements_by_status_and_date/",
+        "GET",
+        "api_user_v1_accounts_retirements_by_status_and_date_list",
+    ): "api_user_v1_accounts_retirements_by_status_and_date_retrieve",
     ("/api/user/v1/preferences/{username}/{preference_key}", "GET", "v1_preferences_retrieve"): (
         "v1_preferences_retrieve_one"
     ),
@@ -103,10 +125,13 @@ def superseded_bodies():
     The v1 views name no serializer. A response is described by the v2 serializer
     of the same shape; a request by the members the v1 handler reads, without the
     v2 bounds, under the media types that handler reads; ``None`` reads no body.
+    Where a v1 view names a serializer describing neither, the shapes its handler
+    exchanges are named here instead.
     """
     # Imported here because the serializers need loaded models.
     # pylint: disable=import-outside-toplevel
     from openedx.core.djangoapps.profile_images.v2.serializers import IMAGE_UPLOAD_REQUEST
+    from openedx.core.djangoapps.user_api.accounts import serializers as retirement
     from openedx.core.djangoapps.user_api.v2 import serializers as replacing
     from openedx.core.lib.api.parsers import MergePatchParser
 
@@ -124,6 +149,40 @@ def superseded_bodies():
         "type": "object",
         "properties": {"name": {"type": "string"}},
         "required": ["name"],
+    }
+    json_type = "application/json"
+
+    def in_every_form(shape):
+        """Name a shape under each media type a view that declares no parsers reads a body in."""
+        return {parser.media_type: shape for parser in api_settings.DEFAULT_PARSER_CLASSES}
+
+    retirement_erased = {
+        204: OpenApiResponse(description="The data this step erases is gone."),
+    }
+    #: The name of one account, which is how the retirement pipeline's steps
+    #: say which account they are acting on.
+    named_account = {
+        "type": "object",
+        "properties": {
+            "username": {
+                "type": "string",
+                "description": "Name the account being retired was registered under.",
+            },
+        },
+        "required": ["username"],
+    }
+    #: The names of several accounts, which is how a step acting on a batch of
+    #: retirement records says which ones.
+    named_accounts = {
+        "type": "object",
+        "properties": {
+            "usernames": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "Names the accounts were registered under.",
+            },
+        },
+        "required": ["usernames"],
     }
     # One preference is answered as the bare value it is stored as. The writes
     # store the text of a value of any type, so their values carry no type.
@@ -196,6 +255,115 @@ def superseded_bodies():
         ),
         # The handler reads the choice from the submitted form rather than from
         # a body of its own, and reads each value as the text a form carries.
+        # The queue and the by-date list both answer with an array of the
+        # shape their view names, which is published for one of them.
+        ("/api/user/v1/accounts/retirement_queue/", "GET"): _SupersededBodies(
+            None, {200: retirement.UserRetirementStatusSerializer(many=True)},
+        ),
+        ("/api/user/v1/accounts/retirements_by_status_and_date/", "GET"): _SupersededBodies(
+            None, {200: retirement.UserRetirementStatusSerializer(many=True)},
+        ),
+        # The move of a retirement to another pipeline step reads the step and
+        # the log entry alongside the account's name, and refuses a body
+        # carrying anything else; it answers with nothing at all.
+        ("/api/user/v1/accounts/update_retirement_status/", "PATCH"): _SupersededBodies(
+            {
+                json_type: {
+                    "type": "object",
+                    "properties": {
+                        "username": {
+                            "type": "string",
+                            "description": "Name the account being retired was registered under.",
+                        },
+                        "new_state": {
+                            "type": "string",
+                            "description": "Name of the pipeline step to move this retirement to.",
+                        },
+                        "response": {
+                            "type": "string",
+                            "description": "What happened at the step being left, appended to the log.",
+                        },
+                        "force": {
+                            "type": "boolean",
+                            "description": "Move the retirement even where the step asked for is not a later one.",
+                        },
+                    },
+                    "required": ["username", "new_state", "response"],
+                },
+            },
+            {204: OpenApiResponse(description="The retirement now stands at the step asked for.")},
+        ),
+        ("/api/user/v1/accounts/retirement_cleanup/", "POST"): _SupersededBodies(
+            {json_type: named_accounts},
+            {204: OpenApiResponse(description="The retirement records named are gone.")},
+        ),
+        # The claim reads no body and answers with the entries it took.
+        ("/api/user/v1/accounts/retirement_partner_report/", "POST"): _SupersededBodies(
+            None, {200: retirement.UserRetirementPartnerReportSerializer(many=True)},
+        ),
+        ("/api/user/v1/accounts/retirement_partner_report/", "PUT"): _SupersededBodies(
+            {json_type: named_account},
+            {
+                204: OpenApiResponse(
+                    description=(
+                        "The account is queued for reporting to the organizations it studied "
+                        "with, or was enrolled with none and so needs no report."
+                    ),
+                ),
+            },
+        ),
+        # This batch is named by a bare array rather than by an object.
+        ("/api/user/v1/accounts/retirement_partner_report_cleanup/", "POST"): _SupersededBodies(
+            {
+                json_type: {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "original_username": {
+                                "type": "string",
+                                "description": "Name the account was registered under.",
+                            },
+                        },
+                        "required": ["original_username"],
+                    },
+                },
+            },
+            {204: OpenApiResponse(description="The partner report entries named are gone.")},
+        ),
+        # The cancellation names the retirement by its own identifier, and its
+        # view declares no parsers, so the body is read in every form the
+        # platform reads one in.
+        ("/api/user/v1/accounts/cancel_retirement/", "POST"): _SupersededBodies(
+            in_every_form({
+                "type": "object",
+                "properties": {
+                    "retirement_id": {
+                        "type": "integer",
+                        "description": "Identifier of the retirement to cancel.",
+                    },
+                },
+                "required": ["retirement_id"],
+            }),
+            {
+                200: {
+                    "type": "object",
+                    "properties": {
+                        "success": {
+                            "type": "boolean",
+                            "description": "True once the retirement request has been undone.",
+                        },
+                    },
+                    "required": ["success"],
+                },
+            },
+        ),
+        ("/api/user/v1/accounts/retire/", "POST"): _SupersededBodies(
+            {json_type: named_account}, retirement_erased,
+        ),
+        ("/api/user/v1/accounts/retire_misc/", "POST"): _SupersededBodies(
+            {json_type: named_account}, retirement_erased,
+        ),
         ("/api/user/v1/preferences/email_opt_in/", "POST"): _SupersededBodies(
             {
                 "application/x-www-form-urlencoded": {

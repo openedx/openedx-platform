@@ -8,7 +8,7 @@ from edx_rest_framework_extensions.testing import assert_error_envelope
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from common.djangoapps.student.tests.factories import AdminFactory, UserFactory
+from common.djangoapps.student.tests.factories import AdminFactory, SuperuserFactory, UserFactory
 from openedx.core.djangoapps.user_api.tests.factories import UserPreferenceFactory
 from openedx.core.djangoapps.user_api.v2 import views as user_api_views
 from openedx.core.djangoapps.user_api.v2.paginators import UserApiPagination
@@ -49,6 +49,9 @@ class PageSizeTests(APITestCase):
         super().setUp()
         self.admin = AdminFactory.create(username="page-admin", password=PASSWORD)
         self.learner = UserFactory.create(username="page-learner", password=PASSWORD)
+        # The retirement queue is read by a caller holding the capability the
+        # pipeline runs with, which a superuser holds along with every other.
+        self.pipeline = SuperuserFactory.create(username="page-pipeline", password=PASSWORD)
         UserPreferenceFactory.create(user=self.learner, key="time_zone", value="UTC")
 
     def collections(self):
@@ -71,6 +74,7 @@ class PageSizeTests(APITestCase):
                 reverse("user_v2:email_search_list"),
                 {"body": {"emails": [self.learner.email]}},
             ),
+            "retirement_list": (self.pipeline, reverse("user_v2:retirement_list"), {}),
         }
 
     def ask(self, caller, address, page_size, body=None):
@@ -156,6 +160,7 @@ class PageSizeTests(APITestCase):
             "CountryTimeZoneViewSet",
             "EmailSearchViewSet",
             "IDVerificationViewSet",
+            "RetirementViewSet",
             "UserPreferenceViewSet",
             "UserViewSet",
         }

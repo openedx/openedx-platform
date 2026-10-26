@@ -18,6 +18,10 @@ from .views import (
     IDVerificationStatusView,
     IDVerificationViewSet,
     NameChangeViewSet,
+    RetirementCleanupView,
+    RetirementPartnerReportCleanupView,
+    RetirementPartnerReportViewSet,
+    RetirementViewSet,
     UserPreferenceViewSet,
     UserViewSet,
 )
@@ -59,6 +63,17 @@ router.register(r"name_changes", NameChangeViewSet, basename="name_change")
 router.register(r"users", UserViewSet, basename="user")
 router.register(r"user_preferences", UserPreferenceViewSet, basename="user_preference")
 router.register(r"time_zones", CountryTimeZoneViewSet, basename="time_zone")
+# A retirement belongs to one account but is listed, worked and disposed of
+# across accounts, so it stands beside them rather than under one of them; the
+# name the account was registered under identifies it.
+router.register(r"retirements", RetirementViewSet, basename="retirement")
+# What is owed to the organizations an account studied with outlives the
+# account, so it is recorded on its own and reached without naming one.
+router.register(
+    r"retirement_partner_reports",
+    RetirementPartnerReportViewSet,
+    basename="retirement_partner_report",
+)
 
 
 urlpatterns = [
@@ -104,5 +119,20 @@ urlpatterns = [
         rf",(?P<key>{PREFERENCE_KEY_PATTERN_PARTIAL})/$",
         UserPreferenceViewSet.as_view({"get": "retrieve"}),
         name="user_preference_detail",
+    ),
+    # Disposing of the records a finished retirement leaves behind is one
+    # operation over a set of them, with no member address of its own, so it
+    # stands beside the collections rather than under one: a fixed word
+    # directly after a collection would occupy the place a member's name goes,
+    # and a user may register any name.
+    re_path(
+        r"^retirement_cleanups/$",
+        RetirementCleanupView.as_view(),
+        name="retirement_cleanup",
+    ),
+    re_path(
+        r"^retirement_partner_report_cleanups/$",
+        RetirementPartnerReportCleanupView.as_view(),
+        name="retirement_partner_report_cleanup",
     ),
 ]

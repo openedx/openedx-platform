@@ -33,6 +33,16 @@ SUPERSEDED_PATHS = (
     "/api/user/v1/preferences/{pref_key}/users/",
     "/api/user/v1/forum_roles/{name}/users/",
     "/api/user/v1/preferences/time_zones/",
+    "/api/user/v1/accounts/{username}/retirement_status/",
+    "/api/user/v1/accounts/retirement_queue/",
+    "/api/user/v1/accounts/retirements_by_status_and_date/",
+    "/api/user/v1/accounts/update_retirement_status/",
+    "/api/user/v1/accounts/retirement_cleanup/",
+    "/api/user/v1/accounts/retirement_partner_report/",
+    "/api/user/v1/accounts/retirement_partner_report_cleanup/",
+    "/api/user/v1/accounts/cancel_retirement/",
+    "/api/user/v1/accounts/retire/",
+    "/api/user/v1/accounts/retire_misc/",
 )
 
 # Legacy addresses of APIs migrated to /api/authoring/, marked deprecated for
