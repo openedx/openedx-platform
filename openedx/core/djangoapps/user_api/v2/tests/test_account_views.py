@@ -40,15 +40,23 @@ PASSWORD = "Password1234"
 #: The properties every caller may see, whoever they are.
 PUBLIC_FIELDS = {"account_privacy", "profile_image", "username"}
 
+#: ``ACCOUNT_VISIBILITY_CONFIGURATION`` is an LMS setting, and this package is
+#: shared with the CMS. Every test below that reads these sets is
+#: ``@skip_unless_lms``, but a module body runs before any skip can apply, so a
+#: missing setting is tolerated here instead of breaking collection under the
+#: CMS settings. The same guard is used for the same setting in
+#: ``user_api/accounts/tests/test_views.py``.
+_VISIBILITY = getattr(settings, "ACCOUNT_VISIBILITY_CONFIGURATION", {})
+
 #: The properties a user sees of their own account, and a staff caller of any.
-FULL_FIELDS = set(settings.ACCOUNT_VISIBILITY_CONFIGURATION["admin_fields"])
+FULL_FIELDS = set(_VISIBILITY.get("admin_fields", ()))
 
 #: The properties a learner sees of an account whose owner shares it with everybody.
-SHARED_FIELDS = set(settings.ACCOUNT_VISIBILITY_CONFIGURATION["bulk_shareable_fields"])
+SHARED_FIELDS = set(_VISIBILITY.get("bulk_shareable_fields", ()))
 
 #: The properties an owner is able to share, and so the only ones another caller
 #: may select; the refusal offers them in this order.
-SHAREABLE_FIELDS = set(settings.ACCOUNT_VISIBILITY_CONFIGURATION["custom_shareable_fields"])
+SHAREABLE_FIELDS = set(_VISIBILITY.get("custom_shareable_fields", ()))
 SHAREABLE_FIELDS_OFFERED = ", ".join(sorted(SHAREABLE_FIELDS))
 
 #: The identifying properties the ``minimal`` preset keeps, and the ones of those
