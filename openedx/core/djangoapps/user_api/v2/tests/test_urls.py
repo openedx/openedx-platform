@@ -18,6 +18,7 @@ from openedx.core.djangoapps.user_api.v2.views import (
     AccountDeactivationView,
     AccountPreferenceViewSet,
     AccountViewSet,
+    EmailOptInViewSet,
     IDVerificationStatusView,
     IDVerificationViewSet,
     NameChangeViewSet,
@@ -251,7 +252,7 @@ class UrlLiteralTests(APITestCase):
 
     def test_the_views_reached_before_an_address_is_confirmed_replace_one_class(self):
         """
-        An account and its picture are reached with the library's token class and a wider session one.
+        These four are reached with the library's token class and a wider session one.
 
         The site's own settings pages are reached by a user who has not
         confirmed their email address, whom the session class the platform
@@ -262,7 +263,9 @@ class UrlLiteralTests(APITestCase):
         """
         platform_token = api_settings.DEFAULT_AUTHENTICATION_CLASSES[0]
         assert issubclass(platform_token, JwtAuthentication)
-        for view_class in (AccountViewSet, ProfileImageView):
+        for view_class in (
+            AccountViewSet, ProfileImageView, AccountPreferenceViewSet, EmailOptInViewSet,
+        ):
             assert view_class.authentication_classes == (
                 JwtAuthentication, SessionAuthenticationAllowInactiveUser,
             ), view_class.__name__

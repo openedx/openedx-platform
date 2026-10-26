@@ -21,7 +21,7 @@ from openedx.core.djangoapps.user_api.v2.serializers import (
 )
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 
-from .test_preference_views import requests_served_outside_a_transaction
+from .test_preference_views import DEFAULT_AUTH_RECORDER, requests_served_outside_a_transaction
 from .test_views import MALFORMED_BODY_SLUG, REFUSED_METHOD_SLUG, UNSUPPORTED_MEDIA_TYPE_SLUG
 
 PASSWORD = "Password1234"
@@ -443,6 +443,35 @@ class EmailOptInAccessTests(EmailOptInTestCase):
         )
         assert self.choices(self.other) == {"edX": "True"}
         assert self.choices() == {}
+
+    def test_a_token_is_read_here_without_recording_the_address_as_one_on_the_defaults(self):
+        """
+        This address names its own classes, so it is not one the default pair serves.
+
+        The pair the platform configures records every request it reads a
+        token for, so that an operator can list the addresses it serves. This
+        one replaces the session half of it and is therefore not among them,
+        and nothing here is recorded as if it were. The address read afterwards
+        names no classes of its own and is recorded, which is what shows the
+        record is reachable from a request made this way at all.
+        """
+        with mock.patch(DEFAULT_AUTH_RECORDER) as recorded:
+            answer = self.choose(**self.token_headers(self.other))
+        assert answer.status_code == status.HTTP_204_NO_CONTENT
+        assert self.choices(self.other) == {"edX": "True"}
+        assert recorded.call_args_list == []
+
+        administrator = UserFactory.create(
+            username="optin-admin", email="optin-admin@example.com", password=PASSWORD, is_staff=True,
+        )
+        with mock.patch(DEFAULT_AUTH_RECORDER) as recorded:
+            on_the_default_pair = self.client.get(
+                reverse("user_v2:time_zone_list"), **self.token_headers(administrator),
+            )
+        assert on_the_default_pair.status_code == status.HTTP_200_OK
+        assert [call.args for call in recorded.call_args_list] == [
+            ("using_default_auth_classes", True),
+        ]
 
     def test_an_account_with_an_unconfirmed_address_records_a_choice(self):
         """A learner makes this choice while enrolling, before confirming their address."""

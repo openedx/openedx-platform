@@ -46,6 +46,9 @@ PREFERENCE_QUERY_PARAMS = "format"
 #: The table the preferences of an account are stored in.
 PREFERENCE_TABLE = "user_api_userpreference"
 
+#: Where the classes the platform configures record that they read a request.
+DEFAULT_AUTH_RECORDER = "openedx.core.djangolib.default_auth_classes.set_custom_attribute"
+
 #: What the platform's own record of a request carries for a read of one of
 #: these addresses: the query string it was made with and the form body it
 #: carried, both empty.
@@ -911,20 +914,28 @@ class PreferenceAccessTests(PreferenceApiTestCase):
                 expected_type_slug="authn",
             )
 
-    def test_a_token_is_read_by_the_class_the_platform_declares(self):
+    def test_a_token_is_read_here_without_recording_the_address_as_one_on_the_defaults(self):
         """
-        Only the session class is replaced here, so a token is read by the platform's own.
+        These addresses name their own classes, so they are not the ones the default pair serves.
 
-        That class records every request it reads a token for, so these
-        addresses are recorded beside the ones that read both halves the way
-        the platform declares, which is the cost of reading a token the
-        platform's own way.
+        The pair the platform configures records every request it reads a
+        token for, so that an operator can list the addresses it serves. These
+        replace the session half of it and are therefore not among them, and
+        nothing here is recorded as if they were. The address read afterwards
+        names no classes of its own and is recorded, which is what shows the
+        record is reachable from a request made this way at all.
         """
-        with mock.patch(
-            "openedx.core.djangolib.default_auth_classes.set_custom_attribute",
-        ) as recorded:
+        with mock.patch(DEFAULT_AUTH_RECORDER) as recorded:
             answer = self.client.get(self.document_url, **self.token_headers(self.owner))
         assert answer.status_code == status.HTTP_200_OK
+        assert answer.json() == {"time_zone": "Asia/Tokyo"}
+        assert recorded.call_args_list == []
+
+        with mock.patch(DEFAULT_AUTH_RECORDER) as recorded:
+            on_the_default_pair = self.client.get(
+                reverse("user_v2:time_zone_list"), **self.token_headers(self.staff),
+            )
+        assert on_the_default_pair.status_code == status.HTTP_200_OK
         assert [call.args for call in recorded.call_args_list] == [
             ("using_default_auth_classes", True),
         ]
