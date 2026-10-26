@@ -856,17 +856,28 @@ class UnconfirmedAccountTests(AccountApiV2TestCase):
         assert page.status_code == status.HTTP_200_OK
         assert self.usernames_in(page) == ["other-caller"]
 
-    def test_a_token_is_read_by_the_class_the_platform_declares(self):
+    def test_a_token_is_read_here_without_recording_the_address_as_one_on_the_defaults(self):
         """
-        Only the session class is replaced here, so a token is read by the platform's own.
+        This address names its own classes, so it is not one the default pair serves.
 
-        That class records every request it reads a token for, which is how an
-        operator finds the addresses that authenticate the way the platform
-        declares rather than by a list of their own.
+        The pair the platform configures records every request it reads a
+        token for, so that an operator can list the addresses it serves. This
+        one replaces the session half of it and is therefore not among them,
+        and nothing here is recorded as if it were. The address read afterwards
+        names no classes of its own and is recorded, which is what shows the
+        record is reachable from a request made this way at all.
         """
         with mock.patch(DEFAULT_AUTH_RECORDER) as recorded:
             answer = self.client.get(self.detail_url("other-caller"), **self.token_headers(self.other))
         assert answer.status_code == status.HTTP_200_OK
+        assert answer.json()["username"] == "other-caller"
+        assert recorded.call_args_list == []
+
+        with mock.patch(DEFAULT_AUTH_RECORDER) as recorded:
+            on_the_default_pair = self.client.get(
+                reverse("user_v2:user_preference_list"), **self.token_headers(self.staff),
+            )
+        assert on_the_default_pair.status_code == status.HTTP_200_OK
         assert [call.args for call in recorded.call_args_list] == [("using_default_auth_classes", True)]
 
     def test_an_unconfirmed_account_still_may_not_search_for_others(self):

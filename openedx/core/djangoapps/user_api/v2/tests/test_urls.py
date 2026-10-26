@@ -5,6 +5,7 @@ import re
 import pytest
 from django.core.exceptions import ImproperlyConfigured
 from django.urls import get_resolver, resolve, reverse
+from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
 from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
 from edx_rest_framework_extensions.testing import assert_error_envelope
 from rest_framework import status
@@ -232,18 +233,20 @@ class UrlLiteralTests(APITestCase):
 
     def test_the_views_reached_before_an_address_is_confirmed_replace_one_class(self):
         """
-        An account and its picture are reached with the platform's token class and a wider session one.
+        An account and its picture are reached with the library's token class and a wider session one.
 
         The site's own settings pages are reached by a user who has not
         confirmed their email address, whom the session class the platform
         configures refuses, so that one class is replaced. The class reading a
-        token is left as the platform declares it, which is what records these
-        requests alongside every other request authenticated that way.
+        token is the one the platform's own pair is built on, named here rather
+        than inherited, because a view that declares its own classes is not one
+        that pair serves and is not recorded as one.
         """
         platform_token = api_settings.DEFAULT_AUTHENTICATION_CLASSES[0]
+        assert issubclass(platform_token, JwtAuthentication)
         for view_class in (AccountViewSet, ProfileImageView):
             assert view_class.authentication_classes == (
-                platform_token, SessionAuthenticationAllowInactiveUser,
+                JwtAuthentication, SessionAuthenticationAllowInactiveUser,
             ), view_class.__name__
 
     def test_what_is_recorded_about_an_account_authenticates_the_way_the_platform_does(self):

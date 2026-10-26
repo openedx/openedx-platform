@@ -16,6 +16,7 @@ from drf_spectacular.utils import (
     extend_schema,
     extend_schema_view,
 )
+from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
 from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
 from edx_rest_framework_extensions.mixins import StandardizedErrorMixin
 from edx_rest_framework_extensions.paginators import IterablePaginationMixin
@@ -46,7 +47,6 @@ from openedx.core.djangoapps.user_api.errors import (
 )
 from openedx.core.djangoapps.user_api.models import UserPreference
 from openedx.core.djangoapps.user_api.preferences.api import get_country_time_zones
-from openedx.core.djangolib.default_auth_classes import DefaultJwtAuthentication
 from openedx.core.lib.api.parsers import MergePatchParser
 
 from .errors import CatalogedRequestErrorsMixin, ErrorExtensionsMixin, RetiredAccount
@@ -890,10 +890,11 @@ class AccountViewSet(
 
     # Account settings are reached from the site's own pages by users who have
     # not confirmed their email address yet, and the platform default refuses
-    # a session belonging to such an account. Only that one class is replaced:
-    # the token class stays the one the platform configures, which is what
-    # records a request as having been authenticated the default way.
-    authentication_classes = (DefaultJwtAuthentication, SessionAuthenticationAllowInactiveUser)
+    # a session belonging to such an account. Only the session class differs in
+    # what it admits: a token is read by the library class the platform's own
+    # pair is built on, named here because a view declaring its own classes is
+    # not one that pair serves.
+    authentication_classes = (JwtAuthentication, SessionAuthenticationAllowInactiveUser)
     permission_classes = (
         permissions.IsAuthenticated,
         CanGetAccountInfo,

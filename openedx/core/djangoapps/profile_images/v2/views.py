@@ -8,6 +8,7 @@ from zoneinfo import ZoneInfo
 
 import piexif
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
+from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
 from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
 from edx_rest_framework_extensions.mixins import StandardizedErrorMixin
 from PIL import Image
@@ -28,7 +29,6 @@ from openedx.core.djangoapps.user_api.v2.view_utils import (
     SDK_TAG,
     StrictQueryParametersMixin,
 )
-from openedx.core.djangolib.default_auth_classes import DefaultJwtAuthentication
 from openedx.core.lib.api.parsers import TypedFileUploadParser
 
 from ..exceptions import ImageValidationError
@@ -128,10 +128,11 @@ class ProfileImageView(
 
     # The site's own pages let a user who has not confirmed their email
     # address set a picture, and the platform default refuses a session
-    # belonging to such an account. Only that one class is replaced: the token
-    # class stays the one the platform configures, which is what records a
-    # request as having been authenticated the default way.
-    authentication_classes = (DefaultJwtAuthentication, SessionAuthenticationAllowInactiveUser)
+    # belonging to such an account. Only the session class differs in what it
+    # admits: a token is read by the library class the platform's own pair is
+    # built on, named here because a view declaring its own classes is not one
+    # that pair serves.
+    authentication_classes = (JwtAuthentication, SessionAuthenticationAllowInactiveUser)
     permission_classes = (permissions.IsAuthenticated, IsAddressedUser)
     parser_classes = (MultiPartParser, FormParser, NamedImageUploadParser)
     serializer_class = ProfileImageUploadSerializer
