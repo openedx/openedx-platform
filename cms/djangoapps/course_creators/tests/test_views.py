@@ -2,12 +2,14 @@
 Tests course_creators.views.py.
 """
 
+from unittest import mock
 
 from django.core.exceptions import PermissionDenied
 from django.test import TestCase
 from django.test.utils import override_settings
 from django.urls import reverse
 
+from cms.djangoapps.contentstore.views.course import _get_course_creator_status
 from cms.djangoapps.course_creators.views import (
     add_user_with_status_granted,
     add_user_with_status_unrequested,
@@ -104,6 +106,18 @@ class CourseCreatorView(TestCase):
         # the appropriate request context.
         self.client.post(reverse('request_course_creator'))
         self.assertEqual('pending', get_course_creator_status(self.user))  # noqa: PT009
+
+    @override_settings(ENABLE_CREATOR_GROUP=True)
+    def test_reading_the_status_of_a_user_without_an_entry_adds_none(self):
+        assert _get_course_creator_status(self.user) == 'unrequested'
+        assert get_course_creator_status(self.user) is None
+
+    @mock.patch('cms.djangoapps.course_creators.models.send_admin_notification')
+    def test_user_requested_access_without_an_entry(self, admin_notification):
+        self.client.login(username=self.user.username, password='foo')
+        self.client.post(reverse('request_course_creator'))
+        assert get_course_creator_status(self.user) == 'pending'
+        admin_notification.send.assert_called_once()
 
     def test_user_requested_already_granted(self):
         add_user_with_status_granted(self.admin, self.user)

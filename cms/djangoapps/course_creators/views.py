@@ -85,8 +85,11 @@ def user_requested_access(user):
 
     This changes the user state to CourseCreator.PENDING, unless the user
     state is already CourseCreator.GRANTED, in which case this method is a no-op.
+    A user not yet in the table is added first.
     """
-    user = CourseCreator.objects.get(user=user)
+    # Created as 'unrequested' and then saved as 'pending', so that the change
+    # of state notifies the admins.
+    user, _ = CourseCreator.objects.get_or_create(user=user)
     if user.state != CourseCreator.GRANTED:
         user.state = CourseCreator.PENDING
         user.save()
