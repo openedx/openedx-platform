@@ -22,6 +22,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 import openedx.core.djangoapps.site_configuration.helpers as configuration_helpers
+from openedx.core.djangoapps.authz.decorators import user_has_course_permission_for_upstream
 from openedx.core.djangoapps.content_libraries import api, permissions
 from openedx.core.djangoapps.content_libraries.rest_api import serializers
 from openedx.core.djangoapps.xblock import api as xblock_api
@@ -122,7 +123,10 @@ class LibraryBlockView(APIView):
         versioning.
         """
         key = LibraryUsageLocatorV2.from_string(usage_key_str)
-        api.require_permission_for_library_key(key.lib_key, request.user, permissions.CAN_VIEW_THIS_CONTENT_LIBRARY)
+        if not user_has_course_permission_for_upstream(
+            request, authz_permissions.COURSES_VIEW_LIBRARY_UPDATES.identifier, key
+        ):
+            api.require_permission_for_library_key(key.lib_key, request.user, permissions.CAN_VIEW_THIS_CONTENT_LIBRARY)
         result = api.get_library_block(key, include_collections=True)
 
         return Response(self.serializer_class(result).data)
@@ -499,9 +503,13 @@ def get_component_version_asset(request, component_version_uuid, asset_path):
     # Permissions check...
     learning_package = component_version.component.learning_package
     library_key = LibraryLocatorV2.from_string(learning_package.package_ref)
-    api.require_permission_for_library_key(
-        library_key, request.user, permissions.CAN_VIEW_THIS_CONTENT_LIBRARY,
-    )
+    upstream_key = api.library_component_usage_key(library_key, component_version.component)
+    if not user_has_course_permission_for_upstream(
+        request, authz_permissions.COURSES_VIEW_LIBRARY_UPDATES.identifier, upstream_key
+    ):
+        api.require_permission_for_library_key(
+            library_key, request.user, permissions.CAN_VIEW_THIS_CONTENT_LIBRARY,
+        )
 
     # We already have logic for getting the correct content and generating the
     # proper headers in openedx_content, but the response generated here is an

@@ -14,6 +14,7 @@ from django.utils.translation import gettext as _
 from django.views.decorators.clickjacking import xframe_options_exempt
 from django.views.decorators.csrf import csrf_exempt
 from opaque_keys.edx.keys import UsageKeyV2
+from openedx_authz.constants.permissions import COURSES_VIEW_LIBRARY_UPDATES
 from rest_framework import permissions, serializers
 from rest_framework.decorators import api_view, permission_classes  # pylint: disable=unused-import
 from rest_framework.exceptions import AuthenticationFailed, NotFound, PermissionDenied
@@ -26,6 +27,7 @@ from xblock.fields import Scope
 
 import openedx.core.djangoapps.site_configuration.helpers as configuration_helpers
 from common.djangoapps.util.json_request import JsonResponse
+from openedx.core.djangoapps.authz.decorators import user_has_course_permission_for_upstream
 from openedx.core.djangoapps.xblock.learning_context.manager import get_learning_context_impl
 from openedx.core.lib.api.view_utils import view_auth_classes
 
@@ -104,8 +106,30 @@ def embed_block_view(request, usage_key: UsageKeyV2, view_name: str):
     except ValueError as exc:
         raise serializers.ValidationError("Invalid version specifier") from exc
 
+    # A user reviewing a library's pending changes from within a course (e.g. a Course
+    # Auditor with courses.view_library_updates) may not have direct access to the
+    # upstream library. That course-level permission substitutes for the regular
+    # library-level check below.
+    check_permission: CheckPerm | None = CheckPerm.CAN_LEARN
+    if user_has_course_permission_for_upstream(
+        request, COURSES_VIEW_LIBRARY_UPDATES.identifier, usage_key
+    ):
+        check_permission = None
+
+    # Forwarded to the runtime so any static asset URLs it renders into this block's
+    # content (e.g. <img> tags) can carry it too: LibraryComponentAssetView does its own
+    # upstream-link check when the browser requests those directly, so it's safe to pass
+    # through unconditionally even when the bypass above didn't apply.
+    downstream_block_id = request.GET.get("downstream_block_id")
+
     try:
-        block = load_block(usage_key, request.user, check_permission=CheckPerm.CAN_LEARN, version=version)
+        block = load_block(
+            usage_key,
+            request.user,
+            check_permission=check_permission,
+            version=version,
+            downstream_block_id=downstream_block_id,
+        )
     except NoSuchUsage as exc:
         raise NotFound(f"{usage_key} not found") from exc
 

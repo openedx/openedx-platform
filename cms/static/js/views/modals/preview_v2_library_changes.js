@@ -65,7 +65,7 @@ function($, _, gettext, BaseModal, ViewUtils) {
 
         getContentHtml: function() {
             return `
-                <iframe src="${this.courseAuthoringMfeUrl}/legacy/preview-changes/${this.upstreamBlockId}?old=${this.upstreamBlockVersionSynced}">
+                <iframe src="${this.courseAuthoringMfeUrl}/legacy/preview-changes/${this.upstreamBlockId}?old=${this.upstreamBlockVersionSynced}&downstream_block_id=${this.downstreamBlockId}">
             `;
         },
 
