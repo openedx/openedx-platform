@@ -106,8 +106,8 @@ class CourseAdvancedSettingsViewSet(StandardizedErrorMixin, viewsets.ViewSet):
     modulestore, not database rows.
     """
 
-    # Kept from the legacy endpoint: an inactive account's browser session stays authenticated and
-    # the course permission decides (inactive course staff are refused, inactive global staff are not).
+    # An inactive account's browser session stays authenticated, so the course permission decides: staff status
+    # admits it, and its roles count only on courses where policy-based permissions are on.
     authentication_classes = (JwtAuthentication, SessionAuthenticationAllowInactiveUser)
     permission_classes = (IsAuthenticated, IsExistingCourse)
     action_permission_classes = {
