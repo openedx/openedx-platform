@@ -10,8 +10,10 @@ from openedx.core.djangoapps.profile_images.v2.views import ProfileImageView
 from .views import (
     PREFERENCE_KEY_PATTERN_PARTIAL,
     AccountDeactivationView,
+    AccountPreferenceViewSet,
     AccountViewSet,
     CountryTimeZoneViewSet,
+    EmailOptInViewSet,
     EmailSearchViewSet,
     IDVerificationStatusView,
     IDVerificationViewSet,
@@ -48,6 +50,11 @@ router.register(
 )
 # Beside the accounts rather than under them: an account may be named anything.
 router.register(r"email_searches", EmailSearchViewSet, basename="email_search")
+# What a user wants to be sent is recorded against that user and against the
+# organization running a course they named, so the choice is reached without
+# naming either in the address and stands beside the accounts rather than
+# under them.
+router.register(r"email_opt_ins", EmailOptInViewSet, basename="email_opt_in")
 router.register(r"name_changes", NameChangeViewSet, basename="name_change")
 router.register(r"users", UserViewSet, basename="user")
 router.register(r"user_preferences", UserPreferenceViewSet, basename="user_preference")
@@ -70,6 +77,26 @@ urlpatterns = [
         rf"^accounts/(?P<username>{settings.USERNAME_REGEX_PARTIAL})/verification_status/$",
         IDVerificationStatusView.as_view(),
         name="account_verification_status",
+    ),
+    # One account's preferences are one document, read and changed whole, and
+    # each of them is also reached on its own; a preference is stored under its
+    # owner and its name together, so neither address can be built without the
+    # account. The two are declared rather than generated because the document
+    # is changed with a method the generated collection route does not carry.
+    re_path(
+        rf"^accounts/(?P<username>{settings.USERNAME_REGEX_PARTIAL})/preferences/$",
+        AccountPreferenceViewSet.as_view({"get": "retrieve_all", "patch": "partial_update_all"}),
+        name="account_preference_list",
+    ),
+    # The name a preference is stored under takes the rest of the segment, so
+    # every name that carries no separator of its own can be addressed.
+    re_path(
+        rf"^accounts/(?P<username>{settings.USERNAME_REGEX_PARTIAL})/preferences/"
+        rf"(?P<key>{PREFERENCE_KEY_PATTERN_PARTIAL})/$",
+        AccountPreferenceViewSet.as_view(
+            {"get": "retrieve", "put": "update", "delete": "destroy"},
+        ),
+        name="account_preference_detail",
     ),
     # The key half takes the rest of the segment after the comma.
     re_path(

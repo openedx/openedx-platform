@@ -1,13 +1,17 @@
 """Query-count guards for the version 2 User API list and member addresses."""
 
 import pytest
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.django_comment_common.models import Role
+from openedx.core.djangoapps.user_api.models import UserOrgTag
 from openedx.core.djangoapps.user_api.tests.factories import UserPreferenceFactory
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 
+PASSWORD = "Password1234"
 COURSE_KEY = "course-v1:edX+DemoX+Demo"
 
 #: Row counts a per-row query would show up at.
@@ -202,3 +206,139 @@ def test_the_earlier_preference_list_pays_per_row_where_this_one_does_not(
     with django_assert_num_queries(EARLIER_PREFERENCE_LIST_QUERIES[len(directory)]):
         earlier = client.get(EARLIER_PREFERENCE_LIST, {"page_size": 100})
     assert len(earlier.json()["results"]) == 2 * len(directory)
+
+
+#: Address of one account's preferences in the version this one supersedes.
+#: Both versions call the same service over the same rows, so what each of the
+#: addresses below costs is measured at the superseded address in the same run
+#: and this version is held to that measurement rather than to a number
+#: written down here. A change in what every request of the site costs then
+#: moves both measurements together instead of turning these red.
+EARLIER_PREFERENCE_DOCUMENT = "/api/user/v1/preferences/{username}"
+
+#: How many more preferences are stored before a cost is measured again, so
+#: that a query paid for each preference stored shows up as a rise.
+MORE_PREFERENCES = 5
+
+
+def cost_of(request):
+    """Return what one request cost in queries, and what it answered with."""
+    with CaptureQueriesContext(connection) as queries:
+        answer = request()
+    return len(queries), answer
+
+
+@pytest.fixture(name="account_with_preferences")
+@skip_unless_lms
+def account_with_preferences_fixture(request, client, django_user_model):  # pylint: disable=unused-argument
+    """Sign a learner in and give their own account ``request.param`` preferences besides a time zone."""
+    owner = UserFactory.create(username="count-owner", password=PASSWORD)
+    UserPreferenceFactory.create(user=owner, key="time_zone", value="UTC")
+    for index in range(request.param):
+        UserPreferenceFactory.create(user=owner, key=f"counted_{index:03d}", value="stored")
+    assert client.login(username=owner.username, password=PASSWORD)
+    # The first authenticated request of a session populates caches the rest
+    # of the session reuses; the counts below are the steady-state ones.
+    client.get(reverse("user_v2:account_preference_list", kwargs={"username": owner.username}))
+    return owner, request.param
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("account_with_preferences", ROW_COUNTS, indirect=True)
+@skip_unless_lms
+def test_the_preference_document_costs_the_same_at_either_address(
+    client, account_with_preferences,
+):
+    """Neither version pays per preference: only the body grows with them."""
+    owner, stored = account_with_preferences
+    address = reverse("user_v2:account_preference_list", kwargs={"username": owner.username})
+    earlier_cost, earlier = cost_of(
+        lambda: client.get(EARLIER_PREFERENCE_DOCUMENT.format(username=owner.username)),
+    )
+    current_cost, current = cost_of(lambda: client.get(address))
+    assert current_cost == earlier_cost
+    assert earlier.json() == current.json()
+    assert set(current.json()) == {"time_zone"} | {
+        f"counted_{index:03d}" for index in range(stored)
+    }
+
+    for index in range(stored, stored + MORE_PREFERENCES):
+        UserPreferenceFactory.create(user=owner, key=f"counted_{index:03d}", value="stored")
+    with_more_cost, with_more = cost_of(lambda: client.get(address))
+    assert with_more_cost == current_cost
+    assert len(with_more.json()) == len(current.json()) + MORE_PREFERENCES
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("account_with_preferences", ROW_COUNTS, indirect=True)
+@skip_unless_lms
+def test_one_preference_costs_the_same_at_either_address(client, account_with_preferences):
+    """Reading one preference costs what it costs at the superseded address, stored rows aside."""
+    owner, stored = account_with_preferences
+    address = reverse(
+        "user_v2:account_preference_detail",
+        kwargs={"username": owner.username, "key": "time_zone"},
+    )
+    earlier_cost, earlier = cost_of(
+        lambda: client.get(
+            f"{EARLIER_PREFERENCE_DOCUMENT.format(username=owner.username)}/time_zone",
+        ),
+    )
+    current_cost, current = cost_of(lambda: client.get(address))
+    assert current_cost == earlier_cost
+    assert earlier.json() == "UTC"
+    assert current.json() == {"key": "time_zone", "value": "UTC"}
+
+    for index in range(stored, stored + MORE_PREFERENCES):
+        UserPreferenceFactory.create(user=owner, key=f"counted_{index:03d}", value="stored")
+    with_more_cost, with_more = cost_of(lambda: client.get(address))
+    assert with_more_cost == current_cost
+    assert with_more.json() == {"key": "time_zone", "value": "UTC"}
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("account_with_preferences", [1], indirect=True)
+@skip_unless_lms
+def test_recording_an_email_choice_costs_what_the_earlier_address_costs(
+    client, account_with_preferences,
+):
+    """
+    Each address is measured from the same starting state as the other.
+
+    Recording the first choice creates the row it is kept in and recording a
+    later one updates it, so a count taken after the other address has already
+    recorded the choice would be the cheaper path measured against the dearer
+    one. Both are measured here, and the rise between them is what makes the
+    starting state matter.
+    """
+    owner, _stored = account_with_preferences
+    choices = UserOrgTag.objects.filter(user=owner, key="email-optin")
+    earlier_body = {"course_id": COURSE_KEY, "email_opt_in": "True"}
+    current_body = {"course_key": COURSE_KEY, "email_opt_in": True}
+
+    def record_at_the_earlier_address():
+        """Record the choice the way the pages calling the earlier address do."""
+        return client.post("/api/user/v1/preferences/email_opt_in/", earlier_body)
+
+    def record():
+        """Record the choice at this version's address."""
+        return client.post(
+            reverse("user_v2:email_opt_in_list"), current_body, content_type="application/json",
+        )
+
+    costs = {}
+    for address, record_choice, expected_status in (
+        ("the earlier address", record_at_the_earlier_address, 200),
+        ("this version", record, 204),
+    ):
+        choices.delete()
+        opening_cost, opened = cost_of(record_choice)
+        assert opened.status_code == expected_status, address
+        changing_cost, changed = cost_of(record_choice)
+        assert changed.status_code == expected_status, address
+        assert choices.count() == 1, address
+        costs[address] = (opening_cost, changing_cost)
+
+    assert costs["this version"] == costs["the earlier address"]
+    opening_cost, changing_cost = costs["this version"]
+    assert opening_cost > changing_cost

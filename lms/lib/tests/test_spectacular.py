@@ -92,15 +92,20 @@ class LmsApiFilterUserAddressTest(SimpleTestCase):
             _served_endpoint("/api/user/v1/me", USER_API_V1_VIEWS),
             _served_endpoint("/api/user/v1/accounts/{username}/image", USER_API_V1_VIEWS),
             _served_endpoint("/api/user/v1/accounts/name_change/", USER_API_V1_VIEWS),
+            _served_endpoint("/api/user/v1/preferences/{username}", USER_API_V1_VIEWS),
+            _served_endpoint(
+                "/api/user/v1/preferences/{username}/{preference_key}", USER_API_V1_VIEWS,
+            ),
+            _served_endpoint("/api/user/v1/preferences/email_opt_in/", USER_API_V1_VIEWS),
             # Served by this version from the app that owns the resource.
             _served_endpoint("/api/user/v2/accounts/{username}/profile_image/", PROFILE_IMAGE_V2_VIEWS),
             # Neither served nor superseded by this version.
             _served_endpoint("/api/user/v2/account/registration/", USER_AUTHN_VIEWS),
             _served_endpoint("/api/profile_images/v1/{username}/upload", PROFILE_IMAGE_V1_VIEWS),
-            _served_endpoint("/api/user/v1/preferences/{username}", USER_API_V1_VIEWS),
             _served_endpoint("/api/courses/v1/courses/", COURSE_VIEWS),
             _served_endpoint("/api/user_tours/v1/tours/"),
             _served_endpoint("/user_api/v1/users/", USER_API_V1_VIEWS),
+            _served_endpoint("/user_api/v1/preferences/email_opt_in/", USER_API_V1_VIEWS),
         ])
         assert [path for path, *_ in kept] == [
             "/api/enrollment/v2/enrollments/",
@@ -114,6 +119,9 @@ class LmsApiFilterUserAddressTest(SimpleTestCase):
             "/api/user/v1/me",
             "/api/user/v1/accounts/{username}/image",
             "/api/user/v1/accounts/name_change/",
+            "/api/user/v1/preferences/{username}",
+            "/api/user/v1/preferences/{username}/{preference_key}",
+            "/api/user/v1/preferences/email_opt_in/",
             "/api/user/v2/accounts/{username}/profile_image/",
         ]
 
@@ -169,11 +177,15 @@ class MarkSupersededUserPathsTest(SimpleTestCase):
             "/api/user/v1/accounts/{username}/verification_status/",
             "/api/user/v1/accounts/{username}/verifications/",
             "/api/user/v1/preferences/{username}",
+            "/api/user/v1/preferences/{username}/{preference_key}",
+            "/api/user/v1/preferences/email_opt_in/",
             "/api/profile_images/v1/{username}/upload",
             "/api/user/v2/users/",
             "/api/user/v2/accounts/{username}/profile_image/",
+            "/api/user/v2/accounts/{username}/preferences/",
             "/user_api/v1/users/",
             "/user_api/v1/accounts/{username}",
+            "/user_api/v1/preferences/email_opt_in/",
         ), None, None, False)
         paths = result["paths"]
         for marked in (
@@ -189,15 +201,19 @@ class MarkSupersededUserPathsTest(SimpleTestCase):
             "/api/user/v1/accounts/name_change/{username}/confirm/",
             "/api/user/v1/accounts/{username}/verification_status/",
             "/api/user/v1/accounts/{username}/verifications/",
+            "/api/user/v1/preferences/{username}",
+            "/api/user/v1/preferences/{username}/{preference_key}",
+            "/api/user/v1/preferences/email_opt_in/",
         ):
             assert paths[marked]["get"]["deprecated"] is True, marked
         for untouched in (
-            "/api/user/v1/preferences/{username}",
             "/api/profile_images/v1/{username}/upload",
             "/api/user/v2/users/",
             "/api/user/v2/accounts/{username}/profile_image/",
+            "/api/user/v2/accounts/{username}/preferences/",
             "/user_api/v1/users/",
             "/user_api/v1/accounts/{username}",
+            "/user_api/v1/preferences/email_opt_in/",
         ):
             assert "deprecated" not in paths[untouched]["get"], untouched
 
@@ -220,7 +236,7 @@ class _EnrollmentsViewSet(viewsets.GenericViewSet):
 
 
 class LmsAutoSchemaTest(SimpleTestCase):
-    """Dual mounts get deterministic operationIds instead of registration-order numeral suffixes."""
+    """Dual mounts get deterministic operationIds instead of numeral suffixes."""
 
     def test_is_the_default_schema_class(self):
         """Views without their own ``schema`` pick this up via REST_FRAMEWORK settings."""
@@ -270,6 +286,11 @@ def _user_routes(schema_class):
             view.as_view({"get": "retrieve"}),
         ),
         path("api/user/v1/users/", view.as_view({"get": "list"})),
+        path("api/user/v2/accounts/<str:username>/preferences/", view.as_view({"get": "retrieve"})),
+        path(
+            "api/user/v2/accounts/<str:username>/preferences/<str:key>/",
+            view.as_view({"get": "retrieve"}),
+        ),
         path("api/user/v2/users/", view.as_view({"get": "list"})),
         # A stored preference is addressed by its owner and its name together,
         # and the comma between them is a token of the address like any other,
@@ -286,24 +307,37 @@ def _user_routes(schema_class):
 
 
 def _derived_operations(schema_class, patches):
-    """The names ``schema_class`` produces with nothing pinned, which is what the generator derives."""
+    """
+    The names ``schema_class`` produces with nothing pinned, which is what the generator derives.
+
+    The paths are read as they are assembled, which is before the numeral
+    telling two addresses that derived one name apart is handed out: a name
+    carrying that numeral was derived without it, and is looked up without it.
+    """
     with mock.patch.dict("openedx.core.djangoapps.user_api.schema.RENAMED_OPERATION_IDS", {}, clear=True):
-        return _named_operations(schema_class, patches)
+        with patched_settings({"PREPROCESSING_HOOKS": [], **patches}):
+            generator = SchemaGenerator(patterns=_user_routes(schema_class))
+            return _by_address(generator.parse(None, public=True))
 
 
 def _named_operations(schema_class, patches):
     """The ``{address: (operationId, tags)}`` ``schema_class`` produces under ``patches``."""
     with patched_settings({"PREPROCESSING_HOOKS": [], **patches}):
         schema = SchemaGenerator(patterns=_user_routes(schema_class)).get_schema(request=None, public=True)
+    return _by_address(schema["paths"])
+
+
+def _by_address(paths):
+    """The ``{address: (operationId, tags)}`` the paths of a document carry."""
     return {
         route: (operation["operationId"], tuple(operation["tags"]))
-        for route, path_item in schema["paths"].items()
+        for route, path_item in paths.items()
         for operation in path_item.values()
     }
 
 
 class UserOperationIdTest(SimpleTestCase):
-    """User addresses keep the names the generator derives; only their tag group is chosen here."""
+    """A user address keeps the name the generator derives unless one is pinned for it."""
 
     def test_the_service_wide_document_keeps_every_name_the_generator_derives(self):
         """
@@ -320,6 +354,10 @@ class UserOperationIdTest(SimpleTestCase):
             "/api/user/v1/preferences/{username}/{preference_key}":
                 ("api_user_v1_preferences_retrieve_2", ("api",)),
             "/api/user/v1/users/": ("api_user_v1_users_list", ("api",)),
+            "/api/user/v2/accounts/{username}/preferences/":
+                ("api_user_v2_accounts_preferences_retrieve", ("api",)),
+            "/api/user/v2/accounts/{username}/preferences/{key}/":
+                ("api_user_v2_accounts_preferences_retrieve_one", ("api",)),
             "/api/user/v2/users/": ("api_user_v2_users_list", ("api",)),
             "/api/user/v2/user_preferences/{username},{key}/":
                 ("api_user_v2_user_preferences_retrieve", ("api",)),
@@ -342,8 +380,16 @@ class UserOperationIdTest(SimpleTestCase):
             "/api/user/v1/accounts": ("v1_accounts_list", ("user",)),
             "/api/user/v1/accounts/{username}": ("v1_accounts_retrieve", ("user",)),
             "/api/user/v1/preferences/{username}": ("v1_preferences_retrieve", ("user",)),
-            "/api/user/v1/preferences/{username}/{preference_key}": ("v1_preferences_retrieve_2", ("user",)),
+            "/api/user/v1/preferences/{username}/{preference_key}": (
+                "v1_preferences_retrieve_one", ("user",),
+            ),
             "/api/user/v1/users/": ("v1_users_list", ("user",)),
+            "/api/user/v2/accounts/{username}/preferences/": (
+                "v2_accounts_preferences_retrieve", ("user",),
+            ),
+            "/api/user/v2/accounts/{username}/preferences/{key}/": (
+                "v2_accounts_preferences_retrieve_one", ("user",),
+            ),
             "/api/user/v2/users/": ("v2_users_list", ("user",)),
             "/api/user/v2/user_preferences/{username},{key}/": (
                 "v2_user_preferences_retrieve", ("user",),
@@ -352,6 +398,18 @@ class UserOperationIdTest(SimpleTestCase):
             "/user_api/v1/preferences/{username}": ("user_api_v1_preferences_retrieve", ("user_api",)),
         }
 
+
+#: The preference document a superseded read answers with, spelled out here
+#: rather than read from the module that publishes it: an edit to the shape
+#: that module publishes is then an edit this test sees.
+PREFERENCE_DOCUMENT_BODY = {
+    "type": "object",
+    "additionalProperties": {"type": "string"},
+    "description": (
+        "Preferences of one account, as an object of preference name to stored value. Every "
+        "value is text. Which names an account carries depends on the features it uses."
+    ),
+}
 
 #: What each superseded operation the schema describes is expected to exchange:
 #: the media types of the body it reads, and the success code with the body it
@@ -375,17 +433,33 @@ SUPERSEDED_EXCHANGES = {
     ),
     ("/api/user/v1/accounts/{username}/image", "delete"): ([], {"204": None}),
     ("/api/user/v1/accounts/{username}/verification_status/", "get"): ([], {"200": "VerificationStatus"}),
+    ("/api/user/v1/preferences/{username}", "get"): ([], {"200": PREFERENCE_DOCUMENT_BODY}),
+    ("/api/user/v1/preferences/{username}", "patch"): (["application/merge-patch+json"], {"204": None}),
+    ("/api/user/v1/preferences/{username}/{preference_key}", "get"): ([], {"200": {"type": "string"}}),
+    ("/api/user/v1/preferences/{username}/{preference_key}", "put"): (["application/json"], {"204": None}),
+    ("/api/user/v1/preferences/{username}/{preference_key}", "delete"): ([], {"204": None}),
+    ("/api/user/v1/preferences/email_opt_in/", "post"): (
+        ["application/x-www-form-urlencoded"], {"200": None},
+    ),
 }
 
 
 def _named_body(response):
-    """Return the component a response carries, suffixed ``[]`` for an array, or ``None``."""
+    """
+    Return what a response carries: the component it names, or the shape itself.
+
+    A component is named by its own name, suffixed ``[]`` where the body is an
+    array of it; a body described in place comes back as that description, and
+    a response with no body at all as ``None``.
+    """
     content = response.get("content")
     if not content:
         return None
     body = content["application/json"]["schema"]
     if body.get("type") == "array":
         return f"{body['items']['$ref'].rsplit('/', 1)[-1]}[]"
+    if "$ref" not in body:
+        return body
     return body["$ref"].rsplit("/", 1)[-1]
 
 
@@ -586,6 +660,55 @@ class SupersededRequestBodyTest(TestCase):
         }
 
 
+#: The exchanges of the preference and opt-in addresses this change describes.
+PREFERENCE_EXCHANGES = {
+    operation: exchange for operation, exchange in SUPERSEDED_EXCHANGES.items()
+    if operation[0].startswith("/api/user/v1/preferences/")
+}
+
+
+class SupersededBodyInTheServiceWideDocumentTest(TestCase):
+    """
+    The same bodies describe these addresses in the document that covers the whole service.
+
+    That document publishes every endpoint rather than this area alone, and it
+    already carried these addresses before they were described, so the table
+    changes what they publish there instead of adding them. Two of them
+    answered with no body all along and are published with the code they
+    really answer with.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.schema = _user_documents()["service-wide"]
+
+    def test_each_superseded_operation_publishes_the_same_exchange_there(self):
+        published = {}
+        for (address, method), _expected in PREFERENCE_EXCHANGES.items():
+            operation = self.schema["paths"][address][method]
+            request_media_types = sorted((operation.get("requestBody") or {}).get("content", {}))
+            published[(address, method)] = (
+                request_media_types,
+                {code: _named_body(response) for code, response in operation["responses"].items()},
+            )
+        assert published == PREFERENCE_EXCHANGES
+
+    def test_the_two_changes_that_answer_with_nothing_publish_only_that(self):
+        """Both handlers answer with no body, which is not what that document carried for them."""
+        answered = {
+            (address, method): sorted(self.schema["paths"][address][method]["responses"])
+            for address, method in (
+                ("/api/user/v1/preferences/{username}", "patch"),
+                ("/api/user/v1/preferences/{username}/{preference_key}", "put"),
+            )
+        }
+        assert answered == {
+            ("/api/user/v1/preferences/{username}", "patch"): ["204"],
+            ("/api/user/v1/preferences/{username}/{preference_key}", "put"): ["204"],
+        }
+
+
 #: Each address this document already published before its body was described,
 #: and the success code its handler really answers. That document carried a 200
 #: with no body for both, which no handler answers; the code each is
@@ -694,6 +817,34 @@ class PublishedDocumentTest(TestCase):
             if re.fullmatch(r".+_\d+", operation["operationId"])
         }
         assert suffixed == {}
+
+    def test_a_read_of_one_preference_is_named_for_the_one_preference_it_reads(self):
+        """
+        The read of a whole preference document and the read of one of its names are named apart.
+
+        Both addresses derive one name, which the assembled document would
+        tell apart with a numeral, so the name a client imports for the read
+        of one preference would say which of the two addresses sorts first
+        rather than what it answers with. Each version names that read for
+        what it reads, and the read of the whole document keeps the name both
+        addresses derive.
+        """
+        ids = {
+            (route, method): operation["operationId"]
+            for route, path_item in self.schema["paths"].items()
+            for method, operation in path_item.items()
+            if isinstance(operation, dict) and "operationId" in operation
+        }
+        assert ids[("/api/user/v1/preferences/{username}", "get")] == "v1_preferences_retrieve"
+        assert ids[("/api/user/v1/preferences/{username}/{preference_key}", "get")] == (
+            "v1_preferences_retrieve_one"
+        )
+        assert ids[("/api/user/v2/accounts/{username}/preferences/", "get")] == (
+            "v2_accounts_preferences_retrieve"
+        )
+        assert ids[("/api/user/v2/accounts/{username}/preferences/{key}/", "get")] == (
+            "v2_accounts_preferences_retrieve_one"
+        )
 
     def test_a_tag_group_holds_one_area_unless_it_marks_the_client_library(self):
         """

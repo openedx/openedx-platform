@@ -10,7 +10,9 @@ import pytest
 from django.conf import settings
 from django.urls import reverse
 from drf_spectacular.generators import SchemaGenerator
+from drf_spectacular.plumbing import get_override
 from drf_spectacular.settings import patched_settings
+from rest_framework.test import APIClient
 from waffle.testutils import override_switch
 
 from common.djangoapps.student.models import PendingNameChange, UserProfile
@@ -35,6 +37,9 @@ from openedx.core.djangoapps.user_api.v2.serializers import (
     ACCOUNT_DEFAULT_SORT,
     ACCOUNT_MINIMAL_FIELDS,
     EXPIRATION_DAY_PATTERN,
+    PREFERENCE_NAME_MAX_LENGTH,
+    AccountPreferenceChangesField,
+    AccountPreferenceDocumentField,
     AccountQuerySerializer,
     TimeZoneQuerySerializer,
     VerificationQuerySerializer,
@@ -56,6 +61,16 @@ PROFILE_IMAGE_PATH = "/api/user/v2/accounts/{username}/profile_image/"
 VERIFICATION_STATUS_PATH = "/api/user/v2/accounts/{username}/verification_status/"
 VERIFICATION_LIST_PATH = "/api/user/v2/accounts/{username}/verifications/"
 EMAIL_SEARCH_PATH = "/api/user/v2/email_searches/"
+PREFERENCE_DOCUMENT_PATH = "/api/user/v2/accounts/{username}/preferences/"
+PREFERENCE_NAME_PATH = "/api/user/v2/accounts/{username}/preferences/{key}/"
+EMAIL_OPT_IN_PATH = "/api/user/v2/email_opt_ins/"
+
+#: What both preference addresses say the name in them is read as.
+ACCOUNT_PREFERENCES_USERNAME_DESCRIPTION = (
+    "Unique name of the user whose preferences are addressed. The name is read as it is stored, "
+    "so `me` here names an account holding that name rather than the account of the caller "
+    "making the request."
+)
 NAME_CHANGE_PATH = "/api/user/v2/name_changes/"
 NAME_CHANGE_CONFIRMATION_PATH = "/api/user/v2/name_changes/{username}/confirmations/"
 
@@ -79,11 +94,14 @@ MEMBER_PATHS = {
     VERIFICATION_STATUS_PATH,
     USER_MEMBER_PATH,
     PREFERENCE_MEMBER_PATH,
+    PREFERENCE_DOCUMENT_PATH,
+    PREFERENCE_NAME_PATH,
 }
 
 #: The addresses that act on a resource rather than answer with one.
 ACTION_PATHS = {
     EMAIL_SEARCH_PATH,
+    EMAIL_OPT_IN_PATH,
     ACCOUNT_DEACTIVATION_PATH,
     PROFILE_IMAGE_PATH,
     NAME_CHANGE_PATH,
@@ -96,6 +114,8 @@ SDK_PATHS = {
     ACCOUNT_MEMBER_PATH,
     VERIFICATION_STATUS_PATH,
     VERIFICATION_LIST_PATH,
+    PREFERENCE_DOCUMENT_PATH,
+    PREFERENCE_NAME_PATH,
 } | ACTION_PATHS
 
 VERSION_TWO_PATHS = LIST_PATHS | MEMBER_PATHS | ACTION_PATHS
@@ -111,10 +131,13 @@ VERSION_TWO_COMPONENTS = (
     "AccountExtendedField",
     "AccountLanguage",
     "AccountMinimal",
+    "AccountPreference",
+    "AccountPreferenceValue",
     "AccountProfileImage",
     "AccountProjection",
     "AccountResponse",
     "AccountSocialLink",
+    "EmailOptIn",
     "EmailSearch",
     "EmailSearchResult",
     "ErrorResponse",
@@ -204,6 +227,12 @@ SHAPE_CASES = (
         {"fields": "value"},
         "UserPreferenceRecordProjection",
     ),
+    (
+        PREFERENCE_NAME_PATH,
+        "/api/user/v2/accounts/shape-admin/preferences/pref-lang/",
+        {},
+        "AccountPreference",
+    ),
     ("/api/user/v2/time_zones/", "/api/user/v2/time_zones/", {"country_code": "FR"}, "TimeZone"),
     ("/api/user/v2/accounts/", "/api/user/v2/accounts/", {}, "Account"),
     ("/api/user/v2/accounts/", "/api/user/v2/accounts/", {"view": "minimal"}, "AccountMinimal"),
@@ -263,6 +292,12 @@ def published_body_schema(schema, path):
     return as_json_schema({**body, "components": schema["components"]})
 
 
+def published_request_schema(schema, path, method, media_type):
+    """Return what a request body of ``path`` must satisfy, components included."""
+    body = schema["paths"][path][method]["requestBody"]["content"][media_type]["schema"]
+    return as_json_schema({**body, "components": schema["components"]})
+
+
 def published_component_schema(schema, name):
     """Return one published component as a document a validator can read on its own."""
     return as_json_schema({
@@ -308,6 +343,9 @@ SUPERSEDED_USER_ADDRESSES = {
     "/api/user/v1/users/{id}/": "/api/user/v2/users/{username}/",
     "/api/user/v1/user_prefs/": "/api/user/v2/user_preferences/",
     "/api/user/v1/user_prefs/{id}/": "/api/user/v2/user_preferences/{username},{key}/",
+    "/api/user/v1/preferences/{username}": PREFERENCE_DOCUMENT_PATH,
+    "/api/user/v1/preferences/{username}/{preference_key}": PREFERENCE_NAME_PATH,
+    "/api/user/v1/preferences/email_opt_in/": EMAIL_OPT_IN_PATH,
     "/api/user/v1/preferences/{pref_key}/users/": "/api/user/v2/users/",
     "/api/user/v1/forum_roles/{name}/users/": "/api/user/v2/users/",
     "/api/user/v1/preferences/time_zones/": "/api/user/v2/time_zones/",
@@ -388,6 +426,12 @@ def test_every_operation_of_this_version_is_published_under_one_group(schema):
         "v2_accounts_verifications_list": ["openedx-platform-sdk"],
         "v2_name_changes_create": ["openedx-platform-sdk"],
         "v2_name_changes_confirmations_create": ["openedx-platform-sdk"],
+        "v2_accounts_preferences_retrieve": ["openedx-platform-sdk"],
+        "v2_accounts_preferences_partial_update": ["openedx-platform-sdk"],
+        "v2_accounts_preferences_retrieve_one": ["openedx-platform-sdk"],
+        "v2_accounts_preferences_update": ["openedx-platform-sdk"],
+        "v2_accounts_preferences_destroy": ["openedx-platform-sdk"],
+        "v2_email_opt_ins_create": ["openedx-platform-sdk"],
         "v2_users_list": ["user"],
         "v2_users_retrieve": ["user"],
         "v2_user_preferences_list": ["user"],
@@ -417,7 +461,6 @@ def test_addresses_owned_by_other_apps_are_not_published(schema):
     for path in (
         "/api/user/v1/accounts/deactivate_logout/",
         "/api/user/v1/accounts/{username}/retirement_status/",
-        "/api/user/v1/preferences/{username}",
     ):
         assert path not in schema["paths"], path
 
@@ -575,8 +618,8 @@ def test_hook_leaves_other_resources_alone():
         "/api/profile_images/v1/{username}/upload",
         "/api/profile_images/v1/{username}/remove",
         "/api/user/v1/accounts/deactivate_logout/",
-        "/api/user/v1/preferences/email_opt_in/",
         "/api/user/v2/account/registration/",
+        "/api/user/v2/accounts/{username}/preferences/",
         "/user_api/v1/users/",
         "/user_api/v1/accounts/{username}",
         "/user_api/v1/preferences/time_zones/",
@@ -589,6 +632,9 @@ def test_hook_leaves_other_resources_alone():
         "/api/user/v1/accounts/{username}",
         "/api/user/v1/accounts/{username}/image",
         "/api/user/v1/accounts/name_change/",
+        "/api/user/v1/preferences/{username}",
+        "/api/user/v1/preferences/{username}/{preference_key}",
+        "/api/user/v1/preferences/email_opt_in/",
         "/api/enrollment/v2/enrollments",
     ]
     result = {"paths": {path: {"get": {"operationId": path}} for path in untouched + marked}}
@@ -616,6 +662,9 @@ SUPERSEDED_REQUEST_MEDIA_TYPES = {
     ("/api/user/v1/accounts/search_emails", "post"): {
         "application/json", "application/merge-patch+json",
     },
+    ("/api/user/v1/preferences/{username}", "patch"): {"application/merge-patch+json"},
+    ("/api/user/v1/preferences/{username}/{preference_key}", "put"): {"application/json"},
+    ("/api/user/v1/preferences/email_opt_in/", "post"): {"application/x-www-form-urlencoded"},
 }
 
 
@@ -634,18 +683,32 @@ def test_each_superseded_body_is_published_in_the_media_types_that_address_reads
     staff = AdminFactory.create(username="media_type_staff", password=PASSWORD)
     assert client.login(username=staff.username, password=PASSWORD)
     member = f"/api/user/v1/accounts/{staff.username}"
+    preferences = f"/api/user/v1/preferences/{staff.username}"
     requests = {
-        ("/api/user/v1/accounts/{username}", "patch"): (member, "{}"),
+        ("/api/user/v1/accounts/{username}", "patch"): (member, "{}", 200),
         ("/api/user/v1/accounts/search_emails", "post"): (
-            "/api/user/v1/accounts/search_emails", json.dumps({"emails": [staff.email]}),
+            "/api/user/v1/accounts/search_emails", json.dumps({"emails": [staff.email]}), 200,
+        ),
+        ("/api/user/v1/preferences/{username}", "patch"): (
+            preferences, json.dumps({"pref-lang": "en"}), 204,
+        ),
+        # The key half of that route carries neither a hyphen nor a dot, so the
+        # name sent here is one it can address.
+        ("/api/user/v1/preferences/{username}/{preference_key}", "put"): (
+            f"{preferences}/account_privacy", json.dumps("private"), 204,
+        ),
+        ("/api/user/v1/preferences/email_opt_in/", "post"): (
+            "/api/user/v1/preferences/email_opt_in/",
+            "course_id=course-v1%3AedX%2BDemoX%2BDemo&email_opt_in=True",
+            200,
         ),
     }
     for (path, method), media_types in SUPERSEDED_REQUEST_MEDIA_TYPES.items():
         assert set(schema["paths"][path][method]["requestBody"]["content"]) == media_types, path
-        address, body = requests[(path, method)]
+        address, body, expected_status = requests[(path, method)]
         for media_type in media_types:
             answer = getattr(client, method)(address, data=body, content_type=media_type)
-            assert answer.status_code == 200, (address, media_type, answer.content)
+            assert answer.status_code == expected_status, (address, media_type, answer.content)
     left_out = client.patch(member, data="{}", content_type="application/json")
     assert left_out.status_code == 415
 
@@ -853,6 +916,34 @@ def test_member_addresses_describe_the_parts_they_are_built_from(schema):
                 "Name the preference is stored under: the part of the address after the comma."
             ),
         },
+        (PREFERENCE_DOCUMENT_PATH, "username"): {
+            "in": "path",
+            "name": "username",
+            "required": True,
+            "schema": username_schema,
+            "description": ACCOUNT_PREFERENCES_USERNAME_DESCRIPTION,
+        },
+        (PREFERENCE_NAME_PATH, "username"): {
+            "in": "path",
+            "name": "username",
+            "required": True,
+            "schema": username_schema,
+            "description": ACCOUNT_PREFERENCES_USERNAME_DESCRIPTION,
+        },
+        (PREFERENCE_NAME_PATH, "key"): {
+            "in": "path",
+            "name": "key",
+            "required": True,
+            "schema": {"type": "string", "pattern": rf"^{PREFERENCE_KEY_PATTERN_PARTIAL}$"},
+            "description": (
+                "Name the preference is stored under, which is the whole segment, punctuation "
+                "included. A name carrying a slash has no address of its own, because the "
+                "segment ends at the slash; such a name is read with the whole document and "
+                "removed by sending a null for it there. Nothing is stored under a name longer "
+                f"than {PREFERENCE_NAME_MAX_LENGTH} characters, nor under one carrying no "
+                "letter, digit, hyphen or underscore."
+            ),
+        },
     }
 
 
@@ -899,6 +990,8 @@ USERNAME_ADDRESS_PARTS = (
     PROFILE_IMAGE_PATH,
     VERIFICATION_STATUS_PATH,
     VERIFICATION_LIST_PATH,
+    PREFERENCE_DOCUMENT_PATH,
+    PREFERENCE_NAME_PATH,
     NAME_CHANGE_CONFIRMATION_PATH,
     USER_MEMBER_PATH,
     PREFERENCE_MEMBER_PATH,
@@ -1806,6 +1899,87 @@ def test_the_addresses_this_phase_adds_publish_no_other_query_parameters(schema)
     }
 
 
+#: The names this resource's operations are published under. The two reads
+#: tokenize alike, so the read of one preference is named for what it reads and
+#: the read of the whole document keeps the name both addresses derive; left to
+#: itself the assembled document tells the two apart with a numeral, which says
+#: which address sorts first rather than what a client gets back.
+PREFERENCE_OPERATION_IDS = {
+    (PREFERENCE_DOCUMENT_PATH, "get"): "v2_accounts_preferences_retrieve",
+    (PREFERENCE_DOCUMENT_PATH, "patch"): "v2_accounts_preferences_partial_update",
+    (PREFERENCE_NAME_PATH, "get"): "v2_accounts_preferences_retrieve_one",
+    (PREFERENCE_NAME_PATH, "put"): "v2_accounts_preferences_update",
+    (PREFERENCE_NAME_PATH, "delete"): "v2_accounts_preferences_destroy",
+    (EMAIL_OPT_IN_PATH, "post"): "v2_email_opt_ins_create",
+}
+
+
+@skip_unless_lms
+def test_the_preference_operations_carry_the_names_they_are_published_under(schema):
+    published = {
+        (path, method): operation["operationId"]
+        for path, method, operation in operations(schema)
+        if path in {PREFERENCE_DOCUMENT_PATH, PREFERENCE_NAME_PATH, EMAIL_OPT_IN_PATH}
+    }
+    assert published == PREFERENCE_OPERATION_IDS
+
+
+@skip_unless_lms
+def test_the_read_of_one_preference_is_named_in_every_document_that_publishes_it(schema, service_wide):
+    """
+    Each document names that read as it names its four siblings, and loses no name.
+
+    The two documents derive different names for one operation, because one
+    trims the area off the front of every path and the other trims nothing, so
+    the read is named in each of them through the name that document derives.
+    That leaves the five operations of this resource carrying the same leading
+    tokens wherever they are published, which is what a client generated from
+    a document takes its module from. The addresses of version 1 are named the
+    same way, and there only the document that trims the area off is covered:
+    the one that trims nothing keeps every name it has published, numeral and
+    all.
+    """
+    assert schema["paths"][PREFERENCE_NAME_PATH]["get"]["operationId"] == (
+        "v2_accounts_preferences_retrieve_one"
+    )
+    assert service_wide["paths"][PREFERENCE_NAME_PATH]["get"]["operationId"] == (
+        "api_user_v2_accounts_preferences_retrieve_one"
+    )
+    assert schema["paths"][PREFERENCE_DOCUMENT_PATH]["get"]["operationId"] == (
+        "v2_accounts_preferences_retrieve"
+    )
+    assert service_wide["paths"][PREFERENCE_DOCUMENT_PATH]["get"]["operationId"] == (
+        "api_user_v2_accounts_preferences_retrieve"
+    )
+    assert {
+        (path, method): operation["operationId"]
+        for path, method, operation in operations(service_wide)
+        if path in {PREFERENCE_DOCUMENT_PATH, PREFERENCE_NAME_PATH}
+    } == {
+        (PREFERENCE_DOCUMENT_PATH, "get"): "api_user_v2_accounts_preferences_retrieve",
+        (PREFERENCE_DOCUMENT_PATH, "patch"): "api_user_v2_accounts_preferences_partial_update",
+        (PREFERENCE_NAME_PATH, "get"): "api_user_v2_accounts_preferences_retrieve_one",
+        (PREFERENCE_NAME_PATH, "put"): "api_user_v2_accounts_preferences_update",
+        (PREFERENCE_NAME_PATH, "delete"): "api_user_v2_accounts_preferences_destroy",
+    }
+    version_one = {
+        (path, method): operation["operationId"]
+        for path, method, operation in operations(service_wide)
+        if path.startswith("/api/user/v1/preferences/{username}")
+    }
+    assert version_one == {
+        ("/api/user/v1/preferences/{username}", "get"): "api_user_v1_preferences_retrieve",
+        ("/api/user/v1/preferences/{username}", "patch"): "api_user_v1_preferences_partial_update",
+        ("/api/user/v1/preferences/{username}/{preference_key}", "get"): (
+            "api_user_v1_preferences_retrieve_2"
+        ),
+        ("/api/user/v1/preferences/{username}/{preference_key}", "put"): "api_user_v1_preferences_update",
+        ("/api/user/v1/preferences/{username}/{preference_key}", "delete"): (
+            "api_user_v1_preferences_destroy"
+        ),
+    }
+
+
 @skip_unless_lms
 def test_the_stored_preference_reads_are_named_alike_in_every_document_that_publishes_them(schema, service_wide):
     """
@@ -1834,6 +2008,199 @@ def test_the_stored_preference_reads_are_named_alike_in_every_document_that_publ
         (PREFERENCE_LIST_PATH, "get"): "api_user_v2_user_preferences_list",
         (PREFERENCE_MEMBER_PATH, "get"): "api_user_v2_user_preferences_retrieve",
     }
+
+
+@skip_unless_lms
+def test_the_preference_document_is_published_as_the_open_ended_object_it_is(schema):
+    """It has no fixed set of names, so it is described rather than named as a component."""
+    members = {
+        ("get", "application/json"): {"type": "string"},
+        # A change may also remove a name, which it does by sending a null.
+        ("patch", "application/merge-patch+json"): {"type": "string", "nullable": True},
+    }
+    for (method, media_type), member in members.items():
+        operation = schema["paths"][PREFERENCE_DOCUMENT_PATH][method]
+        carried = (
+            operation["responses"]["200"] if method == "get" else operation["requestBody"]
+        )["content"]
+        assert list(carried) == [media_type], method
+        body = carried[media_type]["schema"]
+        assert body["type"] == "object", method
+        assert body["additionalProperties"] == member, method
+        assert "$ref" not in body, method
+
+
+@skip_unless_lms
+def test_the_preference_document_is_published_as_the_fields_that_carry_it_describe(schema):
+    """The body is formatted and read by these fields, so each address publishes what its own does."""
+    carried = {
+        ("get", "application/json"): AccountPreferenceDocumentField,
+        ("patch", "application/merge-patch+json"): AccountPreferenceChangesField,
+    }
+    for (method, media_type), field in carried.items():
+        operation = schema["paths"][PREFERENCE_DOCUMENT_PATH][method]
+        published = (
+            operation["responses"]["200"] if method == "get" else operation["requestBody"]
+        )["content"][media_type]["schema"]
+        assert published == get_override(field, "field"), method
+
+
+@pytest.mark.django_db
+@skip_unless_lms
+def test_a_merge_patch_the_endpoint_carries_out_is_one_the_request_body_takes(client, schema):
+    """A null removes a name, so a body generated from the document can express a removal."""
+    owner = AdminFactory.create(username="patch-preferences", password=PASSWORD)
+    UserPreferenceFactory.create(user=owner, key="time_zone", value="Asia/Tokyo")
+    assert client.login(username=owner.username, password=PASSWORD)
+    validator = jsonschema.Draft202012Validator(published_request_schema(
+        schema, PREFERENCE_DOCUMENT_PATH, "patch", "application/merge-patch+json",
+    ))
+    assert [error.message for error in validator.iter_errors({"time_zone": None})] == []
+    assert [error.message for error in validator.iter_errors({"time_zone": "Europe/Paris"})] == []
+    assert [error.message for error in validator.iter_errors({"time_zone": 5})] == [
+        "5 is not valid under any of the given schemas",
+    ]
+    address = reverse("user_v2:account_preference_list", kwargs={"username": owner.username})
+    removal = client.patch(
+        address, data=json.dumps({"time_zone": None}), content_type="application/merge-patch+json",
+    )
+    assert removal.status_code == 204, removal.content
+    assert client.get(address).json() == {}
+
+
+@pytest.mark.django_db
+@skip_unless_lms
+def test_a_preference_document_the_endpoint_answers_is_what_the_document_describes(client, schema):
+    owner = AdminFactory.create(username="shape-preferences", password=PASSWORD)
+    for key, value in (("pref-lang", "en"), ("time_zone", "Asia/Tokyo"), ("visibility.bio", "all_users")):
+        UserPreferenceFactory.create(user=owner, key=key, value=value)
+    assert client.login(username=owner.username, password=PASSWORD)
+    body = client.get(
+        reverse("user_v2:account_preference_list", kwargs={"username": owner.username}),
+    ).json()
+    assert body == {"pref-lang": "en", "time_zone": "Asia/Tokyo", "visibility.bio": "all_users"}
+    validator = jsonschema.Draft202012Validator(
+        published_body_schema(schema, PREFERENCE_DOCUMENT_PATH),
+    )
+    assert [error.message for error in validator.iter_errors(body)] == []
+
+
+@pytest.mark.django_db
+@skip_unless_lms
+def test_the_email_choice_publishes_the_refusal_a_session_is_answered_with_without_its_token(schema):
+    """
+    The refusal a browser session meets here is published alongside the rest.
+
+    This address is reached from a page, and a session is held to the request
+    token the site hands out with it, so the refusal of a request that carries
+    none is the one a browser client meets most. It is driven here and matched
+    against what the operation publishes, because the choice belongs to the
+    caller and so nothing else about who they are is refused at this address.
+    """
+    user = UserFactory.create(username="optin_token", password=PASSWORD)
+    held_to_its_token = APIClient(enforce_csrf_checks=True)
+    assert held_to_its_token.login(username=user.username, password=PASSWORD)
+    answer = held_to_its_token.post(
+        EMAIL_OPT_IN_PATH,
+        {"course_key": "course-v1:edX+DemoX+Demo", "email_opt_in": True},
+        format="json",
+    )
+    assert answer.status_code == 403, answer.content
+    published = schema["paths"][EMAIL_OPT_IN_PATH]["post"]["responses"]
+    assert str(answer.status_code) in published
+    assert published["403"]["description"] == (
+        "The request was made with a session cookie and carried none of the request token the "
+        "site hands out with it, so the site cannot tell that the request came from a page it "
+        "served. Sending that token with the session, or a signed token in place of the "
+        "session, is answered."
+    )
+
+
+@skip_unless_lms
+def test_the_name_a_preference_is_stored_under_is_published_under_one_parameter_name(schema):
+    """
+    Both addresses that carry a preference name carry it under the same name.
+
+    A client generated from the document takes an argument from each path
+    parameter, so one notion published under two names in one version reaches
+    a reader as two notions, and a published name cannot be changed afterwards.
+    """
+    carried = {
+        parameter["name"]
+        for path, _method, operation in operations(schema)
+        if path in {PREFERENCE_MEMBER_PATH, PREFERENCE_NAME_PATH}
+        for parameter in operation["parameters"]
+        if parameter["in"] == "path"
+    }
+    assert carried == {"username", "key"}
+
+
+#: What each preference operation answers, by the address and the method. A
+#: change admits only the caller the address names, so the account it names is
+#: the caller's own and is there to be changed: no such request is answered
+#: with the refusal naming an account that does not exist, and none publishes
+#: it.
+PREFERENCE_PUBLISHED_ANSWERS = {
+    (PREFERENCE_DOCUMENT_PATH, "get"): ["200", "400", "401", "403", "404", "406", "500"],
+    (PREFERENCE_DOCUMENT_PATH, "patch"): ["204", "400", "401", "403", "406", "415", "500"],
+    (PREFERENCE_NAME_PATH, "get"): ["200", "400", "401", "403", "404", "406", "500"],
+    (PREFERENCE_NAME_PATH, "put"): ["204", "400", "401", "403", "406", "415", "500"],
+    (PREFERENCE_NAME_PATH, "delete"): ["204", "400", "401", "403", "404", "406", "500"],
+}
+
+
+@skip_unless_lms
+def test_each_preference_operation_publishes_the_answers_it_can_give(schema):
+    published = {
+        (path, method): sorted(operation["responses"])
+        for path, method, operation in operations(schema)
+        if path in {PREFERENCE_DOCUMENT_PATH, PREFERENCE_NAME_PATH}
+    }
+    assert published == PREFERENCE_PUBLISHED_ANSWERS
+
+
+@skip_unless_lms
+def test_no_preference_operation_publishes_a_parameter_beyond_the_address_it_is_read_from(schema):
+    """These addresses read no query parameter: not a page, not a preset, not a selection."""
+    published = {
+        (path, method): [parameter["name"] for parameter in operation.get("parameters", [])]
+        for path, method, operation in operations(schema)
+        if path in {PREFERENCE_DOCUMENT_PATH, PREFERENCE_NAME_PATH, EMAIL_OPT_IN_PATH}
+    }
+    assert published == {
+        (PREFERENCE_DOCUMENT_PATH, "get"): ["username"],
+        (PREFERENCE_DOCUMENT_PATH, "patch"): ["username"],
+        (PREFERENCE_NAME_PATH, "get"): ["key", "username"],
+        (PREFERENCE_NAME_PATH, "put"): ["key", "username"],
+        (PREFERENCE_NAME_PATH, "delete"): ["key", "username"],
+        (EMAIL_OPT_IN_PATH, "post"): [],
+    }
+
+
+@skip_unless_lms
+def test_the_email_choice_publishes_the_body_it_reads_and_that_it_answers_with_nothing(schema):
+    operation = schema["paths"][EMAIL_OPT_IN_PATH]["post"]
+    # The page a learner makes this choice on submits a form, so the media
+    # types a form submits in are published alongside the JSON body.
+    assert set(operation["requestBody"]["content"]) == {
+        "application/json", "application/x-www-form-urlencoded", "multipart/form-data",
+    }
+    for media_type, carried in operation["requestBody"]["content"].items():
+        assert carried["schema"] == {"$ref": "#/components/schemas/EmailOptIn"}, media_type
+    assert "content" not in operation["responses"]["204"]
+    assert sorted(operation["responses"]) == [
+        "204", "400", "401", "403", "404", "406", "415", "500",
+    ]
+    choice = schema["components"]["schemas"]["EmailOptIn"]
+    assert sorted(choice["required"]) == ["course_key", "email_opt_in"]
+    assert choice["properties"]["course_key"]["type"] == "string"
+    assert choice["properties"]["email_opt_in"]["type"] == "boolean"
+    # What a boolean is read from here is narrower than the media types allow,
+    # so the published description says so.
+    assert choice["properties"]["email_opt_in"]["description"] == (
+        "Whether this user wants messages from that organization, sent as true or false. A "
+        "value that says neither is refused rather than read as one of them."
+    )
 
 
 #: What every operation of this version says about a request it can give no

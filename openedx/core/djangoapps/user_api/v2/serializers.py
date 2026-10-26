@@ -1,15 +1,20 @@
 """Serializers for version 2 of the User API."""
 
+import re
 
 from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.urls import reverse
 from drf_spectacular.utils import extend_schema_field
 from edx_rest_framework_extensions.errors import ErrorResponseSerializer
 from rest_framework import serializers
+from rest_framework.fields import empty
+from rest_framework.settings import api_settings
+from rest_framework.validators import ProhibitSurrogateCharactersValidator
 
 from lms.djangoapps.verify_student.models import ManualVerification, SoftwareSecurePhotoVerification
-from openedx.core.djangoapps.user_api.models import UserPreference
+from openedx.core.djangoapps.user_api.models import UserOrgTag, UserPreference
 from openedx.core.djangoapps.user_authn.views.registration_form import contains_html, contains_url
+from openedx.core.lib.api.serializers import CourseKeyField
 
 from .paginators import UserApiPagination
 
@@ -804,3 +809,293 @@ class VerificationQuerySerializer(serializers.Serializer):  # pylint: disable=ab
             "moment are ordered by the receipt identifier, so a page is always in the same order."
         ),
     )
+
+
+#: Longest name a preference can be stored under, taken from the column that
+#: stores it.
+PREFERENCE_NAME_MAX_LENGTH = UserPreference._meta.get_field("key").max_length
+
+#: Refusal of a name longer than a preference can be stored under.
+PREFERENCE_NAME_TOO_LONG = (
+    f"A preference name is at most {PREFERENCE_NAME_MAX_LENGTH} characters long."
+)
+
+#: What a name must carry to be stored under, taken from the column that stores
+#: it. The column looks for this anywhere in the name rather than over the
+#: whole of it, so the same search is made here and the names refused are the
+#: names the store refuses.
+PREFERENCE_NAME_PATTERN = UserPreference.KEY_REGEX
+
+#: Refusal of a name nothing can be stored under at all.
+PREFERENCE_NAME_UNUSABLE = (
+    "A preference name carries at least one letter, digit, hyphen or underscore."
+)
+
+
+def why_a_name_cannot_be_stored(name):
+    """Return why nothing can be stored under this name, or nothing if something can."""
+    if len(name) > PREFERENCE_NAME_MAX_LENGTH:
+        return [PREFERENCE_NAME_TOO_LONG]
+    if not re.search(PREFERENCE_NAME_PATTERN, name):
+        return [PREFERENCE_NAME_UNUSABLE]
+    return []
+
+#: Refuses text that has no encoding of its own, which is text that can neither
+#: be stored nor be carried back in an answer.
+_REFUSE_UNENCODABLE_TEXT = ProhibitSurrogateCharactersValidator()
+
+
+def _members_at_fault(refusal):
+    """Return a refusal keyed by the body member it is about, or against the body itself."""
+    if isinstance(refusal, dict):
+        return refusal
+    return {api_settings.NON_FIELD_ERRORS_KEY: refusal}
+
+
+def _why_text_cannot_be_carried(text):
+    """Return why this text can be neither stored nor answered with, or nothing if it can."""
+    try:
+        _REFUSE_UNENCODABLE_TEXT(text)
+    except serializers.ValidationError as refused:
+        return list(refused.detail)
+    return []
+
+
+#: What the preference document of one account looks like: an object whose
+#: every member is a preference name and the text stored under it. The
+#: document has no fixed set of members -- any name an account's own features
+#: store a value under is one of them -- so the shape of its members is named
+#: here rather than declared as properties, and the fields below carry it:
+#: a body named by a field alone is published as an object of no stated shape.
+ACCOUNT_PREFERENCES_SCHEMA = {
+    "type": "object",
+    "additionalProperties": {"type": "string"},
+    "description": (
+        "Preferences of one account, as an object of preference name to stored value. Every "
+        "value is text. Which names an account carries depends on the features it uses."
+    ),
+}
+
+
+#: What a merge patch of the preference document carries: the same object as
+#: the document, except that a member may also be null.
+ACCOUNT_PREFERENCE_CHANGES_SCHEMA = {
+    "type": "object",
+    "additionalProperties": {"type": "string", "nullable": True},
+    "description": (
+        "Preferences to change, as an object of preference name to the value to store under it. "
+        "Every value is text, and a null removes the preference. Names the body leaves out are "
+        "left as they are."
+    ),
+}
+
+
+@extend_schema_field(ACCOUNT_PREFERENCES_SCHEMA)
+class AccountPreferenceDocumentField(serializers.DictField):
+    """
+    The preferences of one account, as the body they are answered in.
+
+    Every stored value is text and the names are answered sorted by name,
+    character by character and by the code of each character, rather than in
+    the order they were stored. Both are settled here so that the body cannot
+    say something the shape above does not.
+    """
+
+    child = serializers.CharField(
+        help_text="Value stored under the preference name this member is, which is always text.",
+    )
+
+    def to_representation(self, value):
+        """Return the stored preferences as the document, by name."""
+        return super().to_representation(dict(sorted(value.items())))
+
+
+class _PreferenceChangeField(_TextField):
+    """The value to store under one preference name, which a null removes instead."""
+
+    default_error_messages = {"invalid": "Send a value as text, or null to remove the preference."}
+
+
+@extend_schema_field(ACCOUNT_PREFERENCE_CHANGES_SCHEMA)
+class AccountPreferenceChangesField(serializers.DictField):
+    """
+    The members a merge patch of a preference document carries.
+
+    Each value is read as the text to store under the name carrying it, and a
+    null is read as a removal. An empty value is read rather than refused,
+    because what a preference does with one is the preference service's to
+    decide and it answers for every address storing a value.
+
+    A body that is not an object, and one that names nothing to change, are
+    refused by the field as part of reading it: only the wording of those two
+    refusals is settled here, and it is the wording this version answers with
+    for the other body read as a merge patch.
+    """
+
+    default_error_messages = {
+        "not_a_dict": "Send the preferences to change as an object.",
+        "empty": "Name at least one preference to change.",
+    }
+
+    child = _PreferenceChangeField(
+        allow_null=True,
+        allow_blank=True,
+        help_text="Value to store under the preference name this member is, or null to remove it.",
+    )
+
+
+#: Formats the preference document of one account into the body it is answered in.
+ACCOUNT_PREFERENCE_DOCUMENT = AccountPreferenceDocumentField()
+
+#: Reads the members a merge patch of a preference document carries. A body
+#: naming nothing is refused rather than read as a change that does nothing,
+#: since a caller who sent one has asked for something that did not arrive.
+ACCOUNT_PREFERENCE_CHANGES = AccountPreferenceChangesField(allow_empty=False)
+
+
+class AccountPreferencesUpdateSerializer(serializers.Serializer):  # pylint: disable=abstract-method
+    """
+    The changes a merge patch of an account's preference document carries.
+
+    The document has no fixed set of members, so the body is read member by
+    member against the field describing one change instead of against
+    declared fields. Refusals are reported under the preference name that
+    carried the value at fault, which is the member of the body a caller
+    would correct; a name that could not itself be carried back is reported
+    against the body, since the answer could not name it.
+    """
+
+    def to_internal_value(self, data):
+        """Return the changes sent, refusing a body, a name or a value that cannot be stored."""
+        names = data.keys() if isinstance(data, dict) else ()
+        unnameable = sorted({
+            message for name in names for message in _why_text_cannot_be_carried(name)
+        })
+        if unnameable:
+            raise serializers.ValidationError({api_settings.NON_FIELD_ERRORS_KEY: unnameable})
+        # A name longer than one can be stored under is reported under itself,
+        # ahead of whatever the value carried by it is refused for: the name is
+        # the part of that member a caller has to change either way.
+        too_long = {
+            name: [PREFERENCE_NAME_TOO_LONG]
+            for name in names
+            if len(name) > PREFERENCE_NAME_MAX_LENGTH
+        }
+        try:
+            changes = ACCOUNT_PREFERENCE_CHANGES.run_validation(data)
+        except serializers.ValidationError as refused:
+            raise serializers.ValidationError({
+                **_members_at_fault(refused.detail), **too_long,
+            }) from refused
+        if too_long:
+            raise serializers.ValidationError(too_long)
+        return changes
+
+
+class AccountPreferenceSerializer(serializers.Serializer):  # pylint: disable=abstract-method
+    """One preference of one account."""
+
+    key = serializers.CharField(help_text="Name the preference is stored under.")
+    value = serializers.CharField(help_text="Value stored under that name, which is always text.")
+
+
+class AccountPreferenceValueSerializer(serializers.Serializer):  # pylint: disable=abstract-method
+    """The value to store under one preference of one account."""
+
+    value = _TextField(
+        help_text=(
+            "Value to store, as text. A preference cannot hold an empty value; remove the "
+            "preference instead."
+        ),
+    )
+
+
+@extend_schema_field(serializers.CharField)
+class _CourseKeyField(CourseKeyField):
+    """
+    A course, read from and published as the text that writes its key.
+
+    The platform's field turns that text into the key object the services
+    behind these endpoints take, and describes itself to no document, so the
+    text form is named here. It reads a value of any other type by splitting
+    it, which no value but text can be, so one is refused instead.
+    """
+
+    default_error_messages = {"invalid": "Send the course key as the text that writes it."}
+
+    def to_internal_value(self, data):
+        """Return the course the text names, refusing a value that is not text."""
+        if not isinstance(data, str):
+            self.fail("invalid")
+        return super().to_internal_value(data)
+
+
+#: Longest organization name a choice can be recorded against, taken from the
+#: column the choice is recorded in.
+ORGANIZATION_MAX_LENGTH = UserOrgTag._meta.get_field("org").max_length
+
+#: Refusal of a key that names something other than a course. Some keys of
+#: other kinds are read by the platform's course key reader for historical
+#: reasons and say themselves that they name no course.
+NOT_A_COURSE = (
+    "This key names something other than a course, and the organization a choice is recorded "
+    "against is the one running a course."
+)
+
+#: Refusal of a course whose organization no choice can be recorded against.
+ORGANIZATION_TOO_LONG = (
+    f"The organization running this course is named by more than {ORGANIZATION_MAX_LENGTH} "
+    "characters, which is more than a choice can be recorded against."
+)
+
+#: What the choice itself is published and read as.
+EMAIL_OPT_IN_HELP = (
+    "Whether this user wants messages from that organization, sent as true or false. A value "
+    "that says neither is refused rather than read as one of them."
+)
+
+
+class _EmailOptInChoiceField(serializers.BooleanField):
+    """
+    A yes or no about messages, read from a boolean or from the word for one.
+
+    The value records consent, so it is read strictly: a boolean, or the text
+    ``true`` or ``false`` in any case. The further spellings a boolean field
+    admits (``1``, ``on``, ``yes``) are refused rather than read, because a
+    caller who sends one of them has not said which choice they mean and a
+    choice recorded the wrong way round is not something they can see. For the
+    same reason a body that leaves the choice out is refused instead of being
+    read as an unticked checkbox, which is what an absent form member would
+    otherwise mean.
+    """
+
+    default_empty_html = empty
+    default_error_messages = {"invalid": "Send the choice as true or false."}
+
+    def to_internal_value(self, data):
+        """Return the choice sent, refusing a value that does not say which choice it is."""
+        if isinstance(data, bool):
+            return data
+        if isinstance(data, str) and data.lower() in ("true", "false"):
+            return data.lower() == "true"
+        self.fail("invalid")
+
+
+class EmailOptInSerializer(serializers.Serializer):  # pylint: disable=abstract-method
+    """A user's choice about messages from the organization running a course."""
+
+    course_key = _CourseKeyField(
+        help_text=(
+            "Course the organization runs, which is how the organization the choice applies to "
+            "is identified."
+        ),
+    )
+    email_opt_in = _EmailOptInChoiceField(help_text=EMAIL_OPT_IN_HELP)
+
+    def validate_course_key(self, value):
+        """Return the course, refusing a key that names none and one whose organization is too long."""
+        if not value.is_course:
+            raise serializers.ValidationError(NOT_A_COURSE)
+        if len(value.org) > ORGANIZATION_MAX_LENGTH:
+            raise serializers.ValidationError(ORGANIZATION_TOO_LONG)
+        return value

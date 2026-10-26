@@ -24,6 +24,9 @@ SUPERSEDED_USER_PATHS = (
     "/api/user/v1/users/{id}/",
     "/api/user/v1/user_prefs/",
     "/api/user/v1/user_prefs/{id}/",
+    "/api/user/v1/preferences/{username}",
+    "/api/user/v1/preferences/{username}/{preference_key}",
+    "/api/user/v1/preferences/email_opt_in/",
     "/api/user/v1/preferences/{pref_key}/users/",
     "/api/user/v1/forum_roles/{name}/users/",
     "/api/user/v1/preferences/time_zones/",
@@ -31,9 +34,24 @@ SUPERSEDED_USER_PATHS = (
 
 # Ids pinned over the one a document derives, keyed by (path, method, derived id): the
 # v1 account collection keeps the id it is already published under, and the preference
-# member read drops the bare "," token its two path parameters leave.
+# member read drops the bare "," token its two path parameters leave. The read of one
+# account preference is named for what it reads rather than for the numeral its sort
+# position earns it, in each document that has not already published that numeral.
 RENAMED_OPERATION_IDS = {
     ("/api/user/v1/accounts", "GET", "api_user_v1_accounts_list"): "api_user_v1_accounts_retrieve",
+    ("/api/user/v1/preferences/{username}/{preference_key}", "GET", "v1_preferences_retrieve"): (
+        "v1_preferences_retrieve_one"
+    ),
+    (
+        "/api/user/v2/accounts/{username}/preferences/{key}/",
+        "GET",
+        "v2_accounts_preferences_retrieve",
+    ): "v2_accounts_preferences_retrieve_one",
+    (
+        "/api/user/v2/accounts/{username}/preferences/{key}/",
+        "GET",
+        "api_user_v2_accounts_preferences_retrieve",
+    ): "api_user_v2_accounts_preferences_retrieve_one",
     (
         "/api/user/v2/user_preferences/{username},{key}/",
         "GET",
@@ -91,6 +109,12 @@ def superseded_bodies():
         "properties": {"name": {"type": "string"}},
         "required": ["name"],
     }
+    # One preference is answered and stored as the bare value, which is what
+    # the address replacing it carries as a property of an object.
+    preference_value = {"type": "string"}
+    preferences_changed = {
+        204: OpenApiResponse(description="The preferences now stand as the body asked."),
+    }
     described = {
         ("/api/user/v1/accounts", "GET"): _SupersededBodies(None, {200: replacing.AccountSerializer(many=True)}),
         ("/api/user/v1/accounts/{username}", "GET"): _SupersededBodies(None, account),
@@ -120,6 +144,53 @@ def superseded_bodies():
         ),
         ("/api/user/v1/accounts/{username}/verification_status/", "GET"): _SupersededBodies(
             None, {200: replacing.VerificationStatusSerializer},
+        ),
+        ("/api/user/v1/preferences/{username}", "GET"): _SupersededBodies(
+            None,
+            {
+                200: OpenApiResponse(
+                    replacing.ACCOUNT_PREFERENCES_SCHEMA, description="The preferences this account stores.",
+                ),
+            },
+        ),
+        ("/api/user/v1/preferences/{username}", "PATCH"): _SupersededBodies(
+            {MergePatchParser.media_type: replacing.ACCOUNT_PREFERENCE_CHANGES_SCHEMA}, preferences_changed,
+        ),
+        ("/api/user/v1/preferences/{username}/{preference_key}", "GET"): _SupersededBodies(
+            None, {200: preference_value},
+        ),
+        ("/api/user/v1/preferences/{username}/{preference_key}", "PUT"): _SupersededBodies(
+            {"application/json": preference_value}, preferences_changed,
+        ),
+        ("/api/user/v1/preferences/{username}/{preference_key}", "DELETE"): _SupersededBodies(
+            None, {204: OpenApiResponse(description="The account stores no value under that name.")},
+        ),
+        # The handler reads the choice from the submitted form rather than from
+        # a body of its own, and reads each value as the text a form carries.
+        ("/api/user/v1/preferences/email_opt_in/", "POST"): _SupersededBodies(
+            {
+                "application/x-www-form-urlencoded": {
+                    "type": "object",
+                    "properties": {
+                        "course_id": {
+                            "type": "string",
+                            "description": (
+                                "Course the organization runs, which is how the organization the "
+                                "choice applies to is identified."
+                            ),
+                        },
+                        "email_opt_in": {
+                            "type": "string",
+                            "description": (
+                                "`True` if this user wants messages from that organization. Any "
+                                "other value is read as not wanting them."
+                            ),
+                        },
+                    },
+                    "required": ["course_id", "email_opt_in"],
+                },
+            },
+            {200: OpenApiResponse(description="The choice was recorded.")},
         ),
     }
     # Parameter names are spelled differently at different points of

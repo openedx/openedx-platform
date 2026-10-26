@@ -1,5 +1,6 @@
 """Views for version 2 of the User API."""
 
+import contextlib
 import logging
 
 from django.conf import settings
@@ -37,11 +38,23 @@ from openedx.core.djangoapps.user_api.accounts.permissions import CanDeactivateU
 from openedx.core.djangoapps.user_api.errors import (
     AccountUpdateError,
     AccountValidationError,
+    PreferenceUpdateError,
+    PreferenceValidationError,
+    UserAPIInternalError,
     UserNotAuthorized,
     UserNotFound,
 )
 from openedx.core.djangoapps.user_api.models import UserPreference
-from openedx.core.djangoapps.user_api.preferences.api import get_country_time_zones
+from openedx.core.djangoapps.user_api.preferences.api import (
+    delete_user_preference,
+    get_country_time_zones,
+    get_user_preference,
+    get_user_preferences,
+    set_user_preference,
+    update_email_opt_in,
+    update_user_preferences,
+)
+from openedx.core.djangolib.default_auth_classes import DefaultJwtAuthentication
 from openedx.core.lib.api.parsers import MergePatchParser
 from openedx.core.lib.api.permissions import ApiKeyHeaderPermission
 
@@ -67,19 +80,27 @@ from .selectors import (
 from .serializers import (
     ACCOUNT_DEFAULT_SORT,
     ACCOUNT_MINIMAL_FIELDS,
+    ACCOUNT_PREFERENCE_CHANGES_SCHEMA,
+    ACCOUNT_PREFERENCE_DOCUMENT,
+    ACCOUNT_PREFERENCES_SCHEMA,
     EMAIL_SEARCH_MAX_ADDRESSES,
     EMBEDDABLE_OWNER_IDS,
     FULL_VIEW,
     MINIMAL_VIEW,
     PREFERENCE_MINIMAL_FIELDS,
+    PREFERENCE_NAME_MAX_LENGTH,
     SHARED_VIEW,
     USER_MINIMAL_FIELDS,
     VERIFICATION_DEFAULT_SORT,
     AccountMinimalSerializer,
+    AccountPreferenceSerializer,
+    AccountPreferencesUpdateSerializer,
+    AccountPreferenceValueSerializer,
     AccountProjectionSerializer,
     AccountQuerySerializer,
     AccountSerializer,
     AccountUpdateSerializer,
+    EmailOptInSerializer,
     EmailSearchResultSerializer,
     EmailSearchSerializer,
     ErrorResponse,
@@ -97,6 +118,7 @@ from .serializers import (
     VerificationSerializer,
     VerificationStatusSerializer,
     full_view_requested,
+    why_a_name_cannot_be_stored,
 )
 from .view_utils import (
     RESP_UNAUTHENTICATED,
@@ -1813,3 +1835,433 @@ class IDVerificationViewSet(
             request,
             sorted(attempts, key=_verification_sort_key, reverse=ordering.startswith("-")),
         )
+
+
+_ACCOUNT_PREFERENCES_PATH_PARAM = path_param(
+    "username",
+    "Unique name of the user whose preferences are addressed. The name is read as it is stored, "
+    f"so `{OWN_ACCOUNT_IDENTIFIER}` here names an account holding that name rather than the "
+    "account of the caller making the request.",
+    USERNAME_PATTERN,
+)
+_ACCOUNT_PREFERENCE_KEY_PATH_PARAM = path_param(
+    "key",
+    "Name the preference is stored under, which is the whole segment, punctuation included. A "
+    "name carrying a slash has no address of its own, because the segment ends at the slash; "
+    "such a name is read with the whole document and removed by sending a null for it there. "
+    f"Nothing is stored under a name longer than {PREFERENCE_NAME_MAX_LENGTH} characters, nor "
+    "under one carrying no letter, digit, hyphen or underscore.",
+    rf"^{PREFERENCE_KEY_PATTERN_PARTIAL}$",
+)
+
+#: The actions of the preference resource an active administrator may call
+#: against an account other than their own.
+STAFF_READABLE_PREFERENCE_ACTIONS = ("retrieve_all", "retrieve")
+
+#: The action recorded for a request that asks what an address answers rather
+#: than for what it holds. Such a request is answered to whoever may read the
+#: address; the description of a write it carries is built behind a second
+#: check, which carries the method of that write.
+DESCRIBE_ADDRESS_ACTION = "metadata"
+
+#: Who may read the preferences of the account an address names, and who may
+#: change them. Reading somebody else's is a privilege, so the administrator
+#: half also refuses a caller whose own account is no longer active; changing
+#: them belongs to their owner alone.
+_PREFERENCE_READ_PERMISSIONS = (
+    permissions.IsAuthenticated,
+    (IsStaff & IsActiveUser) | IsAddressedUser,
+)
+_PREFERENCE_WRITE_PERMISSIONS = (permissions.IsAuthenticated, IsAddressedUser)
+
+#: The media type a change to the whole document is sent in: a merge patch, in
+#: which a null removes a name. Every other body of this resource is read in
+#: the media types the platform reads everywhere.
+_DOCUMENT_PARSERS = (MergePatchParser,)
+
+_RESP_PREFERENCE_DOCUMENT = OpenApiResponse(
+    ACCOUNT_PREFERENCES_SCHEMA, description="The preferences this account stores.",
+)
+_RESP_NO_SUCH_PREFERENCE = OpenApiResponse(
+    ErrorResponse, description="No account is held at the address given, or it stores no such preference.",
+)
+_RESP_PREFERENCE_NOT_STORED = OpenApiResponse(
+    ErrorResponse,
+    description=(
+        "The request body is not well formed in the media type it was sent in, or a preference "
+        "name is longer than one can be stored under, or a value is one a preference cannot "
+        "hold. A query parameter this endpoint does not read is refused here too."
+    ),
+)
+_RESP_PREFERENCE_SERVICE_FAILED = OpenApiResponse(
+    ErrorResponse,
+    description=(
+        "The request was correct and could not be carried out. Sending it again with something "
+        "else in it does not help; sending the same request later may."
+    ),
+)
+
+
+@extend_schema(tags=[SDK_TAG])
+class AccountPreferenceViewSet(
+    StandardizedErrorMixin,
+    RestrictedApplicationGuardMixin,
+    ReadableErrorDetailMixin,
+    AccountResourceMixin,
+    StrictQueryParametersMixin,
+    viewsets.ViewSet,
+):
+    """
+    The preferences of the one account an address names.
+
+    They are one document: an object of preference name to stored value, read
+    whole and changed with a merge patch. Each preference is also reached on
+    its own. A user reads and changes their own preferences, and a staff
+    caller whose own account is still active reads anyone's but changes
+    nobody else's.
+
+    A preference name takes the whole of its segment of the address, so the
+    names carrying punctuation that the platform's own features store under
+    can be addressed. A name carrying a slash cannot, because the segment ends
+    there; such a name is read and removed through the whole document, which
+    is also the only way one arrives.
+    """
+
+    # The preferences are read and written through the preference service
+    # rather than from a table of this app's, so there is no queryset here.
+    # Treating them as one document is what the pages that keep a user's
+    # settings read and save; this collection carries no pages of its own, and
+    # the record-shaped view of the same data across accounts is the stored
+    # preference collection of this version.
+
+    # The language a user picked is written from every page of the site, and
+    # the settings page these preferences are kept on is reached by users who
+    # have not confirmed their email address yet, whom the platform default
+    # refuses. Only that one class is replaced: the token class stays the one
+    # the platform configures, which is what records a request as having been
+    # authenticated the default way.
+    authentication_classes = (DefaultJwtAuthentication, SessionAuthenticationAllowInactiveUser)
+    permission_classes = _PREFERENCE_WRITE_PERMISSIONS
+    serializer_class = AccountPreferenceSerializer
+
+    #: Action being served, which the parsers follow. It is declared here
+    #: because it is recorded while the request is being built, which is
+    #: before the view machinery would otherwise set it.
+    action = None
+
+    def get_serializer(self, *args, **kwargs):
+        """Build the output serializer; a plain ViewSet has no generic machinery to do it."""
+        return self.serializer_class(*args, **kwargs)
+
+    def declared_permissions(self):
+        """Return the classes this address declares for the request being served."""
+        reads = self.action in STAFF_READABLE_PREFERENCE_ACTIONS or self._describes_the_address()
+        permission_classes = _PREFERENCE_READ_PERMISSIONS if reads else self.permission_classes
+        return [permission() for permission in permission_classes]
+
+    def _describes_the_address(self):
+        """
+        Return whether the request asks what the address answers rather than for what it holds.
+
+        Such a request is guarded as a read of the address, so a caller who may
+        read somebody else's preferences may also ask what the address does
+        with them. The description of a write that the answer carries is built
+        behind a second check made with the method of that write, which is
+        guarded as that write and so is left out for a caller who may not make
+        it.
+        """
+        return self.action == DESCRIBE_ADDRESS_ACTION and self.request.method == "OPTIONS"
+
+    def initialize_request(self, request, *args, **kwargs):
+        """
+        Record which action is being served before anything reads the request.
+
+        The media type a body is read in follows the action here, and the
+        parsers are chosen while the request is being built, which is before
+        the action would otherwise be recorded.
+        """
+        self.action = self.action_map.get(request.method.lower())
+        return super().initialize_request(request, *args, **kwargs)
+
+    def get_parsers(self):
+        """Return the parsers that read the body the action being served takes."""
+        if self.action == "partial_update_all":
+            return [parser() for parser in _DOCUMENT_PARSERS]
+        return super().get_parsers()
+
+    @extend_schema(
+        summary="Get the preferences of one account",
+        description=(
+            "Returns every preference stored for this user, as an object of preference name to "
+            "stored value. A user may read their own preferences, and a staff caller may read "
+            "anyone's. An account that stores none is answered with an empty object. The names "
+            "come back sorted by name, character by character and by the code of each character, "
+            "so a name beginning with a digit or a capital letter comes before one beginning in "
+            "lower case."
+        ),
+        parameters=[_ACCOUNT_PREFERENCES_PATH_PARAM],
+        responses={
+            200: _RESP_PREFERENCE_DOCUMENT,
+            400: _RESP_BAD_REQUEST,
+            401: RESP_UNAUTHENTICATED,
+            403: _RESP_FORBIDDEN,
+            404: _RESP_NO_SUCH_ACCOUNT,
+            406: RESP_NOT_ACCEPTABLE,
+            500: _RESP_PREFERENCE_SERVICE_FAILED,
+        },
+    )
+    def retrieve_all(self, request, username):
+        """Return every preference stored for the account the address names."""
+        with self._service_failures_named(username):
+            stored = get_user_preferences(request.user, username=username)
+        return Response(ACCOUNT_PREFERENCE_DOCUMENT.to_representation(stored))
+
+    @extend_schema(
+        summary="Change the preferences of one account",
+        description=(
+            "Changes the preferences the body names and leaves the rest as they are. The body is "
+            "a merge patch: a value is the text to store under that name, and a null removes the "
+            "name. A user may change only their own preferences. Nothing is stored unless every "
+            "name in the body can be, and a value that cannot be stored is reported under the "
+            "name that carried it."
+        ),
+        parameters=[_ACCOUNT_PREFERENCES_PATH_PARAM],
+        request={MergePatchParser.media_type: ACCOUNT_PREFERENCE_CHANGES_SCHEMA},
+        responses={
+            204: OpenApiResponse(description="The preferences now stand as the body asked."),
+            400: _RESP_PREFERENCE_NOT_STORED,
+            401: RESP_UNAUTHENTICATED,
+            403: _RESP_FORBIDDEN,
+            406: RESP_NOT_ACCEPTABLE,
+            415: RESP_UNREADABLE_BODY,
+            500: _RESP_PREFERENCE_SERVICE_FAILED,
+        },
+    )
+    def partial_update_all(self, request, username):
+        """Store the preferences the body names and remove the ones it sends a null for."""
+        changes = AccountPreferencesUpdateSerializer(data=request.data)
+        changes.is_valid(raise_exception=True)
+        with self._service_failures_named(username):
+            with transaction.atomic():
+                update_user_preferences(request.user, changes.validated_data, user=username)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @extend_schema(
+        summary="Get one preference of one account",
+        description=(
+            "Returns one preference of this user, as the name it is stored under and the value "
+            "stored there. A user may read their own preferences, and a staff caller may read "
+            "anyone's. A name the account stores no value under is absent."
+        ),
+        parameters=[_ACCOUNT_PREFERENCES_PATH_PARAM, _ACCOUNT_PREFERENCE_KEY_PATH_PARAM],
+        responses={
+            200: AccountPreferenceSerializer,
+            400: _RESP_BAD_REQUEST,
+            401: RESP_UNAUTHENTICATED,
+            403: _RESP_FORBIDDEN,
+            404: _RESP_NO_SUCH_PREFERENCE,
+            406: RESP_NOT_ACCEPTABLE,
+            500: _RESP_PREFERENCE_SERVICE_FAILED,
+        },
+    )
+    def retrieve(self, request, username, key):
+        """Return one preference of the account the address names."""
+        with self._service_failures_named(username):
+            value = get_user_preference(request.user, key, username=username)
+        if value is None:
+            raise NotFound
+        return Response(self.get_serializer({"key": key, "value": value}).data)
+
+    @extend_schema(
+        summary="Store one preference of one account",
+        description=(
+            "Stores a value under one preference of this user, whether or not the name already "
+            "holds one. A user may change only their own preferences. A value a preference "
+            "cannot hold is refused under `value`, and a preference cannot hold an empty value. "
+            "A name nothing can be stored under, whether because it is longer than the store "
+            "holds or because it carries none of the characters a name is made of, is refused "
+            "under `key`, which is the part of the address that carried it."
+        ),
+        parameters=[_ACCOUNT_PREFERENCES_PATH_PARAM, _ACCOUNT_PREFERENCE_KEY_PATH_PARAM],
+        request=AccountPreferenceValueSerializer,
+        responses={
+            204: OpenApiResponse(description="The preference now holds this value."),
+            400: _RESP_PREFERENCE_NOT_STORED,
+            401: RESP_UNAUTHENTICATED,
+            403: _RESP_FORBIDDEN,
+            406: RESP_NOT_ACCEPTABLE,
+            415: RESP_UNREADABLE_BODY,
+            500: _RESP_PREFERENCE_SERVICE_FAILED,
+        },
+    )
+    def update(self, request, username, key):
+        """Store a value under one preference of the account the address names."""
+        self._refuse_a_name_nothing_is_stored_under(key)
+        sent = AccountPreferenceValueSerializer(data=request.data)
+        sent.is_valid(raise_exception=True)
+        with self._service_failures_named(username, carried_by="value"):
+            set_user_preference(
+                request.user, key, sent.validated_data["value"], username=username,
+            )
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @extend_schema(
+        summary="Remove one preference of one account",
+        description=(
+            "Removes one preference of this user, so the name is no longer stored. A user may "
+            "remove only their own preferences. A name the account stores no value under is "
+            "absent."
+        ),
+        parameters=[_ACCOUNT_PREFERENCES_PATH_PARAM, _ACCOUNT_PREFERENCE_KEY_PATH_PARAM],
+        responses={
+            204: OpenApiResponse(description="The account stores no value under that name."),
+            400: _RESP_BAD_REQUEST,
+            401: RESP_UNAUTHENTICATED,
+            403: _RESP_FORBIDDEN,
+            404: _RESP_NO_SUCH_PREFERENCE,
+            406: RESP_NOT_ACCEPTABLE,
+            500: _RESP_PREFERENCE_SERVICE_FAILED,
+        },
+    )
+    def destroy(self, request, username, key):
+        """Remove one preference of the account the address names."""
+        with self._service_failures_named(username):
+            removed = delete_user_preference(request.user, key, username=username)
+        if not removed:
+            raise NotFound
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @staticmethod
+    def _refuse_a_name_nothing_is_stored_under(key):
+        """
+        Refuse a name no value can be stored under, as the part of the address that carried it.
+
+        The name arrives in the address rather than in the body, so a name the
+        store refuses is reported under the address member that carried it: a
+        caller cannot mend it by changing the value they sent. Which names are
+        held is the store's own to decide, so what it refuses is read from the
+        column that keeps them rather than from a list kept here.
+        """
+        refused = why_a_name_cannot_be_stored(key)
+        if refused:
+            raise ValidationError({"key": refused})
+
+    @contextlib.contextmanager
+    def _service_failures_named(self, username, carried_by=None):
+        """
+        Answer a failure of the preference service in the body this API answers with.
+
+        A value the preference refuses is reported under the member of the
+        body that carried it, which is the preference name in a document and
+        the one property of a single change. Work that was asked for correctly
+        and failed anyway is not the caller's to correct, so what it says about
+        itself is logged rather than published.
+        """
+        try:
+            yield
+        except UserNotAuthorized as exc:
+            raise PermissionDenied from exc
+        except UserNotFound as exc:
+            raise NotFound from exc
+        except PreferenceValidationError as exc:
+            raise self._refused_preferences(username, exc, carried_by) from exc
+        except (PreferenceUpdateError, UserAPIInternalError) as exc:
+            log.error("Preferences of %r could not be served: %s", username, exc)
+            raise APIException("The request could not be carried out.") from exc
+
+    def _refused_preferences(self, username, error, carried_by=None):
+        """Return the refusal naming the member of the body that carried each value refused."""
+        log.info("Preferences of %r not changed: %r", username, error.preference_errors)
+        refusals = {}
+        for key, reported in error.preference_errors.items():
+            message = reported.get("user_message") if isinstance(reported, dict) else None
+            refusals[carried_by or key] = [message or "This value cannot be stored here."]
+        return ValidationError(refusals)
+
+
+_RESP_SESSION_WITHOUT_ITS_TOKEN = OpenApiResponse(
+    ErrorResponse,
+    description=(
+        "The request was made with a session cookie and carried none of the request token the "
+        "site hands out with it, so the site cannot tell that the request came from a page it "
+        "served. Sending that token with the session, or a signed token in place of the "
+        "session, is answered."
+    ),
+)
+
+
+@extend_schema(tags=[SDK_TAG])
+@extend_schema_view(
+    create=extend_schema(
+        summary="Record whether to send a user an organization's messages",
+        description=(
+            "Records whether the caller wants messages from the organization running the course "
+            "named in the body. The choice is kept per organization, so it covers every course "
+            "that organization runs, and it is always the caller's own. A user whose account "
+            "needs a guardian's consent is recorded as not wanting them, whatever the body says."
+        ),
+        request=EmailOptInSerializer,
+        responses={
+            204: OpenApiResponse(description="The choice was recorded."),
+            400: _RESP_UNUSABLE_BODY,
+            401: RESP_UNAUTHENTICATED,
+            403: _RESP_SESSION_WITHOUT_ITS_TOKEN,
+            404: OpenApiResponse(
+                ErrorResponse,
+                description="The account of the caller carries no profile to read a consent rule from.",
+            ),
+            406: RESP_NOT_ACCEPTABLE,
+            415: RESP_UNREADABLE_BODY,
+            500: _RESP_PREFERENCE_SERVICE_FAILED,
+        },
+    ),
+)
+class EmailOptInViewSet(
+    StandardizedErrorMixin,
+    RestrictedApplicationGuardMixin,
+    ReadableErrorDetailMixin,
+    StrictQueryParametersMixin,
+    viewsets.ViewSet,
+):
+    """
+    The choices users have made about the messages organizations send them.
+
+    A choice belongs to the user who made it, so it is recorded against the
+    caller and no username is named anywhere in the request. The organization
+    it applies to is the one running the course the body names. The choice is
+    held per organization rather than per course, so naming two courses of one
+    organization records one choice.
+    """
+
+    # Naming the course rather than the organization is how the pages a user
+    # makes this choice on identify the organization they are making it about.
+
+    # The choice is made while enrolling, which a user reaches before they have
+    # confirmed their email address, and the platform default refuses a session
+    # belonging to such an account. Only that one class is replaced: the token
+    # class stays the one the platform configures, which is what records a
+    # request as having been authenticated the default way.
+    authentication_classes = (DefaultJwtAuthentication, SessionAuthenticationAllowInactiveUser)
+    permission_classes = (permissions.IsAuthenticated,)
+    serializer_class = EmailOptInSerializer
+
+    def get_serializer(self, *args, **kwargs):
+        """Build the serializer; a plain ViewSet has no generic machinery to do it."""
+        return self.serializer_class(*args, **kwargs)
+
+    def create(self, request):
+        """Record whether the caller wants messages from the organization running this course."""
+        choice = self.get_serializer(data=request.data)
+        choice.is_valid(raise_exception=True)
+        try:
+            update_email_opt_in(
+                request.user,
+                choice.validated_data["course_key"].org,
+                choice.validated_data["email_opt_in"],
+            )
+        except UserNotFound as exc:
+            raise NotFound from exc
+        except UserAPIInternalError as exc:
+            log.error("Email choice of %r not recorded: %s", request.user.username, exc)
+            raise APIException("The choice could not be recorded.") from exc
+        return Response(status=status.HTTP_204_NO_CONTENT)

@@ -4,7 +4,7 @@ import re
 
 import pytest
 from django.core.exceptions import ImproperlyConfigured
-from django.urls import Resolver404, get_resolver, resolve, reverse
+from django.urls import NoReverseMatch, Resolver404, get_resolver, resolve, reverse
 from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
 from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
 from rest_framework.request import Request
@@ -16,6 +16,7 @@ from openedx.core.djangoapps.profile_images.v2.views import ProfileImageView
 from openedx.core.djangoapps.user_api.v2 import urls as v2_urls
 from openedx.core.djangoapps.user_api.v2.views import (
     AccountDeactivationView,
+    AccountPreferenceViewSet,
     AccountViewSet,
     IDVerificationStatusView,
     IDVerificationViewSet,
@@ -29,6 +30,7 @@ V2_VIEW_MODULE = "openedx.core.djangoapps.user_api.v2.views"
 PROFILE_IMAGE_VIEW_MODULE = "openedx.core.djangoapps.profile_images.v2.views"
 V1_VIEW_MODULE = "openedx.core.djangoapps.user_api.views"
 V1_ACCOUNT_VIEW_MODULE = "openedx.core.djangoapps.user_api.accounts.views"
+V1_PREFERENCE_VIEW_MODULE = "openedx.core.djangoapps.user_api.preferences.views"
 V2_NAMESPACE = "user_v2"
 
 #: A route name is lower case, starts with a letter and separates words with
@@ -44,6 +46,15 @@ EXPECTED_ADDRESSES = {
         {"username": "alice"},
         "/api/user/v2/accounts/alice/deactivation/",
     ),
+    "user_v2:account_preference_list": (
+        {"username": "alice"},
+        "/api/user/v2/accounts/alice/preferences/",
+    ),
+    "user_v2:account_preference_detail": (
+        {"username": "alice", "key": "time_zone"},
+        "/api/user/v2/accounts/alice/preferences/time_zone/",
+    ),
+    "user_v2:email_opt_in_list": ({}, "/api/user/v2/email_opt_ins/"),
     "user_v2:account_profile_image": (
         {"username": "alice"},
         "/api/user/v2/accounts/alice/profile_image/",
@@ -144,6 +155,9 @@ class UrlLiteralTests(APITestCase):
             ("/api/user/v2/accounts/alice/", "account_detail"),
             ("/api/user/v2/email_searches/", "email_search_list"),
             ("/api/user/v2/accounts/alice/deactivation/", "account_deactivation"),
+            ("/api/user/v2/accounts/alice/preferences/", "account_preference_list"),
+            ("/api/user/v2/accounts/alice/preferences/time_zone/", "account_preference_detail"),
+            ("/api/user/v2/email_opt_ins/", "email_opt_in_list"),
             ("/api/user/v2/accounts/alice/profile_image/", "account_profile_image"),
             ("/api/user/v2/accounts/alice/verification_status/", "account_verification_status"),
             ("/api/user/v2/accounts/alice/verifications/", "account_verification_list"),
@@ -195,7 +209,16 @@ class UrlLiteralTests(APITestCase):
             "/api/user/v2/accounts/alice/verifications/": (
                 "IDVerificationViewSet", {"get": "list"},
             ),
+            "/api/user/v2/accounts/alice/preferences/": (
+                "AccountPreferenceViewSet",
+                {"get": "retrieve_all", "patch": "partial_update_all"},
+            ),
+            "/api/user/v2/accounts/alice/preferences/time_zone/": (
+                "AccountPreferenceViewSet",
+                {"get": "retrieve", "put": "update", "delete": "destroy"},
+            ),
             "/api/user/v2/email_searches/": ("EmailSearchViewSet", {"post": "create"}),
+            "/api/user/v2/email_opt_ins/": ("EmailOptInViewSet", {"post": "create"}),
             "/api/user/v2/name_changes/": ("NameChangeViewSet", {"post": "create"}),
             "/api/user/v2/name_changes/alice/confirmations/": (
                 "NameChangeViewSet", {"post": "confirmations"},
@@ -306,6 +329,73 @@ class UrlLiteralTests(APITestCase):
         with pytest.raises(Resolver404):
             resolve("/api/user/v2/user_preferences/42/")
 
+    def test_a_name_carrying_a_slash_is_not_addressed_as_a_preference(self):
+        """A name is read from one segment, which the slash ends, so no member route serves it."""
+        for key in ("a/b", "x/", "/x", "a//b"):
+            with pytest.raises(Resolver404):
+                resolve(f"/api/user/v2/accounts/ada.lovelace/preferences/{key}/")
+            with pytest.raises(NoReverseMatch):
+                reverse(
+                    "user_v2:account_preference_detail",
+                    kwargs={"username": "ada.lovelace", "key": key},
+                )
+
+    def test_every_name_the_segment_can_carry_can_be_addressed(self):
+        """A preference name is free-form text, so the key half takes the whole segment."""
+        for key in ("pref-lang", "visibility.bio", "visibility.", "account_privacy", "a,b"):
+            address = f"/api/user/v2/accounts/ada.lovelace/preferences/{key}/"
+            match = resolve(address)
+            assert view_identity(match.func) == (V2_VIEW_MODULE, "AccountPreferenceViewSet"), key
+            assert match.kwargs == {"username": "ada.lovelace", "key": key}, key
+            assert reverse(
+                "user_v2:account_preference_detail",
+                kwargs={"username": "ada.lovelace", "key": key},
+            ) == address, key
+
+    def test_a_name_that_is_a_collection_of_this_version_is_read_as_a_preference_name(self):
+        """The collections stand at the top of this version, so no preference name shadows one."""
+        for key in ("email_opt_in", "email_opt_ins", "time_zones"):
+            match = resolve(f"/api/user/v2/accounts/alice/preferences/{key}/")
+            assert view_identity(match.func) == (V2_VIEW_MODULE, "AccountPreferenceViewSet"), key
+            assert match.kwargs == {"username": "alice", "key": key}, key
+        for address, name in (
+            ("/api/user/v2/email_opt_ins/", "email_opt_in_list"),
+            ("/api/user/v2/time_zones/", "time_zone_list"),
+        ):
+            assert resolve(address).url_name == name, address
+
+    def test_the_preference_addresses_are_served_only_with_their_slash(self):
+        """Without it no route of this version matches them."""
+        for address in (
+            "/api/user/v2/accounts/alice/preferences",
+            "/api/user/v2/accounts/alice/preferences/time_zone",
+        ):
+            with pytest.raises(Resolver404):
+                resolve(address)
+
+    def test_the_name_in_a_preference_address_is_read_as_a_stored_one(self):
+        """``me`` is a username here, and is routed as one rather than resolved to the caller."""
+        for address, kwargs in (
+            ("/api/user/v2/accounts/me/preferences/", {"username": "me"}),
+            (
+                "/api/user/v2/accounts/me/preferences/time_zone/",
+                {"username": "me", "key": "time_zone"},
+            ),
+        ):
+            match = resolve(address)
+            assert view_identity(match.func) == (V2_VIEW_MODULE, "AccountPreferenceViewSet"), address
+            assert match.kwargs == kwargs, address
+
+    def test_the_preference_viewset_serves_both_of_its_addresses(self):
+        """One class holds every action of this resource, over the two addresses it has."""
+        collection = resolve("/api/user/v2/accounts/alice/preferences/")
+        member = resolve("/api/user/v2/accounts/alice/preferences/time_zone/")
+        assert collection.func.cls is AccountPreferenceViewSet
+        assert member.func.cls is AccountPreferenceViewSet
+        assert set(routed_actions(collection.func)) | set(routed_actions(member.func)) == {
+            "get", "patch", "put", "delete",
+        }
+
 
 @skip_unless_lms
 class RouteShapeTests(APITestCase):
@@ -318,9 +408,12 @@ class RouteShapeTests(APITestCase):
             "account_deactivation",
             "account_detail",
             "account_list",
+            "account_preference_detail",
+            "account_preference_list",
             "account_profile_image",
             "account_verification_list",
             "account_verification_status",
+            "email_opt_in_list",
             "email_search_list",
             "name_change_confirmation",
             "name_change_list",
@@ -334,6 +427,16 @@ class RouteShapeTests(APITestCase):
             assert SNAKE_CASE_NAME.match(pattern.name), pattern.name
             assert str(pattern.pattern).endswith("/$"), pattern.name
 
+    def test_every_pattern_is_anchored_where_the_mount_leaves_off(self):
+        """
+        An address is matched against what the mount leaves of the path, by searching it.
+
+        A pattern that does not say where it starts therefore answers any
+        address that merely ends in it, so every one of them says so.
+        """
+        for pattern in v2_urls.urlpatterns:
+            assert str(pattern.pattern).startswith("^"), (pattern.name, str(pattern.pattern))
+
     def test_the_router_route_that_is_replaced_has_to_exist(self):
         """Dropping a route the router does not generate is refused instead of passing silently."""
         routes = v2_urls.router.urls
@@ -344,6 +447,7 @@ class RouteShapeTests(APITestCase):
             "account_detail",
             "account_verification_list",
             "email_search_list",
+            "email_opt_in_list",
             "name_change_list",
             "name_change_confirmation",
             "user_list",
@@ -450,6 +554,38 @@ class LegacyAddressTests(APITestCase):
             "/api/user/v1/accounts/alice/verifications/"
         )
         assert reverse("preferences_api", kwargs={"username": "alice"}) == "/api/user/v1/preferences/alice"
+
+    def test_version_one_preference_addresses_still_reach_the_version_one_views(self):
+        expected = {
+            "/api/user/v1/preferences/alice": (V1_PREFERENCE_VIEW_MODULE, "PreferencesView"),
+            "/api/user/v1/preferences/alice/time_zone": (
+                V1_PREFERENCE_VIEW_MODULE, "PreferencesDetailView",
+            ),
+            "/api/user/v1/preferences/email_opt_in/": (
+                V1_VIEW_MODULE, "UpdateEmailOptInPreference",
+            ),
+        }
+        for address, identity in expected.items():
+            assert view_identity(resolve(address).func) == identity, address
+
+    def test_version_one_preference_url_names_still_reverse(self):
+        assert reverse(
+            "preferences_detail_api", kwargs={"username": "alice", "preference_key": "time_zone"},
+        ) == "/api/user/v1/preferences/alice/time_zone"
+        assert reverse("preferences_email_opt_in") == "/api/user/v1/preferences/email_opt_in/"
+        assert reverse("preferences_email_opt_in_legacy") == (
+            "/user_api/v1/preferences/email_opt_in/"
+        )
+
+    def test_the_unversioned_opt_in_address_reaches_the_version_one_view_as_before(self):
+        """Both of its addresses are served by one view, and this version adds no third."""
+        versioned = resolve("/api/user/v1/preferences/email_opt_in/")
+        unversioned = resolve("/user_api/v1/preferences/email_opt_in/")
+        assert view_identity(unversioned.func) == view_identity(versioned.func)
+        assert view_identity(unversioned.func) == (V1_VIEW_MODULE, "UpdateEmailOptInPreference")
+        assert served_methods(unversioned.func) == served_methods(versioned.func) == {
+            "POST", "OPTIONS",
+        }
 
     def test_unversioned_twins_still_resolve(self):
         match = resolve("/user_api/v1/users/")
