@@ -27,7 +27,9 @@ from openedx.core.djangoapps.user_api.v2.view_utils import (
     RESP_UNAUTHENTICATED,
     RESP_UNREADABLE_BODY,
     SDK_TAG,
+    USERNAME_PATTERN,
     StrictQueryParametersMixin,
+    path_param,
 )
 from openedx.core.lib.api.parsers import TypedFileUploadParser
 
@@ -37,16 +39,12 @@ from .serializers import IMAGE_UPLOAD_REQUEST, UPLOAD_MEDIA_TYPES, ProfileImageU
 
 log = logging.getLogger(__name__)
 
-_USERNAME_PATH_PARAM = OpenApiParameter(
-    name="username",
-    description=(
-        "Unique name of the user whose image is addressed. The name is read as it is stored, so "
-        "`me` here names an account holding that name rather than the account of the caller "
-        "making the request."
-    ),
-    required=True,
-    location=OpenApiParameter.PATH,
-    type=str,
+_USERNAME_PATH_PARAM = path_param(
+    "username",
+    "Unique name of the user whose image is addressed. The name is read as it is stored, so "
+    "`me` here names an account holding that name rather than the account of the caller "
+    "making the request.",
+    USERNAME_PATTERN,
 )
 
 _RESP_ANOTHER_USERS_IMAGE = OpenApiResponse(

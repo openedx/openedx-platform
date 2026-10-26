@@ -254,6 +254,43 @@ class UserListViewTests(UserApiV2TestCase):
             response, expected_status=status.HTTP_400_BAD_REQUEST, expected_type_slug="validation",
         )
 
+    def test_filter_by_username(self):
+        self.login(self.admin)
+        response = self.client.get(self.url, {"username": "bob", "page_size": 100})
+        assert self.usernames_in(response) == ["bob"]
+
+    def test_several_names_select_the_entries_of_each(self):
+        """
+        The value is a list of names, as it is on the account collection.
+
+        A caller that learned the list on one collection of this version and
+        sent it to another was answered with an empty page, which reads as a
+        page of the accounts asked for rather than as a value this collection
+        does not take.
+        """
+        self.login(self.admin)
+        response = self.client.get(self.url, {"username": "alice,bob", "page_size": 100})
+        assert response.status_code == status.HTTP_200_OK
+        assert self.usernames_in(response) == ["alice", "bob"]
+        assert response.data["count"] == 2
+
+    def test_a_name_in_the_list_that_no_account_holds_is_left_out_of_the_page(self):
+        self.login(self.admin)
+        response = self.client.get(self.url, {"username": "alice,nobody", "page_size": 100})
+        assert self.usernames_in(response) == ["alice"]
+        assert response.data["count"] == 1
+
+    def test_a_position_in_the_list_that_carries_nothing_names_nothing(self):
+        self.login(self.admin)
+        response = self.client.get(self.url, {"username": ",alice,,bob,", "page_size": 100})
+        assert self.usernames_in(response) == ["alice", "bob"]
+
+    def test_an_empty_name_narrows_nothing(self):
+        self.login(self.admin)
+        response = self.client.get(self.url, {"username": "", "page_size": 100})
+        assert response.status_code == status.HTTP_200_OK
+        assert self.usernames_in(response) == ["admin-caller", "alice", "bob", "learner-caller"]
+
     def test_filter_by_email(self):
         self.login(self.admin)
         response = self.client.get(self.url, {"email": "bob@example.com"})
@@ -715,6 +752,25 @@ class UserPreferenceListViewTests(UserApiV2TestCase):
         response = self.client.get(self.url, {"username": "bob", "page_size": 100})
         assert self.keys_in(response) == [("bob", "time_zone")]
 
+    def test_several_names_select_the_preferences_of_each(self):
+        """The value is a list of names, as it is on the sibling collections of this version."""
+        self.login(self.admin)
+        response = self.client.get(self.url, {"username": "alice,bob", "page_size": 100})
+        assert response.status_code == status.HTTP_200_OK
+        assert self.keys_in(response) == [("alice", "pref-lang"), ("bob", "time_zone")]
+        assert response.data["count"] == 2
+
+    def test_a_name_in_the_list_that_no_account_holds_is_left_out_of_the_page(self):
+        self.login(self.admin)
+        response = self.client.get(self.url, {"username": "alice,nobody", "page_size": 100})
+        assert self.keys_in(response) == [("alice", "pref-lang")]
+
+    def test_an_empty_name_narrows_nothing(self):
+        self.login(self.admin)
+        response = self.client.get(self.url, {"username": "", "page_size": 100})
+        assert response.status_code == status.HTTP_200_OK
+        assert self.keys_in(response) == [("alice", "pref-lang"), ("bob", "time_zone")]
+
     def test_the_owner_id_the_earlier_list_took_is_refused_rather_than_ignored(self):
         """A caller that ported by changing the version segment is told, not quietly unfiltered."""
         self.login(self.admin)
@@ -866,6 +922,40 @@ class UserPreferenceDetailViewTests(UserApiV2TestCase):
             response = self.client.head(self.url_for("alice", "pref-lang"))
         assert response.status_code == status.HTTP_200_OK
         assert write_queries(captured.captured_queries) == []
+
+
+@skip_unless_lms
+class NameSelectorTests(UserApiV2TestCase):
+    """``?username=`` on the collections of this version that select accounts by name."""
+
+    def test_every_collection_that_selects_accounts_by_name_reads_one_list(self):
+        """
+        One value names the same accounts wherever it is sent.
+
+        The member address of the stored preferences already reads a comma as
+        the separator between the two names that identify a preference, so a
+        collection of this version that read the comma as part of a username
+        would be answering a value its own addresses spell differently.
+        """
+        self.login(self.admin)
+        selection = {"username": "alice,bob", "page_size": 100}
+        pages = {
+            name: self.client.get(reverse(f"user_v2:{name}"), selection)
+            for name in ("user_list", "user_preference_list", "account_list")
+        }
+        assert {name: page.status_code for name, page in pages.items()} == {
+            "user_list": status.HTTP_200_OK,
+            "user_preference_list": status.HTTP_200_OK,
+            "account_list": status.HTTP_200_OK,
+        }
+        assert {
+            name: sorted({row["username"] for row in page.data["results"]})
+            for name, page in pages.items()
+        } == {
+            "user_list": ["alice", "bob"],
+            "user_preference_list": ["alice", "bob"],
+            "account_list": ["alice", "bob"],
+        }
 
 
 @skip_unless_lms

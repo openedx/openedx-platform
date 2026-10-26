@@ -47,8 +47,27 @@ SUPERSEDED_USER_PATHS = (
 # carries there -- so that one is pinned. The key carries the id the generator
 # derives, so an entry applies only to the document that derives it; a key no
 # document derives would never be reached.
+#
+# A stored preference is addressed by the pair that identifies it, and the
+# comma between the two parameters is left behind as a token of its own, so
+# every document derives an id for that read carrying a bare separator where
+# the rest of the resource carries a word. That read is named here in each
+# document through the id that document derives, which leaves the collection
+# read and the member read of the resource under the same leading tokens
+# wherever they are published; neither document has published either name, so
+# nothing a client imports is taken away.
 RENAMED_OPERATION_IDS = {
     ("/api/user/v1/accounts", "GET", "api_user_v1_accounts_list"): "api_user_v1_accounts_retrieve",
+    (
+        "/api/user/v2/user_preferences/{username},{key}/",
+        "GET",
+        "v2_user_preferences_,_retrieve",
+    ): "v2_user_preferences_retrieve",
+    (
+        "/api/user/v2/user_preferences/{username},{key}/",
+        "GET",
+        "api_user_v2_user_preferences_,_retrieve",
+    ): "api_user_v2_user_preferences_retrieve",
 }
 
 PUBLISHED_PATH_PATTERN = re.compile(r"^/api/enrollment/v\d+/")

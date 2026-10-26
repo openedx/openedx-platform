@@ -9,13 +9,7 @@ from django.db.models import F
 from django.http import Http404
 from django_filters.rest_framework import DjangoFilterBackend
 from django_ratelimit.core import is_ratelimited
-from drf_spectacular.utils import (
-    OpenApiExample,
-    OpenApiParameter,
-    OpenApiResponse,
-    extend_schema,
-    extend_schema_view,
-)
+from drf_spectacular.utils import OpenApiExample, OpenApiResponse, extend_schema, extend_schema_view
 from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
 from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
 from edx_rest_framework_extensions.mixins import StandardizedErrorMixin
@@ -99,7 +93,11 @@ from .view_utils import (
     RESP_UNREADABLE_BODY,
     SDK_TAG,
     USER_TAG,
+    USERNAME_PATTERN,
     StrictQueryParametersMixin,
+    names_in,
+    path_param,
+    query_param,
 )
 
 log = logging.getLogger(__name__)
@@ -121,43 +119,17 @@ PREFERENCE_KEY_PATTERN_PARTIAL = "[^/]+"
 #: identity has been accepted.
 APPROVED_STATUS = "approved"
 
-
-def _query_param(name, description, **kwargs):
-    """Build an optional query parameter for the published schema."""
-    return OpenApiParameter(
-        name=name,
-        description=description,
-        required=False,
-        location=OpenApiParameter.QUERY,
-        **kwargs,
-    )
-
-
-def _path_param(name, description, pattern):
-    """Build a path parameter for the published schema, carrying what its route matches."""
-    return OpenApiParameter(
-        name=name,
-        description=description,
-        required=True,
-        location=OpenApiParameter.PATH,
-        type=str,
-        pattern=pattern,
-    )
-
-
-_USERNAME_PATTERN = rf"^{settings.USERNAME_REGEX_PARTIAL}$"
-
-_USER_PATH_PARAM = _path_param(
+_USER_PATH_PARAM = path_param(
     "username",
     "Unique name of the user whose directory entry is returned.",
-    _USERNAME_PATTERN,
+    USERNAME_PATTERN,
 )
-_PREFERENCE_USERNAME_PATH_PARAM = _path_param(
+_PREFERENCE_USERNAME_PATH_PARAM = path_param(
     "username",
     "Username of the user the preference belongs to: the part of the address before the comma.",
-    _USERNAME_PATTERN,
+    USERNAME_PATTERN,
 )
-_PREFERENCE_KEY_PATH_PARAM = _path_param(
+_PREFERENCE_KEY_PATH_PARAM = path_param(
     "key",
     "Name the preference is stored under: the part of the address after the comma.",
     rf"^{PREFERENCE_KEY_PATTERN_PARTIAL}$",
@@ -185,7 +157,7 @@ VIEW_PARAM = "view"
 FIELDS_PARAM = "fields"
 RESPONSE_SHAPING_PARAMS = (VIEW_PARAM, FIELDS_PARAM)
 
-_FIELDS_PARAM = _query_param(
+_FIELDS_PARAM = query_param(
     FIELDS_PARAM,
     "Comma-separated list of top-level field names to keep in each returned object. "
     "A name the response cannot carry is refused.",
@@ -195,13 +167,13 @@ _FIELDS_PARAM = _query_param(
 USER_PRESETS = (MINIMAL_VIEW,)
 PREFERENCE_PRESETS = (FULL_VIEW, MINIMAL_VIEW)
 
-_MINIMAL_VIEW_PARAM = _query_param(
+_MINIMAL_VIEW_PARAM = query_param(
     VIEW_PARAM,
     "Response preset. `minimal` reduces each user to its identifying fields "
     "(`id`, `username`, `email`). Omit it to receive the full entry.",
     enum=list(USER_PRESETS),
 )
-_PREFERENCE_VIEW_PARAM = _query_param(
+_PREFERENCE_VIEW_PARAM = query_param(
     VIEW_PARAM,
     "Response preset. `full` embeds the owning user's whole directory entry in each "
     "preference; `minimal` returns only `username`, `key` and `value`. Omit it to "
@@ -212,7 +184,7 @@ _PREFERENCE_VIEW_PARAM = _query_param(
 
 def _ordering_param(sort_fields, default):
     """Build the sort parameter of a list, naming the fields it accepts."""
-    return _query_param(
+    return query_param(
         "ordering",
         "Fields to sort by, in order of precedence, each optionally prefixed with `-` to sort "
         "descending. A field that is not listed here is refused.",
@@ -283,21 +255,21 @@ _USER_SHAPES = ResponseShapes(
     ],
 )
 
-_ACCOUNT_PATH_PARAM = _path_param(
+_ACCOUNT_PATH_PARAM = path_param(
     "username",
     "Unique name of the user whose account is addressed. "
     f"`{OWN_ACCOUNT_IDENTIFIER}` names the account of the caller, so an account holding that "
     "name is read through the collection, with `username=` naming it.",
-    _USERNAME_PATTERN,
+    USERNAME_PATTERN,
 )
-_DEACTIVATION_PATH_PARAM = _path_param(
+_DEACTIVATION_PATH_PARAM = path_param(
     "username",
     "Unique name of the user whose account is deactivated. The name is read as it is stored, "
     f"`{OWN_ACCOUNT_IDENTIFIER}` included: this action disables the account the address names, "
     "never the account of the caller making the request.",
-    _USERNAME_PATTERN,
+    USERNAME_PATTERN,
 )
-_ACCOUNT_VIEW_PARAM = _query_param(
+_ACCOUNT_VIEW_PARAM = query_param(
     VIEW_PARAM,
     "Response preset. `minimal` reduces the account to the properties that identify its owner; "
     "`shared` returns only the properties the owner shares with everybody, even to a caller who "
@@ -642,7 +614,6 @@ class UserViewSet(
             "identified by the pair, which the address carries as the username, a comma and "
             "the key, for example `alice,time_zone`."
         ),
-        operation_id="v2_user_preferences_retrieve",
         parameters=[
             _PREFERENCE_USERNAME_PATH_PARAM,
             _PREFERENCE_KEY_PATH_PARAM,
@@ -1091,7 +1062,7 @@ class AccountViewSet(
         """
         usernames = selection.get("username")
         if usernames:
-            return [name for name in usernames.strip(",").split(",") if name]
+            return names_in(usernames)
         email = selection.get("email")
         if email:
             return self._usernames_holding_email(email)
@@ -1213,6 +1184,24 @@ class AccountDeactivationView(
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+class _SearchedAccountsMixin:
+    """
+    The accounts a search names, before it is narrowed to the ones a caller may see.
+
+    A view's scoping policy is applied on top of the selection the classes
+    resolved after it answer with, so the unnarrowed selection is declared
+    here rather than on the view, where it would stand in front of the layer
+    that narrows it and leave the policy with nothing to do.
+    """
+
+    #: The addresses asked about, held for as long as one request is served.
+    searched_emails = ()
+
+    def get_queryset(self):
+        """Return the accounts holding the addresses this request asked about."""
+        return accounts_holding_emails(self.searched_emails)
+
+
 @extend_schema(tags=[SDK_TAG])
 @extend_schema_view(
     create=extend_schema(
@@ -1242,6 +1231,8 @@ class EmailSearchViewSet(
     CatalogedRequestErrorsMixin,
     StrictQueryParametersMixin,
     IterablePaginationMixin,
+    ScopedQuerysetMixin,
+    _SearchedAccountsMixin,
     viewsets.ViewSet,
 ):
     """
@@ -1264,6 +1255,11 @@ class EmailSearchViewSet(
         CanGetAccountInfo,
         IsStaffOrAbsent,
     )
+    # A platform administrator may read every account the addresses match, so
+    # the policy keeps the selection whole; a narrower policy can replace it
+    # without touching the search below, and the accounts come from the same
+    # table the other collections of this version narrow.
+    scoping_policy = FullScopePolicy()
     parser_classes = (JSONParser,)
     serializer_class = EmailSearchResultSerializer
     pagination_class = UserApiPagination
@@ -1276,15 +1272,16 @@ class EmailSearchViewSet(
         """Return a page of the accounts holding the addresses the body carries."""
         search = EmailSearchSerializer(data=request.data)
         search.is_valid(raise_exception=True)
-        return self.paginate_iterable(request, accounts_holding_emails(search.validated_data["emails"]))
+        self.searched_emails = search.validated_data["emails"]
+        return self.paginate_iterable(request, self.get_queryset())
 
 
-_NAME_CHANGE_PATH_PARAM = _path_param(
+_NAME_CHANGE_PATH_PARAM = path_param(
     "username",
     "Unique name of the user whose requested change is confirmed. The name is read as it is "
     f"stored, so `{OWN_ACCOUNT_IDENTIFIER}` here names an account holding that name rather than "
     "the account of the caller making the request.",
-    _USERNAME_PATTERN,
+    USERNAME_PATTERN,
 )
 
 
@@ -1403,12 +1400,12 @@ class NameChangeViewSet(
             raise NotFound from exc
 
 
-_VERIFICATION_PATH_PARAM = _path_param(
+_VERIFICATION_PATH_PARAM = path_param(
     "username",
     "Unique name of the user whose identity verification is addressed. The name is read as it is "
     f"stored, so `{OWN_ACCOUNT_IDENTIFIER}` here names an account holding that name rather than "
     "the account of the caller making the request.",
-    _USERNAME_PATTERN,
+    USERNAME_PATTERN,
 )
 
 

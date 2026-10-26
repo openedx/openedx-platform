@@ -10,6 +10,7 @@ from django.contrib.auth.models import User  # pylint: disable=imported-auth-use
 from django.db import DatabaseError, connection
 from django.test.utils import CaptureQueriesContext, override_settings
 from django.urls import reverse
+from edx_rest_framework_extensions.scoping import FullScopePolicy
 from edx_rest_framework_extensions.testing import assert_error_envelope
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -29,6 +30,7 @@ from openedx.core.djangoapps.user_api.models import RetirementState, UserRetirem
 from openedx.core.djangoapps.user_api.tests.factories import UserPreferenceFactory
 from openedx.core.djangoapps.user_api.v2.permissions import ACCOUNT_CONTACT_SELECTORS
 from openedx.core.djangoapps.user_api.v2.serializers import ACCOUNT_DEFAULT_SORT, AccountQuerySerializer
+from openedx.core.djangoapps.user_api.v2.views import EmailSearchViewSet
 from openedx.core.djangoapps.user_authn.views.password_reset import PasswordResetFormNoActive
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 
@@ -1538,6 +1540,38 @@ class EmailSearchTests(AccountApiV2TestCase):
         response = self.search(["owner-caller@example.com", "nobody@example.com"])
         assert [row["username"] for row in response.data["results"]] == ["owner-caller"]
         assert response.data["count"] == 1
+
+    def test_the_page_carries_the_accounts_the_visibility_layer_leaves(self):
+        """
+        The page is answered from a selection the view's policy has narrowed.
+
+        The policy this view declares keeps every matched account, and the
+        only caller admitted may read them all, so what is held here is the
+        layer rather than a narrowing: a policy that keeps a row back is one
+        the page is answered under, not one the search reads past. The rows
+        come from the same table the collections of this version narrow, so
+        the same policy applies to the search as to them.
+        """
+        class _WithoutTheOtherAccount:
+            """Keeps one account back, standing for a policy narrower than the declared one."""
+
+            def scope(self, queryset, subject):  # pylint: disable=unused-argument
+                """Return the accounts of this selection other than the other caller's."""
+                return queryset.exclude(username="other-caller")
+
+        self.login(self.staff)
+        with mock.patch.object(EmailSearchViewSet, "scoping_policy", _WithoutTheOtherAccount()):
+            response = self.search(["owner-caller@example.com", "other-caller@example.com"])
+        assert response.status_code == status.HTTP_200_OK
+        assert [row["username"] for row in response.data["results"]] == ["owner-caller"]
+        assert response.data["count"] == 1
+
+    def test_the_search_declares_which_of_the_accounts_it_finds_a_caller_may_see(self):
+        """Every account the addresses match is answered, because that is what the policy keeps."""
+        assert isinstance(EmailSearchViewSet.scoping_policy, FullScopePolicy)
+        self.login(self.staff)
+        response = self.search(["owner-caller@example.com", "other-caller@example.com"])
+        assert [row["username"] for row in response.data["results"]] == ["other-caller", "owner-caller"]
 
     def test_an_empty_search_finds_nothing(self):
         self.login(self.staff)

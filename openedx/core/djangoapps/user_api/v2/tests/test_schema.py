@@ -55,7 +55,9 @@ EMAIL_SEARCH_PATH = "/api/user/v2/email_searches/"
 NAME_CHANGE_PATH = "/api/user/v2/name_changes/"
 NAME_CHANGE_CONFIRMATION_PATH = "/api/user/v2/name_changes/{username}/confirmations/"
 
+USER_LIST_PATH = "/api/user/v2/users/"
 USER_MEMBER_PATH = "/api/user/v2/users/{username}/"
+PREFERENCE_LIST_PATH = "/api/user/v2/user_preferences/"
 PREFERENCE_MEMBER_PATH = "/api/user/v2/user_preferences/{username},{key}/"
 TIME_ZONE_LIST_PATH = "/api/user/v2/time_zones/"
 
@@ -64,8 +66,8 @@ TIME_ZONE_LIST_PATH = "/api/user/v2/time_zones/"
 LIST_PATHS = {
     ACCOUNT_LIST_PATH,
     VERIFICATION_LIST_PATH,
-    "/api/user/v2/users/",
-    "/api/user/v2/user_preferences/",
+    USER_LIST_PATH,
+    PREFERENCE_LIST_PATH,
     TIME_ZONE_LIST_PATH,
 }
 MEMBER_PATHS = {
@@ -536,6 +538,37 @@ def test_preference_list_publishes_its_filters(schema):
 
 
 @skip_unless_lms
+def test_every_collection_that_selects_accounts_by_name_publishes_the_same_kind_of_value(schema):
+    """
+    A value learned on one of these collections selects the same accounts on the others.
+
+    Each of the three reads a list of names, and a name no account holds is
+    left out of the page rather than refused, so the published description
+    opens with the same sentence and the value is published as the text that
+    carries the list.
+    """
+    published = {
+        path: next(
+            parameter for parameter in operation["parameters"] if parameter["name"] == "username"
+        )
+        for path, _method, operation in operations(schema)
+        if path in {ACCOUNT_LIST_PATH, USER_LIST_PATH, PREFERENCE_LIST_PATH}
+    }
+    assert {path: parameter["schema"] for path, parameter in published.items()} == {
+        ACCOUNT_LIST_PATH: {"type": "string"},
+        USER_LIST_PATH: {"type": "string"},
+        PREFERENCE_LIST_PATH: {"type": "string"},
+    }
+    assert {
+        path: parameter["description"].split(".")[0] for path, parameter in published.items()
+    } == {
+        ACCOUNT_LIST_PATH: "Comma-separated usernames",
+        USER_LIST_PATH: "Comma-separated usernames",
+        PREFERENCE_LIST_PATH: "Comma-separated usernames",
+    }
+
+
+@skip_unless_lms
 def test_enum_post_processing_runs_before_the_deprecation_hook():
     hooks = settings.SPECTACULAR_SETTINGS["POSTPROCESSING_HOOKS"]
     assert hooks[0] == "drf_spectacular.hooks.postprocess_schema_enums"
@@ -846,6 +879,44 @@ def test_member_addresses_describe_the_parts_they_are_built_from(schema):
                 "Name the preference is stored under: the part of the address after the comma."
             ),
         },
+    }
+
+
+#: Every part of an address of this version that carries a username. A client
+#: built from the document holds a value to what the route matches before it
+#: sends a request, so an address left off this list is one whose caller learns
+#: from a refusal what every sibling address refuses for it.
+USERNAME_ADDRESS_PARTS = (
+    ACCOUNT_MEMBER_PATH,
+    ACCOUNT_DEACTIVATION_PATH,
+    PROFILE_IMAGE_PATH,
+    VERIFICATION_STATUS_PATH,
+    VERIFICATION_LIST_PATH,
+    NAME_CHANGE_CONFIRMATION_PATH,
+    USER_MEMBER_PATH,
+    PREFERENCE_MEMBER_PATH,
+)
+
+
+@skip_unless_lms
+def test_every_part_of_an_address_that_carries_a_username_publishes_what_the_route_matches(schema):
+    """
+    One resource does not admit a name at one of its addresses and refuse it at the next.
+
+    The addresses of this version are matched on the same spelling of a
+    username, whichever app serves them, so each of them is published with
+    that spelling and a client refuses the same names the routes do.
+    """
+    published = {
+        (path, parameter["name"]): parameter["schema"]
+        for path, _method, operation in operations(schema)
+        if path in VERSION_TWO_PATHS
+        for parameter in operation.get("parameters", [])
+        if parameter["in"] == "path" and parameter["name"] == "username"
+    }
+    assert published == {
+        (path, "username"): {"type": "string", "pattern": rf"^{settings.USERNAME_REGEX_PARTIAL}$"}
+        for path in USERNAME_ADDRESS_PARTS
     }
 
 
@@ -1725,4 +1796,35 @@ def test_the_addresses_this_phase_adds_publish_no_other_query_parameters(schema)
         PROFILE_IMAGE_PATH: [],
         VERIFICATION_STATUS_PATH: [],
         VERIFICATION_LIST_PATH: ["ordering", "page", "page_size"],
+    }
+
+
+@skip_unless_lms
+def test_the_stored_preference_reads_are_named_alike_in_every_document_that_publishes_them(schema):
+    """
+    The collection read and the member read of this resource keep one prefix wherever published.
+
+    A client takes the module it writes an operation into from the leading
+    tokens of that operation's name, so a document naming the two reads of one
+    resource differently splits the resource across two modules. The documents
+    derive different names for the member read, because one trims the area off
+    the front of every path and the other trims nothing, so it is named in
+    each of them through the name that document derives.
+    """
+    service_wide = service_wide_schema()
+    assert {
+        (path, method): operation["operationId"]
+        for path, method, operation in operations(schema)
+        if path in {PREFERENCE_LIST_PATH, PREFERENCE_MEMBER_PATH}
+    } == {
+        (PREFERENCE_LIST_PATH, "get"): "v2_user_preferences_list",
+        (PREFERENCE_MEMBER_PATH, "get"): "v2_user_preferences_retrieve",
+    }
+    assert {
+        (path, method): operation["operationId"]
+        for path, method, operation in operations(service_wide)
+        if path in {PREFERENCE_LIST_PATH, PREFERENCE_MEMBER_PATH}
+    } == {
+        (PREFERENCE_LIST_PATH, "get"): "api_user_v2_user_preferences_list",
+        (PREFERENCE_MEMBER_PATH, "get"): "api_user_v2_user_preferences_retrieve",
     }

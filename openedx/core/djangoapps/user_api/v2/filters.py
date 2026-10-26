@@ -13,6 +13,8 @@ from rest_framework.filters import OrderingFilter
 
 from openedx.core.djangoapps.user_api.models import UserPreference
 
+from .view_utils import names_in
+
 log = logging.getLogger(__name__)
 
 
@@ -96,7 +98,13 @@ class UserFilterSet(filters.FilterSet):
     course has defined matches no users and is not created.
     """
 
-    username = filters.CharFilter(help_text="Return the user with exactly this username.")
+    username = filters.CharFilter(
+        method="filter_usernames",
+        help_text=(
+            "Comma-separated usernames. Only these users are returned, and a name no user holds "
+            "is left out of the page rather than refused."
+        ),
+    )
     email = filters.CharFilter(help_text="Return the user with exactly this email address.")
     is_active = StrictBooleanFilter(
         help_text="Return only users whose account is active, or only inactive ones. true or false.",
@@ -132,6 +140,10 @@ class UserFilterSet(filters.FilterSet):
         if course_key and not forum_role:
             raise ValidationError({"forum_role": ["This parameter is required when course_key is supplied."]})
         return super().filter_queryset(queryset)
+
+    def filter_usernames(self, queryset, name, value):
+        """Keep the users the value names, which it carries as a comma-separated list."""
+        return queryset.filter(**{f"{name}__in": names_in(value)})
 
     def filter_preference_key(self, queryset, name, value):  # pylint: disable=unused-argument
         """Keep users who have stored a preference under ``value``."""
@@ -170,9 +182,17 @@ class UserPreferenceFilterSet(filters.FilterSet):
     key = filters.CharFilter(help_text="Return only preferences stored under exactly this key.")
     username = filters.CharFilter(
         field_name="user__username",
-        help_text="Return only preferences belonging to this user.",
+        method="filter_usernames",
+        help_text=(
+            "Comma-separated usernames. Only these users' preferences are returned, and a name "
+            "no user holds is left out of the page rather than refused."
+        ),
     )
 
     class Meta:
         model = UserPreference
         fields = ("key", "username")
+
+    def filter_usernames(self, queryset, name, value):
+        """Keep the preferences of the users the value names, read as a comma-separated list."""
+        return queryset.filter(**{f"{name}__in": names_in(value)})

@@ -236,6 +236,13 @@ def _user_routes(schema_class):
         ),
         path("api/user/v1/users/", view.as_view({"get": "list"})),
         path("api/user/v2/users/", view.as_view({"get": "list"})),
+        # A stored preference is addressed by its owner and its name together,
+        # and the comma between them is a token of the address like any other,
+        # so the generator leaves it in the name it derives.
+        path(
+            "api/user/v2/user_preferences/<str:username>,<str:key>/",
+            view.as_view({"get": "retrieve"}),
+        ),
         path("api/enrollment/v1/enrollments/", view.as_view({"get": "list"})),
         # Outside ``/api/``, so a document that derives its prefix from the
         # routes it covers derives the one the service-wide document has.
@@ -264,7 +271,13 @@ class UserOperationIdTest(SimpleTestCase):
     """User addresses keep the names the generator derives; only their tag group is chosen here."""
 
     def test_the_service_wide_document_keeps_every_name_the_generator_derives(self):
-        """Each of these is the name that document already published, and a client imports it by name."""
+        """
+        Each of these is the name that document publishes, and a client imports it by name.
+
+        An address that document has published for years keeps the name it
+        derived there, numeral and all; an address of a version it has not
+        published yet carries the name pinned for it.
+        """
         assert _named_operations(LmsAutoSchema, get_api_docs_settings()) == {
             "/api/user/v1/accounts": ("api_user_v1_accounts_retrieve", ("api",)),
             "/api/user/v1/accounts/{username}": ("api_user_v1_accounts_retrieve_2", ("api",)),
@@ -273,6 +286,8 @@ class UserOperationIdTest(SimpleTestCase):
                 ("api_user_v1_preferences_retrieve_2", ("api",)),
             "/api/user/v1/users/": ("api_user_v1_users_list", ("api",)),
             "/api/user/v2/users/": ("api_user_v2_users_list", ("api",)),
+            "/api/user/v2/user_preferences/{username},{key}/":
+                ("api_user_v2_user_preferences_retrieve", ("api",)),
             "/api/enrollment/v1/enrollments/": ("api_enrollment_v1_enrollments_list", ("api",)),
             "/user_api/v1/preferences/{username}": ("user_api_v1_preferences_retrieve", ("user_api",)),
         }
@@ -295,6 +310,9 @@ class UserOperationIdTest(SimpleTestCase):
             "/api/user/v1/preferences/{username}/{preference_key}": ("v1_preferences_retrieve_2", ("user",)),
             "/api/user/v1/users/": ("v1_users_list", ("user",)),
             "/api/user/v2/users/": ("v2_users_list", ("user",)),
+            "/api/user/v2/user_preferences/{username},{key}/": (
+                "v2_user_preferences_retrieve", ("user",),
+            ),
             "/api/enrollment/v1/enrollments/": ("v1_enrollments_list", ("v1",)),
             "/user_api/v1/preferences/{username}": ("user_api_v1_preferences_retrieve", ("user_api",)),
         }

@@ -2,7 +2,8 @@
 
 import logging
 
-from drf_spectacular.utils import OpenApiResponse
+from django.conf import settings
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse
 from rest_framework.exceptions import ValidationError
 from rest_framework.settings import api_settings
 
@@ -20,6 +21,48 @@ SDK_TAG = "openedx-platform-sdk"
 #: from it, since ``URL_FORMAT_OVERRIDE`` is unset and JSON is the only
 #: renderer, and a caller that sends it anyway is answered rather than refused.
 FORMAT_PARAM = "format"
+
+#: The whole of a username, as every route of this version matches one. A
+#: client built from the published document holds a name to this shape before
+#: it sends a request, so each address that carries a name is described with
+#: it and no address of one resource admits a name another refuses.
+USERNAME_PATTERN = rf"^{settings.USERNAME_REGEX_PARTIAL}$"
+
+
+def query_param(name, description, **kwargs):
+    """Build an optional query parameter for the published schema."""
+    return OpenApiParameter(
+        name=name,
+        description=description,
+        required=False,
+        location=OpenApiParameter.QUERY,
+        **kwargs,
+    )
+
+
+def path_param(name, description, pattern):
+    """Build a path parameter for the published schema, carrying what its route matches."""
+    return OpenApiParameter(
+        name=name,
+        description=description,
+        required=True,
+        location=OpenApiParameter.PATH,
+        type=str,
+        pattern=pattern,
+    )
+
+
+def names_in(value):
+    """
+    Return the names a comma-separated value carries, in the order they were sent.
+
+    A position carrying nothing names nothing, so an empty one is left out
+    rather than read as a name no account holds. Every collection of this
+    version that selects rows by name reads its value through here, so the
+    same value selects the same rows wherever it is sent.
+    """
+    return [name for name in value.strip(",").split(",") if name]
+
 
 RESP_UNAUTHENTICATED = OpenApiResponse(ErrorResponse, description="The requester is not authenticated.")
 RESP_UNREADABLE_BODY = OpenApiResponse(
