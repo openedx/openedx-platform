@@ -324,8 +324,8 @@ class CustomPagesAccessLegacyPermissionsTest(_AccessMixin, SharedModuleStoreTest
         self.assert_access(UserFactory(is_staff=True), action, OK)
 
     @ddt.data(*ACTIONS)
-    def test_a_superuser_who_is_not_global_staff_is_allowed(self, action):
-        """The role checks consult the policy engine even here, and it admits superusers, as on v0."""
+    def test_a_superuser_is_allowed(self, action):
+        """Saving a superuser also makes it global staff, so it is allowed, as on v0."""
         self.assert_access(UserFactory(is_superuser=True, is_staff=False), action, OK)
 
     def test_a_version_only_course_key_is_404(self):
