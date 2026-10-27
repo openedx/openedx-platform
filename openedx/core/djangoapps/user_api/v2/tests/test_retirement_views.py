@@ -652,6 +652,219 @@ class RetirementListTests(_AccessMatrixMixin, RetirementApiTestCase):
         assert response.status_code == status.HTTP_200_OK
 
 
+class _NarrowingPolicy:
+    """
+    A visibility policy that keeps the rows named and records what it was given.
+
+    It stands in for a deployment's own policy, so that the tests below read
+    what an address answers with when the policy narrows rather than when it
+    leaves the selection whole.
+    """
+
+    def __init__(self, column, *keep):
+        self.column = column
+        self.keep = keep
+        #: The caller each application was made for, in order.
+        self.subjects = []
+        #: The values the selection held each time, before it was narrowed.
+        self.offered = []
+
+    def scope(self, queryset, subject):
+        """Return the rows named, recording the caller and what was on offer."""
+        self.subjects.append(subject)
+        self.offered.append(sorted(queryset.values_list(self.column, flat=True)))
+        return queryset.filter(**{f"{self.column}__in": self.keep})
+
+
+@skip_unless_lms
+class RetirementVisibilityTests(RetirementApiTestCase):
+    """
+    Which retirements a caller may see is decided by the view's own visibility policy.
+
+    The policy this deployment runs keeps the queue whole, because every
+    caller these addresses admit holds the capability to work the whole
+    pipeline. A deployment that replaces it with one that narrows needs it
+    applied where the selection is read, so the policy is replaced here with
+    one that keeps two of three retirements and the page is read.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.url = reverse("user_v2:retirement_list")
+        self.pending = self.retirement_in("PENDING")
+        self.locking = self.retirement_in("LOCKING_ACCOUNT")
+        self.hidden = self.retirement_in("COMPLETE")
+        self.policy = _NarrowingPolicy(
+            "original_username", self.pending.original_username, self.locking.original_username,
+        )
+
+    def names_in(self, response):
+        """Return the registered names the page carries."""
+        return sorted(row["original_username"] for row in response.data["results"])
+
+    def test_the_page_carries_the_retirements_the_policy_keeps_and_no_others(self):
+        self.login("worker")
+        with mock.patch.object(RetirementViewSet, "scoping_policy", self.policy):
+            response = self.client.get(self.url, {"page_size": 100})
+        assert response.status_code == status.HTTP_200_OK
+        assert self.names_in(response) == sorted(
+            [self.pending.original_username, self.locking.original_username],
+        )
+        assert response.data["count"] == 2
+
+    def test_the_policy_is_given_the_caller_and_every_retirement_held(self):
+        self.login("worker")
+        with mock.patch.object(RetirementViewSet, "scoping_policy", self.policy):
+            self.client.get(self.url, {"page_size": 100})
+        assert [subject.username for subject in self.policy.subjects] == [WORKER_USERNAME]
+        assert self.policy.offered == [sorted(
+            [
+                self.pending.original_username,
+                self.locking.original_username,
+                self.hidden.original_username,
+            ],
+        )]
+
+    def test_what_the_policy_leaves_out_is_left_out_of_a_narrowed_page_too(self):
+        """A filter narrows what the policy left; it cannot put a row back in."""
+        self.login("worker")
+        with mock.patch.object(RetirementViewSet, "scoping_policy", self.policy):
+            response = self.client.get(self.url, {"state": "COMPLETE", "page_size": 100})
+        assert self.names_in(response) == []
+        assert response.data["count"] == 0
+
+    def test_the_policy_this_deployment_runs_keeps_the_whole_queue(self):
+        self.login("worker")
+        response = self.client.get(self.url, {"page_size": 100})
+        assert self.names_in(response) == sorted(
+            [
+                self.pending.original_username,
+                self.locking.original_username,
+                self.hidden.original_username,
+            ],
+        )
+
+
+@skip_unless_lms
+class PartnerReportVisibilityTests(RetirementApiTestCase):
+    """The entries a caller may take from the partner-report queue are narrowed the same way."""
+
+    def setUp(self):
+        super().setUp()
+        self.url = reverse("user_v2:retirement_partner_report_list")
+        self.taken = self.queued(self.subject)
+        self.hidden = self.queued(self.learner)
+        self.policy = _NarrowingPolicy("original_username", self.subject.username)
+
+    def queued(self, user):
+        """Return a partner report entry waiting to be taken, for this user."""
+        return UserRetirementPartnerReportingStatus.objects.create(
+            user=user,
+            original_username=user.username,
+            original_email=user.email,
+            original_name=user.profile.name,
+        )
+
+    def test_only_the_entries_the_policy_keeps_are_answered_with(self):
+        self.login("worker")
+        with mock.patch.object(RetirementPartnerReportViewSet, "scoping_policy", self.policy):
+            response = self.client.post(self.url, {}, format="json")
+        assert response.status_code == status.HTTP_200_OK
+        assert [entry["original_username"] for entry in response.data] == [self.subject.username]
+
+    def test_an_entry_the_policy_leaves_out_is_not_marked_as_taken(self):
+        self.login("worker")
+        with mock.patch.object(RetirementPartnerReportViewSet, "scoping_policy", self.policy):
+            self.client.post(self.url, {}, format="json")
+        marked = set(
+            UserRetirementPartnerReportingStatus.objects
+            .filter(is_being_processed=True)
+            .values_list("original_username", flat=True),
+        )
+        assert marked == {self.subject.username}
+
+    def test_the_policy_is_given_the_caller_and_the_entries_nobody_has_taken(self):
+        self.login("worker")
+        with mock.patch.object(RetirementPartnerReportViewSet, "scoping_policy", self.policy):
+            self.client.post(self.url, {}, format="json")
+        assert [subject.username for subject in self.policy.subjects] == [WORKER_USERNAME]
+        assert self.policy.offered == [
+            sorted([self.subject.username, self.learner.username]),
+        ]
+
+    def test_the_policy_this_deployment_runs_leaves_every_queued_entry_takeable(self):
+        self.login("worker")
+        response = self.client.post(self.url, {}, format="json")
+        assert sorted(entry["original_username"] for entry in response.data) == sorted(
+            [self.subject.username, self.learner.username],
+        )
+
+
+@skip_unless_lms
+class RetirementQueueOrderTests(RetirementApiTestCase):
+    """
+    The queue is read in a total order, so that paging through it sees each retirement once.
+
+    Retirements that compare equal on the column a caller sorts by are left
+    in whatever order the database answers with, and two requests need not
+    agree on it, so the order the queue is worked in is appended to the sort
+    asked for. That order is the retirement's own identifier, which rises as
+    retirements are requested: it settles ties without being distinguishable
+    from an unsettled read of rows stored in that order, so what these tests
+    read is the order the database is asked for.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.url = reverse("user_v2:retirement_list")
+        day = datetime.datetime(2026, 3, 1, tzinfo=ZoneInfo("UTC"))
+        self.shared = [self.retirement_in("PENDING", created=day) for _ in range(3)]
+        self.login("worker")
+
+    def ordering_asked_for(self, **params):
+        """Return the order the page of retirements was read in."""
+        with CaptureQueriesContext(connection) as captured:
+            response = self.client.get(self.url, params)
+        assert response.status_code == status.HTTP_200_OK, response.content
+        table = UserRetirementStatus._meta.db_table
+        reads = [
+            query["sql"] for query in captured.captured_queries
+            if query["sql"].startswith("SELECT") and "ORDER BY" in query["sql"]
+            and connection.ops.quote_name(table) in query["sql"]
+        ]
+        assert len(reads) == 1, reads
+        return reads[0].split("ORDER BY")[1].split("LIMIT")[0].strip()
+
+    def column(self, name, direction="ASC"):
+        """Return the one column of the retirement table, as a sort names it."""
+        quoted = connection.ops.quote_name
+        table = UserRetirementStatus._meta.db_table
+        return f"{quoted(table)}.{quoted(name)} {direction}"
+
+    def test_a_sort_a_caller_asks_for_is_completed_by_the_order_the_queue_is_worked_in(self):
+        assert self.ordering_asked_for(ordering="created", page_size=100) == ", ".join(
+            [self.column("created"), self.column("id")],
+        )
+
+    def test_the_order_the_queue_is_worked_in_is_added_to_a_reversed_sort_as_well(self):
+        assert self.ordering_asked_for(ordering="-created", page_size=100) == ", ".join(
+            [self.column("created", "DESC"), self.column("id")],
+        )
+
+    def test_a_page_nobody_asked_a_sort_for_is_read_in_the_order_the_queue_is_worked_in(self):
+        """The order a page falls back to is the tie-break, so it is not asked for twice."""
+        assert self.ordering_asked_for(page_size=100) == self.column("id")
+
+    def test_paging_through_retirements_requested_at_one_moment_sees_each_once(self):
+        listed = []
+        for page in (1, 2, 3):
+            response = self.client.get(
+                self.url, {"ordering": "created", "page_size": 1, "page": page},
+            )
+            listed.extend(row["original_username"] for row in response.data["results"])
+        assert listed == [retirement.original_username for retirement in self.shared]
+
+
 @skip_unless_lms
 class RetirementDetailTests(_AccessMatrixMixin, RetirementApiTestCase):
     """GET /api/user/v2/retirements/{username}/"""
@@ -938,6 +1151,66 @@ class RetirementUpdateTests(_AccessMatrixMixin, RetirementApiTestCase):
         assert envelope["errors"]["view"] == [
             f"No such query parameter. Send any of: {WRITE_QUERY_PARAMS}.",
         ]
+
+
+@skip_unless_lms
+class MovedRetirementRecordTests(RetirementApiTestCase):
+    """
+    A record that has moved names the step it stands at and the step it came from.
+
+    They are two different steps once a retirement has moved, and a caller
+    driving the pipeline reads the second to tell what has already been done,
+    so the record is read here after a move rather than before one, when both
+    name the step the retirement was requested at.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.retirement = self.retirement_in("LOCKING_ACCOUNT", user=self.subject)
+        self.detail_url = reverse("user_v2:retirement_detail", kwargs={"username": "subject"})
+        self.list_url = reverse("user_v2:retirement_list")
+        self.login("worker")
+        moved = self.client.patch(
+            self.detail_url,
+            {"new_state": "LOCKING_COMPLETE", "response": "the account was locked"},
+            format="json",
+        )
+        assert moved.status_code == status.HTTP_204_NO_CONTENT, moved.content
+        self.retirement.refresh_from_db()
+
+    def test_the_record_names_the_step_it_stands_at_and_the_one_it_came_from(self):
+        response = self.client.get(self.detail_url)
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["current_state"] == "LOCKING_COMPLETE"
+        assert response.data["last_state"] == "LOCKING_ACCOUNT"
+
+    def test_the_row_in_the_queue_names_both_steps_as_the_record_does(self):
+        response = self.client.get(self.list_url, {"page_size": 100})
+        row = next(
+            row for row in response.data["results"]
+            if row["original_username"] == self.retirement.original_username
+        )
+        assert row["current_state"] == "LOCKING_COMPLETE"
+        assert row["last_state"] == "LOCKING_ACCOUNT"
+
+    def test_the_step_a_record_came_from_can_be_asked_for_on_its_own(self):
+        response = self.client.get(self.detail_url, {"fields": "last_state"})
+        assert response.data == {"last_state": "LOCKING_ACCOUNT"}
+
+    def test_the_minimal_record_names_the_step_it_stands_at(self):
+        """What a reader of the queue needs is where the retirement is now."""
+        response = self.client.get(self.detail_url, {"view": "minimal"})
+        assert response.data["current_state"] == "LOCKING_COMPLETE"
+        assert "last_state" not in response.data
+
+    def test_the_queue_is_narrowed_by_the_step_a_retirement_stands_at(self):
+        """A retirement is found under the step it is at, not under the one it left."""
+        by_current = self.client.get(self.list_url, {"state": "LOCKING_COMPLETE", "page_size": 100})
+        assert [row["original_username"] for row in by_current.data["results"]] == [
+            self.retirement.original_username,
+        ]
+        by_previous = self.client.get(self.list_url, {"state": "LOCKING_ACCOUNT", "page_size": 100})
+        assert by_previous.data["results"] == []
 
 
 @skip_unless_lms

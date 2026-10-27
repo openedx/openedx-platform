@@ -1122,10 +1122,27 @@ ERASURE_CORE_SCOPE = "lms_core"
 ERASURE_MISC_SCOPE = "lms_misc"
 ERASURE_SCOPES = (ERASURE_CORE_SCOPE, ERASURE_MISC_SCOPE)
 
+#: Each erasure scope with what it clears, as the request body offers them.
+#: The pair is declared here rather than inside the field so that the name the
+#: published set of choices is kept under can be configured from the same
+#: values: a set of choices is matched to its configured name by its values
+#: and their descriptions together, and a configured name that does not match
+#: has no effect.
+ERASURE_SCOPE_CHOICES = (
+    (ERASURE_CORE_SCOPE, "Profile, images, certificates, entitlements and the account itself."),
+    (ERASURE_MISC_SCOPE, "Wiki revisions, enrollment audits, credit and API access records."),
+)
+
 #: What a batch operation reports about each name it was given.
 OUTCOME_DELETED = "deleted"
 OUTCOME_ALREADY_ABSENT = "already_absent"
 BATCH_OUTCOMES = (OUTCOME_DELETED, OUTCOME_ALREADY_ABSENT)
+
+#: Each outcome with what it means, offered and named as the erasure scopes are.
+BATCH_OUTCOME_CHOICES = (
+    (OUTCOME_DELETED, "The record was deleted by this request."),
+    (OUTCOME_ALREADY_ABSENT, "There was no such record, so this request left nothing to do."),
+)
 
 #: The largest number of names one batch may carry, which is the number of
 #: rows a page of any collection of this version holds.
@@ -1290,10 +1307,7 @@ class RetirementErasureSerializer(serializers.Serializer):  # pylint: disable=ab
     """
 
     scope = serializers.ChoiceField(
-        choices=[
-            (ERASURE_CORE_SCOPE, "Profile, images, certificates, entitlements and the account itself."),
-            (ERASURE_MISC_SCOPE, "Wiki revisions, enrollment audits, credit and API access records."),
-        ],
+        choices=ERASURE_SCOPE_CHOICES,
         help_text=(
             f"`{ERASURE_CORE_SCOPE}` erases the account's own data: its profile, its images, the "
             "name on its certificates and entitlement notes, and the username and address on the "
@@ -1332,10 +1346,7 @@ class RetirementBatchResultSerializer(serializers.Serializer):  # pylint: disabl
 
     username = serializers.CharField(help_text="The name this result is about, as it was given.")
     outcome = serializers.ChoiceField(
-        choices=[
-            (OUTCOME_DELETED, "The record was deleted by this request."),
-            (OUTCOME_ALREADY_ABSENT, "There was no such record, so this request left nothing to do."),
-        ],
+        choices=BATCH_OUTCOME_CHOICES,
         help_text=(
             f"`{OUTCOME_DELETED}` where this request deleted the record, and "
             f"`{OUTCOME_ALREADY_ABSENT}` where there was none to delete, which is what a repeat "

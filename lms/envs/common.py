@@ -2222,6 +2222,16 @@ SPECTACULAR_SETTINGS = {
     'APPEND_COMPONENTS': {
         'schemas': {'PatchedUserRetirementStatus': PATCHED_USER_RETIREMENT_STATUS},
     },
+    # A set of choices is published as its own model, named after the field
+    # carrying it while one field of the service carries that name alone. The
+    # moment a second field of the same name carries a different set, both are
+    # renamed after the models they sit in, so the plain name disappears and a
+    # client generated from the document loses that class. The names below are
+    # fixed here so that the sets keep them whatever else the service grows.
+    'ENUM_NAME_OVERRIDES': {
+        'ScopeEnum': 'openedx.core.djangoapps.user_api.v2.serializers.ERASURE_SCOPE_CHOICES',
+        'OutcomeEnum': 'openedx.core.djangoapps.user_api.v2.serializers.BATCH_OUTCOME_CHOICES',
+    },
     # Stripped from each path to derive its tags and operationId, so changing
     # it renames every operationId. Paths themselves are emitted in full.
     'SCHEMA_PATH_PREFIX': r'/api/(enrollment|user)',

@@ -62,6 +62,11 @@ WORKER_USERNAME = "parity-retirement-worker"
 #: The step of the pipeline at which the erasures are run.
 WORKING_STATE = "RETIRING_LMS"
 
+#: The step a record is moved on to, so that the step it stands at and the
+#: step it came from are different steps and a record naming one of them
+#: twice is not read as naming both.
+MOVED_TO_STATE = "LMS_COMPLETE"
+
 #: Each step of the erasure of the account's own data, named by what it clears
 #: and by where both versions reach it. ``None`` as the holder means each
 #: version calls the step through its own module, so both are recorded.
@@ -527,6 +532,14 @@ class RetirementRecordParityTests(RetirementParityTestCase):
         self.retirement = self.retirement_for(
             UserFactory.create(username="parity-subject", email="parity-subject@example.com"),
         )
+        # Moved on once, so the step the record stands at and the step it came
+        # from are different steps.
+        self.retirement.update_state({
+            "username": self.retirement.original_username,
+            "new_state": MOVED_TO_STATE,
+            "response": "moved on",
+        })
+        assert self.retirement.current_state.state_name != self.retirement.last_state.state_name
 
     def test_the_record_carries_the_same_values_bar_the_declared_differences(self):
         legacy = UserRetirementStatusSerializer(instance=self.retirement).data
@@ -548,7 +561,7 @@ class RetirementRecordParityTests(RetirementParityTestCase):
             reverse("user_v2:retirement_detail", kwargs={"username": "parity-subject"}),
         ).data
         legacy = UserRetirementStatusSerializer(instance=self.retirement).data
-        assert conforming["current_state"] == legacy["current_state"]["state_name"] == WORKING_STATE
+        assert conforming["current_state"] == legacy["current_state"]["state_name"] == MOVED_TO_STATE
         assert conforming["last_state"] == legacy["last_state"]["state_name"] == WORKING_STATE
 
     def test_neither_version_carries_the_log_of_the_moves_a_retirement_has_made(self):
