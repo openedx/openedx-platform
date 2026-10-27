@@ -24,7 +24,13 @@ from edx_django_utils.monitoring.signals import (
     monitoring_support_process_request,
     monitoring_support_process_response,
 )
-from edx_rest_framework_extensions.errors import Conflict, classify_error
+from edx_rest_framework_extensions.errors import (
+    INTERNAL_ERROR_SLUG,
+    INTERNAL_ERROR_TITLE,
+    Conflict,
+    classify_error,
+    error_type_uri,
+)
 from edx_rest_framework_extensions.testing import assert_error_envelope
 from opaque_keys.edx.keys import CourseKey
 from rest_framework import permissions, status
@@ -99,6 +105,10 @@ LIST_QUERY_PARAMS = (
 DETAIL_QUERY_PARAMS = "fields, format, view"
 WRITE_QUERY_PARAMS = "format"
 CLAIM_QUERY_PARAMS = "format, limit"
+
+#: What a move of a retirement cannot be asked for without, which is what the
+#: published body of the request says it requires.
+MOVE_REQUIRED_VALUES = ["new_state", "response"]
 
 #: What the shortest and the longest page of any collection of this version holds.
 DEFAULT_PAGE_SIZE = 10
@@ -394,11 +404,47 @@ class RetirementListTests(_AccessMatrixMixin, RetirementApiTestCase):
             self.complete.original_username,
         ]
 
+    def test_several_steps_can_be_asked_for_by_repeating_the_parameter(self):
+        """The list these rows were read from before named its steps that way."""
+        self.login("worker")
+        response = self.client.get(f"{self.url}?state=PENDING&state=COMPLETE")
+        assert self.names_in(response) == [
+            self.pending.original_username,
+            self.complete.original_username,
+        ]
+
+    def test_a_list_and_a_repetition_name_their_steps_together(self):
+        self.login("worker")
+        response = self.client.get(f"{self.url}?state=PENDING,COMPLETE&state=LOCKING_ACCOUNT")
+        assert self.names_in(response) == [
+            self.pending.original_username,
+            self.locking.original_username,
+            self.complete.original_username,
+        ]
+
+    def test_naming_no_step_at_all_leaves_every_retirement_in(self):
+        self.login("worker")
+        response = self.client.get(f"{self.url}?state=")
+        assert self.names_in(response) == [
+            self.pending.original_username,
+            self.locking.original_username,
+            self.complete.original_username,
+        ]
+
     def test_a_step_this_deployment_does_not_run_is_refused(self):
         self.login("worker")
         response = self.client.get(self.url, {"state": "NOPE"})
         envelope = assert_error_envelope(
             response, expected_status=status.HTTP_400_BAD_REQUEST, expected_type_slug="validation",
+        )
+        assert "No such pipeline step: NOPE." in envelope["errors"]["state"][0]
+
+    def test_a_step_this_deployment_does_not_run_is_refused_among_repeated_ones(self):
+        self.login("worker")
+        envelope = assert_error_envelope(
+            self.client.get(f"{self.url}?state=PENDING&state=NOPE"),
+            expected_status=status.HTTP_400_BAD_REQUEST,
+            expected_type_slug="validation",
         )
         assert "No such pipeline step: NOPE." in envelope["errors"]["state"][0]
 
@@ -455,6 +501,37 @@ class RetirementListTests(_AccessMatrixMixin, RetirementApiTestCase):
             self.url, {"created_before": self.locking.created.isoformat(), "page_size": 100},
         )
         assert self.names_in(response) == [self.pending.original_username]
+
+    def test_a_day_as_the_earlier_bound_leaves_that_whole_day_out(self):
+        """
+        A date alone is the first moment of that day, which the bound excludes.
+
+        The retirements requested during the day named are therefore not in the
+        page, which is the one reading of the bound that holds whether the
+        value names a day or a moment within one.
+        """
+        midday = self.retirement_in(
+            "PENDING", created=self.locking.created + datetime.timedelta(hours=12),
+        )
+        self.login("worker")
+        response = self.client.get(
+            self.url,
+            {"created_before": self.locking.created.date().isoformat(), "page_size": 100},
+        )
+        assert self.names_in(response) == [self.pending.original_username]
+        assert midday.original_username not in self.names_in(response)
+        later = self.client.get(
+            self.url,
+            {
+                "created_before": (self.locking.created + datetime.timedelta(days=1)).date().isoformat(),
+                "page_size": 100,
+            },
+        )
+        assert self.names_in(later) == [
+            self.pending.original_username,
+            self.locking.original_username,
+            midday.original_username,
+        ]
 
     def test_a_bound_that_is_not_a_moment_is_refused(self):
         self.login("worker")
@@ -599,6 +676,21 @@ class RetirementDetailTests(_AccessMatrixMixin, RetirementApiTestCase):
         assert response.data["original_username"] == "subject"
         assert response.data["original_email"] == "subject@example.com"
         assert response.data["current_state"] == "LOCKING_ACCOUNT"
+
+    def test_an_account_holding_no_profile_is_answered_with_a_null_profile(self):
+        """The property is answered under its own name either way, as null where there is none."""
+        UserProfile.objects.filter(user=self.subject).delete()
+        self.login("worker")
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["user"] == {
+            "id": self.subject.id,
+            "username": "subject",
+            "email": "subject@example.com",
+            "profile": None,
+        }
+        page = self.client.get(reverse("user_v2:retirement_list"))
+        assert [row["user"]["profile"] for row in page.data["results"]] == [None]
 
     def test_the_hashed_name_a_retired_account_is_moved_to_addresses_the_same_record(self):
         hashed = get_retired_username_by_username("subject")
@@ -780,6 +872,18 @@ class RetirementUpdateTests(_AccessMatrixMixin, RetirementApiTestCase):
             expected_type_slug="validation",
         )
         assert "response" in envelope["errors"]
+
+    def test_an_empty_body_is_refused_for_both_of_the_values_a_move_needs(self):
+        """The two it names here are the two the published body says it cannot be sent without."""
+        self.login("worker")
+        envelope = assert_error_envelope(
+            self.patch_subject({}),
+            expected_status=status.HTTP_400_BAD_REQUEST,
+            expected_type_slug="validation",
+        )
+        assert sorted(envelope["errors"]) == MOVE_REQUIRED_VALUES
+        self.retirement.refresh_from_db()
+        assert self.retirement.current_state.state_name == "LOCKING_ACCOUNT"
 
     def test_a_name_spelled_differently_from_the_registered_one_is_not_found(self):
         self.login("worker")
@@ -1034,7 +1138,15 @@ class RetirementErasureTests(_AccessMatrixMixin, RetirementApiTestCase):
             response = self.client.post(self.url, {"scope": "lms_core"}, format="json")
         assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
         body = response.json()
-        assert body["detail"] == "An unexpected error occurred. Please try again later."
+        # The answer carries the same envelope as every other refusal of this
+        # address, which is what the document publishes for it.
+        assert body == {
+            "type": error_type_uri(INTERNAL_ERROR_SLUG),
+            "title": INTERNAL_ERROR_TITLE,
+            "status": status.HTTP_500_INTERNAL_SERVER_ERROR,
+            "detail": "An unexpected error occurred. Please try again later.",
+            "instance": self.url,
+        }
         assert "fire" not in str(body)
 
 

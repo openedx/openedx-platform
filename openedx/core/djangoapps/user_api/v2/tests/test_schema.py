@@ -159,6 +159,17 @@ SDK_PATHS = {
 
 VERSION_TWO_PATHS = LIST_PATHS | MEMBER_PATHS | ACTION_PATHS
 
+#: The addresses the retirement pipeline is served at.
+RETIREMENT_PATHS = {
+    RETIREMENT_LIST_PATH,
+    RETIREMENT_MEMBER_PATH,
+    RETIREMENT_ERASURE_PATH,
+    RETIREMENT_CLEANUP_PATH,
+    PARTNER_REPORT_LIST_PATH,
+    PARTNER_REPORT_MEMBER_PATH,
+    PARTNER_REPORT_CLEANUP_PATH,
+}
+
 PAGINATION_MEMBERS = {"count", "num_pages", "current_page", "start", "next", "previous", "results"}
 
 #: The prefix every mount serving a user address is configured under.
@@ -187,7 +198,6 @@ VERSION_TWO_COMPONENTS = (
     "PatchedAccountUpdate",
     "OutcomeEnum",
     "PaginatedRetirementResponseList",
-    "PatchedRetirementUpdate",
     "Retirement",
     "RetirementAccount",
     "RetirementAccountProfile",
@@ -199,6 +209,7 @@ VERSION_TWO_COMPONENTS = (
     "RetirementPartnerReportRecord",
     "RetirementProjection",
     "RetirementResponse",
+    "RetirementUpdate",
     "ScopeEnum",
     "PaginatedTimeZoneList",
     "PaginatedUserDirectoryResponseList",
@@ -2515,6 +2526,132 @@ def test_a_retirement_record_publishes_the_step_as_a_name(schema):
         "retired_username", "retired_email", "current_state", "last_state", "created", "modified",
     }
     assert "responses" not in record["properties"]
+
+
+#: What each operation of the retirement pipeline answers, by the address and
+#: the method. The erasure is the one operation of this area that lets a
+#: failure of the work it drives reach the caller, because a step that fails
+#: partway through has already erased part of what it names and the caller
+#: decides what to do about that, so it is the one that publishes a 500.
+RETIREMENT_PUBLISHED_ANSWERS = {
+    (RETIREMENT_LIST_PATH, "get"): ["200", "400", "401", "403", "404", "406"],
+    (RETIREMENT_MEMBER_PATH, "get"): ["200", "400", "401", "403", "404", "406"],
+    (RETIREMENT_MEMBER_PATH, "patch"): ["204", "400", "401", "403", "404", "406", "409", "415"],
+    (RETIREMENT_MEMBER_PATH, "delete"): ["204", "400", "401", "403", "404", "406", "409"],
+    (RETIREMENT_ERASURE_PATH, "post"): [
+        "204", "400", "401", "403", "404", "406", "409", "415", "500",
+    ],
+    (RETIREMENT_CLEANUP_PATH, "post"): ["200", "400", "401", "403", "406", "409", "415"],
+    (PARTNER_REPORT_LIST_PATH, "post"): ["200", "400", "401", "403", "406"],
+    (PARTNER_REPORT_MEMBER_PATH, "put"): ["204", "400", "401", "403", "404", "406", "409"],
+    (PARTNER_REPORT_CLEANUP_PATH, "post"): ["200", "400", "401", "403", "406", "409", "415"],
+}
+
+
+@skip_unless_lms
+def test_each_retirement_operation_publishes_the_answers_it_can_give(schema):
+    published = {
+        (path, method): sorted(operation["responses"])
+        for path, method, operation in operations(schema)
+        if path in RETIREMENT_PATHS
+    }
+    assert published == RETIREMENT_PUBLISHED_ANSWERS
+
+
+@skip_unless_lms
+def test_the_move_of_a_retirement_publishes_the_whole_body_it_reads(schema):
+    """
+    The move is an instruction read whole, so what it requires is published as required.
+
+    A body carrying changes to a stored record leaves every field optional and
+    is published under a name of its own. This one is refused when either the
+    step to move to or what happened at the step being left is missing, so a
+    caller generating a request from the document is told both are needed, and
+    the account update beside it -- which really does carry changes -- keeps
+    the optional form.
+    """
+    body = schema["paths"][RETIREMENT_MEMBER_PATH]["patch"]["requestBody"]
+    assert body["required"] is True
+    assert body["content"]["application/json"]["schema"] == {
+        "$ref": "#/components/schemas/RetirementUpdate",
+    }
+    component = schema["components"]["schemas"]["RetirementUpdate"]
+    assert component["required"] == ["new_state", "response"]
+    assert sorted(component["properties"]) == ["force", "new_state", "response"]
+    assert "PatchedRetirementUpdate" not in schema["components"]["schemas"]
+
+    changes = schema["paths"][ACCOUNT_MEMBER_PATH]["patch"]["requestBody"]
+    assert changes.get("required", False) is False
+    assert "required" not in schema["components"]["schemas"]["PatchedAccountUpdate"]
+
+
+@skip_unless_lms
+def test_a_retirement_publishes_the_profile_it_answers_as_null_where_there_is_none(schema):
+    """An account being retired need not hold a profile, and the property is answered either way."""
+    account = schema["components"]["schemas"]["RetirementAccount"]
+    assert account["properties"]["profile"] == {
+        "allOf": [{"$ref": "#/components/schemas/RetirementAccountProfile"}],
+        "description": "The profile of the account, or null for an account that has none.",
+        "readOnly": True,
+        "nullable": True,
+    }
+    assert "profile" in account["required"]
+    # The profile itself carries no property that may be absent, so nothing
+    # below it is published as nullable.
+    profile = schema["components"]["schemas"]["RetirementAccountProfile"]
+    assert [name for name, published in profile["properties"].items() if published.get("nullable")] == []
+
+
+#: What the body of a superseded operation requires, for the operations whose
+#: body is written out as a shape rather than named by a serializer. The
+#: entries are addresses of several resources, because the rule is read from
+#: the shape and not from the address it is published at.
+SUPERSEDED_NEEDED_BODIES = {
+    ("/api/user/v1/accounts/retirement_cleanup/", "post"): ["usernames"],
+    ("/api/user/v1/accounts/retirement_partner_report/", "put"): ["username"],
+    ("/api/user/v1/accounts/retirement_partner_report_cleanup/", "post"): ["original_username"],
+    ("/api/user/v1/accounts/retire/", "post"): ["username"],
+    ("/api/user/v1/accounts/retire_misc/", "post"): ["username"],
+    ("/api/user/v1/accounts/update_retirement_status/", "patch"): ["username", "new_state", "response"],
+}
+
+
+def members_needed(shape):
+    """Return the members a body shape cannot be sent without, through a list to its members."""
+    if "items" in shape:
+        return members_needed(shape["items"])
+    return shape["required"]
+
+
+@skip_unless_lms
+def test_a_superseded_operation_publishes_a_body_it_cannot_be_called_without(schema, service_wide):
+    """
+    A body written out as a shape says what it needs, and the operation needs it.
+
+    An operation whose body is named by a serializer is marked as needing one
+    by the fields that serializer requires. A body written out as a shape is
+    published as it stands, so nothing has judged whether the operation can be
+    called with no body at all: it is read here from what the shape itself
+    says it cannot be sent without. Both documents are checked, because the
+    one the service serves for browsing its whole surface has published these
+    operations for years and a client generated from it stops sending a body
+    the moment the document stops asking for one.
+    """
+    for document in (schema, service_wide):
+        for (path, method), needed in SUPERSEDED_NEEDED_BODIES.items():
+            body = document["paths"][path][method]["requestBody"]
+            assert body["required"] is True, (path, method)
+            assert members_needed(
+                body["content"]["application/json"]["schema"],
+            ) == needed, (path, method)
+
+
+@skip_unless_lms
+def test_the_claim_of_the_partner_report_queue_publishes_no_body_on_either_version(schema, service_wide):
+    """Neither reads one: the queue it drains is named by nothing the caller sends."""
+    for document in (schema, service_wide):
+        for path in ("/api/user/v1/accounts/retirement_partner_report/", PARTNER_REPORT_LIST_PATH):
+            assert "requestBody" not in document["paths"][path]["post"], path
 
 
 #: The retirement-status model as it was published while the corrected request

@@ -1171,6 +1171,10 @@ class RetirementAccountSerializer(serializers.Serializer):  # pylint: disable=ab
     )
     profile = RetirementAccountProfileSerializer(
         read_only=True,
+        # An account need not hold a profile, and one being retired may never
+        # have held one, so the property is answered as null rather than left
+        # out: a caller reading it finds it under the same name either way.
+        allow_null=True,
         help_text="The profile of the account, or null for an account that has none.",
     )
 
@@ -1245,7 +1249,15 @@ class RetirementUpdateSerializer(serializers.Serializer):  # pylint: disable=abs
     Which steps exist and in what order is configured by the operator, so
     ``new_state`` is checked against the configured steps rather than against
     a fixed list.
+
+    The body is an instruction rather than a set of changes to the record it
+    addresses: the step to move to and what happened at the step being left
+    are both needed to carry the move out and to keep the retirement's log
+    whole, so it is read whole and a body missing either is refused.
     """
+
+    #: Read whole, so what this requires is what is published as required.
+    reads_the_whole_body = True
 
     new_state = serializers.CharField(help_text="Name of the pipeline step to move this retirement to.")
     response = serializers.CharField(

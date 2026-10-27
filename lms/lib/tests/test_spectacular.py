@@ -616,6 +616,27 @@ class SupersededBodyTest(TestCase):
             "image/gif", "image/jpeg", "image/pjpeg", "image/png", "multipart/form-data",
         ]
 
+    def test_a_body_written_out_as_a_shape_is_needed_where_the_shape_says_it_is(self):
+        """
+        Each form of a body is read for what it says it cannot be sent without.
+
+        A shape written out is published as it stands, so nothing has judged
+        whether its operation can be called with no body at all: the mark is
+        read from the members the shape requires, or from the members of its
+        entries where the shape is a list of them. The addresses here belong
+        to several resources and are written in every form the table uses --
+        an object, a list of objects, and a shape named under every media type
+        the platform reads a body in.
+        """
+        for address, method in (
+            ("/api/user/v1/accounts/retirement_cleanup/", "post"),
+            ("/api/user/v1/accounts/retirement_partner_report_cleanup/", "post"),
+            ("/api/user/v1/accounts/update_retirement_status/", "patch"),
+            ("/api/user/v1/accounts/cancel_retirement/", "post"),
+        ):
+            body = self.schema["paths"][address][method]["requestBody"]
+            assert body["required"] is True, (address, method)
+
     def test_no_superseded_operation_answers_with_a_body_it_does_not_describe(self):
         """A published success body with no schema is the half-documented state this avoids."""
         undescribed = [

@@ -58,6 +58,25 @@ class StrictOrderingFilter(OrderingFilter):
         return allowed
 
 
+class _RepeatedValuesWidget(forms.TextInput):
+    """
+    Reads every value sent under one parameter name, not only the last of them.
+
+    A query string names several values either as one comma-separated list or
+    by repeating the parameter, and both idioms are in use by the callers of
+    this area. The default widget keeps the last value sent and drops the
+    rest, so a caller naming several by repetition is answered with the rows
+    of one of them and told nothing about the others.
+    """
+
+    def value_from_datadict(self, data, files, name):
+        """Return every value sent under this name, as the list the filter reads."""
+        if not hasattr(data, "getlist"):
+            return super().value_from_datadict(data, files, name)
+        sent = data.getlist(name)
+        return ",".join(sent) if sent else None
+
+
 class _BooleanQueryField(forms.NullBooleanField):
     """Reads a boolean out of the query string, refusing a value that names neither side."""
 
@@ -217,13 +236,18 @@ class RetirementFilterSet(filters.FilterSet):
     configured in and a caller computing the equivalent timestamp would have
     to agree with this server's clock to the second. The two date bounds say
     which end they include, which the pair they replace left to the reader.
+    ``state`` takes several steps sent either as one comma-separated list or
+    as the parameter repeated, because the list that named them before this
+    one read them as repeated parameters.
     """
 
     state = filters.CharFilter(
         method="filter_states",
+        widget=_RepeatedValuesWidget,
         help_text=(
-            "Comma-separated names of pipeline steps. Only retirements standing at one of them "
-            "are returned, and a name no configured step holds is refused."
+            "Names of pipeline steps, as one comma-separated list or by repeating the parameter "
+            "once per step. Only retirements standing at one of them are returned, and a name no "
+            "configured step holds is refused."
         ),
     )
     cool_off_days = _WholeNumberFilter(

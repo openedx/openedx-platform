@@ -1,8 +1,10 @@
 """Behaviour parity between the version 1 and version 2 retirement pipeline addresses."""
 
 import contextlib
+import datetime
 import json
 from unittest import mock
+from zoneinfo import ZoneInfo
 
 import pytest
 from django.core.cache import cache
@@ -98,6 +100,19 @@ HISTORICAL_SOCIAL_AUTH_STEP = ("historical_social_auth", "redact_and_delete_hist
 RECORD_DIFFERENCES = (
     ("current_state", "the step is the name of the step rather than an object carrying its order and its id"),
     ("last_state", "the step is the name of the step rather than an object carrying its order and its id"),
+)
+
+#: The declared differences between the filters of the two version 1 queue
+#: reads and the version 2 list that answers for both. Each entry is a
+#: (parameter, reason) pair, and the tests below measure every one of them on
+#: both versions, so a parameter that silently selects other rows than the one
+#: it is read in place of is either here or failing.
+QUEUE_FILTER_DIFFERENCES = (
+    (
+        "created_before",
+        "the bound is exclusive, where the end_date it is read in place of took in the whole of "
+        "the day named; the same rows are asked for by naming the day after",
+    ),
 )
 
 #: Each view of this version with the view whose operations it takes over, for
@@ -543,6 +558,118 @@ class RetirementRecordParityTests(RetirementParityTestCase):
         assert "responses" not in conforming
         assert "responses" not in UserRetirementStatusSerializer(instance=self.retirement).data
         assert UserRetirementStatus.objects.get(id=self.retirement.id).responses != ""
+
+
+@skip_unless_lms
+class QueueFilterParityTests(RetirementParityTestCase):
+    """
+    The filters of the merged list against the two version 1 reads they answer for.
+
+    The callers of these addresses are drivers outside this repository, which
+    reach the merged list by renaming the parameters they already send. A
+    parameter that selects other rows than the one it is renamed from is
+    answered 200 and so cannot be noticed by such a caller, which is why each
+    is measured on both versions here rather than reasoned about.
+    """
+
+    #: A day with retirements requested before it, during it, and after it, so
+    #: that a bound naming it is measured from both sides.
+    BOUND = datetime.datetime(2020, 6, 10, tzinfo=ZoneInfo("UTC"))
+
+    def setUp(self):
+        super().setUp()
+        self.moments = {
+            "the-day-before": self.BOUND - datetime.timedelta(days=1),
+            "the-day-itself": self.BOUND + datetime.timedelta(hours=12),
+            "the-day-after": self.BOUND + datetime.timedelta(days=1, hours=1),
+        }
+        self.requested = {
+            name: create_retirement_status(
+                UserFactory.create(username=name),
+                state=RetirementState.objects.get(state_name="COMPLETE"),
+                create_datetime=moment,
+            )
+            for name, moment in self.moments.items()
+        }
+
+    def legacy_by_date(self, start, end):
+        """Return the names the version 1 by-date read answers for this range."""
+        response = self.client.get(
+            reverse("accounts_retirements_by_status_and_date"),
+            {"start_date": start, "end_date": end, "state": "COMPLETE"},
+        )
+        assert response.status_code == status.HTTP_200_OK
+        return [row["original_username"] for row in response.json()]
+
+    def conforming_by_date(self, after, before):
+        """Return the names the merged list answers for this range."""
+        response = self.client.get(
+            reverse("user_v2:retirement_list"),
+            {"state": "COMPLETE", "created_after": after, "created_before": before, "page_size": 100},
+        )
+        assert response.status_code == status.HTTP_200_OK
+        return [row["original_username"] for row in response.json()["results"]]
+
+    def test_the_declared_difference_is_the_day_the_earlier_bound_names(self):
+        """Measured both ways: the day named is in the version 1 answer and out of this one."""
+        assert self.legacy_by_date("2020-06-01", "2020-06-10") == ["the-day-before", "the-day-itself"]
+        assert self.conforming_by_date("2020-06-01", "2020-06-10") == ["the-day-before"]
+        assert [name for name, _reason in QUEUE_FILTER_DIFFERENCES] == ["created_before"]
+
+    def test_the_rows_the_declared_difference_leaves_out_are_asked_for_by_naming_the_day_after(self):
+        assert self.conforming_by_date("2020-06-01", "2020-06-11") == [
+            "the-day-before", "the-day-itself",
+        ]
+        assert self.legacy_by_date("2020-06-01", "2020-06-10") == self.conforming_by_date(
+            "2020-06-01", "2020-06-11",
+        )
+
+    def test_the_later_bound_takes_in_the_day_it_names_on_both_versions(self):
+        """``start_date`` and ``created_after`` are the one pair that means the same thing."""
+        assert self.legacy_by_date("2020-06-10", "2020-06-10") == ["the-day-itself"]
+        assert self.conforming_by_date("2020-06-10", "2020-06-11") == ["the-day-itself"]
+        # One day asked for on the earlier version is that day named at both
+        # ends; on this one it is that day and the day after it.
+        assert self.legacy_by_date("2020-06-09", "2020-06-09") == ["the-day-before"]
+        assert self.conforming_by_date("2020-06-09", "2020-06-10") == ["the-day-before"]
+
+    def test_steps_named_by_repeating_the_parameter_answer_the_same_rows_on_both_versions(self):
+        """The version 1 queue read its steps as repeated parameters, and this list reads them too."""
+        create_retirement_status(
+            UserFactory.create(username="still-pending"),
+            state=RetirementState.objects.get(state_name="PENDING"),
+            create_datetime=self.BOUND,
+        )
+        legacy = self.client.get(
+            reverse("accounts_retirement_queue")
+            + "?cool_off_days=0&states=COMPLETE&states=PENDING",
+        )
+        assert legacy.status_code == status.HTTP_200_OK
+        conforming = self.client.get(
+            reverse("user_v2:retirement_list")
+            + "?cool_off_days=0&state=COMPLETE&state=PENDING&page_size=100",
+        )
+        assert conforming.status_code == status.HTTP_200_OK
+        answered = [row["original_username"] for row in legacy.json()]
+        assert answered == [
+            "the-day-before", "the-day-itself", "the-day-after", "still-pending",
+        ]
+        assert [row["original_username"] for row in conforming.json()["results"]] == answered
+
+    def test_one_step_named_once_answers_the_same_rows_on_both_versions(self):
+        """The comma-separated idiom of this list is not the only one it reads."""
+        legacy = self.client.get(
+            reverse("accounts_retirement_queue") + "?cool_off_days=0&states=COMPLETE",
+        )
+        conforming = self.client.get(
+            reverse("user_v2:retirement_list") + "?cool_off_days=0&state=COMPLETE&page_size=100",
+        )
+        assert [row["original_username"] for row in legacy.json()] == [
+            "the-day-before", "the-day-itself", "the-day-after",
+        ]
+        assert [row["original_username"] for row in conforming.json()["results"]] == [
+            row["original_username"] for row in legacy.json()
+        ]
 
 
 class MediaTypeParityTests(SimpleTestCase):
