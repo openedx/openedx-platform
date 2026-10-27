@@ -1,7 +1,6 @@
 """Tests for the selections version 2 of the User API answers from."""
 
 import datetime
-from unittest import mock
 
 import pytest
 from django.conf import settings
@@ -21,6 +20,7 @@ from openedx.core.djangoapps.user_api.models import (
 from openedx.core.djangoapps.user_api.v2.selectors import (
     accounts_holding_emails,
     cancellable_retirement_for_email,
+    partner_reports,
     partner_reports_requested_as,
     retirement_of_the_account_named,
     retirements,
@@ -146,35 +146,45 @@ class RetirementPipelineSelectionTests(TestCase):
             assert selected.last_state.state_name == "PENDING"
 
     def test_an_account_is_addressed_by_the_name_it_was_registered_under(self):
-        assert retirement_of_the_account_named("pipeline-subject").id == self.retirement.id
+        assert retirement_of_the_account_named(retirements(), "pipeline-subject").id == (
+            self.retirement.id
+        )
 
     def test_an_account_is_addressed_by_the_hashed_name_it_was_moved_to(self):
         hashed = get_retired_username_by_username("pipeline-subject")
         self.subject.username = hashed
         self.subject.save()
-        assert retirement_of_the_account_named(hashed).id == self.retirement.id
-        assert retirement_of_the_account_named("pipeline-subject").id == self.retirement.id
+        assert retirement_of_the_account_named(retirements(), hashed).id == self.retirement.id
+        assert retirement_of_the_account_named(retirements(), "pipeline-subject").id == (
+            self.retirement.id
+        )
 
     def test_a_name_no_account_holds_addresses_no_retirement(self):
-        assert retirement_of_the_account_named("nobody") is None
+        assert retirement_of_the_account_named(retirements(), "nobody") is None
 
     def test_an_account_with_no_retirement_behind_it_addresses_none(self):
         UserFactory.create(username="not-retiring")
-        assert retirement_of_the_account_named("not-retiring") is None
+        assert retirement_of_the_account_named(retirements(), "not-retiring") is None
+
+    def test_a_record_the_selection_given_leaves_out_addresses_no_retirement(self):
+        """Each selection is asked of the records the caller may act on, not of every record held."""
+        assert retirement_of_the_account_named(
+            retirements().exclude(id=self.retirement.id), "pipeline-subject",
+        ) is None
 
     def test_a_retirement_is_found_by_the_name_it_was_requested_under(self):
-        found = retirements_requested_as(["pipeline-subject", "nobody"])
+        found = retirements_requested_as(retirements(), ["pipeline-subject", "nobody"])
         assert set(found) == {"pipeline-subject"}
         assert [row.id for row in found["pipeline-subject"]] == [self.retirement.id]
 
     def test_a_name_spelled_differently_finds_no_retirement(self):
         """Stored names are compared without regard to case in some deployments, so this is exact."""
-        assert set(retirements_requested_as(["Pipeline-Subject"])) == set()
+        assert set(retirements_requested_as(retirements(), ["Pipeline-Subject"])) == set()
 
     def test_both_retirements_of_a_pair_differing_only_in_case_are_found_separately(self):
         other = UserFactory.create(username="PIPELINE-SUBJECT", email="other@example.com")
         other_retirement = create_retirement_status(other)
-        found = retirements_requested_as(["pipeline-subject", "PIPELINE-SUBJECT"])
+        found = retirements_requested_as(retirements(), ["pipeline-subject", "PIPELINE-SUBJECT"])
         assert [row.id for row in found["pipeline-subject"]] == [self.retirement.id]
         assert [row.id for row in found["PIPELINE-SUBJECT"]] == [other_retirement.id]
 
@@ -182,7 +192,7 @@ class RetirementPipelineSelectionTests(TestCase):
         """The stored name is indexed but not unique, so a name may carry several records."""
         twin = create_retirement_status(UserFactory.create(username="pipeline-twin"))
         UserRetirementStatus.objects.filter(id=twin.id).update(original_username="pipeline-subject")
-        found = retirements_requested_as(["pipeline-subject"])
+        found = retirements_requested_as(retirements(), ["pipeline-subject"])
         assert sorted(row.id for row in found["pipeline-subject"]) == sorted(
             [self.retirement.id, twin.id],
         )
@@ -192,6 +202,12 @@ class RetirementPipelineSelectionTests(TestCase):
         taken_user = UserFactory.create(username="already-taken")
         self.queued(taken_user, taken=True)
         assert [report.id for report in unclaimed_partner_reports()] == [waiting.id]
+
+    def test_every_entry_is_offered_for_disposal_whether_it_has_been_taken_or_not(self):
+        """An entry is disposed of once it has been taken, which is when the queue stops offering it."""
+        waiting = self.queued(self.subject)
+        taken = self.queued(UserFactory.create(username="already-taken"), taken=True)
+        assert sorted(report.id for report in partner_reports()) == sorted([waiting.id, taken.id])
 
     def test_the_partner_report_queue_carries_the_courses_each_account_studied(self):
         self.queued(self.subject)
@@ -204,7 +220,7 @@ class RetirementPipelineSelectionTests(TestCase):
 
     def test_a_partner_report_is_found_by_the_name_it_was_registered_under(self):
         report = self.queued(self.subject)
-        found = partner_reports_requested_as(["pipeline-subject", "nobody"])
+        found = partner_reports_requested_as(partner_reports(), ["pipeline-subject", "nobody"])
         assert set(found) == {"pipeline-subject"}
         assert [row.id for row in found["pipeline-subject"]] == [report.id]
 
@@ -214,12 +230,12 @@ class RetirementPipelineSelectionTests(TestCase):
         UserRetirementPartnerReportingStatus.objects.filter(id=twin.id).update(
             original_username="pipeline-subject",
         )
-        found = partner_reports_requested_as(["pipeline-subject"])
+        found = partner_reports_requested_as(partner_reports(), ["pipeline-subject"])
         assert sorted(row.id for row in found["pipeline-subject"]) == sorted([report.id, twin.id])
 
     def test_a_partner_report_is_not_found_by_a_name_spelled_differently(self):
         self.queued(self.subject)
-        assert set(partner_reports_requested_as(["Pipeline-Subject"])) == set()
+        assert set(partner_reports_requested_as(partner_reports(), ["Pipeline-Subject"])) == set()
 
     def queued(self, user, taken=False):
         """Return a partner report entry for this account, taken for processing or not."""
@@ -265,10 +281,7 @@ class CaseExactSelectionTests(TestCase):
         wanted = create_retirement_status(self.lower)
         create_retirement_status(self.upper)
         offered = _CollationIgnoringCase(list(UserRetirementStatus.objects.all()))
-        with mock.patch(
-            "openedx.core.djangoapps.user_api.v2.selectors.retirements", return_value=offered,
-        ):
-            found = retirements_requested_as(["exact-subject"])
+        found = retirements_requested_as(offered, ["exact-subject"])
         assert set(found) == {"exact-subject"}
         assert [row.id for row in found["exact-subject"]] == [wanted.id]
 
@@ -286,9 +299,6 @@ class CaseExactSelectionTests(TestCase):
             original_name=self.upper.profile.name,
         )
         offered = _CollationIgnoringCase(list(UserRetirementPartnerReportingStatus.objects.all()))
-        with mock.patch.object(
-            UserRetirementPartnerReportingStatus, "objects", mock.Mock(filter=offered.filter),
-        ):
-            found = partner_reports_requested_as(["exact-subject"])
+        found = partner_reports_requested_as(offered, ["exact-subject"])
         assert set(found) == {"exact-subject"}
         assert [row.id for row in found["exact-subject"]] == [wanted.id]

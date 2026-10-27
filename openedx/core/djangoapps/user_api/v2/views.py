@@ -77,6 +77,7 @@ from .selectors import (
     accounts_holding_emails,
     accounts_named,
     cancellable_retirement_for_email,
+    partner_reports,
     retirement_of_the_account_named,
     retirements,
     unclaimed_partner_reports,
@@ -2445,6 +2446,63 @@ _RESP_PARTNER_REPORT_QUEUED = OpenApiResponse(
     ),
 )
 
+class _RetirementRecordAccessMixin:
+    """
+    Who may act on the retirement records, and which of those records a caller acts on.
+
+    The records this version lists, moves and cancels are the records its
+    batch disposal deletes, so the capability each operation asks for and the
+    policy deciding which records a caller acts on are declared here, where
+    all of them resolve them, rather than once per view. A rule added here is
+    asked of the disposal as well as of the operations on one record.
+
+    These are declared in a class resolved before the library mixin that
+    reads the policy, which declares a policy of its own for a view that has
+    none; the selection the policy narrows is declared in a class resolved
+    after it instead.
+    """
+
+    permission_classes = (permissions.IsAuthenticated,)
+    # The operations these addresses replace read a body as JSON alone, and
+    # one of them erases personal data for good, so the same narrowing is kept
+    # rather than widened to every media type the platform can parse.
+    parser_classes = (JSONParser,)
+    # Any caller holding the pipeline's capability may act on every
+    # retirement, so the policy keeps the records whole; a narrower policy can
+    # replace it here and is applied by every operation below.
+    scoping_policy = FullScopePolicy()
+    #: The capability each action asks for beyond the classes above.
+    action_permissions = {}
+
+    def get_permissions(self):
+        """Return the classes deciding who may make the request being served."""
+        if self.action is None:
+            # No action serves this method at this address. That is not a
+            # refusal of the caller, so the request is admitted by the classes
+            # every action shares and answered as a method this address does
+            # not serve, which is what the earlier addresses answer.
+            return [permission() for permission in self.permission_classes]
+        # An action this mapping does not name reaches no capability of this
+        # resource, rather than inheriting the one every other action shares.
+        specific = self.action_permissions.get(self.action, (~permissions.AllowAny,))
+        return [permission() for permission in (*self.permission_classes, *specific)]
+
+
+class _RetirementRecordsMixin:
+    """
+    The retirement records, before they are narrowed to the ones a caller may act on.
+
+    A view's policy is applied on top of the selection the classes resolved
+    after it answer with, so the unnarrowed selection is declared here rather
+    than on the view, where it would stand in front of the layer that narrows
+    it and leave the policy with nothing to do.
+    """
+
+    def get_queryset(self):
+        """Return the retirement records, before the policy narrows them to the caller's."""
+        return retirements()
+
+
 #: Who may make each request the retirement collection serves. Cancelling a
 #: retirement is the one operation of this collection that is not pipeline
 #: work: it undoes a request rather than carrying it out, so it is open to
@@ -2573,7 +2631,9 @@ class RetirementViewSet(
     _ActionAddressMixin,
     _ResponsePresetMixin,
     StrictQueryParametersMixin,
+    _RetirementRecordAccessMixin,
     ScopedQuerysetMixin,
+    _RetirementRecordsMixin,
     viewsets.GenericViewSet,
 ):
     """
@@ -2592,18 +2652,9 @@ class RetirementViewSet(
     that carry one out.
     """
 
-    permission_classes = (permissions.IsAuthenticated,)
-    # The operations these addresses replace read a body as JSON alone, and
-    # one of them erases personal data for good, so the same narrowing is kept
-    # rather than widened to every media type the platform can parse.
-    parser_classes = (JSONParser,)
     serializer_class = RetirementSerializer
     pagination_class = UserApiPagination
-    queryset = retirements()
-    # Any caller holding the pipeline's capability may read every retirement,
-    # so the policy keeps the queue whole; a narrower policy can replace it
-    # without touching the filtering below.
-    scoping_policy = FullScopePolicy()
+    action_permissions = RETIREMENT_ACTION_PERMISSIONS
     lookup_field = "username"
     # The router's default lookup pattern excludes dots, which usernames allow.
     lookup_value_regex = settings.USERNAME_REGEX_PARTIAL
@@ -2618,19 +2669,6 @@ class RetirementViewSet(
     minimal_fields = RETIREMENT_MINIMAL_FIELDS
     response_presets = RETIREMENT_PRESETS
     extra_query_params = RESPONSE_SHAPING_PARAMS
-
-    def get_permissions(self):
-        """Return the classes deciding who may make the request being served."""
-        if self.action is None:
-            # No action serves this method at this address. That is not a
-            # refusal of the caller, so the request is admitted by the classes
-            # every action shares and answered as a method this address does
-            # not serve, which is what the earlier addresses answer.
-            return super().get_permissions()
-        # An action this mapping does not name reaches no capability of this
-        # collection, rather than inheriting the one every other action shares.
-        specific = RETIREMENT_ACTION_PERMISSIONS.get(self.action, (~permissions.AllowAny,))
-        return [*super().get_permissions(), *(permission() for permission in specific)]
 
     def known_query_params(self):
         """Return the query parameters the action being served reads."""
@@ -2657,7 +2695,7 @@ class RetirementViewSet(
 
     def retrieve(self, request, username):
         """Return the retirement of the account this name addresses."""
-        retirement = retirement_of_the_account_named(username)
+        retirement = retirement_of_the_account_named(self.get_queryset(), username)
         if retirement is None:
             log.info("No retirement is held for an account addressed as %r.", username)
             raise NotFound(NO_SUCH_RETIREMENT)
@@ -2668,7 +2706,7 @@ class RetirementViewSet(
         changes = RetirementUpdateSerializer(data=request.data)
         changes.is_valid(raise_exception=True)
         move_retirement(
-            retirement_requested_as(username),
+            retirement_requested_as(self.get_queryset(), username),
             changes.validated_data["new_state"],
             changes.validated_data["response"],
             changes.validated_data["force"],
@@ -2677,7 +2715,7 @@ class RetirementViewSet(
 
     def destroy(self, request, username):
         """Undo this retirement request and return the account to its owner."""
-        cancel_retirement(retirement_requested_as(username))
+        cancel_retirement(retirement_requested_as(self.get_queryset(), username))
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=True, methods=["post"], url_path="erasures", url_name="erasure")
@@ -2685,9 +2723,34 @@ class RetirementViewSet(
         """Erase one set of the retiring account's personal data."""
         erasure = RetirementErasureSerializer(data=request.data)
         erasure.is_valid(raise_exception=True)
-        erase_account_data(retirement_open_to_action(username), erasure.validated_data["scope"])
+        erase_account_data(
+            retirement_open_to_action(self.get_queryset(), username),
+            erasure.validated_data["scope"],
+        )
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+
+
+class _PartnerReportAccessMixin:
+    """
+    Who may act on the partner report entries, and which of those entries a caller acts on.
+
+    The entries this version queues and takes for processing are the entries
+    its batch disposal deletes, so the capability every operation of them asks
+    for and the policy deciding which of them a caller acts on are declared
+    here, where all of them resolve them. A rule added here is asked of the
+    disposal as well as of the queue. Which entries each operation starts from
+    differs -- one takes those nobody has taken, the other disposes of those
+    that have been -- so that selection is declared by each of them, in a
+    class resolved after the library mixin that reads the policy.
+    """
+
+    permission_classes = (permissions.IsAuthenticated, CanRetireUser)
+    # The operations these addresses replace read a body as JSON alone, and
+    # that narrowing is kept rather than widened to every media type the
+    # platform can parse.
+    parser_classes = (JSONParser,)
+    scoping_policy = FullScopePolicy()
 
 
 class _UnclaimedPartnerReportsMixin:
@@ -2703,6 +2766,20 @@ class _UnclaimedPartnerReportsMixin:
     def get_queryset(self):
         """Return the partner reports nobody has taken for processing."""
         return unclaimed_partner_reports()
+
+
+class _EveryPartnerReportMixin:
+    """
+    Every partner report entry, before they are narrowed to the ones a caller may act on.
+
+    Declared in a class of its own for the same reason as the queue's own
+    selection, and separately from it because an entry is disposed of once it
+    has been taken for processing, which is what the queue leaves out.
+    """
+
+    def get_queryset(self):
+        """Return every partner report entry, taken for processing or not."""
+        return partner_reports()
 
 
 _RESP_PARTNER_REPORTS_TAKEN = OpenApiResponse(
@@ -2769,6 +2846,7 @@ class RetirementPartnerReportViewSet(
     ErrorExtensionsMixin,
     _ActionAddressMixin,
     StrictQueryParametersMixin,
+    _PartnerReportAccessMixin,
     ScopedQuerysetMixin,
     _UnclaimedPartnerReportsMixin,
     viewsets.ViewSet,
@@ -2786,15 +2864,9 @@ class RetirementPartnerReportViewSet(
     this one. Nothing releases an entry once it has been taken.
     """
 
-    permission_classes = (permissions.IsAuthenticated, CanRetireUser)
-    # The operations this address replaces read a body as JSON alone, and that
-    # narrowing is kept rather than widened to every media type the platform
-    # can parse.
-    parser_classes = (JSONParser,)
     serializer_class = RetirementPartnerReportRecordSerializer
     #: Validates the query string, and names the parameters this view reads.
     query_serializer_class = RetirementPartnerReportQuerySerializer
-    scoping_policy = FullScopePolicy()
     lookup_field = "username"
     # The router's default lookup pattern excludes dots, which usernames allow.
     lookup_value_regex = settings.USERNAME_REGEX_PARTIAL
@@ -2820,7 +2892,10 @@ class RetirementPartnerReportViewSet(
 
     def update(self, request, username):
         """Queue the retiring account this name addresses for partner reporting."""
-        record_partner_report(retirement_open_to_action(username))
+        # The record this queues belongs to the retirement collection rather
+        # than to this one, whose own selection is of queue entries, so the
+        # records it is resolved from are named here.
+        record_partner_report(retirement_open_to_action(retirements(), username))
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -2835,7 +2910,7 @@ _RESP_BATCH_OUTCOME = OpenApiResponse(
 
 @extend_schema(tags=[USER_TAG])
 @extend_schema_view(
-    post=extend_schema(
+    create=extend_schema(
         summary="Delete finished retirement records",
         description=(
             "Deletes the retirement records of the accounts named, once the pipeline has "
@@ -2856,13 +2931,16 @@ _RESP_BATCH_OUTCOME = OpenApiResponse(
         },
     ),
 )
-class RetirementCleanupView(
+class RetirementCleanupViewSet(
     StandardizedErrorMixin,
     RestrictedApplicationGuardMixin,
     ReadableErrorDetailMixin,
     ErrorExtensionsMixin,
     StrictQueryParametersMixin,
-    APIView,
+    _RetirementRecordAccessMixin,
+    ScopedQuerysetMixin,
+    _RetirementRecordsMixin,
+    viewsets.ViewSet,
 ):
     """
     Disposes of a set of finished retirement records.
@@ -2876,28 +2954,26 @@ class RetirementCleanupView(
     open to a different caller.
     """
 
-    permission_classes = (permissions.IsAuthenticated, CanRetireUser)
-    # The operations this address replaces read a body as JSON alone, and that
-    # narrowing is kept rather than widened to every media type the platform
-    # can parse: these operations dispose of records for good.
-    parser_classes = (JSONParser,)
     serializer_class = RetirementBatchOutcomeSerializer
+    #: Disposing of finished records is pipeline work, so it asks for the
+    #: capability the rest of that work asks for.
+    action_permissions = {"create": (CanRetireUser,), "metadata": (CanRetireUser,)}
 
     def get_serializer(self, *args, **kwargs):
-        """Build the output serializer; a plain view has no generic machinery to do it."""
+        """Build the output serializer; a plain ViewSet has no generic machinery to do it."""
         return self.serializer_class(*args, **kwargs)
 
-    def post(self, request):
+    def create(self, request):
         """Delete the retirement records of the accounts the body names."""
         batch = RetirementBatchSerializer(data=request.data)
         batch.is_valid(raise_exception=True)
-        results = delete_retirements(batch.validated_data["usernames"])
+        results = delete_retirements(self.get_queryset(), batch.validated_data["usernames"])
         return Response(self.get_serializer({"results": results}).data)
 
 
 @extend_schema(tags=[USER_TAG])
 @extend_schema_view(
-    post=extend_schema(
+    create=extend_schema(
         summary="Delete reported partner report entries",
         description=(
             "Deletes the partner report entries of the accounts named, once they have been "
@@ -2916,13 +2992,16 @@ class RetirementCleanupView(
         },
     ),
 )
-class RetirementPartnerReportCleanupView(
+class RetirementPartnerReportCleanupViewSet(
     StandardizedErrorMixin,
     RestrictedApplicationGuardMixin,
     ReadableErrorDetailMixin,
     ErrorExtensionsMixin,
     StrictQueryParametersMixin,
-    APIView,
+    _PartnerReportAccessMixin,
+    ScopedQuerysetMixin,
+    _EveryPartnerReportMixin,
+    viewsets.ViewSet,
 ):
     """
     Disposes of a set of partner report entries that have been reported on.
@@ -2933,20 +3012,15 @@ class RetirementPartnerReportCleanupView(
     whole batch and nothing is deleted.
     """
 
-    permission_classes = (permissions.IsAuthenticated, CanRetireUser)
-    # The operations this address replaces read a body as JSON alone, and that
-    # narrowing is kept rather than widened to every media type the platform
-    # can parse: these operations dispose of records for good.
-    parser_classes = (JSONParser,)
     serializer_class = RetirementBatchOutcomeSerializer
 
     def get_serializer(self, *args, **kwargs):
-        """Build the output serializer; a plain view has no generic machinery to do it."""
+        """Build the output serializer; a plain ViewSet has no generic machinery to do it."""
         return self.serializer_class(*args, **kwargs)
 
-    def post(self, request):
+    def create(self, request):
         """Delete the partner report entries of the accounts the body names."""
         batch = RetirementBatchSerializer(data=request.data)
         batch.is_valid(raise_exception=True)
-        results = delete_partner_reports(batch.validated_data["usernames"])
+        results = delete_partner_reports(self.get_queryset(), batch.validated_data["usernames"])
         return Response(self.get_serializer({"results": results}).data)

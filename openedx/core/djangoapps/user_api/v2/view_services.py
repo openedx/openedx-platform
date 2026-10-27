@@ -104,12 +104,14 @@ def _only_record_named(username, records):
     return records[0]
 
 
-def retirement_requested_as(username):
-    """Return the one retirement requested under exactly this name."""
-    return _only_record_named(username, retirements_requested_as([username]).get(username, []))
+def retirement_requested_as(records, username):
+    """Return the one record of this selection requested under exactly this name."""
+    return _only_record_named(
+        username, retirements_requested_as(records, [username]).get(username, []),
+    )
 
 
-def retirement_open_to_action(username):
+def retirement_open_to_action(records, username):
     """
     Return the retirement requested under this name while it admits pipeline work.
 
@@ -117,7 +119,7 @@ def retirement_open_to_action(username):
     and the step that records a part of the pipeline as finished, which is what
     keeps a step from being run twice over the same account.
     """
-    retirement = retirement_requested_as(username)
+    retirement = retirement_requested_as(records, username)
     try:
         # Which steps admit work is decided by the pipeline's own model layer,
         # where the order of the steps is kept, rather than being written out a
@@ -333,18 +335,20 @@ def _one_record_for_each_name(found):
     return {username: records[0] for username, records in found.items()}
 
 
-def delete_retirements(usernames):
+def delete_retirements(records, usernames):
     """
     Delete the retirement records of the accounts named, once the pipeline has finished with them.
 
-    A name no record was requested under is reported as such rather than
-    refused, so a caller repeating a request that has already been carried out
-    is answered rather than left to tell "already done" from "never existed".
+    The records are resolved from the selection given, so a record outside it
+    is reported as absent and left alone. A name no record was requested under
+    is reported as such rather than refused, so a caller repeating a request
+    that has already been carried out is answered rather than left to tell
+    "already done" from "never existed".
     A record the pipeline has not finished with refuses the whole batch and
     nothing is deleted, because the caller asked for a set of records and a
     half-applied delete cannot be undone.
     """
-    found = _one_record_for_each_name(retirements_requested_as(usernames))
+    found = _one_record_for_each_name(retirements_requested_as(records, usernames))
     refused = {
         username: [
             f"This retirement stands at {record.current_state.state_name}; only a retirement at "
@@ -369,16 +373,17 @@ def delete_retirements(usernames):
     return _batch_outcomes(usernames, found)
 
 
-def delete_partner_reports(usernames):
+def delete_partner_reports(entries, usernames):
     """
     Delete the partner report entries of the accounts named, once they have been reported on.
 
-    An entry nobody has taken for processing has not been reported on yet, so
-    it refuses the whole batch and nothing is deleted; a name with no entry at
-    all is reported as such, which is what a repeat of a request already
-    carried out reports for every name.
+    The entries are resolved from the selection given, so an entry outside it
+    is reported as absent and left alone. An entry nobody has taken for
+    processing has not been reported on yet, so it refuses the whole batch and
+    nothing is deleted; a name with no entry at all is reported as such, which
+    is what a repeat of a request already carried out reports for every name.
     """
-    found = _one_record_for_each_name(partner_reports_requested_as(usernames))
+    found = _one_record_for_each_name(partner_reports_requested_as(entries, usernames))
     refused = {
         username: ["This partner report has not been taken for processing, so it has not been reported on yet."]
         for username, report in found.items()

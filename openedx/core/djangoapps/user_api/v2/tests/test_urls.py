@@ -23,8 +23,8 @@ from openedx.core.djangoapps.user_api.v2.views import (
     IDVerificationStatusView,
     IDVerificationViewSet,
     NameChangeViewSet,
-    RetirementCleanupView,
-    RetirementPartnerReportCleanupView,
+    RetirementCleanupViewSet,
+    RetirementPartnerReportCleanupViewSet,
     RetirementPartnerReportViewSet,
     RetirementViewSet,
     UserPreferenceViewSet,
@@ -92,13 +92,13 @@ EXPECTED_ADDRESSES = {
         {"username": "alice"},
         "/api/user/v2/retirements/alice/erasures/",
     ),
-    "user_v2:retirement_cleanup": ({}, "/api/user/v2/retirement_cleanups/"),
+    "user_v2:retirement_cleanup_list": ({}, "/api/user/v2/retirement_cleanups/"),
     "user_v2:retirement_partner_report_list": ({}, "/api/user/v2/retirement_partner_reports/"),
     "user_v2:retirement_partner_report_detail": (
         {"username": "alice"},
         "/api/user/v2/retirement_partner_reports/alice/",
     ),
-    "user_v2:retirement_partner_report_cleanup": (
+    "user_v2:retirement_partner_report_cleanup_list": (
         {},
         "/api/user/v2/retirement_partner_report_cleanups/",
     ),
@@ -193,7 +193,7 @@ class UrlLiteralTests(APITestCase):
             ("/api/user/v2/retirements/", "retirement_list"),
             ("/api/user/v2/retirements/alice/", "retirement_detail"),
             ("/api/user/v2/retirements/alice/erasures/", "retirement_erasure"),
-            ("/api/user/v2/retirement_cleanups/", "retirement_cleanup"),
+            ("/api/user/v2/retirement_cleanups/", "retirement_cleanup_list"),
             ("/api/user/v2/retirement_partner_reports/", "retirement_partner_report_list"),
             (
                 "/api/user/v2/retirement_partner_reports/alice/",
@@ -201,7 +201,7 @@ class UrlLiteralTests(APITestCase):
             ),
             (
                 "/api/user/v2/retirement_partner_report_cleanups/",
-                "retirement_partner_report_cleanup",
+                "retirement_partner_report_cleanup_list",
             ),
         ):
             match = resolve(address)
@@ -454,11 +454,11 @@ class RouteShapeTests(APITestCase):
             "email_search_list",
             "name_change_confirmation",
             "name_change_list",
-            "retirement_cleanup",
+            "retirement_cleanup_list",
             "retirement_detail",
             "retirement_erasure",
             "retirement_list",
-            "retirement_partner_report_cleanup",
+            "retirement_partner_report_cleanup_list",
             "retirement_partner_report_detail",
             "retirement_partner_report_list",
             "time_zone_list",
@@ -501,8 +501,10 @@ class RouteShapeTests(APITestCase):
             "retirement_list",
             "retirement_detail",
             "retirement_erasure",
+            "retirement_cleanup_list",
             "retirement_partner_report_list",
             "retirement_partner_report_detail",
+            "retirement_partner_report_cleanup_list",
         ]
         with pytest.raises(ImproperlyConfigured):
             v2_urls.without_route(routes, "user_preference_detail_renamed")
@@ -656,6 +658,10 @@ RETIREMENT_ROUTES = {
     "/api/user/v2/retirement_partner_reports/alice/": (
         RetirementPartnerReportViewSet, {"put": "update"},
     ),
+    "/api/user/v2/retirement_cleanups/": (RetirementCleanupViewSet, {"post": "create"}),
+    "/api/user/v2/retirement_partner_report_cleanups/": (
+        RetirementPartnerReportCleanupViewSet, {"post": "create"},
+    ),
 }
 
 #: The addresses of the version 1 pipeline, with the view class each still
@@ -724,14 +730,31 @@ class RetirementRouteTests(APITestCase):
             assert view_identity(match.func) == (V2_VIEW_MODULE, view.__name__), address
             assert routed_actions(match.func) == actions, address
 
-    def test_each_batch_address_is_mounted_on_a_view_of_its_own(self):
-        for address, view in (
-            ("/api/user/v2/retirement_cleanups/", RetirementCleanupView),
-            ("/api/user/v2/retirement_partner_report_cleanups/", RetirementPartnerReportCleanupView),
+    def test_neither_disposal_is_served_by_the_collection_whose_records_it_deletes(self):
+        """Each disposal has a view of its own, because it acts on a set and under its own invariant."""
+        assert {
+            view_identity(resolve(address).func)
+            for address in (
+                "/api/user/v2/retirements/",
+                "/api/user/v2/retirement_cleanups/",
+                "/api/user/v2/retirement_partner_reports/",
+                "/api/user/v2/retirement_partner_report_cleanups/",
+            )
+        } == {
+            (V2_VIEW_MODULE, "RetirementViewSet"),
+            (V2_VIEW_MODULE, "RetirementCleanupViewSet"),
+            (V2_VIEW_MODULE, "RetirementPartnerReportViewSet"),
+            (V2_VIEW_MODULE, "RetirementPartnerReportCleanupViewSet"),
+        }
+
+    def test_neither_disposal_has_a_member_address(self):
+        """A collection with no member operation is given no member route by the router."""
+        for address in (
+            "/api/user/v2/retirement_cleanups/",
+            "/api/user/v2/retirement_partner_report_cleanups/",
         ):
-            match = resolve(address)
-            assert view_identity(match.func) == (V2_VIEW_MODULE, view.__name__), address
-            assert served_methods(match.func) == {"POST", "OPTIONS"}, address
+            with pytest.raises(Resolver404):
+                resolve(f"{address}alice/")
 
     def test_a_name_carrying_every_character_a_username_may_hold_addresses_a_member(self):
         for username in ("a.b", "a b", "a@b", "a+b", "a-b", "a_b", "Mixed.Case+1"):
@@ -748,11 +771,11 @@ class RetirementRouteTests(APITestCase):
         match = resolve("/api/user/v2/retirements/cleanups/")
         assert match.url_name == "retirement_detail"
         assert match.kwargs == {"username": "cleanups"}
-        assert resolve("/api/user/v2/retirement_cleanups/").url_name == "retirement_cleanup"
+        assert resolve("/api/user/v2/retirement_cleanups/").url_name == "retirement_cleanup_list"
 
     def test_the_batch_addresses_are_not_members_of_the_collections_they_dispose_of(self):
-        assert reverse("user_v2:retirement_cleanup") == "/api/user/v2/retirement_cleanups/"
-        assert reverse("user_v2:retirement_partner_report_cleanup") == (
+        assert reverse("user_v2:retirement_cleanup_list") == "/api/user/v2/retirement_cleanups/"
+        assert reverse("user_v2:retirement_partner_report_cleanup_list") == (
             "/api/user/v2/retirement_partner_report_cleanups/"
         )
 

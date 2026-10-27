@@ -49,8 +49,8 @@ from openedx.core.djangoapps.user_api.accounts.views import (
 from openedx.core.djangoapps.user_api.models import RetirementState, UserOrgTag, UserRetirementStatus
 from openedx.core.djangoapps.user_api.v2 import view_services
 from openedx.core.djangoapps.user_api.v2.views import (
-    RetirementCleanupView,
-    RetirementPartnerReportCleanupView,
+    RetirementCleanupViewSet,
+    RetirementPartnerReportCleanupViewSet,
     RetirementPartnerReportViewSet,
     RetirementViewSet,
 )
@@ -125,9 +125,9 @@ QUEUE_FILTER_DIFFERENCES = (
 #: earlier version's two pipeline views and are compared against those.
 MEDIA_TYPE_PAIRS = (
     (RetirementViewSet, legacy_views.AccountRetirementStatusView),
-    (RetirementCleanupView, legacy_views.AccountRetirementStatusView),
+    (RetirementCleanupViewSet, legacy_views.AccountRetirementStatusView),
     (RetirementPartnerReportViewSet, legacy_views.AccountRetirementPartnerReportView),
-    (RetirementPartnerReportCleanupView, legacy_views.AccountRetirementPartnerReportView),
+    (RetirementPartnerReportCleanupViewSet, legacy_views.AccountRetirementPartnerReportView),
 )
 
 

@@ -31,6 +31,8 @@ from edx_rest_framework_extensions.errors import (
     classify_error,
     error_type_uri,
 )
+from edx_rest_framework_extensions.permissions import NotJwtRestrictedApplication
+from edx_rest_framework_extensions.scoping import FullScopePolicy
 from edx_rest_framework_extensions.testing import assert_error_envelope
 from opaque_keys.edx.keys import CourseKey
 from rest_framework import permissions, status
@@ -71,10 +73,13 @@ from openedx.core.djangoapps.user_api.v2.paginators import UserApiPagination
 from openedx.core.djangoapps.user_api.v2.serializers import RETIREMENT_MINIMAL_FIELDS
 from openedx.core.djangoapps.user_api.v2.views import (
     RETIREMENT_ACTION_PERMISSIONS,
-    RetirementCleanupView,
-    RetirementPartnerReportCleanupView,
+    RetirementCleanupViewSet,
+    RetirementPartnerReportCleanupViewSet,
     RetirementPartnerReportViewSet,
     RetirementViewSet,
+    _PartnerReportAccessMixin,
+    _RetirementRecordAccessMixin,
+    _RetirementRecordsMixin,
 )
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 
@@ -674,6 +679,70 @@ class _NarrowingPolicy:
         self.subjects.append(subject)
         self.offered.append(sorted(queryset.values_list(self.column, flat=True)))
         return queryset.filter(**{f"{self.column}__in": self.keep})
+
+
+#: Stands for a view class that declares no permission classes of its own.
+NOT_DECLARED = object()
+
+
+def _copied_by_the_middleware(view):
+    """
+    Return whether the classes on this view class are the shared ones with the middleware's added.
+
+    The platform's own middleware appends its class to whatever it finds on
+    every view class it serves, which leaves a copy on the view class itself.
+    That copy is this and nothing else, so a view that declares classes of its
+    own is told apart from one that has merely answered a request.
+    """
+    own = vars(view).get("permission_classes")
+    if own is None:
+        return False
+    inherited = next(
+        vars(base)["permission_classes"]
+        for base in view.__mro__[1:]
+        if "permission_classes" in vars(base)
+    )
+    return tuple(own) == (*inherited, NotJwtRestrictedApplication)
+
+
+@contextlib.contextmanager
+def layers_read_from_their_own_declaration(*views):
+    """
+    Serve these views with the permission classes the layer they share declares.
+
+    The middleware's copy is dropped here and put back afterwards, so that what
+    the views read is what is declared for them, as it would be on a service
+    that has just started. A view declaring classes of its own keeps them,
+    because that declaration is what these tests are here to see.
+    """
+    on_entry = {view: vars(view).get("permission_classes", NOT_DECLARED) for view in views}
+    try:
+        for view in views:
+            if _copied_by_the_middleware(view):
+                del view.permission_classes
+        yield
+    finally:
+        # Each view class is left exactly as it was found, whatever the
+        # middleware wrote onto it while these requests were being served.
+        for view, declared in on_entry.items():
+            if "permission_classes" in vars(view):
+                del view.permission_classes
+            if declared is not NOT_DECLARED:
+                view.permission_classes = declared
+
+
+class _OnlyASuperuser(permissions.BasePermission):
+    """
+    A rule a deployment might add to a resource, admitting one caller and refusing the rest.
+
+    It stands in for whatever a deployment adds to the layer the operations on
+    a resource share, so the tests below read which of those operations is
+    asked for it.
+    """
+
+    def has_permission(self, request, view):
+        """Return whether this caller is a superuser."""
+        return bool(request.user and request.user.is_superuser)
 
 
 @skip_unless_lms
@@ -1692,7 +1761,7 @@ class RetirementCleanupTests(_BatchTestsMixin, RetirementApiTestCase):
 
     def setUp(self):
         super().setUp()
-        self.url = reverse("user_v2:retirement_cleanup")
+        self.url = reverse("user_v2:retirement_cleanup_list")
         self.finished = self.retirement_in("COMPLETE", user=self.subject)
 
     def send(self):
@@ -1778,7 +1847,7 @@ class PartnerReportCleanupTests(_BatchTestsMixin, RetirementApiTestCase):
 
     def setUp(self):
         super().setUp()
-        self.url = reverse("user_v2:retirement_partner_report_cleanup")
+        self.url = reverse("user_v2:retirement_partner_report_cleanup_list")
         self.reported = self.queued(self.subject, taken=True)
 
     def queued(self, user, taken=False):
@@ -1890,8 +1959,10 @@ class RetirementAccessModelTests(RetirementApiTestCase):
         for view in (
             RetirementViewSet,
             RetirementPartnerReportViewSet,
-            RetirementCleanupView,
-            RetirementPartnerReportCleanupView,
+            RetirementCleanupViewSet,
+            RetirementPartnerReportCleanupViewSet,
+            _RetirementRecordAccessMixin,
+            _PartnerReportAccessMixin,
         ):
             with self.subTest(view=view.__name__):
                 assert "authentication_classes" not in vars(view)
@@ -1901,11 +1972,438 @@ class RetirementAccessModelTests(RetirementApiTestCase):
         for view in (
             RetirementViewSet,
             RetirementPartnerReportViewSet,
-            RetirementCleanupView,
-            RetirementPartnerReportCleanupView,
+            RetirementCleanupViewSet,
+            RetirementPartnerReportCleanupViewSet,
+            _RetirementRecordAccessMixin,
+            _PartnerReportAccessMixin,
         ):
             with self.subTest(view=view.__name__):
                 assert "throttle_classes" not in vars(view)
+
+
+@skip_unless_lms
+class RetirementRecordAccessReachTests(RetirementApiTestCase):
+    """
+    What is asked of the operations on the retirement records is asked of their disposal.
+
+    The records the collection lists, moves and cancels are the records the
+    batch disposal deletes, so both resolve who may act on them and which of
+    them a caller acts on through one layer. A rule added to that layer is
+    read here from the answers each of them gives, rather than from where the
+    rule is written.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.list_url = reverse("user_v2:retirement_list")
+        self.disposal_url = reverse("user_v2:retirement_cleanup_list")
+        self.finished = self.retirement_in("COMPLETE", user=self.subject)
+        self.other = self.retirement_in("COMPLETE")
+
+    def dispose_of(self, usernames):
+        """Ask the disposal to delete the records of these accounts."""
+        return self.client.post(self.disposal_url, {"usernames": usernames}, format="json")
+
+    @contextlib.contextmanager
+    def a_rule_added_to_the_records(self):
+        """Add a rule to the layer the operations on these records share."""
+        with layers_read_from_their_own_declaration(RetirementViewSet, RetirementCleanupViewSet):
+            with mock.patch.object(
+                _RetirementRecordAccessMixin, "permission_classes",
+                (permissions.IsAuthenticated, _OnlyASuperuser),
+            ):
+                yield
+
+    def test_a_rule_added_to_the_records_is_asked_of_their_disposal(self):
+        self.login("worker")
+        with self.a_rule_added_to_the_records():
+            refused = self.dispose_of(["subject"])
+        assert_error_envelope(
+            refused, expected_status=status.HTTP_403_FORBIDDEN, expected_type_slug="authz",
+        )
+        assert UserRetirementStatus.objects.filter(id=self.finished.id).exists()
+
+    def test_the_same_rule_is_asked_of_the_collection_those_records_are_listed_by(self):
+        """The rule is added in one place, so what obeys it is what resolves it there."""
+        self.login("worker")
+        with self.a_rule_added_to_the_records():
+            assert_error_envelope(
+                self.client.get(self.list_url),
+                expected_status=status.HTTP_403_FORBIDDEN,
+                expected_type_slug="authz",
+            )
+
+    def test_the_caller_the_rule_admits_is_served_by_both(self):
+        """The refusals above are the rule's doing, and the rule admits somebody."""
+        self.login("superuser")
+        with self.a_rule_added_to_the_records():
+            assert self.client.get(self.list_url).status_code == status.HTTP_200_OK
+            assert self.dispose_of(["subject"]).status_code == status.HTTP_200_OK
+
+    def test_the_same_caller_is_served_by_the_disposal_without_that_rule(self):
+        """The refusal above is the rule's doing and not the caller's."""
+        self.login("worker")
+        answered = self.dispose_of(["subject"])
+        assert answered.status_code == status.HTTP_200_OK
+        assert answered.data == {"results": [{"username": "subject", "outcome": "deleted"}]}
+
+    def test_a_record_the_visibility_policy_leaves_out_is_not_deleted_by_the_disposal(self):
+        self.login("worker")
+        policy = _NarrowingPolicy("original_username", self.other.original_username)
+        with mock.patch.object(_RetirementRecordAccessMixin, "scoping_policy", policy):
+            answered = self.dispose_of(["subject", self.other.original_username])
+        assert answered.data == {
+            "results": [
+                {"username": "subject", "outcome": "already_absent"},
+                {"username": self.other.original_username, "outcome": "deleted"},
+            ],
+        }
+        assert UserRetirementStatus.objects.filter(id=self.finished.id).exists()
+        assert not UserRetirementStatus.objects.filter(id=self.other.id).exists()
+
+    def test_the_policy_is_given_the_caller_and_every_record_the_disposal_could_delete(self):
+        self.login("worker")
+        policy = _NarrowingPolicy("original_username", self.other.original_username)
+        with mock.patch.object(_RetirementRecordAccessMixin, "scoping_policy", policy):
+            self.dispose_of(["subject"])
+        assert [subject.username for subject in policy.subjects] == [WORKER_USERNAME]
+        assert policy.offered == [sorted(["subject", self.other.original_username])]
+
+    def test_the_disposal_declares_none_of_these_layers_itself(self):
+        """Declaring one again here is what would leave a rule added to the records behind."""
+        with layers_read_from_their_own_declaration(RetirementViewSet, RetirementCleanupViewSet):
+            for name, declared_by in (
+                ("permission_classes", _RetirementRecordAccessMixin),
+                ("scoping_policy", _RetirementRecordAccessMixin),
+                ("get_permissions", _RetirementRecordAccessMixin),
+                ("get_queryset", _RetirementRecordsMixin),
+            ):
+                with self.subTest(declaration=name):
+                    assert name not in vars(RetirementCleanupViewSet)
+                    assert name not in vars(RetirementViewSet)
+                    assert name in vars(declared_by)
+
+    def test_the_classes_each_view_resolves_are_the_ones_the_shared_layer_declares(self):
+        """Neither view declares them itself, so these are the classes the layer resolves to."""
+        resolved = {}
+        with layers_read_from_their_own_declaration(RetirementViewSet, RetirementCleanupViewSet):
+            for view, action in (
+                (RetirementViewSet, "list"),
+                (RetirementViewSet, "destroy"),
+                (RetirementCleanupViewSet, "create"),
+                (RetirementCleanupViewSet, "metadata"),
+            ):
+                viewset = view()
+                viewset.action = action
+                resolved[(view.__name__, action)] = [
+                    type(permission) for permission in viewset.get_permissions()
+                ]
+        assert resolved == {
+            ("RetirementViewSet", "list"): [permissions.IsAuthenticated, CanRetireUser, NotJwtRestrictedApplication],
+            ("RetirementViewSet", "destroy"): [
+                permissions.IsAuthenticated, CanCancelUserRetirement, NotJwtRestrictedApplication,
+            ],
+            ("RetirementCleanupViewSet", "create"): [
+                permissions.IsAuthenticated, CanRetireUser, NotJwtRestrictedApplication,
+            ],
+            ("RetirementCleanupViewSet", "metadata"): [
+                permissions.IsAuthenticated, CanRetireUser, NotJwtRestrictedApplication,
+            ],
+        }
+
+    def test_the_policy_declared_for_these_records_is_the_one_each_view_resolves(self):
+        """The library mixin declares the same attribute, so where it stands in the order matters."""
+        for view in (RetirementViewSet, RetirementCleanupViewSet):
+            with self.subTest(view=view.__name__):
+                assert isinstance(view().scoping_policy, FullScopePolicy)
+
+    def test_the_disposal_asks_for_the_capability_the_rest_of_the_pipeline_work_asks_for(self):
+        assert RetirementCleanupViewSet.action_permissions == {
+            "create": (CanRetireUser,),
+            "metadata": (CanRetireUser,),
+        }
+        for action in RetirementCleanupViewSet.action_permissions:
+            with self.subTest(action=action):
+                viewset = RetirementCleanupViewSet()
+                viewset.action = action
+                built = [type(permission) for permission in viewset.get_permissions()]
+                assert built[-1] is CanRetireUser
+                assert permissions.IsAuthenticated in built
+
+    def test_asking_the_disposal_what_it_serves_asks_for_the_same_capability(self):
+        """Describing an address is reading it, and this address is read by whoever may work it."""
+        self.login("worker")
+        described = self.client.options(self.disposal_url)
+        assert described.status_code == status.HTTP_200_OK
+        assert described.data["renders"] == ["application/json"]
+        self.client.logout()
+        self.login("learner")
+        assert_error_envelope(
+            self.client.options(self.disposal_url),
+            expected_status=status.HTTP_403_FORBIDDEN,
+            expected_type_slug="authz",
+        )
+
+    def test_an_action_added_to_the_disposal_later_reaches_no_capability(self):
+        viewset = RetirementCleanupViewSet()
+        viewset.action = "an_action_added_later"
+        assert [
+            permission.has_permission(mock.Mock(user=self.superuser), viewset)
+            for permission in viewset.get_permissions()
+        ][-1] is False
+
+
+@skip_unless_lms
+class PartnerReportAccessReachTests(RetirementApiTestCase):
+    """What is asked of the operations on the partner report entries is asked of their disposal."""
+
+    def setUp(self):
+        super().setUp()
+        self.queue_url = reverse("user_v2:retirement_partner_report_list")
+        self.disposal_url = reverse("user_v2:retirement_partner_report_cleanup_list")
+        self.reported = self.queued(self.subject, taken=True)
+        self.also_reported = self.queued(self.learner, taken=True)
+
+    def queued(self, user, taken=False):
+        """Return a partner report entry for this user, taken for processing or not."""
+        return UserRetirementPartnerReportingStatus.objects.create(
+            user=user,
+            original_username=user.username,
+            original_email=user.email,
+            original_name=user.profile.name,
+            is_being_processed=taken,
+        )
+
+    def dispose_of(self, usernames):
+        """Ask the disposal to delete the entries of these accounts."""
+        return self.client.post(self.disposal_url, {"usernames": usernames}, format="json")
+
+    def test_a_rule_added_to_the_entries_is_asked_of_their_disposal(self):
+        self.login("worker")
+        with layers_read_from_their_own_declaration(
+            RetirementPartnerReportViewSet, RetirementPartnerReportCleanupViewSet,
+        ), mock.patch.object(
+            _PartnerReportAccessMixin, "permission_classes",
+            (permissions.IsAuthenticated, _OnlyASuperuser),
+        ):
+            refused = self.dispose_of(["subject"])
+            taking = self.client.post(self.queue_url, {}, format="json")
+        for response in (refused, taking):
+            assert_error_envelope(
+                response, expected_status=status.HTTP_403_FORBIDDEN, expected_type_slug="authz",
+            )
+        assert UserRetirementPartnerReportingStatus.objects.filter(id=self.reported.id).exists()
+
+    def test_the_same_caller_is_served_by_the_disposal_without_that_rule(self):
+        self.login("worker")
+        answered = self.dispose_of(["subject"])
+        assert answered.status_code == status.HTTP_200_OK
+        assert answered.data == {"results": [{"username": "subject", "outcome": "deleted"}]}
+
+    def test_an_entry_the_visibility_policy_leaves_out_is_not_deleted_by_the_disposal(self):
+        self.login("worker")
+        policy = _NarrowingPolicy("original_username", self.learner.username)
+        with mock.patch.object(_PartnerReportAccessMixin, "scoping_policy", policy):
+            answered = self.dispose_of(["subject", self.learner.username])
+        assert answered.data == {
+            "results": [
+                {"username": "subject", "outcome": "already_absent"},
+                {"username": self.learner.username, "outcome": "deleted"},
+            ],
+        }
+        assert UserRetirementPartnerReportingStatus.objects.filter(id=self.reported.id).exists()
+        assert not UserRetirementPartnerReportingStatus.objects.filter(
+            id=self.also_reported.id,
+        ).exists()
+
+    def test_the_disposal_resolves_the_entries_the_queue_leaves_out(self):
+        """An entry is disposed of once it has been taken, which is when the queue stops offering it."""
+        self.login("worker")
+        policy = _NarrowingPolicy("original_username", "nobody")
+        with mock.patch.object(_PartnerReportAccessMixin, "scoping_policy", policy):
+            self.dispose_of(["subject"])
+            self.client.post(self.queue_url, {}, format="json")
+        assert policy.offered == [
+            sorted([self.subject.username, self.learner.username]),
+            [],
+        ]
+
+    def test_the_disposal_declares_neither_layer_itself(self):
+        with layers_read_from_their_own_declaration(
+            RetirementPartnerReportViewSet, RetirementPartnerReportCleanupViewSet,
+        ):
+            for name in ("permission_classes", "scoping_policy"):
+                with self.subTest(declaration=name):
+                    assert name not in vars(RetirementPartnerReportCleanupViewSet)
+                    assert name not in vars(RetirementPartnerReportViewSet)
+                    assert name in vars(_PartnerReportAccessMixin)
+
+    def test_the_classes_each_view_resolves_are_the_ones_the_shared_layer_declares(self):
+        """Neither view declares them itself, so these are the classes the layer resolves to."""
+        with layers_read_from_their_own_declaration(
+            RetirementPartnerReportViewSet, RetirementPartnerReportCleanupViewSet,
+        ):
+            resolved = {
+                view.__name__: [type(permission) for permission in view().get_permissions()]
+                for view in (
+                    RetirementPartnerReportViewSet, RetirementPartnerReportCleanupViewSet,
+                )
+            }
+        assert resolved == {
+            "RetirementPartnerReportViewSet": [
+                permissions.IsAuthenticated, CanRetireUser, NotJwtRestrictedApplication,
+            ],
+            "RetirementPartnerReportCleanupViewSet": [
+                permissions.IsAuthenticated, CanRetireUser, NotJwtRestrictedApplication,
+            ],
+        }
+
+    def test_the_policy_declared_for_these_entries_is_the_one_each_view_resolves(self):
+        """The library mixin declares the same attribute, so where it stands in the order matters."""
+        for view in (RetirementPartnerReportViewSet, RetirementPartnerReportCleanupViewSet):
+            with self.subTest(view=view.__name__):
+                assert isinstance(view().scoping_policy, FullScopePolicy)
+
+
+@skip_unless_lms
+class RetirementMemberVisibilityTests(RetirementApiTestCase):
+    """
+    A retirement the visibility policy leaves out is absent from every member address too.
+
+    The policy this deployment runs keeps the records whole, because every
+    caller these addresses admit holds the capability to work the whole
+    pipeline, so it is replaced here with one that keeps one record of two and
+    each member address is asked about the other.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.kept = self.retirement_in("RETIRING_LMS", user=self.learner)
+        self.left_out = self.retirement_in("RETIRING_LMS", user=self.subject)
+        self.policy = _NarrowingPolicy("original_username", self.learner.username)
+        self.left_out_url = reverse("user_v2:retirement_detail", kwargs={"username": "subject"})
+        self.kept_url = reverse(
+            "user_v2:retirement_detail", kwargs={"username": self.learner.username},
+        )
+        self.erasure_url = reverse("user_v2:retirement_erasure", kwargs={"username": "subject"})
+
+    @contextlib.contextmanager
+    def policy_in_force(self):
+        """Serve the next requests under a policy that keeps one of the two records."""
+        with mock.patch.object(_RetirementRecordAccessMixin, "scoping_policy", self.policy):
+            yield
+
+    def assert_reported_absent(self, response):
+        """Assert the record was reported as absent rather than the caller refused."""
+        envelope = assert_error_envelope(
+            response, expected_status=status.HTTP_404_NOT_FOUND, expected_type_slug="not-found",
+        )
+        assert envelope["detail"] == view_services.NO_SUCH_RETIREMENT
+
+    def test_a_record_the_policy_leaves_out_is_absent_from_its_member_address(self):
+        self.login("worker")
+        with self.policy_in_force():
+            self.assert_reported_absent(self.client.get(self.left_out_url))
+
+    def test_the_record_the_policy_keeps_is_answered_at_its_own_address(self):
+        self.login("worker")
+        with self.policy_in_force():
+            answered = self.client.get(self.kept_url)
+        assert answered.status_code == status.HTTP_200_OK
+        assert answered.data["original_username"] == self.learner.username
+
+    def test_a_record_the_policy_leaves_out_cannot_be_moved(self):
+        self.login("worker")
+        with self.policy_in_force():
+            self.assert_reported_absent(
+                self.client.patch(
+                    self.left_out_url,
+                    {"new_state": "LMS_COMPLETE", "response": "done"},
+                    format="json",
+                ),
+            )
+        self.left_out.refresh_from_db()
+        assert self.left_out.current_state.state_name == "RETIRING_LMS"
+
+    def test_a_record_the_policy_leaves_out_cannot_be_cancelled(self):
+        pending = self.retirement_in("PENDING", user=UserFactory.create(username="pending-one"))
+        self.login("canceller")
+        with mock.patch.object(
+            _RetirementRecordAccessMixin, "scoping_policy",
+            _NarrowingPolicy("original_username", self.learner.username),
+        ):
+            self.assert_reported_absent(
+                self.client.delete(
+                    reverse("user_v2:retirement_detail", kwargs={"username": "pending-one"}),
+                ),
+            )
+        assert UserRetirementStatus.objects.filter(id=pending.id).exists()
+
+    def test_a_record_the_policy_leaves_out_has_nothing_erased(self):
+        self.subject.profile.city = "Somewhere"
+        self.subject.profile.save()
+        self.login("worker")
+        with self.policy_in_force():
+            self.assert_reported_absent(
+                self.client.post(self.erasure_url, {"scope": "lms_core"}, format="json"),
+            )
+        self.subject.profile.refresh_from_db()
+        assert self.subject.profile.city == "Somewhere"
+        self.subject.refresh_from_db()
+        assert self.subject.username == "subject"
+
+    def test_the_policy_is_given_the_caller_and_every_record_held(self):
+        self.login("worker")
+        with self.policy_in_force():
+            self.client.get(self.kept_url)
+        assert [subject.username for subject in self.policy.subjects] == [WORKER_USERNAME]
+        assert self.policy.offered == [
+            sorted([self.learner.username, self.left_out.original_username]),
+        ]
+
+    def test_a_name_more_than_one_record_is_held_under_is_still_refused(self):
+        """The policy narrows what the name is resolved against; it does not resolve the name."""
+        twin = self.retirement_in("RETIRING_LMS", user=UserFactory.create(username="learner-twin"))
+        UserRetirementStatus.objects.filter(id=twin.id).update(
+            original_username=self.learner.username,
+        )
+        self.login("worker")
+        with self.policy_in_force():
+            envelope = assert_error_envelope(
+                self.client.patch(
+                    self.kept_url,
+                    {"new_state": "LMS_COMPLETE", "response": "done"},
+                    format="json",
+                ),
+                expected_status=status.HTTP_400_BAD_REQUEST,
+                expected_type_slug=AMBIGUOUS_NAME_SLUG,
+            )
+        assert envelope["detail"] == view_services.NAME_IS_AMBIGUOUS
+        for record in (self.kept, twin):
+            record.refresh_from_db()
+            assert record.current_state.state_name == "RETIRING_LMS"
+
+    def test_a_policy_leaving_one_record_of_such_a_pair_leaves_one_record_for_the_name(self):
+        """The record left out belongs to an account this caller may not act on, so it is not weighed."""
+        twin = self.retirement_in("RETIRING_LMS", user=UserFactory.create(username="learner-twin"))
+        UserRetirementStatus.objects.filter(id=twin.id).update(
+            original_username=self.learner.username,
+        )
+        self.login("worker")
+        with mock.patch.object(
+            _RetirementRecordAccessMixin, "scoping_policy",
+            _NarrowingPolicy("id", self.kept.id),
+        ):
+            answered = self.client.patch(
+                self.kept_url,
+                {"new_state": "LMS_COMPLETE", "response": "done"},
+                format="json",
+            )
+        assert answered.status_code == status.HTTP_204_NO_CONTENT
+        self.kept.refresh_from_db()
+        twin.refresh_from_db()
+        assert self.kept.current_state.state_name == "LMS_COMPLETE"
+        assert twin.current_state.state_name == "RETIRING_LMS"
 
 
 class RetirementErrorCatalogTests(SimpleTestCase):
@@ -2126,8 +2624,8 @@ class NameRequestedTwiceTests(RetirementApiTestCase):
         self.queue_url = reverse(
             "user_v2:retirement_partner_report_detail", kwargs={"username": "subject"},
         )
-        self.cleanup_url = reverse("user_v2:retirement_cleanup")
-        self.partner_cleanup_url = reverse("user_v2:retirement_partner_report_cleanup")
+        self.cleanup_url = reverse("user_v2:retirement_cleanup_list")
+        self.partner_cleanup_url = reverse("user_v2:retirement_partner_report_cleanup_list")
 
     def two_retirements_under_one_name(self, state_name):
         """Return two retirement records requested under the one name ``subject``."""
@@ -2354,7 +2852,10 @@ class FormEncodedBodyTests(RetirementApiTestCase):
 
     def test_a_form_body_is_refused_by_each_batch_disposal(self):
         self.login("worker")
-        for name in ("user_v2:retirement_cleanup", "user_v2:retirement_partner_report_cleanup"):
+        for name in (
+            "user_v2:retirement_cleanup_list",
+            "user_v2:retirement_partner_report_cleanup_list",
+        ):
             with self.subTest(address=name):
                 self.assert_the_body_was_unreadable(
                     self.client.post(reverse(name), "usernames=subject", content_type=self.FORM),
@@ -2418,19 +2919,21 @@ class UnservedMethodTests(RetirementApiTestCase):
         ("delete", "user_v2:retirement_list", None),
         ("patch", "user_v2:retirement_list", None),
         ("get", "user_v2:retirement_erasure", {"username": "subject"}),
+        ("get", "user_v2:retirement_cleanup_list", None),
     )
     PER_VIEW = (
         ("get", "user_v2:retirement_partner_report_list", None),
         ("get", "user_v2:retirement_partner_report_detail", {"username": "subject"}),
-        ("get", "user_v2:retirement_cleanup", None),
-        ("get", "user_v2:retirement_partner_report_cleanup", None),
+        ("get", "user_v2:retirement_partner_report_cleanup_list", None),
     )
 
-    #: What each address of the collection serves, as its refusal reports it.
+    #: What each address whose capability follows the operation serves, as its
+    #: refusal reports it.
     SERVED = {
         "user_v2:retirement_list": {"GET", "HEAD", "OPTIONS"},
         "user_v2:retirement_detail": {"GET", "HEAD", "PATCH", "DELETE", "OPTIONS"},
         "user_v2:retirement_erasure": {"POST", "OPTIONS"},
+        "user_v2:retirement_cleanup_list": {"POST", "OPTIONS"},
     }
 
     def setUp(self):

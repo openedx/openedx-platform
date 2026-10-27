@@ -102,19 +102,21 @@ def retirements():
     )
 
 
-def retirement_of_the_account_named(username):
+def retirement_of_the_account_named(records, username):
     """
     Return the retirement of the account this name addresses, or ``None``.
 
     A retired account is stored under a hashed name, so the name a caller
     holds may be either the one the account was registered under or the one it
     was moved to; both address the same account and so the same retirement.
+    The record is taken from the selection given rather than from every record
+    held, so a record outside it is reported as absent.
     """
     try:
         user = get_potentially_retired_user_by_username(username)
     except User.DoesNotExist:
         return None
-    return retirements().filter(user=user).first()
+    return records.filter(user=user).first()
 
 
 def _grouped_by_requested_name(rows, usernames):
@@ -138,10 +140,10 @@ def _grouped_by_requested_name(rows, usernames):
     return grouped
 
 
-def retirements_requested_as(usernames):
-    """Return the retirements requested under exactly these names, grouped by name."""
+def retirements_requested_as(records, usernames):
+    """Return the records of this selection requested under exactly these names, grouped by name."""
     return _grouped_by_requested_name(
-        retirements().filter(original_username__in=usernames), usernames,
+        records.filter(original_username__in=usernames), usernames,
     )
 
 
@@ -162,8 +164,13 @@ def unclaimed_partner_reports():
     )
 
 
-def partner_reports_requested_as(usernames):
-    """Return the partner reports of the accounts registered under exactly these names, grouped by name."""
+def partner_reports():
+    """Return every partner report entry, whether or not it has been taken for processing."""
+    return UserRetirementPartnerReportingStatus.objects.all()
+
+
+def partner_reports_requested_as(entries, usernames):
+    """Return the entries of this selection registered under exactly these names, grouped by name."""
     return _grouped_by_requested_name(
-        UserRetirementPartnerReportingStatus.objects.filter(original_username__in=usernames), usernames,
+        entries.filter(original_username__in=usernames), usernames,
     )
