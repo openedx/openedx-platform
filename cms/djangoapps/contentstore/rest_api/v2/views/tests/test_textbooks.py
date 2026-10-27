@@ -545,10 +545,10 @@ class CourseTextbooksSchemaTest(CourseTestCase):
                 "$ref": "#/components/schemas/ErrorResponse"
             }, code
 
-    def test_the_legacy_operation_is_unchanged(self):
+    def test_the_legacy_operation_keeps_its_id_and_is_marked_deprecated(self):
         operation = self.schema["paths"][LEGACY_TEXTBOOKS_PATH]["get"]
         assert operation["operationId"] == "v1_textbooks_retrieve"
-        assert "deprecated" not in operation
+        assert operation["deprecated"] is True
 
 
 class CmsSchemaFilterTest(CourseTestCase):
