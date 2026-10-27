@@ -80,13 +80,37 @@ class CmsMarkSupersededPathsTest(TestCase):
             "/api/contentstore/v0/youtube_transcripts/{course_id}/uploa",
             "/api/contentstore/v0/youtube_transcripts/{course_id}/upload",
             "/api/contentstore/v1/help_urls",
+            "/api/contentstore/v1/certificates/{course_id}",
+            "/api/contentstore/v1/textbooks/{course_id}",
+            "/api/contentstore/v1/videos/{course_id}",
         }
         assert len(SUPERSEDED_PATHS) == len(set(SUPERSEDED_PATHS))
 
     def test_the_conforming_paths_are_left_unmarked(self):
-        conforming = "/api/authoring/v1/courses/{course_key}/youtube_transcript_checks/"
-        result = self._run({"paths": {conforming: {"get": {"operationId": "x"}}}})
-        assert result["paths"][conforming]["get"] == {"operationId": "x"}
+        for conforming in (
+            "/api/authoring/v1/courses/{course_key}/youtube_transcript_checks/",
+            "/api/authoring/v2/courses/{course_key}/certificate_settings/",
+            "/api/authoring/v2/courses/{course_key}/textbooks/",
+            "/api/authoring/v2/courses/{course_key}/video_settings/",
+        ):
+            result = self._run({"paths": {conforming: {"get": {"operationId": "x"}}}})
+            assert result["paths"][conforming]["get"] == {"operationId": "x"}
+
+    def test_the_certificates_read_is_marked_and_other_v1_reads_are_not(self):
+        certificates = "/api/contentstore/v1/certificates/{course_id}"
+        other = "/api/contentstore/v1/course_waffle_flags/{course_id}"
+        result = self._run({"paths": {certificates: {"get": {}}, other: {"get": {}}}})
+        assert result["paths"][certificates]["get"] == {"deprecated": True}
+        assert result["paths"][other]["get"] == {}
+
+    def test_the_textbooks_and_videos_reads_are_marked_and_other_v1_reads_are_not(self):
+        textbooks = "/api/contentstore/v1/textbooks/{course_id}"
+        videos = "/api/contentstore/v1/videos/{course_id}"
+        other = "/api/contentstore/v1/grading/{course_id}"
+        result = self._run({"paths": {textbooks: {"get": {}}, videos: {"get": {}}, other: {"get": {}}}})
+        assert result["paths"][textbooks]["get"] == {"deprecated": True}
+        assert result["paths"][videos]["get"] == {"deprecated": True}
+        assert result["paths"][other]["get"] == {}
 
     def test_an_unrelated_contentstore_path_is_left_unmarked(self):
         other = "/api/contentstore/v0/advanced_settings/{course_id}"
