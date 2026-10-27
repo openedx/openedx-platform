@@ -5197,7 +5197,7 @@ requires-dist = [
     { name = "openedx-django-require" },
     { name = "openedx-django-wiki" },
     { name = "openedx-events" },
-    { name = "openedx-filters" },
+    { name = "openedx-filters", specifier = ">=3.16.0" },
     { name = "openedx-forum" },
     { name = "path" },
     { name = "piexif" },

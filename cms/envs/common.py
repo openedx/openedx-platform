@@ -406,6 +406,9 @@ MIDDLEWARE = [
     # Instead of AuthenticationMiddleware, we use a cache-backed version
     'openedx.core.djangoapps.cache_toolbox.middleware.CacheBackedAuthenticationMiddleware',
 
+    # Answers 401 instead of a redirect to login when the client is not asking for HTML
+    'cms.djangoapps.contentstore.middleware.LoginRedirectToUnauthorizedMiddleware',
+
     'common.djangoapps.student.middleware.UserStandingMiddleware',
 
     'django.contrib.messages.middleware.MessageMiddleware',

@@ -291,7 +291,7 @@ class TestCourseReIndex(CourseTestCase):
 
         self.client.logout()
         response = self.client.get(index_url, {}, HTTP_ACCEPT='application/json')
-        self.assertEqual(response.status_code, 302)  # noqa: PT009
+        self.assertEqual(response.status_code, 401)  # noqa: PT009
 
     def test_negative_conditions(self):
         """
