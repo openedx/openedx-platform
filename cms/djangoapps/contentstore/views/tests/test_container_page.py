@@ -199,3 +199,11 @@ class ContainerPageTestCase(StudioPageTestCase, LibraryTestCase):
             usage_key_string=str(self.child_container.location)
         )
         self.assertEqual(response.status_code, 302)  # noqa: PT009
+        split_test_url = response.url
+
+        response = views.container_handler(
+            request=request,
+            usage_key_string=str(self.child_vertical.location)
+        )
+        self.assertEqual(response.status_code, 302)  # noqa: PT009
+        self.assertEqual(response.url, split_test_url)  # noqa: PT009

@@ -21,7 +21,7 @@ from xblock.exceptions import NoSuchHandlerError
 from xblock.plugin import PluginMissingError
 from xblock.runtime import Mixologist
 
-from cms.djangoapps.contentstore.helpers import xblock_has_own_studio_page
+from cms.djangoapps.contentstore.helpers import get_parent_if_split_test, xblock_has_own_studio_page
 from cms.djangoapps.contentstore.toggles import libraries_v2_enabled
 from cms.djangoapps.contentstore.xblock_storage_handlers.view_handlers import load_services_for_studio
 from common.djangoapps.edxmako.shortcuts import render_to_response
@@ -155,6 +155,9 @@ def container_handler(request, usage_key_string):
 
         if xblock_has_own_studio_page(xblock):
             return redirect(get_unit_url(course.id, xblock.location))
+
+        if split_xblock := get_parent_if_split_test(xblock):
+            return redirect(get_unit_url(course.id, split_xblock.location))
 
     raise Http404
 
