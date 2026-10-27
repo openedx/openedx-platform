@@ -3,7 +3,6 @@
 import copy
 import json
 from importlib import import_module
-from pathlib import Path
 from unittest import mock
 
 import jsonschema
@@ -2518,30 +2517,48 @@ def test_a_retirement_record_publishes_the_step_as_a_name(schema):
     assert "responses" not in record["properties"]
 
 
-@pytest.mark.django_db
+#: The retirement-status model as it was published while the corrected request
+#: body was its only reference. It is written out here rather than read from
+#: the configuration, so that a pin which no longer describes what a client
+#: already generates from fails this.
+PATCHED_RETIREMENT_STATUS_COMPONENT = {
+    "type": "object",
+    "description": "Perform serialization for the RetirementStatus model",
+    "properties": {
+        "id": {"type": "integer", "readOnly": True},
+        "user": {"allOf": [{"$ref": "#/components/schemas/RetirementUser"}], "readOnly": True},
+        "current_state": {"allOf": [{"$ref": "#/components/schemas/RetirementState"}], "readOnly": True},
+        "last_state": {"allOf": [{"$ref": "#/components/schemas/RetirementState"}], "readOnly": True},
+        "created": {"type": "string", "format": "date-time", "readOnly": True},
+        "modified": {"type": "string", "format": "date-time", "readOnly": True},
+        "original_username": {"type": "string", "maxLength": 150},
+        "original_email": {"type": "string", "format": "email", "maxLength": 254},
+        "original_name": {"type": "string", "maxLength": 255},
+        "retired_username": {"type": "string", "maxLength": 150},
+        "retired_email": {"type": "string", "format": "email", "maxLength": 254},
+    },
+}
+
+
 @skip_unless_lms
-def test_the_component_the_corrected_request_body_leaves_behind_is_pinned_in_the_document(schema, service_wide):
+def test_the_component_the_corrected_request_body_leaves_behind_is_carried_by_both_documents(schema, service_wide):
     """
     The partial update of a version 1 retirement was the component's only reference.
 
-    A client generated from the service-wide document names a class after each
-    component, so a name that loses its last reference is kept by naming it in
-    the configuration that document is built with, rather than disappearing
-    with the body that was wrong.
+    A client generated from a document names a class after each component in
+    it, so a component that loses its last reference is named in the settings
+    both documents are built from, rather than disappearing with the body that
+    was wrong. The document the service serves for browsing its whole surface
+    overlays its own keys on those settings and keeps this one, and the
+    narrower document a client library is generated from carries it too.
     """
-    assert "PatchedUserRetirementStatus" not in schema["components"]["schemas"]
-    assert "PatchedUserRetirementStatus" not in service_wide["components"]["schemas"]
-
-    configured = (Path(settings.REPO_ROOT) / "docs" / "docs_settings.py").read_text()
-    assert '"PatchedUserRetirementStatus": PATCHED_USER_RETIREMENT_STATUS' in configured
-    assert '"schemas": {' in configured
-
-    pinned = {"PatchedUserRetirementStatus": {"type": "object"}}
-    with_the_pin = service_wide_from_user_mounts(APPEND_COMPONENTS={"schemas": pinned})
-    assert with_the_pin["components"]["schemas"]["PatchedUserRetirementStatus"] == {
-        "type": "object",
-    }
-    assert "UserRetirementStatus" in with_the_pin["components"]["schemas"]
+    for document in (schema, service_wide):
+        components = document["components"]["schemas"]
+        assert components["PatchedUserRetirementStatus"] == PATCHED_RETIREMENT_STATUS_COMPONENT
+        # Nothing the kept component refers to is missing from the document
+        # that carries it, so no reference in it dangles.
+        assert "RetirementUser" in components
+        assert "RetirementState" in components
 
 
 #: The two addresses whose published name the body correction would otherwise

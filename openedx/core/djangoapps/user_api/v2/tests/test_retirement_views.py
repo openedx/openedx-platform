@@ -1,20 +1,34 @@
 """Tests for the version 2 User API views over the account retirement pipeline."""
 
+import contextlib
 import datetime
 from unittest import mock
 from zoneinfo import ZoneInfo
 
 import pytest
+from crum.signals import current_user_setter
+from django.conf import settings
 from django.contrib.auth.models import Permission
+from django.contrib.sessions.models import Session
 from django.core.cache import cache
+from django.core.signals import got_request_exception, request_finished, request_started
 from django.db import connection
+from django.db.backends.signals import connection_created
+from django.db.models.signals import class_prepared, post_init, post_save, pre_init, pre_save
+from django.dispatch import Signal
 from django.test import SimpleTestCase, override_settings
+from django.test.signals import setting_changed
 from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
+from edx_django_utils.monitoring.signals import (
+    monitoring_support_process_request,
+    monitoring_support_process_response,
+)
 from edx_rest_framework_extensions.errors import Conflict, classify_error
 from edx_rest_framework_extensions.testing import assert_error_envelope
 from opaque_keys.edx.keys import CourseKey
 from rest_framework import permissions, status
+from rest_framework.exceptions import ValidationError
 from rest_framework.test import APITestCase
 
 from common.djangoapps.student.models import (
@@ -31,6 +45,7 @@ from common.djangoapps.student.tests.factories import (
     SuperuserFactory,
     UserFactory,
 )
+from common.djangoapps.util.model_utils import USER_FIELDS_CHANGED
 from openedx.core.djangoapps.user_api.accounts.permissions import CanCancelUserRetirement, CanRetireUser
 from openedx.core.djangoapps.user_api.accounts.tests.retirement_helpers import (  # pylint: disable=unused-import
     create_retirement_status,
@@ -39,12 +54,13 @@ from openedx.core.djangoapps.user_api.accounts.tests.retirement_helpers import (
 from openedx.core.djangoapps.user_api.models import (
     RetirementState,
     UserOrgTag,
+    UserPreference,
     UserRetirementPartnerReportingStatus,
     UserRetirementRequest,
     UserRetirementStatus,
 )
 from openedx.core.djangoapps.user_api.v2 import view_services
-from openedx.core.djangoapps.user_api.v2.errors import RetirementStateConflict
+from openedx.core.djangoapps.user_api.v2.errors import AmbiguousAccountName, RetirementStateConflict
 from openedx.core.djangoapps.user_api.v2.paginators import UserApiPagination
 from openedx.core.djangoapps.user_api.v2.serializers import RETIREMENT_MINIMAL_FIELDS
 from openedx.core.djangoapps.user_api.v2.views import (
@@ -56,7 +72,7 @@ from openedx.core.djangoapps.user_api.v2.views import (
 )
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 
-from .test_views import MALFORMED_BODY_SLUG, UNSUPPORTED_MEDIA_TYPE_SLUG, write_queries
+from .test_views import MALFORMED_BODY_SLUG, REFUSED_METHOD_SLUG, UNSUPPORTED_MEDIA_TYPE_SLUG, write_queries
 
 PASSWORD = "Password1234"
 
@@ -110,6 +126,77 @@ RETIREMENT_FIELDS = {
 RETIREMENT_PII_FIELDS = {"original_email", "original_name", "user"}
 
 STATE_CONFLICT_SLUG = "user/retirement-state-conflict"
+AMBIGUOUS_NAME_SLUG = "user/ambiguous-account-name"
+
+#: Where the language a user picked is carried between requests, the name it is
+#: stored under, and the table it is stored in.
+LANGUAGE_COOKIE = settings.LANGUAGE_COOKIE_NAME
+LANGUAGE_PREFERENCE = "pref-lang"
+PREFERENCE_TABLE = "user_api_userpreference"
+
+#: The signals every request raises because the platform raises them: a row
+#: being instantiated, the request beginning and ending, a connection being
+#: opened, a model class being prepared, a setting being overridden by a test,
+#: the telemetry each request is measured through, and the caller being put
+#: where the code below the view reads it from. None of them says anything
+#: about what the request did.
+FRAMEWORK_SIGNALS = (
+    pre_init,
+    post_init,
+    class_prepared,
+    connection_created,
+    request_started,
+    request_finished,
+    got_request_exception,
+    setting_changed,
+    monitoring_support_process_request,
+    monitoring_support_process_response,
+    current_user_setter,
+)
+
+#: What syncing the language from the cookie announces: the row being stored,
+#: and the platform's own announcement that a field of the account changed.
+LANGUAGE_SYNC_SIGNALS = [
+    (pre_save, UserPreference),
+    (post_save, UserPreference),
+    (USER_FIELDS_CHANGED, None),
+]
+
+#: The addresses this version supersedes, used where the point is that both
+#: versions behave alike.
+EARLIER_RETIREMENT_QUEUE = "/api/user/v1/accounts/retirement_queue/"
+EARLIER_RETIREMENT_CLEANUP = "/api/user/v1/accounts/retirement_cleanup/"
+EARLIER_PARTNER_REPORT_CLEANUP = "/api/user/v1/accounts/retirement_partner_report_cleanup/"
+EARLIER_PARTNER_REPORT = "/api/user/v1/accounts/retirement_partner_report/"
+EARLIER_CORE_ERASURE = "/api/user/v1/accounts/retire/"
+
+
+@contextlib.contextmanager
+def captured_signals():
+    """
+    Record the signals sent while this block runs, bar the ones the framework sends itself.
+
+    A signal is recorded by the signal object and the sender it was sent
+    under, so that a test names the signals it expects rather than counting
+    them.
+    """
+    sent = []
+    originals = {name: getattr(Signal, name) for name in ("send", "send_robust")}
+
+    def recording(original):
+        """Return a replacement for one of the two ways a signal is sent."""
+        def send(self, sender=None, **named):
+            # The session row is left out for the same reason its statements
+            # are: it is the platform's record of the caller being served,
+            # not data this API answers from.
+            if self not in FRAMEWORK_SIGNALS and sender is not Session:
+                sent.append((self, sender))
+            return original(self, sender=sender, **named)
+        return send
+
+    with mock.patch.object(Signal, "send", recording(originals["send"])), \
+            mock.patch.object(Signal, "send_robust", recording(originals["send_robust"])):
+        yield sent
 
 COURSE_KEY = CourseKey.from_string("course-v1:edX+DemoX+Demo")
 OTHER_COURSE_KEY = CourseKey.from_string("course-v1:OtherOrg+OtherX+Other")
@@ -1448,6 +1535,15 @@ class RetirementErrorCatalogTests(SimpleTestCase):
         """Registering this area's refusal reclassifies nothing for any other view in the process."""
         assert classify_error(Conflict()) == ("conflict", "Conflict")
 
+    def test_the_refusal_of_an_ambiguous_name_is_named_for_this_area(self):
+        assert classify_error(AmbiguousAccountName()) == (
+            "user/ambiguous-account-name", "Ambiguous Account Name",
+        )
+
+    def test_another_area_refusing_an_invalid_request_is_classified_as_it_was_before(self):
+        """The registry is shared, and this area registers a subclass of a classified error."""
+        assert classify_error(ValidationError("anything")) == ("validation", "Validation Error")
+
     def test_a_refusal_naming_no_records_carries_no_per_record_member(self):
         assert not hasattr(RetirementStateConflict("refused"), "extension_members")
 
@@ -1461,23 +1557,63 @@ class RetirementPageSizeTests(SimpleTestCase):
         assert RetirementViewSet.pagination_class is UserApiPagination
 
 
-@skip_unless_lms
-class RetirementReadsAreNotWritesTests(RetirementApiTestCase):
-    """Reading the queue or one record changes nothing, whichever way it is read."""
+class RetirementReadCaptureCase(RetirementApiTestCase):
+    """
+    What a read of the retirement addresses does, measured statement by statement.
+
+    Three channels are captured, because a read that changes stored data need
+    not do so itself: the statements it ran, the callbacks it deferred to the
+    end of its transaction, and the signals it sent. A signal is captured
+    because the platform's own listeners act on one whether or not the read
+    that sent it wrote anything, and the pipeline announces each of its steps
+    that way.
+    """
 
     def setUp(self):
         super().setUp()
         self.retirement = self.retirement_in("LOCKING_ACCOUNT", user=self.subject)
         self.list_url = reverse("user_v2:retirement_list")
         self.detail_url = reverse("user_v2:retirement_detail", kwargs={"username": "subject"})
+        self.deferred = []
+        self.signalled = []
 
     def captured_writes(self, method, url, **params):
         """Return the statements a read makes that would change the data this API serves."""
         self.login("worker")
-        with CaptureQueriesContext(connection) as captured:
+        with CaptureQueriesContext(connection) as captured, \
+                captured_signals() as signalled, \
+                self.captureOnCommitCallbacks(execute=True) as callbacks:
             response = getattr(self.client, method)(url, params)
-        assert response.status_code == status.HTTP_200_OK
+        assert response.status_code == status.HTTP_200_OK, response.content
+        self.deferred = callbacks
+        self.signalled = signalled
         return write_queries(captured.captured_queries)
+
+    def targets(self, statements):
+        """Return the table each statement writes to."""
+        return [statement.split('"')[1] for statement in statements]
+
+
+@skip_unless_lms
+class RetirementReadsAreNotWritesTests(RetirementReadCaptureCase):
+    """Reading the queue or one record changes nothing, whichever way it is read."""
+
+    def assert_nothing_was_changed(self, method, url, **params):
+        """Assert the read wrote nothing, deferred nothing and announced nothing."""
+        statements = self.captured_writes(method, url, **params)
+        assert (statements, self.deferred, self.signalled) == ([], [], [])
+
+    def test_reading_the_queue_announces_nothing_and_defers_nothing(self):
+        self.assert_nothing_was_changed("get", self.list_url)
+
+    def test_reading_one_record_announces_nothing_and_defers_nothing(self):
+        self.assert_nothing_was_changed("get", self.detail_url)
+
+    def test_reading_the_queue_without_a_body_announces_nothing_either(self):
+        self.assert_nothing_was_changed("head", self.list_url)
+
+    def test_reading_one_record_without_a_body_announces_nothing_either(self):
+        self.assert_nothing_was_changed("head", self.detail_url)
 
     def test_reading_the_queue_writes_nothing(self):
         assert self.captured_writes("get", self.list_url) == []
@@ -1502,3 +1638,486 @@ class RetirementReadsAreNotWritesTests(RetirementApiTestCase):
             ordering="created",
             view="minimal",
         ) == []
+
+
+@skip_unless_lms
+class RetirementReadsWithTheLanguageCookieTests(RetirementReadCaptureCase):
+    """
+    A read carrying the language cookie stores the language it carries.
+
+    The platform keeps the language a user picked in a cookie and syncs it into
+    that user's preferences from middleware, which runs before any view and on
+    every method, so it is reached by a read of these addresses as it is by a
+    read of any other. It is the one write a read of this area makes, and it
+    belongs to the platform rather than to this version: the addresses this
+    version supersedes make the same write, under the same cookie. The capture
+    below pins it -- the one row, by the table it is stored in, the one change
+    it announces, and nothing else.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.client.cookies[LANGUAGE_COOKIE] = "eo"
+
+    def language_rows(self):
+        """Return the stored language of every account, by account."""
+        return {
+            preference.user.username: preference.value
+            for preference in UserPreference.objects.filter(key=LANGUAGE_PREFERENCE)
+        }
+
+    def assert_only_the_language_was_stored(self, method, url, **params):
+        """Assert the one write made, and the one change announced, was the caller's language."""
+        statements = self.captured_writes(method, url, **params)
+        assert (self.targets(statements), self.deferred) == ([PREFERENCE_TABLE], []), statements
+        assert self.language_rows() == {WORKER_USERNAME: "eo"}
+        assert self.signalled == LANGUAGE_SYNC_SIGNALS
+
+    def test_reading_the_queue_stores_the_language_the_cookie_carries(self):
+        assert self.language_rows() == {}
+        self.assert_only_the_language_was_stored("get", self.list_url)
+
+    def test_reading_one_record_stores_it_too(self):
+        self.assert_only_the_language_was_stored("get", self.detail_url)
+
+    def test_reading_the_queue_without_a_body_stores_it_as_well(self):
+        """A write one frame below the handler is reached by every method, this one included."""
+        self.assert_only_the_language_was_stored("head", self.list_url)
+
+    def test_reading_one_record_without_a_body_stores_it_as_well(self):
+        self.assert_only_the_language_was_stored("head", self.detail_url)
+
+    def test_reading_the_queue_with_every_filter_applied_stores_only_that(self):
+        self.assert_only_the_language_was_stored(
+            "get",
+            self.list_url,
+            state="LOCKING_ACCOUNT",
+            cool_off_days=0,
+            created_after="2020-01-01",
+            created_before="2099-01-01",
+            ordering="created",
+            view="minimal",
+        )
+
+    def test_the_address_this_version_supersedes_stores_the_same_row(self):
+        """The write belongs to the platform rather than to either version of this area."""
+        self.login("worker")
+        with CaptureQueriesContext(connection) as captured:
+            response = self.client.get(
+                EARLIER_RETIREMENT_QUEUE, {"cool_off_days": 0, "states": "LOCKING_ACCOUNT"},
+            )
+        assert response.status_code == status.HTTP_200_OK, response.content
+        assert self.targets(write_queries(captured.captured_queries)) == [PREFERENCE_TABLE]
+        assert self.language_rows() == {WORKER_USERNAME: "eo"}
+
+    def test_the_row_is_written_once_and_not_once_a_request(self):
+        """It is the language being synced, not the read recording anything."""
+        self.assert_only_the_language_was_stored("get", self.list_url)
+        statements = self.captured_writes("get", self.list_url)
+        assert (statements, self.deferred, self.signalled) == ([], [], [])
+
+
+@skip_unless_lms
+class NameRequestedTwiceTests(RetirementApiTestCase):
+    """
+    A name more than one record was requested under is refused, and nothing is acted on.
+
+    The name a record keeps of the account it is for is indexed but not
+    unique, and in some deployments stored names are compared without regard
+    to case, which once let a learner register a retired name again by
+    changing its capitalisation. Both records of such a pair are built
+    directly here: registering a second account under a name a record holds is
+    refused a frame below this API, so the state cannot be reached through
+    registration, and deployments hold it from before that refusal existed.
+
+    Every operation that finds its record by that name refuses the request,
+    rather than acting on whichever of the two the database offered last.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.detail_url = reverse("user_v2:retirement_detail", kwargs={"username": "subject"})
+        self.erasure_url = reverse("user_v2:retirement_erasure", kwargs={"username": "subject"})
+        self.queue_url = reverse(
+            "user_v2:retirement_partner_report_detail", kwargs={"username": "subject"},
+        )
+        self.cleanup_url = reverse("user_v2:retirement_cleanup")
+        self.partner_cleanup_url = reverse("user_v2:retirement_partner_report_cleanup")
+
+    def two_retirements_under_one_name(self, state_name):
+        """Return two retirement records requested under the one name ``subject``."""
+        held = self.retirement_in(state_name, user=self.subject)
+        twin = self.retirement_in(state_name, user=UserFactory.create(username="subject-twin"))
+        UserRetirementStatus.objects.filter(id=twin.id).update(original_username="subject")
+        return held, twin
+
+    def two_partner_reports_under_one_name(self, taken=True):
+        """Return two partner report entries registered under the one name ``subject``."""
+        entries = [
+            UserRetirementPartnerReportingStatus.objects.create(
+                user=user,
+                original_username=user.username,
+                original_email=user.email,
+                original_name=user.profile.name,
+                is_being_processed=taken,
+            )
+            for user in (self.subject, UserFactory.create(username="subject-twin"))
+        ]
+        UserRetirementPartnerReportingStatus.objects.filter(id=entries[1].id).update(
+            original_username="subject",
+        )
+        return entries
+
+    def assert_the_name_was_refused(self, response):
+        """Assert the answer is the refusal of an ambiguous name, and return its envelope."""
+        envelope = assert_error_envelope(
+            response,
+            expected_status=status.HTTP_400_BAD_REQUEST,
+            expected_type_slug=AMBIGUOUS_NAME_SLUG,
+        )
+        assert envelope["detail"] == view_services.NAME_IS_AMBIGUOUS
+        assert envelope["instance"] == response.request["PATH_INFO"]
+        return envelope
+
+    def test_a_refusal_that_names_one_account_says_so_about_the_request_as_a_whole(self):
+        """One name is refused at the address that carries it, so there is no record to key it to."""
+        self.two_retirements_under_one_name("LOCKING_ACCOUNT")
+        self.login("worker")
+        envelope = self.assert_the_name_was_refused(
+            self.client.patch(
+                self.detail_url, {"new_state": "LOCKING_COMPLETE", "response": "done"}, format="json",
+            ),
+        )
+        assert envelope["errors"] == {"non_field_errors": [view_services.NAME_IS_AMBIGUOUS]}
+
+    def test_moving_the_retirement_is_refused_and_neither_record_moves(self):
+        held, twin = self.two_retirements_under_one_name("LOCKING_ACCOUNT")
+        self.login("worker")
+        self.assert_the_name_was_refused(
+            self.client.patch(
+                self.detail_url, {"new_state": "LOCKING_COMPLETE", "response": "done"}, format="json",
+            ),
+        )
+        for record in (held, twin):
+            record.refresh_from_db()
+            assert record.current_state.state_name == "LOCKING_ACCOUNT"
+
+    def test_cancelling_is_refused_and_neither_request_is_undone(self):
+        held, twin = self.two_retirements_under_one_name("PENDING")
+        self.login("canceller")
+        self.assert_the_name_was_refused(self.client.delete(self.detail_url))
+        assert set(UserRetirementStatus.objects.values_list("id", flat=True)) == {held.id, twin.id}
+        assert UserRetirementRequest.objects.count() == 2
+
+    def test_erasing_is_refused_and_nothing_is_erased(self):
+        self.two_retirements_under_one_name("RETIRING_LMS")
+        self.subject.profile.city = "Somewhere"
+        self.subject.profile.save()
+        self.login("worker")
+        self.assert_the_name_was_refused(
+            self.client.post(self.erasure_url, {"scope": "lms_core"}, format="json"),
+        )
+        self.subject.refresh_from_db()
+        assert (self.subject.username, self.subject.email) == ("subject", "subject@example.com")
+        assert self.subject.is_active is True
+        assert UserProfile.objects.get(user=self.subject).city == "Somewhere"
+
+    def test_queueing_for_partner_reporting_is_refused_and_nothing_is_queued(self):
+        self.two_retirements_under_one_name("RETIRING_LMS")
+        CourseEnrollmentFactory.create(user=self.subject, course_id=COURSE_KEY)
+        self.login("worker")
+        self.assert_the_name_was_refused(self.client.put(self.queue_url, {}, format="json"))
+        assert UserRetirementPartnerReportingStatus.objects.count() == 0
+
+    def test_the_batch_disposal_is_refused_whole_and_nothing_is_deleted(self):
+        held, twin = self.two_retirements_under_one_name("COMPLETE")
+        self.login("worker")
+        envelope = self.assert_the_name_was_refused(
+            self.client.post(self.cleanup_url, {"usernames": ["subject"]}, format="json"),
+        )
+        assert envelope["errors"] == {"subject": [view_services.SEVERAL_RECORDS_HOLD_THIS_NAME]}
+        for record in (held, twin):
+            record.refresh_from_db()
+            assert record.original_username == "subject"
+            assert record.original_email != view_services.REDACTED_EMAIL
+
+    def test_a_batch_naming_it_alongside_a_name_held_once_deletes_neither(self):
+        """A batch is acted on whole or not at all, so one ambiguous name holds the rest back."""
+        held, twin = self.two_retirements_under_one_name("COMPLETE")
+        alone = self.retirement_in("COMPLETE", user=UserFactory.create(username="held-once"))
+        self.login("worker")
+        self.assert_the_name_was_refused(
+            self.client.post(
+                self.cleanup_url, {"usernames": ["subject", "held-once"]}, format="json",
+            ),
+        )
+        assert set(UserRetirementStatus.objects.values_list("id", flat=True)) == {
+            held.id, twin.id, alone.id,
+        }
+
+    def test_the_earlier_batch_disposal_refuses_the_same_name(self):
+        """The address this one replaces refuses it too, and deletes nothing."""
+        held, twin = self.two_retirements_under_one_name("COMPLETE")
+        self.login("worker")
+        response = self.client.post(
+            EARLIER_RETIREMENT_CLEANUP, {"usernames": ["subject"]}, format="json",
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST, response.content
+        assert set(UserRetirementStatus.objects.values_list("id", flat=True)) == {held.id, twin.id}
+
+    def test_the_partner_report_disposal_is_refused_whole_and_nothing_is_deleted(self):
+        entries = self.two_partner_reports_under_one_name()
+        self.login("worker")
+        envelope = self.assert_the_name_was_refused(
+            self.client.post(self.partner_cleanup_url, {"usernames": ["subject"]}, format="json"),
+        )
+        assert envelope["errors"] == {"subject": [view_services.SEVERAL_RECORDS_HOLD_THIS_NAME]}
+        assert set(
+            UserRetirementPartnerReportingStatus.objects.values_list("id", flat=True),
+        ) == {entry.id for entry in entries}
+
+    def test_the_earlier_partner_report_disposal_refuses_the_same_name(self):
+        entries = self.two_partner_reports_under_one_name()
+        self.login("worker")
+        response = self.client.post(
+            EARLIER_PARTNER_REPORT_CLEANUP, [{"original_username": "subject"}], format="json",
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST, response.content
+        assert set(
+            UserRetirementPartnerReportingStatus.objects.values_list("id", flat=True),
+        ) == {entry.id for entry in entries}
+
+    def test_reading_the_record_of_the_account_addressed_still_answers(self):
+        """A read addresses the account rather than the name a record keeps, so it is unambiguous."""
+        held, _twin = self.two_retirements_under_one_name("LOCKING_ACCOUNT")
+        self.login("worker")
+        response = self.client.get(self.detail_url)
+        assert response.status_code == status.HTTP_200_OK, response.content
+        assert response.json()["id"] == held.id
+
+    def test_the_queue_carries_both_records(self):
+        """Nothing is hidden by the refusal: the page answers with every record it holds."""
+        held, twin = self.two_retirements_under_one_name("LOCKING_ACCOUNT")
+        self.login("worker")
+        response = self.client.get(reverse("user_v2:retirement_list"))
+        assert [row["id"] for row in response.json()["results"]] == [held.id, twin.id]
+
+
+@skip_unless_lms
+class FormEncodedBodyTests(RetirementApiTestCase):
+    """
+    A body sent as a web form is refused wherever a body is read.
+
+    These operations read a body as JSON alone, as the operations they replace
+    do. The narrowing is kept rather than widened to every media type the
+    platform can parse because one of them erases personal data for good and
+    cannot be undone, and a form-encoded request is one a page on another site
+    can be made to send.
+
+    The operations that read no body are unaffected, which is why the
+    narrowing is read from the view rather than applied to each method: a
+    method that never reaches the body never reaches the parser either.
+    """
+
+    FORM = "application/x-www-form-urlencoded"
+
+    def setUp(self):
+        super().setUp()
+        self.retirement = self.retirement_in("RETIRING_LMS", user=self.subject)
+        self.detail_url = reverse("user_v2:retirement_detail", kwargs={"username": "subject"})
+        self.erasure_url = reverse("user_v2:retirement_erasure", kwargs={"username": "subject"})
+
+    def assert_the_body_was_unreadable(self, response):
+        """Assert the answer names the media type as one this endpoint cannot read."""
+        assert_error_envelope(
+            response,
+            expected_status=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            expected_type_slug=UNSUPPORTED_MEDIA_TYPE_SLUG,
+        )
+
+    def test_a_form_body_is_refused_rather_than_erasing_the_account(self):
+        self.subject.profile.city = "Somewhere"
+        self.subject.profile.save()
+        self.login("worker")
+        self.assert_the_body_was_unreadable(
+            self.client.post(self.erasure_url, "scope=lms_core", content_type=self.FORM),
+        )
+        self.subject.refresh_from_db()
+        assert (self.subject.username, self.subject.email) == ("subject", "subject@example.com")
+        assert UserProfile.objects.get(user=self.subject).city == "Somewhere"
+
+    def test_the_erasure_this_one_replaces_refuses_the_same_body(self):
+        """Both versions answer the same, which is what keeps a caller's request refused."""
+        self.login("worker")
+        response = self.client.post(
+            EARLIER_CORE_ERASURE, "username=subject", content_type=self.FORM,
+        )
+        assert response.status_code == status.HTTP_415_UNSUPPORTED_MEDIA_TYPE, response.content
+        self.subject.refresh_from_db()
+        assert self.subject.username == "subject"
+
+    def test_a_form_body_is_refused_when_moving_a_retirement(self):
+        self.login("worker")
+        self.assert_the_body_was_unreadable(
+            self.client.patch(
+                self.detail_url, "new_state=RETIRING_LMS_COMPLETE&response=done",
+                content_type=self.FORM,
+            ),
+        )
+        self.retirement.refresh_from_db()
+        assert self.retirement.current_state.state_name == "RETIRING_LMS"
+
+    def test_a_form_body_is_refused_by_each_batch_disposal(self):
+        self.login("worker")
+        for name in ("user_v2:retirement_cleanup", "user_v2:retirement_partner_report_cleanup"):
+            with self.subTest(address=name):
+                self.assert_the_body_was_unreadable(
+                    self.client.post(reverse(name), "usernames=subject", content_type=self.FORM),
+                )
+
+    def test_taking_partner_reports_reads_no_body_and_is_answered(self):
+        """It takes what is queued and reads nothing from the request, as the earlier one does."""
+        self.login("worker")
+        taken = self.client.post(
+            reverse("user_v2:retirement_partner_report_list"), "anything=at-all",
+            content_type=self.FORM,
+        )
+        earlier = self.client.post(EARLIER_PARTNER_REPORT, "anything=at-all", content_type=self.FORM)
+        assert (taken.status_code, earlier.status_code) == (
+            status.HTTP_200_OK, status.HTTP_200_OK,
+        ), (taken.content, earlier.content)
+
+    def test_cancelling_is_answered_whatever_media_type_is_sent(self):
+        """It names the retirement in the address and reads no body, so no parser is reached."""
+        self.retirement_in("PENDING", user=self.learner)
+        self.login("canceller")
+        response = self.client.delete(
+            reverse("user_v2:retirement_detail", kwargs={"username": "learner-caller"}),
+            "nothing=here",
+            content_type=self.FORM,
+        )
+        assert response.status_code == status.HTTP_204_NO_CONTENT, response.content
+
+    def test_queueing_for_partner_reporting_is_answered_whatever_media_type_is_sent(self):
+        """The name is in the address, where the earlier version read it from the body."""
+        CourseEnrollmentFactory.create(user=self.subject, course_id=COURSE_KEY)
+        self.login("worker")
+        response = self.client.put(
+            reverse("user_v2:retirement_partner_report_detail", kwargs={"username": "subject"}),
+            "nothing=here",
+            content_type=self.FORM,
+        )
+        assert response.status_code == status.HTTP_204_NO_CONTENT, response.content
+        assert UserRetirementPartnerReportingStatus.objects.count() == 1
+
+
+@skip_unless_lms
+class UnservedMethodTests(RetirementApiTestCase):
+    """
+    A method an address does not serve is answered as not served, not as refused.
+
+    Which caller may make a request is decided before the method is
+    dispatched, and at an address whose capability follows the operation there
+    is no operation to follow for a method it does not serve. The answer is
+    then the dispatcher's own: the methods the address does serve, and nothing
+    about a capability. A caller who is not signed in is still told to
+    authenticate, because being signed in is asked of every method alike.
+    """
+
+    #: A method each retirement address of this version does not serve, and the
+    #: methods it does. The second group's addresses guard every method with
+    #: the same classes, so they answer a capability refusal before this one.
+    PER_OPERATION = (
+        ("post", "user_v2:retirement_detail", {"username": "subject"}),
+        ("put", "user_v2:retirement_detail", {"username": "subject"}),
+        ("delete", "user_v2:retirement_list", None),
+        ("patch", "user_v2:retirement_list", None),
+        ("get", "user_v2:retirement_erasure", {"username": "subject"}),
+    )
+    PER_VIEW = (
+        ("get", "user_v2:retirement_partner_report_list", None),
+        ("get", "user_v2:retirement_partner_report_detail", {"username": "subject"}),
+        ("get", "user_v2:retirement_cleanup", None),
+        ("get", "user_v2:retirement_partner_report_cleanup", None),
+    )
+
+    #: What each address of the collection serves, as its refusal reports it.
+    SERVED = {
+        "user_v2:retirement_list": {"GET", "HEAD", "OPTIONS"},
+        "user_v2:retirement_detail": {"GET", "HEAD", "PATCH", "DELETE", "OPTIONS"},
+        "user_v2:retirement_erasure": {"POST", "OPTIONS"},
+    }
+
+    def setUp(self):
+        super().setUp()
+        self.retirement_in("LOCKING_ACCOUNT", user=self.subject)
+
+    def send(self, method, name, kwargs):
+        """Send a method the named address does not serve."""
+        return getattr(self.client, method)(reverse(name, kwargs=kwargs))
+
+    def test_a_caller_holding_the_capability_is_told_the_method_is_not_served(self):
+        self.login("worker")
+        for method, name, kwargs in self.PER_OPERATION + self.PER_VIEW:
+            with self.subTest(method=method, address=name):
+                assert_error_envelope(
+                    self.send(method, name, kwargs),
+                    expected_status=status.HTTP_405_METHOD_NOT_ALLOWED,
+                    expected_type_slug=REFUSED_METHOD_SLUG,
+                )
+
+    def test_the_refusal_names_the_methods_the_address_does_serve(self):
+        """The answer comes from the dispatcher, so it says what is served there."""
+        self.login("worker")
+        for method, name, kwargs in self.PER_OPERATION:
+            with self.subTest(method=method, address=name):
+                response = self.send(method, name, kwargs)
+                assert set(response["Allow"].replace(" ", "").split(",")) == self.SERVED[name]
+
+    def test_a_caller_without_the_capability_is_told_the_same_by_the_collection(self):
+        """There is no operation at that address for a capability to be asked for."""
+        self.login("learner")
+        for method, name, kwargs in self.PER_OPERATION:
+            with self.subTest(method=method, address=name):
+                assert_error_envelope(
+                    self.send(method, name, kwargs),
+                    expected_status=status.HTTP_405_METHOD_NOT_ALLOWED,
+                    expected_type_slug=REFUSED_METHOD_SLUG,
+                )
+
+    def test_a_caller_without_the_capability_is_refused_where_every_method_carries_one(self):
+        """These addresses ask for the capability whatever the method, so that answer comes first."""
+        self.login("learner")
+        for method, name, kwargs in self.PER_VIEW:
+            with self.subTest(method=method, address=name):
+                assert_error_envelope(
+                    self.send(method, name, kwargs),
+                    expected_status=status.HTTP_403_FORBIDDEN,
+                    expected_type_slug="authz",
+                )
+
+    def test_an_anonymous_caller_is_told_to_authenticate(self):
+        self.client.logout()
+        for method, name, kwargs in self.PER_OPERATION + self.PER_VIEW:
+            with self.subTest(method=method, address=name):
+                assert_error_envelope(
+                    self.send(method, name, kwargs),
+                    expected_status=status.HTTP_401_UNAUTHORIZED,
+                    expected_type_slug="authn",
+                )
+
+    def test_an_action_the_mapping_does_not_name_still_reaches_no_capability(self):
+        """An action added later is refused; it is an unserved method that is not."""
+        viewset = RetirementViewSet()
+        viewset.action = "an_action_added_later"
+        assert [
+            permission.has_permission(mock.Mock(user=self.superuser), viewset)
+            for permission in viewset.get_permissions()
+        ][-1] is False
+        viewset.action = None
+        # Read from the view rather than named here: the platform's own JWT
+        # middleware adds a class to every view it serves, so what the classes
+        # of this view are is not fixed at import.
+        assert [type(permission) for permission in viewset.get_permissions()] == list(
+            RetirementViewSet.permission_classes,
+        )

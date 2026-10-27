@@ -2180,6 +2180,30 @@ OPTIONAL_APPS += [  # noqa: F405
 add_optional_apps(OPTIONAL_APPS, INSTALLED_APPS)  # noqa: F405
 
 ###################### drf-spectacular (LMS API schema) ######################
+# The retirement-status model that a partial update of a version 1 retirement
+# was published as reading. That operation now publishes the object its handler
+# really reads, which leaves this model with no reference to generate it from,
+# and a client generated from a document names a class after each model in it.
+# The model is therefore named here, exactly as it was published, so the class
+# keeps its name in every document this service builds.
+PATCHED_USER_RETIREMENT_STATUS = {
+    'type': 'object',
+    'description': 'Perform serialization for the RetirementStatus model',
+    'properties': {
+        'id': {'type': 'integer', 'readOnly': True},
+        'user': {'allOf': [{'$ref': '#/components/schemas/RetirementUser'}], 'readOnly': True},
+        'current_state': {'allOf': [{'$ref': '#/components/schemas/RetirementState'}], 'readOnly': True},
+        'last_state': {'allOf': [{'$ref': '#/components/schemas/RetirementState'}], 'readOnly': True},
+        'created': {'type': 'string', 'format': 'date-time', 'readOnly': True},
+        'modified': {'type': 'string', 'format': 'date-time', 'readOnly': True},
+        'original_username': {'type': 'string', 'maxLength': 150},
+        'original_email': {'type': 'string', 'format': 'email', 'maxLength': 254},
+        'original_name': {'type': 'string', 'maxLength': 255},
+        'retired_username': {'type': 'string', 'maxLength': 150},
+        'retired_email': {'type': 'string', 'format': 'email', 'maxLength': 254},
+    },
+}
+
 SPECTACULAR_SETTINGS = {
     'TITLE': 'LMS API',
     'VERSION': '0.1.0',
@@ -2193,6 +2217,11 @@ SPECTACULAR_SETTINGS = {
         'openedx.core.djangoapps.user_api.schema.mark_superseded_user_paths',
         'openedx.core.apidocs.untag_deprecated_operations',
     ],
+    # Carried by every document built from these settings, including the
+    # service-wide one, which overlays its own keys over them.
+    'APPEND_COMPONENTS': {
+        'schemas': {'PatchedUserRetirementStatus': PATCHED_USER_RETIREMENT_STATUS},
+    },
     # Stripped from each path to derive its tags and operationId, so changing
     # it renames every operationId. Paths themselves are emitted in full.
     'SCHEMA_PATH_PREFIX': r'/api/(enrollment|user)',

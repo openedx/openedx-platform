@@ -165,18 +165,27 @@ class RetirementPipelineSelectionTests(TestCase):
     def test_a_retirement_is_found_by_the_name_it_was_requested_under(self):
         found = retirements_requested_as(["pipeline-subject", "nobody"])
         assert set(found) == {"pipeline-subject"}
-        assert found["pipeline-subject"].id == self.retirement.id
+        assert [row.id for row in found["pipeline-subject"]] == [self.retirement.id]
 
     def test_a_name_spelled_differently_finds_no_retirement(self):
         """Stored names are compared without regard to case in some deployments, so this is exact."""
-        assert retirements_requested_as(["Pipeline-Subject"]) == {}
+        assert set(retirements_requested_as(["Pipeline-Subject"])) == set()
 
     def test_both_retirements_of_a_pair_differing_only_in_case_are_found_separately(self):
         other = UserFactory.create(username="PIPELINE-SUBJECT", email="other@example.com")
         other_retirement = create_retirement_status(other)
         found = retirements_requested_as(["pipeline-subject", "PIPELINE-SUBJECT"])
-        assert found["pipeline-subject"].id == self.retirement.id
-        assert found["PIPELINE-SUBJECT"].id == other_retirement.id
+        assert [row.id for row in found["pipeline-subject"]] == [self.retirement.id]
+        assert [row.id for row in found["PIPELINE-SUBJECT"]] == [other_retirement.id]
+
+    def test_every_retirement_requested_under_one_name_is_found_under_it(self):
+        """The stored name is indexed but not unique, so a name may carry several records."""
+        twin = create_retirement_status(UserFactory.create(username="pipeline-twin"))
+        UserRetirementStatus.objects.filter(id=twin.id).update(original_username="pipeline-subject")
+        found = retirements_requested_as(["pipeline-subject"])
+        assert sorted(row.id for row in found["pipeline-subject"]) == sorted(
+            [self.retirement.id, twin.id],
+        )
 
     def test_the_partner_report_queue_leaves_out_what_has_been_taken(self):
         waiting = self.queued(self.subject)
@@ -197,11 +206,20 @@ class RetirementPipelineSelectionTests(TestCase):
         report = self.queued(self.subject)
         found = partner_reports_requested_as(["pipeline-subject", "nobody"])
         assert set(found) == {"pipeline-subject"}
-        assert found["pipeline-subject"].id == report.id
+        assert [row.id for row in found["pipeline-subject"]] == [report.id]
+
+    def test_every_partner_report_registered_under_one_name_is_found_under_it(self):
+        report = self.queued(self.subject)
+        twin = self.queued(UserFactory.create(username="pipeline-twin"))
+        UserRetirementPartnerReportingStatus.objects.filter(id=twin.id).update(
+            original_username="pipeline-subject",
+        )
+        found = partner_reports_requested_as(["pipeline-subject"])
+        assert sorted(row.id for row in found["pipeline-subject"]) == sorted([report.id, twin.id])
 
     def test_a_partner_report_is_not_found_by_a_name_spelled_differently(self):
         self.queued(self.subject)
-        assert partner_reports_requested_as(["Pipeline-Subject"]) == {}
+        assert set(partner_reports_requested_as(["Pipeline-Subject"])) == set()
 
     def queued(self, user, taken=False):
         """Return a partner report entry for this account, taken for processing or not."""
@@ -252,7 +270,7 @@ class CaseExactSelectionTests(TestCase):
         ):
             found = retirements_requested_as(["exact-subject"])
         assert set(found) == {"exact-subject"}
-        assert found["exact-subject"].id == wanted.id
+        assert [row.id for row in found["exact-subject"]] == [wanted.id]
 
     def test_a_partner_report_is_selected_by_the_spelling_asked_for(self):
         wanted = UserRetirementPartnerReportingStatus.objects.create(
@@ -273,4 +291,4 @@ class CaseExactSelectionTests(TestCase):
         ):
             found = partner_reports_requested_as(["exact-subject"])
         assert set(found) == {"exact-subject"}
-        assert found["exact-subject"].id == wanted.id
+        assert [row.id for row in found["exact-subject"]] == [wanted.id]

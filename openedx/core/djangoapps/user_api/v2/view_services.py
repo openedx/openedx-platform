@@ -40,7 +40,7 @@ from openedx.core.djangoapps.user_api.models import (
     UserRetirementStatus,
 )
 
-from .errors import RetirementStateConflict
+from .errors import AmbiguousAccountName, RetirementStateConflict
 from .selectors import partner_reports_requested_as, retirements_requested_as
 from .serializers import (
     ERASURE_CORE_SCOPE,
@@ -75,6 +75,38 @@ ONLY_PENDING_IS_CANCELLED = (
     f"Only a retirement still at {PENDING_STATE} can be cancelled, and this one has moved past it."
 )
 BATCH_LEFT_ALONE = "Some of the records named are not in a state this operation acts on, so none of them was changed."
+NAME_IS_AMBIGUOUS = "More than one record was requested under that name, so nothing was done."
+SEVERAL_RECORDS_HOLD_THIS_NAME = (
+    "More than one record was requested under this name, and acting on one of them would act on an "
+    "account this request did not name."
+)
+
+
+def _only_record_named(username, records):
+    """
+    Return the one record requested under this name, or refuse the name.
+
+    Every operation of this pipeline that names one account resolves it here,
+    so one name addresses the same record whichever operation is asked for.
+    The name a record keeps is not unique, so a name several records were
+    requested under is refused: one of them belongs to an account the caller
+    did not name, and nothing says which.
+    """
+    if not records:
+        log.info("No record is requested under the name %r.", username)
+        raise NotFound(NO_SUCH_RETIREMENT)
+    if len(records) > 1:
+        log.warning(
+            "The name %r was refused: %s records are requested under it, %r.",
+            username, len(records), sorted(record.id for record in records),
+        )
+        raise AmbiguousAccountName(NAME_IS_AMBIGUOUS)
+    return records[0]
+
+
+def retirement_requested_as(username):
+    """Return the one retirement requested under exactly this name."""
+    return _only_record_named(username, retirements_requested_as([username]).get(username, []))
 
 
 def retirement_open_to_action(username):
@@ -85,14 +117,20 @@ def retirement_open_to_action(username):
     and the step that records a part of the pipeline as finished, which is what
     keeps a step from being run twice over the same account.
     """
+    retirement = retirement_requested_as(username)
     try:
-        return UserRetirementStatus.get_retirement_for_retirement_action(username)
+        # Which steps admit work is decided by the pipeline's own model layer,
+        # where the order of the steps is kept, rather than being written out a
+        # second time here. It resolves the name as well, and the name resolved
+        # above addresses one record, so the two agree on which record that is.
+        UserRetirementStatus.get_retirement_for_retirement_action(username)
     except UserRetirementStatus.DoesNotExist as exc:
         log.info("No retirement is requested under the name %r: %s", username, exc)
         raise NotFound(NO_SUCH_RETIREMENT) from exc
     except RetirementStateError as exc:
         log.info("The retirement requested as %r admits no pipeline work: %s", username, exc)
         raise RetirementStateConflict(NOT_OPEN_TO_ACTION) from exc
+    return retirement
 
 
 def move_retirement(retirement, new_state, response, force):
@@ -276,6 +314,25 @@ def _refuse_batch(refused):
     raise RetirementStateConflict(BATCH_LEFT_ALONE, errors=refused)
 
 
+def _one_record_for_each_name(found):
+    """
+    Return the one record each name carries, refusing the batch over any name carrying several.
+
+    A batch is acted on whole or not at all, and a name several records were
+    requested under names an account the caller did not, so the batch is
+    refused and nothing is deleted.
+    """
+    ambiguous = {
+        username: [SEVERAL_RECORDS_HOLD_THIS_NAME]
+        for username, records in found.items()
+        if len(records) > 1
+    }
+    if ambiguous:
+        log.warning("A batch was left alone because these names are ambiguous: %r.", sorted(ambiguous))
+        raise AmbiguousAccountName(NAME_IS_AMBIGUOUS, errors=ambiguous)
+    return {username: records[0] for username, records in found.items()}
+
+
 def delete_retirements(usernames):
     """
     Delete the retirement records of the accounts named, once the pipeline has finished with them.
@@ -287,7 +344,7 @@ def delete_retirements(usernames):
     nothing is deleted, because the caller asked for a set of records and a
     half-applied delete cannot be undone.
     """
-    found = retirements_requested_as(usernames)
+    found = _one_record_for_each_name(retirements_requested_as(usernames))
     refused = {
         username: [
             f"This retirement stands at {record.current_state.state_name}; only a retirement at "
@@ -321,7 +378,7 @@ def delete_partner_reports(usernames):
     all is reported as such, which is what a repeat of a request already
     carried out reports for every name.
     """
-    found = partner_reports_requested_as(usernames)
+    found = _one_record_for_each_name(partner_reports_requested_as(usernames))
     refused = {
         username: ["This partner report has not been taken for processing, so it has not been reported on yet."]
         for username, report in found.items()

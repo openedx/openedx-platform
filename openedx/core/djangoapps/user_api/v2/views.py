@@ -79,7 +79,6 @@ from .selectors import (
     cancellable_retirement_for_email,
     retirement_of_the_account_named,
     retirements,
-    retirements_requested_as,
     unclaimed_partner_reports,
     username_holding_id,
     usernames_among,
@@ -148,6 +147,7 @@ from .view_services import (
     move_retirement,
     record_partner_report,
     retirement_open_to_action,
+    retirement_requested_as,
 )
 from .view_utils import (
     RESP_UNAUTHENTICATED,
@@ -2391,6 +2391,26 @@ _RETIREMENT_SHAPES = ResponseShapes(
 _RESP_NO_SUCH_RETIREMENT = OpenApiResponse(
     ErrorResponse, description="No retirement was requested under that name.",
 )
+#: What a refusal says at an address that finds the record it acts on by the
+#: name the record was requested under. That name is not unique, so more than
+#: one record may answer to it, and the request is refused rather than one of
+#: them picked.
+_RESP_AMBIGUOUS_OR_BAD_REQUEST = OpenApiResponse(
+    ErrorResponse,
+    description=(
+        "A query parameter is missing, invalid, or not one this endpoint reads, or more than one "
+        "record was requested under the name given. Nothing was changed."
+    ),
+)
+_RESP_AMBIGUOUS_OR_UNUSABLE_BODY = OpenApiResponse(
+    ErrorResponse,
+    description=(
+        "The request body is not well formed in the media type it was sent in, or carries a value "
+        "this endpoint will not take, or more than one record was requested under a name the "
+        "request gives. A query parameter this endpoint does not read is refused here too. "
+        "Nothing was changed."
+    ),
+)
 _RESP_RETIREMENT_STATE = OpenApiResponse(
     ErrorResponse,
     description=(
@@ -2487,7 +2507,7 @@ RETIREMENT_ACTION_PERMISSIONS = {
         request=RetirementUpdateSerializer,
         responses={
             204: _RESP_RETIREMENT_MOVED,
-            400: _RESP_UNUSABLE_BODY,
+            400: _RESP_AMBIGUOUS_OR_UNUSABLE_BODY,
             401: RESP_UNAUTHENTICATED,
             403: _RESP_FORBIDDEN,
             404: _RESP_NO_SUCH_RETIREMENT,
@@ -2507,7 +2527,7 @@ RETIREMENT_ACTION_PERMISSIONS = {
         parameters=[_RETIREMENT_PATH_PARAM],
         responses={
             204: _RESP_RETIREMENT_CANCELLED,
-            400: _RESP_BAD_REQUEST,
+            400: _RESP_AMBIGUOUS_OR_BAD_REQUEST,
             401: RESP_UNAUTHENTICATED,
             403: _RESP_FORBIDDEN,
             404: _RESP_NO_SUCH_RETIREMENT,
@@ -2526,7 +2546,7 @@ RETIREMENT_ACTION_PERMISSIONS = {
         request=RetirementErasureSerializer,
         responses={
             204: _RESP_DATA_ERASED,
-            400: _RESP_UNUSABLE_BODY,
+            400: _RESP_AMBIGUOUS_OR_UNUSABLE_BODY,
             401: RESP_UNAUTHENTICATED,
             403: _RESP_FORBIDDEN,
             404: _RESP_NO_SUCH_RETIREMENT,
@@ -2564,6 +2584,10 @@ class RetirementViewSet(
     """
 
     permission_classes = (permissions.IsAuthenticated,)
+    # The operations these addresses replace read a body as JSON alone, and
+    # one of them erases personal data for good, so the same narrowing is kept
+    # rather than widened to every media type the platform can parse.
+    parser_classes = (JSONParser,)
     serializer_class = RetirementSerializer
     pagination_class = UserApiPagination
     queryset = retirements()
@@ -2588,6 +2612,12 @@ class RetirementViewSet(
 
     def get_permissions(self):
         """Return the classes deciding who may make the request being served."""
+        if self.action is None:
+            # No action serves this method at this address. That is not a
+            # refusal of the caller, so the request is admitted by the classes
+            # every action shares and answered as a method this address does
+            # not serve, which is what the earlier addresses answer.
+            return super().get_permissions()
         # An action this mapping does not name reaches no capability of this
         # collection, rather than inheriting the one every other action shares.
         specific = RETIREMENT_ACTION_PERMISSIONS.get(self.action, (~permissions.AllowAny,))
@@ -2629,7 +2659,7 @@ class RetirementViewSet(
         changes = RetirementUpdateSerializer(data=request.data)
         changes.is_valid(raise_exception=True)
         move_retirement(
-            self._retirement_requested_as(username),
+            retirement_requested_as(username),
             changes.validated_data["new_state"],
             changes.validated_data["response"],
             changes.validated_data["force"],
@@ -2638,7 +2668,7 @@ class RetirementViewSet(
 
     def destroy(self, request, username):
         """Undo this retirement request and return the account to its owner."""
-        cancel_retirement(self._retirement_requested_as(username))
+        cancel_retirement(retirement_requested_as(username))
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=True, methods=["post"], url_path="erasures", url_name="erasure")
@@ -2649,13 +2679,6 @@ class RetirementViewSet(
         erase_account_data(retirement_open_to_action(username), erasure.validated_data["scope"])
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    def _retirement_requested_as(self, username):
-        """Return the retirement requested under exactly this name, or report none."""
-        retirement = retirements_requested_as([username]).get(username)
-        if retirement is None:
-            log.info("No retirement is requested under the name %r.", username)
-            raise NotFound(NO_SUCH_RETIREMENT)
-        return retirement
 
 
 class _UnclaimedPartnerReportsMixin:
@@ -2721,7 +2744,7 @@ _RESP_PARTNER_REPORTS_TAKEN = OpenApiResponse(
         request=None,
         responses={
             204: _RESP_PARTNER_REPORT_QUEUED,
-            400: _RESP_BAD_REQUEST,
+            400: _RESP_AMBIGUOUS_OR_BAD_REQUEST,
             401: RESP_UNAUTHENTICATED,
             403: _RESP_FORBIDDEN,
             404: _RESP_NO_SUCH_RETIREMENT,
@@ -2755,6 +2778,10 @@ class RetirementPartnerReportViewSet(
     """
 
     permission_classes = (permissions.IsAuthenticated, CanRetireUser)
+    # The operations this address replaces read a body as JSON alone, and that
+    # narrowing is kept rather than widened to every media type the platform
+    # can parse.
+    parser_classes = (JSONParser,)
     serializer_class = RetirementPartnerReportRecordSerializer
     #: Validates the query string, and names the parameters this view reads.
     query_serializer_class = RetirementPartnerReportQuerySerializer
@@ -2811,7 +2838,7 @@ _RESP_BATCH_OUTCOME = OpenApiResponse(
         request=RetirementBatchSerializer,
         responses={
             200: _RESP_BATCH_OUTCOME,
-            400: _RESP_UNUSABLE_BODY,
+            400: _RESP_AMBIGUOUS_OR_UNUSABLE_BODY,
             401: RESP_UNAUTHENTICATED,
             403: _RESP_FORBIDDEN,
             406: RESP_NOT_ACCEPTABLE,
@@ -2841,6 +2868,10 @@ class RetirementCleanupView(
     """
 
     permission_classes = (permissions.IsAuthenticated, CanRetireUser)
+    # The operations this address replaces read a body as JSON alone, and that
+    # narrowing is kept rather than widened to every media type the platform
+    # can parse: these operations dispose of records for good.
+    parser_classes = (JSONParser,)
     serializer_class = RetirementBatchOutcomeSerializer
 
     def get_serializer(self, *args, **kwargs):
@@ -2867,7 +2898,7 @@ class RetirementCleanupView(
         request=RetirementBatchSerializer,
         responses={
             200: _RESP_BATCH_OUTCOME,
-            400: _RESP_UNUSABLE_BODY,
+            400: _RESP_AMBIGUOUS_OR_UNUSABLE_BODY,
             401: RESP_UNAUTHENTICATED,
             403: _RESP_FORBIDDEN,
             406: RESP_NOT_ACCEPTABLE,
@@ -2894,6 +2925,10 @@ class RetirementPartnerReportCleanupView(
     """
 
     permission_classes = (permissions.IsAuthenticated, CanRetireUser)
+    # The operations this address replaces read a body as JSON alone, and that
+    # narrowing is kept rather than widened to every media type the platform
+    # can parse: these operations dispose of records for good.
+    parser_classes = (JSONParser,)
     serializer_class = RetirementBatchOutcomeSerializer
 
     def get_serializer(self, *args, **kwargs):

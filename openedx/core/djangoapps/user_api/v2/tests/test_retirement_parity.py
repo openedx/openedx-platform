@@ -6,7 +6,7 @@ from unittest import mock
 
 import pytest
 from django.core.cache import cache
-from django.test import override_settings
+from django.test import SimpleTestCase, override_settings
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -46,6 +46,12 @@ from openedx.core.djangoapps.user_api.accounts.views import (
 )
 from openedx.core.djangoapps.user_api.models import RetirementState, UserOrgTag, UserRetirementStatus
 from openedx.core.djangoapps.user_api.v2 import view_services
+from openedx.core.djangoapps.user_api.v2.views import (
+    RetirementCleanupView,
+    RetirementPartnerReportCleanupView,
+    RetirementPartnerReportViewSet,
+    RetirementViewSet,
+)
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 
 PASSWORD = "Password1234"
@@ -92,6 +98,16 @@ HISTORICAL_SOCIAL_AUTH_STEP = ("historical_social_auth", "redact_and_delete_hist
 RECORD_DIFFERENCES = (
     ("current_state", "the step is the name of the step rather than an object carrying its order and its id"),
     ("last_state", "the step is the name of the step rather than an object carrying its order and its id"),
+)
+
+#: Each view of this version with the view whose operations it takes over, for
+#: the media types a body may be sent in. The disposals are part of the
+#: earlier version's two pipeline views and are compared against those.
+MEDIA_TYPE_PAIRS = (
+    (RetirementViewSet, legacy_views.AccountRetirementStatusView),
+    (RetirementCleanupView, legacy_views.AccountRetirementStatusView),
+    (RetirementPartnerReportViewSet, legacy_views.AccountRetirementPartnerReportView),
+    (RetirementPartnerReportCleanupView, legacy_views.AccountRetirementPartnerReportView),
 )
 
 
@@ -527,3 +543,16 @@ class RetirementRecordParityTests(RetirementParityTestCase):
         assert "responses" not in conforming
         assert "responses" not in UserRetirementStatusSerializer(instance=self.retirement).data
         assert UserRetirementStatus.objects.get(id=self.retirement.id).responses != ""
+
+
+class MediaTypeParityTests(SimpleTestCase):
+    """Each operation reads a body in the media types the operation it replaces reads."""
+
+    def test_each_view_reads_what_the_view_it_takes_over_from_reads(self):
+        for conforming, legacy in MEDIA_TYPE_PAIRS:
+            with self.subTest(view=conforming.__name__):
+                assert tuple(conforming.parser_classes) == tuple(legacy.parser_classes)
+
+    def test_the_cancellation_is_the_one_operation_whose_view_narrowed_nothing(self):
+        """It reads no body on either version, so there is nothing for a media type to decide."""
+        assert "parser_classes" not in vars(legacy_views.CancelAccountRetirementStatusView)

@@ -117,22 +117,32 @@ def retirement_of_the_account_named(username):
     return retirements().filter(user=user).first()
 
 
-def retirements_requested_as(usernames):
+def _grouped_by_requested_name(rows, usernames):
     """
-    Return the retirements requested under exactly these names, keyed by name.
+    Return these rows under the name each was requested with, every row kept.
 
     Stored names are compared without regard to case in some deployments,
     which once let a learner register a retired name again by changing its
     capitalisation, so the rows the database offers are compared again here
-    character for character. A name no row was requested under is absent from
-    the result.
+    character for character. The name a row keeps of the account it is for is
+    indexed but not unique, so a name may carry more than one row; every one
+    of them is returned, because a caller that acted on one of several would
+    act on a record it did not ask about. A name no row was requested under is
+    absent from the result.
     """
     asked_for = set(usernames)
-    return {
-        row.original_username: row
-        for row in retirements().filter(original_username__in=usernames)
-        if row.original_username in asked_for
-    }
+    grouped = {}
+    for row in rows:
+        if row.original_username in asked_for:
+            grouped.setdefault(row.original_username, []).append(row)
+    return grouped
+
+
+def retirements_requested_as(usernames):
+    """Return the retirements requested under exactly these names, grouped by name."""
+    return _grouped_by_requested_name(
+        retirements().filter(original_username__in=usernames), usernames,
+    )
 
 
 def unclaimed_partner_reports():
@@ -153,10 +163,7 @@ def unclaimed_partner_reports():
 
 
 def partner_reports_requested_as(usernames):
-    """Return the partner reports of the accounts registered under exactly these names, keyed by name."""
-    asked_for = set(usernames)
-    return {
-        row.original_username: row
-        for row in UserRetirementPartnerReportingStatus.objects.filter(original_username__in=usernames)
-        if row.original_username in asked_for
-    }
+    """Return the partner reports of the accounts registered under exactly these names, grouped by name."""
+    return _grouped_by_requested_name(
+        UserRetirementPartnerReportingStatus.objects.filter(original_username__in=usernames), usernames,
+    )
