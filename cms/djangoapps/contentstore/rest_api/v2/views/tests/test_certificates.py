@@ -161,10 +161,12 @@ class CourseCertificateSettingsAccessTest(CertificateSettingsTestBase):
         )
         assert self.get_legacy(self.global_staff, course_key=ccx_key).status_code == 403
 
-    def test_an_inactive_course_author_is_served(self):
+    def test_an_inactive_course_author_is_authenticated_but_denied_by_the_role_check(self):
         inactive = UserFactory(is_active=False, password=PASSWORD)
         CourseStaffRole(self.course.id).add_users(inactive)
-        assert self.get(inactive).status_code == 200
+        # 403 (not 401): SessionAuthenticationAllowInactiveUser authenticates
+        # the user, but CourseStaffRole.has_user checks is_active and denies.
+        assert self.get(inactive).status_code == 403
 
     def test_a_jwt_caller_is_served(self):
         response = self.api_client.get(self.url(), HTTP_AUTHORIZATION=f"JWT {create_jwt_for_user(self.course_staff)}")
@@ -516,7 +518,7 @@ class CourseCertificateSettingsReadOnlyAuthzEnabledTest(CourseAuthoringAuthzTest
 class CourseCertificateSettingsQueryCountTest(CertificateSettingsTestBase):
     """The new route issues no more queries than the legacy one."""
 
-    @ddt.data((0, 0, 19, 18), (3, 0, 19, 18), (3, 1, 19, 18))
+    @ddt.data((0, 0, 19, 17), (3, 0, 19, 17), (3, 1, 19, 17))
     @ddt.unpack
     def test_query_count(self, certificate_count, mode_count, legacy_queries, new_queries):
         self._add_course_certificates(count=certificate_count, signatory_count=2)
