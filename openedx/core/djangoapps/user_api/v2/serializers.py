@@ -1373,15 +1373,12 @@ class RetirementPartnerReportRecordSerializer(serializers.Serializer):  # pylint
     """
     What a partner needs in order to forget one retired user.
 
-    ``student_id`` and ``orgs_config`` are carried only by a deployment that
-    records them, and are left out of the answer otherwise.
+    Every property is answered for every entry: the record is built from the
+    queue entry and from the enrolments of the account it names, so there is
+    nothing in it that a deployment may or may not supply.
     """
 
     user_id = serializers.IntegerField(help_text="Database identifier of the retired user.")
-    student_id = serializers.CharField(
-        required=False,
-        help_text="Identifier the deployment knows the user by, where it records one.",
-    )
     original_username = serializers.CharField(help_text="Name the account was stored under before retirement.")
     original_email = serializers.EmailField(help_text="Address the account was stored under before retirement.")
     original_name = serializers.CharField(
@@ -1391,10 +1388,6 @@ class RetirementPartnerReportRecordSerializer(serializers.Serializer):  # pylint
     orgs = serializers.ListField(
         child=serializers.CharField(),
         help_text="Short names of the organizations running the courses this user was enrolled in.",
-    )
-    orgs_config = serializers.ListField(
-        required=False,
-        help_text="Per-organization reporting configuration, where the deployment records any.",
     )
     created = serializers.DateTimeField(help_text="When this user was added to the partner reporting queue.")
 

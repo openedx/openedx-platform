@@ -28,6 +28,7 @@ from openedx.core.djangoapps.user_api.accounts.image_helpers import (
     get_profile_image_storage,
 )
 from openedx.core.djangoapps.user_api.accounts.utils import ENABLE_SECONDARY_EMAIL_FEATURE_SWITCH
+from openedx.core.djangoapps.user_api.models import UserRetirementPartnerReportingStatus
 from openedx.core.djangoapps.user_api.schema import (
     RENAMED_OPERATION_IDS,
     SUPERSEDED_USER_PATHS,
@@ -48,6 +49,7 @@ from openedx.core.djangoapps.user_api.v2.serializers import (
     TimeZoneQuerySerializer,
     VerificationQuerySerializer,
 )
+from openedx.core.djangoapps.user_api.v2.view_services import claim_partner_reports
 from openedx.core.djangoapps.user_api.v2.views import (
     PREFERENCE_KEY_PATTERN_PARTIAL,
     RETIREMENT_SORT_FIELDS,
@@ -2558,6 +2560,38 @@ def test_the_claim_answers_with_an_array_rather_than_a_page(schema):
         "type": "array",
         "items": {"$ref": "#/components/schemas/RetirementPartnerReportRecord"},
     }
+
+
+@skip_unless_lms
+def test_selecting_properties_publishes_how_far_a_name_reaches(schema):
+    """A caller is told that a dotted name selects the whole of its first part."""
+    for path, method in (
+        (RETIREMENT_MEMBER_PATH, "get"),
+        (RETIREMENT_LIST_PATH, "get"),
+    ):
+        described = {
+            parameter["name"]: parameter["description"]
+            for parameter in schema["paths"][path][method]["parameters"]
+        }["fields"]
+        assert "`user.email`" in described, (path, method)
+        assert "the whole of that property is returned" in described, (path, method)
+
+
+@pytest.mark.django_db
+@skip_unless_lms
+def test_the_claim_publishes_exactly_the_properties_an_entry_carries(schema):
+    """An entry is published with the properties it is answered with, and with no others."""
+    user = UserFactory.create()
+    UserRetirementPartnerReportingStatus.objects.create(
+        user=user,
+        original_username=user.username,
+        original_email=user.email,
+        original_name=user.profile.name,
+    )
+    answered = set(claim_partner_reports(UserRetirementPartnerReportingStatus.objects.all())[0])
+    record = schema["components"]["schemas"]["RetirementPartnerReportRecord"]
+    assert set(record["properties"]) == answered
+    assert set(record["required"]) == answered
 
 
 @skip_unless_lms

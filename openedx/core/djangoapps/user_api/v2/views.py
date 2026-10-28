@@ -230,7 +230,9 @@ RESPONSE_SHAPING_PARAMS = (VIEW_PARAM, FIELDS_PARAM)
 _FIELDS_PARAM = query_param(
     FIELDS_PARAM,
     "Comma-separated list of top-level field names to keep in each returned object. "
-    "A name the response cannot carry is refused.",
+    "A name the response cannot carry is refused. Selection reaches the top level only: "
+    "a name written as a path, such as `user.email`, is read as `user`, and the whole of "
+    "that property is returned.",
 )
 #: The presets each list answers to, published as the parameter's enum and
 #: accepted by the view from the same declaration.
