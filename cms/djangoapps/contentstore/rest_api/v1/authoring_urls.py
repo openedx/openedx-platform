@@ -7,6 +7,7 @@ from cms.djangoapps.contentstore.rest_api.v1.views import (
     YoutubeTranscriptChecksViewSet,
     YoutubeTranscriptImportsViewSet,
 )
+from cms.djangoapps.contentstore.rest_api.v1.views.video_uploads import CourseVideoUploadsViewSet
 
 app_name = "authoring_v1"
 
@@ -20,6 +21,16 @@ urlpatterns = [
         "courses/<course_key:course_key>/youtube_transcript_imports/",
         YoutubeTranscriptImportsViewSet.as_view({"post": "create"}),
         name="youtube_transcript_import_list",
+    ),
+    path(
+        "courses/<course_key:course_key>/videos/",
+        CourseVideoUploadsViewSet.as_view({"get": "list", "post": "create"}),
+        name="course_video_list",
+    ),
+    path(
+        "courses/<course_key:course_key>/videos/<str:edx_video_id>/",
+        CourseVideoUploadsViewSet.as_view({"get": "retrieve", "delete": "destroy"}),
+        name="course_video_detail",
     ),
     # The viewset has no ``list`` action, so the collection accepts POST only.
     path(

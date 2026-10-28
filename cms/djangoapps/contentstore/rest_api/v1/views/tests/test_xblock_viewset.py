@@ -134,6 +134,15 @@ class XblockViewSetErrorShapeTest(ModuleStoreTestCase, APITestCase):
         response = self.client.get(_detail_url())
         assert response.json()["type"] == "https://docs.openedx.org/errors/authz"
 
+    def test_version_only_course_key_returns_404(self):
+        self.client.force_authenticate(user=self.non_author)
+        response = self.client.get(reverse(
+            "authoring_v1:xblock_detail",
+            kwargs={"usage_key_string": "block-v1:version@5f8d0d55b54eba0b97d3dba5+type@problem+block@abc"},
+        ))
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert response.json()["type"] == "https://docs.openedx.org/errors/not-found"
+
     def test_error_body_has_no_developer_message(self):
         response = self.client.get(_detail_url())
         data = response.json()

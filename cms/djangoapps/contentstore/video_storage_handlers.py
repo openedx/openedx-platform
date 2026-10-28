@@ -198,7 +198,7 @@ def handle_videos(request, course_key_string, edx_video_id=None):
     DELETE
         soft deletes a video for particular course
     """
-    course = _get_and_validate_course(course_key_string, request.user)
+    course = get_and_validate_course(course_key_string, request.user)
 
     if (not course and not use_mock_video_uploads()):
         return HttpResponseNotFound()
@@ -383,7 +383,7 @@ def handle_generate_video_upload_link(request, course_key_string):
     API for creating a video upload.  Returns an edx_video_id and a presigned URL that can be used
     to upload the video to AWS S3.
     """
-    course = _get_and_validate_course(course_key_string, request.user)
+    course = get_and_validate_course(course_key_string, request.user)
     if not course:
         return Response(data='Course Not Found', status=rest_status.HTTP_400_BAD_REQUEST)
 
@@ -562,7 +562,7 @@ def get_video_encodings_download(request, course_key_string):
     Video ID,Name,Status,Profile1 URL,Profile2 URL
     aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa,video.mp4,Complete,http://example.com/prof1.mp4,http://example.com/prof2.mp4
     """
-    course = _get_and_validate_course(course_key_string, request.user)
+    course = get_and_validate_course(course_key_string, request.user)
 
     if not course:
         return HttpResponseNotFound()
@@ -631,7 +631,7 @@ def get_video_encodings_download(request, course_key_string):
     return FileResponse(buffer, as_attachment=True, filename=filename, content_type="text/csv")
 
 
-def _get_and_validate_course(course_key_string, user):
+def get_and_validate_course(course_key_string, user):
     """
     Given a course key, return the course if it exists, the given user has
     access to it, and it is properly configured for video uploads
@@ -653,29 +653,32 @@ def _get_and_validate_course(course_key_string, user):
         return None
 
 
-def convert_video_status(video, is_video_encodes_ready=False):
+def convert_video_status(video, is_video_encodes_ready=False, update_status=True):
     """
     Convert status of a video. Status can be converted to one of the following:
 
         *   FAILED if video is in `upload` state for more than 24 hours
         *   `YouTube Duplicate` if status is `invalid_token`
         *   user-friendly video status
+
+    A video stuck in `upload` is also marked failed in VAL, unless `update_status` is False.
     """
     now = datetime.now(video.get('created', datetime.now().replace(tzinfo=UTC)).tzinfo)
 
     if video['status'] == 'upload' and (now - video['created']) > timedelta(hours=MAX_UPLOAD_HOURS):
         new_status = 'upload_failed'
         status = StatusDisplayStrings.get(new_status)
-        message = 'Video with id [{}] is still in upload after [{}] hours, setting status to [{}]'.format(
-            video['edx_video_id'], MAX_UPLOAD_HOURS, new_status
-        )
-        send_video_status_update([
-            {
-                'edxVideoId': video['edx_video_id'],
-                'status': new_status,
-                'message': message
-            }
-        ])
+        if update_status:
+            message = 'Video with id [{}] is still in upload after [{}] hours, setting status to [{}]'.format(
+                video['edx_video_id'], MAX_UPLOAD_HOURS, new_status
+            )
+            send_video_status_update([
+                {
+                    'edxVideoId': video['edx_video_id'],
+                    'status': new_status,
+                    'message': message
+                }
+            ])
     elif video['status'] == 'invalid_token':
         status = StatusDisplayStrings.get('youtube_duplicate')
     elif is_video_encodes_ready:
@@ -696,6 +699,15 @@ def _get_videos(course, pagination_conf=None):
         SortDirection.desc,
         pagination_conf
     )
+    return convert_videos(course, videos), pagination_context
+
+
+def convert_videos(course, videos, update_status=True):
+    """
+    Add Studio's display status, transcription status and transcript details to VAL videos of `course`.
+
+    `update_status` is passed to `convert_video_status`.
+    """
     videos = list(videos)
 
     # This is required to see if edx video pipeline is enabled while converting the video status.
@@ -722,11 +734,11 @@ def _get_videos(course, pagination_conf=None):
             )
         # Convert the video status.
         # Legacy frontend expects the status to be translated unlike MFEs which handle translation themselves.
-        video['status_nontranslated'] = convert_video_status(video, is_video_encodes_ready)
+        video['status_nontranslated'] = convert_video_status(video, is_video_encodes_ready, update_status)
         # pylint: disable=translation-of-non-string
         video['status'] = _(video['status_nontranslated'])
 
-    return videos, pagination_context
+    return videos
 
 
 def _get_default_video_image_url():
@@ -741,37 +753,37 @@ def _get_index_videos(course, pagination_conf=None):
     Returns the information about each video upload required for the video list
     """
     course_id = str(course.id)
+    videos, pagination_context = _get_videos(course, pagination_conf)
+    return [get_index_video_values(video, course_id) for video in videos], pagination_context
+
+
+def get_index_video_values(video, course_id):
+    """
+    Get the video list attributes of one video converted by `convert_videos`.
+    """
     attrs = [
         'edx_video_id', 'client_video_id', 'created', 'duration', 'status_nontranslated',
         'status', 'courses', 'encoded_videos', 'transcripts', 'transcription_status',
         'transcript_urls', 'error_description'
     ]
-
-    def _get_values(video, course):
-        """
-        Get data for predefined video attributes.
-        """
-        values = {}
-        for attr in attrs:
-            if attr == 'courses':
-                current_course = [c for c in video['courses'] if course_id in c]
-                if current_course:
-                    values['course_video_image_url'] = current_course[0][course_id]
-                else:
-                    values['course_video_image_url'] = None
-            elif attr == 'encoded_videos':
-                values['download_link'] = ''
-                values['file_size'] = 0
-                for encoding in video['encoded_videos']:
-                    if encoding['profile'] == 'desktop_mp4':
-                        values['download_link'] = encoding['url']
-                        values['file_size'] = encoding['file_size']
+    values = {}
+    for attr in attrs:
+        if attr == 'courses':
+            current_course = [c for c in video['courses'] if course_id in c]
+            if current_course:
+                values['course_video_image_url'] = current_course[0][course_id]
             else:
-                values[attr] = video[attr]
-        return values
-
-    videos, pagination_context = _get_videos(course, pagination_conf)
-    return [_get_values(video, course) for video in videos], pagination_context
+                values['course_video_image_url'] = None
+        elif attr == 'encoded_videos':
+            values['download_link'] = ''
+            values['file_size'] = 0
+            for encoding in video['encoded_videos']:
+                if encoding['profile'] == 'desktop_mp4':
+                    values['download_link'] = encoding['url']
+                    values['file_size'] = encoding['file_size']
+        else:
+            values[attr] = video[attr]
+    return values
 
 
 def get_all_transcript_languages():
