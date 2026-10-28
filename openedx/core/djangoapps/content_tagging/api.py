@@ -299,8 +299,8 @@ def set_exported_object_tags(
     """
     content_key_str = str(content_key)
 
-    # Clear the associations the author can see. Archived ones, and those under an archived tag or taxonomy,
-    # are left alone; the queryset delete archives any locked visible row instead of deleting it.
+    # Clear the associations that archiving does not hide. An archived association, or one under an archived tag
+    # or taxonomy, is left alone. The queryset delete archives a deletion-locked row instead of deleting it.
     ObjectTag.objects.filter(object_id=content_key_str).unarchived().delete()
 
     for taxonomy_export_id, tags_values in exported_tags.items():
@@ -308,15 +308,17 @@ def set_exported_object_tags(
             continue
 
         export_id = str(taxonomy_export_id)
-        # The filtered lookup returns None for an archived and a missing taxonomy alike; tell them apart here.
+        # get_taxonomy_by_export_id() returns None for an archived taxonomy and a missing one alike. The two are
+        # handled differently below, so look the taxonomy up through the unfiltered manager to tell them apart.
         taxonomy = Taxonomy.objects.filter(export_id=export_id).first()
         if taxonomy is not None and taxonomy.archived:
-            # No placeholder: ObjectTag.resync() would re-link it to the archived taxonomy.
+            # A placeholder would be wrong here, because ObjectTag.resync() looks taxonomies up unfiltered and
+            # would re-link the placeholder to the archived taxonomy.
             log.info("Skipping tags %s for %s: taxonomy %s is archived", tags_values, content_key_str, export_id)
             continue
         oel_tagging.tag_object(
             object_id=content_key_str,
-            taxonomy=taxonomy,  # None for a missing taxonomy, which creates placeholders.
+            taxonomy=taxonomy,  # None for a missing taxonomy, so tag_object() creates placeholders.
             tags=tags_values,
             create_invalid=True,
             taxonomy_export_id=export_id,
