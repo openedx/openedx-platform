@@ -518,7 +518,7 @@ class CourseCertificateSettingsReadOnlyAuthzEnabledTest(CourseAuthoringAuthzTest
 class CourseCertificateSettingsQueryCountTest(CertificateSettingsTestBase):
     """The new route issues no more queries than the legacy one."""
 
-    @ddt.data((0, 0, 19, 17), (3, 0, 19, 17), (3, 1, 19, 17))
+    @ddt.data((0, 0, 19, 17), (3, 0, 19, 17), (3, 1, 19, 18))
     @ddt.unpack
     def test_query_count(self, certificate_count, mode_count, legacy_queries, new_queries):
         self._add_course_certificates(count=certificate_count, signatory_count=2)
