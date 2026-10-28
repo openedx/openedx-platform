@@ -11,6 +11,7 @@ from django.core import mail
 from django.http import HttpRequest
 from django.test import TestCase
 from django.test.utils import override_settings
+from django.urls import reverse
 
 from cms.djangoapps.course_creators.admin import CourseCreatorAdmin
 from cms.djangoapps.course_creators.models import CourseCreator
@@ -149,9 +150,36 @@ class CourseCreatorAdminTest(TestCase):
 
     def test_add_permission(self):
         """
-        Tests that staff cannot add entries
+        Tests that only staff can add entries
         """
-        self.assertFalse(self.creator_admin.has_add_permission(self.request))  # noqa: PT009
+        assert self.creator_admin.has_add_permission(self.request)
+
+        self.request.user = self.user
+        assert not self.creator_admin.has_add_permission(self.request)
+
+    @override_settings(ENABLE_CREATOR_GROUP=True)
+    def test_staff_can_grant_a_user_who_has_not_requested_access(self):
+        new_user = UserFactory.create()
+        superuser = UserFactory.create(is_staff=True, is_superuser=True, password='foo')
+        self.client.login(username=superuser.username, password='foo')
+
+        response = self.client.post(reverse('admin:course_creators_coursecreator_add'), {
+            'user': new_user.id,
+            'state': CourseCreator.GRANTED,
+            'note': '',
+            'all_organizations': 'on',
+        })
+
+        assert response.status_code == 302
+        assert CourseCreator.objects.get(user=new_user).state == CourseCreator.GRANTED
+        assert auth.user_has_role(new_user, CourseCreatorRole())
+
+    def test_the_user_is_read_only_once_added(self):
+        add_fields = self.creator_admin.get_fieldsets(self.request)[0][1]['fields']
+        change_fields = self.creator_admin.get_fieldsets(self.request, self.table_entry)[0][1]['fields']
+        assert 'user' in add_fields
+        assert 'user' not in change_fields
+        assert 'username' in self.creator_admin.get_readonly_fields(self.request, self.table_entry)
 
     def test_delete_permission(self):
         """
