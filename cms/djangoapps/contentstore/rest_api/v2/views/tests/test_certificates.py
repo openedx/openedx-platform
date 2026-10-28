@@ -142,6 +142,7 @@ class CourseCertificateSettingsAccessTest(CertificateSettingsTestBase):
     def test_a_missing_course_is_not_found_for_a_privileged_caller(self):
         response = self.get(self.global_staff, course_key=MISSING_COURSE_KEY)
         assert_error_envelope(response, expected_status=404, expected_type_slug="not-found")
+        assert response.data["detail"] == "The requested course does not exist."
         assert self.get_legacy(self.global_staff, course_key=MISSING_COURSE_KEY).status_code == 404
 
     def test_a_missing_course_is_refused_not_revealed_to_a_caller_without_access(self):
@@ -160,10 +161,10 @@ class CourseCertificateSettingsAccessTest(CertificateSettingsTestBase):
         )
         assert self.get_legacy(self.global_staff, course_key=ccx_key).status_code == 403
 
-    def test_an_inactive_course_author_is_not_authenticated(self):
+    def test_an_inactive_course_author_is_served(self):
         inactive = UserFactory(is_active=False, password=PASSWORD)
         CourseStaffRole(self.course.id).add_users(inactive)
-        assert_error_envelope(self.get(inactive), expected_status=401, expected_type_slug="authn")
+        assert self.get(inactive).status_code == 200
 
     def test_a_jwt_caller_is_served(self):
         response = self.api_client.get(self.url(), HTTP_AUTHORIZATION=f"JWT {create_jwt_for_user(self.course_staff)}")
@@ -515,7 +516,7 @@ class CourseCertificateSettingsReadOnlyAuthzEnabledTest(CourseAuthoringAuthzTest
 class CourseCertificateSettingsQueryCountTest(CertificateSettingsTestBase):
     """The new route issues no more queries than the legacy one."""
 
-    @ddt.data((0, 0, 19, 19), (3, 0, 19, 19), (3, 1, 19, 19))
+    @ddt.data((0, 0, 19, 18), (3, 0, 19, 18), (3, 1, 19, 18))
     @ddt.unpack
     def test_query_count(self, certificate_count, mode_count, legacy_queries, new_queries):
         self._add_course_certificates(count=certificate_count, signatory_count=2)

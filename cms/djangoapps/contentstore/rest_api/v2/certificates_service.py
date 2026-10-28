@@ -5,7 +5,6 @@ import logging
 from openedx_authz.constants.permissions import COURSES_MANAGE_CERTIFICATES
 from rest_framework.exceptions import NotFound
 
-from cms.djangoapps.contentstore.rest_api.v3.utils import resolve_course_key
 from cms.djangoapps.contentstore.utils import get_certificates_context
 from cms.djangoapps.contentstore.views.permissions import COURSE_NOT_FOUND_MESSAGE
 from openedx.core.djangoapps.authz.constants import LegacyAuthoringPermission
@@ -36,7 +35,6 @@ def get_certificate_settings(course_key, user):
     Raises ``NotFound`` when the course does not exist or cannot be loaded from
     the modulestore. Nothing is written.
     """
-    course_key = resolve_course_key(course_key)
     store = modulestore()
     with store.bulk_operations(course_key):
         course = store.get_course(course_key)
