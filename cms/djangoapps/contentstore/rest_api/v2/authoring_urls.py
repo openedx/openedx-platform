@@ -1,10 +1,14 @@
 """Contentstore API v2 authoring URLs."""
 
-from django.urls import path
+from django.urls import path, register_converter
+from edx_rest_framework_extensions.url_converters import UsageKeyConverter
 
+from cms.djangoapps.contentstore.rest_api.v2.views.container_children import CourseContainerChildrenViewSet
 from cms.djangoapps.contentstore.rest_api.v2.views.help_urls import HelpUrlsView
 from cms.djangoapps.contentstore.rest_api.v2.views.textbooks import CourseTextbooksViewSet
 from cms.djangoapps.contentstore.rest_api.v2.views.video_settings import CourseVideoSettingsViewSet
+
+register_converter(UsageKeyConverter, "usage_key")
 
 app_name = "authoring_v2"
 
@@ -20,4 +24,9 @@ urlpatterns = [
         name="course_video_settings",
     ),
     path("help_urls/", HelpUrlsView.as_view(), name="help_url_list"),
+    path(
+        "containers/<usage_key:usage_key>/children/",
+        CourseContainerChildrenViewSet.as_view({"get": "list"}),
+        name="container_child_list",
+    ),
 ]
