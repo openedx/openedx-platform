@@ -32,13 +32,6 @@ COLLIDING_LEGACY_PATH_PREFIXES = (
     "/api/contentstore/v3/home/",
 )
 
-# BFF surfaces, marked x-internal so clients can tell them from a stable
-# resource contract. Both the legacy and conforming mounts.
-INTERNAL_BFF_PATH_PREFIXES = (
-    "/api/contentstore/v3/home/",
-    "/api/authoring/v3/home/",
-)
-
 
 def cms_api_filter(endpoints):
     """
@@ -93,18 +86,12 @@ class CmsAutoSchema(AutoSchema):
 def cms_mark_migrated_paths(result, generator, request, public):  # pylint: disable=unused-argument
     """
     Post-processing hook: mark the legacy addresses of
-    migrated APIs ``deprecated: true`` and BFF surfaces ``x-internal``.
+    migrated APIs ``deprecated: true``.
     """
     for path, path_item in result.get("paths", {}).items():
-        legacy = path.startswith(LEGACY_MIGRATED_PATH_PREFIXES)
-        internal = path.startswith(INTERNAL_BFF_PATH_PREFIXES)
-        if not (legacy or internal):
+        if not path.startswith(LEGACY_MIGRATED_PATH_PREFIXES):
             continue
         for operation in path_item.values():
-            if not isinstance(operation, dict):
-                continue
-            if legacy:
+            if isinstance(operation, dict):
                 operation["deprecated"] = True
-            if internal:
-                operation["x-internal"] = True
     return result

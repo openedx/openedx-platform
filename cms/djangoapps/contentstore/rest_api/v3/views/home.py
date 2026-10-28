@@ -89,7 +89,6 @@ class HomeViewSet(StandardizedErrorMixin, viewsets.ViewSet):
     @extend_schema(
         responses={(200, "application/json"): StudioHomeSerializer},
         parameters=[
-            OpenApiParameter("org", str, OpenApiParameter.QUERY, description="Filter by course org"),
             OpenApiParameter(
                 "fields",
                 str,

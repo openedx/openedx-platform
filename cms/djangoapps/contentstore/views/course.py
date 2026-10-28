@@ -55,7 +55,7 @@ from rest_framework.exceptions import ValidationError
 from cms.djangoapps.contentstore.api.views.utils import get_bool_param, get_datetime_param
 from cms.djangoapps.contentstore.xblock_storage_handlers.view_handlers import create_xblock_info
 from cms.djangoapps.course_creators.models import CourseCreator
-from cms.djangoapps.course_creators.views import add_user_with_status_unrequested, get_course_creator_status
+from cms.djangoapps.course_creators.views import get_course_creator_status
 from cms.djangoapps.models.settings.course_grading import CourseGradingModel
 from cms.djangoapps.models.settings.course_metadata import CourseMetadata
 from cms.djangoapps.models.settings.encoder import CourseSettingsEncoder
@@ -2128,8 +2128,8 @@ def _get_course_creator_status(user):
     Helper method for returning the course creator status for a particular user,
     taking into account the values of DISABLE_COURSE_CREATION and ENABLE_CREATOR_GROUP.
 
-    If the user passed in has not previously visited the index page, it will be
-    added with status 'unrequested' if the course creator group is in use.
+    A user with no entry in the course creator table is reported as 'unrequested';
+    the entry is created when they request access.
     """
 
     if user.is_staff:
@@ -2137,12 +2137,7 @@ def _get_course_creator_status(user):
     elif getattr(settings, 'DISABLE_COURSE_CREATION', False):
         course_creator_status = 'disallowed_for_this_site'
     elif getattr(settings, 'ENABLE_CREATOR_GROUP', False):
-        course_creator_status = get_course_creator_status(user)
-        if course_creator_status is None:
-            # User not grandfathered in as an existing user, has not previously visited the dashboard page.
-            # Add the user to the course creator admin table with status 'unrequested'.
-            add_user_with_status_unrequested(user)
-            course_creator_status = get_course_creator_status(user)
+        course_creator_status = get_course_creator_status(user) or CourseCreator.UNREQUESTED
     else:
         course_creator_status = 'granted'
 

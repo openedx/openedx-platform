@@ -115,18 +115,16 @@ class CmsMarkMigratedPathsTest(SimpleTestCase):
         assert "deprecated" not in paths["/api/authoring/v1/xblocks/{usage_key_string}/"]["get"]
         assert "deprecated" not in paths["/api/authoring/v3/courses/{course_key}/details/"]["get"]
 
-    def test_bff_surfaces_internal_on_both_mounts(self):
+    def test_home_is_public_on_both_mounts(self):
         result = cms_mark_migrated_paths(_schema(
             "/api/contentstore/v3/home/",
             "/api/authoring/v3/home/",
-            "/api/authoring/v4/courses/",
         ), None, None, False)
         paths = result["paths"]
-        assert paths["/api/contentstore/v3/home/"]["get"]["x-internal"] is True
         assert paths["/api/contentstore/v3/home/"]["get"]["deprecated"] is True
-        assert paths["/api/authoring/v3/home/"]["get"]["x-internal"] is True
         assert "deprecated" not in paths["/api/authoring/v3/home/"]["get"]
-        assert "x-internal" not in paths["/api/authoring/v4/courses/"]["get"]
+        assert "x-internal" not in paths["/api/contentstore/v3/home/"]["get"]
+        assert "x-internal" not in paths["/api/authoring/v3/home/"]["get"]
 
     def test_paths_are_left_as_full_urls(self):
         """Paths are not trimmed, so every key resolves against a service-root server."""
