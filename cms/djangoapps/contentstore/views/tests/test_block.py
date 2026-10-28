@@ -28,6 +28,7 @@ from openedx_authz.constants.roles import COURSE_ADMIN, COURSE_AUDITOR, COURSE_E
 from openedx_events.content_authoring.data import DuplicatedXBlockData
 from openedx_events.content_authoring.signals import XBLOCK_DUPLICATED
 from openedx_events.testing import OpenEdxEventsTestMixin
+from openedx_tagging.models import ObjectTag
 from pytz import UTC
 from web_fragments.fragment import Fragment
 from webob import Response
@@ -1541,6 +1542,9 @@ class TestDuplicateItem(OpenEdxEventsTestMixin, ItemTest, DuplicateHelper):
         # Tag the child block
         tagging_api.tag_object(str(source_block.location), taxonomyA, ["two"],)
 
+        # Archive one of the chapter's associations; it must not be duplicated.
+        ObjectTag.objects.filter(object_id=str(source_chapter.location), _value="four").update(archived=True)
+
         # Duplicate the chapter (and its children)
         dupe_location = duplicate_block(
             parent_usage_key=source_course.location,
@@ -1555,7 +1559,6 @@ class TestDuplicateItem(OpenEdxEventsTestMixin, ItemTest, DuplicateHelper):
         expected_chapter_tags = [
             f'<ObjectTag> {str(dupe_chapter.location)}: A=one',
             f'<ObjectTag> {str(dupe_chapter.location)}: A=two',
-            f'<ObjectTag> {str(dupe_chapter.location)}: B=four',
             f'<ObjectTag> {str(dupe_chapter.location)}: B=three',
         ]
         dupe_chapter_tags = [str(object_tag) for object_tag in tagging_api.get_object_tags(str(dupe_chapter.location))]
@@ -1565,6 +1568,9 @@ class TestDuplicateItem(OpenEdxEventsTestMixin, ItemTest, DuplicateHelper):
         ]
         dupe_block_tags = [str(object_tag) for object_tag in tagging_api.get_object_tags(str(dupe_block.location))]
         assert dupe_block_tags == expected_block_tags
+
+        # The archived association is left in place on the source.
+        assert ObjectTag.objects.get(object_id=str(source_chapter.location), _value="four").archived is True
 
 
 @ddt.ddt

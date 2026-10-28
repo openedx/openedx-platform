@@ -13,7 +13,7 @@ from openedx_events.content_authoring.signals import (
     XBLOCK_UPDATED,
 )
 from openedx_events.testing import OpenEdxEventsTestMixin
-from openedx_tagging.models import Tag
+from openedx_tagging.models import ObjectTag, Tag
 from organizations.models import Organization
 from rest_framework.test import APIClient
 
@@ -284,8 +284,15 @@ class ClipboardPasteTestCase(ModuleStoreTestCase):
             dest_chapter = BlockFactory.create(parent=dest_course, category='chapter', display_name='Section')
             dest_sequential = BlockFactory.create(parent=dest_chapter, category='sequential', display_name='Subsection')
 
-        # Copy the unit
+        # Archive one of the unit's associations, to test that it isn't pasted.
         unit_key = source_block_keys['vertical']
+        ObjectTag.objects.filter(
+            object_id=str(unit_key),
+            taxonomy__export_id='ALL_ORGS',
+            _value='tag_2',
+        ).update(archived=True)
+
+        # Copy the unit
         copy_response = client.post(CLIPBOARD_ENDPOINT, {"usage_key": str(unit_key)}, format="json")
         assert copy_response.status_code == 200
 
@@ -302,9 +309,8 @@ class ClipboardPasteTestCase(ModuleStoreTestCase):
 
         # Only tags from the taxonomy that is associated with the dest org should be copied
         tags = list(tagging_api.get_object_tags(str(dest_unit_key)))
-        assert len(tags) == 2
+        assert len(tags) == 1
         assert str(tags[0]) == f'<ObjectTag> {dest_unit_key}: test_taxonomy=tag_1'
-        assert str(tags[1]) == f'<ObjectTag> {dest_unit_key}: test_taxonomy=tag_2'
 
         # Ensure that the pasted child blocks were tagged too.
         dest_tags, _ = tagging_api.get_all_object_tags(dest_course.id)

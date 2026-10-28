@@ -155,6 +155,7 @@ def get_all_object_tags(
 
     Includes any tags applied to the course/library as a whole.
     Returns a tuple with a dictionary of grouped object tag values for all blocks and a dictionary of taxonomies.
+    Archived associations, and those whose tag or taxonomy is archived, are left out.
 
     If `prefetch_orgs` is set, then the returned ObjectTag taxonomies will have their TaxonomyOrgs prefetched,
     which makes checking permissions faster.
@@ -176,7 +177,7 @@ def get_all_object_tags(
     if block_id_prefix:
         object_id_clause |= Q(object_id__startswith=block_id_prefix)
 
-    all_object_tags = ObjectTag.objects.filter(
+    all_object_tags = ObjectTag.objects.unarchived().filter(
         Q(tag__isnull=False, tag__taxonomy__isnull=False),
         object_id_clause,
     ).select_related("tag__taxonomy").order_by("object_id")

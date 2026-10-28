@@ -1,4 +1,5 @@
 """Tests for the Tagging models"""
+import copy
 import io
 import os
 import tempfile
@@ -9,7 +10,7 @@ from django.test.testcases import TestCase
 from fs.osfs import OSFS
 from opaque_keys.edx.keys import CourseKey, UsageKey
 from opaque_keys.edx.locator import LibraryCollectionLocator, LibraryContainerLocator, LibraryLocatorV2
-from openedx_tagging.models import ObjectTag
+from openedx_tagging.models import ObjectTag, Tag, Taxonomy
 from organizations.models import Organization
 
 from .. import api
@@ -306,6 +307,14 @@ class TestAPIObjectTags(TestGetAllObjectTagsMixin, TestCase):
             self.taxonomy_2.id: [tag.value for tag in vertical2_tags],
         }
 
+        # The order of values within a taxonomy is not guaranteed, and this test is about no tags being lost.
+        for tags_by_taxonomy in (
+            object_tags["block-v1:orgA+test_course+test_run+type@vertical+block@test_vertical1"],
+            self.expected_course_objecttags["block-v1:orgA+test_course+test_run+type@vertical+block@test_vertical1"],
+        ):
+            for values in tags_by_taxonomy.values():
+                values.sort()
+
         assert object_tags == self.expected_course_objecttags
         assert taxonomies == {
             self.taxonomy_1.id: self.taxonomy_1,
@@ -326,6 +335,65 @@ class TestAPIObjectTags(TestGetAllObjectTagsMixin, TestCase):
             self.taxonomy_1.id: self.taxonomy_1,
             self.taxonomy_2.id: self.taxonomy_2,
         }
+
+    def test_get_course_object_tags_excludes_archived_association(self):
+        """
+        An archived association is left out, and the other associations on the same block are kept.
+        """
+        sequential_id = "block-v1:orgA+test_course+test_run+type@sequential+block@test_sequential"
+        ObjectTag.objects.filter(object_id=sequential_id, _value="Tag 1.1").update(archived=True)
+
+        object_tags, taxonomies = api.get_all_object_tags(
+            CourseKey.from_string("course-v1:orgA+test_course+test_run")
+        )
+
+        expected = copy.deepcopy(self.expected_course_objecttags)
+        expected[sequential_id][self.taxonomy_1.id] = ["Tag 1.2"]
+        assert object_tags == expected
+        assert taxonomies == {
+            self.taxonomy_1.id: self.taxonomy_1,
+            self.taxonomy_2.id: self.taxonomy_2,
+        }
+
+    def test_get_course_object_tags_excludes_archived_tag(self):
+        """
+        Associations to an archived tag are left out.
+        """
+        Tag.objects.filter(pk=self.tag_1_2.pk).update(archived=True)
+
+        object_tags, taxonomies = api.get_all_object_tags(
+            CourseKey.from_string("course-v1:orgA+test_course+test_run")
+        )
+
+        expected = copy.deepcopy(self.expected_course_objecttags)
+        sequential_id = "block-v1:orgA+test_course+test_run+type@sequential+block@test_sequential"
+        expected[sequential_id][self.taxonomy_1.id] = ["Tag 1.1"]
+        assert object_tags == expected
+        assert taxonomies == {
+            self.taxonomy_1.id: self.taxonomy_1,
+            self.taxonomy_2.id: self.taxonomy_2,
+        }
+
+    def test_get_course_object_tags_excludes_archived_taxonomy(self):
+        """
+        Associations under an archived taxonomy are left out, and the taxonomy is not returned.
+        """
+        Taxonomy.objects.filter(pk=self.taxonomy_2.pk).update(archived=True)
+
+        object_tags, taxonomies = api.get_all_object_tags(
+            CourseKey.from_string("course-v1:orgA+test_course+test_run")
+        )
+
+        # The vertical and html blocks only had taxonomy_2 tags, so they have no entry at all.
+        assert object_tags == {
+            "course-v1:orgA+test_course+test_run": self.expected_course_objecttags[
+                "course-v1:orgA+test_course+test_run"
+            ],
+            "block-v1:orgA+test_course+test_run+type@sequential+block@test_sequential": {
+                self.taxonomy_1.id: ["Tag 1.1", "Tag 1.2"],
+            },
+        }
+        assert taxonomies == {self.taxonomy_1.id: self.taxonomy_1}
 
     def _test_copy_object_tags(self, src_key, dst_key, expected_tags):
         """
@@ -446,6 +514,39 @@ class TestExportImportTags(TaggedCourseMixin):
         return file_name
 
     def test_generate_csv_rows(self) -> None:
+        buffer = io.StringIO()
+        list(api.generate_csv_rows(str(self.course.id), buffer))
+        buffer.seek(0)
+        csv_content = buffer.getvalue()
+
+        assert csv_content == self.expected_csv
+
+    def test_generate_csv_rows_excludes_archived(self) -> None:
+        sequential_id = "block-v1:orgA+test_course+test_run+type@sequential+block@test_sequential"
+        ObjectTag.objects.filter(object_id=sequential_id, _value="Tag 1.1").update(archived=True)
+        Taxonomy.objects.filter(pk=self.taxonomy_2.pk).update(archived=True)
+
+        buffer = io.StringIO()
+        list(api.generate_csv_rows(str(self.course.id), buffer))
+        buffer.seek(0)
+        csv_content = buffer.getvalue()
+
+        assert csv_content == (
+            '"Name","Type","ID","1-taxonomy-1"\r\n'
+            '"Test Course","course","course-v1:orgA+test_course+test_run","Tag 1.1"\r\n'
+            '"  test sequential","sequential","test_sequential","Tag 1.2"\r\n'
+            '"    test vertical1","vertical","test_vertical1",""\r\n'
+            '"    test vertical2","vertical","test_vertical2",""\r\n'
+            '"      test html","html","test_html",""\r\n'
+            '"  untagged sequential","sequential","untagged_sequential",""\r\n'
+            '"    untagged vertical","vertical","untagged_vertical",""\r\n'
+        )
+
+    def test_generate_csv_rows_keeps_disabled_taxonomy(self) -> None:
+        # Disabled taxonomies are not archived, so their tags are still exported.
+        self.taxonomy_1.enabled = False
+        self.taxonomy_1.save()
+
         buffer = io.StringIO()
         list(api.generate_csv_rows(str(self.course.id), buffer))
         buffer.seek(0)
