@@ -2479,10 +2479,12 @@ class _RetirementRecordAccessMixin:
     def get_permissions(self):
         """Return the classes deciding who may make the request being served."""
         if self.action is None:
-            # No action serves this method at this address. That is not a
-            # refusal of the caller, so the request is admitted by the classes
+            # No action serves this method at this address, so there is no
+            # capability to ask for: the request is admitted by the classes
             # every action shares and answered as a method this address does
-            # not serve, which is what the earlier addresses answer.
+            # not serve. Each address this replaces serves one method and asks
+            # its capability of every caller it is given, so a caller without
+            # that capability is refused there before the method is weighed.
             return [permission() for permission in self.permission_classes]
         # An action this mapping does not name reaches no capability of this
         # resource, rather than inheriting the one every other action shares.
@@ -2896,8 +2898,10 @@ class RetirementPartnerReportViewSet(
         """Queue the retiring account this name addresses for partner reporting."""
         # The record this queues belongs to the retirement collection rather
         # than to this one, whose own selection is of queue entries, so the
-        # records it is resolved from are named here.
-        record_partner_report(retirement_open_to_action(retirements(), username))
+        # records it is resolved from are named here and the policy this view
+        # declares is applied to them, as it is to everything else it acts on.
+        records = self.scoping_policy.scope(retirements(), request.user)
+        record_partner_report(retirement_open_to_action(records, username))
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 

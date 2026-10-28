@@ -55,6 +55,7 @@ from common.djangoapps.student.tests.factories import (
 )
 from common.djangoapps.util.model_utils import USER_FIELDS_CHANGED
 from openedx.core.djangoapps.user_api.accounts.permissions import CanCancelUserRetirement, CanRetireUser
+from openedx.core.djangoapps.user_api.accounts.signals import USER_RETIRE_LMS_CRITICAL
 from openedx.core.djangoapps.user_api.accounts.tests.retirement_helpers import (  # pylint: disable=unused-import
     create_retirement_status,
     setup_retirement_states,  # noqa: F401
@@ -1421,6 +1422,33 @@ class RetirementErasureTests(_AccessMatrixMixin, RetirementApiTestCase):
         assert self.subject.username == "subject"
         assert self.subject.is_active is True
 
+    def test_a_second_run_works_the_replacement_name_out_from_the_registered_name(self):
+        """
+        The record holds no replacement name of its own, so the step works one out.
+
+        It works it out from the name the account was registered under, which the record keeps,
+        rather than from the name the account holds, which this very step has already replaced.
+        """
+        UserRetirementStatus.objects.filter(id=self.retirement.id).update(retired_username="")
+        announced = []
+        USER_RETIRE_LMS_CRITICAL.connect(
+            lambda sender, **kwargs: announced.append(kwargs["retired_username"]),
+            weak=False,
+            dispatch_uid="replacement-name-of-each-run",
+        )
+        self.addCleanup(
+            USER_RETIRE_LMS_CRITICAL.disconnect, dispatch_uid="replacement-name-of-each-run",
+        )
+        self.login("worker")
+        assert self.send("lms_core").status_code == status.HTTP_204_NO_CONTENT
+        self.subject.refresh_from_db()
+        written = self.subject.username
+        assert written == get_retired_username_by_username(self.retirement.original_username)
+        assert self.send("lms_core").status_code == status.HTTP_204_NO_CONTENT
+        self.subject.refresh_from_db()
+        assert self.subject.username == written
+        assert announced == [written, written]
+
     def test_the_erasure_does_not_move_the_retirement(self):
         self.login("worker")
         self.send("lms_core")
@@ -1816,6 +1844,30 @@ class RetirementCleanupTests(_BatchTestsMixin, RetirementApiTestCase):
             self.post(["subject"])
         # The last selection is the delete, which sees the written-over values.
         assert seen[-1] == [(view_services.REDACTED_VALUE, view_services.REDACTED_EMAIL)]
+
+    def test_a_record_moved_off_that_step_between_the_two_statements_is_left(self):
+        """The caller was answered about a finished record, so only a finished record goes."""
+        self.login("worker")
+        selections = []
+        original = UserRetirementStatus.objects.filter
+
+        def move_the_record_before_the_delete_runs(*args, **kwargs):
+            selection = original(*args, **kwargs)
+            selections.append(selection)
+            if len(selections) == 2:
+                forced = UserRetirementStatus.objects.get(id=self.finished.id)
+                forced.current_state = self.state("ERRORED")
+                forced.save()
+            return selection
+
+        with mock.patch.object(
+            UserRetirementStatus.objects, "filter",
+            side_effect=move_the_record_before_the_delete_runs,
+        ):
+            answered = self.post(["subject"])
+        assert answered.status_code == status.HTTP_200_OK
+        left = UserRetirementStatus.objects.get(id=self.finished.id)
+        assert left.current_state.state_name == "ERRORED"
 
     def test_a_repeat_of_a_request_already_carried_out_is_answered(self):
         self.login("worker")
@@ -2430,6 +2482,189 @@ class RetirementMemberVisibilityTests(RetirementApiTestCase):
         assert twin.current_state.state_name == "RETIRING_LMS"
 
 
+@skip_unless_lms
+class SharedNameUnderANarrowingPolicyTests(RetirementApiTestCase):
+    """
+    Which of two records requested under one name an operation weighs, and which it acts on.
+
+    The name a record keeps of the account it was requested for is not unique,
+    so two records can stand under one name. A policy that keeps one of them
+    leaves the name addressing a single record, and that record is the one the
+    operation is weighed against: the record the policy left out belongs to an
+    account this caller does not act on, so the step it stands at decides
+    nothing about the account that does.
+    """
+
+    SHARED_NAME = "sharedname"
+
+    def setUp(self):
+        super().setUp()
+        self.in_scope = UserFactory.create(
+            username="in-scope-holder", email="in-scope@example.com",
+        )
+        self.out_of_scope = UserFactory.create(
+            username="out-of-scope-holder", email="out-of-scope@example.com",
+        )
+        for user, name in ((self.in_scope, "In Scope"), (self.out_of_scope, "Out Of Scope")):
+            user.profile.name = name
+            user.profile.city = f"City of {user.username}"
+            user.profile.save()
+        self.url = reverse("user_v2:retirement_erasure", kwargs={"username": self.SHARED_NAME})
+
+    def pair(self, in_scope_step, out_of_scope_step):
+        """Request a retirement for each account under the one name, standing at these steps."""
+        # The record the policy leaves out is requested first, so that it is
+        # the one a resolution that reads every record held settles on.
+        self.out_of_scope_record = self.retirement_in(out_of_scope_step, user=self.out_of_scope)
+        self.in_scope_record = self.retirement_in(in_scope_step, user=self.in_scope)
+        UserRetirementStatus.objects.filter(
+            id__in=[self.out_of_scope_record.id, self.in_scope_record.id],
+        ).update(original_username=self.SHARED_NAME)
+        self.in_scope_before = self.account(self.in_scope)
+        self.out_of_scope_before = self.account(self.out_of_scope)
+
+    def account(self, user):
+        """Return the stored values the core erasure writes over."""
+        user.refresh_from_db()
+        profile = UserProfile.objects.get(user=user)
+        return {
+            "username": user.username,
+            "email": user.email,
+            "is_active": user.is_active,
+            "profile_name": profile.name,
+            "profile_city": profile.city,
+        }
+
+    @contextlib.contextmanager
+    def policy_keeping(self, record):
+        """Serve the next requests under a policy that keeps this record alone."""
+        with mock.patch.object(
+            _RetirementRecordAccessMixin, "scoping_policy", _NarrowingPolicy("id", record.id),
+        ):
+            yield
+
+    def erase(self):
+        """Ask for the core personal data of the account this name addresses to be erased."""
+        return self.client.post(self.url, {"scope": "lms_core"}, format="json")
+
+    def test_the_step_the_record_the_policy_keeps_stands_at_refuses_the_erasure(self):
+        """The other record admits work, which says nothing about the account being acted on."""
+        self.pair(in_scope_step="PENDING", out_of_scope_step="RETIRING_LMS")
+        self.login("worker")
+        with self.policy_keeping(self.in_scope_record):
+            answered = self.erase()
+        # What survives is read first, so that a failure says what was destroyed.
+        assert self.account(self.in_scope) == self.in_scope_before
+        assert self.account(self.out_of_scope) == self.out_of_scope_before
+        envelope = assert_error_envelope(
+            answered,
+            expected_status=status.HTTP_409_CONFLICT,
+            expected_type_slug=STATE_CONFLICT_SLUG,
+        )
+        assert envelope["detail"] == view_services.NOT_OPEN_TO_ACTION
+
+    def test_the_step_the_record_the_policy_keeps_stands_at_admits_the_erasure(self):
+        """The other record admits no work, which says nothing about the account being acted on."""
+        self.pair(in_scope_step="RETIRING_LMS", out_of_scope_step="COMPLETE")
+        self.login("worker")
+        with self.policy_keeping(self.in_scope_record):
+            answered = self.erase()
+        # What was erased is read first, so that a failure says what was left.
+        assert self.account(self.in_scope) == {
+            "username": self.in_scope_record.retired_username,
+            "email": self.in_scope_record.retired_email,
+            "is_active": False,
+            "profile_name": "",
+            "profile_city": None,
+        }
+        assert self.account(self.out_of_scope) == self.out_of_scope_before
+        assert answered.status_code == status.HTTP_204_NO_CONTENT
+
+    def test_the_account_erased_is_the_one_whose_record_the_policy_keeps(self):
+        """Both records admit work, so what decides is which of them the name addresses here."""
+        self.pair(in_scope_step="RETIRING_LMS", out_of_scope_step="RETIRING_LMS")
+        self.login("worker")
+        with self.policy_keeping(self.in_scope_record):
+            assert self.erase().status_code == status.HTTP_204_NO_CONTENT
+        assert self.account(self.in_scope)["username"] == self.in_scope_record.retired_username
+        assert self.account(self.out_of_scope) == self.out_of_scope_before
+
+    def test_the_policy_this_deployment_runs_refuses_the_name_and_erases_nothing(self):
+        """It keeps the records whole, so the name is carried by two of them and addresses neither."""
+        self.pair(in_scope_step="PENDING", out_of_scope_step="RETIRING_LMS")
+        self.login("worker")
+        envelope = assert_error_envelope(
+            self.erase(),
+            expected_status=status.HTTP_400_BAD_REQUEST,
+            expected_type_slug=AMBIGUOUS_NAME_SLUG,
+        )
+        assert envelope["detail"] == view_services.NAME_IS_AMBIGUOUS
+        assert self.account(self.in_scope) == self.in_scope_before
+        assert self.account(self.out_of_scope) == self.out_of_scope_before
+
+
+@skip_unless_lms
+class PartnerQueueRecordVisibilityTests(RetirementApiTestCase):
+    """The retirement a queue write resolves is narrowed by the policy this collection declares."""
+
+    def setUp(self):
+        super().setUp()
+        self.in_scope = self.retirement_in("ADDING_TO_PARTNER_QUEUE", user=self.subject)
+        self.out_of_scope = self.retirement_in("ADDING_TO_PARTNER_QUEUE", user=self.learner)
+        for user in (self.subject, self.learner):
+            CourseEnrollmentFactory.create(user=user, course_id=COURSE_KEY)
+        self.policy = _NarrowingPolicy("original_username", self.subject.username)
+
+    def queue(self, username):
+        """Ask for the retiring account this name addresses to be queued for partner reporting."""
+        return self.client.put(
+            reverse("user_v2:retirement_partner_report_detail", kwargs={"username": username}),
+            {},
+            format="json",
+        )
+
+    def queued_names(self):
+        """Return the names every entry of the partner report queue carries."""
+        return set(
+            UserRetirementPartnerReportingStatus.objects.values_list("original_username", flat=True),
+        )
+
+    def test_a_record_the_policy_leaves_out_is_not_queued_for_partner_reporting(self):
+        self.login("worker")
+        with mock.patch.object(_PartnerReportAccessMixin, "scoping_policy", self.policy):
+            answered = self.queue(self.learner.username)
+        # What the queue holds is read first, so that a failure names whose
+        # personal data a partner would have been handed.
+        assert self.queued_names() == set()
+        envelope = assert_error_envelope(
+            answered,
+            expected_status=status.HTTP_404_NOT_FOUND,
+            expected_type_slug="not-found",
+        )
+        assert envelope["detail"] == view_services.NO_SUCH_RETIREMENT
+
+    def test_the_record_the_policy_keeps_is_queued(self):
+        self.login("worker")
+        with mock.patch.object(_PartnerReportAccessMixin, "scoping_policy", self.policy):
+            answered = self.queue(self.subject.username)
+        assert answered.status_code == status.HTTP_204_NO_CONTENT
+        assert self.queued_names() == {self.subject.username}
+
+    def test_the_policy_is_given_the_caller_and_the_retirement_records_it_resolves_from(self):
+        self.login("worker")
+        with mock.patch.object(_PartnerReportAccessMixin, "scoping_policy", self.policy):
+            self.queue(self.subject.username)
+        assert [caller.username for caller in self.policy.subjects] == [WORKER_USERNAME]
+        assert self.policy.offered == [
+            sorted([self.subject.username, self.learner.username]),
+        ]
+
+    def test_the_policy_this_deployment_runs_leaves_every_record_queueable(self):
+        self.login("worker")
+        assert self.queue(self.learner.username).status_code == status.HTTP_204_NO_CONTENT
+        assert self.queued_names() == {self.learner.username}
+
+
 class RetirementErrorCatalogTests(SimpleTestCase):
     """What this area adds to the shared error catalog, and what it leaves alone."""
 
@@ -3008,6 +3243,19 @@ class UnservedMethodTests(RetirementApiTestCase):
                     expected_status=status.HTTP_403_FORBIDDEN,
                     expected_type_slug="authz",
                 )
+
+    def test_an_address_that_serves_one_method_refuses_the_same_caller_instead(self):
+        """Whoever may call is decided before the method is, so where every method carries the
+        same capability the caller without it is refused rather than told what is served."""
+        self.login("learner")
+        assert self.client.put(
+            reverse("accounts_retirement_cleanup"),
+        ).status_code == status.HTTP_403_FORBIDDEN
+        assert_error_envelope(
+            self.send("put", "user_v2:retirement_detail", {"username": "subject"}),
+            expected_status=status.HTTP_405_METHOD_NOT_ALLOWED,
+            expected_type_slug=REFUSED_METHOD_SLUG,
+        )
 
     def test_an_anonymous_caller_is_told_to_authenticate(self):
         self.client.logout()

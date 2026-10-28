@@ -123,12 +123,10 @@ def retirement_open_to_action(records, username):
     try:
         # Which steps admit work is decided by the pipeline's own model layer,
         # where the order of the steps is kept, rather than being written out a
-        # second time here. It resolves the name as well, and the name resolved
-        # above addresses one record, so the two agree on which record that is.
-        UserRetirementStatus.get_retirement_for_retirement_action(username)
-    except UserRetirementStatus.DoesNotExist as exc:
-        log.info("No retirement is requested under the name %r: %s", username, exc)
-        raise NotFound(NO_SUCH_RETIREMENT) from exc
+        # second time here. It is asked about the record resolved above rather
+        # than about the name it was resolved under, so the record this answers
+        # for is the record the caller is handed to work on.
+        retirement.check_state_allows_retirement_action()
     except RetirementStateError as exc:
         log.info("The retirement requested as %r admits no pipeline work: %s", username, exc)
         raise RetirementStateConflict(NOT_OPEN_TO_ACTION) from exc
@@ -168,7 +166,12 @@ def cancel_retirement(retirement):
 def _erase_core_data(retirement):
     """Erase what the platform itself holds about the account being retired."""
     user = retirement.user
-    retired_username = retirement.retired_username or get_retired_username_by_username(user.username)
+    # The name the account was registered under, rather than the name it holds
+    # now: this step replaces the one it holds, so a run of it that follows one
+    # that got that far would otherwise hash a hash.
+    retired_username = retirement.retired_username or get_retired_username_by_username(
+        retirement.original_username,
+    )
     retired_email = retirement.retired_email or get_retired_email_by_email(user.email)
     original_email = retirement.original_email
 
@@ -369,7 +372,13 @@ def delete_retirements(records, usernames):
             original_email=REDACTED_EMAIL,
             original_name=REDACTED_VALUE,
         )
-        UserRetirementStatus.objects.filter(id__in=doomed).delete()
+        # The step is stated again on the delete, because the write above has
+        # left the records with nothing of the account on them and a record
+        # moved off that step between the two statements is one the caller was
+        # never answered about.
+        UserRetirementStatus.objects.filter(
+            id__in=doomed, current_state__state_name=COMPLETE_STATE,
+        ).delete()
     return _batch_outcomes(usernames, found)
 
 

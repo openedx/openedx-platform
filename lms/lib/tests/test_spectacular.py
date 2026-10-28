@@ -181,18 +181,6 @@ class MarkSupersededUserPathsTest(SimpleTestCase):
             "/api/user/v1/preferences/{username}",
             "/api/user/v1/preferences/{username}/{preference_key}",
             "/api/user/v1/preferences/email_opt_in/",
-            "/api/user/v1/accounts/{username}/retirement_status/",
-            "/api/user/v1/accounts/retirement_queue/",
-            "/api/user/v1/accounts/retirements_by_status_and_date/",
-            "/api/user/v1/accounts/update_retirement_status/",
-            "/api/user/v1/accounts/retirement_cleanup/",
-            "/api/user/v1/accounts/retirement_partner_report/",
-            "/api/user/v1/accounts/retirement_partner_report_cleanup/",
-            "/api/user/v1/accounts/cancel_retirement/",
-            "/api/user/v1/accounts/retire/",
-            "/api/user/v1/accounts/retire_misc/",
-            "/api/user/v1/accounts/deactivate_logout/",
-            "/api/user/v1/accounts/replace_usernames/",
             "/api/profile_images/v1/{username}/upload",
             "/api/user/v2/users/",
             "/api/user/v2/accounts/{username}/profile_image/",
@@ -218,23 +206,9 @@ class MarkSupersededUserPathsTest(SimpleTestCase):
             "/api/user/v1/preferences/{username}",
             "/api/user/v1/preferences/{username}/{preference_key}",
             "/api/user/v1/preferences/email_opt_in/",
-            "/api/user/v1/accounts/{username}/retirement_status/",
-            "/api/user/v1/accounts/retirement_queue/",
-            "/api/user/v1/accounts/retirements_by_status_and_date/",
-            "/api/user/v1/accounts/update_retirement_status/",
-            "/api/user/v1/accounts/retirement_cleanup/",
-            "/api/user/v1/accounts/retirement_partner_report/",
-            "/api/user/v1/accounts/retirement_partner_report_cleanup/",
-            "/api/user/v1/accounts/cancel_retirement/",
-            "/api/user/v1/accounts/retire/",
-            "/api/user/v1/accounts/retire_misc/",
         ):
             assert paths[marked]["get"]["deprecated"] is True, marked
         for untouched in (
-            # The two operations of this area whose caller is not the pipeline
-            # have no conforming address yet, so neither is marked.
-            "/api/user/v1/accounts/deactivate_logout/",
-            "/api/user/v1/accounts/replace_usernames/",
             "/api/profile_images/v1/{username}/upload",
             "/api/user/v2/users/",
             "/api/user/v2/accounts/{username}/profile_image/",
@@ -314,10 +288,10 @@ def _user_routes(schema_class):
             view.as_view({"get": "retrieve"}),
         ),
         path("api/user/v1/users/", view.as_view({"get": "list"})),
-        # Both reads of the retirement queue answer with an array of records,
-        # which is what the generator derives a list operation id from, while
-        # the service-wide document has published each under the name derived
-        # for a single record.
+        # Two reads of the retirement queue that answer with an array, which
+        # is what the generator derives a list operation id from, and which
+        # the document that trims nothing off the front has published under
+        # the name derived for a single record.
         path("api/user/v1/accounts/retirement_queue/", view.as_view({"get": "list"})),
         path(
             "api/user/v1/accounts/retirements_by_status_and_date/",
@@ -420,15 +394,15 @@ class UserOperationIdTest(SimpleTestCase):
         assert _named_operations(LmsAutoSchema, {}) == {
             "/api/user/v1/accounts": ("v1_accounts_list", ("user",)),
             "/api/user/v1/accounts/{username}": ("v1_accounts_retrieve", ("user",)),
-            "/api/user/v1/accounts/retirement_queue/": ("v1_accounts_retirement_queue_list", ("user",)),
-            "/api/user/v1/accounts/retirements_by_status_and_date/": (
-                "v1_accounts_retirements_by_status_and_date_list", ("user",),
-            ),
             "/api/user/v1/preferences/{username}": ("v1_preferences_retrieve", ("user",)),
             "/api/user/v1/preferences/{username}/{preference_key}": (
                 "v1_preferences_retrieve_one", ("user",),
             ),
             "/api/user/v1/users/": ("v1_users_list", ("user",)),
+            "/api/user/v1/accounts/retirement_queue/": ("v1_accounts_retirement_queue_list", ("user",)),
+            "/api/user/v1/accounts/retirements_by_status_and_date/": (
+                "v1_accounts_retirements_by_status_and_date_list", ("user",),
+            ),
             "/api/user/v2/accounts/{username}/preferences/": (
                 "v2_accounts_preferences_retrieve", ("user",),
             ),
@@ -454,18 +428,6 @@ PREFERENCE_DOCUMENT_BODY = {
         "Preferences of one account, as an object of preference name to stored value. Every "
         "value is text. Which names an account carries depends on the features it uses."
     ),
-}
-
-#: What the cancellation answers with, which it published nothing for.
-CANCELLATION_ANSWER = {
-    "type": "object",
-    "properties": {
-        "success": {
-            "type": "boolean",
-            "description": "True once the retirement request has been undone.",
-        },
-    },
-    "required": ["success"],
 }
 
 #: What each superseded operation the schema describes is expected to exchange:
@@ -498,32 +460,6 @@ SUPERSEDED_EXCHANGES = {
     ("/api/user/v1/preferences/email_opt_in/", "post"): (
         ["application/x-www-form-urlencoded"], {"200": None},
     ),
-    # The retirement pipeline. Of its ten addresses only the read of one
-    # record published what its handler really answers with, and it keeps
-    # what it has always published.
-    ("/api/user/v1/accounts/retirement_queue/", "get"): ([], {"200": "UserRetirementStatus[]"}),
-    ("/api/user/v1/accounts/retirements_by_status_and_date/", "get"): (
-        [], {"200": "UserRetirementStatus[]"},
-    ),
-    ("/api/user/v1/accounts/update_retirement_status/", "patch"): (
-        ["application/json"], {"204": None},
-    ),
-    ("/api/user/v1/accounts/retirement_cleanup/", "post"): (["application/json"], {"204": None}),
-    ("/api/user/v1/accounts/retirement_partner_report/", "post"): (
-        [], {"200": "UserRetirementPartnerReport[]"},
-    ),
-    ("/api/user/v1/accounts/retirement_partner_report/", "put"): (
-        ["application/json"], {"204": None},
-    ),
-    ("/api/user/v1/accounts/retirement_partner_report_cleanup/", "post"): (
-        ["application/json"], {"204": None},
-    ),
-    ("/api/user/v1/accounts/cancel_retirement/", "post"): (
-        ["application/json", "application/x-www-form-urlencoded", "multipart/form-data"],
-        {"200": CANCELLATION_ANSWER},
-    ),
-    ("/api/user/v1/accounts/retire/", "post"): (["application/json"], {"204": None}),
-    ("/api/user/v1/accounts/retire_misc/", "post"): (["application/json"], {"204": None}),
 }
 
 
@@ -615,27 +551,6 @@ class SupersededBodyTest(TestCase):
         assert sorted(image["requestBody"]["content"]) == [
             "image/gif", "image/jpeg", "image/pjpeg", "image/png", "multipart/form-data",
         ]
-
-    def test_a_body_written_out_as_a_shape_is_needed_where_the_shape_says_it_is(self):
-        """
-        Each form of a body is read for what it says it cannot be sent without.
-
-        A shape written out is published as it stands, so nothing has judged
-        whether its operation can be called with no body at all: the mark is
-        read from the members the shape requires, or from the members of its
-        entries where the shape is a list of them. The addresses here belong
-        to several resources and are written in every form the table uses --
-        an object, a list of objects, and a shape named under every media type
-        the platform reads a body in.
-        """
-        for address, method in (
-            ("/api/user/v1/accounts/retirement_cleanup/", "post"),
-            ("/api/user/v1/accounts/retirement_partner_report_cleanup/", "post"),
-            ("/api/user/v1/accounts/update_retirement_status/", "patch"),
-            ("/api/user/v1/accounts/cancel_retirement/", "post"),
-        ):
-            body = self.schema["paths"][address][method]["requestBody"]
-            assert body["required"] is True, (address, method)
 
     def test_no_superseded_operation_answers_with_a_body_it_does_not_describe(self):
         """A published success body with no schema is the half-documented state this avoids."""
@@ -1127,6 +1042,53 @@ class RequiredRequestBodyTest(TestCase):
             for name in self.documents
             for method, shape, _address, _media_type, answer in BODIES_SENT_AS_NOTHING
         }
+
+
+class ServiceWideDocumentSettingsTest(TestCase):
+    """
+    The document covering the whole service keeps the settings it is generated under.
+
+    Its title, its version and its description are given to the generator for
+    the length of the generation rather than configured for the deployment,
+    and a part of the document is built under a setting held for that part
+    alone. What the document says about itself is read here beside that part,
+    because a hold let go of too widely takes the rest with it and the
+    document would describe itself as something else.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.given = get_api_docs_settings()
+        cls.schema = _user_documents()["service-wide"]
+
+    def test_the_document_says_of_itself_what_it_was_generated_with(self):
+        expected = {
+            "title": self.given["TITLE"],
+            "version": self.given["VERSION"],
+            "description": self.given["DESCRIPTION"],
+        }
+        if self.given.get("CONTACT"):
+            expected["contact"] = self.given["CONTACT"]
+        assert self.schema["info"] == expected
+
+    def test_the_document_names_no_server_to_send_callers_to(self):
+        """It is generated with none named, and a document naming one points at that host."""
+        assert "servers" not in self.schema
+
+    def test_the_body_read_whole_is_published_whole_in_that_document_too(self):
+        """Building this is what holds a setting while the rest of the document is built."""
+        body = self.schema["paths"]["/api/user/v2/retirements/{username}/"]["patch"]["requestBody"]
+        assert body["required"] is True
+        assert body["content"]["application/json"]["schema"] == {
+            "$ref": "#/components/schemas/RetirementUpdate",
+        }
+        assert self.schema["components"]["schemas"]["RetirementUpdate"]["required"] == [
+            "new_state", "response",
+        ]
+        assert "PatchedRetirementUpdate" not in self.schema["components"]["schemas"]
+
+
 
 
 class PublishedDocumentTest(TestCase):
