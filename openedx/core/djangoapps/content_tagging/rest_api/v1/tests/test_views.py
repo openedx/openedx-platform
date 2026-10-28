@@ -615,6 +615,42 @@ class TestTaxonomyListCreateViewSet(TestTaxonomyObjectsMixin, APITestCase):
             assert taxonomy["can_delete_taxonomy"] == user.is_staff  # not the metadata about the taxonomy.
             assert taxonomy["can_tag_object"]
 
+    def _get_tags_count(self, taxonomy: Taxonomy, query_params: dict) -> int:
+        """
+        Returns the "tags_count" that the list endpoint reports for the given taxonomy.
+        """
+        self.client.force_authenticate(user=self.staff)
+        response = self.client.get(TAXONOMY_ORG_LIST_URL, {**query_params, "page_size": 20}, format="json")
+        assert response.status_code == status.HTTP_200_OK
+        return next(t for t in response.data["results"] if t["id"] == taxonomy.id)["tags_count"]
+
+    @ddt.data(
+        ("tA1", {}),
+        ("tA1", {"org": "orgA"}),
+        ("ot1", {"unassigned": "true"}),
+    )
+    @ddt.unpack
+    def test_list_taxonomy_tags_count_excludes_archived(self, taxonomy_attr: str, query_params: dict) -> None:
+        """
+        Archived tags are hidden from the taxonomy's tag list, so they must not be counted either.
+        """
+        taxonomy = getattr(self, taxonomy_attr)
+        for value in ("one", "two", "three"):
+            Tag.objects.create(taxonomy=taxonomy, value=value)
+        Tag.objects.filter(taxonomy=taxonomy, value="three").update(archived=True)
+
+        assert self._get_tags_count(taxonomy, query_params) == 2
+
+    def test_list_taxonomy_tags_count_all_archived_is_zero(self) -> None:
+        """
+        A taxonomy whose tags are all archived reports no tags.
+        """
+        for value in ("one", "two", "three"):
+            Tag.objects.create(taxonomy=self.tA1, value=value)
+        Tag.objects.filter(taxonomy=self.tA1).update(archived=True)
+
+        assert self._get_tags_count(self.tA1, {}) == 0
+
     def test_list_taxonomy_type_mixed(self) -> None:
         """
         The list endpoint reports "taxonomy_type" per row for a mixed set of taxonomies:
