@@ -938,7 +938,7 @@ openedx-calc==5.1.0
     # via
     #   openedx-platform
     #   xblocks-contrib
-openedx-core==1.15.1
+openedx-core==1.17.0
     # via openedx-platform
 openedx-django-pyfs==4.0.0
     # via xblock
