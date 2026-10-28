@@ -1,6 +1,8 @@
 """API views for a course's certificate settings."""
 
 from drf_spectacular.utils import OpenApiResponse, extend_schema
+from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
+from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
 from edx_rest_framework_extensions.errors import ErrorResponseSerializer
 from edx_rest_framework_extensions.mixins import StandardizedErrorMixin
 from rest_framework import viewsets
@@ -30,6 +32,9 @@ class CourseCertificateSettingsViewSet(StandardizedErrorMixin, viewsets.ViewSet)
     rows.
     """
 
+    # The legacy decorator allows inactive (unverified-email) users; the v2
+    # siblings (textbooks, video settings) keep that, so certificates does too.
+    authentication_classes = (JwtAuthentication, SessionAuthenticationAllowInactiveUser)
     permission_classes = (IsAuthenticated, CanViewCertificates)
     serializer_class = CertificateSettingsSerializer
 
