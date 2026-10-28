@@ -3,6 +3,7 @@ import copy
 import io
 import os
 import tempfile
+from unittest import mock
 
 import ddt
 import pytest
@@ -499,6 +500,7 @@ class TestAPIObjectTags(TestGetAllObjectTagsMixin, TestCase):
             api.tag_object(object_id=str(unit_key_org_b), taxonomy=self.taxonomy_3, tags=[tag])
 
 
+@ddt.ddt
 class TestExportImportTags(TaggedCourseMixin):
     """
     Tests for export/import functions
@@ -631,3 +633,83 @@ class TestExportImportTags(TaggedCourseMixin):
         assert object_tag.value == 'Tag 1.11'
         assert object_tag.taxonomy is None
         assert object_tag.export_id == '1-taxonomy-1-1'
+
+    @ddt.data("association", "tag", "taxonomy")
+    def test_import_keeps_hidden_association(self, hidden_by: str) -> None:
+        course_id = str(self.course.id)
+        api.tag_object(object_id=course_id, taxonomy=self.taxonomy_2, tags=["Tag 2.1"])
+        hidden_pk = ObjectTag.objects.get(object_id=course_id, _value="Tag 2.1").pk
+        if hidden_by == "association":
+            ObjectTag.objects.filter(pk=hidden_pk).update(archived=True)
+        elif hidden_by == "tag":
+            Tag.objects.filter(pk=self.tag_2_1.pk).update(archived=True)
+        else:
+            Taxonomy.objects.filter(pk=self.taxonomy_2.pk).update(archived=True)
+
+        csv_path = self._create_csv_file(
+            '"Name","Type","ID","1-taxonomy-1","2-taxonomy-2"\r\n'
+            '"Test Course","course","course-v1:orgA+test_course+test_run","Tag 1.2",""\r\n'
+        )
+        api.import_course_tags_from_csv(csv_path, self.course.id)
+
+        visible_tags = list(api.get_object_tags(self.course.id))
+        assert [t.value for t in visible_tags] == ["Tag 1.2"]
+        assert ObjectTag.objects.filter(object_id=course_id, _value="Tag 2.1").count() == 1
+        assert ObjectTag.objects.get(pk=hidden_pk)  # The same row survives.
+        assert hidden_pk not in [t.pk for t in visible_tags]  # It is still hidden.
+
+    def test_import_clears_placeholder_and_deleted_reference_rows(self) -> None:
+        course_id = str(self.course.id)
+        # A placeholder for a taxonomy that does not exist, and a row whose tag was deleted.
+        ObjectTag.objects.create(object_id=course_id, taxonomy=None, tag=None, _value="X", _export_id="gone-taxonomy")
+        ObjectTag.objects.create(object_id=course_id, taxonomy=self.taxonomy_1, tag=None, _value="Tag 1.11")
+
+        csv_path = self._create_csv_file(
+            '"Name","Type","ID","1-taxonomy-1"\r\n'
+            '"Test Course","course","course-v1:orgA+test_course+test_run","Tag 1.1"\r\n'
+        )
+        api.import_course_tags_from_csv(csv_path, self.course.id)
+
+        assert not ObjectTag.objects.filter(object_id=course_id, _export_id="gone-taxonomy").exists()
+        assert not ObjectTag.objects.filter(object_id=course_id, _value="Tag 1.11").exists()
+        assert [t.value for t in api.get_object_tags(self.course.id)] == ["Tag 1.1"]
+        assert ObjectTag.objects.filter(object_id=course_id).count() == 1
+
+    def test_import_archives_locked_visible_association(self) -> None:
+        course_id = str(self.course.id)
+        locked_pk = ObjectTag.objects.get(object_id=course_id, _value="Tag 1.1").pk
+        ObjectTag.objects.filter(pk=locked_pk).update(deletion_locked=True)
+
+        csv_path = self._create_csv_file(
+            '"Name","Type","ID","1-taxonomy-1"\r\n'
+            '"Test Course","course","course-v1:orgA+test_course+test_run","Tag 1.2"\r\n'
+        )
+        api.import_course_tags_from_csv(csv_path, self.course.id)
+
+        assert ObjectTag.objects.get(pk=locked_pk).archived
+        assert [t.value for t in api.get_object_tags(self.course.id)] == ["Tag 1.2"]
+
+    def test_import_skips_archived_taxonomy(self) -> None:
+        course_id = str(self.course.id)
+        Taxonomy.objects.filter(pk=self.taxonomy_2.pk).update(archived=True)
+
+        csv_path = self._create_csv_file(
+            '"Name","Type","ID","1-taxonomy-1","2-taxonomy-2"\r\n'
+            '"Test Course","course","course-v1:orgA+test_course+test_run","Tag 1.1","Tag 2.1"\r\n'
+        )
+        with (
+            mock.patch(
+                "openedx.core.djangoapps.content_tagging.api.CONTENT_OBJECT_ASSOCIATIONS_CHANGED.send_event"
+            ) as send_event,
+            self.assertLogs("openedx.core.djangoapps.content_tagging.api", level="INFO") as logs,
+        ):
+            api.import_course_tags_from_csv(csv_path, self.course.id)
+
+            # These come before the log check so that a missing log does not hide the state they describe.
+            assert [t.value for t in api.get_object_tags(self.course.id)] == ["Tag 1.1"]
+            assert not ObjectTag.objects.filter(object_id=course_id, _export_id="2-taxonomy-2").exists()
+            assert not ObjectTag.objects.filter(object_id=course_id, taxonomy=self.taxonomy_2).exists()
+            # The skipped taxonomy sends no event, so only taxonomy_1 does.
+            assert send_event.call_count == 1
+
+        assert "2-taxonomy-2" in logs.output[0]
