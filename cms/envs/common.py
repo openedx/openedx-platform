@@ -1338,6 +1338,14 @@ SPECTACULAR_SETTINGS = {
         'drf_spectacular.hooks.postprocess_schema_enums',
         'cms.lib.spectacular.cms_mark_superseded_paths',
         'cms.lib.spectacular.cms_mark_migrated_paths',
+        # Studio mounts the user API at the same addresses the LMS does, and
+        # both services publish an unauthenticated document at /api-docs/, so
+        # an address superseded in one is superseded in the other. The list of
+        # them and the hook that reads it are shared rather than restated here,
+        # which is what stops a client generated from Studio's document from
+        # offering an address as current that the LMS document marks as
+        # superseded.
+        'lms.lib.spectacular.lms_mark_legacy_paths_deprecated',
         'openedx.core.apidocs.untag_deprecated_operations',
     ],
     # Stripped from each path to derive its tags and operationId, so changing
