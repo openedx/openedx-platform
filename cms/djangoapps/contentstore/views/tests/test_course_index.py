@@ -227,7 +227,10 @@ class TestCourseOutline(CourseTestCase):
         """
         Test to check number of queries made to mysql and mongo
         """
-        with self.assertNumQueries(21, table_ignorelist=WAFFLE_TABLES):
+        # 22, not 21: EmbargoMiddleware now always resolves GlobalRestrictedCountry's cached
+        # country list (one query on a cold cache) even when the course has no RestrictedCourse
+        # row, so a global block applies without needing a per-course row.
+        with self.assertNumQueries(22, table_ignorelist=WAFFLE_TABLES):
             with check_mongo_calls(3):
                 self.client.get(reverse_course_url('course_handler', self.course.id), content_type="application/json")
 
