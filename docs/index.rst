@@ -30,27 +30,13 @@ locations.
 .. toctree::
     :hidden:
 
-    how-tos/index
     references/index
     concepts/index
-    extensions/tinymce_plugins
     decisions/index
-    apps/index
 
 .. grid:: 1 2 2 2
    :gutter: 3
    :padding: 0
-
-   .. grid-item-card:: How-tos
-      :class-card: sd-shadow-md sd-p-2
-      :class-footer: sd-border-0
-
-      * :doc:`how-tos/celery`
-      +++
-      .. button-ref:: how-tos/index
-         :color: primary
-         :outline:
-         :expand:
 
    .. grid-item-card:: References
       :class-card: sd-shadow-md sd-p-2
@@ -65,7 +51,7 @@ locations.
          :outline:
          :expand:
 
-   .. grid-item-card:: Concepts
+   .. grid-item-card:: Concepts and How-To Guides
       :class-card: sd-shadow-md sd-p-2
       :class-footer: sd-border-0
 
@@ -83,7 +69,6 @@ locations.
       :class-footer: sd-border-0
 
       * `Hooks Extensions Framework`_
-      * :doc:`extensions/tinymce_plugins`
       +++
       .. button-link:: https://docs.openedx.org/en/latest/developers/concepts/hooks_extension_framework.html
          :color: primary
@@ -96,10 +81,10 @@ locations.
       :class-card: sd-shadow-md sd-p-2
       :class-footer: sd-border-0
 
-      * :doc:`apps/index`
-      * :doc:`decisions/app_decisions`
+      * :doc:`references/app_index`
+      * :doc:`references/app_adr_index`
       +++
-      .. button-ref:: apps/index
+      .. button-ref:: references/app_index
          :color: primary
          :outline:
          :expand:
