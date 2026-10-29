@@ -6140,8 +6140,6 @@ paths:
         schema:
           type: string
         description: If '1', include expired enrollment modes in the response.
-      tags:
-      - openedx-platform-sdk
       responses:
         '200':
           content:
@@ -6287,8 +6285,6 @@ paths:
           type: string
         description: Username of the user.
         required: true
-      tags:
-      - openedx-platform-sdk
       responses:
         '200':
           content:
@@ -6321,8 +6317,6 @@ paths:
           type: string
         description: Username of the user.
         required: true
-      tags:
-      - openedx-platform-sdk
       responses:
         '200':
           content:
@@ -6563,8 +6557,6 @@ paths:
         schema:
           type: string
         description: Comma-separated list of usernames.
-      tags:
-      - openedx-platform-sdk
       responses:
         '200':
           content:

@@ -6,7 +6,7 @@ info:
 paths:
   /api/authoring/v1/courses/{course_key}/youtube_transcript_checks/:
     get:
-      operationId: v1_courses_youtube_transcript_checks_list
+      operationId: v1_courses_youtube_transcript_checks_retrieve
       description: Reports which transcripts exist for the video named by the `data`
         parameter, and whether the transcript published on YouTube differs from the
         stored one.
@@ -33,9 +33,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/YoutubeTranscriptCheckResult'
+                $ref: '#/components/schemas/YoutubeTranscriptCheckResult'
           description: The transcript availability of the requested video.
         '400':
           content:
@@ -3695,8 +3693,6 @@ paths:
       description: Create a new xblock under a parent block. The ``parent_locator``
         field on the request body identifies the parent and (implicitly) the course.
       summary: Create an xblock
-      tags:
-      - openedx-platform-sdk
       requestBody:
         content:
           application/json:
@@ -3763,8 +3759,6 @@ paths:
           ``edited_on``, ``published`` …) and keeps only the structural fields (``id``,
           ``display_name``, ``category``, ``children``, ``has_children``, ``studio_url``).
           Omit the parameter to receive the full xblock response.
-      tags:
-      - openedx-platform-sdk
       responses:
         '200':
           content:
@@ -3793,8 +3787,6 @@ paths:
         description: Usage key identifying the xblock (e.g. ``block-v1:edX+DemoX+Demo_Course+type@vertical+block@abcd``).
           Also accepts legacy ``i4x://`` locators.
         required: true
-      tags:
-      - openedx-platform-sdk
       requestBody:
         content:
           application/json:
@@ -3837,8 +3829,6 @@ paths:
         description: Usage key identifying the xblock (e.g. ``block-v1:edX+DemoX+Demo_Course+type@vertical+block@abcd``).
           Also accepts legacy ``i4x://`` locators.
         required: true
-      tags:
-      - openedx-platform-sdk
       requestBody:
         content:
           application/json:
@@ -3880,8 +3870,6 @@ paths:
         description: Usage key identifying the xblock (e.g. ``block-v1:edX+DemoX+Demo_Course+type@vertical+block@abcd``).
           Also accepts legacy ``i4x://`` locators.
         required: true
-      tags:
-      - openedx-platform-sdk
       responses:
         '200':
           description: The xblock was deleted successfully.
@@ -4167,8 +4155,6 @@ paths:
           type: string
         description: OEP-68 course key (e.g. course-v1:org+course+run).
         required: true
-      tags:
-      - openedx-platform-sdk
       requestBody:
         content:
           application/json:
@@ -4226,8 +4212,6 @@ paths:
           syllabus, description, instructor_info, learning_info, banner/video assets,
           license) leaving only identification, schedule, and flags. Omit the parameter
           to receive the full response.
-      tags:
-      - openedx-platform-sdk
       responses:
         '200':
           content:
@@ -4256,8 +4240,6 @@ paths:
           type: string
         description: Course ID
         required: true
-      tags:
-      - openedx-platform-sdk
       requestBody:
         content:
           application/json:
@@ -4309,8 +4291,6 @@ paths:
         schema:
           type: string
         description: Filter by course org
-      tags:
-      - openedx-platform-sdk
       responses:
         '200':
           content:
@@ -4335,8 +4315,6 @@ paths:
         schema:
           type: string
         description: Query param to filter by course org
-      tags:
-      - openedx-platform-sdk
       responses:
         '200':
           content:
@@ -4370,8 +4348,6 @@ paths:
         schema:
           type: string
         description: Query param to filter by course org
-      tags:
-      - openedx-platform-sdk
       responses:
         '200':
           content:
@@ -4432,8 +4408,6 @@ paths:
         schema:
           type: string
         description: Filter by course name, org, or number
-      tags:
-      - openedx-platform-sdk
       responses:
         '200':
           content:
