@@ -1,5 +1,0 @@
-<div class="result-excerpt"><%= HtmlUtils.ensureHtml(excerptHtml) %></div>
-<a class="result-link" href="<%- url %>"><%- gettext("View") %> <span class="icon fa fa-arrow-right" aria-hidden="true"></span></a>
-<span class="result-course-name"><%- course_name %>:</span>
-<span class="result-location"><%- location.join(' ▸ ') %></span>
-<span class="result-type"><%- content_type %></span>

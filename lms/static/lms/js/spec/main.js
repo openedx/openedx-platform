@@ -678,7 +678,6 @@
         'course_bookmarks/js/spec/bookmark_button_view_spec.js',
         'course_bookmarks/js/spec/bookmarks_list_view_spec.js',
         'course_bookmarks/js/spec/course_bookmarks_factory_spec.js',
-        'course_search/js/spec/course_search_spec.js',
         'discussion/js/spec/discussion_board_factory_spec.js',
         'discussion/js/spec/discussion_profile_page_factory_spec.js',
         'discussion/js/spec/discussion_board_view_spec.js',
