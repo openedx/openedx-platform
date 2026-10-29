@@ -67,6 +67,7 @@ import warnings
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
+from django.db.models.deletion import RestrictedError
 from django.db.transaction import atomic, non_atomic_requests
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
@@ -307,7 +308,13 @@ class LibraryDetailsView(APIView):
         """
         key = LibraryLocatorV2.from_string(lib_key_str)
         api.require_permission_for_library_key(key, request.user, permissions.CAN_DELETE_THIS_CONTENT_LIBRARY)
-        api.delete_library(key)
+        try:
+            api.delete_library(key)
+        except RestrictedError:
+            return Response(
+                {"detail": _("This library cannot be deleted because related content is still in use.")},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         return Response({})
 
 
