@@ -59,7 +59,11 @@ from openedx.core.djangolib.markup import HTML
   % endfor
 % endif
 
-<div class="vert-mod">
+<div class="vert-mod"
+% if lazy_children:
+     data-parent-usage-key="${parent_usage_key}"
+% endif
+>
 % for idx, item in enumerate(items):
   % if item['content']:
     <div class="vert vert-${idx}" data-id="${item['id']}" id="${item['id']}">
@@ -67,7 +71,23 @@ from openedx.core.djangolib.markup import HTML
     </div>
   %endif
 % endfor
+% if lazy_children:
+  ## Deliberately not rendered server-side -- vert_module_lazy_bootstrap.html fetches
+  ## these in batches from XBlockChildren and fills each placeholder in turn.
+  % for offset, usage_key in enumerate(lazy_children):
+    <div class="vert vert-${len(items) + offset} vert-lazy-pending"
+         data-id="${usage_key}" id="${usage_key}" data-usage-key="${usage_key}" aria-busy="true">
+      <div class="vert-lazy-skeleton" role="status">
+        <span class="sr">${_("Loading question {number}").format(number=len(items) + offset + 1)}</span>
+      </div>
+    </div>
+  % endfor
+% endif
 </div>
+
+% if lazy_children:
+  <%include file='vert_module_lazy_bootstrap.html' args="parent_usage_key=parent_usage_key, lazy_children=lazy_children"/>
+% endif
 
 % if reset_button:
   <div class="problem-reset-btn-wrapper">

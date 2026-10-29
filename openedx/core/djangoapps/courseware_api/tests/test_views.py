@@ -13,8 +13,10 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.test import override_settings
 from django.test.client import RequestFactory
+from django.urls import reverse
 from edx_django_utils.cache import TieredCache
 from edx_toggles.toggles.testutils import override_waffle_flag, override_waffle_switch
+from xblocks_contrib.problem.capa.testing.response_xml_factory import OptionResponseXMLFactory
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.course_modes.tests.factories import CourseModeFactory
@@ -38,6 +40,7 @@ from lms.djangoapps.courseware.toggles import (
 from lms.djangoapps.verify_student.services import IDVerificationService
 from openedx.core.djangoapps.agreements.api import create_integrity_signature
 from openedx.core.djangolib.testing.utils import skip_unless_lms
+from openedx.core.lib.url_utils import quote_slashes
 from openedx.features.course_experience.waffle import ENABLE_COURSE_ABOUT_SIDEBAR_HTML
 from xmodule.data import CertificatesDisplayBehaviors
 from xmodule.modulestore.django import modulestore
@@ -499,6 +502,175 @@ class SequenceApiTestViews(MasqueradeMixin, BaseCoursewareTests):
         assert response.status_code == 200
         assert response.data['is_hidden_after_due'] == expected_hidden
         assert bool(response.data['banner_text']) == expected_banner
+
+
+class XBlockChildrenApiTestViews(BaseCoursewareTests):
+    """
+    Tests for the xblock_children batch REST API (incremental assessment load)
+    """
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        CourseEnrollment.enroll(cls.user, cls.course.id, 'audit')
+        cls.children = [
+            BlockFactory(parent=cls.unit, category='html', display_name=f'child-{i}', data=f'<p>child {i}</p>')
+            for i in range(3)
+        ]
+        cls.url = f'/api/courseware/xblock_children/{cls.unit.location}'
+
+    @staticmethod
+    def _child_keys_param(children):
+        return ','.join(str(child.location) for child in children)
+
+    def test_batch_renders_requested_children(self):
+        response = self.client.get(self.url, {'child_usage_keys': self._child_keys_param(self.children)})
+        assert response.status_code == 200
+        data = response.json()
+        assert data['parent_usage_key'] == str(self.unit.location)
+        assert not data['errors']
+        returned_keys = {result['usage_key'] for result in data['results']}
+        assert returned_keys == {str(child.location) for child in self.children}
+        for result in data['results']:
+            assert result['html']
+
+    def _create_problem(self, parent_location):
+        """
+        Create a one-input option-response problem under `parent_location`.
+        """
+        problem_xml = OptionResponseXMLFactory().build_xml(
+            question_text='The correct answer is Correct',
+            num_inputs=1,
+            weight=1,
+            options=['Correct', 'Incorrect'],
+            correct_option='Correct',
+        )
+        return BlockFactory.create(
+            parent_location=parent_location,
+            category='problem',
+            data=problem_xml,
+            display_name='persisted-problem',
+        )
+
+    def _submit_correct_answer(self, problem):
+        """
+        Submit `problem` through the normal problem_check handler; return its answer input key.
+        """
+        problem_check_url = reverse(
+            'xblock_handler',
+            kwargs={
+                'course_id': str(self.course.id),
+                'usage_id': quote_slashes(str(problem.location)),
+                'handler': 'xmodule_handler',
+                'suffix': 'problem_check',
+            },
+        )
+        answer_key = f'input_{problem.location.html_id()}_2_1'
+        submit_response = self.client.post(problem_check_url, {answer_key: 'Correct'})
+        assert submit_response.status_code == 200
+        return answer_key
+
+    def _render_single_child(self, child):
+        """
+        Fetch one child through the batch endpoint and return its rendered HTML.
+        """
+        response = self.client.get(self.url, {'child_usage_keys': str(child.location)})
+        assert response.status_code == 200
+        data = response.json()
+        assert not data['errors']
+        return data['results'][0]['html']
+
+    def test_batch_renders_persisted_problem_state(self):
+        """
+        A problem rendered after the eager window must use the same StudentModule state
+        as the normal problem handler, rather than appearing as a fresh attempt.
+        """
+        problem = self._create_problem(self.unit.location)
+        answer_key = self._submit_correct_answer(problem)
+
+        rendered_html = self._render_single_child(problem)
+        assert 'data-attempts-used="1"' in rendered_html
+        assert answer_key in rendered_html
+
+    def test_batch_renders_persisted_item_bank_problem_state(self):
+        """
+        A problem the learner was assigned from a randomized bank (item_bank /
+        library_content) is loaded by the bank through the shared runtime, not by this
+        endpoint, so it must still see the learner's saved state. Otherwise it renders as
+        unanswered, and resubmitting fails with "The state of this problem has changed".
+        """
+        bank = BlockFactory.create(parent_location=self.unit.location, category='itembank', max_count=1)
+        problem = self._create_problem(bank.location)
+
+        # First visit assigns and persists the learner's selection, as it would in courseware.
+        assert 'data-attempts-used="0"' in self._render_single_child(bank)
+        self._submit_correct_answer(problem)
+
+        rendered_html = self._render_single_child(bank)
+        assert 'data-attempts-used="1"' in rendered_html
+
+    def test_batch_requires_authentication(self):
+        self.client.logout()
+        response = self.client.get(self.url, {'child_usage_keys': self._child_keys_param(self.children)})
+        assert response.status_code in (401, 403)
+
+    def test_missing_child_usage_keys_is_a_400(self):
+        response = self.client.get(self.url)
+        assert response.status_code == 400
+
+    def test_invalid_child_usage_key_is_a_400(self):
+        response = self.client.get(self.url, {'child_usage_keys': 'not-a-usage-key'})
+        assert response.status_code == 400
+
+    def test_oversized_batch_is_a_400(self):
+        with override_settings(XBLOCK_CHILDREN_BATCH_MAX=2):
+            response = self.client.get(self.url, {'child_usage_keys': self._child_keys_param(self.children)})
+        assert response.status_code == 400
+
+    def test_child_not_under_this_parent_is_forbidden(self):
+        # A learner must not be able to pull HTML for a block that isn't among this
+        # parent's own children -- this is the batch endpoint's security boundary.
+        # Use parent_location=... (not parent=...) for these scaffolding blocks: passing
+        # the live object would mutate self.chapter's in-memory .children, leaking into
+        # other tests -- see SequenceApiTestViews.test_hidden_after_due for the same note.
+        other_sequence = BlockFactory(parent_location=self.chapter.location, category='sequential')
+        other_unit = BlockFactory(parent_location=other_sequence.location, category='vertical')
+        stray_child = BlockFactory(parent_location=other_unit.location, category='html', display_name='stray')
+
+        response = self.client.get(self.url, {'child_usage_keys': str(stray_child.location)})
+        assert response.status_code == 200
+        data = response.json()
+        assert not data['results']
+        assert data['errors'][0]['usage_key'] == str(stray_child.location)
+        assert data['errors'][0]['error'] == 'forbidden'
+
+    def test_partial_failure_still_returns_the_rest(self):
+        # One bad key in the batch shouldn't cost the learner the other, valid ones.
+        # parent_location=... (not parent=...) for the same reason as
+        # test_child_not_under_this_parent_is_forbidden above.
+        other_sequence = BlockFactory(parent_location=self.chapter.location, category='sequential')
+        other_unit = BlockFactory(parent_location=other_sequence.location, category='vertical')
+        stray_child = BlockFactory(parent_location=other_unit.location, category='html')
+        response = self.client.get(
+            self.url,
+            {'child_usage_keys': self._child_keys_param(self.children) + ',' + str(stray_child.location)},
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data['results']) == len(self.children)
+        assert len(data['errors']) == 1
+        assert data['errors'][0]['usage_key'] == str(stray_child.location)
+
+    def test_parent_with_no_children_forbids_every_requested_key(self):
+        # A leaf block has no get_children() of its own, so nothing is in its allowed set.
+        response = self.client.get(
+            f'/api/courseware/xblock_children/{self.children[0].location}',
+            {'child_usage_keys': self._child_keys_param(self.children[1:])},
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert not data['results']
+        assert len(data['errors']) == len(self.children) - 1
+        assert all(error['error'] == 'forbidden' for error in data['errors'])
 
 
 class ResumeApiTestViews(BaseCoursewareTests, CompletionWaffleTestMixin):

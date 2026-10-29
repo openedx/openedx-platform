@@ -13,7 +13,7 @@ from edx_rest_framework_extensions.auth.session.authentication import SessionAut
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey, UsageKey
 from rest_framework import status
-from rest_framework.exceptions import NotFound
+from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.generics import RetrieveAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -34,7 +34,7 @@ from lms.djangoapps.course_goals.api import get_course_goal
 from lms.djangoapps.course_goals.models import UserActivity
 from lms.djangoapps.courseware.access import has_access
 from lms.djangoapps.courseware.access_utils import check_public_access
-from lms.djangoapps.courseware.block_render import get_block_by_usage_id
+from lms.djangoapps.courseware.block_render import get_block_by_usage_id, render_xblock_children
 from lms.djangoapps.courseware.context_processor import user_timezone_locale_prefs
 from lms.djangoapps.courseware.courses import (
     get_course_about_section,
@@ -42,6 +42,7 @@ from lms.djangoapps.courseware.courses import (
     get_permission_for_course_about,
 )
 from lms.djangoapps.courseware.entrance_exams import course_has_entrance_exam, user_has_passed_entrance_exam
+from lms.djangoapps.courseware.exceptions import CourseAccessRedirect
 from lms.djangoapps.courseware.masquerade import (
     is_masquerading_as_non_audit_enrollment,
     is_masquerading_as_specific_student,
@@ -819,6 +820,75 @@ class SequenceMetadata(DeveloperErrorViewMixin, APIView):
                     'specific_masquerade': is_masquerading_as_specific_student(request.user, usage_key.course_key)
                 }
                 return Response(sequence.get_metadata(view=view, context=context))
+
+
+class XBlockChildren(DeveloperErrorViewMixin, APIView):
+    """
+    **Use Cases**
+
+        Request a bounded batch of a unit's not-yet-rendered children, rendered as HTML.
+        Backs the incremental assessment load: VerticalBlock leaves placeholders for
+        children past its eager-render window, and the page's own JS calls this endpoint
+        repeatedly, in sequential batches, to fill them in.
+
+    **Example Requests**
+
+        GET /api/courseware/xblock_children/{usage_key}?child_usage_keys=key1,key2
+
+    **Response Values**
+
+        Body consists of the following fields:
+            * parent_usage_key: the usage key passed in
+            * results: list of {usage_key, html} for children that rendered
+            * errors: list of {usage_key, error, message} for children that didn't
+
+    **Returns**
+
+        * 200 on success, including partial success (see `errors`).
+        * 400 if child_usage_keys is missing, malformed, or larger than
+          settings.XBLOCK_CHILDREN_BATCH_MAX.
+        * 404 if the parent is not available or not visible to this learner.
+    """
+
+    authentication_classes = (
+        JwtAuthentication,
+        SessionAuthenticationAllowInactiveUser,
+    )
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, usage_key_string, *args, **kwargs):  # lint-amnesty, pylint: disable=unused-argument
+        """
+        Return response to a GET request.
+        """
+        try:
+            parent_usage_key = UsageKey.from_string(usage_key_string)
+        except InvalidKeyError as exc:
+            raise NotFound(f"Invalid usage key: '{usage_key_string}'.") from exc
+
+        child_usage_keys_param = request.GET.get('child_usage_keys', '')
+        try:
+            child_usage_keys = [
+                UsageKey.from_string(key) for key in child_usage_keys_param.split(',') if key
+            ]
+        except InvalidKeyError as exc:
+            raise ValidationError(f"Invalid child usage key in '{child_usage_keys_param}'.") from exc
+
+        try:
+            course = get_course_with_access(
+                request.user,
+                'load',
+                parent_usage_key.course_key,
+                check_if_enrolled=True,
+            )
+        except CourseAccessRedirect as exc:
+            raise NotFound() from exc
+
+        try:
+            result = render_xblock_children(request, parent_usage_key, child_usage_keys, course=course)
+        except ValueError as exc:
+            raise ValidationError(str(exc)) from exc
+
+        return Response(result)
 
 
 class Resume(DeveloperErrorViewMixin, APIView):
