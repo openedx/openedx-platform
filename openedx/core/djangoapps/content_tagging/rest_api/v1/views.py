@@ -7,7 +7,7 @@ import functools
 from typing import TYPE_CHECKING
 
 from django.core import exceptions
-from django.db.models import Count, QuerySet
+from django.db.models import Count
 from django.http import StreamingHttpResponse
 from openedx_authz import api as authz_api
 from openedx_authz.constants.permissions import COURSES_VIEW_COURSE
@@ -196,22 +196,14 @@ class ObjectTagOrgView(ObjectTagView):
     This view extends the ObjectTagView to add Organization filters for the results,
     and fires events when the tags are updated.
 
-    Refer to ObjectTagView docstring for usage details.
+    Refer to ObjectTagView docstring for usage details. In addition, each taxonomy entry carries
+    ``taxonomy_type``: "competency" for a competency taxonomy, and "tags" for any other taxonomy.
     """
     # Serializer overrides
     minimal_serializer_class = ObjectTagCopiedMinimalSerializer
     object_tags_serializer_class = ObjectTagOrgByTaxonomySerializer
 
     filter_backends = [ObjectTagTaxonomyOrgFilterBackend]
-
-    def get_queryset(self) -> QuerySet:
-        """
-        Return the object's ObjectTags with each taxonomy's competency row joined in, so the serializer's
-        ``taxonomy_type`` check adds no per-taxonomy query.
-        """
-        # The path is written directly because the public helper select_competency_taxonomies()
-        # only accepts a Taxonomy queryset, not an ObjectTag queryset.
-        return super().get_queryset().select_related("taxonomy__competencytaxonomy")
 
     @functools.cached_property
     def _authz_check(self) -> tuple[bool, CourseKey | None]:

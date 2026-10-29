@@ -2070,19 +2070,19 @@ class TestObjectTagViewSet(TestObjectTagMixin, APITestCase):
         assert response.data[str(object_id_2)]["taxonomies"] == expected_tags
 
     @ddt.data(
-        ('staff', 'courseA', 10),
-        ('staff', 'libraryA', 13),
-        ('staff', 'collection_key', 13),
-        ("content_creatorA", 'courseA', 15, False),
-        ("content_creatorA", 'libraryA', 18, False),
-        ("content_creatorA", 'collection_key', 18, False),
-        ("library_staffA", 'libraryA', 18, False),  # Library users can only view objecttags, not change them?
-        ("library_staffA", 'collection_key', 18, False),
-        ("library_userA", 'libraryA', 18, False),
-        ("library_userA", 'collection_key', 18, False),
-        ("instructorA", 'courseA', 15),
-        ("course_instructorA", 'courseA', 15),
-        ("course_staffA", 'courseA', 15),
+        ('staff', 'courseA', 11),
+        ('staff', 'libraryA', 14),
+        ('staff', 'collection_key', 14),
+        ("content_creatorA", 'courseA', 16, False),
+        ("content_creatorA", 'libraryA', 19, False),
+        ("content_creatorA", 'collection_key', 19, False),
+        ("library_staffA", 'libraryA', 19, False),  # Library users can only view objecttags, not change them?
+        ("library_staffA", 'collection_key', 19, False),
+        ("library_userA", 'libraryA', 19, False),
+        ("library_userA", 'collection_key', 19, False),
+        ("instructorA", 'courseA', 16),
+        ("course_instructorA", 'courseA', 16),
+        ("course_staffA", 'courseA', 16),
     )
     @ddt.unpack
     def test_object_tags_query_count(
@@ -2171,7 +2171,21 @@ class TestObjectTagViewSet(TestObjectTagMixin, APITestCase):
         assert types_by_taxonomy_id == {competency.pk: "competency", self.t1.pk: "tags"}
 
     def test_get_tags_untagged_object(self):
-        assert self._get_taxonomy_entries(self.courseA) == []
+        self.client.force_authenticate(user=self.staffA)
+        response = self.client.get(OBJECT_TAGS_URL.format(object_id=self.courseA))
+
+        assert response.status_code == 200
+        assert response.data == {str(self.courseA): {"taxonomies": []}}
+
+    def test_put_tags_response_includes_taxonomy_type(self):
+        competency = self._create_competency_taxonomy()
+        self.client.force_authenticate(user=self.staffA)
+
+        response = self._call_put_request(self.courseA, competency.pk, ["Triage"])
+
+        assert response.status_code == 200
+        entries = response.data[str(self.courseA)]["taxonomies"]
+        assert [e["taxonomy_type"] for e in entries] == ["competency"]
 
     def test_get_tags_query_count_independent_of_taxonomy_type_check(self):
         """
