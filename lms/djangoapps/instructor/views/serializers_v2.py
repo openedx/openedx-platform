@@ -1161,6 +1161,14 @@ class SyncOperationResultSerializer(serializers.Serializer):
     )
 
 
+class ReportGenerationResultSerializer(serializers.Serializer):
+    """Report submission response; synchronous reports omit task fields."""
+
+    status = serializers.CharField(help_text="Report generation message")
+    task_id = serializers.CharField(required=False, help_text="Submitted background task identifier")
+    status_url = serializers.CharField(required=False, help_text="Relative URL for the existing task status endpoint")
+
+
 class AsyncOperationResultSerializer(serializers.Serializer):
     """
     Serializer for asynchronous grading operation results.
