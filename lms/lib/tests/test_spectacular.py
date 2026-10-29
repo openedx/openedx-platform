@@ -695,34 +695,22 @@ class SupersededBodyInTheServiceWideDocumentTest(TestCase):
             )
         assert published == PREFERENCE_EXCHANGES
 
-    def test_the_two_changes_that_answer_with_nothing_publish_only_that(self):
-        """Both handlers answer with no body, which is not what that document carried for them."""
-        answered = {
-            (address, method): sorted(self.schema["paths"][address][method]["responses"])
-            for address, method in (
-                ("/api/user/v1/preferences/{username}", "patch"),
-                ("/api/user/v1/preferences/{username}/{preference_key}", "put"),
-            )
-        }
-        assert answered == {
-            ("/api/user/v1/preferences/{username}", "patch"): ["204"],
-            ("/api/user/v1/preferences/{username}/{preference_key}", "put"): ["204"],
-        }
-
 
 #: Each address this document already published before its body was described,
 #: and the success code its handler really answers. That document carried a 200
-#: with no body for both, which no handler answers; the code each is
+#: with no body for all four, which no handler answers; the code each is
 #: published under now is driven below.
 CORRECTED_SUCCESS_CODES = (
     ("post", "/api/user/v1/accounts/name_change/{username}/confirm/", "204"),
     ("post", "/api/user/v1/accounts/{username}/image", "204"),
+    ("patch", "/api/user/v1/preferences/{username}", "204"),
+    ("put", "/api/user/v1/preferences/{username}/{preference_key}", "204"),
 )
 
 
 class CorrectedSuccessCodeTest(TestCase):
     """
-    Two addresses both documents already published answer a success code neither carried.
+    Four addresses both documents already published answer a success code neither carried.
 
     These are not new addresses: a client generated before this change branches
     on the code the document gave them, so each is pinned here in both
@@ -755,12 +743,22 @@ class CorrectedSuccessCodeTest(TestCase):
         return client
 
     def _answered(self):
-        """Drive each of the two on its success path and return the code it answers."""
+        """Drive each of the four on its success path and return the code it answers."""
         owner, staff = self._as(self.owner), self._as(self.staff)
         do_name_change_request(self.owner, "Another Name", "a reason")
         answered = {
             ("post", "/api/user/v1/accounts/name_change/{username}/confirm/"): staff.post(
                 f"/api/user/v1/accounts/name_change/{self.owner.username}/confirm/",
+            ).status_code,
+            ("patch", "/api/user/v1/preferences/{username}"): owner.patch(
+                f"/api/user/v1/preferences/{self.owner.username}",
+                data='{"pref-lang": "en"}',
+                content_type=MERGE_PATCH,
+            ).status_code,
+            ("put", "/api/user/v1/preferences/{username}/{preference_key}"): owner.put(
+                f"/api/user/v1/preferences/{self.owner.username}/account_privacy",
+                data='"private"',
+                content_type="application/json",
             ).status_code,
         }
         with make_image_file() as image_file:
