@@ -60,3 +60,4 @@ class CourseHomeMetadataSerializer(VerifiedModeSerializer):
     course_modes = CourseModeSerrializer(many=True)
     is_new_discussion_sidebar_view_enabled = serializers.BooleanField()
     has_course_author_access = serializers.BooleanField()
+    course_theme_variant = serializers.CharField(allow_blank=True)
