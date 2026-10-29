@@ -6,9 +6,9 @@ from __future__ import annotations
 
 from openedx_authz import api as authz_api
 from openedx_authz.constants.permissions import COURSES_MANAGE_TAGS
-from openedx_learning.api import is_competency_taxonomy
+from openedx_learning.api import is_competency_taxonomy, select_competency_taxonomies
 from openedx_tagging.api import TaxonomyType
-from openedx_tagging.models import ObjectTag
+from openedx_tagging.models import ObjectTag, Taxonomy
 from openedx_tagging.rest_api.v1.serializers import (
     ObjectTagMinimalSerializer,
     ObjectTagsByTaxonomySerializer,
@@ -145,18 +145,21 @@ class ObjectTagOrgByTaxonomySerializer(ObjectTagsByTaxonomySerializer):
         Serialize the object tags grouped by taxonomy, adding ``taxonomy_type`` to each taxonomy entry.
 
         ``taxonomy_type`` is "competency" when ``is_competency_taxonomy`` (the CBE public API) says the
-        taxonomy is competency-backed, and "tags" otherwise. That check costs no extra query only if the
-        taxonomies were loaded with their competency row joined, as ``ObjectTagOrgView`` does.
+        taxonomy is competency-backed, and "tags" otherwise. All the taxonomies are checked with one query,
+        through ``select_competency_taxonomies``, however many there are; no query runs for an untagged object.
         """
         data = super().to_representation(instance)
-        taxonomies = {obj_tag.taxonomy_id: obj_tag.taxonomy for obj_tag in instance}
+        taxonomy_ids = {obj_tag.taxonomy_id for obj_tag in instance if obj_tag.taxonomy_id is not None}
+        competency_taxonomy_ids = {
+            taxonomy.pk
+            for taxonomy in select_competency_taxonomies(Taxonomy.objects.filter(pk__in=taxonomy_ids))
+            if is_competency_taxonomy(taxonomy)
+        }
         for by_object in data.values():
             for entry in by_object["taxonomies"]:
-                # A tag whose taxonomy was deleted has no taxonomy, so it can't be a competency.
-                taxonomy = taxonomies[entry["taxonomy_id"]]
                 entry["taxonomy_type"] = (
                     TaxonomyType.COMPETENCY.value
-                    if taxonomy is not None and is_competency_taxonomy(taxonomy)
+                    if entry["taxonomy_id"] in competency_taxonomy_ids
                     else TaxonomyType.TAGS.value
                 )
         return data
