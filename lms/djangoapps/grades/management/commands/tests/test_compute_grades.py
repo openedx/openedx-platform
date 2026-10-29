@@ -79,11 +79,19 @@ class TestComputeGrades(SharedModuleStoreTestCase):
             command.append('--no_estimate_first_attempted')
         call_command(*(command + courses))
 
-        def _kwargs(course_key, offset):
+        def get_enrollment_ids(course_key):
+            return list(CourseEnrollment.objects.filter(
+                course_id=course_key
+            ).order_by('id').values_list('id', flat=True))
+
+        ids_course_0 = get_enrollment_ids(self.course_keys[0])
+        ids_course_3 = get_enrollment_ids(self.course_keys[3])
+
+        def _kwargs(course_key, start_id):
             return {
                 'course_key': course_key,
                 'batch_size': 2,
-                'offset': offset,
+                'start_id': start_id,
                 'estimate_first_attempted': estimate_first_attempted,
                 'seq_id': ANY
             }
@@ -93,19 +101,19 @@ class TestComputeGrades(SharedModuleStoreTestCase):
         expected = [
             ({
                 'queue': 'key',
-                'kwargs': _kwargs(self.course_keys[0], 0)
+                'kwargs': _kwargs(self.course_keys[0], ids_course_0[0])
             },),
             ({
                 'queue': 'key',
-                'kwargs': _kwargs(self.course_keys[0], 2)
+                'kwargs': _kwargs(self.course_keys[0], ids_course_0[2])
             },),
             ({
                 'queue': 'key',
-                'kwargs': _kwargs(self.course_keys[3], 0)
+                'kwargs': _kwargs(self.course_keys[3], ids_course_3[0])
             },),
             ({
                 'queue': 'key',
-                'kwargs': _kwargs(self.course_keys[3], 2)
+                'kwargs': _kwargs(self.course_keys[3], ids_course_3[2])
             },),
         ]
         assert len(expected) == len(actual)
@@ -116,6 +124,10 @@ class TestComputeGrades(SharedModuleStoreTestCase):
     def test_tasks_fired_from_settings(self, mock_task):
         ComputeGradesSetting.objects.create(course_ids=self.course_keys[1], batch_size=2)
         call_command('compute_grades', '--from_settings')
+
+        ids_course_1 = list(CourseEnrollment.objects.filter(
+            course_id=self.course_keys[1]
+        ).order_by('id').values_list('id', flat=True))
         actual = mock_task.apply_async.call_args_list
         # Order doesn't matter, but can't use a set because dicts aren't hashable
         expected = [
@@ -123,7 +135,7 @@ class TestComputeGrades(SharedModuleStoreTestCase):
                 'kwargs': {
                     'course_key': self.course_keys[1],
                     'batch_size': 2,
-                    'offset': 0,
+                    'start_id': ids_course_1[0],
                     'estimate_first_attempted': True,
                     'seq_id': ANY,
                 },
@@ -132,7 +144,7 @@ class TestComputeGrades(SharedModuleStoreTestCase):
                 'kwargs': {
                     'course_key': self.course_keys[1],
                     'batch_size': 2,
-                    'offset': 2,
+                    'start_id': ids_course_1[2],
                     'estimate_first_attempted': True,
                     'seq_id': ANY,
                 },
