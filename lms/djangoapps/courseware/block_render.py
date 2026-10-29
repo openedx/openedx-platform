@@ -34,6 +34,7 @@ from edx_when.field_data import DateLookupFieldData
 from eventtracking import tracker
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey, UsageKey
+from openedx_filters.learning.filters import LearnerXBlockBound
 from rest_framework.decorators import api_view
 from rest_framework.exceptions import APIException
 from web_fragments.fragment import Fragment
@@ -116,6 +117,9 @@ if TYPE_CHECKING:
     from xmodule.course_block import CourseBlock
 
 log = logging.getLogger(__name__)
+
+# Marks a block that LearnerXBlockBound has not run on yet (anonymous users have no id).
+_NOT_FILTERED = object()
 
 # TODO: course_id and course_key are used interchangeably in this file, which is wrong.
 # Some brave person should make the variable names consistently someday, but the code's
@@ -488,8 +492,26 @@ def get_block_for_descriptor(
         )
         if access or caller_will_handle_access_error:
             block.has_access_error = bool(caller_will_handle_access_error)
-            return block
+            return _run_learner_xblock_bound(block, user, course_key)
         return None
+    return _run_learner_xblock_bound(block, user, course_key)
+
+
+def _run_learner_xblock_bound(block, user, course_key):
+    """
+    Run the LearnerXBlockBound filter once each time a block is bound to a known user.
+
+    Binding the same block instance to a different user runs it again.
+
+    Unknown users are block structure collection (whose result is cached and
+    shared by every learner) and no-auth callbacks, so their blocks are left as
+    authored. A block that was bound to this user while unknown is filtered the
+    first time it is returned to the known user.
+    """
+    if not getattr(user, 'known', True) or getattr(block, '_learner_xblock_bound_user_id', _NOT_FILTERED) == user.id:
+        return block
+    block = LearnerXBlockBound.run_filter(block=block, user=user, course_key=course_key)
+    block._learner_xblock_bound_user_id = user.id  # pylint: disable=protected-access
     return block
 
 

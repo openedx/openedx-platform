@@ -6,6 +6,7 @@ get_course_blocks function.
 
 from django.conf import settings
 from edx_when import field_data
+from openedx_filters.learning.filters import CourseBlocksTransformCompleted
 
 from lms.djangoapps.course_api.blocks.transformers.block_completion import BlockCompletionTransformer
 from openedx.core.djangoapps.content.block_structure.api import get_block_structure_manager
@@ -104,9 +105,12 @@ def get_course_blocks(
         include_has_scheduled_content
     )
 
-    return get_block_structure_manager(starting_block_usage_key.course_key).get_transformed(
+    block_structure = get_block_structure_manager(starting_block_usage_key.course_key).get_transformed(
         transformers,
         starting_block_usage_key,
         collected_block_structure,
         user,
+    )
+    return CourseBlocksTransformCompleted.run_filter(
+        block_structure=block_structure, user=user, starting_block_usage_key=starting_block_usage_key
     )

@@ -117,6 +117,13 @@ class MockModulestore:
         """
         yield
 
+    @contextmanager
+    def fresh_block_reads(self, course_key):  # pylint: disable=unused-argument
+        """
+        A context manager for loading blocks as new instances.
+        """
+        yield
+
 
 class MockCache:
     """

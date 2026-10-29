@@ -1,6 +1,7 @@
 """
 Test for lms courseware app, block render unit
 """
+import contextlib
 import json
 import textwrap
 import warnings
@@ -89,6 +90,8 @@ from lms.djangoapps.courseware.tests.test_submitting_problems import TestSubmitt
 from lms.djangoapps.courseware.tests.tests import LoginEnrollmentTestCase
 from lms.djangoapps.lms_xblock.field_data import LmsFieldData
 from lms.djangoapps.verify_student.tests.factories import SoftwareSecurePhotoVerificationFactory
+from openedx.core.djangoapps.content.block_structure.api import get_block_structure_manager
+from openedx.core.djangoapps.content.block_structure.exceptions import BlockStructureNotFound
 from openedx.core.djangoapps.credit.api import set_credit_requirement_status, set_credit_requirements
 from openedx.core.djangoapps.credit.models import CreditCourse
 from openedx.core.djangoapps.oauth_dispatch.jwt import _create_jwt, create_jwt_for_user
@@ -500,6 +503,99 @@ class BlockRenderTestCase(SharedModuleStoreTestCase, LoginEnrollmentTestCase):
             self.toy_course.id,
             course=self.toy_course
         )
+
+    @ddt.data(
+        ([True, True], 1),
+        ([False, False], 0),
+        ([False, True, True], 1),
+    )
+    @ddt.unpack
+    @patch(
+        'lms.djangoapps.courseware.block_render.LearnerXBlockBound.run_filter',
+        side_effect=lambda **kwargs: kwargs['block'],
+    )
+    def test_learner_xblock_bound_filter(self, known_per_call, expected_calls, run_filter):
+        """The bound filter runs once per binding to a known user, and not for unknown users."""
+        request = self.request_factory.get('')
+        request.user = self.mock_user
+        block = BlockFactory(category='html', parent=CourseFactory())
+        field_data_cache = FieldDataCache([self.toy_course, block], self.toy_course.id, self.mock_user)
+
+        for known in known_per_call:
+            self.mock_user.known = known
+            render.get_block_for_descriptor(
+                self.mock_user, request, block, field_data_cache, self.toy_course.id, course=self.toy_course
+            )
+
+        assert run_filter.call_count == expected_calls
+
+    @patch(
+        'lms.djangoapps.courseware.block_render.LearnerXBlockBound.run_filter',
+        side_effect=lambda **kwargs: kwargs['block'],
+    )
+    def test_learner_xblock_bound_changes_are_not_collected(self, run_filter):
+        """
+        Blocks changed by the bound filter, including children loaded later through the
+        learner's runtime, are not collected into the block structure shared by every user.
+        """
+        def change_display_name(block, **kwargs):  # pylint: disable=unused-argument
+            block.fields['display_name']._set_cached_value(block, 'Changed')  # pylint: disable=protected-access
+            return block
+
+        run_filter.side_effect = change_display_name
+        course = CourseFactory.create()
+        chapter = BlockFactory.create(parent=course, category='chapter', display_name='Authored')
+        BlockFactory.create(parent=chapter, category='sequential', display_name='Authored')
+        request = self.request_factory.get('')
+        request.user = self.mock_user
+        store = modulestore()
+        manager = get_block_structure_manager(course.id)
+        with contextlib.suppress(BlockStructureNotFound):
+            manager.clear()
+
+        with store.bulk_operations(course.id):
+            course_block = store.get_course(course.id, depth=None)
+            field_data_cache = FieldDataCache([course_block], course.id, self.mock_user)
+            bound = render.get_block_for_descriptor(
+                self.mock_user, request, course_block, field_data_cache, course.id, course=course_block
+            )
+            assert bound.display_name == 'Changed'
+            collected = manager.get_collected()
+
+        assert 'Changed' not in {collected.get_xblock_field(key, 'display_name') for key in collected}
+
+    @patch(
+        'lms.djangoapps.courseware.block_render.LearnerXBlockBound.run_filter',
+        side_effect=lambda **kwargs: kwargs['block'],
+    )
+    def test_learner_xblock_bound_filter_runs_again_for_another_user(self, run_filter):
+        """Binding the same block to a different user runs the bound filter again."""
+        block = BlockFactory(category='html', parent=CourseFactory())
+        other_user = UserFactory()
+
+        for user in (self.mock_user, other_user):
+            request = self.request_factory.get('')
+            request.user = user
+            field_data_cache = FieldDataCache([self.toy_course, block], self.toy_course.id, user)
+            render.get_block_for_descriptor(
+                user, request, block, field_data_cache, self.toy_course.id, course=self.toy_course
+            )
+
+        assert [call.kwargs['user'] for call in run_filter.call_args_list] == [self.mock_user, other_user]
+
+    @patch(
+        'lms.djangoapps.courseware.block_render.LearnerXBlockBound.run_filter',
+        side_effect=lambda **kwargs: kwargs['block'],
+    )
+    def test_learner_xblock_bound_filter_anonymous_user(self, run_filter):
+        """The bound filter runs once for an anonymous user, whose id is None."""
+        block = BlockFactory(category='html', parent=CourseFactory())
+        run_bound_filter = render._run_learner_xblock_bound  # pylint: disable=protected-access
+
+        for _ in range(2):
+            run_bound_filter(block, AnonymousUser(), self.toy_course.id)
+
+        assert run_filter.call_count == 1
 
     @override_settings(FIELD_OVERRIDE_PROVIDERS=(
         'lms.djangoapps.courseware.student_field_overrides.IndividualStudentOverrideProvider',

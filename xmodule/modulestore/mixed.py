@@ -1113,6 +1113,16 @@ class MixedModuleStore(ModuleStoreDraftAndPublished, ModuleStoreWriteBase):
         with store.bulk_operations(course_id, emit_signals, ignore_case):
             yield
 
+    @contextmanager
+    def fresh_block_reads(self, course_key):
+        """
+        A context manager for loading the course's blocks as new instances, ignoring block
+        instances that this thread has already loaded (and may have changed in memory).
+        """
+        store = self._get_modulestore_for_courselike(course_key)
+        with store.fresh_block_reads(course_key):
+            yield
+
     def ensure_indexes(self):
         """
         Ensure that all appropriate indexes are created that are needed by this modulestore, or raise

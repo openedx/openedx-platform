@@ -112,8 +112,10 @@ class BlockStructureManager:
                 # we do not want to perform access checks. Access checks result in inconsistent blocks where
                 # inaccessible blocks are missing from the cache. Cached course blocks are then used for all the users.
                 user.known = False
-                block_structure = self._update_collected()
-                user.known = True
+                try:
+                    block_structure = self._update_collected()
+                finally:
+                    user.known = True
             else:
                 block_structure = self._update_collected()
 
@@ -133,18 +135,20 @@ class BlockStructureManager:
         The store is updated with newly collected transformers data from
         the modulestore.
         """
+        course_key = self.root_block_usage_key.course_key
         with self._bulk_operations():
-            # Always uses published-only branch regardless of CMS or LMS context.
-            with self.modulestore.branch_setting(
-                ModuleStoreEnum.Branch.published_only,
-                self.root_block_usage_key.course_key
-            ):
-                block_structure = BlockStructureFactory.create_from_modulestore(
-                    self.root_block_usage_key,
-                    self.modulestore,
-                )
+            # The collected structure is cached and shared by every user, so it is
+            # never read from block instances this request has already loaded,
+            # which may have been changed in memory for one user.
+            with self.modulestore.fresh_block_reads(course_key):
+                # Always uses published-only branch regardless of CMS or LMS context.
+                with self.modulestore.branch_setting(ModuleStoreEnum.Branch.published_only, course_key):
+                    block_structure = BlockStructureFactory.create_from_modulestore(
+                        self.root_block_usage_key,
+                        self.modulestore,
+                    )
 
-            BlockStructureTransformers.collect(block_structure)
+                BlockStructureTransformers.collect(block_structure)
             self.store.add(block_structure)
             return block_structure
 

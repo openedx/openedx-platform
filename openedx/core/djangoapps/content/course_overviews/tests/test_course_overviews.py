@@ -1281,3 +1281,25 @@ class CourseOverviewTabTestCase(ModuleStoreTestCase):
             actual_tabs = {tab.tab_id for tab in course_overview.tab_set.all()}
             assert actual_tabs == expected_tabs
             assert course_overview.display_name != course.display_name
+
+
+class CourseOverviewFreshReadTestCase(ModuleStoreTestCase):
+    """
+    Tests that course overviews are built from the course as authored.
+    """
+
+    def test_load_ignores_course_changed_in_memory(self):
+        """
+        A course instance loaded and changed in memory earlier in a bulk operation is not
+        saved into the course overview, which is shared by every user.
+        """
+        course = CourseFactory.create(display_name='Authored')
+        store = modulestore()
+
+        with store.bulk_operations(course.id):
+            loaded = store.get_course(course.id)
+            loaded.fields['display_name']._set_cached_value(loaded, 'Changed')  # pylint: disable=protected-access
+            assert store.get_course(course.id).display_name == 'Changed'
+            overview = CourseOverview.load_from_module_store(course.id)
+
+        assert overview.display_name == 'Authored'

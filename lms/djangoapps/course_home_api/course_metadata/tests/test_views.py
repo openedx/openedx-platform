@@ -9,6 +9,7 @@ from django.db import transaction
 from django.test.utils import override_settings
 from django.urls import reverse
 from edx_toggles.toggles.testutils import override_waffle_flag
+from openedx_filters import PipelineStep
 from openedx_filters.learning.filters import CoursewareAccessChecksRequested
 
 from common.djangoapps.course_modes.models import CourseMode
@@ -27,6 +28,19 @@ from lms.djangoapps.courseware.toggles import (
     COURSEWARE_MICROFRONTEND_PROGRESS_MILESTONES_STREAK_CELEBRATION,
 )
 from openedx.core.djangoapps.discussions.models import DiscussionsConfiguration
+
+FILTERED_TABS = [{'tab_id': 'filtered', 'title': 'Filtered tab', 'url': 'https://example.com/filtered'}]
+filter_users = []
+
+
+class TestReplaceMetadataStep(PipelineStep):
+    """
+    Pipeline step that records the user it receives and replaces the title and tabs.
+    """
+
+    def run_filter(self, course_key, user, data):  # pylint: disable=arguments-differ
+        filter_users.append(user)
+        return {'data': {**data, 'title': f'Filtered {course_key.course}', 'tabs': FILTERED_TABS}}
 
 
 @ddt.ddt
@@ -86,6 +100,29 @@ class CourseHomeMetadataTests(BaseCourseHomeTests):
         # Now switch users and confirm we get a different result
         self.update_masquerade(username=self.user.username)
         assert self.client.get(self.url).data['username'] == self.user.username
+
+    @override_settings(OPEN_EDX_FILTERS_CONFIG={
+        'org.openedx.learning.course_home_metadata.api.render.started.v1': {
+            'pipeline': [f'{__name__}.TestReplaceMetadataStep'],
+            'fail_silently': False,
+        },
+    })
+    def test_metadata_filter_replaces_data_for_masqueraded_user(self):
+        """
+        Test that the response uses the data returned by the pipeline, which receives the masqueraded user.
+        """
+        CourseEnrollment.enroll(self.user, self.course.id, CourseMode.VERIFIED)
+        self.client.logout()
+        self.client.login(username=self.staff_user.username, password='bar')
+        self.update_masquerade(username=self.user.username)
+        filter_users.clear()
+
+        response = self.client.get(self.url)
+
+        assert response.status_code == 200
+        assert response.data['title'] == f'Filtered {self.course.id.course}'
+        assert response.data['tabs'] == FILTERED_TABS
+        assert filter_users == [self.user]
 
     def test_get_unknown_course(self):
         self.client.logout()

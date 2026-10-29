@@ -11,6 +11,7 @@ from django.conf import settings  # pylint: disable=wrong-import-order
 from django.core.cache import cache
 from django.shortcuts import get_object_or_404  # pylint: disable=wrong-import-order
 from django.urls import reverse  # pylint: disable=wrong-import-order
+from django.utils.translation import get_language  # pylint: disable=wrong-import-order
 from django.utils.translation import gettext as _  # pylint: disable=wrong-import-order
 from edx_django_utils import monitoring as monitoring_utils  # pylint: disable=wrong-import-order
 from edx_rest_framework_extensions.auth.jwt.authentication import (
@@ -20,6 +21,10 @@ from edx_rest_framework_extensions.auth.session.authentication import (
     SessionAuthenticationAllowInactiveUser,  # pylint: disable=wrong-import-order
 )
 from opaque_keys.edx.keys import CourseKey  # pylint: disable=wrong-import-order
+from openedx_filters.learning.filters import (  # pylint: disable=wrong-import-order
+    CourseHomeOutlineAPIRenderStarted,
+    CourseNavigationAPIRenderStarted,
+)
 from rest_framework.decorators import (  # pylint: disable=wrong-import-order
     api_view,
     authentication_classes,
@@ -383,7 +388,8 @@ class OutlineTabView(RetrieveAPIView):
         if send_course_progress_analytics_for_student_is_enabled(course_key) and not user_is_masquerading:
             collect_progress_for_user_in_course.delay(course_key_string, request.user.id)
 
-        return Response(serializer.data)
+        data = CourseHomeOutlineAPIRenderStarted.run_filter(course_key=course_key, user=request.user, data=serializer.data)
+        return Response(data)
 
     def finalize_response(self, request, response, *args, **kwargs):
         """
@@ -436,7 +442,7 @@ class CourseNavigationBlocksView(RetrieveAPIView):
     serializer_class = CourseBlockSerializer
     COURSE_BLOCKS_CACHE_KEY_TEMPLATE = (
         'course_sidebar_blocks_{course_key_string}_{block_structure_version}_{user_id}_{user_cohort_id}'
-        '_{enrollment_mode}_{allow_public}_{allow_public_outline}_{is_masquerading}'
+        '_{enrollment_mode}_{allow_public}_{allow_public_outline}_{is_masquerading}_{language}'
     )
     COURSE_BLOCKS_CACHE_TIMEOUT = 60 * 60  # 1 hour
 
@@ -477,6 +483,9 @@ class CourseNavigationBlocksView(RetrieveAPIView):
             allow_public=allow_public,
             allow_public_outline=allow_public_outline,
             is_masquerading=user_is_masquerading,
+            # CourseBlocksTransformCompleted steps can vary block data by the request's
+            # active language, so the cached response must not be shared across languages.
+            language=get_language(),
         )
         if navigation_sidebar_caching_is_disabled := courseware_disable_navigation_sidebar_blocks_caching():
             course_blocks = None
@@ -503,8 +512,12 @@ class CourseNavigationBlocksView(RetrieveAPIView):
         })
 
         serializer = self.get_serializer_class()(course_blocks, context=context)
+        # Runs on the serialized response, after the cache, so the cached blocks stay as built.
+        data = CourseNavigationAPIRenderStarted.run_filter(
+            course_key=course_key, user=request.user, data=serializer.data
+        )
 
-        return Response(serializer.data)
+        return Response(data)
 
     def filter_inaccessible_blocks(self, course_blocks, course_key):
         """
