@@ -23,7 +23,10 @@ from common.djangoapps.student.roles import CourseInstructorRole
 from common.djangoapps.student.tests.factories import UserFactory
 from lms.djangoapps.course_home_api.outline.views import CourseNavigationBlocksView
 from lms.djangoapps.course_home_api.tests.utils import BaseCourseHomeTests
-from lms.djangoapps.course_home_api.toggles import COURSE_HOME_SEND_COURSE_PROGRESS_ANALYTICS_FOR_STUDENT
+from lms.djangoapps.course_home_api.toggles import (
+    COURSE_HOME_DISABLE_SEQUENCE_QUESTION_COUNT,
+    COURSE_HOME_SEND_COURSE_PROGRESS_ANALYTICS_FOR_STUDENT,
+)
 from lms.djangoapps.grades.course_grade_factory import CourseGradeFactory
 from openedx.core.djangoapps.content.block_structure.api import update_course_in_cache
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
@@ -319,6 +322,29 @@ class OutlineTabTestViews(BaseCourseHomeTests):
         ungraded_data = response.data['course_blocks']['blocks'][str(sequential2.location)]
         assert ungraded_data['display_name'] == 'Ungraded'
         assert ungraded_data['icon'] is None
+
+    @override_waffle_flag(COURSE_HOME_DISABLE_SEQUENCE_QUESTION_COUNT, active=True)
+    def test_assignment_question_count_disabled(self):
+        """
+        Test that the "(N Questions)" suffix is omitted from sequential names when the flag is enabled.
+        """
+        course = CourseFactory.create()
+        with self.store.bulk_operations(course.id):
+            chapter = BlockFactory.create(category='chapter', parent_location=course.location)
+            sequential = BlockFactory.create(display_name='Test', category='sequential', graded=True, has_score=True,
+                                             parent_location=chapter.location)
+            BlockFactory.create(category='problem', graded=True, has_score=True, parent_location=sequential.location)
+            BlockFactory.create(category='problem', graded=True, has_score=True, parent_location=sequential.location)
+        update_outline_from_modulestore(course.id)
+        url = reverse('course-home:outline-tab', args=[course.id])
+
+        CourseEnrollment.enroll(self.user, course.id)
+        response = self.client.get(url)
+        assert response.status_code == 200
+
+        exam_data = response.data['course_blocks']['blocks'][str(sequential.location)]
+        assert exam_data['display_name'] == 'Test'
+        assert exam_data['icon'] == 'fa-pencil-square-o'
 
     @override_waffle_flag(COURSE_ENABLE_UNENROLLED_ACCESS_FLAG, active=True)
     @patch('lms.djangoapps.course_home_api.outline.views.generate_offer_data', new=Mock(return_value={'a': 1}))
