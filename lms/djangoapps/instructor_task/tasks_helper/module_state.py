@@ -10,7 +10,7 @@ from time import time
 from django.utils.translation import gettext_noop
 from opaque_keys.edx.keys import UsageKey
 from xblock.scorable import Score
-from xblocks_contrib.problem.capa.responsetypes import LoncapaProblemError, ResponseError, StudentInputError
+from xblock_problem.capa.responsetypes import LoncapaProblemError, ResponseError, StudentInputError
 
 from common.djangoapps.student.models import get_user_by_username_or_email
 from common.djangoapps.track.event_transaction_utils import create_new_event_transaction_id, set_event_transaction_type
