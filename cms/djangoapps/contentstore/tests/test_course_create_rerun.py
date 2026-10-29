@@ -16,6 +16,8 @@ from django.urls import reverse
 from edx_toggles.toggles.testutils import override_waffle_flag
 from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locator import CourseLocator
+from openedx_authz.api.users import assign_role_to_user_in_scope
+from openedx_authz.engine.enforcer import AuthzEnforcer
 from organizations.api import add_organization, get_course_organizations, get_organization_by_short_name
 from organizations.exceptions import InvalidOrganizationException
 from organizations.models import Organization
@@ -639,3 +641,49 @@ class TestCourseRerunLegacy(ModuleStoreTestCase):
 
         # Verify author access
         assert has_course_author_access(self.user, dest_course_key)
+
+
+
+@ddt.ddt
+class TestCourseCreationAuthz(
+    CourseAuthoringAuthzTestMixin,
+    ModuleStoreTestCase,
+):
+    """
+    Tests for course creation by a non-staff user when authz.enable_course_authoring
+    is enabled. The creator is made the new course's instructor through AuthZ, and
+    `add_instructor` then checks the creator can manage the course's staff role.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.url = reverse("course_handler")
+        self.org = "AuthzOrg"
+        add_organization({"short_name": self.org, "name": self.org})
+        self.creator_client = AjaxEnabledTestClient()
+        self.creator_client.login(username=self.authorized_user.username, password=self.password)
+
+    @ddt.data(False, True)
+    def test_create_course(self, org_wide_admin):
+        """
+        A non-staff creator can create a course and is its instructor afterwards,
+        also when it already administers every course in the organization. An
+        org-wide `course_admin` used to stop the course-level assignment from being
+        made, so `add_instructor`'s authority check failed with a 403 after the
+        course had been written.
+        """
+        if org_wide_admin:
+            assign_role_to_user_in_scope(self.authorized_user.username, "course_admin", f"course-v1:{self.org}+*")
+            AuthzEnforcer.get_enforcer().load_policy()
+
+        response = self.creator_client.ajax_post(self.url, {
+            "org": self.org,
+            "number": "AZ101",
+            "display_name": "AuthZ Course",
+            "run": "2026_T1",
+        })
+
+        assert response.status_code == 200, response.content
+        course_key = CourseKey.from_string(parse_json(response)["course_key"])
+        assert CourseInstructorRole(course_key).has_user(self.authorized_user)
+        assert CourseStaffRole(course_key).has_user(self.authorized_user)
