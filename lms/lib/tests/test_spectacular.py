@@ -5,7 +5,7 @@ from collections import defaultdict
 from types import SimpleNamespace
 from unittest import mock
 
-from django.test import SimpleTestCase, TestCase
+from django.test import Client, SimpleTestCase, TestCase
 from django.urls import path
 from drf_spectacular.generators import SchemaGenerator
 from drf_spectacular.settings import patched_settings, spectacular_settings
@@ -14,6 +14,8 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.settings import api_settings
 
+from common.djangoapps.student.models_api import do_name_change_request
+from common.djangoapps.student.tests.factories import TEST_PASSWORD, UserFactory
 from lms.lib.spectacular import (
     RENAMED_OPERATION_IDS,
     SUPERSEDED_USER_PATHS,
@@ -23,6 +25,11 @@ from lms.lib.spectacular import (
     superseded_bodies,
 )
 from openedx.core.apidocs import get_api_docs_settings
+from openedx.core.djangoapps.profile_images.tests.helpers import make_image_file
+from openedx.core.djangoapps.user_api.accounts.image_helpers import (
+    get_profile_image_names,
+    get_profile_image_storage,
+)
 
 ENROLLMENT_VIEWS = "openedx.core.djangoapps.enrollments.views"
 USER_API_V1_VIEWS = "openedx.core.djangoapps.user_api.views"
@@ -395,6 +402,88 @@ class SupersededBodyTest(TestCase):
             if body is None and "content" in self.schema["paths"][address][method]["responses"][code]
         ]
         assert undescribed == []
+
+
+#: Each address this document already published before its body was described,
+#: and the success code its handler really answers. That document carried a 200
+#: with no body for both, which no handler answers; the code each is
+#: published under now is driven below.
+CORRECTED_SUCCESS_CODES = (
+    ("post", "/api/user/v1/accounts/name_change/{username}/confirm/", "204"),
+    ("post", "/api/user/v1/accounts/{username}/image", "204"),
+)
+
+
+class CorrectedSuccessCodeTest(TestCase):
+    """
+    Two addresses both documents already published answer a success code neither carried.
+
+    These are not new addresses: a client generated before this change branches
+    on the code the document gave them, so each is pinned here in both
+    documents and each handler is driven, so that the published code can only
+    change again together with the handler that answers it.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.documents = {"published": SchemaGenerator().get_schema(request=None, public=True)}
+        with patched_settings(get_api_docs_settings()):
+            cls.documents["service-wide"] = SchemaGenerator().get_schema(request=None, public=True)
+
+    def setUp(self):
+        super().setUp()
+        self.owner = UserFactory.create(username="codeowner", password=TEST_PASSWORD)
+        self.owner.profile.year_of_birth = 1980
+        self.owner.profile.save()
+        self.staff = UserFactory.create(username="codestaff", password=TEST_PASSWORD, is_staff=True)
+        self.storage = get_profile_image_storage()
+
+    def tearDown(self):
+        for name in get_profile_image_names(self.owner.username).values():
+            self.storage.delete(name)
+        super().tearDown()
+
+    def _as(self, user):
+        """A client signed in as that account."""
+        client = Client()
+        assert client.login(username=user.username, password=TEST_PASSWORD)
+        return client
+
+    def _answered(self):
+        """Drive each of the two on its success path and return the code it answers."""
+        owner, staff = self._as(self.owner), self._as(self.staff)
+        do_name_change_request(self.owner, "Another Name", "a reason")
+        answered = {
+            ("post", "/api/user/v1/accounts/name_change/{username}/confirm/"): staff.post(
+                f"/api/user/v1/accounts/name_change/{self.owner.username}/confirm/",
+            ).status_code,
+        }
+        with make_image_file() as image_file:
+            answered[("post", "/api/user/v1/accounts/{username}/image")] = owner.post(
+                f"/api/user/v1/accounts/{self.owner.username}/image", {"file": image_file},
+            ).status_code
+        return answered
+
+    def test_each_handler_answers_the_code_it_is_published_under(self):
+        assert self._answered() == {
+            (method, address): int(code) for method, address, code in CORRECTED_SUCCESS_CODES
+        }
+
+    def test_every_document_publishes_that_code_and_nothing_beside_it(self):
+        published = {}
+        for name, document in self.documents.items():
+            for method, address, _code in CORRECTED_SUCCESS_CODES:
+                responses = document["paths"][address][method]["responses"]
+                published[(name, method, address)] = (
+                    sorted(responses),
+                    ["content" in response for response in responses.values()],
+                )
+        assert published == {
+            (name, method, address): ([code], [False])
+            for name in self.documents
+            for method, address, code in CORRECTED_SUCCESS_CODES
+        }
 
 
 class PublishedDocumentTest(TestCase):
