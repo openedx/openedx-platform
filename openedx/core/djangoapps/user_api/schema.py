@@ -64,6 +64,22 @@ RENAMED_OPERATION_IDS = {
     ): "api_user_v2_user_preferences_retrieve",
 }
 
+# Operations whose handler answers a request carrying no body with a 400. The
+# body of each is described in place rather than through a serializer, and a
+# shape given in place carries no field the generator can read requiredness
+# from, so it publishes no mark at all and a client generated from the document
+# makes the body an argument the caller may leave out. Each address is spelled
+# with its parameter names removed, as the table of bodies below is.
+#
+# An address belongs here only once its handler has been sent a request with
+# the form named and no body behind it and has refused it. The write of one
+# stored preference is deliberately absent: that handler takes a request with
+# no body and answers that the preference now stands as the request asked.
+REQUIRED_REQUEST_BODIES = frozenset({
+    ("/api/user/v1/preferences/{}", "PATCH"),
+    ("/api/user/v1/preferences/email_opt_in/", "POST"),
+    ("/api/user/v2/accounts/{}/preferences/", "PATCH"),
+})
 
 _PATH_PARAMETER = re.compile(r"\{([\w-]+)\}")
 
@@ -218,10 +234,14 @@ class SupersededUserOperations:
         Mark the body required when any of its media types requires it.
 
         Overrides a private method of drf-spectacular 0.30, which requires a body
-        only when every media type does and never requires an inline shape.
+        only when every media type does and never requires an inline shape. An
+        operation named in ``REQUIRED_REQUEST_BODIES`` is marked required outright.
         """
         body = super()._get_request_body(direction)
         if not body:
+            return body
+        if self._operation_shape() in REQUIRED_REQUEST_BODIES:
+            body["required"] = True
             return body
         shapes = self.get_request_serializer()
         if body.get("required") or not isinstance(shapes, dict):
@@ -248,7 +268,11 @@ class SupersededUserOperations:
 
     def _superseded_bodies(self):
         """Return the bodies named for this operation, or ``None`` where none are named."""
-        return superseded_bodies().get((_PATH_PARAMETER.sub("{}", self.path), self.method))
+        return superseded_bodies().get(self._operation_shape())
+
+    def _operation_shape(self):
+        """This operation as the tables above key one: its address without parameter names, and its method."""
+        return (_PATH_PARAMETER.sub("{}", self.path), self.method)
 
 
 def mark_superseded_user_paths(result, generator, request, public):  # pylint: disable=unused-argument

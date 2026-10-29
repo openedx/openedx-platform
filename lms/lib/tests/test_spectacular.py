@@ -11,6 +11,7 @@ from unittest import mock
 import jsonschema
 from django.conf import settings
 from django.test import Client, SimpleTestCase, TestCase
+from django.test.client import FakePayload
 from django.urls import path
 from drf_spectacular.generators import SchemaGenerator
 from drf_spectacular.settings import patched_settings, spectacular_settings
@@ -786,6 +787,88 @@ class CorrectedSuccessCodeTest(TestCase):
             (name, method, address): ([code], [False])
             for name in self.documents
             for method, address, code in CORRECTED_SUCCESS_CODES
+        }
+
+
+MERGE_PATCH = "application/merge-patch+json"
+
+#: Each address that describes its body in place, the form it reads it in, and
+#: what the handler answers a request carrying no body at all.
+BODIES_SENT_AS_NOTHING = (
+    ("PATCH", "/api/user/v1/preferences/{}", "/api/user/v1/preferences/bodyowner", MERGE_PATCH, 400),
+    ("POST", "/api/user/v1/preferences/email_opt_in/", "/api/user/v1/preferences/email_opt_in/",
+     "application/x-www-form-urlencoded", 400),
+    ("PATCH", "/api/user/v2/accounts/{}/preferences/", "/api/user/v2/accounts/bodyowner/preferences/",
+     MERGE_PATCH, 400),
+    ("PUT", "/api/user/v1/preferences/{}/{}", "/api/user/v1/preferences/bodyowner/account_privacy",
+     "application/json", 204),
+)
+
+
+class RequiredRequestBodyTest(TestCase):
+    """
+    A body no request may leave out is published as one the operation needs.
+
+    Every address below describes its body in place rather than through a
+    serializer, which leaves the generator no field to read that from, so it
+    publishes no mark at all and a client makes the body optional. Each is
+    driven here with no body, in both documents, so the mark one carries is
+    held to what the handler answers.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.documents = _user_documents()
+
+    def setUp(self):
+        super().setUp()
+        self.owner = UserFactory.create(username="bodyowner", password=TEST_PASSWORD)
+        assert self.client.login(username=self.owner.username, password=TEST_PASSWORD)
+
+    @staticmethod
+    def _published_address(shape):
+        """The address as a document spells it, from the shape its parameters are removed from."""
+        return {
+            "/api/user/v1/preferences/{}": "/api/user/v1/preferences/{username}",
+            "/api/user/v1/preferences/{}/{}": "/api/user/v1/preferences/{username}/{preference_key}",
+            "/api/user/v2/accounts/{}/preferences/": "/api/user/v2/accounts/{username}/preferences/",
+        }.get(shape, shape)
+
+    def _send_nothing(self, method, address, media_type):
+        """Send the request with its form named and no body behind it."""
+        return self.client.generic(
+            method,
+            address,
+            data=b"",
+            content_type=media_type,
+            CONTENT_TYPE=media_type,
+            CONTENT_LENGTH="0",
+            **{"wsgi.input": FakePayload(b"")},
+        )
+
+    def test_a_handler_that_refuses_a_request_carrying_no_body_is_the_reason_for_the_mark(self):
+        """What each handler answers, which is what the mark below is held to."""
+        answered = {
+            (method, address): self._send_nothing(method, address, media_type).status_code
+            for method, _shape, address, media_type, _expected in BODIES_SENT_AS_NOTHING
+        }
+        assert answered == {
+            (method, address): expected
+            for method, _shape, address, media_type, expected in BODIES_SENT_AS_NOTHING
+        }
+
+    def test_every_document_marks_a_body_the_handler_refuses_to_work_without(self):
+        marks = {}
+        for name, document in self.documents.items():
+            for method, shape, _address, _media_type, answer in BODIES_SENT_AS_NOTHING:
+                address = self._published_address(shape)
+                operation = document["paths"][address][method.lower()]
+                marks[(name, method, address)] = operation["requestBody"].get("required", "<absent>")
+        assert marks == {
+            (name, method, self._published_address(shape)): (True if answer == 400 else "<absent>")
+            for name in self.documents
+            for method, shape, _address, _media_type, answer in BODIES_SENT_AS_NOTHING
         }
 
 
