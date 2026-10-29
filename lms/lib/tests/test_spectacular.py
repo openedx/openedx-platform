@@ -1,7 +1,12 @@
 """Tests for the LMS drf-spectacular hooks and schema class."""
 
+import json
+import os
 import re
+import subprocess
+import sys
 from collections import defaultdict
+from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
 
@@ -483,6 +488,66 @@ class CorrectedSuccessCodeTest(TestCase):
             (name, method, address): ([code], [False])
             for name in self.documents
             for method, address, code in CORRECTED_SUCCESS_CODES
+        }
+
+
+#: Loaded in a process of its own below. The service settings append a
+#: component, and the documentation settings are then asked what they append,
+#: so that a key one of them carries is seen to reach the other.
+DOCUMENTATION_SETTINGS_CHILD = """
+import json
+import os
+
+import lms.envs.common as service_settings
+
+service_settings.SPECTACULAR_SETTINGS["APPEND_COMPONENTS"] = {
+    "schemas": {"ServiceComponent": {"type": "object"}},
+}
+
+os.environ["DJANGO_SETTINGS_MODULE"] = "docs.docs_settings"
+from django.conf import settings
+
+appended = settings.SPECTACULAR_SETTINGS.get("APPEND_COMPONENTS", {})
+print("APPENDED " + json.dumps({
+    "keys": sorted(appended),
+    "schemas": sorted(appended.get("schemas", {})),
+    "security": sorted(appended.get("securitySchemes", {})),
+}))
+"""
+
+
+class DocumentationSettingsTest(SimpleTestCase):
+    """
+    The settings the published reference is generated from keep what the service appends.
+
+    They are loaded in a process of their own because they turn every feature
+    flag on and add Studio's applications to the settings object this process
+    is already running under, so loading them here would reconfigure the
+    service for every test that follows. What they append holds component
+    names the published reference is expected to carry, and one dropped there
+    leaves the reference and every client built from it without that name
+    while no count moves.
+    """
+
+    def test_a_component_the_service_appends_reaches_the_published_reference(self):
+        repository = Path(__file__).resolve().parents[3]
+        environment = dict(os.environ, PYTHONPATH=str(repository))
+        environment.pop("DJANGO_SETTINGS_MODULE", None)
+        finished = subprocess.run(
+            [sys.executable, "-c", DOCUMENTATION_SETTINGS_CHILD],
+            cwd=str(repository),
+            env=environment,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert finished.returncode == 0, finished.stderr[-2000:]
+        reported = [line for line in finished.stdout.splitlines() if line.startswith("APPENDED ")]
+        assert len(reported) == 1, finished.stdout[-2000:]
+        assert json.loads(reported[0].split(" ", 1)[1]) == {
+            "keys": ["schemas", "securitySchemes"],
+            "schemas": ["ServiceComponent"],
+            "security": ["Basic", "csrf", "jwt"],
         }
 
 
