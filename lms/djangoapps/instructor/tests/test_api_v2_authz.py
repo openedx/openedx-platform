@@ -4,6 +4,7 @@ Tests for the AuthZ enforcement of the Instructor Dashboard API v2.
 They cover the tabs, ``authz_enabled`` and the migrated endpoints.
 """
 
+from datetime import datetime
 from unittest.mock import patch
 
 import ddt
@@ -18,11 +19,13 @@ from openedx_authz.authz import (
     COURSE_STAFF,
     COURSES_VIEW_COURSE_INFO,
 )
+from pytz import UTC
 from rest_framework import status
 from rest_framework.test import APIClient
 
 from common.djangoapps.student.roles import CourseDataResearcherRole, CourseLimitedStaffRole
 from common.djangoapps.student.tests.factories import (
+    CourseEnrollmentFactory,
     InstructorFactory,
     StaffFactory,
     UserFactory,
@@ -30,8 +33,9 @@ from common.djangoapps.student.tests.factories import (
 from lms.djangoapps.courseware.tabs import get_course_tab_list
 from lms.djangoapps.instructor.authz import constants
 from lms.djangoapps.instructor.authz.tests.mixins import InstructorAuthzTestMixin
+from openedx.core.djangoapps.course_date_signals.handlers import extract_dates
 from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 
 API = "lms.djangoapps.instructor.authz.api"
 
@@ -313,3 +317,127 @@ class InstructorDashboardTabAuthzTest(InstructorAuthzTestMixin, SharedModuleStor
         self.set_authz_enabled(False)
 
         assert not self._has_instructor_tab(UserFactory())
+
+
+@ddt.ddt
+class DateExtensionsAuthzTest(InstructorAuthzTestMixin, SharedModuleStoreTestCase):
+    """
+    AuthZ enforcement of the Date Extensions tab endpoints: ``GradedSubsectionsView``
+    and ``UnitExtensionsView`` (``courses.view_learner_extensions``), and
+    ``ChangeDueDateView`` (``courses.manage_learner_extensions``).
+    """
+
+    # (url_name, "get" or "post")
+    VIEW_ENDPOINTS = (("graded_subsections", "get"), ("unit_extensions", "get"))
+    MANAGE_ENDPOINTS = (("change_due_date", "post"),)
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.course = CourseFactory.create()
+        cls.course_key = cls.course.id
+        cls.chapter = BlockFactory.create(parent=cls.course, category="chapter")
+        cls.sequential = BlockFactory.create(
+            parent=cls.chapter,
+            category="sequential",
+            due=datetime(2030, 1, 1, tzinfo=UTC),
+            metadata={"graded": True, "format": "Homework"},
+        )
+        # ChangeDueDateView extends a date through edx-when, which needs the course's
+        # dates extracted into its own store before it recognizes this due date exists.
+        extract_dates(None, cls.course_key)
+
+    def setUp(self):
+        super().setUp()
+        self.client = APIClient()
+        self.learner = UserFactory()
+        CourseEnrollmentFactory.create(user=self.learner, course_id=self.course_key)
+
+    def _request(self, user, url_name, method):
+        """Call the given endpoint as ``user``, GET or POST depending on ``method``."""
+        self.client.force_authenticate(user=user)
+        url = reverse(f"instructor_api_v2:{url_name}", kwargs={"course_id": str(self.course_key)})
+        if method == "get":
+            return self.client.get(url)
+        return self.client.post(
+            url,
+            {
+                "block_id": str(self.sequential.location),
+                "due_datetime": "01/01/2030 00:00",
+                "email_or_username": self.learner.username,
+            },
+            format="json",
+        )
+
+    @ddt.data(*VIEW_ENDPOINTS, *MANAGE_ENDPOINTS)
+    @ddt.unpack
+    def test_authz_course_admin_has_access(self, url_name, method):
+        """A Course Admin can view and manage date extensions."""
+        user = self.create_user_with_authz_role(COURSE_ADMIN.external_key, self.course_key)
+
+        response = self._request(user, url_name, method)
+
+        assert response.status_code == status.HTTP_200_OK
+
+    @ddt.data(*VIEW_ENDPOINTS, *MANAGE_ENDPOINTS)
+    @ddt.unpack
+    def test_authz_course_staff_has_access(self, url_name, method):
+        """A Course Staff can view and manage date extensions."""
+        user = self.create_user_with_authz_role(COURSE_STAFF.external_key, self.course_key)
+
+        response = self._request(user, url_name, method)
+
+        assert response.status_code == status.HTTP_200_OK
+
+    @ddt.data(*VIEW_ENDPOINTS, *MANAGE_ENDPOINTS)
+    @ddt.unpack
+    def test_authz_user_without_permission_is_denied(self, url_name, method):
+        """A user with no AuthZ role in the course is denied."""
+        user = UserFactory()
+
+        response = self._request(user, url_name, method)
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    @ddt.data(*VIEW_ENDPOINTS, *MANAGE_ENDPOINTS)
+    @ddt.unpack
+    def test_authz_denied_overrides_legacy_roles(self, url_name, method):
+        """With the flag on, AuthZ denying a legacy instructor means no access."""
+        instructor = InstructorFactory(course_key=self.course_key)
+
+        with patch(f"{API}.authz_api.is_user_allowed", return_value=False):
+            response = self._request(instructor, url_name, method)
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    @ddt.data(*VIEW_ENDPOINTS, *MANAGE_ENDPOINTS)
+    @ddt.unpack
+    def test_legacy_instructor_keeps_access(self, url_name, method):
+        """With the flag off, a legacy instructor keeps the access it always had."""
+        self.set_authz_enabled(False)
+        instructor = InstructorFactory(course_key=self.course_key)
+
+        response = self._request(instructor, url_name, method)
+
+        assert response.status_code == status.HTTP_200_OK
+
+    @ddt.data(*VIEW_ENDPOINTS, *MANAGE_ENDPOINTS)
+    @ddt.unpack
+    def test_legacy_student_is_denied(self, url_name, method):
+        """With the flag off, an enrolled learner with no staff role is denied."""
+        self.set_authz_enabled(False)
+
+        response = self._request(self.learner, url_name, method)
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_legacy_does_not_query_authz(self):
+        """With the flag off, AuthZ is not queried."""
+        self.set_authz_enabled(False)
+        instructor = InstructorFactory(course_key=self.course_key)
+
+        with patch(f"{API}.authz_api.is_user_allowed") as is_user_allowed:
+            response = self._request(instructor, "graded_subsections", "get")
+
+        assert response.status_code == status.HTTP_200_OK
+        is_user_allowed.assert_not_called()

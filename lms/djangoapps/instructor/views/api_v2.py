@@ -51,6 +51,10 @@ from edx_rest_framework_extensions.paginators import DefaultPagination
 from edx_when import api as edx_when_api
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey, UsageKey
+from openedx_authz.authz import (
+    COURSES_MANAGE_LEARNER_EXTENSIONS,
+    COURSES_VIEW_LEARNER_EXTENSIONS,
+)
 from pytz import UTC
 from rest_framework import status
 from rest_framework.exceptions import NotFound, PermissionDenied
@@ -489,7 +493,8 @@ class ChangeDueDateView(APIView):
     Grants a due date extension to a student for a particular unit.
     this version works with a new payload that is JSON and more up to date.
     """
-    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_classes = (IsAuthenticated, InstructorAuthzPermission)
+    authz_permissions = (COURSES_MANAGE_LEARNER_EXTENSIONS.identifier,)
     permission_name = permissions.GIVE_STUDENT_EXTENSION
     serializer_class = BlockDueDateSerializerV2
 
@@ -527,7 +532,8 @@ class ChangeDueDateView(APIView):
 
 class GradedSubsectionsView(APIView):
     """View to retrieve graded subsections with due dates"""
-    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_classes = (IsAuthenticated, InstructorAuthzPermission)
+    authz_permissions = (COURSES_VIEW_LEARNER_EXTENSIONS.identifier,)
     permission_name = permissions.VIEW_DASHBOARD
 
     def get(self, request, course_id):
@@ -628,7 +634,8 @@ class UnitExtensionsView(ListAPIView):
         * 403: Forbidden - User lacks instructor permissions
         * 404: Not Found - Course does not exist
     """
-    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_classes = (IsAuthenticated, InstructorAuthzPermission)
+    authz_permissions = (COURSES_VIEW_LEARNER_EXTENSIONS.identifier,)
     permission_name = permissions.VIEW_DASHBOARD
     serializer_class = UnitExtensionSerializer
     filter_backends = []
