@@ -8,6 +8,7 @@ from rest_framework.exceptions import (
     ParseError,
     UnsupportedMediaType,
 )
+from rest_framework.settings import api_settings
 
 
 class RefusedMethod(MethodNotAllowed):
@@ -50,7 +51,46 @@ register_error_type(MalformedBody, "malformed-body", "Malformed Request Body")
 register_error_type(RetiredAccount, "user/retired-account", "Retired Account")
 
 
-class CatalogedRequestErrorsMixin:
+def refusal_sentence(refusals):
+    """
+    Return one sentence naming what each parameter or property was refused for.
+
+    A refusal that names nothing in particular is spelled on its own, so the
+    sentence reads the same whether or not the thing refused has a name.
+    """
+    return " ".join(
+        reason if name == api_settings.NON_FIELD_ERRORS_KEY else f"{name}: {reason}"
+        for name, reasons in refusals.items()
+        for reason in reasons
+    )
+
+
+class ReadableErrorDetailMixin:
+    """
+    Writes the one-line message of a refused request as a sentence.
+
+    The standard error body carries a line for a person to read beside the
+    list of what each parameter or property was refused for, and where the
+    refusal names them that line was produced by printing the list itself.
+    Everything that puts the line in front of a person then shows the
+    brackets, the quoting and the class names that write a data structure
+    out: the message of the exception a generated client raises, a line in an
+    integration's log, the notification a page puts on the screen. The list is
+    left exactly as it was; only the line is rewritten, from the same values.
+    """
+
+    def handle_exception(self, exc):
+        """Answer with the standard body, its one-line message written in words."""
+        response = super().handle_exception(exc)
+        body = getattr(response, "data", None)
+        if isinstance(body, dict) and isinstance(body.get("errors"), dict):
+            sentence = refusal_sentence(body["errors"])
+            if sentence:
+                body["detail"] = sentence
+        return response
+
+
+class CatalogedRequestErrorsMixin(ReadableErrorDetailMixin):
     """
     Names the error type of a refused method, an unanswerable ``Accept``
     header, a body in a media type this API cannot read and a body that is not
@@ -61,6 +101,10 @@ class CatalogedRequestErrorsMixin:
     subclasses of them names each error without changing how the same failure
     is classified for any other API in the process; once the shared catalog
     covers them, the subclasses can give way to it.
+
+    A view that classifies its request failures also wants the one-line
+    message of each of them to read as a sentence, so this carries what the
+    class it extends does as well, and a view names one mixin rather than two.
     """
 
     def handle_exception(self, exc):

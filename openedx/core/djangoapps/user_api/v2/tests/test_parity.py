@@ -372,3 +372,132 @@ class ParityTests(APITestCase):
         entry = self.conforming(reverse("user_v2:user_detail", kwargs={"username": "parity-user"}))
         assert entry.status_code == status.HTTP_200_OK
         assert json.loads(entry.content)["id"] == self.user.id
+
+
+@skip_unless_lms
+class RefusedRequestMessageTests(APITestCase):
+    """
+    What a person reads when a request of either version is refused.
+
+    The earlier addresses answer a refusal with one sentence, and the
+    standardized body of this version keeps a member for that sentence beside
+    the list of what each parameter was refused for. Where the refusal names
+    parameters, that sentence was being built by printing the list itself, so
+    the quoting, the bracketing and the class names of the data structure
+    holding it reached everything that shows the sentence to a person: the
+    message of an exception a generated client raises, a line in an
+    integration's log, the notification a page puts on the screen.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.admin = AdminFactory.create(username="refusal-admin", password=PASSWORD)
+
+    def refused(self, address, params):
+        """Call a version 2 address as the administrator it is gated by."""
+        assert self.client.login(username=self.admin.username, password=PASSWORD)
+        response = self.client.get(address, params)
+        self.client.logout()
+        return assert_error_envelope(
+            response,
+            expected_status=status.HTTP_400_BAD_REQUEST,
+            expected_type_slug="validation",
+        )
+
+    def test_the_sentence_of_a_refusal_naming_one_parameter_is_the_sentence_that_parameter_got(self):
+        cases = [
+            (
+                reverse("user_v2:user_list"),
+                {"forum_role": "Moderator"},
+                {"course_key": ["This parameter is required when forum_role is supplied."]},
+                "course_key: This parameter is required when forum_role is supplied.",
+            ),
+            (
+                reverse("user_v2:user_list"),
+                {"is_active": "maybe"},
+                {"is_active": ["Enter true or false."]},
+                "is_active: Enter true or false.",
+            ),
+            (
+                reverse("user_v2:user_preference_list"),
+                {"page_size": "0"},
+                {
+                    "page_size": [
+                        "Enter a whole number of rows of at least 1. "
+                        "A larger number than 100 returns 100 rows.",
+                    ],
+                },
+                "page_size: Enter a whole number of rows of at least 1. "
+                "A larger number than 100 returns 100 rows.",
+            ),
+        ]
+        for address, params, expected_errors, expected_sentence in cases:
+            with self.subTest(address=address, params=params):
+                envelope = self.refused(address, params)
+                assert envelope["errors"] == expected_errors
+                assert envelope["detail"] == expected_sentence
+
+    def test_the_sentence_of_a_refusal_naming_several_parameters_names_each_of_them(self):
+        """Every parameter refused is in the sentence, in the order the list carries them."""
+        envelope = self.refused(reverse("user_v2:user_list"), {"nope": "1", "alsonope": "2"})
+        assert sorted(envelope["errors"]) == ["alsonope", "nope"]
+        assert envelope["detail"] == " ".join(
+            f"{name}: {message}"
+            for name, messages in envelope["errors"].items()
+            for message in messages
+        )
+        assert envelope["detail"].startswith("alsonope: No such query parameter.")
+
+    def test_a_refusal_that_names_nothing_in_particular_is_spelled_on_its_own(self):
+        """A body of the wrong shape is refused with no property to hang the refusal on."""
+        assert self.client.login(username=self.admin.username, password=PASSWORD)
+        response = self.client.post(reverse("user_v2:email_search_list"), [], format="json")
+        self.client.logout()
+        envelope = assert_error_envelope(
+            response, expected_status=status.HTTP_400_BAD_REQUEST, expected_type_slug="validation",
+        )
+        assert envelope["errors"] == {
+            "non_field_errors": ["Invalid data. Expected a dictionary, but got list."],
+        }
+        assert envelope["detail"] == "Invalid data. Expected a dictionary, but got list."
+
+    def test_a_refusal_naming_no_parameter_says_what_it_has_always_said(self):
+        """Only the refusals built from a list of parameters change; the rest are untouched."""
+        assert self.client.login(username=self.admin.username, password=PASSWORD)
+        missing = self.client.get(reverse("user_v2:user_detail", kwargs={"username": "nobody"}))
+        envelope = assert_error_envelope(
+            missing, expected_status=status.HTTP_404_NOT_FOUND, expected_type_slug="not-found",
+        )
+        assert envelope["detail"] == "Not found."
+        assert "errors" not in envelope
+
+    def test_no_sentence_of_a_refusal_carries_the_printed_form_of_a_list_or_a_mapping(self):
+        """
+        One sweep over the refusals this version produces, rather than a case each.
+
+        A sentence built by printing a data structure carries the brackets,
+        the quotes and the class names that write it, none of which belong in
+        something a person reads.
+        """
+        refusals = [
+            (reverse("user_v2:user_list"), {"is_active": "maybe"}),
+            (reverse("user_v2:user_list"), {"forum_role": "Moderator"}),
+            (reverse("user_v2:user_list"), {"course_key": "course-v1:edX+DemoX+Demo"}),
+            (reverse("user_v2:user_list"), {"ordering": "password"}),
+            (reverse("user_v2:user_list"), {"nope": "1"}),
+            (reverse("user_v2:user_list"), {"page_size": "0"}),
+            (reverse("user_v2:user_preference_list"), {"ordering": "nope"}),
+            (reverse("user_v2:user_preference_list"), {"page_size": "-1"}),
+            (reverse("user_v2:time_zone_list"), {"country_code": "nowhere"}),
+        ]
+        for address, params in refusals:
+            with self.subTest(address=address, params=params):
+                envelope = self.refused(address, params)
+                sentence = envelope["detail"]
+                assert isinstance(sentence, str)
+                assert not any(mark in sentence for mark in ("{", "}", "[", "]", "ErrorDetail(")), sentence
+                assert sentence == " ".join(
+                    f"{name}: {message}"
+                    for name, messages in envelope["errors"].items()
+                    for message in messages
+                )
