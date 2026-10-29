@@ -23,7 +23,6 @@ from xblock.fields import Reference, ReferenceList, ReferenceValueDict, ScopeIds
 from openedx.core.djangoapps.discussions.services import DiscussionConfigService
 from openedx.core.djangoapps.video_config.services import VideoConfigService
 from openedx.core.lib.cache_utils import CacheService
-from xmodule.assetstore import AssetMetadata
 from xmodule.contentstore.django import contentstore
 from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.draft_and_published import ModuleStoreDraftAndPublished
@@ -534,22 +533,3 @@ class CourseComparisonTest(TransactionTestCase):
         expected_thumbs = expected_store.get_all_content_thumbnails_for_course(expected_course_key)
         actual_thumbs = actual_store.get_all_content_thumbnails_for_course(actual_course_key)
         self._assertAssetsEqual(expected_course_key, expected_thumbs, actual_course_key, actual_thumbs)
-
-    def assertAssetsMetadataEqual(self, expected_modulestore, expected_course_key, actual_modulestore, actual_course_key):  # pylint: disable=line-too-long
-        """
-        Assert that the modulestore asset metdata for the ``expected_course_key`` and the ``actual_course_key``
-        are equivalent.
-        """
-        expected_course_assets = expected_modulestore.get_all_asset_metadata(
-            expected_course_key, None, sort=('displayname', ModuleStoreEnum.SortOrder.descending)
-        )
-        actual_course_assets = actual_modulestore.get_all_asset_metadata(
-            actual_course_key, None, sort=('displayname', ModuleStoreEnum.SortOrder.descending)
-        )
-        assert len(expected_course_assets) == len(actual_course_assets)
-        for idx, expected_val in enumerate(expected_course_assets):
-            for attr in AssetMetadata.ATTRS_ALLOWED_TO_UPDATE:
-                if attr in ('edited_on',):
-                    # edited_on is updated upon import.
-                    continue
-                assert getattr(expected_val, attr) == getattr(actual_course_assets[idx], attr)

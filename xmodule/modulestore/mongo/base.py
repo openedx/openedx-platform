@@ -1479,14 +1479,10 @@ class MongoModuleStore(ModuleStoreDraftAndPublished, ModuleStoreWriteBase, Mongo
         Arguments:
             course_key (CourseKey): course_identifier
         """
-        # Using the course_id, find the course asset metadata document.
         # A single document exists per course to store the course asset metadata.
-        try:
-            course_assets = self._find_course_assets(course_key)
-            self.asset_collection.delete_many({'_id': course_assets.doc_id})
-        except ItemNotFoundError:
-            # When deleting asset metadata, if a course's asset metadata is not present, no big deal.
-            pass
+        course_key = self.fill_in_run(course_key)
+        if course_key.run is not None:
+            self.asset_collection.delete_many({'course_id': str(course_key)})
 
     def heartbeat(self):
         """

@@ -71,6 +71,7 @@ class TestCourseExportOlx(TaggedCourseMixin, ModuleStoreTestCase):
         self.assertIn(f"{dirname}/about", names)  # noqa: PT009
         self.assertIn(f"{dirname}/about/overview.html", names)  # noqa: PT009
         self.assertIn(f"{dirname}/assets/assets.xml", names)  # noqa: PT009
+        assert tar_file.extractfile(f"{dirname}/assets/assets.xml").read() == b'<assets/>'
         self.assertIn(f"{dirname}/policies", names)  # noqa: PT009
         if with_tags:
             self.assertIn(f"{dirname}/tags.csv", names)  # noqa: PT009

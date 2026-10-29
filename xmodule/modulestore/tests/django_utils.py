@@ -155,6 +155,7 @@ def contentstore_config():
         },
         # allow for additional options that can be keyed on a name, e.g. 'trashcan'
         'ADDITIONAL_OPTIONS': {
+            # Deprecated - https://github.com/openedx/openedx-platform/issues/39260
             'trashcan': {
                 'bucket': 'trash_fs'
             }

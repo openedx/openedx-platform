@@ -25,7 +25,6 @@ from cms.djangoapps.contentstore.views import assets
 from common.djangoapps.static_replace import replace_static_urls
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.authz.tests.mixins import CourseAuthzTestMixin
-from xmodule.assetstore import AssetMetadata  # pylint: disable=wrong-import-order
 from xmodule.contentstore.content import StaticContent  # pylint: disable=wrong-import-order
 from xmodule.contentstore.django import contentstore  # pylint: disable=wrong-import-order
 from xmodule.modulestore import ModuleStoreEnum  # pylint: disable=wrong-import-order
@@ -225,8 +224,7 @@ class PaginationTestCase(AssetsTestCase):
         """
         Test the ajax asset interfaces
         """
-        asset_key = self.course.id.make_asset_key(
-            AssetMetadata.GENERAL_ASSET_TYPE, 'test.jpg')
+        asset_key = self.course.id.make_asset_key('asset', 'test.jpg')
         upload_date = datetime(2015, 1, 12, 10, 30, tzinfo=UTC)
         thumbnail_location = [
             'c4x', 'edX', 'toy', 'thumbnail', 'test_thumb.jpg', None]

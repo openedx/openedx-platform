@@ -22,7 +22,6 @@ from opaque_keys.edx.keys import CourseKey
 from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.tests.factories import AdminFactory, UserFactory
 from openedx.core.djangoapps.waffle_utils.models import WaffleFlagCourseOverrideModel
-from xmodule.assetstore.assetmgr import AssetManager
 from xmodule.contentstore.content import VERSIONED_ASSETS_PREFIX, StaticContent
 from xmodule.contentstore.django import contentstore
 from xmodule.modulestore.django import modulestore
@@ -47,7 +46,7 @@ def get_versioned_asset_url(asset_path):
     """
     try:
         locator = StaticContent.get_location_from_path(asset_path)
-        content = AssetManager.find(locator, as_stream=True)
+        content = contentstore().find(locator, as_stream=True)
         return StaticContent.add_version_to_asset_path(asset_path, content.content_digest)
     except (InvalidKeyError, ItemNotFoundError):
         pass
@@ -61,7 +60,7 @@ def get_old_style_versioned_asset_url(asset_path):
     """
     try:
         locator = StaticContent.get_location_from_path(asset_path)
-        content = AssetManager.find(locator, as_stream=True)
+        content = contentstore().find(locator, as_stream=True)
         return f'{VERSIONED_ASSETS_PREFIX}/{content.content_digest}{asset_path}'
     except (InvalidKeyError, ItemNotFoundError):
         pass

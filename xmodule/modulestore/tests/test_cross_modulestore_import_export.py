@@ -146,13 +146,6 @@ class CrossStoreXMLRoundtrip(CourseComparisonTest, PartitionTestCase):
                             dest_course_key,
                         )
 
-                        self.assertAssetsMetadataEqual(
-                            source_store,
-                            source_course_key,
-                            dest_store,
-                            dest_course_key,
-                        )
-
     def test_split_course_export_import(self):
         # Construct the contentstore for storing the first import
         with MongoContentstoreBuilder().build() as source_content:

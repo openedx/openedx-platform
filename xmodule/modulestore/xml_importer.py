@@ -32,7 +32,6 @@ from datetime import datetime, timezone
 import xblock
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils.translation import gettext as _
-from lxml import etree
 from opaque_keys.edx.keys import UsageKey
 from opaque_keys.edx.locator import LibraryLocator
 from openedx_events.content_authoring.data import CourseData
@@ -44,7 +43,6 @@ from xblock.runtime import DictKeyValueStore, KvsFieldData
 
 from common.djangoapps.util.monitoring import monitor_import_failure
 from openedx.core.djangoapps.content_tagging.api import import_course_tags_from_csv
-from xmodule.assetstore import AssetMetadata
 from xmodule.contentstore.content import StaticContent
 from xmodule.errortracker import make_error_tracker
 from xmodule.modulestore import ModuleStoreEnum
@@ -360,54 +358,6 @@ class ImportManager:
                 content_subdir=simport, verbose=self.verbose
             )
 
-    def import_asset_metadata(self, data_dir, course_id):
-        """
-        Read in assets XML file, parse it, and add all asset metadata to the modulestore.
-        """
-        asset_dir = path(data_dir) / AssetMetadata.EXPORTED_ASSET_DIR
-        assets_filename = AssetMetadata.EXPORTED_ASSET_FILENAME
-        asset_xml_file = asset_dir / assets_filename
-
-        def make_asset_id(course_id, asset_xml):
-            """
-            Construct an asset ID out of a complete asset XML section.
-            """
-            asset_type = None
-            asset_name = None
-            for child in asset_xml.iterchildren():
-                if child.tag == AssetMetadata.ASSET_TYPE_ATTR:
-                    asset_type = child.text
-                elif child.tag == AssetMetadata.ASSET_BASENAME_ATTR:
-                    asset_name = child.text
-            return course_id.make_asset_key(asset_type, asset_name)
-
-        all_assets = []
-        try:
-            xml_data = etree.parse(asset_xml_file).getroot()
-            assert xml_data.tag == AssetMetadata.ALL_ASSETS_XML_TAG
-            for asset in xml_data.iterchildren():
-                if asset.tag == AssetMetadata.ASSET_XML_TAG:
-                    # Construct the asset key.
-                    asset_key = make_asset_id(course_id, asset)
-                    asset_md = AssetMetadata(asset_key)
-                    asset_md.from_xml(asset)
-                    all_assets.append(asset_md)
-        except OSError:
-            # file does not exist.
-            logging.info(f'Course import {course_id}: No {assets_filename} file present.')
-            return
-        except Exception as exc:  # pylint: disable=W0703
-            if self.raise_on_failure:  # pylint: disable=no-else-raise
-                monitor_import_failure(course_id, 'Updating', exception=exc)
-                logging.exception(f'Course import {course_id}: Error while parsing {assets_filename}.')
-                raise ErrorReadingFileException(assets_filename)  # pylint: disable=raise-missing-from  # noqa: B904
-            else:
-                return
-
-        # Now add all asset metadata to the modulestore.
-        if len(all_assets) > 0:
-            self.store.save_asset_metadata_list(all_assets, all_assets[0].edited_by, import_only=True)
-
     def import_courselike(self, runtime, courselike_key, dest_id, source_courselike):
         """
         Import the base block
@@ -575,8 +525,7 @@ class ImportManager:
                 # Import all static pieces.
                 self.import_static(data_path, dest_id)
 
-                # Import asset metadata stored in XML.
-                self.import_asset_metadata(data_path, dest_id)
+                # Note: assets/assets.xml (deprecated asset metadata) is intentionally ignored.
 
                 # Import all children
                 self.import_children(source_courselike, courselike, courselike_key, dest_id)

@@ -26,7 +26,6 @@ from openedx.core.djangoapps.dark_lang.models import DarkLangConfig
 from openedx.core.djangoapps.models.course_details import CourseDetails
 from openedx.core.djangolib.testing.utils import CacheIsolationTestCase
 from openedx.core.lib.courses import course_image_url
-from xmodule.assetstore.assetmgr import AssetManager  # pylint: disable=wrong-import-order
 from xmodule.contentstore.content import StaticContent  # pylint: disable=wrong-import-order
 from xmodule.contentstore.django import contentstore  # pylint: disable=wrong-import-order
 from xmodule.course_block import (  # pylint: disable=wrong-import-order
@@ -1071,7 +1070,7 @@ class CourseOverviewImageSetTestCase(ModuleStoreTestCase):
         # Now make sure our thumbnails are of the sizes we expect...
         for image_url, expected_size in [(image_urls['small'], config.small), (image_urls['large'], config.large)]:
             image_key = StaticContent.get_location_from_path(image_url)
-            image_content = AssetManager.find(image_key)
+            image_content = contentstore().find(image_key)
             image = Image.open(BytesIO(image_content.data))
             assert image.size == expected_size
 
@@ -1123,7 +1122,7 @@ class CourseOverviewImageSetTestCase(ModuleStoreTestCase):
 
         for image_url, target in [(image_urls['small'], config.small), (image_urls['large'], config.large)]:
             image_key = StaticContent.get_location_from_path(image_url)
-            image_content = AssetManager.find(image_key)
+            image_content = contentstore().find(image_key)
             image = Image.open(BytesIO(image_content.data))
 
             # Naming convention for thumbnail
