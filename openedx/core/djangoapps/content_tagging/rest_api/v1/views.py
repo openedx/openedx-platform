@@ -196,7 +196,8 @@ class ObjectTagOrgView(ObjectTagView):
     This view extends the ObjectTagView to add Organization filters for the results,
     and fires events when the tags are updated.
 
-    Refer to ObjectTagView docstring for usage details.
+    Refer to ObjectTagView docstring for usage details. In addition, each taxonomy entry carries
+    ``taxonomy_type``: "competency" for a competency taxonomy, and "tags" for any other taxonomy.
     """
     # Serializer overrides
     minimal_serializer_class = ObjectTagCopiedMinimalSerializer
