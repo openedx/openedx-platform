@@ -426,18 +426,10 @@ class TestCourseRerunAuthz(
     """
     Tests for course rerun behavior when authz.enable_course_authoring is enabled.
 
-    Verifies that:
-    - Rerun succeeds without calling add_instructor pre-task (which would fail
-      because CourseOverview doesn't exist yet).
-    - add_instructor is called in the task after clone_course, when CourseOverview
-      can be resolved.
-    - The initiating user can see in-process rerun status via created_user check.
-
-    TODO: These tests cover a temporary workaround needed while (1) the authz system
-    doesn't support pre-assigning roles without a CourseOverview, and (2) we support
-    both authz and legacy systems simultaneously. Once openedx/openedx-authz#352 is
-    implemented, this class can be simplified — the conditional skip of add_instructor
-    and the created_user visibility fallback will no longer be needed.
+    Verifies that rerun succeeds and grants proper access even though add_instructor
+    is called for the destination course key before its CourseOverview exists
+    (openedx-authz#352 makes role assignment succeed ahead of the object, backfilling
+    the link once clone_course creates it).
     """
 
     def setUp(self):
@@ -467,8 +459,8 @@ class TestCourseRerunAuthz(
     def test_rerun_succeeds_with_authz_enabled(self):
         """
         Test that course rerun completes successfully when authz.enable_course_authoring
-        is enabled. Previously this would fail with CourseOverview.DoesNotExist because
-        add_instructor was called before the course was cloned.
+        is enabled, granting the initiating user instructor/staff access on the
+        destination course before it's cloned.
         """
         response = self.staff_client.ajax_post(self.url, {
             'source_course_key': str(self.source_course_key),
@@ -516,8 +508,7 @@ class TestCourseRerunAuthz(
     def test_rerun_grants_authz_permissions_after_clone(self):
         """
         Test that after a successful rerun with authz enabled, the user has proper
-        permissions via the authz layer (add_instructor is called in the task after
-        clone_course completes and CourseOverview is available).
+        permissions via the authz layer on the newly created destination course.
         """
         response = self.staff_client.ajax_post(self.url, {
             'source_course_key': str(self.source_course_key),
@@ -537,8 +528,8 @@ class TestCourseRerunAuthz(
     def test_in_process_rerun_visible_to_initiating_user(self):
         """
         Test that the user who initiated the rerun can see the in-process status
-        via the created_user check in get_in_process_course_actions, even when
-        authz permissions haven't been fully established yet.
+        in get_in_process_course_actions, via the instructor/staff access already
+        granted on the destination course.
         """
         dest_course_key = CourseLocator(org='testorg', course='101', run='in_progress_rerun')
         CourseRerunState.objects.initiated(
