@@ -133,11 +133,11 @@ def get_profile_image_urls_for_user(user, request=None):
                 version=user.profile.profile_image_uploaded_at.strftime("%s"),
             )
         else:
-            urls = _get_default_profile_image_urls()
+            urls = _get_default_profile_image_urls(user)
     except UserProfile.DoesNotExist:
         # when user does not have profile it raises exception, when exception
         # occur we can simply get default image.
-        urls = _get_default_profile_image_urls()
+        urls = _get_default_profile_image_urls(user)
 
     if request:
         for key, value in urls.items():
@@ -146,18 +146,15 @@ def get_profile_image_urls_for_user(user, request=None):
     return urls
 
 
-def _get_default_profile_image_urls():
+def _get_default_profile_image_urls(user):
     """
-    Returns a dict {size:url} for a complete set of default profile images,
-    used as a placeholder when there are no user-submitted images.
-
-    TODO The result of this function should be memoized, but not in tests.
+    Returns a dict {size:url} for a complete set of auto-generated initials avatar
+    images for the given user, used as a placeholder when the user has not uploaded
+    a profile photo.
     """
-    return _get_profile_image_urls(
-        configuration_helpers.get_value('PROFILE_IMAGE_DEFAULT_FILENAME', settings.PROFILE_IMAGE_DEFAULT_FILENAME),
-        staticfiles_storage,
-        file_extension=settings.PROFILE_IMAGE_DEFAULT_FILE_EXTENSION,
-    )
+    from openedx.core.djangoapps.profile_images.images import generate_initials_image  # noqa: PLC0415
+    name = getattr(getattr(user, 'profile', None), 'name', None) or ''
+    return generate_initials_image(user.username, name)
 
 
 def set_has_profile_image(username, is_uploaded, upload_dt=None):
