@@ -12,14 +12,17 @@ RELEASE_LINE = "master"
 
 
 def doc_version():
-    """The readthedocs.org version name used in documentation references.
+    """The docs.openedx.org version name used in documentation references.
 
-    Returns a short string like "latest" or "open-release-ficus.master".
+    docs.openedx.org only publishes a "latest" version (and, at most, the
+    current named release under a bare slug like "ulmo"). The legacy
+    "open-release-<line>.master" slugs do not exist there, so help links
+    generated on named release lines 404 for operators and course authors.
+    Always point at "latest".
+
+    Returns a short string like "latest".
     """
-    if RELEASE_LINE == "master":
-        return "latest"
-    else:
-        return f"open-release-{RELEASE_LINE}.master"
+    return "latest"
 
 
 def skip_unless_master(func_or_class):
