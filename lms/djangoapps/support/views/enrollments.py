@@ -2,6 +2,7 @@
 Support tool for changing course enrollments.
 """
 import logging
+from collections import defaultdict
 
 import markupsafe
 from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
@@ -31,7 +32,7 @@ from lms.djangoapps.support.decorators import require_support_permission
 from lms.djangoapps.support.serializers import ManualEnrollmentSerializer
 from lms.djangoapps.verify_student.models import VerificationDeadline
 from openedx.core.djangoapps.credit.email_utils import get_credit_provider_attribute_values
-from openedx.core.djangoapps.enrollments.api import get_enrollment_attributes, get_enrollments, update_enrollment
+from openedx.core.djangoapps.enrollments.api import get_enrollments, update_enrollment
 from openedx.core.djangoapps.enrollments.errors import CourseModeNotFoundError
 from openedx.core.djangoapps.enrollments.serializers import ModeSerializer
 
@@ -69,27 +70,37 @@ class EnrollmentSupportListView(GenericAPIView):
         """
         Returns a list of enrollments for the given user, along with
         information about previous manual enrollment changes.
+
+        The optional ``order_number`` query parameter limits the list to
+        enrollments from that order.
         """
         try:
             user = User.objects.get(Q(username=username_or_email) | Q(email=username_or_email))
         except User.DoesNotExist:
             return JsonResponse([])
 
-        enrollments = get_enrollments(user.username, include_inactive=True)
+        order_number = request.GET.get('order_number')
+        order_attributes = self.get_order_attributes(user)
+        manual_enrollments = self.get_manual_enrollments(user)
+        enrollments = []
 
-        for enrollment in enrollments:
+        for enrollment in get_enrollments(user.username, include_inactive=True):
             # Folds the course_details field up into the main JSON object.
             enrollment.update(**enrollment.pop('course_details'))
+            order = order_attributes.get(enrollment['course_id'], {})
+            if order_number and order.get('order_number') != order_number:
+                continue
             course_key = CourseKey.from_string(enrollment['course_id'])
             # Get the all courses modes and replace with existing modes.
             enrollment['course_modes'] = self.get_course_modes(course_key)
             # Add the price of the course's verified mode.
             self.include_verified_mode_info(enrollment, course_key)
-            # Add order number associated with the enrollment if available
-            self.include_order_number(enrollment)
-            self.include_source_system(enrollment)
+            # Add order number and source system associated with the enrollment if available
+            enrollment['order_number'] = order.get('order_number', '')
+            enrollment['source_system'] = order.get('source_system', '')
             # Add manual enrollment history, if it exists
-            enrollment['manual_enrollment'] = self.manual_enrollment_data(enrollment, course_key)
+            enrollment['manual_enrollment'] = manual_enrollments.get(enrollment['course_id'], {})
+            enrollments.append(enrollment)
 
         enrollments, _ = SupportEnrollmentDataRequested.run_filter(enrollments_data=enrollments, user=user)
 
@@ -225,71 +236,57 @@ class EnrollmentSupportListView(GenericAPIView):
                 enrollment_data['verification_deadline'] = VerificationDeadline.deadline_for_course(course_key)
 
     @staticmethod
-    def include_order_number(enrollment):
+    def get_order_attributes(user):
         """
-        For a provided enrollment data dictionary, include order_number from CourseEnrollmentAttribute if available.
+        Returns the user's ``order`` enrollment attributes, keyed by course, in one query.
 
-        From all the attributes of a course enrollment:
-
-          * Filter order_number attributes namespaced under `order`
-          * Use the last/latest order number attr if multiple attrs found
-             * This is to keep the usage consistent with get_order_attribute_value method in CourseEnrollment
-        """
-        username = enrollment['user']
-        course_id = enrollment['course_id']
-        enrollment_attributes = get_enrollment_attributes(username, course_id)
-        order_attribute = [
-            enrollment_attribute.get('value', '') for enrollment_attribute in enrollment_attributes if
-            enrollment_attribute['namespace'] == 'order' and enrollment_attribute['name'] == 'order_number'
-        ]
-        if len(order_attribute) > 1:
-            # logging this warning for info/debug purpose
-            logger.warning(
-                "Found multiple order name attributes for CourseEnrollment for user %s with course %s",
-                username,
-                course_id
-            )
-        enrollment['order_number'] = order_attribute[-1] if order_attribute else ''
-
-    @staticmethod
-    def include_source_system(enrollment):
-        """
-        For a provided enrollment data dictionary, include source_system from CourseEnrollmentAttribute if available.
-
-        From all the attributes of a course enrollment:
-
-          * Filter source_system attribute namespaced under `order`
-        """
-        username = enrollment['user']
-        course_id = enrollment['course_id']
-        enrollment_attributes = get_enrollment_attributes(username, course_id)
-        source_system = ''
-        for attribute in enrollment_attributes:
-            if attribute['namespace'] == 'order' and attribute['name'] == 'source_system':
-                source_system = attribute.get('value', '')
-                break
-        enrollment['source_system'] = source_system
-
-    @staticmethod
-    def manual_enrollment_data(enrollment_data, course_key):
-        """
-        Returns serialized information about the manual enrollment
-        belonging to this enrollment, if it exists.
+        The last ``order_number`` wins, consistent with ``CourseEnrollment.get_order_attribute_value``.
+        The first ``source_system`` wins.
 
         Args:
-          enrollment_data (dict): Representation of a single course enrollment.
-          course_key (CourseKey): The course for this enrollment.
+          user (User): The learner whose enrollment attributes to load.
 
         Returns:
-          None: If no manual enrollment change has been made.
-          dict: Serialization of the latest manual enrollment change.
+          dict: ``{course_id: {'order_number': str, 'source_system': str}}``. A course without
+          order attributes is absent, and a course missing one of them has no key for it.
         """
-        user = User.objects.get(username=enrollment_data['user'])
-        enrollment = CourseEnrollment.get_enrollment(user, course_key)
-        manual_enrollment_audit = ManualEnrollmentAudit.get_manual_enrollment(enrollment)
-        if manual_enrollment_audit is None:
-            return {}
-        return ManualEnrollmentSerializer(instance=manual_enrollment_audit).data
+        order_attributes = defaultdict(dict)
+        attributes = CourseEnrollmentAttribute.objects.filter(
+            enrollment__user=user, namespace='order', name__in=('order_number', 'source_system'),
+        ).order_by('id').values_list('enrollment__course_id', 'name', 'value')
+        for course_key, name, value in attributes:
+            course_attributes = order_attributes[str(course_key)]
+            if name == 'order_number' and name in course_attributes:
+                # logging this warning for info/debug purpose
+                logger.warning(
+                    "Found multiple order name attributes for CourseEnrollment for user %s with course %s",
+                    user.id,
+                    course_key
+                )
+            if name == 'order_number' or name not in course_attributes:
+                course_attributes[name] = value
+        return order_attributes
+
+    @staticmethod
+    def get_manual_enrollments(user):
+        """
+        Returns the latest manual enrollment change for each of the user's enrollments, in one query.
+
+        Args:
+          user (User): The learner whose manual enrollment changes to load.
+
+        Returns:
+          dict: ``{course_id: dict}``, each value a ``ManualEnrollmentSerializer`` serialization.
+          A course without manual enrollment changes is absent.
+        """
+        audits = ManualEnrollmentAudit.objects.filter(
+            enrollment__user=user,
+        ).select_related('enrollment', 'enrolled_by').order_by('time_stamp', 'id')
+        latest_audits = {str(audit.enrollment.course_id): audit for audit in audits}
+        return {
+            course_id: ManualEnrollmentSerializer(instance=audit).data
+            for course_id, audit in latest_audits.items()
+        }
 
     @staticmethod
     def get_course_modes(course_key):
