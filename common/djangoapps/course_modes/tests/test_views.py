@@ -10,7 +10,6 @@ from zoneinfo import ZoneInfo
 
 import ddt
 import freezegun
-import httpretty
 from django.conf import settings
 from django.test import override_settings
 from django.urls import reverse
@@ -22,7 +21,6 @@ from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, U
 from common.djangoapps.util.testing import UrlResetMixin
 from common.djangoapps.util.tests.mixins.discovery import CourseCatalogServiceMockMixin
 from lms.djangoapps.commerce.tests import test_utils as ecomm_test_utils
-from lms.djangoapps.commerce.tests.mocks import mock_payment_processors
 from lms.djangoapps.verify_student.services import IDVerificationService
 from openedx.core.djangoapps.catalog.tests.mixins import CatalogIntegrationMixin
 from openedx.core.djangoapps.embargo.test_utils import restrict_course
@@ -63,7 +61,6 @@ class CourseModeViewTest(CatalogIntegrationMixin, UrlResetMixin, ModuleStoreTest
         self.client.login(username=self.user.username, password="edx")
 
     @skip_unless_lms
-    @httpretty.activate
     @ddt.data(
         # is_active?, enrollment_mode, redirect?, has_started
         (True, 'verified', True, False),
@@ -148,7 +145,6 @@ class CourseModeViewTest(CatalogIntegrationMixin, UrlResetMixin, ModuleStoreTest
         self.assertRedirects(response, '/test_basket/add/?sku=TEST', fetch_redirect_response=False)
         ecomm_test_utils.update_commerce_config(enabled=False)
 
-    @httpretty.activate
     @ddt.data(
         '',
         '1,,2',
@@ -301,8 +297,7 @@ class CourseModeViewTest(CatalogIntegrationMixin, UrlResetMixin, ModuleStoreTest
         else:
             self.fail("Must provide a valid redirect URL name")
 
-        with mock_payment_processors(expect_called=None):
-            self.assertRedirects(response, redirect_url, fetch_redirect_response=False,)
+        self.assertRedirects(response, redirect_url, fetch_redirect_response=False)
 
     def test_choose_mode_audit_enroll_on_post(self):
         audit_mode = 'audit'
@@ -456,7 +451,6 @@ class CourseModeViewTest(CatalogIntegrationMixin, UrlResetMixin, ModuleStoreTest
 
     @skip_unless_lms
     @with_comprehensive_theme("edx.org")
-    @httpretty.activate
     def test_hide_nav(self):
         # Create the course modes
         for mode in ["honor", "verified"]:
@@ -688,7 +682,6 @@ class TrackSelectionEmbargoTest(UrlResetMixin, ModuleStoreTestCase):
             response = self.client.get(self.url)
             self.assertRedirects(response, redirect_url)
 
-    @httpretty.activate
     def test_embargo_allow(self):
         response = self.client.get(self.url)
         assert response.status_code == 200

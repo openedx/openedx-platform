@@ -6,8 +6,8 @@ from unittest import mock
 from urllib.parse import urljoin
 
 import ddt
-import httpretty
 import requests  # noqa: F401
+import responses
 from django.conf import settings
 from django.test import TestCase
 from edx_rest_api_client.auth import JwtAuth
@@ -138,7 +138,7 @@ class DeprecatedRestApiClientTest(TestCase):
         self.user = UserFactory()
         self.base_url = get_ecommerce_api_base_url()
 
-    @httpretty.activate
+    @responses.activate
     def test_client_unicode(self):
         """
         The client should handle json responses properly when they contain unicode character data.
@@ -146,11 +146,11 @@ class DeprecatedRestApiClientTest(TestCase):
         Regression test for ECOM-1606.
         """
         expected_content = '{"result": "Préparatoire"}'
-        httpretty.register_uri(
-            httpretty.GET,
+        responses.add(
+            responses.GET,
             f"{settings.ECOMMERCE_API_URL.strip('/')}/baskets/1/order/",
             status=200, body=expected_content,
-            adding_headers={'Content-Type': JSON},
+            content_type=JSON,
         )
         api_url = urljoin(f"{self.base_url}/", "baskets/1/order/")
         actual_object = get_ecommerce_api_client(self.user).get(api_url).json()

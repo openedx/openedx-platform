@@ -3333,12 +3333,6 @@ wheels = [
 ]
 
 [[package]]
-name = "httpretty"
-version = "1.1.4"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/6e/19/850b7ed736319d0c4088581f4fc34f707ef14461947284026664641e16d4/httpretty-1.1.4.tar.gz", hash = "sha256:20de0e5dd5a18292d36d928cc3d6e52f8b2ac73daec40d41eb62dee154933b68", size = 442389, upload-time = "2021-08-16T19:35:31.4Z" }
-
-[[package]]
 name = "httpx"
 version = "0.28.1"
 source = { registry = "https://pypi.org/simple" }
@@ -4935,7 +4929,6 @@ development = [
     { name = "factory-boy" },
     { name = "freezegun" },
     { name = "gitpython" },
-    { name = "httpretty" },
     { name = "import-linter" },
     { name = "libsass" },
     { name = "mailsnake" },
@@ -4960,6 +4953,7 @@ development = [
     { name = "pytest-xdist", extra = ["psutil"] },
     { name = "pywatchman" },
     { name = "recommender-xblock" },
+    { name = "responses" },
     { name = "ruff" },
     { name = "singledispatch" },
     { name = "sphinx", version = "9.1.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.13'" },
@@ -4998,7 +4992,6 @@ django42 = [
     { name = "enterprise-integrated-channels" },
     { name = "factory-boy" },
     { name = "freezegun" },
-    { name = "httpretty" },
     { name = "import-linter" },
     { name = "mailsnake" },
     { name = "mock" },
@@ -5019,6 +5012,7 @@ django42 = [
     { name = "pytest-reportlog" },
     { name = "pytest-xdist", extra = ["psutil"], marker = "extra == 'group-16-openedx-platform-django42'" },
     { name = "recommender-xblock" },
+    { name = "responses" },
     { name = "ruff" },
     { name = "singledispatch" },
     { name = "staff-graded-xblock" },
@@ -5046,7 +5040,6 @@ django52 = [
     { name = "enterprise-integrated-channels" },
     { name = "factory-boy" },
     { name = "freezegun" },
-    { name = "httpretty" },
     { name = "import-linter" },
     { name = "mailsnake" },
     { name = "mock" },
@@ -5067,6 +5060,7 @@ django52 = [
     { name = "pytest-reportlog" },
     { name = "pytest-xdist", extra = ["psutil"], marker = "extra == 'group-16-openedx-platform-django52'" },
     { name = "recommender-xblock" },
+    { name = "responses" },
     { name = "ruff" },
     { name = "singledispatch" },
     { name = "staff-graded-xblock" },
@@ -5120,7 +5114,6 @@ testing = [
     { name = "enterprise-integrated-channels" },
     { name = "factory-boy" },
     { name = "freezegun" },
-    { name = "httpretty" },
     { name = "import-linter" },
     { name = "mailsnake" },
     { name = "mock" },
@@ -5141,6 +5134,7 @@ testing = [
     { name = "pytest-reportlog" },
     { name = "pytest-xdist", extra = ["psutil"] },
     { name = "recommender-xblock" },
+    { name = "responses" },
     { name = "ruff" },
     { name = "singledispatch" },
     { name = "staff-graded-xblock" },
@@ -5343,7 +5337,6 @@ development = [
     { name = "factory-boy" },
     { name = "freezegun" },
     { name = "gitpython" },
-    { name = "httpretty" },
     { name = "import-linter" },
     { name = "libsass" },
     { name = "mailsnake" },
@@ -5368,6 +5361,7 @@ development = [
     { name = "pytest-xdist", extras = ["psutil"] },
     { name = "pywatchman" },
     { name = "recommender-xblock" },
+    { name = "responses" },
     { name = "ruff" },
     { name = "singledispatch" },
     { name = "sphinx" },
@@ -5405,7 +5399,6 @@ django42 = [
     { name = "enterprise-integrated-channels" },
     { name = "factory-boy" },
     { name = "freezegun" },
-    { name = "httpretty" },
     { name = "import-linter" },
     { name = "mailsnake" },
     { name = "mock" },
@@ -5426,6 +5419,7 @@ django42 = [
     { name = "pytest-reportlog" },
     { name = "pytest-xdist", extras = ["psutil"] },
     { name = "recommender-xblock" },
+    { name = "responses" },
     { name = "ruff" },
     { name = "singledispatch" },
     { name = "staff-graded-xblock" },
@@ -5453,7 +5447,6 @@ django52 = [
     { name = "enterprise-integrated-channels" },
     { name = "factory-boy" },
     { name = "freezegun" },
-    { name = "httpretty" },
     { name = "import-linter" },
     { name = "mailsnake" },
     { name = "mock" },
@@ -5474,6 +5467,7 @@ django52 = [
     { name = "pytest-reportlog" },
     { name = "pytest-xdist", extras = ["psutil"] },
     { name = "recommender-xblock" },
+    { name = "responses" },
     { name = "ruff" },
     { name = "singledispatch" },
     { name = "staff-graded-xblock" },
@@ -5526,7 +5520,6 @@ testing = [
     { name = "enterprise-integrated-channels" },
     { name = "factory-boy" },
     { name = "freezegun" },
-    { name = "httpretty" },
     { name = "import-linter" },
     { name = "mailsnake" },
     { name = "mock" },
@@ -5547,6 +5540,7 @@ testing = [
     { name = "pytest-reportlog" },
     { name = "pytest-xdist", extras = ["psutil"] },
     { name = "recommender-xblock" },
+    { name = "responses" },
     { name = "ruff" },
     { name = "singledispatch" },
     { name = "staff-graded-xblock" },
@@ -7075,6 +7069,20 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/42/f2/05f29bc3913aea15eb670be136045bf5c5bbf4b99ecb839da9b422bb2c85/requests-oauthlib-2.0.0.tar.gz", hash = "sha256:b3dffaebd884d8cd778494369603a9e7b58d29111bf6b41bdc2dcd87203af4e9", size = 55650, upload-time = "2024-03-22T20:32:29.939Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/3b/5d/63d4ae3b9daea098d5d6f5da83984853c1bbacd5dc826764b249fe119d24/requests_oauthlib-2.0.0-py2.py3-none-any.whl", hash = "sha256:7dd8a5c40426b779b0868c404bdef9768deccf22749cde15852df527e6269b36", size = 24179, upload-time = "2024-03-22T20:32:28.055Z" },
+]
+
+[[package]]
+name = "responses"
+version = "0.26.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pyyaml" },
+    { name = "requests" },
+    { name = "urllib3" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/9f/47/f216a33221db8eff328987661cf18371afee89c62a62b434b963d6b509c9/responses-0.26.3.tar.gz", hash = "sha256:b0c11ca8131b8b227b8d5108e6ed39772222bd5aab030ed430e8f99057c4c409", size = 86335, upload-time = "2026-08-26T19:17:24.373Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/6d/86/ca7958de70cb0752350575e98229368a3a2f746a2942034b3364e17312bb/responses-0.26.3-py3-none-any.whl", hash = "sha256:74474f799334ac4f37d93b6437ecc3bb1bb5c77a8d31780a338643be2dce0af8", size = 36289, upload-time = "2026-08-26T19:17:23.176Z" },
 ]
 
 [[package]]

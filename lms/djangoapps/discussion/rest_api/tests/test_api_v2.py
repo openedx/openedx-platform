@@ -59,7 +59,6 @@ from lms.djangoapps.discussion.rest_api.serializers import TopicOrdering
 from lms.djangoapps.discussion.rest_api.tests.utils import (
     ForumMockUtilsMixin,
     make_paginated_api_response,
-    parsed_body,  # noqa: F401
 )
 from lms.djangoapps.discussion.tests.utils import make_minimal_cs_comment, make_minimal_cs_thread
 from openedx.core.djangoapps.course_groups.models import CourseUserGroupPartitionGroup

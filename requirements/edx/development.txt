@@ -734,7 +734,6 @@ html5lib==1.1
     #   xblocks-contrib
 httpcore==1.0.9
     # via httpx
-httpretty==1.1.4
 httpx==0.28.1
     # via
     #   firebase-admin
@@ -1235,6 +1234,7 @@ pyyaml==6.0.3
     #   edx-i18n-tools
     #   jsondiff
     #   openedx-platform
+    #   responses
     #   sphinx-autoapi
     #   sphinxcontrib-openapi
     #   swagger-spec-validator
@@ -1275,6 +1275,7 @@ requests==2.34.2
     #   pylti1p3
     #   python-swiftclient
     #   requests-oauthlib
+    #   responses
     #   sailthru-client
     #   slumber
     #   snowflake-connector-python
@@ -1286,6 +1287,7 @@ requests-oauthlib==2.0.0
     # via
     #   openedx-platform
     #   social-auth-core
+responses==0.26.3
 rich==15.0.0
     # via import-linter
 roman-numerals==4.1.0
@@ -1541,6 +1543,7 @@ urllib3==2.8.0
     #   botocore
     #   elasticsearch
     #   requests
+    #   responses
     #   types-requests
 uv==0.13.6
     # via tox-uv

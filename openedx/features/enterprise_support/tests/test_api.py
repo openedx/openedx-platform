@@ -4,8 +4,8 @@ Test the enterprise support APIs.
 from unittest import mock
 
 import ddt
-import httpretty
 import pytest
+import responses
 from consent.models import DataSharingConsent
 from django.conf import settings
 from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
@@ -130,7 +130,7 @@ class TestEnterpriseApi(EnterpriseServiceMockMixin, CacheIsolationTestCase):
         cached_enterprise_customer = cache.get(cache_key)
         assert cached_enterprise_customer == enterprise_customer
 
-    @httpretty.activate
+    @responses.activate
     @mock.patch('openedx.features.enterprise_support.api.create_jwt_for_user')
     def test_enterprise_api_client_with_service_user(self, mock_jwt_builder):
         """
@@ -151,7 +151,7 @@ class TestEnterpriseApi(EnterpriseServiceMockMixin, CacheIsolationTestCase):
         enterprise_api_data_for_mock_2 = {'name': 'dummy-enterprise-customer-2', 'uuid': 'enterprise-uuid-2'}
         self._assert_get_enterprise_customer(enterprise_api_client, enterprise_api_data_for_mock_2)
 
-    @httpretty.activate
+    @responses.activate
     @mock.patch('openedx.features.enterprise_support.api.create_jwt_for_user')
     def test_enterprise_api_client_with_user(self, mock_jwt_builder):
         """
@@ -161,7 +161,7 @@ class TestEnterpriseApi(EnterpriseServiceMockMixin, CacheIsolationTestCase):
         self._assert_api_client_with_user(EnterpriseApiClient, mock_jwt_builder)
 
     @ddt.data(True, False)
-    @httpretty.activate
+    @responses.activate
     @mock.patch('openedx.features.enterprise_support.api.create_jwt_for_user')
     def test_enterprise_api_client_with_user_post_enrollment(self, should_raise_http_error, mock_jwt_builder):
         """
@@ -201,7 +201,7 @@ class TestEnterpriseApi(EnterpriseServiceMockMixin, CacheIsolationTestCase):
         assert actual_result is None
         assert not mock_client_class.called
 
-    @httpretty.activate
+    @responses.activate
     @mock.patch('openedx.features.enterprise_support.api.create_jwt_for_user')
     def test_enterprise_consent_api_client_with_service_user(self, mock_jwt_builder):
         """
@@ -210,7 +210,7 @@ class TestEnterpriseApi(EnterpriseServiceMockMixin, CacheIsolationTestCase):
         """
         self._assert_api_service_client(ConsentApiServiceClient, mock_jwt_builder)
 
-    @httpretty.activate
+    @responses.activate
     @mock.patch('openedx.features.enterprise_support.api.create_jwt_for_user')
     def test_enterprise_consent_api_client_with_user(self, mock_jwt_builder):
         """
@@ -349,7 +349,7 @@ class TestEnterpriseApi(EnterpriseServiceMockMixin, CacheIsolationTestCase):
             assert len(enterprise_course_enrollments) == 1
             assert enterprise_course_enrollments[0].id == ece.id
 
-    @httpretty.activate
+    @responses.activate
     @mock.patch('openedx.features.enterprise_support.api.get_enterprise_learner_data_from_db')
     @mock.patch('openedx.features.enterprise_support.api.EnterpriseCustomer')
     @mock.patch('openedx.features.enterprise_support.api.get_partial_pipeline')
@@ -379,7 +379,7 @@ class TestEnterpriseApi(EnterpriseServiceMockMixin, CacheIsolationTestCase):
         enterprise_customer = enterprise_customer_for_request(dummy_request)
         assert enterprise_customer == {'real': 'enterprisecustomer'}
 
-        httpretty.reset()
+        responses.reset()
 
         # Verify that the method `enterprise_customer_for_request` returns no
         # enterprise customer if the enterprise customer API throws 404.
@@ -388,7 +388,7 @@ class TestEnterpriseApi(EnterpriseServiceMockMixin, CacheIsolationTestCase):
         enterprise_customer = enterprise_customer_for_request(dummy_request)
         assert enterprise_customer is None
 
-        httpretty.reset()
+        responses.reset()
 
         # Verify that the method `enterprise_customer_for_request` returns
         # expected enterprise customer against the requesting user even if

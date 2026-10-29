@@ -7,7 +7,6 @@ import itertools
 from unittest import mock
 
 import ddt
-import httpretty
 from django.test import override_settings
 from django.test.client import RequestFactory
 
@@ -52,10 +51,6 @@ class CommentSerializerDeserializationTest(ForumMockUtilsMixin, SharedModuleStor
 
     def setUp(self):
         super().setUp()
-        httpretty.reset()
-        httpretty.enable()
-        self.addCleanup(httpretty.reset)
-        self.addCleanup(httpretty.disable)
         patcher = mock.patch(
             "openedx.core.djangoapps.django_comment_common.comment_client.models.forum_api.get_course_id_by_comment"
         )
@@ -407,10 +402,6 @@ class ThreadSerializerDeserializationTest(
 
     def setUp(self):
         super().setUp()
-        httpretty.reset()
-        httpretty.enable()
-        self.addCleanup(httpretty.reset)
-        self.addCleanup(httpretty.disable)
         self.user = UserFactory.create()
         self.register_get_user_response(self.user)
         self.request = RequestFactory().get("/dummy")
@@ -551,10 +542,6 @@ class SerializerTestMixin(UrlResetMixin, ForumMockUtilsMixin):
 
     def setUp(self):
         super().setUp()
-        httpretty.reset()
-        httpretty.enable()
-        self.addCleanup(httpretty.reset)
-        self.addCleanup(httpretty.disable)
         patcher = mock.patch(
             "openedx.core.djangoapps.django_comment_common.comment_client.models.forum_api.get_course_id_by_comment"
         )

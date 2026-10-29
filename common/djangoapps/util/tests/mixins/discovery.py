@@ -5,7 +5,7 @@ Mixins for the CourseDiscoveryApiClient.
 
 import json
 
-import httpretty
+import responses
 from django.conf import settings
 from django.core.cache import cache
 
@@ -37,9 +37,9 @@ class CourseCatalogServiceMockMixin:
             self.COURSE_DISCOVERY_CATALOGS_URL, catalog_id, ','.join(course_run_ids)
         )
 
-        httpretty.register_uri(
-            method=httpretty.GET,
-            uri=catalog_contains_uri,
+        responses.add(
+            method=responses.GET,
+            url=catalog_contains_uri,
             body=course_discovery_api_response_json,
             content_type='application/json'
         )

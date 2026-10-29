@@ -7,7 +7,6 @@ import json
 from unittest.mock import call, patch
 
 import ddt
-import httpretty
 from django.conf import settings
 from django.test import RequestFactory, TestCase
 from django.urls import reverse
@@ -405,7 +404,6 @@ class TestAccessTokenView(AccessTokenLoginMixin, mixins.AccessTokenMixin, _Dispa
 
 
 @ddt.ddt
-@httpretty.activate
 class TestAccessTokenExchangeView(ThirdPartyOAuthTestMixinGoogle, ThirdPartyOAuthTestMixin,
                                   _DispatchingViewTestCase, mixins.AccessTokenMixin):
     """

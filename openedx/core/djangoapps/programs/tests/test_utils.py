@@ -6,10 +6,11 @@ import uuid
 from collections import namedtuple
 from copy import deepcopy
 from unittest import mock
+from urllib.parse import parse_qs, urlparse
 from zoneinfo import ZoneInfo
 
 import ddt
-import httpretty
+import responses
 from django.conf import settings
 from django.test import TestCase
 from django.test.utils import override_settings
@@ -57,6 +58,12 @@ from xmodule.modulestore.tests.factories import CourseFactory as ModuleStoreCour
 ECOMMERCE_URL_ROOT = 'https://ecommerce.example.com'
 UTILS_MODULE = 'openedx.core.djangoapps.programs.utils'
 LOGGER_NAME = 'openedx.core.djangoapps.programs.utils'
+
+
+def _last_request_query():
+    """Return the parsed query string of the most recent mocked request."""
+    return parse_qs(urlparse(responses.calls[-1].request.url).query)
+
 
 
 @ddt.ddt
@@ -1567,7 +1574,7 @@ class TestProgramMarketingDataExtender(ModuleStoreTestCase):
 
         assert data['courses'][0]['course_runs'][0]['can_enroll'] == can_enroll
 
-    @httpretty.activate
+    @responses.activate
     def test_fetching_program_discounted_price(self):
         """
         Authenticated users eligible for one click purchase should see the purchase button
@@ -1580,8 +1587,8 @@ class TestProgramMarketingDataExtender(ModuleStoreTestCase):
             'currency': 'USD',
             'total_incl_tax': 50.0
         }
-        httpretty.register_uri(
-            httpretty.GET,
+        responses.add(
+            responses.GET,
             self.ECOMMERCE_CALCULATE_DISCOUNT_ENDPOINT,
             body=json.dumps(mock_discount_data),
             content_type='application/json'
@@ -1590,11 +1597,11 @@ class TestProgramMarketingDataExtender(ModuleStoreTestCase):
         data = ProgramMarketingDataExtender(self.program, self.user).extend()
         self._update_discount_data(mock_discount_data)
 
-        assert httpretty.last_request().querystring.get('username')[0] == self.user.username  # pylint: disable=no-member, line-too-long
+        assert _last_request_query().get('username')[0] == self.user.username
         assert data['skus'] == [course['course_runs'][0]['seats'][0]['sku'] for course in self.program['courses']]
         assert data['discount_data'] == mock_discount_data
 
-    @httpretty.activate
+    @responses.activate
     @override_waffle_switch(ALWAYS_CALCULATE_PROGRAM_PRICE_AS_ANONYMOUS_USER, True)
     def test_fetching_program_price_when_forced_as_anonymous_user(self):
         """
@@ -1607,16 +1614,16 @@ class TestProgramMarketingDataExtender(ModuleStoreTestCase):
             'currency': 'USD',
             'total_incl_tax': 50.0
         }
-        httpretty.register_uri(
-            httpretty.GET,
+        responses.add(
+            responses.GET,
             self.ECOMMERCE_CALCULATE_DISCOUNT_ENDPOINT,
             body=json.dumps(mock_discount_data),
             content_type='application/json'
         )
         ProgramMarketingDataExtender(self.program, self.user).extend()
-        assert httpretty.last_request().querystring.get('is_anonymous')[0] == 'True'  # pylint: disable=no-member, line-too-long
+        assert _last_request_query().get('is_anonymous')[0] == 'True'
 
-    @httpretty.activate
+    @responses.activate
     def test_fetching_program_discounted_price_as_anonymous_user(self):
         """
         Anonymous users should see the purchase button same way the authenticated users do
@@ -1628,8 +1635,8 @@ class TestProgramMarketingDataExtender(ModuleStoreTestCase):
             'currency': 'USD',
             'total_incl_tax': 50.0
         }
-        httpretty.register_uri(
-            httpretty.GET,
+        responses.add(
+            responses.GET,
             self.ECOMMERCE_CALCULATE_DISCOUNT_ENDPOINT,
             body=json.dumps(mock_discount_data),
             content_type='application/json'
@@ -1639,7 +1646,7 @@ class TestProgramMarketingDataExtender(ModuleStoreTestCase):
         data = ProgramMarketingDataExtender(self.program, user).extend()
         self._update_discount_data(mock_discount_data)
 
-        assert httpretty.last_request().querystring.get('is_anonymous', None) is not None  # pylint: disable=no-member, line-too-long
+        assert _last_request_query().get('is_anonymous', None) is not None
         assert data['skus'] == [course['course_runs'][0]['seats'][0]['sku'] for course in self.program['courses']]
         assert data['discount_data'] == mock_discount_data
 
@@ -1652,15 +1659,15 @@ class TestProgramMarketingDataExtender(ModuleStoreTestCase):
 
         assert len(data['skus']) == 0
 
-    @httpretty.activate
+    @responses.activate
     def test_fetching_program_discounted_price_api_exception_caught(self):
         """
         User should be able to do a one click purchase of a program even if the ecommerce API throws an exception
         during the calculation of program discounted price.
         """
         self._prepare_program_for_discounted_price_calculation_endpoint()
-        httpretty.register_uri(
-            httpretty.GET,
+        responses.add(
+            responses.GET,
             self.ECOMMERCE_CALCULATE_DISCOUNT_ENDPOINT,
             status=400,
             content_type='application/json'

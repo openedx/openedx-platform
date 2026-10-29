@@ -5,7 +5,7 @@ Mixins for the EnterpriseApiClient.
 
 import json
 
-import httpretty
+import responses
 from django.conf import settings
 from django.core.cache import cache
 
@@ -31,9 +31,9 @@ class EnterpriseServiceMockMixin:
         Helper to mock the HTTP call to the /enterprise-customer/uuid endpoint
         """
         body = json.dumps(response)
-        httpretty.register_uri(
-            method=httpretty.GET,
-            uri=(self.get_enterprise_url('enterprise-customer') + uuid + '/'),
+        responses.add(
+            method=responses.GET,
+            url=(self.get_enterprise_url('enterprise-customer') + uuid + '/'),
             body=body,
             content_type='application/json',
             status=status,
@@ -54,9 +54,9 @@ class EnterpriseServiceMockMixin:
             consent_granted: consent_granted,
         }
         api_response_json = json.dumps(api_response)
-        httpretty.register_uri(
-            method=httpretty.POST,
-            uri=self.get_enterprise_url('enterprise-course-enrollment'),
+        responses.add(
+            method=responses.POST,
+            url=self.get_enterprise_url('enterprise-course-enrollment'),
             body=api_response_json,
             content_type='application/json'
         )
@@ -65,9 +65,9 @@ class EnterpriseServiceMockMixin:
         """
         Helper method to register the enterprise course enrollment API endpoint for a failure.
         """
-        httpretty.register_uri(
-            method=httpretty.POST,
-            uri=self.get_enterprise_url('enterprise-course-enrollment'),
+        responses.add(
+            method=responses.POST,
+            url=self.get_enterprise_url('enterprise-course-enrollment'),
             body='{}',
             content_type='application/json',
             status=500
@@ -78,7 +78,7 @@ class EnterpriseServiceMockMixin:
             username,
             course_id,
             ec_uuid,
-            method=httpretty.GET,
+            method=responses.GET,
             granted=True,
             required=False,
             exists=True,
@@ -92,9 +92,9 @@ class EnterpriseServiceMockMixin:
             'consent_required': required,
             'exists': exists,
         }
-        httpretty.register_uri(
+        responses.add(
             method=method,
-            uri=self.consent_url,
+            url=self.consent_url,
             content_type='application/json',
             body=json.dumps(response_body),
             status=response_code or 200,
@@ -105,7 +105,7 @@ class EnterpriseServiceMockMixin:
             username,
             course_id,
             ec_uuid,
-            method=httpretty.POST,
+            method=responses.POST,
             granted=True,
             exists=True,
         )
@@ -271,9 +271,9 @@ class EnterpriseServiceMockMixin:
         }
         enterprise_learner_api_response_json = json.dumps(enterprise_learner_api_response)
 
-        httpretty.register_uri(
-            method=httpretty.GET,
-            uri=self.get_enterprise_url('enterprise-learner'),
+        responses.add(
+            method=responses.GET,
+            url=self.get_enterprise_url('enterprise-learner'),
             body=enterprise_learner_api_response_json,
             content_type='application/json'
         )

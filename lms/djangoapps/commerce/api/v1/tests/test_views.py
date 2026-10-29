@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 
 import ddt
 import pytz
+import responses
 from django.conf import settings
 from django.contrib.auth.models import Permission
 from django.test import TestCase
@@ -456,6 +457,7 @@ class OrderViewTests(UserMixin, TestCase):
         super().setUp()
         self._login()
 
+    @responses.activate
     def test_order_found(self):
         """ If the order is located, the view should pass the data from the API. """
         with mock_order_endpoint(order_number=self.ORDER_NUMBER, response=self.MOCK_ORDER):
@@ -465,6 +467,7 @@ class OrderViewTests(UserMixin, TestCase):
         actual = json.loads(response.content.decode('utf-8'))
         assert actual == self.MOCK_ORDER
 
+    @responses.activate
     def test_order_not_found(self):
         """ If the order is not found, the view should return a 404. """
         with mock_order_endpoint(order_number=self.ORDER_NUMBER, status=404):

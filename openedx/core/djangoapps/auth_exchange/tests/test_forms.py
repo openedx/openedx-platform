@@ -6,7 +6,6 @@ Tests for OAuth token exchange forms
 
 import unittest
 
-import httpretty
 import social_django.utils as social_utils
 from django.contrib.sessions.middleware import SessionMiddleware
 from django.test import TestCase
@@ -54,7 +53,6 @@ class AccessTokenExchangeFormTest(AccessTokenExchangeTestMixin):
 
 # This is necessary because cms does not implement third party auth
 @unittest.skipUnless(TPA_FEATURE_ENABLED, TPA_FEATURES_KEY + " not enabled")
-@httpretty.activate
 class DOTAccessTokenExchangeFormTestFacebook(
         DOTAdapterMixin,
         AccessTokenExchangeFormTest,
@@ -70,7 +68,6 @@ class DOTAccessTokenExchangeFormTestFacebook(
 
 # This is necessary because cms does not implement third party auth
 @unittest.skipUnless(TPA_FEATURE_ENABLED, TPA_FEATURES_KEY + " not enabled")
-@httpretty.activate
 class DOTAccessTokenExchangeFormTestGoogle(
         DOTAdapterMixin,
         AccessTokenExchangeFormTest,
