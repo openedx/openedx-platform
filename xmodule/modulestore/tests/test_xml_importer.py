@@ -9,6 +9,7 @@ import unittest
 from unittest import mock
 from uuid import uuid4
 
+import pytest
 from django.core.exceptions import ObjectDoesNotExist
 from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator
@@ -16,10 +17,18 @@ from path import Path as path
 from xblock.fields import List, Scope, ScopeIds, String
 from xblock.runtime import DictKeyValueStore, KvsFieldData, Runtime
 
+from openedx.core.lib.gating.exceptions import GatingValidationError
 from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.inheritance import InheritanceMixin
 from xmodule.modulestore.tests.mongo_connection import MONGO_HOST, MONGO_PORT_NUM
-from xmodule.modulestore.xml_importer import StaticContentImporter, _update_and_import_block, _update_block_location
+from xmodule.modulestore.xml_importer import (
+    InvalidSubsectionPrerequisite,
+    StaticContentImporter,
+    _get_subsection_prerequisite,
+    _import_subsection_prerequisites,
+    _update_and_import_block,
+    _update_block_location,
+)
 from xmodule.tests import DATA_DIR
 from xmodule.x_module import XModuleMixin
 
@@ -398,3 +407,303 @@ class UpdateAndImportBlockLibraryContentTest(unittest.TestCase):
 
         # Outer else runs even though inner sync failed → publish is called
         store.publish.assert_called_once_with(published_block.location, 1)
+
+
+class SubsectionPrerequisitesImportTest(unittest.TestCase):
+    """
+    Tests for applying the subsection prerequisites from the OLX attributes of the imported sequentials.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.source_course_key = CourseLocator('SourceOrg', 'SourceCourse', 'SourceRun')
+        self.dest_course_key = CourseLocator('DestOrg', 'DestCourse', 'DestRun')
+        patcher = mock.patch('xmodule.modulestore.xml_importer.gating_api')
+        self.gating_api = patcher.start()
+        self.addCleanup(patcher.stop)
+        self.gating_api.find_gating_milestones.return_value = []
+
+    def _make_sequential(self, block_id, **xml_attributes):
+        """
+        Build a minimal source sequential with the given OLX attributes.
+        """
+        sequential = mock.Mock()
+        sequential.location = self.source_course_key.make_usage_key('sequential', block_id)
+        sequential.display_name = f'Subsection {block_id}'
+        sequential.xml_attributes = {'filename': ['', None], **xml_attributes}
+        return sequential
+
+    def _dest_key(self, block_id):
+        return self.dest_course_key.make_usage_key('sequential', block_id)
+
+    def test_get_subsection_prerequisite(self):
+        """
+        The prerequisite settings are read from the OLX attributes, and the usage keys are mapped into the destination.
+        """
+        sequential = self._make_sequential(
+            'gated',
+            is_prereq='true',
+            prereq='prereq',
+            prereq_min_score='80',
+            prereq_min_completion='90',
+        )
+
+        prerequisite = _get_subsection_prerequisite(sequential, self.dest_course_key)
+
+        assert prerequisite.usage_key == self._dest_key('gated')
+        assert prerequisite.display_name == 'Subsection gated'
+        assert prerequisite.has_settings is True
+        assert prerequisite.is_prereq is True
+        assert prerequisite.prereq_key == self._dest_key('prereq')
+        assert prerequisite.min_score == '80'
+        assert prerequisite.min_completion == '90'
+
+    def test_get_subsection_prerequisite_without_attributes(self):
+        """
+        A sequential without the OLX attributes has no prerequisite settings.
+        """
+        prerequisite = _get_subsection_prerequisite(self._make_sequential('plain'), self.dest_course_key)
+
+        assert prerequisite.usage_key == self._dest_key('plain')
+        assert prerequisite.has_settings is False
+        assert prerequisite.is_prereq is False
+        assert prerequisite.prereq_key is None
+        assert prerequisite.min_score == ''
+        assert prerequisite.min_completion == ''
+
+    def test_get_subsection_prerequisite_invalid_prereq_key(self):
+        """
+        An invalid prerequisite url_name is reported as an invalid prerequisite of the subsection.
+        """
+        sequential = self._make_sequential('gated', prereq='not a url_name')
+
+        with pytest.raises(InvalidSubsectionPrerequisite) as context:
+            _get_subsection_prerequisite(sequential, self.dest_course_key)
+
+        assert str(context.value) == (
+            f'Invalid prerequisite settings of the subsection "Subsection gated" ({self._dest_key("gated")}): '
+            '"not a url_name" is not a valid subsection url_name'
+        )
+
+    def test_import_subsection_prerequisites(self):
+        """
+        The prerequisites are created before the subsections that require them are gated.
+        """
+        sequentials = [
+            self._make_sequential('prereq', is_prereq='true'),
+            self._make_sequential(
+                'gated', prereq='prereq', prereq_min_score='80', prereq_min_completion='90'
+            ),
+            self._make_sequential('plain'),
+        ]
+
+        _import_subsection_prerequisites(sequentials, self.dest_course_key)
+
+        self.gating_api.add_prerequisite.assert_called_once_with(self.dest_course_key, self._dest_key('prereq'))
+        self.gating_api.set_required_content.assert_called_once_with(
+            self.dest_course_key, self._dest_key('gated'), str(self._dest_key('prereq')), '80', '90'
+        )
+        self.gating_api.remove_prerequisite.assert_not_called()
+
+    def test_import_subsection_prerequisites_without_min_score_and_completion(self):
+        """
+        The minimum score and completion are optional.
+        """
+        sequentials = [
+            self._make_sequential('prereq', is_prereq='true'),
+            self._make_sequential('gated', prereq='prereq'),
+        ]
+
+        _import_subsection_prerequisites(sequentials, self.dest_course_key)
+
+        self.gating_api.set_required_content.assert_called_once_with(
+            self.dest_course_key, self._dest_key('gated'), str(self._dest_key('prereq')), '', ''
+        )
+
+    def test_import_subsection_prerequisites_required_subsection_becomes_prerequisite(self):
+        """
+        A required subsection is made a prerequisite even if the OLX does not flag it as one.
+        """
+        sequentials = [
+            self._make_sequential('prereq'),
+            self._make_sequential('gated', prereq='prereq'),
+        ]
+
+        _import_subsection_prerequisites(sequentials, self.dest_course_key)
+
+        self.gating_api.add_prerequisite.assert_called_once_with(self.dest_course_key, self._dest_key('prereq'))
+
+    def _set_existing_milestones(self, *block_ids):
+        """
+        Make the destination course have prerequisite settings for the given subsections.
+        """
+        self.gating_api.find_gating_milestones.return_value = [
+            {'content_id': str(self._dest_key(block_id)), 'namespace': 'irrelevant'} for block_id in block_ids
+        ]
+
+    def test_import_subsection_prerequisites_removes_existing_settings(self):
+        """
+        The existing prerequisite settings of the subsections imported without them are removed.
+        """
+        self._set_existing_milestones('former_prereq', 'former_gated')
+        sequentials = [
+            self._make_sequential('former_prereq'),
+            self._make_sequential('former_gated'),
+            self._make_sequential('prereq', is_prereq='true'),
+            self._make_sequential('plain'),
+        ]
+
+        _import_subsection_prerequisites(sequentials, self.dest_course_key)
+
+        self.gating_api.find_gating_milestones.assert_called_once_with(self.dest_course_key)
+        self.gating_api.add_prerequisite.assert_called_once_with(self.dest_course_key, self._dest_key('prereq'))
+        assert self.gating_api.remove_prerequisite.call_args_list == [
+            mock.call(self._dest_key('former_prereq')),
+            mock.call(self._dest_key('former_gated')),
+        ]
+        assert self.gating_api.set_required_content.call_args_list == [
+            mock.call(self.dest_course_key, self._dest_key('former_prereq'), None),
+            mock.call(self.dest_course_key, self._dest_key('former_gated'), None),
+        ]
+
+    def test_import_subsection_prerequisites_keeps_existing_settings_of_old_archive(self):
+        """
+        The existing prerequisite settings of the imported subsections are kept when the OLX has no prerequisite
+        attributes at all, as it predates this feature.
+        """
+        self._set_existing_milestones('prereq', 'gated')
+        sequentials = [
+            self._make_sequential('prereq'),
+            self._make_sequential('gated'),
+            self._make_sequential('plain'),
+        ]
+
+        _import_subsection_prerequisites(sequentials, self.dest_course_key)
+
+        self.gating_api.add_prerequisite.assert_not_called()
+        self.gating_api.remove_prerequisite.assert_not_called()
+        self.gating_api.set_required_content.assert_not_called()
+
+    def test_import_subsection_prerequisites_removes_settings_of_missing_subsections(self):
+        """
+        The existing prerequisite settings of the subsections that are not part of the OLX are always removed.
+        """
+        self._set_existing_milestones('removed_prereq', 'removed_gated', 'gated')
+        sequentials = [
+            self._make_sequential('gated'),
+            self._make_sequential('plain'),
+        ]
+
+        _import_subsection_prerequisites(sequentials, self.dest_course_key)
+
+        self.gating_api.add_prerequisite.assert_not_called()
+        assert self.gating_api.remove_prerequisite.call_args_list == [
+            mock.call(str(self._dest_key('removed_gated'))),
+            mock.call(str(self._dest_key('removed_prereq'))),
+        ]
+        assert self.gating_api.set_required_content.call_args_list == [
+            mock.call(self.dest_course_key, str(self._dest_key('removed_gated')), None),
+            mock.call(self.dest_course_key, str(self._dest_key('removed_prereq')), None),
+        ]
+
+    def test_import_subsection_prerequisites_keeps_existing_settings_out_of_scope(self):
+        """
+        The existing prerequisite settings are not touched when the course has none.
+        """
+        _import_subsection_prerequisites([self._make_sequential('plain')], self.dest_course_key)
+
+        self.gating_api.add_prerequisite.assert_not_called()
+        self.gating_api.remove_prerequisite.assert_not_called()
+        self.gating_api.set_required_content.assert_not_called()
+
+    def test_import_subsection_prerequisites_unknown_prerequisite(self):
+        """
+        Requiring a subsection that is not part of the imported course is skipped with a warning, and the existing
+        requirement of the subsection is removed.
+        """
+        self._set_existing_milestones("gated")
+        sequentials = [
+            self._make_sequential("prereq", is_prereq="true"),
+            self._make_sequential("gated", prereq="missing", prereq_min_score="80"),
+        ]
+
+        with self.assertLogs("xmodule.modulestore.xml_importer", level="WARNING") as logs:
+            _import_subsection_prerequisites(sequentials, self.dest_course_key)
+
+        assert logs.output == [
+            f"WARNING:xmodule.modulestore.xml_importer:Course import {self.dest_course_key}: skipping the "
+            f"requirement of the subsection {self._dest_key('gated')} on {self._dest_key('missing')}, which is not "
+            "a subsection of this course."
+        ]
+        self.gating_api.add_prerequisite.assert_called_once_with(self.dest_course_key, self._dest_key("prereq"))
+        self.gating_api.set_required_content.assert_called_once_with(
+            self.dest_course_key, self._dest_key("gated"), None
+        )
+
+    def test_import_subsection_prerequisites_self_reference(self):
+        """
+        A subsection cannot require itself.
+        """
+        sequentials = [self._make_sequential('gated', prereq='gated')]
+
+        with pytest.raises(InvalidSubsectionPrerequisite) as context:
+            _import_subsection_prerequisites(sequentials, self.dest_course_key)
+
+        assert 'a subsection cannot be its own prerequisite' in str(context.value)
+        self.gating_api.add_prerequisite.assert_not_called()
+
+    def test_import_subsection_prerequisites_invalid_min_score(self):
+        """
+        The validation errors of the gating API are reported as invalid prerequisites of the subsection.
+        """
+        self.gating_api.set_required_content.side_effect = GatingValidationError('abc is not a valid grade percentage')
+        sequentials = [
+            self._make_sequential('prereq', is_prereq='true'),
+            self._make_sequential('gated', prereq='prereq', prereq_min_score='abc'),
+        ]
+
+        with pytest.raises(InvalidSubsectionPrerequisite) as context:
+            _import_subsection_prerequisites(sequentials, self.dest_course_key)
+
+        assert str(context.value) == (
+            f'Invalid prerequisite settings of the subsection "Subsection gated" ({self._dest_key("gated")}): '
+            'abc is not a valid grade percentage'
+        )
+
+
+class ImportOnlyXmlAttributesTest(unittest.TestCase):
+    """
+    Tests that the import-only XML attributes are not persisted in the imported blocks.
+    """
+
+    def test_import_only_xml_attributes_are_stripped(self):
+        course_key = CourseLocator('TestOrg', 'TestCourse', '2026_T1')
+        block = mock.MagicMock()
+        block.location = course_key.make_usage_key('sequential', 'gated')
+        xml_attributes = {
+            'filename': ['', None],
+            'parent_url': 'parent',
+            'index_in_children_list': '0',
+            'is_prereq': 'true',
+            'prereq': 'block-v1:TestOrg+TestCourse+2026_T1+type@sequential+block@prereq',
+            'prereq_min_score': '80',
+            'prereq_min_completion': '90',
+            'unknown_attribute': 'kept',
+        }
+        xml_attributes_field = mock.Mock(scope=Scope.settings, spec=['scope', 'is_set_on', 'read_from'])
+        xml_attributes_field.is_set_on.return_value = True
+        xml_attributes_field.read_from.return_value = xml_attributes
+        block.fields = {'xml_attributes': xml_attributes_field}
+        block.get_asides.return_value = []
+        store = mock.MagicMock()
+
+        _update_and_import_block(
+            block, store, user_id=1, source_course_id=course_key, dest_course_id=course_key,
+            do_import_static=False, runtime=mock.MagicMock(),
+        )
+
+        fields = store.import_xblock.call_args.args[4]
+        assert fields['xml_attributes'] == {'filename': ['', None], 'unknown_attribute': 'kept'}
+        # The source block keeps its attributes, as the importer reads some of them after the import.
+        assert 'prereq' in xml_attributes
+        assert 'parent_url' in xml_attributes
