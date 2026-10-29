@@ -48,7 +48,7 @@ class ContentLibraryManager(models.Manager["ContentLibrary"]):
         return self.select_related('learning_package') \
                    .get(org__short_name=library_key.org, slug=library_key.slug)
 
-
+# DiscoveryCollection-BB-9218-OEX: Content Library Model
 class ContentLibrary(models.Model):
     """
     A Content Library is a collection of content (XBlocks and/or static assets)
@@ -118,7 +118,7 @@ class ContentLibrary(models.Model):
     def __str__(self):  # noqa: DJ012
         return f"ContentLibrary ({str(self.library_key)})"
 
-
+# DiscoveryCollection-BB-9218-OEX: Content Library Permission Model
 class ContentLibraryPermission(models.Model):
     """
     Row recording permissions for a content library
@@ -132,6 +132,7 @@ class ContentLibraryPermission(models.Model):
     user = models.ForeignKey(User, null=True, blank=True, on_delete=models.CASCADE)
     group = models.ForeignKey(Group, null=True, blank=True, on_delete=models.CASCADE)
     # What level of access is granted to the above user or group:
+    # DiscoveryCollection-BB-9218-OEX: Three roles/access levels are availabe i.e. admin, author, and read
     ADMIN_LEVEL = 'admin'
     AUTHOR_LEVEL = 'author'
     READ_LEVEL = 'read'
