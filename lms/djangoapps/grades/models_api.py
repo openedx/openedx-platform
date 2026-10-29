@@ -17,6 +17,20 @@ def prefetch_grade_overrides_and_visible_blocks(user, course_key):
     _VisibleBlocks.bulk_read(user.id, course_key)
 
 
+def clear_prefetched_grade_overrides_and_visible_blocks():
+    """
+    Clears the caches populated by prefetch_grade_overrides_and_visible_blocks.
+
+    Both are keyed per (user, course) rather than per course, so -- unlike the
+    course-keyed prefetches below, which are replaced wholesale on each call --
+    they accumulate an entry per learner and are never evicted for the life of
+    the request or task. Long-running work that walks a large learner
+    population should call this between batches.
+    """
+    _PersistentSubsectionGradeOverride.clear_prefetched_data()
+    _VisibleBlocks.clear_prefetched_data()
+
+
 def prefetch_course_grades(course_key, users):
     _PersistentCourseGrade.prefetch(course_key, users)
 
