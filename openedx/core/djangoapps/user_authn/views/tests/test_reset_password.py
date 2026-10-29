@@ -32,21 +32,13 @@ from common.djangoapps.student.tests.test_configuration_overrides import fake_ge
 from common.djangoapps.student.tests.test_email import mock_render_to_string
 from common.djangoapps.util.password_policy_validators import create_validator_config
 from common.djangoapps.util.testing import EventTestMixin
-from openedx.core.djangoapps.oauth_dispatch.tests import factories as dot_factories
-from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
-from openedx.core.djangoapps.user_api.accounts import EMAIL_MAX_LENGTH, EMAIL_MIN_LENGTH
-from openedx.core.djangoapps.user_api.accounts.utils import create_retirement_request_and_deactivate_account
-from openedx.core.djangoapps.user_api.models import RetirementState
-from openedx.core.djangoapps.user_api.tests.test_views import UserAPITestCase
-from openedx.core.djangoapps.user_authn.views.password_reset import (
-    PASSWORD_RESET_INITIATED,
-    SETTING_CHANGE_INITIATED,
-    LogistrationPasswordResetView,
-    PasswordResetConfirmWrapper,
-    password_change_request_handler,
-    password_reset,
-)
-from openedx.core.djangolib.testing.utils import CacheIsolationTestCase, skip_unless_lms
+from django.utils.translation import gettext as _
+
+from edx_toggles.toggles.testutils import override_waffle_flag
+from openedx.core.djangoapps.user_authn.toggles import PREVENT_PASSWORD_REUSE_ON_RESET
+
+ENABLE_AUTHN_MICROFRONTEND = settings.FEATURES.copy()
+ENABLE_AUTHN_MICROFRONTEND['ENABLE_AUTHN_MICROFRONTEND'] = True
 
 
 def process_request(request):
@@ -1062,3 +1054,97 @@ class ResetPasswordAPITests(EventTestMixin, CacheIsolationTestCase):
         # Verify that the user's login failures lockout count is not reset.
         assert not LoginFailures.is_feature_enabled()
         assert LoginFailures.is_user_locked_out(self.user)
+
+    @override_waffle_flag(PREVENT_PASSWORD_REUSE_ON_RESET, active=True)
+    def test_password_reset_with_same_current_password(self):
+        """
+        Test that user cannot reset password to their current password
+        when waffle flag is enabled.
+        """
+        current_password = 'CurrentPass@123'
+        self.user.set_password(current_password)
+        self.user.save()
+        original_password_hash = self.user.password
+
+        token = default_token_generator.make_token(self.user)
+        uidb36 = int_to_base36(self.user.id)
+
+        request_param = {'new_password1': current_password, 'new_password2': current_password}
+        post_request = self.request_factory.post(
+            reverse(
+                "logistration_password_reset",
+                kwargs={"uidb36": uidb36, "token": token}
+            ) + "?track=pwreset",
+            request_param, format='json'
+        )
+        post_request.user = AnonymousUser()
+        reset_view = LogistrationPasswordResetView.as_view()
+        response = reset_view(post_request, uidb36=uidb36, token=token)
+        assert response.status_code == 200
+        response.render()
+        json_response = json.loads(response.content.decode('utf-8'))
+
+        expected_msg = _('Your new password must be different from your current password.')
+        assert json_response.get('reset_status') is False
+        assert expected_msg in json_response.get('err_msg', '')
+        refreshed_user = User.objects.get(id=self.user.id)
+        assert refreshed_user.password == original_password_hash
+
+    @override_waffle_flag(PREVENT_PASSWORD_REUSE_ON_RESET, active=False)
+    def test_same_password_allowed_when_flag_disabled(self):
+        """
+        Test that user CAN reset password to same password
+        when waffle flag is disabled (preserves old behavior).
+        """
+        current_password = 'CurrentPass@123'
+        self.user.set_password(current_password)
+        self.user.save()
+
+        token = default_token_generator.make_token(self.user)
+        uidb36 = int_to_base36(self.user.id)
+
+        request_param = {'new_password1': current_password, 'new_password2': current_password}
+        post_request = self.request_factory.post(
+            reverse(
+                "logistration_password_reset",
+                kwargs={"uidb36": uidb36, "token": token}
+            ) + "?track=pwreset",
+            request_param, format='json'
+        )
+        post_request.user = AnonymousUser()
+        reset_view = LogistrationPasswordResetView.as_view()
+        response = reset_view(post_request, uidb36=uidb36, token=token)
+        assert response.status_code == 200
+        response.render()
+        json_response = json.loads(response.content.decode('utf-8'))
+
+        assert json_response.get('reset_status') is True
+
+    @override_waffle_flag(PREVENT_PASSWORD_REUSE_ON_RESET, active=True)
+    def test_different_password_works_when_flag_enabled(self):
+        """
+        Test that user CAN reset to a different password
+        when waffle flag is enabled.
+        """
+        self.user.set_password('OldPassword@123')
+        self.user.save()
+
+        token = default_token_generator.make_token(self.user)
+        uidb36 = int_to_base36(self.user.id)
+
+        request_param = {'new_password1': 'NewPassword@456', 'new_password2': 'NewPassword@456'}
+        post_request = self.request_factory.post(
+            reverse(
+                "logistration_password_reset",
+                kwargs={"uidb36": uidb36, "token": token}
+            ) + "?track=pwreset",
+            request_param, format='json'
+        )
+        post_request.user = AnonymousUser()
+        reset_view = LogistrationPasswordResetView.as_view()
+        response = reset_view(post_request, uidb36=uidb36, token=token)
+        assert response.status_code == 200
+        response.render()
+        json_response = json.loads(response.content.decode('utf-8'))
+
+        assert json_response.get('reset_status') is True
