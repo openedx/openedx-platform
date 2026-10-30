@@ -61,6 +61,10 @@ class SamlIntegrationTestUtilities:
             public_key=self._get_public_key(),  # lint-amnesty, pylint: disable=no-member
             entity_id="https://saml.example.none",
         )
+        # TestShib's hostname is made up; resolve it to a public address for URL validation.
+        dns_patch = testutil.mock_saml_metadata_dns()
+        dns_patch.start()
+        self.addCleanup(dns_patch.stop)  # pylint: disable=no-member
         # Mock out HTTP requests that may be made to TestShib:
         httpretty.enable()
         httpretty.reset()
