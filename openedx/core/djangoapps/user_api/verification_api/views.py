@@ -3,21 +3,22 @@
 from django.contrib.auth import get_user_model
 from django.http import Http404
 from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
+from edx_rest_framework_extensions.permissions import IsStaff, IsUserInUrl
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.generics import ListAPIView
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from lms.djangoapps.verify_student.services import IDVerificationService
 from openedx.core.djangoapps.user_api.serializers import IDVerificationDetailsSerializer
 from openedx.core.lib.api.authentication import BearerAuthentication
-from openedx.core.lib.api.permissions import IsStaffOrOwner
 
 
 class IDVerificationStatusView(APIView):
     """ IDVerification Status endpoint """
     authentication_classes = (JwtAuthentication, BearerAuthentication, SessionAuthentication,)
-    permission_classes = (IsStaffOrOwner,)
+    permission_classes = (IsAuthenticated, IsStaff | IsUserInUrl)
 
     def get(self, request, **kwargs):  # lint-amnesty, pylint: disable=missing-function-docstring
         username = kwargs.get('username')
@@ -41,7 +42,7 @@ class IDVerificationStatusView(APIView):
 class IDVerificationStatusDetailsView(ListAPIView):
     """ IDVerificationStatusDeetails endpoint to retrieve more details about ID Verification status """
     authentication_classes = (JwtAuthentication, BearerAuthentication, SessionAuthentication,)
-    permission_classes = (IsStaffOrOwner,)
+    permission_classes = (IsAuthenticated, IsStaff | IsUserInUrl)
     pagination_class = None  # No need for pagination for this yet
 
     def get_serializer(self, *args, **kwargs):
