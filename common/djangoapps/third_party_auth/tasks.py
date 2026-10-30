@@ -5,7 +5,6 @@ Code to manage fetching and storing the metadata of IdPs.
 
 import logging
 
-import requests
 from celery import shared_task
 from django.core.exceptions import ObjectDoesNotExist
 from edx_django_utils.monitoring import set_code_owner_attribute
@@ -18,8 +17,8 @@ from common.djangoapps.third_party_auth.utils import (
     MetadataParseError,
     SAMLMetadataURLError,
     create_or_update_bulk_saml_provider_data,
+    fetch_saml_metadata_response,
     parse_metadata_xml,
-    validate_saml_metadata_url,
 )
 
 log = logging.getLogger(__name__)
@@ -76,9 +75,9 @@ def fetch_saml_metadata():
     failure_messages = []  # We return the length of this array for num_failed
     for url, entity_ids in url_map.items():
         try:
-            validate_saml_metadata_url(url)
             log.info("Fetching %s", url)
-            response = requests.get(url, verify=True, timeout=30)  # May raise HTTPError or SSLError or ConnectionError
+            # Validates the URL and every redirect. May raise SAMLMetadataURLError, SSLError or ConnectionError
+            response = fetch_saml_metadata_response(url)
             response.raise_for_status()  # May raise an HTTPError
 
             try:

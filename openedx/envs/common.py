@@ -1942,9 +1942,10 @@ SOCIAL_AUTH_SAML_SP_PUBLIC_CERT_DICT = {}
 #   as a defense against SSRF attacks. Set to True only in deployments where the
 #   SAML Identity Provider is hosted on the same private network as the Open edX
 #   server. Note: loopback (127.x) and link-local (169.254.x) addresses remain
-#   blocked regardless of this toggle. Operators are also encouraged to enforce
-#   network-level egress filtering as a complementary control, particularly to
-#   cover hostname-based URLs that are not subject to IP validation.
+#   blocked regardless of this toggle. Hostnames, including those reached through
+#   redirects, are resolved and checked the same way. Operators are also encouraged
+#   to enforce network-level egress filtering as a complementary control,
+#   particularly against DNS records that change between validation and connection.
 # .. toggle_implementation: DjangoSetting
 # .. toggle_use_cases: open_edx
 # .. toggle_creation_date: 2026-04-24
