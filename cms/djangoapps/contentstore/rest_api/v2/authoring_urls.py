@@ -2,6 +2,7 @@
 
 from django.urls import path
 
+from cms.djangoapps.contentstore.rest_api.v2.views.certificates import CourseCertificateSettingsViewSet
 from cms.djangoapps.contentstore.rest_api.v2.views.textbooks import CourseTextbooksViewSet
 from cms.djangoapps.contentstore.rest_api.v2.views.video_settings import CourseVideoSettingsViewSet
 
@@ -17,5 +18,10 @@ urlpatterns = [
         "courses/<course_key:course_key>/video_settings/",
         CourseVideoSettingsViewSet.as_view({"get": "retrieve"}),
         name="course_video_settings",
+    ),
+    path(
+        "courses/<course_key:course_key>/certificate_settings/",
+        CourseCertificateSettingsViewSet.as_view({"get": "retrieve"}),
+        name="course_certificate_settings",
     ),
 ]
