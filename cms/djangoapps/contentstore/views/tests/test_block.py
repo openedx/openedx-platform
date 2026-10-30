@@ -235,6 +235,29 @@ class GetItemTest(ItemTest):
         # Verify that the Studio element wrapper has been added
         self.assertIn("level-element", html)  # noqa: PT009
 
+    def test_get_container_preview_renders_theming_indicator_for_unthemed_text(self):
+        root_usage_key = self._create_vertical()
+        self.create_xblock(parent_usage_key=root_usage_key, category="html")
+
+        html, __ = self._get_container_preview(root_usage_key)
+
+        self.assertIn("xblock-theming-icon", html)  # noqa: PT009
+        self.assertIn("Theme styles are off for this Text block", html)  # noqa: PT009
+
+    def test_get_container_preview_omits_theming_indicator_for_themed_text(self):
+        root_usage_key = self._create_vertical()
+        resp = self.create_xblock(parent_usage_key=root_usage_key, category="html")
+        html_usage_key = self.response_usage_key(resp)
+        html_block = self.get_item_from_modulestore(html_usage_key)
+        if not hasattr(html_block, "use_mfe_theming"):
+            self.skipTest("The installed xblocks-contrib has no use_mfe_theming field")
+        html_block.use_mfe_theming = True
+        self.store.update_item(html_block, self.user.id)
+
+        html, __ = self._get_container_preview(root_usage_key)
+
+        self.assertNotIn("xblock-theming-icon", html)  # noqa: PT009
+
     def test_get_container_nested_container_fragment(self):
         """
         Test the case of the container page containing a link to another container page.

@@ -156,6 +156,12 @@ can_unlink = upstream_info.upstream_ref and not upstream_info.top_level_parent_k
                             </div>
                         % endif
                     % endif
+                    % if xblock.scope_ids.block_type == 'html' and not getattr(xblock, 'use_mfe_theming', False):
+                        <div class="xblock-theming-icon" data-tooltip="${_('Theme styles are off for this Text block')}">
+                            <span class="icon fa fa-paint-brush" aria-hidden="true"></span>
+                            <span class="sr">${_('Theme styles are off for this Text block')}</span>
+                        </div>
+                    % endif
                     <span class="xblock-display-name">${label}</span>
                 % endif
                 % if selected_groups_label:
