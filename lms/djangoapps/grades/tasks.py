@@ -10,12 +10,12 @@ from django.contrib.auth.models import User  # pylint: disable=imported-auth-use
 from django.core.exceptions import ValidationError
 from django.db.utils import DatabaseError
 from edx_django_utils.monitoring import (
-    set_code_owner_attribute,
     set_custom_attribute,
     set_custom_attributes_for_course_key,
 )
 from opaque_keys.edx.keys import CourseKey, UsageKey
 from opaque_keys.edx.locator import CourseLocator
+from openedx_learning.api import roll_up_competency_statuses
 from submissions import api as sub_api
 
 from common.djangoapps.student.models import CourseEnrollment
@@ -55,7 +55,6 @@ SUBSECTION_GRADE_TIMEOUT_SECONDS = 300
 
 
 @shared_task(base=LoggedPersistOnFailureTask)
-@set_code_owner_attribute
 def compute_all_grades_for_course(**kwargs):
     """
     Compute grades for all students in the specified course.
@@ -88,7 +87,6 @@ def compute_all_grades_for_course(**kwargs):
     time_limit=COURSE_GRADE_TIMEOUT_SECONDS,
     rate_limit=settings.POLICY_CHANGE_TASK_RATE_LIMIT,
 )
-@set_code_owner_attribute
 def compute_grades_for_course_v2(self, **kwargs):
     """
     Compute grades for a set of students in the specified course.
@@ -113,7 +111,6 @@ def compute_grades_for_course_v2(self, **kwargs):
 
 
 @shared_task(base=LoggedPersistOnFailureTask)
-@set_code_owner_attribute
 def compute_grades_for_course(course_key, offset, batch_size, **kwargs):  # pylint: disable=unused-argument
     """
     Compute and save grades for a set of students in the specified course.
@@ -141,7 +138,6 @@ def compute_grades_for_course(course_key, offset, batch_size, **kwargs):  # pyli
     max_retries=2,
     default_retry_delay=RETRY_DELAY_SECONDS,
 )
-@set_code_owner_attribute
 def recalculate_course_and_subsection_grades_for_user(self, **kwargs):  # pylint: disable=unused-argument
     """
     Recalculates the course grade and all subsection grades
@@ -182,13 +178,35 @@ def recalculate_course_and_subsection_grades_for_user(self, **kwargs):  # pylint
     max_retries=2,
     default_retry_delay=RETRY_DELAY_SECONDS
 )
-@set_code_owner_attribute
 def recalculate_subsection_grade_v3(self, **kwargs):
     """
     Latest version of the recalculate_subsection_grade task.  See docstring
     for _recalculate_subsection_grade for further description.
     """
     _recalculate_subsection_grade(self, **kwargs)
+
+
+@shared_task(
+    bind=True,
+    base=LoggedPersistOnFailureTask,
+    time_limit=SUBSECTION_GRADE_TIMEOUT_SECONDS,
+    max_retries=2,
+    default_retry_delay=RETRY_DELAY_SECONDS
+)
+def roll_up_competency_statuses_for_user(self, **kwargs):
+    """
+    Rolls up a learner's competency statuses for the graded objects whose criteria were just updated.
+
+    Keyword Arguments:
+        user_id (int): id of applicable User object
+        object_ids (list of string): usage keys of the graded objects that changed
+    """
+    try:
+        roll_up_competency_statuses(user_id=kwargs['user_id'], object_ids=kwargs['object_ids'])
+    except Exception as exc:
+        if not isinstance(exc, KNOWN_RETRY_ERRORS):
+            raise
+        raise self.retry(kwargs=kwargs, exc=exc) from exc
 
 
 def _recalculate_subsection_grade(self, **kwargs):

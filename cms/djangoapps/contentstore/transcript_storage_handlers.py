@@ -172,18 +172,28 @@ def _create_or_update_video_transcript(**kwargs):
 
 def upload_transcript(request):
     """
-    Upload a transcript file
+    Upload a transcript file for a video, creating or replacing the transcript
+    for ``new_language_code``.
 
     Arguments:
-        request: A WSGI request object
+        request: A WSGI request object. ``request.POST`` must contain
+            ``edx_video_id``, ``language_code`` (the language of the transcript
+            being replaced, if any) and ``new_language_code``; ``request.FILES``
+            must contain the transcript ``file`` in SRT (SubRip) format.
 
-        Transcript file in SRT format
+    Returns:
+        - 201 Created if no transcript existed for ``new_language_code`` yet.
+        - 200 OK if an existing transcript for ``new_language_code`` was replaced.
+        - 400 Bad Request if the file could not be parsed as SRT or decoded as UTF-8.
     """
     edx_video_id = request.POST['edx_video_id']
     language_code = request.POST['language_code']
     new_language_code = request.POST['new_language_code']
     transcript_file = request.FILES['file']
     try:
+        # Determine whether this upload replaces an existing transcript
+        # (return 200) or creates a new one (return 201).
+        is_replace = new_language_code in get_available_transcript_languages(video_id=edx_video_id)
         # Convert SRT transcript into an SJSON format
         # and upload it to S3.
         sjson_subs = Transcript.convert(
@@ -201,7 +211,7 @@ def upload_transcript(request):
             },
             file_data=ContentFile(sjson_subs),
         )
-        response = JsonResponse(status=201)
+        response = JsonResponse(status=200 if is_replace else 201)
     except (TranscriptsGenerationException, UnicodeDecodeError):
         LOGGER.error("Unable to update transcript on edX video %s for language %s", edx_video_id, new_language_code)
         response = JsonResponse(

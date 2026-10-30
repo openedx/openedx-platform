@@ -13,11 +13,12 @@ Covers:
 from unittest.mock import patch
 
 from django.test import override_settings
-from django.urls import reverse
+from django.urls import resolve, reverse
+from opaque_keys.edx.keys import CourseKey
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from common.djangoapps.student.tests.factories import AdminFactory, UserFactory
+from common.djangoapps.student.tests.factories import AdminFactory, CourseEnrollmentFactory, UserFactory
 from openedx.core.djangoapps.enrollments.v2.views import EnrollmentViewSet
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 
@@ -213,7 +214,9 @@ class TestUserRolesViewAliases(APITestCase):
     def setUp(self):
         super().setUp()
         self.user = UserFactory.create(password="test")
-        self.url = reverse("v2:enrollment-v2-roles")
+        # Renamed from the versioned kebab-case ``enrollment-v2-roles``
+        # (the path is unchanged).
+        self.url = reverse("v2:user_roles")
 
     @patch("openedx.core.djangoapps.enrollments.v2.views.api.get_user_roles", return_value=[])
     def test_new_course_key_param_no_header(self, mock_get):  # noqa: ARG002
@@ -287,3 +290,179 @@ class TestEnrollmentViewSetMinimalView(APITestCase):
         assert {r["course_id"] for r in response.data["results"]} == {
             "course-v1:org+a+r", "course-v1:org+b+r",
         }
+
+
+# ---------------------------------------------------------------------------
+# URL-structure tests
+# ---------------------------------------------------------------------------
+
+@skip_unless_lms
+class TestEnrollmentUrlStructure(APITestCase):
+    """Conforming trailing-slash routes with snake_case names, beside the legacy slashless ones."""
+
+    USERNAME = "someone"
+    COURSE_ID = "course-v1:org+course+run"
+
+    def test_conforming_urls_reverse_to_expected_paths(self):
+        assert reverse("v2:enrollment_admin_list") == "/api/enrollment/v2/enrollments/"
+        assert reverse(
+            "v2:enrollment_detail",
+            kwargs={"username": self.USERNAME, "course_id": self.COURSE_ID},
+        ) == f"/api/enrollment/v2/enrollments/{self.USERNAME},{self.COURSE_ID}/"
+        assert reverse(
+            "v2:course_enrollment_detail", kwargs={"course_id": self.COURSE_ID},
+        ) == f"/api/enrollment/v2/courses/{self.COURSE_ID}/"
+        assert reverse("v2:user_roles") == "/api/enrollment/v2/roles/"
+
+    def test_conforming_and_legacy_routes_share_views(self):
+        pairs = (
+            # (conforming path, legacy path)
+            ("/api/enrollment/v2/enrollments/", "/api/enrollment/v2/enrollments"),
+            (
+                f"/api/enrollment/v2/enrollments/{self.USERNAME},{self.COURSE_ID}/",
+                f"/api/enrollment/v2/enrollment/{self.USERNAME},{self.COURSE_ID}",
+            ),
+            (
+                f"/api/enrollment/v2/courses/{self.COURSE_ID}/",
+                f"/api/enrollment/v2/course/{self.COURSE_ID}",
+            ),
+        )
+        for conforming, legacy in pairs:
+            assert resolve(conforming).func.cls is resolve(legacy).func.cls, (
+                f"{conforming} must serve the same view as {legacy}"
+            )
+
+    def test_legacy_admin_list_optional_slash_coverage_is_preserved(self):
+        """
+        The legacy ``^enrollments/?$`` optional-slash pattern is split into a
+        conforming slashed route plus a slashless legacy route: both
+        addresses still resolve, one route each.
+        """
+        slashless = resolve("/api/enrollment/v2/enrollments")
+        slashed = resolve("/api/enrollment/v2/enrollments/")
+        assert slashless.func.cls is slashed.func.cls
+        assert slashless.url_name == "enrollment-v2-admin-list"
+        assert slashed.url_name == "enrollment_admin_list"
+
+    def test_legacy_retrieve_routes_resolve_under_distinct_names(self):
+        """
+        The two legacy retrieve forms resolve under distinct names; the old
+        shared name stays reversible as an alias (see below).
+        """
+        composite = resolve(
+            f"/api/enrollment/v2/enrollment/{self.USERNAME},{self.COURSE_ID}"
+        )
+        course_only = resolve(f"/api/enrollment/v2/enrollment/{self.COURSE_ID}")
+        assert composite.func.cls is course_only.func.cls
+        assert composite.url_name == "enrollment-v2-retrieve"
+        assert course_only.url_name == "enrollment-v2-retrieve-own"
+
+    def test_pre_migration_url_names_still_reverse(self):
+        """Out-of-tree callers of the old names keep working for the deprecation window."""
+        assert reverse("v2:enrollment-v2-roles") == "/api/enrollment/v2/roles/"
+        assert reverse(
+            "v2:enrollment-v2-retrieve", kwargs={"course_id": self.COURSE_ID},
+        ) == f"/api/enrollment/v2/enrollment/{self.COURSE_ID}"
+        # Resolution is unaffected by the aliases: the first-registered names win.
+        assert resolve("/api/enrollment/v2/roles/").url_name == "user_roles"
+        assert resolve(f"/api/enrollment/v2/enrollment/{self.COURSE_ID}").url_name == "enrollment-v2-retrieve-own"
+
+    def test_invalid_course_key_is_404_on_conforming_route(self):
+        # The shared course_key converter rejects unparseable keys with a
+        # routing-level 404.
+        response = self.client.get("/api/enrollment/v2/courses/not-a-course-key/")
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_version_only_course_key_is_404_on_conforming_routes(self):
+        # The converter accepts a key that names only a version. No course run
+        # is behind it, so the views answer 404 rather than 500.
+        user = UserFactory.create()
+        self.client.force_authenticate(user=user)
+        course_key = "course-v1:version@0123456789abcdef01234567"
+        for url in (
+            f"/api/enrollment/v2/courses/{course_key}/",
+            f"/api/enrollment/v2/enrollments/{user.username},{course_key}/",
+        ):
+            assert self.client.get(url).status_code == status.HTTP_404_NOT_FOUND, url
+
+    def test_admin_list_contract_is_identical_on_both_addresses(self):
+        """Unauthenticated callers get the same 401 on legacy and conforming."""
+        legacy = self.client.get("/api/enrollment/v2/enrollments")
+        conforming = self.client.get("/api/enrollment/v2/enrollments/")
+        assert legacy.status_code == conforming.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+# ---------------------------------------------------------------------------
+# EnrollmentsAdminListView (GET /enrollments/)
+# ---------------------------------------------------------------------------
+@skip_unless_lms
+class TestEnrollmentsAdminListView(APITestCase):
+    """
+    Regression tests for the admin enrollment list.
+
+    Covers endpoint access, the pass-through queryset scoping, the query-param
+    filters (applied in ``filter_queryset``, so form validation still yields a
+    400), and the ``Deprecation`` header. Uses real
+    ``CourseEnrollment`` rows (SQL, MongoDB-free).
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.admin = AdminFactory.create(password="test")
+        self.user = UserFactory.create(password="test")
+        self.url = reverse("v2:enrollment-v2-admin-list")
+        self.course_a = CourseKey.from_string("course-v1:edX+A+run")
+        self.course_b = CourseKey.from_string("course-v1:edX+B+run")
+        self.learner_a = UserFactory.create()
+        self.learner_b = UserFactory.create()
+        CourseEnrollmentFactory.create(user=self.learner_a, course_id=self.course_a)
+        CourseEnrollmentFactory.create(user=self.learner_b, course_id=self.course_b)
+
+    def test_unauthenticated_gets_401(self):
+        assert self.client.get(self.url).status_code == status.HTTP_401_UNAUTHORIZED
+
+    def test_non_admin_gets_403(self):
+        """Endpoint-access layer: IsAdminUser rejects a regular user."""
+        self.client.force_authenticate(user=self.user)
+        assert self.client.get(self.url).status_code == status.HTTP_403_FORBIDDEN
+
+    def test_admin_sees_all_rows(self):
+        """Record-visibility layer is a pass-through: admin sees every enrollment."""
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["count"] == 2
+
+    def test_filter_by_course_key_narrows(self):
+        """User-driven filter (filter_queryset) still narrows by course_key."""
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.get(self.url, {"course_key": str(self.course_a)})
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["count"] == 1
+
+    def test_filter_by_username_narrows(self):
+        """User-driven filter (filter_queryset) still narrows by username."""
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.get(self.url, {"username": self.learner_b.username})
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["count"] == 1
+
+    def test_non_admin_cannot_list_another_users_enrollments(self):
+        """A regular user cannot read someone else's enrollments by naming them in the filter."""
+        self.client.force_authenticate(user=self.learner_a)
+        response = self.client.get(self.url, {"username": self.learner_b.username})
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert "results" not in response.data
+
+    def test_invalid_course_key_gets_400(self):
+        """Form validation moved to filter_queryset must still surface as a 400."""
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.get(self.url, {"course_key": "not-a-course-key"})
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_legacy_course_id_emits_deprecation_header(self):
+        """The legacy ``course_id`` alias still emits the Deprecation header."""
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.get(self.url, {"course_id": str(self.course_a)})
+        assert response.status_code == status.HTTP_200_OK
+        assert "Deprecation" in response.headers

@@ -184,7 +184,7 @@ class CourseCreatorAdminTest(TestCase):
             ):
                 for state in states:
                     self._change_state(state)
-                expected_identifier = self.user.id if squelch_pii else self.user.email
+                expected_identifier = str(self.user.id) if squelch_pii else self.user.email
                 mock_log.warning.assert_any_call(
                     "Unable to send course creator status e-mail to %s",
                     expected_identifier
@@ -210,7 +210,7 @@ class CourseCreatorAdminTest(TestCase):
             ):
                 for state in states:
                     self._change_state(state)
-                expected_identifier = self.user.id if squelch_pii else self.user.email
+                expected_identifier = str(self.user.id) if squelch_pii else self.user.email
                 mock_log.warning.assert_any_call(
                     "Failure sending 'pending state' e-mail for %s to %s",
                     expected_identifier,

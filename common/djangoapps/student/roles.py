@@ -329,7 +329,7 @@ class BulkRoleCache:  # pylint: disable=missing-class-docstring
             for role in compat_roles:
                 course_id = get_role_cache_key_for_course(role.course_id)
                 user_roles_set_for_course = roles_by_user[user.id][course_id]
-                user_roles_set_for_course.add(compat_role)
+                user_roles_set_for_course.add(role)
 
         users_without_roles = [u for u in users if u.id not in roles_by_user]
         for user in users_without_roles:
@@ -645,6 +645,11 @@ class RoleBase(AccessRole):
             user_external_key=user.username,
             role_external_key=role,
         )
+        # A platform-wide grant (course-v1:*, lib:*) covers every org, not just the ones
+        # with a concrete assignment. Platform-glob scopes have no .org attribute at all
+        # (unlike org-glob/course/library scopes, where it's a real field that can be None).
+        if any(assignment.scope.IS_PLATFORM_GLOB for assignment in assignments):
+            return [org["short_name"] for org in get_organizations()]
         orgs = {assignment.scope.org for assignment in assignments if assignment.scope.org is not None}
         return list(orgs)
 

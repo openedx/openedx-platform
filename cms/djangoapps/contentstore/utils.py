@@ -53,7 +53,7 @@ from common.djangoapps.course_action_state.models import CourseRerunState, Cours
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.edxmako.services import MakoService
 from common.djangoapps.student import auth
-from common.djangoapps.student.auth import STUDIO_EDIT_ROLES, has_studio_read_access, has_studio_write_access
+from common.djangoapps.student.auth import STUDIO_EDIT_ROLES, has_studio_write_access
 from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRole, GlobalStaff
 from common.djangoapps.track import contexts
@@ -71,6 +71,7 @@ from common.djangoapps.xblock_django.api import deprecated_xblocks
 from common.djangoapps.xblock_django.user_service import DjangoXBlockUserService
 from openedx.core import toggles as core_toggles
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
+from openedx.core.djangoapps.content.services import StudioPermissionsService
 from openedx.core.djangoapps.content_libraries.api import get_container
 from openedx.core.djangoapps.content_tagging.toggles import is_tagging_feature_disabled
 from openedx.core.djangoapps.credit.api import get_credit_requirements, is_credit_course
@@ -1750,6 +1751,32 @@ def get_course_videos_context(course_block, pagination_conf, course_key=None):
     It is used for both DRF and django views.
     """
 
+    from .video_storage_handlers import _get_index_videos
+
+    course = course_block
+    if not course:
+        with modulestore().bulk_operations(course_key):
+            course = modulestore().get_course(course_key)
+
+    video_settings_context = get_course_video_settings_context(course)
+    previous_uploads, pagination_context = _get_index_videos(course, pagination_conf)
+    course_video_context = {
+        'context_course': course,
+        **video_settings_context,
+        'previous_uploads': previous_uploads,
+        'pagination_context': pagination_context,
+    }
+    return course_video_context
+
+
+def get_course_video_settings_context(course):
+    """
+    Return the video upload and transcript settings of ``course``.
+
+    This is the context of ``get_course_videos_context`` without the course
+    itself and without the course's previous uploads.
+    """
+
     from edx_toggles.toggles import WaffleSwitch
     from edxval.api import (
         get_3rd_party_transcription_plans,
@@ -1763,7 +1790,7 @@ def get_course_videos_context(course_block, pagination_conf, course_key=None):
         Transcript,  # pylint: disable=wrong-import-order
     )
 
-    from .video_storage_handlers import _get_default_video_image_url, _get_index_videos, get_all_transcript_languages
+    from .video_storage_handlers import _get_default_video_image_url, get_all_transcript_languages
 
     VIDEO_SUPPORTED_FILE_FORMATS = {
         '.mp4': 'video/mp4',
@@ -1775,21 +1802,13 @@ def get_course_videos_context(course_block, pagination_conf, course_key=None):
         'videos.video_image_upload_enabled', __name__
     )
 
-    course = course_block
-    if not course:
-        with modulestore().bulk_operations(course_key):
-            course = modulestore().get_course(course_key)
-
     is_video_transcript_enabled = VideoTranscriptEnabledFlag.feature_enabled(course.id)
     is_ai_translations_enabled = use_xpert_translations_component(course.id)
-    previous_uploads, pagination_context = _get_index_videos(course, pagination_conf)
-    course_video_context = {
-        'context_course': course,
+    course_video_settings_context = {
         'image_upload_url': reverse_course_url('video_images_handler', str(course.id)),
         'video_handler_url': reverse_course_url('videos_handler', str(course.id)),
         'encodings_download_url': reverse_course_url('video_encodings_download', str(course.id)),
         'default_video_image_url': _get_default_video_image_url(),
-        'previous_uploads': previous_uploads,
         'concurrent_upload_limit': settings.VIDEO_UPLOAD_PIPELINE.get('CONCURRENT_UPLOAD_LIMIT', 0),
         'video_supported_file_formats': list(VIDEO_SUPPORTED_FILE_FORMATS.keys()),
         'video_upload_max_file_size': VIDEO_UPLOAD_MAX_FILE_SIZE_GB,
@@ -1812,10 +1831,9 @@ def get_course_videos_context(course_block, pagination_conf, course_key=None):
             'transcript_delete_handler_url': reverse_course_url('transcript_delete_handler', str(course.id)),
             'trancript_download_file_format': Transcript.SRT
         },
-        'pagination_context': pagination_context
     }
     if is_video_transcript_enabled:
-        course_video_context['video_transcript_settings'].update({
+        course_video_settings_context['video_transcript_settings'].update({
             'transcript_preferences_handler_url': reverse_course_url(
                 'transcript_preferences_handler',
                 str(course.id)
@@ -1826,10 +1844,12 @@ def get_course_videos_context(course_block, pagination_conf, course_key=None):
             ),
             'transcription_plans': get_3rd_party_transcription_plans(),
         })
-        course_video_context['active_transcript_preferences'] = get_transcript_preferences(str(course.id))
+        course_video_settings_context['active_transcript_preferences'] = get_transcript_preferences(str(course.id))
         # Cached state for transcript providers' credentials (org-specific)
-        course_video_context['transcript_credentials'] = get_transcript_credentials_state_for_org(course.id.org)
-    return course_video_context
+        course_video_settings_context['transcript_credentials'] = get_transcript_credentials_state_for_org(
+            course.id.org
+        )
+    return course_video_settings_context
 
 
 def get_course_index_context(request, course_key, course_block=None):
@@ -1854,14 +1874,14 @@ def _get_course_index_context(request, course_key, course_block):
         _course_outline_json,
         _deprecated_blocks_info,
         course_outline_initial_state,
+        user_can_reindex_course,
     )
     from openedx.core.djangoapps.content_staging import api as content_staging_api
 
     lms_link = get_lms_link_for_item(course_block.location)
     reindex_link = None
-    if settings.ENABLE_COURSEWARE_INDEX:
-        if GlobalStaff().has_user(request.user):
-            reindex_link = f"/course/{str(course_key)}/search_reindex"
+    if settings.ENABLE_COURSEWARE_INDEX and user_can_reindex_course(course_key, request.user):
+        reindex_link = f"/course/{str(course_key)}/search_reindex"
     sections = course_block.get_children()
     course_structure = _course_outline_json(request, course_block)
     locator_to_show = request.GET.get('show', None)
@@ -2241,27 +2261,6 @@ def get_group_configurations_context(course, store):
     }
 
     return context
-
-
-class StudioPermissionsService:
-    """
-    Service that can provide information about a user's permissions.
-
-    Deprecated. To be replaced by a more general authorization service.
-
-    Only used by LegacyLibraryContentBlock (and library_tools.py).
-    """
-
-    def __init__(self, user):
-        self._user = user
-
-    def can_read(self, course_key):
-        """ Does the user have read access to the given course/library? """
-        return has_studio_read_access(self._user, course_key)
-
-    def can_write(self, course_key):
-        """ Does the user have read access to the given course/library? """
-        return has_studio_write_access(self._user, course_key)
 
 
 def track_course_update_event(course_key, user, course_update_content=None):

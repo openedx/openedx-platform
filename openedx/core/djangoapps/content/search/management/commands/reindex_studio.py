@@ -15,7 +15,7 @@ from django.conf import settings
 from django.core.management import BaseCommand, CommandError
 
 from ... import api
-from ...tasks import rebuild_index_incremental
+from ...tasks import rebuild_index_incremental, rebuild_library_index
 
 log = logging.getLogger(__name__)
 
@@ -37,11 +37,24 @@ class Command(BaseCommand):
     ./manage.py cms shell -c 'IncrementalIndexCompleted.objects.all().delete()'
 
     This will delete all the IncrementalIndexCompleted records and will help in restarting the index population.
+
+    When upgrading from the single shared Studio index to separate course and library indexes, run
+    `./manage.py cms reindex_studio --libraries-only` once instead. It rebuilds only the library index and
+    deletes library documents from the course index, without reindexing courses.
     """
 
     help = "Add all course and library content to the Studio search index."
 
     def add_arguments(self, parser):
+        parser.add_argument(
+            "--libraries-only",
+            action="store_true",
+            default=False,
+            help=(
+                "Rebuild only the library index, then delete library documents from the course index. "
+                "Run this once when upgrading from the single shared Studio index; courses are not reindexed."
+            ),
+        )
         # Removed flags — provide clear error messages for operators with old automation.
         parser.add_argument(
             "--experimental",
@@ -96,6 +109,17 @@ class Command(BaseCommand):
                 "The --experimental flag has been removed. "
                 "reindex_studio is now a stable command, so the flag is no longer necessary."
             )
+
+        if options["libraries_only"]:
+            result = rebuild_library_index.delay()
+            if settings.CELERY_ALWAYS_EAGER:
+                self.stdout.write("Library indexing complete!")
+            else:
+                self.stdout.write(
+                    f"Studio library index rebuild has been queued (task_id={result.id}). "
+                    "Monitor progress in Celery worker logs."
+                )
+            return
 
         result = rebuild_index_incremental.delay()
 

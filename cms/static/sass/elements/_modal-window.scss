@@ -439,7 +439,20 @@
 
             ul.settings-list {
               flex-grow: 1;
+              min-height: 0;
             }
+
+            > form {
+              display: flex;
+              flex-direction: column;
+              flex-grow: 1;
+              min-height: 0;
+            }
+          }
+
+          .xblock-actions {
+            position: static;
+            flex-shrink: 0;
           }
         }
       }

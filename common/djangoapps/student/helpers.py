@@ -58,6 +58,10 @@ from openedx.core.djangoapps.content.block_structure.exceptions import UsageKeyN
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.core.djangoapps.theming.helpers import get_themes
 from openedx.core.djangoapps.user_authn.utils import is_safe_login_or_logout_redirect
+from openedx.core.lib.log_utils import (
+    get_standalone_pii_or_redacted_for_log,
+    get_username_or_pii_safe_user_id_for_log,
+)
 from openedx.core.lib.time_zone_utils import get_time_zone_offset
 from xmodule.data import CertificatesDisplayBehaviors  # pylint: disable=wrong-import-order
 
@@ -439,7 +443,7 @@ def authenticate_new_user(request, username, password):
     backend = load_backend(NEW_USER_AUTH_BACKEND)
     user = backend.authenticate(request=request, username=username, password=password)
     if not user:
-        log.warning(f"Unable to authenticate user: {username}")
+        log.warning(f"Unable to authenticate user: {get_standalone_pii_or_redacted_for_log(username)}")
     user.backend = NEW_USER_AUTH_BACKEND
     return user
 
@@ -576,7 +580,7 @@ def _cert_info(user, enrollment, cert_status):
         elif 'download_url' not in cert_status:
             log.warning(
                 "User %s has a downloadable cert for %s, but no download url",
-                user.username,
+                get_username_or_pii_safe_user_id_for_log(user),
                 course_overview.id
             )
             return default_info

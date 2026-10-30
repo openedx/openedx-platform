@@ -15,7 +15,6 @@ from edx_ace import ace
 from edx_ace.channel import ChannelType
 from edx_ace.recipient import Recipient
 from edx_ace.utils import date
-from edx_django_utils.monitoring import set_code_owner_attribute
 from eventtracking import tracker
 from opaque_keys.edx.keys import CourseKey
 from six.moves.urllib.parse import urljoin
@@ -41,7 +40,6 @@ DEFAULT_LANGUAGE = 'en'
 
 
 @shared_task(base=LoggedTask)
-@set_code_owner_attribute
 def update_discussions_map(context):
     """
     Updates the mapping between discussion_id to discussion block usage key
@@ -78,7 +76,6 @@ class CommentNotification(BaseMessageType):
 
 
 @shared_task(base=LoggedTask)
-@set_code_owner_attribute
 def send_ace_message(context):  # pylint: disable=missing-function-docstring
     context['course_id'] = CourseKey.from_string(context['course_id'])
 
@@ -119,7 +116,6 @@ def send_ace_message(context):  # pylint: disable=missing-function-docstring
 
 
 @shared_task(base=LoggedTask)
-@set_code_owner_attribute
 def send_ace_message_for_reported_content(context):  # pylint: disable=missing-function-docstring
     context['course_id'] = CourseKey.from_string(context['course_id'])
     context['course_name'] = modulestore().get_course(context['course_id']).display_name

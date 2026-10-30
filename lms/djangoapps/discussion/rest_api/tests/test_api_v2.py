@@ -14,7 +14,6 @@ from unittest import mock
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse  # noqa: F401
 
 import ddt
-import httpretty
 import pytest
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
@@ -58,7 +57,6 @@ from lms.djangoapps.discussion.rest_api.exceptions import (
 )
 from lms.djangoapps.discussion.rest_api.serializers import TopicOrdering
 from lms.djangoapps.discussion.rest_api.tests.utils import (
-    CommentsServiceMockMixin,  # noqa: F401
     ForumMockUtilsMixin,
     make_paginated_api_response,
     parsed_body,  # noqa: F401
@@ -231,10 +229,6 @@ class CreateThreadTest(
     def setUp(self):
         super().setUp()
         self.course = CourseFactory.create()
-        httpretty.reset()
-        httpretty.enable()
-        self.addCleanup(httpretty.reset)
-        self.addCleanup(httpretty.disable)
         self.user = UserFactory.create()
         self.register_get_user_response(self.user)
         self.request = RequestFactory().get("/test_path")
@@ -609,10 +603,6 @@ class CreateCommentTest(
 
     def setUp(self):
         super().setUp()
-        httpretty.reset()
-        httpretty.enable()
-        self.addCleanup(httpretty.reset)
-        self.addCleanup(httpretty.disable)
         self.course = CourseFactory.create()
         self.user = UserFactory.create()
         self.register_get_user_response(self.user)
@@ -1046,10 +1036,6 @@ class UpdateThreadTest(
     def setUp(self):
         super().setUp()
 
-        httpretty.reset()
-        httpretty.enable()
-        self.addCleanup(httpretty.reset)
-        self.addCleanup(httpretty.disable)
         self.user = UserFactory.create()
         self.register_get_user_response(self.user)
         self.request = RequestFactory().get("/test_path")
@@ -1097,8 +1083,7 @@ class UpdateThreadTest(
         )
         self.register_thread()
         update_thread(self.request, "test_thread", {})
-        for request in httpretty.httpretty.latest_requests:
-            assert request.method == "GET"
+        self.mock_forum_api.update_thread.assert_not_called()
 
     def test_basic(self):
         self.register_thread()
@@ -1703,10 +1688,6 @@ class UpdateCommentTest(
     def setUp(self):
         super().setUp()
 
-        httpretty.reset()
-        httpretty.enable()
-        self.addCleanup(httpretty.reset)
-        self.addCleanup(httpretty.disable)
         self.user = UserFactory.create()
         self.register_get_user_response(self.user)
         self.request = RequestFactory().get("/test_path")
@@ -1758,8 +1739,7 @@ class UpdateCommentTest(
         """Check that an empty update does not make any modifying requests."""
         self.register_comment()
         update_comment(self.request, "test_comment", {})
-        for request in httpretty.httpretty.latest_requests:
-            assert request.method == "GET"
+        self.mock_forum_api.update_comment.assert_not_called()
 
     @ddt.data(None, "test_parent")
     def test_basic(self, parent_id):
@@ -2304,10 +2284,6 @@ class DeleteThreadTest(
 
     def setUp(self):
         super().setUp()
-        httpretty.reset()
-        httpretty.enable()
-        self.addCleanup(httpretty.reset)
-        self.addCleanup(httpretty.disable)
         self.user = UserFactory.create()
         self.register_get_user_response(self.user)
         self.request = RequestFactory().get("/test_path")
@@ -2480,10 +2456,6 @@ class DeleteCommentTest(
 
     def setUp(self):
         super().setUp()
-        httpretty.reset()
-        httpretty.enable()
-        self.addCleanup(httpretty.reset)
-        self.addCleanup(httpretty.disable)
         self.user = UserFactory.create()
         self.register_get_user_response(self.user)
         self.request = RequestFactory().get("/test_path")
@@ -2666,10 +2638,6 @@ class RetrieveThreadTest(
 
     def setUp(self):
         super().setUp()
-        httpretty.reset()
-        httpretty.enable()
-        self.addCleanup(httpretty.reset)
-        self.addCleanup(httpretty.disable)
         self.user = UserFactory.create()
         self.register_get_user_response(self.user)
         self.request = RequestFactory().get("/test_path")
@@ -2817,10 +2785,6 @@ class GetThreadListTest(
 
     def setUp(self):
         super().setUp()
-        httpretty.reset()
-        httpretty.enable()
-        self.addCleanup(httpretty.reset)
-        self.addCleanup(httpretty.disable)
         self.maxDiff = None  # pylint: disable=invalid-name
         self.user = UserFactory.create()
         self.register_get_user_response(self.user)
@@ -3449,10 +3413,6 @@ class GetCommentListTest(
 
     def setUp(self):
         super().setUp()
-        httpretty.reset()
-        httpretty.enable()
-        self.addCleanup(httpretty.reset)
-        self.addCleanup(httpretty.disable)
         self.maxDiff = None  # pylint: disable=invalid-name
         self.user = UserFactory.create()
         self.register_get_user_response(self.user)
@@ -4202,10 +4162,6 @@ class CourseTopicsV2Test(ModuleStoreTestCase):
 class GetCourseTopicsTest(ForumMockUtilsMixin, UrlResetMixin, ModuleStoreTestCase):
     """Test for get_course_topics"""
     def setUp(self):
-        httpretty.reset()
-        httpretty.enable()
-        self.addCleanup(httpretty.reset)
-        self.addCleanup(httpretty.disable)
         super().setUp()
         self.maxDiff = None  # pylint: disable=invalid-name
         self.partition = UserPartition(

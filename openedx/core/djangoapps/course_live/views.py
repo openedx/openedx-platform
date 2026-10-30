@@ -3,7 +3,8 @@ View for course live app
 """
 from typing import Dict  # noqa: UP035
 
-import edx_api_doc_tools as apidocs
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
 from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
 from lti_consumer.api import get_lti_pii_sharing_state_for_course
@@ -37,19 +38,20 @@ class CourseLiveConfigurationView(APIView):
     )
     permission_classes = (IsStaffOrInstructor,)
 
-    @apidocs.schema(
+    @extend_schema(
         parameters=[
-            apidocs.path_parameter(
+            OpenApiParameter(
                 'course_id',
-                str,
+                OpenApiTypes.STR,
+                OpenApiParameter.PATH,
                 description="The course for which to get provider list",
             )
         ],
         responses={
             200: CourseLiveConfigurationSerializer,
-            401: "The requester is not authenticated.",
-            403: "The requester cannot access the specified course.",
-            404: "The requested course does not exist.",
+            401: OpenApiResponse(description="The requester is not authenticated."),
+            403: OpenApiResponse(description="The requester cannot access the specified course."),
+            404: OpenApiResponse(description="The requested course does not exist."),
         },
     )
     @ensure_valid_course_key
@@ -66,46 +68,51 @@ class CourseLiveConfigurationView(APIView):
 
         return Response(serializer.data)
 
-    @apidocs.schema(
+    @extend_schema(
         parameters=[
-            apidocs.path_parameter(
+            OpenApiParameter(
                 'course_id',
-                str,
+                OpenApiTypes.STR,
+                OpenApiParameter.PATH,
                 description="The course for which to get provider list",
             ),
-            apidocs.path_parameter(
+            OpenApiParameter(
                 'lti_1p1_client_key',
-                str,
+                OpenApiTypes.STR,
+                OpenApiParameter.PATH,
                 description="The LTI provider's client key",
             ),
-            apidocs.path_parameter(
+            OpenApiParameter(
                 'lti_1p1_client_secret',
-                str,
+                OpenApiTypes.STR,
+                OpenApiParameter.PATH,
                 description="The LTI provider's client secretL",
             ),
-            apidocs.path_parameter(
+            OpenApiParameter(
                 'lti_1p1_launch_url',
-                str,
+                OpenApiTypes.STR,
+                OpenApiParameter.PATH,
                 description="The LTI provider's launch URL",
             ),
-            apidocs.path_parameter(
+            OpenApiParameter(
                 'provider_type',
-                str,
+                OpenApiTypes.STR,
+                OpenApiParameter.PATH,
                 description="The LTI provider's launch URL",
             ),
-            apidocs.parameter(
+            OpenApiParameter(
                 'lti_config',
-                apidocs.ParameterLocation.QUERY,
-                object,
+                OpenApiTypes.OBJECT,
+                OpenApiParameter.QUERY,
                 description="The lti_config object with required additional parameters ",
             ),
         ],
         responses={
             200: CourseLiveConfigurationSerializer,
-            400: "Required parameters are missing.",
-            401: "The requester is not authenticated.",
-            403: "The requester cannot access the specified course.",
-            404: "The requested course does not exist.",
+            400: OpenApiResponse(description="Required parameters are missing."),
+            401: OpenApiResponse(description="The requester is not authenticated."),
+            403: OpenApiResponse(description="The requester cannot access the specified course."),
+            404: OpenApiResponse(description="The requested course does not exist."),
         },
     )
     @ensure_valid_course_key

@@ -23,6 +23,7 @@ from cms.djangoapps.course_creators.models import (
 from cms.djangoapps.course_creators.views import update_course_creator_group, update_org_content_creator_role
 from common.djangoapps.edxmako.shortcuts import render_to_string
 from openedx.core.djangoapps.theming.helpers import get_current_site
+from openedx.core.lib.log_utils import get_email_or_pii_safe_user_id_for_log
 
 log = logging.getLogger("studio.coursecreatoradmin")
 
@@ -169,9 +170,7 @@ def send_user_notification_callback(sender, **kwargs):  # pylint: disable=unused
     try:
         user.email_user(subject, message, studio_request_email)
     except:  # pylint: disable=bare-except
-        user_identifier_for_log = (
-            user.id if getattr(settings, 'SQUELCH_PII_IN_LOGS', False) else user.email
-        )
+        user_identifier_for_log = get_email_or_pii_safe_user_id_for_log(user)
         log.warning("Unable to send course creator status e-mail to %s", user_identifier_for_log)
 
 
@@ -199,9 +198,7 @@ def send_admin_notification_callback(sender, **kwargs):  # pylint: disable=unuse
             fail_silently=False
         )
     except SMTPException:
-        user_identifier_for_log = (
-            user.id if getattr(settings, 'SQUELCH_PII_IN_LOGS', False) else user.email
-        )
+        user_identifier_for_log = get_email_or_pii_safe_user_id_for_log(user)
         log.warning(
             "Failure sending 'pending state' e-mail for %s to %s",
             user_identifier_for_log,

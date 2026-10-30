@@ -214,8 +214,8 @@ class TestCourseListing(ModuleStoreTestCase):
         )
 
         request = self.factory.get('/course', {
-            'start_date_on_or_after': (today - timedelta(days=1)).date().isoformat(),
-            'start_date_on_or_before': (today + timedelta(days=1)).date().isoformat(),
+            'start_date_on_or_after': (today - timedelta(days=1)).isoformat(),
+            'start_date_on_or_before': (today + timedelta(days=1)).isoformat(),
         })
         request.user = self.user
         # Since a date param is present, _apply_course_query_filters also runs get_bool_param,
@@ -976,7 +976,9 @@ class TestCourseListingAuthz(CourseAuthoringAuthzTestMixin, ModuleStoreTestCase)
             "is_enabled",
             side_effect=self._mock_authz_toggle(enabled_keys),
         ):
-            course_keys = _get_course_keys_from_scopes([PlatformCourseOverviewGlobData(external_key="course-v1:*")])
+            course_keys = _get_course_keys_from_scopes([
+                PlatformCourseOverviewGlobData(external_key=PlatformCourseOverviewGlobData.build_external_key())
+            ])
 
         assert course_keys == set(authz_keys) | set(legacy_keys)
 
@@ -993,7 +995,9 @@ class TestCourseListingAuthz(CourseAuthoringAuthzTestMixin, ModuleStoreTestCase)
             "is_enabled",
             side_effect=self._mock_authz_toggle(enabled_keys, global_enabled=True),
         ):
-            course_keys = _get_course_keys_from_scopes([PlatformCourseOverviewGlobData(external_key="course-v1:*")])
+            course_keys = _get_course_keys_from_scopes([
+                PlatformCourseOverviewGlobData(external_key=PlatformCourseOverviewGlobData.build_external_key())
+            ])
 
         assert course_keys == set(CourseOverview.get_all_courses().values_list("id", flat=True))
 
@@ -1012,8 +1016,8 @@ class TestCourseListingAuthz(CourseAuthoringAuthzTestMixin, ModuleStoreTestCase)
         ):
             course_keys = _get_course_keys_from_scopes(
                 [
-                    OrgCourseOverviewGlobData(external_key="course-v1:Org1+*"),
-                    PlatformCourseOverviewGlobData(external_key="course-v1:*"),
+                    OrgCourseOverviewGlobData(external_key=OrgCourseOverviewGlobData.build_external_key("Org1")),
+                    PlatformCourseOverviewGlobData(external_key=PlatformCourseOverviewGlobData.build_external_key()),
                 ]
             )
 

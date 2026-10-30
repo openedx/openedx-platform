@@ -419,7 +419,7 @@ class CourseEnrollmentAdmin(DisableEnrollmentAdminMixin, admin.ModelAdmin):
     list_display = ('id', 'course_id', 'mode', 'user', 'is_active',)
     list_filter = ('mode', 'is_active',)
     raw_id_fields = ('user', 'course')
-    search_fields = ('course__id', 'mode', 'user__username',)
+    search_fields = ('course__id', 'mode', 'user__username', 'user__email')
     form = CourseEnrollmentForm
 
     def get_search_results(self, request, queryset, search_term):

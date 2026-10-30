@@ -2,16 +2,14 @@
 
 from unittest.mock import patch
 
-import casbin
-import pkg_resources
 from openedx_authz.api.users import assign_role_to_user_in_scope
 from openedx_authz.constants.roles import COURSE_STAFF
 from openedx_authz.engine.enforcer import AuthzEnforcer
-from openedx_authz.engine.utils import migrate_policy_between_enforcers
 from rest_framework.test import APIClient
 
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core import toggles as core_toggles
+from openedx.core.djangoapps.authz.tests.fixtures import seed_policies
 
 
 class CourseAuthoringAuthzTestMixin:
@@ -44,7 +42,7 @@ class CourseAuthoringAuthzTestMixin:
     def setUp(self):
         super().setUp()
 
-        self._seed_policies()
+        seed_policies()
 
         self.authorized_user = UserFactory(password=self.password)
         self.unauthorized_user = UserFactory(password=self.password)
@@ -75,27 +73,6 @@ class CourseAuthoringAuthzTestMixin:
             str(course_key)
         )
         AuthzEnforcer.get_enforcer().load_policy()
-
-    @classmethod
-    def _seed_policies(cls):
-        """Seed the database with AuthZ policies."""
-        global_enforcer = AuthzEnforcer.get_enforcer()
-        global_enforcer.load_policy()
-
-        model_path = pkg_resources.resource_filename(
-            "openedx_authz.engine",
-            "config/model.conf",
-        )
-
-        policy_path = pkg_resources.resource_filename(
-            "openedx_authz.engine",
-            "config/authz.policy",
-        )
-
-        migrate_policy_between_enforcers(
-            source_enforcer=casbin.Enforcer(model_path, policy_path),
-            target_enforcer=global_enforcer,
-        )
 
 
 class CourseAuthzTestMixin(CourseAuthoringAuthzTestMixin):

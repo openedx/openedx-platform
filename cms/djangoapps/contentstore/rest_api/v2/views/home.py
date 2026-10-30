@@ -2,7 +2,8 @@
 
 from collections import OrderedDict
 
-import edx_api_doc_tools as apidocs
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -46,57 +47,74 @@ class HomePageCoursesPaginator(PageNumberPagination):
 class HomePageCoursesViewV2(APIView):
     """View for getting all courses available to the logged in user."""
 
-    @apidocs.schema(
+    @extend_schema(
         parameters=[
-            apidocs.string_parameter(
+            OpenApiParameter(
                 "org",
-                apidocs.ParameterLocation.QUERY,
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
                 description="Query param to filter by course org",
             ),
-            apidocs.string_parameter(
+            OpenApiParameter(
                 "search",
-                apidocs.ParameterLocation.QUERY,
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
                 description="Query param to filter by course name, org, or number",
             ),
-            apidocs.string_parameter(
+            OpenApiParameter(
                 "order",
-                apidocs.ParameterLocation.QUERY,
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
                 description="Query param to order by course name, org, or number",
             ),
-            apidocs.string_parameter(
+            OpenApiParameter(
                 "active_only",
-                apidocs.ParameterLocation.QUERY,
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
                 description="Query param to filter by active courses only",
             ),
-            apidocs.string_parameter(
+            OpenApiParameter(
                 "archived_only",
-                apidocs.ParameterLocation.QUERY,
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
                 description="Query param to filter by archived courses only",
             ),
-            apidocs.string_parameter(
+            OpenApiParameter(
                 "page",
-                apidocs.ParameterLocation.QUERY,
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
                 description="Query param to paginate the courses",
             ),
-            apidocs.string_parameter(
+            OpenApiParameter(
                 "page_size",
-                apidocs.ParameterLocation.QUERY,
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
                 description="Query param to set page size",
             ),
-            apidocs.string_parameter(
+            OpenApiParameter(
                 "start_date_on_or_after",
-                apidocs.ParameterLocation.QUERY,
-                description="Query param to filter courses with a start date on or after this date (YYYY-MM-DD).",
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
+                description=(
+                    "Query param to filter courses with a start on or after this instant. Must be an ISO 8601 "
+                    "datetime with a UTC offset or Z, e.g. 2024-01-01T00:00:00+04:00. "
+                    "Percent-encode '+' as %2B in the URL."
+                ),
             ),
-            apidocs.string_parameter(
+            OpenApiParameter(
                 "start_date_on_or_before",
-                apidocs.ParameterLocation.QUERY,
-                description="Query param to filter courses with a start date on or before this date (YYYY-MM-DD).",
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
+                description=(
+                    "Query param to filter courses with a start on or before this instant. Must be an ISO 8601 "
+                    "datetime with a UTC offset or Z, e.g. 2024-12-31T23:59:59.999999+04:00. "
+                    "Percent-encode '+' as %2B in the URL."
+                ),
             ),
         ],
         responses={
             200: CourseHomeTabSerializerV2,
-            401: "The requester is not authenticated.",
+            401: OpenApiResponse(description="The requester is not authenticated."),
         },
     )
     def get(self, request: Request):
@@ -113,8 +131,8 @@ class HomePageCoursesViewV2(APIView):
             GET /api/contentstore/v2/home/courses?archived_only=true
             GET /api/contentstore/v2/home/courses?page=2
             GET /api/contentstore/v2/home/courses?page_size=20
-            GET /api/contentstore/v2/home/courses?start_date_on_or_after=2024-01-01
-            GET /api/contentstore/v2/home/courses?start_date_on_or_before=2024-12-31
+            GET /api/contentstore/v2/home/courses?start_date_on_or_after=2024-01-01T00:00:00%2B04:00
+            GET /api/contentstore/v2/home/courses?start_date_on_or_before=2024-12-31T23:59:59.999999Z
 
         **Response Values**
 

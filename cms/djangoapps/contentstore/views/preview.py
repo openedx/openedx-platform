@@ -29,6 +29,7 @@ from common.djangoapps.static_replace.wrapper import replace_urls_wrapper
 from common.djangoapps.student.models import anonymous_id_for_user
 from common.djangoapps.xblock_django.user_service import DjangoXBlockUserService
 from lms.djangoapps.lms_xblock.field_data import LmsFieldData
+from openedx.core.djangoapps.content.services import StudioPermissionsService
 from openedx.core.djangoapps.discussions.services import DiscussionConfigService
 from openedx.core.djangoapps.video_config.services import VideoConfigService
 from openedx.core.lib.cache_utils import CacheService
@@ -44,7 +45,7 @@ from xmodule.util.builtin_assets import add_webpack_js_to_fragment
 from xmodule.util.sandboxing import SandboxService
 from xmodule.x_module import AUTHOR_VIEW, PREVIEW_VIEWS, STUDENT_VIEW, XModuleMixin
 
-from ..utils import StudioPermissionsService, get_visibility_partition_info
+from ..utils import get_visibility_partition_info
 from .access import get_user_role
 from .session_kv_store import SessionKeyValueStore
 
@@ -318,6 +319,9 @@ def _studio_wrap_xblock(xblock, view, frag, context, display_name_only=False):
         can_edit = context.get('can_edit', True)
         can_add = context.get('can_add', True)
         can_move = context.get('can_move', True)
+        # Set by block.py as an already-final boolean. Default True so callers
+        # that don't set it preserve pre-RBAC behaviour (matching can_edit).
+        can_manage_tags = context.get('can_manage_tags', True)
         root_upstream_link = UpstreamLink.try_get_for_block(root_xblock, log_error=False)
         upstream_link = UpstreamLink.try_get_for_block(xblock, log_error=False)
         if (
@@ -333,6 +337,13 @@ def _studio_wrap_xblock(xblock, view, frag, context, display_name_only=False):
 
         if upstream_link.error_message is None and upstream_link.upstream_ref:
             can_edit = xblock.category in editable_library_components
+
+        # All content-modifying actions require edit access. A user may reach
+        # the actions menu with only tag-management rights (can_manage_tags),
+        # so gate the edit-type flags on can_edit to keep Move/Add/Delete and
+        # (via can_edit_visibility below) Manage Access out of their reach.
+        can_add = can_add and can_edit
+        can_move = can_move and can_edit
 
         # Is this a course or a library?
         is_course = xblock.context_key.is_course
@@ -362,7 +373,12 @@ def _studio_wrap_xblock(xblock, view, frag, context, display_name_only=False):
             'language': getattr(course, 'language', None),
             'is_course': is_course,
             'tags_count': tags_count,
-            'can_edit_title': True,  # This is always true even for imported components
+            # Set by block.py as an already-final boolean. Defaults True so
+            # callers that don't set it preserve pre-RBAC behaviour (the "Edit
+            # Title" affordance was historically always available, including for
+            # imported components).
+            'can_edit_title': context.get('can_edit_title', True),
+            'can_manage_tags': can_manage_tags,
         }
 
         add_webpack_js_to_fragment(frag, "js/factories/xblock_validation")

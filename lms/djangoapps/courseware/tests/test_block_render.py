@@ -40,6 +40,7 @@ from opaque_keys.edx.asides import AsideUsageKeyV2  # pylint: disable=wrong-impo
 from opaque_keys.edx.keys import CourseKey, UsageKey  # pylint: disable=wrong-import-order
 from pyquery import PyQuery  # pylint: disable=wrong-import-order
 from web_fragments.fragment import Fragment  # pylint: disable=wrong-import-order
+from webob import Response
 from xblock.completable import CompletableXBlockMixin  # pylint: disable=wrong-import-order
 from xblock.core import XBlock, XBlockAside  # pylint: disable=wrong-import-order
 from xblock.exceptions import NoSuchServiceError
@@ -58,6 +59,7 @@ from xblocks_contrib.problem.capa.testing.response_xml_factory import (
 from common.djangoapps.course_modes.models import CourseMode  # pylint: disable=reimported
 from common.djangoapps.student.models import CourseEnrollment, anonymous_id_for_user
 from common.djangoapps.student.tests.factories import (
+    TEST_PASSWORD,
     BetaTesterFactory,
     GlobalStaffFactory,
     InstructorFactory,
@@ -214,6 +216,29 @@ class XBlockWithoutCompletionAPI(XBlock):
         New code should use the completion event instead.
         """
         return self.runtime.publish(self, 'progress', {})
+
+
+class NoauthHandlerXBlock(XBlock):
+    """
+    XBlock with two handlers that report which user they ran as, for testing the noauth handler URL.
+    """
+
+    @XBlock.handler
+    def allowed_handler(self, request, suffix=''):  # pylint: disable=unused-argument
+        """
+        Handler that the tests put on XBLOCK_NOAUTH_HANDLER_ALLOWLIST.
+        """
+        return Response(json_body={'user_id': self.scope_ids.user_id})
+
+    @XBlock.handler
+    def other_handler(self, request, suffix=''):  # pylint: disable=unused-argument
+        """
+        Handler that is never on XBLOCK_NOAUTH_HANDLER_ALLOWLIST.
+        """
+        return Response(json_body={'user_id': self.scope_ids.user_id})
+
+
+NOAUTH_TEST_ALLOWLIST = [f'{__name__}.NoauthHandlerXBlock.allowed_handler']
 
 
 @ddt.ddt
@@ -990,6 +1015,91 @@ class TestHandleXBlockCallback(SharedModuleStoreTestCase, LoginEnrollmentTestCas
         render.handle_xblock_callback(request, str(course.id), usage_id, handler)
         assert mock_get_block.call_count == 2
         assert mock_get_block.call_args[1]['will_recheck_access'] == will_recheck_access
+
+
+@ddt.ddt
+@override_settings(XBLOCK_NOAUTH_HANDLER_ALLOWLIST=NOAUTH_TEST_ALLOWLIST)
+class TestNoauthXBlockHandler(ModuleStoreTestCase):
+    """
+    Test which handlers can be called without authentication, and as which user.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.course = CourseFactory.create()
+        self.chapter = BlockFactory.create(parent=self.course, category='chapter')
+
+    def _create_block(self, **kwargs):
+        return BlockFactory.create(parent=self.chapter, category='noauth_test', **kwargs)
+
+    def _handler_url(self, block, handler, url_name='xblock_handler_noauth'):
+        return reverse(url_name, kwargs={
+            'course_id': str(self.course.id),
+            'usage_id': quote_slashes(str(block.location)),
+            'handler': handler,
+        })
+
+    @XBlock.register_temp_plugin(NoauthHandlerXBlock, identifier='noauth_test')
+    def test_allowed_handler_runs_as_anonymous(self):
+        """
+        An allowed handler runs without a user, even when the request carries a session.
+        """
+        block = self._create_block()
+        user = UserFactory.create()
+        self.client.login(username=user.username, password=TEST_PASSWORD)
+
+        response = self.client.post(self._handler_url(block, 'allowed_handler'))
+
+        assert response.status_code == 200
+        assert json.loads(response.content) == {'user_id': None}
+
+    @XBlock.register_temp_plugin(NoauthHandlerXBlock, identifier='noauth_test')
+    def test_handler_not_on_allowlist(self):
+        block = self._create_block()
+
+        response = self.client.post(self._handler_url(block, 'other_handler'))
+
+        assert response.status_code == 404
+
+    @override_settings(XBLOCK_NOAUTH_HANDLER_ALLOWLIST=['no_such_module.NoSuchBlock.handler'] + NOAUTH_TEST_ALLOWLIST)
+    @XBlock.register_temp_plugin(NoauthHandlerXBlock, identifier='noauth_test')
+    def test_unimportable_allowlist_entry_is_skipped(self):
+        block = self._create_block()
+
+        with self.assertLogs('lms.djangoapps.courseware.block_render', level='WARNING') as logs:
+            response = self.client.post(self._handler_url(block, 'allowed_handler'))
+
+        assert response.status_code == 200
+        assert 'no_such_module.NoSuchBlock.handler' in logs.output[0]
+
+    @override_settings(XBLOCK_NOAUTH_HANDLER_ALLOWLIST=settings.XBLOCK_NOAUTH_HANDLER_ALLOWLIST)
+    def test_default_allowlist_blocks_problem_handler(self):
+        problem = BlockFactory.create(parent=self.chapter, category='problem')
+
+        response = self.client.post(self._handler_url(problem, 'xmodule_handler') + '/problem_get')
+
+        assert response.status_code == 404
+
+    @override_settings(XBLOCK_NOAUTH_HANDLER_ALLOWLIST=settings.XBLOCK_NOAUTH_HANDLER_ALLOWLIST)
+    def test_default_allowlist_entries_import(self):
+        """
+        Every handler on the default allowlist exists, so a rename upstream doesn't silently drop it.
+        """
+        handlers = render._get_noauth_handlers(tuple(settings.XBLOCK_NOAUTH_HANDLER_ALLOWLIST))  # pylint: disable=protected-access
+
+        assert len(handlers) == len(settings.XBLOCK_NOAUTH_HANDLER_ALLOWLIST)
+
+    @ddt.data(False, True)
+    @XBlock.register_temp_plugin(NoauthHandlerXBlock, identifier='noauth_test')
+    def test_anonymous_get_checks_access(self, visible_to_staff_only):
+        """
+        An anonymous GET on the regular handler URL only reaches blocks an anonymous user can load.
+        """
+        block = self._create_block(visible_to_staff_only=visible_to_staff_only)
+
+        response = self.client.get(self._handler_url(block, 'other_handler', url_name='xblock_handler'))
+
+        assert response.status_code == (404 if visible_to_staff_only else 200)
 
 
 @ddt.ddt

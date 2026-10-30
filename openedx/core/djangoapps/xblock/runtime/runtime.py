@@ -355,6 +355,13 @@ class XBlockRuntime(RuntimeShim, Runtime):
             return DiscussionConfigService()
         elif service_name == 'xqueue':
             return XQueueService(block)
+        elif service_name == 'studio_user_permissions':
+            from openedx.core.djangoapps.content.services import StudioPermissionsService
+            if self.user is None:
+                raise RuntimeError(
+                    "Cannot access studio permissions service when there is no user bound to the XBlock."
+                )
+            return StudioPermissionsService(self.user)
 
         # Otherwise, fall back to the base implementation which loads services
         # defined in the constructor:

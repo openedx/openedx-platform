@@ -1,7 +1,8 @@
 """ API Views for course home """
 
-import edx_api_doc_tools as apidocs
 from django.conf import settings
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from organizations import api as org_api
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -18,16 +19,17 @@ class HomePageView(APIView):
     """
     View for getting all courses and libraries available to the logged in user.
     """
-    @apidocs.schema(
+    @extend_schema(
         parameters=[
-            apidocs.string_parameter(
+            OpenApiParameter(
                 "org",
-                apidocs.ParameterLocation.QUERY,
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
                 description="Query param to filter by course org",
             )],
         responses={
             200: StudioHomeSerializer,
-            401: "The requester is not authenticated.",
+            401: OpenApiResponse(description="The requester is not authenticated."),
         },
     )
     def get(self, request: Request):
@@ -104,16 +106,18 @@ class HomePageLibrariesView(APIView):
     """
     View for getting all courses and libraries available to the logged in user.
     """
-    @apidocs.schema(
+    @extend_schema(
         parameters=[
-            apidocs.string_parameter(
+            OpenApiParameter(
                 "org",
-                apidocs.ParameterLocation.QUERY,
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
                 description="Query param to filter by course org",
             ),
-            apidocs.query_parameter(
+            OpenApiParameter(
                 "is_migrated",
-                bool,
+                OpenApiTypes.BOOL,
+                OpenApiParameter.QUERY,
                 description=(
                     "Query param to filter by migrated status of library."
                     " If present (true or false), it will filter by migration status"
@@ -123,7 +127,7 @@ class HomePageLibrariesView(APIView):
         ],
         responses={
             200: LibraryTabSerializer,
-            401: "The requester is not authenticated.",
+            401: OpenApiResponse(description="The requester is not authenticated."),
         },
     )
     def get(self, request: Request):

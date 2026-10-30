@@ -12,9 +12,11 @@ from urllib.parse import urljoin
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import AbstractBaseUser
 from django.contrib.sites.models import Site
 from django.core.management import BaseCommand
 from django.utils import timezone
+from edx_django_utils.plugins import pluggable_override
 from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locator import CourseLocator
 
@@ -23,11 +25,34 @@ from lms.djangoapps.grades.models import PersistentCourseGrade
 from openedx.core.constants import COURSE_PUBLISHED
 from openedx.core.djangoapps.catalog.utils import get_programs
 from openedx.core.djangoapps.programs.utils import ProgramProgressMeter
-from openedx.features.enterprise_support.api import get_enterprise_learner_data_from_db
 
 User = get_user_model()
 
 LOGGER = logging.getLogger(__name__)
+
+
+@pluggable_override('OVERRIDE_PROGRAM_NUDGE_SUGGESTED_COURSE_URL')
+def get_suggested_course_url(
+    user: AbstractBaseUser,
+    suggested_course: dict,
+    suggested_course_run: dict,
+) -> str:
+    """
+    Return the URL that the nudge email's suggested course link should point at.
+
+    Arguments:
+        user: The learner the nudge email is being sent to.
+        suggested_course: The catalog course being suggested.
+        suggested_course_run: The catalog course run being suggested.
+
+    Returns:
+        str: The absolute URL of the suggested course's about page.
+
+    This function can be overridden by an installed plugin via the
+    OVERRIDE_PROGRAM_NUDGE_SUGGESTED_COURSE_URL setting, for deployments that
+    route some learners to a different course landing page.
+    """
+    return urljoin(settings.MKTG_URLS.get('ROOT'), suggested_course_run['marketing_url'])
 
 
 class Command(BaseCommand):
@@ -185,16 +210,11 @@ class Command(BaseCommand):
         """
          Emit the Segment event which will be used by Braze to send the email
         """
-        learner_data = get_enterprise_learner_data_from_db(user)
-        enterprise_customer = learner_data[0]['enterprise_customer'] if learner_data else None
-        if enterprise_customer and enterprise_customer['enable_learner_portal']:
-            # If user is an enterprise learner then we want to redirect to B2B course landing page on learner portal.
-            recommended_course_url = urljoin(
-                settings.ENTERPRISE_LEARNER_PORTAL_BASE_URL,
-                '/'.join([enterprise_customer['slug'], 'course', suggested_course['key']]),
-            )
-        else:
-            recommended_course_url = urljoin(settings.MKTG_URLS.get('ROOT'), suggested_course_run['marketing_url'])
+        recommended_course_url = get_suggested_course_url(
+            user=user,
+            suggested_course=suggested_course,
+            suggested_course_run=suggested_course_run,
+        )
 
         event_properties = {
             'COURSE_ONE_NAME': completed_course_run['title'],

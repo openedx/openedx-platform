@@ -111,7 +111,6 @@ USE_TZ = True
 TIME_ZONE = 'UTC'
 
 # User-uploaded content
-MEDIA_ROOT = '/edx/var/edxapp/media/'
 MEDIA_URL = '/media/'
 
 # Dummy secret key for dev/test
@@ -972,6 +971,16 @@ EDX_DRF_EXTENSIONS = {
     # Set this value to an empty dict in order to prevent automatically updating
     # user data from values in (possibly stale) JWTs.
     'JWT_PAYLOAD_USER_ATTRIBUTE_MAPPING': {},
+
+    # .. setting_name: EDX_DRF_EXTENSIONS['STANDARDIZED_ERROR_BASE_HANDLER']
+    # .. setting_default: openedx.core.lib.request_utils.ignored_error_exception_handler
+    # .. setting_description: The exception handler that the ADR 0029 standardized
+    #      error-response handler (``edx_rest_framework_extensions.errors
+    #      .standardized_error_exception_handler``) delegates to before shaping the
+    #      error envelope. Pointing it at ``ignored_error_exception_handler``
+    #      preserves the platform's ignored-error logging and monitoring on every
+    #      endpoint that opts into the standardized envelope.
+    'STANDARDIZED_ERROR_BASE_HANDLER': 'openedx.core.lib.request_utils.ignored_error_exception_handler',
 }
 
 ################################# Features #################################
@@ -1212,6 +1221,17 @@ SHOW_BUMPER_PERIODICITY = 7 * 24 * 3600
 # .. toggle_creation_date: 2015-09-04
 # .. toggle_tickets: https://github.com/openedx/edx-platform/pull/9744
 ENABLE_SPECIAL_EXAMS = False
+
+# .. toggle_name: ENABLE_EXAM_SETTINGS_HTML_VIEW
+# .. toggle_implementation: DjangoSetting
+# .. toggle_default: False
+# .. toggle_description: Enable the "Exam Settings" view in Studio's course settings. When enabled,
+#   the corresponding legacy proctored/timed-exam fields on the course are marked deprecated in the
+#   advanced settings editor so they are edited via the dedicated view instead.
+# .. toggle_use_cases: open_edx
+# .. toggle_creation_date: 2020-07-09
+# .. toggle_tickets: https://github.com/openedx/edx-platform/pull/24405
+ENABLE_EXAM_SETTINGS_HTML_VIEW = False
 
 # .. toggle_name: SHOW_HEADER_LANGUAGE_SELECTOR
 # .. toggle_implementation: DjangoSetting
@@ -1613,7 +1633,7 @@ VIDEO_IMAGE_SETTINGS = dict(
     # STORAGE_CLASS='storages.backends.s3boto3.S3Boto3Storage',
     # STORAGE_KWARGS=dict(bucket='video-image-bucket'),
     STORAGE_KWARGS=dict(
-        location=MEDIA_ROOT,
+        location=Derived(lambda settings: settings.MEDIA_ROOT),
     ),
     DIRECTORY_PREFIX='video-images/',
     BASE_URL=MEDIA_URL,
@@ -1630,7 +1650,7 @@ VIDEO_TRANSCRIPTS_SETTINGS = dict(
     # STORAGE_CLASS='storages.backends.s3boto3.S3Boto3Storage',
     # STORAGE_KWARGS=dict(bucket='video-transcripts-bucket'),
     STORAGE_KWARGS=dict(
-        location=MEDIA_ROOT,
+        location=Derived(lambda settings: settings.MEDIA_ROOT),
     ),
     DIRECTORY_PREFIX='video-transcripts/',
     BASE_URL=MEDIA_URL,
@@ -2020,7 +2040,7 @@ OAUTH2_PROVIDER_APPLICATION_MODEL = 'oauth2_provider.Application'
 PROFILE_IMAGE_BACKEND = {
     'class': 'openedx.core.storage.OverwriteStorage',
     'options': {
-        'location': os.path.join(MEDIA_ROOT, 'profile-images/'),
+        'location': Derived(lambda settings: os.path.join(settings.MEDIA_ROOT, 'profile-images/')),
         'base_url': os.path.join(MEDIA_URL, 'profile-images/'),
     },
 }

@@ -46,6 +46,7 @@ from eventtracking import tracker
 # Note that this lives in LMS, so this dependency should be refactored.
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey
+from openedx_filters.authentication.filters import AccountActivationEmailContextGenerated
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.permissions import IsAuthenticated
 
@@ -112,9 +113,9 @@ from openedx.core.djangoapps.user_authn.toggles import (
 )
 from openedx.core.djangolib.markup import HTML, Text
 from openedx.core.lib.api.authentication import BearerAuthenticationAllowInactiveUser
+from openedx.core.lib.log_utils import get_username_or_pii_safe_user_id_for_log
 from openedx.features.course_experience.url_helpers import make_learning_mfe_courseware_url
 from openedx.features.discounts.applicability import FIRST_PURCHASE_DISCOUNT_OVERRIDE_FLAG
-from openedx.features.enterprise_support.utils import is_enterprise_learner
 from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 
 log = logging.getLogger("edx.student")
@@ -236,7 +237,6 @@ def compose_activation_email(
     message_context = generate_activation_email_context(user, user_registration)
     message_context.update({
         'confirm_activation_link': _get_activation_confirmation_link(message_context['key'], redirect_url),
-        'is_enterprise_learner': is_enterprise_learner(user),
         'is_first_purchase_discount_overridden': FIRST_PURCHASE_DISCOUNT_OVERRIDE_FLAG.is_enabled(),
         'route_enabled': route_enabled,
         'routed_user': user.username,
@@ -245,6 +245,11 @@ def compose_activation_email(
         'registration_flow': registration_flow,
         'show_auto_generated_username': show_auto_generated_username(user.username),
     })
+    # .. filter_implemented_name: AccountActivationEmailContextGenerated
+    # .. filter_type: org.openedx.authentication.account_activation.email.context.generated.v1
+    __, message_context = AccountActivationEmailContextGenerated.run_filter(
+        user=user, message_context=message_context,
+    )
 
     if route_enabled:
         dest_addr = getattr(settings, 'REROUTE_ACTIVATION_EMAIL', False)
@@ -400,7 +405,7 @@ def change_enrollment(request, check_access=True):
     except InvalidKeyError:
         log.warning(
             "User %s tried to %s with invalid course id: %s",
-            user.username,
+            get_username_or_pii_safe_user_id_for_log(user),
             action,
             request.POST.get("course_id"),
         )
@@ -416,7 +421,7 @@ def change_enrollment(request, check_access=True):
         if not modulestore().has_course(course_id):
             log.warning(
                 "User %s tried to enroll in non-existent course %s",
-                user.username,
+                get_username_or_pii_safe_user_id_for_log(user),
                 course_id
             )
             return HttpResponseBadRequest(_("Course id is invalid"))
@@ -489,7 +494,7 @@ def change_enrollment(request, check_access=True):
         except UnenrollmentNotAllowed as exc:
             return HttpResponseBadRequest(str(exc))
 
-        user_identifier_for_log = user.id if getattr(settings, 'SQUELCH_PII_IN_LOGS', False) else user.username
+        user_identifier_for_log = get_username_or_pii_safe_user_id_for_log(user)
         log.info("User %s unenrolled from %s; sending REFUND_ORDER", user_identifier_for_log, course_id)
         REFUND_ORDER.send(sender=None, course_enrollment=enrollment)
         return HttpResponse()
@@ -698,7 +703,7 @@ def activate_account(request, key):
     if request.GET.get('next'):
         redirect_to, root_login_url = get_next_url_for_login_page(request, include_host=True)
 
-        # Don't automatically redirect authenticated users to the redirect_url
+        # Don't automatically redirect to the redirect_url
         # if the `next` value is either:
         # 1. "/dashboard" or
         # 2. "https://{LMS_ROOT_URL}/dashboard" (which we might provide as a value from the AuthN MFE)
@@ -708,14 +713,23 @@ def activate_account(request, key):
         ):
             redirect_url = get_redirect_url_with_host(root_login_url, redirect_to)
 
-    if should_redirect_to_authn_microfrontend() and not request.user.is_authenticated:
-        params = {'account_activation_status': activation_message_type}
+    # Visitors who are not signed in have to authenticate before they can use their
+    # destination, so force a detour to the login page.
+    if not request.user.is_authenticated:
+        params = {}
+        if should_redirect_to_authn_microfrontend():
+            login_url = settings.AUTHN_MICROFRONTEND_URL + '/login'
+            params['account_activation_status'] = activation_message_type
+        else:
+            login_url = reverse('signin_user')
+
         if redirect_url:
             params['next'] = redirect_url
-        url_path = '/login?{}'.format(urllib.parse.urlencode(params))  # noqa: UP032
-        return redirect(settings.AUTHN_MICROFRONTEND_URL + url_path)
+        if params:
+            login_url = f'{login_url}?{urllib.parse.urlencode(params)}'
+        redirect_url = login_url
 
-    response = redirect(redirect_url) if redirect_url and is_enterprise_learner(request.user) else redirect('dashboard')
+    response = redirect(redirect_url or 'dashboard')
     if show_account_activation_popup:
         response.delete_cookie(
             settings.SHOW_ACTIVATE_CTA_POPUP_COOKIE_NAME,
@@ -1003,14 +1017,17 @@ def change_email_settings(request):
     receive_emails = request.data.get("receive_emails")
     course_key = CourseKey.from_string(course_id)
 
+    user_identifier_for_log = (
+        user.id if getattr(settings, 'SQUELCH_PII_IN_LOGS', False) else f'{user.username} ({user.email})'
+    )
+
     if receive_emails:
         optout_object = Optout.objects.filter(user=user, course_id=course_key)
         if optout_object:
             optout_object.delete()
         log.info(
-            "User %s (%s) opted in to receive emails from course %s",
-            user.username,
-            user.email,
+            "User %s opted in to receive emails from course %s",
+            user_identifier_for_log,
             course_id,
         )
         track_views.server_track(
@@ -1022,9 +1039,8 @@ def change_email_settings(request):
     else:
         Optout.objects.get_or_create(user=user, course_id=course_key)
         log.info(
-            "User %s (%s) opted out of receiving emails from course %s",
-            user.username,
-            user.email,
+            "User %s opted out of receiving emails from course %s",
+            user_identifier_for_log,
             course_id,
         )
         track_views.server_track(

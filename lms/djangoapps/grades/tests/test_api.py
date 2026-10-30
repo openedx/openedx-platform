@@ -1,10 +1,14 @@
 """ Tests calling the grades api directly """
 
 
+from decimal import Decimal
 from unittest.mock import patch
 
 import ddt
+from django.test import override_settings
+from openedx_learning.api import GradedObjectScore
 
+from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.tests.factories import UserFactory
 from lms.djangoapps.grades import api
 from lms.djangoapps.grades.models import (
@@ -12,6 +16,7 @@ from lms.djangoapps.grades.models import (
     PersistentSubsectionGrade,
     PersistentSubsectionGradeOverride,
 )
+from lms.djangoapps.grades.tests.utils import mock_get_score
 from xmodule.modulestore.tests.django_utils import (
     ModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
@@ -66,6 +71,23 @@ class OverrideSubsectionGradeTests(ModuleStoreTestCase):
     def tearDown(self):
         super().tearDown()
         PersistentSubsectionGradeOverride.objects.all().delete()
+
+    @override_settings(ENABLE_COMPETENCY_MASTERY_TRACKING=True)
+    def test_override_without_existing_grade_records_competency_status(self):
+        CourseEnrollment.enroll(self.user, self.course.id)
+        new_subsection = BlockFactory.create(parent=self.course, category="sequential", display_name="New Subsection")
+        BlockFactory.create(parent=new_subsection, category="problem", display_name="New Problem")
+        score = GradedObjectScore(object_id=str(new_subsection.location), fraction=Decimal('0.5'))
+
+        with mock_get_score(1, 2), patch(
+            'lms.djangoapps.grades.subsection_grade.record_graded_object_statuses'
+        ) as mock_record:
+            api.override_subsection_grade(
+                self.user.id, self.course.id, new_subsection.location, overrider=self.overriding_user,
+                earned_graded=1.0,
+            )
+
+        mock_record.assert_called_once_with(user_id=self.user.id, scores=[score])
 
     @ddt.data(0.0, None, 3.0)
     def test_override_subsection_grade(self, earned_graded):

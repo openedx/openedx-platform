@@ -421,6 +421,7 @@ class TestPhotoVerification(TestVerificationBase, MockS3Boto3Mixin, ModuleStoreT
         assert result is not None
 
 
+@ddt.ddt
 class SSOVerificationTest(TestVerificationBase):
     """
     Tests for the SSOVerification model
@@ -430,6 +431,21 @@ class SSOVerificationTest(TestVerificationBase):
         user = UserFactory.create()
         attempt = SSOVerification.objects.create(user=user)
         self.verification_active_at_datetime(attempt)
+
+    @ddt.data(True, False)
+    @patch('lms.djangoapps.verify_student.models.log')
+    def test_send_approval_signal_log_squelches_pii(self, squelch_pii, mock_log):
+        user = UserFactory.create()
+        attempt = SSOVerification.objects.create(user=user)
+
+        with override_settings(SQUELCH_PII_IN_LOGS=squelch_pii):
+            attempt.send_approval_signal(approved_by='reviewer')
+
+        expected_identifier = user.id if squelch_pii else user.username
+        mock_log.info.assert_any_call(f"Verification for user '{expected_identifier}' approved by 'reviewer' SSO.")
+        mock_log.info.assert_any_call(
+            f'LEARNER_SSO_VERIFIED signal fired for {expected_identifier} from SSOVerification'
+        )
 
 
 class ManualVerificationTest(TestVerificationBase):

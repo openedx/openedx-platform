@@ -7,6 +7,7 @@ from unittest.mock import patch
 import ddt
 from django.contrib.auth.models import Permission
 from django.test import TestCase
+from edx_django_utils.cache import RequestCache
 from edx_toggles.toggles.testutils import override_waffle_flag
 from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locator import LibraryLocator
@@ -24,6 +25,7 @@ from openedx_authz.api.users import assign_role_to_user_in_scope
 from openedx_authz.constants.roles import COURSE_ADMIN, COURSE_STAFF
 from openedx_authz.engine.enforcer import AuthzEnforcer
 from organizations.api import add_organization
+from organizations.tests.factories import OrganizationFactory
 
 from common.djangoapps.student.admin import CourseAccessRoleHistoryAdmin
 from common.djangoapps.student.models import CourseAccessRoleHistory, User
@@ -31,6 +33,7 @@ from common.djangoapps.student.role_helpers import get_course_roles, has_staff_r
 from common.djangoapps.student.roles import (
     ROLE_CACHE_UNGROUPED_ROLES__KEY,
     AuthzCompatCourseAccessRole,
+    BulkRoleCache,
     CourseAccessRole,
     CourseBetaTesterRole,
     CourseCreatorRole,
@@ -316,6 +319,61 @@ class RolesTestCase(TestCase):
             result = role.get_orgs_for_user(self.student)
             self.assertCountEqual(result, [self.course_key.org, other_org])  # noqa: PT009
 
+    @override_waffle_flag(AUTHZ_COURSE_AUTHORING_FLAG, active=True)
+    def test_get_orgs_for_user_authz_platform_glob(self):
+        """
+        A platform-wide glob assignment (course-v1:*) has no `.org` attribute, unlike
+        course/org-glob scopes. get_orgs_for_user must special-case it and return every
+        registered org instead of crashing with an AttributeError.
+        """
+        role = CourseStaffRole(self.course_key)
+
+        for org in self.orgs:
+            OrganizationFactory(short_name=org, name=org)
+
+        assign_role_to_user_in_scope(
+            self.student.username,
+            COURSE_STAFF.external_key,
+            PlatformCourseOverviewGlobData.build_external_key(),
+        )
+        AuthzEnforcer.get_enforcer().load_policy()
+
+        result = role.get_orgs_for_user(self.student)
+        assert sorted(result) == sorted(self.orgs)
+        assert role.has_org_for_user(self.student)
+        assert role.has_org_for_user(self.student, org=self.orgs[0])
+
+    @override_waffle_flag(AUTHZ_COURSE_AUTHORING_FLAG, active=True)
+    def test_get_orgs_for_user_authz_platform_glob_vs_org_scoped(self):
+        """
+        Side-by-side check that the platform-glob branch (return every registered org)
+        and the regular branch (return only the orgs with a concrete assignment) produce
+        the same list[str] shape, over the same pool of registered orgs: an org-scoped
+        grant returns a subset, a platform-wide grant returns all of them.
+        """
+        role = CourseStaffRole(self.course_key)
+        third_org = "Universal"
+        all_orgs = [*self.orgs, third_org]
+
+        for org in all_orgs:
+            OrganizationFactory(short_name=org, name=org)
+
+        subset_user = UserFactory()
+        assign_role_to_user_in_scope(
+            subset_user.username,
+            COURSE_STAFF.external_key,
+            OrgCourseOverviewGlobData.build_external_key(self.orgs[0]),
+        )
+        assign_role_to_user_in_scope(
+            self.student.username,
+            COURSE_STAFF.external_key,
+            PlatformCourseOverviewGlobData.build_external_key(),
+        )
+        AuthzEnforcer.get_enforcer().load_policy()
+
+        assert sorted(role.get_orgs_for_user(subset_user)) == [self.orgs[0]]
+        assert sorted(role.get_orgs_for_user(self.student)) == sorted(all_orgs)
+
     def test_get_authz_compat_course_access_roles_for_user(self):
         """
         Test that get_authz_compat_course_access_roles_for_user doesn't crash when the user
@@ -560,6 +618,91 @@ class RoleCacheTestCase(TestCase):  # pylint: disable=missing-class-docstring
         assert roles_dict.get('library-v1:edX+quizzes').pop().course_id.course == 'quizzes'
         assert roles_dict.get('course-v1:edX+toy+2012_Summer').pop().course_id.course == 'toy'
         assert roles_dict.get('course-v1:edX+toy2+2013_Fall').pop().course_id.course == 'toy2'
+
+
+class BulkRoleCachePrefetchTestCase(TestCase):
+    """
+    Regression tests for BulkRoleCache.prefetch mixing legacy CourseAccessRole rows
+    with openedx-authz compat roles. The authz loop used to add the previous
+    iteration's `compat_role` (left over from the legacy loop above it) instead of
+    its own `role`, raising UnboundLocalError when no legacy role existed at all,
+    and silently caching the wrong role when one did.
+
+    These mock get_authz_compat_course_access_roles_for_user directly rather than
+    assigning real AuthZ roles, since that goes through the global casbin enforcer,
+    whose in-memory policy isn't rolled back between tests the way the database is.
+
+    prefetch() also stores its result in a RequestCache, which outside of an actual
+    request (as here) isn't cleared automatically between tests, so it's cleared in
+    tearDown to avoid leaking cached roles into unrelated tests that construct a
+    RoleCache for a user this class never prefetched.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.course_key = CourseKey.from_string('course-v1:edX+toy+2012_Fall')
+
+    def tearDown(self):
+        super().tearDown()
+        RequestCache(BulkRoleCache.CACHE_NAMESPACE).clear()
+
+    def test_prefetch_with_only_authz_roles_does_not_crash(self):
+        """
+        A user with an authz compat role and no legacy CourseAccessRole entry used to
+        crash prefetch with UnboundLocalError, since compat_role was never assigned.
+        """
+        user = UserFactory()
+        authz_role = AuthzCompatCourseAccessRole(
+            user_id=user.id,
+            username=user.username,
+            course_id=str(self.course_key),
+            org=self.course_key.org,
+            role='staff',
+        )
+
+        with patch(
+            'common.djangoapps.student.roles.get_authz_compat_course_access_roles_for_user',
+            return_value={authz_role},
+        ):
+            BulkRoleCache.prefetch([user])
+
+        cached_roles = BulkRoleCache.get_user_roles(user)
+        assert cached_roles[get_role_cache_key_for_course(self.course_key)] == {authz_role}
+
+    def test_prefetch_with_legacy_and_authz_roles_for_different_users(self):
+        """
+        Each user's authz compat role must be cached as itself, not as whichever
+        legacy CourseAccessRole happened to be the last one scanned by the loop above.
+        """
+        legacy_user = UserFactory()
+        CourseAccessRole.objects.create(
+            user=legacy_user, org=self.course_key.org, course_id=self.course_key, role='staff',
+        )
+
+        authz_user = UserFactory()
+        authz_role = AuthzCompatCourseAccessRole(
+            user_id=authz_user.id,
+            username=authz_user.username,
+            course_id=str(self.course_key),
+            org=self.course_key.org,
+            role='instructor',
+        )
+
+        def fake_authz_roles(user):
+            return {authz_role} if user.id == authz_user.id else set()
+
+        with patch(
+            'common.djangoapps.student.roles.get_authz_compat_course_access_roles_for_user',
+            side_effect=fake_authz_roles,
+        ):
+            BulkRoleCache.prefetch([legacy_user, authz_user])
+
+        course_cache_key = get_role_cache_key_for_course(self.course_key)
+        legacy_roles = BulkRoleCache.get_user_roles(legacy_user)[course_cache_key]
+        authz_roles = BulkRoleCache.get_user_roles(authz_user)[course_cache_key]
+
+        assert {r.role for r in legacy_roles} == {'staff'}
+        assert authz_roles == {authz_role}
 
 
 class CourseAccessRoleHistoryTest(TestCase):

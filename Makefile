@@ -29,8 +29,8 @@ SWAGGER = docs/lms-openapi.yaml
 docs: swagger guides technical-docs ## build the documentation for this repository
 	$(MAKE) -C docs html
 
-swagger: ## generate the swagger.yaml file
-	DJANGO_SETTINGS_MODULE=docs.docs_settings uv run python manage.py lms generate_swagger --generator-class=edx_api_doc_tools.ApiSchemaGenerator -o $(SWAGGER)
+swagger: ## generate the OpenAPI schema file
+	DJANGO_SETTINGS_MODULE=docs.docs_settings uv run python manage.py lms spectacular --file $(SWAGGER)
 
 extract_translations: ## extract localizable strings from sources
 	uv run i18n_tool extract --no-segment -v
@@ -86,7 +86,7 @@ compile-requirements: ## Regenerate uv.lock for the root project and all uv sub-
 	@# independent of the root project's dependency graph) before exporting any
 	@# compat file below, so a failure in one halts the whole target before
 	@# anything downstream of it is (re)generated.
-	@for d in requirements/edx-sandbox scripts/xblock scripts/semgrep scripts/user_retirement scripts/structures_pruning; do \
+	@for d in requirements/edx-sandbox scripts/xblock scripts/user_retirement scripts/structures_pruning; do \
 		echo ; \
 		echo "== $$d ===============================" ; \
 		uv run --no-project --isolated --with edx-lint edx_lint write_uv_constraints $$d/pyproject.toml && \

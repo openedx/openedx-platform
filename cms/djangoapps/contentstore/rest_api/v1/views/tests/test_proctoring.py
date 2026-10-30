@@ -8,12 +8,14 @@ from django.test.utils import override_settings
 from django.urls import reverse
 from edx_toggles.toggles.testutils import override_waffle_flag
 from openedx_authz.constants.permissions import COURSES_VIEW_ADVANCED_SETTINGS
+from openedx_authz.constants.roles import COURSE_AUDITOR, COURSE_LIMITED_STAFF, COURSE_STAFF
 from rest_framework import status
 from rest_framework.test import APITestCase
 
 from cms.djangoapps.contentstore.tests.test_utils import AuthorizeStaffTestCase
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase
 from openedx.core import toggles as core_toggles
+from openedx.core.djangoapps.authz.tests.mixins import CourseAuthoringAuthzTestMixin
 from openedx.core.djangoapps.course_apps.toggles import EXAMS_IDA
 from xmodule.course_metadata_utils import DEFAULT_START_DATE
 from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
@@ -41,6 +43,84 @@ class ProctoringExamSettingsTestcase(AuthorizeStaffTestCase):
         assert response.data == {
             "detail": f"Course with course_id {course_id} does not exist."
         }
+
+
+class ProctoredExamSettingsAuthzTests(CourseAuthoringAuthzTestMixin, CourseTestCase):
+    """
+    Tests for the proctored exam settings endpoint with AuthZ enabled, using real role assignments.
+
+    GET requires courses.view_pages_and_resources and POST requires courses.manage_pages_and_resources.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.url = reverse(
+            "cms.djangoapps.contentstore:v1:proctored_exam_settings",
+            kwargs={"course_id": self.course.id},
+        )
+
+    def _get_opt_out(self):
+        return modulestore().get_item(self.course.location).allow_proctoring_opt_out
+
+    def _post_flipping_opt_out(self, client):
+        """POST the settings with allow_proctoring_opt_out (a staff-only field) set to the opposite value."""
+        data = ProctoringExamSettingsPostTests.get_request_data(allow_proctoring_opt_out=not self._get_opt_out())
+        return client.post(self.url, data, format="json")
+
+    def test_staff_role_can_get_settings(self):
+        self.add_user_to_role_in_course(self.authorized_user, COURSE_STAFF.external_key, self.course.id)
+        response = self.authorized_client.get(self.url)
+        assert response.status_code == status.HTTP_200_OK
+
+    def test_auditor_role_can_get_settings(self):
+        self.add_user_to_role_in_course(self.authorized_user, COURSE_AUDITOR.external_key, self.course.id)
+        response = self.authorized_client.get(self.url)
+        assert response.status_code == status.HTTP_200_OK
+
+    def test_limited_staff_role_cannot_get_settings(self):
+        self.add_user_to_role_in_course(self.authorized_user, COURSE_LIMITED_STAFF.external_key, self.course.id)
+        response = self.authorized_client.get(self.url)
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_user_without_role_cannot_get_settings(self):
+        response = self.unauthorized_client.get(self.url)
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_global_staff_can_get_settings(self):
+        response = self.staff_client.get(self.url)
+        assert response.status_code == status.HTTP_200_OK
+
+    def test_staff_role_can_edit_staff_only_fields(self):
+        """A non-staff user whose role grants manage can save the fields reserved to edX staff."""
+        self.add_user_to_role_in_course(self.authorized_user, COURSE_STAFF.external_key, self.course.id)
+        initial = self._get_opt_out()
+        response = self._post_flipping_opt_out(self.authorized_client)
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["proctored_exam_settings"]["allow_proctoring_opt_out"] is not initial
+        assert self._get_opt_out() is not initial
+
+    def test_auditor_role_cannot_post_settings(self):
+        """The view permission is not enough to save the settings."""
+        self.add_user_to_role_in_course(self.authorized_user, COURSE_AUDITOR.external_key, self.course.id)
+        initial = self._get_opt_out()
+        response = self._post_flipping_opt_out(self.authorized_client)
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert self._get_opt_out() is initial
+
+    def test_limited_staff_role_cannot_post_settings(self):
+        self.add_user_to_role_in_course(self.authorized_user, COURSE_LIMITED_STAFF.external_key, self.course.id)
+        response = self._post_flipping_opt_out(self.authorized_client)
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_user_without_role_cannot_post_settings(self):
+        response = self._post_flipping_opt_out(self.unauthorized_client)
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_global_staff_can_post_settings(self):
+        initial = self._get_opt_out()
+        response = self._post_flipping_opt_out(self.staff_client)
+        assert response.status_code == status.HTTP_200_OK
+        assert self._get_opt_out() is not initial
 
 
 class ProctoringExamSettingsGetTests(

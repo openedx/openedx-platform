@@ -13,7 +13,6 @@ from datetime import datetime
 from unittest import mock
 
 import ddt
-import httpretty
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import override_settings
 from django.urls import reverse
@@ -39,7 +38,6 @@ from common.test.utils import disable_signal
 from lms.djangoapps.discussion.django_comment_client.tests.utils import config_course_discussions, topic_name_to_id
 from lms.djangoapps.discussion.rest_api import api
 from lms.djangoapps.discussion.rest_api.tests.utils import (
-    CommentsServiceMockMixin,
     ForumMockUtilsMixin,
     ProfileImageTestMixin,
     make_minimal_cs_comment,
@@ -164,7 +162,6 @@ class DiscussionAPIViewTestMixin(ForumMockUtilsMixin, UrlResetMixin):
 
 
 @ddt.ddt
-@httpretty.activate
 @disable_signal(api, "thread_edited")
 @override_settings(ENABLE_DISCUSSION_SERVICE=True)
 class ThreadViewSetPartialUpdateTest(
@@ -482,7 +479,6 @@ class CommentViewSetPartialUpdateTest(
 
 
 @ddt.ddt
-@httpretty.activate
 @override_settings(ENABLE_DISCUSSION_SERVICE=True)
 class ThreadViewSetListTest(
     DiscussionAPIViewTestMixin, ModuleStoreTestCase, ProfileImageTestMixin
@@ -1093,7 +1089,6 @@ class CourseViewTest(DiscussionAPIViewTestMixin, ModuleStoreTestCase):
 
 
 @ddt.ddt
-@httpretty.activate
 @mock.patch('django.conf.settings.USERNAME_REPLACEMENT_WORKER', 'test_replace_username_service_worker')
 @override_settings(ENABLE_DISCUSSION_SERVICE=True)
 class ReplaceUsernamesViewTest(DiscussionAPIViewTestMixin, ModuleStoreTestCase):
@@ -1190,16 +1185,12 @@ class ReplaceUsernamesViewTest(DiscussionAPIViewTestMixin, ModuleStoreTestCase):
 
 @ddt.ddt
 @override_settings(ENABLE_DISCUSSION_SERVICE=True)
-class CourseTopicsViewTest(DiscussionAPIViewTestMixin, CommentsServiceMockMixin, ModuleStoreTestCase):
+class CourseTopicsViewTest(DiscussionAPIViewTestMixin, ModuleStoreTestCase):
     """
     Tests for CourseTopicsView
     """
 
     def setUp(self):
-        httpretty.reset()
-        httpretty.enable()
-        self.addCleanup(httpretty.reset)
-        self.addCleanup(httpretty.disable)
         super().setUp()
         self.url = reverse("course_topics", kwargs={"course_id": str(self.course.id)})
         self.thread_counts_map = {
@@ -1490,7 +1481,6 @@ class CourseTopicsViewV3Test(DiscussionAPIViewTestMixin, ModuleStoreTestCase):
 
 
 @ddt.ddt
-@httpretty.activate
 @override_settings(ENABLE_DISCUSSION_SERVICE=True)
 class LearnerThreadViewAPITest(DiscussionAPIViewTestMixin, ModuleStoreTestCase):
     """Tests for LearnerThreadView list"""
@@ -1801,7 +1791,6 @@ class LearnerThreadViewAPITest(DiscussionAPIViewTestMixin, ModuleStoreTestCase):
 
 
 @ddt.ddt
-@httpretty.activate
 @override_waffle_flag(ENABLE_DISCUSSIONS_MFE, True)
 @override_settings(ENABLE_DISCUSSION_SERVICE=True)
 class CourseActivityStatsTest(UrlResetMixin, ForumMockUtilsMixin, APITestCase,
@@ -1952,7 +1941,6 @@ class CourseActivityStatsTest(UrlResetMixin, ForumMockUtilsMixin, APITestCase,
         assert response == (username_search_string.lower(), 1, 1)
 
 
-@httpretty.activate
 @override_settings(ENABLE_DISCUSSION_SERVICE=True)
 class RetireViewTest(DiscussionAPIViewTestMixin, ModuleStoreTestCase):
     """Tests for CourseView"""

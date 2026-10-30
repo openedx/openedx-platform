@@ -15,6 +15,7 @@ from django.test import TransactionTestCase
 from django.test.client import RequestFactory
 from django.test.utils import override_settings
 from django.urls import reverse
+from django_countries import countries
 from openedx_events.testing import OpenEdxEventsTestMixin
 from social_django.models import Partial, UserSocialAuth
 from testfixtures import LogCapture
@@ -60,7 +61,6 @@ from openedx.core.djangoapps.user_api.accounts.tests.retirement_helpers import (
     fake_requested_retirement,
     setup_retirement_states,  # noqa: F401
 )
-from openedx.core.djangoapps.user_api.tests.test_constants import SORTED_COUNTRIES
 from openedx.core.djangoapps.user_api.tests.test_helpers import TestCaseForm
 from openedx.core.djangoapps.user_api.tests.test_views import UserAPITestCase
 from openedx.core.djangolib.testing.utils import CacheIsolationTestCase, skip_unless_lms
@@ -666,7 +666,7 @@ class RegistrationViewTestV1(
             }
         )
 
-    @override_settings(REGISTRATION_EXTENSION_FORM='openedx.core.djangoapps.user_api.tests.test_helpers.TestCaseForm')
+    @override_settings(PROFILE_EXTENSION_FORM='openedx.core.djangoapps.user_api.tests.test_helpers.TestCaseForm')
     def test_extension_form_fields(self):
         no_extra_fields_setting = {}
 
@@ -733,22 +733,7 @@ class RegistrationViewTestV1(
     def test_register_form_third_party_auth_running_google(self, input_country_code, expected_country_code,
                                                            input_username, expected_username):
         no_extra_fields_setting = {}
-        country_options = (
-            [
-                {
-                    "name": "--",
-                    "value": "",
-                    "default": False
-                }
-            ] + [
-                {
-                    "value": country_code,
-                    "name": str(country_name),
-                    "default": country_code == expected_country_code
-                }
-                for country_code, country_name in SORTED_COUNTRIES
-            ]
-        )
+        country_options = self._expected_country_options(expected_country_code)
 
         provider = self.configure_google_provider(enabled=True)
         with simulate_running_pipeline(
@@ -1088,22 +1073,7 @@ class RegistrationViewTestV1(
         )
 
     def test_registration_form_country(self):
-        country_options = (
-            [
-                {
-                    "name": "--",
-                    "value": "",
-                    "default": True
-                }
-            ] + [
-                {
-                    "value": country_code,
-                    "name": str(country_name),
-                    "default": False
-                }
-                for country_code, country_name in SORTED_COUNTRIES
-            ]
-        )
+        country_options = self._expected_country_options()
         self._assert_reg_field(
             {"country": "required"},
             {
@@ -1223,7 +1193,7 @@ class RegistrationViewTestV1(
             "confirm_email": "required",
         },
         REGISTRATION_FIELD_ORDER=None,
-        REGISTRATION_EXTENSION_FORM='openedx.core.djangoapps.user_api.tests.test_helpers.TestCaseForm',
+        PROFILE_EXTENSION_FORM='openedx.core.djangoapps.user_api.tests.test_helpers.TestCaseForm',
     )
     def test_field_order(self):
         response = self.client.get(self.url)
@@ -1310,7 +1280,7 @@ class RegistrationViewTestV1(
             "honor_code": "required",
             "confirm_email": "required",
         },
-        REGISTRATION_EXTENSION_FORM='openedx.core.djangoapps.user_api.tests.test_helpers.TestCaseForm',
+        PROFILE_EXTENSION_FORM='openedx.core.djangoapps.user_api.tests.test_helpers.TestCaseForm',
         REGISTRATION_FIELD_ORDER=[
             "name",
             "confirm_email",
@@ -1417,7 +1387,7 @@ class RegistrationViewTestV1(
         assert account_settings["goals"] == self.GOALS
         assert account_settings["country"] == self.COUNTRY
 
-    @override_settings(REGISTRATION_EXTENSION_FORM='openedx.core.djangoapps.user_api.tests.test_helpers.TestCaseForm')
+    @override_settings(PROFILE_EXTENSION_FORM='openedx.core.djangoapps.user_api.tests.test_helpers.TestCaseForm')
     @mock.patch('openedx.core.djangoapps.user_api.tests.test_helpers.TestCaseForm.DUMMY_STORAGE', new_callable=dict)
     @mock.patch(
         'openedx.core.djangoapps.user_api.tests.test_helpers.DummyRegistrationExtensionModel',
@@ -1859,6 +1829,38 @@ class RegistrationViewTestV1(
             }
         )
 
+    def _expected_country_options(self, default_code=""):
+        """
+        Build the options the country select is expected to offer: the empty
+        placeholder followed by every country django-countries knows about,
+        with `default` set on the one matching default_code.
+
+        The options are derived from django_countries.countries rather than
+        from a hardcoded list so that upstream renames (and our own
+        COUNTRIES_OVERRIDE entries) don't turn into test failures. What this
+        asserts is our own behavior: the placeholder comes first, and exactly
+        one option is marked as the default.
+
+        Iterate `countries` directly instead of sorting the names here.
+        django-countries orders by locale-aware collation, which is not plain
+        string sort: "Åland Islands" collates as "Aland" and so comes second,
+        not last.
+        """
+        return [
+            {
+                "name": "--",
+                "value": "",
+                "default": default_code == ""
+            }
+        ] + [
+            {
+                "value": country_code,
+                "name": str(country_name),
+                "default": country_code == default_code
+            }
+            for country_code, country_name in countries
+        ]
+
     def _assert_fields_match(self, actual_field, expected_field):
         """
         Assert that the actual field and the expected field values match.
@@ -1985,7 +1987,7 @@ class RegistrationViewTestV2(RegistrationViewTestV1):
             "honor_code": "required",
             "confirm_email": "required",
         },
-        REGISTRATION_EXTENSION_FORM='openedx.core.djangoapps.user_api.tests.test_helpers.TestCaseForm',
+        PROFILE_EXTENSION_FORM='openedx.core.djangoapps.user_api.tests.test_helpers.TestCaseForm',
         REGISTRATION_FIELD_ORDER=[
             "name",
             "confirm_email",
@@ -2093,7 +2095,7 @@ class RegistrationViewTestV2(RegistrationViewTestV1):
             "confirm_email": "required",
         },
         REGISTRATION_FIELD_ORDER=None,
-        REGISTRATION_EXTENSION_FORM='openedx.core.djangoapps.user_api.tests.test_helpers.TestCaseForm',
+        PROFILE_EXTENSION_FORM='openedx.core.djangoapps.user_api.tests.test_helpers.TestCaseForm',
     )
     def test_field_order(self):
         response = self.client.get(self.url)
@@ -2135,7 +2137,7 @@ class RegistrationViewTestV2(RegistrationViewTestV1):
             "confirm_email": "required",
         },
         REGISTRATION_FIELD_ORDER=None,
-        REGISTRATION_EXTENSION_FORM='openedx.core.djangoapps.user_api.tests.test_helpers.TestCaseForm',
+        PROFILE_EXTENSION_FORM='openedx.core.djangoapps.user_api.tests.test_helpers.TestCaseForm',
     )
     def test_year_of_birth_field_with_feature_flag(self):
         """

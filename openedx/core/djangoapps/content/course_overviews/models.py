@@ -5,7 +5,7 @@ Declaration of CourseOverview model
 
 import json
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime
 from urllib.parse import urlparse, urlunparse
 from zoneinfo import ZoneInfo
 
@@ -694,10 +694,10 @@ class CourseOverview(TimeStampedModel):
             active_only (bool): If provided, only the courses that have not ended will be returned.
             course_keys (list[string]): Optional parameter that allows case-insensitive
                 filter by course ids
-            start_date_on_or_after (date): Optional parameter that limits the results to courses
-                starting on or after this date.
-            start_date_on_or_before (date): Optional parameter that limits the results to courses
-                starting on or before this date.
+            start_date_on_or_after (datetime, timezone-aware): Optional parameter that limits the results
+                to courses starting at or after this instant.
+            start_date_on_or_before (datetime, timezone-aware): Optional parameter that limits the results
+                to courses starting at or before this instant.
         """
         # Note: If a newly created course is not returned in this QueryList,
         # make sure the "publish" signal was emitted when the course was
@@ -709,7 +709,7 @@ class CourseOverview(TimeStampedModel):
             if start_date_on_or_after:
                 date_range_filter["start__gte"] = start_date_on_or_after
             if start_date_on_or_before:
-                date_range_filter["start__lt"] = start_date_on_or_before + timedelta(days=1)
+                date_range_filter["start__lte"] = start_date_on_or_before
             course_overviews = course_overviews.filter(**date_range_filter)
 
         if course_keys:

@@ -3,6 +3,7 @@ URLs for LMS
 """
 
 from config_models.views import ConfigurationModelCurrentAPIView
+from django.apps import apps as django_apps
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
@@ -10,9 +11,9 @@ from django.contrib.admin import autodiscover as django_autodiscover
 from django.urls import include, path, re_path
 from django.utils.translation import gettext_lazy as _
 from django.views.generic.base import RedirectView
-from drf_spectacular.views import SpectacularAPIView
-from edx_api_doc_tools import make_docs_urls
+from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 from edx_django_utils.plugins import get_plugin_url_patterns
+from edx_rest_framework_extensions.url_converters import register_url_converters
 from submissions import urls as submissions_urls
 
 from common.djangoapps.student import views as student_views
@@ -37,7 +38,7 @@ from lms.djangoapps.instructor_task import views as instructor_task_views
 from lms.djangoapps.mfe_config_api.urls import frontend_site_config_urls, mfe_config_urls
 from lms.djangoapps.static_template_view import views as static_template_view_views
 from lms.djangoapps.staticbook import views as staticbook_views
-from openedx.core.apidocs import api_info
+from openedx.core.apidocs import cached_schema_view
 from openedx.core.djangoapps.auth_exchange.views import LoginWithAccessTokenView
 from openedx.core.djangoapps.catalog.models import CatalogIntegration
 from openedx.core.djangoapps.common_views.xblock import xblock_resource
@@ -51,7 +52,9 @@ from openedx.core.djangoapps.plugins.constants import ProjectType
 from openedx.core.djangoapps.programs.models import ProgramsApiConfig
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.core.djangoapps.user_authn.views.login import redirect_to_lms_login
-from openedx.features.enterprise_support.api import enterprise_enabled
+
+# Shared opaque-key path converters, registered before any pattern using them.
+register_url_converters()
 
 RESET_COURSE_DEADLINES_NAME = 'reset_course_deadlines'
 RENDER_XBLOCK_NAME = 'render_xblock'
@@ -880,8 +883,24 @@ if settings.ENABLE_THIRD_PARTY_AUTH:
         path('api/third_party_auth/', include('common.djangoapps.third_party_auth.api.urls')),
     ]
 
+
+def _enterprise_enabled():
+    """
+    Whether the enterprise feature is installed and enabled.
+
+    Temporary duplicate of the helper that now lives in edx-enterprise
+    (``enterprise.platform_support.api.enterprise_enabled``), kept here only
+    because ``channel_integrations.urls`` still has to be included by the
+    platform. Remove this function and the whole block below once
+    enterprise-integrated-channels is modernized into a true plugin that
+    injects its own URLs via ``url_config``, at which point ``enterprise.urls``
+    moves there too. Tracked by ENT-11577.
+    """
+    return django_apps.is_installed('enterprise') and getattr(settings, 'ENABLE_ENTERPRISE_INTEGRATION', False)
+
+
 # Enterprise
-if enterprise_enabled():
+if _enterprise_enabled():
     urlpatterns += [
         path('', include('enterprise.urls')),
         path('', include('channel_integrations.urls')),
@@ -915,6 +934,10 @@ if settings.CUSTOM_COURSES_EDX:
     urlpatterns += [
         re_path(fr'^courses/{settings.COURSE_ID_PATTERN}/', include('lms.djangoapps.ccx.urls')),
         path('api/ccx/', include(('lms.djangoapps.ccx.api.urls', 'lms.djangoapps.ccx'), namespace='ccx_api')),
+        path(
+            'api/ccx_coach/v2/',
+            include(('lms.djangoapps.ccx.api.v2.urls', 'lms.djangoapps.ccx'), namespace='ccx_coach_api_v2'),
+        ),
     ]
 
 # Access to courseware as an LTI provider
@@ -937,10 +960,11 @@ if settings.DEBUG:
     )
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
-# UX reference templates
-urlpatterns += [
-    path('template/<path:template>', openedx_debug_views.show_reference_template),
-]
+    # UX reference templates: development only. The view renders any template with
+    # request.GET as its context, so it must never be routed in production.
+    urlpatterns += [
+        path('template/<path:template>', openedx_debug_views.show_reference_template),
+    ]
 
 if 'debug_toolbar' in settings.INSTALLED_APPS:
     import debug_toolbar
@@ -983,8 +1007,53 @@ if settings.ENABLE_FINANCIAL_ASSISTANCE_FORM:
         )
     ]
 
-# API docs.
-urlpatterns += make_docs_urls(api_info)
+# API docs, served by drf-spectacular.
+#
+# Route names and paths are preserved from the edx-api-doc-tools implementation
+# these replaced, since reverse() calls and existing links depend on them.
+#
+# ``swagger.json`` / ``swagger.yaml`` serve the schema. drf-spectacular picks
+# the renderer by content negotiation, so the extension is passed through as
+# DRF's standard ``format`` suffix kwarg (without the leading dot) to select
+# JSON or YAML explicitly.
+#
+# The Swagger and ReDoc views reverse their schema URL with no arguments, so
+# ``api-docs/schema/`` exists alongside the format-suffixed routes for them to
+# point at.
+#
+# Schema generation is expensive and these endpoints are public, so both schema
+# routes are cached for OPENAPI_CACHE_TIMEOUT, as edx-api-doc-tools did via
+# SchemaView.as_cached_view. The document is too large for cache_page to store
+# -- see cached_schema_view() for why it caches the compressed body instead.
+_apidocs_schema_view = cached_schema_view()
+
+urlpatterns += [
+    re_path(
+        r'^swagger\.(?P<format>json|yaml)$',
+        _apidocs_schema_view,
+        name='apidocs-data',
+    ),
+    path(
+        'api-docs/schema/',
+        _apidocs_schema_view,
+        name='apidocs-schema',
+    ),
+    path(
+        'api-docs/',
+        SpectacularSwaggerView.as_view(url_name='apidocs-schema'),
+        name='apidocs-ui',
+    ),
+    path(
+        'api-docs/redoc/',
+        SpectacularRedocView.as_view(url_name='apidocs-schema'),
+        name='apidocs-ui-redoc',
+    ),
+    path(
+        'swagger/',
+        RedirectView.as_view(pattern_name='apidocs-ui', permanent=False),
+        name='apidocs-ui-swagger',
+    ),
+]
 
 # edx-drf-extensions csrf app
 urlpatterns += [
