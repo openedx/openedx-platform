@@ -5,10 +5,8 @@ Utilities for view tests.
 
 import json
 
-from cms.djangoapps.contentstore.tests.utils import CourseTestCase
+from cms.djangoapps.contentstore.tests.utils import CourseTestCase, get_url
 from xmodule.modulestore.tests.factories import BlockFactory  # pylint: disable=wrong-import-order
-
-from ...helpers import xblock_studio_url
 
 
 class StudioPageTestCase(CourseTestCase):
@@ -25,10 +23,10 @@ class StudioPageTestCase(CourseTestCase):
 
     def get_page_html(self, xblock):
         """
-        Returns the HTML for the page representing the xblock.
+        Returns the HTML for the page representing the xblock, as rendered by
+        container_embed_handler (the chromeless container page the Authoring MFE loads).
         """
-        url = xblock_studio_url(xblock)
-        self.assertIsNotNone(url)  # noqa: PT009
+        url = get_url('container_embed_handler', xblock.location)
         resp = self.client.get_html(url)
         self.assertEqual(resp.status_code, 200)  # noqa: PT009
         return resp.content.decode(resp.charset)
