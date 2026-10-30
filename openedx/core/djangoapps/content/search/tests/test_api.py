@@ -1685,3 +1685,51 @@ class TestWaitForMeiliTaskTimeout(TestCase):
         with patch.object(api, "_MEILI_CLIENT", client):
             assert _wait_for_meili_task(MagicMock(task_uid=5)) is True
         assert client.get_task.call_count == 2
+
+
+@skip_unless_cms
+@override_settings(MEILISEARCH_ENABLED=True)
+@patch("openedx.core.djangoapps.content.search.api._wait_for_meili_task")
+@patch("openedx.core.djangoapps.content.search.api.MeilisearchClient")
+class TestDocumentWriteWaitTimeout(TestCase):
+    """
+    Tests for how long the incremental document write helpers wait on Meilisearch.
+    """
+    # pylint: disable=protected-access
+
+    def setUp(self) -> None:
+        super().setUp()
+        api.clear_meilisearch_client()
+        self.addCleanup(api.clear_meilisearch_client)
+
+    @override_settings(MEILISEARCH_WRITE_WAIT_TIMEOUT=5)
+    def test_document_writes_use_write_wait_timeout(self, mock_meilisearch, mock_wait) -> None:
+        """
+        Incremental document writes and deletes wait at most MEILISEARCH_WRITE_WAIT_TIMEOUT.
+        """
+        api._update_index_docs("idx", [{"id": "a"}])
+        api._delete_index_doc("idx", "a")
+        api._delete_documents("idx", 'context_key = "x"')
+
+        assert mock_wait.call_count == 3
+        for wait_call in mock_wait.call_args_list:
+            assert wait_call.kwargs == {"timeout": 5}
+
+    @override_settings(MEILISEARCH_WRITE_WAIT_TIMEOUT=5)
+    def test_explicit_wait_timeout_overrides_setting(self, mock_meilisearch, mock_wait) -> None:
+        """
+        A caller's wait_timeout (e.g. SYNC_INDEX_WAIT_TIMEOUT for inline library block upserts) wins over the setting.
+        """
+        api._update_index_docs("idx", [{"id": "a"}], wait_timeout=api.SYNC_INDEX_WAIT_TIMEOUT)
+
+        assert mock_wait.call_args.kwargs == {"timeout": api.SYNC_INDEX_WAIT_TIMEOUT}
+
+    def test_document_writes_wait_indefinitely_by_default(self, mock_meilisearch, mock_wait) -> None:
+        """
+        Without MEILISEARCH_WRITE_WAIT_TIMEOUT, document writes wait as long as Meilisearch takes.
+        """
+        api._update_index_docs("idx", [{"id": "a"}])
+        api._delete_index_doc("idx", "a")
+
+        for wait_call in mock_wait.call_args_list:
+            assert wait_call.kwargs == {"timeout": None}

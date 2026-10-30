@@ -237,6 +237,14 @@ def _wait_for_meili_task(info: TaskInfo, timeout: float | None = None) -> bool:
     return True
 
 
+def _write_wait_timeout() -> float | None:
+    """
+    How long the incremental document write helpers wait for Meilisearch to apply a write. See
+    MEILISEARCH_WRITE_WAIT_TIMEOUT.
+    """
+    return getattr(settings, "MEILISEARCH_WRITE_WAIT_TIMEOUT", None)
+
+
 def _index_exists(index_name: str) -> bool:
     """
     Check if an index exists
@@ -384,8 +392,8 @@ def _update_index_docs(index_name: str, docs, wait_timeout: float | None = None)
 
     If there is a rebuild of that index in progress, the document will also be added to the new index.
 
-    ``wait_timeout`` bounds how long we wait for Meilisearch to finish applying the update. The
-    documents are applied either way; see ``_wait_for_meili_task``.
+    ``wait_timeout`` bounds how long we wait for Meilisearch to finish applying the update, and defaults to
+    MEILISEARCH_WRITE_WAIT_TIMEOUT. The documents are applied either way; see ``_wait_for_meili_task``.
     """
     if not docs:
         return
@@ -396,7 +404,10 @@ def _update_index_docs(index_name: str, docs, wait_timeout: float | None = None)
     if current_rebuild_index_name:
         # If there is a rebuild in progress, the document will also be added to the new index.
         client.index(current_rebuild_index_name).update_documents(docs)
-    _wait_for_meili_task(client.index(index_name).update_documents(docs), timeout=wait_timeout)
+    _wait_for_meili_task(
+        client.index(index_name).update_documents(docs),
+        timeout=wait_timeout if wait_timeout is not None else _write_wait_timeout(),
+    )
 
 
 def only_if_meilisearch_enabled(f):
@@ -966,7 +977,7 @@ def _delete_documents(index_name: str, filter_query: str) -> None:
     if current_rebuild_index_name:
         # If there is a rebuild in progress, the document will also be removed from the new index.
         client.index(current_rebuild_index_name).delete_documents(filter=filter_query)
-    _wait_for_meili_task(client.index(index_name).delete_documents(filter=filter_query))
+    _wait_for_meili_task(client.index(index_name).delete_documents(filter=filter_query), timeout=_write_wait_timeout())
 
 
 def _delete_index_doc(index_name: str, doc_id) -> None:
@@ -985,7 +996,7 @@ def _delete_index_doc(index_name: str, doc_id) -> None:
         # If there is a rebuild in progress, the document will also be removed from the new index.
         client.index(current_rebuild_index_name).delete_document(doc_id)
 
-    _wait_for_meili_task(client.index(index_name).delete_document(doc_id))
+    _wait_for_meili_task(client.index(index_name).delete_document(doc_id), timeout=_write_wait_timeout())
 
 
 def upsert_library_block_index_doc(usage_key: UsageKey, wait_timeout: float | None = None) -> None:

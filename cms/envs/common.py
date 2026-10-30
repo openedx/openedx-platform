@@ -1366,6 +1366,19 @@ MEILISEARCH_PUBLIC_URL = "http://meilisearch.example.com"
 # See https://www.meilisearch.com/docs/learn/security/tenant_tokens
 MEILISEARCH_INDEX_PREFIX = ""
 MEILISEARCH_API_KEY = "devkey"
+# .. setting_name: MEILISEARCH_WRITE_WAIT_TIMEOUT
+# .. setting_default: None
+# .. setting_description: Seconds to wait for Meilisearch to apply each incremental document write (the writes made
+#   when course or library content changes, not index rebuilds) before giving up on waiting. None waits until
+#   Meilisearch finishes. Meilisearch applies tasks one at a time in the order they were enqueued, so a write made
+#   during a large reindex can wait minutes behind it, and the library handlers make these writes inline in the Studio
+#   request. Inline library block upserts already use SYNC_INDEX_WAIT_TIMEOUT; this covers the rest (block deletes,
+#   library, collection and container writes). The limit is per write, and one library change can make several inline
+#   writes (one per affected component, unit, subsection or section), so keep the timeout times that count below your
+#   gateway's upstream timeout. A write that is not waited for is still applied later, but until then the Authoring
+#   MFE's refetch of the library listing will not show it, and if it fails the failure is not raised (so a Celery task
+#   making it is not retried).
+MEILISEARCH_WRITE_WAIT_TIMEOUT = None
 
 # .. setting_name: LIBRARY_ENABLED_BLOCKS
 # .. setting_default: ['problem', 'video', 'html', 'drag-and-drop-v2']
