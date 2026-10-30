@@ -33,6 +33,12 @@ from lms.djangoapps.discussion.django_comment_client.utils import has_forum_acce
 from lms.djangoapps.grades.api import is_writable_gradebook_enabled
 from lms.djangoapps.instructor import permissions
 from lms.djangoapps.instructor.access import FORUM_ROLES, ROLES
+from lms.djangoapps.instructor.authz import constants as authz_constants
+from lms.djangoapps.instructor.authz import legacy as authz_legacy
+from lms.djangoapps.instructor.authz.api import (
+    get_instructor_authz_permissions,
+    user_has_any_instructor_permission,
+)
 from lms.djangoapps.instructor.views.instructor_dashboard import get_analytics_dashboard_message
 from openedx.core.djangoapps.django_comment_common.models import FORUM_ROLE_ADMINISTRATOR
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
@@ -84,6 +90,13 @@ class CourseInformationSerializerV2(serializers.Serializer):
         help_text="URL to the admin console (requires instructor access and MFE configuration, null if not accessible)"
     )
     permissions = serializers.SerializerMethodField(help_text="User permissions for instructor dashboard features")
+    authz_permissions = serializers.SerializerMethodField(
+        help_text=(
+            "Effective value of each AuthZ permission of the instructor dashboard for the user in the course, keyed by "
+            "permission identifier. Resolved through AuthZ when it is enabled for the course, and through the "
+            "equivalent legacy roles otherwise."
+        )
+    )
     tabs = serializers.SerializerMethodField(help_text="List of course tabs with configuration and display information")
     disable_buttons = serializers.SerializerMethodField(
         help_text="Whether to disable certain bulk action buttons due to large course size"
@@ -149,7 +162,6 @@ class CourseInformationSerializerV2(serializers.Serializer):
             'finance_admin': CourseFinanceAdminRole(course_key).has_user(request.user),
             'sales_admin': CourseSalesAdminRole(course_key).has_user(request.user),
             'staff': bool(has_access(request.user, 'staff', course)),
-            'forum_admin': has_forum_access(request.user, course_key, FORUM_ROLE_ADMINISTRATOR),
             'data_researcher': request.user.has_perm(permissions.CAN_RESEARCH, course_key),
         }
         tabs = []
@@ -161,61 +173,47 @@ class CourseInformationSerializerV2(serializers.Serializer):
         # Without explicit sort_order values, there's no deterministic way to interleave
         # backend tabs with plugin-inserted tabs, and tab order could shift based on
         # load/config timing.
-        if access['staff']:
-            tabs.extend([
-                {
-                    'tab_id': 'course_info',
-                    'title': _('Course Info'),
-                    'url': self._build_tab_url(
-                        'INSTRUCTOR_MICROFRONTEND_URL',
-                        course_key,
-                        'course_info'
-                    ),
-                    'sort_order': 10,
-                },
-                {
-                    'tab_id': 'enrollments',
-                    'title': _('Enrollments'),
-                    'url': self._build_tab_url(
-                        'INSTRUCTOR_MICROFRONTEND_URL',
-                        course_key,
-                        'enrollments'
-                    ),
-                    'sort_order': 20,
-                },
-                {
-                    'tab_id': 'grading',
-                    'title': _('Grading'),
-                    'url': self._build_tab_url(
-                        'INSTRUCTOR_MICROFRONTEND_URL',
-                        course_key,
-                        'grading'
-                    ),
-                    'sort_order': 40,
-                },
-                {
-                    'tab_id': 'cohorts',
-                    'title': _('Cohorts'),
-                    'url': self._build_tab_url(
-                        'INSTRUCTOR_MICROFRONTEND_URL',
-                        course_key,
-                        'cohorts'
-                    ),
-                    'sort_order': 90,
-                },
-            ])
 
-        if access['instructor'] or (access['staff'] and access['forum_admin']):
-            tabs.append({
-                'tab_id': 'course_team',
-                'title': _('Course Team'),
-                'url': self._build_tab_url(
-                    'INSTRUCTOR_MICROFRONTEND_URL',
-                    course_key,
-                    'course_team'
-                ),
-                'sort_order': 30,
-            })
+        # The tabs below are enforced through AuthZ when ``authz.enable_course_authoring``
+        # is enabled for the course. A tab is shown when the user holds at least one of
+        # its permissions (``authz_constants.TAB_PERMISSIONS``). Otherwise they keep the
+        # legacy role check passed as the second argument, or the default ones of the
+        # permissions when it is ``None``.
+        def can_see(tab, legacy_check=None):
+            return user_has_any_instructor_permission(
+                request.user, authz_constants.TAB_PERMISSIONS[tab], course_key, legacy_check
+            )
+
+        # (tab_id, title, sort_order, legacy check). The legacy check is
+        # explicit when the default ones of the permissions are broader than
+        # the tab condition, which has always required staff access.
+        authz_tabs = [
+            ("course_info", _("Course Info"), 10, authz_legacy.has_staff_access),
+            ("enrollments", _("Enrollments"), 20, None),
+            ("grading", _("Grading"), 40, authz_legacy.has_staff_access),
+            ("cohorts", _("Cohorts"), 90, authz_legacy.has_staff_access),
+        ]
+
+        for tab, title, sort_order, legacy_check in authz_tabs:
+            if can_see(tab, legacy_check):
+                tabs.append(
+                    {
+                        "tab_id": tab,
+                        "title": title,
+                        "url": self._build_tab_url("INSTRUCTOR_MICROFRONTEND_URL", course_key, tab),
+                        "sort_order": sort_order,
+                    }
+                )
+
+        if can_see("course_team"):
+            tabs.append(
+                {
+                    "tab_id": "course_team",
+                    "title": _("Course Team"),
+                    "url": self._build_tab_url("INSTRUCTOR_MICROFRONTEND_URL", course_key, "course_team"),
+                    "sort_order": 30,
+                }
+            )
 
         if access['staff'] and is_bulk_email_feature_enabled(course_key):
             tabs.append(
@@ -229,7 +227,7 @@ class CourseInformationSerializerV2(serializers.Serializer):
                 }
             )
 
-        if access['instructor'] and is_enabled_for_course(course_key):
+        if is_enabled_for_course(course_key) and can_see("date_extensions", authz_legacy.has_instructor_access):
             tabs.append({
                 'tab_id': 'date_extensions',
                 'title': _('Date Extensions'),
@@ -423,6 +421,19 @@ class CourseInformationSerializerV2(serializers.Serializer):
         """Get number of sections in the course."""
         course = data['course']
         return len(course.get_children()) if hasattr(course, 'get_children') else 0
+
+    def get_authz_permissions(self, data) -> dict[str, bool]:
+        """
+        Get the effective AuthZ permissions of the user for the course.
+
+        Args:
+            data (dict): The serializer context, with ``user`` and ``course``.
+
+        Returns:
+            dict[str, bool]: Mapping of AuthZ permission identifier to its
+            value.
+        """
+        return get_instructor_authz_permissions(data['user'], data['course'].id)
 
     def get_permissions(self, data):
         """Get user permissions for the course."""

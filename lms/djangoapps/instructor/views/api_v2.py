@@ -103,6 +103,10 @@ from lms.djangoapps.instructor.access import (
     revoke_access,
     update_forum_role,
 )
+from lms.djangoapps.instructor.authz import constants as authz_constants
+from lms.djangoapps.instructor.authz import legacy as authz_legacy
+from lms.djangoapps.instructor.authz.api import user_has_any_instructor_permission
+from lms.djangoapps.instructor.authz.permissions import InstructorAuthzPermission
 from lms.djangoapps.instructor.constants import ReportType
 from lms.djangoapps.instructor.enrollment import (
     enroll_email,
@@ -182,6 +186,9 @@ log = logging.getLogger(__name__)
 
 VALID_TEAM_ROLES = frozenset(ROLES.keys()) | frozenset(FORUM_ROLES)
 
+# Legacy check of the dashboard
+LEGACY_VIEW_DASHBOARD_CHECK = authz_legacy.bridgekeeper_check(permissions.VIEW_DASHBOARD)
+
 # Shared OpenAPI parameters, each used identically by several endpoints below.
 COURSE_ID_PATH_PARAMETER = OpenApiParameter(
     'course_id',
@@ -211,7 +218,9 @@ class CourseMetadataView(DeveloperErrorViewMixin, APIView):
         permissions, and navigation sections.
     """
 
-    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_classes = (IsAuthenticated, InstructorAuthzPermission)
+    # Holding any of the dashboard permissions is enough, as for the "Instructor" course tab.
+    authz_permissions = authz_constants.INSTRUCTOR_DASHBOARD_PERMISSIONS
     permission_name = permissions.VIEW_DASHBOARD
 
     @extend_schema(
@@ -306,6 +315,24 @@ class CourseMetadataView(DeveloperErrorViewMixin, APIView):
         course_key = CourseKey.from_string(course_id)
         course = get_course_by_id(course_key)
 
+        def can_view_dashboard(user):
+            """
+            Return whether the user can view the instructor dashboard.
+
+            With ``authz.enable_course_authoring`` enabled for the course, holding any of
+            the dashboard AuthZ permissions is enough. With it disabled, the legacy
+            dashboard permission is used.
+            """
+            return user_has_any_instructor_permission(
+                user,
+                authz_constants.INSTRUCTOR_DASHBOARD_PERMISSIONS,
+                course_key,
+                LEGACY_VIEW_DASHBOARD_CHECK,
+            )
+
+        # Masquerading is not migrated to AuthZ yet: it keeps requiring legacy staff access.
+        # The AuthZ course staff and course admin roles satisfy it through the legacy
+        # compatibility layer, which maps them to the legacy roles.
         original_user_is_staff = has_access(request.user, 'staff', course_key).has_access
         _, request.user = setup_masquerade(
             request,
@@ -313,8 +340,7 @@ class CourseMetadataView(DeveloperErrorViewMixin, APIView):
             staff_access=original_user_is_staff,
         )
 
-        if get_masquerade_role(request.user, course_key) == 'student' or \
-                not request.user.has_perm(permissions.VIEW_DASHBOARD, course):
+        if get_masquerade_role(request.user, course_key) == 'student' or not can_view_dashboard(request.user):
             raise PermissionDenied('This user does not have access to the instructor dashboard.')
 
         tabs = get_course_tab_list(request.user, course)
