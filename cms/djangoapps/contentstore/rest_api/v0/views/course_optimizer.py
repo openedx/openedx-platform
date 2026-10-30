@@ -33,6 +33,9 @@ from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin, verify_cour
 class LinkCheckView(DeveloperErrorViewMixin, APIView):
     """
     View for queueing a celery task to scan a course for broken links.
+
+    Deprecated: use ``POST /api/authoring/v1/courses/{course_key}/link_check/`` instead.
+    See https://github.com/openedx/openedx-platform/issues/39128.
     """
     @extend_schema(
         parameters=[
@@ -49,6 +52,10 @@ class LinkCheckView(DeveloperErrorViewMixin, APIView):
     def post(self, request: Request, course_id: str):
         """
         Queue celery task to scan a course for broken links.
+
+        Deprecated: use ``POST /api/authoring/v1/courses/{course_key}/link_check/``, which answers
+        202 with ``{"status": "Pending"}``.
+        See https://github.com/openedx/openedx-platform/issues/39128.
 
         **Example Request**
             POST /api/contentstore/v0/link_check/{course_id}
@@ -77,6 +84,9 @@ class LinkCheckView(DeveloperErrorViewMixin, APIView):
 class LinkCheckStatusView(DeveloperErrorViewMixin, APIView):
     """
     View for checking the status of the celery task and returning the results.
+
+    Deprecated: use ``GET /api/authoring/v1/courses/{course_key}/link_check/`` instead.
+    See https://github.com/openedx/openedx-platform/issues/39128.
     """
     @extend_schema(
         parameters=[
@@ -102,6 +112,11 @@ class LinkCheckStatusView(DeveloperErrorViewMixin, APIView):
                 'Succeeded', 'Failed', 'Canceled', 'Retrying'
             This function adds a status for when status from UserTaskStatus is None:
                 'Uninitiated'
+
+            Deprecated: use ``GET /api/authoring/v1/courses/{course_key}/link_check/``. Its default
+            view returns ``status``, ``created_at`` and ``error``; ``view=full`` adds ``output``, the
+            report this endpoint returns, with snake_case member names.
+            See https://github.com/openedx/openedx-platform/issues/39128.
 
         **Example Request**
 
@@ -233,6 +248,9 @@ class LinkCheckStatusView(DeveloperErrorViewMixin, APIView):
 class RerunLinkUpdateView(DeveloperErrorViewMixin, APIView):
     """
     View for queueing a celery task to update course links to the latest re-run.
+
+    Deprecated: use ``POST /api/authoring/v1/courses/{course_key}/previous_run_link_update/`` instead.
+    See https://github.com/openedx/openedx-platform/issues/39128.
     """
 
     @extend_schema(
@@ -254,6 +272,10 @@ class RerunLinkUpdateView(DeveloperErrorViewMixin, APIView):
     def post(self, request: Request, course_id: str):
         """
         Queue celery task to update course links to the latest re-run.
+
+        Deprecated: use ``POST /api/authoring/v1/courses/{course_key}/previous_run_link_update/``,
+        which takes this body and answers 202 with ``{"status": "Pending"}``.
+        See https://github.com/openedx/openedx-platform/issues/39128.
 
         **Example Request - Update All Links**
             POST /api/contentstore/v0/rerun_link_update/{course_id}
@@ -341,6 +363,9 @@ class RerunLinkUpdateView(DeveloperErrorViewMixin, APIView):
 class RerunLinkUpdateStatusView(DeveloperErrorViewMixin, APIView):
     """
     View for checking the status of the course link update task and returning the results.
+
+    Deprecated: use ``GET /api/authoring/v1/courses/{course_key}/previous_run_link_update/`` instead.
+    See https://github.com/openedx/openedx-platform/issues/39128.
     """
 
     @extend_schema(
@@ -366,6 +391,10 @@ class RerunLinkUpdateStatusView(DeveloperErrorViewMixin, APIView):
 
             Possible statuses:
                 'pending', 'in_progress', 'completed', 'failed', 'uninitiated'
+
+            Deprecated: use ``GET /api/authoring/v1/courses/{course_key}/previous_run_link_update/``.
+            Its default view returns ``status``; ``view=full`` adds ``results``.
+            See https://github.com/openedx/openedx-platform/issues/39128.
 
         **Example Request**
 
