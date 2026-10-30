@@ -78,6 +78,11 @@ class CmsMarkSupersededPathsTest(TestCase):
             "/api/contentstore/v0/youtube_transcripts/{course_id}/check",
             "/api/contentstore/v0/youtube_transcripts/{course_id}/uploa",
             "/api/contentstore/v0/youtube_transcripts/{course_id}/upload",
+            "/api/contentstore/v0/advanced_settings/{course_id}",
+            "/api/contentstore/v0/tabs/{course_id}",
+            "/api/contentstore/v0/tabs/{course_id}/reorder",
+            "/api/contentstore/v0/tabs/{course_id}/settings",
+            "/api/contentstore/v1/course_team/{course_id}",
         }
 
     def test_the_conforming_paths_are_left_unmarked(self):
@@ -85,8 +90,48 @@ class CmsMarkSupersededPathsTest(TestCase):
         result = self._run({"paths": {conforming: {"get": {"operationId": "x"}}}})
         assert result["paths"][conforming]["get"] == {"operationId": "x"}
 
+    def test_the_advanced_settings_operations_are_marked_and_their_successor_is_not(self):
+        legacy = "/api/contentstore/v0/advanced_settings/{course_id}"
+        conforming = "/api/authoring/v1/courses/{course_key}/advanced_settings/"
+        result = self._run({"paths": {
+            legacy: {"get": {}, "patch": {}},
+            conforming: {"get": {}, "patch": {}},
+        }})
+        assert result["paths"][legacy] == {"get": {"deprecated": True}, "patch": {"deprecated": True}}
+        assert result["paths"][conforming] == {"get": {}, "patch": {}}
+
+    def test_the_tab_operations_are_marked_and_their_successors_are_not(self):
+        legacy = {
+            "/api/contentstore/v0/tabs/{course_id}": "get",
+            "/api/contentstore/v0/tabs/{course_id}/reorder": "post",
+            "/api/contentstore/v0/tabs/{course_id}/settings": "post",
+        }
+        conforming = {
+            "/api/authoring/v1/custom_pages/": "get",
+            "/api/authoring/v1/courses/{course_key}/custom_page_order/": "put",
+            "/api/authoring/v1/courses/{course_key}/tabs/{tab_id}/": "patch",
+        }
+        paths = {path: {method: {}} for path, method in {**legacy, **conforming}.items()}
+        result = self._run({"paths": paths})
+        assert {path: result["paths"][path] for path in legacy} == {
+            path: {method: {"deprecated": True}} for path, method in legacy.items()
+        }
+        assert {path: result["paths"][path] for path in conforming} == {
+            path: {method: {}} for path, method in conforming.items()
+        }
+
+    def test_the_course_team_operation_is_marked_and_its_successors_are_not(self):
+        legacy = "/api/contentstore/v1/course_team/{course_id}"
+        conforming = (
+            "/api/authoring/v2/courses/{course_key}/team_members/",
+            "/api/authoring/v2/courses/{course_key}/team_members/me/",
+        )
+        result = self._run({"paths": {path: {"get": {}} for path in (legacy, *conforming)}})
+        assert result["paths"][legacy] == {"get": {"deprecated": True}}
+        assert {path: result["paths"][path] for path in conforming} == {path: {"get": {}} for path in conforming}
+
     def test_an_unrelated_contentstore_path_is_left_unmarked(self):
-        other = "/api/contentstore/v0/advanced_settings/{course_id}"
+        other = "/api/contentstore/v0/heartbeat"
         result = self._run({"paths": {other: {"get": {}}}})
         assert "deprecated" not in result["paths"][other]["get"]
 
