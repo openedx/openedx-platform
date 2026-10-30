@@ -25,7 +25,7 @@ class UserOrgFilterBackend(BaseFilterBackend):
             return queryset
 
         user_admin_orgs = get_admin_orgs(request.user)
-        user_orgs = get_user_orgs(request.user)  # Orgs that the user is a content creator or instructor
+        user_orgs = get_user_orgs(request.user)
 
         if len(user_orgs) == 0 and len(user_admin_orgs) == 0:
             return queryset.none()

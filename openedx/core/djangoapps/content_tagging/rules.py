@@ -7,6 +7,8 @@ from typing import Union
 import django.contrib.auth.models
 import openedx_tagging.rules as oel_tagging
 import rules
+from opaque_keys import InvalidKeyError
+from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locator import LibraryLocatorV2
 from openedx_authz import api as authz_api
 from openedx_authz.constants import permissions as authz_permissions
@@ -21,6 +23,7 @@ from common.djangoapps.student.roles import (
     OrgInstructorRole,
     OrgLibraryUserRole,
     OrgStaffRole,
+    enable_authz_course_authoring,
 )
 
 from .auth import should_use_course_authz_for_object
@@ -79,16 +82,29 @@ def _get_course_user_orgs(user: UserType, orgs: list[Organization]) -> list[Orga
     if not orgs:
         return []
 
+    def course_uses_authz(course_id) -> bool:
+        """
+        True if the course has switched to openedx-authz, where legacy course roles are no longer
+        authoritative: tagging there requires courses.manage_tags (see can_change_object_tag_objectid),
+        so those users are picked up by _get_authz_manage_tags_orgs instead.
+        """
+        try:
+            return enable_authz_course_authoring(CourseKey.from_string(str(course_id)))
+        except InvalidKeyError:
+            return False
+
     def user_has_role_ignore_course_id(user, role_name, org_name) -> bool:
         """
-        Returns True if the given user has the given role for the given org, OR for any courses in this org.
+        Returns True if the given user has the given role for the given org, OR for any courses in this org
+        that have not switched to openedx-authz.
         """
         # We use the user's RoleCache here to avoid re-querying.
         roles_cache = get_role_cache(user)
         course_roles = get_course_roles(user)
         return any(
             access_role.role in roles_cache.get_roles(role_name) and
-            access_role.org == org_name
+            access_role.org == org_name and
+            not (access_role.course_id and course_uses_authz(access_role.course_id))
             for access_role in course_roles
         )
 
@@ -117,17 +133,38 @@ def get_user_orgs(user: UserType, orgs: list[Organization] | None = None) -> lis
     """
     Return a list of orgs that the given user is a member of (instructor or content creator),
     from the given list of orgs.
+
+    Membership comes from legacy roles and, additively, from openedx-authz roles that grant
+    courses.manage_tags (see _get_authz_manage_tags_orgs).
     """
     org_list = rules_cache.get_orgs() if orgs is None else orgs
     content_creator_orgs = _get_content_creator_orgs(user, org_list)
     course_user_orgs = _get_course_user_orgs(user, org_list)
     library_user_orgs = _get_library_user_orgs(user, org_list)
-    user_orgs = list(set(content_creator_orgs) | set(course_user_orgs) | set(library_user_orgs))
+    authz_orgs = _get_authz_manage_tags_orgs(user, org_list)
+    return list(set(content_creator_orgs) | set(course_user_orgs) | set(library_user_orgs) | set(authz_orgs))
 
-    return user_orgs
+
+def _get_authz_manage_tags_orgs(user: UserType, orgs: list[Organization]) -> list[Organization]:
+    """
+    Return the orgs, from the given list, where the user holds courses.manage_tags through openedx-authz.
+
+    This is the authz equivalent of _get_course_user_orgs: roles like course_editor,
+    course_staff, and course_admin only exist in openedx-authz, with no legacy
+    CourseAccessRole for the legacy helpers to find.
+
+    The user's scopes (course, org-wide and platform-wide) are expanded into course keys, keeping only
+    the courses that have switched to openedx-authz: a policy assignment can exist ahead of the course's
+    own toggle, and until it flips, legacy access stays authoritative for it (see
+    should_use_course_authz_for_object).
+    """
+    if not orgs:
+        return []
+
+    org_names = rules_cache.get_authz_manage_tags_org_names(user)
+    return [org for org in orgs if org.short_name in org_names]
 
 
-@rules.predicate
 def can_create_taxonomy(user: UserType) -> bool:
     """
     Returns True if the given user can create a taxonomy.
