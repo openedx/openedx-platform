@@ -46,6 +46,10 @@ class CmsApiFilterTest(TestCase):
         assert self._admitted("/api/contentstore/v0/youtube_transcripts/course-v1:a+b+c/check")
         assert self._admitted("/api/contentstore/v4/home/courses/")
 
+    def test_the_container_children_mounts_are_admitted(self):
+        assert self._admitted("/api/authoring/v2/containers/block-v1:a+b+c+type@vertical+block@d/children/")
+        assert self._admitted("/api/contentstore/v1/container/block-v1:a+b+c+type@vertical+block@d/children")
+
     def test_the_hand_listed_discussions_path_is_still_admitted(self):
         assert self._admitted("/api/courses/course-v1:a+b+c/bulk_enable_disable_discussions")
 
@@ -78,12 +82,39 @@ class CmsMarkSupersededPathsTest(TestCase):
             "/api/contentstore/v0/youtube_transcripts/{course_id}/check",
             "/api/contentstore/v0/youtube_transcripts/{course_id}/uploa",
             "/api/contentstore/v0/youtube_transcripts/{course_id}/upload",
+            "/api/contentstore/v1/container/{usage_key_string}/children",
         }
 
     def test_the_conforming_paths_are_left_unmarked(self):
-        conforming = "/api/authoring/v1/courses/{course_key}/youtube_transcript_checks/"
-        result = self._run({"paths": {conforming: {"get": {"operationId": "x"}}}})
-        assert result["paths"][conforming]["get"] == {"operationId": "x"}
+        for conforming in (
+            "/api/authoring/v1/courses/{course_key}/youtube_transcript_checks/",
+            "/api/authoring/v2/containers/{usage_key}/children/",
+        ):
+            result = self._run({"paths": {conforming: {"get": {"operationId": "x"}}}})
+            assert result["paths"][conforming]["get"] == {"operationId": "x"}
+
+    def test_the_children_read_is_marked_and_the_redirect_is_not(self):
+        children = "/api/contentstore/v1/container/{usage_key_string}/children"
+        redirect = "/api/contentstore/v1/container/vertical/{usage_key_string}/children"
+        result = self._run({"paths": {children: {"get": {}}, redirect: {"get": {}}}})
+        assert result["paths"][children]["get"] == {"deprecated": True}
+        assert result["paths"][redirect]["get"] == {}
+
+    def test_the_children_read_is_marked_by_its_exact_path_and_its_replacement_is_not(self):
+        legacy = "/api/contentstore/v1/container/{usage_key_string}/children"
+        replacement = "/api/authoring/v2/containers/{usage_key}/children/"
+        lookalikes = (
+            legacy + "/",
+            "/api/contentstore/v1/container/{usage_key_string}/children_summary",
+            "/api/contentstore/v2/container/{usage_key_string}/children",
+            "/api/authoring/v2/containers/{usage_key}/",
+            "/api/contentstore/v0/advanced_settings/{course_id}",
+        )
+        result = self._run({"paths": {path: {"get": {}} for path in (legacy, replacement, *lookalikes)}})
+        assert result["paths"][legacy]["get"] == {"deprecated": True}
+        assert result["paths"][replacement]["get"] == {}
+        for path in lookalikes:
+            assert result["paths"][path]["get"] == {}, path
 
     def test_an_unrelated_contentstore_path_is_left_unmarked(self):
         other = "/api/contentstore/v0/advanced_settings/{course_id}"
