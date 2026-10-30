@@ -14,6 +14,7 @@ from opaque_keys.edx.keys import AssetKey, ContainerKey, UsageKey
 from xblock.core import XBlock
 
 from openedx.core.djangoapps.content_tagging.api import TagValuesByObjectIdDict
+from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.core.lib.xblock_serializer.api import StaticFile, XBlockSerializer
 from xmodule import block_metadata_utils
 from xmodule.contentstore.content import StaticContent
@@ -136,6 +137,25 @@ def _save_static_assets_to_staged_content(
     Helper method for saving static files into staged content.
     Used by both clipboard and library sync functionality.
     """
+    STATIC_ASSET_STAGING_SIZE_LIMIT_SITE_CONFIG_KEY = "CONTENT_STAGING_STATIC_ASSET_SIZE_LIMIT_BYTES"
+    DEFAULT_STATIC_ASSET_STAGING_SIZE_LIMIT_BYTES = 10 * 1024 * 1024
+
+    static_asset_size_limit = configuration_helpers.get_value(
+        STATIC_ASSET_STAGING_SIZE_LIMIT_SITE_CONFIG_KEY,
+        DEFAULT_STATIC_ASSET_STAGING_SIZE_LIMIT_BYTES,
+    )
+
+    try:
+        static_asset_size_limit = int(static_asset_size_limit)
+    except (TypeError, ValueError):
+        log.warning(
+            "Invalid %s site configuration value: %r. Falling back to %s bytes.",
+            STATIC_ASSET_STAGING_SIZE_LIMIT_SITE_CONFIG_KEY,
+            static_asset_size_limit,
+            DEFAULT_STATIC_ASSET_STAGING_SIZE_LIMIT_BYTES,
+        )
+        static_asset_size_limit = DEFAULT_STATIC_ASSET_STAGING_SIZE_LIMIT_BYTES
+
     for f in static_files:
         source_key = (
             StaticContent.get_asset_key_from_path(usage_key.context_key if usage_key else "", f.url)
@@ -155,11 +175,9 @@ def _save_static_assets_to_staged_content(
         # Compute the md5 hash
         md5_hash = hashlib.md5(content).hexdigest()
 
-        # Because we store clipboard files on S3, uploading really large files will be too slow. And it's wasted if
-        # the copy-paste is just happening within a single course. So for files > 10MB, users must copy the files
-        # manually. In the future we can consider removing this or making it configurable or filterable.
-        limit = 10 * 1024 * 1024
-        if content and len(content) > limit:
+        # Staged files can be stored remotely, so avoid uploading large assets by default.
+        # Site configuration may raise or lower this limit. Oversized files keep their metadata but omit data_file.
+        if content and len(content) > static_asset_size_limit:
             content = None
 
         try:
