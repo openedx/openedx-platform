@@ -883,7 +883,7 @@ class AdvancedSettingsRuleMessageCheckTest(SimpleTestCase):
     def test_every_message_of_the_teams_rules_is_a_rule_message(self, value):
         """Each message the teams rules write for these configurations is recognised."""
         errors = CourseMetadata.validate_team_settings({"teams_configuration": {"value": value}})
-        assert errors != []
+        assert errors
         assert [error["message"] for error in errors if not is_rule_message(error["key"], error["message"])] == []
 
     @ddt.data([], ["lti_external"], ["escalating_provider", "valid_provider"])
@@ -910,8 +910,14 @@ class AdvancedSettingsRuleMessageCheckTest(SimpleTestCase):
         assert not is_rule_message(setting, text)
 
     def test_a_long_explanation_is_judged_quickly(self):
-        """An explanation that nearly matches does not make the check slow."""
-        text = "type " + "a is invalid," * 3000 + "extra keys: " + "x," * 3000 + "!\x00"
+        """
+        An explanation that nearly matches does not make the check slow.
+
+        Each team-set problem may appear once, in order, so the repeated
+        problem below keeps the text from being a rule message however the
+        text before it is split.
+        """
+        text = "type " + "a is invalid," * 3000 + "id attribute must not be empty," * 3000 + "!\x00"
         started = perf_counter()
         assert not is_rule_message("teams_configuration", text)
         assert perf_counter() - started < 1
