@@ -486,10 +486,18 @@ class _ActionAddressMixin:
 
 
 def _requested_field_names(raw):
-    """Return the top-level property names a ``fields`` value asks for."""
+    """
+    Return the property names a ``fields`` value asks for, each as it was written.
+
+    A name is held against the properties the answer carries whole, so a name
+    written with a dot in it names no such property and is refused. Reading
+    only the part before the dot would hand back the whole of a property the
+    caller asked one piece of, and would take a part after it that names
+    nothing at all without saying so.
+    """
     if not raw:
         return []
-    return [name.strip().split(".", 1)[0] for name in raw.split(",") if name.strip()]
+    return [name.strip() for name in raw.split(",") if name.strip()]
 
 
 class _ResponsePresetMixin(MinimalViewMixin):
@@ -547,7 +555,7 @@ class _ResponsePresetMixin(MinimalViewMixin):
     def shape(self, data, request):
         """Return ``data`` reduced to the preset and the fields the caller asked for."""
         data = self.shape_minimal(data, request)
-        requested_fields = request.query_params.get(FIELDS_PARAM)
+        requested_fields = _requested_field_names(request.query_params.get(FIELDS_PARAM))
         if not requested_fields:
             return data
         if isinstance(data, list):

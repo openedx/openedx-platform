@@ -2954,3 +2954,54 @@ class AccountReadsDoNotWriteTests(AccountReadsDoNotWriteMixin, AccountApiV2TestC
 @override_switch(ENABLE_SECONDARY_EMAIL_FEATURE_SWITCH, active=True)
 class AccountReadsWithARecoveryAddressDoNotWriteTests(AccountReadsDoNotWriteMixin, AccountApiV2TestCase):
     """The same reads on a site that collects a recovery address, which is another row to read."""
+
+
+@skip_unless_lms
+class AccountSelectedPropertyNameTests(AccountApiV2TestCase):
+    """
+    What a selected property name may be at the account addresses.
+
+    An account carries properties that are objects of their own. A name
+    written with a dot in it reads as a name of no property the account
+    carries, because the account carries the object whole and the parameter
+    selects the properties of the account rather than the properties of those
+    objects.
+    """
+
+    def test_a_name_reaching_into_a_property_is_refused_on_one_account(self):
+        self.login(self.owner)
+        response = self.client.get(f"{self.own_url}?fields=profile_image.has_image")
+        assert_error_envelope(
+            response, expected_status=status.HTTP_400_BAD_REQUEST, expected_type_slug="validation",
+        )
+        assert response.json()["errors"]["fields"][0].startswith(
+            "No such field: profile_image.has_image. Select any of: ",
+        )
+
+    def test_a_name_reaching_into_a_property_is_refused_on_the_account_list(self):
+        self.login(self.owner)
+        response = self.client.get(f"{self.list_url}?fields=profile_image.image_url_full")
+        assert_error_envelope(
+            response, expected_status=status.HTTP_400_BAD_REQUEST, expected_type_slug="validation",
+        )
+        assert response.json()["errors"]["fields"][0].startswith(
+            "No such field: profile_image.image_url_full. Select any of: ",
+        )
+
+    def test_a_name_reaching_into_a_property_is_refused_on_a_change(self):
+        self.login(self.owner)
+        response = self.patch(f"{self.own_url}?fields=profile_image.has_image", json.dumps({"bio": "a bio"}))
+        assert_error_envelope(
+            response, expected_status=status.HTTP_400_BAD_REQUEST, expected_type_slug="validation",
+        )
+        assert UserProfile.objects.get(user=self.owner).bio != "a bio"
+
+    def test_naming_the_property_itself_returns_the_whole_object(self):
+        """The object is what the account carries, so naming it brings all of it back."""
+        self.login(self.owner)
+        response = self.client.get(f"{self.own_url}?fields=profile_image")
+        assert response.status_code == status.HTTP_200_OK
+        assert sorted(response.json()) == ["profile_image"]
+        assert sorted(response.json()["profile_image"]) == [
+            "has_image", "image_url_full", "image_url_large", "image_url_medium", "image_url_small",
+        ]

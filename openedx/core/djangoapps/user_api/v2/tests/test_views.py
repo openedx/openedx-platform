@@ -1705,3 +1705,63 @@ class AddressSelfDescriptionTests(UserApiV2TestCase):
         assert answer.json()["description"].startswith(
             "Directory entries of the platform's users, each addressed by username.",
         )
+
+
+@skip_unless_lms
+class SelectedPropertyNameTests(UserApiV2TestCase):
+    """
+    What a selected property name may be, at the collections that take one.
+
+    The parameter takes the names of properties the answer carries. A name
+    written with a dot in it names no such property: the answer carries the
+    property the name starts with, whole, and the rest of the name selects
+    nothing. Reading such a name as its first part would hand a caller the
+    whole of a property it asked one piece of, and would accept a second part
+    that names nothing at all.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.list_url = reverse("user_v2:user_list")
+        self.member_url = reverse("user_v2:user_detail", kwargs={"username": "alice"})
+        self.preference_list_url = reverse("user_v2:user_preference_list")
+        self.login(self.admin)
+
+    def test_a_name_written_with_a_dot_is_refused_on_the_directory_list(self):
+        response = self.client.get(f"{self.list_url}?fields=username.first")
+        assert_error_envelope(
+            response, expected_status=status.HTTP_400_BAD_REQUEST, expected_type_slug="validation",
+        )
+        assert response.json()["errors"]["fields"] == [
+            "No such field: username.first. Select any of: email, id, name, preferences, url, "
+            "username.",
+        ]
+
+    def test_a_name_written_with_a_dot_is_refused_on_a_directory_entry(self):
+        response = self.client.get(f"{self.member_url}?fields=preferences.pref-lang")
+        assert_error_envelope(
+            response, expected_status=status.HTTP_400_BAD_REQUEST, expected_type_slug="validation",
+        )
+        assert "No such field: preferences.pref-lang." in response.json()["errors"]["fields"][0]
+
+    def test_a_name_written_with_a_dot_is_refused_on_the_preference_list(self):
+        response = self.client.get(f"{self.preference_list_url}?fields=user.email")
+        assert_error_envelope(
+            response, expected_status=status.HTTP_400_BAD_REQUEST, expected_type_slug="validation",
+        )
+        assert "No such field: user.email." in response.json()["errors"]["fields"][0]
+
+    def test_a_plain_name_still_selects_that_property_alone(self):
+        response = self.client.get(f"{self.member_url}?fields=username")
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json() == {"username": "alice"}
+
+    def test_a_plain_name_still_selects_that_property_alone_on_a_list(self):
+        response = self.client.get(f"{self.list_url}?fields=username,email&ordering=username")
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json()["results"] == [
+            {"username": "admin-caller", "email": self.admin.email},
+            {"username": "alice", "email": "alice@example.com"},
+            {"username": "bob", "email": "bob@example.com"},
+            {"username": "learner-caller", "email": self.learner.email},
+        ]
