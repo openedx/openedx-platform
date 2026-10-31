@@ -1875,6 +1875,12 @@ class UnsatisfiableAcceptTests(UserApiV2TestCase):
             ("get", reverse("user_v2:time_zone_list"), self.learner),
             ("get", reverse("user_v2:account_list"), self.learner),
             ("get", reverse("user_v2:account_detail", kwargs={"username": "me"}), self.learner),
+            ("get", reverse("user_v2:account_preference_list", kwargs={"username": "alice"}), self.alice),
+            (
+                "get",
+                reverse("user_v2:account_preference_detail", kwargs={"username": "alice", "key": "pref-lang"}),
+                self.alice,
+            ),
             ("delete", reverse("user_v2:account_profile_image", kwargs={"username": "alice"}), self.alice),
         ]
 
@@ -1926,8 +1932,9 @@ class SessionWithoutItsTokenTests(UserApiV2TestCase):
     """
     What a write answers a session the site cannot tie to a page it served.
 
-    The name change collection records something for the caller, is reached
-    from the site's own pages, and refuses such a session.
+    Both of these collections record something for the caller and are reached
+    from the site's own pages, and both refuse such a session. Only one of
+    them published that refusal, so they are measured together here.
     """
 
     def test_asking_for_a_name_change_with_a_session_without_its_token_is_refused(self):
@@ -1939,6 +1946,20 @@ class SessionWithoutItsTokenTests(UserApiV2TestCase):
             expected_type_slug="authz",
         )
         assert PendingNameChange.objects.filter(user=self.alice).count() == 0
+
+    def test_recording_an_organizations_messages_with_the_same_session_is_refused_the_same_way(self):
+        """The refusal the sibling collection publishes is the one this one answers with."""
+        client = APIClient(enforce_csrf_checks=True)
+        assert client.login(username=self.alice.username, password=PASSWORD)
+        assert_error_envelope(
+            client.post(
+                reverse("user_v2:email_opt_in_list"),
+                {"course_key": str(COURSE_KEY), "email_opt_in": True},
+                format="json",
+            ),
+            expected_status=status.HTTP_403_FORBIDDEN,
+            expected_type_slug="authz",
+        )
 
     def test_a_name_change_asked_for_with_the_token_the_session_carries_is_recorded(self):
         """The refusal is about the missing token, not about the address."""

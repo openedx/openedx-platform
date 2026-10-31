@@ -2234,3 +2234,20 @@ def test_every_operation_publishes_the_refusal_of_an_accept_it_cannot_satisfy(sc
         and operation["responses"]["406"]["description"] != UNSATISFIABLE_ACCEPT_DESCRIPTION
     }
     assert wrongly_described == {}
+
+
+@skip_unless_lms
+def test_asking_for_a_name_change_publishes_the_refusal_of_a_session_without_its_token(schema):
+    """
+    A write made with a session the site cannot tie to a page it served is refused here too.
+
+    The sibling collection of this version that records a choice for the
+    caller publishes that refusal; this one answers with it and did not
+    publish it, so a caller handling failures by the statuses the document
+    carries fell through to a status it had no model for.
+    """
+    asked = schema["paths"][NAME_CHANGE_PATH]["post"]["responses"]
+    recorded = schema["paths"][EMAIL_OPT_IN_PATH]["post"]["responses"]
+    assert "403" in asked
+    assert asked["403"]["description"] == recorded["403"]["description"]
+    assert asked["403"]["content"] == recorded["403"]["content"]

@@ -2197,17 +2197,6 @@ class AccountPreferenceViewSet(
         return ValidationError(refusals)
 
 
-_RESP_SESSION_WITHOUT_ITS_TOKEN = OpenApiResponse(
-    ErrorResponse,
-    description=(
-        "The request was made with a session cookie and carried none of the request token the "
-        "site hands out with it, so the site cannot tell that the request came from a page it "
-        "served. Sending that token with the session, or a signed token in place of the "
-        "session, is answered."
-    ),
-)
-
-
 @extend_schema(tags=[SDK_TAG])
 @extend_schema_view(
     create=extend_schema(
