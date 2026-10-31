@@ -28,7 +28,6 @@ from cms.djangoapps.contentstore.rest_api.v3.serializers.grading import (
     CourseGradingSerializer,
     CourseGradingUpdateSerializer,
     GradingViewQuerySerializer,
-    grading_policy_update_serializer,
 )
 from cms.djangoapps.contentstore.rest_api.v3.utils import resolve_course_key
 
@@ -168,7 +167,7 @@ class AuthoringGradingViewSet(StandardizedErrorMixin, viewsets.ViewSet):
         self, request: Request, course_key: str, format=None,  # pylint: disable=unused-argument,redefined-builtin
     ):
         """Change the grading policy fields present in the body."""
-        grading_policy_update_serializer(request.data).is_valid(raise_exception=True)
+        CourseGradingUpdateSerializer(data=request.data).is_valid(raise_exception=True)
         # The model receives the body as sent: it does its own conversions, and
         # converting here first would change what it stores.
         policy = update_grading_policy(self.get_course_key(), request.data, request.user)

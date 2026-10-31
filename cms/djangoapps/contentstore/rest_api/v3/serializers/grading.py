@@ -133,15 +133,9 @@ class GradingViewQuerySerializer(serializers.Serializer):  # pylint: disable=abs
 
 # The request fields below check each value with the conversion the grading
 # model applies when it reads it, and the view then hands the model the body as
-# sent. A value the model cannot convert or store is refused before anything is
-# written.
-#
-# A body holding every policy field goes to the model's whole-policy update,
-# which stores some values outside the documented shape: null or empty cutoffs,
-# a grader type of any JSON type, an empty credit minimum. Such a body is
-# validated by _WholeGradingPolicyUpdateSerializer, which accepts them. Any other
-# body is held to the documented shape, because the model's per-field updates
-# store null or empty cutoffs where they break the course's grading.
+# sent. A value the model stores as sent must already have the published type;
+# a value the model converts must convert and fit in storage. Anything else is
+# refused before anything is written.
 
 GRADING_POLICY_FIELDS = ("graders", "grade_cutoffs", "grace_period", "minimum_grade_credit")
 
@@ -190,8 +184,8 @@ class _SentValueField(serializers.Field):
 
 
 @extend_schema_field(OpenApiTypes.STR)
-class _NameField(_SentValueField):
-    """A name, which must be a string."""
+class _StringField(_SentValueField):
+    """A string, stored as sent."""
 
     default_error_messages = {"invalid": "A string is required."}
 
@@ -199,17 +193,6 @@ class _NameField(_SentValueField):
         if not isinstance(data, str):
             self.fail("invalid")
         return super().to_internal_value(data)
-
-
-@extend_schema_field(OpenApiTypes.STR)
-class _TextField(_SentValueField):
-    """A label the grading model stores as sent, whatever its type."""
-
-    def validate_empty_values(self, data):
-        # The grading model stores null here, so it is accepted, though not published.
-        if data is None:
-            return (True, None)
-        return super().validate_empty_values(data)
 
 
 @extend_schema_field(OpenApiTypes.INT)
@@ -239,16 +222,6 @@ class _ScoreField(_NumberField):
         return super().to_internal_value(data)
 
 
-@extend_schema_field(OpenApiTypes.DOUBLE)
-class _CreditMinimumField(_NumberField):
-    """A credit minimum; an empty string is stored as no minimum."""
-
-    def to_internal_value(self, data):
-        if data == "":
-            return data
-        return super().to_internal_value(data)
-
-
 @extend_schema_field(OpenApiTypes.INT)
 class _PercentField(_NumberField):
     """A whole percentage; the grading model also stores a fractional one as sent."""
@@ -257,10 +230,16 @@ class _PercentField(_NumberField):
 
 
 @extend_schema_field(OpenApiTypes.INT)
-class _GraderIdField(_TextField):
+class _GraderIdField(_SentValueField):
     """A grader id, which the grading model ignores whatever its value."""
 
     stored_as_sent = False
+
+    def validate_empty_values(self, data):
+        # Ignored like any other value, so null is accepted too, though not published.
+        if data is None:
+            return (True, None)
+        return super().validate_empty_values(data)
 
 
 class GracePeriodUpdateSerializer(serializers.Serializer):  # pylint: disable=abstract-method
@@ -299,37 +278,10 @@ class _GracePeriodField(serializers.Field):
         return value
 
 
-class _AnyGradeCutoffsField(serializers.DictField):
-    """Letter-grade cutoffs as the whole-policy update stores them: null, or an object of numbers or nulls."""
-
-    def __init__(self, **kwargs):
-        super().__init__(child=_NumberField(allow_null=True), **kwargs)
-
-    def validate_empty_values(self, data):
-        if data is None:
-            return (True, None)
-        return super().validate_empty_values(data)
-
-
-class _GraderListSerializer(serializers.ListSerializer):  # pylint: disable=abstract-method
-    """
-    Graders as a list.
-
-    The grading model iterates whatever it is given, so it stores an empty
-    string or an empty object as an empty list, and both are accepted.
-    Anything else that is not a list is refused.
-    """
-
-    def to_internal_value(self, data):
-        if isinstance(data, (str, Mapping)):
-            data = list(data)
-        return super().to_internal_value(data)
-
-
 class GraderUpdateSerializer(serializers.Serializer):  # pylint: disable=abstract-method
     """One assignment type in a grading policy update."""
 
-    type = _NameField(help_text="Name of the assignment type, for example Homework.")
+    type = _StringField(help_text="Name of the assignment type, for example Homework.")
     min_count = _CountField(
         required=False,
         help_text="Number of assignments of this type the course expects. Defaults to 0.",
@@ -338,7 +290,7 @@ class GraderUpdateSerializer(serializers.Serializer):  # pylint: disable=abstrac
         required=False,
         help_text="Number of lowest-scoring assignments of this type left out of the grade. Defaults to 0.",
     )
-    short_label = _TextField(
+    short_label = _StringField(
         required=False,
         allow_null=True,
         help_text="Abbreviation shown with the assignment type, for example HW.",
@@ -357,7 +309,6 @@ class GraderUpdateSerializer(serializers.Serializer):  # pylint: disable=abstrac
 
     class Meta:
         ref_name = "authoring_grading.GraderUpdate.v3"
-        list_serializer_class = _GraderListSerializer
 
 
 class CourseGradingUpdateSerializer(serializers.Serializer):  # pylint: disable=abstract-method
@@ -388,7 +339,7 @@ class CourseGradingUpdateSerializer(serializers.Serializer):  # pylint: disable=
             "a grace period cannot be removed here."
         ),
     )
-    minimum_grade_credit = _NumberField(
+    minimum_grade_credit = _ScoreField(
         required=False,
         allow_null=True,
         help_text="Lowest course score, from 0 to 1, that earns course credit. Null leaves it unchanged.",
@@ -401,49 +352,3 @@ class CourseGradingUpdateSerializer(serializers.Serializer):  # pylint: disable=
         if html.is_html_input(data):
             raise ValidationError({api_settings.NON_FIELD_ERRORS_KEY: ["Send the grading policy as a JSON object."]})
         return super().to_internal_value(data)
-
-
-class _WholePolicyGraderUpdateSerializer(GraderUpdateSerializer):  # pylint: disable=abstract-method
-    """One assignment type in a whole-policy update, whose type may be any value."""
-
-    type = _TextField(help_text="Name of the assignment type, for example Homework.")
-
-    class Meta:
-        ref_name = "authoring_grading.WholePolicyGraderUpdate.v3"
-        list_serializer_class = _GraderListSerializer
-
-
-class _WholeGradingPolicyUpdateSerializer(CourseGradingUpdateSerializer):  # pylint: disable=abstract-method
-    """
-    A grading policy update holding every policy field.
-
-    The grading model's whole-policy update stores some values beyond the
-    documented shape, and this accepts them: null cutoffs or cutoff values,
-    empty cutoffs, a grader type of any JSON type, and an empty string as the
-    credit minimum, which stores no minimum.
-    """
-
-    graders = _WholePolicyGraderUpdateSerializer(
-        many=True,
-        required=False,
-        help_text="Replaces every assignment type, in the order given.",
-    )
-    grade_cutoffs = _AnyGradeCutoffsField(
-        required=False,
-        help_text="Lowest score, from 0 to 1, that earns each letter grade, keyed by the grade's name.",
-    )
-    minimum_grade_credit = _CreditMinimumField(
-        required=False,
-        allow_null=True,
-        help_text="Lowest course score, from 0 to 1, that earns course credit. Null leaves it unchanged.",
-    )
-
-    class Meta:
-        ref_name = "authoring_grading.WholeGradingPolicyUpdate.v3"
-
-
-def grading_policy_update_serializer(data):
-    """Return the serializer that validates the grading policy update body ``data``."""
-    if isinstance(data, Mapping) and all(field in data for field in GRADING_POLICY_FIELDS):
-        return _WholeGradingPolicyUpdateSerializer(data=data)
-    return CourseGradingUpdateSerializer(data=data)
