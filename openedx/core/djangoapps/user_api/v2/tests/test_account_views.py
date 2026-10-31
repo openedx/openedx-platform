@@ -13,6 +13,7 @@ from django.urls import reverse
 from edx_rest_framework_extensions.scoping import FullScopePolicy
 from edx_rest_framework_extensions.testing import assert_error_envelope
 from rest_framework import status
+from rest_framework.permissions import BasePermission
 from rest_framework.test import APITestCase
 from waffle.testutils import override_switch
 
@@ -30,6 +31,7 @@ from openedx.core.djangoapps.user_api.models import RetirementState, UserRetirem
 from openedx.core.djangoapps.user_api.tests.factories import UserPreferenceFactory
 from openedx.core.djangoapps.user_api.v2.permissions import ACCOUNT_CONTACT_SELECTORS
 from openedx.core.djangoapps.user_api.v2.serializers import ACCOUNT_DEFAULT_SORT, AccountQuerySerializer
+from openedx.core.djangoapps.user_api.v2 import views
 from openedx.core.djangoapps.user_api.v2.views import AMBIGUOUS_ACCOUNT_ADDRESS, EmailSearchViewSet
 from openedx.core.djangoapps.user_authn.views.password_reset import PasswordResetFormNoActive
 from openedx.core.djangolib.testing.utils import skip_unless_lms
@@ -82,6 +84,23 @@ DEFAULT_AUTH_RECORDER = "openedx.core.djangolib.default_auth_classes.set_custom_
 #: Where the account views look an account up, which the database answers. A
 #: test that stands in for the database answers it from here.
 ACCOUNT_LOOKUP = "openedx.core.djangoapps.user_api.v2.views.get_account_settings"
+
+class RefusesEveryCaller(BasePermission):
+    """A rule that admits nobody, added to a declaration to see how far it reaches."""
+
+    def has_permission(self, request, view):
+        """Refuse every caller."""
+        return False
+
+
+def refusing_account_resource():
+    """Add a rule admitting nobody to the classes the account resource is read with."""
+    return mock.patch.object(
+        views,
+        "ACCOUNT_RESOURCE_PERMISSIONS",
+        (*views.ACCOUNT_RESOURCE_PERMISSIONS, RefusesEveryCaller),
+    )
+
 
 def counting_cache(location):
     """
@@ -1986,6 +2005,206 @@ class AccountPageSizeTests(AccountApiV2TestCase):
         assert [row["username"] for row in response.data["results"]] == names
         assert response.data["num_pages"] == 1
         assert response.data["next"] is None
+
+
+@skip_unless_lms
+class AccountWriteTargetTests(AccountApiV2TestCase):
+    """
+    A change whose address names no one account is refused rather than written somewhere.
+
+    What an address resolves to is the database's answer, and more than one
+    account can come back for one name. The record the work lands on is
+    settled from that answer rather than taken as the first of it, so a change
+    either lands on the account the address names or on nothing at all. The
+    test database resolves a name only to the record stored under exactly it,
+    so the lookups are answered here the way they answer where a name resolves
+    more widely.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.deactivator = UserFactory.create(username="target-deactivator", password=PASSWORD)
+        self.deactivator.user_permissions.add(
+            PermissionFactory(
+                codename="can_deactivate_users",
+                content_type=ContentTypeFactory(app_label="student"),
+            ),
+        )
+        self.owner.profile.profile_image_uploaded_at = datetime.datetime.now(datetime.UTC)
+        self.owner.profile.save()
+
+    def test_a_deactivation_whose_address_names_more_than_one_account_deactivates_none(self):
+        address = reverse("user_v2:account_deactivation", kwargs={"username": self.owner.username})
+        self.login(self.deactivator)
+        with mock.patch(
+            "openedx.core.djangoapps.user_api.v2.views.accounts_named",
+            lambda name: [self.other, self.staff],
+        ):
+            envelope = assert_error_envelope(
+                self.client.post(address),
+                expected_status=status.HTTP_400_BAD_REQUEST,
+                expected_type_slug="validation",
+            )
+        assert envelope["errors"] == {"non_field_errors": [AMBIGUOUS_ACCOUNT_ADDRESS]}
+        for user in (self.owner, self.other, self.staff):
+            user.refresh_from_db()
+            assert user.has_usable_password(), user.username
+
+    def test_a_deactivation_lands_on_the_account_stored_under_the_name_addressed(self):
+        address = reverse("user_v2:account_deactivation", kwargs={"username": self.owner.username})
+        self.login(self.deactivator)
+        with mock.patch(
+            "openedx.core.djangoapps.user_api.v2.views.accounts_named",
+            lambda name: [self.other, self.owner],
+        ):
+            assert self.client.post(address).status_code == status.HTTP_204_NO_CONTENT
+        self.owner.refresh_from_db()
+        self.other.refresh_from_db()
+        assert not self.owner.has_usable_password()
+        assert self.other.has_usable_password()
+
+    def test_an_image_whose_address_names_more_than_one_account_is_left_alone(self):
+        """
+        The image is recorded against the account the address names, or against none.
+
+        The record it is written to is resolved again by the name in the
+        address when it is written, so a name that answers for more than one
+        account is refused there and the stored image is left as it stands.
+        """
+        address = reverse(
+            "user_v2:account_profile_image", kwargs={"username": self.owner.username},
+        )
+        self.login(self.owner)
+        with mock.patch(
+            "openedx.core.djangoapps.profile_images.v2.views.set_has_profile_image",
+            side_effect=UserProfile.MultipleObjectsReturned,
+        ):
+            envelope = assert_error_envelope(
+                self.client.delete(address),
+                expected_status=status.HTTP_400_BAD_REQUEST,
+                expected_type_slug="validation",
+            )
+        assert envelope["errors"] == {"non_field_errors": [AMBIGUOUS_ACCOUNT_ADDRESS]}
+        self.owner.profile.refresh_from_db()
+        assert self.owner.profile.has_profile_image is True
+
+
+@skip_unless_lms
+class AccountResourceGateTests(AccountApiV2TestCase):
+    """
+    A rule the account resource admits a caller by reaches every operation on an account.
+
+    The accounts are one collection however many addresses reach into them, so
+    a rule declared for the resource has to be applied by every operation that
+    reads or changes one of its accounts, wherever that operation is served
+    from. Each one is measured twice: once as it stands, and once with a rule
+    that admits nobody added to the resource's declaration, which every one of
+    them must then refuse. Measuring both ways is what makes the second
+    measurement an answer about the rule rather than about the address.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.owner.profile.profile_image_uploaded_at = datetime.datetime.now(datetime.UTC)
+        self.owner.profile.save()
+        self.deactivator = UserFactory.create(username="gate-deactivator", password=PASSWORD)
+        self.deactivator.user_permissions.add(
+            PermissionFactory(
+                codename="can_deactivate_users",
+                content_type=ContentTypeFactory(app_label="student"),
+            ),
+        )
+
+    def reads(self):
+        """Return each read of one account, by the address it is sent to."""
+        name = self.owner.username
+        return {
+            "the account": lambda: self.client.get(self.detail_url(name)),
+            "the verification summary": lambda: self.client.get(
+                reverse("user_v2:account_verification_status", kwargs={"username": name}),
+            ),
+            "the verification attempts": lambda: self.client.get(
+                reverse("user_v2:account_verification_list", kwargs={"username": name}),
+            ),
+        }
+
+    def writes(self):
+        """Return each change to one account, by the address it is sent to."""
+        name = self.owner.username
+        return {
+            "the image": lambda: self.client.post(
+                reverse("user_v2:account_profile_image", kwargs={"username": name}),
+            ),
+            "the stored image": lambda: self.client.delete(
+                reverse("user_v2:account_profile_image", kwargs={"username": name}),
+            ),
+        }
+
+    def has_image(self):
+        """Return whether the account carries an image of its own."""
+        self.owner.profile.refresh_from_db()
+        return self.owner.profile.has_profile_image
+
+    def test_every_read_of_one_account_is_answered_while_the_resource_admits_the_caller(self):
+        self.login(self.owner)
+        for case, send in self.reads().items():
+            assert send().status_code == status.HTTP_200_OK, case
+
+    def test_a_rule_the_resource_refuses_every_caller_by_refuses_every_read_of_one_account(self):
+        self.login(self.owner)
+        with refusing_account_resource():
+            for case, send in self.reads().items():
+                assert_error_envelope(
+                    send(), expected_status=status.HTTP_403_FORBIDDEN, expected_type_slug="authz",
+                )
+
+    def test_every_change_to_one_account_reaches_its_handler_while_the_resource_admits_the_caller(self):
+        """
+        The handler is reached, which is what the refusal below is measured against.
+
+        A change is sent here as a caller sends it wrong, so that what is
+        measured is the request reaching the handler rather than the change
+        itself: an upload carrying no image is refused by the handler, and
+        clearing the image is carried out.
+        """
+        self.login(self.owner)
+        answers = {case: send() for case, send in self.writes().items()}
+        assert answers["the image"].status_code == status.HTTP_400_BAD_REQUEST
+        assert answers["the stored image"].status_code == status.HTTP_204_NO_CONTENT
+        assert self.has_image() is False
+
+    def test_a_rule_the_resource_refuses_every_caller_by_refuses_every_change_to_one_account(self):
+        """A change refused by the resource leaves the account as it stands."""
+        self.login(self.owner)
+        with refusing_account_resource():
+            for case, send in self.writes().items():
+                assert_error_envelope(
+                    send(), expected_status=status.HTTP_403_FORBIDDEN, expected_type_slug="authz",
+                )
+        assert self.has_image() is True
+
+    def test_a_rule_the_resource_refuses_every_caller_by_refuses_a_deactivation(self):
+        """
+        The privilege to deactivate is held and the resource still decides.
+
+        The caller holds the privilege this address asks for, so the refusal
+        measured here is the resource's rather than that privilege's, and the
+        password is still usable afterwards.
+        """
+        address = reverse("user_v2:account_deactivation", kwargs={"username": self.owner.username})
+        self.login(self.deactivator)
+        with refusing_account_resource():
+            assert_error_envelope(
+                self.client.post(address),
+                expected_status=status.HTTP_403_FORBIDDEN,
+                expected_type_slug="authz",
+            )
+        self.owner.refresh_from_db()
+        assert self.owner.has_usable_password()
+
+        assert self.client.post(address).status_code == status.HTTP_204_NO_CONTENT
+        self.owner.refresh_from_db()
+        assert not self.owner.has_usable_password()
 
 
 @skip_unless_lms

@@ -50,6 +50,7 @@ from .permissions import CanSelectAccountsByContact, IsActiveUser, IsAddressedUs
 from .schema import ResponseShapes
 from .selectors import (
     accounts_holding_emails,
+    accounts_named,
     cancellable_retirement_for_email,
     username_holding_id,
     usernames_among,
@@ -416,10 +417,7 @@ def _the_one_addressed(username, records, name_of):
 
 def _user_named(username):
     """Return the user an address names, or refuse the address."""
-    try:
-        return User.objects.get(username=username)
-    except User.DoesNotExist as exc:
-        raise NotFound from exc
+    return _the_one_addressed(username, accounts_named(username), lambda user: user.username)
 
 
 class _MemberLookupMixin:
@@ -777,6 +775,57 @@ def _shareable_account_fields():
     return set(settings.ACCOUNT_VISIBILITY_CONFIGURATION["custom_shareable_fields"])
 
 
+#: The classes every operation on an account admits a caller by, wherever it is
+#: served from. The account collection declares this tuple and every address
+#: that works on one of its accounts carries it, so the rules of the resource
+#: are declared once rather than restated by each address that reaches into it.
+#: It is read from here rather than from the collection's own attribute because
+#: that attribute is added to in place, by the first request to reach a view
+#: that reads a token, and admission must not depend on which addresses a
+#: process has served already.
+ACCOUNT_RESOURCE_PERMISSIONS = (
+    permissions.IsAuthenticated,
+    CanGetAccountInfo,
+    CanSelectAccountsByContact,
+)
+
+
+class AccountResourceMixin:
+    """
+    Carries the rules of the account resource into the operations on one account.
+
+    An address beneath an account works on a row of the collection the account
+    resource answers from, so a caller that resource refuses is a caller the
+    operation refuses too: the classes the resource declares are applied first
+    and the ones this address declares after, which keeps an address reached
+    this way from standing open to a caller the resource is closed to. The
+    account the address names is resolved here as well, so the record a
+    permission settled the request on is the record the work lands on.
+    """
+
+    def account_resource_permissions(self):
+        """Return the classes the account resource admits a caller by."""
+        return ACCOUNT_RESOURCE_PERMISSIONS
+
+    def declared_permissions(self):
+        """Return the classes the address being served declares of its own."""
+        return super().get_permissions()
+
+    def get_permissions(self):
+        """Return the collection's classes, then the ones this address declares."""
+        declared = self.declared_permissions()
+        already_carried = {type(permission) for permission in declared}
+        carried = [
+            permission() for permission in self.account_resource_permissions()
+            if permission not in already_carried
+        ]
+        return carried + declared
+
+    def addressed_account(self):
+        """Return the account this address names, refusing an address that names no one account."""
+        return _user_named(self.kwargs["username"])
+
+
 @extend_schema(tags=[SDK_TAG])
 @extend_schema_view(
     list=extend_schema(
@@ -847,6 +896,7 @@ class AccountViewSet(
     StandardizedErrorMixin,
     CatalogedRequestErrorsMixin,
     ErrorExtensionsMixin,
+    AccountResourceMixin,
     _ActionAddressMixin,
     _ResponsePresetMixin,
     StrictQueryParametersMixin,
@@ -893,11 +943,7 @@ class AccountViewSet(
     # pair is built on, named here because a view declaring its own classes is
     # not one that pair serves.
     authentication_classes = (JwtAuthentication, SessionAuthenticationAllowInactiveUser)
-    permission_classes = (
-        permissions.IsAuthenticated,
-        CanGetAccountInfo,
-        CanSelectAccountsByContact,
-    )
+    permission_classes = ACCOUNT_RESOURCE_PERMISSIONS
     #: A change is a merge patch: a body in any other media type is refused.
     parser_classes = (MergePatchParser,)
     serializer_class = AccountSerializer
@@ -1193,6 +1239,7 @@ class AccountViewSet(
 class AccountDeactivationView(
     StandardizedErrorMixin,
     CatalogedRequestErrorsMixin,
+    AccountResourceMixin,
     StrictQueryParametersMixin,
     APIView,
 ):
@@ -1213,7 +1260,7 @@ class AccountDeactivationView(
 
     def post(self, request, username):
         """Make the password of the named account unusable and record it as disabled."""
-        user = _user_named(username)
+        user = self.addressed_account()
         segment.identify(user.id, {"is_disabled": "true"})
         user.set_unusable_password()
         user.save()
@@ -1454,6 +1501,7 @@ def _verification_sort_key(attempt):
 class IDVerificationStatusView(
     StandardizedErrorMixin,
     CatalogedRequestErrorsMixin,
+    AccountResourceMixin,
     StrictQueryParametersMixin,
     APIView,
 ):
@@ -1537,6 +1585,7 @@ class IDVerificationStatusView(
 class IDVerificationViewSet(
     StandardizedErrorMixin,
     CatalogedRequestErrorsMixin,
+    AccountResourceMixin,
     StrictQueryParametersMixin,
     IterablePaginationMixin,
     viewsets.ViewSet,

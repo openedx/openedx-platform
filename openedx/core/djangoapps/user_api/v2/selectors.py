@@ -14,6 +14,17 @@ def accounts_holding_emails(emails):
     return User.objects.filter(email__in=emails).order_by("username")
 
 
+def accounts_named(name):
+    """
+    Return the accounts this name addresses.
+
+    The database settles which stored names an address answers to, and it need
+    not be only the one written exactly as the address writes it, so a name
+    can bring back more than one account.
+    """
+    return list(User.objects.filter(username=name))
+
+
 def usernames_among(names, ordering):
     """
     Return the names these accounts are stored under, in the order asked for.

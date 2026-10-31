@@ -1,5 +1,7 @@
 """Tests for the version 2 User API profile name change views."""
 
+from unittest import mock
+
 import pytest
 from django.urls import reverse
 from edx_rest_framework_extensions.testing import assert_error_envelope
@@ -9,6 +11,7 @@ from rest_framework.test import APITestCase
 from common.djangoapps.student.models import PendingNameChange
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.oauth_dispatch.jwt import create_jwt_for_user
+from openedx.core.djangoapps.user_api.v2.views import AMBIGUOUS_ACCOUNT_ADDRESS
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 
 PASSWORD = "Password1234"
@@ -396,6 +399,68 @@ class NameChangeConfirmationTests(NameChangeTestCase):
             "confirm": ["No such query parameter. Send any of: format."],
         }
         assert self.profile_name(self.owner) == "Original Name"
+
+
+@skip_unless_lms
+class NameChangeAmbiguousTargetTests(NameChangeTestCase):
+    """A confirmation whose address names no one account changes no profile."""
+
+    def setUp(self):
+        super().setUp()
+        PendingNameChange.objects.create(
+            user=self.owner, new_name="Jon Doe", rationale="asked for in a test",
+        )
+        self.url = self.confirmation_url(self.owner.username)
+
+    def test_an_address_naming_more_than_one_account_changes_nothing(self):
+        """
+        The profile the work lands on is the one the address names, or none at all.
+
+        What the address resolves to is the database's answer, and more than
+        one account can come back for one name. Writing to whichever came back
+        first would put a name on an account nobody addressed, so the request
+        is refused and both profiles are left as they stand. The test database
+        resolves a name only to the record stored under exactly it, so the
+        lookup is answered here the way it answers where a name resolves more
+        widely.
+        """
+        sibling = UserFactory.create(
+            username="name-sibling", email="name-sibling@example.com", password=PASSWORD,
+        )
+        sibling.profile.name = "Sibling Name"
+        sibling.profile.save()
+        self.login(self.staff)
+        with mock.patch(
+            "openedx.core.djangoapps.user_api.v2.views.accounts_named",
+            lambda name: [sibling, self.other],
+        ):
+            envelope = assert_error_envelope(
+                self.client.post(self.url),
+                expected_status=status.HTTP_400_BAD_REQUEST,
+                expected_type_slug="validation",
+            )
+        assert envelope["errors"] == {"non_field_errors": [AMBIGUOUS_ACCOUNT_ADDRESS]}
+        assert self.profile_name(self.owner) == "Original Name"
+        assert self.pending_name(self.owner) == "Jon Doe"
+        sibling.profile.refresh_from_db()
+        assert sibling.profile.name == "Sibling Name"
+
+    def test_the_account_stored_under_the_name_addressed_is_the_one_changed(self):
+        """Among several, the account stored under exactly the name addressed is the one written to."""
+        sibling = UserFactory.create(
+            username="name-sibling", email="name-sibling@example.com", password=PASSWORD,
+        )
+        sibling.profile.name = "Sibling Name"
+        sibling.profile.save()
+        self.login(self.staff)
+        with mock.patch(
+            "openedx.core.djangoapps.user_api.v2.views.accounts_named",
+            lambda name: [sibling, self.owner],
+        ):
+            assert self.client.post(self.url).status_code == status.HTTP_204_NO_CONTENT
+        assert self.profile_name(self.owner) == "Jon Doe"
+        sibling.profile.refresh_from_db()
+        assert sibling.profile.name == "Sibling Name"
 
 
 @skip_unless_lms
