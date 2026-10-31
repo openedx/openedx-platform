@@ -222,6 +222,15 @@ class SpectacularSettingsTest(SimpleTestCase):
         """Setting the key replaces drf-spectacular's default list, so it is restated."""
         assert "drf_spectacular.hooks.postprocess_schema_enums" in settings.SPECTACULAR_SETTINGS["POSTPROCESSING_HOOKS"]
 
+    def test_the_run_state_enum_name_is_pinned(self):
+        """The shared settings pin the name, and no environment replaces the dict."""
+        overrides = settings.SPECTACULAR_SETTINGS["ENUM_NAME_OVERRIDES"]
+        assert overrides["CourseOptimizerStatusEnum"] == (
+            "cms.djangoapps.contentstore.rest_api.v1.course_optimizer_service.RUN_STATES"
+        )
+        for module in self.SETTINGS_MODULES:
+            assert "ENUM_NAME_OVERRIDES" not in self._source(module), module
+
     def test_no_prefix_is_trimmed_so_paths_are_emitted_in_full(self):
         assert "SCHEMA_PATH_PREFIX_TRIM" not in settings.SPECTACULAR_SETTINGS
 

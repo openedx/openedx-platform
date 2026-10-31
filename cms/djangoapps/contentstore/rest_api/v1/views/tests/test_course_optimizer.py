@@ -10,10 +10,13 @@ from unittest.mock import patch
 
 import ddt
 import pytest
+from django.contrib.auth import get_user_model
 from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import ContentFile
 from django.test import SimpleTestCase, TestCase
 from django.urls import Resolver404, resolve, reverse
+from drf_spectacular.hooks import postprocess_schema_enums
+from drf_spectacular.plumbing import ComponentRegistry, list_hash
 from edx_rest_framework_extensions.testing import assert_error_envelope
 from edx_toggles.toggles.testutils import override_waffle_flag
 from opaque_keys.edx.keys import CourseKey, UsageKey
@@ -747,6 +750,7 @@ class _VisibilityMixin:
         return record_link_update(user, course_key, state, created=created)
 
     def _assert_visibility(self, operation):
+        """Each caller with a run reads their own, an editor without one reads Uninitiated, a superuser the latest."""
         self._record(operation, self.other, UserTaskStatus.FAILED, created=_hours_ago(2))
         self._record(operation, self.author, UserTaskStatus.IN_PROGRESS, created=_hours_ago(1))
         assert self.read_status(self.author, operation) == UserTaskStatus.IN_PROGRESS
@@ -1499,6 +1503,7 @@ class _ReadsAreSideEffectFreeMixin:
         self.html = BlockFactory.create(parent_location=vertical.location, category="html")
 
     def _reader_with_runs(self):
+        """Return an editor of the course with a succeeded link check and link update, and no policy version row."""
         reader = self.editor_for(self.course)
         links = [[str(self.html.location), "https://broken.example.com/", LinkState.BROKEN]]
         record_link_check(reader, self.course.id, UserTaskStatus.SUCCEEDED, links=links)
@@ -1527,16 +1532,24 @@ class _ReadsAreSideEffectFreeMixin:
             assert created == [], read
 
     def test_the_first_v0_read_writes_what_the_first_v1_read_writes(self):
+        """
+        On a database without the policy version row, a v0 read and a v1 read each write only that row.
+
+        Each read gets its own user instance, because the role lookup is cached on the
+        user object; reusing one would leave the second read with no lookup to make.
+        """
         reader = self._reader_with_runs()
+        first_lookup = (FIRST_LOOKUP_WRITES, FIRST_LOOKUP_SIGNALS, 0)
         for operation in ("read_check", "read_update"):
             seen = []
             for legacy in (True, False):
                 PolicyCacheControl.objects.all().delete()
+                fresh_reader = get_user_model().objects.get(pk=reader.pk)
                 with record_effects(self) as effects:
-                    response = call(api_client(reader), operation, self.course.id, legacy=legacy)
+                    response = call(api_client(fresh_reader), operation, self.course.id, legacy=legacy)
                 assert response.status_code == 200, response.content
                 seen.append((effects["sql_writes"], effects["signals"], effects["mongo_writes"]))
-            assert seen[0] == seen[1], operation
+            assert seen == [first_lookup, first_lookup], operation
 
     def test_the_creation_recorder_sees_an_item_created(self):
         """The check above would notice a creation: one made inside the recorder is seen."""
@@ -1842,7 +1855,24 @@ class CourseOptimizerSchemaTest(TestCase):
             self.components["CourseOptimizerQueuedRun.v1"]["properties"]["status"],
         ]
         assert [self._enum(node) for node in nodes] == [set(RUN_STATES)] * 3
-        assert {self._enum_ref(node) for node in nodes} == {"#/components/schemas/StatusEnum"}
+        assert {self._enum_ref(node) for node in nodes} == {"#/components/schemas/CourseOptimizerStatusEnum"}
+
+    def test_the_states_enum_keeps_its_name_beside_another_status_enum(self):
+        """
+        A ``status`` field with other choices elsewhere in the service leaves the states' name alone.
+
+        Without a pinned name, drf-spectacular names both enums after their components instead.
+        """
+        def enum(values):
+            """An enum property as drf-spectacular emits it before naming the enum components."""
+            return {"type": "string", "enum": list(values), "x-spec-enum-id": list_hash([(v, v) for v in values])}
+
+        schema = {"components": {"schemas": {
+            "LinkCheck.v1": {"type": "object", "properties": {"status": enum(RUN_STATES)}},
+            "Other": {"type": "object", "properties": {"status": enum(["open", "closed"])}},
+        }}}
+        result = postprocess_schema_enums(schema, SimpleNamespace(registry=ComponentRegistry()))
+        assert sorted(result["components"]["schemas"]) == ["CourseOptimizerStatusEnum", "OtherStatusEnum"]
 
     def test_the_minimal_and_full_members(self):
         link_check = self.components["LinkCheck.v1"]
