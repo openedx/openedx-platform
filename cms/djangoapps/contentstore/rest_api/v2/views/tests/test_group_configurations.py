@@ -2,6 +2,7 @@
 
 import json
 from datetime import UTC, datetime
+from functools import cached_property
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -44,6 +45,7 @@ from cms.djangoapps.contentstore.rest_api.v1.views.tests.helpers import (
     session_client,
     undeclared_paths,
 )
+from cms.djangoapps.contentstore.rest_api.v2.serializers.group_configurations import VIEW_HELP_TEXT
 from cms.djangoapps.contentstore.rest_api.v2.views.group_configurations import CourseGroupConfigurationsViewSet
 from cms.djangoapps.contentstore.tests.utils import routed_actions
 from cms.djangoapps.contentstore.utils import reverse_usage_url
@@ -795,6 +797,8 @@ RESPONSE_DIFFERENCES = [
      "test_a_course_the_modulestore_returns_nothing_for"),
     ("OPTIONS by a signed-in caller without access, or for an unknown course", "200", "403 or 404",
      "test_options"),
+    ("POST, PUT, PATCH or DELETE by a signed-in caller without access, or for an unknown course", "405",
+     "403 or 404", "test_a_method_the_endpoint_does_not_serve"),
     ("any read with a Bearer token", "200", "401", "test_a_bearer_token"),
     ("read for a slash-separated course key", "404 JSON", "HTML 404 at routing", "test_a_slash_separated_course_key"),
 ]
@@ -805,8 +809,18 @@ class GroupConfigurationsResponseDifferencesTest(ModuleStoreTestCase):
 
     def setUp(self):
         super().setUp()
-        self.course = build_course(**SHAPES["rich"])
         self.client = api_client(UserFactory(is_staff=True))
+
+    @cached_property
+    def course(self):
+        """
+        The course listing every kind of configuration, built on first use.
+
+        Building it makes content type gating configurable in Studio for the
+        whole site, which lists that configuration on every course read
+        afterwards; a test about other courses must not touch it.
+        """
+        return build_course(**SHAPES["rich"])
 
     def both(self, course_key=None, **params):
         """Read the course through v1 and v2 (with ``params``), assert both succeed and return both bodies."""
@@ -852,11 +866,13 @@ class GroupConfigurationsResponseDifferencesTest(ModuleStoreTestCase):
         """Experiments turned on with none defined lists the same as turned off; only v1's flag tells them apart."""
         on_none_defined = build_course(**SHAPES["experiments_on_none_defined"])
         off = build_course(**SHAPES["experiments_off"])
+        assert not ContentTypeGatingConfig.objects.exists()
         with patch(ID_GENERATOR, return_value=PLACEHOLDER_ID):
             for course_key, shown, experiments in ((on_none_defined.id, True, []), (off.id, False, None)):
                 legacy, new = self.both(course_key)
                 assert legacy["should_show_experiment_groups"] is shown
                 assert legacy["experiment_group_configurations"] == experiments
+                assert [c["id"] for c in legacy["all_group_configurations"]] == [PLACEHOLDER_ID]
                 assert [c["id"] for c in new["results"]] == [PLACEHOLDER_ID]
                 assert "should_show_experiment_groups" not in new
 
@@ -901,6 +917,21 @@ class GroupConfigurationsResponseDifferencesTest(ModuleStoreTestCase):
         assert self.client.options(url(self.course.id)).status_code == 200
         assert outsider.options(legacy_url(UNKNOWN_COURSE_KEY)).status_code == 200
         assert_refused(outsider.options(url(UNKNOWN_COURSE_KEY)), 404)
+
+    def test_a_method_the_endpoint_does_not_serve(self):
+        """
+        v1 answers any method but GET with 405; v2 checks the course and the
+        caller first, so only a caller who may read the course learns of 405.
+        """
+        outsider = api_client(UserFactory())
+        for method in ("post", "put", "patch", "delete"):
+            send = getattr(outsider, method)
+            assert send(legacy_url(self.course.id), {}, format="json").status_code == 405, method
+            assert_refused(send(url(self.course.id), {}, format="json"), 403)
+            assert send(legacy_url(UNKNOWN_COURSE_KEY), {}, format="json").status_code == 405, method
+            assert_refused(send(url(UNKNOWN_COURSE_KEY), {}, format="json"), 404)
+            response = getattr(self.client, method)(url(self.course.id), {}, format="json")
+            assert_error_envelope(response, expected_status=405, expected_type_slug="internal")
 
     def test_a_bearer_token(self):
         user = UserFactory(is_staff=True)
@@ -1054,40 +1085,47 @@ class GroupConfigurationsParityAuthzTest(_ParityMixin, CourseAuthoringAuthzTestM
 # Side effects and cost of listing
 # ---------------------------------------------------------------------------
 
-READS = [
-    ("get", {}), ("get", FULL), ("get", {"page_size": 2, "page": 2, **FULL}), ("head", {}), ("head", FULL),
-]
+READS = [("get", {}), ("get", FULL), ("head", {}), ("head", FULL)]
+# Read only on a course listing more than two configurations: a page past the
+# last is answered with 404.
+SECOND_PAGE_READ = ("get", {"page_size": 2, "page": 2, **FULL})
 
 
 @ddt.ddt
 class _ListingIsSideEffectFreeMixin:
     """
-    Every listing (default, full, paged, and HEAD on both views), on a course
+    Every listing (default, full, and HEAD on both views), on a course
     listing only the unsaved content group configuration, on one listing
-    every kind and on one listing a team-set's configuration, writes no row
-    and no Mongo document, stores nothing through the modulestore and sends
-    no signal or event. The listings start on a
-    database that has never served a role or permission lookup, so the first
-    may insert the permission library's one policy version row and nothing
-    else; v1 inserts the same row.
+    every kind (where a second page is read too) and on one listing a
+    team-set's configuration, writes no row and no Mongo document, stores
+    nothing through the modulestore and sends no signal or event. The
+    listings start on a database that has never served a role or permission
+    lookup, so the first may insert the permission library's one policy
+    version row and nothing else; v1 inserts the same row.
     """
 
     def reader_for(self, course_key):
         """Return a user who may view the course, leaving the database as no lookup had touched it."""
         raise NotImplementedError
 
-    @ddt.data("bare", "rich", "team_groups")
-    def test_listings_have_no_side_effects(self, shape):
+    @ddt.data(("bare", False), ("rich", True), ("team_groups", False))
+    @ddt.unpack
+    def test_listings_have_no_side_effects(self, shape, paged):
+        """``paged``: the course lists more than two configurations, so a second page of two is read too."""
         course = build_course(**SHAPES[shape])
         partitions = _stored_course(course.id).user_partitions
         client = api_client(self.reader_for(course.id))
         assert not PolicyCacheControl.objects.exists()
-        for index, (method, params) in enumerate(READS):
+        for index, (method, params) in enumerate([*READS, SECOND_PAGE_READ] if paged else READS):
             with record_effects(self) as effects:
                 response = getattr(client, method)(url(course.id), params)
             read = (shape, index, method, params)
             first = index == 0
             assert response.status_code == 200, (read, response.content)
+            if first:
+                assert (response.json()["count"] > 2) is paged, read
+            if (method, params) == SECOND_PAGE_READ:
+                assert response.json()["current_page"] == 2, read
             assert effects["sql_writes"] == (FIRST_LOOKUP_WRITES if first else []), read
             assert effects["signals"] == (FIRST_LOOKUP_SIGNALS if first else []), read
             assert effects["events"] == [], read
@@ -1322,6 +1360,7 @@ class GroupConfigurationsSchemaTest(TestCase):
         assert parameters["course_key"]["in"] == "path"
         assert parameters["course_key"]["schema"] == {"type": "string", "pattern": "^[^/]+$"}
         assert parameters["view"]["in"] == "query"
+        assert parameters["view"]["description"] == VIEW_HELP_TEXT
         assert not parameters["view"].get("required")
         assert parameters["view"]["schema"] == {"type": "string", "enum": ["full", "minimal"], "default": "minimal"}
         for name in ("page", "page_size"):
