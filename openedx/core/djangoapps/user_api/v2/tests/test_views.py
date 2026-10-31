@@ -3,8 +3,10 @@
 import re
 from datetime import UTC, datetime
 from math import ceil
+from unittest.mock import patch
 
 from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
+from django.core.exceptions import ImproperlyConfigured
 from django.db import connection
 from django.test import SimpleTestCase
 from django.test.utils import CaptureQueriesContext
@@ -22,6 +24,7 @@ from openedx.core.djangoapps.user_api.preferences.api import get_country_time_zo
 from openedx.core.djangoapps.user_api.tests.factories import UserPreferenceFactory
 from openedx.core.djangoapps.user_api.v2.filters import UserFilterSet
 from openedx.core.djangoapps.user_api.v2.serializers import UserPreferenceRecordSerializer
+from openedx.core.djangoapps.user_api.v2.views import UserPreferenceViewSet, UserViewSet
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 
 PASSWORD = "Password1234"
@@ -1489,3 +1492,122 @@ class PreferenceSerializerTests(UserApiV2TestCase):
         data = UserPreferenceRecordSerializer(preference).data
         assert data["url"] == "/api/user/v2/user_preferences/alice,pref-lang/"
         assert data["user"] is None
+
+
+class RecordingScopePolicy:
+    """A record-visibility policy that drops one owner's rows and records each call."""
+
+    def __init__(self, hidden_username):
+        self.hidden_username = hidden_username
+        self.calls = []
+
+    def scope(self, queryset, subject):
+        """Return the rows of ``queryset`` that do not belong to the hidden owner."""
+        self.calls.append((queryset.model, subject))
+        owner_field = "username" if queryset.model is User else "user__username"
+        return queryset.exclude(**{owner_field: self.hidden_username})
+
+
+@skip_unless_lms
+class QuerysetScopingSeamTests(UserApiV2TestCase):
+    """
+    The record-visibility layer of the two collections backed by a queryset.
+
+    Each of these collections declares a policy that decides which rows a
+    caller may see, and the rows it leaves out are absent from the answer
+    rather than refused. The policy that ships keeps every row, because only
+    platform administrators reach these collections at all, so these tests
+    put a narrowing policy in its place and read the answer: a collection
+    that stopped consulting its policy would hand back the rows the policy
+    left out, and a collection that no longer declared one would narrow
+    nothing whatever policy it was given.
+    """
+
+    def scoped(self, view_class, hidden_username):
+        """Run the view class with a policy that hides one owner's rows."""
+        policy = RecordingScopePolicy(hidden_username)
+        return patch.object(view_class, "scoping_policy", policy, create=True), policy
+
+    def test_user_list_leaves_out_the_rows_its_policy_excludes(self):
+        self.login(self.admin)
+        patched, policy = self.scoped(UserViewSet, "alice")
+        with patched:
+            response = self.client.get(reverse("user_v2:user_list"))
+        assert response.status_code == status.HTTP_200_OK
+        assert self.usernames_in(response) == ["admin-caller", "bob", "learner-caller"]
+        assert policy.calls == [(User, self.admin)]
+
+    def test_user_detail_of_an_excluded_row_is_not_found(self):
+        self.login(self.admin)
+        patched, _ = self.scoped(UserViewSet, "alice")
+        with patched:
+            response = self.client.get(reverse("user_v2:user_detail", kwargs={"username": "alice"}))
+        assert_error_envelope(
+            response, expected_status=status.HTTP_404_NOT_FOUND, expected_type_slug="not-found",
+        )
+
+    def test_user_detail_of_an_included_row_is_returned(self):
+        self.login(self.admin)
+        patched, _ = self.scoped(UserViewSet, "alice")
+        with patched:
+            response = self.client.get(reverse("user_v2:user_detail", kwargs={"username": "bob"}))
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["username"] == "bob"
+
+    def test_preference_list_leaves_out_the_rows_its_policy_excludes(self):
+        self.login(self.admin)
+        patched, policy = self.scoped(UserPreferenceViewSet, "alice")
+        with patched:
+            response = self.client.get(reverse("user_v2:user_preference_list"))
+        assert response.status_code == status.HTTP_200_OK
+        assert [(row["username"], row["key"]) for row in response.data["results"]] == [("bob", "time_zone")]
+        assert policy.calls == [(UserPreference, self.admin)]
+
+    def test_preference_detail_of_an_excluded_row_is_not_found(self):
+        self.login(self.admin)
+        patched, _ = self.scoped(UserPreferenceViewSet, "alice")
+        with patched:
+            response = self.client.get(
+                reverse("user_v2:user_preference_detail", kwargs={"username": "alice", "key": "pref-lang"}),
+            )
+        assert_error_envelope(
+            response, expected_status=status.HTTP_404_NOT_FOUND, expected_type_slug="not-found",
+        )
+
+    def test_preference_detail_of_an_included_row_is_returned(self):
+        self.login(self.admin)
+        patched, _ = self.scoped(UserPreferenceViewSet, "alice")
+        with patched:
+            response = self.client.get(
+                reverse("user_v2:user_preference_detail", kwargs={"username": "bob", "key": "time_zone"}),
+            )
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["value"] == "UTC"
+
+    def test_each_scoped_collection_declares_a_policy_of_its_own(self):
+        """
+        Each of these two views names the policy that governs its rows.
+
+        A view that inherited the default instead of naming one would be left
+        with no policy at all, so the declaration is read from the view's own
+        attributes rather than from anything it inherits.
+        """
+        for view_class in (UserViewSet, UserPreferenceViewSet):
+            declared = vars(view_class).get("scoping_policy")
+            assert declared is not None, f"{view_class.__name__} declares no record-visibility policy"
+            assert callable(getattr(declared, "scope", None)), (
+                f"{view_class.__name__} declares a record-visibility policy that cannot narrow rows"
+            )
+
+    def test_the_rows_are_fetched_through_the_declared_policy(self):
+        """
+        The policy is what the rows are fetched through, not a step that can be skipped.
+
+        A view left without a usable policy hands back no rows at all rather
+        than every row, which is how a collection that stopped consulting its
+        policy is told apart from one whose policy happens to keep every row.
+        """
+        for view_class in (UserViewSet, UserPreferenceViewSet):
+            with patch.object(view_class, "scoping_policy", None, create=True):
+                with self.assertRaises(ImproperlyConfigured):
+                    view_class().get_queryset()
