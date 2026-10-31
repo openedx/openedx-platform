@@ -4,6 +4,10 @@ from rest_framework import serializers
 
 MINIMAL_VIEW = "minimal"
 FULL_VIEW = "full"
+VIEW_HELP_TEXT = (
+    "How much to return. 'minimal' leaves out of the response where each configuration and group is "
+    "used in the course content; 'full' includes it."
+)
 
 
 class _FullViewUsage:
@@ -142,10 +146,7 @@ class GroupConfigurationListQuerySerializer(serializers.Serializer):  # pylint: 
     view = serializers.ChoiceField(
         choices=[MINIMAL_VIEW, FULL_VIEW],
         default=MINIMAL_VIEW,
-        help_text=(
-            "How much to return. 'minimal' leaves out of the response where each configuration and group is "
-            "used in the course content; 'full' includes it."
-        ),
+        help_text=VIEW_HELP_TEXT,
     )
 
     class Meta:
