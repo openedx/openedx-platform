@@ -402,6 +402,39 @@ class NameChangeConfirmationTests(NameChangeTestCase):
 
 
 @skip_unless_lms
+class NameChangeAddressDescriptionTests(NameChangeTestCase):
+    """What OPTIONS answers about the addresses that ask for and confirm a name."""
+
+    def setUp(self):
+        super().setUp()
+        PendingNameChange.objects.create(
+            user=self.owner, new_name="Jon Doe", rationale="asked for in a test",
+        )
+        self.url = self.confirmation_url(self.owner.username)
+
+    def test_the_confirmation_address_describes_no_body(self):
+        """
+        A confirmation carries out the change already asked for, so there is nothing to send.
+
+        A client or a form built from this description would otherwise ask the
+        operator for a name before confirming the change, and send a body the
+        address does not read.
+        """
+        self.login(self.staff)
+        answer = self.client.options(self.url)
+        assert answer.status_code == status.HTTP_200_OK
+        assert "actions" not in answer.json()
+
+    def test_asking_for_a_name_is_still_described_by_the_body_it_takes(self):
+        """The collection reads a body, and the description of it is not what the above removes."""
+        self.login(self.owner)
+        answer = self.client.options(self.request_url)
+        assert answer.status_code == status.HTTP_200_OK
+        assert set(answer.json()["actions"]["POST"]) == {"name"}
+        assert answer.json()["actions"]["POST"]["name"]["required"] is True
+
+
+@skip_unless_lms
 class NameChangeAmbiguousTargetTests(NameChangeTestCase):
     """A confirmation whose address names no one account changes no profile."""
 

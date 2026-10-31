@@ -21,6 +21,7 @@ from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import APIException, NotFound, PermissionDenied, Throttled, ValidationError
 from rest_framework.parsers import JSONParser
+from rest_framework.metadata import SimpleMetadata
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from rest_framework.settings import api_settings
@@ -186,6 +187,37 @@ _PREFERENCE_VIEW_PARAM = query_param(
     "receive the owner's username alongside the preference.",
     enum=list(PREFERENCE_PRESETS),
 )
+
+
+class AddressMetadata(SimpleMetadata):
+    """
+    Describes an address by what it reads, rather than by what its view declares.
+
+    The standard description is built from the parsers and the serializer
+    declared on the view, which belong to the view as a whole rather than to
+    the address being asked about: an address that reads one media type is
+    otherwise described as reading every media type the platform reads
+    anywhere, and a method whose handler reads no body is described as taking
+    the one the view's serializer carries. A caller that negotiates from this
+    description sends what it was told to send, so each half of it is answered
+    from the address and the method being described.
+    """
+
+    def determine_metadata(self, request, view):
+        """Describe the address, naming the media types the bodies it takes are read in."""
+        description = super().determine_metadata(request, view)
+        description["parses"] = [parser.media_type for parser in view.get_parsers()]
+        return description
+
+    def determine_actions(self, request, view):
+        """Describe the body of each method that takes one, and leave out the methods that take none."""
+        described = super().determine_actions(request, view)
+        served = getattr(view, "action_map", None) or {}
+        bodiless = set(getattr(view, "bodiless_actions", ()))
+        return {
+            method: fields for method, fields in described.items()
+            if served.get(method.lower()) not in bodiless
+        }
 
 
 def _ordering_param(sort_fields, default):
@@ -1407,6 +1439,12 @@ class NameChangeViewSet(
 
     permission_classes = (permissions.IsAuthenticated,)
     serializer_class = NameChangeSerializer
+    #: Describes each address by the body and the media types it reads.
+    metadata_class = AddressMetadata
+    #: The actions whose handler reads no body, which their address describes
+    #: none for. Confirming a change carries out the one already asked for, so
+    #: there is nothing for a caller to send.
+    bodiless_actions = ("confirmations",)
     lookup_field = "username"
     # The router's default lookup pattern excludes dots, which usernames allow.
     lookup_value_regex = settings.USERNAME_REGEX_PARTIAL
