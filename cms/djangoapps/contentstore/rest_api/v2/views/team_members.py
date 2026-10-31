@@ -107,7 +107,7 @@ class CourseTeamMembersViewSet(StandardizedErrorMixin, IterablePaginationMixin, 
             200: OpenApiResponse(response=CourseTeamMemberSerializer, description="A page of the team's members."),
             401: _error("The requester is not authenticated."),
             403: _error("The requester may not see this course's team."),
-            404: _error("The course does not exist, or the requested page is out of range."),
+            404: _error("The course does not exist, or the page is invalid or out of range."),
         },
         examples=[_MEMBER_EXAMPLE],
     )

@@ -135,6 +135,7 @@ class CmsMarkSupersededPathsTest(TestCase):
         }
 
     def test_the_course_team_operation_is_marked_and_its_successors_are_not(self):
+        """The legacy course team read is marked deprecated; the listing and ``me`` that replace it are not."""
         legacy = "/api/contentstore/v1/course_team/{course_id}"
         conforming = (
             "/api/authoring/v2/courses/{course_key}/team_members/",

@@ -38,9 +38,8 @@ class CourseTeamCallerSerializer(serializers.Serializer):  # pylint: disable=abs
     )
     can_manage_team = serializers.BooleanField(
         help_text=(
-            "Whether the caller may add members to the team, and remove other members or change their roles. "
-            "A caller without it may still remove themself from the team, or move themself from instructor "
-            "to staff."
+            "Whether the caller may add members to the team, remove members, and change their roles. "
+            "Always true for an instructor. A staff member without it may still remove themself from the team."
         ),
     )
     is_only_instructor = serializers.BooleanField(
