@@ -23,9 +23,6 @@ from ..serializers import CourseAdvancedSettingsSerializer
 class AdvancedCourseSettingsView(DeveloperErrorViewMixin, APIView):
     """
     View for getting and setting the advanced settings for a course.
-
-    Deprecated: use ``GET`` and ``PATCH /api/authoring/v1/courses/{course_key}/advanced_settings/``
-    instead. See https://github.com/openedx/openedx-platform/issues/39128.
     """
 
     class FilterQuery(forms.Form):
@@ -67,12 +64,6 @@ class AdvancedCourseSettingsView(DeveloperErrorViewMixin, APIView):
     def get(self, request: Request, course_id: str):
         """
         Get an object containing all the advanced settings in a course.
-
-        Deprecated: use ``GET /api/authoring/v1/courses/{course_key}/advanced_settings/``.
-        Equivalent v1 reads: without ``view`` = this endpoint with ``fetch_all=0``;
-        ``view=full`` = this endpoint's default; ``fields`` replaces ``filter_fields``
-        and selects within the chosen view.
-        See https://github.com/openedx/openedx-platform/issues/39128.
 
         **Example Request**
 
@@ -156,9 +147,6 @@ class AdvancedCourseSettingsView(DeveloperErrorViewMixin, APIView):
     def patch(self, request: Request, course_id: str):
         """
         Update a course's advanced settings.
-
-        Deprecated: use ``PATCH /api/authoring/v1/courses/{course_key}/advanced_settings/``,
-        which accepts this body unchanged. See https://github.com/openedx/openedx-platform/issues/39128.
 
         **Example Request**
 
