@@ -142,6 +142,7 @@ urlpatterns = [
     path('api/courses/', include('lms.djangoapps.course_api.urls')),
 
     # User API endpoints
+    path('api/user/v2/', include('openedx.core.djangoapps.user_api.v2.urls')),
     path('api/user/', include('openedx.core.djangoapps.user_api.urls')),
     # Note: these are older versions of the User API that will eventually be
     # subsumed by api/user listed above.
