@@ -40,8 +40,10 @@ from cms.djangoapps.contentstore.rest_api.v1.custom_pages_service import (
     UNKNOWN_CUSTOM_PAGE_MESSAGE,
 )
 from cms.djangoapps.contentstore.rest_api.v1.serializers.custom_pages import (
+    NO_TAB_CHANGE_MESSAGE,
     NOT_A_COURSE_KEY_MESSAGE,
     NOT_A_USAGE_KEY_MESSAGE,
+    CustomPageListQuerySerializer,
 )
 from cms.djangoapps.contentstore.rest_api.v1.views.custom_pages import (
     CourseCustomPageOrderViewSet,
@@ -512,6 +514,7 @@ class CustomPagesAuthenticationTest(SharedModuleStoreTestCase):
         return user
 
     def _assert_every_action_succeeds(self, client, **headers):
+        """Assert ``client`` may list the pages, reverse their order and toggle a tab, each change stored."""
         assert client.get(list_url(self.course.id), **headers).status_code == 200
         wanted = custom_page_keys(self.course.id)[::-1]
         response = client.put(order_url(self.course.id), {"custom_pages": wanted}, format="json", **headers)
@@ -700,6 +703,16 @@ class CustomPagesCourseKeyQueryTest(SharedModuleStoreTestCase):
         assert value not in envelope["detail"]
         assert value not in json.dumps(envelope["errors"])
 
+    def test_a_course_key_sent_without_percent_encoding_is_refused(self):
+        """An unencoded + in the query reads as a space, so the key is refused; encoded, the course is listed."""
+        client = api_client(UserFactory(is_staff=True))
+        course_key = str(self.course.id)
+        assert "+" in course_key
+        response = client.get(f"{list_url()}?course_key={course_key}")
+        envelope = self.assert_invalid_course_key(response, NOT_A_COURSE_KEY_MESSAGE)
+        assert course_key.replace("+", " ") not in json.dumps(envelope)
+        assert [page["id"] for page in client.get(list_url(course_key)).json()["results"]] == self.keys
+
     def test_a_version_only_or_library_key_is_an_unknown_course(self):
         client = api_client(UserFactory(is_staff=True))
         assert_refused(client.get(list_url(VERSION_ONLY_KEY)), 404)
@@ -855,6 +868,11 @@ class CustomPageOrderTest(ModuleStoreTestCase):
         assert envelope["errors"] == {"custom_pages": [NOT_A_USAGE_KEY_MESSAGE]}
         assert custom_page_keys(self.course.id) == self.keys
 
+    def test_a_null_item_is_refused_with_the_same_message(self):
+        """A null item, alone or after a valid key, is refused like any other unusable item, never per item."""
+        for items in ([None], [self.keys[0], None], [None, self.keys[0]]):
+            self.assert_order_refused({"custom_pages": items}, {"custom_pages": [NOT_A_USAGE_KEY_MESSAGE]})
+
     def test_a_null_list_is_refused(self):
         self.assert_order_refused({"custom_pages": None}, {"custom_pages": ["This field may not be null."]})
 
@@ -938,22 +956,29 @@ class CourseTabUpdateTest(ModuleStoreTestCase):
             assert b"can not be hidden" not in response.content
             assert stored_tab(self.course.id, tab_id).is_hidden is before
 
-    @ddt.data({"is_hidden": True}, {})
+    @ddt.data({"is_hidden": True}, {"is_hidden": False})
     def test_a_tab_the_course_does_not_have_is_404(self, body):
         response = self.patch(body, "no_such_tab")
         envelope = assert_error_envelope(response, expected_status=404, expected_type_slug="not-found")
         assert envelope["detail"] == TAB_NOT_FOUND_MESSAGE
         assert "no_such_tab" not in envelope["detail"]
 
-    def test_a_body_without_is_hidden_changes_nothing(self):
+    @ddt.data({}, {"is_hiden": True}, {"name": "Renamed", "is_hideable": False})
+    def test_a_body_without_is_hidden_is_refused_and_changes_nothing(self, body):
+        """A body naming no member a change accepts is refused with the fixed message, and nothing is stored."""
+        before = stored_tab(self.course.id, HIDEABLE_TAB).to_json()
         with patch.object(MixedModuleStore, "update_item", wraps=modulestore().update_item) as update_item:
-            response = self.patch({})
-            renamed = self.patch({"name": "Renamed", "is_hideable": False})
+            response = self.patch(body)
+        envelope = assert_error_envelope(response, expected_status=400, expected_type_slug="validation")
+        assert envelope["errors"] == {"non_field_errors": [NO_TAB_CHANGE_MESSAGE]}
         assert update_item.call_count == 0
-        for answer in (response, renamed):
-            assert answer.status_code == 200, answer.content
-            assert (answer.json()["tab_id"], answer.json()["is_hideable"]) == (HIDEABLE_TAB, True)
-        assert renamed.json()["name"] == str(stored_tab(self.course.id, HIDEABLE_TAB).name)
+        assert stored_tab(self.course.id, HIDEABLE_TAB).to_json() == before
+
+    def test_the_body_is_read_before_the_tab_is_looked_up(self):
+        """A body without is_hidden is refused with 400 even for a tab the course does not have."""
+        envelope = assert_error_envelope(self.patch({}, "no_such_tab"), expected_status=400,
+                                         expected_type_slug="validation")
+        assert envelope["errors"] == {"non_field_errors": [NO_TAB_CHANGE_MESSAGE]}
 
     @ddt.data(
         ({"is_hidden": None}, {"is_hidden": ["This field may not be null."]}),
@@ -980,7 +1005,6 @@ RESPONSE_DIFFERENCES = [
     ("change of a tab's visibility", "204 without a body", "200 with the tab",
      "test_a_visibility_change_returns_the_tab"),
     ("change of a tab the course does not have", "400", "404", "test_an_unknown_tab"),
-    ("change without is_hidden", "400", "200, nothing changed", "test_a_change_without_is_hidden"),
     ("reorder naming a custom page that does not exist", "500", "400", "test_a_reorder_naming_no_page"),
     ("reorder naming a page twice", "204, the page stored twice", "400", "test_a_reorder_naming_a_page_twice"),
     ("any request for a course the modulestore returns nothing for", "500", "404",
@@ -1030,12 +1054,6 @@ class CustomPagesResponseDifferencesTest(ModuleStoreTestCase):
         assert b"no_such_tab" in legacy.content
         new = self.client.patch(tab_url(self.course.id, "no_such_tab"), {"is_hidden": True}, format="json")
         assert_error_envelope(new, expected_status=404, expected_type_slug="not-found")
-
-    def test_a_change_without_is_hidden(self):
-        legacy = self.client.post(legacy_settings_url(self.course.id), {}, format="json")
-        assert legacy.status_code == 400
-        new = self.client.patch(tab_url(self.course.id), {}, format="json")
-        assert new.status_code == 200, new.content
 
     def test_a_reorder_naming_no_page(self):
         missing = str(self.course.id.make_usage_key("static_tab", "no_such_page"))
@@ -1193,6 +1211,7 @@ class _ParityMixin:
         return legacy_body, new_body
 
     def assert_same_pages(self):
+        """Assert v0 and v1 list the course's three custom pages identically, in course order."""
         client = api_client(self.manager)
         legacy = client.get(legacy_list_url(self.course.id))
         new = client.get(list_url(), list_query(self.course.id, page_size=100))
@@ -1249,6 +1268,8 @@ class _ParityMixin:
              (tab_url(self.course.id), {"is_hidden": True}), 403),
             (api_client(self.manager), ("post", "put"), (legacy_order_url(self.course.id), [{"tab_id": "no_such_tab"}]),
              (order_url(self.course.id), {"custom_pages": [missing_page]}), 400),
+            (api_client(self.manager), ("post", "patch"), (legacy_settings_url(self.course.id), {"is_hiden": True}),
+             (tab_url(self.course.id), {"is_hiden": True}), 400),
             (api_client(self.manager), ("post", "patch"),
              (legacy_settings_url(self.course.id, UNHIDEABLE_TAB), {"is_hidden": True}),
              (tab_url(self.course.id, UNHIDEABLE_TAB), {"is_hidden": True}), 400),
@@ -1267,6 +1288,15 @@ class _ParityMixin:
     def test_errors_differ_only_by_the_envelope(self):
         for legacy, new, status in self._error_pairs():
             self.compare(legacy, new, status)
+
+    def test_a_change_naming_no_known_member_is_refused_by_both(self):
+        """v0 requires is_hidden; v1 refuses a body without it with its own fixed message, and stores nothing."""
+        before = stored_tab(self.course.id, HIDEABLE_TAB).to_json()
+        *_, (legacy, new, status), _ = self._error_pairs()
+        legacy_body, new_body = self.compare(legacy, new, status)
+        assert legacy_body["developer_message"] == {"is_hidden": ["This field is required."]}
+        assert new_body["errors"] == {"non_field_errors": [NO_TAB_CHANGE_MESSAGE]}
+        assert stored_tab(self.course.id, HIDEABLE_TAB).to_json() == before
 
     def test_a_refused_visibility_change_names_is_hidden_with_a_fixed_message(self):
         *_, (legacy, new, status) = self._error_pairs()
@@ -1642,7 +1672,10 @@ class CustomPagesSchemaTest(TestCase):
         assert parameters["course_key"]["in"] == "query"
         assert parameters["course_key"]["required"] is True
         assert parameters["course_key"]["schema"] == {"type": "string"}
-        assert parameters["course_key"]["description"]
+        description = parameters["course_key"]["description"]
+        assert description == CustomPageListQuerySerializer().fields["course_key"].help_text
+        assert "Percent-encode it" in description
+        assert "course-v1%3AedX%2BDemoX%2B2026" in description
         for name in ("page", "page_size"):
             assert (parameters[name]["in"], parameters[name]["schema"]) == ("query", {"type": "integer"})
             assert not parameters[name].get("required")
@@ -1670,10 +1703,17 @@ class CustomPagesSchemaTest(TestCase):
         order = self.components["CustomPageOrder.v1"]
         assert order["required"] == ["custom_pages"]
         assert order["properties"]["custom_pages"]["type"] == "array"
-        assert order["properties"]["custom_pages"]["items"]["type"] == "string"
+        assert order["properties"]["custom_pages"]["items"] == {
+            "type": "string", "description": "Usage key of one of the course's custom pages.",
+        }
 
-    def test_the_tab_change_takes_an_optional_is_hidden_and_returns_the_tab(self):
+    def test_the_tab_change_takes_is_hidden_and_returns_the_tab(self):
+        """
+        A PATCH body is published with no required member, so the refusal of
+        a body without is_hidden is documented in the description instead.
+        """
         operation = self._operation(self.TAB_PATH, "patch")
+        assert NO_TAB_CHANGE_MESSAGE in operation["description"]
         parameters = {p["name"]: p for p in operation["parameters"]}
         assert set(parameters) == {"course_key", "tab_id"}
         assert parameters["tab_id"]["schema"] == {"type": "string"}

@@ -24,6 +24,7 @@ from cms.djangoapps.contentstore.rest_api.v1.custom_pages_service import (
     update_tab,
 )
 from cms.djangoapps.contentstore.rest_api.v1.serializers.custom_pages import (
+    NO_TAB_CHANGE_MESSAGE,
     NOT_A_USAGE_KEY_MESSAGE,
     CourseTabSerializer,
     CourseTabUpdateSerializer,
@@ -262,7 +263,8 @@ class CourseTabsViewSet(StandardizedErrorMixin, viewsets.ViewSet):
     """
     The tabs of one course's navigation, each addressed by its ``tab_id``.
 
-    A partial update shows or hides one tab from learners. Only tabs whose
+    A partial update shows or hides one tab from learners; a body without
+    ``is_hidden`` is refused rather than accepted as no change. Only tabs whose
     ``is_hideable`` is true accept it: built-in tabs such as progress, dates
     and wiki do, custom pages do not.
 
@@ -288,7 +290,8 @@ class CourseTabsViewSet(StandardizedErrorMixin, viewsets.ViewSet):
         summary="Show or hide one of a course's tabs",
         description=(
             "Hides the tab from learners when is_hidden is true and shows it when false. A body without "
-            "is_hidden changes nothing. Returns the tab as stored. A tab that may not be hidden or shown "
+            f"is_hidden is refused under non_field_errors with the message '{NO_TAB_CHANGE_MESSAGE}'. "
+            "Returns the tab as stored. A tab that may not be hidden or shown "
             f"refuses is_hidden with the message '{TAB_NOT_HIDEABLE_MESSAGE}'; a tab_id the course does not "
             f"have is answered with 404 and the message '{TAB_NOT_FOUND_MESSAGE}'. Custom pages are among "
             "the course's tabs, under tab_id static_tab_ followed by their url_slug, but cannot be hidden "
@@ -298,7 +301,7 @@ class CourseTabsViewSet(StandardizedErrorMixin, viewsets.ViewSet):
         request={"application/json": CourseTabUpdateSerializer},
         responses={
             200: OpenApiResponse(response=CourseTabSerializer, description="The tab, as stored."),
-            400: _error("The body is invalid, or the tab may not be hidden or shown."),
+            400: _error("The body is invalid or lacks is_hidden, or the tab may not be hidden or shown."),
             401: _error("The requester is not authenticated."),
             403: _error("The requester may not change this course's pages and resources."),
             404: _error("The course does not exist, or has no tab with this identifier."),
