@@ -2131,6 +2131,17 @@ class AccountPreferenceAddressDescriptionTests(AccountApiV2TestCase):
             "multipart/form-data",
         ]
 
+    def test_a_change_built_from_the_described_body_is_carried_out(self):
+        """The description is taken at its word: what it names is a body the address reads."""
+        self.login(self.owner)
+        described = self.client.options(self.member_url).json()["actions"]["PUT"]
+        response = self.client.put(
+            self.member_url, json.dumps({name: "Europe/Berlin" for name in described}),
+            content_type="application/json",
+        )
+        assert response.status_code == status.HTTP_204_NO_CONTENT
+        assert self.owner.preferences.get(key="time_zone").value == "Europe/Berlin"
+
     def test_a_change_sent_in_a_media_type_the_answer_names_is_read(self):
         """
         The answer is taken at its word, which is the only mechanism offered for it.
