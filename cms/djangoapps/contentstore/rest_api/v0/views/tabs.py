@@ -27,9 +27,6 @@ from ..serializers import CourseTabSerializer, CourseTabUpdateSerializer, TabIDL
 class CourseTabListView(DeveloperErrorViewMixin, APIView):
     """
     API view to list course tabs.
-
-    Deprecated: use ``GET /api/authoring/v1/custom_pages/?course_key={course_key}`` instead.
-    See https://github.com/openedx/openedx-platform/issues/39128.
     """
 
     @extend_schema(
@@ -45,10 +42,6 @@ class CourseTabListView(DeveloperErrorViewMixin, APIView):
     def get(self, request: Request, course_id: str) -> Response:
         """
         Get a list of all the tabs in a course including hidden tabs.
-
-        Deprecated: use ``GET /api/authoring/v1/custom_pages/?course_key={course_key}``, which
-        returns the same custom pages, paginated (``page``, ``page_size`` up to 100).
-        See https://github.com/openedx/openedx-platform/issues/39128.
 
         **Example Request**
 
@@ -117,9 +110,6 @@ class CourseTabListView(DeveloperErrorViewMixin, APIView):
 class CourseTabSettingsView(DeveloperErrorViewMixin, APIView):
     """
     API view for course tabs settings.
-
-    Deprecated: use ``PATCH /api/authoring/v1/courses/{course_key}/tabs/{tab_id}/`` instead.
-    See https://github.com/openedx/openedx-platform/issues/39128.
     """
 
     def handle_exception(self, exc):
@@ -148,10 +138,6 @@ class CourseTabSettingsView(DeveloperErrorViewMixin, APIView):
     def post(self, request: Request, course_id: str) -> Response:
         """
         Change visibility of tabs in a course.
-
-        Deprecated: use ``PATCH /api/authoring/v1/courses/{course_key}/tabs/{tab_id}/`` with
-        the same body, which names the tab by ``tab_id`` in the path and returns the tab.
-        See https://github.com/openedx/openedx-platform/issues/39128.
 
         **Example Requests**
 
@@ -205,9 +191,6 @@ class CourseTabSettingsView(DeveloperErrorViewMixin, APIView):
 class CourseTabReorderView(DeveloperErrorViewMixin, APIView):
     """
     API view for reordering course tabs.
-
-    Deprecated: use ``PUT /api/authoring/v1/courses/{course_key}/custom_page_order/`` instead.
-    See https://github.com/openedx/openedx-platform/issues/39128.
     """
 
     def handle_exception(self, exc: Exception) -> Response:
@@ -234,10 +217,6 @@ class CourseTabReorderView(DeveloperErrorViewMixin, APIView):
     def post(self, request: Request, course_id: str) -> Response:
         """
         Reorder tabs in a course.
-
-        Deprecated: use ``PUT /api/authoring/v1/courses/{course_key}/custom_page_order/`` with
-        ``{"custom_pages": [<usage key>, ...]}``, the usage keys this endpoint takes as
-        ``tab_locator``. See https://github.com/openedx/openedx-platform/issues/39128.
 
         **Example Requests**
 
