@@ -23,9 +23,6 @@ from ..serializers import CourseSettingsSerializer
 class CourseSettingsView(DeveloperErrorViewMixin, APIView):
     """
     View for getting the settings for a course.
-
-    Deprecated: use ``GET /api/authoring/v2/courses/{course_key}/settings/``
-    instead. See https://github.com/openedx/openedx-platform/issues/39128.
     """
 
     @extend_schema(
@@ -43,13 +40,6 @@ class CourseSettingsView(DeveloperErrorViewMixin, APIView):
     def get(self, request: Request, course_id: str):
         """
         Get an object containing all the course settings.
-
-        Deprecated: use ``GET /api/authoring/v2/courses/{course_key}/settings/?view=full``,
-        which returns these fields and ``content_experiments_enabled``. Without ``view=full``
-        it leaves out ``language_options``, ``possible_pre_requisite_courses`` and
-        ``credit_requirements``. Its prerequisite list ignores the course list's query
-        parameters (``search``, ``ordering``, ``active_only`` and the others) that narrow
-        this endpoint's. See https://github.com/openedx/openedx-platform/issues/39128.
 
         **Example Request**
 
