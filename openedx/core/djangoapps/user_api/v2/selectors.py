@@ -32,12 +32,15 @@ def usernames_among(names, ordering):
     )
 
 
-def username_holding_email(email):
-    """Return the name of the account holding this address, or ``None`` when no account holds it."""
-    try:
-        return User.objects.get(email=email).username
-    except User.DoesNotExist:
-        return None
+def usernames_holding_email(email):
+    """
+    Return the names of the accounts holding this address.
+
+    Nothing keeps one email address to one account, so an address can be held
+    by more than one of them. Every account holding it is named, and nothing
+    is named for an address no account holds.
+    """
+    return list(accounts_holding_emails([email]).values_list("username", flat=True))
 
 
 def username_holding_id(identifier):

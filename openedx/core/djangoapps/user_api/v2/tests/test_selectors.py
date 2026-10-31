@@ -10,8 +10,8 @@ from openedx.core.djangoapps.user_api.models import RetirementState, UserRetirem
 from openedx.core.djangoapps.user_api.v2.selectors import (
     accounts_holding_emails,
     cancellable_retirement_for_email,
-    username_holding_email,
     username_holding_id,
+    usernames_holding_email,
     usernames_among,
 )
 from openedx.core.djangolib.testing.utils import skip_unless_lms
@@ -52,10 +52,15 @@ class AccountSelectionTests(TestCase):
         assert not list(usernames_among([], "username"))
 
     def test_the_account_holding_one_address_is_named(self):
-        assert username_holding_email("second@example.com") == "second-holder"
+        assert usernames_holding_email("second@example.com") == ["second-holder"]
 
     def test_no_account_holds_an_unregistered_address(self):
-        assert username_holding_email("nobody@example.com") is None
+        assert usernames_holding_email("nobody@example.com") == []
+
+    def test_every_account_holding_one_address_is_named(self):
+        """Nothing keeps one address to one account, so an address can be held by several."""
+        UserFactory.create(username="also-second", email="second@example.com")
+        assert usernames_holding_email("second@example.com") == ["also-second", "second-holder"]
 
     def test_the_account_holding_one_identifier_is_named(self):
         assert username_holding_id(self.second.id) == "second-holder"

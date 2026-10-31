@@ -51,9 +51,9 @@ from .schema import ResponseShapes
 from .selectors import (
     accounts_holding_emails,
     cancellable_retirement_for_email,
-    username_holding_email,
     username_holding_id,
     usernames_among,
+    usernames_holding_email,
 )
 from .serializers import (
     ACCOUNT_DEFAULT_SORT,
@@ -782,10 +782,12 @@ def _shareable_account_fields():
     list=extend_schema(
         summary="List accounts",
         description=(
-            "Returns a page of accounts. Name them with `username`, or select the one holding an "
-            "`email` address or an `lms_user_id`; omit all three to receive your own account. A "
-            "name, an address or an identifier no account holds is left out of the page, which is "
-            "empty when nothing given is held. Each account carries the properties the caller may "
+            "Returns a page of accounts. Name them with `username`, or select the accounts "
+            "holding an `email` address or the one holding an `lms_user_id`; omit all three to "
+            "receive your own account. A name, an address or an identifier no account holds is "
+            "left out of the page, which is empty when nothing given is held. An address held by "
+            "more than one account brings back each of them. "
+            "Each account carries the properties the caller may "
             "see: everything for your own account and for a staff caller, and otherwise the "
             "properties its owner shares. "
             "A property named in `fields` that an owner does not share is left out of their "
@@ -1107,11 +1109,10 @@ class AccountViewSet(
         return [request.user.username]
 
     def _usernames_holding_email(self, email):
-        """Return the account holding this address, and nothing when none does."""
+        """Return the accounts holding this address, by name, and nothing when none does."""
         if is_email_retired(email):
             raise self._retired_account(email)
-        username = username_holding_email(email)
-        return [username] if username is not None else []
+        return usernames_holding_email(email)
 
     def _usernames_holding_identifier(self, identifier):
         """Return the account holding this numeric identifier, and nothing when none does."""

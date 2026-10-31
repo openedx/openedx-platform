@@ -462,6 +462,24 @@ class AccountListSelectorTests(AccountApiV2TestCase):
         assert documented == {"email", "lms_user_id"}
         assert set(ACCOUNT_CONTACT_SELECTORS) == documented
 
+    def test_a_staff_caller_selecting_an_address_more_than_one_account_holds_receives_them_all(self):
+        """
+        A page carries every account holding the address it was given.
+
+        Nothing keeps one email address to one account, so an address can be
+        held by more than one of them. The page of accounts holding an address
+        is what the search over addresses answers with as well, and it is the
+        answer here whether the address is held once or several times.
+        """
+        UserFactory.create(
+            username="owner-second", email="owner-caller@example.com", password=PASSWORD,
+        )
+        self.login(self.staff)
+        response = self.client.get(self.list_url, {"email": "owner-caller@example.com"})
+        assert response.status_code == status.HTTP_200_OK, response.content
+        assert response.data["count"] == 2
+        assert self.usernames_in(response) == ["owner-caller", "owner-second"]
+
     def test_a_learner_may_not_select_by_email_address(self):
         self.login(self.owner)
         response = self.client.get(self.list_url, {"email": "other-caller@example.com"})
