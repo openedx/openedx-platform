@@ -1,16 +1,20 @@
 """Tests for the v2 course team members API."""
 
 import json
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
 import ddt
 import pytest
+from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.db import connection
 from django.test import SimpleTestCase, TestCase
 from django.test.utils import CaptureQueriesContext
 from django.urls import Resolver404, resolve, reverse
+from drf_spectacular.hooks import postprocess_schema_enums
+from drf_spectacular.plumbing import ComponentRegistry, list_hash
 from edx_rest_framework_extensions.permissions import NotJwtRestrictedApplication
 from edx_rest_framework_extensions.testing import assert_error_envelope
 from edx_rest_framework_extensions.url_converters import CourseKeyConverter
@@ -46,6 +50,7 @@ from cms.djangoapps.contentstore.rest_api.v1.views.tests.helpers import (
     session_client,
     undeclared_paths,
 )
+from cms.djangoapps.contentstore.rest_api.v2.serializers.team_members import TEAM_ROLES
 from cms.djangoapps.contentstore.rest_api.v2.views.team_members import CourseTeamMembersViewSet
 from cms.djangoapps.contentstore.rest_api.v2.views.tests.helpers import resolve_ref
 from cms.djangoapps.contentstore.tests.utils import routed_actions
@@ -718,6 +723,8 @@ RESPONSE_DIFFERENCES = [
      "test_the_caller_flags_are_on_me"),
     ("listing with a page beyond the last", "200 with every member (no paging)", "404",
      "test_a_page_beyond_the_last"),
+    ("listing with a page that is not a positive integer (page=abc, 0 or -1)", "200 with every member (no paging)",
+     "404", "test_a_page_that_is_not_a_positive_integer"),
     ("OPTIONS by a signed-in caller without access, or for an unknown course", "200", "403 or 404",
      "test_options"),
     ("any request with a Bearer token", "200", "401", "test_a_bearer_token"),
@@ -768,6 +775,16 @@ class TeamMembersResponseDifferencesTest(ModuleStoreTestCase):
         assert legacy.json()["users"] == [member(self.instructor, "instructor")]
         new = self.client.get(list_url(self.course.id), {"page": 2})
         assert_error_envelope(new, expected_status=404, expected_type_slug="not-found")
+
+    def test_a_page_that_is_not_a_positive_integer(self):
+        """The legacy endpoint ignores ``page``; v2 answers a page that is not a positive integer with 404."""
+        for page in ("abc", "0", "-1"):
+            legacy = self.client.get(legacy_url(self.course.id), {"page": page})
+            assert legacy.status_code == 200, (page, legacy.content)
+            assert legacy.json()["users"] == [member(self.instructor, "instructor")], page
+            new = self.client.get(list_url(self.course.id), {"page": page})
+            assert new.status_code == 404, (page, new.content)
+            assert_error_envelope(new, expected_status=404, expected_type_slug="not-found")
 
     def test_options(self):
         """The legacy endpoint answers OPTIONS to any signed-in caller; v2 checks the course and the caller first."""
@@ -1025,8 +1042,16 @@ class _ReadCostMixin:
             assert new[2] == legacy[2] == 0, (address.__name__, new, legacy)
 
     def test_the_sql_cost_does_not_grow_with_the_team(self):
+        """
+        The query count for a team of two (one staff, one instructor) is the
+        count for a team of twenty. Both roles are held from the first
+        measurement on: with policy-based permissions an empty role is looked
+        up without a user query, so the first holder of a role adds one query
+        that does not grow with the team.
+        """
         course = CourseFactory.create()
         client = api_client(self.add_member(course, "staff"))
+        self.add_member(course, "instructor")
 
         def queries(address):
             client.get(address(course.id), {"page_size": 100})
@@ -1034,10 +1059,10 @@ class _ReadCostMixin:
                 assert client.get(address(course.id), {"page_size": 100}).status_code == 200
             return len(captured.captured_queries)
 
-        one = {address: queries(address) for address in (list_url, me_url)}
-        for index in range(19):
+        small = {address: queries(address) for address in (list_url, me_url)}
+        for index in range(18):
             self.add_member(course, "instructor" if index % 4 == 0 else "staff")
-        assert {address: queries(address) for address in (list_url, me_url)} == one
+        assert {address: queries(address) for address in (list_url, me_url)} == small
         assert client.get(list_url(course.id), {"page_size": 100}).json()["count"] == 20
 
 
@@ -1219,9 +1244,11 @@ class TeamMembersSchemaTest(TestCase):
         assert set(member_component["properties"]) == set(member_component["required"]) == MEMBER_MEMBERS
         assert set(caller_component["properties"]) == set(caller_component["required"]) == CALLER_MEMBERS
         (role,) = member_component["properties"]["role"]["allOf"]
+        assert role == {"$ref": "#/components/schemas/CourseTeamRoleEnum"}
         assert resolve_ref(self.schema, role)["enum"] == list(LISTED_ORDER)
         caller_role = caller_component["properties"]["role"]
         assert caller_role["nullable"] is True
+        assert caller_role["oneOf"][0] == {"$ref": "#/components/schemas/CourseTeamRoleEnum"}
         assert [resolve_ref(self.schema, option)["enum"] for option in caller_role["oneOf"]] == [
             list(LISTED_ORDER), [None],
         ]
@@ -1233,6 +1260,35 @@ class TeamMembersSchemaTest(TestCase):
             for name, field in component["properties"].items() if field.get("nullable")
         }
         assert nullable == {"role"}
+
+    def test_the_role_enum_keeps_its_name_beside_another_role_enum(self):
+        """
+        A ``role`` field with other choices elsewhere in the service leaves the team roles' name alone.
+
+        Without a pinned name, drf-spectacular names both enums after their components instead.
+        """
+        def enum(values):
+            """An enum property as drf-spectacular emits it before naming the enum components."""
+            return {"type": "string", "enum": list(values), "x-spec-enum-id": list_hash([(v, v) for v in values])}
+
+        schema = {"components": {"schemas": {
+            "CourseTeamMember.v2": {"type": "object", "properties": {"role": enum(TEAM_ROLES)}},
+            "Other": {"type": "object", "properties": {"role": enum(["reader", "writer"])}},
+        }}}
+        result = postprocess_schema_enums(schema, SimpleNamespace(registry=ComponentRegistry()))
+        assert sorted(result["components"]["schemas"]) == ["CourseTeamRoleEnum", "OtherRoleEnum"]
+
+    def test_the_role_enum_name_is_pinned_once(self):
+        """
+        The shared settings pin the team roles' enum name, and no environment replaces the dict.
+
+        The test settings use the common module's, so the published-schema
+        assertions above cannot see what devstack or production would publish.
+        """
+        overrides = settings.SPECTACULAR_SETTINGS["ENUM_NAME_OVERRIDES"]
+        assert overrides["CourseTeamRoleEnum"] == "cms.djangoapps.contentstore.rest_api.v2.serializers.team_members.TEAM_ROLES"
+        for module in ("cms/envs/devstack.py", "cms/envs/production.py"):
+            assert "ENUM_NAME_OVERRIDES" not in (Path(settings.REPO_ROOT) / module).read_text(), module
 
     def test_every_member_is_described(self):
         for name in ("CourseTeamMember.v2", "CourseTeamCaller.v2"):
