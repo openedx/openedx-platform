@@ -498,8 +498,8 @@ class SettingsReadTest(ModuleStoreTestCase):
         with patch(target, wraps=course_settings_service.get_course_settings) as listing:
             self.get(**FULL, **COURSE_LIST_PARAMETERS)
         (given, course_key, course), _ = listing.call_args
-        assert dict(given.query_params) == {}
-        assert dict(given.GET) == {}
+        assert not dict(given.query_params)
+        assert not dict(given.GET)
         assert given.user.is_staff is True
         assert (course_key, course.id) == (self.course.id, self.course.id)
 
