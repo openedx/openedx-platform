@@ -775,6 +775,7 @@ ignore_imports = [
     #  -> lms.djangoapps.courseware.access
     "openedx.core.djangoapps.content.learning_sequences.api.permissions -> lms.djangoapps.courseware.access",
     "cms.djangoapps.contentstore.rest_api.v1.views.settings -> lms.djangoapps.certificates.api",
+    "cms.djangoapps.contentstore.rest_api.v2.course_settings_service -> lms.djangoapps.certificates.api",
     # We are ignoring this existing import until we can refactor contenstore/helpers.
     # https://github.com/openedx/edx-platform/issues/37637
     "openedx.core.djangoapps.content_libraries.api.libraries -> cms.djangoapps.contentstore.helpers",

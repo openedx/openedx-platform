@@ -7,6 +7,7 @@ from cms.djangoapps.contentstore.rest_api.v1.views import (
     YoutubeTranscriptChecksViewSet,
     YoutubeTranscriptImportsViewSet,
 )
+from cms.djangoapps.contentstore.rest_api.v1.views.advanced_settings import CourseAdvancedSettingsViewSet
 
 app_name = "authoring_v1"
 
@@ -38,5 +39,10 @@ urlpatterns = [
             }
         ),
         name="xblock_detail",
+    ),
+    path(
+        "courses/<course_key:course_key>/advanced_settings/",
+        CourseAdvancedSettingsViewSet.as_view({"get": "retrieve", "patch": "partial_update"}),
+        name="course_advanced_settings",
     ),
 ]
