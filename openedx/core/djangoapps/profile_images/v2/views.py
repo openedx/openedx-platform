@@ -116,17 +116,19 @@ class ProfileImageView(
     """
     The image shown beside a user's name, in each size the site renders.
 
-    An account has one image, set and cleared whole and never listed or
-    addressed by an identifier of its own, so it is served from this single
-    address rather than routed as a collection. A user sets and clears the
-    image on their own account, and nobody else's: staff included, since
-    clearing an image is an account change rather than a moderation tool. That
-    is not what the account collection admits, which is the other reason this
-    is a view of its own rather than an action of that collection. The sizes
-    are stored under the username the address carries. The addresses those
-    stored sizes are served from belong to the account resource rather than to
-    this one.
+    A user sets and clears the image on their own account and nobody else's,
+    staff included. Setting an image replaces one already set, and clearing an
+    account that carries no image of its own is not an error. The addresses
+    the stored sizes are served from are carried by the account itself.
     """
+
+    # An account has one image, set and cleared whole and never listed or
+    # addressed by an identifier of its own, so it is served from this one
+    # address rather than routed as a collection. Clearing an image is an
+    # account change rather than a moderation tool, so staff are not admitted
+    # to somebody else's; that is not what the account collection admits,
+    # which is the other reason this is a view of its own rather than an
+    # action of that collection.
 
     # The site's own pages let a user who has not confirmed their email
     # address set a picture, and the platform default refuses a session

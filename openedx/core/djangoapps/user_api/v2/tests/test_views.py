@@ -22,6 +22,7 @@ from openedx.core.djangoapps.oauth_dispatch.jwt import create_jwt_for_user
 from openedx.core.djangoapps.user_api.models import UserPreference
 from openedx.core.djangoapps.user_api.preferences.api import get_country_time_zones
 from openedx.core.djangoapps.user_api.tests.factories import UserPreferenceFactory
+from openedx.core.djangoapps.user_api.v2 import urls as v2_urls
 from openedx.core.djangoapps.user_api.v2.filters import UserFilterSet
 from openedx.core.djangoapps.user_api.v2.serializers import UserPreferenceRecordSerializer
 from openedx.core.djangoapps.user_api.v2.views import UserPreferenceViewSet, UserViewSet
@@ -1611,3 +1612,96 @@ class QuerysetScopingSeamTests(UserApiV2TestCase):
             with patch.object(view_class, "scoping_policy", None, create=True):
                 with self.assertRaises(ImproperlyConfigured):
                     view_class().get_queryset()
+
+
+def routed_view_classes():
+    """Return every view class this version mounts, by the name it is routed under."""
+    classes = {}
+    for entry in v2_urls.urlpatterns:
+        view_class = getattr(entry.callback, "cls", None)
+        if view_class is not None:
+            classes[view_class.__name__] = view_class
+    return classes
+
+
+#: Words that name how an address is built rather than what it answers. A
+#: description carrying one of these was written for somebody reading this
+#: module, and the body of an OPTIONS request is not where they will read it.
+IMPLEMENTATION_TERMS = (
+    "ViewSet",
+    "queryset",
+    "permission_classes",
+    "serializer",
+    "filter set",
+    "filter backend",
+    "mixin",
+    "scoping policy",
+    "router",
+    "selectors",
+    "class attribute",
+)
+
+#: The longest description an address gives of itself. The client-facing text
+#: is a short paragraph; the maintainer-facing text these replaced ran to four.
+DESCRIPTION_LIMIT = 700
+
+
+@skip_unless_lms
+class AddressSelfDescriptionTests(UserApiV2TestCase):
+    """
+    What each address of this version says about itself to a caller that asks.
+
+    An OPTIONS request is answered with the description the view class
+    carries, so that description is published text and is read by clients and
+    by documentation browsers alongside the description of the same address in
+    the schema. These tests hold it to being written for the caller: no markup
+    that renders as itself in a JSON body, no vocabulary from the
+    implementation, and no essay.
+    """
+
+    def test_every_mounted_address_is_described(self):
+        """Each view this version mounts says something about itself."""
+        described = {
+            name: view_class().get_view_description()
+            for name, view_class in routed_view_classes().items()
+        }
+        assert len(described) == 11, sorted(described)
+        assert [name for name, text in described.items() if not text.strip()] == []
+
+    def test_no_address_describes_itself_in_implementation_terms(self):
+        offenders = {
+            name: [term for term in IMPLEMENTATION_TERMS if term in view_class().get_view_description()]
+            for name, view_class in routed_view_classes().items()
+        }
+        assert {name: terms for name, terms in offenders.items() if terms} == {}
+
+    def test_no_address_describes_itself_with_markup_a_caller_sees_as_itself(self):
+        """Double backticks are markup in this module's own documentation and text in a JSON body."""
+        carrying_markup = [
+            name for name, view_class in routed_view_classes().items()
+            if "``" in view_class().get_view_description()
+        ]
+        assert carrying_markup == []
+
+    def test_no_address_describes_itself_at_length(self):
+        too_long = {
+            name: len(view_class().get_view_description())
+            for name, view_class in routed_view_classes().items()
+            if len(view_class().get_view_description()) > DESCRIPTION_LIMIT
+        }
+        assert too_long == {}
+
+    def test_options_answers_with_the_description_the_view_carries(self):
+        """
+        The description a view carries is the one a caller is handed.
+
+        This is what makes the text above published rather than internal: the
+        framework answers an OPTIONS request with it verbatim.
+        """
+        self.login(self.admin)
+        answer = self.client.options(reverse("user_v2:user_list"))
+        assert answer.status_code == status.HTTP_200_OK
+        assert answer.json()["description"] == UserViewSet().get_view_description()
+        assert answer.json()["description"].startswith(
+            "Directory entries of the platform's users, each addressed by username.",
+        )

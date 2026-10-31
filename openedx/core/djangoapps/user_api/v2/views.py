@@ -602,13 +602,18 @@ class UserViewSet(
     viewsets.ReadOnlyModelViewSet,
 ):
     """
-    Read-only directory of platform users, addressed by username.
+    Directory entries of the platform's users, each addressed by username.
 
-    Access is layered: ``permission_classes`` admits only platform
-    administrators whose account is still active, the scoping policy decides
-    which rows such an administrator may see, and the filter set narrows those
-    rows further by the caller's query parameters.
+    An entry carries the identifying properties of one account together with
+    the preferences stored against it. Only a platform administrator whose own
+    account is still active may read this directory.
     """
+
+    # Who may read the directory is settled in three layers, each of which can
+    # be replaced on its own: the permission classes below settle who may call
+    # the collection at all, the record-visibility policy settles which rows
+    # such a caller may see, and the filter set narrows those rows by the
+    # parameters the request carries.
 
     permission_classes = (permissions.IsAuthenticated, IsActiveUser, permissions.IsAdminUser)
     serializer_class = UserDirectorySerializer
@@ -694,13 +699,18 @@ class UserPreferenceViewSet(
     viewsets.ReadOnlyModelViewSet,
 ):
     """
-    Read-only list of stored user preferences, each addressed by its owner and key.
+    Preferences stored for the platform's users, each addressed by its owner and its name.
 
-    A preference is identified by the pair, so the member address is
-    ``{username},{key}`` rather than a database id. Access is layered the same
-    way as the user directory: permission classes, then the scoping policy,
-    then the filter set.
+    A preference is identified by the two together, so a member address
+    carries the owner's username, a comma and the name the preference is
+    stored under, as in alice,time_zone. Only a platform administrator whose
+    own account is still active may read these.
     """
+
+    # The pair identifies a row, so the member address is built from it rather
+    # than from a database id, and the route that serves it is declared with
+    # the collection rather than generated. Who may read these rows is settled
+    # in the same three layers as the user directory.
 
     permission_classes = (permissions.IsAuthenticated, IsActiveUser, permissions.IsAdminUser)
     serializer_class = UserPreferenceRecordSerializer
@@ -763,11 +773,13 @@ class CountryTimeZoneViewSet(
     """
     Time zones commonly used in a country, or every time zone when no country is named.
 
-    The rows come from the time-zone database rather than from a queryset, so
-    this is a plain ViewSet whose one query parameter is validated by a
-    serializer. The reference data it returns is the same for every caller and
-    is public on purpose.
+    The list is the same for every caller and is open to anyone.
     """
+
+    # The rows come from the time-zone database rather than from a table of
+    # this app's, so there is no queryset to narrow and the one parameter the
+    # view reads is validated by a serializer instead of a filter set. The
+    # data is reference data, which is why no caller is turned away.
 
     permission_classes = (permissions.AllowAny,)
     serializer_class = TimeZoneSerializer
@@ -936,37 +948,33 @@ class AccountViewSet(
     viewsets.ViewSet,
 ):
     """
-    Accounts of the platform's users, addressed by username or by ``me``.
+    Accounts of the platform's users. Address one by username, or me for your own.
 
-    The properties of an account are read from the account service rather than
-    from a queryset of this app's, so this is a plain ViewSet; which accounts
-    the answer carries is settled first, from the accounts holding the names
-    the caller gave, in the order the page is cut in. Access is layered: the
-    permission classes decide who may call an action at all, the service
-    decides which properties of each account the caller may see -- everything
-    for their own account and for a staff caller, the owner's shared
-    properties otherwise -- and the selectors decide which accounts the page
-    carries.
+    An account carries the properties the caller may see: all of them for your
+    own account and for a staff caller, and otherwise the ones its owner
+    shares. A property an owner does not share is left out of their account
+    rather than refused, so an account can come back as an empty object.
 
-    A selector that finds nothing narrows the page to nothing, whichever of
-    the three it is, so a selection no account matches is answered by an empty
-    page rather than by a refusal. An address an account held before it was
-    retired is the one exception: that account was there and is not a row this
-    page can carry, so it is refused, with whether the retirement can still be
-    cancelled. That refusal is why the selectors are read from the query
-    string by a serializer and applied here rather than declared as a filter
-    set, which has no room for it.
+    Selecting accounts that nothing holds gives an empty page rather than a
+    refusal. An address an account held before it was retired is refused
+    instead, and that refusal says whether the retirement can still be
+    cancelled.
 
-    A selection of properties is measured against the properties a response of
-    this kind can carry for this caller, so one no account could ever show
-    them is refused rather than answered as an empty object. Which of the rest
-    a particular owner shares is settled per account, so a selected property
-    that this owner keeps to themselves is left out of their object, which can
-    leave it empty.
-
-    ``me`` stands for the caller's own account wherever a caller reads or
-    changes one here.
+    A property no account of this kind could show this caller is refused
+    rather than answered as an empty object.
     """
+
+    # The properties of an account are read from the account service rather
+    # than from a table of this app's, so there is no queryset to narrow and
+    # the page is cut from the names the selection resolved to. The service is
+    # what settles which properties of each account the caller may see; the
+    # selection settles which accounts the page carries, and is applied in the
+    # handler rather than declared as a filter set because a filter set has no
+    # room for the retired-address refusal, which reports rows it cannot carry
+    # instead of leaving them out. Which properties the answer can carry is
+    # settled before the address is read, so a request for a property this
+    # kind of answer never carries is refused without reading or writing
+    # anything on the way to it.
 
     # Account settings are reached from the site's own pages by users who have
     # not confirmed their email address yet, and the platform default refuses
@@ -1276,17 +1284,19 @@ class AccountDeactivationView(
     APIView,
 ):
     """
-    Disables the account the address names.
+    Disables the account the address names, so its owner can no longer sign in with it.
 
-    This is an operation a privileged caller carries out on somebody else's
-    account rather than a property of that account, and it shares nothing with
-    the way an account is read or changed: the caller holds the privilege to
-    disable accounts and has confirmed their own address, the body is read as
-    JSON rather than as a merge patch, and the name in the address is read as
-    a stored username, ``me`` included, so a caller that addressed one account
-    is never answered by disabling another. It is therefore its own view
-    rather than an action of the account collection.
+    The account and everything belonging to it are kept, and none of it is
+    removed. Asking for a password reset does not undo this.
     """
+
+    # Disabling an account is something a privileged caller does to somebody
+    # else's account rather than a property of that account, and it shares
+    # neither its callers nor its body with the way an account is read or
+    # changed: the caller holds the privilege to disable accounts and has
+    # confirmed their own address, and the body is read as JSON rather than as
+    # a merge patch. It is therefore a view of its own rather than an action
+    # of the account collection.
 
     permission_classes = (permissions.IsAuthenticated, IsActiveUser, CanDeactivateUser)
 
@@ -1353,16 +1363,19 @@ class EmailSearchViewSet(
     """
     The accounts holding a given set of email addresses.
 
-    The addresses are sent in a request body rather than in a query string, so
-    that they stay out of server logs and browser histories, which is why a
-    search is made with a POST, and why the links on a page of results are
-    followed by sending the body to them again rather than by fetching them.
-    The search is a collection of its own rather than an action under the
-    accounts, because what follows the account collection in an address is the
-    name of an account, and an account may be named anything a user may
-    register. Only a platform administrator may search, and every other caller
-    is told there is nothing at this address.
+    The addresses to look for are sent in the request body, so a search is
+    made with POST, and the links on a page of results are followed by sending
+    the body to them again rather than by fetching them. Only a platform
+    administrator may search here; every other caller is told there is nothing
+    at this address.
     """
+
+    # The addresses are sent in a body so that they stay out of server logs
+    # and browser histories, which is what makes the search a POST and what
+    # makes its pages be followed with a body. The search stands beside the
+    # accounts rather than under them because what follows the account
+    # collection in an address is the name of an account, and a user may
+    # register any name.
 
     permission_classes = (
         permissions.IsAuthenticated,
@@ -1546,17 +1559,18 @@ class IDVerificationStatusView(
     """
     Whether a user has proved their identity, as one summary.
 
-    An account has one such summary, computed rather than stored and never
-    listed, so it is served from this single address rather than routed as a
-    collection. The summary is read from the identity verification service
-    rather than from this app's own tables, and the username in the address
-    names the user whose summary is read. A user may read their own summary,
-    and a staff caller whose own account is active may read anyone's, which is
-    not what the account collection admits, so the summary is served by a view
-    of its own rather than as an action of that collection. Every account has a
-    summary: one belonging to a user who has been through no check says so, and
-    the address is absent only when the user it names is.
+    Every account has a summary, and one belonging to a user who has been
+    through no check says so; the address is absent only when the user it
+    names is. A user may read their own summary, and a staff caller whose own
+    account is still active may read anyone's.
     """
+
+    # The summary is computed rather than stored and is never listed, so it is
+    # served from this one address rather than routed as a collection, and it
+    # is read from the identity verification service rather than from a table
+    # of this app's. It admits a different set of callers from the account
+    # collection, which is why it is a view of its own rather than an action
+    # of that collection.
 
     permission_classes = (
         permissions.IsAuthenticated,
@@ -1631,15 +1645,17 @@ class IDVerificationViewSet(
     """
     The attempts one user has made at proving their identity.
 
-    The attempts are collected from the identity verification service, which
-    holds a table per kind of check, so there is no queryset of this app's to
-    narrow: the page is cut from what those tables return and is sorted here
-    rather than by a filter backend. An attempt belongs to the user who made
-    it and is reached by no other route, so the collection is addressed
-    beneath that user's account. A user may read their own attempts, and a
-    staff caller may read anyone's. A user who has been through no checks has
-    an empty page: the address is absent only when the user it names is.
+    A user may read their own attempts, and a staff caller may read anyone's.
+    A user who has been through no checks has an empty page; the address is
+    absent only when the user it names is.
     """
+
+    # The attempts are collected from the identity verification service, which
+    # holds a table per kind of check, so there is no queryset of this app's to
+    # narrow: the page is cut from what those tables return and is sorted in
+    # the view rather than by a filter backend. An attempt is reached by no
+    # route other than this one, which is why the collection is addressed
+    # beneath the account it belongs to.
 
     permission_classes = (
         permissions.IsAuthenticated,
@@ -1671,11 +1687,11 @@ class IDVerificationViewSet(
 @extend_schema(exclude=True)
 class UnknownAddressView(StandardizedErrorMixin, APIView):
     """
-    Refuses every address under this version of the API that no route serves.
+    Refuses an address under this version of the API that no route serves.
 
-    It serves no resource: it exists so that a mistyped address is answered
-    with the same JSON body as every other failure instead of the service's
-    HTML error page, which a client that asked for JSON cannot read.
+    The refusal carries the same JSON body as every other failure of this
+    version, rather than the service's HTML error page, which a client that
+    asked for JSON cannot read.
     """
 
     permission_classes = (permissions.AllowAny,)
