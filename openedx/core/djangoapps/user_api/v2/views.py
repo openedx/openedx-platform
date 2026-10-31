@@ -153,7 +153,9 @@ AMBIGUOUS_ACCOUNT_ADDRESS = "More than one account answers to this address. Name
 SHAPED_ACCOUNT_ACTIONS = ("list", "retrieve", "partial_update")
 
 #: The properties whose change is limited to a rate, and the setting carrying
-#: the limit of each.
+#: the limit of each. Both settings are empty until a deployment gives one of
+#: them a value, and an empty limit limits nothing, so a site that has
+#: configured neither takes every change to either property.
 RATE_LIMITED_ACCOUNT_FIELDS = (
     ("email", "EMAIL_CHANGE_RATE_LIMIT"),
     ("secondary_email", "SECONDARY_EMAIL_RATE_LIMIT"),
@@ -252,7 +254,12 @@ _RESP_UNUSABLE_BODY = OpenApiResponse(
     ),
 )
 _RESP_RATE_LIMITED = OpenApiResponse(
-    ErrorResponse, description="The caller has changed this property too often lately and has to wait.",
+    ErrorResponse,
+    description=(
+        "The caller has changed this property too often lately and has to wait. Only a site that "
+        "has given a limit for the property answers this; a site that has given none, which is "
+        "how the platform ships, takes every change."
+    ),
 )
 _RESP_CHANGE_FAILED = OpenApiResponse(
     ErrorResponse,

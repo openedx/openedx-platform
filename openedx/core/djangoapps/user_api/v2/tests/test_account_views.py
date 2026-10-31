@@ -3005,3 +3005,64 @@ class AccountSelectedPropertyNameTests(AccountApiV2TestCase):
         assert sorted(response.json()["profile_image"]) == [
             "has_image", "image_url_full", "image_url_large", "image_url_medium", "image_url_small",
         ]
+
+
+@skip_unless_lms
+@override_switch(ENABLE_SECONDARY_EMAIL_FEATURE_SWITCH, active=True)
+class RecoveryAddressRateLimitedTests(AccountApiV2TestCase):
+    """A site that limits how often a recovery address may be changed."""
+
+    @override_settings(
+        SECONDARY_EMAIL_RATE_LIMIT="1/d", CACHES=counting_cache("recovery-address-refused"),
+    )
+    def test_changing_a_recovery_address_too_often_is_refused(self):
+        self.login(self.owner)
+        first = self.patch(self.own_url, json.dumps({"secondary_email": "owner-recovery@example.com"}))
+        assert first.status_code == status.HTTP_200_OK
+
+        second = self.patch(self.own_url, json.dumps({"secondary_email": "owner-other@example.com"}))
+        envelope = assert_error_envelope(
+            second, expected_status=status.HTTP_429_TOO_MANY_REQUESTS, expected_type_slug="rate-limited",
+        )
+        assert envelope["detail"] == "Wait before changing secondary_email again."
+
+    @override_settings(
+        SECONDARY_EMAIL_RATE_LIMIT="1/d", CACHES=counting_cache("recovery-address-allowed"),
+    )
+    def test_the_limit_leaves_a_change_of_the_sign_in_address_alone(self):
+        """Each property is counted under a name of its own, so one limit does not spend another."""
+        self.login(self.owner)
+        assert self.patch(
+            self.own_url, json.dumps({"secondary_email": "owner-recovery@example.com"}),
+        ).status_code == status.HTTP_200_OK
+        later = self.patch(self.own_url, json.dumps({"email": "owner-signin@example.com"}))
+        assert later.status_code == status.HTTP_200_OK
+
+
+@skip_unless_lms
+@override_switch(ENABLE_SECONDARY_EMAIL_FEATURE_SWITCH, active=True)
+@override_settings(CACHES=counting_cache("recovery-address-unlimited"))
+class RecoveryAddressUnlimitedTests(AccountApiV2TestCase):
+    """
+    A site that has given no limit, which is how the platform ships.
+
+    Neither of the two properties that can be limited carries a limit out of
+    the box, so the refusal this endpoint publishes for changing one too often
+    is answered only by a deployment that has given the matching setting a
+    value. That is recorded here so that the published refusal is not read as
+    something every deployment produces.
+    """
+
+    def test_the_platform_default_gives_no_limit(self):
+        assert settings.SECONDARY_EMAIL_RATE_LIMIT == ""
+        assert settings.EMAIL_CHANGE_RATE_LIMIT == ""
+
+    def test_a_recovery_address_may_be_changed_again_and_again(self):
+        self.login(self.owner)
+        answered = []
+        for attempt in range(3):
+            response = self.patch(
+                self.own_url, json.dumps({"secondary_email": f"owner-recovery-{attempt}@example.com"}),
+            )
+            answered.append(response.status_code)
+        assert answered == [status.HTTP_200_OK] * 3
