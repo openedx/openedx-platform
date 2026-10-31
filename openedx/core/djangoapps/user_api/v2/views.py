@@ -141,6 +141,11 @@ ACCOUNT_PRESETS = (MINIMAL_VIEW, SHARED_VIEW)
 #: The member of the account collection that addresses the caller's own account.
 OWN_ACCOUNT_IDENTIFIER = "me"
 
+#: What a caller is told about a member address that more than one account
+#: answers to. One account is addressed there, so an address several of them
+#: answer to names none of them in particular.
+AMBIGUOUS_ACCOUNT_ADDRESS = "More than one account answers to this address. Name one of them as it is stored."
+
 #: The account actions that answer with an account, and so read the parameters
 #: that shape one.
 SHAPED_ACCOUNT_ACTIONS = ("list", "retrieve", "partial_update")
@@ -387,6 +392,26 @@ _PREFERENCE_SHAPES = ResponseShapes(
         UserPreferenceRecordProjectionSerializer,
     ],
 )
+
+
+def _the_one_addressed(username, records, name_of):
+    """
+    Return the one of these records the address names, or refuse the address.
+
+    A name can be answered with more than one record, in which case the record
+    stored under exactly the name given is the one addressed. Where none of
+    them is stored under it the address names no one of them, so it is refused
+    rather than worked on: which record came back first is no basis for
+    reading or changing an account.
+    """
+    stored_under_it = [record for record in records if name_of(record) == username]
+    if stored_under_it:
+        return stored_under_it[0]
+    if len(records) > 1:
+        raise ValidationError({api_settings.NON_FIELD_ERRORS_KEY: [AMBIGUOUS_ACCOUNT_ADDRESS]})
+    if not records:
+        raise NotFound
+    return records[0]
 
 
 def _user_named(username):
@@ -965,11 +990,11 @@ class AccountViewSet(
 
     def retrieve(self, request, username):
         """Return one account, shaped as the caller asked."""
-        account = self._accounts_named(
+        account = self._account_addressed(
             request,
-            [self._addressed_username(request, username)],
+            self._addressed_username(request, username),
             request.query_params.get(VIEW_PARAM),
-        )[0]
+        )
         return Response(self.shape(account, request))
 
     def partial_update(self, request, username):
@@ -994,9 +1019,9 @@ class AccountViewSet(
         try:
             with transaction.atomic():
                 update_account_settings(request.user, changes, username=username)
-                account = self._accounts_named(
-                    request, [username], request.query_params.get(VIEW_PARAM),
-                )[0]
+                account = self._account_addressed(
+                    request, username, request.query_params.get(VIEW_PARAM),
+                )
         except UserNotAuthorized as exc:
             raise PermissionDenied from exc
         except UserNotFound as exc:
@@ -1018,29 +1043,39 @@ class AccountViewSet(
         names = list(usernames)
         if not names:
             return []
+        found = self._accounts_found(request, names, preset)
+        # The accounts come back in the order the database returned them, which
+        # is not the order of the page they were selected for, so each is put
+        # back under the name it is stored as. Which stored names a selection
+        # resolves to is the database's decision and need not be the names it
+        # was given, so an account none of those names is written as is carried
+        # at the end of the page rather than left out of it.
+        by_name = {account["username"]: account for account in found}
+        claimed = {name for name in names if name in by_name}
+        ordered = [by_name[name] for name in names if name in by_name]
+        ordered.extend(account for account in found if account["username"] not in claimed)
+        return ordered
+
+    def _account_addressed(self, request, username, preset=None):
+        """
+        Return the one account a member address names, as this caller may see it.
+
+        The lookup settles which stored account an address names, so the
+        account it comes back with is the answer here whatever name that
+        account is stored under. An address the lookup comes back from with
+        several accounts and none of them stored under exactly the name given
+        names no one of them, so it is refused rather than answered with
+        whichever of them came back first.
+        """
+        found = self._accounts_found(request, [username], preset)
+        return _the_one_addressed(username, found, lambda account: account["username"])
+
+    def _accounts_found(self, request, names, preset):
+        """Return the accounts the lookup comes back with for these names."""
         try:
-            found = get_account_settings(request, names, view=preset if preset == SHARED_VIEW else None)
+            return get_account_settings(request, names, view=preset if preset == SHARED_VIEW else None)
         except UserNotFound as exc:
             raise NotFound from exc
-        # The accounts come back in the order the database returned them, which
-        # is not the order of the page they were selected for. Each name is
-        # matched to its account by the name that account stores, and failing
-        # that by its case-folded form: the database decides which names a
-        # selection matches, and the collation MySQL applies to these columns
-        # by default matches names differing only in case, so an account can
-        # come back stored under a spelling other than the one asked for.
-        by_name = {account["username"]: account for account in found}
-        folded = {}
-        for stored, account in by_name.items():
-            folded.setdefault(stored.casefold(), account)
-        ordered = []
-        for name in names:
-            account = by_name.get(name)
-            if account is None:
-                account = folded.get(name.casefold())
-            if account is not None:
-                ordered.append(account)
-        return ordered
 
     def _selected_usernames(self, request, selection):
         """Return the usernames the selectors name, in the order the page carries them."""

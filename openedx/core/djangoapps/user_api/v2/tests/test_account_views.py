@@ -30,7 +30,7 @@ from openedx.core.djangoapps.user_api.models import RetirementState, UserRetirem
 from openedx.core.djangoapps.user_api.tests.factories import UserPreferenceFactory
 from openedx.core.djangoapps.user_api.v2.permissions import ACCOUNT_CONTACT_SELECTORS
 from openedx.core.djangoapps.user_api.v2.serializers import ACCOUNT_DEFAULT_SORT, AccountQuerySerializer
-from openedx.core.djangoapps.user_api.v2.views import EmailSearchViewSet
+from openedx.core.djangoapps.user_api.v2.views import AMBIGUOUS_ACCOUNT_ADDRESS, EmailSearchViewSet
 from openedx.core.djangoapps.user_authn.views.password_reset import PasswordResetFormNoActive
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 
@@ -78,6 +78,10 @@ MERGE_PATCH = "application/merge-patch+json"
 
 #: Where the classes the platform declares record that they read a request.
 DEFAULT_AUTH_RECORDER = "openedx.core.djangolib.default_auth_classes.set_custom_attribute"
+
+#: Where the account views look an account up, which the database answers. A
+#: test that stands in for the database answers it from here.
+ACCOUNT_LOOKUP = "openedx.core.djangoapps.user_api.v2.views.get_account_settings"
 
 def counting_cache(location):
     """
@@ -227,6 +231,27 @@ class AccountListViewTests(AccountApiV2TestCase):
         response = self.client.get(self.list_url, {"username": "owner-caller,nobody"})
         assert response.status_code == status.HTTP_200_OK
         assert self.usernames_in(response) == ["owner-caller"]
+
+    def test_an_account_the_lookup_resolved_a_name_to_is_carried_by_the_page(self):
+        """
+        A page carries every account its lookup came back with.
+
+        The rows are put back in the order the names were asked for by the name
+        each account is stored under. An account stored under a name none of
+        them is written as is carried at the end of the page rather than
+        dropped from it in silence.
+        """
+        def one_account_written_apart(request, usernames=None, **kwargs):  # pylint: disable=unused-argument
+            assert usernames == ["owner-caller"]
+            return [{"username": "owner-caller ", "email": "owner-caller@example.com"}]
+
+        self.login(self.staff)
+        with mock.patch(ACCOUNT_LOOKUP, one_account_written_apart):
+            response = self.client.get(self.list_url, {"username": "owner-caller"})
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["results"] == [
+            {"username": "owner-caller ", "email": "owner-caller@example.com"},
+        ]
 
     def test_a_selector_that_names_no_account_answers_an_empty_page(self):
         """A collection that matched nothing is an empty page, not an absent collection."""
@@ -634,27 +659,87 @@ class AccountDetailViewTests(AccountApiV2TestCase):
         assert set(by_a_learner.data) == PUBLIC_FIELDS
         assert by_a_learner.data["username"] == "email_searches"
 
-    def test_a_member_address_spelled_in_another_case_carries_the_account_it_names(self):
+    def test_a_member_address_a_stored_account_answers_to_carries_that_account(self):
         """
-        A database that holds usernames case-insensitively answers an address spelled differently.
+        An address the lookup resolves to a stored account is answered with that account.
 
-        Whether two names differing only in case name one account is the
-        database's decision, and the collation MySQL applies to these columns
-        by default says they do, so an account can come back stored under a
-        spelling other than the one the address carried. The test database
-        compares the names exactly, so the account service is answered here as
-        a database holding them case-insensitively answers it.
+        Which stored names an address resolves to is the database's decision,
+        and the name it resolves to can be written differently from the one the
+        address carried. The test database resolves a name only to the record
+        stored under exactly it, so the account service is answered here the
+        way it answers where an address resolves more widely.
         """
         def stored_under_another_spelling(request, usernames=None, **kwargs):  # pylint: disable=unused-argument
             assert usernames == ["Owner-Caller"]
             return [{"username": "owner-caller", "email": "owner-caller@example.com"}]
 
         self.login(self.staff)
-        with mock.patch(
-            "openedx.core.djangoapps.user_api.v2.views.get_account_settings",
-            stored_under_another_spelling,
-        ):
+        with mock.patch(ACCOUNT_LOOKUP, stored_under_another_spelling):
             response = self.client.get(self.detail_url("Owner-Caller"))
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == {"username": "owner-caller", "email": "owner-caller@example.com"}
+
+    def test_a_member_address_resolving_to_a_name_written_further_apart_carries_that_account(self):
+        """
+        An address resolving to a record whose name shares less with it is answered with that record.
+
+        The name asked for is matched to the record the lookup came back with
+        so that a page carries its rows in the order they were asked for. At a
+        member address the record the lookup resolved to is the answer whatever
+        it is stored under, which is what the superseded version answers.
+        """
+        def stored_under_a_name_written_further_apart(request, usernames=None, **kwargs):  # pylint: disable=unused-argument
+            assert usernames == ["owner-caller "]
+            return [{"username": "owner-caller", "email": "owner-caller@example.com"}]
+
+        self.login(self.staff)
+        with mock.patch(ACCOUNT_LOOKUP, stored_under_a_name_written_further_apart):
+            response = self.client.get(self.detail_url("owner-caller "))
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == {"username": "owner-caller", "email": "owner-caller@example.com"}
+
+    def test_a_member_address_the_lookup_resolves_to_nothing_is_reported_as_absent(self):
+        """A lookup that comes back with no account is an absent address rather than a fault."""
+        self.login(self.staff)
+        with mock.patch(ACCOUNT_LOOKUP, lambda *args, **kwargs: []):
+            response = self.client.get(self.detail_url("owner-caller"))
+        assert_error_envelope(
+            response, expected_status=status.HTTP_404_NOT_FOUND, expected_type_slug="not-found",
+        )
+
+    def test_a_member_address_more_than_one_account_answers_to_is_refused(self):
+        """
+        An address resolving to several accounts names none of them, so it is refused.
+
+        Answering with one of them would hand the caller an account they did
+        not address, and which one it was would be settled by the order the
+        records came back in.
+        """
+        def two_accounts(request, usernames=None, **kwargs):  # pylint: disable=unused-argument
+            return [
+                {"username": "owner-caller", "email": "owner-caller@example.com"},
+                {"username": "Owner-Caller", "email": "second@example.com"},
+            ]
+
+        self.login(self.staff)
+        with mock.patch(ACCOUNT_LOOKUP, two_accounts):
+            response = self.client.get(self.detail_url("owner-caller "))
+        envelope = assert_error_envelope(
+            response, expected_status=status.HTTP_400_BAD_REQUEST, expected_type_slug="validation",
+        )
+        assert envelope["errors"] == {"non_field_errors": [AMBIGUOUS_ACCOUNT_ADDRESS]}
+
+    def test_a_member_address_one_of_several_accounts_is_stored_under_carries_that_one(self):
+        """The account stored under exactly the name addressed is the answer, in whatever order they come."""
+        def two_accounts(request, usernames=None, **kwargs):  # pylint: disable=unused-argument
+            return [
+                {"username": "Owner-Caller", "email": "second@example.com"},
+                {"username": "owner-caller", "email": "owner-caller@example.com"},
+            ]
+
+        self.login(self.staff)
+        with mock.patch(ACCOUNT_LOOKUP, two_accounts):
+            response = self.client.get(self.detail_url("owner-caller"))
         assert response.status_code == status.HTTP_200_OK
         assert response.data == {"username": "owner-caller", "email": "owner-caller@example.com"}
 
