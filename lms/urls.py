@@ -123,6 +123,9 @@ urlpatterns = [
     path('api/enrollment/v1/', include('openedx.core.djangoapps.enrollments.urls')),
     path('api/enrollment/v2/', include('openedx.core.djangoapps.enrollments.v2.urls')),
 
+    # Grades API v2. Grades v1 stays mounted by the grades plugin at api/grades/v1/.
+    path('api/grade/v2/', include('lms.djangoapps.grades.rest_api.v2.urls')),
+
     # Agreements API RESTful endpoints
     path('api/agreements/v1/', include('openedx.core.djangoapps.agreements.urls')),
 

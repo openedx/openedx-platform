@@ -2205,7 +2205,7 @@ SPECTACULAR_SETTINGS = {
     # SERVERS is environment-specific (LMS_ROOT_URL differs per env) and is
     # set in devstack.py / production.py.
 }
-# The colliding legacy Enrollment v2 address gets a distinct operationId (lms/lib/spectacular.py).
+# Colliding legacy addresses get a distinct operationId (lms/lib/spectacular.py).
 REST_FRAMEWORK['DEFAULT_SCHEMA_CLASS'] = 'lms.lib.spectacular.LmsAutoSchema'  # noqa: F405
 
 
