@@ -3,6 +3,7 @@
 import json
 import uuid
 from datetime import UTC, datetime, timedelta
+from time import perf_counter
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -34,6 +35,7 @@ from rest_framework.utils.encoders import JSONEncoder
 from cms.djangoapps.contentstore.rest_api.v1.advanced_settings_service import (
     INVALID_SETTING_MESSAGE,
     SETTINGS_NOT_SAVED_MESSAGE,
+    is_rule_message,
 )
 from cms.djangoapps.contentstore.rest_api.v1.views.advanced_settings import CourseAdvancedSettingsViewSet
 from cms.djangoapps.contentstore.rest_api.v1.views.tests.helpers import (
@@ -73,6 +75,7 @@ from openedx.core.djangoapps.authz.tests.mixins import CourseAuthoringAuthzTestM
 from openedx.core.djangoapps.oauth_dispatch.jwt import create_jwt_for_user
 from openedx.core.djangoapps.oauth_dispatch.tests.factories import AccessTokenFactory, ApplicationFactory
 from xmodule.modulestore.django import modulestore
+from xmodule.modulestore.exceptions import InvalidProctoringProvider
 from xmodule.modulestore.mixed import MixedModuleStore
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase, SharedModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory, LibraryFactory
@@ -118,11 +121,6 @@ def editable_settings(course_key):
 def every_setting(course_key):
     """Every setting of the stored course, as the settings model returns them."""
     return CourseMetadata.fetch_all(stored_course(course_key))
-
-
-# ---------------------------------------------------------------------------
-# The published schema
-# ---------------------------------------------------------------------------
 
 
 # ---------------------------------------------------------------------------
@@ -732,6 +730,192 @@ class AdvancedSettingsUpdateTest(ModuleStoreTestCase):
         assert legacy.status_code == 400
         assert b"validator internals" in legacy.content
 
+    def test_each_message_is_listed_once_per_setting(self):
+        """Several unreadable values of one setting give one fixed message; a repeated rule message is listed once."""
+        target = "cms.djangoapps.models.settings.course_metadata.CourseMetadata.validate_and_update_from_json"
+        refusals = [
+            {"key": INTEGER_SETTING, "message": "first internals"},
+            {"key": INTEGER_SETTING, "message": "second internals"},
+            {"key": "teams_configuration", "message": "duplicate ids: topic"},
+            {"key": "teams_configuration", "message": "duplicate ids: topic"},
+        ]
+        with (
+            patch(target, return_value=(False, refusals, None)),
+            self.assertLogs(SERVICE_LOGGER, "WARNING") as logs,
+        ):
+            response = self.patch({"display_name": {"value": "Not stored"}})
+        envelope = assert_error_envelope(response, expected_status=400, expected_type_slug="validation")
+        assert envelope["errors"] == {
+            INTEGER_SETTING: [INVALID_SETTING_MESSAGE], "teams_configuration": ["duplicate ids: topic"],
+        }
+        assert b"internals" not in response.content
+        assert len(logs.output) == 2
+
+
+TEAM_SET = {"id": "topic", "name": "Topic", "description": "A topic"}
+RETIRED_PROVIDER = "retired_provider"
+ESCALATING_PROVIDER = "escalating_provider"
+
+
+def team_settings(**value):
+    """A body changing the teams configuration to ``value``."""
+    return {"teams_configuration": {"value": value}}
+
+
+@ddt.ddt
+@override_settings(
+    ENABLE_PROCTORED_EXAMS=True,
+    PROCTORING_BACKENDS={
+        "DEFAULT": "valid_provider",
+        "valid_provider": {},
+        ESCALATING_PROVIDER: {"requires_escalation_email": True},
+    },
+)
+class AdvancedSettingsRuleMessagesTest(ModuleStoreTestCase):
+    """
+    A value that breaks one of the course's rules is reported with the rule's
+    own message, as v0 reports it. The text of an exception raised while
+    converting a value is not.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.course = CourseFactory.create(display_name="Original", start=datetime.now(UTC) + timedelta(days=30))
+        writer = UserFactory()
+        CourseStaffRole(self.course.id).add_users(writer)
+        self.client = api_client(writer)
+
+    def store_directly(self, values):
+        """Store ``values`` on the course directly, without the rules an update checks."""
+        CourseMetadata.update_from_dict(values, stored_course(self.course.id), self.user)
+
+    def refusals(self, body):
+        """Return the messages v1 and v0 report for each refused setting of ``body``, by setting name."""
+        new = self.client.patch(url(self.course.id), body, format="json")
+        legacy = self.client.patch(legacy_url(self.course.id), body, format="json")
+        envelope = assert_error_envelope(new, expected_status=400, expected_type_slug="validation")
+        assert legacy.status_code == 400, legacy.content
+        legacy_messages = {}
+        for entry in legacy.json()["developer_message"]:
+            legacy_messages.setdefault(entry["key"], []).append(entry["message"])
+        assert stored_display_name(self.course.id) == "Original"
+        return envelope["errors"], legacy_messages
+
+    @ddt.data(
+        ({}, team_settings(max_team_size=0, topics=[]), "teams_configuration",
+         "max_team_size must be greater than zero"),
+        ({}, team_settings(max_team_size=501, topics=[]), "teams_configuration",
+         "max_team_size cannot be greater than 500"),
+        ({}, team_settings(topics=[TEAM_SET, TEAM_SET]), "teams_configuration", "duplicate ids: topic"),
+        (
+            {},
+            team_settings(topics=[{**TEAM_SET, "name": "", "type": "secret", "max_team_size": 501, "colour": "red"}]),
+            "teams_configuration",
+            "type secret is invalid,max_team_size cannot be greater than 500,name attribute must not be empty,"
+            "extra keys: colour",
+        ),
+        (
+            {"enable_proctored_exams": True, "proctoring_provider": RETIRED_PROVIDER},
+            {},
+            "proctoring_provider",
+            f"The proctoring provider configured for this course, '{RETIRED_PROVIDER}', is not valid.",
+        ),
+        (
+            {"enable_proctored_exams": True},
+            {"proctoring_provider": {"value": ESCALATING_PROVIDER}},
+            "proctoring_provider",
+            f"Provider '{ESCALATING_PROVIDER}' requires an exam escalation contact.",
+        ),
+        (
+            {"enable_proctored_exams": True, "proctoring_provider": ESCALATING_PROVIDER},
+            {"proctoring_escalation_email": {"value": ""}},
+            "proctoring_escalation_email",
+            f"Provider '{ESCALATING_PROVIDER}' requires an exam escalation contact.",
+        ),
+    )
+    @ddt.unpack
+    def test_a_rule_message_is_reported_as_v0_reports_it(self, stored, body, setting, message):
+        """The rule's message reaches v1 unchanged, under the setting v0 names."""
+        self.store_directly(stored)
+        new, legacy = self.refusals({**body, "display_name": {"value": "Not stored"}})
+        assert new == {setting: [message]}
+        assert legacy == {setting: [message]}
+
+    def test_an_unknown_provider_is_reported_as_v0_reports_it(self):
+        """The sentence naming the providers the course may use reaches v1 unchanged."""
+        body = {"proctoring_provider": {"value": RETIRED_PROVIDER}, "display_name": {"value": "Not stored"}}
+        new, legacy = self.refusals(body)
+        message = (
+            f"The selected proctoring provider, {RETIRED_PROVIDER}, is not a valid provider. "
+            f"Please select from one of {['escalating_provider', 'valid_provider']}."
+        )
+        assert new == {"proctoring_provider": [message]}
+        assert legacy == {"proctoring_provider": [message]}
+
+    def test_rule_messages_and_exception_text_of_one_setting_are_told_apart(self):
+        """Each of a setting's messages is judged on its own, in the order v0 lists them."""
+        self.store_directly({"enable_proctored_exams": True})
+        body = {"proctoring_provider": {"value": 5}, "display_name": {"value": "Not stored"}}
+        with self.assertLogs(SERVICE_LOGGER, "WARNING") as logs:
+            new, legacy = self.refusals(body)
+        rule_message = "The proctoring provider configured for this course, '5', is not valid."
+        assert new == {"proctoring_provider": [INVALID_SETTING_MESSAGE, rule_message]}
+        exception_text, *rest = legacy["proctoring_provider"]
+        assert rest == [rule_message]
+        assert exception_text.startswith("Value stored in a String must be None or a string")
+        assert exception_text not in json.dumps(new)
+        (record,) = logs.output
+        assert exception_text in record
+
+
+@ddt.ddt
+class AdvancedSettingsRuleMessageCheckTest(SimpleTestCase):
+    """Which explanations of a refused setting are the course rules' own messages."""
+
+    @ddt.data(
+        {"max_team_size": 0, "topics": [TEAM_SET, TEAM_SET]},
+        {"max_team_size": 501, "topics": []},
+        {"topics": [{**TEAM_SET, "id": "a,b"}, {**TEAM_SET, "id": "a,b"}]},
+        {"topics": [{**TEAM_SET, "type": "a, b is invalid"}]},
+        {"topics": [{"id": "", "max_team_size": -1, "x,y": 1}]},
+        {"team_sets": [{**TEAM_SET, "description": "", "type": "two\nlines"}]},
+    )
+    def test_every_message_of_the_teams_rules_is_a_rule_message(self, value):
+        """Each message the teams rules write for these configurations is recognised."""
+        errors = CourseMetadata.validate_team_settings({"teams_configuration": {"value": value}})
+        assert errors != []
+        assert [error["message"] for error in errors if not is_rule_message(error["key"], error["message"])] == []
+
+    @ddt.data([], ["lti_external"], ["escalating_provider", "valid_provider"])
+    def test_the_unknown_provider_sentence_is_a_rule_message(self, available_providers):
+        """The sentence an unknown provider raises, naming the providers the course may use, is recognised."""
+        sentence = str(InvalidProctoringProvider("retired, or renamed", available_providers))
+        assert is_rule_message("proctoring_provider", sentence)
+        assert not is_rule_message("proctoring_escalation_email", sentence)
+        assert not is_rule_message("proctoring_provider", f"{sentence} Traceback (most recent call last)")
+
+    @ddt.data(
+        (INTEGER_SETTING, "invalid literal for int() with base 10: 'lots'"),
+        ("proctoring_provider", "Value stored in a String must be None or a string, found <class 'int'>"),
+        ("teams_configuration", "Team-set 'x' does not exist."),
+        ("teams_configuration", ""),
+        ("teams_configuration", "max_team_size must be greater than zero, Traceback (most recent call last)"),
+        ("teams_configuration", "type foo is invalid,id attribute must not be empty,Traceback"),
+        ("display_name", "max_team_size must be greater than zero"),
+        ("proctoring_escalation_email", "The proctoring provider configured for this course, 'x', is not valid."),
+    )
+    @ddt.unpack
+    def test_other_text_is_not_a_rule_message(self, setting, text):
+        """Exception text, a rule message with more after it, and a message under another setting are refused."""
+        assert not is_rule_message(setting, text)
+
+    def test_a_long_explanation_is_judged_quickly(self):
+        """An explanation that nearly matches does not make the check slow."""
+        text = "type " + "a is invalid," * 3000 + "extra keys: " + "x," * 3000 + "!\x00"
+        started = perf_counter()
+        assert not is_rule_message("teams_configuration", text)
+        assert perf_counter() - started < 1
+
 
 # Requests v0 and v1 answer differently beyond the error body, as
 # (request, v0 answer, v1 answer, test in AdvancedSettingsResponseDifferencesTest).
@@ -743,6 +927,8 @@ RESPONSE_DIFFERENCES = [
     ("read with view=default", "200", "400", "test_an_unknown_view"),
     ("read or update with a Bearer token", "200", "401", "test_a_bearer_token"),
     ("slash-separated course key", "404 JSON", "404 HTML", "test_a_slash_separated_course_key"),
+    ("OPTIONS on an unknown course", "200", "404", "test_options_on_an_unknown_course"),
+    ("PUT on an unknown course", "405", "404", "test_put_on_an_unknown_course"),
 ]
 
 
@@ -809,6 +995,17 @@ class AdvancedSettingsResponseDifferencesTest(ModuleStoreTestCase):
         assert legacy.json()["error_code"] == "course_does_not_exist"
         assert new["Content-Type"].startswith("text/html")
 
+    def test_options_on_an_unknown_course(self):
+        """v0 checks the course only when reading or updating; v1 checks it for every method."""
+        assert self.client.options(legacy_url(UNKNOWN_COURSE_KEY)).status_code == 200
+        assert_refused(self.client.options(url(UNKNOWN_COURSE_KEY)), 404)
+
+    def test_put_on_an_unknown_course(self):
+        """v0 refuses the method; v1 reports the missing course first."""
+        body = {"display_name": {"value": "x"}}
+        assert self.client.put(legacy_url(UNKNOWN_COURSE_KEY), body, format="json").status_code == 405
+        assert_refused(self.client.put(url(UNKNOWN_COURSE_KEY), body, format="json"), 404)
+
 
 @ddt.ddt
 @override_settings(
@@ -823,6 +1020,10 @@ class AdvancedSettingsProctoringProviderTest(ModuleStoreTestCase):
     """
 
     CHANGE = {"proctoring_provider": {"value": "valid_provider"}}
+    AFTER_START = (
+        "The proctoring provider cannot be modified after a course has started. "
+        "Contact support@example.com for assistance"
+    )
 
     def _course(self, started):
         offset = timedelta(days=-1 if started else 30)
@@ -846,9 +1047,10 @@ class AdvancedSettingsProctoringProviderTest(ModuleStoreTestCase):
         assert response.status_code == 400, response.content
         if version == "v1":
             envelope = assert_error_envelope(response, expected_status=400, expected_type_slug="validation")
-            assert list(envelope["errors"]) == ["proctoring_provider"]
+            assert envelope["errors"] == {"proctoring_provider": [self.AFTER_START]}
         else:
-            assert [entry["key"] for entry in response.json()["developer_message"]] == ["proctoring_provider"]
+            refusals = [(entry["key"], entry["message"]) for entry in response.json()["developer_message"]]
+            assert refusals == [("proctoring_provider", self.AFTER_START)]
         assert stored_course(course.id).proctoring_provider == before
 
     @ddt.data("v1", "v0")
@@ -879,8 +1081,9 @@ INTENTIONAL_DIFFERENCES = [
     ("title", "errors use the standardized envelope"),
     ("status", "errors use the standardized envelope"),
     ("detail", "errors use the standardized envelope"),
-    ("errors", "a refused update maps the name of each refused setting to INVALID_SETTING_MESSAGE, where v0 "
-               "lists the validator's own text under developer_message"),
+    ("errors", "a refused update maps the name of each refused setting to its messages, where v0 lists them "
+               "under developer_message; a message that is not one of the course rules' own, such as exception "
+               "text, is INVALID_SETTING_MESSAGE on v1"),
     ("developer_message", "the v0 error body carries developer_message; the envelope does not"),
     ("error_code", "the v0 not-found body carries error_code; the envelope does not"),
 ]
