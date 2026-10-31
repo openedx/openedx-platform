@@ -18,10 +18,6 @@ from ..serializers import CourseTeamSerializer
 class CourseTeamView(DeveloperErrorViewMixin, APIView):
     """
     View for getting data for course team.
-
-    Deprecated: use ``GET /api/authoring/v2/courses/{course_key}/team_members/`` and
-    ``GET /api/authoring/v2/courses/{course_key}/team_members/me/`` instead.
-    See https://github.com/openedx/openedx-platform/issues/39128.
     """
     @extend_schema(
         parameters=[
@@ -38,13 +34,6 @@ class CourseTeamView(DeveloperErrorViewMixin, APIView):
     def get(self, request: Request, course_id: str):
         """
         Get all CMS users who are editors for the specified course.
-
-        Deprecated: use ``GET /api/authoring/v2/courses/{course_key}/team_members/``, which
-        returns the same users, paginated (``page``, ``page_size`` up to 100), instructors first
-        and then staff, each by username. ``allow_actions`` and ``show_transfer_ownership_hint``
-        are ``can_manage_team`` and ``is_only_instructor`` of
-        ``GET /api/authoring/v2/courses/{course_key}/team_members/me/``.
-        See https://github.com/openedx/openedx-platform/issues/39128.
 
         **Example Request**
 
