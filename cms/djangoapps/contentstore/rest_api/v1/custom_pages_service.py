@@ -92,7 +92,7 @@ def reorder_custom_pages(course_key, usage_keys, user):
 
 def update_tab(course_key, tab_id, changes, user):
     """
-    Apply ``changes`` (``{"is_hidden": bool}`` or nothing) to the course tab ``tab_id``, as ``user``.
+    Apply ``changes`` (``{"is_hidden": bool}``) to the course tab ``tab_id``, as ``user``.
 
     Returns the tab as stored. Raises ``NotFound`` when the course has no such
     tab, and ``ValidationError`` on ``is_hidden`` when the tab may not be
@@ -102,8 +102,6 @@ def update_tab(course_key, tab_id, changes, user):
     tab = CourseTabList.get_tab_by_id(course_block.tabs, tab_id)
     if tab is None:
         raise NotFound(TAB_NOT_FOUND_MESSAGE)
-    if "is_hidden" not in changes:
-        return tab
     if not tab.is_hideable:
         raise ValidationError({"is_hidden": [TAB_NOT_HIDEABLE_MESSAGE]})
     edit_tab_handler(course_block, {"tab_id_locator": {"tab_id": tab_id}, "is_hidden": changes["is_hidden"]}, user)

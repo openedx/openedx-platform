@@ -9,6 +9,8 @@ from rest_framework import serializers
 NOT_A_USAGE_KEY_MESSAGE = "Each item must be the usage key of a custom page."
 # Reported under course_key when the query parameter does not hold the key of a course.
 NOT_A_COURSE_KEY_MESSAGE = "The value must be the key of a course, such as course-v1:edX+DemoX+2026."
+# Reported under non_field_errors when a change to a tab names none of the members it accepts.
+NO_TAB_CHANGE_MESSAGE = "The body must hold is_hidden, the only change a tab accepts."
 
 # Members of a tab that are returned as members of their own; the rest of the
 # tab's stored entry is returned under ``settings``.
@@ -60,7 +62,10 @@ class CustomPageListQuerySerializer(serializers.Serializer):  # pylint: disable=
     """Query parameters of a listing of a course's custom pages."""
 
     course_key = serializers.CharField(
-        help_text="Key of the course whose custom pages to list, such as course-v1:edX+DemoX+2026.",
+        help_text=(
+            "Key of the course whose custom pages to list, such as course-v1:edX+DemoX+2026. Percent-encode "
+            "it, as any query value: a + sent as is reads as a space, so send course-v1%3AedX%2BDemoX%2B2026."
+        ),
     )
 
     class Meta:
@@ -80,18 +85,35 @@ class CustomPageListQuerySerializer(serializers.Serializer):  # pylint: disable=
 @extend_schema_field({"type": "string"})
 class _CustomPageItemField(serializers.JSONField):
     """
-    One item of a custom page order, accepted as any JSON value.
+    One item of a custom page order, accepted as any JSON value but null.
 
     Its type is checked by the list's own validation, so every unusable item
     is refused with the same message instead of a per-item error.
     """
 
 
+class _CustomPageListField(serializers.ListField):
+    """
+    The usage keys of a custom page order, refusing a null item as it refuses any other unusable item.
+
+    An item field refuses null with a per-item error of its own, so null is
+    refused here, before the items are read, with the message every unusable
+    item gets. Accepting null in the item field instead would publish the
+    items as nullable, a value the order always refuses.
+    """
+
+    def run_child_validation(self, data):
+        """Refuse the list when an item is null, then read each item."""
+        if any(item is None for item in data):
+            raise serializers.ValidationError(NOT_A_USAGE_KEY_MESSAGE)
+        return super().run_child_validation(data)
+
+
 class CustomPageOrderSerializer(serializers.Serializer):  # pylint: disable=abstract-method
     """A new order for a course's custom pages."""
 
-    custom_pages = serializers.ListField(
-        child=_CustomPageItemField(allow_null=True, help_text="Usage key of one of the course's custom pages."),
+    custom_pages = _CustomPageListField(
+        child=_CustomPageItemField(help_text="Usage key of one of the course's custom pages."),
         allow_empty=True,
         help_text=(
             "Usage keys of the course's custom pages, in the order learners are to see them. Custom pages "
@@ -124,3 +146,9 @@ class CourseTabUpdateSerializer(serializers.Serializer):  # pylint: disable=abst
 
     class Meta:
         ref_name = "CourseTabUpdate.v1"
+
+    def validate(self, attrs):
+        """Refuse a change that names none of the members a tab accepts, such as a misspelt is_hidden."""
+        if not attrs:
+            raise serializers.ValidationError(NO_TAB_CHANGE_MESSAGE)
+        return attrs
