@@ -16,6 +16,7 @@ from cms.djangoapps.contentstore.rest_api.v2.group_configurations_service import
 from cms.djangoapps.contentstore.rest_api.v2.serializers.group_configurations import (
     FULL_VIEW,
     MINIMAL_VIEW,
+    VIEW_HELP_TEXT,
     GroupConfigurationListQuerySerializer,
     GroupConfigurationSerializer,
 )
@@ -31,7 +32,7 @@ _COURSE_KEY_PARAMETER = OpenApiParameter(
 
 _VIEW_PARAMETER = OpenApiParameter(
     name="view",
-    description=GroupConfigurationListQuerySerializer().fields["view"].help_text,
+    description=VIEW_HELP_TEXT,
     required=False,
     location=OpenApiParameter.QUERY,
     type=str,
