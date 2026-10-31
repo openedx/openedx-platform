@@ -2188,6 +2188,7 @@ class AccountResourceGateTests(AccountApiV2TestCase):
 
     def setUp(self):
         super().setUp()
+        UserPreferenceFactory.create(user=self.owner, key="time_zone", value="Asia/Tokyo")
         self.owner.profile.profile_image_uploaded_at = datetime.datetime.now(datetime.UTC)
         self.owner.profile.save()
         self.deactivator = UserFactory.create(username="gate-deactivator", password=PASSWORD)
@@ -2209,12 +2210,26 @@ class AccountResourceGateTests(AccountApiV2TestCase):
             "the verification attempts": lambda: self.client.get(
                 reverse("user_v2:account_verification_list", kwargs={"username": name}),
             ),
+            "the preferences": lambda: self.client.get(
+                reverse("user_v2:account_preference_list", kwargs={"username": name}),
+            ),
+            "one preference": lambda: self.client.get(
+                reverse(
+                    "user_v2:account_preference_detail",
+                    kwargs={"username": name, "key": "time_zone"},
+                ),
+            ),
         }
 
     def writes(self):
         """Return each change to one account, by the address it is sent to."""
         name = self.owner.username
         return {
+            "the preferences": lambda: self.client.patch(
+                reverse("user_v2:account_preference_list", kwargs={"username": name}),
+                json.dumps({"time_zone": "Asia/Tokyo"}),
+                content_type=MERGE_PATCH,
+            ),
             "the image": lambda: self.client.post(
                 reverse("user_v2:account_profile_image", kwargs={"username": name}),
             ),
@@ -2248,11 +2263,12 @@ class AccountResourceGateTests(AccountApiV2TestCase):
 
         A change is sent here as a caller sends it wrong, so that what is
         measured is the request reaching the handler rather than the change
-        itself: an upload carrying no image is refused by the handler, and
-        clearing the image is carried out.
+        itself: an empty merge patch and an upload carrying no image are
+        refused by the handler, and clearing the image is carried out.
         """
         self.login(self.owner)
         answers = {case: send() for case, send in self.writes().items()}
+        assert answers["the preferences"].status_code == status.HTTP_204_NO_CONTENT
         assert answers["the image"].status_code == status.HTTP_400_BAD_REQUEST
         assert answers["the stored image"].status_code == status.HTTP_204_NO_CONTENT
         assert self.has_image() is False
