@@ -29,9 +29,9 @@ from openedx.core.djangoapps.site_configuration.tests.test_util import with_site
 from openedx.core.djangoapps.user_api.accounts.utils import ENABLE_SECONDARY_EMAIL_FEATURE_SWITCH
 from openedx.core.djangoapps.user_api.models import RetirementState, UserRetirementStatus
 from openedx.core.djangoapps.user_api.tests.factories import UserPreferenceFactory
+from openedx.core.djangoapps.user_api.v2 import views
 from openedx.core.djangoapps.user_api.v2.permissions import ACCOUNT_CONTACT_SELECTORS
 from openedx.core.djangoapps.user_api.v2.serializers import ACCOUNT_DEFAULT_SORT, AccountQuerySerializer
-from openedx.core.djangoapps.user_api.v2 import views
 from openedx.core.djangoapps.user_api.v2.views import AMBIGUOUS_ACCOUNT_ADDRESS, EmailSearchViewSet
 from openedx.core.djangoapps.user_authn.views.password_reset import PasswordResetFormNoActive
 from openedx.core.djangolib.testing.utils import skip_unless_lms
@@ -738,7 +738,7 @@ class AccountDetailViewTests(AccountApiV2TestCase):
     def test_a_member_address_the_lookup_resolves_to_nothing_is_reported_as_absent(self):
         """A lookup that comes back with no account is an absent address rather than a fault."""
         self.login(self.staff)
-        with mock.patch(ACCOUNT_LOOKUP, lambda *args, **kwargs: []):
+        with mock.patch(ACCOUNT_LOOKUP, return_value=[]):
             response = self.client.get(self.detail_url("owner-caller"))
         assert_error_envelope(
             response, expected_status=status.HTTP_404_NOT_FOUND, expected_type_slug="not-found",
@@ -2038,7 +2038,7 @@ class AccountWriteTargetTests(AccountApiV2TestCase):
         self.login(self.deactivator)
         with mock.patch(
             "openedx.core.djangoapps.user_api.v2.views.accounts_named",
-            lambda name: [self.other, self.staff],
+            return_value=[self.other, self.staff],
         ):
             envelope = assert_error_envelope(
                 self.client.post(address),
@@ -2055,7 +2055,7 @@ class AccountWriteTargetTests(AccountApiV2TestCase):
         self.login(self.deactivator)
         with mock.patch(
             "openedx.core.djangoapps.user_api.v2.views.accounts_named",
-            lambda name: [self.other, self.owner],
+            return_value=[self.other, self.owner],
         ):
             assert self.client.post(address).status_code == status.HTTP_204_NO_CONTENT
         self.owner.refresh_from_db()
@@ -2154,9 +2154,10 @@ class AccountResourceGateTests(AccountApiV2TestCase):
         self.login(self.owner)
         with refusing_account_resource():
             for case, send in self.reads().items():
-                assert_error_envelope(
-                    send(), expected_status=status.HTTP_403_FORBIDDEN, expected_type_slug="authz",
-                )
+                with self.subTest(case=case):
+                    assert_error_envelope(
+                        send(), expected_status=status.HTTP_403_FORBIDDEN, expected_type_slug="authz",
+                    )
 
     def test_every_change_to_one_account_reaches_its_handler_while_the_resource_admits_the_caller(self):
         """
@@ -2178,9 +2179,10 @@ class AccountResourceGateTests(AccountApiV2TestCase):
         self.login(self.owner)
         with refusing_account_resource():
             for case, send in self.writes().items():
-                assert_error_envelope(
-                    send(), expected_status=status.HTTP_403_FORBIDDEN, expected_type_slug="authz",
-                )
+                with self.subTest(case=case):
+                    assert_error_envelope(
+                        send(), expected_status=status.HTTP_403_FORBIDDEN, expected_type_slug="authz",
+                    )
         assert self.has_image() is True
 
     def test_a_rule_the_resource_refuses_every_caller_by_refuses_a_deactivation(self):

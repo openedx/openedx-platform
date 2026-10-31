@@ -20,8 +20,8 @@ from edx_rest_framework_extensions.shaping import MinimalViewMixin, project
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import APIException, NotFound, PermissionDenied, Throttled, ValidationError
-from rest_framework.parsers import JSONParser
 from rest_framework.metadata import SimpleMetadata
+from rest_framework.parsers import JSONParser
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from rest_framework.settings import api_settings

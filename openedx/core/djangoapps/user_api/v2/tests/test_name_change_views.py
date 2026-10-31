@@ -465,7 +465,7 @@ class NameChangeAmbiguousTargetTests(NameChangeTestCase):
         self.login(self.staff)
         with mock.patch(
             "openedx.core.djangoapps.user_api.v2.views.accounts_named",
-            lambda name: [sibling, self.other],
+            return_value=[sibling, self.other],
         ):
             envelope = assert_error_envelope(
                 self.client.post(self.url),
@@ -488,7 +488,7 @@ class NameChangeAmbiguousTargetTests(NameChangeTestCase):
         self.login(self.staff)
         with mock.patch(
             "openedx.core.djangoapps.user_api.v2.views.accounts_named",
-            lambda name: [sibling, self.owner],
+            return_value=[sibling, self.owner],
         ):
             assert self.client.post(self.url).status_code == status.HTTP_204_NO_CONTENT
         assert self.profile_name(self.owner) == "Jon Doe"

@@ -24,7 +24,6 @@ from openedx.core.djangoapps.user_api.accounts.image_helpers import get_profile_
 from openedx.core.djangoapps.user_api.errors import UserNotFound
 from openedx.core.djangoapps.user_api.v2.errors import CatalogedRequestErrorsMixin
 from openedx.core.djangoapps.user_api.v2.permissions import IsAddressedUser
-from openedx.core.djangoapps.user_api.v2.views import AMBIGUOUS_ACCOUNT_ADDRESS, AccountResourceMixin
 from openedx.core.djangoapps.user_api.v2.serializers import ErrorResponse
 from openedx.core.djangoapps.user_api.v2.view_utils import (
     RESP_UNAUTHENTICATED,
@@ -34,6 +33,7 @@ from openedx.core.djangoapps.user_api.v2.view_utils import (
     StrictQueryParametersMixin,
     path_param,
 )
+from openedx.core.djangoapps.user_api.v2.views import AMBIGUOUS_ACCOUNT_ADDRESS, AccountResourceMixin
 from openedx.core.lib.api.parsers import TypedFileUploadParser
 
 from ..exceptions import ImageValidationError

@@ -11,8 +11,8 @@ from openedx.core.djangoapps.user_api.v2.selectors import (
     accounts_holding_emails,
     cancellable_retirement_for_email,
     username_holding_id,
-    usernames_holding_email,
     usernames_among,
+    usernames_holding_email,
 )
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 

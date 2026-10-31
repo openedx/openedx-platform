@@ -70,6 +70,13 @@ def cancellable_retirement_for_email(email):
     period runs, so a retirement older than that is not reported here: the
     address is gone either way, and only a retirement inside the period can be
     undone by asking the platform to undo it.
+
+    One address can have been held and left more than once, so more than one
+    retirement of it can sit inside the period. The most recent is the one
+    reported, being the only one still open to being undone. This is the one
+    place where the answer differs from the superseded version, which reads
+    the same window with a lookup that takes a single record and so fails
+    outright on the second.
     """
     now = datetime.datetime.now(ZoneInfo("UTC"))
     return (
