@@ -11,24 +11,41 @@ LEGACY_V2_PREFIX = "/api/enrollment/v2/"
 # addresses already have distinct ids and keep them.
 COLLIDING_LEGACY_PATH = "/api/enrollment/v2/enrollments"
 
+# Routes a newer version supersedes. They are published so that clients can
+# see they are deprecated, and every operation under them is marked so.
+SUPERSEDED_PATH_PATTERNS = (
+    # Cohorts v1 settings, cohorts and membership. The v1 CSV upload route has
+    # no successor and stays unpublished.
+    re.compile(r"^/api/cohorts/v1/(settings/|courses/[^/]+/cohorts/)"),
+)
+
+# Mounts published in the LMS schema. Anything else is left out.
+SCHEMA_PATH_PATTERNS = (
+    re.compile(r"^/api/enrollment/v\d+/"),
+    re.compile(r"^/api/cohorts/v2/courses/[^/]+/(cohorts|cohort_settings)/"),
+    *SUPERSEDED_PATH_PATTERNS,
+)
+
 
 def _is_legacy_path(path):
     """Conforming routes always end in a slash, so a slashless v2 path is a legacy address."""
     return path.startswith(LEGACY_V2_PREFIX) and not path.endswith("/")
 
 
+def _is_deprecated_path(path):
+    """Return True for a legacy slashless address or a route a newer version supersedes."""
+    return _is_legacy_path(path) or any(pattern.match(path) for pattern in SUPERSEDED_PATH_PATTERNS)
+
+
 def lms_api_filter(endpoints):
     """
-    Pre-processing hook: keep only enrollment v2 endpoints tagged for the SDK.
+    Pre-processing hook: keep only the endpoints under the mounts the LMS schema publishes.
     """
-    filtered = []
-    ENROLLMENT_PATH_PATTERN = re.compile(r"^/api/enrollment/v\d+/")
-
-    for path, path_regex, method, callback in endpoints:
-        if ENROLLMENT_PATH_PATTERN.match(path):
-            filtered.append((path, path_regex, method, callback))
-
-    return filtered
+    return [
+        (path, path_regex, method, callback)
+        for path, path_regex, method, callback in endpoints
+        if any(pattern.match(path) for pattern in SCHEMA_PATH_PATTERNS)
+    ]
 
 
 class LmsAutoSchema(AutoSchema):
@@ -50,9 +67,9 @@ class LmsAutoSchema(AutoSchema):
 
 
 def lms_mark_legacy_paths_deprecated(result, generator, request, public):  # pylint: disable=unused-argument
-    """Mark the legacy slashless Enrollment v2 addresses ``deprecated: true``."""
+    """Mark the legacy slashless Enrollment v2 addresses and superseded routes ``deprecated: true``."""
     for path, path_item in result.get("paths", {}).items():
-        if not _is_legacy_path(path):
+        if not _is_deprecated_path(path):
             continue
         for operation in path_item.values():
             if isinstance(operation, dict):
