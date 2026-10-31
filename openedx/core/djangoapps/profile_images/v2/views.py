@@ -33,7 +33,11 @@ from openedx.core.djangoapps.user_api.v2.view_utils import (
     StrictQueryParametersMixin,
     path_param,
 )
-from openedx.core.djangoapps.user_api.v2.views import AMBIGUOUS_ACCOUNT_ADDRESS, AccountResourceMixin
+from openedx.core.djangoapps.user_api.v2.views import (
+    AMBIGUOUS_ACCOUNT_ADDRESS,
+    RESP_NOT_ACCEPTABLE,
+    AccountResourceMixin,
+)
 from openedx.core.lib.api.parsers import TypedFileUploadParser
 
 from ..exceptions import ImageValidationError
@@ -169,6 +173,7 @@ class ProfileImageView(
             401: RESP_UNAUTHENTICATED,
             403: _RESP_ANOTHER_USERS_IMAGE,
             404: _RESP_NO_PROFILE,
+            406: RESP_NOT_ACCEPTABLE,
             415: RESP_UNREADABLE_BODY,
         },
     )
@@ -213,6 +218,7 @@ class ProfileImageView(
             401: RESP_UNAUTHENTICATED,
             403: _RESP_ANOTHER_USERS_IMAGE,
             404: _RESP_NO_PROFILE,
+            406: RESP_NOT_ACCEPTABLE,
         },
     )
     def delete(self, request, username):

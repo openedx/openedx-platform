@@ -245,6 +245,25 @@ _USER_ORDERING_PARAM = _ordering_param(USER_SORT_FIELDS, USER_DEFAULT_SORT)
 _PREFERENCE_ORDERING_PARAM = _ordering_param(PREFERENCE_SORT_FIELDS, PREFERENCE_DEFAULT_SORT)
 
 _RESP_FORBIDDEN = OpenApiResponse(ErrorResponse, description="The requester may not use this endpoint.")
+#: Published by every operation of this version. Which representations an
+#: answer can be given in is settled as the request enters, before the address
+#: it names is read or written, so an ``Accept`` header naming none of them is
+#: refused at every address whether or not that address answers with a body.
+_RESP_SESSION_WITHOUT_ITS_TOKEN = OpenApiResponse(
+    ErrorResponse,
+    description=(
+        "The request was made with a session cookie and carried none of the request token the "
+        "site hands out with it, so the site cannot tell that the request came from a page it "
+        "served. Sending that token with the session, or a signed token in place of the "
+        "session, is answered."
+    ),
+)
+RESP_NOT_ACCEPTABLE = OpenApiResponse(
+    ErrorResponse,
+    description=(
+        "The `Accept` header of the request names no representation this endpoint can answer in."
+    ),
+)
 _RESP_NOT_FOUND = OpenApiResponse(ErrorResponse, description="No such resource.")
 _RESP_NO_SUCH_PAGE = OpenApiResponse(ErrorResponse, description="There is no such page of results.")
 _RESP_BAD_REQUEST = OpenApiResponse(
@@ -596,6 +615,7 @@ class _ResponsePresetMixin(MinimalViewMixin):
             401: RESP_UNAUTHENTICATED,
             403: _RESP_FORBIDDEN,
             404: _RESP_NO_SUCH_PAGE,
+            406: RESP_NOT_ACCEPTABLE,
         },
     ),
     retrieve=extend_schema(
@@ -608,6 +628,7 @@ class _ResponsePresetMixin(MinimalViewMixin):
             401: RESP_UNAUTHENTICATED,
             403: _RESP_FORBIDDEN,
             404: _RESP_NOT_FOUND,
+            406: RESP_NOT_ACCEPTABLE,
         },
     ),
 )
@@ -685,6 +706,7 @@ class UserViewSet(
             401: RESP_UNAUTHENTICATED,
             403: _RESP_FORBIDDEN,
             404: _RESP_NO_SUCH_PAGE,
+            406: RESP_NOT_ACCEPTABLE,
         },
     ),
     retrieve=extend_schema(
@@ -706,6 +728,7 @@ class UserViewSet(
             401: RESP_UNAUTHENTICATED,
             403: _RESP_FORBIDDEN,
             404: _RESP_NOT_FOUND,
+            406: RESP_NOT_ACCEPTABLE,
         },
     ),
 )
@@ -824,6 +847,7 @@ class CountryTimeZoneViewSet(
             200: TimeZoneSerializer,
             400: _RESP_BAD_REQUEST,
             404: _RESP_NO_SUCH_PAGE,
+            406: RESP_NOT_ACCEPTABLE,
         },
     )
     def list(self, request):
@@ -913,6 +937,7 @@ class AccountResourceMixin:
             401: RESP_UNAUTHENTICATED,
             403: _RESP_FORBIDDEN,
             404: _RESP_NO_SUCH_PAGE_OR_RETIRED,
+            406: RESP_NOT_ACCEPTABLE,
         },
     ),
     retrieve=extend_schema(
@@ -930,6 +955,7 @@ class AccountResourceMixin:
             401: RESP_UNAUTHENTICATED,
             403: _RESP_FORBIDDEN,
             404: _RESP_NO_SUCH_ACCOUNT,
+            406: RESP_NOT_ACCEPTABLE,
         },
         examples=_ACCOUNT_EXAMPLES,
     ),
@@ -950,6 +976,7 @@ class AccountResourceMixin:
             401: RESP_UNAUTHENTICATED,
             403: _RESP_FORBIDDEN,
             404: _RESP_CHANGED_ACCOUNT_GONE,
+            406: RESP_NOT_ACCEPTABLE,
             415: RESP_UNREADABLE_BODY,
             429: _RESP_RATE_LIMITED,
             500: _RESP_CHANGE_FAILED,
@@ -1293,6 +1320,7 @@ class AccountViewSet(
             401: RESP_UNAUTHENTICATED,
             403: _RESP_FORBIDDEN,
             404: _RESP_NOT_FOUND,
+            406: RESP_NOT_ACCEPTABLE,
         },
     ),
 )
@@ -1367,6 +1395,7 @@ class _SearchedAccountsMixin:
             401: RESP_UNAUTHENTICATED,
             403: _RESP_FORBIDDEN,
             404: _RESP_NOT_FOUND,
+            406: RESP_NOT_ACCEPTABLE,
             415: RESP_UNREADABLE_BODY,
         },
     ),
@@ -1452,10 +1481,12 @@ _NAME_CHANGE_PATH_PARAM = path_param(
             201: NameChangeSerializer,
             400: _RESP_UNUSABLE_BODY,
             401: RESP_UNAUTHENTICATED,
+            403: _RESP_SESSION_WITHOUT_ITS_TOKEN,
             404: OpenApiResponse(
                 ErrorResponse,
                 description="The account of the caller carries no profile to put a name on.",
             ),
+            406: RESP_NOT_ACCEPTABLE,
             415: RESP_UNREADABLE_BODY,
         },
     ),
@@ -1522,6 +1553,7 @@ class NameChangeViewSet(
                 ErrorResponse,
                 description="No such user, or the user has asked for no name change.",
             ),
+            406: RESP_NOT_ACCEPTABLE,
         },
     )
     @action(
@@ -1623,6 +1655,7 @@ class IDVerificationStatusView(
             401: RESP_UNAUTHENTICATED,
             403: _RESP_FORBIDDEN,
             404: OpenApiResponse(ErrorResponse, description="No such user."),
+            406: RESP_NOT_ACCEPTABLE,
         },
     )
     def get(self, request, username):
@@ -1656,6 +1689,7 @@ class IDVerificationStatusView(
             404: OpenApiResponse(
                 ErrorResponse, description="No such user, or no such page of attempts.",
             ),
+            406: RESP_NOT_ACCEPTABLE,
         },
     ),
 )

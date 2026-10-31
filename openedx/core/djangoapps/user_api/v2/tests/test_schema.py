@@ -811,11 +811,11 @@ def test_every_list_publishes_the_page_that_does_not_exist(schema):
         if path in LIST_PATHS
     }
     assert documented == {
-        ACCOUNT_LIST_PATH: ["200", "400", "401", "403", "404"],
-        VERIFICATION_LIST_PATH: ["200", "400", "401", "403", "404"],
-        "/api/user/v2/users/": ["200", "400", "401", "403", "404"],
-        "/api/user/v2/user_preferences/": ["200", "400", "401", "403", "404"],
-        TIME_ZONE_LIST_PATH: ["200", "400", "404"],
+        ACCOUNT_LIST_PATH: ["200", "400", "401", "403", "404", "406"],
+        VERIFICATION_LIST_PATH: ["200", "400", "401", "403", "404", "406"],
+        "/api/user/v2/users/": ["200", "400", "401", "403", "404", "406"],
+        "/api/user/v2/user_preferences/": ["200", "400", "401", "403", "404", "406"],
+        TIME_ZONE_LIST_PATH: ["200", "400", "404", "406"],
     }
 
 
@@ -1103,14 +1103,14 @@ def test_every_property_the_change_publishes_a_null_for_is_cleared_by_one(client
 @skip_unless_lms
 def test_a_change_publishes_the_refusals_only_it_can_answer_with(schema):
     assert sorted(schema["paths"][ACCOUNT_MEMBER_PATH]["patch"]["responses"]) == [
-        "200", "400", "401", "403", "404", "415", "429", "500",
+        "200", "400", "401", "403", "404", "406", "415", "429", "500",
     ]
     assert schema["paths"][ACCOUNT_MEMBER_PATH]["patch"]["responses"]["500"]["description"] == (
         "The change was asked for correctly and could not be carried out. Sending it again "
         "with something else in it does not help; sending the same request later may."
     )
     assert sorted(schema["paths"][ACCOUNT_MEMBER_PATH]["get"]["responses"]) == [
-        "200", "400", "401", "403", "404",
+        "200", "400", "401", "403", "404", "406",
     ]
 
 
@@ -1179,7 +1179,7 @@ def test_the_search_publishes_the_addresses_it_reads_and_the_page_it_answers_wit
     addresses = schema["components"]["schemas"]["EmailSearch"]["properties"]["emails"]
     assert addresses["type"] == "array"
     assert addresses["maxItems"] == 100
-    assert sorted(operation["responses"]) == ["200", "400", "401", "403", "404", "415"]
+    assert sorted(operation["responses"]) == ["200", "400", "401", "403", "404", "406", "415"]
     # The page is the only thing it reads from the query string.
     assert [parameter["name"] for parameter in operation["parameters"]] == ["page", "page_size"]
 
@@ -1188,7 +1188,7 @@ def test_the_search_publishes_the_addresses_it_reads_and_the_page_it_answers_wit
 def test_a_deactivation_publishes_that_it_answers_with_nothing(schema):
     operation = schema["paths"][ACCOUNT_DEACTIVATION_PATH]["post"]
     assert "requestBody" not in operation
-    assert sorted(operation["responses"]) == ["204", "400", "401", "403", "404"]
+    assert sorted(operation["responses"]) == ["204", "400", "401", "403", "404", "406"]
     assert "content" not in operation["responses"]["204"]
     assert operation["responses"]["204"]["description"] == "The account was deactivated."
 
@@ -1490,7 +1490,7 @@ def test_a_name_change_publishes_the_body_it_reads_and_the_one_it_returns(schema
     assert operation["responses"]["201"]["content"]["application/json"]["schema"] == {
         "$ref": "#/components/schemas/NameChange",
     }
-    assert sorted(operation["responses"]) == ["201", "400", "401", "404", "415"]
+    assert sorted(operation["responses"]) == ["201", "400", "401", "403", "404", "406", "415"]
     published = schema["components"]["schemas"]["NameChange"]
     assert published["required"] == ["name"]
     assert published["properties"]["name"]["maxLength"] == 255
@@ -1507,7 +1507,7 @@ def test_a_confirmation_publishes_that_it_reads_nothing_and_answers_with_nothing
         "The profile now carries the name that was asked for."
     )
     assert "content" not in operation["responses"]["204"]
-    assert sorted(operation["responses"]) == ["204", "400", "401", "403", "404"]
+    assert sorted(operation["responses"]) == ["204", "400", "401", "403", "404", "406"]
 
 
 #: Every form an image may be sent in: the media type, the name a body sent in
@@ -1555,7 +1555,7 @@ def test_the_profile_image_publishes_every_media_type_it_reads_the_image_in(sche
             "site configures."
         ),
     }
-    assert sorted(operation["responses"]) == ["204", "400", "401", "403", "404", "415"]
+    assert sorted(operation["responses"]) == ["204", "400", "401", "403", "404", "406", "415"]
 
 
 @pytest.mark.django_db
@@ -1604,7 +1604,7 @@ def test_clearing_the_profile_image_publishes_that_it_reads_nothing(schema):
     assert "requestBody" not in operation
     assert [parameter["name"] for parameter in operation["parameters"]] == ["username"]
     assert operation["responses"]["204"]["description"] == "The account carries no image of its own."
-    assert sorted(operation["responses"]) == ["204", "400", "401", "403", "404"]
+    assert sorted(operation["responses"]) == ["204", "400", "401", "403", "404", "406"]
     assert operation["responses"]["400"]["description"] == (
         "The request carries a query parameter this endpoint does not read, or the address names "
         "more than one account and so names none of them in particular."
@@ -1829,3 +1829,36 @@ def test_the_stored_preference_reads_are_named_alike_in_every_document_that_publ
         (PREFERENCE_LIST_PATH, "get"): "api_user_v2_user_preferences_list",
         (PREFERENCE_MEMBER_PATH, "get"): "api_user_v2_user_preferences_retrieve",
     }
+
+
+#: What every operation of this version says about a request it can give no
+#: answer to. Which representations an answer can be given in is settled as
+#: the request enters, before the address it names is read or written, so the
+#: refusal reaches an operation that answers with a body and one that does not
+#: alike.
+UNSATISFIABLE_ACCEPT_DESCRIPTION = (
+    "The `Accept` header of the request names no representation this endpoint can answer in."
+)
+
+
+@skip_unless_lms
+def test_every_operation_publishes_the_refusal_of_an_accept_it_cannot_satisfy(schema):
+    """
+    No operation of this version leaves this refusal unpublished.
+
+    This is asserted over every operation rather than per address, so an
+    operation added later is held to it without this test being changed.
+    """
+    unpublished = {
+        f"{method.upper()} {path}"
+        for path, method, operation in operations(schema)
+        if path in VERSION_TWO_PATHS and "406" not in operation["responses"]
+    }
+    assert unpublished == set()
+    wrongly_described = {
+        f"{method.upper()} {path}": operation["responses"]["406"]["description"]
+        for path, method, operation in operations(schema)
+        if path in VERSION_TWO_PATHS
+        and operation["responses"]["406"]["description"] != UNSATISFIABLE_ACCEPT_DESCRIPTION
+    }
+    assert wrongly_described == {}

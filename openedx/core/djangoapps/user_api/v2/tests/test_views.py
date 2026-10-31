@@ -14,11 +14,12 @@ from django.urls import reverse
 from edx_rest_framework_extensions.testing import assert_error_envelope
 from opaque_keys.edx.keys import CourseKey
 from rest_framework import status
-from rest_framework.test import APITestCase
+from rest_framework.test import APIClient, APITestCase
 
 from common.djangoapps.student.tests.factories import AdminFactory, UserFactory
 from openedx.core.djangoapps.django_comment_common.models import Role
 from openedx.core.djangoapps.oauth_dispatch.jwt import create_jwt_for_user
+from common.djangoapps.student.models import PendingNameChange, UserProfile
 from openedx.core.djangoapps.user_api.models import UserPreference
 from openedx.core.djangoapps.user_api.preferences.api import get_country_time_zones
 from openedx.core.djangoapps.user_api.tests.factories import UserPreferenceFactory
@@ -1765,3 +1766,98 @@ class SelectedPropertyNameTests(UserApiV2TestCase):
             {"username": "bob", "email": "bob@example.com"},
             {"username": "learner-caller", "email": self.learner.email},
         ]
+
+
+@skip_unless_lms
+class UnsatisfiableAcceptTests(UserApiV2TestCase):
+    """
+    What an address answers a request it can give no acceptable answer to.
+
+    Which representations an answer may be given in is settled as the request
+    enters, so the refusal reaches an address that answers with a body and one
+    that answers with none alike. It is published by every operation of this
+    version, and these are the measurements that publication rests on.
+    """
+
+    def addresses(self):
+        """Return a representative request to each kind of address of this version, by method."""
+        return [
+            ("get", reverse("user_v2:user_list"), self.admin),
+            ("get", reverse("user_v2:user_detail", kwargs={"username": "alice"}), self.admin),
+            ("get", reverse("user_v2:user_preference_list"), self.admin),
+            ("get", reverse("user_v2:time_zone_list"), self.learner),
+            ("get", reverse("user_v2:account_list"), self.learner),
+            ("get", reverse("user_v2:account_detail", kwargs={"username": "me"}), self.learner),
+            ("delete", reverse("user_v2:account_profile_image", kwargs={"username": "alice"}), self.alice),
+        ]
+
+    def test_an_accept_header_naming_nothing_the_address_answers_in_is_refused(self):
+        answered = {}
+        for method, url, caller in self.addresses():
+            self.client.logout()
+            self.login(caller)
+            response = getattr(self.client, method)(url, HTTP_ACCEPT="text/csv")
+            answered[f"{method.upper()} {url}"] = response.status_code
+        assert set(answered.values()) == {status.HTTP_406_NOT_ACCEPTABLE}, answered
+
+    def test_the_refusal_comes_back_in_the_body_this_version_answers_with(self):
+        """The refusal is readable even though the caller asked for a representation it is not in."""
+        self.login(self.admin)
+        response = self.client.get(reverse("user_v2:user_list"), HTTP_ACCEPT="text/csv")
+        assert_error_envelope(
+            response, expected_status=status.HTTP_406_NOT_ACCEPTABLE, expected_type_slug="not-acceptable",
+        )
+
+    def test_an_address_that_answers_with_no_body_refuses_it_too(self):
+        """
+        Nothing is read or changed on the way to the refusal.
+
+        Clearing an image answers with no body at all, so the representation
+        asked for could make no difference to what comes back; the refusal is
+        settled before the handler runs, and the stored image is left alone.
+        """
+        UserProfile.objects.filter(user=self.alice).update(profile_image_uploaded_at=datetime.now(UTC))
+        self.login(self.alice)
+        response = self.client.delete(
+            reverse("user_v2:account_profile_image", kwargs={"username": "alice"}),
+            HTTP_ACCEPT="text/csv",
+        )
+        assert response.status_code == status.HTTP_406_NOT_ACCEPTABLE
+        self.alice.profile.refresh_from_db()
+        assert self.alice.profile.has_profile_image is True
+
+    def test_an_accept_header_the_address_can_satisfy_is_answered(self):
+        """The refusal is about what was asked for, not about asking at all."""
+        self.login(self.admin)
+        response = self.client.get(reverse("user_v2:user_list"), HTTP_ACCEPT="application/json")
+        assert response.status_code == status.HTTP_200_OK
+        assert self.usernames_in(response) == ["admin-caller", "alice", "bob", "learner-caller"]
+
+
+@skip_unless_lms
+class SessionWithoutItsTokenTests(UserApiV2TestCase):
+    """
+    What a write answers a session the site cannot tie to a page it served.
+
+    The name change collection records something for the caller, is reached
+    from the site's own pages, and refuses such a session.
+    """
+
+    def test_asking_for_a_name_change_with_a_session_without_its_token_is_refused(self):
+        client = APIClient(enforce_csrf_checks=True)
+        assert client.login(username=self.alice.username, password=PASSWORD)
+        assert_error_envelope(
+            client.post(reverse("user_v2:name_change_list"), {"name": "Alice Example"}, format="json"),
+            expected_status=status.HTTP_403_FORBIDDEN,
+            expected_type_slug="authz",
+        )
+        assert PendingNameChange.objects.filter(user=self.alice).count() == 0
+
+    def test_a_name_change_asked_for_with_the_token_the_session_carries_is_recorded(self):
+        """The refusal is about the missing token, not about the address."""
+        self.login(self.alice)
+        response = self.client.post(
+            reverse("user_v2:name_change_list"), {"name": "Alice Example"}, format="json",
+        )
+        assert response.status_code == status.HTTP_201_CREATED
+        assert PendingNameChange.objects.get(user=self.alice).new_name == "Alice Example"
