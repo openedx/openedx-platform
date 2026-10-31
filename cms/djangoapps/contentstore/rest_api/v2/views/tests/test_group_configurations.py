@@ -903,9 +903,11 @@ class GroupConfigurationsResponseDifferencesTest(ModuleStoreTestCase):
             assert envelope["detail"] == "Invalid page.", page
 
     def test_a_course_the_modulestore_returns_nothing_for(self):
+        """v1 raises on a course the modulestore cannot load; v2 answers 404."""
+        course_key = self.course.id
         with patch.object(MixedModuleStore, "get_course", return_value=None):
-            legacy = self.client.get(legacy_url(self.course.id))
-            new = self.client.get(url(self.course.id))
+            legacy = self.client.get(legacy_url(course_key))
+            new = self.client.get(url(course_key))
         assert legacy.status_code == 500, legacy.content
         assert_refused(new, 404)
 
