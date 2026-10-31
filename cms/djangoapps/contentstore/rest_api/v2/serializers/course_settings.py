@@ -4,6 +4,11 @@ from rest_framework import serializers
 
 MINIMAL_VIEW = "minimal"
 FULL_VIEW = "full"
+VIEW_HELP_TEXT = (
+    "How much to return. 'minimal' returns the course's settings and the site's switches; "
+    "'full' also returns the language list, the courses that may be prerequisites and the "
+    "course's credit requirements."
+)
 
 
 class PrerequisiteCourseSerializer(serializers.Serializer):  # pylint: disable=abstract-method
@@ -68,9 +73,7 @@ class CourseSettingsSerializer(serializers.Serializer):  # pylint: disable=abstr
     )
     content_experiments_enabled = serializers.BooleanField(
         help_text="Whether content experiments are turned on in the course's advanced settings and installed on "
-                  "the site, so experiment group configurations apply to it. Read this instead of the "
-                  "should_show_experiment_groups flag of the course's group configurations listing, which "
-                  "its successor does not return.",
+                  "the site, so experiment group configurations apply to it.",
     )
     course_display_name = serializers.CharField(
         allow_null=True,
@@ -123,9 +126,7 @@ class CourseSettingsSerializer(serializers.Serializer):  # pylint: disable=abstr
     mfe_proctored_exam_settings_url = serializers.CharField(
         allow_blank=True,
         help_text="Path, within the authoring app, of the course's proctored exam settings page, or an empty "
-                  "string when that page is not served by the authoring app. Read this instead of the "
-                  "mfe_proctored_exam_settings_url link of the course's group configurations listing, which "
-                  "its successor does not return.",
+                  "string when that page is not served by the authoring app.",
     )
     platform_name = serializers.CharField(help_text="Name of the site.")
     possible_pre_requisite_courses = PrerequisiteCourseSerializer(
@@ -160,11 +161,7 @@ class CourseSettingsQuerySerializer(serializers.Serializer):  # pylint: disable=
     view = serializers.ChoiceField(
         choices=[MINIMAL_VIEW, FULL_VIEW],
         default=MINIMAL_VIEW,
-        help_text=(
-            "How much to return. 'minimal' returns the course's settings and the site's switches; "
-            "'full' also returns the language list, the courses that may be prerequisites and the "
-            "course's credit requirements."
-        ),
+        help_text=VIEW_HELP_TEXT,
     )
 
     class Meta:

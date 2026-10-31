@@ -14,6 +14,7 @@ from cms.djangoapps.contentstore.rest_api.v2.course_settings_service import get_
 from cms.djangoapps.contentstore.rest_api.v2.serializers.course_settings import (
     FULL_VIEW,
     MINIMAL_VIEW,
+    VIEW_HELP_TEXT,
     CourseSettingsQuerySerializer,
     CourseSettingsSerializer,
 )
@@ -29,7 +30,7 @@ _COURSE_KEY_PARAMETER = OpenApiParameter(
 
 _VIEW_PARAMETER = OpenApiParameter(
     name="view",
-    description=CourseSettingsQuerySerializer().fields["view"].help_text,
+    description=VIEW_HELP_TEXT,
     required=False,
     location=OpenApiParameter.QUERY,
     type=str,
