@@ -204,7 +204,11 @@ class ProfileImageView(
         responses={
             204: OpenApiResponse(description="The account carries no image of its own."),
             400: OpenApiResponse(
-                ErrorResponse, description="The request carries a query parameter this endpoint does not read.",
+                ErrorResponse,
+                description=(
+                    "The request carries a query parameter this endpoint does not read, or the "
+                    "address names more than one account and so names none of them in particular."
+                ),
             ),
             401: RESP_UNAUTHENTICATED,
             403: _RESP_ANOTHER_USERS_IMAGE,

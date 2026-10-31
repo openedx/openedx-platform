@@ -1606,7 +1606,8 @@ def test_clearing_the_profile_image_publishes_that_it_reads_nothing(schema):
     assert operation["responses"]["204"]["description"] == "The account carries no image of its own."
     assert sorted(operation["responses"]) == ["204", "400", "401", "403", "404"]
     assert operation["responses"]["400"]["description"] == (
-        "The request carries a query parameter this endpoint does not read."
+        "The request carries a query parameter this endpoint does not read, or the address names "
+        "more than one account and so names none of them in particular."
     )
 
 
