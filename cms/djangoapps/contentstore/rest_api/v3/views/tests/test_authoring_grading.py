@@ -5,7 +5,6 @@ from contextlib import contextmanager
 from datetime import timedelta
 from functools import cache
 from importlib import import_module
-from unittest import TestCase
 from unittest.mock import patch
 
 import ddt
@@ -95,129 +94,41 @@ def _full(**overrides):
     return body
 
 
-# Whole-policy bodies the grading model accepts, picked by hand. Each must produce
-# the same response bytes, stored policy, events and credit task as the
-# whole-policy update.
-HAND_PICKED_FULL_BODIES = {
-    "authoring_app": _full(),
-    "end_to_end_post": {
-        "graders": [{"type": "Homework", "min_count": 2, "drop_count": 0, "short_label": "HW", "weight": 100}],
-        "grade_cutoffs": {"Pass": 0.6},
-        "grace_period": {"hours": 0, "minutes": 30},
-        "minimum_grade_credit": 0.8,
-        "is_credit_course": False,
-    },
-    "documented_example_with_credit_flag": {
-        "graders": [{"type": "Homework", "min_count": 1, "drop_count": 0, "short_label": "", "weight": 100, "id": 0}],
-        "grade_cutoffs": {"A": 0.75, "B": 0.63, "C": 0.57, "D": 0.5},
-        "grace_period": {"hours": 12, "minutes": 0},
-        "minimum_grade_credit": 0.7,
-        "is_credit_course": True,
-    },
-    "graders_without_id": _full(graders=[{k: v for k, v in g.items() if k != "id"} for g in GRADERS]),
-    "numbers_as_strings": _full(graders=[
-        {**g, "min_count": "1", "drop_count": "0", "weight": str(g["weight"])} for g in GRADERS
-    ]),
-    "grace_period_null": _full(grace_period=None),
-    "minimum_grade_credit_null": _full(minimum_grade_credit=None),
-    "grace_period_with_seconds": _full(grace_period={"hours": 1, "minutes": 2, "seconds": 3}),
-    "grace_period_with_days": _full(grace_period={"days": 1, "hours": 2}),
-    "grace_period_wrapped": _full(grace_period={"grace_period": {"hours": 2}}),
-    "grace_period_empty": _full(grace_period={}),
-    "grace_period_fractional": _full(grace_period={"hours": 1.5}),
-    "displayed_weights_resent": _full(graders=[{**GRADERS[0], "weight": 28}, GRADERS[1], GRADERS[2]]),
-    "stored_policy_resent": _full(graders=SEED_GRADERS_AS_SENT, grade_cutoffs=SEED_CUTOFFS),
-    "unknown_key": _full(foo="bar"),
-    "graders_empty_list": _full(graders=[]),
-    "graders_empty_object": _full(graders={}),
-    "graders_empty_string": _full(graders=""),
-    "grader_type_null": _full(graders=[{**GRADERS[0], "type": None}]),
-    "grader_type_number": _full(graders=[{**GRADERS[0], "type": 123}]),
-    "grader_count_fractional": _full(graders=[{**GRADERS[0], "min_count": 1.5}]),
-    "grader_count_boolean": _full(graders=[{**GRADERS[0], "min_count": True}]),
-    "grader_weight_boolean": _full(graders=[{**GRADERS[0], "weight": True}]),
-    "grader_label_number": _full(graders=[{**GRADERS[0], "short_label": 5}]),
-    "grader_extra_key": _full(graders=[{**GRADERS[0], "extra": 1}]),
-    "cutoffs_null": _full(grade_cutoffs=None),
-    "cutoffs_empty": _full(grade_cutoffs={}),
-    "cutoff_as_string": _full(grade_cutoffs={"A": "0.5"}),
-    "credit_as_string": _full(minimum_grade_credit="0.5"),
-    "credit_as_integer": _full(minimum_grade_credit=1),
-}
+POLICY_FIELDS = ("graders", "grade_cutoffs", "grace_period", "minimum_grade_credit")
 
-# Every position of a whole-policy body was sent each of these values, plus 10 ** 30.
-# WHOLE_POLICY_VALUES lists, per position, the ones the whole-policy update stores
-# and answers 200 for; every other combination fails inside the grading model.
-_SCALARS = (True, False, 0, 1, -1, 0.5)
-_ANY_JSON = (
-    None, *_SCALARS, 1e308, "", "x", "1", "0.5", "inf", "nan", "1" * 30, [], ["a"], [1], {}, {"x": 1},
-)
-GRACE_PERIOD_UNITS = ("hours", "minutes", "seconds", "days", "weeks", "milliseconds", "microseconds")
-WHOLE_POLICY_VALUES = {
-    "graders": ([], {}, ""),
-    "grader.type": _ANY_JSON,
-    "grader.short_label": _ANY_JSON,
-    "grader.id": (*_ANY_JSON, 10 ** 30),
-    "grader.min_count": (*_SCALARS, "1"),
-    "grader.drop_count": (*_SCALARS, "1"),
-    "grader.weight": (*_SCALARS, 1e308, 10 ** 30, "1", "0.5", "1" * 30),
-    "grade_cutoffs": (None, {}, {"x": 1}),
-    "cutoff": (None, *_SCALARS, 1e308, "1", "0.5", "1" * 30),
-    "grace_period": (None, {}),
-    "grace_period.unit": _SCALARS,
-    "minimum_grade_credit": (None, *_SCALARS, 1e308, "", "1", "0.5", "1" * 30),
-    "unknown_field": (*_ANY_JSON, 10 ** 30),
-}
-
-
-def _whole_policy_bodies():
-    """One whole-policy body per position and accepted value in WHOLE_POLICY_VALUES."""
-    bodies = {}
-    for position, values in WHOLE_POLICY_VALUES.items():
-        for value in values:
-            name = f"{position}={value!r}"
-            if position == "graders":
-                bodies[name] = _full(graders=value)
-            elif position.startswith("grader."):
-                field = position.split(".")[1]
-                bodies[name] = _full(graders=[{**GRADERS[0], field: value}, *GRADERS[1:]])
-            elif position == "cutoff":
-                bodies[name] = _full(grade_cutoffs={"A": value, "Pass": 0.45})
-                bodies[f"only_{name}"] = _full(grade_cutoffs={"A": value})
-            elif position == "grace_period.unit":
-                for unit in GRACE_PERIOD_UNITS:
-                    bodies[f"grace_period.{unit}={value!r}"] = _full(grace_period={unit: value})
-            elif position == "unknown_field":
-                bodies[name] = _full(unknown=value)
-            else:
-                bodies[name] = _full(**{position: value})
-    for field in ("min_count", "drop_count", "short_label", "weight", "id"):
-        bodies[f"grader_without_{field}"] = _full(
-            graders=[{key: value for key, value in GRADERS[0].items() if key != field}],
-        )
-    bodies["cutoff_named_with_empty_string"] = _full(grade_cutoffs={"": 0.5})
-    return bodies
-
-
-GENERATED_FULL_BODIES = _whole_policy_bodies()
-FULL_BODIES = {**HAND_PICKED_FULL_BODIES, **GENERATED_FULL_BODIES}
-
-# The whole-policy bodies replayed per mount. Both mounts route to one view, so
-# each generated body is replayed on one of them, alternating; the hand-picked
-# bodies are replayed on both.
-FULL_BODY_CASES = [
-    *((mount, name, body) for mount in MOUNTS for name, body in HAND_PICKED_FULL_BODIES.items()),
-    *((MOUNTS[index % len(MOUNTS)], name, body) for index, (name, body) in enumerate(GENERATED_FULL_BODIES.items())),
+# Whole percentages: a read shows a weight such as 0.29 as 28, so sending that read
+# back stores 0.28 (test_displayed_weights_are_stored_truncated).
+ROUND_TRIP_GRADERS = [
+    {"type": "Homework", "min_count": 3, "drop_count": 1, "short_label": "HW", "weight": 0.25},
+    {"type": "Lab", "min_count": 2, "drop_count": 0, "short_label": "", "weight": 0.15},
+    {"type": "Exam", "min_count": 1, "drop_count": 0, "short_label": None, "weight": 0.6},
 ]
+# The kinds of stored policy a read returns, each built by _UpdateBehaviourMixin.course_with.
+ROUND_TRIP_SHAPES = (
+    "never_configured", "custom", "no_assignment_types", "credit_minimum_unset", "outside_0_to_1",
+    "saved_by_the_authoring_app",
+)
 
-# Bodies that make the grading model raise. Each is refused with a 400 naming the
-# field, before anything is written.
+# Bodies outside the published request shape. Each is refused with a 400 naming the
+# field, before anything is written. A body holding every policy field reaches the
+# grading model's whole-policy update and any other body its per-field updates, so
+# both kinds are listed.
 REJECTED_BODIES = {
     "graders_null": ({"graders": None}, "graders"),
     "graders_not_a_list": ({"graders": 5}, "graders"),
     "graders_a_string": ({"graders": "x"}, "graders"),
+    "graders_an_empty_string": (_full(graders=""), "graders"),
+    "graders_an_empty_object": (_full(graders={}), "graders"),
     "grader_not_an_object": (_full(graders=["Homework"]), "graders"),
     "grader_without_type": ({"graders": [{"min_count": 1, "weight": 100}]}, "graders"),
+    "grader_type_null": (_full(graders=[{**GRADERS[0], "type": None}]), "graders"),
+    "grader_type_a_number": (_full(graders=[{**GRADERS[0], "type": 123}]), "graders"),
+    "partial_grader_type_null": ({"graders": [{**GRADERS[0], "type": None}]}, "graders"),
+    "partial_grader_type_a_number": ({"graders": [{**GRADERS[0], "type": 123}]}, "graders"),
+    "partial_grader_type_a_list": ({"graders": [{**GRADERS[0], "type": ["a"]}]}, "graders"),
+    "partial_grader_type_an_object": ({"graders": [{**GRADERS[0], "type": {}}]}, "graders"),
+    "grader_label_a_number": (_full(graders=[{**GRADERS[0], "short_label": 5}]), "graders"),
+    "partial_grader_label_a_list": ({"graders": [{**GRADERS[0], "short_label": ["HW"]}]}, "graders"),
     "grader_count_not_a_number": ({"graders": [{**GRADERS[0], "min_count": "many"}]}, "graders"),
     "grader_count_fractional_string": (_full(graders=[{**GRADERS[0], "min_count": "1.5"}]), "graders"),
     "grader_count_null": (_full(graders=[{**GRADERS[0], "min_count": None}]), "graders"),
@@ -225,41 +136,45 @@ REJECTED_BODIES = {
     "grader_weight_not_a_number": (_full(graders=[{**GRADERS[0], "weight": "abc"}]), "graders"),
     "grader_weight_null": (_full(graders=[{**GRADERS[0], "weight": None}]), "graders"),
     "grader_weight_infinite": (_full(graders=[{**GRADERS[0], "weight": "inf"}]), "graders"),
+    "cutoffs_null": (_full(grade_cutoffs=None), "grade_cutoffs"),
+    "cutoffs_empty": (_full(grade_cutoffs={}), "grade_cutoffs"),
     "cutoffs_a_string": (_full(grade_cutoffs="x"), "grade_cutoffs"),
     "cutoffs_a_list": (_full(grade_cutoffs=[]), "grade_cutoffs"),
-    "cutoff_not_a_number": ({"grade_cutoffs": {"A": "x"}}, "grade_cutoffs"),
+    "cutoff_null": (_full(grade_cutoffs={"A": None, "Pass": 0.45}), "grade_cutoffs"),
+    "cutoff_a_numeric_string": (_full(grade_cutoffs={"A": "0.5"}), "grade_cutoffs"),
+    "cutoff_a_boolean": (_full(grade_cutoffs={"A": True}), "grade_cutoffs"),
     "cutoff_an_object": (_full(grade_cutoffs={"A": {"x": 1}}), "grade_cutoffs"),
-    "grace_period_unknown_unit": (_full(grace_period={"foo": 1}), "grace_period"),
-    "grace_period_string_value": (_full(grace_period={"hours": "1"}), "grace_period"),
-    "grace_period_a_string": (_full(grace_period="x"), "grace_period"),
-    "grace_period_a_list": (_full(grace_period=[]), "grace_period"),
-    "grace_period_too_long": (_full(grace_period={"days": 10 ** 10}), "grace_period"),
-    "credit_not_a_number": (_full(minimum_grade_credit="x"), "minimum_grade_credit"),
-    "credit_a_list": (_full(minimum_grade_credit=[1]), "minimum_grade_credit"),
-    "body_a_list": ([1, 2], "non_field_errors"),
-    # A body without every policy field is held to the documented shape: a grader
-    # type is a string, and the cutoffs are at least one JSON number.
     "partial_cutoffs_null": ({"grade_cutoffs": None}, "grade_cutoffs"),
     "partial_cutoffs_empty": ({"grade_cutoffs": {}}, "grade_cutoffs"),
     "partial_cutoff_null": ({"grade_cutoffs": {"A": None, "Pass": 0.5}}, "grade_cutoffs"),
     "partial_only_cutoff_null": ({"grade_cutoffs": {"A": None}}, "grade_cutoffs"),
+    "partial_cutoff_not_a_number": ({"grade_cutoffs": {"A": "x"}}, "grade_cutoffs"),
     "partial_cutoff_a_numeric_string": ({"grade_cutoffs": {"A": "0.5"}}, "grade_cutoffs"),
     "partial_cutoff_a_boolean": ({"grade_cutoffs": {"A": True}}, "grade_cutoffs"),
     "partial_graders_and_cutoffs_null": ({"graders": GRADERS, "grade_cutoffs": None}, "grade_cutoffs"),
     "partial_three_fields_cutoffs_empty": (
         {"graders": GRADERS, "grade_cutoffs": {}, "grace_period": {"hours": 1}}, "grade_cutoffs",
     ),
-    "partial_grader_type_null": ({"graders": [{**GRADERS[0], "type": None}]}, "graders"),
-    "partial_grader_type_a_number": ({"graders": [{**GRADERS[0], "type": 123}]}, "graders"),
-    "partial_grader_type_a_list": ({"graders": [{**GRADERS[0], "type": ["a"]}]}, "graders"),
-    "partial_grader_type_an_object": ({"graders": [{**GRADERS[0], "type": {}}]}, "graders"),
+    "grace_period_unknown_unit": (_full(grace_period={"foo": 1}), "grace_period"),
+    "grace_period_string_value": (_full(grace_period={"hours": "1"}), "grace_period"),
+    "grace_period_a_string": (_full(grace_period="x"), "grace_period"),
+    "grace_period_a_list": (_full(grace_period=[]), "grace_period"),
+    "grace_period_too_long": (_full(grace_period={"days": 10 ** 10}), "grace_period"),
+    "credit_empty_string": (_full(minimum_grade_credit=""), "minimum_grade_credit"),
+    "credit_a_numeric_string": (_full(minimum_grade_credit="0.7"), "minimum_grade_credit"),
+    "credit_a_boolean": (_full(minimum_grade_credit=True), "minimum_grade_credit"),
+    "credit_not_a_number": (_full(minimum_grade_credit="x"), "minimum_grade_credit"),
+    "credit_a_list": (_full(minimum_grade_credit=[1]), "minimum_grade_credit"),
     "partial_credit_empty_string": ({"minimum_grade_credit": ""}, "minimum_grade_credit"),
+    "partial_credit_a_numeric_string": ({"minimum_grade_credit": "0.7"}, "minimum_grade_credit"),
+    "partial_credit_a_boolean": ({"minimum_grade_credit": True}, "minimum_grade_credit"),
+    "body_a_list": ([1, 2], "non_field_errors"),
 }
 
 # Bodies holding an integer wider than the 8 bytes the modulestore can store, at a
-# position where the grading model stores it. The whole-policy update fails part-way
-# through its write on these and leaves the modulestore unable to read the course for
-# the rest of the process, so they are not replayed against it here.
+# position where the grading model stores it or the integer it converts it to. Storing
+# one fails part-way through the write and leaves the modulestore unable to read the
+# course for the rest of the process.
 TOO_LARGE_BODIES = {
     "grader_count_huge": (_full(graders=[{**GRADERS[0], "min_count": 10 ** 30}]), "graders"),
     "grader_count_huge_float": (_full(graders=[{**GRADERS[0], "min_count": 1e308}]), "graders"),
@@ -267,9 +182,6 @@ TOO_LARGE_BODIES = {
     "grader_drop_count_huge": (_full(graders=[{**GRADERS[0], "drop_count": 10 ** 30}]), "graders"),
     "grader_drop_count_huge_float": (_full(graders=[{**GRADERS[0], "drop_count": 1e308}]), "graders"),
     "grader_drop_count_huge_string": (_full(graders=[{**GRADERS[0], "drop_count": "1" * 30}]), "graders"),
-    "grader_type_huge": (_full(graders=[{**GRADERS[0], "type": 10 ** 30}]), "graders"),
-    "grader_label_huge": (_full(graders=[{**GRADERS[0], "short_label": 10 ** 30}]), "graders"),
-    "grader_label_list_holding_huge": (_full(graders=[{**GRADERS[0], "short_label": [10 ** 30]}]), "graders"),
     "cutoff_huge": (_full(grade_cutoffs={"A": 10 ** 30, "Pass": 0.45}), "grade_cutoffs"),
     "credit_huge": (_full(minimum_grade_credit=10 ** 30), "minimum_grade_credit"),
     "partial_grader_count_huge": ({"graders": [{**GRADERS[0], "min_count": 10 ** 30}]}, "graders"),
@@ -332,6 +244,14 @@ def stored_policy(course_key):
         "graceperiod": course.graceperiod,
         "minimum_grade_credit": course.minimum_grade_credit,
     }
+
+
+def _as_read_back(policy):
+    """
+    ``policy`` with a missing short label stored as the empty string a read shows
+    for it. The grading model labels an assignment type by its name in both cases.
+    """
+    return {**policy, "raw_grader": [{"short_label": "", **grader} for grader in policy["raw_grader"]]}
 
 
 def _as_json_schema(node):
@@ -745,7 +665,8 @@ class GradingReadTest(ModuleStoreTestCase):
         """
         Including policies stored with each value the schema marks nullable, and a
         course never configured. The read publishes both shapes; a full response
-        also matches the default one.
+        also matches the default one. This update refuses the nullable values, so
+        they are stored through the grading model, as the v1 update still stores them.
         """
         nullable_values = _full(
             graders=[{**GRADERS[0], "type": None, "short_label": None}],
@@ -769,8 +690,7 @@ class GradingReadTest(ModuleStoreTestCase):
         )
         for body, expected in cases:
             course = seed_course(self.staff)
-            with patch(CREDIT_TASK):
-                assert _patch(self.client, grading_url(mount, course.id), body).status_code == 200
+            CourseGradingModel.update_from_json(course.id, body, self.staff)
             default = self.client.get(grading_url(mount, course.id)).json()
             full = self.client.get(grading_url(mount, course.id), {"view": "full"}).json()
             assert default == expected
@@ -915,12 +835,8 @@ class GradingReadSideEffectsAuthzTest(CourseAuthoringAuthzTestMixin, _ReadIsSide
 
 class _UpdateBehaviourMixin:
     """
-    The update, checked against the v0 update as the reference: v0 hands any
-    body to the grading model's whole-policy update as sent, so a whole-policy
-    body must behave identically here.
-
-    Each concrete class runs on one side of the flag that decides whether a
-    grading change with no new weights or counts is announced.
+    Updates the update accepts. Each concrete class runs on one side of the flag
+    that decides whether a grading change with no new weights or counts is announced.
     """
 
     recompute_only = None
@@ -930,9 +846,6 @@ class _UpdateBehaviourMixin:
         self.enterContext(override_waffle_flag(MATERIAL_RECOMPUTE_ONLY_FLAG, active=self.recompute_only))
         self.staff = UserFactory(is_staff=True)
         self.client = _client(self.staff)
-
-    def _twin_courses(self):
-        return seed_course(self.staff), seed_course(self.staff)
 
     def _apply(self, request, course, body):
         """Send ``body`` through ``request``; return status, bytes, policy before and after, and effects."""
@@ -944,43 +857,86 @@ class _UpdateBehaviourMixin:
         content = response.content.replace(str(course.id).encode(), b"<course>")
         return response.status_code, content, before, stored_policy(course.id), effects
 
-    def _v0(self, course, body):
-        return _post(self.client, v0_url(course.id), body)
-
     def _v3(self, mount):
+        """Return a request sending a body to the grading resource of a course on ``mount``."""
         return lambda course, body: _patch(self.client, grading_url(mount, course.id), body)
 
-    def test_whole_policy_bodies_behave_as_the_v0_update(self):
-        for mount, name, body in FULL_BODY_CASES:
-            with self.subTest(mount=mount, body=name):
-                reference_course, course = self._twin_courses()
-                expected = self._apply(self._v0, reference_course, body)
-                actual = self._apply(self._v3(mount), course, body)
-                assert expected[0] == 200, expected[1]
-                assert actual[1] == expected[1]           # response bytes
-                assert actual[3] == expected[3]           # stored policy
-                assert actual[4] == expected[4]           # signals, events, credit task
-                assert_matches_published_schema(json.loads(actual[1]), DEFAULT_SHAPE)
+    def course_with(self, shape):
+        """Create a course holding the kind of policy ``shape`` names (see ROUND_TRIP_SHAPES)."""
+        if shape == "never_configured":
+            return CourseFactory.create()
+        course = seed_course(self.staff)
+        if shape == "saved_by_the_authoring_app":
+            with patch(CREDIT_TASK):
+                response = _patch(self.client, grading_url(CONFORMING, course.id), _full())
+            assert response.status_code == 200, response.content
+            return course
+        course.raw_grader = [] if shape == "no_assignment_types" else [dict(grader) for grader in ROUND_TRIP_GRADERS]
+        course.graceperiod = timedelta(days=1, hours=2, minutes=5, seconds=30)
+        course.minimum_grade_credit = 0.65
+        if shape == "outside_0_to_1":
+            # Course import and the v1 update store any number here.
+            course.grade_cutoffs = {"A": 90.0, "Pass": 50.0}
+            course.minimum_grade_credit = 75.0
+        modulestore().update_item(course, self.staff.id)
+        if shape == "credit_minimum_unset":
+            # The v1 update stores an empty credit minimum as sent, and it reads as null.
+            CourseGradingModel.update_minimum_grade_credit_from_json(course.id, "", self.staff)
+        return course
+
+    def test_a_read_sent_back_is_accepted_and_changes_nothing(self):
+        """
+        Whatever a read returns, default or full, the update accepts back: the response
+        is the read's policy, and the stored policy and the next read are unchanged.
+
+        The body holds every policy field, so the grading model announces a change, as
+        it does for any such body, unless only changes to weights or counts are
+        announced or there are no assignment types to compare; and the credit
+        requirements are refreshed, as for any body holding the credit minimum.
+        """
+        for shape in ROUND_TRIP_SHAPES:
+            announced = 0 if self.recompute_only or shape == "no_assignment_types" else 1
+            for mount in MOUNTS:
+                for params in ({}, {"view": "full"}):
+                    with self.subTest(shape=shape, mount=mount, **params):
+                        course = self.course_with(shape)
+                        url = grading_url(mount, course.id)
+                        read = self.client.get(url, params).json()
+                        if shape == "credit_minimum_unset":
+                            assert read["minimum_grade_credit"] is None
+                        if shape == "outside_0_to_1":
+                            assert (read["grade_cutoffs"], read["minimum_grade_credit"]) == (
+                                {"A": 90.0, "Pass": 50.0}, 75.0,
+                            )
+                        status, content, before, after, effects = self._apply(self._v3(mount), course, read)
+                        assert status == 200, content
+                        assert json.loads(content) == {field: read[field] for field in POLICY_FIELDS}
+                        assert _as_read_back(after) == _as_read_back(before)
+                        assert self.client.get(url, params).json() == read
+                        assert effects == {
+                            "signals": announced, "events": announced, "credit_tasks": [("<course>",)],
+                        }
 
     def test_resending_the_stored_policy_is_announced_only_without_recompute_only(self):
         """Pins which side of the flag this class runs on."""
+        body = _full(graders=SEED_GRADERS_AS_SENT, grade_cutoffs=SEED_CUTOFFS)
         for mount in MOUNTS:
             with self.subTest(mount=mount):
-                _, course = self._twin_courses()
-                effects = self._apply(self._v3(mount), course, FULL_BODIES["stored_policy_resent"])[4]
+                effects = self._apply(self._v3(mount), seed_course(self.staff), body)[4]
                 expected = 0 if self.recompute_only else 1
                 assert (effects["signals"], effects["events"]) == (expected, expected)
 
     def test_displayed_weights_are_stored_truncated(self):
         """A weight of 0.29 is shown as 28, so sending back what was shown stores 0.28."""
-        _, course = self._twin_courses()
-        body = FULL_BODIES["displayed_weights_resent"]
-        status, content, _, after, _ = self._apply(self._v3(CONFORMING), course, body)
+        body = _full()
+        assert body["graders"][0]["weight"] == 28
+        status, content, _, after, _ = self._apply(self._v3(CONFORMING), seed_course(self.staff), body)
         assert status == 200
         assert json.loads(content)["graders"][0]["weight"] == 28
         assert after["raw_grader"][0]["weight"] == 0.28
 
     def test_partial_bodies_change_only_the_fields_sent(self):
+        """Each partial body changes the fields it holds, announces only real changes, and returns the read."""
         seeded_weights = [grader["weight"] for grader in SEED_GRADERS]
         cases = {
             # name: (body, fields that change, grading signals)
@@ -1004,10 +960,7 @@ class _UpdateBehaviourMixin:
         for mount in MOUNTS:
             for name, (body, changed, signals) in cases.items():
                 with self.subTest(mount=mount, body=name):
-                    reference_course, course = self._twin_courses()
-                    if set(body) != {"graders", "grade_cutoffs", "grace_period", "minimum_grade_credit"}:
-                        # The whole-policy update cannot take a partial body.
-                        assert self._apply(self._v0, reference_course, body)[0] == 500
+                    course = seed_course(self.staff)
                     status, content, before, after, effects = self._apply(self._v3(mount), course, body)
                     assert status == 200, content
                     assert {field for field in before if before[field] != after[field]} == changed
@@ -1043,68 +996,12 @@ class _UpdateBehaviourMixin:
                     assert stored_policy(course.id)["raw_grader"] == drifting
 
     def test_partial_graders_keep_the_stored_cutoffs_grace_period_and_credit_minimum(self):
-        _, course = self._twin_courses()
-        _, _, before, after, _ = self._apply(self._v3(LEGACY), course, {"graders": GRADERS})
+        """Graders alone leave every other stored field as it was."""
+        _, _, before, after, _ = self._apply(self._v3(LEGACY), seed_course(self.staff), {"graders": GRADERS})
         assert after["grade_cutoffs"] == SEED_CUTOFFS
         assert after["graceperiod"] == SEED_GRACE
         assert after["minimum_grade_credit"] == SEED_CREDIT
         assert after["raw_grader"] != before["raw_grader"]
-
-    def test_bodies_the_model_cannot_store_are_refused_before_anything_is_written(self):
-        for mount in MOUNTS:
-            for name, (body, field) in REJECTED_BODIES.items():
-                with self.subTest(mount=mount, body=name):
-                    reference_course, course = self._twin_courses()
-                    assert self._apply(self._v0, reference_course, body)[0] == 500
-                    with capture_grading_effects() as effects:
-                        response = _patch(self.client, grading_url(mount, course.id), body)
-                    envelope = assert_error_envelope(response, expected_status=400, expected_type_slug="validation")
-                    assert list(envelope["errors"]) == [field]
-                    assert effects == {"signals": 0, "events": 0, "credit_tasks": []}
-                    _, fresh = self._twin_courses()
-                    assert stored_policy(course.id) == stored_policy(fresh.id)
-                    assert modulestore().get_course(course.id).lowest_passing_grade == min(SEED_CUTOFFS.values())
-
-    def test_numbers_too_large_to_store_are_refused_before_anything_is_written(self):
-        for mount in MOUNTS:
-            for name, (body, field) in TOO_LARGE_BODIES.items():
-                with self.subTest(mount=mount, body=name):
-                    course = seed_course(self.staff)
-                    with capture_grading_effects() as effects:
-                        response = _patch(self.client, grading_url(mount, course.id), body)
-                    envelope = assert_error_envelope(response, expected_status=400, expected_type_slug="validation")
-                    assert list(envelope["errors"]) == [field]
-                    assert effects == {"signals": 0, "events": 0, "credit_tasks": []}
-                    assert stored_policy(course.id) == stored_policy(seed_course(self.staff).id)
-
-    def test_a_form_encoded_body_is_refused(self):
-        _, course = self._twin_courses()
-        response = self.client.patch(
-            grading_url(CONFORMING, course.id),
-            data="graders[0]type=Homework&grade_cutoffs=x",
-            content_type="application/x-www-form-urlencoded",
-        )
-        envelope = assert_error_envelope(response, expected_status=400, expected_type_slug="validation")
-        assert list(envelope["errors"]) == ["non_field_errors"]
-        _, fresh = self._twin_courses()
-        assert stored_policy(course.id) == stored_policy(fresh.id)
-
-
-class WholePolicyBodyCasesTest(TestCase):
-    """Every whole-policy body is replayed on at least one mount."""
-
-    def test_hand_picked_bodies_run_on_both_mounts_and_generated_bodies_on_one(self):
-        mounts_by_body = {}
-        for mount, name, _ in FULL_BODY_CASES:
-            mounts_by_body.setdefault(name, []).append(mount)
-        assert len(FULL_BODIES) == len(HAND_PICKED_FULL_BODIES) + len(GENERATED_FULL_BODIES)
-        assert set(mounts_by_body) == set(FULL_BODIES)
-        for name in HAND_PICKED_FULL_BODIES:
-            assert sorted(mounts_by_body[name]) == sorted(MOUNTS), name
-        for name in GENERATED_FULL_BODIES:
-            assert len(mounts_by_body[name]) == 1, name
-        per_mount = [sum(mounts_by_body[name] == [mount] for name in GENERATED_FULL_BODIES) for mount in MOUNTS]
-        assert max(per_mount) - min(per_mount) <= 1, per_mount
 
 
 class GradingUpdateTest(_UpdateBehaviourMixin, ModuleStoreTestCase):
@@ -1117,6 +1014,84 @@ class GradingUpdateRecomputeOnlyTest(_UpdateBehaviourMixin, ModuleStoreTestCase)
     """Updates when only changes to weights or counts are announced."""
 
     recompute_only = True
+
+
+class GradingUpdateBodyTest(ModuleStoreTestCase):
+    """
+    How the update reads a body: spellings it stores alike, and bodies it refuses
+    before the grading model is called. Neither depends on the flag the update
+    classes vary, which decides only what is announced.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.staff = UserFactory(is_staff=True)
+        self.client = _client(self.staff)
+
+    def _assert_refused_before_anything_is_written(self, bodies):
+        """Send each of ``bodies`` on both mounts; assert a 400 naming its field, and nothing stored or announced."""
+        for mount in MOUNTS:
+            course = seed_course(self.staff)
+            seeded = stored_policy(course.id)
+            for name, (body, field) in bodies.items():
+                with self.subTest(mount=mount, body=name):
+                    with capture_grading_effects() as effects:
+                        response = _patch(self.client, grading_url(mount, course.id), body)
+                    envelope = assert_error_envelope(response, expected_status=400, expected_type_slug="validation")
+                    assert list(envelope["errors"]) == [field]
+                    assert effects == {"signals": 0, "events": 0, "credit_tasks": []}
+                    assert stored_policy(course.id) == seeded
+                    assert modulestore().get_course(course.id).lowest_passing_grade == min(SEED_CUTOFFS.values())
+
+    def test_equivalent_spellings_store_the_same_policy(self):
+        """Each body is stored, and answered, exactly as the plainer body it is paired with."""
+        as_strings = [{**grader, "min_count": str(grader["min_count"]), "drop_count": str(grader["drop_count"]),
+                       "weight": str(grader["weight"])} for grader in GRADERS]
+        pairs = {
+            # name: (body, the body it must store alike)
+            "grader_ids_left_out": (_full(graders=[{k: v for k, v in g.items() if k != "id"} for g in GRADERS]),
+                                    _full()),
+            "grader_ids_null": (_full(graders=[{**grader, "id": None} for grader in GRADERS]), _full()),
+            "counts_and_weights_as_strings": (_full(graders=as_strings), _full()),
+            "unknown_keys": (_full(graders=[{**GRADERS[0], "extra": 1}, *GRADERS[1:]], unknown="x"), _full()),
+            "grace_period_wrapped": (_full(grace_period={"grace_period": {"hours": 3, "minutes": 15}}), _full()),
+            "grace_period_in_minutes": (_full(grace_period={"minutes": 195}), _full()),
+            "grace_period_in_fractional_hours": (_full(grace_period={"hours": 3.25}), _full()),
+            "credit_minimum_as_an_integer": (_full(minimum_grade_credit=1), _full(minimum_grade_credit=1.0)),
+            "partial_grace_period_wrapped": ({"grace_period": {"grace_period": {"hours": 2}}},
+                                             {"grace_period": {"hours": 2}}),
+        }
+        for name, (body, plain) in pairs.items():
+            with self.subTest(body=name):
+                stored = []
+                for sent in (body, plain):
+                    course = seed_course(self.staff)
+                    with patch(CREDIT_TASK):
+                        response = _patch(self.client, grading_url(CONFORMING, course.id), sent)
+                    assert response.status_code == 200, response.content
+                    stored.append((response.json(), stored_policy(course.id)))
+                assert stored[0] == stored[1]
+
+    def test_bodies_outside_the_published_shape_are_refused_before_anything_is_written(self):
+        """Wrong types, nulls where none is allowed, and empty cutoffs are refused, whole or partial."""
+        self._assert_refused_before_anything_is_written(REJECTED_BODIES)
+
+    def test_numbers_too_large_to_store_are_refused_before_anything_is_written(self):
+        """Integers the modulestore cannot store are refused rather than half-written."""
+        self._assert_refused_before_anything_is_written(TOO_LARGE_BODIES)
+
+    def test_a_form_encoded_body_is_refused(self):
+        """Only a JSON object is a grading policy update."""
+        course = seed_course(self.staff)
+        seeded = stored_policy(course.id)
+        response = self.client.patch(
+            grading_url(CONFORMING, course.id),
+            data="graders[0]type=Homework&grade_cutoffs=x",
+            content_type="application/x-www-form-urlencoded",
+        )
+        envelope = assert_error_envelope(response, expected_status=400, expected_type_slug="validation")
+        assert list(envelope["errors"]) == ["non_field_errors"]
+        assert stored_policy(course.id) == seeded
 
 
 # ---------------------------------------------------------------------------
