@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 import ddt
 import pytest
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.test import SimpleTestCase, TestCase
 from django.test.utils import override_settings
 from django.urls import Resolver404, resolve, reverse
@@ -59,6 +59,8 @@ from xmodule.modulestore.django import modulestore
 from xmodule.modulestore.mixed import MixedModuleStore
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase, SharedModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory, LibraryFactory
+
+User = get_user_model()
 
 URL_NAME = "authoring_v2:course_rerun_defaults"
 LEGACY_URL_NAME = "cms.djangoapps.contentstore:v1:course_rerun"
@@ -578,7 +580,19 @@ class RerunDefaultsParityAuthzTest(_ParityMixin, CourseAuthoringAuthzTestMixin, 
 
 # What a read may write on a database that has never served a role or
 # permission lookup: nothing, or the permission library's policy version row.
-FIRST_READ_EFFECTS = (([], []), (FIRST_LOOKUP_WRITES, FIRST_LOOKUP_SIGNALS))
+FIRST_READ_EFFECTS: tuple[tuple[list[tuple[str, str]], list[tuple[str, str]]], ...] = (
+    ([], []),
+    (FIRST_LOOKUP_WRITES, FIRST_LOOKUP_SIGNALS),
+)
+
+
+def fresh_client(user):
+    """
+    Return a client authenticated as a new instance of ``user``. Role lookups
+    are cached on the user instance, so reusing one instance across reads
+    would let a later read skip the lookup an earlier read made.
+    """
+    return api_client(User.objects.get(pk=user.pk))
 
 
 class _ReadsAreSideEffectFreeMixin:
@@ -598,8 +612,9 @@ class _ReadsAreSideEffectFreeMixin:
     def _read_on_a_fresh_database(self, address, method="get"):
         """Record the effects of one read made after the policy version row is removed."""
         PolicyCacheControl.objects.all().delete()
+        client = fresh_client(self.reader)
         with record_effects(self) as effects:
-            response = getattr(api_client(self.reader), method)(address)
+            response = getattr(client, method)(address)
         assert response.status_code == 200, response.content
         return effects
 
@@ -615,8 +630,9 @@ class _ReadsAreSideEffectFreeMixin:
             first = self._read_on_a_fresh_database(url(self.course.id), method)
             assert (first["sql_writes"], first["signals"]) == (legacy["sql_writes"], legacy["signals"]), method
             self.assert_nothing_else(first, method)
+            client = fresh_client(self.reader)
             with record_effects(self) as again:
-                response = getattr(api_client(self.reader), method)(url(self.course.id))
+                response = getattr(client, method)(url(self.course.id))
             assert response.status_code == 200, response.content
             assert again["sql_writes"] == [], method
             assert again["signals"] == [], method

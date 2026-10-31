@@ -8,7 +8,7 @@ from unittest.mock import patch
 import ddt
 import pytest
 from django.conf import settings
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.test import SimpleTestCase, TestCase
 from django.test.utils import override_settings
 from django.urls import Resolver404, resolve, reverse
@@ -76,6 +76,8 @@ from xmodule.modulestore.django import modulestore
 from xmodule.modulestore.mixed import MixedModuleStore
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase, SharedModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory, LibraryFactory
+
+User = get_user_model()
 
 URL_NAME = "authoring_v2:course_settings"
 LEGACY_URL_NAME = "cms.djangoapps.contentstore:v1:course_settings"
@@ -872,8 +874,20 @@ class SettingsParityCreditOffAuthzTest(
 
 # What a read may write on a database that has never served a role or
 # permission lookup: nothing, or the permission library's policy version row.
-FIRST_READ_EFFECTS = (([], []), (FIRST_LOOKUP_WRITES, FIRST_LOOKUP_SIGNALS))
+FIRST_READ_EFFECTS: tuple[tuple[list[tuple[str, str]], list[tuple[str, str]]], ...] = (
+    ([], []),
+    (FIRST_LOOKUP_WRITES, FIRST_LOOKUP_SIGNALS),
+)
 READS = [("get", {}), ("get", FULL), ("head", {}), ("head", FULL)]
+
+
+def fresh_client(user):
+    """
+    Return a client authenticated as a new instance of ``user``. Role lookups
+    are cached on the user instance, so reusing one instance across reads
+    would let a later read skip the lookup an earlier read made.
+    """
+    return api_client(User.objects.get(pk=user.pk))
 
 
 class _ReadsAreSideEffectFreeMixin:
@@ -952,24 +966,31 @@ class _ReadsAreSideEffectFreeMixin:
                 checked = [call.args[2] for call in row_check.call_args_list]
                 assert checked == ([self.rerun.id] if checks_rows else []), (name, address)
 
-    def _read_on_a_fresh_database(self, client, address, method, params):
+    def _read_on_a_fresh_database(self, reader, address, method, params):
         """Record the effects of one read made after the policy version row is removed."""
         PolicyCacheControl.objects.all().delete()
+        client = fresh_client(reader)
         with record_effects(self) as effects:
             response = getattr(client, method)(address, params)
         assert response.status_code == 200, response.content
         return effects
 
     def test_reads_have_no_side_effects(self):
+        """
+        Each read writes and sends exactly what the v1 read does on a database
+        that has never served a lookup, and nothing at all on one that has.
+        Every read is made by a new instance of the reader, so no role lookup
+        cached on the instance of an earlier read hides the lookup this one makes.
+        """
         for name, reader in self.readers().items():
-            client = api_client(reader)
-            legacy = self._read_on_a_fresh_database(client, legacy_url(self.course.id), "get", {})
+            legacy = self._read_on_a_fresh_database(reader, legacy_url(self.course.id), "get", {})
             first_effects = (legacy["sql_writes"], legacy["signals"])
             assert first_effects in FIRST_READ_EFFECTS, name
             for method, params in READS:
                 read = (name, method, params)
-                first = self._read_on_a_fresh_database(client, url(self.course.id), method, params)
+                first = self._read_on_a_fresh_database(reader, url(self.course.id), method, params)
                 assert (first["sql_writes"], first["signals"]) == first_effects, read
+                client = fresh_client(reader)
                 with record_effects(self) as again:
                     response = getattr(client, method)(url(self.course.id), params)
                 assert response.status_code == 200, (read, response.content)
