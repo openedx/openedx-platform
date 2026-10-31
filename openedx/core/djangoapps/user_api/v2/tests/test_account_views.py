@@ -3066,3 +3066,46 @@ class RecoveryAddressUnlimitedTests(AccountApiV2TestCase):
             )
             answered.append(response.status_code)
         assert answered == [status.HTTP_200_OK] * 3
+
+
+@skip_unless_lms
+class EmailSearchAddressDescriptionTests(AccountApiV2TestCase):
+    """What OPTIONS answers about the body a search is asked for in."""
+
+    def setUp(self):
+        super().setUp()
+        self.url = reverse("user_v2:email_search_list")
+
+    def test_the_address_names_the_body_a_search_is_sent_in(self):
+        """
+        The body the answer describes is the one the address reads, not the one it returns.
+
+        A search is asked for by sending the addresses to look for, and is
+        answered with an account per address found. Describing the answer here
+        would have a caller build its request out of the shape it is going to
+        receive, which this address does not read.
+        """
+        self.login(self.staff)
+        answer = self.client.options(self.url)
+        assert answer.status_code == status.HTTP_200_OK
+        assert sorted(answer.json()["actions"]["POST"]) == ["emails"]
+
+    def test_every_name_the_described_body_carries_is_one_the_search_needs(self):
+        """Leaving any one of the described names out is refused, so the description is the body."""
+        self.login(self.staff)
+        described = self.client.options(self.url).json()["actions"]["POST"]
+        assert described
+        for omitted in described:
+            body = {name: ["owner-caller@example.com"] for name in described if name != omitted}
+            response = self.client.post(self.url, body, format="json")
+            assert response.status_code == status.HTTP_400_BAD_REQUEST, omitted
+
+    def test_a_search_built_from_the_described_body_is_answered(self):
+        """The description is taken at its word: what it names is a body the address reads."""
+        self.login(self.staff)
+        described = self.client.options(self.url).json()["actions"]["POST"]
+        response = self.client.post(
+            self.url, {name: ["owner-caller@example.com"] for name in described}, format="json",
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert [row["username"] for row in response.data["results"]] == ["owner-caller"]

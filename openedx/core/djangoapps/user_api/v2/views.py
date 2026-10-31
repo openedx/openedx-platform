@@ -199,10 +199,12 @@ class AddressMetadata(SimpleMetadata):
     declared on the view, which belong to the view as a whole rather than to
     the address being asked about: an address that reads one media type is
     otherwise described as reading every media type the platform reads
-    anywhere, and a method whose handler reads no body is described as taking
-    the one the view's serializer carries. A caller that negotiates from this
-    description sends what it was told to send, so each half of it is answered
-    from the address and the method being described.
+    anywhere, a method whose handler reads no body is described as taking the
+    one the view's serializer carries, and a method whose body differs from
+    what the view answers with is described as taking the answer. A caller
+    that negotiates from this description sends what it was told to send, so
+    each part of it is answered from the address and the method being
+    described.
     """
 
     def determine_metadata(self, request, view):
@@ -216,6 +218,9 @@ class AddressMetadata(SimpleMetadata):
         described = super().determine_actions(request, view)
         served = getattr(view, "action_map", None) or {}
         bodiless = set(getattr(view, "bodiless_actions", ()))
+        taken = getattr(view, "request_serializer_class", None)
+        if taken is not None:
+            described = {method: self.get_serializer_info(taken()) for method in described}
         return {
             method: fields for method, fields in described.items()
             if served.get(method.lower()) not in bodiless
@@ -1404,7 +1409,12 @@ class EmailSearchViewSet(
     # table the other collections of this version narrow.
     scoping_policy = FullScopePolicy()
     parser_classes = (JSONParser,)
+    metadata_class = AddressMetadata
     serializer_class = EmailSearchResultSerializer
+    #: A search is asked for by sending the addresses to look for and is
+    #: answered with an account per address found, so the body it takes is not
+    #: the shape it answers with.
+    request_serializer_class = EmailSearchSerializer
     pagination_class = UserApiPagination
 
     def get_serializer(self, *args, **kwargs):
