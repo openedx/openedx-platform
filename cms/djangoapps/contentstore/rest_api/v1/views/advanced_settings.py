@@ -175,9 +175,11 @@ class CourseAdvancedSettingsViewSet(StandardizedErrorMixin, viewsets.ViewSet):
         description=(
             "Sets the value of each setting named in the body. Every value is validated before any is "
             "stored: when one is refused nothing is changed, and the error's errors member maps the name "
-            f"of each refused setting to the message '{INVALID_SETTING_MESSAGE}'. Settings that authors do "
-            "not edit are ignored, and so are settings the course does not have. Returns the settings "
-            "course authors edit in Studio, as stored."
+            "of each refused setting to a list of messages. A value that breaks one of the course's rules, "
+            "such as the team size limit or a proctoring rule, is reported with that rule's message. A "
+            f"value that cannot be converted to the setting's type is reported as '{INVALID_SETTING_MESSAGE}'. "
+            "Settings that authors do not edit are ignored, and so are settings the course does not have. "
+            "Returns the settings course authors edit in Studio, as stored."
         ),
         parameters=[_COURSE_KEY_PARAMETER],
         request={"application/json": CourseAdvancedSettingsUpdateSerializer},
