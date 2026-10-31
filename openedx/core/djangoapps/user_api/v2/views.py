@@ -1857,6 +1857,9 @@ _ACCOUNT_PREFERENCE_KEY_PATH_PARAM = path_param(
 #: against an account other than their own.
 STAFF_READABLE_PREFERENCE_ACTIONS = ("retrieve_all", "retrieve")
 
+#: The action that changes the whole preference document of one account.
+DOCUMENT_CHANGE_ACTION = "partial_update_all"
+
 #: The action recorded for a request that asks what an address answers rather
 #: than for what it holds. Such a request is answered to whoever may read the
 #: address; the description of a write it carries is built behind a second
@@ -1942,6 +1945,8 @@ class AccountPreferenceViewSet(
     authentication_classes = (JwtAuthentication, SessionAuthenticationAllowInactiveUser)
     permission_classes = _PREFERENCE_WRITE_PERMISSIONS
     serializer_class = AccountPreferenceSerializer
+    #: Describes each address by the body and the media types it reads.
+    metadata_class = AddressMetadata
 
     #: Action being served, which the parsers follow. It is declared here
     #: because it is recorded while the request is being built, which is
@@ -1983,10 +1988,24 @@ class AccountPreferenceViewSet(
         return super().initialize_request(request, *args, **kwargs)
 
     def get_parsers(self):
-        """Return the parsers that read the body the action being served takes."""
-        if self.action == "partial_update_all":
+        """Return the parsers that read the bodies the address being served takes."""
+        if self.action == DOCUMENT_CHANGE_ACTION or self._describes_an_address_the_document_is_changed_at():
             return [parser() for parser in _DOCUMENT_PARSERS]
         return super().get_parsers()
+
+    def _describes_an_address_the_document_is_changed_at(self):
+        """
+        Return whether the request asks what an address that takes the whole document answers.
+
+        Such a request is answered with the media types that address reads,
+        which are the ones of the change it serves rather than the ones read
+        everywhere else; the action recorded for it is not the change, so the
+        methods the address serves are what decide.
+        """
+        return (
+            self.action == DESCRIBE_ADDRESS_ACTION
+            and DOCUMENT_CHANGE_ACTION in (self.action_map or {}).values()
+        )
 
     @extend_schema(
         summary="Get the preferences of one account",

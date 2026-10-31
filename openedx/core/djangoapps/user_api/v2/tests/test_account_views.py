@@ -2092,6 +2092,62 @@ class AccountPageSizeTests(AccountApiV2TestCase):
 
 
 @skip_unless_lms
+class AccountPreferenceAddressDescriptionTests(AccountApiV2TestCase):
+    """What OPTIONS answers about the preference addresses beneath one account."""
+
+    def setUp(self):
+        super().setUp()
+        self.document_url = reverse(
+            "user_v2:account_preference_list", kwargs={"username": self.owner.username},
+        )
+        UserPreferenceFactory.create(user=self.owner, key="time_zone", value="Asia/Tokyo")
+        self.member_url = reverse(
+            "user_v2:account_preference_detail",
+            kwargs={"username": self.owner.username, "key": "time_zone"},
+        )
+
+    def test_the_document_address_names_the_media_type_a_change_to_it_is_sent_in(self):
+        """
+        The media types the answer names are the ones the address reads.
+
+        A change to the whole document is a merge patch and a body in any
+        other media type is refused, so naming the media types read everywhere
+        else would tell a caller to send three the address refuses and leave
+        out the one it takes.
+        """
+        self.login(self.owner)
+        answer = self.client.options(self.document_url)
+        assert answer.status_code == status.HTTP_200_OK
+        assert answer.json()["parses"] == [MERGE_PATCH]
+
+    def test_the_member_address_names_the_media_types_a_change_to_one_preference_is_sent_in(self):
+        """One preference is sent as the platform reads a body everywhere, which is what is named."""
+        self.login(self.owner)
+        answer = self.client.options(self.member_url)
+        assert answer.status_code == status.HTTP_200_OK
+        assert answer.json()["parses"] == [
+            "application/json",
+            "application/x-www-form-urlencoded",
+            "multipart/form-data",
+        ]
+
+    def test_a_change_sent_in_a_media_type_the_answer_names_is_read(self):
+        """
+        The answer is taken at its word, which is the only mechanism offered for it.
+
+        A caller that reads the media types from the description and sends one
+        of them is answered by the change being carried out rather than by a
+        refusal of what it was told to send.
+        """
+        self.login(self.owner)
+        for media_type in self.client.options(self.document_url).json()["parses"]:
+            response = self.client.patch(
+                self.document_url, json.dumps({"time_zone": "Asia/Tokyo"}), content_type=media_type,
+            )
+            assert response.status_code == status.HTTP_204_NO_CONTENT, media_type
+
+
+@skip_unless_lms
 class AccountWriteTargetTests(AccountApiV2TestCase):
     """
     A change whose address names no one account is refused rather than written somewhere.
