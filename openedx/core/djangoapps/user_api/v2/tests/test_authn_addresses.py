@@ -1292,7 +1292,7 @@ LOGIN_SESSION_KEY = "/api/user/{api_version}/account/login_session/"
 
 #: Each operation the addresses above supersede, with the operation replacing
 #: it and the name it is published under in the document trimming the area off
-#: each path and in the one trimming nothing.
+#: each path, where that document publishes it, and in the one trimming nothing.
 SUPERSEDED_OPERATIONS = {
     (V1_REGISTRATION, "get"): (
         (REGISTRATIONS, "get"), "v1_account_registration_retrieve", "api_user_v1_account_registration_retrieve",
@@ -1322,16 +1322,23 @@ SUPERSEDED_OPERATIONS = {
         "api_user_v1_validation_registration_create",
     ),
     (LOGIN_SESSION_KEY, "get"): (
-        (LOGIN_SESSIONS, "get"), "account_login_session_retrieve", "api_user_account_login_session_retrieve",
+        (LOGIN_SESSIONS, "get"), None, "api_user_account_login_session_retrieve",
     ),
     (LOGIN_SESSION_KEY, "post"): (
-        (LOGIN_SESSIONS, "post"), "account_login_session_create", "api_user_account_login_session_create",
+        (LOGIN_SESSIONS, "post"), None, "api_user_account_login_session_create",
     ),
 }
 
 #: The one superseded operation whose handler is described where it is
 #: defined; it keeps that description rather than taking its replacement's.
 SIGN_IN_BY_POSTING = (LOGIN_SESSION_KEY, "post")
+
+#: What each document publishes of the operations above. The narrow document
+#: admits no address that takes its version as a parameter.
+PUBLISHED_SUPERSEDED_OPERATIONS = {
+    "narrow": {key for key in SUPERSEDED_OPERATIONS if key[0] != LOGIN_SESSION_KEY},
+    "service-wide": set(SUPERSEDED_OPERATIONS),
+}
 
 
 @skip_unless_lms
@@ -1344,31 +1351,31 @@ class SupersededDocumentTests(TestCase):
         cls.documents = {"narrow": narrow_document(), "service-wide": service_wide_document()}
 
     def operations(self, which):
-        return published_operations(self.documents[which], SUPERSEDED_OPERATIONS)
+        return published_operations(self.documents[which], PUBLISHED_SUPERSEDED_OPERATIONS[which])
 
     def test_each_operation_is_marked_superseded_in_both_documents(self):
         for which in self.documents:
             marked = {key: operation.get("deprecated") for key, operation in self.operations(which).items()}
-            assert marked == dict.fromkeys(SUPERSEDED_OPERATIONS, True), which
+            assert marked == dict.fromkeys(PUBLISHED_SUPERSEDED_OPERATIONS[which], True), which
 
     def test_each_operation_keeps_the_name_it_is_published_under(self):
         for which, position in (("narrow", 1), ("service-wide", 2)):
             published = {key: operation["operationId"] for key, operation in self.operations(which).items()}
-            assert published == {key: names[position] for key, names in SUPERSEDED_OPERATIONS.items()}, which
+            assert published == {
+                key: names[position] for key, names in SUPERSEDED_OPERATIONS.items()
+                if key in PUBLISHED_SUPERSEDED_OPERATIONS[which]
+            }, which
 
     def test_each_operation_is_grouped_with_its_area(self):
-        """Once the version parameter is dropped, the sign-in addresses lead with the segment after it."""
         narrow = {key: operation["tags"] for key, operation in self.operations("narrow").items()}
-        assert narrow == {
-            key: ["account"] if key[0] == LOGIN_SESSION_KEY else ["user"] for key in SUPERSEDED_OPERATIONS
-        }
+        assert narrow == dict.fromkeys(PUBLISHED_SUPERSEDED_OPERATIONS["narrow"], ["user"])
         service_wide = {key: operation["tags"] for key, operation in self.operations("service-wide").items()}
         assert service_wide == dict.fromkeys(SUPERSEDED_OPERATIONS, ["api"])
 
     def test_each_operation_publishes_what_the_one_replacing_it_publishes(self):
         for which in self.documents:
             for key, ((path, method), _narrow, _service_wide) in SUPERSEDED_OPERATIONS.items():
-                if key == SIGN_IN_BY_POSTING:
+                if key == SIGN_IN_BY_POSTING or key not in PUBLISHED_SUPERSEDED_OPERATIONS[which]:
                     continue
                 superseded = self.documents[which]["paths"][key[0]][key[1]]
                 replacing = self.documents[which]["paths"][path][method]
@@ -1376,21 +1383,27 @@ class SupersededDocumentTests(TestCase):
                 assert superseded["responses"] == replacing["responses"], (which, key)
 
     def test_signing_in_by_posting_keeps_what_it_has_always_published(self):
-        for which, document in self.documents.items():
-            operation = document["paths"][LOGIN_SESSION_KEY]["post"]
-            assert {media_type: body["schema"] for media_type, body in operation["requestBody"]["content"].items()} == (
-                dict.fromkeys([JSON, FORM, MULTIPART], {"$ref": "#/components/schemas/LoginUserRequest"})
-            ), which
-            assert {code: response["content"][JSON]["schema"] for code, response in operation["responses"].items()} == (
-                dict.fromkeys(["200", "400", "403"], {"$ref": "#/components/schemas/LoginUserResponse"})
-            ), which
-            assert operation["security"] == [{"csrf": []}], which
-            assert {"LoginUserRequest", "LoginUserResponse"} <= set(document["components"]["schemas"]), which
+        document = self.documents["service-wide"]
+        operation = document["paths"][LOGIN_SESSION_KEY]["post"]
+        assert {media_type: body["schema"] for media_type, body in operation["requestBody"]["content"].items()} == (
+            dict.fromkeys([JSON, FORM, MULTIPART], {"$ref": "#/components/schemas/LoginUserRequest"})
+        )
+        assert {code: response["content"][JSON]["schema"] for code, response in operation["responses"].items()} == (
+            dict.fromkeys(["200", "400", "403"], {"$ref": "#/components/schemas/LoginUserResponse"})
+        )
+        assert operation["security"] == [{"csrf": []}]
+        assert {"LoginUserRequest", "LoginUserResponse"} <= set(document["components"]["schemas"])
+
+    def test_the_narrow_document_leaves_out_the_address_that_takes_its_version_as_a_parameter(self):
+        """Signing in by posting there is described by its handler, and that description is not what it does."""
+        narrow = self.documents["narrow"]
+        assert LOGIN_SESSION_KEY not in narrow["paths"]
+        assert {"LoginUserRequest", "LoginUserResponse"} & set(narrow["components"]["schemas"]) == set()
 
     def test_only_the_token_check_publishes_an_unauthenticated_or_throttled_refusal(self):
         token_checks = {(TOKEN_VALIDATIONS, "post"), (V1_TOKEN_VALIDATION, "post")}
         for which, document in self.documents.items():
-            keys = set(CONFORMING_OPERATIONS) | set(SUPERSEDED_OPERATIONS)
+            keys = set(CONFORMING_OPERATIONS) | PUBLISHED_SUPERSEDED_OPERATIONS[which]
             for key, operation in published_operations(document, keys).items():
                 published = set(operation["responses"]) & {"401", "429"}
                 assert published == ({"401", "429"} if key in token_checks else set()), (which, key)
@@ -1591,8 +1604,8 @@ BODY_READERS = set(CONFORMING_REQUESTS) | {
 #: The operations each document is held to here. Signing in by posting at the
 #: older address keeps the description its handler carries.
 REFUSING_OPERATIONS = {
-    "narrow": set(CONFORMING_OPERATIONS) | set(SUPERSEDED_OPERATIONS) - {SIGN_IN_BY_POSTING},
-    "service-wide": set(CONFORMING_OPERATIONS) | set(SUPERSEDED_OPERATIONS) - {SIGN_IN_BY_POSTING},
+    which: set(CONFORMING_OPERATIONS) | (published - {SIGN_IN_BY_POSTING})
+    for which, published in PUBLISHED_SUPERSEDED_OPERATIONS.items()
 }
 
 

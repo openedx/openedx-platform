@@ -28,6 +28,13 @@ USER_TAG = "user"
 
 _VERSION_TAG = re.compile(r"v\d+")
 
+# An address that takes its version as a parameter is left out of the
+# superseded addresses this schema admits, though it is still marked wherever
+# it is published: posting there to sign in publishes the description its
+# handler carries, which is not what that sign-in reads or answers with, and
+# nothing here can replace it.
+_VERSION_PARAMETER = "{api_version}"
+
 
 def _is_legacy_path(path):
     """Conforming routes always end in a slash, so a slashless v2 path is a legacy address."""
@@ -35,8 +42,8 @@ def _is_legacy_path(path):
 
 
 def _is_published_user_path(path, callback):
-    """A user address is documented when this version serves it, or when this version replaces it."""
-    if is_superseded_user_path(path):
+    """A user address is documented when this version serves it, or when it is a superseded one admitted above."""
+    if is_superseded_user_path(path) and _VERSION_PARAMETER not in path:
         return True
     if not path.startswith(PUBLISHED_USER_PREFIX):
         return False

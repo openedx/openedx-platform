@@ -448,6 +448,11 @@ SUPERSEDED_USER_ADDRESSES = {
     "/api/user/v1/account/password_reset/": "/api/user/v2/password_resets/",
     "/api/user/v1/account/password_reset/token/validate/": "/api/user/v2/password_reset_token_validations/",
     "/api/user/v1/validation/registration": "/api/user/v2/registration_validations/",
+}
+
+#: The superseded address the document leaves out, though the hook marks it
+#: wherever it is published: it takes its version as a parameter.
+SUPERSEDED_USER_ADDRESSES_LEFT_OUT = {
     "/api/user/{api_version}/account/login_session/": "/api/user/v2/login_sessions/",
 }
 
@@ -777,9 +782,12 @@ def test_hook_leaves_other_resources_alone():
 
 @skip_unless_lms
 def test_every_superseded_address_has_a_published_replacement(schema):
-    assert set(SUPERSEDED_USER_ADDRESSES) == set(SUPERSEDED_USER_PATHS)
+    assert set(SUPERSEDED_USER_ADDRESSES) | set(SUPERSEDED_USER_ADDRESSES_LEFT_OUT) == set(SUPERSEDED_USER_PATHS)
     for superseded, replacement in SUPERSEDED_USER_ADDRESSES.items():
         assert superseded in schema["paths"]
+        assert replacement in schema["paths"]
+    for superseded, replacement in SUPERSEDED_USER_ADDRESSES_LEFT_OUT.items():
+        assert superseded not in schema["paths"]
         assert replacement in schema["paths"]
 
 

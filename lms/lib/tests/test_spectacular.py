@@ -146,9 +146,10 @@ class LmsApiFilterUserAddressTest(SimpleTestCase):
             "/api/user/v1/account/password_reset/",
             "/api/user/v1/account/password_reset/token/validate/",
             "/api/user/v1/validation/registration",
-            "/api/user/{api_version}/account/login_session/",
         ]
         neighbours = [
+            # Superseded as well, but it takes its version as a parameter.
+            "/api/user/{api_version}/account/login_session/",
             # The same app's addresses that keep resolving and are not superseded here.
             "/user_api/v1/account/registration/",
             "/user_api/v2/account/registration/",
