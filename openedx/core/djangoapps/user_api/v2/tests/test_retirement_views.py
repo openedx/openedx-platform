@@ -68,7 +68,7 @@ from openedx.core.djangoapps.user_api.models import (
     UserRetirementRequest,
     UserRetirementStatus,
 )
-from openedx.core.djangoapps.user_api.v2 import view_services
+from openedx.core.djangoapps.user_api.v2 import urls as v2_urls, view_services
 from openedx.core.djangoapps.user_api.v2.errors import AmbiguousAccountName, RetirementStateConflict
 from openedx.core.djangoapps.user_api.v2.paginators import UserApiPagination
 from openedx.core.djangoapps.user_api.v2.serializers import (
@@ -87,7 +87,13 @@ from openedx.core.djangoapps.user_api.v2.views import (
 )
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 
-from .test_views import MALFORMED_BODY_SLUG, REFUSED_METHOD_SLUG, UNSUPPORTED_MEDIA_TYPE_SLUG, write_queries
+from .test_views import (
+    MALFORMED_BODY_SLUG,
+    NOT_ACCEPTABLE_SLUG,
+    REFUSED_METHOD_SLUG,
+    UNSUPPORTED_MEDIA_TYPE_SLUG,
+    write_queries,
+)
 
 PASSWORD = "Password1234"
 
@@ -3043,6 +3049,168 @@ class NameRequestedTwiceTests(RetirementApiTestCase):
         self.login("worker")
         response = self.client.get(reverse("user_v2:retirement_list"))
         assert [row["id"] for row in response.json()["results"]] == [held.id, twin.id]
+
+
+#: The view classes this pipeline is served by, read from the module that
+#: routes them so that an address mounted later is covered by the sweep below.
+RETIREMENT_VIEW_CLASSES = (
+    RetirementViewSet,
+    RetirementPartnerReportViewSet,
+    RetirementCleanupViewSet,
+    RetirementPartnerReportCleanupViewSet,
+)
+
+
+def mounted_retirement_operations():
+    """Return every address of this pipeline with the methods it serves, by the name it is routed under."""
+    return {
+        (entry.name, method)
+        for entry in v2_urls.urlpatterns
+        if getattr(entry.callback, "cls", None) in RETIREMENT_VIEW_CLASSES
+        for method in getattr(entry.callback, "actions", {})
+    }
+
+
+@skip_unless_lms
+class UnsatisfiableAcceptTests(RetirementApiTestCase):
+    """
+    What each address of this pipeline answers a request it can give no answer to.
+
+    Which representations an answer may be given in is settled as the request
+    enters, before the record it names is read or written, so the refusal
+    reaches an address that answers with a body and one that answers with none
+    alike. Every operation here publishes that refusal, and these are the
+    measurements it rests on: each address answers it, and the records each of
+    them would otherwise have acted on -- including the ones two of them
+    delete and the account data one of them erases -- are left as they were.
+    """
+
+    UNANSWERABLE = "text/csv"
+
+    def setUp(self):
+        super().setUp()
+        self.finished = self.retirement_in("COMPLETE", user=self.subject)
+        self.working = self.retirement_in(
+            "RETIRING_LMS", user=UserFactory.create(username="working-subject"),
+        )
+        self.pending = self.retirement_in(
+            "PENDING", user=UserFactory.create(username="pending-subject"),
+        )
+        self.subject.profile.city = "Somewhere"
+        self.subject.profile.save()
+        self.entry = UserRetirementPartnerReportingStatus.objects.create(
+            user=self.working.user,
+            original_username=self.working.user.username,
+            original_email=self.working.user.email,
+            original_name=self.working.user.profile.name,
+            is_being_processed=True,
+        )
+
+    def requests(self):
+        """Return a request to every method of every address, by the caller that address admits."""
+        return {
+            ("retirement_list", "get"): ("worker", reverse("user_v2:retirement_list"), None),
+            ("retirement_detail", "get"): (
+                "worker", reverse("user_v2:retirement_detail", kwargs={"username": "subject"}), None,
+            ),
+            # Both reads are mounted for a request that asks for the answer
+            # without its body as well, and the refusal is settled before
+            # either is read, so each is sent that request too.
+            ("retirement_list", "head"): ("worker", reverse("user_v2:retirement_list"), None),
+            ("retirement_detail", "head"): (
+                "worker", reverse("user_v2:retirement_detail", kwargs={"username": "subject"}), None,
+            ),
+            ("retirement_detail", "patch"): (
+                "worker",
+                reverse("user_v2:retirement_detail", kwargs={"username": "working-subject"}),
+                {"new_state": "RETIRING_LMS_COMPLETE", "response": "done"},
+            ),
+            ("retirement_detail", "delete"): (
+                "canceller",
+                reverse("user_v2:retirement_detail", kwargs={"username": "pending-subject"}),
+                None,
+            ),
+            ("retirement_erasure", "post"): (
+                "worker",
+                reverse("user_v2:retirement_erasure", kwargs={"username": "working-subject"}),
+                {"scope": "lms_core"},
+            ),
+            ("retirement_cleanup_list", "post"): (
+                "worker", reverse("user_v2:retirement_cleanup_list"), {"usernames": ["subject"]},
+            ),
+            ("retirement_partner_report_list", "post"): (
+                "worker", reverse("user_v2:retirement_partner_report_list"), None,
+            ),
+            ("retirement_partner_report_detail", "put"): (
+                "worker",
+                reverse(
+                    "user_v2:retirement_partner_report_detail",
+                    kwargs={"username": "working-subject"},
+                ),
+                {},
+            ),
+            ("retirement_partner_report_cleanup_list", "post"): (
+                "worker",
+                reverse("user_v2:retirement_partner_report_cleanup_list"),
+                {"usernames": ["working-subject"]},
+            ),
+        }
+
+    def send_each(self):
+        """Send every request of the table asking for a representation none can answer in."""
+        answered = {}
+        for (name, method), (caller, url, body) in self.requests().items():
+            self.client.logout()
+            self.login(caller)
+            send = getattr(self.client, method)
+            if body is None:
+                response = send(url, HTTP_ACCEPT=self.UNANSWERABLE)
+            else:
+                response = send(url, body, format="json", HTTP_ACCEPT=self.UNANSWERABLE)
+            answered[(name, method)] = response.status_code
+        return answered
+
+    def test_every_address_of_this_pipeline_is_covered_here(self):
+        """A method mounted later is sent one of these requests, or this fails."""
+        assert set(self.requests()) == mounted_retirement_operations()
+
+    def test_each_address_refuses_an_accept_it_cannot_satisfy(self):
+        assert self.send_each() == {
+            address: status.HTTP_406_NOT_ACCEPTABLE for address in self.requests()
+        }
+
+    def test_the_refusal_comes_back_in_the_body_this_version_answers_with(self):
+        """The refusal is readable even though the caller asked for a representation it is not in."""
+        self.login("worker")
+        assert_error_envelope(
+            self.client.get(reverse("user_v2:retirement_list"), HTTP_ACCEPT=self.UNANSWERABLE),
+            expected_status=status.HTTP_406_NOT_ACCEPTABLE,
+            expected_type_slug=NOT_ACCEPTABLE_SLUG,
+        )
+
+    def test_nothing_is_moved_erased_or_deleted_on_the_way_to_the_refusal(self):
+        self.send_each()
+        assert set(UserRetirementStatus.objects.values_list("id", flat=True)) == {
+            self.finished.id, self.working.id, self.pending.id,
+        }
+        assert UserRetirementRequest.objects.count() == 3
+        for record, state_name in (
+            (self.finished, "COMPLETE"),
+            (self.working, "RETIRING_LMS"),
+            (self.pending, "PENDING"),
+        ):
+            record.refresh_from_db()
+            assert record.current_state.state_name == state_name
+            assert record.original_email != view_services.REDACTED_EMAIL
+        self.subject.refresh_from_db()
+        assert (self.subject.username, self.subject.email) == ("subject", "subject@example.com")
+        assert self.subject.is_active is True
+        assert UserProfile.objects.get(user=self.subject).city == "Somewhere"
+        assert set(
+            UserRetirementPartnerReportingStatus.objects.values_list("id", flat=True),
+        ) == {self.entry.id}
+        self.entry.refresh_from_db()
+        assert self.entry.is_being_processed is True
 
 
 @skip_unless_lms
