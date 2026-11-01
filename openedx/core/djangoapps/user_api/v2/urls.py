@@ -130,10 +130,16 @@ urlpatterns = [
         UserPreferenceViewSet.as_view({"get": "retrieve"}),
         name="user_preference_detail",
     ),
-    # Registering an account, signing in and resetting a password each create
-    # something no address here reads back, so each is a collection that is
-    # only ever posted to or described. Signing in answers as the version this
-    # API is at, which the view reads from its route.
+    # Registering an account, checking what it would be registered with,
+    # signing in and asking for a password reset are each answered by a
+    # subclass of the authentication app's own view that adds only its
+    # description, so a request runs that view's one code path, with its
+    # decorators, its CSRF handling and any limit it counts together with the
+    # app's older addresses. Each is a collection that is only ever posted to
+    # or described: registering and signing in answer with a session and where
+    # to go next rather than with the account, which is read at
+    # accounts/{username}/ like any other. Signing in answers as the version
+    # this API is at, which the view reads from its route.
     re_path(r"^registrations/$", authn_views.RegistrationView.as_view(), name="registration_list"),
     re_path(
         r"^registration_validations/$",

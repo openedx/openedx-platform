@@ -628,6 +628,15 @@ class RegistrationParityTests(TestCase):
         assert not unexpected
         assert json.loads(conforming.content)["name"] == "Registration"
 
+    def test_the_account_registered_is_read_where_every_account_is(self):
+        """A registration answers with a session and where to go next; the account is read at its own address."""
+        client = Client()
+        registered = client.post(REGISTRATIONS, registration_form("read_back"))
+        assert set(json.loads(registered.content)) == {"authenticated_user", "success", "redirect_url"}
+        account = client.get(reverse("user_v2:account_detail", kwargs={"username": "read_back"}))
+        assert account.status_code == 200
+        assert json.loads(account.content)["email"] == "read_back@example.com"
+
 
 @skip_unless_lms
 @override_settings(CACHES=COUNTING_CACHE)
