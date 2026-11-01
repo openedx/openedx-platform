@@ -6,9 +6,10 @@ from unittest import TestCase, mock
 
 from django.conf import settings
 from django.test import SimpleTestCase
+from django.test import TestCase as DjangoTestCase
 from django.urls import path as url_path
 from drf_spectacular.generators import SchemaGenerator
-from drf_spectacular.settings import spectacular_settings
+from drf_spectacular.settings import patched_settings, spectacular_settings
 from rest_framework import serializers, viewsets
 from rest_framework.response import Response
 from rest_framework.settings import api_settings
@@ -20,6 +21,8 @@ from cms.lib.spectacular import (
     cms_mark_migrated_paths,
     cms_mark_superseded_paths,
 )
+from lms.lib.spectacular import SUPERSEDED_USER_PATHS, superseded_bodies
+from openedx.core.apidocs import get_api_docs_settings
 
 
 def _endpoint(path):
@@ -215,3 +218,148 @@ class CmsAutoSchemaTest(SimpleTestCase):
         # Already distinct from its conforming twin's id, so it keeps its name.
         assert ids["/api/authoring/v4/courses/"] == "v4_courses_list"
         assert ids["/api/contentstore/v4/home/courses/"] == "v4_home_courses_list"
+
+
+#: What each superseded user operation this service serves is expected to
+#: exchange: the media types of the body it reads, and the success code with
+#: the body it answers with. ``None`` is a response carrying no body at all.
+#:
+#: The table is spelled out here rather than taken from the tests of the
+#: service that serves the replacements, so that a change made to what one of
+#: the two documents says about these addresses and not to the other is a
+#: failure here rather than a difference a client only finds after generating
+#: from both.
+SUPERSEDED_USER_EXCHANGES = {
+    ("/api/user/v1/accounts", "get"): ([], {"200": "Account[]"}),
+    ("/api/user/v1/accounts/{username}", "get"): ([], {"200": "Account"}),
+    ("/api/user/v1/accounts/{username}", "patch"): (["application/merge-patch+json"], {"200": "Account"}),
+    ("/api/user/v1/accounts/search_emails", "post"): (
+        ["application/json", "application/merge-patch+json"], {"200": "EmailSearchResult[]"},
+    ),
+    ("/api/user/v1/accounts/{username}/deactivate/", "post"): ([], {"200": "Account"}),
+    ("/api/user/v1/accounts/name_change/", "post"): (
+        ["application/json", "application/x-www-form-urlencoded", "multipart/form-data"],
+        {"201": None},
+    ),
+    ("/api/user/v1/accounts/name_change/{username}/confirm/", "post"): ([], {"204": None}),
+    ("/api/user/v1/accounts/{username}/image", "post"): (
+        ["image/gif", "image/jpeg", "image/pjpeg", "image/png", "multipart/form-data"],
+        {"204": None},
+    ),
+    ("/api/user/v1/accounts/{username}/image", "delete"): ([], {"204": None}),
+    ("/api/user/v1/accounts/{username}/verification_status/", "get"): ([], {"200": "VerificationStatus"}),
+}
+
+#: Every operation of a superseded user address this service serves, with the
+#: name it is published under. The names are the ones both documents have
+#: always carried: a client imports a function per name, so an operation that
+#: comes back under a different one has been taken away from it.
+SUPERSEDED_USER_OPERATION_IDS = {
+    ("/api/user/v1/accounts", "get"): "api_user_v1_accounts_retrieve",
+    ("/api/user/v1/accounts/name_change/", "post"): "api_user_v1_accounts_name_change_create",
+    ("/api/user/v1/accounts/name_change/{username}/confirm/", "post"): (
+        "api_user_v1_accounts_name_change_confirm_create"
+    ),
+    ("/api/user/v1/accounts/search_emails", "post"): "api_user_v1_accounts_search_emails_create",
+    ("/api/user/v1/accounts/{username}", "get"): "api_user_v1_accounts_retrieve_2",
+    ("/api/user/v1/accounts/{username}", "patch"): "api_user_v1_accounts_partial_update",
+    ("/api/user/v1/accounts/{username}/deactivate/", "post"): "api_user_v1_accounts_deactivate_create",
+    ("/api/user/v1/accounts/{username}/image", "delete"): "api_user_v1_accounts_image_destroy",
+    ("/api/user/v1/accounts/{username}/image", "post"): "api_user_v1_accounts_image_create",
+    ("/api/user/v1/accounts/{username}/verification_status/", "get"): (
+        "api_user_v1_accounts_verification_status_retrieve"
+    ),
+    ("/api/user/v1/accounts/{username}/verifications/", "get"): "api_user_v1_accounts_verifications_list",
+    ("/api/user/v1/forum_roles/{name}/users/", "get"): "api_user_v1_forum_roles_users_list",
+    ("/api/user/v1/me", "get"): "api_user_v1_me_retrieve",
+    ("/api/user/v1/preferences/time_zones/", "get"): "api_user_v1_preferences_time_zones_list",
+    ("/api/user/v1/preferences/{pref_key}/users/", "get"): "api_user_v1_preferences_users_list",
+    ("/api/user/v1/user_prefs/", "get"): "api_user_v1_user_prefs_list",
+    ("/api/user/v1/user_prefs/{id}/", "get"): "api_user_v1_user_prefs_retrieve",
+    ("/api/user/v1/users/", "get"): "api_user_v1_users_list",
+    ("/api/user/v1/users/{id}/", "get"): "api_user_v1_users_retrieve",
+}
+
+
+def _named_body(response):
+    """
+    Return what a response carries: the component it names, or the shape itself.
+
+    A component is named by its own name, suffixed ``[]`` where the body is an
+    array of it; a body described in place comes back as that description, and
+    a response with no body at all as ``None``.
+    """
+    content = response.get("content")
+    if not content:
+        return None
+    body = content["application/json"]["schema"]
+    if body.get("type") == "array":
+        return f"{body['items']['$ref'].rsplit('/', 1)[-1]}[]"
+    if "$ref" not in body:
+        return body
+    return body["$ref"].rsplit("/", 1)[-1]
+
+
+class SupersededUserOperationTest(DjangoTestCase):
+    """
+    The user addresses this service serves beside the service that replaces them.
+
+    Both services mount that API at the same addresses and both publish an
+    unauthenticated document of everything they serve, so what one of those
+    documents says about an address is what the other has to say too: the same
+    body on each side of the exchange, the same success code, the same
+    published name, and the same mark saying a replacement exists. A client
+    generated from this service's document would otherwise offer a different
+    signature, and no mark, for the very same request.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        with patched_settings(get_api_docs_settings()):
+            cls.schema = SchemaGenerator().get_schema(request=None, public=True)
+
+    def _operations(self):
+        """Every operation of a superseded address this document carries."""
+        return {
+            (path, method): operation
+            for path in SUPERSEDED_USER_PATHS if path in self.schema["paths"]
+            for method, operation in self.schema["paths"][path].items()
+            if isinstance(operation, dict) and "operationId" in operation
+        }
+
+    def test_this_service_serves_every_superseded_address(self):
+        """The marking and the bodies below are claims about all of them, not about some."""
+        served = [path for path in SUPERSEDED_USER_PATHS if path in self.schema["paths"]]
+        assert served == list(SUPERSEDED_USER_PATHS)
+
+    def test_every_operation_of_those_addresses_is_marked_superseded(self):
+        marked = {key: operation.get("deprecated") for key, operation in self._operations().items()}
+        assert marked == dict.fromkeys(SUPERSEDED_USER_OPERATION_IDS, True)
+
+    def test_every_operation_keeps_the_name_it_is_published_under(self):
+        published = {key: operation["operationId"] for key, operation in self._operations().items()}
+        assert published == SUPERSEDED_USER_OPERATION_IDS
+
+    def test_each_superseded_operation_publishes_what_it_reads_and_what_it_answers_with(self):
+        published = {}
+        for (address, method) in SUPERSEDED_USER_EXCHANGES:
+            operation = self.schema["paths"][address][method]
+            published[(address, method)] = (
+                sorted((operation.get("requestBody") or {}).get("content", {})),
+                {code: _named_body(response) for code, response in operation["responses"].items()},
+            )
+        assert published == SUPERSEDED_USER_EXCHANGES
+
+    def test_an_image_may_be_sent_as_the_whole_body_or_as_a_form_part(self):
+        """The forms are alternatives, and a body one of them needs is one the operation needs."""
+        image = self.schema["paths"]["/api/user/v1/accounts/{username}/image"]["post"]["requestBody"]
+        assert image["required"] is True
+        assert sorted(image["content"]) == [
+            "image/gif", "image/jpeg", "image/pjpeg", "image/png", "multipart/form-data",
+        ]
+
+    def test_the_described_addresses_are_ones_this_document_marks_superseded(self):
+        described = {address for address, _method in superseded_bodies()}
+        marked = {re.sub(r"\{[\w-]+\}", "{}", address) for address in SUPERSEDED_USER_PATHS}
+        assert described <= marked, described - marked

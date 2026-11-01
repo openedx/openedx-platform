@@ -207,39 +207,29 @@ def lms_api_filter(endpoints):
     return filtered
 
 
-class LmsAutoSchema(AutoSchema):
+class SupersededUserOperations:
     """
-    Keep colliding addresses distinct, group each operation under its own area,
-    and name the bodies of the addresses this schema publishes as superseded,
-    marking a body the operation cannot be called without as one it needs.
+    Describe the superseded user addresses wherever a service publishes them.
 
-    The slashless Enrollment v2 address tokenizes to the id of its conforming
-    twin, so the two would be told apart only by a numeral suffix handed out
-    in registration order, which says nothing about the operation and moves
-    when the routes move; it is suffixed ``_legacy`` instead, leaving the
-    conforming address the clean id, and the address listed above keeps the
-    name it is already published under. Every other address keeps the id and
-    the tag the generator derives for it, because a client generated from a
-    document takes a module from each operationId and groups it by tag, so
-    renaming either drops what a consumer already imports.
+    Both services mount that API at the same addresses and both publish an
+    unauthenticated document of everything they serve, so what one of those
+    documents says about one of these addresses is what the other has to say
+    about it as well: a client generated from either reads the same body on
+    each side of the exchange, branches on the same success code, and imports
+    the same name. The behaviour is shared rather than restated in each
+    service's schema class, which is what keeps the two documents a deployment
+    publishes from describing one address two ways.
+
+    Every address ``RENAMED_OPERATION_IDS`` does not name keeps the id the
+    generator derives for it, because a client generated from a document takes
+    a module from each operationId, so renaming one drops what a consumer
+    already imports.
     """
 
     def get_operation_id(self):
-        """Keep each address that tokenizes to another one's id distinct from it."""
+        """Keep the name an address is published under where describing its bodies would move it."""
         operation_id = super().get_operation_id()
-        renamed = RENAMED_OPERATION_IDS.get((self.path, self.method, operation_id))
-        if renamed is not None:
-            return renamed
-        if self.path == COLLIDING_LEGACY_PATH:
-            return f"{operation_id}_legacy"
-        return operation_id
-
-    def get_tags(self):
-        """Name the area whenever the tag derived for a user address would name a version."""
-        tags = super().get_tags()
-        if self.path.startswith(USER_PATH_PREFIX) and tags and _VERSION_TAG.fullmatch(tags[0]):
-            return [USER_TAG]
-        return tags
+        return RENAMED_OPERATION_IDS.get((self.path, self.method, operation_id), operation_id)
 
     def _get_request_body(self, direction="request"):
         """
@@ -274,6 +264,35 @@ class LmsAutoSchema(AutoSchema):
     def _superseded_bodies(self):
         """Return the bodies named for this operation, or ``None`` where none are named."""
         return superseded_bodies().get((_PATH_PARAMETER.sub("{}", self.path), self.method))
+
+
+class LmsAutoSchema(SupersededUserOperations, AutoSchema):
+    """
+    Keep colliding addresses distinct and group each operation under its own area.
+
+    The slashless Enrollment v2 address tokenizes to the id of its conforming
+    twin, so the two would be told apart only by a numeral suffix, which says
+    which of the two addresses sorts first rather than anything about the
+    operation; it is suffixed ``_legacy`` instead, leaving the conforming
+    address the clean id, and the address listed above keeps the name it is
+    already published under. Each operation keeps the tag the generator derives
+    for it unless that tag names a version, because a client generated from a
+    document groups the operations it offers by tag.
+    """
+
+    def get_operation_id(self):
+        """Keep each address that tokenizes to another one's id distinct from it."""
+        operation_id = super().get_operation_id()
+        if self.path == COLLIDING_LEGACY_PATH:
+            return f"{operation_id}_legacy"
+        return operation_id
+
+    def get_tags(self):
+        """Name the area whenever the tag derived for a user address would name a version."""
+        tags = super().get_tags()
+        if self.path.startswith(USER_PATH_PREFIX) and tags and _VERSION_TAG.fullmatch(tags[0]):
+            return [USER_TAG]
+        return tags
 
 
 def lms_mark_legacy_paths_deprecated(result, generator, request, public):  # pylint: disable=unused-argument

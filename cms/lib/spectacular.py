@@ -4,6 +4,8 @@ import re
 
 from drf_spectacular.openapi import AutoSchema
 
+from lms.lib.spectacular import SupersededUserOperations
+
 # Legacy operations superseded by a conforming address under /api/authoring/.
 # Each is listed in the truncated spelling as well as the full one: the routes
 # make the final character optional, so both addresses resolve, and which one
@@ -72,7 +74,7 @@ def cms_mark_superseded_paths(result, generator, request, public):  # pylint: di
     return result
 
 
-class CmsAutoSchema(AutoSchema):
+class CmsAutoSchema(SupersededUserOperations, AutoSchema):
     """
     Give a colliding legacy address a distinct operationId.
 
@@ -80,6 +82,14 @@ class CmsAutoSchema(AutoSchema):
     operationId, drf-spectacular would otherwise break the tie with a numeral
     suffix in registration order. The conforming address keeps the clean id;
     the deprecated one is suffixed ``_legacy``.
+
+    This service also serves the user API at the same addresses the service
+    that replaces it does, and both publish an unauthenticated document of
+    everything they serve. The shared behaviour describes those addresses the
+    one way, so that a client generated from either document reads the same
+    signature and the same success code for the same request; it is taken from
+    where that API's own schema lives rather than copied, because two copies
+    of a description drift.
     """
 
     def get_operation_id(self):
