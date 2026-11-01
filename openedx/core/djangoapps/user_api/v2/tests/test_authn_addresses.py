@@ -7,6 +7,7 @@ from unittest import mock
 
 import jsonschema
 import pytest
+from django import forms
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
@@ -1523,3 +1524,51 @@ class PublishedShapeTests(TestCase):
                 ), \
                 mock.patch.object(login.pipeline, "get_authenticated_user", side_effect=User.DoesNotExist):
             self.assert_published(LOGIN_SESSIONS, "post", Client().post(LOGIN_SESSIONS, {}))
+
+
+class UnlabelledExtensionForm(forms.Form):
+    """A field a site adds to registration with a name and nothing else: no label, no starting value."""
+
+    nickname = forms.CharField()
+
+
+#: Forms a site can name to add fields to registration, each with the field
+#: it adds and the label that field is described with.
+EXTENSION_FORMS = {
+    "openedx.core.djangoapps.user_api.tests.test_helpers.TestCaseForm": ("favorite_movie", "Fav Flick"),
+    f"{UnlabelledExtensionForm.__module__}.UnlabelledExtensionForm": ("nickname", None),
+}
+
+
+@skip_unless_lms
+class ExtensionFormShapeTests(TestCase):
+    """
+    A registration form carrying the fields a site adds is a body both documents publish.
+
+    Such a field holds what the field of the site's form holds, and a field
+    of a Django form has no label and no starting value unless it is given
+    them, so the form describes it with neither.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.documents = {"narrow": narrow_document(), "service-wide": service_wide_document()}
+
+    def test_a_field_the_site_adds_is_described_as_published(self):
+        for form, (name, label) in EXTENSION_FORMS.items():
+            # Reading the form appends the added fields to the configured order in place.
+            order = list(settings.REGISTRATION_FIELD_ORDER)
+            with override_settings(PROFILE_EXTENSION_FORM=form, REGISTRATION_FIELD_ORDER=order):
+                for address in (REGISTRATIONS, V1_REGISTRATION, V2_REGISTRATION):
+                    response = Client().get(address)
+                    body = json.loads(response.content)
+                    added = [
+                        (field["label"], field["placeholder"], field["defaultValue"])
+                        for field in body["fields"] if field["name"] == name
+                    ]
+                    assert added == [(label, None, None)], (form, address)
+                    for which, document in self.documents.items():
+                        schema = published_response_schema(document, address, "get", response.status_code)
+                        jsonschema.validate(body, schema)
+                        assert undeclared_members(body, schema) == [], (which, form, address)

@@ -29,7 +29,11 @@ FORM_FIELD = {
     "description": "One input of the form.",
     "properties": {
         "name": {"type": "string", "description": "Name the value is submitted under."},
-        "label": {"type": "string", "description": "Label to show beside the input."},
+        "label": {
+            "type": "string",
+            "nullable": True,
+            "description": "Label to show beside the input, or null for an input the site adds that is given none.",
+        },
         "type": {
             "type": "string",
             "description": (
@@ -37,8 +41,20 @@ FORM_FIELD = {
                 "or `plaintext`."
             ),
         },
-        "defaultValue": {"description": "Value the input starts with: text, or true or false for a checkbox."},
-        "placeholder": {"type": "string", "description": "Hint to show in the empty input."},
+        "defaultValue": {
+            "description": (
+                "Value the input starts with: text, or true or false for a checkbox. Null for an input the site "
+                "adds that is given none."
+            ),
+        },
+        "placeholder": {
+            "type": "string",
+            "nullable": True,
+            "description": (
+                "Hint to show in the empty input. An input the site adds carries the value it starts with here, "
+                "or null where it is given none."
+            ),
+        },
         "instructions": {"type": "string", "description": "Help text to show with the input."},
         "exposed": {"type": "boolean", "description": "Whether to show the input although it is optional."},
         "required": {"type": "boolean", "description": "Whether the form cannot be submitted without a value."},
