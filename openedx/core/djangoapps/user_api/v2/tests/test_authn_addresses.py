@@ -1039,14 +1039,63 @@ class LoginLimitTests(TestCase):
             )
 
 
+#: A statement that changes rows, told by its first keyword whatever follows
+#: it, so ``INSERT OR IGNORE INTO`` and ``INSERT IGNORE INTO`` (what a bulk
+#: create that ignores conflicts sends) are writes as plain ``INSERT INTO`` is.
+WRITE_STATEMENT = re.compile(
+    r"""\s*(?P<statement>INSERT|UPDATE|DELETE|REPLACE)\b
+        (?:\s+(?:OR\s+\w+|IGNORE|LOW_PRIORITY|DELAYED|HIGH_PRIORITY|QUICK|ONLY|INTO|FROM)\b)*
+        \s*[`"]?(?P<table>\w+)?""",
+    re.IGNORECASE | re.VERBOSE,
+)
+
+
 def written_tables(captured):
-    """Return the (statement, table) of every write a captured block sent to the database."""
+    """
+    Return the (statement, table) of every write a captured block sent to the database.
+
+    A write whose table cannot be read is still returned, with the whole
+    statement in place of the table, so it is never left out.
+    """
     writes = []
     for query in captured:
-        match = re.match(r'\s*(INSERT INTO|UPDATE|DELETE FROM)\s+[`"]?(\w+)', query["sql"], re.IGNORECASE)
+        match = WRITE_STATEMENT.match(query["sql"])
         if match:
-            writes.append((match.group(1).upper(), match.group(2)))
+            writes.append((match.group("statement").upper(), match.group("table") or query["sql"]))
     return writes
+
+
+@skip_unless_lms
+def test_a_write_is_told_by_its_first_keyword_whatever_follows_it():
+    captured = [{"sql": sql} for sql in (
+        'INSERT INTO "django_site" ("domain", "name") VALUES (\'a\', \'a\')',
+        'INSERT OR IGNORE INTO "django_site" ("domain", "name") VALUES (\'b\', \'b\')',
+        "INSERT IGNORE INTO `django_site` (`domain`, `name`) VALUES ('c', 'c')",
+        "REPLACE INTO `django_site` (`domain`, `name`) VALUES ('d', 'd')",
+        'UPDATE "django_session" SET "expire_date" = 1',
+        'UPDATE OR REPLACE "django_session" SET "expire_date" = 1',
+        'DELETE FROM "django_session" WHERE 1',
+        "DELETE LOW_PRIORITY QUICK IGNORE FROM `django_session` WHERE 1",
+        "  insert into auth_user (username) values ('e')",
+        "DELETE FROM quick_links WHERE 1",
+        'SELECT "id" FROM "django_site" FOR UPDATE',
+        'SAVEPOINT "s1"',
+        'RELEASE SAVEPOINT "s1"',
+        "INSERT (",
+    )]
+    assert written_tables(captured) == [
+        ("INSERT", "django_site"),
+        ("INSERT", "django_site"),
+        ("INSERT", "django_site"),
+        ("REPLACE", "django_site"),
+        ("UPDATE", "django_session"),
+        ("UPDATE", "django_session"),
+        ("DELETE", "django_session"),
+        ("DELETE", "django_session"),
+        ("INSERT", "auth_user"),
+        ("DELETE", "quick_links"),
+        ("INSERT", "INSERT ("),
+    ]
 
 
 class _FormReadTests:
