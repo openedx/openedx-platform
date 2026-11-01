@@ -39,6 +39,7 @@ from rest_framework.settings import api_settings
 
 from common.djangoapps.student.models import Registration
 from common.djangoapps.student.tests.factories import UserFactory
+from common.djangoapps.third_party_auth.models import OAuth2ProviderConfig
 from openedx.core.apidocs import get_api_docs_settings
 from openedx.core.djangoapps.oauth_dispatch.jwt import create_jwt_for_user
 from openedx.core.djangoapps.user_api.v2 import authn_views
@@ -1229,6 +1230,102 @@ class FormReadWithoutThirdPartyAuthTests(_FormReadTests, TestCase):
     """With it off, reading a form writes nothing at all."""
 
     EXPECTED_WRITES = {REGISTRATIONS: set(), PASSWORD_RESETS: set(), LOGIN_SESSIONS: set()}
+
+
+#: What a sign-in through another provider that is under way holds: the
+#: provider's backend and what the provider has said about the person.
+RUNNING_PIPELINE = {
+    "backend": "google-oauth2",
+    "kwargs": {
+        "username": "elsewhere",
+        "details": {"fullname": "Else Where", "email": "elsewhere@example.com"},
+    },
+}
+
+
+class _FormReadDuringThirdPartySignIn(_FormReadTests):
+    """
+    Reading a form while a sign-in through another provider is under way writes nothing and sends nothing.
+
+    The sign-in under way and its provider are handed to the forms in place
+    of the ones the session would point to, so the session is not read for
+    them and nothing is written to it.
+    """
+
+    EXPECTED_WRITES = {REGISTRATIONS: set(), PASSWORD_RESETS: set(), LOGIN_SESSIONS: set()}
+
+    #: How the registration form shows the fields a provider can fill in: type and default.
+    FIELDS_SHOWN = {}
+
+    def provider(self):
+        """Return the provider the sign-in under way runs through, as this site knows it."""
+        return OAuth2ProviderConfig(name="Provider", backend_name="google-oauth2", sync_learner_profile_data=True)
+
+    def setUp(self):
+        super().setUp()
+        reading = mock.patch.object(login.pipeline, "get", return_value=RUNNING_PIPELINE)
+        looking_up = mock.patch.object(login.provider.Registry, "get_from_pipeline", return_value=self.provider())
+        reading.start()
+        self.addCleanup(reading.stop)
+        self.found = looking_up.start()
+        self.addCleanup(looking_up.stop)
+
+    def test_each_form_is_built_for_the_sign_in_under_way(self):
+        for legacy, conforming in ((V2_REGISTRATION, REGISTRATIONS), (V2_LOGIN_SESSION, LOGIN_SESSIONS)):
+            self.found.reset_mock()
+            assert_byte_equal(Client().get(legacy), Client().get(conforming))
+            assert self.found.call_args_list == [mock.call(RUNNING_PIPELINE)] * 2, conforming
+        fields = json.loads(Client().get(REGISTRATIONS).content)["fields"]
+        shown = {field["name"]: (field["type"], field["defaultValue"]) for field in fields}
+        assert {name: shown.get(name) for name in self.FIELDS_SHOWN} == self.FIELDS_SHOWN
+
+
+@skip_unless_lms
+@override_settings(ENABLE_THIRD_PARTY_AUTH=True)
+class FormReadDuringThirdPartySignInTests(_FormReadDuringThirdPartySignIn, TestCase):
+    """The provider is known and fills the profile in, so the form hides what it filled in."""
+
+    FIELDS_SHOWN = {
+        "username": ("hidden", "elsewhere"),
+        "name": ("hidden", "Else Where"),
+        "email": ("hidden", "elsewhere@example.com"),
+        "password": ("hidden", ""),
+        "social_auth_provider": ("hidden", "Provider"),
+    }
+
+
+@skip_unless_lms
+@override_settings(ENABLE_THIRD_PARTY_AUTH=True)
+class FormReadDuringThirdPartySignInWithoutProfileFillingTests(_FormReadDuringThirdPartySignIn, TestCase):
+    """The provider is known and does not fill the profile in, so the form offers what it said, to change."""
+
+    FIELDS_SHOWN = {
+        "username": ("text", "elsewhere"),
+        "name": ("text", "Else Where"),
+        "email": ("email", "elsewhere@example.com"),
+        "password": ("hidden", ""),
+        "social_auth_provider": ("hidden", "Provider"),
+    }
+
+    def provider(self):
+        return OAuth2ProviderConfig(name="Provider", backend_name="google-oauth2", sync_learner_profile_data=False)
+
+
+@skip_unless_lms
+@override_settings(ENABLE_THIRD_PARTY_AUTH=True)
+class FormReadDuringThirdPartySignInThroughAnUnknownProviderTests(_FormReadDuringThirdPartySignIn, TestCase):
+    """The provider is not one this site knows, so the form is the stock one."""
+
+    FIELDS_SHOWN = {
+        "username": ("text", ""),
+        "name": ("text", ""),
+        "email": ("email", ""),
+        "password": ("password", ""),
+        "social_auth_provider": None,
+    }
+
+    def provider(self):
+        return None
 
 
 def query_count(send):
