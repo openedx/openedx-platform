@@ -156,6 +156,7 @@ OPTIONS_DIFFERENCES = [
 SIGNED_IN_COOKIES = {"csrftoken", "edx-user-info", "edxloggedin", "openedx-language-preference", "sessionid"}
 
 TOO_MANY_LOGINS = "Too many failed login attempts. Try again later."
+WRONG_LOGIN = "Email or password is incorrect."
 MISSING_LOGIN_FIELDS = "There was an error receiving your login information. Please email us."
 
 
@@ -645,6 +646,14 @@ class RegistrationLimitTests(TestCase):
         assert json.loads(refused.content) == {"error_code": "forbidden-request"}
         assert Client().post(REGISTRATIONS, {}, REMOTE_ADDR="10.0.0.9").status_code == 400
 
+    def test_registrations_sent_to_the_other_older_addresses_count_here(self):
+        for address in (V1_REGISTRATION, CREATE_ACCOUNT):
+            cache.clear()
+            assert spend(address, {}, self.allowed) == [400] * self.allowed, address
+            refused = Client().post(REGISTRATIONS, {})
+            assert refused.status_code == 403, address
+            assert json.loads(refused.content) == {"error_code": "forbidden-request"}, address
+
     def test_registrations_sent_here_count_at_every_older_address(self):
         assert spend(REGISTRATIONS, {}, self.allowed) == [400] * self.allowed
         for address in (V1_REGISTRATION, V2_REGISTRATION, CREATE_ACCOUNT):
@@ -1037,7 +1046,7 @@ class LoginParityTests(TestCase):
 @skip_unless_lms
 @override_settings(CACHES=COUNTING_CACHE)
 class LoginLimitTests(TestCase):
-    """The failed sign-ins counted against a caller are counted wherever it signs in."""
+    """The failed sign-ins counted against a caller, or against the account named, are counted wherever it signs in."""
 
     def setUp(self):
         super().setUp()
@@ -1060,6 +1069,15 @@ class LoginLimitTests(TestCase):
             Client().post(LOGIN_SESSIONS, {"email_or_username": "counted", "password": PASSWORD}),
         )
 
+    def test_failures_at_version_one_or_the_sign_in_function_count_here(self):
+        for address in (V1_LOGIN_SESSION, LOGIN_AJAX):
+            cache.clear()
+            failures = spend(address, {"email": "counted@example.com", "password": "wrong"}, self.allowed)
+            assert failures == [400] * self.allowed, address
+            self.assert_refused_for_a_while(
+                Client().post(LOGIN_SESSIONS, {"email_or_username": "counted", "password": PASSWORD}),
+            )
+
     def test_failures_here_count_at_every_older_address(self):
         failures = spend(LOGIN_SESSIONS, {"email_or_username": "counted", "password": "wrong"}, self.allowed)
         assert failures == [400] * self.allowed
@@ -1067,6 +1085,39 @@ class LoginLimitTests(TestCase):
             self.assert_refused_for_a_while(
                 Client().post(address, {"email": "counted@example.com", "password": PASSWORD}),
             )
+        self.assert_refused_for_a_while(
+            Client().post(V2_LOGIN_SESSION, {"email_or_username": "counted", "password": PASSWORD}),
+        )
+
+    def assert_counted_for_the_account_at_both(self, spent_at, refused_at):
+        """
+        Failures naming one account, each from a client at an address of its own, are counted for the account.
+
+        No client sends enough of them to be refused for its own address, so
+        the refusal that follows, from yet another client, is the one counted
+        for the account.
+        """
+        allowed = limit_of(settings.LOGISTRATION_PER_EMAIL_RATELIMIT_RATE)
+        failures = [
+            Client().post(spent_at, {"email_or_username": "counted", "password": "wrong"}, REMOTE_ADDR=f"10.0.1.{n}")
+            for n in range(allowed)
+        ]
+        assert [(failure.status_code, json.loads(failure.content)["value"]) for failure in failures] == (
+            [(400, WRONG_LOGIN)] * allowed
+        )
+        UserFactory.create(username="not_counted", password=PASSWORD)
+        assert Client().post(
+            refused_at, {"email_or_username": "not_counted", "password": PASSWORD}, REMOTE_ADDR="10.0.2.1",
+        ).status_code == 200
+        self.assert_refused_for_a_while(
+            Client().post(refused_at, {"email_or_username": "counted", "password": PASSWORD}, REMOTE_ADDR="10.0.2.1"),
+        )
+
+    def test_failures_for_one_account_at_the_older_address_count_here_from_any_client(self):
+        self.assert_counted_for_the_account_at_both(V2_LOGIN_SESSION, LOGIN_SESSIONS)
+
+    def test_failures_for_one_account_here_count_at_the_older_address_from_any_client(self):
+        self.assert_counted_for_the_account_at_both(LOGIN_SESSIONS, V2_LOGIN_SESSION)
 
 
 #: A statement that changes rows, told by its first keyword whatever follows
