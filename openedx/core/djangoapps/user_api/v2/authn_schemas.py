@@ -275,10 +275,10 @@ REGISTRATION_RESPONSES = {
     403: OpenApiResponse(
         REGISTRATION_REFUSAL,
         description=(
-            "Too many accounts were registered from the address the request came from (`error_code` is "
-            "`forbidden-request`), or a step the site adds to registration refused it. Where the site requires "
-            "signing in through another provider, or creates no accounts here, the refusal is an HTML page "
-            "instead of this body."
+            "Too many requests to register were sent from the address the request came from, whether or not "
+            "they created an account (`error_code` is `forbidden-request`), or a step the site adds to "
+            "registration refused it. Where the site requires signing in through another provider, or creates "
+            "no accounts here, the refusal is an HTML page instead of this body."
         ),
     ),
     406: NOT_ACCEPTABLE,

@@ -34,7 +34,8 @@ from .permissions import RestrictedApplicationGuardMixin
             "Creates an account from the fields the registration form lists and signs the caller in as it, "
             "setting the session cookies. The body is read as a submitted form; a body sent as JSON is read as "
             "an empty one. No CSRF token is needed, and a session the caller already holds is not consulted. "
-            "Refused once too many accounts were registered from the address the request comes from."
+            "Refused once too many requests to register were sent from the address the request comes from, "
+            "whether or not they created an account."
         ),
         request=authn_schemas.REGISTRATION_REQUEST,
         responses=authn_schemas.REGISTRATION_RESPONSES,
