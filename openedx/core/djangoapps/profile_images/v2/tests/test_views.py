@@ -11,6 +11,7 @@ from zoneinfo import ZoneInfo
 
 import freezegun
 import pytest
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 from edx_rest_framework_extensions.testing import assert_error_envelope
@@ -23,7 +24,9 @@ from openedx.core.djangoapps.oauth_dispatch.jwt import create_jwt_for_user
 from openedx.core.djangoapps.user_api.accounts.image_helpers import (
     get_profile_image_names,
     get_profile_image_storage,
+    set_has_profile_image,
 )
+from openedx.core.djangoapps.user_api.errors import UserNotFound
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 
 from ...tests.helpers import make_image_file
@@ -859,6 +862,65 @@ class ProfileImageParityTests(ProfileImageTestCase):
         assert later.status_code == earlier.status_code
         assert_error_envelope(later, expected_status=403, expected_type_slug="authz")
         assert self.stored_sizes(self.owner.username) == set()
+
+
+@skip_unless_lms
+class ImageRecordingTests(APITestCase):
+    """
+    What an image is recorded on is the account handed over, not a name read again.
+
+    The recording helper takes either the account itself or the name of one. A
+    caller that has already settled which account it is acting on hands over
+    that account, and that is the account written to; a caller that has only a
+    name is served by the name, as before.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.owner = UserFactory.create(username="recorded-owner", password=PASSWORD)
+        self.uploaded_at = datetime.datetime(2026, 3, 4, 5, 6, tzinfo=ZoneInfo("UTC"))
+
+    def test_the_account_handed_over_is_the_account_recorded_on(self):
+        """
+        The account's own row is the one written, so no name is read on the way to it.
+
+        The account is given a different name in the database behind the
+        record handed over, which a write that read a name would not find.
+        """
+        User.objects.filter(pk=self.owner.pk).update(username="recorded-owner-elsewhere")
+        set_has_profile_image(self.owner, True, self.uploaded_at)
+        self.owner.profile.refresh_from_db()
+        assert self.owner.profile.has_profile_image is True
+        assert self.owner.profile.profile_image_uploaded_at == self.uploaded_at
+
+    def test_an_account_handed_over_for_clearing_is_the_account_cleared(self):
+        set_has_profile_image(self.owner, True, self.uploaded_at)
+        User.objects.filter(pk=self.owner.pk).update(username="recorded-owner-elsewhere")
+        set_has_profile_image(self.owner, False)
+        self.owner.profile.refresh_from_db()
+        assert self.owner.profile.has_profile_image is False
+        assert self.owner.profile.profile_image_uploaded_at is None
+
+    def test_a_name_handed_over_is_still_read_as_a_name(self):
+        """A caller holding a name rather than an account is served as it was."""
+        set_has_profile_image(self.owner.username, True, self.uploaded_at)
+        self.owner.profile.refresh_from_db()
+        assert self.owner.profile.has_profile_image is True
+        assert self.owner.profile.profile_image_uploaded_at == self.uploaded_at
+
+    def test_a_name_no_account_holds_is_refused(self):
+        with pytest.raises(UserNotFound):
+            set_has_profile_image("nobody-holds-this-name", False)
+
+    def test_an_account_carrying_no_profile_is_refused(self):
+        profileless = UserFactory.create(username="recorded-no-profile", password=PASSWORD)
+        profileless.profile.delete()
+        with pytest.raises(UserNotFound):
+            set_has_profile_image(profileless, False)
+
+    def test_recording_an_image_without_saying_when_is_refused(self):
+        with pytest.raises(ValueError):
+            set_has_profile_image(self.owner, True)
 
 
 @pytest.fixture(name="image_owner")

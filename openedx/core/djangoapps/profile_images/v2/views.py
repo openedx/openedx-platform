@@ -7,7 +7,6 @@ from contextlib import closing
 from zoneinfo import ZoneInfo
 
 import piexif
-from django.core.exceptions import MultipleObjectsReturned
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
 from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
@@ -17,12 +16,11 @@ from rest_framework import permissions, status
 from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
-from rest_framework.settings import api_settings
 from rest_framework.views import APIView
 
 from openedx.core.djangoapps.user_api.accounts.image_helpers import get_profile_image_names, set_has_profile_image
 from openedx.core.djangoapps.user_api.errors import UserNotFound
-from openedx.core.djangoapps.user_api.v2.errors import AmbiguousAccountName, CatalogedRequestErrorsMixin
+from openedx.core.djangoapps.user_api.v2.errors import CatalogedRequestErrorsMixin
 from openedx.core.djangoapps.user_api.v2.permissions import IsAddressedUser
 from openedx.core.djangoapps.user_api.v2.serializers import ErrorResponse
 from openedx.core.djangoapps.user_api.v2.view_utils import (
@@ -33,11 +31,7 @@ from openedx.core.djangoapps.user_api.v2.view_utils import (
     StrictQueryParametersMixin,
     path_param,
 )
-from openedx.core.djangoapps.user_api.v2.views import (
-    AMBIGUOUS_ACCOUNT_ADDRESS,
-    RESP_NOT_ACCEPTABLE,
-    AccountResourceMixin,
-)
+from openedx.core.djangoapps.user_api.v2.views import RESP_NOT_ACCEPTABLE, AccountResourceMixin
 from openedx.core.lib.api.parsers import TypedFileUploadParser
 
 from ..exceptions import ImageValidationError
@@ -190,7 +184,7 @@ class ProfileImageView(
             self._read_image(username, uploaded_file)
             image_names = get_profile_image_names(username)
             create_profile_images(uploaded_file, image_names)
-            self._record_image(username, True)
+            self._record_image(request.user, True)
             log.info(
                 "Generated and uploaded images %(image_names)s for user %(user_id)s",
                 {"image_names": list(image_names.values()), "user_id": request.user.id},
@@ -210,10 +204,7 @@ class ProfileImageView(
             204: OpenApiResponse(description="The account carries no image of its own."),
             400: OpenApiResponse(
                 ErrorResponse,
-                description=(
-                    "The request carries a query parameter this endpoint does not read, or the "
-                    "address names more than one account and so names none of them in particular."
-                ),
+                description="The request carries a query parameter this endpoint does not read.",
             ),
             401: RESP_UNAUTHENTICATED,
             403: _RESP_ANOTHER_USERS_IMAGE,
@@ -223,7 +214,7 @@ class ProfileImageView(
     )
     def delete(self, request, username):
         """Remove the stored sizes of the user's image."""
-        self._record_image(username, False)
+        self._record_image(request.user, False)
         image_names = get_profile_image_names(username)
         remove_profile_images(image_names)
         log.info(
@@ -256,25 +247,19 @@ class ProfileImageView(
         finally:
             uploaded_file.seek(0)
 
-    def _record_image(self, username, is_uploaded):
+    def _record_image(self, user, is_uploaded):
         """
         Record on the account whether it carries an image of its own.
 
-        The account is looked up again by the name in the address to record
-        this, and a name that answers for more than one account settles on
-        none of them, so nothing is recorded and the request is refused rather
-        than written to whichever account came back.
+        The account recorded on is the one the request was admitted for, which
+        is handed over here, so what is recorded lands on that account and on
+        no other.
         """
         uploaded_at = datetime.datetime.now(ZoneInfo("UTC")) if is_uploaded else None
         try:
-            set_has_profile_image(username, is_uploaded, uploaded_at)
+            set_has_profile_image(user, is_uploaded, uploaded_at)
         except UserNotFound as exc:
             raise NotFound from exc
-        except MultipleObjectsReturned as exc:
-            log.info("Profile image not recorded for %r: the name answers for more than one account", username)
-            raise AmbiguousAccountName({
-                api_settings.NON_FIELD_ERRORS_KEY: [AMBIGUOUS_ACCOUNT_ADDRESS],
-            }) from exc
 
     def _unusable_image(self, username, message, reason):
         """Return the refusal telling the caller what the site cannot do with this image."""

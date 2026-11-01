@@ -2067,13 +2067,13 @@ class AccountWriteTargetTests(AccountApiV2TestCase):
         assert not self.owner.has_usable_password()
         assert self.other.has_usable_password()
 
-    def test_an_image_whose_address_names_more_than_one_account_is_left_alone(self):
+    def test_an_image_is_recorded_on_the_account_the_request_was_admitted_for(self):
         """
-        The image is recorded against the account the address names, or against none.
+        What the image is recorded on is the account the request was admitted for.
 
-        The record it is written to is resolved again by the name in the
-        address when it is written, so a name that answers for more than one
-        account is refused there and the stored image is left as it stands.
+        The account is handed to the write as a record rather than as a name
+        for the write to find for itself, which is what keeps the account
+        written to the account the caller was admitted for.
         """
         address = reverse(
             "user_v2:account_profile_image", kwargs={"username": self.owner.username},
@@ -2081,14 +2081,10 @@ class AccountWriteTargetTests(AccountApiV2TestCase):
         self.login(self.owner)
         with mock.patch(
             "openedx.core.djangoapps.profile_images.v2.views.set_has_profile_image",
-            side_effect=UserProfile.MultipleObjectsReturned,
-        ):
-            envelope = assert_error_envelope(
-                self.client.delete(address),
-                expected_status=status.HTTP_400_BAD_REQUEST,
-                expected_type_slug="user/ambiguous-account-name",
-            )
-        assert envelope["errors"] == {"non_field_errors": [AMBIGUOUS_ACCOUNT_ADDRESS]}
+        ) as recorded:
+            assert self.client.delete(address).status_code == status.HTTP_204_NO_CONTENT
+        assert recorded.call_args.args[0] == self.owner
+        assert recorded.call_args.args[1] is False
         self.owner.profile.refresh_from_db()
         assert self.owner.profile.has_profile_image is True
 
