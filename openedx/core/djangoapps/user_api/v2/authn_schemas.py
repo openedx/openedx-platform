@@ -129,6 +129,17 @@ NOT_ACCEPTABLE = OpenApiResponse(
 #: Published by every operation here that reads a body, which is parsed before the handler reads it.
 UNREADABLE_BODY = OpenApiResponse(REFUSAL, description="The request body is in a media type this endpoint cannot read.")
 
+
+def or_unparsed(shape):
+    """
+    Offer ``shape`` beside the body a request whose body cannot be parsed is refused with.
+
+    The body is parsed when the handler first reads it, so one that cannot be
+    parsed in the media type it is sent as is refused with ``detail`` alone,
+    before the handler can answer with a body of its own.
+    """
+    return {"oneOf": [shape, REFUSAL]}
+
 REGISTRATION_FORM_RESPONSES = {
     200: OpenApiResponse(
         FORM_DESCRIPTION,
@@ -254,10 +265,11 @@ REGISTRATION_REFUSAL = {
 REGISTRATION_RESPONSES = {
     200: OpenApiResponse(REGISTERED, description="The account was created and the caller is signed in as it."),
     400: OpenApiResponse(
-        REGISTRATION_REFUSAL,
+        or_unparsed(REGISTRATION_REFUSAL),
         description=(
             "A field is missing or not acceptable, the country is not one the site knows, or a sign-in through "
-            "another provider the registration relied on has expired."
+            "another provider the registration relied on has expired. A body that cannot be parsed in the media "
+            "type it is sent as is refused with `detail` alone."
         ),
     ),
     403: OpenApiResponse(
@@ -419,11 +431,12 @@ LOGIN_RESPONSES = {
         description="The caller is signed in.",
     ),
     400: OpenApiResponse(
-        LOGIN_REFUSAL,
+        or_unparsed(LOGIN_REFUSAL),
         description=(
             "Signing in failed: the account or the password is wrong, the account is not active, a field is "
             "missing, a step the site adds to signing in refused it, or signing in is refused for a while after "
-            "too many failed attempts."
+            "too many failed attempts. A body that cannot be parsed in the media type it is sent as is refused "
+            "with `detail` alone."
         ),
     ),
     403: OpenApiResponse(

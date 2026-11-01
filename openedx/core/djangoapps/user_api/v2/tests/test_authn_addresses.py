@@ -1727,11 +1727,23 @@ def published_request_schema(document, path, media_type):
 
 
 def undeclared_members(body, node, where="$"):
-    """Return the members of ``body`` an object of ``node`` that lists its members does not declare."""
+    """
+    Return the members of ``body`` an object of ``node`` that lists its members does not declare.
+
+    Where ``node`` offers bodies of different shapes, ``body`` is held to the
+    one it satisfies.
+    """
     if "anyOf" in node:
         if body is None:
             return []
         node = node["anyOf"][0]
+    if "oneOf" in node:
+        satisfied = [
+            option for option in node["oneOf"] if jsonschema.validators.validator_for(option)(option).is_valid(body)
+        ]
+        if len(satisfied) != 1:
+            return [f"{where} satisfies {len(satisfied)} of the shapes offered"]
+        node = satisfied[0]
     found = []
     if isinstance(body, dict) and "properties" in node:
         extra = node.get("additionalProperties")
@@ -1745,6 +1757,18 @@ def undeclared_members(body, node, where="$"):
         for index, item in enumerate(body):
             found += undeclared_members(item, node["items"], f"{where}[{index}]")
     return found
+
+
+def test_a_body_offered_two_shapes_is_held_to_the_one_it_satisfies():
+    listed = {"type": "object", "properties": {"detail": {"type": "string"}}, "required": ["detail"]}
+    keyed = {"type": "object", "properties": {"code": {"type": "string"}}, "additionalProperties": {"type": "array"}}
+    offered = {"oneOf": [keyed, listed]}
+    assert undeclared_members({"detail": "x"}, offered) == []
+    assert undeclared_members({"detail": "x", "extra": "y"}, offered) == ["$.extra"]
+    assert undeclared_members({"code": "c", "field": []}, offered) == []
+    assert undeclared_members({"detail": "x", "code": "c"}, offered) == ["$.code"]
+    assert undeclared_members({"detail": []}, offered) == []
+    assert undeclared_members({"detail": 1}, offered) == ["$ satisfies 0 of the shapes offered"]
 
 
 @skip_unless_lms
@@ -1920,6 +1944,11 @@ REFUSING_OPERATIONS = {
 }
 
 
+#: The operations reading the body as a submitted form, at the addresses
+#: replacing others and at the ones they replace.
+FORM_READERS = (REGISTRATIONS, V1_REGISTRATION, V2_REGISTRATION, LOGIN_SESSIONS)
+
+
 @skip_unless_lms
 class RefusedRepresentationTests(TestCase):
     """
@@ -1957,6 +1986,21 @@ class RefusedRepresentationTests(TestCase):
                     schema = published_response_schema(self.documents[which], path, method, status)
                     jsonschema.validate(body, schema)
                     assert undeclared_members(body, schema) == [], (which, key, status)
+
+    def test_each_operation_reading_a_form_publishes_the_refusal_of_one_it_cannot_parse(self):
+        """A multipart body without the boundary its parts are split by is refused before the handler reads it."""
+        for which, document in self.documents.items():
+            for path in FORM_READERS:
+                with transaction.atomic():
+                    response = Client().post(path, "x", content_type=MULTIPART)
+                assert response.status_code == 400, (which, path)
+                assert response["Content-Type"].startswith(JSON), (which, path)
+                body = json.loads(response.content)
+                assert list(body) == ["detail"], (which, path)
+                assert body["detail"].startswith("Multipart form parse error"), (which, path)
+                schema = published_response_schema(document, path, "post", 400)
+                jsonschema.validate(body, schema)
+                assert undeclared_members(body, schema) == [], (which, path)
 
     def test_the_fields_published_as_required_are_the_ones_the_stock_form_requires(self):
         """
