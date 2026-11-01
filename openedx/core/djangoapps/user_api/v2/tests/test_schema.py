@@ -15,11 +15,7 @@ from waffle.testutils import override_switch
 from common.djangoapps.student.models import PendingNameChange, UserProfile
 from common.djangoapps.student.tests.factories import AccountRecoveryFactory, AdminFactory, UserFactory
 from lms.djangoapps.verify_student.models import IDVerificationAttempt, VerificationAttempt
-from lms.lib.spectacular import (
-    RENAMED_OPERATION_IDS,
-    SUPERSEDED_USER_PATHS,
-    lms_mark_legacy_paths_deprecated,
-)
+from lms.lib.spectacular import lms_mark_legacy_paths_deprecated
 from openedx.core.apidocs import get_api_docs_settings
 from openedx.core.djangoapps.profile_images.tests.helpers import make_image_file
 from openedx.core.djangoapps.site_configuration.tests.test_util import with_site_configuration_context
@@ -28,6 +24,11 @@ from openedx.core.djangoapps.user_api.accounts.image_helpers import (
     get_profile_image_storage,
 )
 from openedx.core.djangoapps.user_api.accounts.utils import ENABLE_SECONDARY_EMAIL_FEATURE_SWITCH
+from openedx.core.djangoapps.user_api.schema import (
+    RENAMED_OPERATION_IDS,
+    SUPERSEDED_USER_PATHS,
+    mark_superseded_user_paths,
+)
 from openedx.core.djangoapps.user_api.tests.factories import UserPreferenceFactory
 from openedx.core.djangoapps.user_api.v2.serializers import (
     ACCOUNT_DEFAULT_SORT,
@@ -573,6 +574,7 @@ def test_enum_post_processing_runs_before_the_deprecation_hook():
     hooks = settings.SPECTACULAR_SETTINGS["POSTPROCESSING_HOOKS"]
     assert hooks[0] == "drf_spectacular.hooks.postprocess_schema_enums"
     assert "lms.lib.spectacular.lms_mark_legacy_paths_deprecated" in hooks[1:]
+    assert "openedx.core.djangoapps.user_api.schema.mark_superseded_user_paths" in hooks[1:]
 
 
 @skip_unless_lms
@@ -601,6 +603,7 @@ def test_hook_leaves_other_resources_alone():
     result = {"paths": {path: {"get": {"operationId": path}} for path in untouched + marked}}
 
     lms_mark_legacy_paths_deprecated(result, generator=None, request=None, public=True)
+    mark_superseded_user_paths(result, generator=None, request=None, public=True)
 
     for path in untouched:
         assert "deprecated" not in result["paths"][path]["get"], path

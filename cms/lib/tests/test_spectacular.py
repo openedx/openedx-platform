@@ -21,8 +21,12 @@ from cms.lib.spectacular import (
     cms_mark_migrated_paths,
     cms_mark_superseded_paths,
 )
-from lms.lib.spectacular import SUPERSEDED_USER_PATHS, superseded_bodies
 from openedx.core.apidocs import get_api_docs_settings
+from openedx.core.djangoapps.user_api.schema import (
+    SUPERSEDED_USER_PATHS,
+    SupersededUserOperations,
+    superseded_bodies,
+)
 
 
 def _endpoint(path):

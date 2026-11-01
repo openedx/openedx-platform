@@ -2190,6 +2190,7 @@ SPECTACULAR_SETTINGS = {
     'POSTPROCESSING_HOOKS': [
         'drf_spectacular.hooks.postprocess_schema_enums',
         'lms.lib.spectacular.lms_mark_legacy_paths_deprecated',
+        'openedx.core.djangoapps.user_api.schema.mark_superseded_user_paths',
         'openedx.core.apidocs.untag_deprecated_operations',
     ],
     # Stripped from each path to derive its tags and operationId, so changing

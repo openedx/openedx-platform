@@ -21,19 +21,18 @@ from rest_framework.settings import api_settings
 
 from common.djangoapps.student.models_api import do_name_change_request
 from common.djangoapps.student.tests.factories import TEST_PASSWORD, UserFactory
-from lms.lib.spectacular import (
-    RENAMED_OPERATION_IDS,
-    SUPERSEDED_USER_PATHS,
-    LmsAutoSchema,
-    lms_api_filter,
-    lms_mark_legacy_paths_deprecated,
-    superseded_bodies,
-)
+from lms.lib.spectacular import LmsAutoSchema, lms_api_filter, lms_mark_legacy_paths_deprecated
 from openedx.core.apidocs import get_api_docs_settings
 from openedx.core.djangoapps.profile_images.tests.helpers import make_image_file
 from openedx.core.djangoapps.user_api.accounts.image_helpers import (
     get_profile_image_names,
     get_profile_image_storage,
+)
+from openedx.core.djangoapps.user_api.schema import (
+    RENAMED_OPERATION_IDS,
+    SUPERSEDED_USER_PATHS,
+    mark_superseded_user_paths,
+    superseded_bodies,
 )
 
 ENROLLMENT_VIEWS = "openedx.core.djangoapps.enrollments.views"
@@ -126,8 +125,17 @@ class LmsMarkLegacyPathsDeprecatedTest(SimpleTestCase):
         assert "deprecated" not in paths["/api/enrollment/v2/courses/{course_key}/"]["get"]
         assert "deprecated" not in paths["/api/enrollment/v1/enrollment"]["get"]
 
+    def test_paths_are_left_as_full_urls(self):
+        """Paths are not trimmed, so every key resolves against LMS_ROOT_URL."""
+        result = lms_mark_legacy_paths_deprecated(_schema("/api/enrollment/v2/enrollments/"), None, None, False)
+        assert list(result["paths"]) == ["/api/enrollment/v2/enrollments/"]
+
+
+class MarkSupersededUserPathsTest(SimpleTestCase):
+    """Only the addresses the shared list names are marked, wherever a service publishes them."""
+
     def test_only_the_listed_user_addresses_are_deprecated(self):
-        result = lms_mark_legacy_paths_deprecated(_schema(
+        result = mark_superseded_user_paths(_schema(
             "/api/user/v1/users/",
             "/api/user/v1/users/{id}/",
             "/api/user/v1/preferences/time_zones/",
@@ -172,11 +180,6 @@ class LmsMarkLegacyPathsDeprecatedTest(SimpleTestCase):
             "/user_api/v1/accounts/{username}",
         ):
             assert "deprecated" not in paths[untouched]["get"], untouched
-
-    def test_paths_are_left_as_full_urls(self):
-        """Paths are not trimmed, so every key resolves against LMS_ROOT_URL."""
-        result = lms_mark_legacy_paths_deprecated(_schema("/api/enrollment/v2/enrollments/"), None, None, False)
-        assert list(result["paths"]) == ["/api/enrollment/v2/enrollments/"]
 
 
 class _EmptySerializer(serializers.Serializer):  # pylint: disable=abstract-method
@@ -264,7 +267,7 @@ def _user_routes(schema_class):
 
 def _derived_operations(schema_class, patches):
     """The names ``schema_class`` produces with nothing pinned, which is what the generator derives."""
-    with mock.patch.dict("lms.lib.spectacular.RENAMED_OPERATION_IDS", {}, clear=True):
+    with mock.patch.dict("openedx.core.djangoapps.user_api.schema.RENAMED_OPERATION_IDS", {}, clear=True):
         return _named_operations(schema_class, patches)
 
 

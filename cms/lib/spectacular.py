@@ -4,7 +4,7 @@ import re
 
 from drf_spectacular.openapi import AutoSchema
 
-from lms.lib.spectacular import SupersededUserOperations
+from openedx.core.djangoapps.user_api.schema import SupersededUserOperations
 
 # Legacy operations superseded by a conforming address under /api/authoring/.
 # Each is listed in the truncated spelling as well as the full one: the routes
