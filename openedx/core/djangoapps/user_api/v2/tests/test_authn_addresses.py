@@ -3,6 +3,7 @@
 import contextlib
 import json
 import re
+from collections import defaultdict
 from types import SimpleNamespace
 from unittest import mock
 
@@ -179,6 +180,28 @@ class RefuseLoginStep(PipelineStep):
         )
 
 
+class RefuseRegistrationUnnamedStep(PipelineStep):
+    """A deployment's own step refusing every registration with 403, without naming the refusal."""
+
+    status_code = 403
+
+    def run_filter(self, form_data):  # pylint: disable=arguments-differ
+        raise StudentRegistrationRequested.PreventRegistration("Registration is closed.", status_code=self.status_code)
+
+
+class RefuseRegistrationUnnamedAsInvalidStep(RefuseRegistrationUnnamedStep):
+    """The same step refusing with 400."""
+
+    status_code = 400
+
+
+class RefuseLoginSilentlyStep(PipelineStep):
+    """A deployment's own step refusing every sign-in with no message, name, details or address."""
+
+    def run_filter(self, user):  # pylint: disable=arguments-differ
+        raise StudentLoginRequested.PreventLogin("")
+
+
 REFUSE_REGISTRATION = {
     "org.openedx.learning.student.registration.requested.v1": {
         "pipeline": [f"{__name__}.RefuseRegistrationStep"],
@@ -191,6 +214,11 @@ REFUSE_LOGIN = {
         "fail_silently": False,
     },
 }
+
+
+def running_only(step, filter_class):
+    """Return the filter configuration running ``step`` alone wherever ``filter_class`` runs."""
+    return {filter_class.filter_type: {"pipeline": [f"{__name__}.{step.__name__}"], "fail_silently": False}}
 
 
 def registration_form(name):
@@ -1781,6 +1809,116 @@ def test_a_body_offered_two_shapes_is_held_to_the_one_it_satisfies():
     assert undeclared_members({"detail": 1}, offered) == ["$ satisfies 0 of the shapes offered"]
 
 
+#: Members a body carries in some cases only, which the document therefore
+#: does not publish as always present. They are listed by operation and code,
+#: then by where they sit in the body (``[]`` stands for every item of a list),
+#: each with the case it is carried in. A member a body carries that is not
+#: listed here must be published as always present, and none listed may be.
+SOMETIMES_CARRIED = {
+    (REGISTRATIONS, "get", 200): {
+        "$.fields[]": {"options": "Only an input offering a choice of values lists them."},
+    },
+    (REGISTRATIONS, "post", 400): {
+        "$": {"error_code": "Left out where a step the site adds refuses the registration without naming why."},
+    },
+    (REGISTRATIONS, "post", 403): {
+        "$": {"error_code": "Left out where a step the site adds refuses the registration without naming why."},
+    },
+    (REGISTRATIONS, "post", 409): {
+        "$": {
+            "error_code": "Left out where the username or the email address is held back for retired accounts.",
+            "username_suggestions": "Offered only where the username sent is taken.",
+        },
+    },
+    (REGISTRATION_VALIDATIONS, "post", 200): {
+        "$": {"username_suggestions": "Offered only for a taken username or for a name."},
+    },
+    (LOGIN_SESSIONS, "post", 400): {
+        "$": {
+            "value": "Left out where a step the site adds refuses the sign-in without a message.",
+            "error_code": "Left out of a refusal that has no name, such as one for a missing field.",
+            "email": "Left out of the refusal of a password found on lists of exposed passwords.",
+            "context": "Only a refusal that has details for its message carries them.",
+            "redirect_url": (
+                "Only for a password found on lists of exposed passwords, or where a step the site adds names "
+                "where to send the person."
+            ),
+        },
+    },
+}
+
+
+def members_carried(body, node, where="$"):
+    """
+    Yield, for each object in ``body`` whose node lists its members, where it sits, the listed members it
+    carries and the ones published as always present.
+
+    Every item of a list is named by ``[]``. Where ``node`` offers bodies of
+    different shapes, ``body`` is held to the first one it satisfies.
+    """
+    if "anyOf" in node:
+        if body is None:
+            return
+        node = node["anyOf"][0]
+    if "oneOf" in node:
+        node = [
+            option for option in node["oneOf"] if jsonschema.validators.validator_for(option)(option).is_valid(body)
+        ][0]
+    if isinstance(body, dict) and "properties" in node:
+        yield where, set(body) & set(node["properties"]), set(node.get("required", ()))
+        extra = node.get("additionalProperties")
+        for key, value in body.items():
+            member = node["properties"].get(key, extra if isinstance(extra, dict) else None)
+            if member:
+                yield from members_carried(value, member, f"{where}.{key}")
+    elif isinstance(body, list) and "items" in node:
+        for item in body:
+            yield from members_carried(item, node["items"], f"{where}[]")
+
+
+def unkept_promises(path, method, status, body, node):
+    """
+    Return each object of ``body`` whose members published as always present are not the ones it always carries.
+
+    An operation another one replaces is held to what is listed for its
+    replacement, which publishes the same bodies.
+    """
+    replacing = SUPERSEDED_OPERATIONS.get((path, method), ((path, method),))[0]
+    sometimes = SOMETIMES_CARRIED.get((*replacing, status), {})
+    found = []
+    for where, carried, promised in members_carried(body, node):
+        always = carried - set(sometimes.get(where, ()))
+        if promised != always:
+            found.append(f"{where} is published as always carrying {sorted(promised)}, and carries {sorted(always)}")
+    return found
+
+
+def test_the_members_published_as_always_present_are_held_to_the_ones_each_body_carries():
+    text = {"type": "string"}
+    item = {"type": "object", "properties": {"name": text, "options": {"type": "array"}}, "required": ["name"]}
+    node = {"oneOf": [
+        {"type": "object", "properties": {"detail": text}, "required": ["detail"]},
+        {"type": "object", "properties": {"fields": {"type": "array", "items": item}}, "required": ["fields"]},
+    ]}
+    body = {"fields": [{"name": "a"}, {"name": "b", "options": []}]}
+    assert list(members_carried(body, node)) == [
+        ("$", {"fields"}, {"fields"}),
+        ("$.fields[]", {"name"}, {"name"}),
+        ("$.fields[]", {"name", "options"}, {"name"}),
+    ]
+    assert list(members_carried({"detail": "x", "other": 1}, node)) == [("$", {"detail"}, {"detail"})]
+    form = (REGISTRATIONS, "get", 200)
+    assert not unkept_promises(*form, body, node)
+    assert unkept_promises(PASSWORD_RESETS, "get", 200, body, node) == [
+        "$.fields[] is published as always carrying ['name'], and carries ['name', 'options']",
+    ]
+    assert not unkept_promises(V1_REGISTRATION, "get", 200, body, node)
+    loosened = {"oneOf": [node["oneOf"][0], {**node["oneOf"][1], "required": []}]}
+    assert unkept_promises(*form, body, loosened) == [
+        "$ is published as always carrying [], and carries ['fields']",
+    ]
+
+
 @skip_unless_lms
 class PublishedShapeTests(TestCase):
     """
@@ -1789,7 +1927,10 @@ class PublishedShapeTests(TestCase):
     Each response below is sent to the running address, then held against the
     shape published for that operation and code: every member published as
     always present is there, each value has the published type, and an object
-    that lists its members carries no other.
+    that lists its members carries no other. The members published as always
+    present are also exactly the ones the body carries, less those
+    ``SOMETIMES_CARRIED`` lists, and each of those is carried by one body
+    below and left out of another.
     """
 
     @classmethod
@@ -1797,13 +1938,31 @@ class PublishedShapeTests(TestCase):
         super().setUpClass()
         cls.document = service_wide_document()
 
+    def setUp(self):
+        super().setUp()
+        self.carried = defaultdict(list)
+
     def assert_published(self, path, method, response):
         """Assert ``response`` is a body the document publishes for that operation and code."""
         assert response["Content-Type"].startswith(JSON), (path, response.status_code)
         body = json.loads(response.content)
-        schema = published_response_schema(self.document, path, method, response.status_code)
+        status = response.status_code
+        schema = published_response_schema(self.document, path, method, status)
         jsonschema.validate(body, schema)
-        assert undeclared_members(body, schema) == [], (path, method, response.status_code)
+        assert undeclared_members(body, schema) == [], (path, method, status)
+        assert not unkept_promises(path, method, status, body, schema), (path, method, status)
+        for where, carried, _promised in members_carried(body, schema):
+            self.carried[(path, method, status, where)].append(carried)
+
+    def assert_each_member_listed_was_carried_and_left_out(self, path, method):
+        """Assert each member listed for the operation as carried in some cases was carried and left out above."""
+        listed = [(key, places) for key, places in SOMETIMES_CARRIED.items() if key[:2] == (path, method)]
+        assert listed, (path, method)
+        for (_path, _method, status), places in listed:
+            for where, members in places.items():
+                for member in members:
+                    seen = {member in carried for carried in self.carried[(path, method, status, where)]}
+                    assert seen == {True, False}, (path, method, status, where, member)
 
     def test_the_forms(self):
         extra = {**settings.REGISTRATION_EXTRA_FIELDS, "confirm_email": "required", "country": "required"}
@@ -1812,6 +1971,7 @@ class PublishedShapeTests(TestCase):
         self.assert_published(REGISTRATIONS, "get", Client().get(REGISTRATIONS))
         self.assert_published(PASSWORD_RESETS, "get", Client().get(PASSWORD_RESETS))
         self.assert_published(LOGIN_SESSIONS, "get", Client().get(LOGIN_SESSIONS))
+        self.assert_each_member_listed_was_carried_and_left_out(REGISTRATIONS, "get")
 
     def test_a_registration_and_its_refusals(self):
         self.assert_published(REGISTRATIONS, "post", Client().post(REGISTRATIONS, registration_form("shape_new")))
@@ -1822,11 +1982,19 @@ class PublishedShapeTests(TestCase):
         )
         with override_settings(OPEN_EDX_FILTERS_CONFIG=REFUSE_REGISTRATION):
             self.assert_published(REGISTRATIONS, "post", Client().post(REGISTRATIONS, registration_form("shape_y")))
+        for step in (RefuseRegistrationUnnamedStep, RefuseRegistrationUnnamedAsInvalidStep):
+            with override_settings(OPEN_EDX_FILTERS_CONFIG=running_only(step, StudentRegistrationRequested)):
+                self.assert_published(
+                    REGISTRATIONS, "post", Client().post(REGISTRATIONS, registration_form("shape_z")),
+                )
+        retired = registration_form(f"{settings.RETIRED_USERNAME_PREFIX}shape")
+        self.assert_published(REGISTRATIONS, "post", Client().post(REGISTRATIONS, retired))
         with override_settings(CACHES=COUNTING_CACHE):
             cache.clear()
             spend(REGISTRATIONS, {}, limit_of(settings.REGISTRATION_RATELIMIT))
             self.assert_published(REGISTRATIONS, "post", Client().post(REGISTRATIONS, {}))
             cache.clear()
+        self.assert_each_member_listed_was_carried_and_left_out(REGISTRATIONS, "post")
 
     def test_a_token_check_and_its_refusals(self):
         owner = UserFactory.create(username="shape_owner", password=PASSWORD)
@@ -1861,6 +2029,7 @@ class PublishedShapeTests(TestCase):
             spend(REGISTRATION_VALIDATIONS, {}, limit_of(settings.REGISTRATION_VALIDATION_RATELIMIT))
             self.assert_published(REGISTRATION_VALIDATIONS, "post", Client().post(REGISTRATION_VALIDATIONS, {}))
             cache.clear()
+        self.assert_each_member_listed_was_carried_and_left_out(REGISTRATION_VALIDATIONS, "post")
 
     def test_a_sign_in_and_its_refusals(self):
         UserFactory.create(username="shape_signer", password=PASSWORD)
@@ -1873,12 +2042,14 @@ class PublishedShapeTests(TestCase):
             {"password": PASSWORD},
         ):
             self.assert_published(LOGIN_SESSIONS, "post", Client().post(LOGIN_SESSIONS, data))
-        with override_settings(OPEN_EDX_FILTERS_CONFIG=REFUSE_LOGIN):
-            self.assert_published(
-                LOGIN_SESSIONS,
-                "post",
-                Client().post(LOGIN_SESSIONS, {"email_or_username": "shape_signer", "password": PASSWORD}),
-            )
+        signing_in = {"email_or_username": "shape_signer", "password": PASSWORD}
+        for config in (REFUSE_LOGIN, running_only(RefuseLoginSilentlyStep, StudentLoginRequested)):
+            with override_settings(OPEN_EDX_FILTERS_CONFIG=config):
+                self.assert_published(LOGIN_SESSIONS, "post", Client().post(LOGIN_SESSIONS, signing_in))
+        found = {"frequency": settings.HIBP_LOGIN_BLOCK_PASSWORD_FREQUENCY_THRESHOLD}
+        with override_settings(ENABLE_AUTHN_LOGIN_BLOCK_HIBP_POLICY=True), \
+                mock.patch.object(login, "check_pwned_password_and_send_track_event", return_value=found):
+            self.assert_published(LOGIN_SESSIONS, "post", Client().post(LOGIN_SESSIONS, signing_in))
         running = {"backend": "oa2-provider", "kwargs": {"username": "elsewhere", "uid": "elsewhere"}}
         with mock.patch.object(login.pipeline, "running", return_value=True), \
                 mock.patch.object(login.pipeline, "get", return_value=running), \
@@ -1887,6 +2058,7 @@ class PublishedShapeTests(TestCase):
                 ), \
                 mock.patch.object(login.pipeline, "get_authenticated_user", side_effect=User.DoesNotExist):
             self.assert_published(LOGIN_SESSIONS, "post", Client().post(LOGIN_SESSIONS, {}))
+        self.assert_each_member_listed_was_carried_and_left_out(LOGIN_SESSIONS, "post")
 
 
 class UnlabelledExtensionForm(forms.Form):
@@ -1935,6 +2107,9 @@ class ExtensionFormShapeTests(TestCase):
                         schema = published_response_schema(document, address, "get", response.status_code)
                         jsonschema.validate(body, schema)
                         assert undeclared_members(body, schema) == [], (which, form, address)
+                        assert not unkept_promises(address, "get", response.status_code, body, schema), (
+                            which, form, address,
+                        )
 
 
 #: Where an operation is requested, for one published under a key that is not an address.
@@ -1996,6 +2171,7 @@ class RefusedRepresentationTests(TestCase):
                     schema = published_response_schema(self.documents[which], path, method, status)
                     jsonschema.validate(body, schema)
                     assert undeclared_members(body, schema) == [], (which, key, status)
+                    assert not unkept_promises(path, method, status, body, schema), (which, key, status)
 
     def test_each_operation_reading_a_form_publishes_the_refusal_of_one_it_cannot_parse(self):
         """A multipart body without the boundary its parts are split by is refused before the handler reads it."""
@@ -2011,6 +2187,7 @@ class RefusedRepresentationTests(TestCase):
                 schema = published_response_schema(document, path, "post", 400)
                 jsonschema.validate(body, schema)
                 assert undeclared_members(body, schema) == [], (which, path)
+                assert not unkept_promises(path, "post", 400, body, schema), (which, path)
 
     def test_the_fields_published_as_required_are_the_ones_the_stock_form_requires(self):
         """
@@ -2164,6 +2341,7 @@ class SignInWithAnExposedPasswordTests(TestCase):
             schema = published_response_schema(document, LOGIN_SESSIONS, "post", 400)
             jsonschema.validate(body, schema)
             assert undeclared_members(body, schema) == [], which
+            assert not unkept_promises(LOGIN_SESSIONS, "post", 400, body, schema), which
         return response, body
 
     @override_settings(ENABLE_AUTHN_LOGIN_NUDGE_HIBP_POLICY=True)
