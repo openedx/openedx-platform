@@ -37,8 +37,13 @@ from openedx.core.djangoapps.user_api.models import (
     UserRetirementStatus,
 )
 from openedx.core.djangoapps.user_api.v2 import view_services
+from openedx.core.djangoapps.user_api.v2.errors import AccountTemporarilyLocked, PasswordNotConfirmed
 from openedx.core.djangoapps.user_api.v2.permissions import ACCOUNT_DELETION_IS_NOT_OFFERED
-from openedx.core.djangoapps.user_api.v2.views import RetirementCleanupViewSet, RetirementViewSet
+from openedx.core.djangoapps.user_api.v2.views import (
+    REFUSALS_THAT_RECORD_AN_ATTEMPT,
+    RetirementCleanupViewSet,
+    RetirementViewSet,
+)
 # The class reading an access token this platform's authorization endpoint
 # handed out, named here so that the operation taking it is held to taking it.
 from openedx.core.lib.api.authentication import BearerAuthentication
@@ -533,6 +538,98 @@ class RetirementRequestFailureTests(RetirementRequestTestCase):
         self.assert_this_servers_failure(answered, view_services.RETIREMENT_WAS_NOT_RECORDED)
         assert "fire" not in answered.content.decode()
         self.assert_nothing_was_recorded(self.owner)
+
+
+@skip_unless_lms
+class RefusedRequestLeavesTheRecordsAloneTests(RetirementRequestTestCase):
+    """
+    What a refused or failed request does to the records that were already there.
+
+    A refusal keeps the count of the attempt it refused, which it does by
+    letting the request it was answering be kept rather than rolled back, so
+    what else such an answer keeps -- and what a failure part way through
+    still undoes -- is measured here against the stored rows rather than
+    against the status alone.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.held_for_the_bystander = UserRetirementStatus.create_retirement(self.bystander)
+        self.login(self.owner)
+
+    def bystander_record(self):
+        """Return everything about the record held for the account that asked for nothing."""
+        record = UserRetirementStatus.objects.get(id=self.held_for_the_bystander.id)
+        return {
+            "id": record.id,
+            "step": record.current_state.state_name,
+            "name": record.original_username,
+            "address": record.original_email,
+            "requests recorded": UserRetirementRequest.objects.filter(user=self.bystander).count(),
+        }
+
+    def assert_the_bystander_is_untouched(self):
+        """Assert the record another request left is exactly as that request left it."""
+        assert self.bystander_record() == {
+            "id": self.held_for_the_bystander.id,
+            "step": FIRST_STEP,
+            "name": "bystander",
+            "address": "bystander@example.com",
+            "requests recorded": 1,
+        }
+        assert User.objects.get(id=self.bystander.id).email == "bystander@example.com"
+
+    @override_settings(ENABLE_MAX_FAILED_LOGIN_ATTEMPTS=True)
+    def test_a_refusal_that_keeps_the_count_adds_no_record_and_touches_no_other(self):
+        assert self.ask(password="WrongPassword9999").status_code == status.HTTP_403_FORBIDDEN
+        assert [record.failure_count for record in LoginFailures.objects.filter(user=self.owner)] == [1]
+        assert not self.queued(self.owner).exists()
+        assert UserRetirementStatus.objects.count() == 1
+        self.assert_the_bystander_is_untouched()
+
+    @override_settings(ENABLE_MAX_FAILED_LOGIN_ATTEMPTS=True)
+    def test_a_refusal_at_an_account_closed_to_attempts_does_the_same(self):
+        for _ in range(MAX_ATTEMPTS):
+            self.ask(password="WrongPassword9999")
+        assert_error_envelope(
+            self.ask(),
+            expected_status=status.HTTP_403_FORBIDDEN,
+            expected_type_slug=TEMPORARILY_LOCKED_SLUG,
+        )
+        assert not self.queued(self.owner).exists()
+        assert UserRetirementStatus.objects.count() == 1
+        self.assert_the_bystander_is_untouched()
+
+    def test_a_request_that_cannot_be_recorded_in_full_keeps_none_of_its_own_and_none_of_theirs(self):
+        """The whole of a failed request is undone, and nothing of another request is."""
+        with mock.patch.object(
+            view_services.ace, "send", side_effect=ValueError("the mail server is on fire"),
+        ):
+            answered = self.ask()
+        assert answered.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR, answered.content
+        assert not self.queued(self.owner).exists()
+        assert not UserRetirementRequest.objects.filter(user=self.owner).exists()
+        assert User.objects.get(id=self.owner.id).check_password(PASSWORD) is True
+        assert UserRetirementStatus.objects.count() == 1
+        self.assert_the_bystander_is_untouched()
+
+    def test_the_answers_that_keep_what_a_request_wrote_are_the_two_that_record_an_attempt(self):
+        """
+        Every other answer leaves the request to be rolled back, as it always was.
+
+        Keeping what a failed request wrote would be covered twice over here,
+        because the record and the end of the session are written inside a
+        transaction of their own as well, so this holds the narrower of the
+        two to being the one that is declared.
+        """
+        assert REFUSALS_THAT_RECORD_AN_ATTEMPT == (PasswordNotConfirmed, AccountTemporarilyLocked)
+
+    def test_a_request_that_is_carried_out_keeps_its_own_and_touches_no_other(self):
+        """The measurement the three above are read against: the same fixtures, carried out."""
+        assert self.ask().status_code == status.HTTP_204_NO_CONTENT
+        assert self.queued(self.owner).count() == 1
+        assert UserRetirementStatus.objects.count() == 2
+        self.assert_the_bystander_is_untouched()
 
 
 @skip_unless_lms
