@@ -145,7 +145,11 @@ REGISTRATION_FIELDS = {
     "description": (
         "The fields of the registration form, each under its name. The fields listed as required are the ones "
         "a site requires unless it is configured otherwise; the form description lists the ones this site asks "
-        "for, and every field it lists is accepted here."
+        "for, and every field it lists is accepted here. A registration carries a password, unless it completes "
+        "a sign-in through another provider, for which the server generates the password: the sign-in under way "
+        "in the caller's session, named in `social_auth_provider`, or one the client made with the provider "
+        "itself, named in `provider` with the access token the provider issued. Both ways apply only where the "
+        "site lets people sign in through other providers."
     ),
     "properties": {
         "name": {"type": "string", "description": "Full name of the person registering."},
@@ -155,7 +159,31 @@ REGISTRATION_FIELDS = {
             "type": "string",
             "description": "The email address again, where the site asks for it.",
         },
-        "password": {"type": "string", "description": "Password of the account.", "format": "password"},
+        "password": {
+            "type": "string",
+            "description": (
+                "Password of the account. Left out of a registration that completes a sign-in through another "
+                "provider, for which the server generates one and ignores any value sent."
+            ),
+            "format": "password",
+        },
+        "social_auth_provider": {
+            "type": "string",
+            "description": (
+                "Name of the provider of the sign-in under way in the caller's session, which the form lists "
+                "while one is under way. A registration naming one after that sign-in has expired is refused."
+            ),
+        },
+        "provider": {
+            "type": "string",
+            "description": (
+                "Backend of the provider the client signed the person in with itself, such as `google-oauth2`."
+            ),
+        },
+        "access_token": {
+            "type": "string",
+            "description": "Access token that provider issued, through which the new account is linked to it.",
+        },
         "honor_code": {"type": "string", "description": "`true` once the site's terms are accepted."},
         "terms_of_service": {
             "type": "string",
@@ -163,7 +191,12 @@ REGISTRATION_FIELDS = {
         },
         "country": {"type": "string", "description": "Two-letter code of the country of residence."},
     },
-    "required": ["name", "username", "email", "password", "honor_code"],
+    "required": ["name", "username", "email", "honor_code"],
+    "anyOf": [
+        {"required": ["password"]},
+        {"required": ["social_auth_provider"]},
+        {"required": ["provider", "access_token"]},
+    ],
     "additionalProperties": _TEXT,
 }
 

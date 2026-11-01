@@ -1720,6 +1720,12 @@ def published_response_schema(document, path, method, status):
     return as_json_schema({**node, "components": document["components"]})
 
 
+def published_request_schema(document, path, media_type):
+    """Return what a body posted to ``path`` in ``media_type`` must satisfy, components included."""
+    node = document["paths"][path]["post"]["requestBody"]["content"][media_type]["schema"]
+    return as_json_schema({**node, "components": document["components"]})
+
+
 def undeclared_members(body, node, where="$"):
     """Return the members of ``body`` an object of ``node`` that lists its members does not declare."""
     if "anyOf" in node:
@@ -1953,14 +1959,126 @@ class RefusedRepresentationTests(TestCase):
                     assert undeclared_members(body, schema) == [], (which, key, status)
 
     def test_the_fields_published_as_required_are_the_ones_the_stock_form_requires(self):
-        """An empty registration is refused for each of them, and for the terms taken from `honor_code`."""
+        """
+        An empty registration is refused for each of them, and for the terms taken from `honor_code`.
+
+        The password is published as the first of the ways a registration can
+        be completed, beside the two that complete a sign-in through another
+        provider, so every other field the stock form requires is required
+        whichever way is taken.
+        """
         with override_settings(REGISTRATION_EXTRA_FIELDS=dict(STOCK_REGISTRATION_EXTRA_FIELDS)):
             form = json.loads(Client().get(REGISTRATIONS).content)
             refused = set(json.loads(Client().post(REGISTRATIONS, {}).content)) - {"error_code"}
         required = sorted(field["name"] for field in form["fields"] if field["required"])
         assert refused == set(required) | {"terms_of_service"}
+        assert "password" in required
+        expected = (sorted(set(required) - {"password"}), WAYS_OF_REGISTERING)
         for which, document in self.documents.items():
-            for path in (REGISTRATIONS, V1_REGISTRATION, V2_REGISTRATION):
+            for path in REGISTRATION_ADDRESSES:
                 content = document["paths"][path]["post"]["requestBody"]["content"]
-                published = {media_type: sorted(body["schema"]["required"]) for media_type, body in content.items()}
-                assert published == dict.fromkeys([FORM, MULTIPART], required), (which, path)
+                published = {
+                    media_type: (
+                        sorted(body["schema"]["required"]),
+                        [sorted(way["required"]) for way in body["schema"]["anyOf"]],
+                    )
+                    for media_type, body in content.items()
+                }
+                assert published == dict.fromkeys([FORM, MULTIPART], expected), (which, path)
+
+
+#: Where an account is registered, here and at the addresses this one replaces.
+REGISTRATION_ADDRESSES = (REGISTRATIONS, V1_REGISTRATION, V2_REGISTRATION)
+
+#: What a registration carries besides the fields every registration needs:
+#: a password, or what completes a sign-in through another provider.
+WAYS_OF_REGISTERING = [["password"], ["social_auth_provider"], ["access_token", "provider"]]
+
+
+def without_password(body):
+    """Return ``body`` with the password left out."""
+    return {name: value for name, value in body.items() if name != "password"}
+
+
+@skip_unless_lms
+@override_settings(ENABLE_THIRD_PARTY_AUTH=True)
+class RegistrationRequestShapeTests(TestCase):
+    """
+    The registration both documents publish is the one each registration address takes.
+
+    A registration completing a sign-in through another provider carries no
+    password, because the server generates one, and every other registration
+    carries one. Each body below is held against the shape both documents
+    publish at each registration address, in each form it is read in, and is
+    then sent to that address.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.documents = {"narrow": narrow_document(), "service-wide": service_wide_document()}
+
+    def accepted(self, body):
+        """Return whether ``body`` satisfies the published shape, by document, address and media type."""
+        verdicts = {}
+        for which, document in self.documents.items():
+            for address in REGISTRATION_ADDRESSES:
+                for media_type in (FORM, MULTIPART):
+                    schema = published_request_schema(document, address, media_type)
+                    validator = jsonschema.validators.validator_for(schema)(schema)
+                    verdicts[(which, address, media_type)] = validator.is_valid(body)
+        return verdicts
+
+    def everywhere(self, verdict):
+        """Return ``verdict`` for every document, address and media type."""
+        return {
+            (which, address, media_type): verdict
+            for which in self.documents for address in REGISTRATION_ADDRESSES for media_type in (FORM, MULTIPART)
+        }
+
+    def assert_registered(self, response, body):
+        """Assert ``response`` created the account ``body`` names and signed the caller in as it."""
+        assert response.status_code == 200, response.content
+        assert json.loads(response.content)["authenticated_user"]["username"] == body["username"]
+        assert User.objects.get(username=body["username"]).email == body["email"]
+
+    def test_the_front_end_registers_through_another_provider_without_a_password(self):
+        """
+        The authentication front end names the provider the form lists and leaves the password out.
+
+        The sign-in under way is handed to the view in place of the one the
+        session would point to.
+        """
+        provider = OAuth2ProviderConfig(name="Provider", backend_name="google-oauth2")
+        for index, address in enumerate(REGISTRATION_ADDRESSES):
+            body = {**without_password(registration_form(f"elsewhere_{index}")), "social_auth_provider": "Provider"}
+            assert self.accepted(body) == self.everywhere(True), address
+            with mock.patch.object(register.pipeline, "get", return_value=RUNNING_PIPELINE), \
+                    mock.patch.object(register.provider.Registry, "get_from_pipeline", return_value=provider):
+                self.assert_registered(Client().post(address, body), body)
+
+    def test_a_client_registers_with_a_providers_access_token_without_a_password(self):
+        """The provider's check of the token is stood in for by one that accepts it."""
+        backend = SimpleNamespace(do_auth=lambda token, user=None: user)
+        for index, address in enumerate(REGISTRATION_ADDRESSES):
+            body = {
+                **without_password(registration_form(f"token_{index}")),
+                "provider": "google-oauth2",
+                "access_token": "token",
+            }
+            assert self.accepted(body) == self.everywhere(True), address
+            with mock.patch.object(register.social_utils, "load_backend", return_value=backend):
+                self.assert_registered(Client().post(address, body), body)
+
+    def test_any_other_registration_needs_a_password_in_both_documents_and_at_every_address(self):
+        assert self.accepted(registration_form("with_password")) == self.everywhere(True)
+        body = without_password(registration_form("no_password"))
+        assert self.accepted(body) == self.everywhere(False)
+        assert self.accepted({**body, "provider": "google-oauth2"}) == self.everywhere(False)
+        for address in REGISTRATION_ADDRESSES:
+            response = Client().post(address, body)
+            assert response.status_code == 400, address
+            assert json.loads(response.content) == {
+                "password": [{"user_message": "This field is required."}],
+                "error_code": "validation-error",
+            }, address
