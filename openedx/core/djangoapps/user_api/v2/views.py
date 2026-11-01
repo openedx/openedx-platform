@@ -6,7 +6,7 @@ import logging
 from django.conf import settings
 from django.contrib.auth import logout
 from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
-from django.db import transaction
+from django.db import connection, transaction
 from django.db.models import F, Prefetch
 from django.http import Http404
 from django_filters.rest_framework import DjangoFilterBackend
@@ -69,7 +69,14 @@ from openedx.core.lib.api.authentication import BearerAuthentication
 from openedx.core.lib.api.parsers import MergePatchParser
 from openedx.core.lib.api.permissions import ApiKeyHeaderPermission
 
-from .errors import AmbiguousAccountName, ErrorExtensionsMixin, ReadableErrorDetailMixin, RetiredAccount
+from .errors import (
+    AccountTemporarilyLocked,
+    AmbiguousAccountName,
+    ErrorExtensionsMixin,
+    PasswordNotConfirmed,
+    ReadableErrorDetailMixin,
+    RetiredAccount,
+)
 from .filters import RetirementFilterSet, StrictOrderingFilter, UserFilterSet, UserPreferenceFilterSet
 from .paginators import UserApiPagination
 from .permissions import (
@@ -2600,6 +2607,16 @@ class _RetirementRecordsMixin:
 #: Who may make each request. Asking for a retirement is the owner's own request,
 #: offered where the deployment allows it; cancellation is not pipeline work, so
 #: it takes a different capability; an unnamed action is refused.
+#: The refusals of this collection that record something which has to outlive
+#: the request they refuse. How many password attempts an account has had
+#: refused is what closes it to further ones, and a request is carried out as
+#: one transaction which a refusal rolls back, so the attempt an answer of this
+#: kind has just counted would be forgotten as that answer was sent and no
+#: number of attempts would ever add up to anything. The operation this one
+#: replaces answers such a request without raising, which is why it kept them.
+REFUSALS_THAT_RECORD_AN_ATTEMPT = (PasswordNotConfirmed, AccountTemporarilyLocked)
+
+
 RETIREMENT_ACTION_PERMISSIONS = {
     "create": (AccountDeletionEnabled,),
     "list": (CanRetireUser,),
@@ -2824,6 +2841,17 @@ class RetirementViewSet(
         if self.action not in SHAPED_RETIREMENT_ACTIONS:
             names -= set(RESPONSE_SHAPING_PARAMS)
         return names
+
+    def handle_exception(self, exc):
+        """Answer a refused request, keeping the record of a password attempt it refused."""
+        response = super().handle_exception(exc)
+        if isinstance(exc, REFUSALS_THAT_RECORD_AN_ATTEMPT) and connection.in_atomic_block:
+            # Nothing else has been written when a request is refused this
+            # way: the account is reached only once its owner's password has
+            # been confirmed, so what is kept here is the count and nothing
+            # beside it.
+            transaction.set_rollback(False)
+        return response
 
     def create(self, request):
         """Queue the account this request was made from for retirement, and end its session."""
