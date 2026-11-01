@@ -463,7 +463,7 @@ class AttemptsNotCountedTests(RetirementRequestTestCase):
                 expected_status=status.HTTP_403_FORBIDDEN,
                 expected_type_slug=PASSWORD_NOT_CONFIRMED_SLUG,
             )
-        assert list(LoginFailures.objects.filter(user=self.owner)) == []
+        assert [record.failure_count for record in LoginFailures.objects.filter(user=self.owner)] == []
         assert self.ask().status_code == status.HTTP_204_NO_CONTENT
 
 
@@ -500,7 +500,7 @@ class RetirementAlreadyRequestedTests(RetirementRequestTestCase):
         assert self.queued(self.owner).count() == 1
         assert UserRetirementRequest.objects.filter(user=self.owner).count() == requests_before
         assert User.objects.get(id=self.owner.id).check_password(PASSWORD) is True
-        assert mail.outbox == []
+        assert [message.to for message in mail.outbox] == []
 
 
 @skip_unless_lms
@@ -766,11 +766,12 @@ class RequestResolutionTests(RetirementRequestTestCase):
         }
 
     def test_the_disposal_of_finished_records_is_reached_with_the_platform_credentials_alone(self):
-        """It is named ``create`` as well, and it deletes records rather than adding one."""
-        assert RetirementCleanupViewSet.action_authentication == {}
-        assert RetirementCleanupViewSet.action_parsers == {}
+        """The operation it serves is named ``create`` too, and it deletes records for the pipeline."""
         assert "action_authentication" not in vars(RetirementCleanupViewSet)
         assert "action_parsers" not in vars(RetirementCleanupViewSet)
+        assert self.resolved("/api/user/v2/retirement_cleanups/", "POST") == (
+            PLATFORM_AUTHENTICATION, [JSONParser],
+        )
 
     def test_the_collection_declares_no_credentials_for_all_of_its_operations_at_once(self):
         """Declaring them for the whole class is what would widen the operations that erase data."""

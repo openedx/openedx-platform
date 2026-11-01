@@ -36,7 +36,7 @@ from edx_rest_framework_extensions.scoping import FullScopePolicy
 from edx_rest_framework_extensions.testing import assert_error_envelope
 from opaque_keys.edx.keys import CourseKey
 from rest_framework import permissions, status
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.test import APITestCase
 
 from common.djangoapps.student.models import (
@@ -70,7 +70,13 @@ from openedx.core.djangoapps.user_api.models import (
 )
 from openedx.core.djangoapps.user_api.v2 import urls as v2_urls
 from openedx.core.djangoapps.user_api.v2 import view_services
-from openedx.core.djangoapps.user_api.v2.errors import AmbiguousAccountName, RetirementStateConflict
+from openedx.core.djangoapps.user_api.v2.errors import (
+    AccountDeletionUnavailable,
+    AccountTemporarilyLocked,
+    AmbiguousAccountName,
+    PasswordNotConfirmed,
+    RetirementStateConflict,
+)
 from openedx.core.djangoapps.user_api.v2.paginators import UserApiPagination
 from openedx.core.djangoapps.user_api.v2.permissions import AccountDeletionEnabled
 from openedx.core.djangoapps.user_api.v2.serializers import (
@@ -2826,6 +2832,21 @@ class RetirementErrorCatalogTests(SimpleTestCase):
 
     def test_a_refusal_naming_no_records_carries_no_per_record_member(self):
         assert not hasattr(RetirementStateConflict("refused"), "extension_members")
+
+    def test_each_refusal_a_request_to_be_retired_can_answer_is_named_for_this_area(self):
+        """A caller branching on the status alone cannot tell these three apart."""
+        assert {
+            classify_error(refusal())
+            for refusal in (AccountDeletionUnavailable, PasswordNotConfirmed, AccountTemporarilyLocked)
+        } == {
+            ("user/account-deletion-unavailable", "Account Deletion Unavailable"),
+            ("user/password-not-confirmed", "Password Not Confirmed"),
+            ("user/account-temporarily-locked", "Account Temporarily Locked"),
+        }
+
+    def test_another_area_refusing_a_caller_is_classified_as_it_was_before(self):
+        """These three are subclasses of a classified refusal, and the registry is shared."""
+        assert classify_error(PermissionDenied()) == ("authz", "Permission Denied")
 
 
 class RetirementPageSizeTests(SimpleTestCase):

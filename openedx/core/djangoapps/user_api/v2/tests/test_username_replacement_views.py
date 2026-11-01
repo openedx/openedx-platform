@@ -152,15 +152,19 @@ class UsernameReplacementAccessTests(UsernameReplacementTestCase):
         }
 
     def test_the_view_declares_no_credentials_of_its_own(self):
+        """It takes whatever the deployment configures for every endpoint of the platform."""
         assert "authentication_classes" not in vars(UsernameReplacementViewSet)
-        assert UsernameReplacementViewSet.action_authentication == {}
+        assert "action_authentication" not in vars(UsernameReplacementViewSet)
         assert [
             type(authenticator) for authenticator in UsernameReplacementViewSet().get_authenticators()
         ] == list(APIView.authentication_classes)
 
     def test_the_view_reads_a_body_as_json_alone(self):
         assert UsernameReplacementViewSet.parser_classes == (JSONParser,)
-        assert UsernameReplacementViewSet.action_parsers == {}
+        assert "action_parsers" not in vars(UsernameReplacementViewSet)
+        assert [
+            type(parser) for parser in UsernameReplacementViewSet().get_parsers()
+        ] == [JSONParser]
 
     def test_a_method_the_address_does_not_serve_is_answered_as_not_served(self):
         self.login(self.replacer)
