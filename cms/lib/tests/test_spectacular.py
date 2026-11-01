@@ -266,6 +266,27 @@ SUPERSEDED_USER_OPERATION_IDS = {
     ("/api/user/v1/user_prefs/{id}/", "get"): "api_user_v1_user_prefs_retrieve",
     ("/api/user/v1/users/", "get"): "api_user_v1_users_list",
     ("/api/user/v1/users/{id}/", "get"): "api_user_v1_users_retrieve",
+    ("/api/user/v1/accounts/cancel_retirement/", "post"): "api_user_v1_accounts_cancel_retirement_create",
+    ("/api/user/v1/accounts/retire/", "post"): "api_user_v1_accounts_retire_create",
+    ("/api/user/v1/accounts/retire_misc/", "post"): "api_user_v1_accounts_retire_misc_create",
+    ("/api/user/v1/accounts/retirement_cleanup/", "post"): "api_user_v1_accounts_retirement_cleanup_create",
+    ("/api/user/v1/accounts/retirement_partner_report/", "post"): (
+        "api_user_v1_accounts_retirement_partner_report_create"
+    ),
+    ("/api/user/v1/accounts/retirement_partner_report/", "put"): (
+        "api_user_v1_accounts_retirement_partner_report_update"
+    ),
+    ("/api/user/v1/accounts/retirement_partner_report_cleanup/", "post"): (
+        "api_user_v1_accounts_retirement_partner_report_cleanup_create"
+    ),
+    ("/api/user/v1/accounts/retirement_queue/", "get"): "api_user_v1_accounts_retirement_queue_retrieve",
+    ("/api/user/v1/accounts/retirements_by_status_and_date/", "get"): (
+        "api_user_v1_accounts_retirements_by_status_and_date_retrieve"
+    ),
+    ("/api/user/v1/accounts/update_retirement_status/", "patch"): (
+        "api_user_v1_accounts_update_retirement_status_partial_update"
+    ),
+    ("/api/user/v1/accounts/{username}/retirement_status/", "get"): "api_user_v1_accounts_retirement_status_retrieve",
 }
 
 
