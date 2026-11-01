@@ -2070,6 +2070,37 @@ def test_a_merge_patch_the_endpoint_carries_out_is_one_the_request_body_takes(cl
 
 @pytest.mark.django_db
 @skip_unless_lms
+def test_a_change_that_names_no_preference_is_refused_by_the_document_too(client, schema):
+    """
+    A body naming nothing to change is refused, and the document says so as well as the handler.
+
+    A caller that generates a request from the document should learn that the
+    body has to name something before it is sent, rather than being told so
+    by a refusal.
+    """
+    owner = AdminFactory.create(username="empty-patch", password=PASSWORD)
+    UserPreferenceFactory.create(user=owner, key="time_zone", value="Asia/Tokyo")
+    assert client.login(username=owner.username, password=PASSWORD)
+    validator = jsonschema.Draft202012Validator(published_request_schema(
+        schema, PREFERENCE_DOCUMENT_PATH, "patch", "application/merge-patch+json",
+    ))
+    assert [error.message for error in validator.iter_errors({})] == [
+        "{} should be non-empty",
+    ]
+    assert [error.message for error in validator.iter_errors({"time_zone": "Europe/Paris"})] == []
+    refusal = client.patch(
+        reverse("user_v2:account_preference_list", kwargs={"username": owner.username}),
+        data=json.dumps({}),
+        content_type="application/merge-patch+json",
+    )
+    assert refusal.status_code == 400, refusal.content
+    assert refusal.json()["errors"] == {
+        "non_field_errors": ["Name at least one preference to change."],
+    }
+
+
+@pytest.mark.django_db
+@skip_unless_lms
 def test_a_preference_document_the_endpoint_answers_is_what_the_document_describes(client, schema):
     owner = AdminFactory.create(username="shape-preferences", password=PASSWORD)
     for key, value in (("pref-lang", "en"), ("time_zone", "Asia/Tokyo"), ("visibility.bio", "all_users")):

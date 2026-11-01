@@ -878,14 +878,17 @@ ACCOUNT_PREFERENCES_SCHEMA = {
 
 
 #: What a merge patch of the preference document carries: the same object as
-#: the document, except that a member may also be null.
+#: the document, except that a member may also be null, and that it has to
+#: name something -- a body naming nothing to change is refused as it is read,
+#: so the document says so too.
 ACCOUNT_PREFERENCE_CHANGES_SCHEMA = {
     "type": "object",
+    "minProperties": 1,
     "additionalProperties": {"type": "string", "nullable": True},
     "description": (
         "Preferences to change, as an object of preference name to the value to store under it. "
         "Every value is text, and a null removes the preference. Names the body leaves out are "
-        "left as they are."
+        "left as they are. At least one name must be given."
     ),
 }
 
