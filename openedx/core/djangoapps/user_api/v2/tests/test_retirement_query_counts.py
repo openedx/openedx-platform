@@ -1,6 +1,10 @@
 """Query-count guards for the version 2 retirement pipeline addresses."""
 
+import re
+
 import pytest
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 
 from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory
@@ -31,10 +35,18 @@ RETIREMENT_LIST_QUERIES = 15
 RETIREMENT_DETAIL_QUERIES = 15
 PARTNER_REPORT_CLAIM_QUERIES = 16
 
+#: How many statements one request to be retired makes, which is what the
+#: address this one replaces makes.
+REQUEST_RETIREMENT_QUERIES = 36
+
 #: Addresses of the pipeline operations this version replaces, so the cost of
 #: the two can be compared.
 EARLIER_QUEUE = "/api/user/v1/accounts/retirement_queue/"
 EARLIER_CLAIM = "/api/user/v1/accounts/retirement_partner_report/"
+EARLIER_REQUEST = "/api/user/v1/accounts/deactivate_logout/"
+
+#: The form both addresses read the password from.
+FORM_BODY = "application/x-www-form-urlencoded"
 
 #: What the earlier claim costs, measured the same way as the counts above: a
 #: constant part plus two queries for every account on it, because both the
@@ -165,3 +177,54 @@ def test_the_earlier_queue_costs_what_it_costs(client, queue, django_assert_num_
     with django_assert_num_queries(EARLIER_QUEUE_QUERIES[len(queue)]):
         response = client.get(EARLIER_QUEUE, {"cool_off_days": 0, "states": WORKING_STATE})
     assert len(response.json()) == len(queue)
+
+
+#: The statements of one request to be retired, as a shape with the values
+#: taken out of it, so that two requests about different accounts compare.
+_VALUE = re.compile(r"\d+|'[^']*'")
+
+
+def statement_shapes(captured):
+    """Return what each statement of a request does, without the values it does it with."""
+    return [_VALUE.sub("?", query["sql"]) for query in captured.captured_queries]
+
+
+def ask_to_be_retired(client, url, username):
+    """Sign a learner in and ask, at this address, for their own account to be retired."""
+    owner = UserFactory.create(username=username, password=PASSWORD)
+    assert client.login(username=owner.username, password=PASSWORD)
+    answered = client.post(url, f"password={PASSWORD}", content_type=FORM_BODY)
+    assert answered.status_code == 204, (url, answered.content)
+    client.logout()
+    return owner
+
+
+@pytest.mark.django_db
+@skip_unless_lms
+@pytest.mark.usefixtures("setup_retirement_states")
+def test_asking_to_be_retired_costs_what_it_costs_at_the_address_this_one_replaces(client):
+    """
+    Both addresses make the same statements in the same order, and as many of them.
+
+    The write is the same helper on both, so the measurement here is parity
+    rather than improvement: a statement in one list and not the other means a
+    read was added on the way to the same write. Each address is driven once
+    before it is measured, because the first request of a process fills caches
+    every later one reads instead of the database, which would otherwise be
+    counted against whichever address was measured first.
+    """
+    measured = {}
+    for which, url in (
+        ("conforming", reverse("user_v2:retirement_list")),
+        ("earlier", EARLIER_REQUEST),
+    ):
+        ask_to_be_retired(client, url, f"warming-{which}")
+        owner = UserFactory.create(username=f"measured-{which}", password=PASSWORD)
+        assert client.login(username=owner.username, password=PASSWORD)
+        with CaptureQueriesContext(connection) as captured:
+            answered = client.post(url, f"password={PASSWORD}", content_type=FORM_BODY)
+        assert answered.status_code == 204, (url, answered.content)
+        client.logout()
+        measured[which] = statement_shapes(captured)
+    assert measured["conforming"] == measured["earlier"]
+    assert len(measured["conforming"]) == REQUEST_RETIREMENT_QUERIES
