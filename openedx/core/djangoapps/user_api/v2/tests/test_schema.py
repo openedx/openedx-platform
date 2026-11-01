@@ -163,6 +163,18 @@ SDK_PATHS = {
 
 VERSION_TWO_PATHS = LIST_PATHS | MEMBER_PATHS | ACTION_PATHS
 
+#: The addresses this version serves for the authentication app. They answer
+#: with the bodies that app has always answered with rather than with the
+#: envelope the rest of this version uses, so the checks made over the rest of
+#: it leave them out; their own tests are in ``test_authn_addresses``.
+AUTHN_PATHS = {
+    "/api/user/v2/registrations/",
+    "/api/user/v2/registration_validations/",
+    "/api/user/v2/login_sessions/",
+    "/api/user/v2/password_resets/",
+    "/api/user/v2/password_reset_token_validations/",
+}
+
 #: The addresses the retirement pipeline is served at.
 RETIREMENT_PATHS = {
     RETIREMENT_LIST_PATH,
@@ -549,7 +561,7 @@ def test_only_superseded_addresses_are_marked_deprecated(schema):
 def test_only_this_version_and_the_addresses_it_supersedes_are_published(schema):
     """A user address this change neither serves nor replaces stays out of the document."""
     published = {path for path in schema["paths"] if path.startswith("/api/user/")}
-    assert published == VERSION_TWO_PATHS | set(SUPERSEDED_USER_ADDRESSES)
+    assert published == VERSION_TWO_PATHS | AUTHN_PATHS | set(SUPERSEDED_USER_ADDRESSES)
 
 
 @skip_unless_lms

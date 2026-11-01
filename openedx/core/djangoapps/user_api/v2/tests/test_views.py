@@ -1768,7 +1768,7 @@ class AddressSelfDescriptionTests(UserApiV2TestCase):
             name: view_class().get_view_description()
             for name, view_class in routed_view_classes().items()
         }
-        assert len(described) == 16, sorted(described)
+        assert len(described) == 21, sorted(described)
         assert [name for name, text in described.items() if not text.strip()] == []
 
     def test_no_address_describes_itself_in_implementation_terms(self):

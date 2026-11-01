@@ -7,6 +7,7 @@ from rest_framework.routers import SimpleRouter
 
 from openedx.core.djangoapps.profile_images.v2.views import ProfileImageView
 
+from . import authn_views
 from .views import (
     PREFERENCE_KEY_PATTERN_PARTIAL,
     AccountDeactivationView,
@@ -128,5 +129,29 @@ urlpatterns = [
         rf",(?P<key>{PREFERENCE_KEY_PATTERN_PARTIAL})/$",
         UserPreferenceViewSet.as_view({"get": "retrieve"}),
         name="user_preference_detail",
+    ),
+    # Registering an account, signing in and resetting a password each create
+    # something no address here reads back, so each is a collection that is
+    # only ever posted to or described. Signing in answers as the version this
+    # API is at, which the view reads from its route.
+    re_path(r"^registrations/$", authn_views.RegistrationView.as_view(), name="registration_list"),
+    re_path(
+        r"^registration_validations/$",
+        authn_views.RegistrationValidationView.as_view(),
+        name="registration_validation_list",
+    ),
+    re_path(
+        r"^login_sessions/$",
+        authn_views.LoginSessionView.as_view(),
+        {"api_version": "v2"},
+        name="login_session_list",
+    ),
+    re_path(r"^password_resets/$", authn_views.PasswordResetView.as_view(), name="password_reset_list"),
+    # The token is a secret, so it is sent in the body rather than in the
+    # address, where it would be written to every log the request passes.
+    re_path(
+        r"^password_reset_token_validations/$",
+        authn_views.PasswordResetTokenValidation.as_view(),
+        name="password_reset_token_validation_list",
     ),
 ]

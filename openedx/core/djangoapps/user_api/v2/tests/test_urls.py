@@ -102,6 +102,11 @@ EXPECTED_ADDRESSES = {
         {},
         "/api/user/v2/retirement_partner_report_cleanups/",
     ),
+    "user_v2:registration_list": ({}, "/api/user/v2/registrations/"),
+    "user_v2:registration_validation_list": ({}, "/api/user/v2/registration_validations/"),
+    "user_v2:login_session_list": ({}, "/api/user/v2/login_sessions/"),
+    "user_v2:password_reset_list": ({}, "/api/user/v2/password_resets/"),
+    "user_v2:password_reset_token_validation_list": ({}, "/api/user/v2/password_reset_token_validations/"),
 }
 
 
@@ -452,8 +457,13 @@ class RouteShapeTests(APITestCase):
             "account_verification_status",
             "email_opt_in_list",
             "email_search_list",
+            "login_session_list",
             "name_change_confirmation",
             "name_change_list",
+            "password_reset_list",
+            "password_reset_token_validation_list",
+            "registration_list",
+            "registration_validation_list",
             "retirement_cleanup_list",
             "retirement_detail",
             "retirement_erasure",
