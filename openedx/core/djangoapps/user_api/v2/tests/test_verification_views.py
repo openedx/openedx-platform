@@ -970,6 +970,13 @@ class VerificationParityTests(VerificationTestCase):
         assert self.client.get(self.list_address("nobody-at-all")).status_code == status.HTTP_404_NOT_FOUND
 
     def test_both_versions_refuse_an_address_that_is_not_exactly_the_callers_name(self):
+        """
+        Neither version answers an account to a caller who addressed it differently.
+
+        The two refuse such a request in different terms, so each is held to
+        the code it answers rather than both to one code, and neither hands
+        back anything of the account that was asked for.
+        """
         self.login(self.owner)
         shouted = self.owner.username.upper()
         for earlier_address, later_address in (
@@ -978,8 +985,8 @@ class VerificationParityTests(VerificationTestCase):
         ):
             earlier = self.client.get(earlier_address)
             later = self.client.get(later_address)
-            assert earlier.status_code == status.HTTP_403_FORBIDDEN
-            assert earlier.data == {"detail": "You do not have permission to perform this action."}
+            assert earlier.status_code == status.HTTP_404_NOT_FOUND
+            assert "verification" not in str(earlier.data)
             assert_error_envelope(later, expected_status=403, expected_type_slug="authz")
 
     def test_an_anonymous_caller_is_refused_by_both_and_told_so_by_this_one(self):
