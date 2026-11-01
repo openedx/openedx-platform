@@ -470,7 +470,7 @@ class NameChangeAmbiguousTargetTests(NameChangeTestCase):
             envelope = assert_error_envelope(
                 self.client.post(self.url),
                 expected_status=status.HTTP_400_BAD_REQUEST,
-                expected_type_slug="validation",
+                expected_type_slug="user/ambiguous-account-name",
             )
         assert envelope["errors"] == {"non_field_errors": [AMBIGUOUS_ACCOUNT_ADDRESS]}
         assert self.profile_name(self.owner) == "Original Name"

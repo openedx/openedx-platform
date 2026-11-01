@@ -7,6 +7,7 @@ from rest_framework.exceptions import (
     NotFound,
     ParseError,
     UnsupportedMediaType,
+    ValidationError,
 )
 from rest_framework.settings import api_settings
 
@@ -25,6 +26,17 @@ class UnreadableRepresentation(UnsupportedMediaType):
 
 class MalformedBody(ParseError):
     """A request body that is not well formed in the media type it was sent as."""
+
+
+class AmbiguousAccountName(ValidationError):
+    """
+    An address answered by more than one account, naming no one of them.
+
+    The refusal is one about what the request asked for, so it keeps the
+    status of the refusals beside it; what it adds is a name for the one
+    condition, which a caller can tell apart from a value it sent being
+    wrong and can act on by naming an account as it is stored.
+    """
 
 
 class RetiredAccount(NotFound):
@@ -49,6 +61,7 @@ register_error_type(UnsatisfiableAccept, "not-acceptable", "Not Acceptable")
 register_error_type(UnreadableRepresentation, "unsupported-media-type", "Unsupported Media Type")
 register_error_type(MalformedBody, "malformed-body", "Malformed Request Body")
 register_error_type(RetiredAccount, "user/retired-account", "Retired Account")
+register_error_type(AmbiguousAccountName, "user/ambiguous-account-name", "Ambiguous Account Name")
 
 
 def refusal_sentence(refusals):

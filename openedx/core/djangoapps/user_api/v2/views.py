@@ -44,7 +44,7 @@ from openedx.core.djangoapps.user_api.models import UserPreference
 from openedx.core.djangoapps.user_api.preferences.api import get_country_time_zones
 from openedx.core.lib.api.parsers import MergePatchParser
 
-from .errors import CatalogedRequestErrorsMixin, ErrorExtensionsMixin, RetiredAccount
+from .errors import AmbiguousAccountName, CatalogedRequestErrorsMixin, ErrorExtensionsMixin, RetiredAccount
 from .filters import StrictOrderingFilter, UserFilterSet, UserPreferenceFilterSet
 from .paginators import UserApiPagination
 from .permissions import CanSelectAccountsByContact, IsActiveUser, IsAddressedUser, IsStaffOrAbsent
@@ -473,7 +473,7 @@ def _the_one_addressed(username, records, name_of):
     if stored_under_it:
         return stored_under_it[0]
     if len(records) > 1:
-        raise ValidationError({api_settings.NON_FIELD_ERRORS_KEY: [AMBIGUOUS_ACCOUNT_ADDRESS]})
+        raise AmbiguousAccountName({api_settings.NON_FIELD_ERRORS_KEY: [AMBIGUOUS_ACCOUNT_ADDRESS]})
     if not records:
         raise NotFound
     return records[0]

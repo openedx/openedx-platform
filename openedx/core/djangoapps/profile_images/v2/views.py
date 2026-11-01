@@ -22,7 +22,7 @@ from rest_framework.views import APIView
 
 from openedx.core.djangoapps.user_api.accounts.image_helpers import get_profile_image_names, set_has_profile_image
 from openedx.core.djangoapps.user_api.errors import UserNotFound
-from openedx.core.djangoapps.user_api.v2.errors import CatalogedRequestErrorsMixin
+from openedx.core.djangoapps.user_api.v2.errors import AmbiguousAccountName, CatalogedRequestErrorsMixin
 from openedx.core.djangoapps.user_api.v2.permissions import IsAddressedUser
 from openedx.core.djangoapps.user_api.v2.serializers import ErrorResponse
 from openedx.core.djangoapps.user_api.v2.view_utils import (
@@ -272,7 +272,7 @@ class ProfileImageView(
             raise NotFound from exc
         except MultipleObjectsReturned as exc:
             log.info("Profile image not recorded for %r: the name answers for more than one account", username)
-            raise ValidationError({
+            raise AmbiguousAccountName({
                 api_settings.NON_FIELD_ERRORS_KEY: [AMBIGUOUS_ACCOUNT_ADDRESS],
             }) from exc
 

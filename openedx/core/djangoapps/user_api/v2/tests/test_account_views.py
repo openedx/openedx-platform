@@ -763,8 +763,9 @@ class AccountDetailViewTests(AccountApiV2TestCase):
         with mock.patch(ACCOUNT_LOOKUP, two_accounts):
             response = self.client.get(self.detail_url("owner-caller "))
         envelope = assert_error_envelope(
-            response, expected_status=status.HTTP_400_BAD_REQUEST, expected_type_slug="validation",
+            response, expected_status=status.HTTP_400_BAD_REQUEST, expected_type_slug="user/ambiguous-account-name",
         )
+        assert envelope["title"] == "Ambiguous Account Name"
         assert envelope["errors"] == {"non_field_errors": [AMBIGUOUS_ACCOUNT_ADDRESS]}
 
     def test_a_member_address_one_of_several_accounts_is_stored_under_carries_that_one(self):
@@ -2046,7 +2047,7 @@ class AccountWriteTargetTests(AccountApiV2TestCase):
             envelope = assert_error_envelope(
                 self.client.post(address),
                 expected_status=status.HTTP_400_BAD_REQUEST,
-                expected_type_slug="validation",
+                expected_type_slug="user/ambiguous-account-name",
             )
         assert envelope["errors"] == {"non_field_errors": [AMBIGUOUS_ACCOUNT_ADDRESS]}
         for user in (self.owner, self.other, self.staff):
@@ -2085,7 +2086,7 @@ class AccountWriteTargetTests(AccountApiV2TestCase):
             envelope = assert_error_envelope(
                 self.client.delete(address),
                 expected_status=status.HTTP_400_BAD_REQUEST,
-                expected_type_slug="validation",
+                expected_type_slug="user/ambiguous-account-name",
             )
         assert envelope["errors"] == {"non_field_errors": [AMBIGUOUS_ACCOUNT_ADDRESS]}
         self.owner.profile.refresh_from_db()
