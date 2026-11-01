@@ -32,6 +32,7 @@ from openedx.core.djangoapps.user_api.v2 import authn_views
 from openedx.core.djangoapps.user_api.v2.tests.test_schema import as_json_schema
 from openedx.core.djangoapps.user_authn.views import login, password_reset, register
 from openedx.core.djangolib.testing.utils import skip_unless_lms
+from openedx.envs.common import REGISTRATION_EXTRA_FIELDS as STOCK_REGISTRATION_EXTRA_FIELDS
 
 User = get_user_model()
 
@@ -1163,22 +1164,26 @@ def test_a_check_takes_as_many_queries_at_either_address(django_assert_num_queri
 #: it is published under in the document trimming the area off each path and
 #: in the one trimming nothing, and the codes it is published with.
 CONFORMING_OPERATIONS = {
-    (REGISTRATIONS, "get"): ("v2_registrations_retrieve", "api_user_v2_registrations_retrieve", ["200"]),
+    (REGISTRATIONS, "get"): ("v2_registrations_retrieve", "api_user_v2_registrations_retrieve", ["200", "406"]),
     (REGISTRATIONS, "post"): (
-        "v2_registrations_create", "api_user_v2_registrations_create", ["200", "400", "403", "409"],
+        "v2_registrations_create", "api_user_v2_registrations_create", ["200", "400", "403", "406", "409", "415"],
     ),
-    (PASSWORD_RESETS, "get"): ("v2_password_resets_retrieve", "api_user_v2_password_resets_retrieve", ["200"]),
+    (PASSWORD_RESETS, "get"): (
+        "v2_password_resets_retrieve", "api_user_v2_password_resets_retrieve", ["200", "406"],
+    ),
     (TOKEN_VALIDATIONS, "post"): (
         "v2_password_reset_token_validations_create",
         "api_user_v2_password_reset_token_validations_create",
-        ["200", "400", "401", "403", "429"],
+        ["200", "400", "401", "403", "406", "415", "429"],
     ),
     (REGISTRATION_VALIDATIONS, "post"): (
-        "v2_registration_validations_create", "api_user_v2_registration_validations_create", ["200", "400", "403"],
+        "v2_registration_validations_create",
+        "api_user_v2_registration_validations_create",
+        ["200", "400", "403", "406", "415"],
     ),
-    (LOGIN_SESSIONS, "get"): ("v2_login_sessions_retrieve", "api_user_v2_login_sessions_retrieve", ["200"]),
+    (LOGIN_SESSIONS, "get"): ("v2_login_sessions_retrieve", "api_user_v2_login_sessions_retrieve", ["200", "406"]),
     (LOGIN_SESSIONS, "post"): (
-        "v2_login_sessions_create", "api_user_v2_login_sessions_create", ["200", "400", "403"],
+        "v2_login_sessions_create", "api_user_v2_login_sessions_create", ["200", "400", "403", "406", "415"],
     ),
 }
 
@@ -1572,3 +1577,72 @@ class ExtensionFormShapeTests(TestCase):
                         schema = published_response_schema(document, address, "get", response.status_code)
                         jsonschema.validate(body, schema)
                         assert undeclared_members(body, schema) == [], (which, form, address)
+
+
+#: Where an operation is requested, for one published under a key that is not an address.
+REQUESTED_AT = {LOGIN_SESSION_KEY: V2_LOGIN_SESSION}
+
+#: Each operation that reads a body, at the addresses replacing others and at the ones they replace.
+BODY_READERS = set(CONFORMING_REQUESTS) | {
+    superseded for superseded, (replacing, _narrow, _service_wide) in SUPERSEDED_OPERATIONS.items()
+    if replacing in CONFORMING_REQUESTS
+}
+
+#: The operations each document is held to here. Signing in by posting at the
+#: older address keeps the description its handler carries.
+REFUSING_OPERATIONS = {
+    "narrow": set(CONFORMING_OPERATIONS) | set(SUPERSEDED_OPERATIONS) - {SIGN_IN_BY_POSTING},
+    "service-wide": set(CONFORMING_OPERATIONS) | set(SUPERSEDED_OPERATIONS) - {SIGN_IN_BY_POSTING},
+}
+
+
+@skip_unless_lms
+class RefusedRepresentationTests(TestCase):
+    """
+    Each operation publishes the refusal of an answer it cannot give and of a body it cannot read.
+
+    Both are settled as the request enters, before the handler runs, so every
+    operation refuses an ``Accept`` header naming nothing it answers in, and
+    every operation reading a body refuses one in a media type it cannot
+    read. Each refusal is sent to the running address and held against the
+    shape both documents publish for that operation and code.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.documents = {"narrow": narrow_document(), "service-wide": service_wide_document()}
+
+    def test_each_operation_publishes_the_refusals_it_answers_with(self):
+        for which, keys in REFUSING_OPERATIONS.items():
+            for key in sorted(keys):
+                path, method = key
+                address = REQUESTED_AT.get(path, path)
+                requests = [(406, {"HTTP_ACCEPT": "text/html"})]
+                if key in BODY_READERS:
+                    requests.append((415, {"data": "x", "content_type": "text/plain"}))
+                for status, extra in requests:
+                    # Registration runs outside the transaction a request is
+                    # otherwise given, so a refusal there marks the one it runs
+                    # in for rollback; each request is given one of its own.
+                    with transaction.atomic():
+                        response = getattr(Client(), method)(address, **extra)
+                    assert response.status_code == status, (which, key)
+                    assert response["Content-Type"].startswith(JSON), (which, key, status)
+                    body = json.loads(response.content)
+                    schema = published_response_schema(self.documents[which], path, method, status)
+                    jsonschema.validate(body, schema)
+                    assert undeclared_members(body, schema) == [], (which, key, status)
+
+    def test_the_fields_published_as_required_are_the_ones_the_stock_form_requires(self):
+        """An empty registration is refused for each of them, and for the terms taken from `honor_code`."""
+        with override_settings(REGISTRATION_EXTRA_FIELDS=dict(STOCK_REGISTRATION_EXTRA_FIELDS)):
+            form = json.loads(Client().get(REGISTRATIONS).content)
+            refused = set(json.loads(Client().post(REGISTRATIONS, {}).content)) - {"error_code"}
+        required = sorted(field["name"] for field in form["fields"] if field["required"])
+        assert refused == set(required) | {"terms_of_service"}
+        for which, document in self.documents.items():
+            for path in (REGISTRATIONS, V1_REGISTRATION, V2_REGISTRATION):
+                content = document["paths"][path]["post"]["requestBody"]["content"]
+                published = {media_type: sorted(body["schema"]["required"]) for media_type, body in content.items()}
+                assert published == dict.fromkeys([FORM, MULTIPART], required), (which, path)

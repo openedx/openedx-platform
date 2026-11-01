@@ -119,6 +119,16 @@ REFUSAL = {
     "required": ["detail"],
 }
 
+#: Published by every operation here. Which representations an answer can be
+#: given in is settled as the request enters, before the handler runs.
+NOT_ACCEPTABLE = OpenApiResponse(
+    REFUSAL,
+    description="The `Accept` header of the request names no representation this endpoint can answer in.",
+)
+
+#: Published by every operation here that reads a body, which is parsed before the handler reads it.
+UNREADABLE_BODY = OpenApiResponse(REFUSAL, description="The request body is in a media type this endpoint cannot read.")
+
 REGISTRATION_FORM_RESPONSES = {
     200: OpenApiResponse(
         FORM_DESCRIPTION,
@@ -127,6 +137,7 @@ REGISTRATION_FORM_RESPONSES = {
             "site is configured."
         ),
     ),
+    406: NOT_ACCEPTABLE,
 }
 
 REGISTRATION_FIELDS = {
@@ -225,10 +236,12 @@ REGISTRATION_RESPONSES = {
             "instead of this body."
         ),
     ),
+    406: NOT_ACCEPTABLE,
     409: OpenApiResponse(
         REGISTRATION_REFUSAL,
         description="An account already has that email address or that username.",
     ),
+    415: UNREADABLE_BODY,
 }
 
 PASSWORD_RESET_FORM_RESPONSES = {
@@ -236,6 +249,7 @@ PASSWORD_RESET_FORM_RESPONSES = {
         FORM_DESCRIPTION,
         description="The form a password reset is asked for with, which asks for the email address of the account.",
     ),
+    406: NOT_ACCEPTABLE,
 }
 
 TOKEN_VALIDATION_REQUEST = read_in_every_form({
@@ -257,6 +271,8 @@ TOKEN_VALIDATION_RESPONSES = {
     400: OpenApiResponse(REFUSAL, description="The body could not be parsed."),
     401: OpenApiResponse(REFUSAL, description="The credentials sent could not be read."),
     403: OpenApiResponse(REFUSAL, description="A caller signed in with a session sent no valid CSRF token."),
+    406: NOT_ACCEPTABLE,
+    415: UNREADABLE_BODY,
     429: OpenApiResponse(REFUSAL, description="Too many tokens were checked; `detail` says when to try again."),
 }
 
@@ -308,10 +324,13 @@ REGISTRATION_VALIDATION_RESPONSES = {
     403: OpenApiResponse(
         REFUSAL, description="Too many checks were sent from the address the request came from.",
     ),
+    406: NOT_ACCEPTABLE,
+    415: UNREADABLE_BODY,
 }
 
 LOGIN_FORM_RESPONSES = {
     200: OpenApiResponse(FORM_DESCRIPTION, description="The form the site's sign-in page is built from."),
+    406: NOT_ACCEPTABLE,
 }
 
 LOGIN_REQUEST = read_as_a_form({
@@ -376,4 +395,6 @@ LOGIN_RESPONSES = {
             "through another provider, is refused with an HTML page instead of this body."
         ),
     ),
+    406: NOT_ACCEPTABLE,
+    415: UNREADABLE_BODY,
 }
