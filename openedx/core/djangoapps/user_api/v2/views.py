@@ -4,6 +4,7 @@ import contextlib
 import logging
 
 from django.conf import settings
+from django.contrib.auth import logout
 from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.db import transaction
 from django.db.models import F, Prefetch
@@ -19,10 +20,11 @@ from edx_rest_framework_extensions.permissions import IsStaff
 from edx_rest_framework_extensions.scoping import FullScopePolicy, ScopedQuerysetMixin
 from edx_rest_framework_extensions.shaping import MinimalViewMixin, project
 from rest_framework import permissions, status, viewsets
+from rest_framework.authentication import SessionAuthentication
 from rest_framework.decorators import action
 from rest_framework.exceptions import APIException, NotFound, PermissionDenied, Throttled, ValidationError
 from rest_framework.metadata import SimpleMetadata
-from rest_framework.parsers import JSONParser
+from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from rest_framework.settings import api_settings
@@ -59,6 +61,11 @@ from openedx.core.djangoapps.user_api.preferences.api import (
     update_email_opt_in,
     update_user_preferences,
 )
+# The mobile clients of the operation this version replaces hold an access
+# token rather than a token this platform signs, and which scheme they send it
+# under is configured per deployment, so the operation replacing it reads the
+# same credential they already hold.
+from openedx.core.lib.api.authentication import BearerAuthentication
 from openedx.core.lib.api.parsers import MergePatchParser
 from openedx.core.lib.api.permissions import ApiKeyHeaderPermission
 
@@ -66,6 +73,7 @@ from .errors import AmbiguousAccountName, ErrorExtensionsMixin, ReadableErrorDet
 from .filters import RetirementFilterSet, StrictOrderingFilter, UserFilterSet, UserPreferenceFilterSet
 from .paginators import UserApiPagination
 from .permissions import (
+    AccountDeletionEnabled,
     CanSelectAccountsByContact,
     IsActiveUser,
     IsAddressedUser,
@@ -123,6 +131,7 @@ from .serializers import (
     RetirementPartnerReportQuerySerializer,
     RetirementPartnerReportRecordSerializer,
     RetirementProjectionSerializer,
+    RetirementRequestSerializer,
     RetirementSerializer,
     RetirementUpdateSerializer,
     TimeZoneQuerySerializer,
@@ -143,11 +152,13 @@ from .view_services import (
     NO_SUCH_RETIREMENT,
     cancel_retirement,
     claim_partner_reports,
+    confirm_the_callers_password,
     delete_partner_reports,
     delete_retirements,
     erase_account_data,
     move_retirement,
     record_partner_report,
+    request_retirement_of_own_account,
     retirement_open_to_action,
     retirement_requested_as,
 )
@@ -582,6 +593,82 @@ class _ActionAddressMixin:
             namespace = request.resolver_match.namespace or namespace
         kwargs.setdefault("request", request)
         return reverse(f"{namespace}:{self.basename}_{url_name}", *args, **kwargs)
+
+
+#: The action recorded for a request that asks what an address answers rather
+#: than for what it holds. Such a request is answered to whoever may read the
+#: address; the description of a write it carries is built behind a second
+#: check, which carries the method of that write.
+DESCRIBE_ADDRESS_ACTION = "metadata"
+
+class _PerActionAccessMixin:
+    """
+    Who may make each request a collection serves, and how each of them is read.
+
+    A collection whose operations are not all for the same caller cannot ask
+    one capability of the whole of it, and a route carries one set of
+    declarations rather than one per method, so the operation being served
+    decides. An operation no mapping names falls back to what the view
+    declares for every operation alike -- except for the capability, where an
+    operation that is not named reaches none at all, so that one added later
+    cannot hold a capability by standing beside the operations that do.
+
+    The credentials a request may carry and the forms its body may be sent in
+    are settled while the request is still being built, before the operation
+    it resolves to has been recorded, so that is read from the map the route
+    was mounted with. The capability is resolved afterwards, once the
+    operation is recorded, and is read from there.
+    """
+
+    #: The capability each operation asks for beyond the classes the view
+    #: declares for all of them.
+    action_permissions = {}
+
+    #: The authenticators one operation resolves, where the credentials it
+    #: takes are not the ones every other operation of the view takes.
+    action_authentication = {}
+
+    #: The parsers one operation reads its body with, where the forms it is
+    #: sent in are not the ones every other operation of the view reads.
+    action_parsers = {}
+
+    def _action_being_served(self):
+        """
+        Return the operation this request resolves to, before it has been recorded.
+
+        A request describing the address is one operation whatever else the
+        address serves. Outside a request there is no map to read, and the
+        operation is whatever has been named on the view.
+        """
+        method = getattr(getattr(self, "request", None), "method", None) or ""
+        if method.upper() == "OPTIONS":
+            return DESCRIBE_ADDRESS_ACTION
+        mounted = getattr(self, "action_map", None) or {}
+        return mounted.get(method.lower()) or getattr(self, "action", None)
+
+    def get_permissions(self):
+        """Return the classes deciding who may make the request being served."""
+        if self.action is None:
+            # No action serves this method here: the shared classes admit it and it answers 405.
+            return [permission() for permission in self.permission_classes]
+        # An action this mapping does not name reaches no capability of this
+        # resource, rather than inheriting the one every other action shares.
+        specific = self.action_permissions.get(self.action, (~permissions.AllowAny,))
+        return [permission() for permission in (*self.permission_classes, *specific)]
+
+    def get_authenticators(self):
+        """Return the authenticators the operation being served takes credentials through."""
+        declared = self.action_authentication.get(self._action_being_served())
+        if declared is None:
+            return super().get_authenticators()
+        return [authenticator() for authenticator in declared]
+
+    def get_parsers(self):
+        """Return the parsers the operation being served reads a body with."""
+        declared = self.action_parsers.get(self._action_being_served())
+        if declared is None:
+            return super().get_parsers()
+        return [parser() for parser in declared]
 
 
 def _requested_field_names(raw):
@@ -1895,12 +1982,6 @@ STAFF_READABLE_PREFERENCE_ACTIONS = ("retrieve_all", "retrieve")
 #: The action that changes the whole preference document of one account.
 DOCUMENT_CHANGE_ACTION = "partial_update_all"
 
-#: The action recorded for a request that asks what an address answers rather
-#: than for what it holds. Such a request is answered to whoever may read the
-#: address; the description of a write it carries is built behind a second
-#: check, which carries the method of that write.
-DESCRIBE_ADDRESS_ACTION = "metadata"
-
 #: Who may read the preferences of the account an address names, and who may
 #: change them. Reading somebody else's is a privilege, so the administrator
 #: half also refuses a caller whose own account is no longer active; changing
@@ -2426,6 +2507,38 @@ _RESP_BATCH_STATE = OpenApiResponse(
         "deleted, and `errors` names each record at fault and why."
     ),
 )
+_RESP_RETIREMENT_REQUESTED = OpenApiResponse(
+    description=(
+        "The account is queued for retirement, its password no longer signs anybody in, and the "
+        "session the request was made from no longer holds."
+    ),
+)
+#: What a refusal says where the request itself is in order and the account it
+#: was made from cannot be closed: because this deployment does not offer it,
+#: because the password sent was not the account's, or because too many were
+#: sent. Each carries a type of its own, so a caller can tell them apart.
+_RESP_RETIREMENT_NOT_OFFERED = OpenApiResponse(
+    ErrorResponse,
+    description=(
+        "The password sent is not the password of the account making the request, or that account "
+        "is closed to password attempts for a while because several were, or this site does not "
+        "offer the closing of an account by its owner. Nothing was changed."
+    ),
+)
+_RESP_RETIREMENT_ALREADY_REQUESTED = OpenApiResponse(
+    ErrorResponse,
+    description=(
+        "The retirement of this account has already been requested. Nothing was changed and no "
+        "second request was recorded."
+    ),
+)
+_RESP_RETIREMENT_NOT_RECORDED = OpenApiResponse(
+    ErrorResponse,
+    description=(
+        "The request could not be recorded in full, so nothing of it was kept and the account is "
+        "as it was. It may be sent again."
+    ),
+)
 _RESP_RETIREMENT_MOVED = OpenApiResponse(description="The retirement now stands at the step asked for.")
 _RESP_RETIREMENT_CANCELLED = OpenApiResponse(
     description="The retirement request is gone and the account it was made for is usable again.",
@@ -2446,7 +2559,7 @@ _RESP_PARTNER_REPORT_QUEUED = OpenApiResponse(
     ),
 )
 
-class _RetirementRecordAccessMixin:
+class _RetirementRecordAccessMixin(_PerActionAccessMixin):
     """
     Who may act on the retirement records, and which of those records a caller acts on.
 
@@ -2467,18 +2580,6 @@ class _RetirementRecordAccessMixin:
     parser_classes = (JSONParser,)
     # The pipeline capability reaches every retirement; a narrower policy goes here.
     scoping_policy = FullScopePolicy()
-    #: The capability each action asks for beyond the classes above.
-    action_permissions = {}
-
-    def get_permissions(self):
-        """Return the classes deciding who may make the request being served."""
-        if self.action is None:
-            # No action serves this method here: the shared classes admit it and it answers 405.
-            return [permission() for permission in self.permission_classes]
-        # An action this mapping does not name reaches no capability of this
-        # resource, rather than inheriting the one every other action shares.
-        specific = self.action_permissions.get(self.action, (~permissions.AllowAny,))
-        return [permission() for permission in (*self.permission_classes, *specific)]
 
 
 class _RetirementRecordsMixin:
@@ -2496,9 +2597,11 @@ class _RetirementRecordsMixin:
         return retirements()
 
 
-#: Who may make each request. Cancellation is not pipeline work, so it takes a
-#: different capability; an unnamed action is refused.
+#: Who may make each request. Asking for a retirement is the owner's own request,
+#: offered where the deployment allows it; cancellation is not pipeline work, so
+#: it takes a different capability; an unnamed action is refused.
 RETIREMENT_ACTION_PERMISSIONS = {
+    "create": (AccountDeletionEnabled,),
     "list": (CanRetireUser,),
     "retrieve": (CanRetireUser,),
     "partial_update": (CanRetireUser,),
@@ -2512,6 +2615,38 @@ RETIREMENT_ACTION_PERMISSIONS = {
 # visibility policy, then filters; a record the policy hides answers 404.
 @extend_schema(tags=[USER_TAG])
 @extend_schema_view(
+    create=extend_schema(
+        # This is the one operation of the collection a client library is
+        # generated from: it is the account owner's own request, it reaches no
+        # account but the one making it, and the clients that make it are
+        # applications shipped to learners.
+        tags=[SDK_TAG],
+        summary="Close your own account",
+        description=(
+            "Queues the account this request is made from for retirement, and ends the session it "
+            "was made from. The password of that account is sent in the body to confirm the "
+            "request, and nothing in the request says which account it is about: it is always the "
+            "account the request was made from.\n\n"
+            "Afterwards the account cannot be signed in to, its address is replaced by one that "
+            "reaches nobody, and a message about the request is sent to the address it held. What "
+            "is then removed, and when, is the operator's configured sequence of steps; it can be "
+            "called off until the first of them runs.\n\n"
+            "The request may be sent with a session, with a token this platform signed, or with "
+            "an access token obtained from this platform's authorization endpoint, and its body "
+            "may be sent as JSON or as a web form."
+        ),
+        request=RetirementRequestSerializer,
+        responses={
+            204: _RESP_RETIREMENT_REQUESTED,
+            400: _RESP_UNUSABLE_BODY,
+            401: RESP_UNAUTHENTICATED,
+            403: _RESP_RETIREMENT_NOT_OFFERED,
+            406: RESP_NOT_ACCEPTABLE,
+            409: _RESP_RETIREMENT_ALREADY_REQUESTED,
+            415: RESP_UNREADABLE_BODY,
+            500: _RESP_RETIREMENT_NOT_RECORDED,
+        },
+    ),
     list=extend_schema(
         summary="List retirements",
         description=(
@@ -2631,21 +2766,37 @@ class RetirementViewSet(
     The accounts being retired, addressed by the name each was registered under.
 
     A retirement records one account's progress through the steps the operator
-    has configured. The requests here carry that work out; where an account
-    stands is recorded separately, by the caller driving them.
+    has configured. An account's owner asks here for their own to be retired,
+    which adds the record; the other requests carry that work out and record
+    where it stands.
 
     A read answers for either the name the account was registered under or the
     hashed name it was given when retired: both address the same account. A
     write takes the registered name alone, spelled exactly as it was
     registered, so it reaches one account and no other.
 
-    Cancelling a retirement is open to a different caller from the requests
-    that carry one out.
+    Asking for a retirement, and calling one off, are each open to a caller
+    the work itself is not.
     """
 
     serializer_class = RetirementSerializer
     pagination_class = UserApiPagination
     action_permissions = RETIREMENT_ACTION_PERMISSIONS
+    # The applications shipped to learners hold an access token obtained from
+    # this platform's authorization endpoint rather than a token this platform
+    # signed, and which scheme they send it under is configured per
+    # deployment, so the request a learner makes for their own account takes
+    # that credential as well as the two every other request here takes. It is
+    # declared for that one operation, because the others move and erase
+    # personal data and are not reached by any of those applications.
+    action_authentication = {
+        "create": (JwtAuthentication, SessionAuthentication, BearerAuthentication),
+    }
+    # Those applications and the sites that make the same request from a page
+    # send the body as a web form, so the operation a learner calls reads a
+    # form and a file upload as well as JSON. The rest of this collection
+    # reads JSON alone.
+    action_parsers = {"create": (JSONParser, FormParser, MultiPartParser)}
     lookup_field = "username"
     # The router's default lookup pattern excludes dots, which usernames allow.
     lookup_value_regex = settings.USERNAME_REGEX_PARTIAL
@@ -2673,6 +2824,20 @@ class RetirementViewSet(
         if self.action not in SHAPED_RETIREMENT_ACTIONS:
             names -= set(RESPONSE_SHAPING_PARAMS)
         return names
+
+    def create(self, request):
+        """Queue the account this request was made from for retirement, and end its session."""
+        asked = RetirementRequestSerializer(data=request.data)
+        asked.is_valid(raise_exception=True)
+        confirm_the_callers_password(request, asked.validated_data["password"])
+        with transaction.atomic():
+            # The request is recorded and the session ended together, so a
+            # failure of either leaves the caller signed in to an account that
+            # was not queued, rather than signed out of one that was not, or
+            # signed in to one that was.
+            request_retirement_of_own_account(request.user)
+            logout(request)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     def list(self, request, *args, **kwargs):
         """Return a page of the retirement queue, shaped as the caller asked."""

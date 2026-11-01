@@ -1,8 +1,16 @@
 """Permission classes for version 2 of the User API."""
 
+from django.conf import settings
 from edx_rest_framework_extensions.permissions import NotJwtRestrictedApplication
 from rest_framework.exceptions import NotFound
 from rest_framework.permissions import BasePermission
+
+from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
+
+from .errors import AccountDeletionUnavailable
+
+#: What a caller is told where closing one's own account is not offered.
+ACCOUNT_DELETION_IS_NOT_OFFERED = "The owner of an account cannot close it here."
 
 
 class IsActiveUser(BasePermission):
@@ -98,3 +106,25 @@ class RestrictedApplicationGuardMixin:
         if not any(isinstance(permission, NotJwtRestrictedApplication) for permission in resolved):
             resolved.append(NotJwtRestrictedApplication())
         return resolved
+
+
+class AccountDeletionEnabled(BasePermission):
+    """
+    Admits a caller only where the owner of an account may close it.
+
+    Whether an account's owner may close it is configured, and a site this
+    deployment serves may carry a value of its own, so the site being served
+    is asked first and the deployment answers for a site that says nothing.
+    The refusal is named for this one condition, because a caller refused
+    here holds every capability the request needs and would otherwise be
+    told only that it was forbidden.
+    """
+
+    def has_permission(self, request, view):
+        """Admit the caller where this site offers it, and refuse every caller where it does not."""
+        offered = configuration_helpers.get_value(
+            "ENABLE_ACCOUNT_DELETION", settings.ENABLE_ACCOUNT_DELETION,
+        )
+        if offered:
+            return True
+        raise AccountDeletionUnavailable(ACCOUNT_DELETION_IS_NOT_OFFERED)

@@ -646,7 +646,7 @@ class LegacyAddressTests(APITestCase):
 #: The addresses of the retirement pipeline, with the view each is mounted on
 #: and the methods it serves.
 RETIREMENT_ROUTES = {
-    "/api/user/v2/retirements/": (RetirementViewSet, {"get": "list"}),
+    "/api/user/v2/retirements/": (RetirementViewSet, {"get": "list", "post": "create"}),
     "/api/user/v2/retirements/alice/": (
         RetirementViewSet,
         {"get": "retrieve", "patch": "partial_update", "delete": "destroy"},

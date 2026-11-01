@@ -2,13 +2,19 @@
 
 import logging
 
-from rest_framework.exceptions import NotFound
+from django.conf import settings
+from django.contrib.auth import authenticate
+from django.contrib.sites.models import Site
+from edx_ace import ace
+from edx_ace.recipient import Recipient
+from rest_framework.exceptions import APIException, NotFound
 from wiki.models import ArticleRevision
 from wiki.models.pluginbase import RevisionPluginRevision
 
 from common.djangoapps.student.models import (
     AccountRecovery,
     CourseEnrollmentAllowed,
+    LoginFailures,
     ManualEnrollmentAudit,
     PendingEmailChange,
     PendingNameChange,
@@ -16,20 +22,24 @@ from common.djangoapps.student.models import (
     get_retired_email_by_email,
     get_retired_username_by_username,
 )
+from openedx.core.djangoapps.ace_common.template_context import get_base_template_context
 from openedx.core.djangoapps.api_admin.models import ApiAccessRequest
 from openedx.core.djangoapps.course_groups.models import UnregisteredLearnerCohortAssignments
 from openedx.core.djangoapps.credit.models import CreditRequest, CreditRequirementStatus
+from openedx.core.djangoapps.lang_pref import LANGUAGE_KEY
 from openedx.core.djangoapps.user_api.accounts.signals import (
     USER_RETIRE_LMS_CRITICAL,
     USER_RETIRE_LMS_MISC,
     USER_RETIRE_MAILINGS,
 )
 from openedx.core.djangoapps.user_api.accounts.utils import (
+    create_retirement_request_and_deactivate_account,
     get_orgs_for_user,
     handle_retirement_cancellation,
     redact_and_delete_historical_social_auth,
 )
 from openedx.core.djangoapps.user_api.accounts.views import AccountRetirementView, LMSAccountRetirementView
+from openedx.core.djangoapps.user_api.message_types import DeletionNotificationMessage
 from openedx.core.djangoapps.user_api.models import (
     RetirementStateError,
     UserOrgTag,
@@ -37,7 +47,12 @@ from openedx.core.djangoapps.user_api.models import (
     UserRetirementStatus,
 )
 
-from .errors import AmbiguousAccountName, RetirementStateConflict
+from .errors import (
+    AccountTemporarilyLocked,
+    AmbiguousAccountName,
+    PasswordNotConfirmed,
+    RetirementStateConflict,
+)
 from .selectors import partner_reports_requested_as, retirements_requested_as
 from .serializers import (
     ERASURE_CORE_SCOPE,
@@ -73,6 +88,96 @@ SEVERAL_RECORDS_HOLD_THIS_NAME = (
     "More than one record was requested under this name, and acting on one of them would act on an "
     "account this request did not name."
 )
+PASSWORD_NOT_CONFIRMED = "The password sent is not the password of the account making the request."
+ACCOUNT_TEMPORARILY_LOCKED = (
+    "This account is closed to password attempts for a while, after several were made with a "
+    "password it does not hold. Try again later."
+)
+RETIREMENT_ALREADY_REQUESTED = (
+    "The retirement of this account has already been requested, and it stands where the pipeline "
+    "has left it."
+)
+RETIREMENT_COULD_NOT_BE_REQUESTED = "The retirement could not be requested. Nothing was changed."
+RETIREMENT_WAS_NOT_RECORDED = (
+    "The retirement could not be recorded in full, so nothing of it was kept. The request may be "
+    "sent again."
+)
+
+
+def confirm_the_callers_password(request, password):
+    """
+    Confirm that the password sent is the one the account making the request holds.
+
+    Attempts are counted the way they are counted when signing in, and an
+    account that has had several refused is closed to further ones for a
+    while, so trying passwords here is no cheaper than trying them there. A
+    confirmed password clears that count, as signing in does.
+
+    The value is read and compared and never written down: no log line and no
+    answer carries it.
+    """
+    user = request.user
+    counted = LoginFailures.is_feature_enabled()
+    if counted and LoginFailures.is_user_locked_out(user):
+        log.info("A request from %r was refused: the account is closed to attempts.", user.username)
+        raise AccountTemporarilyLocked(ACCOUNT_TEMPORARILY_LOCKED)
+    if authenticate(username=user.username, password=password, request=request) is None:
+        if counted:
+            LoginFailures.increment_lockout_counter(user)
+        log.info("A request from %r was refused: the password sent was not the account's.", user.username)
+        raise PasswordNotConfirmed(PASSWORD_NOT_CONFIRMED)
+    if counted:
+        LoginFailures.clear_lockout_counter(user)
+
+
+def request_retirement_of_own_account(user):
+    """
+    Record that this account's owner has asked for it to be closed, and tell them so.
+
+    The account is the one given and no other: nothing here resolves a name,
+    so the record written is the record of the account the request was made
+    from.
+
+    The address the account holds is read before the request is recorded,
+    because recording it replaces that address with the one a retired account
+    is stored under, and the message about the request has to reach the
+    address its owner gave.
+    """
+    address_before_the_request = user.email
+    try:
+        create_retirement_request_and_deactivate_account(user)
+    except RetirementStateError as exc:
+        if UserRetirementStatus.objects.filter(user=user).exists():
+            log.info("A retirement is already held for the account %r: %s", user.username, exc)
+            raise RetirementStateConflict(RETIREMENT_ALREADY_REQUESTED) from exc
+        log.error("No retirement could be requested for %r: %s", user.username, exc)
+        raise APIException(RETIREMENT_COULD_NOT_BE_REQUESTED) from exc
+    _tell_the_owner_their_account_is_closing(user, address_before_the_request)
+
+
+def _tell_the_owner_their_account_is_closing(user, address):
+    """
+    Send the one message a request to close an account sends, to the address given.
+
+    A message that cannot be sent leaves the request unrecorded rather than
+    recorded in silence: the owner of an account being closed is told that it
+    is, and the whole request is answered as this server's failure so that it
+    can be sent again.
+    """
+    try:
+        context = get_base_template_context(Site.objects.get_current())
+        context.update({"full_name": user.profile.name})
+        language = user.preferences.model.get_value(
+            user, LANGUAGE_KEY, default=settings.LANGUAGE_CODE,
+        )
+        ace.send(DeletionNotificationMessage().personalize(
+            recipient=Recipient(lms_user_id=0, email_address=address),
+            language=language,
+            user_context=context,
+        ))
+    except Exception as exc:
+        log.exception("The message about the retirement requested for %r could not be sent.", user.username)
+        raise APIException(RETIREMENT_WAS_NOT_RECORDED) from exc
 
 
 def _only_record_named(username, records):

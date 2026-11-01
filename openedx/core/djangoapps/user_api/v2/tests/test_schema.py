@@ -143,9 +143,14 @@ ACTION_PATHS = {
 }
 
 #: The addresses a generated client library is built from. The retirement
-#: pipeline's are deliberately not among them: one service calls them by path
-#: literal, and a library for irreversible destruction of personal data invites
-#: a caller who has not read what the steps do.
+#: pipeline's work is deliberately not among them: one service calls those
+#: addresses by path literal, and a library for irreversible destruction of
+#: personal data invites a caller who has not read what the steps do. The
+#: request an account's owner makes for their own account is in, because it is
+#: not that work: it reaches no account but the caller's, it is made by the
+#: applications shipped to learners, and it is the sibling of the other
+#: account-family operations below. The replacement of several names is out
+#: for the same reason as the pipeline: its one caller addresses it by literal.
 SDK_PATHS = {
     ACCOUNT_LIST_PATH,
     ACCOUNT_MEMBER_PATH,
@@ -159,6 +164,7 @@ SDK_PATHS = {
     PROFILE_IMAGE_PATH,
     NAME_CHANGE_PATH,
     NAME_CHANGE_CONFIRMATION_PATH,
+    RETIREMENT_LIST_PATH,
 }
 
 VERSION_TWO_PATHS = LIST_PATHS | MEMBER_PATHS | ACTION_PATHS
@@ -525,6 +531,7 @@ def test_every_operation_of_this_version_is_published_under_one_group(schema):
         "v2_user_preferences_list": ["user"],
         "v2_user_preferences_retrieve": ["user"],
         "v2_time_zones_list": ["user"],
+        "v2_retirements_create": ["openedx-platform-sdk"],
         "v2_retirements_list": ["user"],
         "v2_retirements_retrieve": ["user"],
         "v2_retirements_partial_update": ["user"],
@@ -996,8 +1003,10 @@ def test_every_list_publishes_the_page_that_does_not_exist(schema):
     assert LIST_PATHS | MEMBER_PATHS | ACTION_PATHS == set(VERSION_TWO_PATHS)
     documented = {
         path: sorted(operation["responses"])
-        for path, _method, operation in operations(schema)
-        if path in LIST_PATHS
+        for path, method, operation in operations(schema)
+        # The read is what carries a page, so it is the read that is held to
+        # publishing the refusal: a collection may serve a write as well.
+        if path in LIST_PATHS and method == "get"
     }
     assert documented == {
         ACCOUNT_LIST_PATH: ["200", "400", "401", "403", "404", "406"],
@@ -2628,6 +2637,11 @@ def test_a_retirement_record_publishes_the_step_as_a_name(schema):
 #: decides what to do about that, so it is the one that publishes a 500.
 RETIREMENT_PUBLISHED_ANSWERS = {
     (RETIREMENT_LIST_PATH, "get"): ["200", "400", "401", "403", "404", "406"],
+    # The request an account's owner makes publishes a 500 as well, because
+    # the message about it is sent while the request is being recorded and a
+    # message that cannot be sent leaves nothing recorded; and a 409, because
+    # a record may already be held for the account it was made from.
+    (RETIREMENT_LIST_PATH, "post"): ["204", "400", "401", "403", "406", "409", "415", "500"],
     (RETIREMENT_MEMBER_PATH, "get"): ["200", "400", "401", "403", "404", "406"],
     (RETIREMENT_MEMBER_PATH, "patch"): ["204", "400", "401", "403", "404", "406", "409", "415"],
     (RETIREMENT_MEMBER_PATH, "delete"): ["204", "400", "401", "403", "404", "406", "409"],

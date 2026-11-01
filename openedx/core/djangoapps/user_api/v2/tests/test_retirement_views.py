@@ -77,6 +77,7 @@ from openedx.core.djangoapps.user_api.v2.serializers import (
     RetirementSerializer,
     RetirementUpdateSerializer,
 )
+from openedx.core.djangoapps.user_api.v2.permissions import AccountDeletionEnabled
 from openedx.core.djangoapps.user_api.v2.views import (
     RETIREMENT_ACTION_PERMISSIONS,
     RetirementCleanupViewSet,
@@ -84,6 +85,7 @@ from openedx.core.djangoapps.user_api.v2.views import (
     RetirementPartnerReportViewSet,
     RetirementViewSet,
     _PartnerReportAccessMixin,
+    _PerActionAccessMixin,
     _RetirementRecordAccessMixin,
     _RetirementRecordsMixin,
 )
@@ -2116,6 +2118,7 @@ class RetirementAccessModelTests(RetirementApiTestCase):
     def test_each_named_action_carries_the_capability_it_is_mapped_to(self):
         """The classes are read from the view rather than from the mapping, so the mapping can be wrong."""
         expected = {
+            "create": AccountDeletionEnabled,
             "list": CanRetireUser,
             "retrieve": CanRetireUser,
             "partial_update": CanRetireUser,
@@ -2269,7 +2272,9 @@ class RetirementRecordAccessReachTests(RetirementApiTestCase):
             for name, declared_by in (
                 ("permission_classes", _RetirementRecordAccessMixin),
                 ("scoping_policy", _RetirementRecordAccessMixin),
-                ("get_permissions", _RetirementRecordAccessMixin),
+                ("get_permissions", _PerActionAccessMixin),
+                ("get_authenticators", _PerActionAccessMixin),
+                ("get_parsers", _PerActionAccessMixin),
                 ("get_queryset", _RetirementRecordsMixin),
             ):
                 with self.subTest(declaration=name):
@@ -3267,6 +3272,11 @@ class UnsatisfiableAcceptTests(RetirementApiTestCase):
     def requests(self):
         """Return a request to every method of every address, by the caller that address admits."""
         return {
+            # The account the request would be made for is the caller's own,
+            # so this one is sent by a caller holding no capability at all.
+            ("retirement_list", "post"): (
+                "learner", reverse("user_v2:retirement_list"), {"password": PASSWORD},
+            ),
             ("retirement_list", "get"): ("worker", reverse("user_v2:retirement_list"), None),
             ("retirement_detail", "get"): (
                 "worker", reverse("user_v2:retirement_detail", kwargs={"username": "subject"}), None,
@@ -3516,7 +3526,7 @@ class UnservedMethodTests(RetirementApiTestCase):
     #: What each address whose capability follows the operation serves, as its
     #: refusal reports it.
     SERVED = {
-        "user_v2:retirement_list": {"GET", "HEAD", "OPTIONS"},
+        "user_v2:retirement_list": {"GET", "HEAD", "POST", "OPTIONS"},
         "user_v2:retirement_detail": {"GET", "HEAD", "PATCH", "DELETE", "OPTIONS"},
         "user_v2:retirement_erasure": {"POST", "OPTIONS"},
         "user_v2:retirement_cleanup_list": {"POST", "OPTIONS"},

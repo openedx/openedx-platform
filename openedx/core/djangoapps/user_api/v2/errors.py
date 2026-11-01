@@ -1,7 +1,7 @@
 """Error types this version of the User API classifies for itself."""
 
 from edx_rest_framework_extensions.errors import Conflict, register_error_type
-from rest_framework.exceptions import NotFound, ValidationError
+from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 from rest_framework.settings import api_settings
 
 
@@ -47,6 +47,37 @@ class RetirementStateConflict(_NamesTheRecordsAtFault, Conflict):
     """
 
 
+class AccountDeletionUnavailable(PermissionDenied):
+    """
+    A request to close an account where this deployment does not offer that.
+
+    Whether an account's owner may close it is a deployment's own choice, and
+    a site it serves may answer differently from the deployment as a whole, so
+    a caller refused here may be served at another site of the same
+    deployment. Nothing about the request itself is at fault.
+    """
+
+
+class PasswordNotConfirmed(PermissionDenied):
+    """
+    A request that has to be confirmed with the caller's own password was not.
+
+    The value sent is not the password of the account the request was made
+    from. The request is refused whole; a caller that holds the password sends
+    it again.
+    """
+
+
+class AccountTemporarilyLocked(PermissionDenied):
+    """
+    A request from an account closed to password attempts for a while.
+
+    Several attempts have been made with a password the account does not
+    hold, which closes it to further ones until the period the operator
+    configured has passed. Nothing the caller sends is accepted until then.
+    """
+
+
 class AmbiguousAccountName(_NamesTheRecordsAtFault, ValidationError):
     """
     An address or a name answered by more than one account, naming no one of them.
@@ -65,6 +96,13 @@ class AmbiguousAccountName(_NamesTheRecordsAtFault, ValidationError):
 register_error_type(RetiredAccount, "user/retired-account", "Retired Account")
 register_error_type(AmbiguousAccountName, "user/ambiguous-account-name", "Ambiguous Account Name")
 register_error_type(RetirementStateConflict, "user/retirement-state-conflict", "Retirement State Conflict")
+register_error_type(
+    AccountDeletionUnavailable, "user/account-deletion-unavailable", "Account Deletion Unavailable",
+)
+register_error_type(PasswordNotConfirmed, "user/password-not-confirmed", "Password Not Confirmed")
+register_error_type(
+    AccountTemporarilyLocked, "user/account-temporarily-locked", "Account Temporarily Locked",
+)
 
 
 def refusal_sentence(refusals):

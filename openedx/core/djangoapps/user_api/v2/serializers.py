@@ -1245,6 +1245,29 @@ class RetirementProjectionSerializer(_OptionalFieldsMixin, RetirementSerializer)
     """A retirement reduced to the properties the caller selected."""
 
 
+class RetirementRequestSerializer(serializers.Serializer):  # pylint: disable=abstract-method
+    """
+    What the owner of an account confirms a request to close it with.
+
+    The account is identified by the request itself rather than by anything in
+    the body, so the password is all that is read: whoever is making the
+    request is who the account is closed for.
+
+    The value is read exactly as it was sent, spaces at either end included,
+    because that is how a password was stored, and it is never sent back or
+    written down anywhere.
+    """
+
+    password = serializers.CharField(
+        write_only=True,
+        trim_whitespace=False,
+        help_text=(
+            "Current password of the account making the request, which confirms that whoever is "
+            "making it is the account's owner."
+        ),
+    )
+
+
 class RetirementUpdateSerializer(serializers.Serializer):  # pylint: disable=abstract-method
     """
     A move of one retirement to another step of the pipeline.
