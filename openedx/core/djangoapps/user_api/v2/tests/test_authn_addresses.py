@@ -1265,12 +1265,20 @@ class ConformingDocumentTests(TestCase):
                 assert sorted(shape["properties"]) == ["email_or_username", "password"], which
                 assert shape["required"] == ["email_or_username", "password"], which
 
-    def test_signing_in_publishes_the_security_every_other_address_here_publishes(self):
+    def test_signing_in_publishes_the_security_the_older_sign_in_publishes(self):
+        """
+        A client generated from either document treats the two sign-in addresses alike.
+
+        Both need the CSRF token, which the older one publishes as a scheme of
+        its own; a document declaring that scheme says how the token is sent.
+        No other address here needs anything.
+        """
+        older = self.documents["service-wide"]["paths"][LOGIN_SESSION_KEY]["post"]["security"]
+        assert older == [{"csrf": []}]
+        expected = {**dict.fromkeys(CONFORMING_OPERATIONS, [{}]), (LOGIN_SESSIONS, "post"): older}
         for which in self.documents:
             security = {key: operation.get("security") for key, operation in self.operations(which).items()}
-            assert security == dict.fromkeys(CONFORMING_OPERATIONS, [{}]), which
-            schemes = self.documents[which].get("components", {}).get("securitySchemes", {})
-            assert "csrf" not in schemes, which
+            assert security == expected, which
 
     def test_no_operation_publishes_a_choice_list(self):
         for which in self.documents:

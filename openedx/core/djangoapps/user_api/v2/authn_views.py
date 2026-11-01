@@ -121,9 +121,6 @@ class RegistrationValidationView(RestrictedApplicationGuardMixin, register.Regis
         ),
         request=authn_schemas.LOGIN_REQUEST,
         responses=authn_schemas.LOGIN_RESPONSES,
-        # The view it extends names a scheme for the CSRF token that no
-        # published document declares; the token is described above instead.
-        auth=[{}],
     ),
 )
 class LoginSessionView(RestrictedApplicationGuardMixin, login.LoginSessionView):
