@@ -68,7 +68,8 @@ from openedx.core.djangoapps.user_api.models import (
     UserRetirementRequest,
     UserRetirementStatus,
 )
-from openedx.core.djangoapps.user_api.v2 import urls as v2_urls, view_services
+from openedx.core.djangoapps.user_api.v2 import urls as v2_urls
+from openedx.core.djangoapps.user_api.v2 import view_services
 from openedx.core.djangoapps.user_api.v2.errors import AmbiguousAccountName, RetirementStateConflict
 from openedx.core.djangoapps.user_api.v2.paginators import UserApiPagination
 from openedx.core.djangoapps.user_api.v2.serializers import (
