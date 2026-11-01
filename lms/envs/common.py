@@ -2205,6 +2205,8 @@ SPECTACULAR_SETTINGS = {
         'RetirementErasureScopeEnum': 'openedx.core.djangoapps.user_api.v2.serializers.ERASURE_SCOPE_CHOICES',
         'RetirementBatchResultOutcomeEnum':
             'openedx.core.djangoapps.user_api.v2.serializers.BATCH_OUTCOME_CHOICES',
+        'ReplacementOutcomeEnum':
+            'openedx.core.djangoapps.user_api.v2.serializers.REPLACEMENT_OUTCOME_CHOICES',
     },
     # Stripped from each path to derive its tags and operationId, so changing
     # it renames every operationId. Paths themselves are emitted in full.

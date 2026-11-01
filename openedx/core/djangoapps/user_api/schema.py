@@ -41,6 +41,8 @@ SUPERSEDED_USER_PATHS = (
     "/api/user/v1/accounts/cancel_retirement/",
     "/api/user/v1/accounts/retire/",
     "/api/user/v1/accounts/retire_misc/",
+    "/api/user/v1/accounts/deactivate_logout/",
+    "/api/user/v1/accounts/replace_usernames/",
 )
 
 # Ids pinned over the one a document derives, keyed by (path, method, derived id): the
@@ -362,6 +364,71 @@ def superseded_bodies():
         ),
         ("/api/user/v1/accounts/retire_misc/", "POST"): _SupersededBodies(
             {json_type: named_account}, retirement_erased,
+        ),
+        # The owner of an account asks there for it to be closed, and the
+        # handler reads the password from the submitted form rather than from
+        # a body of its own: a request sent as JSON is parsed and then refused,
+        # so that form is left out here rather than offered to a client that
+        # would always be answered the refusal. It answers with nothing at all.
+        ("/api/user/v1/accounts/deactivate_logout/", "POST"): _SupersededBodies(
+            {
+                "application/x-www-form-urlencoded": replacing.RetirementRequestSerializer,
+                "multipart/form-data": replacing.RetirementRequestSerializer,
+            },
+            {
+                204: OpenApiResponse(
+                    description=(
+                        "The account is queued for retirement, its password no longer signs "
+                        "anybody in, and the session the request was made from no longer holds."
+                    ),
+                ),
+            },
+        ),
+        # The names of several accounts are replaced there in one request, and
+        # the answer sorts the mappings it was given into two arrays rather
+        # than reporting what was done about each of them.
+        ("/api/user/v1/accounts/replace_usernames/", "POST"): _SupersededBodies(
+            {
+                json_type: {
+                    "type": "object",
+                    "properties": {
+                        "username_mappings": {
+                            "type": "array",
+                            "items": replacing.USERNAME_MAPPING_SCHEMA,
+                            "description": (
+                                "Accounts whose names are to be replaced, each as an object "
+                                "naming one of them."
+                            ),
+                        },
+                    },
+                    "required": ["username_mappings"],
+                },
+            },
+            {
+                200: {
+                    "type": "object",
+                    "properties": {
+                        "successful_replacements": {
+                            "type": "array",
+                            "items": replacing.USERNAME_MAPPING_SCHEMA,
+                            "description": (
+                                "Every mapping that was not refused, as the name given carrying "
+                                "the name handed out for it. A name no account was stored under "
+                                "is reported here as well, although nothing was replaced for it."
+                            ),
+                        },
+                        "failed_replacements": {
+                            "type": "array",
+                            "items": replacing.USERNAME_MAPPING_SCHEMA,
+                            "description": (
+                                "Every mapping whose replacement did not finish, as the name "
+                                "given carrying the name that was to replace it."
+                            ),
+                        },
+                    },
+                    "required": ["successful_replacements", "failed_replacements"],
+                },
+            },
         ),
         ("/api/user/v1/preferences/email_opt_in/", "POST"): _SupersededBodies(
             {

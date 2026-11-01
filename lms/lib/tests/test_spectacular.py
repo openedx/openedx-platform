@@ -10,7 +10,7 @@ from unittest import mock
 
 import jsonschema
 from django.conf import settings
-from django.test import Client, SimpleTestCase, TestCase
+from django.test import Client, SimpleTestCase, TestCase, override_settings
 from django.test.client import FakePayload
 from django.urls import path, resolve
 from drf_spectacular.generators import SchemaGenerator
@@ -433,6 +433,45 @@ PREFERENCE_DOCUMENT_BODY = {
 #: What each superseded operation the schema describes is expected to exchange:
 #: the media types of the body it reads, and the success code with the body it
 #: answers with. ``None`` is a response code carrying no body at all.
+#: What the replacement of several names answers with, spelled out here rather
+#: than read from the module that publishes it, so that an edit to that shape
+#: is an edit this test sees. The mapping it carries is a wire format: the
+#: services this one is called beside read the same member shape.
+_MAPPING_BODY = {
+    "type": "object",
+    "additionalProperties": {"type": "string"},
+    "description": (
+        "One account, as the name it is stored under carrying the name asked for it. Exactly one "
+        "name per object."
+    ),
+    "maxProperties": 1,
+    "minProperties": 1,
+}
+REPLACEMENT_OUTCOME_BODY = {
+    "type": "object",
+    "properties": {
+        "successful_replacements": {
+            "type": "array",
+            "items": _MAPPING_BODY,
+            "description": (
+                "Every mapping that was not refused, as the name given carrying the name handed "
+                "out for it. A name no account was stored under is reported here as well, "
+                "although nothing was replaced for it."
+            ),
+        },
+        "failed_replacements": {
+            "type": "array",
+            "items": _MAPPING_BODY,
+            "description": (
+                "Every mapping whose replacement did not finish, as the name given carrying the "
+                "name that was to replace it."
+            ),
+        },
+    },
+    "required": ["successful_replacements", "failed_replacements"],
+}
+
+
 SUPERSEDED_EXCHANGES = {
     ("/api/user/v1/accounts", "get"): ([], {"200": "Account[]"}),
     ("/api/user/v1/accounts/{username}", "get"): ([], {"200": "Account"}),
@@ -459,6 +498,12 @@ SUPERSEDED_EXCHANGES = {
     ("/api/user/v1/preferences/{username}/{preference_key}", "delete"): ([], {"204": None}),
     ("/api/user/v1/preferences/email_opt_in/", "post"): (
         ["application/x-www-form-urlencoded"], {"200": None},
+    ),
+    ("/api/user/v1/accounts/deactivate_logout/", "post"): (
+        ["application/x-www-form-urlencoded", "multipart/form-data"], {"204": None},
+    ),
+    ("/api/user/v1/accounts/replace_usernames/", "post"): (
+        ["application/json"], {"200": REPLACEMENT_OUTCOME_BODY},
     ),
 }
 
@@ -974,9 +1019,17 @@ BODIES_SENT_AS_NOTHING = (
      MERGE_PATCH, 400),
     ("PUT", "/api/user/v1/preferences/{}/{}", "/api/user/v1/preferences/bodyowner/account_privacy",
      "application/json", 204),
+    # Neither of these two reaches the account it is about: one cannot read a
+    # password out of a body that is not there, and the other cannot read the
+    # mappings, so sending each of them nothing leaves every account as it is.
+    ("POST", "/api/user/v1/accounts/deactivate_logout/", "/api/user/v1/accounts/deactivate_logout/",
+     "application/x-www-form-urlencoded", 400),
+    ("POST", "/api/user/v1/accounts/replace_usernames/", "/api/user/v1/accounts/replace_usernames/",
+     "application/json", 400),
 )
 
 
+@override_settings(USERNAME_REPLACEMENT_WORKER="bodyowner")
 class RequiredRequestBodyTest(TestCase):
     """
     A body no request may leave out is published as one the operation needs.

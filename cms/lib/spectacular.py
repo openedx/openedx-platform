@@ -43,6 +43,8 @@ SUPERSEDED_PATHS = (
     "/api/user/v1/accounts/cancel_retirement/",
     "/api/user/v1/accounts/retire/",
     "/api/user/v1/accounts/retire_misc/",
+    "/api/user/v1/accounts/deactivate_logout/",
+    "/api/user/v1/accounts/replace_usernames/",
 )
 
 # Legacy addresses of APIs migrated to /api/authoring/, marked deprecated for

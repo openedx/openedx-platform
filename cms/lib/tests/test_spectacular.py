@@ -288,6 +288,8 @@ SUPERSEDED_USER_OPERATION_IDS = {
         "api_user_v1_accounts_update_retirement_status_partial_update"
     ),
     ("/api/user/v1/accounts/{username}/retirement_status/", "get"): "api_user_v1_accounts_retirement_status_retrieve",
+    ("/api/user/v1/accounts/deactivate_logout/", "post"): "api_user_v1_accounts_deactivate_logout_create",
+    ("/api/user/v1/accounts/replace_usernames/", "post"): "api_user_v1_accounts_replace_usernames_create",
 }
 
 

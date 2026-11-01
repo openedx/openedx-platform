@@ -42,6 +42,7 @@ from openedx.core.djangoapps.user_api.v2.serializers import (
     ERASURE_SCOPES,
     EXPIRATION_DAY_PATTERN,
     PREFERENCE_NAME_MAX_LENGTH,
+    REPLACEMENT_OUTCOMES,
     AccountPreferenceChangesField,
     AccountPreferenceDocumentField,
     AccountQuerySerializer,
@@ -211,6 +212,7 @@ VERSION_TWO_COMPONENTS = (
     "PaginatedEmailSearchResultList",
     "PaginatedVerificationList",
     "PatchedAccountUpdate",
+    "ReplacementOutcomeEnum",
     "PaginatedRetirementResponseList",
     "Retirement",
     "RetirementAccount",
@@ -224,6 +226,7 @@ VERSION_TWO_COMPONENTS = (
     "RetirementMinimal",
     "RetirementPartnerReportRecord",
     "RetirementProjection",
+    "RetirementRequest",
     "RetirementResponse",
     "RetirementUpdate",
     "PaginatedTimeZoneList",
@@ -239,6 +242,9 @@ VERSION_TWO_COMPONENTS = (
     "UserPreferenceRecordMinimal",
     "UserPreferenceRecordProjection",
     "UserPreferenceRecordResponse",
+    "UsernameReplacementOutcome",
+    "UsernameReplacementRequest",
+    "UsernameReplacementResult",
     "Verification",
     "VerificationStatus",
 )
@@ -439,6 +445,47 @@ SUPERSEDED_USER_ADDRESSES = {
     "/api/user/v1/accounts/cancel_retirement/": RETIREMENT_MEMBER_PATH,
     "/api/user/v1/accounts/retire/": RETIREMENT_ERASURE_PATH,
     "/api/user/v1/accounts/retire_misc/": RETIREMENT_ERASURE_PATH,
+    "/api/user/v1/accounts/deactivate_logout/": RETIREMENT_LIST_PATH,
+    "/api/user/v1/accounts/replace_usernames/": USERNAME_REPLACEMENT_PATH,
+}
+
+#: The method each superseded address's replacement is served with, where the
+#: address replacing it serves more than one: a replacement has to be mounted
+#: for the operation that is superseded, not only at the address that replaces
+#: it, or a client is sent to an address that refuses the request.
+SUPERSEDED_USER_METHODS = {
+    "/api/user/v1/accounts": "get",
+    "/api/user/v1/accounts/{username}": "get",
+    "/api/user/v1/me": "get",
+    "/api/user/v1/accounts/search_emails": "post",
+    "/api/user/v1/accounts/{username}/deactivate/": "post",
+    "/api/user/v1/accounts/{username}/image": "post",
+    "/api/user/v1/accounts/{username}/verification_status/": "get",
+    "/api/user/v1/accounts/{username}/verifications/": "get",
+    "/api/user/v1/accounts/name_change/": "post",
+    "/api/user/v1/accounts/name_change/{username}/confirm/": "post",
+    "/api/user/v1/users/": "get",
+    "/api/user/v1/users/{id}/": "get",
+    "/api/user/v1/user_prefs/": "get",
+    "/api/user/v1/user_prefs/{id}/": "get",
+    "/api/user/v1/preferences/{username}": "get",
+    "/api/user/v1/preferences/{username}/{preference_key}": "get",
+    "/api/user/v1/preferences/email_opt_in/": "post",
+    "/api/user/v1/preferences/{pref_key}/users/": "get",
+    "/api/user/v1/forum_roles/{name}/users/": "get",
+    "/api/user/v1/preferences/time_zones/": "get",
+    "/api/user/v1/accounts/{username}/retirement_status/": "get",
+    "/api/user/v1/accounts/retirement_queue/": "get",
+    "/api/user/v1/accounts/retirements_by_status_and_date/": "get",
+    "/api/user/v1/accounts/update_retirement_status/": "patch",
+    "/api/user/v1/accounts/retirement_cleanup/": "post",
+    "/api/user/v1/accounts/retirement_partner_report/": "post",
+    "/api/user/v1/accounts/retirement_partner_report_cleanup/": "post",
+    "/api/user/v1/accounts/cancel_retirement/": "delete",
+    "/api/user/v1/accounts/retire/": "post",
+    "/api/user/v1/accounts/retire_misc/": "post",
+    "/api/user/v1/accounts/deactivate_logout/": "post",
+    "/api/user/v1/accounts/replace_usernames/": "post",
 }
 
 def user_patterns():
@@ -560,16 +607,6 @@ def test_only_this_version_and_the_addresses_it_supersedes_are_published(schema)
     """A user address this change neither serves nor replaces stays out of the document."""
     published = {path for path in schema["paths"] if path.startswith("/api/user/")}
     assert published == VERSION_TWO_PATHS | set(SUPERSEDED_USER_ADDRESSES)
-
-
-@skip_unless_lms
-def test_addresses_owned_by_other_apps_are_not_published(schema):
-    """Neighbours of the superseded addresses, served from the same mount and left out."""
-    for path in (
-        "/api/user/v1/accounts/deactivate_logout/",
-        "/api/user/v1/accounts/replace_usernames/",
-    ):
-        assert path not in schema["paths"], path
 
 
 @skip_unless_lms
@@ -726,7 +763,6 @@ def test_hook_leaves_other_resources_alone():
     untouched = [
         "/api/profile_images/v1/{username}/upload",
         "/api/profile_images/v1/{username}/remove",
-        "/api/user/v1/accounts/deactivate_logout/",
         "/api/user/v2/account/registration/",
         "/api/user/v2/accounts/{username}/preferences/",
         "/user_api/v1/users/",
@@ -744,6 +780,8 @@ def test_hook_leaves_other_resources_alone():
         "/api/user/v1/preferences/{username}",
         "/api/user/v1/preferences/{username}/{preference_key}",
         "/api/user/v1/preferences/email_opt_in/",
+        "/api/user/v1/accounts/deactivate_logout/",
+        "/api/user/v1/accounts/replace_usernames/",
         "/api/enrollment/v2/enrollments",
     ]
     result = {"paths": {path: {"get": {"operationId": path}} for path in untouched + marked}}
@@ -759,10 +797,19 @@ def test_hook_leaves_other_resources_alone():
 
 @skip_unless_lms
 def test_every_superseded_address_has_a_published_replacement(schema):
+    """
+    The replacement serves the operation, not only the address.
+
+    An address replacing several operations serves a method for each of them,
+    and a client told to move to one that does not serve the method it was
+    using has nowhere to go: the method is held here as well as the path.
+    """
     assert set(SUPERSEDED_USER_ADDRESSES) == set(SUPERSEDED_USER_PATHS)
+    assert set(SUPERSEDED_USER_METHODS) == set(SUPERSEDED_USER_PATHS)
     for superseded, replacement in SUPERSEDED_USER_ADDRESSES.items():
         assert superseded in schema["paths"]
         assert replacement in schema["paths"]
+        assert SUPERSEDED_USER_METHODS[superseded] in schema["paths"][replacement], superseded
 
 
 #: The media types each superseded body is published in, by address and method.
@@ -774,12 +821,23 @@ SUPERSEDED_REQUEST_MEDIA_TYPES = {
     ("/api/user/v1/preferences/{username}", "patch"): {"application/merge-patch+json"},
     ("/api/user/v1/preferences/{username}/{preference_key}", "put"): {"application/json"},
     ("/api/user/v1/preferences/email_opt_in/", "post"): {"application/x-www-form-urlencoded"},
+    ("/api/user/v1/accounts/replace_usernames/", "post"): {"application/json"},
+}
+
+#: The forms the request to close one's own account is published in. It is
+#: pinned on its own because driving it carries the account away with it: both
+#: forms are sent to both addresses in the parity tests of that operation,
+#: where each case has an account of its own, and the form this document
+#: leaves out is sent there too and is refused.
+REQUEST_TO_BE_RETIRED_MEDIA_TYPES = {
+    "application/x-www-form-urlencoded",
+    "multipart/form-data",
 }
 
 
 @pytest.mark.django_db
 @skip_unless_lms
-def test_each_superseded_body_is_published_in_the_media_types_that_address_reads(client, schema):
+def test_each_superseded_body_is_published_in_the_media_types_that_address_reads(client, schema, settings):
     """
     Every media type published for a superseded body is sent to that address here.
 
@@ -790,6 +848,9 @@ def test_each_superseded_body_is_published_in_the_media_types_that_address_reads
     endpoint here, and a type the document leaves out is sent as well.
     """
     staff = AdminFactory.create(username="media_type_staff", password=PASSWORD)
+    # One of these addresses serves the one caller a deployment names for
+    # replacing the names accounts are stored under, and this is that caller.
+    settings.USERNAME_REPLACEMENT_WORKER = "media_type_staff"
     assert client.login(username=staff.username, password=PASSWORD)
     member = f"/api/user/v1/accounts/{staff.username}"
     preferences = f"/api/user/v1/preferences/{staff.username}"
@@ -811,6 +872,11 @@ def test_each_superseded_body_is_published_in_the_media_types_that_address_reads
             "course_id=course-v1%3AedX%2BDemoX%2BDemo&email_opt_in=True",
             200,
         ),
+        ("/api/user/v1/accounts/replace_usernames/", "post"): (
+            "/api/user/v1/accounts/replace_usernames/",
+            json.dumps({"username_mappings": [{staff.username: "renamed-by-the-document"}]}),
+            200,
+        ),
     }
     for (path, method), media_types in SUPERSEDED_REQUEST_MEDIA_TYPES.items():
         assert set(schema["paths"][path][method]["requestBody"]["content"]) == media_types, path
@@ -822,11 +888,21 @@ def test_each_superseded_body_is_published_in_the_media_types_that_address_reads
     assert left_out.status_code == 415
 
 
+@skip_unless_lms
+def test_the_request_to_be_retired_is_published_in_the_forms_that_address_reads(schema):
+    """The form it is published without is the one its handler parses and then refuses."""
+    published = schema["paths"]["/api/user/v1/accounts/deactivate_logout/"]["post"]["requestBody"]
+    assert set(published["content"]) == REQUEST_TO_BE_RETIRED_MEDIA_TYPES
+    assert published["required"] is True
+    assert "application/json" not in published["content"]
+
+
 #: The sets of choices this version publishes as a model of their own, with
 #: the name each is published under and the values it offers.
 PINNED_CHOICE_SETS = {
     "RetirementErasureScopeEnum": list(ERASURE_SCOPES),
     "RetirementBatchResultOutcomeEnum": list(BATCH_OUTCOMES),
+    "ReplacementOutcomeEnum": list(REPLACEMENT_OUTCOMES),
 }
 
 #: A second field of each of those names, with the value it would offer and
