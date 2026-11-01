@@ -619,6 +619,43 @@ class RetiredAccountTests(AccountApiV2TestCase):
         assert envelope["can_cancel_retirement"] is True
         assert envelope["retirement_id"] == retirement.id
 
+    def test_an_address_held_and_left_more_than_once_reports_the_most_recent_retirement(self):
+        """
+        Where one address has been held and left more than once, the retirement reported is the last.
+
+        Only the most recent retirement of an address is still open to being
+        undone, so that is the one the refusal names. The second account is
+        given the address outright rather than registered with it, because an
+        address an account held before it was retired is refused to a new one.
+        Each account here is this test's own: what retirement leaves behind of
+        an account cannot be shared with another test.
+        """
+        RetirementState.objects.create(state_name="PENDING", state_execution_order=1)
+        address = "held-and-left-twice@example.com"
+        first = UserFactory.create(username="first-holder", email=address, password=PASSWORD)
+        earliest = UserRetirementStatus.create_retirement(first)
+        first.email = get_retired_email_by_email(address)
+        first.save()
+        second = UserFactory.create(
+            username="second-holder", email="second-holder@example.com", password=PASSWORD,
+        )
+        User.objects.filter(pk=second.pk).update(email=address)
+        second.refresh_from_db()
+        latest = UserRetirementStatus.create_retirement(second)
+        second.email = get_retired_email_by_email(address)
+        second.save()
+        assert sorted(
+            UserRetirementStatus.objects.filter(original_email=address).values_list("id", flat=True),
+        ) == sorted([earliest.id, latest.id])
+
+        envelope = assert_error_envelope(
+            self.client.get(self.list_url, {"email": address}),
+            expected_status=status.HTTP_404_NOT_FOUND,
+            expected_type_slug="user/retired-account",
+        )
+        assert envelope["can_cancel_retirement"] is True
+        assert envelope["retirement_id"] == latest.id
+
     def test_a_retirement_older_than_the_cooling_off_period_can_no_longer_be_cancelled(self):
         RetirementState.objects.create(state_name="PENDING", state_execution_order=1)
         retirement = UserRetirementStatus.create_retirement(self.other)
