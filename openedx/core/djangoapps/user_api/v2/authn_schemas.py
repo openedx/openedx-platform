@@ -447,7 +447,8 @@ LOGIN_RESPONSES = {
         ),
     ),
     403: OpenApiResponse(
-        LOGIN_REFUSAL,
+        # Unlike the refusals answered with 400, the one answered with this body always has a message and a name.
+        {**LOGIN_REFUSAL, "required": ["success", "value", "error_code"]},
         description=(
             "The caller signed in through another provider with an account that is not linked to one here. "
             "A request carrying no valid CSRF token, or a password sent where the site requires signing in "
