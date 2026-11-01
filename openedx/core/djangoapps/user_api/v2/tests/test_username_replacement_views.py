@@ -4,7 +4,6 @@ import json
 from unittest import mock
 
 from django.apps import apps
-from django.conf import settings
 from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.test import override_settings
 from django.urls import reverse

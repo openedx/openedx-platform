@@ -15,12 +15,10 @@ from rest_framework.test import APITestCase
 
 from common.djangoapps.student.models import get_retired_username_by_username
 from common.djangoapps.student.tests.factories import UserFactory
-from openedx.core.djangoapps.user_api.accounts import views as legacy_views
 from openedx.core.djangoapps.user_api.accounts.tests.retirement_helpers import (  # pylint: disable=unused-import
     create_retirement_status,
     setup_retirement_states,  # noqa: F401
 )
-from openedx.core.djangoapps.user_api.models import UserRetirementStatus
 from openedx.core.djangoapps.user_api.v2 import view_services
 from openedx.core.djangoapps.user_api.v2.serializers import (
     REPLACEMENT_NO_SUCH_ACCOUNT,
@@ -208,10 +206,19 @@ class ReplacementOutcomeParityTests(ReplacementParityTestCase):
         assert answered[EARLIER].status_code == status.HTTP_400_BAD_REQUEST
         assert answered["conforming"].status_code == status.HTTP_415_UNSUPPORTED_MEDIA_TYPE
 
-    def test_every_difference_is_declared_with_what_it_is_about(self):
-        assert len(DECLARED_DIFFERENCES) == 5
+    def test_the_differences_a_caller_would_notice_are_the_ones_declared(self):
+        """A difference measured above and not listed here, or listed and not measured, fails."""
+        assert [name for name, _reason in DECLARED_DIFFERENCES] == [
+            "the answer",
+            "a name no account is stored under",
+            "a request carrying no mappings at all",
+            "a body sent as a web form",
+            "a write that fails part way through",
+        ]
         for name, reason in DECLARED_DIFFERENCES:
-            assert name and reason
+            with self.subTest(difference=name):
+                assert "the earlier address" in reason
+                assert "the conforming one" in reason
 
 
 @skip_unless_lms

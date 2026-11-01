@@ -72,12 +72,12 @@ from openedx.core.djangoapps.user_api.v2 import urls as v2_urls
 from openedx.core.djangoapps.user_api.v2 import view_services
 from openedx.core.djangoapps.user_api.v2.errors import AmbiguousAccountName, RetirementStateConflict
 from openedx.core.djangoapps.user_api.v2.paginators import UserApiPagination
+from openedx.core.djangoapps.user_api.v2.permissions import AccountDeletionEnabled
 from openedx.core.djangoapps.user_api.v2.serializers import (
     RETIREMENT_MINIMAL_FIELDS,
     RetirementSerializer,
     RetirementUpdateSerializer,
 )
-from openedx.core.djangoapps.user_api.v2.permissions import AccountDeletionEnabled
 from openedx.core.djangoapps.user_api.v2.views import (
     RETIREMENT_ACTION_PERMISSIONS,
     RetirementCleanupViewSet,

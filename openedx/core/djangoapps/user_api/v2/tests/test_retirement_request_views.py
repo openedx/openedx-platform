@@ -44,12 +44,13 @@ from openedx.core.djangoapps.user_api.v2.views import (
     RetirementCleanupViewSet,
     RetirementViewSet,
 )
+from openedx.core.djangolib.testing.utils import skip_unless_lms
+
 # The class reading an access token this platform's authorization endpoint
 # handed out, named here so that the operation taking it is held to taking it.
 from openedx.core.lib.api.authentication import BearerAuthentication
 
 from .test_views import UNSUPPORTED_MEDIA_TYPE_SLUG
-from openedx.core.djangolib.testing.utils import skip_unless_lms
 
 PASSWORD = "Password1234"
 

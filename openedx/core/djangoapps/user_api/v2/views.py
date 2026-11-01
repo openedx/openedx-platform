@@ -62,6 +62,7 @@ from openedx.core.djangoapps.user_api.preferences.api import (
     update_email_opt_in,
     update_user_preferences,
 )
+
 # The mobile clients of the operation this version replaces hold an access
 # token rather than a token this platform signs, and which scheme they send it
 # under is configured per deployment, so the operation replacing it reads the
@@ -147,11 +148,11 @@ from .serializers import (
     UserDirectoryMinimalSerializer,
     UserDirectoryProjectionSerializer,
     UserDirectorySerializer,
+    UsernameReplacementOutcomeSerializer,
+    UsernameReplacementRequestSerializer,
     UserPreferenceRecordMinimalSerializer,
     UserPreferenceRecordProjectionSerializer,
     UserPreferenceRecordSerializer,
-    UsernameReplacementOutcomeSerializer,
-    UsernameReplacementRequestSerializer,
     VerificationQuerySerializer,
     VerificationSerializer,
     VerificationStatusSerializer,

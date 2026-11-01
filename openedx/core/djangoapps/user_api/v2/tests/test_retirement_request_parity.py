@@ -427,10 +427,18 @@ class CredentialParityTests(RequestParityTestCase):
 class DeclaredDifferenceTests(RequestParityTestCase):
     """The differences between the two addresses are the ones written down."""
 
-    def test_every_difference_is_declared_with_what_it_is_about(self):
-        assert len(DECLARED_DIFFERENCES) == 4
+    def test_the_differences_a_caller_would_notice_are_the_ones_declared(self):
+        """A difference measured above and not listed here, or listed and not measured, fails."""
+        assert [name for name, _reason in DECLARED_DIFFERENCES] == [
+            "a body sent as JSON",
+            "a body in a form neither address reads",
+            "a refusal of the request itself",
+            "an account that already has a record while its password still signs its owner in",
+        ]
         for name, reason in DECLARED_DIFFERENCES:
-            assert name and reason
+            with self.subTest(difference=name):
+                assert "the earlier address" in reason
+                assert "the conforming one" in reason
 
     def test_both_views_read_the_body_in_the_forms_their_callers_send_it_in(self):
         """The view each address is served by resolves these, which is what the cases above drive."""
