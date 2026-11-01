@@ -2517,6 +2517,11 @@ class SharedNameUnderANarrowingPolicyTests(RetirementApiTestCase):
             user.profile.city = f"City of {user.username}"
             user.profile.save()
         self.url = reverse("user_v2:retirement_erasure", kwargs={"username": self.SHARED_NAME})
+        # Declared here so the attributes exist before pair() fills them in.
+        self.out_of_scope_record = None
+        self.in_scope_record = None
+        self.in_scope_before = None
+        self.out_of_scope_before = None
 
     def pair(self, in_scope_step, out_of_scope_step):
         """Request a retirement for each account under the one name, standing at these steps."""
