@@ -197,6 +197,37 @@ class SpectacularSettingsTest(SimpleTestCase):
         assert "SPECTACULAR_SETTINGS" not in self._source("cms/envs/development.py")
 
 
+class SharedSchemaBehaviourTest(SimpleTestCase):
+    """
+    Where the description this service shares with the one replacing these addresses is kept.
+
+    Both services publish the same user addresses, so what they say about them
+    is held once, in a module belonging to the API being described rather than
+    to either service. A service reaching into the other's package for it
+    would tie the two together, and a copy of it here would drift from the
+    original the moment one of the two was corrected.
+    """
+
+    #: The module holding what the two services say the same way.
+    SHARED_MODULE = "openedx/core/djangoapps/user_api/schema.py"
+
+    @staticmethod
+    def _source(module):
+        return (Path(__file__).resolve().parents[3] / module).read_text()
+
+    def test_the_shared_description_is_read_from_the_api_it_describes(self):
+        assert SupersededUserOperations.__module__ == "openedx.core.djangoapps.user_api.schema"
+        assert SupersededUserOperations in CmsAutoSchema.__mro__
+
+    def test_the_shared_module_reads_no_part_of_either_service(self):
+        found = re.findall(r"(?m)^\s*(?:from|import) (?:lms|cms)\b", self._source(self.SHARED_MODULE))
+        assert found == []
+
+    def test_the_schema_helpers_of_this_service_read_no_part_of_the_other(self):
+        found = re.findall(r"(?m)^\s*(?:from|import) lms\b", self._source("cms/lib/spectacular.py"))
+        assert found == []
+
+
 class _EmptySerializer(serializers.Serializer):  # pylint: disable=abstract-method
     pass
 
