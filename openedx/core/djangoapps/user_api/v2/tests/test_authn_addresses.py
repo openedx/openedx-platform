@@ -1257,6 +1257,114 @@ class ConformingDocumentTests(TestCase):
         assert operation["security"] == [{"csrf": []}]
 
 
+LOGIN_SESSION_KEY = "/api/user/{api_version}/account/login_session/"
+
+#: Each operation the addresses above supersede, with the operation replacing
+#: it and the name it is published under in the document trimming the area off
+#: each path and in the one trimming nothing.
+SUPERSEDED_OPERATIONS = {
+    (V1_REGISTRATION, "get"): (
+        (REGISTRATIONS, "get"), "v1_account_registration_retrieve", "api_user_v1_account_registration_retrieve",
+    ),
+    (V1_REGISTRATION, "post"): (
+        (REGISTRATIONS, "post"), "v1_account_registration_create", "api_user_v1_account_registration_create",
+    ),
+    (V2_REGISTRATION, "get"): (
+        (REGISTRATIONS, "get"), "v2_account_registration_retrieve", "api_user_v2_account_registration_retrieve",
+    ),
+    (V2_REGISTRATION, "post"): (
+        (REGISTRATIONS, "post"), "v2_account_registration_create", "api_user_v2_account_registration_create",
+    ),
+    (V1_PASSWORD_RESET, "get"): (
+        (PASSWORD_RESETS, "get"),
+        "v1_account_password_reset_retrieve",
+        "api_user_v1_account_password_reset_retrieve",
+    ),
+    (V1_TOKEN_VALIDATION, "post"): (
+        (TOKEN_VALIDATIONS, "post"),
+        "v1_account_password_reset_token_validate_create",
+        "api_user_v1_account_password_reset_token_validate_create",
+    ),
+    (V1_REGISTRATION_VALIDATION, "post"): (
+        (REGISTRATION_VALIDATIONS, "post"),
+        "v1_validation_registration_create",
+        "api_user_v1_validation_registration_create",
+    ),
+    (LOGIN_SESSION_KEY, "get"): (
+        (LOGIN_SESSIONS, "get"), "account_login_session_retrieve", "api_user_account_login_session_retrieve",
+    ),
+    (LOGIN_SESSION_KEY, "post"): (
+        (LOGIN_SESSIONS, "post"), "account_login_session_create", "api_user_account_login_session_create",
+    ),
+}
+
+#: The one superseded operation whose handler is described where it is
+#: defined; it keeps that description rather than taking its replacement's.
+SIGN_IN_BY_POSTING = (LOGIN_SESSION_KEY, "post")
+
+
+@skip_unless_lms
+class SupersededDocumentTests(TestCase):
+    """What the two documents of this service publish about each address these replace."""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.documents = {"narrow": narrow_document(), "service-wide": service_wide_document()}
+
+    def operations(self, which):
+        return published_operations(self.documents[which], SUPERSEDED_OPERATIONS)
+
+    def test_each_operation_is_marked_superseded_in_both_documents(self):
+        for which in self.documents:
+            marked = {key: operation.get("deprecated") for key, operation in self.operations(which).items()}
+            assert marked == dict.fromkeys(SUPERSEDED_OPERATIONS, True), which
+
+    def test_each_operation_keeps_the_name_it_is_published_under(self):
+        for which, position in (("narrow", 1), ("service-wide", 2)):
+            published = {key: operation["operationId"] for key, operation in self.operations(which).items()}
+            assert published == {key: names[position] for key, names in SUPERSEDED_OPERATIONS.items()}, which
+
+    def test_each_operation_is_grouped_with_its_area(self):
+        """Once the version parameter is dropped, the sign-in addresses lead with the segment after it."""
+        narrow = {key: operation["tags"] for key, operation in self.operations("narrow").items()}
+        assert narrow == {
+            key: ["account"] if key[0] == LOGIN_SESSION_KEY else ["user"] for key in SUPERSEDED_OPERATIONS
+        }
+        service_wide = {key: operation["tags"] for key, operation in self.operations("service-wide").items()}
+        assert service_wide == dict.fromkeys(SUPERSEDED_OPERATIONS, ["api"])
+
+    def test_each_operation_publishes_what_the_one_replacing_it_publishes(self):
+        for which in self.documents:
+            for key, ((path, method), _narrow, _service_wide) in SUPERSEDED_OPERATIONS.items():
+                if key == SIGN_IN_BY_POSTING:
+                    continue
+                superseded = self.documents[which]["paths"][key[0]][key[1]]
+                replacing = self.documents[which]["paths"][path][method]
+                assert superseded.get("requestBody") == replacing.get("requestBody"), (which, key)
+                assert superseded["responses"] == replacing["responses"], (which, key)
+
+    def test_signing_in_by_posting_keeps_what_it_has_always_published(self):
+        for which, document in self.documents.items():
+            operation = document["paths"][LOGIN_SESSION_KEY]["post"]
+            assert {media_type: body["schema"] for media_type, body in operation["requestBody"]["content"].items()} == (
+                dict.fromkeys([JSON, FORM, MULTIPART], {"$ref": "#/components/schemas/LoginUserRequest"})
+            ), which
+            assert {code: response["content"][JSON]["schema"] for code, response in operation["responses"].items()} == (
+                dict.fromkeys(["200", "400", "403"], {"$ref": "#/components/schemas/LoginUserResponse"})
+            ), which
+            assert operation["security"] == [{"csrf": []}], which
+            assert {"LoginUserRequest", "LoginUserResponse"} <= set(document["components"]["schemas"]), which
+
+    def test_only_the_token_check_publishes_an_unauthenticated_or_throttled_refusal(self):
+        token_checks = {(TOKEN_VALIDATIONS, "post"), (V1_TOKEN_VALIDATION, "post")}
+        for which, document in self.documents.items():
+            keys = set(CONFORMING_OPERATIONS) | set(SUPERSEDED_OPERATIONS)
+            for key, operation in published_operations(document, keys).items():
+                published = set(operation["responses"]) & {"401", "429"}
+                assert published == ({"401", "429"} if key in token_checks else set()), (which, key)
+
+
 def published_response_schema(document, path, method, status):
     """Return what a body answered at ``path`` with ``status`` must satisfy, components included."""
     node = document["paths"][path][method]["responses"][str(status)]["content"][JSON]["schema"]

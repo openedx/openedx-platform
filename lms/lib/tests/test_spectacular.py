@@ -99,10 +99,11 @@ class LmsApiFilterUserAddressTest(SimpleTestCase):
                 "/api/user/v1/preferences/{username}/{preference_key}", USER_API_V1_VIEWS,
             ),
             _served_endpoint("/api/user/v1/preferences/email_opt_in/", USER_API_V1_VIEWS),
+            _served_endpoint("/api/user/v2/account/registration/", USER_AUTHN_VIEWS),
             # Served by this version from the app that owns the resource.
             _served_endpoint("/api/user/v2/accounts/{username}/profile_image/", PROFILE_IMAGE_V2_VIEWS),
             # Neither served nor superseded by this version.
-            _served_endpoint("/api/user/v2/account/registration/", USER_AUTHN_VIEWS),
+            _served_endpoint("/user_api/v2/account/registration/", USER_AUTHN_VIEWS),
             _served_endpoint("/api/profile_images/v1/{username}/upload", PROFILE_IMAGE_V1_VIEWS),
             _served_endpoint("/api/courses/v1/courses/", COURSE_VIEWS),
             _served_endpoint("/api/user_tours/v1/tours/"),
@@ -124,17 +125,47 @@ class LmsApiFilterUserAddressTest(SimpleTestCase):
             "/api/user/v1/preferences/{username}",
             "/api/user/v1/preferences/{username}/{preference_key}",
             "/api/user/v1/preferences/email_opt_in/",
+            "/api/user/v2/account/registration/",
             "/api/user/v2/accounts/{username}/profile_image/",
         ]
 
     def test_under_the_version_prefix_the_view_package_decides(self):
         """Other apps are mounted under the same prefix, so the path alone cannot admit an address."""
-        route = "/api/user/v2/account/registration/"
+        route = "/api/user/v2/login_sessions/"
         admitted = {
             view_module: [path for path, *_ in lms_api_filter([_served_endpoint(route, view_module)])]
             for view_module in (USER_AUTHN_VIEWS, USER_API_V2_VIEWS)
         }
         assert admitted == {USER_AUTHN_VIEWS: [], USER_API_V2_VIEWS: [route]}
+
+    def test_keeps_the_authentication_addresses_this_version_supersedes_and_none_beside_them(self):
+        """Each is admitted by its exact published key, whatever app serves it."""
+        superseded = [
+            "/api/user/v1/account/registration/",
+            "/api/user/v2/account/registration/",
+            "/api/user/v1/account/password_reset/",
+            "/api/user/v1/account/password_reset/token/validate/",
+            "/api/user/v1/validation/registration",
+            "/api/user/{api_version}/account/login_session/",
+        ]
+        neighbours = [
+            # The same app's addresses that keep resolving and are not superseded here.
+            "/user_api/v1/account/registration/",
+            "/user_api/v2/account/registration/",
+            "/user_api/{api_version}/account/login_session/",
+            "/user_api/v1/account/password_reset/",
+            "/user_api/v1/account/password_reset/token/validate/",
+            "/create_account",
+            "/login_ajax",
+            # Spellings of the keys above that no route publishes.
+            "/api/user/v1/account/login_session/",
+            "/api/user/v1/validation/registration/",
+            # The addresses replacing them, which only their own views admit.
+            "/api/user/v2/registrations/",
+            "/api/user/v2/login_sessions/",
+        ]
+        kept = lms_api_filter([_served_endpoint(route, USER_AUTHN_VIEWS) for route in superseded + neighbours])
+        assert [path for path, *_ in kept] == superseded
 
 
 class LmsMarkLegacyPathsDeprecatedTest(SimpleTestCase):
@@ -218,6 +249,38 @@ class MarkSupersededUserPathsTest(SimpleTestCase):
             "/user_api/v1/preferences/email_opt_in/",
         ):
             assert "deprecated" not in paths[untouched]["get"], untouched
+
+    def test_the_authentication_addresses_are_deprecated_and_their_neighbours_are_not(self):
+        marked = (
+            "/api/user/v1/account/registration/",
+            "/api/user/v2/account/registration/",
+            "/api/user/v1/account/password_reset/",
+            "/api/user/v1/account/password_reset/token/validate/",
+            "/api/user/v1/validation/registration",
+            "/api/user/{api_version}/account/login_session/",
+        )
+        untouched = (
+            "/user_api/v1/account/registration/",
+            "/user_api/v2/account/registration/",
+            "/user_api/{api_version}/account/login_session/",
+            "/user_api/v1/account/password_reset/",
+            "/user_api/v1/account/password_reset/token/validate/",
+            "/create_account",
+            "/login_ajax",
+            "/api/user/v1/account/login_session/",
+            "/api/user/v2/account/login_session/",
+            "/api/user/v1/validation/registration/",
+            "/api/user/v2/registrations/",
+            "/api/user/v2/registration_validations/",
+            "/api/user/v2/login_sessions/",
+            "/api/user/v2/password_resets/",
+            "/api/user/v2/password_reset_token_validations/",
+            "/api/user/v2/users/",
+            "/api/user/v2/accounts/{username}/",
+        )
+        paths = mark_superseded_user_paths(_schema(*marked, *untouched), None, None, False)["paths"]
+        assert {path: paths[path]["get"].get("deprecated") for path in marked} == dict.fromkeys(marked, True)
+        assert {path: paths[path]["get"].get("deprecated") for path in untouched} == dict.fromkeys(untouched)
 
 
 class _EmptySerializer(serializers.Serializer):  # pylint: disable=abstract-method

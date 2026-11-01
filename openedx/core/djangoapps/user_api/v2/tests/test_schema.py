@@ -443,12 +443,27 @@ SUPERSEDED_USER_ADDRESSES = {
     "/api/user/v1/accounts/cancel_retirement/": RETIREMENT_MEMBER_PATH,
     "/api/user/v1/accounts/retire/": RETIREMENT_ERASURE_PATH,
     "/api/user/v1/accounts/retire_misc/": RETIREMENT_ERASURE_PATH,
+    "/api/user/v1/account/registration/": "/api/user/v2/registrations/",
+    "/api/user/v2/account/registration/": "/api/user/v2/registrations/",
+    "/api/user/v1/account/password_reset/": "/api/user/v2/password_resets/",
+    "/api/user/v1/account/password_reset/token/validate/": "/api/user/v2/password_reset_token_validations/",
+    "/api/user/v1/validation/registration": "/api/user/v2/registration_validations/",
+    "/api/user/{api_version}/account/login_session/": "/api/user/v2/login_sessions/",
 }
+
+#: The authentication app's mount, which serves the superseded registration,
+#: sign-in and password reset addresses from outside the user API's own mounts.
+AUTHN_MOUNT = "openedx.core.djangoapps.user_authn.urls"
+
 
 def user_patterns():
     """Return the mounts of the service's URL configuration that serve user addresses."""
     configured = import_module(settings.ROOT_URLCONF).urlpatterns
-    return [entry for entry in configured if str(entry.pattern).startswith(USER_MOUNT)]
+    return [
+        entry for entry in configured
+        if str(entry.pattern).startswith(USER_MOUNT)
+        or getattr(getattr(entry, "urlconf_module", None), "__name__", None) == AUTHN_MOUNT
+    ]
 
 
 @pytest.fixture(name="generated_documents", scope="module")
@@ -729,7 +744,7 @@ def test_hook_leaves_other_resources_alone():
         "/api/profile_images/v1/{username}/upload",
         "/api/profile_images/v1/{username}/remove",
         "/api/user/v1/accounts/deactivate_logout/",
-        "/api/user/v2/account/registration/",
+        "/user_api/v2/account/registration/",
         "/api/user/v2/accounts/{username}/preferences/",
         "/user_api/v1/users/",
         "/user_api/v1/accounts/{username}",
@@ -746,6 +761,7 @@ def test_hook_leaves_other_resources_alone():
         "/api/user/v1/preferences/{username}",
         "/api/user/v1/preferences/{username}/{preference_key}",
         "/api/user/v1/preferences/email_opt_in/",
+        "/api/user/v2/account/registration/",
         "/api/enrollment/v2/enrollments",
     ]
     result = {"paths": {path: {"get": {"operationId": path}} for path in untouched + marked}}

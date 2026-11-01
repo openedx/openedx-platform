@@ -41,6 +41,12 @@ SUPERSEDED_USER_PATHS = (
     "/api/user/v1/accounts/cancel_retirement/",
     "/api/user/v1/accounts/retire/",
     "/api/user/v1/accounts/retire_misc/",
+    "/api/user/v1/account/registration/",
+    "/api/user/v2/account/registration/",
+    "/api/user/v1/account/password_reset/",
+    "/api/user/v1/account/password_reset/token/validate/",
+    "/api/user/v1/validation/registration",
+    "/api/user/{api_version}/account/login_session/",
 )
 
 # Ids pinned over the one a document derives, keyed by (path, method, derived id): the
@@ -133,6 +139,7 @@ def superseded_bodies():
     # pylint: disable=import-outside-toplevel
     from openedx.core.djangoapps.profile_images.v2.serializers import IMAGE_UPLOAD_REQUEST
     from openedx.core.djangoapps.user_api.accounts import serializers as retirement
+    from openedx.core.djangoapps.user_api.v2 import authn_schemas
     from openedx.core.djangoapps.user_api.v2 import serializers as replacing
     from openedx.core.lib.api.parsers import MergePatchParser
 
@@ -387,6 +394,34 @@ def superseded_bodies():
                 },
             },
             {200: OpenApiResponse(description="The choice was recorded.")},
+        ),
+        # Registering, signing in and resetting a password are described with
+        # the bodies of the addresses replacing them. Signing in by posting has
+        # no entry: its handler is described where it is defined, which is
+        # published in place of anything named here.
+        ("/api/user/v1/account/registration/", "GET"): _SupersededBodies(
+            None, authn_schemas.REGISTRATION_FORM_RESPONSES,
+        ),
+        ("/api/user/v1/account/registration/", "POST"): _SupersededBodies(
+            authn_schemas.REGISTRATION_REQUEST, authn_schemas.REGISTRATION_RESPONSES,
+        ),
+        ("/api/user/v2/account/registration/", "GET"): _SupersededBodies(
+            None, authn_schemas.REGISTRATION_FORM_RESPONSES,
+        ),
+        ("/api/user/v2/account/registration/", "POST"): _SupersededBodies(
+            authn_schemas.REGISTRATION_REQUEST, authn_schemas.REGISTRATION_RESPONSES,
+        ),
+        ("/api/user/v1/account/password_reset/", "GET"): _SupersededBodies(
+            None, authn_schemas.PASSWORD_RESET_FORM_RESPONSES,
+        ),
+        ("/api/user/v1/account/password_reset/token/validate/", "POST"): _SupersededBodies(
+            authn_schemas.TOKEN_VALIDATION_REQUEST, authn_schemas.TOKEN_VALIDATION_RESPONSES,
+        ),
+        ("/api/user/v1/validation/registration", "POST"): _SupersededBodies(
+            authn_schemas.REGISTRATION_VALIDATION_REQUEST, authn_schemas.REGISTRATION_VALIDATION_RESPONSES,
+        ),
+        ("/api/user/{api_version}/account/login_session/", "GET"): _SupersededBodies(
+            None, authn_schemas.LOGIN_FORM_RESPONSES,
         ),
     }
     # Parameter names are spelled differently at different points of

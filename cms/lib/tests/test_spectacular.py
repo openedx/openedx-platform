@@ -288,8 +288,22 @@ SUPERSEDED_USER_OPERATION_IDS = {
         "api_user_v1_accounts_update_retirement_status_partial_update"
     ),
     ("/api/user/v1/accounts/{username}/retirement_status/", "get"): "api_user_v1_accounts_retirement_status_retrieve",
+    ("/api/user/v1/account/registration/", "get"): "api_user_v1_account_registration_retrieve",
+    ("/api/user/v1/account/registration/", "post"): "api_user_v1_account_registration_create",
+    ("/api/user/v2/account/registration/", "get"): "api_user_v2_account_registration_retrieve",
+    ("/api/user/v2/account/registration/", "post"): "api_user_v2_account_registration_create",
+    ("/api/user/v1/account/password_reset/", "get"): "api_user_v1_account_password_reset_retrieve",
+    ("/api/user/v1/account/password_reset/token/validate/", "post"): (
+        "api_user_v1_account_password_reset_token_validate_create"
+    ),
+    ("/api/user/v1/validation/registration", "post"): "api_user_v1_validation_registration_create",
+    ("/api/user/{api_version}/account/login_session/", "get"): "api_user_account_login_session_retrieve",
+    ("/api/user/{api_version}/account/login_session/", "post"): "api_user_account_login_session_create",
 }
 
+
+#: The authentication app's mount, which serves its addresses under the user prefix.
+AUTHN_URLS = "openedx.core.djangoapps.user_authn.urls_common"
 
 #: The user addresses this service marks superseded.
 SUPERSEDED_USER_ADDRESSES = tuple(path for path in SUPERSEDED_PATHS if path.startswith("/api/user/"))
@@ -319,9 +333,12 @@ class SupersededUserOperationTest(DjangoTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        # The authentication app serves the superseded registration, sign-in
+        # and password reset addresses from a mount of its own.
         patterns = [
             entry for entry in import_module(settings.ROOT_URLCONF).urlpatterns
             if str(entry.pattern).startswith("api/user/")
+            or getattr(getattr(entry, "urlconf_module", None), "__name__", None) == AUTHN_URLS
         ]
         # The whole document derives its path prefix from every address the
         # service serves, which share nothing past the root.
@@ -354,6 +371,28 @@ class SupersededUserOperationTest(DjangoTestCase):
     def test_every_operation_keeps_the_name_it_is_published_under(self):
         published = {key: operation["operationId"] for key, operation in self._operations().items()}
         assert published == SUPERSEDED_USER_OPERATION_IDS
+
+    def test_signing_in_by_posting_keeps_what_it_has_always_published(self):
+        """Its handler is described where it is defined, and nothing here replaces that."""
+        operation = self.schema["paths"]["/api/user/{api_version}/account/login_session/"]["post"]
+        assert {media_type: body["schema"] for media_type, body in operation["requestBody"]["content"].items()} == (
+            dict.fromkeys(
+                ["application/json", "application/x-www-form-urlencoded", "multipart/form-data"],
+                {"$ref": "#/components/schemas/LoginUserRequest"},
+            )
+        )
+        assert {
+            code: response["content"]["application/json"]["schema"] for code, response in operation["responses"].items()
+        } == dict.fromkeys(["200", "400", "403"], {"$ref": "#/components/schemas/LoginUserResponse"})
+        assert operation["security"] == [{"csrf": []}]
+
+    def test_no_address_replacing_a_superseded_one_is_published_here(self):
+        """This service serves none of them, so its document describes only what it serves."""
+        replacing = {
+            path for path in self.schema["paths"]
+            if path.startswith("/api/user/v2/") and not path.startswith("/api/user/v2/account/")
+        }
+        assert replacing == set()
 
     def test_the_retirement_status_model_is_published_as_the_other_service_appends_it(self):
         """

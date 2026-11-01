@@ -43,6 +43,13 @@ SUPERSEDED_PATHS = (
     "/api/user/v1/accounts/cancel_retirement/",
     "/api/user/v1/accounts/retire/",
     "/api/user/v1/accounts/retire_misc/",
+    # The registration, sign-in and password reset addresses of the authentication app.
+    "/api/user/v1/account/registration/",
+    "/api/user/v2/account/registration/",
+    "/api/user/v1/account/password_reset/",
+    "/api/user/v1/account/password_reset/token/validate/",
+    "/api/user/v1/validation/registration",
+    "/api/user/{api_version}/account/login_session/",
 )
 
 # Legacy addresses of APIs migrated to /api/authoring/, marked deprecated for
