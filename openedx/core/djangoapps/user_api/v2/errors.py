@@ -5,17 +5,6 @@ from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.settings import api_settings
 
 
-class AmbiguousAccountName(ValidationError):
-    """
-    An address answered by more than one account, naming no one of them.
-
-    The refusal is one about what the request asked for, so it keeps the
-    status of the refusals beside it; what it adds is a name for the one
-    condition, which a caller can tell apart from a value it sent being
-    wrong and can act on by naming an account as it is stored.
-    """
-
-
 class RetiredAccount(NotFound):
     """
     An account that has been retired, addressed by something it used to hold.
@@ -60,21 +49,22 @@ class RetirementStateConflict(_NamesTheRecordsAtFault, Conflict):
 
 class AmbiguousAccountName(_NamesTheRecordsAtFault, ValidationError):
     """
-    A name that more than one retirement record was requested under.
+    An address or a name answered by more than one account, naming no one of them.
 
-    The name a record keeps of the account it is for is not unique, and in
-    some deployments stored names are compared without regard to case, which
-    once let a learner register a retired name again by changing its
-    capitalisation. A request naming such a name addresses several records at
-    once, and acting on either of them would act on an account the caller did
-    not ask about, so nothing is done.
+    The name an account was registered under is kept on the records of this
+    area without being unique to one of them, so a request naming such a name
+    reaches several records at once and acting on any of them would act on an
+    account the caller did not ask about. Nothing is done. The refusal is one
+    about what the request asked for, so it keeps the status of the refusals
+    beside it; what it adds is a name for this one condition, which a caller
+    can tell apart from a value it sent being wrong and can act on by naming
+    an account as it is stored.
     """
 
 
 register_error_type(RetiredAccount, "user/retired-account", "Retired Account")
 register_error_type(AmbiguousAccountName, "user/ambiguous-account-name", "Ambiguous Account Name")
 register_error_type(RetirementStateConflict, "user/retirement-state-conflict", "Retirement State Conflict")
-register_error_type(AmbiguousAccountName, "user/ambiguous-account-name", "Ambiguous Account Name")
 
 
 def refusal_sentence(refusals):
