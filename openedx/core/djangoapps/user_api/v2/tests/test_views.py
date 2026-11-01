@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 from math import ceil
 from unittest.mock import patch
 
+import pytest
 from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.core.exceptions import ImproperlyConfigured
 from django.db import connection
@@ -16,10 +17,10 @@ from opaque_keys.edx.keys import CourseKey
 from rest_framework import status
 from rest_framework.test import APIClient, APITestCase
 
+from common.djangoapps.student.models import PendingNameChange, UserProfile
 from common.djangoapps.student.tests.factories import AdminFactory, UserFactory
 from openedx.core.djangoapps.django_comment_common.models import Role
 from openedx.core.djangoapps.oauth_dispatch.jwt import create_jwt_for_user
-from common.djangoapps.student.models import PendingNameChange, UserProfile
 from openedx.core.djangoapps.user_api.models import UserPreference
 from openedx.core.djangoapps.user_api.preferences.api import get_country_time_zones
 from openedx.core.djangoapps.user_api.tests.factories import UserPreferenceFactory
@@ -1611,7 +1612,7 @@ class QuerysetScopingSeamTests(UserApiV2TestCase):
         """
         for view_class in (UserViewSet, UserPreferenceViewSet):
             with patch.object(view_class, "scoping_policy", None, create=True):
-                with self.assertRaises(ImproperlyConfigured):
+                with pytest.raises(ImproperlyConfigured):
                     view_class().get_queryset()
 
 
@@ -1861,3 +1862,121 @@ class SessionWithoutItsTokenTests(UserApiV2TestCase):
         )
         assert response.status_code == status.HTTP_201_CREATED
         assert PendingNameChange.objects.get(user=self.alice).new_name == "Alice Example"
+
+
+class HiddenKeyPolicy:
+    """A record-visibility policy that drops the preferences stored under one name."""
+
+    def __init__(self, hidden_key):
+        self.hidden_key = hidden_key
+        self.calls = 0
+
+    def scope(self, queryset, subject):  # pylint: disable=unused-argument
+        """Return the rows of ``queryset`` stored under any other name."""
+        self.calls += 1
+        return queryset.exclude(key=self.hidden_key)
+
+
+@skip_unless_lms
+class EmbeddedRowScopingTests(UserApiV2TestCase):
+    """
+    Rows of one resource carried inside another come through the policy that governs them.
+
+    A directory entry carries the preferences stored against its account, and
+    a stored preference asked for whole carries its owner's entry, which
+    carries those preferences again. Those rows belong to the other
+    collection, so the policy that decides which of them a caller may see is
+    that collection's and not the one the entry came from. Applying it is
+    arranged where the page is fetched, so it costs no query per row.
+    """
+
+    def directory_of(self, rows):
+        """Create ``rows`` users, each with two stored preferences."""
+        made = []
+        for index in range(rows):
+            user = UserFactory.create(username=f"row-{index:03d}", password=PASSWORD)
+            UserPreferenceFactory.create(user=user, key="pref-lang", value="en")
+            UserPreferenceFactory.create(user=user, key="time_zone", value="UTC")
+            made.append(user)
+        return made
+
+    def test_the_preferences_inside_a_directory_entry_come_through_their_own_policy(self):
+        policy = HiddenKeyPolicy("pref-lang")
+        self.login(self.admin)
+        with patch.object(UserViewSet, "embedded_preference_policy", policy, create=True):
+            response = self.client.get(reverse("user_v2:user_detail", kwargs={"username": "alice"}))
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["preferences"] == {}
+        assert policy.calls == 1
+
+    def test_a_preference_the_embedded_policy_keeps_is_still_carried(self):
+        policy = HiddenKeyPolicy("pref-lang")
+        self.login(self.admin)
+        with patch.object(UserViewSet, "embedded_preference_policy", policy, create=True):
+            response = self.client.get(reverse("user_v2:user_detail", kwargs={"username": "bob"}))
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["preferences"] == {"time_zone": "UTC"}
+
+    def test_the_preferences_inside_a_page_of_entries_come_through_their_own_policy(self):
+        self.directory_of(5)
+        policy = HiddenKeyPolicy("pref-lang")
+        self.login(self.admin)
+        with patch.object(UserViewSet, "embedded_preference_policy", policy, create=True):
+            response = self.client.get(reverse("user_v2:user_list"), {"page_size": 100})
+        assert response.status_code == status.HTTP_200_OK
+        carried = {row["username"]: row["preferences"] for row in response.data["results"]}
+        assert [name for name, preferences in carried.items() if "pref-lang" in preferences] == []
+        assert carried["row-000"] == {"time_zone": "UTC"}
+
+    def test_narrowing_the_embedded_preferences_costs_no_query_per_row(self):
+        """
+        The policy is applied where the page is fetched, so it is run once however many rows there are.
+
+        One row would hide a per-row query that cancels a prefetch, so this is
+        measured at five rows and again at twenty-five.
+        """
+        self.login(self.admin)
+        measured = {}
+        for rows in (5, 25):
+            User.objects.filter(username__startswith="row-").delete()
+            self.directory_of(rows)
+            policy = HiddenKeyPolicy("pref-lang")
+            with patch.object(UserViewSet, "embedded_preference_policy", policy, create=True):
+                # The first request of a signed-in client pays for its session,
+                # which is not part of what is being measured here.
+                self.client.get(reverse("user_v2:user_list"), {"page_size": 100})
+                with CaptureQueriesContext(connection) as captured:
+                    response = self.client.get(reverse("user_v2:user_list"), {"page_size": 100})
+                assert response.status_code == status.HTTP_200_OK
+                assert len(response.data["results"]) == rows + 4
+            measured[rows] = len(captured)
+        assert measured[5] == measured[25], measured
+
+    def test_the_preferences_inside_an_embedded_owner_come_through_their_own_policy(self):
+        """A preference asked for whole carries its owner, whose own preferences are narrowed too."""
+        policy = HiddenKeyPolicy("pref-lang")
+        self.login(self.admin)
+        with patch.object(UserPreferenceViewSet, "embedded_preference_policy", policy, create=True):
+            response = self.client.get(
+                reverse("user_v2:user_preference_detail", kwargs={"username": "alice", "key": "pref-lang"}),
+                {"view": "full"},
+            )
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["user"]["preferences"] == {}
+
+    def test_narrowing_an_embedded_owners_preferences_costs_no_query_per_row(self):
+        self.login(self.admin)
+        measured = {}
+        for rows in (5, 25):
+            User.objects.filter(username__startswith="row-").delete()
+            self.directory_of(rows)
+            policy = HiddenKeyPolicy("pref-lang")
+            address = reverse("user_v2:user_preference_list")
+            with patch.object(UserPreferenceViewSet, "embedded_preference_policy", policy, create=True):
+                self.client.get(address, {"view": "full", "page_size": 100})
+                with CaptureQueriesContext(connection) as captured:
+                    response = self.client.get(address, {"view": "full", "page_size": 100})
+                assert response.status_code == status.HTTP_200_OK
+                assert len(response.data["results"]) == rows * 2 + 2
+            measured[rows] = len(captured)
+        assert measured[5] == measured[25], measured

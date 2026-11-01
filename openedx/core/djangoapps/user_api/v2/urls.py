@@ -123,5 +123,13 @@ urlpatterns = [
     # belongs to this version, including an address no route of it answers,
     # which is refused in the body the rest of this version answers with. The
     # route answers rather than reverses, so it carries no name.
+    #
+    # This claims the whole prefix: it matches every address under it that the
+    # routes above and the addresses named in OTHER_APP_ADDRESSES do not, and
+    # the service mounts it ahead of the patterns contributed by installed
+    # plugins. An address a plugin registers under this prefix is therefore
+    # reached by nothing and answered 404 here. A plugin that needs an address
+    # of its own serves it under a prefix of its own; one that has to extend
+    # this version is added to OTHER_APP_ADDRESSES or to the routes above.
     re_path(rf"^(?!{OTHER_APP_ADDRESSES}$).*$", UnknownAddressView.as_view()),
 ]

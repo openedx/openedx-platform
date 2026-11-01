@@ -5,7 +5,7 @@ import logging
 from django.conf import settings
 from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.db import transaction
-from django.db.models import F
+from django.db.models import F, Prefetch
 from django.http import Http404
 from django_filters.rest_framework import DjangoFilterBackend
 from django_ratelimit.core import is_ratelimited
@@ -669,11 +669,17 @@ class UserViewSet(
     permission_classes = (permissions.IsAuthenticated, IsActiveUser, permissions.IsAdminUser)
     serializer_class = UserDirectorySerializer
     pagination_class = UserApiPagination
-    queryset = User.objects.all().prefetch_related("preferences").select_related("profile")
+    queryset = User.objects.all().select_related("profile")
     # Platform administrators may read every entry, so the policy keeps the
     # queryset whole; a narrower policy can replace it without touching the
     # filtering below.
     scoping_policy = FullScopePolicy()
+    #: The preferences carried inside an entry are rows of the stored
+    #: preference collection, so which of them a caller may see is that
+    #: collection's to decide and not this one's. It is declared separately for
+    #: that reason, and applied where the page is fetched rather than once per
+    #: entry, which would cost a query per row.
+    embedded_preference_policy = FullScopePolicy()
     lookup_field = "username"
     # The router's default lookup pattern excludes dots, which usernames allow.
     lookup_value_regex = settings.USERNAME_REGEX_PARTIAL
@@ -689,6 +695,17 @@ class UserViewSet(
     minimal_fields = USER_MINIMAL_FIELDS
     response_presets = USER_PRESETS
     extra_query_params = RESPONSE_SHAPING_PARAMS
+
+    def get_queryset(self):
+        """Fetch the preferences carried inside each entry through the policy that governs them."""
+        return super().get_queryset().prefetch_related(
+            Prefetch(
+                "preferences",
+                queryset=self.embedded_preference_policy.scope(
+                    UserPreference.objects.all(), self.request.user,
+                ),
+            ),
+        )
 
     def list(self, request, *args, **kwargs):
         """Return a page of directory entries, shaped as the caller asked."""
@@ -774,6 +791,11 @@ class UserPreferenceViewSet(
         .annotate(username=F("user__username"))
     )
     scoping_policy = FullScopePolicy()
+    #: The entry of a preference's owner carries that owner's own preferences,
+    #: which are rows of this same collection but are reached through the
+    #: entry rather than as rows of the page, so the policy that governs them
+    #: is applied where they are fetched.
+    embedded_preference_policy = FullScopePolicy()
     filter_backends = (DjangoFilterBackend, StrictOrderingFilter)
     filterset_class = UserPreferenceFilterSet
     ordering_fields = PREFERENCE_SORT_FIELDS
@@ -785,11 +807,18 @@ class UserPreferenceViewSet(
     response_presets = PREFERENCE_PRESETS
     extra_query_params = RESPONSE_SHAPING_PARAMS
 
-    def filter_queryset(self, queryset):
-        """Fetch each owner's own preferences too when they are about to be embedded."""
-        queryset = super().filter_queryset(queryset)
+    def get_queryset(self):
+        """Fetch each owner's own preferences through the policy that governs them, when embedding."""
+        queryset = super().get_queryset()
         if full_view_requested(getattr(self, "request", None)):
-            queryset = queryset.prefetch_related("user__preferences")
+            queryset = queryset.prefetch_related(
+                Prefetch(
+                    "user__preferences",
+                    queryset=self.embedded_preference_policy.scope(
+                        UserPreference.objects.all(), self.request.user,
+                    ),
+                ),
+            )
         return queryset
 
     def get_object(self):
