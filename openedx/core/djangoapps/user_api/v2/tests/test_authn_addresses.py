@@ -761,6 +761,22 @@ class TokenValidationParityTests(TestCase):
         other = self.both(Client, {"token": reset_token(self.other)}, HTTP_AUTHORIZATION=f"JWT {jwt}")
         assert json.loads(other[1].content) == {"is_valid": False}
 
+    def test_a_caller_presenting_a_token_issued_to_a_restricted_application_is_refused(self):
+        jwt = create_jwt_for_user(self.owner, additional_claims={"is_restricted": True})
+        legacy, conforming = self.both(Client, {"token": reset_token(self.owner)}, HTTP_AUTHORIZATION=f"JWT {jwt}")
+        assert_same_answer(legacy, conforming, 403)
+        assert json.loads(conforming.content) == {"detail": "You do not have permission to perform this action."}
+
+    def test_a_session_whose_account_was_made_inactive_is_answered_as_no_session(self):
+        """Another account's token is valid to it, and no CSRF token is asked for, as for a caller not signed in."""
+        sessions = (signed_in(self.other, enforce_csrf_checks=True), signed_in(self.other, enforce_csrf_checks=True))
+        User.objects.filter(pk=self.other.pk).update(is_active=False)
+        data = {"token": reset_token(self.owner)}
+        legacy = sessions[0].post(V1_TOKEN_VALIDATION, data)
+        conforming = sessions[1].post(TOKEN_VALIDATIONS, data)
+        assert_same_answer(legacy, conforming, 200)
+        assert json.loads(conforming.content) == {"is_valid": True}
+
     def test_credentials_that_cannot_be_read_are_refused(self):
         legacy, conforming = self.both(Client, {"token": "zz"}, HTTP_AUTHORIZATION="JWT not-a-jwt")
         assert_same_answer(legacy, conforming, 401)

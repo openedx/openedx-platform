@@ -270,7 +270,13 @@ TOKEN_VALIDATION_RESPONSES = {
     ),
     400: OpenApiResponse(REFUSAL, description="The body could not be parsed."),
     401: OpenApiResponse(REFUSAL, description="The credentials sent could not be read."),
-    403: OpenApiResponse(REFUSAL, description="A caller signed in with a session sent no valid CSRF token."),
+    403: OpenApiResponse(
+        REFUSAL,
+        description=(
+            "A caller signed in with a session sent no valid CSRF token, or the JWT sent was issued to a "
+            "restricted application."
+        ),
+    ),
     406: NOT_ACCEPTABLE,
     415: UNREADABLE_BODY,
     429: OpenApiResponse(REFUSAL, description="Too many tokens were checked; `detail` says when to try again."),
