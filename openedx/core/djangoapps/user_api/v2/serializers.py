@@ -25,6 +25,13 @@ USER_MINIMAL_FIELDS = ("id", "username", "email")
 #: Properties the ``minimal`` preset keeps of a stored preference.
 PREFERENCE_MINIMAL_FIELDS = ("username", "key", "value")
 
+#: Context member naming the users whose whole directory entry a response may
+#: carry, by id. A directory entry belongs to the user collection, so which
+#: entries a caller may be given is that collection's decision; the view
+#: settles it for a whole page and leaves the answer here, so that reading it
+#: costs no query per row.
+EMBEDDABLE_OWNER_IDS = "embeddable_owner_ids"
+
 
 class ErrorResponse(ErrorResponseSerializer):  # pylint: disable=abstract-method
     """
@@ -159,8 +166,9 @@ class UserPreferenceRecordSerializer(serializers.ModelSerializer):
     A stored preference, identified by the user that owns it and its key.
 
     ``user`` carries the owner's whole directory entry and is included only
-    when the caller asks for the ``full`` response preset; by default the
-    owner appears as the ``username`` string alone.
+    when the caller asks for the ``full`` response preset and is one the
+    caller may be given; by default the owner appears as the ``username``
+    string alone.
     """
 
     url = serializers.SerializerMethodField(help_text="Absolute URL of this preference.")
@@ -172,7 +180,10 @@ class UserPreferenceRecordSerializer(serializers.ModelSerializer):
     key = serializers.CharField(read_only=True, help_text="Name of the preference.")
     value = serializers.CharField(read_only=True, help_text="Stored value of the preference.")
     user = serializers.SerializerMethodField(
-        help_text="Directory entry of the owning user; null unless the full response preset is asked for.",
+        help_text=(
+            "Directory entry of the owning user; null unless the full response preset is asked "
+            "for and the entry is one the caller may be given."
+        ),
     )
 
     class Meta:
@@ -192,8 +203,10 @@ class UserPreferenceRecordSerializer(serializers.ModelSerializer):
 
     @extend_schema_field(UserDirectorySerializer(allow_null=True))
     def get_user(self, preference):
-        """Embed the owner only when the caller asked for the full preset."""
+        """Embed the owner's entry when the caller asked for the full preset and may be given it."""
         if not full_view_requested(self.context.get("request")):
+            return None
+        if preference.user_id not in (self.context.get(EMBEDDABLE_OWNER_IDS) or ()):
             return None
         return UserDirectorySerializer(preference.user, context=self.context).data
 

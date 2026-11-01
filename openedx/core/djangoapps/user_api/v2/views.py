@@ -61,6 +61,7 @@ from .serializers import (
     ACCOUNT_DEFAULT_SORT,
     ACCOUNT_MINIMAL_FIELDS,
     EMAIL_SEARCH_MAX_ADDRESSES,
+    EMBEDDABLE_OWNER_IDS,
     FULL_VIEW,
     MINIMAL_VIEW,
     PREFERENCE_MINIMAL_FIELDS,
@@ -796,6 +797,15 @@ class UserPreferenceViewSet(
     #: entry rather than as rows of the page, so the policy that governs them
     #: is applied where they are fetched.
     embedded_preference_policy = FullScopePolicy()
+    #: The owner's entry is itself a row of the user collection rather than of
+    #: this one, so which owners a caller may be given the entry of is that
+    #: collection's decision and is declared separately for that reason. It is
+    #: settled for a whole page in one query, because asking it of each row in
+    #: turn would cost a query per row. An owner the policy leaves out is left
+    #: out of the row that carries it; the row itself stays, named by the owner
+    #: it is stored against, because which rows come back is this collection's
+    #: own decision and is made by the policy above it.
+    embedded_user_policy = FullScopePolicy()
     filter_backends = (DjangoFilterBackend, StrictOrderingFilter)
     filterset_class = UserPreferenceFilterSet
     ordering_fields = PREFERENCE_SORT_FIELDS
@@ -820,6 +830,27 @@ class UserPreferenceViewSet(
                 ),
             )
         return queryset
+
+    def get_serializer(self, *args, **kwargs):
+        """Build the serializer, having settled which owners the rows it is given may carry."""
+        serializer = super().get_serializer(*args, **kwargs)
+        if args and full_view_requested(getattr(self, "request", None)):
+            serializer.context[EMBEDDABLE_OWNER_IDS] = self._embeddable_owner_ids(args[0])
+        return serializer
+
+    def _embeddable_owner_ids(self, rows):
+        """Return the ids of the owners of ``rows`` whose entry the caller may be given, in one query."""
+        if isinstance(rows, UserPreference):
+            rows = [rows]
+        owner_ids = {row.user_id for row in rows}
+        if not owner_ids:
+            return frozenset()
+        # The owners of the page are taken out of the policy's answer rather
+        # than handed to it: a policy free to answer with a collection of its
+        # own is then still narrowed to this page, and what comes back is the
+        # size of the page rather than the size of the collection.
+        owners = self.embedded_user_policy.scope(User.objects.all(), self.request.user)
+        return frozenset(owners.filter(pk__in=owner_ids).values_list("pk", flat=True))
 
     def get_object(self):
         """Look the preference up by the username and key that identify it."""

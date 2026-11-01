@@ -22,8 +22,15 @@ PAGE_SIZES = [1, 10, 100]
 USER_LIST_QUERIES = 16
 USER_DETAIL_QUERIES = 15
 PREFERENCE_LIST_QUERIES = 15
-PREFERENCE_LIST_FULL_VIEW_QUERIES = 16
+#: One more than the list costs without the preset: the owners whose entry
+#: a page may carry are resolved for the whole page in a single query,
+#: whatever the number of rows.
+PREFERENCE_LIST_FULL_VIEW_QUERIES = 17
 PREFERENCE_DETAIL_QUERIES = 14
+#: What the same address costs with the owner's entry asked for: the entry's
+#: own preferences, and the one query that settles which owners' entries may
+#: be carried.
+PREFERENCE_DETAIL_FULL_VIEW_QUERIES = 16
 TIME_ZONE_LIST_QUERIES = 13
 
 #: Address of the stored-preference list this version replaces, and the key it
@@ -148,6 +155,31 @@ def test_member_query_counts(client, directory, django_assert_num_queries):
             ),
         )
     assert response.json()["value"] == "en"
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("directory", [5], indirect=True)
+@skip_unless_lms
+def test_the_member_address_pays_a_flat_cost_for_the_entry_it_carries(
+    client, directory, django_assert_num_queries,
+):  # pylint: disable=unused-argument
+    """
+    Asking for one preference whole costs the same whatever else is stored.
+
+    The entry the row carries brings the owner's own preferences with it and
+    the owners whose entry may be carried are resolved once, so the cost is
+    the member cost plus a fixed amount and does not move with the number of
+    rows the collection holds.
+    """
+    address = reverse(
+        "user_v2:user_preference_detail", kwargs={"username": "counted0", "key": "pref-lang"},
+    )
+    with django_assert_num_queries(PREFERENCE_DETAIL_FULL_VIEW_QUERIES):
+        response = client.get(address, {"view": "full"})
+    body = response.json()
+    assert body["value"] == "en"
+    assert body["user"]["username"] == "counted0"
+    assert body["user"]["preferences"] == {"pref-lang": "en", "time_zone": "UTC"}
 
 
 @pytest.mark.django_db

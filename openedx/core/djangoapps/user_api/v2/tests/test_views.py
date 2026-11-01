@@ -1980,3 +1980,159 @@ class EmbeddedRowScopingTests(UserApiV2TestCase):
                 assert len(response.data["results"]) == rows * 2 + 2
             measured[rows] = len(captured)
         assert measured[5] == measured[25], measured
+
+
+class HiddenOwnerPolicy:
+    """A record-visibility policy over owners that hides one of them and counts its calls."""
+
+    def __init__(self, hidden_username):
+        self.hidden_username = hidden_username
+        self.calls = 0
+
+    def scope(self, queryset, subject):  # pylint: disable=unused-argument
+        """Return the rows of ``queryset`` that are not the hidden owner."""
+        self.calls += 1
+        return queryset.exclude(username=self.hidden_username)
+
+
+@skip_unless_lms
+class EmbeddedOwnerScopingTests(UserApiV2TestCase):
+    """
+    The owner carried inside a stored preference comes through the policy that governs owners.
+
+    A preference asked for whole carries its owner's directory entry, which is
+    a row of the directory and not of the preference collection, so which
+    owners a caller may see is the directory's decision. An entry the caller
+    may not see is left out of the answer; the preference itself is still
+    returned, named by the owner it is stored against, because which
+    preferences come back is the preference collection's own decision.
+    """
+
+    def preferences_of(self, rows):
+        """Create ``rows`` users, each with two stored preferences."""
+        for index in range(rows):
+            user = UserFactory.create(username=f"row-{index:03d}", password=PASSWORD)
+            UserPreferenceFactory.create(user=user, key="pref-lang", value="en")
+            UserPreferenceFactory.create(user=user, key="time_zone", value="UTC")
+
+    def test_an_owner_the_embedded_policy_leaves_out_is_not_carried_inside_a_page(self):
+        policy = HiddenOwnerPolicy("alice")
+        self.login(self.admin)
+        with patch.object(UserPreferenceViewSet, "embedded_user_policy", policy, create=True):
+            response = self.client.get(
+                reverse("user_v2:user_preference_list"), {"view": "full", "page_size": 100},
+            )
+        assert response.status_code == status.HTTP_200_OK
+        carried = {row["username"]: row["user"] for row in response.data["results"]}
+        assert set(carried) == {"alice", "bob"}
+        assert carried["alice"] is None
+        assert carried["bob"]["username"] == "bob"
+        assert carried["bob"]["email"] == "bob@example.com"
+
+    def test_an_owner_the_embedded_policy_leaves_out_is_not_carried_inside_one_preference(self):
+        policy = HiddenOwnerPolicy("alice")
+        self.login(self.admin)
+        with patch.object(UserPreferenceViewSet, "embedded_user_policy", policy, create=True):
+            response = self.client.get(
+                reverse("user_v2:user_preference_detail", kwargs={"username": "alice", "key": "pref-lang"}),
+                {"view": "full"},
+            )
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["user"] is None
+        assert response.data["username"] == "alice"
+        assert response.data["key"] == "pref-lang"
+        assert response.data["value"] == "en"
+
+    def test_an_owner_the_embedded_policy_keeps_is_still_carried(self):
+        """
+        An owner the policy keeps comes back whole.
+
+        This is a control rather than a guard: it reads a preference whose
+        owner the policy keeps, so it is green whether or not the policy is
+        consulted. It is here to show the answer is not narrowed too far.
+        """
+        policy = HiddenOwnerPolicy("alice")
+        self.login(self.admin)
+        with patch.object(UserPreferenceViewSet, "embedded_user_policy", policy, create=True):
+            response = self.client.get(
+                reverse("user_v2:user_preference_detail", kwargs={"username": "bob", "key": "time_zone"}),
+                {"view": "full"},
+            )
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["user"]["username"] == "bob"
+        assert response.data["user"]["preferences"] == {"time_zone": "UTC"}
+
+    def test_the_owners_of_a_page_are_resolved_once_however_many_rows_it_carries(self):
+        """
+        The owners a page may carry are settled for the whole page, so the cost does not grow with rows.
+
+        One row would hide a per-row lookup, so this is measured at five rows
+        and again at twenty-five, and the policy is asked once either way.
+        """
+        self.login(self.admin)
+        measured = {}
+        address = reverse("user_v2:user_preference_list")
+        for rows in (5, 25):
+            User.objects.filter(username__startswith="row-").delete()
+            self.preferences_of(rows)
+            policy = HiddenOwnerPolicy("alice")
+            with patch.object(UserPreferenceViewSet, "embedded_user_policy", policy, create=True):
+                # The first request of a signed-in client pays for its session,
+                # which is not part of what is being measured here.
+                self.client.get(address, {"view": "full", "page_size": 100})
+                with CaptureQueriesContext(connection) as captured:
+                    response = self.client.get(address, {"view": "full", "page_size": 100})
+                assert response.status_code == status.HTTP_200_OK
+                assert len(response.data["results"]) == rows * 2 + 2
+                assert policy.calls == 2, "the owners of a page are resolved once per request"
+            measured[rows] = len(captured)
+        assert measured[5] == measured[25], measured
+
+    def test_no_owner_is_resolved_for_a_page_that_carries_none(self):
+        """A page that does not carry its owners does not ask which owners it could carry."""
+        self.login(self.admin)
+        policy = HiddenOwnerPolicy("alice")
+        with patch.object(UserPreferenceViewSet, "embedded_user_policy", policy, create=True):
+            response = self.client.get(reverse("user_v2:user_preference_list"), {"page_size": 100})
+        assert response.status_code == status.HTTP_200_OK
+        assert [row["username"] for row in response.data["results"]] == ["alice", "bob"]
+        assert policy.calls == 0
+
+    def test_a_policy_answering_with_a_collection_of_its_own_still_narrows_what_is_carried(self):
+        """
+        A policy need not narrow the collection it is handed for its answer to hold.
+
+        The owners of the page are taken out of what the policy answers with,
+        so a policy that builds its own collection instead of narrowing the
+        one it is given narrows the page just the same.
+        """
+        class OwnCollectionPolicy:
+            """A policy that answers with a collection of its own."""
+
+            def scope(self, queryset, subject):  # pylint: disable=unused-argument
+                """Return the one owner this policy keeps, built without the given collection."""
+                return User.objects.filter(username="bob")
+
+        self.login(self.admin)
+        with patch.object(UserPreferenceViewSet, "embedded_user_policy", OwnCollectionPolicy(), create=True):
+            response = self.client.get(
+                reverse("user_v2:user_preference_list"), {"view": "full", "page_size": 100},
+            )
+        assert response.status_code == status.HTTP_200_OK
+        carried = {row["username"]: row["user"] for row in response.data["results"]}
+        assert carried["alice"] is None
+        assert carried["bob"]["username"] == "bob"
+
+    def test_the_embedded_owner_policy_is_declared_by_the_view_that_embeds(self):
+        """
+        The view names the policy that governs the owners it carries, rather than inheriting one.
+
+        A view that inherited the default would be left with no policy over
+        the entries it embeds, which is how a view that stopped declaring one
+        is told apart from a view whose policy happens to keep every owner.
+        """
+        declared = vars(UserPreferenceViewSet).get("embedded_user_policy")
+        assert declared is not None, "UserPreferenceViewSet declares no policy over the owners it carries"
+        assert callable(getattr(declared, "scope", None)), (
+            "UserPreferenceViewSet declares a policy over the owners it carries that cannot narrow rows"
+        )
