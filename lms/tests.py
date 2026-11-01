@@ -155,7 +155,8 @@ class NarrowSchemaCacheTests(TestCase):
         cache.clear()
         narrow = self.client.get(self.ADDRESS)
         wide = self.client.get('/api-docs/schema/')
-        assert narrow.status_code == 200 and wide.status_code == 200
+        assert narrow.status_code == 200
+        assert wide.status_code == 200
         assert len(narrow.content) < len(wide.content)
         assert self.client.get(self.ADDRESS).content == narrow.content
         assert self.client.get('/api-docs/schema/').content == wide.content
@@ -168,7 +169,8 @@ class NarrowSchemaCacheTests(TestCase):
         cache.clear()
         english = self.client.get(self.ADDRESS, HTTP_ACCEPT_LANGUAGE='en')
         spanish = self.client.get(self.ADDRESS, HTTP_ACCEPT_LANGUAGE='es-419')
-        assert english.status_code == 200 and spanish.status_code == 200
+        assert english.status_code == 200
+        assert spanish.status_code == 200
         assert english.content != spanish.content
         assert self.client.get(self.ADDRESS, HTTP_ACCEPT_LANGUAGE='en').content == english.content
 
