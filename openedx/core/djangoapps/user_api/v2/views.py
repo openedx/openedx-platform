@@ -40,6 +40,7 @@ from openedx.core.djangoapps.user_api.accounts.permissions import (
     CanCancelUserRetirement,
     CanDeactivateUser,
     CanGetAccountInfo,
+    CanReplaceUsername,
     CanRetireUser,
 )
 from openedx.core.djangoapps.user_api.errors import (
@@ -149,6 +150,8 @@ from .serializers import (
     UserPreferenceRecordMinimalSerializer,
     UserPreferenceRecordProjectionSerializer,
     UserPreferenceRecordSerializer,
+    UsernameReplacementOutcomeSerializer,
+    UsernameReplacementRequestSerializer,
     VerificationQuerySerializer,
     VerificationSerializer,
     VerificationStatusSerializer,
@@ -165,6 +168,7 @@ from .view_services import (
     erase_account_data,
     move_retirement,
     record_partner_report,
+    replace_usernames,
     request_retirement_of_own_account,
     retirement_open_to_action,
     retirement_requested_as,
@@ -3208,4 +3212,103 @@ class RetirementPartnerReportCleanupViewSet(
         batch = RetirementBatchSerializer(data=request.data)
         batch.is_valid(raise_exception=True)
         results = delete_partner_reports(self.get_queryset(), batch.validated_data["usernames"])
+        return Response(self.get_serializer({"results": results}).data)
+
+
+_RESP_NAMES_REPLACED = OpenApiResponse(
+    UsernameReplacementOutcomeSerializer,
+    description=(
+        "What was done about each mapping given. A name no account was stored under is reported "
+        "as such rather than refused, so a repeat of a request already carried out is answered."
+    ),
+)
+_RESP_NAMES_WERE_NOT_REPLACED = OpenApiResponse(
+    ErrorResponse,
+    description=(
+        "The names could not be replaced. Nothing was changed, and the request may be sent again."
+    ),
+)
+
+
+# One operation over a set of accounts named in its body, with no member
+# address of its own, so it stands at a collection of its own rather than
+# beneath the accounts: what follows the account collection in an address is
+# the name of an account, and a user may register any name. Who may call it is
+# resolved through the layer the operations of this version resolve it through,
+# so an operation added here later holds no capability by standing beside this
+# one. Written here rather than in the description the class carries, which is
+# published to every caller that asks what this address does.
+@extend_schema(tags=[USER_TAG])
+@extend_schema_view(
+    create=extend_schema(
+        summary="Replace the names accounts are stored under",
+        description=(
+            "Replaces the name each account named in the body is stored under, wherever this "
+            "service keeps it. Each mapping is the name an account is stored under carrying the "
+            "name asked for it; where another account already holds the name asked for, a suffix "
+            "is added to it.\n\n"
+            "The answer reports what was done about every mapping given, in the order they were "
+            "given, so that a name that reached no account can be told from a name that was "
+            "replaced. Only the replacements are the caller's to forward to the other services "
+            "holding the same name.\n\n"
+            "This is one step of a longer job: a name replaced here and nowhere else leaves an "
+            "account holding one name in this service and another in the rest."
+        ),
+        request=UsernameReplacementRequestSerializer,
+        responses={
+            200: _RESP_NAMES_REPLACED,
+            400: _RESP_UNUSABLE_BODY,
+            401: RESP_UNAUTHENTICATED,
+            403: _RESP_FORBIDDEN,
+            406: RESP_NOT_ACCEPTABLE,
+            415: RESP_UNREADABLE_BODY,
+            500: _RESP_NAMES_WERE_NOT_REPLACED,
+        },
+    ),
+)
+class UsernameReplacementViewSet(
+    StandardizedErrorMixin,
+    RestrictedApplicationGuardMixin,
+    ReadableErrorDetailMixin,
+    ErrorExtensionsMixin,
+    StrictQueryParametersMixin,
+    _PerActionAccessMixin,
+    viewsets.ViewSet,
+):
+    """
+    Replaces the names a set of accounts are stored under.
+
+    This is one step of a job that replaces a name across every service of a
+    deployment, and it is the step that decides what each new name is: where
+    the name asked for an account is already held by another, a suffix is
+    added to it, and the name that was settled on is answered for the rest of
+    the job to carry.
+
+    Every mapping given is reported, so that a name no account was stored
+    under is told apart from a name that was replaced rather than counted as
+    one.
+    """
+
+    serializer_class = UsernameReplacementOutcomeSerializer
+    permission_classes = (permissions.IsAuthenticated,)
+    # The operation this address replaces reads a body as JSON alone, and the
+    # same narrowing is kept: its one caller sends JSON, and a form-encoded
+    # request is one a page on another site can be made to send.
+    parser_classes = (JSONParser,)
+    #: Replacing the name an account is stored under is the work of the one
+    #: caller a deployment names for it, so that is what this asks for.
+    action_permissions = {
+        "create": (CanReplaceUsername,),
+        DESCRIBE_ADDRESS_ACTION: (CanReplaceUsername,),
+    }
+
+    def get_serializer(self, *args, **kwargs):
+        """Build the output serializer; a plain ViewSet has no generic machinery to do it."""
+        return self.serializer_class(*args, **kwargs)
+
+    def create(self, request):
+        """Replace the name each account the body names is stored under."""
+        asked = UsernameReplacementRequestSerializer(data=request.data)
+        asked.is_valid(raise_exception=True)
+        results = replace_usernames(asked.validated_data["username_mappings"])
         return Response(self.get_serializer({"results": results}).data)

@@ -22,6 +22,7 @@ from .views import (
     RetirementPartnerReportCleanupViewSet,
     RetirementPartnerReportViewSet,
     RetirementViewSet,
+    UsernameReplacementViewSet,
     UserPreferenceViewSet,
     UserViewSet,
 )
@@ -82,6 +83,16 @@ router.register(
     r"retirement_partner_report_cleanups",
     RetirementPartnerReportCleanupViewSet,
     basename="retirement_partner_report_cleanup",
+)
+# Replacing the name a set of accounts are stored under is one operation over
+# that set, with no member address of its own, so it stands beside the
+# collections rather than under the accounts: what follows the account
+# collection in an address is the name of an account, and a user may register
+# any name.
+router.register(
+    r"username_replacements",
+    UsernameReplacementViewSet,
+    basename="username_replacement",
 )
 
 

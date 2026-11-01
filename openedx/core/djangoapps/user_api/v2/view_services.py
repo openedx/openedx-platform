@@ -2,9 +2,12 @@
 
 import logging
 
+from django.apps import apps
 from django.conf import settings
 from django.contrib.auth import authenticate
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.contrib.sites.models import Site
+from django.db import transaction
 from edx_ace import ace
 from edx_ace.recipient import Recipient
 from rest_framework.exceptions import APIException, NotFound
@@ -37,6 +40,7 @@ from openedx.core.djangoapps.user_api.accounts.utils import (
     get_orgs_for_user,
     handle_retirement_cancellation,
     redact_and_delete_historical_social_auth,
+    username_suffix_generator,
 )
 from openedx.core.djangoapps.user_api.accounts.views import AccountRetirementView, LMSAccountRetirementView
 from openedx.core.djangoapps.user_api.message_types import DeletionNotificationMessage
@@ -59,6 +63,8 @@ from .serializers import (
     ERASURE_MISC_SCOPE,
     OUTCOME_ALREADY_ABSENT,
     OUTCOME_DELETED,
+    REPLACEMENT_NO_SUCH_ACCOUNT,
+    REPLACEMENT_REPLACED,
 )
 
 log = logging.getLogger(__name__)
@@ -102,6 +108,7 @@ RETIREMENT_WAS_NOT_RECORDED = (
     "The retirement could not be recorded in full, so nothing of it was kept. The request may be "
     "sent again."
 )
+NAMES_WERE_NOT_REPLACED = "The names could not be replaced. Nothing was changed."
 
 
 def confirm_the_callers_password(request, password):
@@ -503,3 +510,94 @@ def delete_partner_reports(entries, usernames):
     if doomed:
         UserRetirementPartnerReportingStatus.objects.filter(id__in=doomed).delete()
     return _batch_outcomes(usernames, found)
+
+
+#: Where the name an account is stored under is also kept, which is what has to
+#: be rewritten for that name to be replaced everywhere it is read. The pairs
+#: are written out here because the operation this one replaces holds them
+#: inside its own handler, where nothing can read them from; a test resolves
+#: every one of them, so a renamed column or an application a deployment does
+#: not install is a failure of that test rather than a name replaced in some
+#: places and not others.
+NAMES_ARE_ALSO_KEPT_IN = (
+    ("auth.user", "username"),
+    ("consent.DataSharingConsent", "username"),
+    ("consent.HistoricalDataSharingConsent", "username"),
+    ("credit.CreditEligibility", "username"),
+    ("credit.CreditRequest", "username"),
+    ("credit.CreditRequirementStatus", "username"),
+    ("user_api.UserRetirementPartnerReportingStatus", "original_username"),
+    ("user_api.UserRetirementStatus", "original_username"),
+)
+
+
+def _where_names_are_kept():
+    """Return each model holding an account's name, with the column it holds it in."""
+    try:
+        return [(apps.get_model(model), column) for model, column in NAMES_ARE_ALSO_KEPT_IN]
+    except LookupError as exc:
+        log.exception("A model holding an account's name could not be read.")
+        raise APIException(NAMES_WERE_NOT_REPLACED) from exc
+
+
+def _name_nobody_is_stored_under(asked_for):
+    """
+    Return the name asked for, or that name with a suffix where an account holds it.
+
+    The suffix is generated rather than counted up, so a generated name can be
+    taken as well and the result is tried again until nobody holds it. A
+    separator is put between the name asked for and what was generated, so
+    that the two cannot be read as one word.
+    """
+    suffix_length = getattr(settings, "SOCIAL_AUTH_UUID_LENGTH", 4)
+    candidate = asked_for
+    while User.objects.filter(username=candidate).exists():
+        candidate = f"{asked_for}-{username_suffix_generator(suffix_length)}"
+    return candidate
+
+
+def _rewrite_name(current_username, replacement, columns):
+    """
+    Replace this name wherever it is kept, and return how many rows carried it.
+
+    One account's name is replaced in every place at once or in none of them,
+    so that no account is left holding one name in one place and another
+    elsewhere.
+    """
+    with transaction.atomic():
+        return sum(
+            model.objects.filter(**{column: current_username}).update(**{column: replacement})
+            for model, column in columns
+        )
+
+
+def replace_usernames(mappings):
+    """
+    Replace the name each account named is stored under, and report each mapping.
+
+    A name no account is stored under leaves nothing to rewrite, and that is
+    reported as such rather than as a replacement that was carried out: the
+    operation this one replaces reports both the same way, which has a caller
+    forward a replacement that happened nowhere to the services it is called
+    beside.
+
+    No name is handed out for a mapping that reached no account. The name
+    asked for is worked out before the rewrite, as it is in the operation this
+    one replaces, so that the work either does is the same; where nothing
+    carried the name given, the name worked out is simply not reported and
+    nothing holds it.
+    """
+    columns = _where_names_are_kept()
+    results = []
+    for mapping in mappings:
+        (current_username, asked_for), = mapping.items()
+        replacement = _name_nobody_is_stored_under(asked_for)
+        rewritten = _rewrite_name(current_username, replacement, columns)
+        if rewritten:
+            log.info("The name of one account was replaced in %s places.", rewritten)
+        results.append({
+            "current_username": current_username,
+            "new_username": replacement if rewritten else None,
+            "outcome": REPLACEMENT_REPLACED if rewritten else REPLACEMENT_NO_SUCH_ACCOUNT,
+        })
+    return results

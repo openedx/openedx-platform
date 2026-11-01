@@ -102,6 +102,7 @@ EXPECTED_ADDRESSES = {
         {},
         "/api/user/v2/retirement_partner_report_cleanups/",
     ),
+    "user_v2:username_replacement_list": ({}, "/api/user/v2/username_replacements/"),
 }
 
 
@@ -466,6 +467,7 @@ class RouteShapeTests(APITestCase):
             "user_list",
             "user_preference_detail",
             "user_preference_list",
+            "username_replacement_list",
         ]
         for pattern in addresses:
             assert SNAKE_CASE_NAME.match(pattern.name), pattern.name
@@ -505,6 +507,7 @@ class RouteShapeTests(APITestCase):
             "retirement_partner_report_list",
             "retirement_partner_report_detail",
             "retirement_partner_report_cleanup_list",
+            "username_replacement_list",
         ]
         with pytest.raises(ImproperlyConfigured):
             v2_urls.without_route(routes, "user_preference_detail_renamed")
@@ -802,6 +805,49 @@ class RetirementRouteTests(APITestCase):
         outside = self.client.get("/api/not_a_service/v2/retirement/")
         assert response.status_code == outside.status_code == status.HTTP_404_NOT_FOUND
         assert response["Content-Type"] == outside["Content-Type"]
+
+
+@skip_unless_lms
+class UsernameReplacementRouteTests(APITestCase):
+    """Where the replacement of a set of names is mounted, and what it serves."""
+
+    def test_the_address_is_mounted_on_the_view_that_serves_it(self):
+        match = resolve("/api/user/v2/username_replacements/")
+        assert view_identity(match.func) == (V2_VIEW_MODULE, "UsernameReplacementViewSet")
+        assert routed_actions(match.func) == {"post": "create"}
+
+    def test_the_collection_has_no_member_address(self):
+        """A collection with no member operation is given no member route by the router."""
+        with pytest.raises(Resolver404):
+            resolve("/api/user/v2/username_replacements/alice/")
+
+    def test_the_address_is_served_only_with_its_slash(self):
+        with pytest.raises(Resolver404):
+            resolve("/api/user/v2/username_replacements")
+
+    def test_the_singular_spelling_is_not_this_collection(self):
+        """A name a user may register is read as nothing of this version rather than as this."""
+        with pytest.raises(Resolver404):
+            resolve("/api/user/v2/username_replacement/")
+
+    def test_the_name_it_reverses_by_builds_the_address_it_serves(self):
+        assert reverse("user_v2:username_replacement_list") == "/api/user/v2/username_replacements/"
+
+    def test_the_collection_is_registered_under_the_name_its_address_is_built_from(self):
+        """The router names a route after the basename, and that is the name published."""
+        registered = [route for route in v2_urls.router.urls if "username_replacement" in route.name]
+        assert [route.name for route in registered] == ["username_replacement_list"]
+        assert str(registered[0].pattern) == "^username_replacements/$"
+
+    def test_no_version_one_name_is_shadowed_by_this_one(self):
+        """The two sets live in different namespaces, so the same word names two addresses."""
+        assert reverse("username_replacement") == "/api/user/v1/accounts/replace_usernames/"
+        assert reverse("username_replacement") != reverse("user_v2:username_replacement_list")
+
+    def test_the_version_one_address_still_reaches_the_version_one_view(self):
+        match = resolve("/api/user/v1/accounts/replace_usernames/")
+        assert view_identity(match.func) == (V1_ACCOUNT_VIEW_MODULE, "UsernameReplacementView")
+        assert served_methods(match.func) == {"POST", "OPTIONS"}
 
 
 @skip_unless_lms

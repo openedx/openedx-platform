@@ -95,6 +95,7 @@ RETIREMENT_CLEANUP_PATH = "/api/user/v2/retirement_cleanups/"
 PARTNER_REPORT_LIST_PATH = "/api/user/v2/retirement_partner_reports/"
 PARTNER_REPORT_MEMBER_PATH = "/api/user/v2/retirement_partner_reports/{username}/"
 PARTNER_REPORT_CLEANUP_PATH = "/api/user/v2/retirement_partner_report_cleanups/"
+USERNAME_REPLACEMENT_PATH = "/api/user/v2/username_replacements/"
 
 #: The meaning published for the part of a retirement's address that carries
 #: the name the account was registered under.
@@ -140,6 +141,7 @@ ACTION_PATHS = {
     RETIREMENT_CLEANUP_PATH,
     PARTNER_REPORT_LIST_PATH,
     PARTNER_REPORT_CLEANUP_PATH,
+    USERNAME_REPLACEMENT_PATH,
 }
 
 #: The addresses a generated client library is built from. The retirement
@@ -541,6 +543,7 @@ def test_every_operation_of_this_version_is_published_under_one_group(schema):
         "v2_retirement_partner_reports_create": ["user"],
         "v2_retirement_partner_reports_update": ["user"],
         "v2_retirement_partner_report_cleanups_create": ["user"],
+        "v2_username_replacements_create": ["user"],
     }
 
 

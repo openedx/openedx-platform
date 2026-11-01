@@ -1392,6 +1392,132 @@ class RetirementBatchOutcomeSerializer(serializers.Serializer):  # pylint: disab
     )
 
 
+#: What a replacement reports about each mapping it was given.
+REPLACEMENT_REPLACED = "replaced"
+REPLACEMENT_NO_SUCH_ACCOUNT = "no_such_account"
+REPLACEMENT_OUTCOMES = (REPLACEMENT_REPLACED, REPLACEMENT_NO_SUCH_ACCOUNT)
+
+#: Each outcome with what it means, offered and named as the erasure scopes
+#: are: the pair is declared here so that the name the published set of
+#: choices is kept under can be configured from the same values.
+REPLACEMENT_OUTCOME_CHOICES = (
+    (REPLACEMENT_REPLACED, "The name this account is stored under was replaced by this request."),
+    (
+        REPLACEMENT_NO_SUCH_ACCOUNT,
+        "No account was stored under that name, so nothing was replaced and no name was handed out.",
+    ),
+)
+
+#: The largest number of mappings one request may carry, which is the number
+#: of rows a page of any collection of this version holds. The answer carries
+#: one result per mapping, so a request without a ceiling is an answer without
+#: one, over a write across several tables.
+REPLACEMENT_MAX_MAPPINGS = UserApiPagination.max_page_size
+
+#: One mapping, as the body carries it: an object whose single member is the
+#: name an account is stored under, carrying the name asked for it. The shape
+#: is written out because a field alone publishes an object of no stated
+#: shape, and because the form is a wire format the services this one is
+#: called beside read the same way.
+USERNAME_MAPPING_SCHEMA = {
+    "type": "object",
+    "minProperties": 1,
+    "maxProperties": 1,
+    "additionalProperties": {"type": "string"},
+    "description": (
+        "One account, as the name it is stored under carrying the name asked for it. Exactly one "
+        "name per object."
+    ),
+}
+
+
+@extend_schema_field(USERNAME_MAPPING_SCHEMA)
+class UsernameMappingField(serializers.DictField):
+    """
+    One account whose name is to be replaced, with the name asked for it.
+
+    The member's name is the name the account is stored under and its value is
+    the name asked for; an object carrying more than one member names more
+    than one account and is refused, because nothing would say which of them
+    the result it is answered with is about.
+    """
+
+    default_error_messages = {
+        "not_a_dict": "Send each mapping as an object naming one account.",
+        "empty": "Each mapping names the account it is about.",
+        "several": "Each mapping names one account, and this one names several.",
+    }
+
+    child = serializers.CharField(
+        help_text="Name asked for the account stored under the name this member carries.",
+    )
+
+    def to_internal_value(self, data):
+        """Return the one mapping this object carries, refusing an object carrying several."""
+        mapping = super().to_internal_value(data)
+        if len(mapping) > 1:
+            self.fail("several")
+        return mapping
+
+
+class UsernameReplacementRequestSerializer(serializers.Serializer):  # pylint: disable=abstract-method
+    """
+    The accounts whose names are to be replaced, each with the name asked for it.
+
+    A name no account is stored under is reported as such rather than
+    refusing the request, so a repeat of a request already carried out is
+    answered. A name given twice is acted on in the order the mappings are
+    given, which leaves the second of them nothing to replace.
+    """
+
+    username_mappings = serializers.ListField(
+        child=UsernameMappingField(allow_empty=False),
+        allow_empty=False,
+        max_length=REPLACEMENT_MAX_MAPPINGS,
+        help_text=(
+            "Accounts whose names are to be replaced, each as an object naming one of them. At "
+            f"most {REPLACEMENT_MAX_MAPPINGS} of them, and at least one."
+        ),
+    )
+
+
+class UsernameReplacementResultSerializer(serializers.Serializer):  # pylint: disable=abstract-method
+    """What a replacement did about one of the mappings it was given."""
+
+    current_username = serializers.CharField(
+        help_text="The name this result is about, as the request gave it.",
+    )
+    new_username = serializers.CharField(
+        allow_null=True,
+        help_text=(
+            "Name the account is stored under now, which is the name asked for, or that name with "
+            "a suffix added where another account already held it. Null where no account was "
+            "stored under the name given, since nothing was replaced and no name was handed out."
+        ),
+    )
+    outcome = serializers.ChoiceField(
+        choices=REPLACEMENT_OUTCOME_CHOICES,
+        help_text=(
+            f"`{REPLACEMENT_REPLACED}` where the name was replaced, and "
+            f"`{REPLACEMENT_NO_SUCH_ACCOUNT}` where no account was stored under the name given."
+        ),
+    )
+
+
+class UsernameReplacementOutcomeSerializer(serializers.Serializer):  # pylint: disable=abstract-method
+    """
+    What a replacement did, reported for each mapping it was given.
+
+    Every mapping is reported, so a caller can tell a name that was replaced
+    from a name that reached no account, and forward only the replacements.
+    """
+
+    results = UsernameReplacementResultSerializer(
+        many=True,
+        help_text="One result per mapping given, in the order the mappings were given.",
+    )
+
+
 class RetirementPartnerReportRecordSerializer(serializers.Serializer):  # pylint: disable=abstract-method
     """
     What a partner needs in order to forget one retired user.
