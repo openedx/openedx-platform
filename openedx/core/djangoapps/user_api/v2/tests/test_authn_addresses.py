@@ -1,5 +1,6 @@
 """Tests for the registration, sign-in and password reset addresses of version 2 of the User API."""
 
+import contextlib
 import json
 import re
 from types import SimpleNamespace
@@ -7,18 +8,30 @@ from unittest import mock
 
 import jsonschema
 import pytest
+from crum.signals import current_user_setter
 from django import forms
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
+from django.contrib.sessions.models import Session
 from django.core.cache import cache
+from django.core.signals import request_finished, request_started
 from django.db import connection, transaction
+from django.db.models.signals import post_init, post_save, pre_init, pre_save
+from django.dispatch import Signal
 from django.test import Client, TestCase
 from django.test.utils import CaptureQueriesContext, override_settings
 from django.urls import resolve, reverse
 from django.utils.http import int_to_base36
 from drf_spectacular.generators import SchemaGenerator
 from drf_spectacular.settings import patched_settings
+from edx_django_utils.monitoring.signals import (
+    monitoring_support_process_exception,
+    monitoring_support_process_request,
+    monitoring_support_process_response,
+)
+from openedx_events.learning.signals import STUDENT_REGISTRATION_COMPLETED
+from openedx_events.tooling import OpenEdxPublicSignal
 from openedx_filters import PipelineStep
 from openedx_filters.learning.filters import StudentLoginRequested, StudentRegistrationRequested
 from rest_framework.permissions import AllowAny
@@ -1098,8 +1111,65 @@ def test_a_write_is_told_by_its_first_keyword_whatever_follows_it():
     ]
 
 
+#: What every request sends whatever it reads: the request starting and
+#: finishing, the monitoring and current-user middleware around it, and a
+#: model instance being built.
+SIGNALS_OF_EVERY_REQUEST = (
+    request_started,
+    request_finished,
+    monitoring_support_process_request,
+    monitoring_support_process_response,
+    monitoring_support_process_exception,
+    current_user_setter,
+    pre_init,
+    post_init,
+)
+
+
+@contextlib.contextmanager
+def signals_sent():
+    """
+    Record each Django signal and Open edX event sent while this block runs.
+
+    What every request sends is left out, and so is the saving of the
+    caller's session, which the capture of writes already accounts for. An
+    event is recorded as it is sent, whether or not events are turned on, and
+    an event that is turned on is recorded again by the signal it is sent as.
+    """
+    sent = []
+
+    def recording(send):
+        """Return a replacement for one of the ways a signal or an event is sent."""
+        def spy(signal, *args, **kwargs):
+            sender = kwargs.get("sender", args[0] if args else None)
+            saves_the_session = signal in (pre_save, post_save) and sender is Session
+            if signal not in SIGNALS_OF_EVERY_REQUEST and not saves_the_session:
+                sent.append((send.__name__, getattr(signal, "event_type", signal), sender))
+            return send(signal, *args, **kwargs)
+        return spy
+
+    with mock.patch.object(Signal, "send", recording(Signal.send)), \
+            mock.patch.object(Signal, "send_robust", recording(Signal.send_robust)), \
+            mock.patch.object(OpenEdxPublicSignal, "send_event", recording(OpenEdxPublicSignal.send_event)):
+        yield sent
+
+
+@skip_unless_lms
+def test_each_way_of_sending_is_recorded_even_with_events_turned_off():
+    signal = Signal()
+    with mock.patch.object(STUDENT_REGISTRATION_COMPLETED, "_allow_events", False), signals_sent() as sent:
+        signal.send(sender=User)
+        signal.send_robust(User)
+        STUDENT_REGISTRATION_COMPLETED.send_event()
+    assert sent == [
+        ("send", signal, User),
+        ("send_robust", signal, User),
+        ("send_event", "org.openedx.learning.student.registration.completed.v1", None),
+    ]
+
+
 class _FormReadTests:
-    """Reading a form writes nothing but the caller's session, at either address."""
+    """Reading a form writes nothing but the caller's session, and sends nothing, at either address."""
 
     #: The tables a read may write to in this configuration, by the address it reads.
     EXPECTED_WRITES = {}
@@ -1117,6 +1187,13 @@ class _FormReadTests:
         assert response.status_code == 200, (method, address)
         return written_tables(queries.captured_queries)
 
+    def signalled(self, method, address):
+        """Return the signals and events one request to ``address`` sends."""
+        with signals_sent() as sent:
+            response = getattr(Client(), method)(address)
+        assert response.status_code == 200, (method, address)
+        return sent
+
     def test_a_read_writes_only_the_session_and_the_same_way_at_both_addresses(self):
         for method in ("get", "head"):
             for legacy, conforming in self.PAIRS:
@@ -1125,6 +1202,13 @@ class _FormReadTests:
                 assert {table for _statement, table in conforming_writes} == self.EXPECTED_WRITES[conforming], (
                     method, conforming,
                 )
+
+    def test_a_read_sends_no_signal_or_event_at_either_address(self):
+        for method in ("get", "head"):
+            for legacy, conforming in self.PAIRS:
+                legacy_sent, conforming_sent = self.signalled(method, legacy), self.signalled(method, conforming)
+                assert conforming_sent == legacy_sent, (method, conforming)
+                assert not conforming_sent, (method, conforming)
 
 
 @skip_unless_lms
