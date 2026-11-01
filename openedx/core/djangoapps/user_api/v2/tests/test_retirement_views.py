@@ -3051,6 +3051,37 @@ class NameRequestedTwiceTests(RetirementApiTestCase):
         assert [row["id"] for row in response.json()["results"]] == [held.id, twin.id]
 
 
+@skip_unless_lms
+class RetirementSelfDescriptionTests(RetirementApiTestCase):
+    """
+    What each address of this pipeline says about itself to a caller that asks.
+
+    The description a view class carries is what an OPTIONS request is
+    answered with, so it is published text: a client and a documentation
+    browser read it beside the description of the same address in the schema.
+    These hold two of them to being the text the class carries, which the
+    checks on that text elsewhere hold to being written for the caller.
+    """
+
+    def test_the_queue_answers_with_the_description_it_carries(self):
+        self.login("worker")
+        answer = self.client.options(reverse("user_v2:retirement_list"))
+        assert answer.status_code == status.HTTP_200_OK
+        assert answer.json()["description"] == RetirementViewSet().get_view_description()
+        assert answer.json()["description"].startswith(
+            "The accounts being retired, addressed by the name each was registered under.",
+        )
+
+    def test_the_disposal_answers_with_the_description_it_carries(self):
+        self.login("worker")
+        answer = self.client.options(reverse("user_v2:retirement_cleanup_list"))
+        assert answer.status_code == status.HTTP_200_OK
+        assert answer.json()["description"] == RetirementCleanupViewSet().get_view_description()
+        assert answer.json()["description"].startswith(
+            "Disposes of a set of finished retirement records.",
+        )
+
+
 #: The view classes this pipeline is served by, read from the module that
 #: routes them so that an address mounted later is covered by the sweep below.
 RETIREMENT_VIEW_CLASSES = (

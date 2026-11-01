@@ -2523,6 +2523,18 @@ RETIREMENT_ACTION_PERMISSIONS = {
 }
 
 
+# How this collection is built, which is written here rather than in the
+# description the class carries: that description is what an OPTIONS request
+# is answered with, so it is published text and belongs to the caller.
+#
+# A retirement is not written through generic machinery -- every change goes
+# through the pipeline's own model layer, which is what decides whether a step
+# may run. Access is layered: the permission classes decide who may call an
+# action at all, the visibility policy decides which retirements such a caller
+# may act on, and the filters narrow the page a list carries further. Every
+# action resolves the records it reads or changes from the selection the policy
+# left, a member address included, so a retirement the policy leaves out is
+# reported as absent rather than refused.
 @extend_schema(tags=[USER_TAG])
 @extend_schema_view(
     list=extend_schema(
@@ -2905,6 +2917,13 @@ class RetirementPartnerReportViewSet(
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+# The entries a request answers with are read first and marked by the
+# identifiers that were read, which is what keeps an entry added during the
+# read from being marked by a caller that never saw it; the enrolments behind
+# the organization names are fetched with the entries so that the cost of the
+# answer does not grow with the number of entries. Written here rather than in
+# the description the class carries, which is published to every caller that
+# asks an address what it does.
 _RESP_BATCH_OUTCOME = OpenApiResponse(
     RetirementBatchOutcomeSerializer,
     description=(
@@ -2914,6 +2933,13 @@ _RESP_BATCH_OUTCOME = OpenApiResponse(
 )
 
 
+# One operation over a set of records named in its body, with a condition that
+# covers the whole set and no member address of its own, so it stands at a
+# collection of its own rather than among the operations on one record. Who may
+# call it and which records it deletes are resolved through the layers those
+# operations resolve them through, so a rule added to the records is asked of
+# their disposal too. Written here rather than in the description the class
+# carries, which is published to every caller that asks what this address does.
 @extend_schema(tags=[USER_TAG])
 @extend_schema_view(
     create=extend_schema(
@@ -2977,6 +3003,13 @@ class RetirementCleanupViewSet(
         return Response(self.get_serializer({"results": results}).data)
 
 
+# This disposal stands at a collection of its own for the same reason the
+# retirement records' own disposal does, and the two are kept apart because
+# they act on different records in different tables under different conditions.
+# Who may call this one and which entries it deletes are resolved through the
+# layers the operations on those entries resolve them through. Written here
+# rather than in the description the class carries, which is published to every
+# caller that asks what this address does.
 @extend_schema(tags=[USER_TAG])
 @extend_schema_view(
     create=extend_schema(
