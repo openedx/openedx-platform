@@ -571,16 +571,26 @@ class _ResponsePresetMixin(MinimalViewMixin):
             return set(self.minimal_fields)
         return set(self.get_serializer_class()().fields)
 
+    #: What a caller is told in place of the names, at a view that may withhold
+    #: them. A view that narrows what a response carries by who is asking says
+    #: here what it tells a caller it has narrowed the answer for.
+    withheld_fields_message = ""
+
+    def shapeable_fields_may_be_named(self):
+        """Whether a refusal may list the properties a response of this view can carry."""
+        return True
+
     def check_requested_fields(self, request):
         """Refuse a selected field the response cannot carry, naming the ones it can."""
         available = self.shapeable_fields()
         unknown = sorted(set(_requested_field_names(request.query_params.get(FIELDS_PARAM))) - available)
         if unknown:
+            if self.shapeable_fields_may_be_named():
+                rest = f"Select any of: {', '.join(sorted(available))}."
+            else:
+                rest = self.withheld_fields_message
             raise ValidationError({
-                FIELDS_PARAM: [
-                    f"No such field: {', '.join(unknown)}. "
-                    f"Select any of: {', '.join(sorted(available))}.",
-                ],
+                FIELDS_PARAM: [f"No such field: {', '.join(unknown)}. {rest}"],
             })
 
     def shape(self, data, request):
@@ -1043,6 +1053,7 @@ class AccountViewSet(
     minimal_fields = ACCOUNT_MINIMAL_FIELDS
     response_presets = ACCOUNT_PRESETS
     extra_query_params = RESPONSE_SHAPING_PARAMS
+    withheld_fields_message = "An account another user holds carries only the properties its owner shares."
     #: The validated query string of the request being served, read once.
     _validated_selection = None
 
@@ -1075,13 +1086,32 @@ class AccountViewSet(
             return describable
         return describable & _shareable_account_fields()
 
+    def shapeable_fields_may_be_named(self):
+        """
+        Whether a refusal may list the properties an answer of this kind can carry.
+
+        Which properties an owner shares is that owner's to decide, and the
+        set the site offers them to choose from is the site's own
+        configuration. A caller addressing an account it does not hold is
+        therefore told that it may not select what it selected, and not what
+        the site holds for other people: the list would otherwise name every
+        property the site is configured to let an owner share, including ones
+        nobody on the site shares. A caller that narrowed the answer itself,
+        by asking for a preset, is still told what that preset carries.
+        """
+        return not self._only_shared_properties_are_readable(self.request)
+
     def _whole_accounts_are_readable(self, request):
         """Whether every account this request addresses comes back whole to this caller."""
         if request.query_params.get(VIEW_PARAM) == SHARED_VIEW:
             return False
+        return not self._only_shared_properties_are_readable(request)
+
+    def _only_shared_properties_are_readable(self, request):
+        """Whether who the caller is keeps them from every property of the accounts addressed."""
         if request.user.is_staff:
-            return True
-        return self._addressed_names(request) == [request.user.username]
+            return False
+        return self._addressed_names(request) != [request.user.username]
 
     def _selection(self, request):
         """

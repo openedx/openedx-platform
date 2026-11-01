@@ -59,14 +59,13 @@ FULL_FIELDS = set(_VISIBILITY.get("admin_fields", ()))
 SHARED_FIELDS = set(_VISIBILITY.get("bulk_shareable_fields", ()))
 
 #: The properties an owner is able to share, and so the only ones another caller
-#: may select; the refusal offers them in this order.
+#: may select. A refusal about somebody else's account names none of them; one
+#: about an answer the caller narrowed itself offers them in this order.
 SHAREABLE_FIELDS = set(_VISIBILITY.get("custom_shareable_fields", ()))
 SHAREABLE_FIELDS_OFFERED = ", ".join(sorted(SHAREABLE_FIELDS))
 
-#: The identifying properties the ``minimal`` preset keeps, and the ones of those
-#: another caller may select; the refusal offers them in this order.
+#: The identifying properties the ``minimal`` preset keeps.
 MINIMAL_FIELDS = {"username", "email", "name", "profile_image"}
-SHAREABLE_MINIMAL_FIELDS_OFFERED = ", ".join(sorted(SHAREABLE_FIELDS & MINIMAL_FIELDS))
 
 #: The query parameters each account action reads, in the order its refusal lists them.
 LIST_QUERY_PARAMS = "email, fields, format, lms_user_id, ordering, page, page_size, username, view"
@@ -336,7 +335,8 @@ class AccountListViewTests(AccountApiV2TestCase):
             response, expected_status=status.HTTP_400_BAD_REQUEST, expected_type_slug="validation",
         )
         assert envelope["errors"]["fields"] == [
-            f"No such field: email. Select any of: {SHAREABLE_MINIMAL_FIELDS_OFFERED}.",
+            "No such field: email. An account another user holds carries only the "
+            "properties its owner shares.",
         ]
 
     def test_a_caller_selects_an_identifying_property_of_their_own_account(self):
@@ -368,7 +368,8 @@ class AccountListViewTests(AccountApiV2TestCase):
             response, expected_status=status.HTTP_400_BAD_REQUEST, expected_type_slug="validation",
         )
         assert envelope["errors"]["fields"] == [
-            f"No such field: email. Select any of: {SHAREABLE_FIELDS_OFFERED}.",
+            "No such field: email. An account another user holds carries only the "
+            "properties its owner shares.",
         ]
 
     def test_a_learner_selecting_a_property_this_owner_does_not_share_receives_the_rest(self):
@@ -830,7 +831,8 @@ class AccountDetailViewTests(AccountApiV2TestCase):
             response, expected_status=status.HTTP_400_BAD_REQUEST, expected_type_slug="validation",
         )
         assert envelope["errors"]["fields"] == [
-            f"No such field: email. Select any of: {SHAREABLE_MINIMAL_FIELDS_OFFERED}.",
+            "No such field: email. An account another user holds carries only the "
+            "properties its owner shares.",
         ]
 
     def test_selected_fields_narrow_the_account(self):
@@ -846,7 +848,8 @@ class AccountDetailViewTests(AccountApiV2TestCase):
             response, expected_status=status.HTTP_400_BAD_REQUEST, expected_type_slug="validation",
         )
         assert envelope["errors"]["fields"] == [
-            f"No such field: email. Select any of: {SHAREABLE_FIELDS_OFFERED}.",
+            "No such field: email. An account another user holds carries only the "
+            "properties its owner shares.",
         ]
 
     def test_a_learner_selecting_a_property_this_owner_does_not_share_receives_the_rest(self):
@@ -3109,3 +3112,75 @@ class EmailSearchAddressDescriptionTests(AccountApiV2TestCase):
         )
         assert response.status_code == status.HTTP_200_OK
         assert [row["username"] for row in response.data["results"]] == ["owner-caller"]
+
+
+@skip_unless_lms
+class RefusalDisclosureTests(AccountApiV2TestCase):
+    """
+    What a refusal about somebody else's account gives away.
+
+    A caller that selects a property of another user's account it may not see
+    is told that it cannot. Which properties an owner shares is that owner's
+    to decide, and the set the site offers them to choose from is the site's
+    own configuration, so a refusal about an account the caller does not hold
+    names neither: it would otherwise hand every signed-in caller the whole
+    configured list, including names nobody on the site shares.
+    """
+
+    REFUSAL_ABOUT_ANOTHER_ACCOUNT = (
+        "No such field: email. An account another user holds carries only the properties "
+        "its owner shares."
+    )
+
+    def test_a_refusal_about_another_account_names_nothing_the_site_configures(self):
+        self.login(self.owner)
+        envelope = assert_error_envelope(
+            self.client.get(self.detail_url("other-caller"), {"fields": "email"}),
+            expected_status=status.HTTP_400_BAD_REQUEST,
+            expected_type_slug="validation",
+        )
+        message = envelope["errors"]["fields"][0]
+        assert message == self.REFUSAL_ABOUT_ANOTHER_ACCOUNT
+        assert sorted(name for name in SHAREABLE_FIELDS if name in message) == []
+
+    def test_a_refusal_about_another_account_on_the_list_names_nothing_either(self):
+        self.login(self.owner)
+        envelope = assert_error_envelope(
+            self.client.get(self.list_url, {"username": "other-caller", "fields": "email"}),
+            expected_status=status.HTTP_400_BAD_REQUEST,
+            expected_type_slug="validation",
+        )
+        message = envelope["errors"]["fields"][0]
+        assert message == self.REFUSAL_ABOUT_ANOTHER_ACCOUNT
+        assert sorted(name for name in SHAREABLE_FIELDS if name in message) == []
+
+    def test_a_refusal_about_another_account_under_a_preset_names_nothing_either(self):
+        self.login(self.owner)
+        envelope = assert_error_envelope(
+            self.client.get(self.detail_url("other-caller"), {"view": "minimal", "fields": "email"}),
+            expected_status=status.HTTP_400_BAD_REQUEST,
+            expected_type_slug="validation",
+        )
+        assert envelope["errors"]["fields"][0] == self.REFUSAL_ABOUT_ANOTHER_ACCOUNT
+
+    def test_a_refusal_about_the_callers_own_account_still_says_what_may_be_selected(self):
+        """The caller sees every property of their own account, so naming them gives nothing away."""
+        self.login(self.owner)
+        envelope = assert_error_envelope(
+            self.client.get(self.own_url, {"fields": "wallet"}),
+            expected_status=status.HTTP_400_BAD_REQUEST,
+            expected_type_slug="validation",
+        )
+        message = envelope["errors"]["fields"][0]
+        assert message.startswith("No such field: wallet. Select any of: ")
+        assert "username" in message
+
+    def test_a_refusal_to_a_staff_caller_still_says_what_may_be_selected(self):
+        """A staff caller reads every property of every account, so the list tells them nothing new."""
+        self.login(self.staff)
+        envelope = assert_error_envelope(
+            self.client.get(self.detail_url("other-caller"), {"fields": "wallet"}),
+            expected_status=status.HTTP_400_BAD_REQUEST,
+            expected_type_slug="validation",
+        )
+        assert envelope["errors"]["fields"][0].startswith("No such field: wallet. Select any of: ")
