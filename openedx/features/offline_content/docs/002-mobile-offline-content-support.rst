@@ -6,6 +6,11 @@ Status
 
 Proposed
 
+Narrowed by `ADR-003`_: the shared-resources archive (decision 1) is deferred until the mobile applications
+can consume one; decisions 2–4 are unaffected.
+
+.. _ADR-003: 003-offline-content-generation-architecture.rst
+
 Context
 -------
 
