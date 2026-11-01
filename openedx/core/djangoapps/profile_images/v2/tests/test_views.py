@@ -919,7 +919,7 @@ class ImageRecordingTests(APITestCase):
             set_has_profile_image(profileless, False)
 
     def test_recording_an_image_without_saying_when_is_refused(self):
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="No upload datetime was supplied."):
             set_has_profile_image(self.owner, True)
 
 
