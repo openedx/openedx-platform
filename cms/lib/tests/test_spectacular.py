@@ -24,6 +24,7 @@ from cms.lib.spectacular import (
     cms_mark_superseded_paths,
 )
 from openedx.core.apidocs import get_api_docs_settings
+from openedx.core.djangoapps.user_api.schema_components import PATCHED_USER_RETIREMENT_STATUS
 
 
 def _endpoint(path):
@@ -353,3 +354,26 @@ class SupersededUserOperationTest(DjangoTestCase):
     def test_every_operation_keeps_the_name_it_is_published_under(self):
         published = {key: operation["operationId"] for key, operation in self._operations().items()}
         assert published == SUPERSEDED_USER_OPERATION_IDS
+
+    def test_the_component_no_operation_refers_to_any_more_is_still_published_here(self):
+        """
+        A client generated from this document names a class after each component in it.
+
+        One of these addresses was the only reference to the retirement-status
+        model, and it now publishes the object its handler really reads, so
+        nothing in either service's document generates that model any more. It
+        is appended by this service as well, under the name it has always been
+        published under and with the definition the other service appends, so
+        that a client generated from this document still carries the class.
+        """
+        components = self.schema["components"]["schemas"]
+        assert components["PatchedUserRetirementStatus"] == PATCHED_USER_RETIREMENT_STATUS
+        referred_to = {
+            member["allOf"][0]["$ref"].rsplit("/", 1)[-1]
+            for member in components["PatchedUserRetirementStatus"]["properties"].values()
+            if "allOf" in member
+        }
+        assert referred_to == {"RetirementUser", "RetirementState"}
+        # The appended component is described in place, so nothing checks that
+        # what it points at is published beside it.
+        assert referred_to - set(components) == set()

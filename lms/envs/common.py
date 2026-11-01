@@ -64,6 +64,7 @@ from openedx_content.settings_api import openedx_content_backcompat_apps_to_inst
 from path import Path as path
 
 from openedx.core.djangoapps.plugins.constants import ProjectType, SettingsType
+from openedx.core.djangoapps.user_api.schema_components import KEPT_COMPONENT_SCHEMAS
 from openedx.core.lib.derived import Derived
 from openedx.core.lib.features_setting_proxy import FeaturesProxy
 from openedx.envs.common import *  # pylint: disable=wildcard-import  # noqa: F403
@@ -2180,30 +2181,6 @@ OPTIONAL_APPS += [  # noqa: F405
 add_optional_apps(OPTIONAL_APPS, INSTALLED_APPS)  # noqa: F405
 
 ###################### drf-spectacular (LMS API schema) ######################
-# The retirement-status model that a partial update of a version 1 retirement
-# was published as reading. That operation now publishes the object its handler
-# really reads, which leaves this model with no reference to generate it from,
-# and a client generated from a document names a class after each model in it.
-# The model is therefore named here, exactly as it was published, so the class
-# keeps its name in every document this service builds.
-PATCHED_USER_RETIREMENT_STATUS = {
-    'type': 'object',
-    'description': 'Perform serialization for the RetirementStatus model',
-    'properties': {
-        'id': {'type': 'integer', 'readOnly': True},
-        'user': {'allOf': [{'$ref': '#/components/schemas/RetirementUser'}], 'readOnly': True},
-        'current_state': {'allOf': [{'$ref': '#/components/schemas/RetirementState'}], 'readOnly': True},
-        'last_state': {'allOf': [{'$ref': '#/components/schemas/RetirementState'}], 'readOnly': True},
-        'created': {'type': 'string', 'format': 'date-time', 'readOnly': True},
-        'modified': {'type': 'string', 'format': 'date-time', 'readOnly': True},
-        'original_username': {'type': 'string', 'maxLength': 150},
-        'original_email': {'type': 'string', 'format': 'email', 'maxLength': 254},
-        'original_name': {'type': 'string', 'maxLength': 255},
-        'retired_username': {'type': 'string', 'maxLength': 150},
-        'retired_email': {'type': 'string', 'format': 'email', 'maxLength': 254},
-    },
-}
-
 SPECTACULAR_SETTINGS = {
     'TITLE': 'LMS API',
     'VERSION': '0.1.0',
@@ -2218,9 +2195,11 @@ SPECTACULAR_SETTINGS = {
         'openedx.core.apidocs.untag_deprecated_operations',
     ],
     # Carried by every document built from these settings, including the
-    # service-wide one, which overlays its own keys over them.
+    # service-wide one, which overlays its own keys over them. The other
+    # service that serves this API appends the same components, read from the
+    # same definition, so neither document names one the other does not.
     'APPEND_COMPONENTS': {
-        'schemas': {'PatchedUserRetirementStatus': PATCHED_USER_RETIREMENT_STATUS},
+        'schemas': dict(KEPT_COMPONENT_SCHEMAS),
     },
     # A set of choices is published as its own model, named after the field
     # carrying it while one field of the service carries that name alone. The

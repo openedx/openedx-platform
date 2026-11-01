@@ -19,6 +19,7 @@ from cms.envs.common import (  # pylint: disable=unused-import
 )
 from lms.envs.common import *  # pylint: disable=wildcard-import  # noqa: F403
 from openedx.core.apidocs import get_api_docs_settings
+from openedx.core.djangoapps.user_api.schema_components import KEPT_COMPONENT_SCHEMAS
 from openedx.core.lib.derived import derive_settings
 
 # Turn on all the boolean feature flags, so that conditionally included
@@ -82,13 +83,13 @@ SPECTACULAR_SETTINGS.update(get_api_docs_settings())  # noqa: F405
 
 # OpenAPI 3 security schemes, consumed by drf-spectacular. "Basic" uses the
 # OpenAPI 3 http/basic form rather than Swagger 2.0's type: basic.
-# Components the service settings already append are kept, and the retirement-status model,
-# which lost its only reference, is named again from the service settings.
+# Components the service settings already append are kept, and the ones nothing refers to
+# are named again from the one definition both services read.
 SPECTACULAR_SETTINGS["APPEND_COMPONENTS"] = {  # noqa: F405
     **SPECTACULAR_SETTINGS.get("APPEND_COMPONENTS", {}),  # noqa: F405
     "schemas": {
         **SPECTACULAR_SETTINGS.get("APPEND_COMPONENTS", {}).get("schemas", {}),  # noqa: F405
-        "PatchedUserRetirementStatus": PATCHED_USER_RETIREMENT_STATUS,  # noqa: F405
+        **KEPT_COMPONENT_SCHEMAS,
     },
     "securitySchemes": {
         "Basic": {
