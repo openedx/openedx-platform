@@ -3,16 +3,19 @@
 
 import logging
 import mimetypes
+from unittest import mock
 
 from django.conf import settings  # pylint: disable=unused-import  # noqa: F401
 from django.core.cache import cache
+from django.http import HttpResponse
 from django.test import TestCase, override_settings
 from django.urls import Resolver404, URLResolver, path, resolve, reverse
 from django.urls.resolvers import RegexPattern
-from django.views.generic import View
+from drf_spectacular.generators import SchemaGenerator
 from edx_django_utils.plugins import get_plugin_url_patterns
 
 import lms.urls
+from common.djangoapps.student.tests.factories import TEST_PASSWORD, UserFactory
 from openedx.core.apidocs import cached_schema_view
 from openedx.core.djangoapps.plugins.constants import ProjectType
 from openedx.core.djangoapps.user_api.v2.views import AccountViewSet as CurrentAccountViewSet
@@ -95,6 +98,101 @@ class LmsModuleTests(TestCase):
         assert again.content == full.content
 
 
+class NarrowSchemaCacheTests(TestCase):
+    """
+    The document this service publishes for client generation is served from the cache.
+
+    It is public, it costs a full generation pass, and it is the one schema
+    address with nothing in front of it. The cache may only serve it if every
+    caller is given the same document, so that is measured here too.
+    """
+
+    ADDRESS = '/lms-api/schema/'
+
+    def _generations(self):
+        """Count the passes the generator makes, leaving it otherwise alone."""
+        return mock.patch.object(
+            SchemaGenerator,
+            'get_schema',
+            autospec=True,
+            side_effect=SchemaGenerator.get_schema,
+        )
+
+    @override_settings(
+        OPENAPI_CACHE_TIMEOUT=60,
+        CACHES={'default': {'BACKEND': 'django.core.cache.backends.locmem.LocMemCache'}},
+    )
+    def test_two_requests_generate_the_document_once(self):
+        cache.clear()
+        with self._generations() as generated:
+            first = self.client.get(self.ADDRESS)
+            second = self.client.get(self.ADDRESS)
+        assert first.status_code == 200
+        assert first.content.startswith(b'openapi:')
+        assert second.content == first.content
+        assert second['Content-Type'] == first['Content-Type']
+        assert generated.call_count == 1
+
+    @override_settings(
+        OPENAPI_CACHE_TIMEOUT=0,
+        CACHES={'default': {'BACKEND': 'django.core.cache.backends.locmem.LocMemCache'}},
+    )
+    def test_without_a_timeout_each_request_generates_it_again(self):
+        """A deployment that turns the cache off is served exactly what it was before."""
+        cache.clear()
+        with self._generations() as generated:
+            first = self.client.get(self.ADDRESS)
+            second = self.client.get(self.ADDRESS)
+        assert first.status_code == 200
+        assert second.content == first.content
+        assert generated.call_count == 2
+
+    @override_settings(
+        OPENAPI_CACHE_TIMEOUT=60,
+        CACHES={'default': {'BACKEND': 'django.core.cache.backends.locmem.LocMemCache'}},
+    )
+    def test_the_two_documents_this_service_serves_are_not_stored_under_one_key(self):
+        cache.clear()
+        narrow = self.client.get(self.ADDRESS)
+        wide = self.client.get('/api-docs/schema/')
+        assert narrow.status_code == 200 and wide.status_code == 200
+        assert len(narrow.content) < len(wide.content)
+        assert self.client.get(self.ADDRESS).content == narrow.content
+        assert self.client.get('/api-docs/schema/').content == wide.content
+
+    @override_settings(
+        OPENAPI_CACHE_TIMEOUT=60,
+        CACHES={'default': {'BACKEND': 'django.core.cache.backends.locmem.LocMemCache'}},
+    )
+    def test_another_language_is_not_served_the_document_already_stored(self):
+        cache.clear()
+        english = self.client.get(self.ADDRESS, HTTP_ACCEPT_LANGUAGE='en')
+        spanish = self.client.get(self.ADDRESS, HTTP_ACCEPT_LANGUAGE='es-419')
+        assert english.status_code == 200 and spanish.status_code == 200
+        assert english.content != spanish.content
+        assert self.client.get(self.ADDRESS, HTTP_ACCEPT_LANGUAGE='en').content == english.content
+
+    def test_every_caller_is_given_the_same_document(self):
+        """What the cache may hold: one document, not one per caller."""
+        staff = UserFactory.create(username='narrowstaff', password=TEST_PASSWORD, is_staff=True)
+        root = UserFactory.create(
+            username='narrowroot', password=TEST_PASSWORD, is_staff=True, is_superuser=True,
+        )
+        anonymous = self.client.get(self.ADDRESS)
+        served = {'anonymous': anonymous.content}
+        for user in (staff, root):
+            assert self.client.login(username=user.username, password=TEST_PASSWORD)
+            served[user.username] = self.client.get(self.ADDRESS).content
+            self.client.logout()
+        assert anonymous.status_code == 200
+        assert set(served.values()) == {anonymous.content}
+
+
+def _calendars_of_an_application(request):  # pylint: disable=unused-argument
+    """Stand-in for an address an installed application serves under a claimed prefix."""
+    return HttpResponse()
+
+
 class ClaimedPrefixTests(TestCase):
     """
     A prefix whose mount answers every address under it that its own routes do not.
@@ -131,16 +229,13 @@ class ClaimedPrefixTests(TestCase):
         assert claimed > self._index_of(self.LANDMARK)
 
     def test_an_address_an_application_registers_under_the_prefix_reaches_its_view(self):
-        class _Calendars(View):
-            """Stand-in for a view an installed application serves under that prefix."""
-
         patterns = list(lms.urls.urlpatterns)
         patterns.insert(
             self._index_of(self.LANDMARK) + 1,
-            path("api/user/v2/calendars/", _Calendars.as_view()),
+            path("api/user/v2/calendars/", _calendars_of_an_application),
         )
         resolved = URLResolver(RegexPattern(r"^/"), patterns).resolve("/api/user/v2/calendars/")
-        assert resolved.func.view_class is _Calendars, resolved.func.view_class
+        assert resolved.func is _calendars_of_an_application, resolved.func
 
     def test_an_address_nothing_registers_is_still_answered_by_the_mount(self):
         assert resolve("/api/user/v2/nothing_here/").func.cls is UnknownAddressView
