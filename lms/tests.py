@@ -7,9 +7,18 @@ import mimetypes
 from django.conf import settings  # pylint: disable=unused-import  # noqa: F401
 from django.core.cache import cache
 from django.test import TestCase, override_settings
-from django.urls import path
+from django.urls import Resolver404, URLResolver, path, resolve, reverse
+from django.urls.resolvers import RegexPattern
+from django.views.generic import View
+from edx_django_utils.plugins import get_plugin_url_patterns
 
+import lms.urls
 from openedx.core.apidocs import cached_schema_view
+from openedx.core.djangoapps.plugins.constants import ProjectType
+from openedx.core.djangoapps.user_api.v2.views import AccountViewSet as CurrentAccountViewSet
+from openedx.core.djangoapps.user_api.v2.views import UnknownAddressView
+from openedx.core.djangoapps.user_authn.views.login import LoginSessionView
+from openedx.core.djangoapps.user_authn.views.register import RegistrationView
 
 log = logging.getLogger(__name__)
 
@@ -84,6 +93,88 @@ class LmsModuleTests(TestCase):
         assert other.status_code == 200
         assert full.content != other.content
         assert again.content == full.content
+
+
+class ClaimedPrefixTests(TestCase):
+    """
+    A prefix whose mount answers every address under it that its own routes do not.
+
+    The current version of the user API is mounted that way, so nothing after
+    it is ever consulted for an address under that prefix. An installed
+    application contributes its patterns at one point in the URLconf, which
+    leaves the order between the two as what decides whether an address such an
+    application registers under the prefix can be served at all.
+
+    The authentication application registers two addresses there, so that order
+    is measurable against real patterns rather than asserted about a copy.
+    """
+
+    LANDMARK = "api/user/v2/account/registration/"
+
+    def _index_of(self, route):
+        """Where in the URLconf the pattern that answers that address sits."""
+        for index, pattern in enumerate(lms.urls.urlpatterns):
+            try:
+                if pattern.resolve(route):
+                    return index
+            except Resolver404:
+                continue
+        raise AssertionError(f"nothing in the URLconf answers {route}")
+
+    def test_the_landmark_address_is_one_an_installed_application_contributes(self):
+        """The order below says nothing unless an application really registers an address here."""
+        contributed = URLResolver(RegexPattern(r"^/"), get_plugin_url_patterns(ProjectType.LMS))
+        assert contributed.resolve(f"/{self.LANDMARK}").func.cls is RegistrationView
+
+    def test_the_mount_that_claims_the_prefix_is_consulted_after_those_applications(self):
+        claimed = self._index_of("api/user/v2/nothing_here/")
+        assert claimed > self._index_of(self.LANDMARK)
+
+    def test_an_address_an_application_registers_under_the_prefix_reaches_its_view(self):
+        class _Calendars(View):
+            """Stand-in for a view an installed application serves under that prefix."""
+
+        patterns = list(lms.urls.urlpatterns)
+        patterns.insert(
+            self._index_of(self.LANDMARK) + 1,
+            path("api/user/v2/calendars/", _Calendars.as_view()),
+        )
+        resolved = URLResolver(RegexPattern(r"^/"), patterns).resolve("/api/user/v2/calendars/")
+        assert resolved.func.view_class is _Calendars, resolved.func.view_class
+
+    def test_an_address_nothing_registers_is_still_answered_by_the_mount(self):
+        assert resolve("/api/user/v2/nothing_here/").func.cls is UnknownAddressView
+
+    def test_the_version_serves_its_own_resources(self):
+        assert resolve("/api/user/v2/accounts/").func.cls is CurrentAccountViewSet
+
+    def test_the_addresses_another_application_serves_under_the_prefix_still_reach_it(self):
+        reached = {
+            address: resolve(address).func.cls
+            for address in (
+                "/api/user/v2/account/registration/",
+                "/api/user/v2/account/login_session/",
+            )
+        }
+        assert reached == {
+            "/api/user/v2/account/registration/": RegistrationView,
+            "/api/user/v2/account/login_session/": LoginSessionView,
+        }
+
+    def test_those_addresses_keep_the_names_they_are_reversed_by(self):
+        reversed_names = {
+            "user_api_registration_v2": reverse("user_api_registration_v2"),
+            "user_api_login_session": reverse("user_api_login_session", kwargs={"api_version": "v2"}),
+        }
+        assert reversed_names == {
+            "user_api_registration_v2": "/api/user/v2/account/registration/",
+            "user_api_login_session": "/api/user/v2/account/login_session/",
+        }
+
+    def test_one_of_them_sent_without_its_trailing_slash_is_still_redirected_to_it(self):
+        response = self.client.get("/api/user/v2/account/registration")
+        assert response.status_code == 301
+        assert response["Location"] == "/api/user/v2/account/registration/"
 
 
 urlpatterns = [path('api-docs/schema/', cached_schema_view())]

@@ -141,8 +141,8 @@ urlpatterns = [
     # Course API
     path('api/courses/', include('lms.djangoapps.course_api.urls')),
 
-    # User API endpoints
-    path('api/user/v2/', include('openedx.core.djangoapps.user_api.v2.urls')),
+    # User API endpoints. The current version is mounted at the end of this
+    # file instead, for the reason given there.
     path('api/user/', include('openedx.core.djangoapps.user_api.urls')),
     # Note: these are older versions of the User API that will eventually be
     # subsumed by api/user listed above.
@@ -1077,6 +1077,16 @@ urlpatterns.append(
 )
 
 urlpatterns.extend(get_plugin_url_patterns(ProjectType.LMS))
+
+# The current version of the User API, mounted after everything an installed
+# application contributes. That mount answers every address under its prefix
+# that its own routes do not serve, so an address registered under the prefix
+# by anything mounted later is reached by nothing; mounting it here leaves such
+# an address to the application that registers it, and leaves the mount only
+# the addresses nothing serves.
+urlpatterns += [
+    path('api/user/v2/', include('openedx.core.djangoapps.user_api.v2.urls')),
+]
 
 # Course Home API urls
 urlpatterns += [
