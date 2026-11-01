@@ -859,7 +859,7 @@ class RequiredRequestBodyTest(TestCase):
     def test_every_document_marks_a_body_the_handler_refuses_to_work_without(self):
         marks = {}
         for name, document in self.documents.items():
-            for method, shape, _address, _media_type, answer in BODIES_SENT_AS_NOTHING:
+            for method, shape, _address, _media_type, _answer in BODIES_SENT_AS_NOTHING:
                 address = self._published_address(shape)
                 operation = document["paths"][address][method.lower()]
                 marks[(name, method, address)] = operation["requestBody"].get("required", "<absent>")
