@@ -142,6 +142,13 @@ _PREFERENCE_KEY_PATH_PARAM = path_param(
 ACCOUNT_PRESETS = (MINIMAL_VIEW, SHARED_VIEW)
 
 #: The member of the account collection that addresses the caller's own account.
+#: It belongs to that collection, and the addresses beneath one account do not
+#: translate it: each of those reads the name it is given as the name of a
+#: stored account, so a request sent to one of them under this name works on
+#: the account registered under it, whichever account that is. The deactivation
+#: of an account publishes that in the description of the name it carries; it
+#: is written here as well because an address added beside it inherits the rule
+#: and not the sentence.
 OWN_ACCOUNT_IDENTIFIER = "me"
 
 #: What a caller is told about a member address that more than one account

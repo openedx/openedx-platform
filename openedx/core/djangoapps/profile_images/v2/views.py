@@ -40,6 +40,12 @@ from .serializers import IMAGE_UPLOAD_REQUEST, UPLOAD_MEDIA_TYPES, ProfileImageU
 
 log = logging.getLogger(__name__)
 
+# The name in this address is read as the name of a stored account, and the
+# shorthand the account collection takes for the caller's own account is not
+# translated here: a request sent under that name works on the account
+# registered under it. The description below publishes that to a caller; it is
+# written here for the reader of the module, because an address serving one
+# account from another app follows the same rule.
 _USERNAME_PATH_PARAM = path_param(
     "username",
     "Unique name of the user whose image is addressed. The name is read as it is stored, so "

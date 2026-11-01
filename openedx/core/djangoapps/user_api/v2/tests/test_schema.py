@@ -882,6 +882,39 @@ def test_member_addresses_describe_the_parts_they_are_built_from(schema):
     }
 
 
+@skip_unless_lms
+def test_the_addresses_that_work_on_one_account_describe_the_name_they_carry(schema):
+    """
+    An address that works on one account publishes what the name in it is read as.
+
+    Neither of these addresses takes the shorthand the account collection
+    takes for the caller's own account, so what each of them does with a
+    request sent under that name is published rather than left for a caller to
+    find out by sending one.
+    """
+    published = {
+        (path, method): parameter["description"]
+        for path, method, operation in operations(schema)
+        if path in (ACCOUNT_DEACTIVATION_PATH, PROFILE_IMAGE_PATH)
+        for parameter in operation["parameters"]
+        if parameter["in"] == "path" and parameter["name"] == "username"
+    }
+    image_description = (
+        "Unique name of the user whose image is addressed. The name is read as it is stored, so "
+        "`me` here names an account holding that name rather than the account of the caller "
+        "making the request."
+    )
+    assert published == {
+        (ACCOUNT_DEACTIVATION_PATH, "post"): (
+            "Unique name of the user whose account is deactivated. The name is read as it is "
+            "stored, `me` included: this action disables the account the address names, never "
+            "the account of the caller making the request."
+        ),
+        (PROFILE_IMAGE_PATH, "post"): image_description,
+        (PROFILE_IMAGE_PATH, "delete"): image_description,
+    }
+
+
 #: Every part of an address of this version that carries a username. A client
 #: built from the document holds a value to what the route matches before it
 #: sends a request, so an address left off this list is one whose caller learns
