@@ -42,6 +42,7 @@ from common.djangoapps.student.tests.factories import UserFactory
 from common.djangoapps.third_party_auth.models import OAuth2ProviderConfig
 from openedx.core.apidocs import get_api_docs_settings
 from openedx.core.djangoapps.oauth_dispatch.jwt import create_jwt_for_user
+from openedx.core.djangoapps.user_api import accounts
 from openedx.core.djangoapps.user_api.v2 import authn_views
 from openedx.core.djangoapps.user_api.v2.tests.test_schema import as_json_schema
 from openedx.core.djangoapps.user_authn.views import login, password_reset, register
@@ -2126,3 +2127,58 @@ class RegistrationRequestShapeTests(TestCase):
                 "password": [{"user_message": "This field is required."}],
                 "error_code": "validation-error",
             }, address
+
+
+@skip_unless_lms
+class SignInWithAnExposedPasswordTests(TestCase):
+    """
+    Where the site checks passwords against lists of exposed ones, a 400 can follow a correct password.
+
+    The check is stood in for by one that reports how often the password was
+    found, so each side of the site's two thresholds is reached.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.documents = {"narrow": narrow_document(), "service-wide": service_wide_document()}
+
+    def sign_in(self, client, frequency):
+        """Sign in at the address replacing the older sign-in, with a password found ``frequency`` times over."""
+        UserFactory.create(username="exposed", password=PASSWORD)
+        found = {"frequency": frequency}
+        with mock.patch.object(login, "check_pwned_password_and_send_track_event", return_value=found):
+            response = client.post(LOGIN_SESSIONS, {"email_or_username": "exposed", "password": PASSWORD})
+        assert response.status_code == 400
+        body = json.loads(response.content)
+        for which, document in self.documents.items():
+            schema = published_response_schema(document, LOGIN_SESSIONS, "post", 400)
+            jsonschema.validate(body, schema)
+            assert undeclared_members(body, schema) == [], which
+        return response, body
+
+    @override_settings(ENABLE_AUTHN_LOGIN_NUDGE_HIBP_POLICY=True)
+    def test_a_password_found_rarely_is_answered_400_after_signing_the_caller_in(self):
+        client = Client()
+        response, body = self.sign_in(client, settings.HIBP_LOGIN_NUDGE_PASSWORD_FREQUENCY_THRESHOLD)
+        assert body == {
+            "success": False,
+            "value": str(accounts.AUTHN_LOGIN_NUDGE_HIBP_POLICY_MSG),
+            "error_code": "nudge-password-change",
+            "redirect_url": None,
+        }
+        assert client.session["_auth_user_id"] == str(User.objects.get(username="exposed").id)
+        assert cookies_set(response) == SIGNED_IN_COOKIES - {"edxloggedin", "edx-user-info"}
+
+    @override_settings(ENABLE_AUTHN_LOGIN_BLOCK_HIBP_POLICY=True)
+    def test_a_password_found_often_is_refused_without_signing_the_caller_in(self):
+        client = Client()
+        response, body = self.sign_in(client, settings.HIBP_LOGIN_BLOCK_PASSWORD_FREQUENCY_THRESHOLD)
+        assert body == {
+            "success": False,
+            "value": str(accounts.AUTHN_LOGIN_BLOCK_HIBP_POLICY_MSG),
+            "error_code": "require-password-change",
+            "redirect_url": None,
+        }
+        assert "_auth_user_id" not in client.session
+        assert not cookies_set(response) & {"edxloggedin", "edx-user-info"}

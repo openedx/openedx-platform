@@ -408,7 +408,10 @@ LOGIN_REFUSAL = {
         "redirect_url": {
             "type": "string",
             "nullable": True,
-            "description": "Where to send the person instead, such as to change a password.",
+            "description": (
+                "Where to send the person instead, such as to change a password, or, for a caller signed in "
+                "although answered with a failure, where to send them next."
+            ),
         },
     },
     "required": ["success"],
@@ -435,8 +438,12 @@ LOGIN_RESPONSES = {
         description=(
             "Signing in failed: the account or the password is wrong, the account is not active, a field is "
             "missing, a step the site adds to signing in refused it, or signing in is refused for a while after "
-            "too many failed attempts. A body that cannot be parsed in the media type it is sent as is refused "
-            "with `detail` alone."
+            "too many failed attempts. Where the site checks passwords against lists of exposed passwords, a "
+            "password found often enough has to be changed before signing in (`error_code` is "
+            "`require-password-change`), and one found less often is answered with `error_code` "
+            "`nudge-password-change` after the caller has been signed in: the session cookie is set, but not the "
+            "cookies a successful sign-in adds to it, such as `edxloggedin`. A body that cannot be parsed in the "
+            "media type it is sent as is refused with `detail` alone."
         ),
     ),
     403: OpenApiResponse(
