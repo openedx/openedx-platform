@@ -231,8 +231,8 @@ _FIELDS_PARAM = query_param(
     FIELDS_PARAM,
     "Comma-separated list of top-level field names to keep in each returned object. "
     "A name the response cannot carry is refused. Selection reaches the top level only: "
-    "a name written as a path, such as `user.email`, is read as `user`, and the whole of "
-    "that property is returned.",
+    "a name written as a path, such as `user.email`, names no field a response carries "
+    "and is refused with the names that can be selected.",
 )
 #: The presets each list answers to, published as the parameter's enum and
 #: accepted by the view from the same declaration.

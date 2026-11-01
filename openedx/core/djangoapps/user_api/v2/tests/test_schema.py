@@ -2564,7 +2564,7 @@ def test_the_claim_answers_with_an_array_rather_than_a_page(schema):
 
 @skip_unless_lms
 def test_selecting_properties_publishes_how_far_a_name_reaches(schema):
-    """A caller is told that a dotted name selects the whole of its first part."""
+    """A caller is told that a dotted name selects nothing and is refused."""
     for path, method in (
         (RETIREMENT_MEMBER_PATH, "get"),
         (RETIREMENT_LIST_PATH, "get"),
@@ -2574,7 +2574,8 @@ def test_selecting_properties_publishes_how_far_a_name_reaches(schema):
             for parameter in schema["paths"][path][method]["parameters"]
         }["fields"]
         assert "`user.email`" in described, (path, method)
-        assert "the whole of that property is returned" in described, (path, method)
+        assert "names no field a response carries and is refused" in described, (path, method)
+        assert "the whole of that property is returned" not in described, (path, method)
 
 
 @pytest.mark.django_db
