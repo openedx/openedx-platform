@@ -37,10 +37,9 @@ from openedx.core.djangoapps.user_api.models import (
     UserRetirementStatus,
 )
 from openedx.core.djangoapps.user_api.v2 import view_services
-from openedx.core.djangoapps.user_api.v2.errors import AccountTemporarilyLocked, PasswordNotConfirmed
+from openedx.core.djangoapps.user_api.v2.errors import PasswordNotConfirmed
 from openedx.core.djangoapps.user_api.v2.permissions import ACCOUNT_DELETION_IS_NOT_OFFERED
 from openedx.core.djangoapps.user_api.v2.views import (
-    REFUSALS_THAT_RECORD_AN_ATTEMPT,
     RetirementCleanupViewSet,
     RetirementViewSet,
 )
@@ -620,16 +619,90 @@ class RefusedRequestLeavesTheRecordsAloneTests(RetirementRequestTestCase):
         assert UserRetirementStatus.objects.count() == 1
         self.assert_the_bystander_is_untouched()
 
-    def test_the_answers_that_keep_what_a_request_wrote_are_the_two_that_record_an_attempt(self):
+    @override_settings(ENABLE_MAX_FAILED_LOGIN_ATTEMPTS=True)
+    def test_what_a_request_refused_one_of_those_two_ways_wrote_is_all_of_it(self):
         """
-        Every other answer leaves the request to be rolled back, as it always was.
+        Credentials this service resolved an account row through are kept as well.
 
-        Keeping what a failed request wrote would be covered twice over here,
-        because the record and the end of the session are written inside a
-        transaction of their own as well, so this holds the narrower of the
-        two to being the one that is declared.
+        A token this platform signed names an account by the name it holds,
+        and resolving one for a name this service holds no account under
+        writes the account row it then answers the request from. That row is
+        part of what the request wrote, so a refusal that keeps what the
+        request wrote keeps it -- as the address this one replaces does, which
+        answers the same refusal without raising.
         """
-        assert REFUSALS_THAT_RECORD_AN_ATTEMPT == (PasswordNotConfirmed, AccountTemporarilyLocked)
+        signed_for = UserFactory.create(username="named-by-a-token", password=PASSWORD)
+        token = create_jwt_for_user(signed_for)
+        User.objects.filter(id=signed_for.id).update(username="renamed-after-signing")
+        self.client.logout()
+        assert_error_envelope(
+            self.client.post(
+                self.url, {"password": "WrongPassword9999"}, format="json",
+                HTTP_AUTHORIZATION=f"JWT {token}",
+            ),
+            expected_status=status.HTTP_403_FORBIDDEN,
+            expected_type_slug=PASSWORD_NOT_CONFIRMED_SLUG,
+        )
+        resolved = User.objects.get(username="named-by-a-token")
+        assert [record.failure_count for record in LoginFailures.objects.filter(user=resolved)] == [1]
+        assert not self.queued(resolved).exists()
+
+    def test_a_refusal_this_collection_answers_any_other_way_keeps_nothing(self):
+        """
+        A refusal the request is not carried out past is rolled back whole.
+
+        The same token resolves the same account row, and a deployment that
+        does not offer this refuses the request before the password is read:
+        what the request wrote is undone, the row included.
+        """
+        signed_for = UserFactory.create(username="named-by-another-token", password=PASSWORD)
+        token = create_jwt_for_user(signed_for)
+        User.objects.filter(id=signed_for.id).update(username="renamed-after-signing-too")
+        self.client.logout()
+        with override_settings(ENABLE_ACCOUNT_DELETION=False):
+            assert_error_envelope(
+                self.client.post(
+                    self.url, {"password": PASSWORD}, format="json",
+                    HTTP_AUTHORIZATION=f"JWT {token}",
+                ),
+                expected_status=status.HTTP_403_FORBIDDEN,
+                expected_type_slug=DELETION_UNAVAILABLE_SLUG,
+            )
+        assert not User.objects.filter(username="named-by-another-token").exists()
+
+    @override_settings(ENABLE_MAX_FAILED_LOGIN_ATTEMPTS=True)
+    def test_an_operation_that_erases_data_keeps_nothing_when_refused_the_same_way(self):
+        """
+        Those two refusals are the shared catalog's, so another operation can raise one.
+
+        What is kept is declared for the request a caller makes for their own
+        retirement, which counts the attempt, and not for the type of the
+        refusal: an operation that erases personal data and is refused with
+        the same type has what it wrote undone.
+        """
+        worker = UserFactory.create(username=WORKER_USERNAME, password=PASSWORD)
+        self.held_for_the_bystander.current_state = RetirementState.objects.get(
+            state_name="RETIRING_LMS",
+        )
+        self.held_for_the_bystander.save()
+        self.login(worker)
+
+        def refuse_after_writing(*args, **kwargs):
+            """Write something of the request, then raise a refusal of the first kind."""
+            LoginFailures.increment_lockout_counter(self.owner)
+            raise PasswordNotConfirmed("the account's password was not confirmed")
+
+        with mock.patch(
+            "openedx.core.djangoapps.user_api.v2.views.erase_account_data",
+            side_effect=refuse_after_writing,
+        ):
+            answered = self.client.post(
+                reverse("user_v2:retirement_erasure", kwargs={"username": "bystander"}),
+                {"scope": "lms_core"},
+                format="json",
+            )
+        assert answered.status_code == status.HTTP_403_FORBIDDEN, answered.content
+        assert not LoginFailures.objects.filter(user=self.owner).exists()
 
     def test_a_request_that_is_carried_out_keeps_its_own_and_touches_no_other(self):
         """The measurement the three above are read against: the same fixtures, carried out."""

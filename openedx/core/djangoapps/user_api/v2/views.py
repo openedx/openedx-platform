@@ -2609,19 +2609,23 @@ class _RetirementRecordsMixin:
         return retirements()
 
 
+#: The two answers refusing a request for the caller's own retirement that
+#: leave what the request wrote where it is. How many password attempts an
+#: account has had refused is what closes it to further ones, and a request is
+#: carried out as one transaction which a refusal rolls back, so the attempt
+#: the first of these has just counted would be forgotten as the answer
+#: refusing it was sent and no number of attempts would ever add up to
+#: anything. The second counts nothing of its own, being raised before a
+#: password is read at all; it is here because the request it refuses then
+#: leaves exactly what the same request leaves at the address this one
+#: replaces, which answers both of them without raising and so rolls back
+#: neither.
+REFUSALS_THAT_KEEP_WHAT_WAS_WRITTEN = (PasswordNotConfirmed, AccountTemporarilyLocked)
+
+
 #: Who may make each request. Asking for a retirement is the owner's own request,
 #: offered where the deployment allows it; cancellation is not pipeline work, so
 #: it takes a different capability; an unnamed action is refused.
-#: The refusals of this collection that record something which has to outlive
-#: the request they refuse. How many password attempts an account has had
-#: refused is what closes it to further ones, and a request is carried out as
-#: one transaction which a refusal rolls back, so the attempt an answer of this
-#: kind has just counted would be forgotten as that answer was sent and no
-#: number of attempts would ever add up to anything. The operation this one
-#: replaces answers such a request without raising, which is why it kept them.
-REFUSALS_THAT_RECORD_AN_ATTEMPT = (PasswordNotConfirmed, AccountTemporarilyLocked)
-
-
 RETIREMENT_ACTION_PERMISSIONS = {
     "create": (AccountDeletionEnabled,),
     "list": (CanRetireUser,),
@@ -2848,13 +2852,34 @@ class RetirementViewSet(
         return names
 
     def handle_exception(self, exc):
-        """Answer a refused request, keeping the record of a password attempt it refused."""
+        """
+        Answer a refused request, keeping what it wrote where two answers refuse it.
+
+        Those two refuse a caller's request for their own retirement, which is
+        the one operation here that writes something a later request of the
+        same caller is answered from. Every other operation is rolled back
+        whole whatever refuses it, a refusal of one of those two types raised
+        from one of them included: they are refusals the shared catalog
+        classifies rather than types private to one operation, and what an
+        operation that moves, erases or deletes wrote is not a count to be
+        kept.
+        """
         response = super().handle_exception(exc)
-        if isinstance(exc, REFUSALS_THAT_RECORD_AN_ATTEMPT) and connection.in_atomic_block:
-            # Nothing else has been written when a request is refused this
-            # way: the account is reached only once its owner's password has
-            # been confirmed, so what is kept here is the count and nothing
-            # beside it.
+        if (
+            self.action == "create"
+            and isinstance(exc, REFUSALS_THAT_KEEP_WHAT_WAS_WRITTEN)
+            and connection.in_atomic_block
+        ):
+            # What is kept is the whole of what the request wrote, not the
+            # count alone: the count of the attempt just refused, the account
+            # row the credentials were resolved through where a token this
+            # platform signed named an account this service holds none of, the
+            # duplicate counter rows the lockout check deletes, and any
+            # callback registered during the request for its commit. That is
+            # what the same request leaves at the address this one replaces,
+            # which answers both of these refusals without raising and so
+            # rolls back none of it. No account is reached before its owner's
+            # password is confirmed, so nothing of a retirement is among it.
             transaction.set_rollback(False)
         return response
 
