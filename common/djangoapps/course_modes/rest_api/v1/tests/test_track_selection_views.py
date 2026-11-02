@@ -3,9 +3,10 @@ Tests for Track Selection API in the course_modes REST API.
 """
 
 from datetime import datetime
+from unittest import mock
 
 import ddt
-from django.test import override_settings
+from django.test import SimpleTestCase, override_settings
 from django.urls import reverse
 from edx_toggles.toggles.testutils import override_waffle_flag
 from openedx_filters import PipelineStep
@@ -15,7 +16,9 @@ from cms.djangoapps.contentstore.outlines import update_outline_from_modulestore
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.course_modes.tests.factories import CourseModeFactory
 from common.djangoapps.course_modes.toggles import COURSE_MODES_MFE_TRACK_SELECTION
+from common.djangoapps.course_modes.track_selection_data import get_track_options
 from common.djangoapps.student.models import CourseEnrollment
+from lms.djangoapps.commerce.models import CommerceConfiguration
 from lms.djangoapps.verify_student.models import VerificationDeadline
 from openedx.core.djangoapps.content.course_overviews.tests.factories import (
     CourseOverviewFactory,
@@ -27,6 +30,9 @@ from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 
 TEST_LIST_PRICE = 149
 TEST_DISCOUNTED_PRICE = 99
+TEST_SUBSCRIBE_URL = "https://checkout.example.com/subscribe"
+TEST_CATALOG_OFFER = {"in_catalog": True, "subscribe_url": TEST_SUBSCRIBE_URL}
+TEST_PROGRAM_UUID = "6d1b9c2e-3f4a-4b5c-8d6e-7f8a9b0c1d2e"
 
 
 class TestCourseModePriceRequestedPipelineStep(PipelineStep):
@@ -60,6 +66,20 @@ class TestTrackSelectionAPIRenderStartedPipelineStep(PipelineStep):
 
 
 TEST_RENDER_STEP_PATH = f"{__name__}.{TestTrackSelectionAPIRenderStartedPipelineStep.__name__}"
+
+
+class TestTrackSelectionOfferPipelineStep(PipelineStep):
+    """
+    Utility pipeline step that adds a subscription offer to the track selection data.
+    """
+
+    def run_filter(self, track_selection_data, **kwargs):  # pylint: disable=arguments-differ
+        """Pipeline step that offers Subscribe for a course in the catalog."""
+        track_selection_data["extra_offer"] = TEST_CATALOG_OFFER
+        return {"track_selection_data": track_selection_data}
+
+
+TEST_OFFER_STEP_PATH = f"{__name__}.{TestTrackSelectionOfferPipelineStep.__name__}"
 
 
 @ddt.ddt
@@ -137,6 +157,8 @@ class TrackSelectionTestViews(ModuleStoreTestCase, APITestCase):
         assert response.data["verified_mode"] is not None
         assert response.data["audit_mode"] is not None
         assert response.data["course_name"] == self.course.display_name_with_default
+        assert response.data["program"] is None
+        assert response.data["options"] == [{"slug": "purchase", "url": None}, {"slug": "audit", "url": None}]
 
     def test_get_is_not_supported(self):
         response = self.client.get(self.url)
@@ -149,6 +171,8 @@ class TrackSelectionTestViews(ModuleStoreTestCase, APITestCase):
         assert response.data["verified_mode"] is not None
         assert response.data["audit_mode"] is not None
         assert response.data["course_name"] == self.course.display_name_with_default
+        # without the upgrade intent, an audit learner may have just enrolled, so Audit stays
+        assert [option["slug"] for option in response.data["options"]] == ["purchase", "audit"]
 
     def test_post_authenticated_verified_enrolled_user_redirects(self):
         CourseEnrollment.enroll(self.user, self.course.id, CourseMode.VERIFIED)
@@ -238,3 +262,175 @@ class TrackSelectionTestViews(ModuleStoreTestCase, APITestCase):
             "username": self.user.username,
         }
         assert response.data["verified_mode"] is not None
+
+    @override_settings(
+        OPEN_EDX_FILTERS_CONFIG={
+            "org.openedx.learning.course_mode.track_selection.api.rendered.started.v1": {
+                "pipeline": [
+                    TEST_OFFER_STEP_PATH,
+                ],
+                "fail_silently": False,
+            },
+        },
+    )
+    def test_post_page_data_options_use_the_plugin_offer(self):
+        """
+        Core picks the options after the filter, from the offer a plugin adds.
+        """
+        response = self.client.post(self.url, {}, format="json")
+        assert response.status_code == 200
+        assert response.data["options"] == [
+            {"slug": "subscribe", "url": TEST_SUBSCRIBE_URL},
+            {"slug": "audit", "url": None},
+        ]
+
+    @override_settings(
+        OPEN_EDX_FILTERS_CONFIG={
+            "org.openedx.learning.course_mode.track_selection.api.rendered.started.v1": {
+                "pipeline": [
+                    TEST_OFFER_STEP_PATH,
+                ],
+                "fail_silently": False,
+            },
+        },
+    )
+    @mock.patch(
+        "common.djangoapps.course_modes.track_selection_data.get_track_options",
+        return_value=[{"slug": "subscribe", "url": TEST_SUBSCRIBE_URL}],
+    )
+    def test_post_single_option_redirects_to_its_link(self, _mock_get_track_options):
+        """
+        With a single option that has a link, the learner skips the page and goes to its link.
+        """
+        response = self.client.post(self.url, {}, format="json")
+        assert response.status_code == 200
+        assert response.data == {"redirect_url": TEST_SUBSCRIBE_URL}
+
+    @mock.patch("common.djangoapps.course_modes.track_selection_data.ProgramDataExtender")
+    @mock.patch("common.djangoapps.course_modes.track_selection_data.get_programs")
+    def test_post_page_data_offers_the_program(self, mock_get_programs, mock_extender):
+        """
+        An active program of the course run that the learner can buy in one click is an option.
+        """
+        mock_get_programs.return_value = [{"status": "retired"}, {"status": "active"}]
+        mock_extender.return_value.extend.return_value = {
+            "uuid": TEST_PROGRAM_UUID,
+            "title": "Test Program",
+            "courses": [{}, {}, {}],
+            "is_learner_eligible_for_one_click_purchase": True,
+            "skus": ["SKU1", "SKU2"],
+            "discount_data": {"total_incl_tax_excl_discounts": 300.0, "total_incl_tax": 270.0, "currency": "USD"},
+        }
+        response = self.client.post(self.url, {}, format="json")
+        assert response.status_code == 200
+        program = response.data["program"]
+        assert program["url"].endswith(f"?sku=SKU1&sku=SKU2&bundle={TEST_PROGRAM_UUID}")
+        assert {key: program[key] for key in ("title", "number_of_courses", "price", "discounted_price")} == {
+            "title": "Test Program",
+            "number_of_courses": 3,
+            "price": 300.0,
+            "discounted_price": 270.0,
+        }
+        assert [option["slug"] for option in response.data["options"]] == ["purchase", "program", "audit"]
+        mock_extender.assert_called_once_with({"status": "active"}, self.user)
+
+    @override_settings(
+        OPEN_EDX_FILTERS_CONFIG={
+            "org.openedx.learning.course_mode.track_selection.api.rendered.started.v1": {
+                "pipeline": [
+                    TEST_OFFER_STEP_PATH,
+                ],
+                "fail_silently": False,
+            },
+        },
+    )
+    def test_post_upgrading_audit_learner_chooses_subscribe_or_purchase(self):
+        """
+        An audit learner who came to upgrade a catalog course chooses between Subscribe and Purchase.
+        """
+        CourseEnrollment.enroll(self.user, self.course.id, CourseMode.AUDIT)
+        response = self.client.post(self.url, {"intent": "upgrade"}, format="json")
+        assert response.status_code == 200
+        assert [option["slug"] for option in response.data["options"]] == ["subscribe", "purchase"]
+
+    def test_post_upgrading_audit_learner_goes_to_the_checkout(self):
+        """
+        An audit learner who came to upgrade a course outside the catalog skips the page.
+        """
+        CommerceConfiguration.objects.create(checkout_on_ecommerce_service=True)
+        CourseEnrollment.enroll(self.user, self.course.id, CourseMode.AUDIT)
+        response = self.client.post(self.url, {"intent": "upgrade"}, format="json")
+        assert response.status_code == 200
+        assert "/basket/add/?sku=ABCD1234&course_run_key=" in response.data["redirect_url"]
+
+    @mock.patch("common.djangoapps.course_modes.track_selection_data.get_programs", side_effect=Exception("down"))
+    def test_post_page_data_leaves_out_a_program_that_cannot_be_read(self, _mock_get_programs):
+        """
+        An error while reading the program leaves the program out instead of failing the page.
+        """
+        response = self.client.post(self.url, {}, format="json")
+        assert response.status_code == 200
+        assert response.data["program"] is None
+        assert [option["slug"] for option in response.data["options"]] == ["purchase", "audit"]
+
+    @mock.patch("common.djangoapps.course_modes.track_selection_data.get_track_options", return_value=[])
+    def test_post_without_options_redirects_to_the_course(self, _mock_get_track_options):
+        """
+        With nothing to choose, the learner skips the page and goes to the course.
+        """
+        response = self.client.post(self.url, {}, format="json")
+        assert response.status_code == 200
+        assert response.data["redirect_url"].endswith(f"/course/{self.course.id}/home")
+
+
+@ddt.ddt
+@skip_unless_lms
+class GetTrackOptionsTests(SimpleTestCase):
+    """
+    Tests for the options the track selection page shows.
+    """
+
+    @ddt.data(
+        (None, True, False, False, ["purchase", "audit"]),
+        (None, False, False, False, ["purchase"]),
+        (None, True, True, False, ["purchase", "program", "audit"]),
+        (TEST_CATALOG_OFFER, True, True, False, ["subscribe", "program", "audit"]),
+        ({"in_catalog": True, "is_subscriber": True}, True, True, False, ["upgrade"]),
+        ({"in_catalog": False, "is_subscriber": True}, True, False, False, ["purchase", "audit"]),
+        ({"in_catalog": True, "is_subscriber": None}, True, False, False, ["purchase", "audit"]),
+        (TEST_CATALOG_OFFER, False, False, False, ["subscribe", "purchase"]),
+        (None, True, True, True, ["purchase", "program"]),
+        (TEST_CATALOG_OFFER, True, False, True, ["subscribe", "purchase"]),
+    )
+    @ddt.unpack
+    def test_options(self, extra_offer, has_audit_mode, has_program, upgrading, expected):
+        data = {
+            "course_id": "course-v1:a+b+c",
+            "verified_mode": {"use_ecommerce_payment_flow": False},
+            "audit_mode": {"slug": CourseMode.AUDIT} if has_audit_mode else None,
+            "program": {"url": "https://ecommerce.test/program"} if has_program else None,
+            "extra_offer": extra_offer,
+        }
+        assert [option["slug"] for option in get_track_options(data, upgrading)] == expected
+
+    def test_purchase_link(self):
+        data = {
+            "course_id": "course-v1:a+b+c",
+            "verified_mode": {
+                "sku": "ABCD1234",
+                "use_ecommerce_payment_flow": True,
+                "ecommerce_payment_page": "https://ecommerce.test/basket/add/",
+            },
+            "audit_mode": None,
+        }
+        purchase_url = "https://ecommerce.test/basket/add/?sku=ABCD1234&course_run_key=course-v1%3Aa%2Bb%2Bc"
+        assert get_track_options(data) == [{"slug": "purchase", "url": purchase_url}]
+
+    def test_subscriber_upgrade_needs_the_verified_mode(self):
+        data = {
+            "course_id": "course-v1:a+b+c",
+            "verified_mode": None,
+            "audit_mode": {"slug": CourseMode.AUDIT},
+            "extra_offer": {"in_catalog": True, "is_subscriber": True},
+        }
+        assert get_track_options(data) == [{"slug": "audit", "url": None}]

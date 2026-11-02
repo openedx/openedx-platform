@@ -193,7 +193,8 @@ class TrackSelectionView(APIView):
     """
     POST api/course_modes/v1/track_selection/{course_id}
 
-    Without a mode, returns track selection page data for the Learning MFE.
+    Without a mode, returns track selection page data for the Learning MFE. An ``intent`` of "upgrade"
+    marks a learner who came from an upgrade link.
     With a mode, processes the learner's track selection choice.
     """
 
@@ -234,7 +235,7 @@ class TrackSelectionView(APIView):
 
             raise Http404
 
-        result = get_track_selection_page_data(request, course_id)
+        result = get_track_selection_page_data(request, course_id, intent=request.data.get("intent"))
         if isinstance(result, TrackSelectionRedirect):
             redirect_url = result.url
             if not redirect_url.startswith(("http://", "https://")):

@@ -129,6 +129,20 @@ class CourseModeViewTest(CatalogIntegrationMixin, UrlResetMixin, ModuleStoreTest
         )
         self.assertRedirects(response, mfe_url, fetch_redirect_response=False)
 
+    @override_waffle_flag(COURSE_MODES_MFE_TRACK_SELECTION, active=True)
+    def test_redirect_to_mfe_track_selection_keeps_the_intent(self):
+        """
+        The upgrade intent of an upgrade link reaches the MFE page, which sends it to the track selection API.
+        """
+        course = self.course_that_started
+        for mode in (CourseMode.AUDIT, CourseMode.VERIFIED):
+            CourseModeFactory.create(mode_slug=mode, course_id=course.id)
+        CourseEnrollmentFactory(is_active=True, mode=CourseMode.AUDIT, course_id=course.id, user=self.user)
+        url = reverse("course_modes_choose", args=[str(course.id)])
+        response = self.client.get(url, {"intent": "upgrade"})
+        mfe_url = f"{settings.LEARNING_MICROFRONTEND_URL}/course/{course.id}/track-selection?intent=upgrade"
+        self.assertRedirects(response, mfe_url, fetch_redirect_response=False)
+
     def test_no_id_redirect(self):
         # Create the course modes
         CourseModeFactory.create(mode_slug=CourseMode.NO_ID_PROFESSIONAL_MODE, course_id=self.course.id, min_price=100)
