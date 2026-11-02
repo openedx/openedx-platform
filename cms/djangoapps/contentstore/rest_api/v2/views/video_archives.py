@@ -122,6 +122,6 @@ class CourseVideoArchiveView(StandardizedErrorMixin, APIView):
         ensure_course_exists(course_key)
         # The view declares no serializer_class: documentation generators read
         # it as the response body as well, and the response is a binary archive.
-        body = VideoArchiveRequestSerializer(data=request.data)
+        body = VideoArchiveRequestSerializer(data=request.data, context={"course_key": course_key})
         body.is_valid(raise_exception=True)
         return create_course_video_archive(course_key, body.validated_data["files"])

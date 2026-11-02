@@ -35,7 +35,8 @@ def create_course_video_archive(course_key, files):
     Return a streaming zip response holding the requested videos of the course.
 
     Every ``files[].url`` must be one of the course's own encoded-video URLs;
-    otherwise ``ValidationError`` is raised before anything is fetched. The
-    archive is assembled while it is sent and is not stored.
+    the request serializer refuses any other, and the helper checks again
+    before anything is fetched. The archive is assembled while it is sent and
+    is not stored.
     """
     return create_video_zip(str(course_key), files)

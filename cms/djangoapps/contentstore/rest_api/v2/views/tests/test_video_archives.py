@@ -216,9 +216,9 @@ class VideoArchiveResponseTest(VideoArchiveTestBase):
 class VideoArchiveAllowlistTest(VideoArchiveTestBase):
     """Only the course's own video addresses are ever fetched."""
 
-    def assert_refused_without_fetching(self, response, fetch, address):
+    def assert_refused_without_fetching(self, response, fetch, *addresses):
         envelope = assert_error_envelope(response, expected_status=400, expected_type_slug="validation")
-        assert envelope["errors"] == {"non_field_errors": [f"Invalid video download url: {address}"]}
+        assert envelope["errors"] == {"files": [f"Invalid video download url: {address}" for address in addresses]}
         fetch.assert_not_called()
 
     def test_an_address_outside_the_course_is_refused(self, fetch):
@@ -238,6 +238,15 @@ class VideoArchiveAllowlistTest(VideoArchiveTestBase):
         ])
 
         self.assert_refused_without_fetching(response, fetch, SSRF_URL)
+
+    def test_every_refused_address_is_named_in_request_order(self, fetch):
+        response = self.post(self.client_for(self.user), [
+            {"url": OTHER_COURSE_URL, "name": "x.mp4"},
+            {"url": FIRST_URL, "name": "one.mp4"},
+            {"url": SSRF_URL, "name": "x"},
+        ])
+
+        self.assert_refused_without_fetching(response, fetch, OTHER_COURSE_URL, SSRF_URL)
 
     def test_an_address_is_matched_exactly(self, fetch):
         padded = f" {FIRST_URL}"
@@ -895,10 +904,13 @@ class VideoArchiveParityTest(VideoArchiveTestBase):
 
 class VideoArchiveQueryCountTest(VideoArchiveTestBase):
     """
-    The new address costs no more queries than the legacy one for the same caller.
+    What each address costs in queries for the same caller.
 
-    Each error answered by the new address ends with one extra statement, a
-    rollback of the request's savepoint, issued by the standard error handling.
+    An accepted request at the new address reads the course's video addresses
+    twice, three statements each time: once to validate the body, once in the
+    shared helper before anything is fetched. Each error answered by the new
+    address ends with one extra statement, a rollback of the request's
+    savepoint, issued by the standard error handling.
     """
 
     #: Set from the pytest fixture below, which class-based tests cannot request directly.
@@ -919,7 +931,7 @@ class VideoArchiveQueryCountTest(VideoArchiveTestBase):
                 self.post(client, files, course_key)
 
     def test_global_staff(self):
-        self.measure(self.client_for(self.user), [{"url": FIRST_URL, "name": "a"}], 11, 11)
+        self.measure(self.client_for(self.user), [{"url": FIRST_URL, "name": "a"}], 11, 14)
 
     def test_refused_address(self):
         self.measure(self.client_for(self.user), [{"url": SSRF_URL, "name": "a"}], 11, 12)
