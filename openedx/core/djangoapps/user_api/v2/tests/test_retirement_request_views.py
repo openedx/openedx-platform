@@ -44,6 +44,10 @@ from openedx.core.djangoapps.user_api.v2.views import (
     RetirementCleanupViewSet,
     RetirementViewSet,
 )
+from openedx.core.djangolib.default_auth_classes import (
+    DefaultJwtAuthentication,
+    DefaultSessionAuthentication,
+)
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 
 # The class reading an access token this platform's authorization endpoint
@@ -78,10 +82,12 @@ EARLIER_ADDRESS = "/api/user/v1/accounts/deactivate_logout/"
 #: account to further ones, read from the deployment rather than named here.
 MAX_ATTEMPTS = settings.MAX_FAILED_LOGIN_ATTEMPTS_ALLOWED
 
-#: The authenticators every operation that declares none of its own resolves,
-#: read from the platform because a deployment configures them and the point
-#: is that those operations take whatever it configured.
-PLATFORM_AUTHENTICATION = list(APIView.authentication_classes)
+#: The authenticators every operation that declares none of its own resolves.
+#: They are named here rather than read from the platform: the operations of
+#: this collection that move, erase and delete records are held to taking
+#: these two and nothing else, and reading the list from the platform would
+#: hold them to whatever it grows instead.
+PLATFORM_AUTHENTICATION = [DefaultJwtAuthentication, DefaultSessionAuthentication]
 
 #: What the one operation of this collection that declares its own resolves.
 OWN_REQUEST_AUTHENTICATION = [JwtAuthentication, SessionAuthentication, BearerAuthentication]
@@ -716,6 +722,81 @@ class RetirementRequestCredentialTests(RetirementRequestTestCase):
 
 
 @skip_unless_lms
+class PipelineCredentialTests(RetirementRequestTestCase):
+    """
+    What the operations carrying the work out answer a token this address takes.
+
+    The one operation an account's owner makes for themselves takes an access
+    token the authorization endpoint handed out, and that it is the only one
+    is why it is declared for that operation rather than for the collection.
+    Each of the others is driven here with a real token held by the caller
+    whose capability it asks for, because what a view declares says nothing
+    about what a request carrying that token is answered.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.worker = UserFactory.create(username=WORKER_USERNAME, password=PASSWORD)
+        self.held = UserRetirementStatus.create_retirement(self.bystander)
+        self.member = reverse(
+            "user_v2:retirement_detail", kwargs={"username": self.bystander.username},
+        )
+
+    def access_token_of_the_pipeline(self):
+        """Return an access token the authorization endpoint handed the pipeline's caller."""
+        return AccessTokenFactory(
+            user=self.worker,
+            application=ApplicationFactory(name="pipeline-client", user=self.worker),
+        ).token
+
+    def test_an_access_token_reaches_no_operation_that_carries_the_work_out(self):
+        carried = {"HTTP_AUTHORIZATION": f"Bearer {self.access_token_of_the_pipeline()}"}
+        self.client.logout()
+        answered = {
+            "the queue": self.client.get(self.url, **carried),
+            "what the collection serves": self.client.options(self.url, **carried),
+            "one retirement": self.client.get(self.member, **carried),
+            "moving one on": self.client.patch(self.member, {}, format="json", **carried),
+            "calling one off": self.client.delete(self.member, **carried),
+            "erasing an account's data": self.client.post(
+                f"{self.member}erasures/", {}, format="json", **carried,
+            ),
+            "disposing of finished records": self.client.post(
+                reverse("user_v2:retirement_cleanup_list"), {}, format="json", **carried,
+            ),
+            "the queue of accounts to report": self.client.post(
+                reverse("user_v2:retirement_partner_report_list"), {}, format="json", **carried,
+            ),
+            "disposing of reported records": self.client.post(
+                reverse("user_v2:retirement_partner_report_cleanup_list"), {}, format="json", **carried,
+            ),
+        }
+        assert {
+            operation: sent.status_code for operation, sent in answered.items()
+        } == dict.fromkeys(answered, status.HTTP_401_UNAUTHORIZED), {
+            operation: sent.content for operation, sent in answered.items()
+        }
+        held = UserRetirementStatus.objects.get(id=self.held.id)
+        assert (held.original_username, held.current_state.state_name) == (
+            self.bystander.username, FIRST_STEP,
+        )
+        assert UserRetirementStatus.objects.count() == 1
+
+    def test_the_same_token_is_taken_at_the_one_operation_that_declares_it(self):
+        """The measurement the refusals above are read against: the token itself is a good one."""
+        token = AccessTokenFactory(
+            user=self.owner,
+            application=ApplicationFactory(name="learner-client", user=self.owner),
+        ).token
+        self.client.logout()
+        answered = self.client.post(
+            self.url, {"password": PASSWORD}, format="json", HTTP_AUTHORIZATION=f"Bearer {token}",
+        )
+        assert answered.status_code == status.HTTP_204_NO_CONTENT, answered.content
+        assert self.queued(self.owner).count() == 1
+
+
+@skip_unless_lms
 class RequestResolutionTests(RetirementRequestTestCase):
     """
     Which credentials and which forms of body each operation of this collection resolves.
@@ -764,6 +845,17 @@ class RequestResolutionTests(RetirementRequestTestCase):
             ),
             ("/api/user/v2/retirement_cleanups/", "POST"): (PLATFORM_AUTHENTICATION, [JSONParser]),
         }
+
+    def test_the_operations_that_declare_none_of_their_own_take_two_named_credentials(self):
+        """
+        Those two are named here, so a third configured for everything else is a failure.
+
+        A class that takes an access token the authorization endpoint handed
+        out, added to what a deployment configures for every operation alike,
+        would otherwise reach the operations that move, erase and delete
+        records while every expectation above went on holding.
+        """
+        assert list(APIView.authentication_classes) == PLATFORM_AUTHENTICATION
 
     def test_the_disposal_of_finished_records_is_reached_with_the_platform_credentials_alone(self):
         """The operation it serves is named ``create`` too, and it deletes records for the pipeline."""
