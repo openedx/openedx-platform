@@ -2,6 +2,8 @@
 
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiExample, OpenApiResponse, extend_schema
+from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
+from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
 from edx_rest_framework_extensions.errors import ErrorResponseSerializer
 from edx_rest_framework_extensions.mixins import StandardizedErrorMixin
 from rest_framework.parsers import JSONParser
@@ -20,7 +22,7 @@ from cms.djangoapps.contentstore.rest_api.v2.views.video_schema import (
     forbidden_response,
     unauthenticated_response,
 )
-from cms.djangoapps.contentstore.views.permissions import HasFullCourseKey, HasStudioReadAccess
+from cms.djangoapps.contentstore.views.permissions import HasStudioReadAccess
 
 _REQUEST_EXAMPLE = OpenApiExample(
     "Two videos",
@@ -90,7 +92,10 @@ class CourseVideoArchiveView(StandardizedErrorMixin, APIView):
     endpoints draw on one budget.
     """
 
-    permission_classes = (IsAuthenticated, HasFullCourseKey, HasStudioReadAccess)
+    # The v1 endpoint this replaces admits inactive accounts over a session, as
+    # the other views of this API do; the default session class refuses them.
+    authentication_classes = (JwtAuthentication, SessionAuthenticationAllowInactiveUser)
+    permission_classes = (IsAuthenticated, HasStudioReadAccess)
     parser_classes = (JSONParser,)
     throttle_classes = (VideoDownloadThrottle,)
 

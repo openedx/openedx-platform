@@ -3,6 +3,7 @@
 from rest_framework.exceptions import NotFound
 
 from cms.djangoapps.contentstore.video_storage_handlers import create_video_zip, get_video_usage_path
+from cms.djangoapps.contentstore.views.permissions import COURSE_NOT_FOUND_MESSAGE
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 
 
@@ -14,7 +15,7 @@ def ensure_course_exists(course_key):
     overview row is never created here, so a read request writes nothing.
     """
     if not CourseOverview.course_exists(course_key):
-        raise NotFound("The course does not exist.")
+        raise NotFound(COURSE_NOT_FOUND_MESSAGE)
 
 
 def get_course_video_usages(course_key, edx_video_id):

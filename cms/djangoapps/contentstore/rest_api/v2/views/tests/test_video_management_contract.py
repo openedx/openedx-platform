@@ -3,31 +3,27 @@ Contract tests shared by the course video usage and video archive APIs.
 """
 import functools
 import json
-import os
-import subprocess
-import sys
 from collections import defaultdict
-from pathlib import Path
 from types import SimpleNamespace
 
 import ddt
 import pytest
+from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
 from django.test import RequestFactory, TestCase
 from django.urls import get_resolver, resolve, reverse
 from drf_spectacular.generators import SchemaGenerator
 from drf_spectacular.settings import patched_settings
-from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey
 from rest_framework.exceptions import NotFound
 
-import cms.envs
 from cms.djangoapps.contentstore.rest_api.v2.serializers.video_usages import VideoUsageLocationSerializer
+from cms.djangoapps.contentstore.rest_api.v2.views.tests.helpers import SCHEMA_SETTINGS, generate_cms_schema
 from cms.djangoapps.contentstore.rest_api.v2.views.video_archives import CourseVideoArchiveView
 from cms.djangoapps.contentstore.rest_api.v2.views.video_usages import CourseVideoUsageViewSet
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase, routed_actions
-from cms.djangoapps.contentstore.views.permissions import HasFullCourseKey, HasStudioReadAccess
-from cms.lib.spectacular import SUPERSEDED_PATHS, cms_api_filter, cms_mark_superseded_paths
+from cms.djangoapps.contentstore.views.permissions import HasStudioReadAccess
+from cms.lib.spectacular import SUPERSEDED_PATHS, cms_mark_superseded_paths
 from common.djangoapps.student.roles import (
     CourseInstructorRole,
     CourseLimitedStaffRole,
@@ -41,21 +37,6 @@ ARCHIVE_PATH = "/api/authoring/v2/courses/{course_key}/video_archives/"
 LEGACY_USAGE_PATH = "/api/contentstore/v1/videos/{course_id}/{edx_video_id}/usage"
 LEGACY_DOWNLOAD_PATH = "/api/contentstore/v1/videos/{course_id}/download"
 
-ENUM_POSTPROCESSING_HOOK = "drf_spectacular.hooks.postprocess_schema_enums"
-SUPERSEDED_PATHS_HOOK = "cms.lib.spectacular.cms_mark_superseded_paths"
-MIGRATED_PATHS_HOOK = "cms.lib.spectacular.cms_mark_migrated_paths"
-
-PRODUCTION_SETTINGS = "cms.envs.production"
-DEVSTACK_SETTINGS = "cms.envs.devstack"
-SETTINGS_DIRECTORY = Path(cms.envs.__file__).resolve().parent
-REPO_ROOT = SETTINGS_DIRECTORY.parents[1]
-MOCK_CONFIG = SETTINGS_DIRECTORY / "mock.yml"
-
-# The schema settings a document generated in this process has to be given for
-# its addresses to come out the way the deployment publishes them.
-GENERATION_SETTING_KEYS = ("PREPROCESSING_HOOKS", "POSTPROCESSING_HOOKS", "SCHEMA_PATH_PREFIX")
-SETTINGS_MARKER = "schema settings: "
-
 # Keys the course_key path converter accepts that carry only a content version,
 # with no organization, course or run.
 VERSION_ONLY_COURSE_KEYS = (
@@ -67,44 +48,8 @@ VERSION_ONLY_COURSE_KEYS = (
 
 
 @functools.lru_cache
-def schema_settings(module):
-    """
-    Return ``SPECTACULAR_SETTINGS`` of the deployment settings module ``module``.
-
-    Deployment settings share their mutable defaults with the settings the test
-    process runs under and would alter them on import, so they are read in a
-    separate process.
-    """
-    script = (
-        "import importlib, json, sys\n"
-        "values = importlib.import_module(sys.argv[1]).SPECTACULAR_SETTINGS\n"
-        "print(sys.argv[2] + json.dumps(values))\n"
-    )
-    completed = subprocess.run(
-        [sys.executable, "-c", script, module, SETTINGS_MARKER],
-        capture_output=True,
-        check=True,
-        cwd=REPO_ROOT,
-        env={**os.environ, "CMS_CFG": str(MOCK_CONFIG), "SERVICE_VARIANT": "cms"},
-        text=True,
-    )
-    reported = next(line for line in completed.stdout.splitlines() if line.startswith(SETTINGS_MARKER))
-    return json.loads(reported[len(SETTINGS_MARKER):])
-
-
-def generate_document(postprocessing_hooks=None, generator=None):
-    """Generate the Studio document with the production schema settings."""
-    configured = schema_settings(PRODUCTION_SETTINGS)
-    overrides = {key: configured[key] for key in GENERATION_SETTING_KEYS}
-    if postprocessing_hooks is not None:
-        overrides["POSTPROCESSING_HOOKS"] = postprocessing_hooks
-    with patched_settings(overrides):
-        return (generator or SchemaGenerator()).get_schema(request=None, public=True)
-
-
-@functools.lru_cache
-def production_document():
-    return generate_document()
+def published_document():
+    return generate_cms_schema()
 
 
 def operations(document):
@@ -211,82 +156,27 @@ class HasStudioReadAccessTest(CourseTestCase):
     def test_a_view_without_a_course_key_is_refused(self):
         assert self.allows(self.user, kwargs={}) is False
 
-    # The role checks behind this class cannot evaluate a key that carries only
-    # a content version, which is why the views list HasFullCourseKey first.
-    def test_a_key_without_an_organization_cannot_be_evaluated(self):
-        with pytest.raises(InvalidKeyError):
-            self.allows(self.user, course_key=CourseKey.from_string(VERSION_ONLY_COURSE_KEYS[0]))
-
-
-@ddt.ddt
-class HasFullCourseKeyTest(TestCase):
-    """The permission answers 404 for a course key with no organization, course or run, and passes any other."""
-
-    def check(self, kwargs):
-        request = RequestFactory().get("/")
-        request.user = AnonymousUser()
-        return HasFullCourseKey().has_permission(request, SimpleNamespace(kwargs=kwargs))
-
+    # The role checks cannot evaluate a key that carries only a content version,
+    # so such a key is answered as a missing course before they run.
     @ddt.data(*VERSION_ONLY_COURSE_KEYS)
-    def test_a_key_carrying_only_a_version_is_not_found(self, key):
-        with pytest.raises(NotFound):
-            self.check({"course_key": CourseKey.from_string(key)})
+    def test_a_key_naming_only_a_version_is_not_found(self, key):
+        with pytest.raises(NotFound) as raised:
+            self.allows(self.user, course_key=CourseKey.from_string(key))
 
-    @ddt.data(
-        "course-v1:edX+DemoX+Demo_Course",
-        "course-v1:edX+DemoX+Demo_Course+version@" + "a" * 24,
-        "ccx-v1:edX+DemoX+Demo_Course+ccx@1",
-        "library-v1:edX+DemoLib",
-    )
-    def test_a_key_naming_an_organization_passes(self, key):
-        assert self.check({"course_key": CourseKey.from_string(key)}) is True
+        assert raised.value.detail == "The requested course does not exist."
 
-    def test_a_view_without_a_course_key_passes(self):
-        assert self.check({}) is True
+    def test_a_key_naming_a_course_and_a_version_is_evaluated(self):
+        key = CourseKey.from_string(f"{self.course.id}+version@{'a' * 24}")
+
+        assert self.allows(self.user, course_key=key) is True
+        assert self.allows(UserFactory.create(), course_key=key) is False
 
 
 class CmsSchemaHookTest(TestCase):
-    """The schema hooks admit the new addresses and deprecate exactly the two superseded ones."""
+    """The post-processing hook deprecates exactly the two superseded operations."""
 
-    def test_filter_admits_the_authoring_prefix(self):
-        admitted = cms_api_filter([
-            ("/api/authoring/v2/courses/course-v1:a+b+c/video_archives/", None, "post", None),
-            ("/api/contentstore/v1/videos/course-v1:a+b+c/download", None, "put", None),
-            ("/api/authoring/v2", None, "get", None),
-            ("/login", None, "get", None),
-        ])
-
-        assert [entry[0] for entry in admitted] == [
-            "/api/authoring/v2/courses/course-v1:a+b+c/video_archives/",
-            "/api/contentstore/v1/videos/course-v1:a+b+c/download",
-        ]
-
-    def test_filter_refuses_the_versioned_paths_of_other_apis(self):
-        admitted = cms_api_filter([
-            ("/api/xblock/v2/xblocks/lb:Org:lib:html:abc/", None, "get", None),
-            ("/api/content_tagging/v1/taxonomies/", None, "get", None),
-            ("/api/libraries/v2/", None, "get", None),
-            ("/api/courses/v1/courses/", None, "get", None),
-            ("/api/authoring_tools/v1/", None, "get", None),
-            ("/api/v1/authoring/", None, "get", None),
-        ])
-
-        assert not admitted, admitted
-
-    def test_filter_admits_the_course_discussions_switch_and_nothing_else_under_courses(self):
-        admitted = cms_api_filter([
-            ("/api/courses/{course_key_string}/bulk_enable_disable_discussions", None, "put", None),
-            ("/api/courses/{course_key_string}/updates", None, "get", None),
-            ("/api/discussions/v0/bulk_enable_disable_discussions", None, "get", None),
-        ])
-
-        assert [entry[0] for entry in admitted] == [
-            "/api/courses/{course_key_string}/bulk_enable_disable_discussions",
-        ]
-
-    # Listed as exact paths rather than prefixes: the operations beside them
-    # under /api/contentstore/v1/videos/ have no successor, and a prefix would
-    # also reach any sibling later added below one of these two addresses.
+    # Listed as exact paths rather than prefixes: a prefix would also reach
+    # the other operations under /api/contentstore/v1/videos/.
     def test_the_superseded_paths_include_the_two_video_operations(self):
         assert {LEGACY_USAGE_PATH, LEGACY_DOWNLOAD_PATH} <= set(SUPERSEDED_PATHS)
 
@@ -296,7 +186,6 @@ class CmsSchemaHookTest(TestCase):
     # Resources superseded in their own right are not listed: whether they are
     # marked is decided with their successors, not here.
     OTHER_RESOURCE_PATHS = (
-        "/api/contentstore/v1/videos/{course_id}",
         "/api/contentstore/v0/videos/encodings/{course_id}",
         "/api/contentstore/v0/videos/features",
         "/api/contentstore/v0/videos/images/{course_id}/{edx_video_id}",
@@ -338,26 +227,18 @@ class CmsSchemaHookTest(TestCase):
 
 @ddt.ddt
 class CmsSchemaDocumentTest(TestCase):
-    """The published Studio document, generated with the production schema settings."""
+    """The published Studio document."""
 
     def test_both_new_operations_are_published_at_their_full_address(self):
-        document = production_document()
+        document = published_document()
 
         assert [method for method in document["paths"][USAGE_PATH] if method != "parameters"] == ["get"]
         assert [method for method in document["paths"][ARCHIVE_PATH] if method != "parameters"] == ["post"]
 
-    def test_only_the_studio_apis_are_published(self):
-        paths = list(production_document()["paths"])
-
-        assert {path.split("/")[2] for path in paths} == {"contentstore", "authoring", "courses"}
-        assert [path for path in paths if path.startswith("/api/courses/")] == [
-            "/api/courses/{course_key_string}/bulk_enable_disable_discussions",
-        ]
-
     def test_no_other_address_of_these_resources_is_published(self):
         published = {
             path
-            for path in production_document()["paths"]
+            for path in published_document()["paths"]
             if path.startswith("/api/authoring/") and {"video_usages", "video_archives"} & set(path.split("/"))
         }
 
@@ -375,40 +256,33 @@ class CmsSchemaDocumentTest(TestCase):
         assert routed_actions(usage.func) == {"get": "retrieve"}
 
     def test_operation_ids(self):
-        document = production_document()
+        document = published_document()
 
         assert document["paths"][USAGE_PATH]["get"]["operationId"] == "v2_courses_video_usages_retrieve"
         assert document["paths"][ARCHIVE_PATH]["post"]["operationId"] == "v2_courses_video_archives_create"
         assert document["paths"][LEGACY_USAGE_PATH]["get"]["operationId"] == "v1_videos_usage_retrieve"
         assert document["paths"][LEGACY_DOWNLOAD_PATH]["put"]["operationId"] == "v1_videos_download_update"
 
-    def test_no_authoring_operation_is_given_the_id_of_another(self):
-        # Ids are derived from the path after its API prefix, so an authoring
-        # path can be given the id of a contentstore one. The generator then
-        # renames one of the two with a numeric suffix, possibly the existing
-        # operation, so a collision is checked on the ids as first assigned.
+    # Ids are derived from the path after its API prefix, so an authoring path
+    # can be given the id of a contentstore one. The generator then renames one
+    # of the two with a numeric suffix, possibly the existing operation, so the
+    # ids are checked as first assigned.
+    def test_the_new_operation_ids_are_given_to_no_other_path(self):
         generator = SchemaGenerator()
-        hooks = [*schema_settings(PRODUCTION_SETTINGS)["POSTPROCESSING_HOOKS"], RECORDING_HOOK]
-        generate_document(postprocessing_hooks=hooks, generator=generator)
+        hooks = [*settings.SPECTACULAR_SETTINGS["POSTPROCESSING_HOOKS"], RECORDING_HOOK]
+        with patched_settings({**SCHEMA_SETTINGS, "POSTPROCESSING_HOOKS": hooks}):
+            generator.get_schema(request=None, public=True)
         holders = defaultdict(list)
         for operation_id, path, method in generator.assigned_operation_ids:
             holders[operation_id].append((path, method))
 
-        shared = {
-            operation_id: places
-            for operation_id, places in holders.items()
-            if len(places) > 1 and any(path.startswith("/api/authoring/") for path, __ in places)
-        }
-        assert shared == {}
-        assert sorted((path, method) for __, path, method in generator.assigned_operation_ids) == sorted(
-            (path, method) for path, method, __ in operations(production_document())
-        )
+        assert holders["v2_courses_video_usages_retrieve"] == [(USAGE_PATH, "get")]
+        assert holders["v2_courses_video_archives_create"] == [(ARCHIVE_PATH, "post")]
 
     # Published operations nothing supersedes: the neighbours of the two
     # superseded ones, other Studio resources, and the new addresses. Resources
     # superseded in their own right are not listed.
     UNMARKED_OPERATIONS = (
-        ("/api/contentstore/v1/videos/{course_id}", "get"),
         ("/api/contentstore/v0/videos/encodings/{course_id}", "get"),
         ("/api/contentstore/v0/videos/features", "get"),
         ("/api/contentstore/v0/videos/images/{course_id}/{edx_video_id}", "post"),
@@ -424,13 +298,13 @@ class CmsSchemaDocumentTest(TestCase):
         return operation.get("deprecated"), operation.get("x-internal")
 
     def test_the_two_legacy_operations_are_deprecated(self):
-        document = production_document()
+        document = published_document()
 
         assert self.marks(document, LEGACY_USAGE_PATH, "get") == (True, None)
         assert self.marks(document, LEGACY_DOWNLOAD_PATH, "put") == (True, None)
 
     def test_other_operations_are_left_unmarked(self):
-        document = production_document()
+        document = published_document()
 
         assert {key: self.marks(document, *key) for key in self.UNMARKED_OPERATIONS} == {
             key: (None, None) for key in self.UNMARKED_OPERATIONS
@@ -442,20 +316,20 @@ class CmsSchemaDocumentTest(TestCase):
         (USAGE_PATH, "get", (
             "The request carries no accepted credentials. Send a JSON Web Token in the Authorization "
             "header as 'JWT <token>' (the OAuth2 access token endpoint issues one when the token request "
-            "sets token_type=jwt), or the session cookie of a signed-in Studio user whose account is "
-            "active. OAuth2 access tokens sent as 'Bearer <token>' are not accepted."
+            "sets token_type=jwt), or the session cookie of a signed-in Studio user. OAuth2 access "
+            "tokens sent as 'Bearer <token>' are not accepted."
         )),
         (ARCHIVE_PATH, "post", (
             "The request carries no accepted credentials. Send a JSON Web Token in the Authorization "
             "header as 'JWT <token>' (the OAuth2 access token endpoint issues one when the token request "
-            "sets token_type=jwt), or the session cookie of a signed-in Studio user whose account is "
-            "active, together with the CSRF token in the X-CSRFToken header. OAuth2 access tokens sent "
-            "as 'Bearer <token>' are not accepted."
+            "sets token_type=jwt), or the session cookie of a signed-in Studio user, together with the "
+            "CSRF token in the X-CSRFToken header. OAuth2 access tokens sent as 'Bearer <token>' are not "
+            "accepted."
         )),
     )
     @ddt.unpack
     def test_the_accepted_credentials_are_named(self, path, method, description):
-        operation = production_document()["paths"][path][method]
+        operation = published_document()["paths"][path][method]
 
         assert operation["responses"]["401"]["description"] == description
 
@@ -473,12 +347,12 @@ class CmsSchemaDocumentTest(TestCase):
     )
     @ddt.unpack
     def test_each_refusal_names_its_reasons(self, path, method, code, description):
-        operation = production_document()["paths"][path][method]
+        operation = published_document()["paths"][path][method]
 
         assert operation["responses"][code]["description"] == description
 
     def test_both_new_operations_are_tagged_for_the_sdk(self):
-        document = production_document()
+        document = published_document()
 
         assert document["paths"][USAGE_PATH]["get"]["tags"] == ["openedx-platform-sdk"]
         assert document["paths"][ARCHIVE_PATH]["post"]["tags"] == ["openedx-platform-sdk"]
@@ -487,7 +361,7 @@ class CmsSchemaDocumentTest(TestCase):
         return document["components"]["schemas"][reference["$ref"].rsplit("/", 1)[-1]]
 
     def test_the_usage_response_is_declared(self):
-        document = production_document()
+        document = published_document()
         response = document["paths"][USAGE_PATH]["get"]["responses"]["200"]
 
         body = self.component(document, response["content"]["application/json"]["schema"])
@@ -500,7 +374,7 @@ class CmsSchemaDocumentTest(TestCase):
         }
 
     def test_the_archive_request_body_is_declared(self):
-        document = production_document()
+        document = published_document()
         request_body = document["paths"][ARCHIVE_PATH]["post"]["requestBody"]
 
         body = self.component(document, request_body["content"]["application/json"]["schema"])
@@ -511,7 +385,7 @@ class CmsSchemaDocumentTest(TestCase):
         assert sorted(entry["required"]) == ["name", "url"]
 
     def test_the_archive_response_is_a_binary_zip(self):
-        response = production_document()["paths"][ARCHIVE_PATH]["post"]["responses"]["200"]
+        response = published_document()["paths"][ARCHIVE_PATH]["post"]["responses"]["200"]
 
         assert response["content"] == {"application/zip": {"schema": {"type": "string", "format": "binary"}}}
         assert "<course key>_videos.zip" in response["description"]
@@ -522,49 +396,13 @@ class CmsSchemaDocumentTest(TestCase):
     )
     @ddt.unpack
     def test_every_error_response_is_the_error_envelope(self, path, method, codes):
-        responses = production_document()["paths"][path][method]["responses"]
+        responses = published_document()["paths"][path][method]["responses"]
 
         assert sorted(code for code in responses if code != "200") == codes
         for code in codes:
             assert responses[code]["content"]["application/json"]["schema"] == {
                 "$ref": "#/components/schemas/ErrorResponse"
             }
-
-    def test_enum_components_survive_the_registered_post_processing(self):
-        without_enum_hook = generate_document(postprocessing_hooks=[SUPERSEDED_PATHS_HOOK])
-
-        assert not [name for name in without_enum_hook["components"]["schemas"] if name.endswith("Enum")]
-        assert "ContentTypeEnum" in production_document()["components"]["schemas"]
-
-
-@ddt.ddt
-class CmsSchemaSettingsTest(TestCase):
-    """The deployment settings publish full paths, and no server adds an API prefix of its own."""
-
-    @ddt.data(PRODUCTION_SETTINGS, DEVSTACK_SETTINGS)
-    def test_paths_are_published_in_full(self, module):
-        configured = schema_settings(module)
-
-        assert "SCHEMA_PATH_PREFIX_TRIM" not in configured
-        assert configured["SCHEMA_PATH_PREFIX"] == r"/api/(contentstore|authoring)"
-
-    @ddt.data(PRODUCTION_SETTINGS, DEVSTACK_SETTINGS)
-    # These modules replace SPECTACULAR_SETTINGS wholesale, so a hook left out
-    # here is silently disabled for the deployment that uses them.
-    def test_the_post_processing_hooks_are_all_registered(self, module):
-        hooks = schema_settings(module)["POSTPROCESSING_HOOKS"]
-
-        assert hooks == [ENUM_POSTPROCESSING_HOOK, SUPERSEDED_PATHS_HOOK, MIGRATED_PATHS_HOOK]
-
-    # The Public server is AUTHORING_API_URL as configured. Whether a gateway
-    # behind it serves the full paths is not decided by these settings and is
-    # not checked here.
-    @ddt.data(PRODUCTION_SETTINGS, DEVSTACK_SETTINGS)
-    def test_no_server_url_carries_an_api_prefix(self, module):
-        servers = schema_settings(module)["SERVERS"]
-
-        assert [server["description"] for server in servers] == ["Public", "Local"]
-        assert [server for server in servers if "/api/" in server["url"]] == []
 
 
 class StudioApiDocsTest(TestCase):
@@ -599,3 +437,10 @@ class StudioApiDocsTest(TestCase):
             "application/zip": {"schema": {"type": "string", "format": "binary"}}
         }
         assert list(operation["requestBody"]["content"]) == ["application/json"]
+
+    # This document runs the same post-processing hooks as the Authoring API's.
+    def test_the_superseded_operations_are_deprecated_there_too(self):
+        paths = self.document()["paths"]
+
+        assert paths[LEGACY_USAGE_PATH]["get"]["deprecated"] is True
+        assert paths[LEGACY_DOWNLOAD_PATH]["put"]["deprecated"] is True

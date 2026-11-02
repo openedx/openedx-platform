@@ -25,7 +25,7 @@ def unauthenticated_response(requires_csrf_token):
     also send the CSRF token, as for any method other than GET, HEAD, OPTIONS
     and TRACE.
     """
-    session = "the session cookie of a signed-in Studio user whose account is active"
+    session = "the session cookie of a signed-in Studio user"
     if requires_csrf_token:
         session += ", together with the CSRF token in the X-CSRFToken header"
     return OpenApiResponse(

@@ -1,6 +1,8 @@
 """API Views for where a video is used in a course."""
 
 from drf_spectacular.utils import OpenApiExample, OpenApiParameter, OpenApiResponse, extend_schema
+from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
+from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
 from edx_rest_framework_extensions.mixins import StandardizedErrorMixin
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
@@ -14,7 +16,7 @@ from cms.djangoapps.contentstore.rest_api.v2.views.video_schema import (
     forbidden_response,
     unauthenticated_response,
 )
-from cms.djangoapps.contentstore.views.permissions import HasFullCourseKey, HasStudioReadAccess
+from cms.djangoapps.contentstore.views.permissions import HasStudioReadAccess
 
 _EDX_VIDEO_ID_PARAMETER = OpenApiParameter(
     name="edx_video_id",
@@ -65,7 +67,10 @@ class CourseVideoUsageViewSet(StandardizedErrorMixin, viewsets.ViewSet):
     video store does not hold.
     """
 
-    permission_classes = (IsAuthenticated, HasFullCourseKey, HasStudioReadAccess)
+    # The v1 endpoint this replaces admits inactive accounts over a session, as
+    # the other views of this API do; the default session class refuses them.
+    authentication_classes = (JwtAuthentication, SessionAuthenticationAllowInactiveUser)
+    permission_classes = (IsAuthenticated, HasStudioReadAccess)
     serializer_class = CourseVideoUsageSerializer
 
     def get_serializer(self, *args, **kwargs):

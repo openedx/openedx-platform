@@ -185,6 +185,13 @@ class CourseVideoSettingsAccessTest(VideoSettingsTestBase):
         assert_error_envelope(response, expected_status=404, expected_type_slug="not-found")
         assert response.data["detail"] == "The requested course does not exist."
 
+    # A key naming only a version has no course run behind it; the role check
+    # cannot evaluate one, so it is answered as a missing course.
+    def test_a_key_naming_only_a_version_is_not_found(self):
+        response = self.get(self.global_staff, course_key="course-v1:version@" + "a" * 24)
+        assert_error_envelope(response, expected_status=404, expected_type_slug="not-found")
+        assert response.data["detail"] == "The requested course does not exist."
+
     def test_a_missing_course_is_refused_not_revealed_to_a_caller_without_access(self):
         response = self.get(self.no_role_user, course_key=MISSING_COURSE_KEY)
         assert_error_envelope(response, expected_status=403, expected_type_slug="authz")

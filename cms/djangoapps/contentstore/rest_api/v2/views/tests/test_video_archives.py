@@ -13,7 +13,9 @@ import pytest
 import requests
 from django.core.signals import got_request_exception
 from django.urls import Resolver404, resolve, reverse
+from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
 from edx_rest_framework_extensions.auth.jwt.tests.utils import generate_jwt
+from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
 from edx_rest_framework_extensions.testing import assert_error_envelope
 from edxval.api import create_profile, create_video, remove_video_for_course
 from rest_framework import status
@@ -529,6 +531,7 @@ class VideoArchiveAuthorizationTest(VideoArchiveTestBase):
         response = self.post(self.client_for(self.user), [], course_key=MISSING_COURSE_KEY)
 
         self.assert_refused(response, fetch, 404, "not-found")
+        assert response.json()["detail"] == "The requested course does not exist."
 
     def test_a_missing_course_is_reported_before_the_body_is_read(self, fetch):
         response = self.client_for(self.user).post(self.url(MISSING_COURSE_KEY), {}, format="json")
@@ -540,7 +543,7 @@ class VideoArchiveAuthorizationTest(VideoArchiveTestBase):
         response = self.post(self.client_for(self.user), [{"url": FIRST_URL, "name": "one.mp4"}], course_key=key)
 
         self.assert_refused(response, fetch, 404, "not-found")
-        assert response.json()["detail"] == "Not found."
+        assert response.json()["detail"] == "The requested course does not exist."
 
     @ddt.data(*VERSION_ONLY_COURSE_KEYS)
     def test_a_key_carrying_only_a_version_is_not_found_by_a_caller_without_a_role(self, key, fetch):
@@ -549,7 +552,7 @@ class VideoArchiveAuthorizationTest(VideoArchiveTestBase):
         )
 
         self.assert_refused(response, fetch, 404, "not-found")
-        assert response.json()["detail"] == "Not found."
+        assert response.json()["detail"] == "The requested course does not exist."
 
     @ddt.data(*VERSION_ONLY_COURSE_KEYS)
     def test_a_key_carrying_only_a_version_still_needs_authentication(self, key, fetch):
@@ -565,8 +568,8 @@ class VideoArchiveAuthorizationTest(VideoArchiveTestBase):
     def test_the_view_declares_its_checks_in_order(self, fetch):
         # The JWT middleware appends its own restricted-application check to
         # views that accept JWTs, so only the declared head of the list is fixed.
-        assert [klass.__name__ for klass in CourseVideoArchiveView.permission_classes[:3]] == [
-            "IsAuthenticated", "HasFullCourseKey", "HasStudioReadAccess",
+        assert [klass.__name__ for klass in CourseVideoArchiveView.permission_classes[:2]] == [
+            "IsAuthenticated", "HasStudioReadAccess",
         ]
 
 
@@ -626,7 +629,7 @@ class VideoArchiveUnexpectedFailureTest(VideoArchiveTestBase):
 
 @patch(FETCH)
 class VideoArchiveAuthenticationTest(VideoArchiveTestBase):
-    """The endpoint uses the platform's default authentication."""
+    """JWT and session callers are admitted, inactive accounts included, as at the legacy address; Bearer is not."""
 
     def test_session_caller_succeeds(self, fetch):
         fetch.return_value = upstream_response()
@@ -676,30 +679,38 @@ class VideoArchiveAuthenticationTest(VideoArchiveTestBase):
 
         assert response.status_code == status.HTTP_200_OK
 
-    def deactivated_global_staff(self):
-        """Log a global staff member in, then deactivate the account behind the live session."""
+    def deactivated_user(self, **attributes):
+        """Log a user in, then deactivate the account behind the live session."""
         password = "password-12345"
-        staff = UserFactory.create(is_staff=True, password=password)
+        user = UserFactory.create(password=password, **attributes)
         session_client = APIClient()
-        assert session_client.login(username=staff.username, password=password)
-        staff.is_active = False
-        staff.save()
-        return staff, session_client
+        assert session_client.login(username=user.username, password=password)
+        user.is_active = False
+        user.save()
+        return user, session_client
 
-    def test_inactive_global_staff_is_refused_over_a_session(self, fetch):
+    def deactivated_global_staff(self):
+        return self.deactivated_user(is_staff=True)
+
+    def test_inactive_global_staff_is_admitted_over_a_session_at_both_addresses(self, fetch):
         __, session_client = self.deactivated_global_staff()
 
-        response = self.post(session_client, [{"url": FIRST_URL, "name": "one.mp4"}])
+        new = self.post(session_client, [])
+        legacy = self.put_legacy(session_client, [])
 
-        assert_error_envelope(response, expected_status=401, expected_type_slug="authn")
+        assert (new.status_code, legacy.status_code) == (status.HTTP_200_OK, status.HTTP_200_OK)
+        assert len(b"".join(new.streaming_content)) == EMPTY_ARCHIVE_SIZE
+
+    def test_an_inactive_course_author_is_authenticated_then_refused_as_on_legacy(self, fetch):
+        author, session_client = self.deactivated_user()
+        CourseStaffRole(self.course.id).add_users(author)
+
+        new = self.post(session_client, [{"url": FIRST_URL, "name": "one.mp4"}])
+        legacy = self.put_legacy(session_client, [{"url": FIRST_URL, "name": "one.mp4"}])
+
+        assert_error_envelope(new, expected_status=403, expected_type_slug="authz")
+        assert legacy.status_code == status.HTTP_403_FORBIDDEN
         fetch.assert_not_called()
-
-    def test_inactive_global_staff_still_reaches_the_legacy_address_over_a_session(self, fetch):
-        __, session_client = self.deactivated_global_staff()
-
-        response = self.put_legacy(session_client, [])
-
-        assert response.status_code == status.HTTP_200_OK
 
     def test_inactive_global_staff_is_admitted_over_jwt(self, fetch):
         staff, __ = self.deactivated_global_staff()
@@ -709,11 +720,10 @@ class VideoArchiveAuthenticationTest(VideoArchiveTestBase):
         assert response.status_code == status.HTTP_200_OK
         assert len(b"".join(response.streaming_content)) == EMPTY_ARCHIVE_SIZE
 
-    def test_the_view_does_not_declare_authentication_classes(self, fetch):
-        assert "authentication_classes" not in CourseVideoArchiveView.__dict__
-        assert [klass.__name__ for klass in CourseVideoArchiveView.authentication_classes] == [
-            "DefaultJwtAuthentication", "DefaultSessionAuthentication",
-        ]
+    def test_the_view_keeps_the_inactive_user_session_class(self, fetch):
+        assert CourseVideoArchiveView.authentication_classes == (
+            JwtAuthentication, SessionAuthenticationAllowInactiveUser,
+        )
 
 
 @patch(FETCH)

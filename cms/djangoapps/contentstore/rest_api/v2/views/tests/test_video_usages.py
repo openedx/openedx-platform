@@ -13,7 +13,9 @@ from django.db.models.signals import post_init, pre_init
 from django.dispatch import Signal
 from django.test.utils import CaptureQueriesContext
 from django.urls import Resolver404, resolve, reverse
+from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
 from edx_rest_framework_extensions.auth.jwt.tests.utils import generate_jwt
+from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
 from edx_rest_framework_extensions.testing import assert_error_envelope
 from openedx_authz.models.engine import PolicyCacheControl
 from rest_framework import status
@@ -411,21 +413,21 @@ class VideoUsageAuthorizationTest(VideoUsageTestBase):
         response = self.client_for(self.user).get(self.url("single-use", course_key=MISSING_COURSE_KEY))
 
         envelope = assert_error_envelope(response, expected_status=404, expected_type_slug="not-found")
-        assert envelope["detail"] == "The course does not exist."
+        assert envelope["detail"] == "The requested course does not exist."
 
     @ddt.data(*VERSION_ONLY_COURSE_KEYS)
     def test_a_key_carrying_only_a_version_is_not_found_by_global_staff(self, key):
         response = self.client_for(self.user).get(self.url("single-use", course_key=key))
 
         envelope = assert_error_envelope(response, expected_status=404, expected_type_slug="not-found")
-        assert envelope["detail"] == "Not found."
+        assert envelope["detail"] == "The requested course does not exist."
 
     @ddt.data(*VERSION_ONLY_COURSE_KEYS)
     def test_a_key_carrying_only_a_version_is_not_found_by_a_caller_without_a_role(self, key):
         response = self.client_for(UserFactory.create()).get(self.url("single-use", course_key=key))
 
         envelope = assert_error_envelope(response, expected_status=404, expected_type_slug="not-found")
-        assert envelope["detail"] == "Not found."
+        assert envelope["detail"] == "The requested course does not exist."
 
     @ddt.data(*VERSION_ONLY_COURSE_KEYS)
     def test_a_key_carrying_only_a_version_still_needs_authentication(self, key):
@@ -456,8 +458,8 @@ class VideoUsageAuthorizationTest(VideoUsageTestBase):
     def test_the_view_declares_its_checks_in_order(self):
         # The JWT middleware appends its own restricted-application check to
         # views that accept JWTs, so only the declared head of the list is fixed.
-        assert [klass.__name__ for klass in CourseVideoUsageViewSet.permission_classes[:3]] == [
-            "IsAuthenticated", "HasFullCourseKey", "HasStudioReadAccess",
+        assert [klass.__name__ for klass in CourseVideoUsageViewSet.permission_classes[:2]] == [
+            "IsAuthenticated", "HasStudioReadAccess",
         ]
 
 
@@ -516,7 +518,7 @@ class VideoUsageUnexpectedFailureTest(VideoUsageTestBase):
 
 
 class VideoUsageAuthenticationTest(VideoUsageTestBase):
-    """The endpoint uses the platform's default authentication."""
+    """JWT and session callers are admitted, inactive accounts included, as at the legacy address; Bearer is not."""
 
     def test_session_caller_succeeds(self):
         client = APIClient()
@@ -547,29 +549,37 @@ class VideoUsageAuthenticationTest(VideoUsageTestBase):
 
         assert response.status_code == status.HTTP_200_OK
 
-    def deactivated_global_staff(self):
-        """Log a global staff member in, then deactivate the account behind the live session."""
+    def deactivated_user(self, **attributes):
+        """Log a user in, then deactivate the account behind the live session."""
         password = "password-12345"
-        staff = UserFactory.create(is_staff=True, password=password)
+        user = UserFactory.create(password=password, **attributes)
         session_client = APIClient()
-        assert session_client.login(username=staff.username, password=password)
-        staff.is_active = False
-        staff.save()
-        return staff, session_client
+        assert session_client.login(username=user.username, password=password)
+        user.is_active = False
+        user.save()
+        return user, session_client
 
-    def test_inactive_global_staff_is_refused_over_a_session(self):
+    def deactivated_global_staff(self):
+        return self.deactivated_user(is_staff=True)
+
+    def test_inactive_global_staff_is_admitted_over_a_session_at_both_addresses(self):
         __, session_client = self.deactivated_global_staff()
 
-        response = session_client.get(self.url("single-use"))
+        new = session_client.get(self.url("single-use"))
+        legacy = session_client.get(self.legacy_url("single-use"))
 
-        assert_error_envelope(response, expected_status=401, expected_type_slug="authn")
+        assert (new.status_code, legacy.status_code) == (status.HTTP_200_OK, status.HTTP_200_OK)
+        assert new.json() == self.expected_body("single-use")
 
-    def test_inactive_global_staff_still_reaches_the_legacy_address_over_a_session(self):
-        __, session_client = self.deactivated_global_staff()
+    def test_an_inactive_course_author_is_authenticated_then_refused_as_on_legacy(self):
+        author, session_client = self.deactivated_user()
+        CourseStaffRole(self.course.id).add_users(author)
 
-        response = session_client.get(self.legacy_url("single-use"))
+        new = session_client.get(self.url("single-use"))
+        legacy = session_client.get(self.legacy_url("single-use"))
 
-        assert response.status_code == status.HTTP_200_OK
+        assert_error_envelope(new, expected_status=403, expected_type_slug="authz")
+        assert legacy.status_code == status.HTTP_403_FORBIDDEN
 
     def test_inactive_global_staff_is_admitted_over_jwt_at_both_addresses(self):
         staff, __ = self.deactivated_global_staff()
@@ -581,11 +591,10 @@ class VideoUsageAuthenticationTest(VideoUsageTestBase):
         assert (new.status_code, legacy.status_code) == (status.HTTP_200_OK, status.HTTP_200_OK)
         assert new.json() == self.expected_body("single-use")
 
-    def test_the_viewset_does_not_declare_authentication_classes(self):
-        assert "authentication_classes" not in CourseVideoUsageViewSet.__dict__
-        assert [klass.__name__ for klass in CourseVideoUsageViewSet.authentication_classes] == [
-            "DefaultJwtAuthentication", "DefaultSessionAuthentication",
-        ]
+    def test_the_viewset_keeps_the_inactive_user_session_class(self):
+        assert CourseVideoUsageViewSet.authentication_classes == (
+            JwtAuthentication, SessionAuthenticationAllowInactiveUser,
+        )
 
 
 @ddt.ddt
