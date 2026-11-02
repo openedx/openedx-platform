@@ -19,7 +19,6 @@ from openedx_authz.models.engine import PolicyCacheControl
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from cms.djangoapps.contentstore.rest_api.v1.views.unknown_route import UnknownRouteView
 from cms.djangoapps.contentstore.rest_api.v2.views.video_usages import CourseVideoUsageViewSet
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase, routed_actions
 from common.djangoapps.student.roles import (
@@ -767,36 +766,16 @@ class VideoUsageUrlContractTest(VideoUsageTestBase):
         assert self.legacy_url("abc-123") == f"/api/contentstore/v1/videos/{self.course.id}/abc-123/usage"
         assert resolve(self.legacy_url("abc-123")).func.view_class.__name__ == "VideoUsageView"
 
-    def assert_json_not_found(self, address):
-        response = self.client_for(self.user).get(address, HTTP_ACCEPT="application/json")
-        assert response["Content-Type"] == "application/json"
-        return assert_error_envelope(response, expected_status=404, expected_type_slug="not-found")
+    @ddt.data("not-a-key", "Org/Course/Run", "i4x://Org/Course/video/abc")
+    def test_malformed_and_deprecated_keys_do_not_route(self, key):
+        address = f"/api/authoring/v2/courses/{key}/video_usages/abc-123/"
 
-    def test_malformed_course_key_is_answered_with_the_error_envelope(self):
-        self.assert_json_not_found("/api/authoring/v2/courses/not-a-key/video_usages/abc-123/")
+        response = self.client_for(self.user).get(address)
 
-    def test_deprecated_course_key_is_answered_with_the_error_envelope(self):
-        self.assert_json_not_found("/api/authoring/v2/courses/Org/Course/Run/video_usages/abc-123/")
-
-    def test_a_block_key_in_place_of_a_course_key_is_answered_with_the_error_envelope(self):
-        self.assert_json_not_found("/api/authoring/v2/courses/i4x://Org/Course/video/abc/video_usages/abc-123/")
-
-    def test_an_unusable_course_key_is_claimed_by_the_fallback_route(self):
-        address = "/api/authoring/v2/courses/Org/Course/Run/video_usages/abc-123/"
-
-        assert resolve(address).func.cls is UnknownRouteView
-        assert reverse(
-            "authoring_v2:course_video_usage_detail_unmatched",
-            kwargs={"course_key": "Org/Course/Run", "subpath": "abc-123"},
-        ) == address
-        assert reverse(
-            "authoring_v2:course_video_usage_list_unmatched", kwargs={"course_key": "Org/Course/Run"},
-        ) == "/api/authoring/v2/courses/Org/Course/Run/video_usages/"
-
-    def test_the_fallback_needs_no_authentication(self):
-        response = self.client_for(None).get("/api/authoring/v2/courses/not-a-key/video_usages/abc-123/")
-
-        assert_error_envelope(response, expected_status=404, expected_type_slug="not-found")
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        # Studio's HTML not-found page answers, as at the other addresses of
+        # this API: no JSON catch-all exists under this mount.
+        assert response["Content-Type"].startswith("text/html")
 
     def test_the_legacy_address_still_accepts_a_deprecated_course_key(self):
         match = resolve("/api/contentstore/v1/videos/Org/Course/Run/abc-123/usage")
@@ -810,20 +789,9 @@ class VideoUsageUrlContractTest(VideoUsageTestBase):
         "video_usages/abc-123/extra/",
         "video_usages/abc-123/extra/more/",
     )
-    def test_other_addresses_under_the_collection_are_answered_with_the_error_envelope(self, rest):
-        address = f"/api/authoring/v2/courses/{self.course.id}/{rest}"
-
-        assert resolve(address).func.cls is UnknownRouteView
-        self.assert_json_not_found(address)
-
-    @ddt.data("video_usages", "video_usages/abc-123/extra")
-    def test_an_address_under_the_collection_without_the_trailing_slash_is_redirected(self, rest):
-        address = f"/api/authoring/v2/courses/{self.course.id}/{rest}"
-
-        response = self.client_for(self.user).get(address, HTTP_ACCEPT="application/json")
-
-        assert response.status_code == status.HTTP_301_MOVED_PERMANENTLY
-        assert response["Location"] == f"{address}/"
+    def test_other_addresses_under_the_collection_do_not_route(self, rest):
+        with pytest.raises(Resolver404):
+            resolve(f"/api/authoring/v2/courses/{self.course.id}/{rest}")
 
     def test_the_address_requires_the_trailing_slash(self):
         with pytest.raises(Resolver404):

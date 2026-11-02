@@ -14,7 +14,7 @@ import ddt
 import pytest
 from django.contrib.auth.models import AnonymousUser
 from django.test import RequestFactory, TestCase
-from django.urls import Resolver404, get_resolver, resolve, reverse
+from django.urls import get_resolver, resolve, reverse
 from drf_spectacular.generators import SchemaGenerator
 from drf_spectacular.settings import patched_settings
 from opaque_keys import InvalidKeyError
@@ -141,22 +141,6 @@ class VideoRoutesTest(TestCase):
     ROUTE_NAMES = (
         "course_video_usage_detail",
         "course_video_archive_list",
-        "course_video_usage_list_unmatched",
-        "course_video_usage_detail_unmatched",
-        "course_video_archive_list_unmatched",
-        "course_video_archive_detail_unmatched",
-    )
-
-    # Addresses outside the two collections, some named like them, that another
-    # resource may serve. Neither fallback may claim them.
-    ADDRESSES_OUTSIDE_THE_COLLECTIONS = (
-        f"/api/authoring/v2/courses/{COURSE_KEY}/",
-        f"/api/authoring/v2/courses/{COURSE_KEY}/textbooks/",
-        "/api/authoring/v2/courses/Org/Course/Run/textbooks/",
-        f"/api/authoring/v2/courses/{COURSE_KEY}/textbooks/video_usages_report/",
-        f"/api/authoring/v2/courses/{COURSE_KEY}/video_usage/abc-123/",
-        f"/api/authoring/v2/courses/{COURSE_KEY}/all_video_archives/",
-        "/api/authoring/v2/video_usages/",
     )
 
     def test_the_shared_legacy_name_without_a_video_id_reverses_to_the_download_route(self):
@@ -179,26 +163,11 @@ class VideoRoutesTest(TestCase):
 
         names = [pattern.name for pattern in resolver.url_patterns if pattern.name in self.ROUTE_NAMES]
 
-        # Each fallback route has to come after the route it backs, or it would
-        # answer valid course keys too.
         assert names == list(self.ROUTE_NAMES)
         assert resolver.app_name == "authoring_v2"
         assert not [name for name in names if "v1" in name or "v2" in name]
 
-    def test_the_fallbacks_claim_nothing_outside_the_two_collections(self):
-        fallbacks = {f"authoring_v2:{name}" for name in self.ROUTE_NAMES if name.endswith("_unmatched")}
-        claimed = []
-        for address in self.ADDRESSES_OUTSIDE_THE_COLLECTIONS:
-            try:
-                match = resolve(address)
-            except Resolver404:
-                continue
-            if match.view_name in fallbacks:
-                claimed.append(address)
-
-        assert not claimed, claimed
-
-
+@ddt.ddt
 class HasStudioReadAccessTest(CourseTestCase):
     """The permission grants exactly the callers with Studio read access to the course in the path."""
 

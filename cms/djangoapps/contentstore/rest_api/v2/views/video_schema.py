@@ -13,7 +13,7 @@ COURSE_KEY_PARAMETER = OpenApiParameter(
 
 COURSE_NOT_FOUND_RESPONSE = OpenApiResponse(
     response=ErrorResponseSerializer,
-    description="The course does not exist, or the course key is malformed.",
+    description="The course does not exist.",
 )
 
 
