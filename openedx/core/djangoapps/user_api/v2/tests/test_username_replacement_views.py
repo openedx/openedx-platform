@@ -3,10 +3,11 @@
 import json
 from unittest import mock
 
+import pytest
 from django.apps import apps
 from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.test import override_settings
-from django.urls import reverse
+from django.urls import NoReverseMatch, resolve, reverse
 from edx_rest_framework_extensions.errors import INTERNAL_ERROR_SLUG, INTERNAL_ERROR_TITLE, error_type_uri
 from edx_rest_framework_extensions.testing import assert_error_envelope
 from rest_framework import status
@@ -28,6 +29,7 @@ from openedx.core.djangoapps.user_api.models import (
 )
 from openedx.core.djangoapps.user_api.v2 import view_services
 from openedx.core.djangoapps.user_api.v2.serializers import (
+    LONGEST_NAME_AN_ACCOUNT_IS_STORED_UNDER,
     REPLACEMENT_MAX_MAPPINGS,
     REPLACEMENT_NO_SUCH_ACCOUNT,
     REPLACEMENT_REPLACED,
@@ -432,6 +434,47 @@ class UsernameReplacementBodyTests(UsernameReplacementTestCase):
         answered = self.ask(mappings)
         assert answered.status_code == status.HTTP_200_OK, answered.content
         assert len(self.results_of(answered)) == REPLACEMENT_MAX_MAPPINGS
+
+    def test_a_name_no_address_can_carry_is_refused_before_anything_is_written(self):
+        """
+        Such a name would leave the account, and the record of its retirement, unreachable.
+
+        The work that erases a retired account's data reaches the record of it
+        by the name the account was registered under, and every address of
+        this version carries the same names, so a name outside them would be
+        written and then addressable nowhere.
+        """
+        self.assert_refused_for(
+            self.ask([{"plain-learner": "has/a/slash"}]), "username_mappings[0].plain-learner",
+        )
+        assert User.objects.get(id=self.learner.id).username == "plain-learner"
+        with pytest.raises(NoReverseMatch):
+            reverse("user_v2:retirement_detail", kwargs={"username": "has/a/slash"})
+
+    def test_a_name_longer_than_the_column_that_stores_it_is_refused(self):
+        """One database takes it and another refuses it part way through a request."""
+        asked_for = "x" * (LONGEST_NAME_AN_ACCOUNT_IS_STORED_UNDER + 1)
+        self.assert_refused_for(self.ask([{"plain-learner": asked_for}]), "username_mappings[0].plain-learner")
+        assert User.objects.get(id=self.learner.id).username == "plain-learner"
+
+    def test_a_name_as_long_as_that_column_is_answered(self):
+        """The measurement the refusal above is read against, at the boundary."""
+        asked_for = "x" * LONGEST_NAME_AN_ACCOUNT_IS_STORED_UNDER
+        answered = self.ask([{"plain-learner": asked_for}])
+        assert answered.status_code == status.HTTP_200_OK, answered.content
+        assert User.objects.get(id=self.learner.id).username == asked_for
+
+    def test_the_name_handed_out_is_one_every_address_of_this_version_carries(self):
+        """A retirement record is reached under the name the replacement left on it."""
+        RetirementState.objects.create(
+            state_name="PENDING", state_execution_order=1, is_dead_end_state=False, required=True,
+        )
+        record = create_retirement_status(self.learner)
+        answered = self.ask([{"plain-learner": "asked.for+name"}])
+        assert self.results_of(answered)[0]["new_username"] == "asked.for+name"
+        record.refresh_from_db()
+        member = reverse("user_v2:retirement_detail", kwargs={"username": record.original_username})
+        assert resolve(member).kwargs == {"username": "asked.for+name"}
 
     def test_a_body_sent_as_a_web_form_is_refused(self):
         assert_error_envelope(

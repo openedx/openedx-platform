@@ -2,7 +2,9 @@
 
 import re
 
+from django.conf import settings
 from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
+from django.core.validators import RegexValidator
 from django.urls import reverse
 from drf_spectacular.utils import extend_schema_field
 from edx_rest_framework_extensions.errors import ErrorResponseSerializer
@@ -1418,6 +1420,20 @@ REPLACEMENT_OUTCOME_CHOICES = (
 #: one, over a write across several tables.
 REPLACEMENT_MAX_MAPPINGS = UserApiPagination.max_page_size
 
+#: The longest name an account is stored under, which is the column storing
+#: it: a longer one is taken by one database and refused by another part way
+#: through a request, so it is refused before any of the request is carried
+#: out.
+LONGEST_NAME_AN_ACCOUNT_IS_STORED_UNDER = (
+    User._meta.get_field("username").max_length  # pylint: disable=protected-access
+)
+
+#: The names an address of this version carries. A name asked for is held to
+#: this because the account given it is addressed by it afterwards: a name no
+#: address carries leaves the account, and the record of the work that has to
+#: erase its data, at an address nothing resolves.
+NAME_AN_ADDRESS_CARRIES = settings.USERNAME_REGEX_PARTIAL
+
 #: One mapping, as the body carries it: an object whose single member is the
 #: name an account is stored under, carrying the name asked for it. The shape
 #: is written out because a field alone publishes an object of no stated
@@ -1434,8 +1450,25 @@ USERNAME_MAPPING_SCHEMA = {
     ),
 }
 
+#: The same mapping where the name asked for is held to what stores it and to
+#: what addresses it. The operation this one replaces reads a name of any
+#: shape, so the shape above is left as it is and the bounds are published
+#: here, by the operation that holds a name to them.
+BOUNDED_USERNAME_MAPPING_SCHEMA = {
+    **USERNAME_MAPPING_SCHEMA,
+    "additionalProperties": {
+        "type": "string",
+        "maxLength": LONGEST_NAME_AN_ACCOUNT_IS_STORED_UNDER,
+        "pattern": f"^{NAME_AN_ADDRESS_CARRIES}$",
+    },
+    "description": (
+        "One account, as the name it is stored under carrying the name asked for it. Exactly one "
+        "name per object, and the name asked for is one an address can carry."
+    ),
+}
 
-@extend_schema_field(USERNAME_MAPPING_SCHEMA)
+
+@extend_schema_field(BOUNDED_USERNAME_MAPPING_SCHEMA)
 class UsernameMappingField(serializers.DictField):
     """
     One account whose name is to be replaced, with the name asked for it.
@@ -1453,7 +1486,18 @@ class UsernameMappingField(serializers.DictField):
     }
 
     child = serializers.CharField(
-        help_text="Name asked for the account stored under the name this member carries.",
+        max_length=LONGEST_NAME_AN_ACCOUNT_IS_STORED_UNDER,
+        validators=[RegexValidator(
+            regex=rf"\A(?:{NAME_AN_ADDRESS_CARRIES})\Z",
+            message=(
+                "A name asked for carries letters, digits, spaces and the characters . @ _ + - "
+                "and nothing else, so that the account given it can be addressed afterwards."
+            ),
+        )],
+        help_text=(
+            "Name asked for the account stored under the name this member carries. It is a name "
+            "an address can carry, so the account given it is reachable under it."
+        ),
     )
 
     def to_internal_value(self, data):
