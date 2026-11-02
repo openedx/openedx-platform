@@ -5,12 +5,9 @@ import re
 from drf_spectacular.openapi import AutoSchema
 
 # Legacy operations superseded by a conforming address under /api/authoring/.
-# Listed as exact paths, not prefixes: their neighbours under the same legacy
-# collection are not superseded, and a prefix would also match them.
-#
-# The youtube_transcripts routes make the final character optional, so both
-# addresses resolve and which one the generator emits depends on how it renders
-# that regex; each is therefore listed in the truncated spelling as well.
+# The v0 transcript routes make the final character optional, so both the
+# truncated and full spellings are listed; the v1 routes have a single
+# address each.
 SUPERSEDED_PATHS = (
     "/api/contentstore/v0/youtube_transcripts/{course_id}/chec",
     "/api/contentstore/v0/youtube_transcripts/{course_id}/check",
