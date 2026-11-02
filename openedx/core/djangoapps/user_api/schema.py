@@ -405,29 +405,35 @@ def superseded_bodies():
                 },
             },
             {
-                200: {
-                    "type": "object",
-                    "properties": {
-                        "successful_replacements": {
-                            "type": "array",
-                            "items": replacing.USERNAME_MAPPING_SCHEMA,
-                            "description": (
-                                "Every mapping that was not refused, as the name given carrying "
-                                "the name handed out for it. A name no account was stored under "
-                                "is reported here as well, although nothing was replaced for it."
-                            ),
+                200: OpenApiResponse(
+                    {
+                        "type": "object",
+                        "properties": {
+                            "successful_replacements": {
+                                "type": "array",
+                                "items": replacing.USERNAME_MAPPING_SCHEMA,
+                                "description": (
+                                    "Every mapping that was not refused, as the name given carrying "
+                                    "the name handed out for it. A name no account was stored under "
+                                    "is reported here as well, although nothing was replaced for it."
+                                ),
+                            },
+                            "failed_replacements": {
+                                "type": "array",
+                                "items": replacing.USERNAME_MAPPING_SCHEMA,
+                                "description": (
+                                    "Every mapping whose replacement did not finish, as the name "
+                                    "given carrying the name that was to replace it."
+                                ),
+                            },
                         },
-                        "failed_replacements": {
-                            "type": "array",
-                            "items": replacing.USERNAME_MAPPING_SCHEMA,
-                            "description": (
-                                "Every mapping whose replacement did not finish, as the name "
-                                "given carrying the name that was to replace it."
-                            ),
-                        },
+                        "required": ["successful_replacements", "failed_replacements"],
                     },
-                    "required": ["successful_replacements", "failed_replacements"],
-                },
+                    description=(
+                        "The mappings given, sorted into the ones this service carried out and "
+                        "the ones it could not finish."
+                    ),
+                ),
             },
         ),
         ("/api/user/v1/preferences/email_opt_in/", "POST"): _SupersededBodies(

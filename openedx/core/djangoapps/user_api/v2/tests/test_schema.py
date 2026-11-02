@@ -41,7 +41,9 @@ from openedx.core.djangoapps.user_api.v2.serializers import (
     BATCH_OUTCOMES,
     ERASURE_SCOPES,
     EXPIRATION_DAY_PATTERN,
+    LONGEST_NAME_AN_ACCOUNT_IS_STORED_UNDER,
     PREFERENCE_NAME_MAX_LENGTH,
+    REPLACEMENT_MAX_MAPPINGS,
     REPLACEMENT_OUTCOMES,
     AccountPreferenceChangesField,
     AccountPreferenceDocumentField,
@@ -2932,3 +2934,39 @@ def test_the_corrected_queue_reads_keep_the_names_the_service_wide_document_publ
             "v1_accounts_retirements_by_status_and_date_list"
         ),
     }
+
+
+#: The forms the request a caller makes for their own retirement is published
+#: as being read in, which are the three that address reads: two shipped
+#: applications send it as a web form and the pages that make the same request
+#: send it as JSON.
+OWN_RETIREMENT_REQUEST_MEDIA_TYPES = {
+    "application/json",
+    "application/x-www-form-urlencoded",
+    "multipart/form-data",
+}
+
+@skip_unless_lms
+def test_the_replacement_publishes_the_body_it_reads_rather_than_the_one_it_answers(schema):
+    """The answer carries a result per mapping; the body carries the mappings."""
+    published = schema["paths"]["/api/user/v2/username_replacements/"]["post"]
+    assert published["requestBody"]["required"] is True
+    assert list(published["requestBody"]["content"]) == ["application/json"]
+    assert published["requestBody"]["content"]["application/json"]["schema"]["$ref"] == (
+        "#/components/schemas/UsernameReplacementRequest"
+    )
+    assert published["responses"]["200"]["content"]["application/json"]["schema"]["$ref"] == (
+        "#/components/schemas/UsernameReplacementOutcome"
+    )
+
+
+@skip_unless_lms
+def test_the_published_mapping_holds_a_name_to_what_an_address_carries(schema):
+    """A client building a request from the document builds one the endpoint applies."""
+    mappings = schema["components"]["schemas"]["UsernameReplacementRequest"]["properties"][
+        "username_mappings"
+    ]
+    assert mappings["maxItems"] == REPLACEMENT_MAX_MAPPINGS
+    asked_for = mappings["items"]["additionalProperties"]
+    assert asked_for["maxLength"] == LONGEST_NAME_AN_ACCOUNT_IS_STORED_UNDER
+    assert asked_for["pattern"] == f"^{settings.USERNAME_REGEX_PARTIAL}$"

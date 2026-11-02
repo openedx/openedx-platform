@@ -546,6 +546,28 @@ class RetirementRequestFailureTests(RetirementRequestTestCase):
         self.assert_nothing_was_recorded(self.owner)
 
 
+    def test_a_failure_after_the_message_leaves_it_sent_and_the_account_as_it_was(self):
+        """
+        The owner is told before the request is kept, as they are at the earlier address.
+
+        Nothing of the request is kept, so it can be made again, and the
+        message about the first one has already gone to the address the
+        account held.
+        """
+        with mock.patch(
+            "openedx.core.djangoapps.user_api.v2.views.logout",
+            side_effect=ValueError("the session store is on fire"),
+        ):
+            answered = self.ask()
+        assert answered.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR, answered.content
+        assert len([message for message in mail.outbox if self.owner.email in message.to]) == 1
+        assert not self.queued(self.owner).exists()
+        assert not UserRetirementRequest.objects.filter(user=self.owner).exists()
+        stored = User.objects.get(id=self.owner.id)
+        assert stored.email == self.owner.email
+        assert stored.check_password(PASSWORD) is True
+
+
 @skip_unless_lms
 class RefusedRequestLeavesTheRecordsAloneTests(RetirementRequestTestCase):
     """
@@ -952,6 +974,52 @@ class RequestResolutionTests(RetirementRequestTestCase):
         ):
             assert self.ask().status_code == status.HTTP_204_NO_CONTENT
         assert self.queued(self.owner).count() == 1
+
+
+@skip_unless_lms
+class CollectionSelfDescriptionTests(RetirementRequestTestCase):
+    """
+    What a caller asking an address of this collection what it serves is told.
+
+    A caller negotiating from the description sends what it was told to send,
+    so what the description says about the forms a body may be sent in and
+    about the body itself is held to what each address really reads. The
+    request asking for the description is an operation of the collection in
+    its own right, and what it reads is not what it is being asked about.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.worker = UserFactory.create(username=WORKER_USERNAME, password=PASSWORD)
+        self.member = reverse("user_v2:retirement_detail", kwargs={"username": "bystander"})
+        self.login(self.worker)
+
+    def description_of(self, address):
+        """Return what this address says it serves."""
+        answered = self.client.options(address)
+        assert answered.status_code == status.HTTP_200_OK, answered.content
+        return answered.json()
+
+    def test_the_collection_reads_a_body_in_the_forms_its_own_methods_read_it_in(self):
+        """One of its methods reads three forms and the rest read one, so it names three."""
+        assert self.description_of(self.url)["parses"] == [
+            "application/json", FORM, "multipart/form-data",
+        ]
+
+    def test_the_collection_describes_the_body_its_write_carries(self):
+        """The record the collection answers with is not what a caller sends it."""
+        described = self.description_of(self.url)["actions"]["POST"]
+        assert list(described) == ["password"]
+        assert described["password"]["required"] is True
+
+    def test_one_record_reads_a_body_in_the_one_form_its_own_methods_read(self):
+        assert self.description_of(self.member)["parses"] == ["application/json"]
+
+    def test_the_address_that_erases_data_describes_the_body_it_reads(self):
+        """Each operation of the collection names the body it reads, not the first of them."""
+        described = self.description_of(f"{self.member}erasures/")["actions"]["POST"]
+        assert list(described) == ["scope"]
+        assert described["scope"]["required"] is True
 
 
 @skip_unless_lms

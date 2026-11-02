@@ -476,6 +476,15 @@ class UsernameReplacementBodyTests(UsernameReplacementTestCase):
         member = reverse("user_v2:retirement_detail", kwargs={"username": record.original_username})
         assert resolve(member).kwargs == {"username": "asked.for+name"}
 
+    def test_asking_what_the_address_serves_describes_the_body_it_reads(self):
+        """A caller negotiating from the description sends what it was told to send."""
+        answered = self.client.options(self.url)
+        assert answered.status_code == status.HTTP_200_OK, answered.content
+        described = answered.json()
+        assert list(described["actions"]["POST"]) == ["username_mappings"]
+        assert described["actions"]["POST"]["username_mappings"]["required"] is True
+        assert described["parses"] == ["application/json"]
+
     def test_a_body_sent_as_a_web_form_is_refused(self):
         assert_error_envelope(
             self.client.post(self.url, "username_mappings=x", content_type=FORM),

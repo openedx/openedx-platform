@@ -278,6 +278,12 @@ _PREFERENCE_VIEW_PARAM = query_param(
 )
 
 
+#: The methods a caller sends a body with, which are the ones the media types
+#: an address is described as reading belong to. A request asking for the
+#: description carries none itself.
+METHODS_THAT_CARRY_A_BODY = ("POST", "PUT", "PATCH")
+
+
 class AddressMetadata(SimpleMetadata):
     """
     Describes an address by what it reads, rather than by what its view declares.
@@ -297,21 +303,59 @@ class AddressMetadata(SimpleMetadata):
     def determine_metadata(self, request, view):
         """Describe the address, naming the media types the bodies it takes are read in."""
         description = super().determine_metadata(request, view)
-        description["parses"] = [parser.media_type for parser in view.get_parsers()]
+        description["parses"] = self.media_types_read_at(view)
         return description
+
+    def media_types_read_at(self, view):
+        """
+        Return the media types the methods of this address read a body in, each named once.
+
+        The description belongs to the address rather than to one method of
+        it, and one method of an address can read a body in forms another does
+        not. The request asking for the description carries no body, so what
+        the view resolves for it is what its methods read unless one of them
+        declares otherwise, and what each method of this address declares is
+        added to that.
+        """
+        read = [parser.media_type for parser in view.get_parsers()]
+        declared = getattr(view, "action_parsers", None) or {}
+        served = getattr(view, "action_map", None) or {}
+        for method, operation in served.items():
+            if method.upper() not in METHODS_THAT_CARRY_A_BODY:
+                continue
+            read += [
+                parser.media_type for parser in declared.get(operation, ())
+                if parser.media_type not in read
+            ]
+        return read
 
     def determine_actions(self, request, view):
         """Describe the body of each method that takes one, and leave out the methods that take none."""
         described = super().determine_actions(request, view)
         served = getattr(view, "action_map", None) or {}
         bodiless = set(getattr(view, "bodiless_actions", ()))
-        taken = getattr(view, "request_serializer_class", None)
-        if taken is not None:
-            described = {method: self.get_serializer_info(taken()) for method in described}
         return {
-            method: fields for method, fields in described.items()
+            method: self.body_read_by(view, served.get(method.lower()), fields)
+            for method, fields in described.items()
             if served.get(method.lower()) not in bodiless
         }
+
+    def body_read_by(self, view, action, described):
+        """
+        Return the fields the body of this method carries, where the view names them.
+
+        The standard description is built from what the view answers with,
+        which is not what it reads, and a collection whose operations read
+        different bodies names one per operation: a caller negotiating from
+        this description sends what it was told the method takes, so what it
+        is told is the body that method reads.
+        """
+        taken = getattr(view, "action_request_serializers", {}).get(action)
+        if taken is None:
+            taken = getattr(view, "request_serializer_class", None)
+        if taken is None:
+            return described
+        return self.get_serializer_info(taken())
 
 
 def _ordering_param(sort_fields, default):
@@ -2807,6 +2851,15 @@ class RetirementViewSet(
 
     serializer_class = RetirementSerializer
     pagination_class = UserApiPagination
+    metadata_class = AddressMetadata
+    #: The body each operation of this collection reads, which is not the
+    #: record the collection answers with. A description is built for the
+    #: methods that carry one, and the operations behind them read different
+    #: bodies, so each is named.
+    action_request_serializers = {
+        "create": RetirementRequestSerializer,
+        "erasures": RetirementErasureSerializer,
+    }
     action_permissions = RETIREMENT_ACTION_PERMISSIONS
     # The applications shipped to learners hold an access token obtained from
     # this platform's authorization endpoint rather than a token this platform
@@ -2889,10 +2942,16 @@ class RetirementViewSet(
         asked.is_valid(raise_exception=True)
         confirm_the_callers_password(request, asked.validated_data["password"])
         with transaction.atomic():
-            # The request is recorded and the session ended together, so a
-            # failure of either leaves the caller signed in to an account that
-            # was not queued, rather than signed out of one that was not, or
-            # signed in to one that was.
+            # The request is recorded first, so a failure of the recording
+            # leaves the caller signed in to an account that was not queued
+            # rather than signed out of one that was not. The session is held
+            # where the deployment keeps its cache rather than in the records,
+            # so ending it is not undone by a failure after it: it is done
+            # last, where what is left to fail is the commit of what was
+            # recorded. The message telling the owner their account is closing
+            # is sent before that commit too, as it is at the address this
+            # replaces, so a request that fails at the commit can have been
+            # announced without being kept.
             request_retirement_of_own_account(request.user)
             logout(request)
         return Response(status=status.HTTP_204_NO_CONTENT)
@@ -3316,6 +3375,10 @@ class UsernameReplacementViewSet(
     """
 
     serializer_class = UsernameReplacementOutcomeSerializer
+    metadata_class = AddressMetadata
+    #: The body this operation reads, which is not what it answers with: a
+    #: caller asking what the address serves is told what to send it.
+    request_serializer_class = UsernameReplacementRequestSerializer
     permission_classes = (permissions.IsAuthenticated,)
     # The operation this address replaces reads a body as JSON alone, and the
     # same narrowing is kept: its one caller sends JSON, and a form-encoded
