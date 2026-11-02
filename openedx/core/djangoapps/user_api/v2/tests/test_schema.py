@@ -2946,6 +2946,59 @@ OWN_RETIREMENT_REQUEST_MEDIA_TYPES = {
     "multipart/form-data",
 }
 
+#: The credentials the request a caller makes for their own retirement is
+#: published as taking. The generator describes the session cookie from the
+#: class that reads it and nothing else, so the two tokens are named by the
+#: operation, from the schemes the service appends.
+OWN_RETIREMENT_REQUEST_CREDENTIALS = [{"cookieAuth": []}, {"jwt": []}, {"bearer": []}]
+
+
+@skip_unless_lms
+def test_the_request_for_a_callers_own_retirement_publishes_the_forms_it_reads(schema):
+    """A client generated from the document sends the form the shipped applications send."""
+    published = schema["paths"]["/api/user/v2/retirements/"]["post"]["requestBody"]
+    assert set(published["content"]) == OWN_RETIREMENT_REQUEST_MEDIA_TYPES
+    assert published["required"] is True
+    assert {
+        media_type: body["schema"]["$ref"] for media_type, body in published["content"].items()
+    } == dict.fromkeys(
+        OWN_RETIREMENT_REQUEST_MEDIA_TYPES, "#/components/schemas/RetirementRequest",
+    )
+    body = schema["components"]["schemas"]["RetirementRequest"]
+    assert body["required"] == ["password"]
+    assert body["properties"]["password"]["writeOnly"] is True
+
+
+@skip_unless_lms
+def test_the_request_for_a_callers_own_retirement_publishes_every_credential_it_takes(schema):
+    """
+    A client is generated from this operation, so what it publishes is what that client sends.
+
+    Two shipped applications reach it with an access token the authorization
+    endpoint handed out, which is the whole reason the operation takes one, and
+    a client offering no way to send that token is a client those callers
+    cannot use.
+    """
+    assert schema["paths"]["/api/user/v2/retirements/"]["post"]["security"] == (
+        OWN_RETIREMENT_REQUEST_CREDENTIALS
+    )
+
+
+@skip_unless_lms
+def test_every_credential_an_operation_publishes_is_one_the_document_describes(schema):
+    """A name no scheme is published under leaves a generated client unable to send it."""
+    named = {
+        credential
+        for operations in schema["paths"].values()
+        for operation in operations.values()
+        if isinstance(operation, dict)
+        for alternative in operation.get("security", ())
+        for credential in alternative
+    }
+    assert named == {"cookieAuth", "jwt", "bearer"}
+    assert named <= set(schema["components"]["securitySchemes"])
+
+
 @skip_unless_lms
 def test_the_replacement_publishes_the_body_it_reads_rather_than_the_one_it_answers(schema):
     """The answer carries a result per mapping; the body carries the mappings."""

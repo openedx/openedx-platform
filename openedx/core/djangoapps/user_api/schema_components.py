@@ -1,4 +1,4 @@
-"""Components of this API that a document carries although nothing in it refers to them."""
+"""Parts of this API's documents that are written out rather than generated."""
 
 # No imports: a settings module reads this while settings are still being built.
 
@@ -25,4 +25,29 @@ PATCHED_USER_RETIREMENT_STATUS = {
 #: Keyed by the name each component is published under, for a service to append.
 KEPT_COMPONENT_SCHEMAS = {
     'PatchedUserRetirementStatus': PATCHED_USER_RETIREMENT_STATUS,
+}
+
+
+# How a caller sends each credential this API takes beside the session cookie.
+# The generator describes the cookie by itself, from the class that reads it,
+# and has nothing to say about the other two, so they are written out here and
+# appended by the service. A client is generated from a document, and it offers
+# the caller a way to send a credential only where the document describes one,
+# so an operation taking a token and publishing no scheme for it leaves the
+# callers holding that token with no generated client they can use.
+CREDENTIAL_SCHEMES = {
+    'jwt': {
+        'type': 'apiKey',
+        'name': 'Authorization',
+        'in': 'header',
+        'description': 'A token this platform signed, sent as `JWT <token>`.',
+    },
+    'bearer': {
+        'type': 'http',
+        'scheme': 'bearer',
+        'description': (
+            "An access token obtained from this platform's authorization endpoint, sent as "
+            '`Bearer <token>`.'
+        ),
+    },
 }

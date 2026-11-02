@@ -357,6 +357,25 @@ class SupersededUserOperationTest(DjangoTestCase):
         published = {key: operation["operationId"] for key, operation in self._operations().items()}
         assert published == SUPERSEDED_USER_OPERATION_IDS
 
+    def test_every_credential_an_operation_names_is_described_by_this_document_too(self):
+        """
+        This service describes the credentials its own operations name and no others.
+
+        The other service appends a scheme for each credential an operation of
+        it names; an operation served here that named one of those would leave
+        a client generated from this document with a name it cannot resolve.
+        """
+        described = set(self.schema["components"].get("securitySchemes", {}))
+        named = {
+            credential
+            for path_item in self.schema["paths"].values()
+            for operation in path_item.values()
+            if isinstance(operation, dict)
+            for alternative in operation.get("security", ())
+            for credential in alternative
+        }
+        assert named <= described, sorted(named - described)
+
     def test_the_retirement_status_model_is_published_as_the_other_service_appends_it(self):
         """
         A client generated from this document names a class after each component in it.

@@ -1160,6 +1160,34 @@ class PublishedDocumentTest(TestCase):
                 if isinstance(operation, dict) and "operationId" in operation:
                     yield route, operation
 
+    def test_every_credential_an_operation_names_is_described_by_the_document(self):
+        """
+        A client is generated from this document, and it sends what the document describes.
+
+        An operation naming a credential the document carries no scheme for
+        leaves a generated client with a name it cannot resolve, and an
+        operation that names none at all is published as taking none.
+        """
+        named = {
+            credential
+            for _route, operation in self.operations()
+            for alternative in operation.get("security", ())
+            for credential in alternative
+        }
+        assert named == {"cookieAuth", "jwt", "bearer"}
+        assert named <= set(self.schema["components"]["securitySchemes"])
+
+    def test_the_request_for_a_callers_own_retirement_names_the_credentials_it_takes(self):
+        """Two shipped applications reach it with a token, which is why it takes one."""
+        operations = {
+            route: operation.get("security")
+            for route, operation in self.operations()
+            if route == "/api/user/v2/retirements/" and operation["operationId"].endswith("_create")
+        }
+        assert operations == {
+            "/api/user/v2/retirements/": [{"cookieAuth": []}, {"jwt": []}, {"bearer": []}],
+        }
+
     def test_every_operation_id_is_unique(self):
         ids = [operation["operationId"] for _route, operation in self.operations()]
         assert sorted(ids) == sorted(set(ids))

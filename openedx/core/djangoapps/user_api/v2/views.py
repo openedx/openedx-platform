@@ -2706,6 +2706,13 @@ RETIREMENT_ACTION_PERMISSIONS = {
             "may be sent as JSON or as a web form."
         ),
         request=RetirementRequestSerializer,
+        # The three credentials this operation takes, named rather than
+        # resolved: the generator describes the session cookie from the class
+        # that reads it and has nothing to say about either token, so a client
+        # generated from the document would require the cookie and offer the
+        # applications that hold a token no way to send it. The names are the
+        # ones the service describes.
+        auth=[{"cookieAuth": []}, {"jwt": []}, {"bearer": []}],
         responses={
             204: _RESP_RETIREMENT_REQUESTED,
             400: _RESP_UNUSABLE_BODY,
