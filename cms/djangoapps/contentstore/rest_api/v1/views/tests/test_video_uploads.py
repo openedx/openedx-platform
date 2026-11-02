@@ -9,7 +9,6 @@ import ddt
 import pytest
 import pytz
 from django.core.exceptions import PermissionDenied as DjangoPermissionDenied
-from django.http import Http404
 from django.test import override_settings
 from django.urls import resolve, reverse
 from drf_spectacular.generators import SchemaGenerator
@@ -18,6 +17,7 @@ from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthenticat
 from edx_rest_framework_extensions.auth.jwt.tests.utils import generate_jwt
 from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
 from edx_rest_framework_extensions.testing import assert_error_envelope
+from edx_toggles.toggles.testutils import override_waffle_flag
 from edxval.api import create_profile, create_video
 from edxval.models import CourseVideo, EncodedVideo, Video
 from opaque_keys.edx.keys import CourseKey
@@ -31,6 +31,7 @@ from cms.djangoapps.contentstore.rest_api.v0.views.authoring_videos import (
 from cms.djangoapps.contentstore.rest_api.v1.serializers.video_uploads import CourseVideoSerializer
 from cms.djangoapps.contentstore.rest_api.v1.views.video_uploads import CourseVideoUploadsViewSet
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase
+from cms.djangoapps.contentstore.toggles import MOCK_VIDEO_UPLOADS
 from cms.lib.spectacular import cms_mark_migrated_paths
 from common.djangoapps.student.roles import (
     CourseInstructorRole,
@@ -409,7 +410,7 @@ class CourseVideoListTest(CourseVideoUploadsTestBase):
     def test_list_404_for_unknown_course(self):
         unknown = CourseKey.from_string("course-v1:no+such+course")
         response = self.api_client.get(reverse(LIST_URL_NAME, kwargs={"course_key": unknown}))
-        assert_error_envelope(response, expected_status=404)
+        assert_error_envelope(response, expected_status=404, expected_type_slug="not-found")
 
 
 class CourseVideoRetrieveTest(CourseVideoUploadsTestBase):
@@ -876,12 +877,16 @@ class CourseVideoAuthorizationTest(CourseVideoUploadsTestBase):
         assert_error_envelope(response, expected_status=403, expected_type_slug="authz")
 
     @ddt.data("list", "retrieve", "create", "destroy")
-    def test_a_course_that_cannot_be_loaded_is_reported_as_missing(self, operation):
-        with patch(
-            "cms.djangoapps.contentstore.rest_api.v1.video_uploads_service.get_and_validate_course",
-            side_effect=Http404(),
-        ):
-            response = self.call(self.client_for(self.user), operation)
+    def test_a_course_that_does_not_exist_is_not_found(self, operation):
+        unknown = CourseKey.from_string("course-v1:no+such+course")
+        response = self.call(self.client_for(self.user), operation, course_key=unknown)
+        assert_error_envelope(response, expected_status=404, expected_type_slug="not-found")
+
+    @ddt.data("list", "retrieve", "create", "destroy")
+    def test_a_course_that_does_not_exist_is_not_found_with_mocked_uploads(self, operation):
+        unknown = CourseKey.from_string("course-v1:no+such+course")
+        with override_waffle_flag(MOCK_VIDEO_UPLOADS, active=True):
+            response = self.call(self.client_for(self.user), operation, course_key=unknown)
         assert_error_envelope(response, expected_status=404, expected_type_slug="not-found")
 
     @ddt.data("list", "retrieve", "create", "destroy")

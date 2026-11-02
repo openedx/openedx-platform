@@ -4,7 +4,6 @@ import logging
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.exceptions import PermissionDenied as DjangoPermissionDenied
-from django.http import Http404
 from edx_rest_framework_extensions.errors import register_error_type
 from edxval.api import (
     SortDirection,
@@ -35,6 +34,7 @@ from cms.djangoapps.contentstore.video_storage_handlers import (
     get_index_video_values,
     videos_post,
 )
+from xmodule.modulestore.django import modulestore
 
 log = logging.getLogger(__name__)
 
@@ -83,21 +83,24 @@ def get_course_for_uploads(course_key, user):
     Return the course a video upload operation applies to.
 
     Enforces the caller's Studio access to the course and the course's upload
-    pipeline configuration; a course the caller may not read is refused, and a
-    course that does not accept uploads is reported as missing. Returns
-    ``None`` only when uploads are mocked for local development, in which case
-    no real course is needed.
+    pipeline configuration; a course the caller may not read is refused, a
+    course that does not exist is not found, and a course that does not accept
+    uploads is reported as such. Returns ``None`` only when uploads are mocked
+    for local development, in which case no configured course is needed.
     """
     try:
         course = get_and_validate_course(str(course_key), user)
     except DjangoPermissionDenied as error:
         log.info("Course [%s] is not readable in Studio by user [%s]", course_key, user.id)
         raise PermissionDenied() from error
-    except Http404 as error:
-        log.info("No course [%s] to serve video uploads for", course_key)
-        raise NotFound() from error
-    if course is None and not use_mock_video_uploads():
-        raise VideoUploadsNotConfigured()
+    if course is None:
+        # The lookup answers None both for a course that does not exist and for
+        # one that does not accept uploads; only the second is a configuration issue.
+        if not modulestore().has_course(course_key):
+            log.info("No course [%s] to serve video uploads for", course_key)
+            raise NotFound()
+        if not use_mock_video_uploads():
+            raise VideoUploadsNotConfigured()
     return course
 
 
