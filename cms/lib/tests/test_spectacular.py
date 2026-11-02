@@ -1,12 +1,14 @@
 """Tests for the CMS drf-spectacular hooks and schema class."""
 
+import json
 import re
+from collections import defaultdict
 from importlib import import_module
 from pathlib import Path
 from unittest import TestCase, mock
 
 from django.conf import settings
-from django.test import SimpleTestCase
+from django.test import Client, SimpleTestCase
 from django.test import TestCase as DjangoTestCase
 from django.urls import path as url_path
 from drf_spectacular.generators import SchemaGenerator
@@ -407,3 +409,76 @@ class SupersededUserOperationTest(DjangoTestCase):
         bodies = {content["schema"]["$ref"] for content in operation["requestBody"]["content"].values()}
         assert bodies == {"#/components/schemas/PatchedUserRetirementStatus"}
         assert self.schema["components"]["schemas"]["PatchedUserRetirementStatus"] == PATCHED_USER_RETIREMENT_STATUS
+
+
+#: How each served document is expected to describe the CSRF token, written out
+#: rather than read from the definition the service appends, so that a change
+#: to that definition shows up here as a change to what callers are told.
+CSRF_SCHEME = {
+    "type": "apiKey",
+    "name": "X-CSRFToken",
+    "in": "header",
+    "description": (
+        "The value of the `csrftoken` cookie the sign-in, registration and password reset forms set, "
+        "sent in this header along with that cookie."
+    ),
+}
+
+
+def credentials_named(document):
+    """Return each credential an operation of a document names, with the operations naming it."""
+    named = defaultdict(set)
+    for route, path_item in document["paths"].items():
+        for method, operation in path_item.items():
+            if isinstance(operation, dict):
+                for alternative in operation.get("security", ()):
+                    for credential in alternative:
+                        named[credential].add((method, route))
+    return named
+
+
+class ServedCredentialSchemesTest(DjangoTestCase):
+    """
+    Each document this service serves describes every credential its operations name.
+
+    A client is generated from one document, and it can only offer the caller
+    a way to send a credential the document describes; an operation naming one
+    the document does not describe makes the document invalid. This service serves the user API's older sign-in, which
+    names the CSRF token, so the token is described here as well as by the
+    other service. The documents are requested at the addresses they are served
+    from, because what each carries depends on the settings it is generated
+    under.
+    """
+
+    ADDRESSES = ("/authoring-api/schema/", "/api-docs/schema/")
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        client = Client()
+        cls.documents = {}
+        for address in cls.ADDRESSES:
+            response = client.get(address, {"format": "json"}, HTTP_ACCEPT="application/vnd.oai.openapi+json")
+            assert response.status_code == 200, (address, response.status_code)
+            cls.documents[address] = json.loads(response.content)
+
+    def test_every_credential_an_operation_names_is_described_in_the_same_document(self):
+        for address, document in self.documents.items():
+            described = set(document["components"].get("securitySchemes", {}))
+            named = credentials_named(document)
+            assert {name: sorted(named[name]) for name in set(named) - described} == {}, address
+
+    def test_the_csrf_token_is_described_where_the_older_sign_in_names_it(self):
+        document = self.documents["/api-docs/schema/"]
+        sign_in = ("post", "/api/user/{api_version}/account/login_session/")
+        assert sign_in in credentials_named(document)["csrf"]
+        assert document["components"].get("securitySchemes", {}).get("csrf") == CSRF_SCHEME
+
+    def test_every_document_describing_the_csrf_token_describes_it_alike(self):
+        described = {
+            address: document["components"].get("securitySchemes", {}).get("csrf")
+            for address, document in self.documents.items()
+        }
+        assert {address: scheme for address, scheme in described.items() if scheme is not None} == {
+            address: CSRF_SCHEME for address, scheme in described.items() if scheme is not None
+        }

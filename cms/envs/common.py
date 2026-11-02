@@ -49,6 +49,7 @@ from path import Path as path
 
 from cms.lib.xblock.authoring_mixin import AuthoringMixin
 from cms.lib.xblock.upstream_sync import UpstreamSyncMixin
+from openedx.core.djangoapps.user_api.schema_components import CREDENTIAL_SCHEMES
 from openedx.core.lib.derived import Derived
 from openedx.core.lib.features_setting_proxy import FeaturesProxy
 from openedx.envs.common import *  # pylint: disable=wildcard-import  # noqa: F403
@@ -1340,6 +1341,13 @@ SPECTACULAR_SETTINGS = {
         'cms.lib.spectacular.cms_mark_migrated_paths',
         'openedx.core.apidocs.untag_deprecated_operations',
     ],
+    # The sign-in this service serves at the user API's addresses names the
+    # CSRF token, so the token is described here from the definition the other
+    # service appends. Only that credential is described: no operation of this
+    # service names any other.
+    'APPEND_COMPONENTS': {
+        'securitySchemes': {'csrf': CREDENTIAL_SCHEMES['csrf']},
+    },
     # Stripped from each path to derive its tags and operationId, so changing
     # it renames every operationId. Paths are published in full, from the
     # service root, so /api/contentstore and /api/authoring resolve against the

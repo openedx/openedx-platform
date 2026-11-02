@@ -1227,3 +1227,65 @@ class PublishedDocumentTest(TestCase):
             "openedx-platform-sdk": ["user"],
             "user": ["user"],
         }
+
+
+#: How each served document is expected to describe the CSRF token, written out
+#: rather than read from the definition the service appends, so that a change
+#: to that definition shows up here as a change to what callers are told.
+CSRF_SCHEME = {
+    "type": "apiKey",
+    "name": "X-CSRFToken",
+    "in": "header",
+    "description": (
+        "The value of the `csrftoken` cookie the sign-in, registration and password reset forms set, "
+        "sent in this header along with that cookie."
+    ),
+}
+
+
+def credentials_named(document):
+    """Return each credential an operation of a document names, with the operations naming it."""
+    named = defaultdict(set)
+    for route, path_item in document["paths"].items():
+        for method, operation in path_item.items():
+            if isinstance(operation, dict):
+                for alternative in operation.get("security", ()):
+                    for credential in alternative:
+                        named[credential].add((method, route))
+    return named
+
+
+class ServedCredentialSchemesTest(TestCase):
+    """
+    Each document this service serves describes every credential its operations name.
+
+    A client is generated from one document, and it can only offer the caller
+    a way to send a credential the document describes; an operation naming one
+    the document does not describe makes the document invalid. The documents are requested at the addresses they are
+    served from, because what each carries depends on the settings it is
+    generated under.
+    """
+
+    ADDRESSES = ("/lms-api/schema/", "/api-docs/schema/")
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        client = Client()
+        cls.documents = {}
+        for address in cls.ADDRESSES:
+            response = client.get(address, {"format": "json"}, HTTP_ACCEPT="application/vnd.oai.openapi+json")
+            assert response.status_code == 200, (address, response.status_code)
+            cls.documents[address] = json.loads(response.content)
+
+    def test_every_credential_an_operation_names_is_described_in_the_same_document(self):
+        for address, document in self.documents.items():
+            described = set(document["components"].get("securitySchemes", {}))
+            named = credentials_named(document)
+            assert {name: sorted(named[name]) for name in set(named) - described} == {}, address
+
+    def test_the_csrf_token_is_described_where_the_sign_in_names_it(self):
+        """Both documents carry a sign-in that needs the token, and say how it is sent."""
+        for address, document in self.documents.items():
+            assert ("post", "/api/user/v2/login_sessions/") in credentials_named(document)["csrf"], address
+            assert document["components"].get("securitySchemes", {}).get("csrf") == CSRF_SCHEME, address

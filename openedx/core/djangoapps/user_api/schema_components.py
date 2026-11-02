@@ -1,4 +1,4 @@
-"""Components of this API that a document carries although nothing in it refers to them."""
+"""Parts of this API's documents that are written out rather than generated."""
 
 # No imports: a settings module reads this while settings are still being built.
 
@@ -25,4 +25,23 @@ PATCHED_USER_RETIREMENT_STATUS = {
 #: Keyed by the name each component is published under, for a service to append.
 KEPT_COMPONENT_SCHEMAS = {
     'PatchedUserRetirementStatus': PATCHED_USER_RETIREMENT_STATUS,
+}
+
+
+# How a caller sends each credential this API takes beside the session cookie.
+# The generator describes the cookie by itself, from the class that reads it,
+# and knows nothing of the CSRF token the sign-in names, so the token is
+# written out here and appended by each service that serves this API. An
+# operation naming a credential its document does not describe makes that
+# document invalid, and a client generated from it has no way to send it.
+CREDENTIAL_SCHEMES = {
+    'csrf': {
+        'type': 'apiKey',
+        'name': 'X-CSRFToken',
+        'in': 'header',
+        'description': (
+            'The value of the `csrftoken` cookie the sign-in, registration and password reset forms set, '
+            'sent in this header along with that cookie.'
+        ),
+    },
 }

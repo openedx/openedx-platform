@@ -64,7 +64,10 @@ from openedx_content.settings_api import openedx_content_backcompat_apps_to_inst
 from path import Path as path
 
 from openedx.core.djangoapps.plugins.constants import ProjectType, SettingsType
-from openedx.core.djangoapps.user_api.schema_components import KEPT_COMPONENT_SCHEMAS
+from openedx.core.djangoapps.user_api.schema_components import (
+    CREDENTIAL_SCHEMES,
+    KEPT_COMPONENT_SCHEMAS,
+)
 from openedx.core.lib.derived import Derived
 from openedx.core.lib.features_setting_proxy import FeaturesProxy
 from openedx.envs.common import *  # pylint: disable=wildcard-import  # noqa: F403
@@ -2198,6 +2201,12 @@ SPECTACULAR_SETTINGS = {
     # identical model from its own description of the operation.
     'APPEND_COMPONENTS': {
         'schemas': dict(KEPT_COMPONENT_SCHEMAS),
+        # How a caller sends each credential the operations of this service
+        # take beside the session cookie. The generator describes the cookie
+        # and nothing else, so an operation taking a token names these and a
+        # client generated from the document can offer the caller a way to
+        # send it.
+        'securitySchemes': dict(CREDENTIAL_SCHEMES),
     },
     # Pinned so a second same-named choice field cannot rename these sets; each
     # names its model so it never claims a plain name another field may need.
