@@ -15,6 +15,7 @@ from rest_framework.test import APITestCase
 from rest_framework.views import APIView
 
 from common.djangoapps.student.tests.factories import AdminFactory, SuperuserFactory, UserFactory
+from openedx.core.djangoapps.credit.models import CreditCourse, CreditEligibility
 from openedx.core.djangoapps.user_api.accounts.permissions import CanReplaceUsername
 from openedx.core.djangoapps.user_api.accounts.tests.retirement_helpers import (  # pylint: disable=unused-import
     create_retirement_status,
@@ -303,6 +304,49 @@ class EveryPlaceTheNameIsKeptTests(UsernameReplacementTestCase):
         assert self.results_of(answered)[0]["outcome"] == REPLACEMENT_REPLACED
         entry.refresh_from_db()
         assert entry.original_username == "asked-for"
+
+    def test_a_name_only_kept_beside_an_accounts_work_reaches_no_account(self):
+        """
+        A row left behind by an account stored under another name is not an account.
+
+        Reporting such a name as replaced would have the caller carry a name
+        no account holds to the other services it replaces names in, so the
+        answer reads it from the place an account's own name is kept. The row
+        itself is rewritten, as it is at the address this one replaces.
+        """
+        course = CreditCourse.objects.create(course_key="course-v1:x+y+z", enabled=True)
+        left_behind = CreditEligibility.objects.create(username="nobody-holds-this", course=course)
+        answered = self.ask([{"nobody-holds-this": "asked-for"}])
+        assert self.results_of(answered) == [{
+            "current_username": "nobody-holds-this",
+            "new_username": None,
+            "outcome": REPLACEMENT_NO_SUCH_ACCOUNT,
+        }]
+        assert "asked-for" not in self.names_stored()
+        left_behind.refresh_from_db()
+        assert left_behind.username == "asked-for"
+
+    def test_the_record_of_an_account_already_retired_reaches_no_account(self):
+        """
+        Such an account is stored under the name it was given when it was retired.
+
+        The record keeps the name it was registered under, so a request naming
+        that reaches the record and not the account, and the name answered
+        with would be one no account holds.
+        """
+        RetirementState.objects.create(
+            state_name="PENDING", state_execution_order=1, is_dead_end_state=False, required=True,
+        )
+        record = create_retirement_status(self.learner)
+        User.objects.filter(id=self.learner.id).update(username=record.retired_username)
+        answered = self.ask([{"plain-learner": "asked-for"}])
+        assert self.results_of(answered) == [{
+            "current_username": "plain-learner",
+            "new_username": None,
+            "outcome": REPLACEMENT_NO_SUCH_ACCOUNT,
+        }]
+        assert User.objects.get(id=self.learner.id).username == record.retired_username
+        assert "asked-for" not in self.names_stored()
 
     def test_an_application_this_deployment_does_not_install_is_this_servers_failure(self):
         """Two of the applications holding a name are features a deployment may leave out."""

@@ -519,8 +519,15 @@ def delete_partner_reports(entries, usernames):
 #: every one of them, so a renamed column or an application a deployment does
 #: not install is a failure of that test rather than a name replaced in some
 #: places and not others.
+#: Where an account's own name is kept, which is the one of the places below
+#: that decides whether the name asked for was handed to an account. A row
+#: anywhere else carries a copy of a name beside an account's work, and a copy
+#: left behind by an account that is no longer stored under that name is not an
+#: account to hand a new name to.
+WHERE_AN_ACCOUNT_HOLDS_ITS_NAME = ("auth.user", "username")
+
 NAMES_ARE_ALSO_KEPT_IN = (
-    ("auth.user", "username"),
+    WHERE_AN_ACCOUNT_HOLDS_ITS_NAME,
     ("consent.DataSharingConsent", "username"),
     ("consent.HistoricalDataSharingConsent", "username"),
     ("credit.CreditEligibility", "username"),
@@ -532,9 +539,12 @@ NAMES_ARE_ALSO_KEPT_IN = (
 
 
 def _where_names_are_kept():
-    """Return each model holding an account's name, with the column it holds it in."""
+    """Return the model holding an account's name at each place one is kept, by that place."""
     try:
-        return [(apps.get_model(model), column) for model, column in NAMES_ARE_ALSO_KEPT_IN]
+        return {
+            (model, column): apps.get_model(model)
+            for model, column in NAMES_ARE_ALSO_KEPT_IN
+        }
     except LookupError as exc:
         log.exception("A model holding an account's name could not be read.")
         raise APIException(NAMES_WERE_NOT_REPLACED) from exc
@@ -556,48 +566,63 @@ def _name_nobody_is_stored_under(asked_for):
     return candidate
 
 
-def _rewrite_name(current_username, replacement, columns):
+def _rewrite_name(current_username, replacement, places):
     """
-    Replace this name wherever it is kept, and return how many rows carried it.
+    Replace this name wherever it is kept, and return how many rows carried it at each place.
 
     One account's name is replaced in every place at once or in none of them,
     so that no account is left holding one name in one place and another
-    elsewhere.
+    elsewhere. The count is kept per place, because what an account is stored
+    under is answered from the place that is the account and not from the
+    number of rows a name was found in.
     """
+    rewritten = {}
     with transaction.atomic():
-        return sum(
-            model.objects.filter(**{column: current_username}).update(**{column: replacement})
-            for model, column in columns
-        )
+        for place, model in places.items():
+            _, column = place
+            rewritten[place] = model.objects.filter(**{column: current_username}).update(
+                **{column: replacement},
+            )
+    return rewritten
 
 
 def replace_usernames(mappings):
     """
     Replace the name each account named is stored under, and report each mapping.
 
-    A name no account is stored under leaves nothing to rewrite, and that is
-    reported as such rather than as a replacement that was carried out: the
-    operation this one replaces reports both the same way, which has a caller
-    forward a replacement that happened nowhere to the services it is called
-    beside.
+    A mapping is reported as replaced where an account is stored under the
+    name answered for it afterwards, and as naming no account otherwise. That
+    is read from the place an account's own name is kept rather than from how
+    many rows carried the name given: a name kept beside the work of an
+    account that is no longer stored under it is rewritten the way the
+    operation this one replaces rewrites it, but it is not an account, and
+    reporting it as replaced would have the caller carry a name no account
+    holds to the other services it replaces names in.
 
     No name is handed out for a mapping that reached no account. The name
     asked for is worked out before the rewrite, as it is in the operation this
-    one replaces, so that the work either does is the same; where nothing
-    carried the name given, the name worked out is simply not reported and
-    nothing holds it.
+    one replaces, so that the work either does is the same; where no account
+    was stored under the name given, the name worked out is simply not
+    reported and no account holds it.
+
     """
-    columns = _where_names_are_kept()
+    places = _where_names_are_kept()
     results = []
     for mapping in mappings:
         (current_username, asked_for), = mapping.items()
         replacement = _name_nobody_is_stored_under(asked_for)
-        rewritten = _rewrite_name(current_username, replacement, columns)
-        if rewritten:
-            log.info("The name of one account was replaced in %s places.", rewritten)
+        rewritten = _rewrite_name(current_username, replacement, places)
+        handed_to_an_account = bool(rewritten[WHERE_AN_ACCOUNT_HOLDS_ITS_NAME])
+        if handed_to_an_account:
+            log.info(
+                "The name of one account was replaced in %s places.",
+                sum(rewritten.values()),
+            )
         results.append({
             "current_username": current_username,
-            "new_username": replacement if rewritten else None,
-            "outcome": REPLACEMENT_REPLACED if rewritten else REPLACEMENT_NO_SUCH_ACCOUNT,
+            "new_username": replacement if handed_to_an_account else None,
+            "outcome": (
+                REPLACEMENT_REPLACED if handed_to_an_account else REPLACEMENT_NO_SUCH_ACCOUNT
+            ),
         })
     return results

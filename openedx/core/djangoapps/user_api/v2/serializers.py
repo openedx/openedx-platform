@@ -1401,10 +1401,14 @@ REPLACEMENT_OUTCOMES = (REPLACEMENT_REPLACED, REPLACEMENT_NO_SUCH_ACCOUNT)
 #: are: the pair is declared here so that the name the published set of
 #: choices is kept under can be configured from the same values.
 REPLACEMENT_OUTCOME_CHOICES = (
-    (REPLACEMENT_REPLACED, "The name this account is stored under was replaced by this request."),
+    (
+        REPLACEMENT_REPLACED,
+        "The account stored under that name is now stored under the name answered with.",
+    ),
     (
         REPLACEMENT_NO_SUCH_ACCOUNT,
-        "No account was stored under that name, so nothing was replaced and no name was handed out.",
+        "No account is stored under that name, so no name was handed out and the other services "
+        "have nothing to be told about it.",
     ),
 )
 
@@ -1491,15 +1495,16 @@ class UsernameReplacementResultSerializer(serializers.Serializer):  # pylint: di
         allow_null=True,
         help_text=(
             "Name the account is stored under now, which is the name asked for, or that name with "
-            "a suffix added where another account already held it. Null where no account was "
-            "stored under the name given, since nothing was replaced and no name was handed out."
+            "a suffix added where another account already held it. Null where no account is "
+            "stored under the name given, since no name was handed to an account."
         ),
     )
     outcome = serializers.ChoiceField(
         choices=REPLACEMENT_OUTCOME_CHOICES,
         help_text=(
-            f"`{REPLACEMENT_REPLACED}` where the name was replaced, and "
-            f"`{REPLACEMENT_NO_SUCH_ACCOUNT}` where no account was stored under the name given."
+            f"`{REPLACEMENT_REPLACED}` where an account is stored under the name answered "
+            f"with, and `{REPLACEMENT_NO_SUCH_ACCOUNT}` where no account is stored under the "
+            "name given."
         ),
     )
 
