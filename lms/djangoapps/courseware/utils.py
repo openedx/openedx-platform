@@ -4,6 +4,7 @@
 import datetime
 import hashlib
 import logging
+from bs4 import BeautifulSoup
 
 from django.conf import settings
 from django.http import HttpResponse, HttpResponseBadRequest
@@ -229,3 +230,16 @@ def _use_new_financial_assistance_flow(course_id):
     ):
         return True
     return False
+
+
+def is_empty_html(html_content):
+    """
+    Check if HTML content is effectively empty.
+    """
+    if not html_content:
+        return True
+
+    soup = BeautifulSoup(html_content, 'html.parser')
+    text = soup.get_text(strip=True)
+
+    return not text

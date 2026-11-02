@@ -20,7 +20,7 @@ from xmodule.modulestore.django import modulestore
 
 def get_block_side_effect(block_locator, user_known):
     """
-    Side effect for `CachingDescriptorSystem.get_block`
+    Side effect for `SplitModuleStoreRuntime.get_block`
     """
     store = modulestore()
     course = store.get_course(block_locator.course_key)
@@ -126,8 +126,8 @@ class TestGetCourseBlocks(UserPartitionTestMixin, CourseStructureTestCase):
 
         Access checks are done through the transformers and through Runtime get_block_for_descriptor. Due
         to the runtime limitations during the tests, the Runtime access checks are not performed as
-        get_block_for_descriptor is never called and Block is returned by CachingDescriptorSystem.get_block.
-        In this test, we mock the CachingDescriptorSystem.get_block and check block access for known and unknown users.
+        get_block_for_descriptor is never called and Block is returned by SplitModuleStoreRuntime.get_block.
+        In this test, we mock the SplitModuleStoreRuntime.get_block and check block access for known and unknown users.
         For known users, it performs the Runtime access checks through get_block_for_descriptor. For unknown, it
         skips the access checks.
         """
@@ -137,7 +137,7 @@ class TestGetCourseBlocks(UserPartitionTestMixin, CourseStructureTestCase):
             add_user_to_cohort(cohort, self.user.username)
 
         side_effect = get_block_side_effect_for_known_user if user_known else get_block_side_effect_for_unknown_user
-        with patch('xmodule.modulestore.split_mongo.split.CachingDescriptorSystem.get_block', side_effect=side_effect):
+        with patch('xmodule.modulestore.split_mongo.split.SplitModuleStoreRuntime.get_block', side_effect=side_effect):
             block_structure = get_course_blocks(
                 self.user,
                 self.course.location,

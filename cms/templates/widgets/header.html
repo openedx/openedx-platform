@@ -16,22 +16,12 @@
   <header class="primary" role="banner">
     <div class="wrapper wrapper-l">
       <h1 class="branding">
-        % if not toggles.use_new_home_page():
-        <a class="brand-link" href="/">
-          <img class="brand-image" src="${static.url('images/studio-logo.png')}" alt="${settings.STUDIO_NAME}" />
-            % if settings.LOGO_IMAGE_EXTRA_TEXT == 'edge':
-            <span class="font-italic"> <span class="tilted">|</span> EDGE</span>
-            % endif
-        </a>
-        % endif
-        % if toggles.use_new_home_page():
         <a class="brand-link" href="${get_studio_home_url()}">
           <img class="brand-image" src="${static.url('images/studio-logo.png')}" alt="${settings.STUDIO_NAME}" />
             % if settings.LOGO_IMAGE_EXTRA_TEXT == 'edge':
             <span class="font-italic"> <span class="tilted">|</span> EDGE</span>
             % endif
         </a>
-        % endif
 
       </h1>
 
@@ -56,9 +46,7 @@
                 certificates_url = reverse('certificates_list_handler', kwargs={'course_key_string': str(course_key)})
             checklists_url = reverse('checklists_handler', kwargs={'course_key_string': str(course_key)})
             pages_and_resources_mfe_enabled = ENABLE_PAGES_AND_RESOURCES_MICROFRONTEND.is_enabled(context_course.id)
-            course_outline_mfe_enabled = toggles.use_new_course_outline_page(context_course.id)
             updates_mfe_enabled = toggles.use_new_updates_page(context_course.id)
-            files_uploads_mfe_enabled = toggles.use_new_files_uploads_page(context_course.id)
             video_upload_mfe_enabled = toggles.use_new_video_uploads_page(context_course.id)
             schedule_details_mfe_enabled = toggles.use_new_schedule_details_page(context_course.id)
             grading_mfe_enabled = toggles.use_new_grading_page(context_course.id)
@@ -72,18 +60,10 @@
       %>
       <h2 class="info-course">
         <span class="sr">${_("Current Course:")}</span>
-        % if not course_outline_mfe_enabled:
-        <a class="course-link" href="${index_url}">
-          <span class="course-org">${context_course.display_org_with_default}</span><span class="course-number">${context_course.display_number_with_default}</span>
-          <span class="course-title" title="${context_course.display_name_with_default}">${context_course.display_name_with_default}</span>
-        </a>
-        % endif
-        % if course_outline_mfe_enabled:
         <a class="course-link" href="${get_course_outline_url(course_key)}">
           <span class="course-org">${context_course.display_org_with_default}</span><span class="course-number">${context_course.display_number_with_default}</span>
           <span class="course-title" title="${context_course.display_name_with_default}">${context_course.display_name_with_default}</span>
         </a>
-        % endif
       </h2>
 
       <nav class="nav-course nav-dd ui-left" aria-label="${_('Course')}">
@@ -95,16 +75,9 @@
             <div class="wrapper wrapper-nav-sub">
               <div class="nav-sub">
                 <ul>
-                  % if not course_outline_mfe_enabled:
-                  <li class="nav-item nav-course-courseware-outline">
-                    <a href="${index_url}">${_("Outline")}</a>
-                  </li>
-                  % endif
-                  % if course_outline_mfe_enabled:
                   <li class="nav-item nav-course-courseware-outline">
                     <a href="${get_course_outline_url(course_key)}">${_("Outline")}</a>
                   </li>
-                  % endif
                   % if libraries_v2_enabled:
                   <li class="nav-item nav-course-courseware-outline">
                     <a href="${get_course_libraries_url(course_key)}">${_("Libraries")}</a>
@@ -130,16 +103,9 @@
                     <a href="${get_pages_and_resources_url(course_key)}">${_("Pages & Resources")}</a>
                   </li>
                   % endif
-                  %if not files_uploads_mfe_enabled:
-                  <li class="nav-item nav-course-courseware-uploads">
-                    <a href="${assets_url}">${_("Files")}</a>
-                  </li>
-                  %endif
-                  %if files_uploads_mfe_enabled:
                   <li class="nav-item nav-course-courseware-uploads">
                     <a href="${get_files_uploads_url(course_key)}">${_("Files")}</a>
                   </li>
-                  %endif
                   % if not pages_and_resources_mfe_enabled:
                   <li class="nav-item nav-course-courseware-textbooks">
                     <a href="${textbooks_url}">${_("Textbooks")}</a>

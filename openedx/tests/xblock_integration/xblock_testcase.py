@@ -44,7 +44,7 @@ from datetime import datetime, timedelta
 import html
 
 from unittest import mock
-import pytz
+from zoneinfo import ZoneInfo
 from bs4 import BeautifulSoup
 from django.conf import settings
 from django.urls import reverse
@@ -199,7 +199,7 @@ class GradePublishTestMixin:
                                 'score': score,
                                 'max_score': max_score})
             # Shim a return time, defaults to 1 hour before now
-            return datetime.now().replace(tzinfo=pytz.UTC) - timedelta(hours=1)
+            return datetime.now().replace(tzinfo=ZoneInfo("UTC")) - timedelta(hours=1)
 
         self.scores = []
         patcher = mock.patch("lms.djangoapps.grades.signals.handlers.set_score", capture_score)

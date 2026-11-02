@@ -4,7 +4,7 @@ Tests for the course updates page.
 from datetime import datetime
 
 from django.urls import reverse
-from pytz import UTC
+from zoneinfo import ZoneInfo
 
 from openedx.core.djangoapps.waffle_utils.testutils import WAFFLE_TABLES
 from openedx.features.content_type_gating.models import ContentTypeGatingConfig
@@ -40,7 +40,7 @@ class TestCourseUpdatesPage(BaseCourseUpdatesTestCase):
         self.assertContains(response, 'Second Message')
 
     def test_queries(self):
-        ContentTypeGatingConfig.objects.create(enabled=True, enabled_as_of=datetime(2018, 1, 1, tzinfo=UTC))
+        ContentTypeGatingConfig.objects.create(enabled=True, enabled_as_of=datetime(2018, 1, 1, tzinfo=ZoneInfo("UTC")))
         self.create_course_update('First Message')
 
         # Pre-fetch the view to populate any caches

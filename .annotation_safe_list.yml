@@ -381,6 +381,8 @@ oel_publishing.PublishLogRecord:
   ".. no_pii:": "No PII"
 oel_publishing.PublishableEntityVersion:
   ".. no_pii:": "No PII"
+oel_publishing.PublishableEntityVersionDependency:
+  ".. no_pii:": "No PII"
 oel_publishing.Published:
   ".. no_pii:": "No PII"
 oel_sections.Section:

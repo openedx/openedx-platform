@@ -34,6 +34,8 @@ URL_LIB_TEAM_GROUP = URL_LIB_TEAM + 'group/{group_name}/'  # Add/edit/remove a g
 URL_LIB_PASTE_CLIPBOARD = URL_LIB_DETAIL + 'paste_clipboard/'  # Paste user clipboard (POST) containing Xblock data
 URL_LIB_BACKUP = URL_LIB_DETAIL + 'backup/'  # Start a backup task for this library
 URL_LIB_BACKUP_GET = URL_LIB_BACKUP + '?{query_params}'  # Get status on a backup task for this library
+URL_LIB_RESTORE = URL_PREFIX + 'restore/'  # Restore a library from a learning package backup file
+URL_LIB_RESTORE_GET = URL_LIB_RESTORE + '?{query_params}'  # Get status/result of a library restore task
 URL_LIB_BLOCK = URL_PREFIX + 'blocks/{block_key}/'  # Get data about a block, or delete it
 URL_LIB_BLOCK_PUBLISH = URL_LIB_BLOCK + 'publish/'  # Publish changes from a specified XBlock
 URL_LIB_BLOCK_OLX = URL_LIB_BLOCK + 'olx/'  # Get or set the OLX of the specified XBlock
@@ -139,18 +141,21 @@ class ContentLibrariesRestApiTest(APITransactionTestCase):
 
     def _create_library(
         self, slug, title, description="", org=None,
-        license_type=ALL_RIGHTS_RESERVED, expect_response=200,
+        license_type=ALL_RIGHTS_RESERVED, expect_response=200, learning_package=None
     ):
         """ Create a library """
         if org is None:
             org = self.organization.short_name
-        return self._api('post', URL_LIB_CREATE, {
+        data = {
             "org": org,
             "slug": slug,
             "title": title,
             "description": description,
             "license": license_type,
-        }, expect_response)
+        }
+        if learning_package is not None:
+            data["learning_package"] = learning_package
+        return self._api('post', URL_LIB_CREATE, data, expect_response)
 
     def _list_libraries(self, query_params_dict=None, expect_response=200):
         """ List libraries """
@@ -330,6 +335,21 @@ class ContentLibrariesRestApiTest(APITransactionTestCase):
         """ Get the status of a backup task for this library """
         query_params = urlencode({"task_id": task_id})
         url = URL_LIB_BACKUP_GET.format(lib_key=lib_key, query_params=query_params)
+        return self._api('get', url, None, expect_response)
+
+    def _start_library_restore_task(self, file, expect_response=200):
+        """ Start a library restore task from a backup file """
+        url = URL_LIB_RESTORE
+        data = {"file": file}
+        response = self.client.post(url, data, format='multipart')
+        assert response.status_code == expect_response, \
+            f'Unexpected response code {response.status_code}:\n{getattr(response, "data", "(no data)")}'
+        return response.data
+
+    def _get_library_restore_task(self, task_id, expect_response=200):
+        """ Get the status/result of a library restore task """
+        query_params = urlencode({"task_id": task_id})
+        url = URL_LIB_RESTORE_GET.format(query_params=query_params)
         return self._api('get', url, None, expect_response)
 
     def _render_block_view(self, block_key, view_name, version=None, expect_response=200):

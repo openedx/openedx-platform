@@ -11,7 +11,7 @@ from django.utils.translation import gettext_lazy as _
 from django_mysql.models import ListCharField
 from oauth2_provider.settings import oauth2_settings
 from organizations.models import Organization
-from pytz import utc
+from zoneinfo import ZoneInfo
 
 from openedx.core.djangolib.markup import HTML
 from openedx.core.lib.request_utils import get_request_or_stub
@@ -53,7 +53,7 @@ class RestrictedApplication(models.Model):
         For access_tokens for RestrictedApplications, make sure that the expiry date
         is set at the beginning of the epoch which is Jan. 1, 1970
         """
-        return access_token.expires == datetime(1970, 1, 1, tzinfo=utc)
+        return access_token.expires == datetime(1970, 1, 1, tzinfo=ZoneInfo("UTC"))
 
 
 class ApplicationAccess(models.Model):

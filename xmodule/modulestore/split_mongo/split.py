@@ -106,7 +106,7 @@ from xmodule.util.misc import get_library_or_course_attribute
 from xmodule.util.keys import BlockKey, derive_key
 
 from ..exceptions import ItemNotFoundError
-from .caching_descriptor_system import CachingDescriptorSystem
+from .runtime import SplitModuleStoreRuntime
 
 log = logging.getLogger(__name__)
 
@@ -715,7 +715,7 @@ class SplitMongoModuleStore(SplitBulkWriteMixin, ModuleStoreWriteBase):
         per course per fetch operations are done.
 
         Arguments:
-            system: a CachingDescriptorSystem
+            system: a SplitModuleStoreRuntime
             base_block_ids: list of BlockIds to fetch
             course_key: the destination course providing the context
             depth: how deep below these to prefetch
@@ -3283,14 +3283,18 @@ class SplitMongoModuleStore(SplitBulkWriteMixin, ModuleStoreWriteBase):
         """
         Create the proper runtime for this course
         """
-        services = self.services
+        # A single SplitMongoModuleStore may create many SplitModuleStoreRuntimes,
+        # each of which will later modify its internal dict of services on a per-item and often per-user basis.
+        # Therefore, it's critical that we make a new copy of our baseline services dict here,
+        # so that each runtime is free to add and replace its services without impacting other runtimes.
+        services = self.services.copy()
         # Only the CourseBlock can have user partitions. Therefore, creating the PartitionService with the library key
         # instead of the course key does not work. The XBlock validation in Studio fails with the following message:
         # "This component's access settings refer to deleted or invalid group configurations.".
         if not isinstance(course_entry.course_key, LibraryLocator):
             services["partitions"] = PartitionService(course_entry.course_key)
 
-        return CachingDescriptorSystem(
+        return SplitModuleStoreRuntime(
             modulestore=self,
             course_entry=course_entry,
             module_data={},

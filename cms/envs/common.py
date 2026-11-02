@@ -39,9 +39,7 @@ When refering to XBlocks, we use the entry-point name. For example,
 # pylint: disable=unused-import, useless-suppression, wrong-import-order, wrong-import-position
 
 import importlib.util
-import json
 import os
-import sys
 
 from corsheaders.defaults import default_headers as corsheaders_default_headers
 from datetime import timedelta
@@ -53,19 +51,12 @@ import lms.envs.common
 from openedx.envs.common import *  # pylint: disable=wildcard-import
 
 from path import Path as path
-from django.urls import reverse_lazy
 
 from lms.djangoapps.lms_xblock.mixin import LmsBlockMixin
 from cms.lib.xblock.authoring_mixin import AuthoringMixin
 from cms.lib.xblock.upstream_sync import UpstreamSyncMixin
 from xmodule.modulestore.edit_info import EditInfoMixin
-from openedx.core.djangoapps.theming.helpers_dirs import (
-    get_themes_unchecked,
-    get_theme_base_dirs_from_settings
-)
-from openedx.core.lib.license import LicenseMixin
 from openedx.core.lib.derived import Derived
-from openedx.core.release import doc_version
 from openedx.core.lib.features_setting_proxy import FeaturesProxy
 
 # A proxy for feature flags stored in the settings namespace
@@ -735,8 +726,6 @@ STATICFILES_FINDERS = [
     'pipeline.finders.PipelineFinder',
 ]
 
-from openedx.core.lib.rooted_paths import rooted_glob
-
 PIPELINE['STYLESHEETS'] = {
     'style-vendor': {
         'source_filenames': [
@@ -1021,8 +1010,6 @@ INSTALLED_APPS = [
     # New (Learning-Core-based) XBlock runtime
     'openedx.core.djangoapps.xblock.apps.StudioXBlockAppConfig',
 
-    # Maintenance tools
-    'cms.djangoapps.maintenance',
     'openedx.core.djangoapps.util.apps.UtilConfig',
 
     # Tracking
@@ -1434,8 +1421,6 @@ ELASTIC_FIELD_MAPPINGS = {
 
 XBLOCK_FS_STORAGE_BUCKET = None
 XBLOCK_FS_STORAGE_PREFIX = None
-
-STUDIO_FRONTEND_CONTAINER_URL = None
 
 ############################ Global Database Configuration #####################
 

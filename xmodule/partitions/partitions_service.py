@@ -99,8 +99,47 @@ class PartitionService:
     with a given course.
     """
 
-    def __init__(self, course_id, cache=None, course=None):
-        self._course_id = course_id
+    def __init__(self, course_id: CourseKey, cache=None, course=None):
+        """Create a new ParititonService. This is user-specific."""
+
+        # There is a surprising amount of complexity in how to save the
+        # course_id we were passed in this constructor.
+        if course_id.org and course_id.course and course_id.run:
+            # This is the normal case, where we're instantiated with a CourseKey
+            # that has org, course, and run information. It will also often have
+            # a version_guid attached in this case, and we will want to strip
+            # that off in most cases.
+            #
+            # The reason for this is that the PartitionService is going to get
+            # recreated for every runtime (i.e. every block that's created for a
+            # user). Say you do the following:
+            #
+            # 1. You query the modulestore's get_item() for block A.
+            # 2. You update_item() for a different block B
+            # 3. You publish block B.
+            #
+            # When get_item() was called, a SplitModuleStoreRuntime was created
+            # for block A and it was given a CourseKey that had the version_guid
+            # encoded in it. If we persist that CourseKey with the version guid
+            # intact, then it will be incorrect after B is published, and any
+            # future access checks on A will break because it will try to query
+            # for a version of the course that is no longer published.
+            #
+            # Note that we still need to keep the branch information, or else
+            # this wouldn't work right in preview mode.
+            self._course_id = course_id.replace(version_guid=None)
+        else:
+            # If we're here, it means that the CourseKey we were sent doesn't
+            # have an org, course, and run. A much less common (but still legal)
+            # way to query by CourseKey involves a version_guid-only query, i.e.
+            # everything is None but the version_guid. In this scenario, it
+            # doesn't make sense to remove the one identifying piece of
+            # information we have, so we just assign the CourseKey without
+            # modification. We *could* potentially query the modulestore
+            # here and get the more normal form of the CourseKey, but that would
+            # be much more expensive and require database access.
+            self._course_id = course_id
+
         self._cache = cache
         self.course = course
 

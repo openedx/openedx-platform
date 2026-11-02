@@ -9,7 +9,7 @@ import datetime
 import logging
 from functools import wraps
 
-import pytz
+from zoneinfo import ZoneInfo
 from django.apps import apps
 from django.conf import settings
 from django.contrib.auth import authenticate, get_user_model, logout
@@ -200,11 +200,11 @@ class AccountViewSet(ViewSet):
             if is_email_retired(user_email):
                 can_cancel_retirement = True
                 retirement_id = None
-                earliest_datetime = datetime.datetime.now(pytz.UTC) - datetime.timedelta(days=settings.COOL_OFF_DAYS)
+                earliest_datetime = datetime.datetime.now(ZoneInfo("UTC")) - datetime.timedelta(days=settings.COOL_OFF_DAYS)
                 try:
                     retirement_status = UserRetirementStatus.objects.get(
                         created__gt=earliest_datetime,
-                        created__lt=datetime.datetime.now(pytz.UTC),
+                        created__lt=datetime.datetime.now(ZoneInfo("UTC")),
                         original_email=user_email,
                     )
                     retirement_id = retirement_status.id
@@ -892,7 +892,7 @@ class AccountRetirementStatusView(ViewSet):
                         status=status.HTTP_400_BAD_REQUEST,
                     )
 
-            earliest_datetime = datetime.datetime.now(pytz.UTC) - datetime.timedelta(days=cool_off_days)
+            earliest_datetime = datetime.datetime.now(ZoneInfo("UTC")) - datetime.timedelta(days=cool_off_days)
 
             retirements = (
                 UserRetirementStatus.objects.select_related("user", "current_state", "last_state")
@@ -922,9 +922,12 @@ class AccountRetirementStatusView(ViewSet):
         so to get one day you would set both dates to that day.
         """
         try:
-            start_date = datetime.datetime.strptime(request.GET["start_date"], "%Y-%m-%d").replace(tzinfo=pytz.UTC)
-            end_date = datetime.datetime.strptime(request.GET["end_date"], "%Y-%m-%d").replace(tzinfo=pytz.UTC)
-            now = datetime.datetime.now(pytz.UTC)
+            start_date = (
+                datetime.datetime.strptime(request.GET["start_date"], "%Y-%m-%d")
+                .replace(tzinfo=ZoneInfo("UTC"))
+            )
+            end_date = datetime.datetime.strptime(request.GET["end_date"], "%Y-%m-%d").replace(tzinfo=ZoneInfo("UTC"))
+            now = datetime.datetime.now(ZoneInfo("UTC"))
             if start_date > now or end_date > now or start_date > end_date:
                 raise RetirementStateError("Dates must be today or earlier, and start must be earlier than end.")
 

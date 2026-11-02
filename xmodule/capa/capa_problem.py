@@ -93,7 +93,7 @@ class LoncapaSystem(object):
         i18n: an object implementing the `gettext.Translations` interface so
             that we can use `.ugettext` to localize strings.
 
-    See :class:`DescriptorSystem` for documentation of other attributes.
+    See :class:`ModuleStoreRuntime` for documentation of other attributes.
 
     """
 

@@ -1244,22 +1244,16 @@ class TestMakoTemplateLinter(TestLinter):
                 ${x | h}
             </%static:require_module>
             ${x | h}
-            <%static:studiofrontend page="${x}">
-                ${x | h}
-            </%static:studiofrontend>
-            ${x | h}
         """)
 
         linter._check_mako_file_is_safe(mako_template, results)
 
-        assert len(results.violations) == 7
+        assert len(results.violations) == 5
         assert results.violations[0].rule == MAKO_LINTER_RULESET.mako_unwanted_html_filter
         assert results.violations[1].rule == MAKO_LINTER_RULESET.mako_invalid_js_filter
         assert results.violations[2].rule == MAKO_LINTER_RULESET.mako_unwanted_html_filter
         assert results.violations[3].rule == MAKO_LINTER_RULESET.mako_invalid_js_filter
         assert results.violations[4].rule == MAKO_LINTER_RULESET.mako_unwanted_html_filter
-        assert results.violations[5].rule == MAKO_LINTER_RULESET.mako_invalid_js_filter
-        assert results.violations[6].rule == MAKO_LINTER_RULESET.mako_unwanted_html_filter
 
     def test_check_mako_expressions_javascript_strings(self):
         """

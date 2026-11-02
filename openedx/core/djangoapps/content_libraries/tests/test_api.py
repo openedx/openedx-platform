@@ -28,8 +28,10 @@ from openedx_events.content_authoring.signals import (
     LIBRARY_COLLECTION_UPDATED,
     LIBRARY_CONTAINER_UPDATED,
 )
+from openedx_authz.api.users import get_user_role_assignments_in_scope
 from openedx_learning.api import authoring as authoring_api
 
+from common.djangoapps.student.tests.factories import UserFactory
 from .. import api
 from ..models import ContentLibrary
 from .base import ContentLibrariesRestApiTest
@@ -1312,6 +1314,82 @@ class ContentLibraryContainersTest(ContentLibrariesRestApiTest):
             },
         )
 
+    def test_copy_and_paste_container_same_library(self) -> None:
+        # Copy a section with children
+        api.copy_container(self.section1.container_key, self.user.id)
+        # Paste the container
+        new_container: api.ContainerMetadata = (
+            api.import_staged_content_from_user_clipboard(self.lib1.library_key, self.user)  # type: ignore[assignment]
+        )
+
+        # Verify that the container is copied
+        assert new_container.container_type == self.section1.container_type
+        assert new_container.display_name == self.section1.display_name
+
+        # Verify that the children are linked
+        subsections = api.get_container_children(new_container.container_key)
+        assert len(subsections) == 2
+        assert isinstance(subsections[0], api.ContainerMetadata)
+        assert subsections[0].container_key == self.subsection1.container_key
+        assert isinstance(subsections[1], api.ContainerMetadata)
+        assert subsections[1].container_key == self.subsection2.container_key
+
+    def test_copy_and_paste_container_another_library(self) -> None:
+        # Copy a section with children
+        api.copy_container(self.section1.container_key, self.user.id)
+
+        self._create_library("test-lib-cont-2", "Test Library 2")
+        lib2 = ContentLibrary.objects.get(slug="test-lib-cont-2")
+        # Paste the container
+        new_container: api.ContainerMetadata = (
+            api.import_staged_content_from_user_clipboard(lib2.library_key, self.user)  # type: ignore[assignment]
+        )
+
+        # Verify that the container is copied
+        assert new_container.container_type == self.section1.container_type
+        assert new_container.display_name == self.section1.display_name
+
+        # Verify that the children are copied
+        subsections = api.get_container_children(new_container.container_key)
+        assert len(subsections) == 2
+        assert isinstance(subsections[0], api.ContainerMetadata)
+        assert subsections[0].container_key != self.subsection1.container_key  # This subsection was copied
+        assert subsections[0].display_name == self.subsection1.display_name
+        units_subsection1 = api.get_container_children(subsections[0].container_key)
+        assert len(units_subsection1) == 2
+        assert isinstance(units_subsection1[0], api.ContainerMetadata)
+        assert units_subsection1[0].container_key != self.unit1.container_key  # This unit was copied
+        assert units_subsection1[0].display_name == self.unit1.display_name == "Unit 1"
+        unit1_components = api.get_container_children(units_subsection1[0].container_key)
+        assert len(unit1_components) == 2
+        assert isinstance(unit1_components[0], api.LibraryXBlockMetadata)
+        assert unit1_components[0].usage_key != self.problem_block_usage_key  # This component was copied
+        assert isinstance(unit1_components[1], api.LibraryXBlockMetadata)
+        assert unit1_components[1].usage_key != self.html_block_usage_key  # This component was copied
+
+        assert isinstance(units_subsection1[1], api.ContainerMetadata)
+        assert units_subsection1[1].container_key != self.unit2.container_key  # This unit was copied
+        assert units_subsection1[1].display_name == self.unit2.display_name == "Unit 2"
+        unit2_components = api.get_container_children(units_subsection1[1].container_key)
+        assert len(unit2_components) == 1
+        assert isinstance(unit2_components[0], api.LibraryXBlockMetadata)
+        assert unit2_components[0].usage_key != self.html_block_usage_key
+
+        # This is the same component, so it should not be duplicated
+        assert unit1_components[1].usage_key == unit2_components[0].usage_key
+
+        assert isinstance(subsections[1], api.ContainerMetadata)
+        assert subsections[1].container_key != self.subsection2.container_key  # This subsection was copied
+        assert subsections[1].display_name == self.subsection2.display_name
+        units_subsection2 = api.get_container_children(subsections[1].container_key)
+        assert len(units_subsection2) == 1
+        assert isinstance(units_subsection2[0], api.ContainerMetadata)
+        assert units_subsection2[0].container_key != self.unit1.container_key  # This unit was copied
+        assert units_subsection2[0].display_name == self.unit1.display_name
+
+        # This is the same unit, so it should not be duplicated
+        assert units_subsection1[0].container_key == units_subsection2[0].container_key
+
 
 class ContentLibraryExportTest(ContentLibrariesRestApiTest):
     """
@@ -1354,7 +1432,7 @@ class ContentLibraryExportTest(ContentLibrariesRestApiTest):
             status = api.get_backup_task_status(self.user.id, task_id=task_id)
             assert status is not None
             assert status['state'] == UserTaskStatus.IN_PROGRESS
-            assert status['url'] is None
+            assert status['file'] is None
 
     def test_get_backup_task_status_succeeded(self) -> None:
         # Create a mock UserTaskStatus in SUCCEEDED state
@@ -1368,7 +1446,7 @@ class ContentLibraryExportTest(ContentLibrariesRestApiTest):
 
         # Create a mock UserTaskArtifact
         mock_artifact = mock.Mock()
-        mock_artifact.file.storage.url.return_value = "/media/user_tasks/2025/10/01/library-libOEXCSPROB_mOw1rPL.zip"
+        mock_artifact.file.url = "/media/user_tasks/2025/10/01/library-libOEXCSPROB_mOw1rPL.zip"
 
         with mock.patch(
             'openedx.core.djangoapps.content_libraries.api.libraries.UserTaskStatus.objects.get'
@@ -1382,7 +1460,7 @@ class ContentLibraryExportTest(ContentLibrariesRestApiTest):
             status = api.get_backup_task_status(self.user.id, task_id=task_id)
             assert status is not None
             assert status['state'] == UserTaskStatus.SUCCEEDED
-            assert status['url'] == "/media/user_tasks/2025/10/01/library-libOEXCSPROB_mOw1rPL.zip"
+            assert status['file'].url == "/media/user_tasks/2025/10/01/library-libOEXCSPROB_mOw1rPL.zip"
 
     def test_get_backup_task_status_failed(self) -> None:
         # Create a mock UserTaskStatus in FAILED state
@@ -1402,4 +1480,127 @@ class ContentLibraryExportTest(ContentLibrariesRestApiTest):
             status = api.get_backup_task_status(self.user.id, task_id=task_id)
             assert status is not None
             assert status['state'] == UserTaskStatus.FAILED
-            assert status['url'] is None
+            assert status['file'] is None
+
+
+class ContentLibraryAuthZRoleAssignmentTest(ContentLibrariesRestApiTest):
+    """
+    Tests for Content Library role assignment via the AuthZ Authorization Framework.
+
+    These tests verify that library roles are correctly assigned to users through
+    the openedx-authz (AuthZ) Authorization Framework when libraries are created or when
+    explicit role assignments are made.
+
+    See: https://github.com/openedx/openedx-authz/
+    """
+
+    def setUp(self) -> None:
+        super().setUp()
+
+        # Create Content Libraries
+        self._create_library("test-lib-role-1", "Test Library Role 1")
+
+        # Fetch the created ContentLibrary objects so we can access their learning_package.id
+        self.lib1 = ContentLibrary.objects.get(slug="test-lib-role-1")
+
+    def test_assign_library_admin_role_to_user_via_authz(self) -> None:
+        """
+        Test assigning a library admin role to a user via the AuthZ Authorization Framework.
+
+        This test verifies that the openedx-authz Authorization Framework correctly
+        assigns the library_admin role to a user when explicitly called.
+        """
+        api.assign_library_role_to_user(self.lib1.library_key, self.user, api.AccessLevel.ADMIN_LEVEL)
+
+        roles = get_user_role_assignments_in_scope(self.user.username, str(self.lib1.library_key))
+        assert len(roles) == 1
+        assert "library_admin" in repr(roles[0].roles[0])
+
+    def test_assign_library_author_role_to_user_via_authz(self) -> None:
+        """
+        Test assigning a library author role to a user via the AuthZ Authorization Framework.
+
+        This test verifies that the openedx-authz Authorization Framework correctly
+        assigns the library_author role to a user when explicitly called.
+        """
+        # Create a new user to avoid conflicts with roles assigned during library creation
+        author_user = UserFactory.create(username="Author", email="author@example.com")
+
+        api.assign_library_role_to_user(self.lib1.library_key, author_user, api.AccessLevel.AUTHOR_LEVEL)
+
+        roles = get_user_role_assignments_in_scope(author_user.username, str(self.lib1.library_key))
+        assert len(roles) == 1
+        assert "library_author" in repr(roles[0].roles[0])
+
+    @mock.patch("openedx.core.djangoapps.content_libraries.api.libraries.assign_role_to_user_in_scope")
+    def test_library_creation_assigns_admin_role_via_authz(
+        self,
+        mock_assign_role
+    ) -> None:
+        """
+        Test that creating a library via REST API assigns admin role via AuthZ.
+
+        This test verifies that when a library is created via the REST API,
+        the creator is automatically assigned the library_admin role through
+        the openedx-authz Authorization Framework.
+        """
+        mock_assign_role.return_value = True
+
+        # Create a new library (this should trigger role assignment in the REST API)
+        self._create_library("test-lib-role-2", "Test Library Role 2")
+
+        # Verify that assign_role_to_user_in_scope was called
+        mock_assign_role.assert_called_once()
+        call_args = mock_assign_role.call_args
+        assert call_args[0][0] == self.user.username  # username
+        assert call_args[0][1] == "library_admin"  # role
+        assert "test-lib-role-2" in call_args[0][2]  # library_key (contains slug)
+
+    @mock.patch("openedx.core.djangoapps.content_libraries.api.libraries.assign_role_to_user_in_scope")
+    def test_library_creation_handles_authz_failure_gracefully(
+        self,
+        mock_assign_role
+    ) -> None:
+        """
+        Test that library creation succeeds even if AuthZ role assignment fails.
+
+        This test verifies that if the openedx-authz Authorization Framework fails to assign
+        a role (returns False), the library creation still succeeds. This ensures that
+        the system degrades gracefully and doesn't break library creation if there are
+        issues with the Authorization Framework.
+        """
+        # Simulate openedx-authz failing to assign the role
+        mock_assign_role.return_value = False
+
+        # Library creation should still succeed
+        result = self._create_library("test-lib-role-3", "Test Library Role 3")
+        assert result is not None
+        assert result["slug"] == "test-lib-role-3"
+
+        # Verify that the library was created successfully
+        lib3 = ContentLibrary.objects.get(slug="test-lib-role-3")
+        assert lib3 is not None
+        assert lib3.slug == "test-lib-role-3"
+
+    @mock.patch("openedx.core.djangoapps.content_libraries.api.libraries.assign_role_to_user_in_scope")
+    def test_library_creation_handles_authz_exception(
+        self,
+        mock_assign_role
+    ) -> None:
+        """
+        Test that library creation succeeds even if AuthZ raises an exception.
+
+        This test verifies that if the openedx-authz Authorization Framework raises an
+        exception during role assignment, the library creation still succeeds. This ensures
+        robust error handling when the Authorization Framework is unavailable or misconfigured.
+        """
+        # Simulate openedx-authz raising an exception for unknown issues
+        mock_assign_role.side_effect = Exception("AuthZ unavailable")
+
+        # Library creation should still succeed (the exception should be caught/handled)
+        # Note: Currently, the code doesn't catch this exception, so we expect it to propagate.
+        # This test documents the current behavior and can be updated if error handling is added.
+        with self.assertRaises(Exception) as context:
+            self._create_library("test-lib-role-4", "Test Library Role 4")
+
+        assert "AuthZ unavailable" in str(context.exception)

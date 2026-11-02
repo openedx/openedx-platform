@@ -19,7 +19,7 @@ from django.utils.html import escape
 from edx_django_utils.plugins import pluggable_override
 from lxml import etree, html
 from opaque_keys.edx.asides import AsideUsageKeyV1, AsideUsageKeyV2
-from pytz import UTC
+from zoneinfo import ZoneInfo
 from web_fragments.fragment import Fragment
 from xblock.core import XBlock
 from xblock.exceptions import InvalidScopeError
@@ -312,7 +312,7 @@ def add_staff_markup(user, disable_staff_debug_info, block, view, frag, context)
     # Useful to indicate to staff if problem has been released or not.
     # TODO (ichuang): use _has_access_block.can_load in lms.courseware.access,
     # instead of now>mstart comparison here.
-    now = datetime.datetime.now(UTC)
+    now = datetime.datetime.now(ZoneInfo("UTC"))
     is_released = "unknown"
     mstart = block.start
 

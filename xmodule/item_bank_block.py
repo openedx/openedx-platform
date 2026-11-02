@@ -7,6 +7,7 @@ import json
 import logging
 import random
 from copy import copy
+
 from django.conf import settings
 from django.utils.functional import classproperty
 from lxml import etree
@@ -24,13 +25,13 @@ from xmodule.mako_block import MakoTemplateBlockBase
 from xmodule.studio_editable import StudioEditableBlock
 from xmodule.util.builtin_assets import add_webpack_js_to_fragment
 from xmodule.validation import StudioValidation, StudioValidationMessage
-from xmodule.xml_block import XmlMixin
 from xmodule.x_module import (
+    STUDENT_VIEW,
     ResourceTemplates,
     XModuleMixin,
     shim_xmodule_js,
-    STUDENT_VIEW,
 )
+from xmodule.xml_block import XmlMixin
 
 _ = lambda text: text
 
@@ -268,20 +269,6 @@ class ItemBankMixin(
 
         return self.selected
 
-    def format_block_keys_for_analytics(self, block_keys: list[tuple[str, str]]) -> list[dict]:
-        """
-        Given a list of (block_type, block_id) pairs, prepare the JSON-ready metadata needed for analytics logging.
-
-        This is [
-            {"usage_key": x, "original_usage_key": y, "original_usage_version": z, "descendants": [...]}
-        ]
-        where the main list contains all top-level blocks, and descendants contains a *flat* list of all
-        descendants of the top level blocks, if any.
-
-        Must be implemented in child class.
-        """
-        raise NotImplementedError
-
     @XBlock.handler
     def reset_selected_children(self, _, __):
         """
@@ -432,6 +419,40 @@ class ItemBankMixin(
                 xml_object.set(field_name, str(field.read_from(self)))
         return xml_object
 
+    def author_view(self, context):
+        """
+        Renders the Studio views.
+        Normal studio view: If block is properly configured, displays library status summary
+        Studio container view: displays a preview of all possible children.
+        """
+        fragment = Fragment()
+        root_xblock = context.get('root_xblock')
+        is_root = root_xblock and root_xblock.usage_key == self.usage_key
+        if is_root and self.children:
+            # User has clicked the "View" link. Show a preview of all possible children:
+            context['can_edit_visibility'] = False
+            context['can_move'] = False
+            context['can_collapse'] = True
+            self.render_children(context, fragment, can_reorder=False, can_add=False)
+        else:
+            # We're just on the regular unit page, or we're on the "view" page but no children exist yet.
+            # Show a summary message and instructions.
+            summary_html = loader.render_django_template('templates/item_bank/author_view.html', {
+                # Due to template interpolation limitations, we have to pass some HTML for the link here:
+                "view_link": f'<a target="_top" href="/container/{self.usage_key}">',
+                "blocks": [
+                    {"display_name": display_name_with_default(child)}
+                    for child in self.get_children()
+                ],
+                "block_count": len(self.children),
+                "max_count": self.max_count,
+            })
+            fragment.add_content(summary_html)
+        # Whether on the main author view or the detailed children view, show a button to add more from the library:
+        add_html = loader.render_django_template('templates/item_bank/author_view_add.html', {})
+        fragment.add_content(add_html)
+        return fragment
+
     @classmethod
     def get_selected_event_prefix(cls) -> str:
         """
@@ -441,21 +462,6 @@ class ItemBankMixin(
                  raise `edx.myblock.content.assigned`.
         """
         raise NotImplementedError
-
-
-class ItemBankBlock(ItemBankMixin, XBlock):
-    """
-    An XBlock which shows a random subset of its children to each learner.
-
-    Unlike LegacyLibraryContentBlock, this block does not need to worry about synchronization, capa_type filtering, etc.
-    That is all implemented using `upstream` links on each individual child.
-    """
-    display_name = String(
-        display_name=_("Display Name"),
-        help=_("The display name for this component."),
-        default="Problem Bank",
-        scope=Scope.settings,
-    )
 
     def validate(self):
         """
@@ -492,40 +498,6 @@ class ItemBankBlock(ItemBankMixin, XBlock):
             )
         return validation
 
-    def author_view(self, context):
-        """
-        Renders the Studio views.
-        Normal studio view: If block is properly configured, displays library status summary
-        Studio container view: displays a preview of all possible children.
-        """
-        fragment = Fragment()
-        root_xblock = context.get('root_xblock')
-        is_root = root_xblock and root_xblock.usage_key == self.usage_key
-        if is_root and self.children:
-            # User has clicked the "View" link. Show a preview of all possible children:
-            context['can_edit_visibility'] = False
-            context['can_move'] = False
-            context['can_collapse'] = True
-            self.render_children(context, fragment, can_reorder=False, can_add=False)
-        else:
-            # We're just on the regular unit page, or we're on the "view" page but no children exist yet.
-            # Show a summary message and instructions.
-            summary_html = loader.render_django_template('templates/item_bank/author_view.html', {
-                # Due to template interpolation limitations, we have to pass some HTML for the link here:
-                "view_link": f'<a target="_top" href="/container/{self.usage_key}">',
-                "blocks": [
-                    {"display_name": display_name_with_default(child)}
-                    for child in self.get_children()
-                ],
-                "block_count": len(self.children),
-                "max_count": self.max_count,
-            })
-            fragment.add_content(summary_html)
-        # Whether on the main author view or the detailed children view, show a button to add more from the library:
-        add_html = loader.render_django_template('templates/item_bank/author_view_add.html', {})
-        fragment.add_content(add_html)
-        return fragment
-
     def format_block_keys_for_analytics(self, block_keys: list[tuple[str, str]]) -> list[dict]:
         """
         Implement format_block_keys_for_analytics using the `upstream` link system.
@@ -540,6 +512,21 @@ class ItemBankBlock(ItemBankMixin, XBlock):
                 # "descendents": ...,
             } for block_key in block_keys
         ]
+
+
+class ItemBankBlock(ItemBankMixin, XBlock):
+    """
+    An XBlock which shows a random subset of its children to each learner.
+
+    Unlike LegacyLibraryContentBlock, this block does not need to worry about synchronization, capa_type filtering, etc.
+    That is all implemented using `upstream` links on each individual child.
+    """
+    display_name = String(
+        display_name=_("Display Name"),
+        help=_("The display name for this component."),
+        default="Problem Bank",
+        scope=Scope.settings,
+    )
 
     @classmethod
     def get_selected_event_prefix(cls) -> str:

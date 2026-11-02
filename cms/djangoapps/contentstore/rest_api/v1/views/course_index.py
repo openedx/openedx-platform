@@ -8,6 +8,7 @@ from opaque_keys.edx.keys import CourseKey
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.fields import BooleanField
 
 from cms.djangoapps.contentstore.config.waffle import CUSTOM_RELATIVE_DATES
 from cms.djangoapps.contentstore.rest_api.v1.mixins import ContainerHandlerMixin
@@ -129,6 +130,11 @@ class ContainerChildrenView(APIView, ContainerHandlerMixin):
                 apidocs.ParameterLocation.PATH,
                 description="Container usage key",
             ),
+            apidocs.string_parameter(
+                "get_upstream_info",
+                apidocs.ParameterLocation.QUERY,
+                description="Gets the info of all ready to sync children",
+            ),
         ],
         responses={
             200: ContainerChildrenSerializer,
@@ -210,6 +216,7 @@ class ContainerChildrenView(APIView, ContainerHandlerMixin):
                         "version_available": 49,
                         "error_message": null,
                         "ready_to_sync": true,
+                        "is_ready_to_sync_individually": true,
                     },
                     "actions": {
                         "can_copy": true,
@@ -230,11 +237,20 @@ class ContainerChildrenView(APIView, ContainerHandlerMixin):
             ],
             "is_published": false,
             "can_paste_component": true,
+            "display_name": "Vertical block 1"
+            "upstream_ready_to_sync_children_info": [{
+                "name": "Text",
+                "upstream": "lb:org:mylib:html:abcd",
+                'block_type': "html",
+                'downstream_customized': ["display_name"],
+                'id': "block-v1:org+101+101+type@html+block@3e3fa1f88adb4a108cd14e9002143690",
+            }]
         }
         ```
         """
         usage_key = self.get_object(usage_key_string)
         current_xblock = get_xblock(usage_key, request.user)
+        get_upstream_info = BooleanField().to_internal_value(request.GET.get("get_upstream_info", False))
         is_course = current_xblock.scope_ids.usage_id.context_key.is_course
 
         with modulestore().bulk_operations(usage_key.course_key):
@@ -273,10 +289,18 @@ class ContainerChildrenView(APIView, ContainerHandlerMixin):
             except ItemNotFoundError:
                 logging.error('Could not find any changes for block [%s]', usage_key)
 
+            upstream_ready_to_sync_children_info = []
+            if current_xblock.upstream and get_upstream_info:
+                upstream_link = UpstreamLink.get_for_block(current_xblock)
+                upstream_link_data = upstream_link.to_json(include_child_info=True)
+                upstream_ready_to_sync_children_info = upstream_link_data["ready_to_sync_children"]
+
             container_data = {
                 "children": children,
                 "is_published": is_published,
                 "can_paste_component": is_course,
+                "upstream_ready_to_sync_children_info": upstream_ready_to_sync_children_info,
+                "display_name": current_xblock.display_name_with_default,
             }
             serializer = ContainerChildrenSerializer(container_data)
             return Response(serializer.data)

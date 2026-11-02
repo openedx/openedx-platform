@@ -304,7 +304,7 @@ class XmlMixin:
         Returns (XBlock): The newly parsed XBlock
 
         """
-        from xmodule.modulestore.xml import ImportSystem  # done here to avoid circular import
+        from xmodule.modulestore.xml import XMLImportingModuleStoreRuntime  # done here to avoid circular import
 
         if keys is None:
             # Passing keys=None is against the XBlock API but some platform tests do it.
@@ -361,9 +361,10 @@ class XmlMixin:
         if "filename" in field_data:
             del field_data["filename"]  # filename should only be in xml_attributes.
 
-        if isinstance(runtime, ImportSystem):
-            # we shouldn't be instantiating our own field data instance here, but there are complex inter-depenencies
-            # between this mixin and ImportSystem that currently seem to require it for proper metadata inheritance.
+        if isinstance(runtime, XMLImportingModuleStoreRuntime):
+            # we shouldn't be instantiating our own field data instance here, but there are complex
+            # inter-depenencies between this mixin and XMLImportingModuleStoreRuntime that currently
+            # seem to require it for proper metadata inheritance.
             kvs = InheritanceKeyValueStore(initial_values=field_data)
             field_data = KvsFieldData(kvs)
             xblock = runtime.construct_xblock_from_class(cls, keys, field_data)

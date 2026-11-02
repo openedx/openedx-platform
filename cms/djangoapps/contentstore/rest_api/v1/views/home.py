@@ -236,7 +236,7 @@ class HomePageLibrariesView(APIView):
                 "number": "CPSPR",
                 "can_edit": true
                 }
-            ],        }
+            ],
         ```
         """
 

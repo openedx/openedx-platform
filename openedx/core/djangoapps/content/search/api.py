@@ -386,13 +386,13 @@ def init_index(status_cb: Callable[[str], None] | None = None, warn_cb: Callable
         if _index_is_empty(STUDIO_INDEX_NAME):
             warn_cb(
                 "The studio search index is empty. Please run ./manage.py cms reindex_studio"
-                " --experimental [--incremental]"
+                " [--incremental]"
             )
             return
         if not _is_index_configured(STUDIO_INDEX_NAME):
             warn_cb(
                 "A rebuild of the index is required. Please run ./manage.py cms reindex_studio"
-                " --experimental [--incremental]"
+                " [--incremental]"
             )
             return
         status_cb("Index already exists and is configured.")
@@ -649,7 +649,7 @@ def upsert_xblock_index_doc(usage_key: UsageKey, recursive: bool = True) -> None
     _update_index_docs(docs)
 
 
-def delete_index_doc(key: OpaqueKey) -> None:
+def delete_index_doc(key: OpaqueKey, *, delete_children: bool = False) -> None:
     """
     Deletes the document for the given XBlock from the search index
 
@@ -658,6 +658,37 @@ def delete_index_doc(key: OpaqueKey) -> None:
     """
     doc = searchable_doc_for_key(key)
     _delete_index_doc(doc[Fields.id])
+    if delete_children:
+        _delete_documents(f'{Fields.breadcrumbs}.{Fields.usage_key} = "{key}"')
+
+
+def delete_docs_with_context_key(key: OpaqueKey) -> None:
+    """
+    Delete all docs for given context key
+    """
+    _delete_documents(f'{Fields.context_key} = "{key}"')
+
+
+def _delete_documents(filter_query: str) -> None:
+    """
+    Deletes all documents from the search index that match the given filter
+
+    Args:
+        filter (str): The query to use when filtering documents
+    """
+    if not filter_query:
+        return
+
+    client = _get_meilisearch_client()
+    current_rebuild_index_name = _get_running_rebuild_index_name()
+
+    tasks = []
+    if current_rebuild_index_name:
+        # If there is a rebuild in progress, the document will also be removed from the new index.
+        tasks.append(client.index(current_rebuild_index_name).delete_documents(filter=filter_query))
+    tasks.append(client.index(STUDIO_INDEX_NAME).delete_documents(filter=filter_query))
+
+    _wait_for_meili_tasks(tasks)
 
 
 def _delete_index_doc(doc_id) -> None:
@@ -853,7 +884,7 @@ def upsert_library_container_index_doc(container_key: LibraryContainerLocator) -
         _update_index_docs([doc])
 
 
-def upsert_content_library_index_docs(library_key: LibraryLocatorV2) -> None:
+def upsert_content_library_index_docs(library_key: LibraryLocatorV2, full_index: bool = False) -> None:
     """
     Creates or updates the documents for the given Content Library in the search index
     """
@@ -862,6 +893,21 @@ def upsert_content_library_index_docs(library_key: LibraryLocatorV2) -> None:
         metadata = lib_api.LibraryXBlockMetadata.from_component(library_key, component)
         doc = searchable_doc_for_library_block(metadata)
         docs.append(doc)
+
+    if full_index:
+        # For a full re-index, we also need to update collections, and containers data:
+        for container in lib_api.get_library_containers(library_key):
+            container_key = lib_api.library_container_locator(
+                library_key,
+                container,
+            )
+            doc = searchable_doc_for_container(container_key)
+            docs.append(doc)
+
+        for collection in lib_api.get_library_collections(library_key):
+            collection_key = lib_api.library_collection_locator(library_key, collection.key)
+            doc = searchable_doc_for_collection(collection_key, collection=collection)
+            docs.append(doc)
 
     _update_index_docs(docs)
 

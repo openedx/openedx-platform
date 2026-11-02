@@ -36,7 +36,6 @@ from xmodule.course_block import CourseSummary
 from xmodule.error_block import ErrorBlock
 from xmodule.errortracker import exc_info_to_str, null_error_tracker
 from xmodule.exceptions import HeartbeatFailure
-from xmodule.mako_block import MakoDescriptorSystem
 from xmodule.modulestore import BulkOperationsMixin, ModuleStoreEnum, ModuleStoreWriteBase
 from xmodule.modulestore.draft_and_published import DIRECT_ONLY_CATEGORIES, ModuleStoreDraftAndPublished
 from xmodule.modulestore.edit_info import EditInfoRuntimeMixin
@@ -46,6 +45,7 @@ from xmodule.modulestore.xml import CourseLocationManager
 from xmodule.mongo_utils import connect_to_mongodb, create_collection_index
 from xmodule.partitions.partitions_service import PartitionService
 from xmodule.services import SettingsService
+from xmodule.x_module import ModuleStoreRuntime
 
 log = logging.getLogger(__name__)
 
@@ -146,19 +146,19 @@ class MongoKeyValueStore(InheritanceKeyValueStore):
         )
 
 
-class CachingDescriptorSystem(MakoDescriptorSystem, EditInfoRuntimeMixin):  # lint-amnesty, pylint: disable=abstract-method
+class OldModuleStoreRuntime(ModuleStoreRuntime, EditInfoRuntimeMixin):  # pylint: disable=abstract-method
     """
     A system that has a cache of block json that it will use to load blocks
     from, with a backup of calling to the underlying modulestore for more data
     """
 
-    # This CachingDescriptorSystem runtime sets block._field_data on each block via construct_xblock_from_class(),
+    # This OldModuleStoreRuntime sets block._field_data on each block via construct_xblock_from_class(),
     # rather than the newer approach of providing a "field-data" service via runtime.service(). As a result, during
     # bind_for_student() we can't just set ._bound_field_data; we must overwrite block._field_data.
     uses_deprecated_field_data = True
 
     def __repr__(self):
-        return "CachingDescriptorSystem{!r}".format((
+        return "{}{!r}".format(self.__class__.__name__, (
             self.modulestore,
             str(self.course_id),
             [str(key) for key in self.module_data.keys()],
@@ -177,12 +177,12 @@ class CachingDescriptorSystem(MakoDescriptorSystem, EditInfoRuntimeMixin):  # li
         default_class: The default_class to use when loading an
             XModuleDescriptor from the module_data
 
-        resources_fs: a filesystem, as per MakoDescriptorSystem
+        resources_fs: a filesystem, as per ModuleStoreRuntime
 
         error_tracker: a function that logs errors for later display to users
 
         render_template: a function for rendering templates, as per
-            MakoDescriptorSystem
+            ModuleStoreRuntime
         """
         id_manager = CourseLocationManager(course_key)
         kwargs.setdefault('id_reader', id_manager)
@@ -660,7 +660,7 @@ class MongoModuleStore(ModuleStoreDraftAndPublished, ModuleStoreWriteBase, Mongo
                 data_dir (optional): The directory name to use as the root data directory for this XModule
             data_cache (dict): A dictionary mapping from UsageKeys to xblock field data
                 (this is the xblock data loaded from the database)
-            using_descriptor_system (CachingDescriptorSystem): The existing CachingDescriptorSystem
+            using_descriptor_system (OldModuleStoreRuntime): The existing runtime
                 to add data to, and to load the XBlocks from.
             for_parent (:class:`XBlock`): The parent of the XBlock being loaded.
         """
@@ -687,7 +687,7 @@ class MongoModuleStore(ModuleStoreDraftAndPublished, ModuleStoreWriteBase, Mongo
 
             services["partitions"] = PartitionService(course_key)
 
-            system = CachingDescriptorSystem(
+            system = OldModuleStoreRuntime(
                 modulestore=self,
                 course_key=course_key,
                 module_data=data_cache,
@@ -922,7 +922,7 @@ class MongoModuleStore(ModuleStoreDraftAndPublished, ModuleStoreWriteBase, Mongo
                 descendents of the queried blocks for more efficient results later
                 in the request. The depth is counted in the number of
                 calls to get_children() to cache. None indicates to cache all descendents.
-            using_descriptor_system (CachingDescriptorSystem): The existing CachingDescriptorSystem
+            using_descriptor_system (ModuleStoreRuntime): The existing ModuleStoreRuntime
                 to add data to, and to load the XBlocks from.
         """
         item = self._find_one(usage_key)
@@ -994,7 +994,7 @@ class MongoModuleStore(ModuleStoreDraftAndPublished, ModuleStoreWriteBase, Mongo
                 For this modulestore, ``name`` is a commonly provided key (Location based stores)
                 This modulestore does not allow searching dates by comparison or edited_by, previous_version,
                 update_version info.
-            using_descriptor_system (CachingDescriptorSystem): The existing CachingDescriptorSystem
+            using_descriptor_system (ModuleStoreRuntime): The existing ModuleStoreRuntime
                 to add data to, and to load the XBlocks from.
         """
         qualifiers = qualifiers.copy() if qualifiers else {}  # copy the qualifiers (destructively manipulated here)
@@ -1104,7 +1104,7 @@ class MongoModuleStore(ModuleStoreDraftAndPublished, ModuleStoreWriteBase, Mongo
 
             services["partitions"] = PartitionService(course_key)
 
-            runtime = CachingDescriptorSystem(
+            runtime = OldModuleStoreRuntime(
                 modulestore=self,
                 module_data={},
                 course_key=course_key,

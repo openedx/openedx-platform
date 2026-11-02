@@ -87,6 +87,7 @@ from cms.djangoapps.contentstore.xblock_storage_handlers.view_handlers import (
     add_container_page_publishing_info,
     create_xblock_info,
 )
+from common.test.utils import assert_dict_contains_subset
 
 
 class AsideTest(XBlockAside):
@@ -864,7 +865,8 @@ class TestDuplicateItem(ItemTest, DuplicateHelper, OpenEdxEventsTestMixin):
         XBLOCK_DUPLICATED.connect(event_receiver)
         usage_key = self._duplicate_and_verify(self.vert_usage_key, self.seq_usage_key)
         event_receiver.assert_called()
-        self.assertDictContainsSubset(
+        assert_dict_contains_subset(
+            self,
             {
                 "signal": XBLOCK_DUPLICATED,
                 "sender": None,
@@ -1854,7 +1856,7 @@ class TestDuplicateItemWithAsides(ItemTest, DuplicateHelper):
 
     @XBlockAside.register_temp_plugin(AsideTest, "test_aside")
     @patch(
-        "xmodule.modulestore.split_mongo.caching_descriptor_system.CachingDescriptorSystem.applicable_aside_types",
+        "xmodule.modulestore.split_mongo.runtime.SplitModuleStoreRuntime.applicable_aside_types",
         lambda self, block: ["test_aside"],
     )
     def test_duplicate_equality_with_asides(self):
@@ -2822,8 +2824,8 @@ class TestEditSplitModule(ItemTest):
         group_id_to_child = split_test.group_id_to_child.copy()
         self.assertEqual(2, len(group_id_to_child))
 
-        # CachingDescriptorSystem is used in tests.
-        # CachingDescriptorSystem doesn't have user service, that's needed for
+        # SplitModuleStoreRuntime is used in tests.
+        # SplitModuleStoreRuntime doesn't have user service, that's needed for
         # SplitTestBlock. So, in this line of code we add this service manually.
         split_test.runtime._services["user"] = DjangoXBlockUserService(  # pylint: disable=protected-access
             self.user
@@ -4578,7 +4580,7 @@ class TestXBlockPublishingInfo(ItemTest):
 
 
 @patch(
-    "xmodule.modulestore.split_mongo.caching_descriptor_system.CachingDescriptorSystem.applicable_aside_types",
+    "xmodule.modulestore.split_mongo.runtime.SplitModuleStoreRuntime.applicable_aside_types",
     lambda self, block: ["test_aside"],
 )
 class TestUpdateFromSource(ModuleStoreTestCase):

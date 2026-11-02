@@ -1,4 +1,6 @@
 name: unit-tests
+permissions:
+  contents: read
 
 on:
   pull_request:
@@ -23,7 +25,6 @@ jobs:
           - "3.11"
         django-version:
           - "pinned"
-          - "5.2"
         # When updating the shards, remember to make the same changes in
         # .github/workflows/unit-tests-gh-hosted.yml
         shard_name:
@@ -96,7 +97,7 @@ jobs:
           docker ps
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -159,7 +160,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: 3.11
 
@@ -289,7 +290,7 @@ jobs:
         uses: actions/checkout@v5
 
       - name: Setup Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
 

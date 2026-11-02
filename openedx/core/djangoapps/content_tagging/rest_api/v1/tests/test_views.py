@@ -514,12 +514,12 @@ class TestTaxonomyListCreateViewSet(TestTaxonomyObjectsMixin, APITestCase):
 
     @ddt.data(
         ('staff', 11),
-        ("content_creatorA", 17),
-        ("library_staffA", 17),
-        ("library_userA", 17),
-        ("instructorA", 17),
-        ("course_instructorA", 17),
-        ("course_staffA", 17),
+        ("content_creatorA", 22),
+        ("library_staffA", 22),
+        ("library_userA", 22),
+        ("instructorA", 22),
+        ("course_instructorA", 22),
+        ("course_staffA", 22),
     )
     @ddt.unpack
     def test_list_taxonomy_query_count(self, user_attr: str, expected_queries: int):
@@ -1927,16 +1927,16 @@ class TestObjectTagViewSet(TestObjectTagMixin, APITestCase):
         ('staff', 'courseA', 8),
         ('staff', 'libraryA', 8),
         ('staff', 'collection_key', 8),
-        ("content_creatorA", 'courseA', 12, False),
-        ("content_creatorA", 'libraryA', 12, False),
-        ("content_creatorA", 'collection_key', 12, False),
-        ("library_staffA", 'libraryA', 12, False),  # Library users can only view objecttags, not change them?
-        ("library_staffA", 'collection_key', 12, False),
-        ("library_userA", 'libraryA', 12, False),
-        ("library_userA", 'collection_key', 12, False),
-        ("instructorA", 'courseA', 12),
-        ("course_instructorA", 'courseA', 12),
-        ("course_staffA", 'courseA', 12),
+        ("content_creatorA", 'courseA', 17, False),
+        ("content_creatorA", 'libraryA', 17, False),
+        ("content_creatorA", 'collection_key', 17, False),
+        ("library_staffA", 'libraryA', 17, False),  # Library users can only view objecttags, not change them?
+        ("library_staffA", 'collection_key', 17, False),
+        ("library_userA", 'libraryA', 17, False),
+        ("library_userA", 'collection_key', 17, False),
+        ("instructorA", 'courseA', 17),
+        ("course_instructorA", 'courseA', 17),
+        ("course_staffA", 'courseA', 17),
     )
     @ddt.unpack
     def test_object_tags_query_count(

@@ -21,6 +21,7 @@ from openedx.core.djangoapps.django_comment_common.models import (
 )
 from openedx.core.djangoapps.django_comment_common.utils import seed_permissions_roles
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from common.test.utils import assert_dict_contains_subset
 
 
 class AutoAuthTestCase(UrlResetMixin, TestCase):
@@ -182,12 +183,13 @@ class AutoAuthEnabledTestCase(AutoAuthTestCase, ModuleStoreTestCase):
         for key in ['created_status', 'username', 'email', 'password', 'user_id', 'anonymous_id']:
             assert key in response_data
         user = User.objects.get(username=response_data['username'])
-        self.assertDictContainsSubset(
+        assert_dict_contains_subset(
+            self,
             {
                 'created_status': 'Logged in',
                 'anonymous_id': anonymous_id_for_user(user, None),
             },
-            response_data
+            response_data,
         )
 
     @ddt.data(*COURSE_IDS_DDT)

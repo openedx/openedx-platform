@@ -613,6 +613,35 @@ class ModuleStoreTestCase(
         return updated_course
 
 
+class ImmediateOnCommitMixin:
+    """
+    Mixin for tests that want `on_commit` callbacks to run immediately,
+    even under TestCase (which normally wraps tests in a transaction
+    that never commits).
+    Especially useful when the test needs to execute an event that occurs after an `on_commit`
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        super_cls = super()
+        if hasattr(super_cls, 'setUpClass'):
+            super_cls.setUpClass()
+        # Patch `transaction.on_commit` so that callbacks run immediately
+        cls._on_commit_patcher = patch(
+            'django.db.transaction.on_commit',
+            side_effect=lambda func, **kwargs: func()
+        )
+        cls._on_commit_patcher.start()
+
+    @classmethod
+    def tearDownClass(cls):
+        # Stop patching, restore original behavior
+        cls._on_commit_patcher.stop()
+        super_cls = super()
+        if hasattr(super_cls, 'tearDownClass'):
+            super_cls.tearDownClass()
+
+
 def upload_file_to_course(course_key, contentstore, source_file, target_filename):
     '''
     Uploads the given source file to the given course, and returns the content of the file.

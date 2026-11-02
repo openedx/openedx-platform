@@ -121,7 +121,7 @@ class CertificateManager:
         along with the certificates.
         """
         is_active = False
-        certificates = None
+        certificates = []
         if settings.FEATURES.get('CERTIFICATES_HTML_VIEW', False):
             certificates = CertificateManager.get_certificates(course)
             # we are assuming only one certificate in certificates collection.

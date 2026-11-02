@@ -5,7 +5,7 @@ Tests for verified_track_content/partition_scheme.py.
 
 from datetime import datetime, timedelta
 
-import pytz
+from zoneinfo import ZoneInfo
 import pytest
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.student.models import CourseEnrollment
@@ -38,7 +38,7 @@ class EnrollmentTrackUserPartitionTest(SharedModuleStoreTestCase):
         # Note that the verified mode is expired-- this is intentional.
         create_mode(
             self.course, CourseMode.VERIFIED, "Verified Enrollment Track", min_price=1,
-            expiration_datetime=datetime.now(pytz.UTC) + timedelta(days=-1)
+            expiration_datetime=datetime.now(ZoneInfo("UTC")) + timedelta(days=-1)
         )
         # Note that the credit mode is not selectable-- this is intentional so we
         # can test that it is filtered out.
@@ -128,7 +128,7 @@ class EnrollmentTrackPartitionSchemeTest(SharedModuleStoreTestCase):
     def test_enrolled_in_expired(self):
         create_mode(
             self.course, CourseMode.VERIFIED, "Verified Enrollment Track",
-            min_price=1, expiration_datetime=datetime.now(pytz.UTC) + timedelta(days=-1)
+            min_price=1, expiration_datetime=datetime.now(ZoneInfo("UTC")) + timedelta(days=-1)
         )
         CourseEnrollment.enroll(self.student, self.course.id, mode=CourseMode.VERIFIED)
         assert 'Verified Enrollment Track' == self._get_user_group().name
@@ -153,7 +153,7 @@ class EnrollmentTrackPartitionSchemeTest(SharedModuleStoreTestCase):
         # the upgrade deadline has passed (see EDUCATOR-1511 for why this matters).
         create_mode(
             self.course, CourseMode.VERIFIED, "Verified Enrollment Track", min_price=1,
-            expiration_datetime=datetime.now(pytz.UTC) + timedelta(days=-1)
+            expiration_datetime=datetime.now(ZoneInfo("UTC")) + timedelta(days=-1)
         )
         assert 'Verified Enrollment Track' == self._get_user_group().name
 

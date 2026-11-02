@@ -285,7 +285,6 @@ function getBaseConfig(config, useRequireJs) {
             'karma-chrome-launcher',
             'karma-firefox-launcher',
             'karma-spec-reporter',
-            'karma-selenium-webdriver-launcher',
             'karma-webpack',
             'karma-sourcemap-loader',
             customPlugin
@@ -332,36 +331,15 @@ function getBaseConfig(config, useRequireJs) {
                 base: 'Firefox',
                 prefs: {
                     'app.update.auto': false,
-                    'app.update.enabled': false
+                    'app.update.enabled': false,
+                    'media.autoplay.default': 0, // allow autoplay
+                    'media.autoplay.blocking_policy': 0, // disable autoplay blocking
+                    'media.autoplay.allow-extension-background-pages': true,
+                    'media.autoplay.enabled.user-gestures-needed': false,
                 }
             },
-            ChromeDocker: {
-                base: 'SeleniumWebdriver',
-                browserName: 'chrome',
-                getDriver: function() {
-                    return new webdriver.Builder()
-                        .forBrowser('chrome')
-                        .usingServer('http://edx.devstack.chrome:4444/wd/hub')
-                        .build();
-                }
-            },
-            FirefoxDocker: {
-                base: 'SeleniumWebdriver',
-                browserName: 'firefox',
-                getDriver: function() {
-                    var options = new firefox.Options(),
-                        profile = new firefox.Profile();
-                    profile.setPreference('focusmanager.testmode', true);
-                    options.setProfile(profile);
-                    return new webdriver.Builder()
-                        .forBrowser('firefox')
-                        .usingServer('http://edx.devstack.firefox:4444/wd/hub')
-                        .setFirefoxOptions(options)
-                        .build();
-                }
-            }
         },
-        
+
         // Continuous Integration mode
         // if true, Karma captures browsers, runs the tests and exits
         singleRun: config.singleRun,

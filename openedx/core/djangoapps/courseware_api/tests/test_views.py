@@ -834,15 +834,20 @@ class CoursewareMetaTestViews(BaseCoursewareTests):
     )
     def test_about_sidebar_html_property(self, waffle_enabled, mock_get_course_about_section):
         """
-        Test about_sidebar_html property with different waffle settings
+        Test about_sidebar_html property with different waffle settings.
+
+        Ensure that when a value is returned, <script> tags are stripped.
         """
-        mock_get_course_about_section.return_value = '<div>About Course</div>'
+        # We're mocking the underlying method used to grab both the overview
+        # html and the about_sidebar_html, so we can test sanitization on both.
+        mock_get_course_about_section.return_value = '<div>About Course<script>alert("warning!");</script></div>'
         with override_waffle_switch(ENABLE_COURSE_ABOUT_SIDEBAR_HTML, active=waffle_enabled):
             meta = self.create_courseware_meta()
             if waffle_enabled:
                 assert meta.about_sidebar_html == '<div>About Course</div>'
             else:
                 assert meta.about_sidebar_html is None
+            assert meta.overview == '<div>About Course</div>'
 
 
 @ddt.ddt

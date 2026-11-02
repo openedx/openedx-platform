@@ -18,11 +18,11 @@ def usage_key_with_run(usage_key_string: str) -> UsageKey:
     return usage_key
 
 
-def get_block_key_dict(usage_key: UsageKey) -> dict:
+def get_block_key_string(usage_key: UsageKey) -> str:
     """
-    Converts the usage_key in a dict with the form: `{"type": block_type, "id": block_id}`
+    Extract block key from UsageKey in string format: `html:my-id`.
     """
-    return BlockKey.from_usage_key(usage_key)._asdict()
+    return str(BlockKey.from_usage_key(usage_key))
 
 
 def get_tags_count(xblock: XBlock, include_children=False) -> dict[str, int]:

@@ -415,14 +415,14 @@ class TestSplitDirectOnlyCategorySemantics(DirectOnlyCategorySemantics):
 
     @ddt.data(*TESTABLE_BLOCK_TYPES)
     @XBlockAside.register_temp_plugin(AsideTest, 'test_aside')
-    @patch('xmodule.modulestore.split_mongo.caching_descriptor_system.CachingDescriptorSystem.applicable_aside_types',
+    @patch('xmodule.modulestore.split_mongo.runtime.SplitModuleStoreRuntime.applicable_aside_types',
            lambda self, block: ['test_aside'])
     def test_create_with_asides(self, block_type):
         self._do_create(block_type, with_asides=True)
 
     @ddt.data(*TESTABLE_BLOCK_TYPES)
     @XBlockAside.register_temp_plugin(AsideTest, 'test_aside')
-    @patch('xmodule.modulestore.split_mongo.caching_descriptor_system.CachingDescriptorSystem.applicable_aside_types',
+    @patch('xmodule.modulestore.split_mongo.runtime.SplitModuleStoreRuntime.applicable_aside_types',
            lambda self, block: ['test_aside'])
     def test_update_asides(self, block_type):
         block_usage_key = self._do_create(block_type, with_asides=True)

@@ -52,7 +52,7 @@ from common.djangoapps.student.tests.factories import (
     UserFactory,
 )
 from common.djangoapps.third_party_auth.tests.factories import SAMLProviderConfigFactory
-from common.test.utils import disable_signal
+from common.test.utils import disable_signal, assert_dict_contains_subset
 from lms.djangoapps.program_enrollments.tests.factories import ProgramCourseEnrollmentFactory, ProgramEnrollmentFactory
 from lms.djangoapps.support.models import CourseResetAudit
 from lms.djangoapps.support.serializers import ProgramEnrollmentSerializer
@@ -358,14 +358,18 @@ class SupportViewEnrollmentsTests(SharedModuleStoreTestCase, SupportViewTestCase
         assert response.status_code == 200
         data = json.loads(response.content.decode('utf-8'))
         assert len(data) == 1
-        self.assertDictContainsSubset({
-            'mode': CourseMode.AUDIT,
-            'manual_enrollment': {},
-            'user': self.student.username,
-            'course_id': str(self.course.id),
-            'is_active': True,
-            'verified_upgrade_deadline': None,
-        }, data[0])
+        assert_dict_contains_subset(
+            self,
+            {
+                'mode': CourseMode.AUDIT,
+                'manual_enrollment': {},
+                'user': self.student.username,
+                'course_id': str(self.course.id),
+                'is_active': True,
+                'verified_upgrade_deadline': None,
+            },
+            data[0],
+        )
         assert {CourseMode.VERIFIED, CourseMode.AUDIT, CourseMode.HONOR, CourseMode.NO_ID_PROFESSIONAL_MODE,
                 CourseMode.PROFESSIONAL, CourseMode.CREDIT_MODE} == {mode['slug'] for mode in data[0]['course_modes']}
         assert data[0]['order_number'] == ''
@@ -468,10 +472,14 @@ class SupportViewEnrollmentsTests(SharedModuleStoreTestCase, SupportViewTestCase
         )
         response = self.client.get(self.url)
         assert response.status_code == 200
-        self.assertDictContainsSubset({
-            'enrolled_by': self.user.email,
-            'reason': 'Financial Assistance',
-        }, json.loads(response.content.decode('utf-8'))[0]['manual_enrollment'])
+        assert_dict_contains_subset(
+            self,
+            {
+                'enrolled_by': self.user.email,
+                'reason': 'Financial Assistance',
+            },
+            json.loads(response.content.decode('utf-8'))[0]['manual_enrollment'],
+        )
 
     def test_get_latest_manual_enrollment(self):
         enrollment = CourseEnrollment.objects.get(course_id=self.course.id, user=self.student)
@@ -568,7 +576,7 @@ class SupportViewEnrollmentsTests(SharedModuleStoreTestCase, SupportViewTestCase
         assert response.status_code == 200
         data = json.loads(response.content.decode('utf-8'))
         assert [enrollment['course_id'] for enrollment in data] == [str(course.id)]
-        self.assertDictContainsSubset({
+        assert_dict_contains_subset(self, {
             'order_number': 'ORD-001',
             'source_system': 'commercetools',
         }, data[0])

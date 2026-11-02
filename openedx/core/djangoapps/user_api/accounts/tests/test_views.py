@@ -10,7 +10,7 @@ from unittest import mock
 from urllib.parse import quote
 
 import ddt
-import pytz
+from zoneinfo import ZoneInfo
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
 from django.test.testcases import TransactionTestCase
@@ -44,7 +44,7 @@ from openedx.features.name_affirmation_api.utils import get_name_affirmation_ser
 
 from .. import ALL_USERS_VISIBILITY, CUSTOM_VISIBILITY, PRIVATE_VISIBILITY
 
-TEST_PROFILE_IMAGE_UPLOADED_AT = datetime.datetime(2002, 1, 9, 15, 43, 1, tzinfo=pytz.UTC)
+TEST_PROFILE_IMAGE_UPLOADED_AT = datetime.datetime(2002, 1, 9, 15, 43, 1, tzinfo=ZoneInfo("UTC"))
 
 # this is used in one test to check the behavior of profile image url
 # generation with a relative url in the config.
@@ -304,7 +304,7 @@ class TestCancelAccountRetirementStatusView(UserAPITestCase):
             current_state=retirement_state,
             last_state=retirement_state,
             original_email=self.user.email,
-            created=datetime.datetime.now(pytz.UTC)
+            created=datetime.datetime.now(ZoneInfo("UTC"))
         )
         url = reverse("cancel_account_retirement")
         response = client.post(url, data={'retirement_id': user_retirement_status.id})
@@ -329,7 +329,7 @@ class TestCancelAccountRetirementStatusView(UserAPITestCase):
             current_state=retirement_state,
             last_state=retirement_state,
             original_email=self.user.email,
-            created=datetime.datetime.now(pytz.UTC)
+            created=datetime.datetime.now(ZoneInfo("UTC"))
         )
         user_retirement_status.user.set_unusable_password()
         assert UserRetirementStatus.objects.count() == 1
@@ -585,8 +585,8 @@ class TestAccountsAPI(FilteredQueryCountMixin, CacheIsolationTestCase, UserAPITe
 
     @mock.patch('openedx.core.djangoapps.user_api.accounts.views.is_email_retired')
     @ddt.data(
-        (datetime.datetime.now(pytz.UTC), True),
-        (datetime.datetime.now(pytz.UTC) - datetime.timedelta(days=15), False)
+        (datetime.datetime.now(ZoneInfo("UTC")), True),
+        (datetime.datetime.now(ZoneInfo("UTC")) - datetime.timedelta(days=15), False)
     )
     @ddt.unpack
     def test_search_emails_retired_before_cooloff_period(self, created_date, can_cancel, mock_is_email_retired):

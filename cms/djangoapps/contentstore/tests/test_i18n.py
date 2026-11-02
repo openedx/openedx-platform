@@ -2,10 +2,9 @@
 Tests for validate Internationalization and XBlock i18n service.
 """
 import gettext
-from unittest import mock, skip
+from unittest import mock
 
 from django.utils import translation
-from edx_toggles.toggles.testutils import override_waffle_flag
 
 from django.utils.translation import get_language
 from xblock.core import XBlock
@@ -14,10 +13,7 @@ from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, 
 from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory
 from xmodule.tests.test_export import PureXBlock
 
-from cms.djangoapps.contentstore import toggles
-from cms.djangoapps.contentstore.tests.utils import AjaxEnabledTestClient
 from cms.djangoapps.contentstore.views.preview import _prepare_runtime_for_preview
-from common.djangoapps.student.tests.factories import UserFactory
 
 
 class FakeTranslations(XBlockI18nService):
@@ -166,101 +162,3 @@ class TestXBlockI18nService(ModuleStoreTestCase):
         Test: i18n service should be callable in studio.
         """
         self.assertTrue(callable(self.block.runtime._services.get('i18n')))  # pylint: disable=protected-access
-
-
-class InternationalizationTest(ModuleStoreTestCase):
-    """
-    Tests to validate Internationalization.
-    """
-
-    CREATE_USER = False
-
-    def setUp(self):
-        """
-        These tests need a user in the DB so that the django Test Client
-        can log them in.
-        They inherit from the ModuleStoreTestCase class so that the mongodb collection
-        will be cleared out before each test case execution and deleted
-        afterwards.
-        """
-        super().setUp()
-
-        self.uname = 'testuser'
-        self.email = 'test+courses@edx.org'
-        self.password = self.TEST_PASSWORD
-
-        # Create the use so we can log them in.
-        self.user = UserFactory.create(username=self.uname, email=self.email, password=self.password)
-
-        # Note that we do not actually need to do anything
-        # for registration if we directly mark them active.
-        self.user.is_active = True
-        # Staff has access to view all courses
-        self.user.is_staff = True
-        self.user.save()
-
-        self.course_data = {
-            'org': 'MITx',
-            'number': '999',
-            'display_name': 'Robot Super Course',
-        }
-
-    @override_waffle_flag(toggles.LEGACY_STUDIO_HOME, True)
-    def test_course_plain_english(self):
-        """Test viewing the index page with no courses"""
-        self.client = AjaxEnabledTestClient()  # lint-amnesty, pylint: disable=attribute-defined-outside-init
-        self.client.login(username=self.uname, password=self.password)
-
-        resp = self.client.get_html('/home/')
-        self.assertContains(resp,
-                            '<h1 class="page-header">𝓢𝓽𝓾𝓭𝓲𝓸 Home</h1>',
-                            status_code=200,
-                            html=True)
-
-    @override_waffle_flag(toggles.LEGACY_STUDIO_HOME, True)
-    def test_course_explicit_english(self):
-        """Test viewing the index page with no courses"""
-        self.client = AjaxEnabledTestClient()  # lint-amnesty, pylint: disable=attribute-defined-outside-init
-        self.client.login(username=self.uname, password=self.password)
-
-        resp = self.client.get_html(
-            '/home/',
-            {},
-            HTTP_ACCEPT_LANGUAGE='en',
-        )
-
-        self.assertContains(resp,
-                            '<h1 class="page-header">𝓢𝓽𝓾𝓭𝓲𝓸 Home</h1>',
-                            status_code=200,
-                            html=True)
-
-    # ****
-    # NOTE:
-    # ****
-    #
-    # This test will break when we replace this fake 'test' language
-    # with actual Esperanto. This test will need to be updated with
-    # actual Esperanto at that time.
-    # Test temporarily disable since it depends on creation of dummy strings
-    @skip
-    def test_course_with_accents(self):
-        """Test viewing the index page with no courses"""
-        self.client = AjaxEnabledTestClient()  # lint-amnesty, pylint: disable=attribute-defined-outside-init
-        self.client.login(username=self.uname, password=self.password)
-
-        resp = self.client.get_html(
-            '/home/',
-            {},
-            HTTP_ACCEPT_LANGUAGE='eo'
-        )
-
-        TEST_STRING = (
-            '<h1 class="title-1">'
-            'My \xc7\xf6\xfcrs\xe9s L#'
-            '</h1>'
-        )
-
-        self.assertContains(resp,
-                            TEST_STRING,
-                            status_code=200,
-                            html=True)

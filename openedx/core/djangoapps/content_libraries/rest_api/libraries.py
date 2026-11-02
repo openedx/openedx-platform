@@ -79,7 +79,10 @@ from django.views.decorators.clickjacking import xframe_options_exempt
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic.base import TemplateResponseMixin, View
 from drf_yasg.utils import swagger_auto_schema
+from user_tasks.models import UserTaskStatus
+
 from opaque_keys.edx.locator import LibraryLocatorV2, LibraryUsageLocatorV2
+from openedx_authz.constants import permissions as authz_permissions
 from organizations.api import ensure_organization
 from organizations.exceptions import InvalidOrganizationException
 from organizations.models import Organization
@@ -97,6 +100,9 @@ from cms.djangoapps.contentstore.views.course import (
     get_allowed_organizations_for_libraries,
     user_can_create_organizations
 )
+from cms.djangoapps.contentstore.storage import course_import_export_storage
+from openedx.core.djangoapps.content_libraries.tasks import restore_library
+
 from openedx.core.djangoapps.content_libraries import api, permissions
 from openedx.core.djangoapps.content_libraries.api.libraries import get_backup_task_status
 from openedx.core.djangoapps.content_libraries.rest_api.serializers import (
@@ -110,6 +116,9 @@ from openedx.core.djangoapps.content_libraries.rest_api.serializers import (
     ContentLibraryUpdateSerializer,
     LibraryBackupResponseSerializer,
     LibraryBackupTaskStatusSerializer,
+    LibraryRestoreFileSerializer,
+    LibraryRestoreTaskRequestSerializer,
+    LibraryRestoreTaskResultSerializer,
     LibraryXBlockCreationSerializer,
     LibraryXBlockMetadataSerializer,
     LibraryXBlockTypeSerializer,
@@ -211,7 +220,7 @@ class LibraryRootView(GenericAPIView):
         """
         Create a new content library.
         """
-        if not request.user.has_perm(permissions.CAN_CREATE_CONTENT_LIBRARY):
+        if not api.user_can_create_library(request.user):
             raise PermissionDenied
         serializer = ContentLibraryMetadataSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -245,6 +254,12 @@ class LibraryRootView(GenericAPIView):
                 result = api.create_library(org=org, **data)
                 # Grant the current user admin permissions on the library:
                 api.set_library_user_permissions(result.key, request.user, api.AccessLevel.ADMIN_LEVEL)
+
+                # Grant the current user the library admin role for this library.
+                # Other role assignments are handled by openedx-authz and the Console MFE.
+                # This ensures the creator has access to new libraries. From the library views,
+                # users can then manage roles for others.
+                api.assign_library_role_to_user(result.key, request.user, api.AccessLevel.ADMIN_LEVEL)
         except api.LibraryAlreadyExists:
             raise ValidationError(detail={"slug": "A library with that ID already exists."})  # lint-amnesty, pylint: disable=raise-missing-from
 
@@ -465,7 +480,11 @@ class LibraryCommitView(APIView):
         descendants.
         """
         key = LibraryLocatorV2.from_string(lib_key_str)
-        api.require_permission_for_library_key(key, request.user, permissions.CAN_EDIT_THIS_CONTENT_LIBRARY)
+        api.require_permission_for_library_key(
+            key,
+            request.user,
+            authz_permissions.PUBLISH_LIBRARY_CONTENT
+        )
         api.publish_changes(key, request.user.id)
         return Response({})
 
@@ -786,8 +805,84 @@ class LibraryBackupView(APIView):
 
         if not result:
             raise NotFound(detail="No backup found for this library.")
+        # Passing request context to the serializer so the url absolute path is correctly generated
+        return Response(LibraryBackupTaskStatusSerializer(result, context={'request': request}).data)
 
-        return Response(LibraryBackupTaskStatusSerializer(result).data)
+
+@method_decorator(non_atomic_requests, name="dispatch")
+@view_auth_classes()
+class LibraryRestoreView(APIView):
+    """
+    Restore a library from a backup file.
+
+    After the file is uploaded, a background task will be started to process the
+    file and restore the library contents. You can use the returned `task_id` to
+    check the status of the restore task.
+
+    The result of the restore task will be a "staged" learning package that can
+    then be saved into a content library.
+
+    **POST Parameters**
+
+        A POST request must include the following parameters.
+
+        * file: (required) The backup file to restore the library from. Must be a
+          .zip file.
+
+    **GET Parameters**
+
+        A GET request must include the following parameters.
+
+        * task_id: (required) The UUID of a restore task.
+    """
+    @apidocs.schema(
+        body=LibraryRestoreFileSerializer,
+        responses={200: LibraryRestoreFileSerializer}
+    )
+    def post(self, request):
+        """
+        Restore a library from a backup file.
+        """
+        if not api.user_can_create_library(request.user):
+            raise PermissionDenied
+
+        serializer = LibraryRestoreFileSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        upload = serializer.validated_data['file']
+
+        storage_path = course_import_export_storage.save(f'library_restore/{upload.name}', upload)
+
+        log.info("Learning package archive upload %s: Upload complete", upload.name)
+
+        async_result = restore_library.delay(request.user.id, storage_path)
+
+        return Response(LibraryRestoreFileSerializer({'task_id': async_result.task_id}).data)
+
+    @apidocs.schema(
+        parameters=[
+            apidocs.query_parameter(
+                'task_id',
+                str,
+                description="The ID of the restore library task to retrieve."
+            ),
+        ],
+        responses={200: LibraryRestoreTaskResultSerializer}
+    )
+    def get(self, request):
+        """
+        Check the status of a library restore task.
+        """
+        # validate input
+        serializer = LibraryRestoreTaskRequestSerializer(data=request.query_params)
+        serializer.is_valid(raise_exception=True)
+        task_id = serializer.validated_data.get('task_id')
+
+        # get task status and related artifact
+        task_status = get_object_or_404(UserTaskStatus, task_id=task_id, user=request.user)
+
+        # serialize and return result
+        result_serializer = LibraryRestoreTaskResultSerializer.from_task_status(task_status, request)
+        return Response(result_serializer.data)
 
 
 # LTI 1.3 Views

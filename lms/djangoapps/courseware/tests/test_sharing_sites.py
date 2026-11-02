@@ -6,7 +6,7 @@ import ddt
 from unittest import TestCase
 from unittest.mock import patch
 from urllib.parse import parse_qsl
-from xmodule.video_block.sharing_sites import (
+from openedx.core.djangoapps.video_config.sharing_sites import (
     sharing_url,
     sharing_sites_info_for_video,
     SharingSiteConfig,
@@ -66,7 +66,7 @@ class TestSharingSites(TestCase):
             TEST_SHARING_SITE_CONFIG,
             TEST_SHARING_SITE_CONFIG_WITH_ADDITIONAL_PARAMS,
         ]
-        with patch('xmodule.video_block.sharing_sites.ALL_SHARING_SITES', new=sharing_site_configs):
+        with patch('openedx.core.djangoapps.video_config.sharing_sites.ALL_SHARING_SITES', new=sharing_site_configs):
             sharing_sites_info = sharing_sites_info_for_video(TEST_PUBLIC_URL, organization=None)
             for expected_config, actual_info in zip(sharing_site_configs, sharing_sites_info):
                 self.assertDictEqual(

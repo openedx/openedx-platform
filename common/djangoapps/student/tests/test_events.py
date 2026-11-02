@@ -36,6 +36,7 @@ from openedx.core.djangolib.testing.utils import skip_unless_lms
 from xmodule.modulestore.tests.django_utils import \
     SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from common.test.utils import assert_dict_contains_subset
 
 
 class TestUserProfileEvents(UserSettingsEventTestMixin, TestCase):
@@ -271,7 +272,8 @@ class EnrollmentEventsTest(SharedModuleStoreTestCase, OpenEdxEventsTestMixin):
         enrollment = CourseEnrollment.enroll(self.user, self.course.id)
 
         self.assertTrue(self.receiver_called)
-        self.assertDictContainsSubset(
+        assert_dict_contains_subset(
+            self,
             {
                 "signal": COURSE_ENROLLMENT_CREATED,
                 "sender": None,
@@ -294,7 +296,7 @@ class EnrollmentEventsTest(SharedModuleStoreTestCase, OpenEdxEventsTestMixin):
                     creation_date=enrollment.created,
                 ),
             },
-            event_receiver.call_args.kwargs
+            event_receiver.call_args.kwargs,
         )
 
     def test_enrollment_changed_event_emitted(self):
@@ -314,7 +316,8 @@ class EnrollmentEventsTest(SharedModuleStoreTestCase, OpenEdxEventsTestMixin):
         enrollment.update_enrollment(mode="verified")
 
         self.assertTrue(self.receiver_called)
-        self.assertDictContainsSubset(
+        assert_dict_contains_subset(
+            self,
             {
                 "signal": COURSE_ENROLLMENT_CHANGED,
                 "sender": None,
@@ -337,7 +340,7 @@ class EnrollmentEventsTest(SharedModuleStoreTestCase, OpenEdxEventsTestMixin):
                     creation_date=enrollment.created,
                 ),
             },
-            event_receiver.call_args.kwargs
+            event_receiver.call_args.kwargs,
         )
 
     def test_unenrollment_completed_event_emitted(self):
@@ -357,7 +360,8 @@ class EnrollmentEventsTest(SharedModuleStoreTestCase, OpenEdxEventsTestMixin):
         CourseEnrollment.unenroll(self.user, self.course.id)
 
         self.assertTrue(self.receiver_called)
-        self.assertDictContainsSubset(
+        assert_dict_contains_subset(
+            self,
             {
                 "signal": COURSE_UNENROLLMENT_COMPLETED,
                 "sender": None,
@@ -380,7 +384,7 @@ class EnrollmentEventsTest(SharedModuleStoreTestCase, OpenEdxEventsTestMixin):
                     creation_date=enrollment.created,
                 ),
             },
-            event_receiver.call_args.kwargs
+            event_receiver.call_args.kwargs,
         )
 
 
@@ -430,7 +434,8 @@ class TestCourseAccessRoleEvents(TestCase, OpenEdxEventsTestMixin):
         role.add_users(self.user)
 
         self.assertTrue(self.receiver_called)
-        self.assertDictContainsSubset(
+        assert_dict_contains_subset(
+            self,
             {
                 "signal": COURSE_ACCESS_ROLE_ADDED,
                 "sender": None,
@@ -448,7 +453,7 @@ class TestCourseAccessRoleEvents(TestCase, OpenEdxEventsTestMixin):
                     role=role._role_name,  # pylint: disable=protected-access
                 ),
             },
-            event_receiver.call_args.kwargs
+            event_receiver.call_args.kwargs,
         )
 
     @ddt.data(
@@ -468,7 +473,8 @@ class TestCourseAccessRoleEvents(TestCase, OpenEdxEventsTestMixin):
         role.remove_users(self.user)
 
         self.assertTrue(self.receiver_called)
-        self.assertDictContainsSubset(
+        assert_dict_contains_subset(
+            self,
             {
                 "signal": COURSE_ACCESS_ROLE_REMOVED,
                 "sender": None,
@@ -486,5 +492,5 @@ class TestCourseAccessRoleEvents(TestCase, OpenEdxEventsTestMixin):
                     role=role._role_name,  # pylint: disable=protected-access
                 ),
             },
-            event_receiver.call_args.kwargs
+            event_receiver.call_args.kwargs,
         )

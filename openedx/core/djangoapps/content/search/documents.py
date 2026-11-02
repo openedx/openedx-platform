@@ -48,8 +48,9 @@ class Fields:
     org = "org"
     access_id = "access_id"  # .models.SearchAccess.id
     # breadcrumbs: an array of {"display_name": "..."} entries. First one is the name of the course/library itself.
-    # After that is the name of any parent Section/Subsection/Unit/etc.
+    # After that is the name of any parent Section/Subsection/Unit/etc and its usage_key.
     # It's a list of dictionaries because for now we just include the name of each but in future we may add their IDs.
+    # Example: [{"display_name": "My course"}, {"display_name": "Section1", "usage_key": "..."}]}
     breadcrumbs = "breadcrumbs"
     # tags (dictionary)
     # See https://blog.meilisearch.com/nested-hierarchical-facets-guide/

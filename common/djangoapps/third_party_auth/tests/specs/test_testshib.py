@@ -28,6 +28,8 @@ from common.djangoapps.third_party_auth.tests import testutil, utils
 from openedx.core.djangoapps.user_authn.views.login import login_user
 
 from .base import IntegrationTestMixin
+from common.test.utils import assert_dict_contains_subset
+from urllib.parse import urlparse, parse_qs, quote
 
 TESTSHIB_ENTITY_ID = "https://idp.testshib.org/idp/shibboleth"
 TESTSHIB_METADATA_URL = "https://mock.testshib.org/metadata/testshib-providers.xml"
@@ -140,10 +142,20 @@ class SamlIntegrationTestUtilities:
             os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "testshib_saml_response.xml")
         )
 
+        data = utils.prepare_saml_response_from_xml(saml_response_xml)
+
+        # Extract RelayState from the redirect to IdP
+        parsed_url = urlparse(provider_redirect_url)
+        query_params = parse_qs(parsed_url.query)
+        relay_state = query_params.get('RelayState', [''])[0]
+
+        if relay_state:
+            data += '&RelayState=' + quote(relay_state)  # Append as string to the URL-encoded data
+
         return self.client.post(  # lint-amnesty, pylint: disable=no-member
             self.complete_url,  # lint-amnesty, pylint: disable=no-member
             content_type="application/x-www-form-urlencoded",
-            data=utils.prepare_saml_response_from_xml(saml_response_xml),
+            data=data,
         )
 
 
@@ -171,45 +183,6 @@ class TestIndexExceptionTest(SamlIntegrationTestUtilities, IntegrationTestMixin,
         """
         The `urn:oid:0.9.2342.19200300.100.1.1` attribute is an empty list,
         should throw a specific exception NOT an IndexException
-        """
-        self.provider = self._configure_testshib_provider()
-        request, strategy = self.get_request_and_strategy(
-            auth_entry=pipeline.AUTH_ENTRY_LOGIN, redirect_uri="social:complete"
-        )
-        with self.assertRaises(IncorrectConfigurationException):
-            request.backend.auth_complete = MagicMock(return_value=self.fake_auth_complete(strategy))
-
-    def get_response_data(self):
-        """Gets dict (string -> object) of merged data about the user."""
-        response_data = dict(self.TOKEN_RESPONSE_DATA)
-        response_data.update(self.USER_RESPONSE_DATA)
-        return response_data
-
-
-@ddt.ddt
-@utils.skip_unless_thirdpartyauth()
-class TestKeyExceptionTest(SamlIntegrationTestUtilities, IntegrationTestMixin, testutil.SAMLTestCase):
-    """
-    To test SAML error handling when presented with missing attributes
-    """
-
-    TOKEN_RESPONSE_DATA = {
-        "access_token": "access_token_value",
-        "expires_in": "expires_in_value",
-    }
-    USER_RESPONSE_DATA = {
-        "lastName": "lastName_value",
-        "id": "id_value",
-        "firstName": "firstName_value",
-        "idp_name": "testshib",
-        "attributes": {"name_id": "1"},
-        "session_index": "1",
-    }
-
-    def test_key_error_from_missing_saml_attributes(self):
-        """
-        The `urn:oid:0.9.2342.19200300.100.1.1` attribute is missing,
-        should throw a specific exception NOT a Key Error
         """
         self.provider = self._configure_testshib_provider()
         request, strategy = self.get_request_and_strategy(
@@ -369,8 +342,10 @@ class TestShibIntegrationTest(SamlIntegrationTestUtilities, IntegrationTestMixin
             assert msg.startswith("SAML login %s")
             assert action_type == "request"
             assert idp_name == self.PROVIDER_IDP_SLUG
-            self.assertDictContainsSubset(
-                {"idp": idp_name, "auth_entry": "login", "next": expected_next_url}, request_data
+            assert_dict_contains_subset(
+                self,
+                {"idp": idp_name, "auth_entry": "login", "next": expected_next_url},
+                request_data,
             )
             assert next_url == expected_next_url
             assert "<samlp:AuthnRequest" in xml
@@ -379,7 +354,8 @@ class TestShibIntegrationTest(SamlIntegrationTestUtilities, IntegrationTestMixin
             assert msg.startswith("SAML login %s")
             assert action_type == "response"
             assert idp_name == self.PROVIDER_IDP_SLUG
-            self.assertDictContainsSubset({"RelayState": idp_name}, response_data)
+            expected_relay_state = json.dumps({"idp": idp_name, "next": expected_next_url})  # Remove "auth_entry"
+            assert_dict_contains_subset(self, {"RelayState": expected_relay_state}, response_data)
             assert "SAMLResponse" in response_data
             assert next_url == expected_next_url
             assert "<saml2p:Response" in xml

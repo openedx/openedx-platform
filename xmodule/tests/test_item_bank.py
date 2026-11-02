@@ -21,7 +21,7 @@ from xmodule.capa_block import ProblemBlock
 from common.djangoapps.student.tests.factories import UserFactory
 
 from ..item_bank_block import ItemBankBlock
-from .test_course_block import DummySystem as TestImportSystem
+from .test_course_block import DummyModuleStoreRuntime
 
 dummy_render = lambda block, _: Fragment(block.data)  # pylint: disable=invalid-name
 
@@ -121,7 +121,7 @@ class TestItemBankForCms(ItemBankTestBase):
         olx_element = etree.fromstring(actual_olx_export)
 
         # Re-import the OLX.
-        runtime = TestImportSystem(load_error_blocks=True, course_id=self.item_bank.context_key)
+        runtime = DummyModuleStoreRuntime(load_error_blocks=True, course_id=self.item_bank.context_key)
         runtime.resources_fs = export_fs
         imported_item_bank = ItemBankBlock.parse_xml(olx_element, runtime, None)
 
@@ -168,11 +168,11 @@ class TestItemBankForCms(ItemBankTestBase):
         assert self.item_bank.validate()
 
     @patch(
-        'xmodule.modulestore.split_mongo.caching_descriptor_system.CachingDescriptorSystem.render',
+        'xmodule.modulestore.split_mongo.runtime.SplitModuleStoreRuntime.render',
         VanillaRuntime.render,
     )
     @patch('xmodule.capa_block.ProblemBlock.author_view', dummy_render, create=True)
-    @patch('xmodule.x_module.DescriptorSystem.applicable_aside_types', lambda self, block: [])
+    @patch('xmodule.x_module.ModuleStoreRuntime.applicable_aside_types', lambda self, block: [])
     def test_preview_view(self):
         """ Test preview view rendering """
         self._bind_course_block(self.item_bank)
@@ -183,11 +183,11 @@ class TestItemBankForCms(ItemBankTestBase):
         assert '<p>Hello world from problem 3</p>' in rendered.content
 
     @patch(
-        'xmodule.modulestore.split_mongo.caching_descriptor_system.CachingDescriptorSystem.render',
+        'xmodule.modulestore.split_mongo.runtime.SplitModuleStoreRuntime.render',
         VanillaRuntime.render,
     )
     @patch('xmodule.capa_block.ProblemBlock.author_view', dummy_render, create=True)
-    @patch('xmodule.x_module.DescriptorSystem.applicable_aside_types', lambda self, block: [])
+    @patch('xmodule.x_module.ModuleStoreRuntime.applicable_aside_types', lambda self, block: [])
     def test_author_view(self):
         """ Test author view rendering """
         self._bind_course_block(self.item_bank)

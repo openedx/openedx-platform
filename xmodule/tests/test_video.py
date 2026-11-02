@@ -40,7 +40,7 @@ from xmodule.video_block.transcripts_utils import save_to_store
 from xblock.core import XBlockAside
 from xmodule.modulestore.tests.test_asides import AsideTestType
 
-from .test_import import DummySystem
+from .test_import import DummyModuleStoreRuntime
 
 SRT_FILEDATA = '''
 0
@@ -283,7 +283,7 @@ class VideoBlockImportTestCase(TestCase):
         })
 
     def test_parse_xml(self):
-        module_system = DummySystem(load_error_blocks=True)
+        module_system = DummyModuleStoreRuntime(load_error_blocks=True)
         xml_data = '''
             <video display_name="Test Video"
                    youtube="1.0:p2Q6BrNhdh8,0.75:izygArpw-Qo,1.25:1EeWXzPdhSA,1.5:rABDYkeK0x8"
@@ -324,7 +324,7 @@ class VideoBlockImportTestCase(TestCase):
     @ddt.data(True, False)
     def test_parse_xml_with_asides(self, video_xml_has_aside, mock_is_pointer_tag, mock_load_file):
         """Test that `parse_xml` parses asides from the video xml"""
-        runtime = DummySystem(load_error_blocks=True)
+        runtime = DummyModuleStoreRuntime(load_error_blocks=True)
         if video_xml_has_aside:
             xml_data = '''
                 <video url_name="a16643fa63234fef8f6ebbc1902e2253">
@@ -358,7 +358,7 @@ class VideoBlockImportTestCase(TestCase):
         """
         Test that if handout link is course_asset then it will contain targeted course_id in handout link.
         """
-        module_system = DummySystem(load_error_blocks=True)
+        module_system = DummyModuleStoreRuntime(load_error_blocks=True)
         course_id = CourseKey.from_string(course_id_string)
         xml_data = '''
             <video display_name="Test Video"
@@ -401,7 +401,7 @@ class VideoBlockImportTestCase(TestCase):
         Ensure that attributes have the right values if they aren't
         explicitly set in XML.
         """
-        module_system = DummySystem(load_error_blocks=True)
+        module_system = DummyModuleStoreRuntime(load_error_blocks=True)
         xml_data = '''
             <video display_name="Test Video"
                    youtube="1.0:p2Q6BrNhdh8,1.25:1EeWXzPdhSA"
@@ -432,7 +432,7 @@ class VideoBlockImportTestCase(TestCase):
         Ensure that attributes have the right values if they aren't
         explicitly set in XML.
         """
-        module_system = DummySystem(load_error_blocks=True)
+        module_system = DummyModuleStoreRuntime(load_error_blocks=True)
         xml_data = '''
             <video display_name="Test Video"
                    youtube="1.0:p2Q6BrNhdh8,1.25:1EeWXzPdhSA"
@@ -463,7 +463,7 @@ class VideoBlockImportTestCase(TestCase):
         """
         Make sure settings are correct if none are explicitly set in XML.
         """
-        module_system = DummySystem(load_error_blocks=True)
+        module_system = DummyModuleStoreRuntime(load_error_blocks=True)
         xml_data = '<video></video>'
         xml_object = etree.fromstring(xml_data)
         output = VideoBlock.parse_xml(xml_object, module_system, None)
@@ -489,7 +489,7 @@ class VideoBlockImportTestCase(TestCase):
         Make sure we can handle the double-quoted string format (which was used for exporting for
         a few weeks).
         """
-        module_system = DummySystem(load_error_blocks=True)
+        module_system = DummyModuleStoreRuntime(load_error_blocks=True)
         xml_data = '''
             <video display_name="&quot;display_name&quot;"
                 html5_sources="[&quot;source_1&quot;, &quot;source_2&quot;]"
@@ -524,7 +524,7 @@ class VideoBlockImportTestCase(TestCase):
         })
 
     def test_parse_xml_double_quote_concatenated_youtube(self):
-        module_system = DummySystem(load_error_blocks=True)
+        module_system = DummyModuleStoreRuntime(load_error_blocks=True)
         xml_data = '''
             <video display_name="Test Video"
                    youtube="1.0:&quot;p2Q6BrNhdh8&quot;,1.25:&quot;1EeWXzPdhSA&quot;">
@@ -552,7 +552,7 @@ class VideoBlockImportTestCase(TestCase):
         """
         Test backwards compatibility with VideoBlock's XML format.
         """
-        module_system = DummySystem(load_error_blocks=True)
+        module_system = DummyModuleStoreRuntime(load_error_blocks=True)
         xml_data = """
             <video display_name="Test Video"
                    youtube="1.0:p2Q6BrNhdh8,0.75:izygArpw-Qo,1.25:1EeWXzPdhSA,1.5:rABDYkeK0x8"
@@ -584,7 +584,7 @@ class VideoBlockImportTestCase(TestCase):
         """
         Ensure that Video is able to read VideoBlock's model data.
         """
-        module_system = DummySystem(load_error_blocks=True)
+        module_system = DummyModuleStoreRuntime(load_error_blocks=True)
         xml_data = """
             <video display_name="Test Video"
                    youtube="1.0:p2Q6BrNhdh8,0.75:izygArpw-Qo,1.25:1EeWXzPdhSA,1.5:rABDYkeK0x8"
@@ -615,7 +615,7 @@ class VideoBlockImportTestCase(TestCase):
         """
         Ensure that Video is able to read VideoBlock's model data.
         """
-        module_system = DummySystem(load_error_blocks=True)
+        module_system = DummyModuleStoreRuntime(load_error_blocks=True)
         xml_data = """
             <video display_name="Test Video"
                    youtube="1.0:p2Q6BrNhdh8,0.75:izygArpw-Qo,1.25:1EeWXzPdhSA,1.5:rABDYkeK0x8"
@@ -660,7 +660,7 @@ class VideoBlockImportTestCase(TestCase):
 
         edx_video_id = 'test_edx_video_id'
         mock_val_api.import_from_xml = Mock(wraps=mock_val_import)
-        module_system = DummySystem(load_error_blocks=True)
+        module_system = DummyModuleStoreRuntime(load_error_blocks=True)
 
         # Create static directory in import file system and place transcript files inside it.
         module_system.resources_fs.makedirs(EXPORT_IMPORT_STATIC_DIR, recreate=True)
@@ -691,7 +691,7 @@ class VideoBlockImportTestCase(TestCase):
     def test_import_val_data_invalid(self, mock_val_api):
         mock_val_api.ValCannotCreateError = _MockValCannotCreateError
         mock_val_api.import_from_xml = Mock(side_effect=mock_val_api.ValCannotCreateError)
-        module_system = DummySystem(load_error_blocks=True)
+        module_system = DummyModuleStoreRuntime(load_error_blocks=True)
 
         # Negative duration is invalid
         xml_data = """

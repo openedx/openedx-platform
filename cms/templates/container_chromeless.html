@@ -98,13 +98,6 @@ from openedx.core.release import RELEASE_LINE
             <%static:include path="common/templates/image-modal.underscore" />
         </script>
         <link rel="stylesheet" type="text/css" href="${static.url('js/vendor/timepicker/jquery.timepicker.css')}" />
-        ## The following stylesheets are included for studio-frontend debugging.
-        ## Remove this as part of studio frontend deprecation.
-        ## https://github.com/openedx/studio-frontend/issues/381
-        % if not settings.STUDIO_FRONTEND_CONTAINER_URL:
-            <link rel="stylesheet" type="text/css" href="${static.url('common/css/vendor/common.min.css')}" />
-            <link rel="stylesheet" type="text/css" href="${static.url('common/css/vendor/editImageModal.min.css')}" />
-        % endif
     </head>
 
     <body class="${static.dir_rtl()} is-signedin course container view-container lang_${LANGUAGE_CODE}">

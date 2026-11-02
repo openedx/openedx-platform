@@ -19,7 +19,7 @@ from django.urls import reverse
 from freezegun import freeze_time
 from oauth2_provider.models import AccessToken as dot_access_token
 from oauth2_provider.models import RefreshToken as dot_refresh_token
-from pytz import UTC
+from zoneinfo import ZoneInfo
 from testfixtures import LogCapture
 
 from openedx.core.djangoapps.oauth_dispatch.tests import factories as dot_factories
@@ -319,7 +319,7 @@ class TestPasswordChange(CreateAccountMixin, CacheIsolationTestCase):
 
         # now reset the time to 1 min from now in future and change the email and
         # verify that it will allow another request from same IP
-        reset_time = datetime.now(UTC) + timedelta(seconds=61)
+        reset_time = datetime.now(ZoneInfo("UTC")) + timedelta(seconds=61)
         with freeze_time(reset_time):
             response = self._change_password(email=self.OLD_EMAIL)
             assert response.status_code == 200

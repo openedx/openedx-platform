@@ -630,7 +630,7 @@ class ContainersTestCase(ContentLibrariesRestApiTest):
         ]
 
     def test_subsection_hierarchy(self):
-        with self.assertNumQueries(93):
+        with self.assertNumQueries(95):
             hierarchy = self._get_container_hierarchy(self.subsection_with_units["id"])
         assert hierarchy["object_key"] == self.subsection_with_units["id"]
         assert hierarchy["components"] == [
@@ -653,7 +653,7 @@ class ContainersTestCase(ContentLibrariesRestApiTest):
         ]
 
     def test_units_hierarchy(self):
-        with self.assertNumQueries(56):
+        with self.assertNumQueries(60):
             hierarchy = self._get_container_hierarchy(self.unit_with_components["id"])
         assert hierarchy["object_key"] == self.unit_with_components["id"]
         assert hierarchy["components"] == [
@@ -679,7 +679,7 @@ class ContainersTestCase(ContentLibrariesRestApiTest):
         )
 
     def test_block_hierarchy(self):
-        with self.assertNumQueries(21):
+        with self.assertNumQueries(27):
             hierarchy = self._get_block_hierarchy(self.problem_block["id"])
         assert hierarchy["object_key"] == self.problem_block["id"]
         assert hierarchy["components"] == [

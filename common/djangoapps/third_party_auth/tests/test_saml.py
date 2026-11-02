@@ -2,7 +2,6 @@
 Unit tests for third_party_auth SAML auth providers
 """
 
-
 from unittest import mock
 
 from django.test import RequestFactory
@@ -10,6 +9,7 @@ from django.utils.datastructures import MultiValueDictKeyError
 from django.contrib.sessions.middleware import SessionMiddleware
 from social_core.exceptions import AuthMissingParameter
 
+from common.djangoapps.third_party_auth.dummy import DummyBackend
 from common.djangoapps.third_party_auth.saml import EdXSAMLIdentityProvider, get_saml_idp_class, SAMLAuthBackend
 from common.djangoapps.third_party_auth.tests.data.saml_identity_provider_mock_data import (
     expected_user_details,
@@ -23,6 +23,7 @@ class TestEdXSAMLIdentityProvider(SAMLTestCase):
     """
         Test EdXSAMLIdentityProvider.
     """
+
     @mock.patch('common.djangoapps.third_party_auth.saml.log')
     def test_get_saml_idp_class_with_fake_identifier(self, log_mock):
         error_mock = log_mock.error
@@ -35,7 +36,7 @@ class TestEdXSAMLIdentityProvider(SAMLTestCase):
 
     def test_get_user_details(self):
         """ test get_attr and get_user_details of EdXSAMLIdentityProvider"""
-        edx_saml_identity_provider = EdXSAMLIdentityProvider('demo', **mock_conf)
+        edx_saml_identity_provider = EdXSAMLIdentityProvider(DummyBackend, 'demo', **mock_conf)
         assert edx_saml_identity_provider.get_user_details(mock_attributes) == expected_user_details
 
 

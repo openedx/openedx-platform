@@ -16,7 +16,7 @@ from openedx_events.tests.utils import OpenEdxEventsTestMixin
 from openedx_tagging.core.tagging.models import Tag
 from organizations.models import Organization
 from xmodule.modulestore.django import contentstore, modulestore
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase, upload_file_to_course
+from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase, upload_file_to_course, ImmediateOnCommitMixin
 from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory, ToyCourseFactory, LibraryFactory
 
 from cms.djangoapps.contentstore.utils import reverse_usage_url
@@ -400,7 +400,7 @@ class ClipboardPasteTestCase(ModuleStoreTestCase):
         assert source_pic2_hash != dest_pic2_hash  # Because there was a conflict, this file was unchanged.
 
 
-class ClipboardPasteFromV2LibraryTestCase(OpenEdxEventsTestMixin, ModuleStoreTestCase):
+class ClipboardPasteFromV2LibraryTestCase(OpenEdxEventsTestMixin, ImmediateOnCommitMixin, ModuleStoreTestCase):
     """
     Test Clipboard Paste functionality with a "new" (as of Sumac) library
     """

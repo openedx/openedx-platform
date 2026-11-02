@@ -26,6 +26,7 @@ from ..models import CommerceConfiguration
 from ..utils import _generate_refund_notification_body, _send_refund_notification, create_zendesk_ticket
 from . import JSON
 from .mocks import mock_create_refund, mock_process_refund
+from common.test.utils import assert_dict_contains_subset
 
 ZENDESK_URL = 'http://zendesk.example.com/'
 ZENDESK_USER = 'test@example.com'
@@ -309,7 +310,7 @@ class TestRefundSignal(ModuleStoreTestCase):
                 f'{ZENDESK_USER}/token:{ZENDESK_API_KEY}'.encode('utf8')).decode('utf8')
             )
         }
-        self.assertDictContainsSubset(expected, last_request.headers)
+        assert_dict_contains_subset(self, expected, last_request.headers)
 
         # Verify the content
         expected = {

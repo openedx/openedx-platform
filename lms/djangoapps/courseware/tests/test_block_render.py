@@ -58,7 +58,7 @@ from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory, Toy
 from xmodule.modulestore.tests.test_asides import AsideTestType  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.services import RebindUserServiceError
 from xmodule.video_block import VideoBlock  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.x_module import STUDENT_VIEW, DescriptorSystem  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.x_module import STUDENT_VIEW, ModuleStoreRuntime  # lint-amnesty, pylint: disable=wrong-import-order
 from common.djangoapps.course_modes.models import CourseMode  # lint-amnesty, pylint: disable=reimported
 from common.djangoapps.student.tests.factories import (
     TEST_PASSWORD,
@@ -486,8 +486,11 @@ class BlockRenderTestCase(SharedModuleStoreTestCase, LoginEnrollmentTestCase):
     @override_settings(FIELD_OVERRIDE_PROVIDERS=(
         'lms.djangoapps.courseware.student_field_overrides.IndividualStudentOverrideProvider',
     ))
-    @patch('xmodule.modulestore.xml.ImportSystem.applicable_aside_types', lambda self, block: ['test_aside'])
-    @patch('xmodule.modulestore.split_mongo.caching_descriptor_system.CachingDescriptorSystem.applicable_aside_types',
+    @patch(
+        'xmodule.modulestore.xml.XMLImportingModuleStoreRuntime.applicable_aside_types',
+        lambda self, block: ['test_aside']
+    )
+    @patch('xmodule.modulestore.split_mongo.runtime.SplitModuleStoreRuntime.applicable_aside_types',
            lambda self, block: ['test_aside'])
     @XBlockAside.register_temp_plugin(AsideTestType, 'test_aside')
     @ddt.data('regular', 'test_aside')
@@ -2030,7 +2033,7 @@ class TestAnonymousStudentId(SharedModuleStoreTestCase, LoginEnrollmentTestCase)
             location=location,
             static_asset_path=None,
             _runtime=Mock(
-                spec=DescriptorSystem,
+                spec=ModuleStoreRuntime,
                 resources_fs=None,
                 mixologist=Mock(_mixins=(), name='mixologist'),
                 _services={},
@@ -2043,7 +2046,7 @@ class TestAnonymousStudentId(SharedModuleStoreTestCase, LoginEnrollmentTestCase)
             fields={},
             days_early_for_beta=None,
         )
-        block.runtime = DescriptorSystem(None, None, None)
+        block.runtime = ModuleStoreRuntime(None, None, None)
         # Use the xblock_class's bind_for_student method
         block.bind_for_student = partial(xblock_class.bind_for_student, block)
 
@@ -2116,9 +2119,9 @@ class TestModuleTrackingContext(SharedModuleStoreTestCase):
         assert problem_display_name == block_info['display_name']
 
     @XBlockAside.register_temp_plugin(AsideTestType, 'test_aside')
-    @patch('xmodule.modulestore.mongo.base.CachingDescriptorSystem.applicable_aside_types',
+    @patch('xmodule.modulestore.mongo.base.OldModuleStoreRuntime.applicable_aside_types',
            lambda self, block: ['test_aside'])
-    @patch('xmodule.x_module.DescriptorSystem.applicable_aside_types',
+    @patch('xmodule.x_module.ModuleStoreRuntime.applicable_aside_types',
            lambda self, block: ['test_aside'])
     def test_context_contains_aside_info(self, mock_tracker):
         """

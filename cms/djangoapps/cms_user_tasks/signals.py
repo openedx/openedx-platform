@@ -12,6 +12,7 @@ from user_tasks.signals import user_task_stopped
 
 from cms.djangoapps.contentstore.toggles import bypass_olx_failure_enabled
 from cms.djangoapps.contentstore.utils import course_import_olx_validation_is_enabled
+from openedx.core.djangoapps.content_libraries.api import is_library_backup_task, is_library_restore_task
 
 from .tasks import send_task_complete_email
 
@@ -64,6 +65,28 @@ def user_task_stopped_handler(sender, **kwargs):  # pylint: disable=unused-argum
         if olx_artifact and not bypass_olx_failure_enabled():
             return olx_artifact.text
 
+    def should_skip_end_of_task_email(task_name) -> bool:
+        """
+        Studio tasks generally send an email when finished, but not always.
+
+        Some tasks can last many minutes, e.g. course import/export. For these
+        tasks, there is a high chance that the user has navigated away and will
+        want to check back in later. Yet email notification is unnecessary and
+        distracting for things like the Library restore task, which is
+        relatively quick and cannot be resumed (i.e. if you navigate away, you
+        have to upload again).
+
+        The task_name passed in will be lowercase.
+        """
+        # We currently have to pattern match on the name to differentiate
+        # between tasks. A better long term solution would be to add a separate
+        # task type identifier field to Django User Tasks.
+        return (
+            is_library_content_update(task_name) or
+            is_library_backup_task(task_name) or
+            is_library_restore_task(task_name)
+        )
+
     status = kwargs['status']
 
     # Only send email when the entire task is complete, should only send when
@@ -72,7 +95,7 @@ def user_task_stopped_handler(sender, **kwargs):  # pylint: disable=unused-argum
         task_name = status.name.lower()
 
         # Also suppress emails on library content XBlock updates (too much like spam)
-        if is_library_content_update(task_name):
+        if should_skip_end_of_task_email(task_name):
             LOGGER.info(f"Suppressing end-of-task email on task {task_name}")
             return
 

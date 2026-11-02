@@ -15,7 +15,7 @@ from xblock.fields import ScopeIds
 
 from xmodule.conditional_block import ConditionalBlock
 from xmodule.error_block import ErrorBlock
-from xmodule.modulestore.xml import CourseLocationManager, ImportSystem, XMLModuleStore
+from xmodule.modulestore.xml import CourseLocationManager, XMLImportingModuleStoreRuntime, XMLModuleStore
 from xmodule.tests import DATA_DIR, get_test_system, prepare_block_runtime
 from xmodule.tests.xml import XModuleXmlImportTest
 from xmodule.tests.xml import factories as xml
@@ -26,7 +26,10 @@ ORG = 'test_org'
 COURSE = 'conditional'      # name of directory with course data
 
 
-class DummySystem(ImportSystem):  # lint-amnesty, pylint: disable=abstract-method, missing-class-docstring
+class DummyModuleStoreRuntime(XMLImportingModuleStoreRuntime):  # pylint: disable=abstract-method
+    """
+    Minimal modulestore runtime for tests
+    """
 
     @patch('xmodule.modulestore.xml.OSFS', lambda directory: MemoryFS())
     def __init__(self, load_error_blocks):

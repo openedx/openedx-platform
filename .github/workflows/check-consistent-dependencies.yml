@@ -19,26 +19,31 @@ jobs:
     runs-on: ubuntu-24.04
 
     steps:
-      # Only run remaining steps if there are changes to requirements/**
-      - name: "Decide whether to short-circuit"
-        env:
-          GH_TOKEN: "${{ github.token }}"
-          PR_URL: "${{ github.event.pull_request.html_url }}"
-        run: |
-          paths=$(gh pr diff "$PR_URL" --name-only)
-          echo $'Paths touched in PR:\n'"$paths"
+      # Always checkout the code because we don't always have a PR url.
+      - uses: actions/checkout@v5
 
-          # The ^"? is because git may quote weird file paths
-          matched="$(echo "$paths" | grep -P '^"?((requirements/)|(scripts/.*?/requirements/))' || true)"
-          echo $'Relevant paths:\n'"$matched"
-          if [[ -n "$matched" ]]; then
-              echo "RELEVANT=true" >> "$GITHUB_ENV"
+      # Only run remaining steps if there are changes to requirements/**
+      # We do this instead of using path based short-circuiting.
+      # see https://stackoverflow.com/questions/77996177/how-can-i-handle-a-required-check-that-isnt-always-triggered
+      # for some more details.
+      - name: "Decide whether to short-circuit"
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          else
+            BASE_SHA="${{ github.event.merge_group.base_sha }}"
           fi
 
-      - uses: actions/checkout@v5
-        if: ${{ env.RELEVANT == 'true' }}
+          # Fetch the base sha so we can compare to it. It's not checked out by
+          # default.
+          git fetch origin "$BASE_SHA"
 
-      - uses: actions/setup-python@v5
+          # The ^"? is because git may quote weird file paths
+          if git diff --name-only "$BASE_SHA" | grep -P '^"?((requirements/)|(scripts/.*?/requirements/))'; then
+            echo "RELEVANT=true" >> "$GITHUB_ENV"
+          fi
+
+      - uses: actions/setup-python@v6
         if: ${{ env.RELEVANT == 'true' }}
         with:
           python-version: '3.11'

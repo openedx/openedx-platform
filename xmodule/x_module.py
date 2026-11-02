@@ -17,17 +17,13 @@ from opaque_keys.edx.keys import UsageKey
 from web_fragments.fragment import Fragment
 from webob import Response
 from webob.multidict import MultiDict
-from xblock.core import XBlock, XBlockAside
+from xblock.core import XBlock
 from xblock.fields import (
     Dict,
     Float,
     Integer,
     List,
-    Reference,
-    ReferenceList,
-    ReferenceValueDict,
     Scope,
-    ScopeIds,
     String,
     UserScope
 )
@@ -267,17 +263,17 @@ class XModuleMixin(XModuleFields, XBlock):
 
     def __init__(self, *args, **kwargs):
         self._asides = []
-        # Initialization data used by CachingDescriptorSystem to defer FieldData initialization
+        # Initialization data used by SplitModuleStoreRuntime to defer FieldData initialization
         self._cds_init_args = kwargs.pop("cds_init_args", None)
 
         super().__init__(*args, **kwargs)
 
     def get_cds_init_args(self):
-        """ Get initialization data used by CachingDescriptorSystem to defer FieldData initialization """
+        """ Get initialization data used by SplitModuleStoreRuntime to defer FieldData initialization """
         if self._cds_init_args is None:
             raise KeyError("cds_init_args was not provided for this XBlock")
         if self._cds_init_args is False:
-            raise RuntimeError("Tried to get CachingDescriptorSystem cds_init_args twice for the same XBlock.")
+            raise RuntimeError("Tried to get SplitModuleStoreRuntime cds_init_args twice for the same XBlock.")
         args = self._cds_init_args
         # Free the memory and set this False to flag any double-access bugs. This only needs to be read once.
         self._cds_init_args = False
@@ -617,8 +613,8 @@ class XModuleMixin(XModuleFields, XBlock):
                 wrapped_field_data = wrapper(wrapped_field_data)
             self._bound_field_data = wrapped_field_data
             if getattr(self.runtime, "uses_deprecated_field_data", False):
-                # This approach is deprecated but old mongo's CachingDescriptorSystem still requires it.
-                # For Split mongo's CachingDescriptor system, don't set ._field_data this way.
+                # This approach is deprecated but OldModuleStoreRuntime still requires it.
+                # For SplitModuleStoreRuntime, don't set ._field_data this way.
                 self._field_data = wrapped_field_data
 
     @property
@@ -919,7 +915,7 @@ class ResourceTemplates:
                 return cls._load_template(abs_path, template_id)
 
 
-class ConfigurableFragmentWrapper:
+class _ConfigurableFragmentWrapper:
     """
     Runtime mixin that allows for composition of many `wrap_xblock` wrappers
     """
@@ -985,9 +981,9 @@ def block_global_local_resource_url(block, uri):
     raise NotImplementedError("Applications must monkey-patch this function before using local_resource_url for studio_view")  # lint-amnesty, pylint: disable=line-too-long
 
 
-class MetricsMixin:
+class _MetricsMixin:
     """
-    Mixin for adding metric logging for render and handle methods in the DescriptorSystem.
+    Mixin for adding metric logging for render and handle methods in the ModuleStoreRuntime.
     """
 
     def render(self, block, view_name, context=None):  # lint-amnesty, pylint: disable=missing-function-docstring
@@ -1022,7 +1018,7 @@ class MetricsMixin:
             )
 
 
-class ModuleSystemShim:
+class _ModuleSystemShim:
     """
     This shim provides the properties formerly available from ModuleSystem which are now being provided by services.
 
@@ -1346,12 +1342,19 @@ class ModuleSystemShim:
         self._deprecated_course_id = course_id
 
 
-class DescriptorSystem(MetricsMixin, ConfigurableFragmentWrapper, ModuleSystemShim, Runtime):
+class ModuleStoreRuntime(_MetricsMixin, _ConfigurableFragmentWrapper, _ModuleSystemShim, Runtime):
     """
-    Base class for :class:`Runtime`s to be used with :class:`XModuleDescriptor`s
+    Base class for :class:`Runtime`s to be used with :class:`XBlock`s loaded from ModuleStore.
     """
     def __init__(
-        self, load_item, resources_fs, error_tracker, get_policy=None, disabled_xblock_types=lambda: [], **kwargs
+        self,
+        load_item,
+        resources_fs,
+        error_tracker,
+        get_policy=None,
+        render_template=None,
+        disabled_xblock_types=lambda: [],
+        **kwargs
     ):
         """
         load_item: Takes a Location and returns an XModuleDescriptor
@@ -1385,6 +1388,19 @@ class DescriptorSystem(MetricsMixin, ConfigurableFragmentWrapper, ModuleSystemSh
             self.get_policy = get_policy
         else:
             self.get_policy = lambda u: {}
+        if render_template:
+            self.render_template = render_template
+            # Add the MakoService to the runtime services. If it already exists, do not attempt to reinitialize it;
+            # otherwise, this could override the `namespace_prefix` of the `MakoService`, breaking template rendering in
+            # Studio.
+            #
+            # This is not needed by most XBlocks, because the MakoService is added to their runtimes. However, there are
+            # a few cases where the MakoService is not added to the XBlock's runtime. Specifically: * in the Instructor
+            # Dashboard bulk emails tab, when rendering the HtmlBlock for its WYSIWYG editor. * during testing, when
+            # fetching factory-created blocks.
+            if 'mako' not in self._services:
+                from common.djangoapps.edxmako.services import MakoService
+                self._services['mako'] = MakoService()
 
         self.disabled_xblock_types = disabled_xblock_types
 
@@ -1439,7 +1455,7 @@ class DescriptorSystem(MetricsMixin, ConfigurableFragmentWrapper, ModuleSystemSh
         return result
 
     def handler_url(self, block, handler_name, suffix='', query='', thirdparty=False):
-        # When the Modulestore instantiates DescriptorSystems, we will reference a
+        # When the Modulestore instantiates ModuleStoreRuntime, we will reference a
         # global function that the application can override, unless a specific function is
         # defined for LMS/CMS through the handler_url_override property.
         if getattr(self, 'handler_url_override', None):
@@ -1450,8 +1466,8 @@ class DescriptorSystem(MetricsMixin, ConfigurableFragmentWrapper, ModuleSystemSh
         """
         See :meth:`xblock.runtime.Runtime:local_resource_url` for documentation.
         """
-        # Currently, Modulestore is responsible for instantiating DescriptorSystems
-        # This means that LMS/CMS don't have a way to define a subclass of DescriptorSystem
+        # Currently, Modulestore is responsible for instantiating ModuleStoreRuntime
+        # This means that LMS/CMS don't have a way to define a subclass of ModuleStoreRuntime
         # that implements the correct local_resource_url. So, for now, instead, we will reference a
         # global function that the application can override.
         return block_global_local_resource_url(block, uri)
@@ -1520,120 +1536,6 @@ class DescriptorSystem(MetricsMixin, ConfigurableFragmentWrapper, ModuleSystemSh
         if getattr(self, 'layout_asides_override', None):
             return self.layout_asides_override(block, context, frag, view_name, aside_frag_fns)
         return super().layout_asides(block, context, frag, view_name, aside_frag_fns)
-
-
-class XMLParsingSystem(DescriptorSystem):  # lint-amnesty, pylint: disable=abstract-method, missing-class-docstring
-    def __init__(self, process_xml, **kwargs):
-        """
-        process_xml: Takes an xml string, and returns a XModuleDescriptor
-            created from that xml
-        """
-
-        super().__init__(**kwargs)
-        self.process_xml = process_xml
-
-    def _usage_id_from_node(self, node, parent_id):
-        """Create a new usage id from an XML dom node.
-
-        Args:
-            node (lxml.etree.Element): The DOM node to interpret.
-            parent_id: The usage ID of the parent block
-        Returns:
-            UsageKey: the usage key for the new xblock
-        """
-        return self.xblock_from_node(node, parent_id, self.id_generator).scope_ids.usage_id
-
-    def xblock_from_node(self, node, parent_id, id_generator=None):
-        """
-        Create an XBlock instance from XML data.
-
-        Args:
-            xml_data (string): A string containing valid xml.
-            system (XMLParsingSystem): The :class:`.XMLParsingSystem` used to connect the block
-                to the outside world.
-            id_generator (IdGenerator): An :class:`~xblock.runtime.IdGenerator` that
-                will be used to construct the usage_id and definition_id for the block.
-
-        Returns:
-            XBlock: The fully instantiated :class:`~xblock.core.XBlock`.
-
-        """
-        id_generator = id_generator or self.id_generator
-        # leave next line commented out - useful for low-level debugging
-        # log.debug('[_usage_id_from_node] tag=%s, class=%s' % (node.tag, xblock_class))
-
-        block_type = node.tag
-        # remove xblock-family from elements
-        node.attrib.pop('xblock-family', None)
-
-        url_name = node.get('url_name')  # difference from XBlock.runtime
-        def_id = id_generator.create_definition(block_type, url_name)
-        usage_id = id_generator.create_usage(def_id)
-
-        keys = ScopeIds(None, block_type, def_id, usage_id)
-        block_class = self.mixologist.mix(self.load_block_type(block_type))
-
-        aside_children = self.parse_asides(node, def_id, usage_id, id_generator)
-        asides_tags = [x.tag for x in aside_children]
-
-        block = block_class.parse_xml(node, self, keys)
-        self._convert_reference_fields_to_keys(block)  # difference from XBlock.runtime
-        block.parent = parent_id
-        block.save()
-
-        asides = self.get_asides(block)
-        for asd in asides:
-            if asd.scope_ids.block_type in asides_tags:
-                block.add_aside(asd)
-
-        return block
-
-    def parse_asides(self, node, def_id, usage_id, id_generator):
-        """pull the asides out of the xml payload and instantiate them"""
-        aside_children = []
-        for child in node.iterchildren():
-            # get xblock-family from node
-            xblock_family = child.attrib.pop('xblock-family', None)
-            if xblock_family:
-                xblock_family = self._family_id_to_superclass(xblock_family)
-                if issubclass(xblock_family, XBlockAside):
-                    aside_children.append(child)
-        # now process them & remove them from the xml payload
-        for child in aside_children:
-            self._aside_from_xml(child, def_id, usage_id)
-            node.remove(child)
-        return aside_children
-
-    def _make_usage_key(self, course_key, value):
-        """
-        Makes value into a UsageKey inside the specified course.
-        If value is already a UsageKey, returns that.
-        """
-        if isinstance(value, UsageKey):
-            return value
-        usage_key = UsageKey.from_string(value)
-        return usage_key.map_into_course(course_key)
-
-    def _convert_reference_fields_to_keys(self, xblock):
-        """
-        Find all fields of type reference and convert the payload into UsageKeys
-        """
-        course_key = xblock.scope_ids.usage_id.course_key
-
-        for field in xblock.fields.values():
-            if field.is_set_on(xblock):
-                field_value = getattr(xblock, field.name)
-                if field_value is None:
-                    continue
-                elif isinstance(field, Reference):
-                    setattr(xblock, field.name, self._make_usage_key(course_key, field_value))
-                elif isinstance(field, ReferenceList):
-                    setattr(xblock, field.name, [self._make_usage_key(course_key, ele) for ele in field_value])
-                elif isinstance(field, ReferenceValueDict):
-                    for key, subvalue in field_value.items():
-                        assert isinstance(subvalue, str)
-                        field_value[key] = self._make_usage_key(course_key, subvalue)
-                    setattr(xblock, field.name, field_value)
 
 
 class DoNothingCache:

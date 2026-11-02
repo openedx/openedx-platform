@@ -93,6 +93,49 @@
             testCancel(this.view);
         });
 
+        describe('Enter key behavior in title input', function() {
+            beforeEach(function() {
+                this.createEditView();
+                this.titleInput = this.view.$('.edit-post-title');
+            });
+
+            it('prevents form submission when Enter is pressed in title input', function() {
+                var submitSpy = jasmine.createSpy('submitSpy');
+                this.view.$el.on('submit', submitSpy);
+                
+                var enterKeyEvent = $.Event('keypress', {which: 13, keyCode: 13});
+                this.titleInput.trigger(enterKeyEvent);
+                expect(submitSpy).not.toHaveBeenCalled();
+            });
+
+            it('prevents default behavior when Enter is pressed in title input', function() {
+                var enterKeyEvent = $.Event('keypress', {which: 13, keyCode: 13});
+                var preventDefaultSpy = spyOn(enterKeyEvent, 'preventDefault');
+                
+                this.titleInput.trigger(enterKeyEvent);
+                expect(preventDefaultSpy).toHaveBeenCalled();
+            });
+
+            it('does not prevent non-Enter key presses in title input', function() {
+                var submitSpy = jasmine.createSpy('submitSpy');
+                this.view.$el.on('submit', submitSpy);
+                
+                var aKeyEvent = $.Event('keypress', {which: 65, keyCode: 65});
+                var preventDefaultSpy = spyOn(aKeyEvent, 'preventDefault');
+                this.titleInput.trigger(aKeyEvent);
+                expect(preventDefaultSpy).not.toHaveBeenCalled();
+            });
+
+            it('does not interfere with body editor when Enter is pressed', function() {
+                var bodyEditor = this.view.$('.edit-post-body textarea');
+                var enterKeyEvent = $.Event('keypress', {which: 13, keyCode: 13});
+                var preventDefaultSpy = spyOn(enterKeyEvent, 'preventDefault');
+                
+                bodyEditor.trigger(enterKeyEvent);                
+                expect(preventDefaultSpy).not.toHaveBeenCalled();
+            });
+        });
+
         describe('renderComments', function() {
             beforeEach(function() {
                 this.course_settings = new DiscussionCourseSettings({

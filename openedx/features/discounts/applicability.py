@@ -12,7 +12,7 @@ not other discounts like coupons or enterprise/program offers configured in ecom
 import logging
 from datetime import datetime, timedelta
 
-import pytz
+from zoneinfo import ZoneInfo
 from crum import get_current_request, impersonate
 from django.conf import settings
 from django.utils import timezone
@@ -206,7 +206,7 @@ def _is_in_holdback_and_bucket(user):
     Return whether the specified user is in the first-purchase-discount holdback group.
     This will also stable bucket the user.
     """
-    if datetime(2020, 8, 1, tzinfo=pytz.UTC) <= datetime.now(tz=pytz.UTC):
+    if datetime(2020, 8, 1, tzinfo=ZoneInfo("UTC")) <= datetime.now(tz=ZoneInfo("UTC")):
         return False
 
     # Holdback is 10%

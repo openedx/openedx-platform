@@ -27,12 +27,16 @@ import '../../common/static/common/js/spec_helpers/jasmine-waituntil.js';
 import '../../common/static/common/js/spec_helpers/jasmine-extensions.js';
 import '../../common/static/common/js/vendor/sinon.js';
 
+import HtmlUtils from 'edx-ui-toolkit/js/utils/html-utils';
+import StringUtils from 'edx-ui-toolkit/js/utils/string-utils';
+
+
 // These libraries are used by the tests (and the code under test)
 // but not explicitly imported
 import 'jquery.ui';
 
 // These
-import './src/video/10_main.js';
+import '../assets/video/public/js/10_main.js';
 import './spec/helper.js';
 import './spec/video_helper.js';
 
@@ -71,11 +75,18 @@ import './spec/video/video_transcript_feedback_spec.js';
 import './spec/video/video_volume_control_spec.js';
 import './spec/time_spec.js';
 
+
 // overwrite the loaded method and manually start the karma after a delay
 // Somehow the code initialized in jQuery's onready doesn't get called before karma auto starts
 
 // eslint-disable-next-line no-unused-expressions
 'use strict';
+
+window._ = _;
+window.edx = window.edx || {};
+window.edx.HtmlUtils = HtmlUtils;
+window.edx.StringUtils = StringUtils;
+
 window.__karma__.loaded = function() {
     setTimeout(function() {
         window.__karma__.start();

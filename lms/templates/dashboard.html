@@ -293,16 +293,6 @@ from common.djangoapps.student.models import CourseEnrollment
           </div>
           <div id="dashboard-search-results" class="search-results dashboard-search-results"></div>
         % endif
-
-        <%block name="skip_links">
-          % if settings.FEATURES.get('ENABLE_ANNOUNCEMENTS'):
-            <a id="announcements-skip" class="nav-skip sr-only sr-only-focusable" href="#announcements">${_("Skip to list of announcements")}</a>
-          % endif
-        </%block>
-        % if settings.FEATURES.get('ENABLE_ANNOUNCEMENTS'):
-          <%include file='dashboard/_dashboard_announcements.html' />
-        % endif
-
       </div>
     </div>
 </main>

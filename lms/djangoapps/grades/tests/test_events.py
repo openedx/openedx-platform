@@ -30,6 +30,7 @@ from lms.djangoapps.grades.models import PersistentCourseGrade
 from lms.djangoapps.grades.tests.utils import mock_passing_grade
 from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory
+from common.test.utils import assert_dict_contains_subset
 
 
 class PersistentGradeEventsTest(SharedModuleStoreTestCase, OpenEdxEventsTestMixin):
@@ -91,7 +92,8 @@ class PersistentGradeEventsTest(SharedModuleStoreTestCase, OpenEdxEventsTestMixi
         PERSISTENT_GRADE_SUMMARY_CHANGED.connect(event_receiver)
         grade = PersistentCourseGrade.update_or_create(**self.params)
         self.assertTrue(self.receiver_called)
-        self.assertDictContainsSubset(
+        assert_dict_contains_subset(
+            self,
             {
                 "signal": PERSISTENT_GRADE_SUMMARY_CHANGED,
                 "sender": None,
@@ -152,7 +154,8 @@ class CoursePassingStatusEventsTest(SharedModuleStoreTestCase, OpenEdxEventsTest
             grade_factory.update(self.user, self.course)
 
         self.assertTrue(self.receiver_called)
-        self.assertDictContainsSubset(
+        assert_dict_contains_subset(
+            self,
             {
                 "signal": COURSE_PASSING_STATUS_UPDATED,
                 "sender": None,
@@ -225,7 +228,8 @@ class CCXCoursePassingStatusEventsTest(
             grade_factory.update(self.user, self.store.get_course(self.ccx_locator))
 
         self.assertTrue(self.receiver_called)
-        self.assertDictContainsSubset(
+        assert_dict_contains_subset(
+            self,
             {
                 "signal": CCX_COURSE_PASSING_STATUS_UPDATED,
                 "sender": None,

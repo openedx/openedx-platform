@@ -12,21 +12,27 @@ from __future__ import annotations
 
 import json
 import logging
-from gettext import ngettext, gettext
+import typing as t
+from gettext import gettext, ngettext
 
 import nh3
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
-from opaque_keys.edx.locator import LibraryLocator
+from opaque_keys.edx.locator import LibraryLocator, LibraryUsageLocatorV2
 from web_fragments.fragment import Fragment
 from webob import Response
 from xblock.core import XBlock
-from xblock.fields import Integer, Scope, String
+from xblock.fields import Boolean, Scope, String
 
 from xmodule.capa.responsetypes import registry
-from xmodule.modulestore.exceptions import ItemNotFoundError
 from xmodule.item_bank_block import ItemBankMixin
+from xmodule.modulestore.django import modulestore
+from xmodule.modulestore.exceptions import ItemNotFoundError
 from xmodule.validation import StudioValidation, StudioValidationMessage
 from xmodule.x_module import XModuleToXBlockMixin
+
+if t.TYPE_CHECKING:
+    from xmodule.library_tools import LegacyLibraryToolsService
+
 
 _ = lambda text: text
 
@@ -90,18 +96,23 @@ class LegacyLibraryContentBlock(ItemBankMixin, XModuleToXBlockMixin, XBlock):
         display_name=_("Library Version"),
         scope=Scope.settings,
     )
-    max_count = Integer(
-        display_name=_("Count"),
-        help=_("Enter the number of components to display to each student. Set it to -1 to display all components."),
-        default=1,
-        scope=Scope.settings,
-    )
     capa_type = String(
         display_name=_("Problem Type"),
         help=_('Choose a problem type to fetch from the library. If "Any Type" is selected no filtering is applied.'),
         default=ANY_CAPA_TYPE_VALUE,
         values=_get_capa_types(),
         scope=Scope.settings,
+    )
+    # This is a hidden field that stores whether child blocks are migrated to v2, i.e., whether they have an upstream.
+    # We can never completely remove the legacy library_content block; otherwise, we'd lose student data,
+    # (such as selected fields), which tracks the children selected for each user.
+    # However, once all legacy libraries are migrated to v2 and removed, this block can be converted into a very thin
+    # compatibility wrapper around ItemBankBlock. All other aspects of LegacyLibraryContentBlock (the editor, the child
+    # viewer, the block picker, the legacy syncing mechanism, etc.) can then be removed.
+    is_migrated_to_v2 = Boolean(
+        display_name=_("Is Migrated to library v2"),
+        scope=Scope.settings,
+        default=False,
     )
 
     @property
@@ -111,12 +122,35 @@ class LegacyLibraryContentBlock(ItemBankMixin, XModuleToXBlockMixin, XBlock):
         """
         return LibraryLocator.from_string(self.source_library_id)
 
+    @property
+    def is_source_lib_migrated_to_v2(self) -> bool:
+        """
+        Determines whether the source library has been migrated to v2.
+        """
+        from cms.djangoapps.modulestore_migrator.api import is_forwarded
+
+        return (
+            self.source_library_id
+            and self.source_library_version
+            and is_forwarded(self.source_library_key)
+        )
+
+    @property
+    def is_ready_to_migrated_to_v2(self) -> bool:
+        """
+        Returns whether the block can be migrated to v2.
+        """
+        return self.is_source_lib_migrated_to_v2 and not self.is_migrated_to_v2
+
     def author_view(self, context):
         """
         Renders the Studio views.
         Normal studio view: If block is properly configured, displays library status summary
         Studio container view: displays a preview of all possible children.
         """
+        if self.is_migrated_to_v2:
+            # Show ItemBank UI in this case
+            return super().author_view(context)
         fragment = Fragment()
         root_xblock = context.get('root_xblock')
         is_root = root_xblock and root_xblock.location == self.location
@@ -151,7 +185,7 @@ class LegacyLibraryContentBlock(ItemBankMixin, XModuleToXBlockMixin, XBlock):
         else:
             fragment.add_javascript_url(self.runtime.local_resource_url(self, 'public/js/library_content_edit.js'))
 
-        fragment.initialize_js('LibraryContentAuthorView')
+        fragment.initialize_js('LibraryContentAuthorView', {"is_root": is_root})
         return fragment
 
     @property
@@ -159,10 +193,17 @@ class LegacyLibraryContentBlock(ItemBankMixin, XModuleToXBlockMixin, XBlock):
         non_editable_fields = super().non_editable_metadata_fields
         non_editable_fields.extend([
             LegacyLibraryContentBlock.source_library_version,
+            LegacyLibraryContentBlock.is_migrated_to_v2,
         ])
+        if self.is_migrated_to_v2:
+            # If the block is migrated, hide legacy settings to make it similar to the new ItemBankBlock.
+            non_editable_fields.extend([
+                LegacyLibraryContentBlock.capa_type,
+                LegacyLibraryContentBlock.source_library_id,
+            ])
         return non_editable_fields
 
-    def get_tools(self, to_read_library_content: bool = False) -> 'LegacyLibraryToolsService':
+    def get_tools(self, to_read_library_content: bool = False) -> LegacyLibraryToolsService:
         """
         Grab the library tools service and confirm that it'll work for us. Else, raise LibraryToolsUnavailable.
         """
@@ -195,6 +236,12 @@ class LegacyLibraryContentBlock(ItemBankMixin, XModuleToXBlockMixin, XBlock):
         Returns 400 if libraray tools or user permission services are not available.
         Returns 403/404 if user lacks read access on source library or write access on this block.
         """
+        if self.is_migrated_to_v2:
+            # If the block is already migrated to behave like ItemBankBlock
+            return Response(
+                _("This block is already migrated to use library v2. You can sync individual blocks now"),
+                status=400
+            )
         self._validate_sync_permissions()
         if not self.source_library_id:
             return Response(_("Source content library has not been specified."), status=400)
@@ -246,6 +293,10 @@ class LegacyLibraryContentBlock(ItemBankMixin, XModuleToXBlockMixin, XBlock):
         if hasattr(super(), 'studio_post_duplicate'):
             super().studio_post_duplicate(store, source_block)
 
+        if self.is_migrated_to_v2:
+            # If the block is already migrated to behave like ItemBankBlock
+            return False  # Children have not been handled
+
         self._validate_sync_permissions()
         self.get_tools(to_read_library_content=True).trigger_duplication(source_block=source_block, dest_block=self)
         return True  # Children have been handled.
@@ -257,14 +308,64 @@ class LegacyLibraryContentBlock(ItemBankMixin, XModuleToXBlockMixin, XBlock):
         if hasattr(super(), 'studio_post_paste'):
             super().studio_post_paste(store, source_node)
 
+        if self.is_migrated_to_v2:
+            # If the block is already migrated to behave like ItemBankBlock
+            return False  # Children have not been handled
+
         self.sync_from_library(upgrade_to_latest=False)
         return True  # Children have been handled
+
+    def _v2_update_children_upstream_version(self):
+        """
+        Update the upstream and upstream version fields of all children to point to library v2 version of the legacy
+        library blocks. This essentially converts this legacy block to new ItemBankBlock.
+        """
+        from cms.djangoapps.modulestore_migrator import api as migrator_api
+        store = modulestore()
+        with store.bulk_operations(self.course_id):
+            children = self.get_children()
+            # These are the v1 library item upstream UsageKeys
+            child_old_upstream_keys = [
+                self.runtime.modulestore.get_block_original_usage(child.usage_key)[0]
+                for child in children
+            ]
+            child_migrations = migrator_api.get_forwarding_for_blocks(child_old_upstream_keys)
+            for child, old_upstream_key in zip(children, child_old_upstream_keys):
+                upstream_migration = child_migrations.get(old_upstream_key)
+                if upstream_migration and isinstance(upstream_migration.target_key, LibraryUsageLocatorV2):
+                    child.upstream = str(upstream_migration.target_key)
+                    if upstream_migration.target_version_num:
+                        child.upstream_version = upstream_migration.target_version_num
+                else:
+                    child.upstream = ""
+                # Use `modulestore()` instead of `self.runtime.modulestore` to make sure that the XBLOCK_UPDATED signal
+                # is triggered
+                store.update_item(child, None)
+            self.is_migrated_to_v2 = True
+            self.save()
+            store.update_item(self, None)
 
     def _validate_library_version(self, validation, lib_tools, version, library_key):
         """
         Validates library version
         """
         latest_version = lib_tools.get_latest_library_version(library_key)
+        if self.is_ready_to_migrated_to_v2:
+            validation.set_summary(
+                StudioValidationMessage(
+                    StudioValidationMessage.WARNING,
+                    _(
+                        'This legacy library reference is no longer supported, and'
+                        ' needs to be updated to receive future changes'
+                    ),
+                    # TODO: change this to action_runtime_event='...' once the unit page supports that feature.
+                    # See https://openedx.atlassian.net/browse/TNL-993
+                    action_class='library-block-migrate-btn',
+                    # Translators: {refresh_icon} placeholder is substituted to "↻" (without double quotes)
+                    action_label=_('{refresh_icon} Update reference').format(refresh_icon='↻'),
+                )
+            )
+            return False
         if latest_version is not None:
             if version is None or version != latest_version:
                 validation.set_summary(
@@ -296,13 +397,33 @@ class LegacyLibraryContentBlock(ItemBankMixin, XModuleToXBlockMixin, XBlock):
         if validation.empty:
             validation.set_summary(summary)
 
+    @XBlock.handler
+    def upgrade_to_v2_library(self, request=None, suffix=None):
+        """
+        Upgrate this legacy block to a mode where it behaves like the new ItemBankBlock which uses library v2 blocks as
+        children.
+        """
+        if not self.is_source_lib_migrated_to_v2:
+            return Response(_("The source library has not been migrated to version 2"), status=400)
+        if self.is_migrated_to_v2:
+            return Response(_("The block has already been upgraded to version 2"), status=400)
+        # If the source library is migrated but this block still depends on legacy library
+        # Migrate the block by setting upstream field to all children blocks
+        self._v2_update_children_upstream_version()
+        return Response()
+
     def validate(self):
         """
-        Validates the state of this Library Content Block Instance. This
-        is the override of the general XBlock method, and it will also ask
-        its superclass to validate.
+        Validates the state of this Library Content Block Instance.
         """
-        validation = super().validate()
+        if self.is_migrated_to_v2:
+            # If the block is already migrated to v2 i.e. ItemBankBlock
+            # super() will call ItemBankMixin.validate() as it is first in inheritance order
+            return super().validate()
+
+        # We cannot use `super()` here because we do not want to invoke `ItemBankMixin.validate()`.
+        # Instead, we want to use `XBlock.validate`.
+        validation = XBlock.validate(self)
         if not isinstance(validation, StudioValidation):
             validation = StudioValidation.copy(validation)
         try:
@@ -328,7 +449,12 @@ class LegacyLibraryContentBlock(ItemBankMixin, XModuleToXBlockMixin, XBlock):
                 )
             )
             return validation
-        self._validate_library_version(validation, lib_tools, self.source_library_version, self.source_library_key)
+        self._validate_library_version(
+            validation,
+            lib_tools,
+            self.source_library_version,
+            self.source_library_key
+        )
 
         # Note: we assume children have been synced
         # since the last time fields like source_library_id or capa_types were changed.
@@ -390,6 +516,9 @@ class LegacyLibraryContentBlock(ItemBankMixin, XModuleToXBlockMixin, XBlock):
         """
         If source library or capa_type have been edited, upgrade library & sync automatically.
         """
+        if self.is_migrated_to_v2:
+            # If the block is already migrated to v2 i.e. ItemBankBlock, Do nothing
+            return True
         source_lib_changed = (self.source_library_id != old_metadata.get("source_library_id", ""))
         capa_filter_changed = (self.capa_type != old_metadata.get("capa_type", ANY_CAPA_TYPE_VALUE))
         if source_lib_changed or capa_filter_changed:
@@ -403,6 +532,9 @@ class LegacyLibraryContentBlock(ItemBankMixin, XModuleToXBlockMixin, XBlock):
         """
         Implement format_block_keys_for_analytics using the modulestore-specific legacy library original-usage system.
         """
+        if self.is_migrated_to_v2:
+            return super().format_block_keys_for_analytics(block_keys)
+
         def summarize_block(usage_key):
             """ Basic information about the given block """
             orig_key, orig_version = self.runtime.modulestore.get_block_original_usage(usage_key)

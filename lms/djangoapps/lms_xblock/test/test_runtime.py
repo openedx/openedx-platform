@@ -11,7 +11,7 @@ from django.test import TestCase
 from opaque_keys.edx.locations import BlockUsageLocator, CourseLocator
 from xblock.fields import ScopeIds
 
-from xmodule.x_module import DescriptorSystem
+from xmodule.x_module import ModuleStoreRuntime
 from lms.djangoapps.lms_xblock.runtime import handler_url
 
 
@@ -51,7 +51,7 @@ class TestHandlerUrl(TestCase):
     def setUp(self):
         super().setUp()
         self.block = BlockMock(name='block')
-        self.runtime = DescriptorSystem(
+        self.runtime = ModuleStoreRuntime(
             load_item=Mock(name='get_test_descriptor_system.load_item'),
             resources_fs=Mock(name='get_test_descriptor_system.resources_fs'),
             error_tracker=Mock(name='get_test_descriptor_system.error_tracker')

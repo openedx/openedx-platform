@@ -124,7 +124,7 @@ class UpstreamLinkSerializer(serializers.Serializer):
     version_declined = serializers.IntegerField(allow_null=True)
     error_message = serializers.CharField(allow_null=True)
     ready_to_sync = serializers.BooleanField()
-    is_modified = serializers.BooleanField()
+    downstream_customized = serializers.ListField(child=serializers.CharField(), allow_empty=True)
     has_top_level_parent = serializers.BooleanField()
     ready_to_sync_children = UpstreamChildrenInfoSerializer(many=True, required=False)
 
@@ -177,6 +177,22 @@ class ContainerChildrenSerializer(serializers.Serializer):
     Serializer for representing a vertical container with state and children.
     """
 
+    class UpstreamReadyToSyncChildrenInfoSerializer(serializers.Serializer):
+        """
+        Serializer used for the `upstream_ready_to_sync_children_info` field
+        """
+        id = serializers.CharField()
+        name = serializers.CharField()
+        upstream = serializers.CharField()
+        block_type = serializers.CharField()
+        downstream_customized = serializers.ListField(child=serializers.CharField(), allow_empty=True)
+
     children = ContainerChildSerializer(many=True)
     is_published = serializers.BooleanField()
     can_paste_component = serializers.BooleanField()
+    display_name = serializers.CharField()
+    upstream_ready_to_sync_children_info = UpstreamReadyToSyncChildrenInfoSerializer(
+        many=True,
+        required=False,
+        help_text="List of dictionaries describing upstream child components readiness to sync."
+    )

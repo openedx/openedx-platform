@@ -21,7 +21,11 @@ openedx/core/djangoapps/user_api/                                   @openedx/com
 openedx/core/djangoapps/user_authn/                                 @openedx/committers-edx-platform-2u-infinity
 openedx/core/djangoapps/verified_track_content/                     @openedx/committers-edx-platform-2u-infinity
 openedx/features/course_experience/
-xmodule/
+# The Aximprovements team is working on extracting all built-in XBlocks
+# to the external repository (xblocks-contrib). They need to be notified
+# about any changes within xmodule to stay aligned with this effort.
+# Ticket: https://github.com/openedx/edx-platform/issues/34827
+xmodule/                                                            @farhan @irtazaakram @salman2013
 
 # Core Extensions
 lms/djangoapps/discussion/

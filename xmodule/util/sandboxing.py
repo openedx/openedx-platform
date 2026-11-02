@@ -3,6 +3,7 @@
 import re
 
 from django.conf import settings
+from opaque_keys.edx.keys import CourseKey, LearningContextKey
 
 DEFAULT_PYTHON_LIB_FILENAME = 'python_lib.zip'
 
@@ -39,10 +40,14 @@ def can_execute_unsafe_code(course_id):
     return False
 
 
-def get_python_lib_zip(contentstore, course_id):
+def get_python_lib_zip(contentstore, context_key: LearningContextKey):
     """Return the bytes of the course code library file, if it exists."""
+    if not isinstance(context_key, CourseKey):
+        # Although Content Libraries V2 does support python-evaluated capa problems,
+        # it doesn't yet support supplementary python zip files.
+        return None
     python_lib_filename = course_code_library_asset_name()
-    asset_key = course_id.make_asset_key("asset", python_lib_filename)
+    asset_key = context_key.make_asset_key("asset", python_lib_filename)
     zip_lib = contentstore().find(asset_key, throw_on_not_found=False)
     if zip_lib is not None:
         return zip_lib.data

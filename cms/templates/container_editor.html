@@ -77,10 +77,6 @@ from openedx.core.release import RELEASE_LINE
             <%static:include path="common/templates/image-modal.underscore" />
         </script>
 
-        % if not settings.STUDIO_FRONTEND_CONTAINER_URL:
-            <link rel="stylesheet" type="text/css" href="${static.url('common/css/vendor/common.min.css')}" />
-            <link rel="stylesheet" type="text/css" href="${static.url('common/css/vendor/editImageModal.min.css')}" />
-        % endif
         <link rel="stylesheet" type="text/css" href="${static.url('js/vendor/timepicker/jquery.timepicker.css')}" />
         % for _, resource in resources:
             % if resource['kind'] == 'url' and resource['mimetype'] == 'text/css':

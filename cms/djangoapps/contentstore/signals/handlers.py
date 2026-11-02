@@ -221,6 +221,7 @@ def handle_item_deleted(**kwargs):
             id_list.add(block.location)
 
         ComponentLink.objects.filter(downstream_usage_key__in=id_list).delete()
+        ContainerLink.objects.filter(downstream_usage_key__in=id_list).delete()
 
 
 @receiver(GRADING_POLICY_CHANGED)

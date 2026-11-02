@@ -239,7 +239,6 @@
       "cms/djangoapps/course_creators/",
       "cms/djangoapps/export_course_metadata/",
       "cms/djangoapps/modulestore_migrator/",
-      "cms/djangoapps/maintenance/",
       "cms/djangoapps/models/",
       "cms/djangoapps/pipeline_js/",
       "cms/djangoapps/xblock_config/",

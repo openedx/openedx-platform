@@ -21,6 +21,7 @@ from lms.djangoapps.experiments.models import ExperimentData  # lint-amnesty, py
 from lms.djangoapps.experiments.serializers import ExperimentDataSerializer
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from common.test.utils import assert_dict_contains_subset
 
 CROSS_DOMAIN_REFERER = 'https://ecommerce.edx.org'
 
@@ -42,7 +43,7 @@ class ExperimentDataViewSetTests(APITestCase, ModuleStoreTestCase):  # lint-amne
         ExperimentData.objects.get(user=user)
 
         data['user'] = user.username
-        self.assertDictContainsSubset(data, response.data)
+        assert_dict_contains_subset(self, data, response.data)
 
     def test_list_permissions(self):
         """ Users should only be able to list their own data. """

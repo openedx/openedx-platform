@@ -2,7 +2,6 @@
 Slightly customized python-social-auth backend for SAML 2.0 support
 """
 
-
 import logging
 from urllib.parse import unquote
 from copy import deepcopy
@@ -15,7 +14,7 @@ from django.utils.datastructures import MultiValueDictKeyError
 from django_countries import countries
 from onelogin.saml2.settings import OneLogin_Saml2_Settings
 from social_core.backends.saml import OID_EDU_PERSON_ENTITLEMENT, SAMLAuth, SAMLIdentityProvider
-from social_core.exceptions import AuthForbidden, AuthMissingParameter
+from social_core.exceptions import AuthForbidden, AuthMissingParameter, AuthInvalidParameter
 
 from openedx.core.djangoapps.theming.helpers import get_current_request
 from openedx.core.djangoapps.user_authn.utils import is_safe_login_or_logout_redirect
@@ -36,7 +35,7 @@ class SAMLAuthBackend(SAMLAuth):  # pylint: disable=abstract-method
     def get_idp(self, idp_name):
         """ Given the name of an IdP, get a SAMLIdentityProvider instance """
         from .models import SAMLProviderConfig
-        return SAMLProviderConfig.current(idp_name).get_config()
+        return SAMLProviderConfig.current(idp_name).get_config(self)
 
     def setting(self, name, default=None):
         """ Get a setting, from SAMLConfiguration """
@@ -163,7 +162,7 @@ class SAMLAuthBackend(SAMLAuth):  # pylint: disable=abstract-method
         """
         try:
             return super().get_user_id(details, response)
-        except (KeyError, IndexError) as ex:
+        except (KeyError, IndexError, AuthInvalidParameter) as ex:  # Add AuthInvalidParameter here
             log.warning(
                 '[THIRD_PARTY_AUTH] Error in SAML authentication flow. '
                 'Provider: {idp_name}, Message: {message}'.format(
@@ -251,7 +250,6 @@ class SAMLAuthBackend(SAMLAuth):  # pylint: disable=abstract-method
         auth_inst = super()._create_saml_auth(idp)
         from .models import SAMLProviderConfig
         if SAMLProviderConfig.current(idp.name).debug_mode:
-
             def wrap_with_logging(method_name, action_description, xml_getter, request_data, next_url):
                 """ Wrap the request and response handlers to add debug mode logging """
                 method = getattr(auth_inst, method_name)
@@ -264,6 +262,7 @@ class SAMLAuthBackend(SAMLAuth):  # pylint: disable=abstract-method
                         action_description, idp.name, request_data, next_url, xml_getter()
                     )
                     return result
+
                 setattr(auth_inst, method_name, wrapped_method)
 
             request_data = self.strategy.request_data()
@@ -298,21 +297,47 @@ class EdXSAMLIdentityProvider(SAMLIdentityProvider):
         })
         return details
 
-    def get_attr(self, attributes, conf_key, default_attribute):
+    def get_attr(
+        self,
+        attributes: dict[str, str | list[str] | None],
+        conf_key: str,
+        default_attributes: tuple[str, ...],
+        *,
+        validate_defaults: bool = False,
+    ):
         """
-        Internal helper method.
-        Get the attribute 'default_attribute' out of the attributes,
-        unless self.conf[conf_key] overrides the default by specifying
-        another attribute to use.
+        This override is compatible with the new social-core base class
+        (which passes a tuple of default_attributes) and preserves the
+        'attr_defaults' fallback logic.
         """
-        key = self.conf.get(conf_key, default_attribute)
-        if key in attributes:
+        try:
+            key = self.conf[conf_key]
+        except KeyError:
+            for key in default_attributes:
+                if key in attributes:
+                    break  # Found a matching default
+            else:
+                key = None
+
+        if key is None:
+            return self.conf.get('attr_defaults', {}).get(conf_key) or None
+        try:
+            value = attributes[key]
+        except KeyError:
+            return self.conf.get('attr_defaults', {}).get(conf_key) or None
+
+        if isinstance(value, list):
             try:
-                return attributes[key][0]
+                return value[0]
             except IndexError:
-                log.warning('[THIRD_PARTY_AUTH] SAML attribute value not found. '
-                            'SamlAttribute: {attribute}'.format(attribute=key))
-        return self.conf['attr_defaults'].get(conf_key) or None
+                log.warning(
+                    '[THIRD_PARTY_AUTH] SAML attribute value not found. '
+                    'The attribute %s was present but the list was empty.',
+                    key
+                )
+        else:
+            return value
+        return self.conf.get('attr_defaults', {}).get(conf_key) or None
 
     @property
     def saml_sp_configuration(self):

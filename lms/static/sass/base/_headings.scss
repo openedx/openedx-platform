@@ -41,7 +41,7 @@ $headings-base-color:                       $gray-d2;
 %hd-3 {
   margin-bottom: ($baseline / 2);
   font-size: 1.35em;
-  font-weight: $headings-font-weight-normal;
+  font-weight: $headings-font-weight-bold;
   line-height: 1.4em;
 }
 
@@ -112,6 +112,12 @@ $headings-base-color:                       $gray-d2;
 // H3 was problematic in xblocks, we so we'll keep it as it was
 
 .xblock .xblock {
+  @for $i from 1 through $headings-count {
+    h#{$i} {
+      @extend %hd-#{$i};
+    }
+  }
+
   h2 {
     @extend %hd-2;
 

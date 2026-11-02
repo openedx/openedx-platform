@@ -11,7 +11,7 @@ from urllib.parse import quote
 
 import ddt
 import pytest
-import pytz
+from zoneinfo import ZoneInfo
 from django.conf import settings
 from django.core.cache import cache
 from django.core.exceptions import ImproperlyConfigured
@@ -353,8 +353,8 @@ class EnrollmentTest(EnrollmentTestMixin, ModuleStoreTestCase, APITestCase):
     @ddt.unpack
     def test_force_enrollment(self, course_modes, enrollment_mode, force_enrollment):
         # Create the course modes (if any) required for this test case
-        start_date = datetime.datetime(2021, 12, 1, 5, 0, 0, tzinfo=pytz.UTC)
-        end_date = datetime.datetime(2022, 12, 1, 5, 0, 0, tzinfo=pytz.UTC)
+        start_date = datetime.datetime(2021, 12, 1, 5, 0, 0, tzinfo=ZoneInfo("UTC"))
+        end_date = datetime.datetime(2022, 12, 1, 5, 0, 0, tzinfo=ZoneInfo("UTC"))
         self.course = CourseFactory.create(
             emit_signals=True,
             start=start_date,
@@ -677,11 +677,11 @@ class EnrollmentTest(EnrollmentTestMixin, ModuleStoreTestCase, APITestCase):
         # enforced at the data layer, so we need to handle the case
         # in which no dates are specified.
         (None, None, None, None),
-        (datetime.datetime(2015, 1, 2, 3, 4, 5, tzinfo=pytz.UTC), None, "2015-01-02T03:04:05Z", None),
-        (None, datetime.datetime(2015, 1, 2, 3, 4, 5, tzinfo=pytz.UTC), None, "2015-01-02T03:04:05Z"),
+        (datetime.datetime(2015, 1, 2, 3, 4, 5, tzinfo=ZoneInfo("UTC")), None, "2015-01-02T03:04:05Z", None),
+        (None, datetime.datetime(2015, 1, 2, 3, 4, 5, tzinfo=ZoneInfo("UTC")), None, "2015-01-02T03:04:05Z"),
         (
-            datetime.datetime(2014, 6, 7, 8, 9, 10, tzinfo=pytz.UTC),
-            datetime.datetime(2015, 1, 2, 3, 4, 5, tzinfo=pytz.UTC),
+            datetime.datetime(2014, 6, 7, 8, 9, 10, tzinfo=ZoneInfo("UTC")),
+            datetime.datetime(2015, 1, 2, 3, 4, 5, tzinfo=ZoneInfo("UTC")),
             "2014-06-07T08:09:10Z",
             "2015-01-02T03:04:05Z",
         ),
@@ -1097,7 +1097,7 @@ class EnrollmentTest(EnrollmentTestMixin, ModuleStoreTestCase, APITestCase):
 
         # Change verified mode expiration.
         mode = CourseMode.objects.get(course_id=self.course.id, mode_slug=CourseMode.VERIFIED)
-        mode.expiration_datetime = datetime.datetime(year=1970, month=1, day=1, tzinfo=pytz.utc)
+        mode.expiration_datetime = datetime.datetime(year=1970, month=1, day=1, tzinfo=ZoneInfo("UTC"))
         mode.save()
 
         # Deactivate enrollment.
@@ -1217,7 +1217,7 @@ class EnrollmentTest(EnrollmentTestMixin, ModuleStoreTestCase, APITestCase):
 
         # Change verified mode expiration.
         mode = CourseMode.objects.get(course_id=self.course.id, mode_slug=CourseMode.VERIFIED)
-        mode.expiration_datetime = datetime.datetime(year=1970, month=1, day=1, tzinfo=pytz.utc)
+        mode.expiration_datetime = datetime.datetime(year=1970, month=1, day=1, tzinfo=ZoneInfo("UTC"))
         mode.save()
         self.assert_enrollment_status(
             as_server=using_api_key,
@@ -1769,7 +1769,7 @@ class CourseEnrollmentsApiListTest(APITestCase, ModuleStoreTestCase):
     """
     Test the course enrollments list API.
     """
-    CREATED_DATA = datetime.datetime(2018, 1, 1, 0, 0, 1, tzinfo=pytz.UTC)
+    CREATED_DATA = datetime.datetime(2018, 1, 1, 0, 0, 1, tzinfo=ZoneInfo("UTC"))
 
     def setUp(self):
         super().setUp()

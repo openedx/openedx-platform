@@ -157,7 +157,7 @@ class RuntimeShim:
         """
         # We can't parse XML in a vacuum - we need to know the parent block and/or the
         # OLX file that holds this XML in order to generate useful definition keys etc.
-        # The older ImportSystem runtime could do this because it stored the course_id
+        # The older XMLImportingModuleStoreRuntime runtime could do this because it stored the course_id
         # as part of the runtime.
         raise NotImplementedError("This newer runtime does not support process_xml()")
 
@@ -244,7 +244,7 @@ class RuntimeShim:
 
     def get_field_provenance(self, xblock, field):
         """
-        A Studio-specific method that was implemented on DescriptorSystem.
+        A Studio-specific method that was implemented on ModuleStoreRuntime.
         Used by the problem block.
 
         For the given xblock, return a dict for the field's current state:

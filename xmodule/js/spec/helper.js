@@ -255,7 +255,8 @@
         }
 
         jasmine.stubRequests();
-        state = new window.Video('#example');
+        let runtime = jasmine.createSpyObj('TestRuntime', ['handlerUrl']);
+        state = new window.Video(runtime, '#example');
 
         state.resizer = (function() {
             var methods = [

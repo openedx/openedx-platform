@@ -11,7 +11,7 @@ from django.core.cache import cache
 from django.test.utils import override_settings
 from django.urls import reverse
 from edx_toggles.toggles.testutils import override_waffle_flag
-from pytz import UTC
+from zoneinfo import ZoneInfo
 from rest_framework import status
 from rest_framework.test import APIClient, APITestCase
 
@@ -192,7 +192,7 @@ class NotificationListAPIViewTest(APITestCase):
         """
         Test that the view can filter notifications by expiry date.
         """
-        today = datetime.now(UTC)
+        today = datetime.now(ZoneInfo("UTC"))
 
         # Create two notifications for the user, one with current date and other with expiry date.
         Notification.objects.create(
@@ -604,7 +604,7 @@ class TestNotificationPreferencesView(ModuleStoreTestCase):
                         },
                         "new_instructor_all_learners_post": {
                             "web": True,
-                            "email": False,
+                            "email": True,
                             "push": False,
                             "email_cadence": "Daily"
                         },
@@ -628,7 +628,7 @@ class TestNotificationPreferencesView(ModuleStoreTestCase):
                     "notification_types": {
                         "course_updates": {
                             "web": True,
-                            "email": False,
+                            "email": True,
                             "push": False,
                             "email_cadence": "Daily"
                         },

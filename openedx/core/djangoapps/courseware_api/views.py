@@ -64,6 +64,7 @@ from openedx.core.djangoapps.agreements.api import get_integrity_signature
 from openedx.core.djangoapps.courseware_api.utils import get_celebrations_dict
 from openedx.core.djangoapps.enrollments.permissions import ENROLL_IN_COURSE
 from openedx.core.djangoapps.programs.utils import ProgramProgressMeter
+from openedx.core.djangolib.markup import clean_dangerous_html
 from openedx.core.lib.api.authentication import BearerAuthenticationAllowInactiveUser
 from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin
 from openedx.core.lib.courses import get_course_by_id
@@ -289,7 +290,7 @@ class CoursewareMeta:
                 get_certificate_url(course_id=self.course_key, uuid=user_certificate.verify_uuid)
             )
             return linkedin_config.add_to_profile_url(
-                self.course_overview.display_name, user_certificate.mode, cert_url, certificate=user_certificate,
+                self.course_overview, user_certificate.mode, cert_url, certificate=user_certificate,
             )
 
     @property
@@ -517,7 +518,9 @@ class CoursewareMeta:
         Returns the HTML content for the course about section.
         """
         if ENABLE_COURSE_ABOUT_SIDEBAR_HTML.is_enabled():
-            return get_course_about_section(self.request, self.course, "about_sidebar_html")
+            return clean_dangerous_html(
+                get_course_about_section(self.request, self.course, "about_sidebar_html")
+            )
         return None
 
     @property
@@ -525,7 +528,9 @@ class CoursewareMeta:
         """
         Returns the overview HTML content for the course.
         """
-        return get_course_about_section(self.request, self.course, "overview")
+        return clean_dangerous_html(
+            get_course_about_section(self.request, self.course, "overview")
+        )
 
 
 @method_decorator(transaction.non_atomic_requests, name='dispatch')

@@ -1,4 +1,4 @@
-import * as Time from 'time.js';
+import * as Time from '../../../assets/video/public/js/utils/time.js';
 
 // eslint-disable-next-line no-shadow-restricted-names
 (function(undefined) {

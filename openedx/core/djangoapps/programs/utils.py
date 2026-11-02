@@ -14,7 +14,7 @@ from django.core.cache import cache
 from django.urls import reverse
 from django.utils.functional import cached_property
 from opaque_keys.edx.keys import CourseKey
-from pytz import utc
+from zoneinfo import ZoneInfo
 from requests.exceptions import RequestException
 
 from common.djangoapps.course_modes.api import get_paid_modes_for_course
@@ -43,7 +43,7 @@ from openedx.core.djangoapps.site_configuration import helpers as configuration_
 from xmodule.modulestore.django import modulestore
 
 # The datetime module's strftime() methods require a year >= 1900.
-DEFAULT_ENROLLMENT_START_DATE = datetime.datetime(1900, 1, 1, tzinfo=utc)
+DEFAULT_ENROLLMENT_START_DATE = datetime.datetime(1900, 1, 1, tzinfo=ZoneInfo("UTC"))
 
 log = logging.getLogger(__name__)
 
@@ -286,7 +286,7 @@ class ProgramProgressMeter:
             list of dict, each containing information about a user's progress
                 towards completing a program.
         """
-        now = datetime.datetime.now(utc)
+        now = datetime.datetime.now(ZoneInfo("UTC"))
 
         progress = []
         programs = programs or self.engaged_programs
@@ -598,15 +598,17 @@ class ProgramDataExtender:
         run_mode["enrollment_open_date"] = strftime_localized(self.enrollment_start, "SHORT_DATE")
 
     def _attach_course_run_is_course_ended(self, run_mode):
-        end_date = self.course_overview.end or datetime.datetime.max.replace(tzinfo=utc)
-        run_mode["is_course_ended"] = end_date < datetime.datetime.now(utc)
+        end_date = self.course_overview.end or datetime.datetime.max.replace(tzinfo=ZoneInfo("UTC"))
+        run_mode["is_course_ended"] = end_date < datetime.datetime.now(ZoneInfo("UTC"))
 
     def _attach_course_run_is_enrolled(self, run_mode):
         run_mode["is_enrolled"] = CourseEnrollment.is_enrolled(self.user, self.course_run_key)
 
     def _attach_course_run_is_enrollment_open(self, run_mode):
-        enrollment_end = self.course_overview.enrollment_end or datetime.datetime.max.replace(tzinfo=utc)
-        run_mode["is_enrollment_open"] = self.enrollment_start <= datetime.datetime.now(utc) < enrollment_end
+        enrollment_end = self.course_overview.enrollment_end or datetime.datetime.max.replace(tzinfo=ZoneInfo("UTC"))
+        run_mode["is_enrollment_open"] = (
+            self.enrollment_start <= datetime.datetime.now(ZoneInfo("UTC")) < enrollment_end
+        )
 
     def _attach_course_run_advertised_start(self, run_mode):
         """

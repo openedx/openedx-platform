@@ -42,7 +42,7 @@ show_order_history = should_show_order_history()
     <div class="dropdown-user-menu hidden" aria-label=${_("More Options")} role="menu" id="user-menu" tabindex="-1">
         <div class="mobile-nav-item dropdown-item dropdown-nav-item"><a href="${dashboard_url}" role="menuitem">${_("Dashboard")}</a></div>
 
-        <div class="mobile-nav-item dropdown-item dropdown-nav-item"><a href="${urljoin(settings.PROFILE_MICROFRONTEND_URL, f'/u/{user.username}')}" role="menuitem">${_("Profile")}</a></div>
+        <div class="mobile-nav-item dropdown-item dropdown-nav-item"><a href="${urljoin(settings.PROFILE_MICROFRONTEND_URL, f'{user.username}')}" role="menuitem">${_("Profile")}</a></div>
         <div class="mobile-nav-item dropdown-item dropdown-nav-item"><a href="${settings.ACCOUNT_MICROFRONTEND_URL}" role="menuitem">${_("Account")}</a></div>
         % if show_order_history:
             <div class="mobile-nav-item dropdown-item dropdown-nav-item"><a href="${settings.ORDER_HISTORY_MICROFRONTEND_URL}" role="menuitem">${_("Order History")}</a></div>

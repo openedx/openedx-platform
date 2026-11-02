@@ -10,7 +10,7 @@ from unittest import mock
 import ddt
 import httpretty
 import pytest
-import pytz
+from zoneinfo import ZoneInfo
 import requests
 from celery.exceptions import MaxRetriesExceededError
 from django.conf import settings
@@ -520,7 +520,7 @@ class AwardCourseCertificatesTestCase(CredentialsApiConfigMixin, TestCase):
     def setUp(self):
         super().setUp()
 
-        self.available_date = datetime.now(pytz.UTC) + timedelta(days=1)
+        self.available_date = datetime.now(ZoneInfo("UTC")) + timedelta(days=1)
         self.course = CourseOverviewFactory.create(
             self_paced=True,  # Any option to allow the certificate to be viewable for the course
             certificate_available_date=self.available_date,
@@ -1023,7 +1023,7 @@ class UpdateCertificateAvailableDateOnCourseUpdateTestCase(CredentialsApiConfigM
 
     def setUp(self):
         super().setUp()
-        self.end_date = datetime.now(pytz.UTC) + timedelta(days=90)
+        self.end_date = datetime.now(ZoneInfo("UTC")) + timedelta(days=90)
         self.credentials_api_config = self.create_credentials_config(enabled=False)
 
     def tearDown(self):
@@ -1135,7 +1135,7 @@ class UpdateCertificateAvailableDateOnCourseUpdateTestCase(CredentialsApiConfigM
         explicitly set as part of the course overview.
         """
         self._update_credentials_api_config(True)
-        certificate_available_date = datetime.now(pytz.UTC) + timedelta(days=120)
+        certificate_available_date = datetime.now(ZoneInfo("UTC")) + timedelta(days=120)
 
         course_overview = self._create_course_overview(
             False,
@@ -1168,7 +1168,7 @@ class UpdateCertificateAvailableDateOnCourseUpdateTestCase(CredentialsApiConfigM
         invalid data is set in a course overview, we don't pass it to Credentials.
         """
         self._update_credentials_api_config(True)
-        certificate_available_date = datetime.now(pytz.UTC) + timedelta(days=120)
+        certificate_available_date = datetime.now(ZoneInfo("UTC")) + timedelta(days=120)
 
         course_overview = self._create_course_overview(
             True,

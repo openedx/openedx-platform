@@ -79,7 +79,7 @@ class ErrorBlock(
         Build a new ErrorBlock using ``system``.
 
         Arguments:
-            system (:class:`DescriptorSystem`): The :class:`DescriptorSystem` used
+            system (:class:`ModuleStoreRuntime`): The :class:`ModuleStoreRuntime` used
                 to construct the XBlock that had an error.
             contents (unicode): An encoding of the content of the xblock that had an error.
             error_msg (unicode): A message describing the error.

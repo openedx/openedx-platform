@@ -11,7 +11,7 @@ from xmodule.modulestore.tests.utils import MixedSplitTestCase
 from xmodule.randomize_block import RandomizeBlock
 from xmodule.tests import prepare_block_runtime
 
-from .test_course_block import DummySystem as TestImportSystem
+from .test_course_block import DummyModuleStoreRuntime
 
 
 class RandomizeBlockTest(MixedSplitTestCase):
@@ -78,7 +78,7 @@ class RandomizeBlockTest(MixedSplitTestCase):
         # And compare.
         assert exported_olx == expected_olx
 
-        runtime = TestImportSystem(load_error_blocks=True, course_id=randomize_block.location.course_key)
+        runtime = DummyModuleStoreRuntime(load_error_blocks=True, course_id=randomize_block.location.course_key)
         runtime.resources_fs = export_fs
 
         # Now import it.

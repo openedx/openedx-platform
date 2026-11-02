@@ -18,6 +18,7 @@ from openedx_events.tests.utils import OpenEdxEventsTestMixin
 from common.djangoapps.student.tests.factories import UserFactory, UserProfileFactory
 from openedx.core.djangoapps.user_api.tests.test_views import UserAPITestCase
 from openedx.core.djangolib.testing.utils import skip_unless_lms
+from common.test.utils import assert_dict_contains_subset
 
 
 @skip_unless_lms
@@ -83,7 +84,8 @@ class RegistrationEventTest(UserAPITestCase, OpenEdxEventsTestMixin):
 
         user = User.objects.get(username=self.user_info.get("username"))
         self.assertTrue(self.receiver_called)
-        self.assertDictContainsSubset(
+        assert_dict_contains_subset(
+            self,
             {
                 "signal": STUDENT_REGISTRATION_COMPLETED,
                 "sender": None,
@@ -97,7 +99,7 @@ class RegistrationEventTest(UserAPITestCase, OpenEdxEventsTestMixin):
                     is_active=user.is_active,
                 ),
             },
-            event_receiver.call_args.kwargs
+            event_receiver.call_args.kwargs,
         )
 
 
@@ -165,7 +167,8 @@ class LoginSessionEventTest(UserAPITestCase, OpenEdxEventsTestMixin):
 
         user = User.objects.get(username=self.user.username)
         self.assertTrue(self.receiver_called)
-        self.assertDictContainsSubset(
+        assert_dict_contains_subset(
+            self,
             {
                 "signal": SESSION_LOGIN_COMPLETED,
                 "sender": None,
@@ -179,5 +182,5 @@ class LoginSessionEventTest(UserAPITestCase, OpenEdxEventsTestMixin):
                     is_active=user.is_active,
                 ),
             },
-            event_receiver.call_args.kwargs
+            event_receiver.call_args.kwargs,
         )

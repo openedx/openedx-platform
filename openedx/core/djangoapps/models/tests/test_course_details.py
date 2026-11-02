@@ -7,7 +7,7 @@ import datetime
 from django.test import override_settings
 import pytest
 import ddt
-from pytz import UTC
+from zoneinfo import ZoneInfo
 
 from django.conf import settings
 from xmodule.modulestore import ModuleStoreEnum
@@ -86,13 +86,13 @@ class CourseDetailsTestCase(ModuleStoreTestCase):
             jsondetails.self_paced = True
             assert CourseDetails.update_from_json(self.course.id, jsondetails.__dict__, self.user).self_paced ==\
                    jsondetails.self_paced
-            jsondetails.start_date = datetime.datetime(2010, 10, 1, 0, tzinfo=UTC)
+            jsondetails.start_date = datetime.datetime(2010, 10, 1, 0, tzinfo=ZoneInfo("UTC"))
             assert CourseDetails.update_from_json(self.course.id, jsondetails.__dict__, self.user).start_date ==\
                    jsondetails.start_date
-            jsondetails.end_date = datetime.datetime(2011, 10, 1, 0, tzinfo=UTC)
+            jsondetails.end_date = datetime.datetime(2011, 10, 1, 0, tzinfo=ZoneInfo("UTC"))
             assert CourseDetails.update_from_json(self.course.id, jsondetails.__dict__, self.user).end_date ==\
                    jsondetails.end_date
-            jsondetails.certificate_available_date = datetime.datetime(2010, 10, 1, 0, tzinfo=UTC)
+            jsondetails.certificate_available_date = datetime.datetime(2010, 10, 1, 0, tzinfo=ZoneInfo("UTC"))
             assert CourseDetails.update_from_json(self.course.id, jsondetails.__dict__, self.user)\
                 .certificate_available_date == jsondetails.certificate_available_date
             jsondetails.course_image_name = "an_image.jpg"
@@ -126,7 +126,7 @@ class CourseDetailsTestCase(ModuleStoreTestCase):
                    jsondetails.instructor_info
 
     def test_toggle_pacing_during_course_run(self):
-        self.course.start = datetime.datetime.now(UTC)
+        self.course.start = datetime.datetime.now(ZoneInfo("UTC"))
         self.store.update_item(self.course, self.user.id)
 
         details = CourseDetails.fetch(self.course.id)

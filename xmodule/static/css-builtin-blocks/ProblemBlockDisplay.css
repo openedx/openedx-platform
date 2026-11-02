@@ -710,6 +710,7 @@
 }
 
 .xmodule_display.xmodule_ProblemBlock div.problem ul {
+    padding-left: 1em;
     margin-bottom: lh();
     margin-left: .75em;
     margin-left: .75rem;
@@ -717,6 +718,7 @@
 }
 
 .xmodule_display.xmodule_ProblemBlock div.problem ol {
+    padding-left: 1em;
     margin-bottom: lh();
     margin-left: .75em;
     margin-left: .75rem;
@@ -753,6 +755,7 @@
     margin: lh() 0;
     border-collapse: collapse;
     table-layout: auto;
+    max-width: 100%;
 }
 
 .xmodule_display.xmodule_ProblemBlock div.problem table td.cont-justified-left,
@@ -801,7 +804,7 @@
 
 .xmodule_display.xmodule_ProblemBlock div.problem code {
     margin: 0 2px;
-    padding: 0px 5px;
+    padding: 0 5px;
     border: 1px solid #eaeaea;
     border-radius: 3px;
     background-color: var(--gray-l6, #f8f8f8);
@@ -1195,11 +1198,11 @@
     color: var(--uxpl-gray-dark, #111111);
 }
 
-.xmodule_display.xmodule_ProblemBlock div.problem .notification.problem-hint li {
+.xmodule_display.xmodule_ProblemBlock div.problem .notification.problem-hint li[class*="hint-index-"] {
     color: var(--uxpl-gray-base, #414141);
 }
 
-.xmodule_display.xmodule_ProblemBlock div.problem .notification.problem-hint li strong {
+.xmodule_display.xmodule_ProblemBlock div.problem .notification.problem-hint li[class*="hint-index-"] > strong {
     color: var(--uxpl-gray-dark, #111111);
 }
 
@@ -1223,6 +1226,16 @@
 
 .xmodule_display.xmodule_ProblemBlock div.problem .notification .notification-message ol li:not(:last-child) {
     margin-bottom: calc(var(--baseline, 20px) / 4);
+}
+
+.xmodule_display.xmodule_ProblemBlock div.problem .notification li[class*="hint-index-"] ul,
+.xmodule_display.xmodule_ProblemBlock div.problem .notification li[class*="hint-index-"] ol {
+    padding: 0 0 0 1em;
+    margin-left: .75rem;
+}
+
+.xmodule_display.xmodule_ProblemBlock div.problem .notification li[class*="hint-index-"] ol {
+    list-style: decimal outside none;
 }
 
 .xmodule_display.xmodule_ProblemBlock div.problem .notification .notification-btn-wrapper {

@@ -10,7 +10,7 @@ import datetime
 import logging
 from collections import defaultdict
 
-import pytz
+from zoneinfo import ZoneInfo
 from config_models.models import ConfigurationModel
 from django.conf import settings
 from django.core.cache import cache
@@ -540,7 +540,7 @@ def default_deadline_for_credit_eligibility():
     """
     The default deadline to use when creating a new CreditEligibility model.
     """
-    return datetime.datetime.now(pytz.UTC) + datetime.timedelta(
+    return datetime.datetime.now(ZoneInfo("UTC")) + datetime.timedelta(
         days=getattr(settings, "CREDIT_ELIGIBILITY_EXPIRATION_DAYS", 365)
     )
 
@@ -623,7 +623,7 @@ class CreditEligibility(TimeStampedModel):
         return cls.objects.filter(
             username=username,
             course__enabled=True,
-            deadline__gt=datetime.datetime.now(pytz.UTC)
+            deadline__gt=datetime.datetime.now(ZoneInfo("UTC"))
         ).select_related('course')
 
     @classmethod
@@ -642,7 +642,7 @@ class CreditEligibility(TimeStampedModel):
             course__course_key=course_key,
             course__enabled=True,
             username=username,
-            deadline__gt=datetime.datetime.now(pytz.UTC),
+            deadline__gt=datetime.datetime.now(ZoneInfo("UTC")),
         ).exists()
 
     def __str__(self):

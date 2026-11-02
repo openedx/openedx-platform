@@ -12,6 +12,7 @@ from openedx.core.djangoapps.oauth_dispatch.adapters import DOTAdapter
 from openedx.core.djangoapps.oauth_dispatch.models import RestrictedApplication
 from openedx.core.djangoapps.oauth_dispatch.tests.mixins import AccessTokenMixin
 from common.djangoapps.student.tests.factories import UserFactory
+from common.test.utils import assert_dict_contains_subset
 
 
 @ddt.ddt
@@ -171,7 +172,7 @@ class TestCreateJWTs(AccessTokenMixin, TestCase):
         token_payload = self.assert_valid_jwt_access_token(
             jwt_token, self.user, self.default_scopes, aud=aud, secret=secret,
         )
-        self.assertDictContainsSubset(additional_claims, token_payload)
+        assert_dict_contains_subset(self, additional_claims, token_payload)
         assert user_email_verified == token_payload['email_verified']
         assert token_payload['roles'] == mock_create_roles.return_value
 

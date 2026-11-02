@@ -18,7 +18,7 @@ from xblock.runtime import DictKeyValueStore, KvsFieldData
 
 from xmodule.fields import Date
 from xmodule.modulestore.inheritance import InheritanceMixin, compute_inherited_metadata
-from xmodule.modulestore.xml import ImportSystem, LibraryXMLModuleStore, XMLModuleStore
+from xmodule.modulestore.xml import XMLImportingModuleStoreRuntime, LibraryXMLModuleStore, XMLModuleStore
 from xmodule.tests import DATA_DIR
 from xmodule.x_module import XModuleMixin
 from xmodule.xml_block import is_pointer_tag
@@ -28,7 +28,10 @@ COURSE = 'test_course'
 RUN = 'test_run'
 
 
-class DummySystem(ImportSystem):  # lint-amnesty, pylint: disable=abstract-method, missing-class-docstring
+class DummyModuleStoreRuntime(XMLImportingModuleStoreRuntime):  # pylint: disable=abstract-method, missing-class-docstring
+    """
+    Minimal modulestore runtime for tests
+    """
 
     @patch('xmodule.modulestore.xml.OSFS', lambda dir: OSFS(mkdtemp()))
     def __init__(self, load_error_blocks, library=False):
@@ -58,7 +61,7 @@ class BaseCourseTestCase(TestCase):
     @staticmethod
     def get_system(load_error_blocks=True, library=False):
         '''Get a dummy system'''
-        return DummySystem(load_error_blocks, library=library)
+        return DummyModuleStoreRuntime(load_error_blocks, library=library)
 
     def get_course(self, name):
         """Get a test course by directory name.  If there's more than one, error."""

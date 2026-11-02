@@ -6,7 +6,7 @@ from unittest.mock import Mock, patch
 
 import ddt
 import pytest
-import pytz
+from zoneinfo import ZoneInfo
 from django.contrib.sites.models import Site
 from django.utils.timezone import now
 from edx_toggles.toggles.testutils import override_waffle_flag
@@ -45,7 +45,7 @@ class TestApplicability(ModuleStoreTestCase):
         self.user = UserFactory.create()
         self.course = CourseFactory.create(run='test', display_name='test')
         CourseModeFactory.create(course_id=self.course.id, mode_slug='verified')
-        now_time = datetime.now(tz=pytz.UTC).strftime("%Y-%m-%d %H:%M:%S%z")
+        now_time = datetime.now(tz=ZoneInfo("UTC")).strftime("%Y-%m-%d %H:%M:%S%z")
         ExperimentData.objects.create(
             user=self.user, experiment_id=REV1008_EXPERIMENT_ID, key=str(self.course.id), value=now_time
         )
@@ -184,7 +184,7 @@ class TestApplicability(ModuleStoreTestCase):
         with patch('openedx.features.discounts.applicability.stable_bucketing_hash_group', return_value=0):
             with patch(
                 'openedx.features.discounts.applicability.datetime',
-                Mock(now=Mock(return_value=datetime(2020, 8, 1, 0, 1, tzinfo=pytz.UTC)), wraps=datetime),
+                Mock(now=Mock(return_value=datetime(2020, 8, 1, 0, 1, tzinfo=ZoneInfo("UTC"))), wraps=datetime),
             ):
                 assert not _is_in_holdback_and_bucket(self.user)
 

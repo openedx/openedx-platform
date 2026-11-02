@@ -16,11 +16,11 @@ from unittest import SkipTest, mock
 from uuid import uuid4
 
 import ddt
-import lxml.html
 from django.conf import settings
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
 from django.test import TestCase
 from django.test.utils import override_settings
+from django.urls import reverse
 from edx_toggles.toggles.testutils import override_waffle_switch, override_waffle_flag
 from edxval.api import create_video, get_videos_for_course
 from fs.osfs import OSFS
@@ -1388,17 +1388,6 @@ class ContentStoreTest(ContentStoreTestCase):
         resp = self.client.ajax_post('/course/', self.course_data)
         self.assertEqual(resp.status_code, 403)
 
-    @override_waffle_flag(toggles.LEGACY_STUDIO_HOME, True)
-    def test_course_index_view_with_no_courses(self):
-        """Test viewing the index page with no courses"""
-        resp = self.client.get_html('/home/')
-        self.assertContains(
-            resp,
-            f'<h1 class="page-header">{settings.STUDIO_SHORT_NAME} Home</h1>',
-            status_code=200,
-            html=True
-        )
-
     def test_course_factory(self):
         """Test that the course factory works correctly."""
         course = CourseFactory.create()
@@ -1409,33 +1398,6 @@ class ContentStoreTest(ContentStoreTestCase):
         course = CourseFactory.create()
         item = BlockFactory.create(parent_location=course.location)
         self.assertIsInstance(item, SequenceBlock)
-
-    @override_waffle_flag(toggles.LEGACY_STUDIO_COURSE_OUTLINE, True)
-    def test_course_overview_view_with_course(self):
-        """Test viewing the course overview page with an existing course"""
-        course = CourseFactory.create()
-        resp = self._show_course_overview(course.id)
-
-        # course_handler raise 404 for old mongo course
-        if course.id.deprecated:
-            self.assertEqual(resp.status_code, 404)
-            return
-
-        assets_url = reverse_course_url(
-            'assets_handler',
-            course.location.course_key
-        )
-
-        self.assertContains(
-            resp,
-            '<article class="outline outline-complex outline-course" data-locator="{locator}" data-course-key="{course_key}" data-course-assets="{assets_url}" >'.format(  # lint-amnesty, pylint: disable=line-too-long
-                locator=str(course.location),
-                course_key=str(course.id),
-                assets_url=assets_url,
-            ),
-            status_code=200,
-            html=True
-        )
 
     def test_create_block(self):
         """Test creating a new xblock instance."""
@@ -1510,8 +1472,7 @@ class ContentStoreTest(ContentStoreTestCase):
         )
         course_key = course_items[0].id
 
-        with override_waffle_flag(toggles.LEGACY_STUDIO_COURSE_OUTLINE, True):
-            resp = self._show_course_overview(course_key)
+        resp = self._show_course_overview(course_key)
 
         # course_handler raise 404 for old mongo course
         if course_key.deprecated:
@@ -1530,8 +1491,6 @@ class ContentStoreTest(ContentStoreTestCase):
             test_get_html('course_team_handler')
         with override_waffle_flag(toggles.LEGACY_STUDIO_UPDATES, True):
             test_get_html('course_info_handler')
-        with override_waffle_flag(toggles.LEGACY_STUDIO_FILES_UPLOADS, True):
-            test_get_html('assets_handler')
         with override_waffle_flag(toggles.LEGACY_STUDIO_CUSTOM_PAGES, True):
             test_get_html('tabs_handler')
         with override_waffle_flag(toggles.LEGACY_STUDIO_SCHEDULE_DETAILS, True):
@@ -1755,7 +1714,8 @@ class ContentStoreTest(ContentStoreTestCase):
         """
         Show the course overview page.
         """
-        resp = self.client.get_html(get_url('course_handler', course_key, 'course_key_string'))
+        resp = self.client.get(get_url('course_handler', course_key, 'course_key_string'),
+                               content_type='application/json')
         return resp
 
     def test_wiki_slug(self):
@@ -1879,17 +1839,21 @@ class RerunCourseTest(ContentStoreTestCase):
         """
         Asserts that the given course key is NOT in the unsucceeded course action section of the html.
         """
-        with override_waffle_flag(toggles.LEGACY_STUDIO_HOME, True):
-            course_listing = lxml.html.fromstring(self.client.get_html('/home/').content)
-        self.assertEqual(len(self.get_unsucceeded_course_action_elements(course_listing, course_key)), 0)
+        response = self.client.get(reverse('cms.djangoapps.contentstore:v2:courses'))
+        assert str(course_key) not in [
+            course["course_key"]
+            for course in response.json()["results"]["in_process_course_actions"]
+        ]
 
     def assertInUnsucceededCourseActions(self, course_key):
         """
         Asserts that the given course key is in the unsucceeded course action section of the html.
         """
-        with override_waffle_flag(toggles.LEGACY_STUDIO_HOME, True):
-            course_listing = lxml.html.fromstring(self.client.get_html('/home/').content)
-        self.assertEqual(len(self.get_unsucceeded_course_action_elements(course_listing, course_key)), 1)
+        response = self.client.get(reverse('cms.djangoapps.contentstore:v2:courses'))
+        assert str(course_key) in [
+            course["course_key"]
+            for course in response.json()["results"]["in_process_course_actions"]
+        ]
 
     def verify_rerun_course(self, source_course_key, destination_course_key, destination_display_name):
         """

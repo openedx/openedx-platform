@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 import pytest
 import datetime  # lint-amnesty, pylint: disable=wrong-import-order
-from pytz import UTC
+from zoneinfo import ZoneInfo
 
 from django.urls import reverse
 from django.http import HttpResponse
@@ -30,8 +30,8 @@ from ..views import LOG_MESSAGE_CREATE, LOG_MESSAGE_DELETE
 from .helpers import make_image_file
 
 TEST_PASSWORD = "test"
-TEST_UPLOAD_DT = datetime.datetime(2002, 1, 9, 15, 43, 1, tzinfo=UTC)
-TEST_UPLOAD_DT2 = datetime.datetime(2003, 1, 9, 15, 43, 1, tzinfo=UTC)
+TEST_UPLOAD_DT = datetime.datetime(2002, 1, 9, 15, 43, 1, tzinfo=ZoneInfo("UTC"))
+TEST_UPLOAD_DT2 = datetime.datetime(2003, 1, 9, 15, 43, 1, tzinfo=ZoneInfo("UTC"))
 
 
 class ProfileImageEndpointMixin(UserSettingsEventTestMixin):

@@ -13,7 +13,7 @@ from contextlib import contextmanager
 from functools import wraps
 from unittest.mock import Mock
 
-from django.test import TestCase
+from django.test import TransactionTestCase
 
 from opaque_keys.edx.keys import CourseKey
 from path import Path as path
@@ -24,14 +24,13 @@ from xblock.fields import Reference, ReferenceList, ReferenceValueDict, ScopeIds
 from xmodule.capa.xqueue_interface import XQueueService
 from xmodule.assetstore import AssetMetadata
 from xmodule.contentstore.django import contentstore
-from xmodule.mako_block import MakoDescriptorSystem
 from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.draft_and_published import ModuleStoreDraftAndPublished
 from xmodule.modulestore.inheritance import InheritanceMixin
 from xmodule.modulestore.xml import CourseLocationManager
 from xmodule.tests.helpers import StubReplaceURLService, mock_render_template, StubMakoService, StubUserService
 from xmodule.util.sandboxing import SandboxService
-from xmodule.x_module import DoNothingCache, XModuleMixin
+from xmodule.x_module import DoNothingCache, XModuleMixin, ModuleStoreRuntime
 from openedx.core.lib.cache_utils import CacheService
 
 
@@ -64,12 +63,12 @@ def get_asides(block):
 
 @property
 def resources_fs():
-    return Mock(name='TestDescriptorSystem.resources_fs', root_path='.')
+    return Mock(name='TestModuleStoreRuntime.resources_fs', root_path='.')
 
 
-class TestDescriptorSystem(MakoDescriptorSystem):  # pylint: disable=abstract-method
+class TestModuleStoreRuntime(ModuleStoreRuntime):  # pylint: disable=abstract-method
     """
-    DescriptorSystem for testing
+    ModuleStore-based XBlock Runtime for testing
     """
     def handler_url(self, block, handler, suffix='', query='', thirdparty=False):  # lint-amnesty, pylint: disable=arguments-differ
         return '{usage_id}/{handler}{suffix}?{query}'.format(
@@ -90,7 +89,7 @@ class TestDescriptorSystem(MakoDescriptorSystem):  # pylint: disable=abstract-me
         return []
 
     def resources_fs(self):  # lint-amnesty, pylint: disable=method-hidden
-        return Mock(name='TestDescriptorSystem.resources_fs', root_path='.')
+        return Mock(name='TestModuleStoreRuntime.resources_fs', root_path='.')
 
     def __repr__(self):
         """
@@ -117,7 +116,7 @@ def get_test_system(
     add_get_block_overrides=False
 ):
     """
-    Construct a test DescriptorSystem instance.
+    Construct a test ModuleStoreRuntime instance.
 
     By default, the descriptor system's render_template() method simply returns the repr of the
     context it is passed.  You can override this by passing in a different render_template argument.
@@ -239,11 +238,11 @@ def prepare_block_runtime(
 
 def get_test_descriptor_system(render_template=None, **kwargs):
     """
-    Construct a test DescriptorSystem instance.
+    Construct a test ModuleStoreRuntime instance.
     """
     field_data = DictFieldData({})
 
-    descriptor_system = TestDescriptorSystem(
+    descriptor_system = TestModuleStoreRuntime(
         load_item=Mock(name='get_test_descriptor_system.load_item'),
         resources_fs=Mock(name='get_test_descriptor_system.resources_fs'),
         error_tracker=Mock(name='get_test_descriptor_system.error_tracker'),
@@ -306,7 +305,7 @@ class LazyFormat:
         return str(self)[index]
 
 
-class CourseComparisonTest(TestCase):
+class CourseComparisonTest(TransactionTestCase):
     """
     Mixin that has methods for comparing courses for equality.
     """

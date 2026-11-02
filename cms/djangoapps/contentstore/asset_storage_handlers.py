@@ -19,7 +19,6 @@ from django.views.decorators.http import require_http_methods, require_POST
 from opaque_keys.edx.keys import AssetKey, CourseKey
 from pymongo import ASCENDING, DESCENDING
 
-from common.djangoapps.edxmako.shortcuts import render_to_response
 from common.djangoapps.student.auth import has_course_author_access
 from common.djangoapps.util.date_utils import get_default_time_display
 from common.djangoapps.util.json_request import JsonResponse
@@ -34,8 +33,7 @@ from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disa
 from xmodule.modulestore.exceptions import ItemNotFoundError  # lint-amnesty, pylint: disable=wrong-import-order
 
 from .exceptions import AssetNotFoundException, AssetSizeTooLargeException
-from .utils import reverse_course_url, get_files_uploads_url, get_response_format, request_response_format_is_json
-from .toggles import use_new_files_uploads_page
+from .utils import get_files_uploads_url, get_response_format, request_response_format_is_json
 
 
 REQUEST_DEFAULTS = {
@@ -169,22 +167,8 @@ def _get_asset_usage_path(course_key, assets):
 def _asset_index(request, course_key):
     '''
     Display an editable asset library.
-
-    Supports start (0-based index into the list of assets) and max query parameters.
     '''
-    course_block = modulestore().get_course(course_key)
-
-    if use_new_files_uploads_page(course_key):
-        return redirect(get_files_uploads_url(course_key))
-
-    return render_to_response('asset_index.html', {
-        'language_code': request.LANGUAGE_CODE,
-        'context_course': course_block,
-        'max_file_size_in_mbs': settings.MAX_ASSET_UPLOAD_FILE_SIZE_IN_MB,
-        'chunk_size_in_mbs': settings.UPLOAD_CHUNK_SIZE_IN_MB,
-        'max_file_size_redirect_url': settings.MAX_ASSET_UPLOAD_FILE_SIZE_URL,
-        'asset_callback_url': reverse_course_url('assets_handler', course_key)
-    })
+    return redirect(get_files_uploads_url(course_key))
 
 
 def _assets_json(request, course_key):

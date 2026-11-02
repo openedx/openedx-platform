@@ -2,13 +2,19 @@
 Serializers for the content libraries REST API
 """
 # pylint: disable=abstract-method
+import json
+import logging
+
 from django.core.validators import validate_unicode_slug
 from opaque_keys import InvalidKeyError, OpaqueKey
 from opaque_keys.edx.locator import LibraryContainerLocator, LibraryUsageLocatorV2
-from openedx_learning.api.authoring_models import Collection
+from openedx_learning.api.authoring_models import Collection, LearningPackage
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
+from user_tasks.models import UserTaskStatus
 
+from openedx.core.djangoapps.content_libraries.tasks import LibraryRestoreTask
+from openedx.core.djangoapps.content_libraries import api
 from openedx.core.djangoapps.content_libraries.api.containers import ContainerType
 from openedx.core.djangoapps.content_libraries.constants import ALL_RIGHTS_RESERVED, LICENSE_OPTIONS
 from openedx.core.djangoapps.content_libraries.models import (
@@ -21,6 +27,8 @@ from openedx.core.lib.api.serializers import CourseKeyField
 from .. import permissions
 
 DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%SZ'
+
+log = logging.getLogger(__name__)
 
 
 class ContentLibraryMetadataSerializer(serializers.Serializer):
@@ -37,8 +45,8 @@ class ContentLibraryMetadataSerializer(serializers.Serializer):
     slug = serializers.CharField(source="key.slug", validators=(validate_unicode_slug, ))
     title = serializers.CharField()
     description = serializers.CharField(allow_blank=True)
+    learning_package = serializers.PrimaryKeyRelatedField(queryset=LearningPackage.objects.all(), required=False)
     num_blocks = serializers.IntegerField(read_only=True)
-    version = serializers.IntegerField(read_only=True)
     last_published = serializers.DateTimeField(format=DATETIME_FORMAT, read_only=True)
     published_by = serializers.CharField(read_only=True)
     last_draft_created = serializers.DateTimeField(format=DATETIME_FORMAT, read_only=True)
@@ -68,7 +76,8 @@ class ContentLibraryMetadataSerializer(serializers.Serializer):
             return False
 
         library_obj = ContentLibrary.objects.get_by_key(obj.key)
-        return user.has_perm(permissions.CAN_EDIT_THIS_CONTENT_LIBRARY, obj=library_obj)
+        return api.user_has_permission_across_lib_authz_systems(
+            user, permissions.CAN_EDIT_THIS_CONTENT_LIBRARY, library_obj)
 
 
 class ContentLibraryUpdateSerializer(serializers.Serializer):
@@ -426,4 +435,112 @@ class LibraryBackupTaskStatusSerializer(serializers.Serializer):
     Serializer for checking the status of a library backup task.
     """
     state = serializers.CharField()
-    url = serializers.URLField(allow_null=True)
+    url = serializers.FileField(source='file', allow_null=True, use_url=True)
+
+
+class LibraryRestoreFileSerializer(serializers.Serializer):
+    """
+    Serializer for restoring a library from a backup file.
+    """
+    # input only fields
+    file = serializers.FileField(write_only=True, help_text="A ZIP file containing a library backup.")
+
+    # output only fields
+    task_id = serializers.UUIDField(read_only=True)
+
+    def validate_file(self, value):
+        """
+        Validate that the uploaded file is a ZIP file.
+        """
+        if value.content_type != 'application/zip':
+            raise serializers.ValidationError("Only ZIP files are allowed.")
+        return value
+
+
+class LibraryRestoreTaskRequestSerializer(serializers.Serializer):
+    """
+    Serializer for requesting the status of a library restore task.
+    """
+    task_id = serializers.UUIDField(write_only=True, help_text="The ID of the restore task to check.")
+
+
+class RestoreSuccessDataSerializer(serializers.Serializer):
+    """
+    Serializer for the data returned upon successful restoration of a library.
+    """
+    learning_package_id = serializers.IntegerField(source="lp_restored_data.id")
+    title = serializers.CharField(source="lp_restored_data.title")
+    org = serializers.CharField(source="lp_restored_data.archive_org_key")
+    slug = serializers.CharField(source="lp_restored_data.archive_slug")
+
+    # The `key` is a unique temporary key assigned to the learning package during the restore process,
+    # whereas the `archive_key` is the original key of the learning package from the backup.
+    # The temporary learning package key is replaced with a standard key once it is added to a content library.
+    key = serializers.CharField(source="lp_restored_data.key")
+    archive_key = serializers.CharField(source="lp_restored_data.archive_lp_key")
+
+    containers = serializers.IntegerField(source="lp_restored_data.num_containers")
+    components = serializers.IntegerField(source="lp_restored_data.num_components")
+    collections = serializers.IntegerField(source="lp_restored_data.num_collections")
+    sections = serializers.IntegerField(source="lp_restored_data.num_sections")
+    subsections = serializers.IntegerField(source="lp_restored_data.num_subsections")
+    units = serializers.IntegerField(source="lp_restored_data.num_units")
+
+    created_on_server = serializers.CharField(source="backup_metadata.original_server", required=False)
+    created_at = serializers.DateTimeField(source="backup_metadata.created_at", format=DATETIME_FORMAT)
+    created_by = serializers.SerializerMethodField()
+
+    def get_created_by(self, obj):
+        """
+        Get the user information of the archive creator, if available.
+
+        The information is stored in the backup metadata of the archive and references
+        a user that may not exist in the system where the restore is being performed.
+        """
+        username = obj["backup_metadata"].get("created_by")
+        email = obj["backup_metadata"].get("created_by_email")
+        return {"username": username, "email": email}
+
+
+class LibraryRestoreTaskResultSerializer(serializers.Serializer):
+    """
+    Serializer for the result of a library restore task.
+    """
+    state = serializers.CharField()
+    result = RestoreSuccessDataSerializer(required=False, allow_null=True, default=None)
+    error = serializers.CharField(required=False, allow_blank=True, default=None)
+    error_log = serializers.FileField(source='error_log_url', allow_null=True, use_url=True, default=None)
+
+    @classmethod
+    def from_task_status(cls, task_status, request):
+        """Build serializer input from task status object."""
+
+        # If the task did not complete, just return the state.
+        if task_status.state not in {UserTaskStatus.SUCCEEDED, UserTaskStatus.FAILED}:
+            return cls({
+                "state": task_status.state,
+            })
+
+        artifact_name = LibraryRestoreTask.ARTIFACT_NAMES.get(task_status.state, '')
+        artifact = task_status.artifacts.filter(name=artifact_name).first()
+
+        # If the task failed, include the log artifact if it exists
+        if task_status.state == UserTaskStatus.FAILED:
+            return cls({
+                "state": UserTaskStatus.FAILED,
+                "error": "Library restore failed. See error log for details.",
+                "error_log_url": artifact.file if artifact else None,
+            }, context={'request': request})
+
+        if task_status.state == UserTaskStatus.SUCCEEDED:
+            input_data = {
+                "state": UserTaskStatus.SUCCEEDED,
+            }
+            try:
+                result = json.loads(artifact.text) if artifact else {}
+                input_data["result"] = result
+            except json.JSONDecodeError:
+                log.error("Failed to decode JSON from artifact (%s): %s", artifact.id, artifact.text)
+                input_data["error"] = f'Could not decode artifact JSON. Artifact Text: {artifact.text}'
+
+            return cls(input_data)

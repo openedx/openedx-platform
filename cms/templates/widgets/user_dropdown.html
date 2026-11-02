@@ -21,11 +21,6 @@
       <li class="nav-item nav-account-dashboard">
         <a href="/">${_("{studio_name} Home").format(studio_name=settings.STUDIO_SHORT_NAME)}</a>
       </li>
-      % if GlobalStaff().has_user(user):
-      <li class="nav-item">
-        <a href="${reverse('maintenance:maintenance_index')}">${_("Maintenance")}</a>
-      </li>
-      % endif
       <li class="nav-item nav-account-signout">
         <a class="action action-signout" href="${settings.FRONTEND_LOGOUT_URL}">${_("Sign Out")}</a>
       </li>

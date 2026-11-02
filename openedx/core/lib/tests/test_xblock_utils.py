@@ -177,7 +177,10 @@ class TestXBlockAside(SharedModuleStoreTestCase):
         """test if xblock is not aside"""
         assert is_xblock_aside(self.block.scope_ids.usage_id) is False
 
-    @patch('xmodule.modulestore.xml.ImportSystem.applicable_aside_types', lambda self, block: ['test_aside'])
+    @patch(
+        'xmodule.modulestore.xml.XMLImportingModuleStoreRuntime.applicable_aside_types',
+        lambda self, block: ['test_aside'],
+    )
     @XBlockAside.register_temp_plugin(AsideTestType, 'test_aside')
     def test_get_aside(self):
         """test get aside success"""

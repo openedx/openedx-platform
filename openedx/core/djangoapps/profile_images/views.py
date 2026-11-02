@@ -11,7 +11,7 @@ from contextlib import closing
 from django.utils.translation import gettext as _
 from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
 from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
-from pytz import UTC
+from zoneinfo import ZoneInfo
 from rest_framework import permissions, status
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
@@ -38,7 +38,7 @@ def _make_upload_dt():
     Generate a server-side timestamp for the upload. This is in a separate
     function so its behavior can be overridden in tests.
     """
-    return datetime.datetime.utcnow().replace(tzinfo=UTC)
+    return datetime.datetime.utcnow().replace(tzinfo=ZoneInfo("UTC"))
 
 
 class ProfileImageView(DeveloperErrorViewMixin, APIView):

@@ -12,6 +12,15 @@ from django.dispatch import Signal
 from markupsafe import escape
 
 
+def assert_dict_contains_subset(test_case, subset, superset):
+    """
+    Assert that `superset` includes all key/value pairs from `subset`.
+    """
+    test_case.assertTrue(
+        all(item in superset.items() for item in subset.items())
+    )
+
+
 @contextmanager
 def nostderr():
     """

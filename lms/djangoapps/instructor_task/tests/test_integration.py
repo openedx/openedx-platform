@@ -44,6 +44,7 @@ from openedx.core.djangoapps.util.testing import TestConditionalContent
 from openedx.core.lib.url_utils import quote_slashes
 from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.tests.factories import BlockFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from common.test.utils import assert_dict_contains_subset
 
 log = logging.getLogger(__name__)
 
@@ -585,7 +586,7 @@ class TestGradeReportConditionalContent(TestReportMixin, TestConditionalContent,
         Arguments:
             task_result (dict): Return value of `CourseGradeReport.generate`.
         """
-        self.assertDictContainsSubset({'attempted': 2, 'succeeded': 2, 'failed': 0}, task_result)
+        assert_dict_contains_subset(self, {'attempted': 2, 'succeeded': 2, 'failed': 0}, task_result)
 
     def verify_grades_in_csv(self, students_grades, ignore_other_columns=False):
         """

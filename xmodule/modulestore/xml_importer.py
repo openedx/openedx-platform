@@ -52,7 +52,7 @@ from xmodule.modulestore.django import ASSET_IGNORE_REGEX
 from xmodule.modulestore.exceptions import DuplicateCourseError
 from xmodule.modulestore.mongo.base import MongoRevisionKey
 from xmodule.modulestore.store_utilities import draft_node_constructor, get_draft_subtree_roots
-from xmodule.modulestore.xml import ImportSystem, LibraryXMLModuleStore, XMLModuleStore
+from xmodule.modulestore.xml import XMLImportingModuleStoreRuntime, LibraryXMLModuleStore, XMLModuleStore
 from xmodule.tabs import CourseTabList
 from xmodule.util.misc import escape_invalid_characters
 from xmodule.x_module import XModuleMixin
@@ -993,8 +993,8 @@ def _import_course_draft(
     # create a new 'System' object which will manage the importing
     errorlog = make_error_tracker()
 
-    # The course_dir as passed to ImportSystem is expected to just be relative, not
-    # the complete path including data_dir. ImportSystem will concatenate the two together.
+    # The course_dir as passed to XMLImportingModuleStoreRuntime is expected to just be relative, not
+    # the complete path including data_dir. XMLImportingModuleStoreRuntime will concatenate the two together.
     data_dir = xml_module_store.data_dir
     # Whether or not data_dir ends with a "/" differs in production vs. test.
     if not data_dir.endswith("/"):
@@ -1002,7 +1002,7 @@ def _import_course_draft(
     # Remove absolute path, leaving relative <course_name>/drafts.
     draft_course_dir = draft_dir.replace(data_dir, '', 1)
 
-    system = ImportSystem(
+    system = XMLImportingModuleStoreRuntime(
         xmlstore=xml_module_store,
         course_id=source_course_id,
         course_dir=draft_course_dir,

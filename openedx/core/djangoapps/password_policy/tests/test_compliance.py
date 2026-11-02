@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from unittest.mock import patch
 
 import pytest
-import pytz
+from zoneinfo import ZoneInfo
 from dateutil.parser import parse as parse_date
 from django.test import TestCase, override_settings
 
@@ -75,7 +75,7 @@ class TestCompliance(TestCase):
             mock_check_user_compliance.return_value = False
             with patch('openedx.core.djangoapps.password_policy.compliance._get_compliance_deadline_for_user') as \
                     mock_get_compliance_deadline_for_user:
-                mock_get_compliance_deadline_for_user.return_value = datetime.now(pytz.UTC) - timedelta(1)
+                mock_get_compliance_deadline_for_user.return_value = datetime.now(ZoneInfo("UTC")) - timedelta(1)
                 pytest.raises(NonCompliantPasswordException, enforce_compliance_on_login, user, password)
 
         # Test deadline is in the future
@@ -84,7 +84,7 @@ class TestCompliance(TestCase):
             mock_check_user_compliance.return_value = False
             with patch('openedx.core.djangoapps.password_policy.compliance._get_compliance_deadline_for_user') as \
                     mock_get_compliance_deadline_for_user:
-                mock_get_compliance_deadline_for_user.return_value = datetime.now(pytz.UTC) + timedelta(1)
+                mock_get_compliance_deadline_for_user.return_value = datetime.now(ZoneInfo("UTC")) + timedelta(1)
                 assert pytest.raises(NonCompliantPasswordWarning, enforce_compliance_on_login, user, password)
 
     def test_check_user_compliance(self):

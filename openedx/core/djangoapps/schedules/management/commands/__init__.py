@@ -5,7 +5,7 @@ Base management command for sending emails
 
 import datetime
 
-import pytz
+from zoneinfo import ZoneInfo
 from django.contrib.sites.models import Site
 from django.core.management.base import BaseCommand
 
@@ -62,7 +62,7 @@ class SendEmailBaseCommand(PrefixedDebugLoggerMixin, BaseCommand):  # lint-amnes
 
         current_date = datetime.datetime(
             *[int(x) for x in options['date'].split('-')],
-            tzinfo=pytz.UTC
+            tzinfo=ZoneInfo("UTC")
         )
         self.log_debug('Current date = %s', current_date.isoformat())
         override_recipient_email = options.get('override_recipient_email')

@@ -18,7 +18,7 @@ dnspython==2.8.0
     #   pymongo
 edx-opaque-keys==3.0.0
     # via -r scripts/structures_pruning/requirements/base.txt
-iniconfig==2.1.0
+iniconfig==2.3.0
     # via pytest
 packaging==25.0
     # via pytest

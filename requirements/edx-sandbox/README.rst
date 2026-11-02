@@ -74,3 +74,21 @@ releases/sumac.txt
 .. _Python changelog: https://docs.python.org/3.11/whatsnew/changelog.html
 .. _SciPy changelog: https://docs.scipy.org/doc/scipy/release.html
 .. _NumPy changelog: https://numpy.org/doc/stable/release.html
+
+releases/teak.txt
+------------------
+
+* Frozen at the time of the Teak release
+* Supports Python 3.11 and Python 3.12
+* SciPy is upgraded from 1.14.1 to 1.15.2
+
+.. _SciPy changelog: https://docs.scipy.org/doc/scipy/release.html
+
+releases/ulmo.txt
+------------------
+
+* Frozen at the time of the Ulmo release
+* Supports Python 3.11 and Python 3.12
+* SciPy is upgraded from 1.15.2 to 1.16.3
+
+.. _SciPy changelog: https://docs.scipy.org/doc/scipy/release.html

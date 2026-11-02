@@ -147,8 +147,8 @@ class ModulestoreSourceAdmin(admin.ModelAdmin):
                     source_key=source.key,
                     target_library_key=target_library_key,
                     target_collection_slug=target_collection_slug,
-                    composition_level=form.cleaned_data['composition_level'],
-                    repeat_handling_strategy=form.cleaned_data['repeat_handling_strategy'],
+                    composition_level=CompositionLevel(form.cleaned_data['composition_level']),
+                    repeat_handling_strategy=RepeatHandlingStrategy(form.cleaned_data['repeat_handling_strategy']),
                     preserve_url_slugs=form.cleaned_data['preserve_url_slugs'],
                     forward_source_to_target=form.cleaned_data['forward_to_target'],
                 )
@@ -178,6 +178,7 @@ class ModulestoreBlockMigrationInline(admin.TabularInline):
         "source",
         "target",
         "change_log_record",
+        "unsupported_reason",
     )
     list_display = ("id", *readonly_fields)
 

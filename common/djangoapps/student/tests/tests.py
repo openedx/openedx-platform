@@ -53,8 +53,6 @@ from openedx.features.course_experience.url_helpers import make_learning_mfe_cou
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase, SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.tests.factories import CourseFactory, check_mongo_calls  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.data import CertificatesDisplayBehaviors  # lint-amnesty, pylint: disable=wrong-import-order
-
-
 log = logging.getLogger(__name__)
 
 BETA_TESTER_METHOD = 'common.djangoapps.student.helpers.access.is_beta_tester'
@@ -451,6 +449,7 @@ class DashboardTest(ModuleStoreTestCase, TestVerificationBase):
         self.course.start = datetime.now(ZoneInfo("UTC")) - timedelta(days=2)
         self.course.end = datetime.now(ZoneInfo("UTC")) - timedelta(days=1)
         self.course.display_name = 'Omega'
+        self.course.course_organization = 'Omega Org'
         self.course = self.update_course(self.course, self.user.id)
 
         cert = GeneratedCertificateFactory.create(
@@ -474,7 +473,7 @@ class DashboardTest(ModuleStoreTestCase, TestVerificationBase):
         ).format(
             platform=quote(settings.PLATFORM_NAME.encode('utf-8')),
             cert_url=quote(cert.download_url, safe=''),
-            company_identifier=linkedin_config.company_identifier
+            company_identifier=linkedin_config.company_identifier,
         )
 
         # Single assertion for the expected LinkedIn URL

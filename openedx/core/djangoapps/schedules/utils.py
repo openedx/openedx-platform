@@ -3,7 +3,7 @@
 import datetime
 import logging
 
-import pytz
+from zoneinfo import ZoneInfo
 from django.db import transaction
 
 from openedx.core.djangoapps.schedules.models import Schedule
@@ -59,7 +59,7 @@ def reset_self_paced_schedule(user, course_key, use_enrollment_date=False):
         if use_enrollment_date:
             new_start_date = schedule.enrollment.created
         else:
-            new_start_date = datetime.datetime.now(pytz.utc)
+            new_start_date = datetime.datetime.now(ZoneInfo("UTC"))
 
         # Make sure we don't start the clock on the learner's schedule before the course even starts
         new_start_date = max(new_start_date, schedule.enrollment.course.start)

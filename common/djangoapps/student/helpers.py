@@ -610,7 +610,7 @@ def _cert_info(user, enrollment, cert_status):  # lint-amnesty, pylint: disable=
             linkedin_config = LinkedInAddToProfileConfiguration.current()
             if linkedin_config.is_enabled():
                 status_dict['linked_in_url'] = linkedin_config.add_to_profile_url(
-                    course_overview.display_name, cert_status.get('mode'), cert_status['download_url'],
+                    course_overview, cert_status.get('mode'), cert_status['download_url'],
                 )
 
     if status in {'generating', 'downloadable', 'notpassing', 'restricted', 'auditing', 'unverified'}:

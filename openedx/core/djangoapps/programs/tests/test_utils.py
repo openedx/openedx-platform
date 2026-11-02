@@ -15,7 +15,7 @@ from django.test.utils import override_settings
 from django.urls import reverse
 from edx_toggles.toggles.testutils import override_waffle_switch
 from opaque_keys.edx.keys import CourseKey  # lint-amnesty, pylint: disable=wrong-import-order
-from pytz import utc
+from zoneinfo import ZoneInfo
 from testfixtures import LogCapture
 
 from common.djangoapps.course_modes.models import CourseMode
@@ -209,7 +209,7 @@ class TestProgramProgressMeter(ModuleStoreTestCase):
         CourseEntitlementFactory.create(
             user=self.user,
             course_uuid=course_uuid,
-            expired_at=datetime.datetime.now(utc),
+            expired_at=datetime.datetime.now(ZoneInfo("UTC")),
             mode=CourseMode.VERIFIED,
             enrollment_course_run=enrollment
 
@@ -308,7 +308,7 @@ class TestProgramProgressMeter(ModuleStoreTestCase):
         the right type for which the upgrade deadline has not passed.
         """
         course_run_key = generate_course_run_key()
-        now = datetime.datetime.now(utc)
+        now = datetime.datetime.now(ZoneInfo("UTC"))
         upgrade_deadline = None if not offset else str(now + datetime.timedelta(days=offset))
         required_seat = SeatFactory(type=CourseMode.VERIFIED, upgrade_deadline=upgrade_deadline)
         enrolled_seat = SeatFactory(type=CourseMode.AUDIT)
@@ -488,7 +488,7 @@ class TestProgramProgressMeter(ModuleStoreTestCase):
 
     def test_simulate_progress(self, mock_get_programs):  # lint-amnesty, pylint: disable=too-many-statements
         """Simulate the entirety of a user's progress through a program."""
-        today = datetime.datetime.now(utc)
+        today = datetime.datetime.now(ZoneInfo("UTC"))
         two_days_ago = today - datetime.timedelta(days=2)
         three_days_ago = today - datetime.timedelta(days=3)
         yesterday = today - datetime.timedelta(days=1)
@@ -862,8 +862,8 @@ def _create_course(self, course_price, course_run_count=1, make_entitlement=Fals
     course_runs = []
     for x in range(course_run_count):
         course = ModuleStoreCourseFactory.create(run='Run_' + str(x))
-        course.start = datetime.datetime.now(utc) - datetime.timedelta(days=1)
-        course.end = datetime.datetime.now(utc) + datetime.timedelta(days=1)
+        course.start = datetime.datetime.now(ZoneInfo("UTC")) - datetime.timedelta(days=1)
+        course.end = datetime.datetime.now(ZoneInfo("UTC")) + datetime.timedelta(days=1)
         course.instructor_info = self.instructors
         course = self.update_course(course, self.user.id)
 
@@ -899,8 +899,8 @@ class TestProgramDataExtender(ModuleStoreTestCase):
         super().setUp()
 
         self.course = ModuleStoreCourseFactory()
-        self.course.start = datetime.datetime.now(utc) - datetime.timedelta(days=1)
-        self.course.end = datetime.datetime.now(utc) + datetime.timedelta(days=1)
+        self.course.start = datetime.datetime.now(ZoneInfo("UTC")) - datetime.timedelta(days=1)
+        self.course.end = datetime.datetime.now(ZoneInfo("UTC")) + datetime.timedelta(days=1)
         self.course = self.update_course(self.course, self.user.id)
 
         self.course_run = CourseRunFactory(key=str(self.course.id))
@@ -941,7 +941,7 @@ class TestProgramDataExtender(ModuleStoreTestCase):
         Verify that changes to the course run end date do not affect our
         assessment of the course run being open for enrollment.
         """
-        self.course.end = datetime.datetime.now(utc) + datetime.timedelta(days=days_offset)
+        self.course.end = datetime.datetime.now(ZoneInfo("UTC")) + datetime.timedelta(days=days_offset)
         self.course = self.update_course(self.course, self.user.id)
 
         data = ProgramDataExtender(self.program, self.user).extend()
@@ -1022,8 +1022,8 @@ class TestProgramDataExtender(ModuleStoreTestCase):
         """
         Verify that course run enrollment status is reflected correctly.
         """
-        self.course.enrollment_start = datetime.datetime.now(utc) - datetime.timedelta(days=start_offset)
-        self.course.enrollment_end = datetime.datetime.now(utc) - datetime.timedelta(days=end_offset)
+        self.course.enrollment_start = datetime.datetime.now(ZoneInfo("UTC")) - datetime.timedelta(days=start_offset)
+        self.course.enrollment_end = datetime.datetime.now(ZoneInfo("UTC")) - datetime.timedelta(days=end_offset)
 
         self.course = self.update_course(self.course, self.user.id)
 
@@ -1040,7 +1040,7 @@ class TestProgramDataExtender(ModuleStoreTestCase):
         Verify that a closed course run with no explicit enrollment start date
         doesn't cause an error. Regression test for ECOM-4973.
         """
-        self.course.enrollment_end = datetime.datetime.now(utc) - datetime.timedelta(days=1)
+        self.course.enrollment_end = datetime.datetime.now(ZoneInfo("UTC")) - datetime.timedelta(days=1)
         self.course = self.update_course(self.course, self.user.id)
 
         data = ProgramDataExtender(self.program, self.user).extend()

@@ -10,7 +10,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from edx_django_utils.monitoring import set_code_owner_attribute
 from opaque_keys.edx.keys import CourseKey
-from pytz import UTC
+from zoneinfo import ZoneInfo
 
 from openedx.core.djangoapps.notifications.audience_filters import NotificationFilter
 from openedx.core.djangoapps.notifications.base_notification import (
@@ -75,7 +75,7 @@ def delete_expired_notifications():
     This task deletes all expired notifications
     """
     batch_size = settings.EXPIRED_NOTIFICATIONS_DELETE_BATCH_SIZE
-    expiry_date = datetime.now(UTC) - timedelta(days=settings.NOTIFICATIONS_EXPIRY)
+    expiry_date = datetime.now(ZoneInfo("UTC")) - timedelta(days=settings.NOTIFICATIONS_EXPIRY)
     start_time = datetime.now()
     total_deleted = 0
     delete_count = None

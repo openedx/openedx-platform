@@ -139,7 +139,6 @@ setup(
         ],
         "lms.djangoapp": [
             "ace_common = openedx.core.djangoapps.ace_common.apps:AceCommonConfig",
-            "announcements = openedx.features.announcements.apps:AnnouncementsConfig",
             "content_libraries = openedx.core.djangoapps.content_libraries.apps:ContentLibrariesConfig",
             "course_apps = openedx.core.djangoapps.course_apps.apps:CourseAppsConfig",
             "course_live = openedx.core.djangoapps.course_live.apps:CourseLiveConfig",
@@ -158,7 +157,6 @@ setup(
             "program_enrollments = lms.djangoapps.program_enrollments.apps:ProgramEnrollmentsConfig",
         ],
         "cms.djangoapp": [
-            "announcements = openedx.features.announcements.apps:AnnouncementsConfig",
             "ace_common = openedx.core.djangoapps.ace_common.apps:AceCommonConfig",
             "bookmarks = openedx.core.djangoapps.bookmarks.apps:BookmarksConfig",
             "course_live = openedx.core.djangoapps.course_live.apps:CourseLiveConfig",

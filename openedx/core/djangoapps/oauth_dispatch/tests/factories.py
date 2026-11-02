@@ -4,7 +4,7 @@
 from datetime import datetime, timedelta
 
 import factory
-import pytz
+from zoneinfo import ZoneInfo
 from factory.django import DjangoModelFactory
 from factory.fuzzy import FuzzyText
 from oauth2_provider.models import AccessToken, Application, RefreshToken
@@ -39,7 +39,7 @@ class AccessTokenFactory(DjangoModelFactory):
         django_get_or_create = ('user', 'application')
 
     token = FuzzyText(length=32)
-    expires = datetime.now(pytz.UTC) + timedelta(days=1)
+    expires = datetime.now(ZoneInfo("UTC")) + timedelta(days=1)
 
 
 class RefreshTokenFactory(DjangoModelFactory):

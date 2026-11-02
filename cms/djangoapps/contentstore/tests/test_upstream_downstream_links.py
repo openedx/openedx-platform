@@ -14,7 +14,7 @@ from openedx_events.tests.utils import OpenEdxEventsTestMixin
 
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangolib.testing.utils import skip_unless_cms
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
+from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase, ImmediateOnCommitMixin
 from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 
 from ..models import ContainerLink, LearningContextLinksStatus, LearningContextLinksStatusChoices, ComponentLink
@@ -265,7 +265,12 @@ class TestRecreateUpstreamLinks(ModuleStoreTestCase, OpenEdxEventsTestMixin, Bas
 
 
 @skip_unless_cms
-class TestUpstreamLinksEvents(ModuleStoreTestCase, OpenEdxEventsTestMixin, BaseUpstreamLinksHelpers):
+class TestUpstreamLinksEvents(
+    ImmediateOnCommitMixin,
+    ModuleStoreTestCase,
+    OpenEdxEventsTestMixin,
+    BaseUpstreamLinksHelpers,
+):
     """
     Test signals related to managing upstream->downstream links.
     """

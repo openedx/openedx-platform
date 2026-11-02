@@ -11,7 +11,7 @@ from unittest.mock import Mock, patch
 
 import attr
 import ddt
-import pytz
+from zoneinfo import ZoneInfo
 from django.conf import settings
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
 from django.db.models import Max
@@ -119,7 +119,7 @@ class ScheduleSendEmailTestMixin(FilteredQueryCountMixin):  # lint-amnesty, pyli
         return max_user_id + num_bins - (max_user_id % num_bins)
 
     def _get_dates(self, offset=None):  # lint-amnesty, pylint: disable=missing-function-docstring
-        current_day = _get_datetime_beginning_of_day(datetime.datetime.now(pytz.UTC))
+        current_day = _get_datetime_beginning_of_day(datetime.datetime.now(ZoneInfo("UTC")))
         offset = offset or self.expected_offsets[0]
         target_day = current_day + datetime.timedelta(days=offset)
         if self.resolver.schedule_date_field == 'upgrade_deadline':
@@ -148,7 +148,7 @@ class ScheduleSendEmailTestMixin(FilteredQueryCountMixin):  # lint-amnesty, pyli
             CourseModeFactory(
                 course_id=course_id,
                 mode_slug=CourseMode.VERIFIED,
-                expiration_datetime=datetime.datetime.now(pytz.UTC) + datetime.timedelta(days=30),
+                expiration_datetime=datetime.datetime.now(ZoneInfo("UTC")) + datetime.timedelta(days=30),
             )
             self._courses_with_verified_modes.add(course_id)
         return schedule
@@ -158,7 +158,7 @@ class ScheduleSendEmailTestMixin(FilteredQueryCountMixin):  # lint-amnesty, pyli
         Updates the schedule config model by making sure the new entry
         has a later timestamp.
         """
-        later_time = datetime.datetime.now(pytz.UTC) + datetime.timedelta(minutes=1)
+        later_time = datetime.datetime.now(ZoneInfo("UTC")) + datetime.timedelta(minutes=1)
         with freeze_time(later_time):
             ScheduleConfigFactory.create(**schedule_config_kwargs)
 
@@ -167,7 +167,7 @@ class ScheduleSendEmailTestMixin(FilteredQueryCountMixin):  # lint-amnesty, pyli
 
     def test_handle(self):
         with patch.object(self.command, 'async_send_task') as mock_send:
-            test_day = datetime.datetime(2017, 8, 1, tzinfo=pytz.UTC)
+            test_day = datetime.datetime(2017, 8, 1, tzinfo=ZoneInfo("UTC"))
             self.command().handle(date='2017-08-01', site_domain_name=self.site_config.site.domain)
 
             for offset in self.expected_offsets:
@@ -287,7 +287,7 @@ class ScheduleSendEmailTestMixin(FilteredQueryCountMixin):  # lint-amnesty, pyli
         }
         self._update_schedule_config(schedule_config_kwargs)
 
-        current_datetime = datetime.datetime(2017, 8, 1, tzinfo=pytz.UTC)
+        current_datetime = datetime.datetime(2017, 8, 1, tzinfo=ZoneInfo("UTC"))
         with patch.object(self.task, 'apply_async') as mock_apply_async:
             self.task.enqueue(self.site_config.site, current_datetime, 3)
 

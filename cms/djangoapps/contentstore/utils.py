@@ -15,7 +15,7 @@ from uuid import uuid4
 
 from bs4 import BeautifulSoup
 from django.conf import settings
-from django.core.exceptions import ObjectDoesNotExist, ValidationError
+from django.core.exceptions import ImproperlyConfigured, ObjectDoesNotExist, ValidationError
 from django.urls import reverse
 from django.utils import translation
 from django.utils.text import Truncator
@@ -43,26 +43,22 @@ from cms.djangoapps.contentstore.toggles import (
     split_library_view_on_dashboard,
     use_new_advanced_settings_page,
     use_new_certificates_page,
-    use_new_course_outline_page,
     use_new_course_team_page,
     use_new_custom_pages,
     use_new_export_page,
-    use_new_files_uploads_page,
     use_new_grading_page,
     use_new_group_configurations_page,
-    use_new_home_page,
     use_new_import_page,
     use_new_schedule_details_page,
-    use_new_text_editor,
     use_new_textbooks_page,
     use_new_unit_page,
     use_new_updates_page,
-    use_new_video_editor,
     use_new_video_uploads_page,
 )
 from cms.djangoapps.models.settings.course_grading import CourseGradingModel
 from cms.djangoapps.models.settings.course_metadata import CourseMetadata
-from cms.djangoapps.modulestore_migrator.api import get_migration_info
+from cms.djangoapps.modulestore_migrator import api as migrator_api
+from cms.djangoapps.modulestore_migrator.data import ModulestoreMigration
 from common.djangoapps.course_action_state.managers import CourseActionStateItemNotFoundError
 from common.djangoapps.course_action_state.models import CourseRerunState, CourseRerunUIStateManager
 from common.djangoapps.course_modes.models import CourseMode
@@ -117,6 +113,7 @@ from xmodule.partitions.partitions_service import (
     get_all_partitions_for_course,  # lint-amnesty, pylint: disable=wrong-import-order
 )
 from xmodule.services import ConfigurationService, SettingsService, TeamsConfigurationService
+from xmodule.util.keys import BlockKey
 
 from .models import ComponentLink, ContainerLink
 
@@ -288,11 +285,10 @@ def get_editor_page_base_url(course_locator) -> str:
     Gets course authoring microfrontend URL for links to the new base editors
     """
     editor_url = None
-    if use_new_text_editor(course_locator) or use_new_video_editor(course_locator):
-        mfe_base_url = get_course_authoring_url(course_locator)
-        course_mfe_url = f'{mfe_base_url}/course/{course_locator}/editor'
-        if mfe_base_url:
-            editor_url = course_mfe_url
+    mfe_base_url = get_course_authoring_url(course_locator)
+    course_mfe_url = f'{mfe_base_url}/course/{course_locator}/editor'
+    if mfe_base_url:
+        editor_url = course_mfe_url
     return editor_url
 
 
@@ -300,12 +296,15 @@ def get_studio_home_url():
     """
     Gets course authoring microfrontend URL for Studio Home view.
     """
-    studio_home_url = None
-    if use_new_home_page():
-        mfe_base_url = settings.COURSE_AUTHORING_MICROFRONTEND_URL
-        if mfe_base_url:
-            studio_home_url = f'{mfe_base_url}/home'
-    return studio_home_url
+    mfe_base_url = settings.COURSE_AUTHORING_MICROFRONTEND_URL
+    if mfe_base_url:
+        studio_home_url = f'{mfe_base_url}/home'
+        return studio_home_url
+
+    raise ImproperlyConfigured(
+        "The COURSE_AUTHORING_MICROFRONTEND_URL must be configured. "
+        "Please set it to the base url for your authoring MFE."
+    )
 
 
 def get_schedule_details_url(course_locator) -> str:
@@ -417,11 +416,10 @@ def get_files_uploads_url(course_locator) -> str:
     Gets course authoring microfrontend URL for files and uploads page view.
     """
     files_uploads_url = None
-    if use_new_files_uploads_page(course_locator):
-        mfe_base_url = get_course_authoring_url(course_locator)
-        course_mfe_url = f'{mfe_base_url}/course/{course_locator}/assets'
-        if mfe_base_url:
-            files_uploads_url = course_mfe_url
+    mfe_base_url = get_course_authoring_url(course_locator)
+    course_mfe_url = f'{mfe_base_url}/course/{course_locator}/assets'
+    if mfe_base_url:
+        files_uploads_url = course_mfe_url
     return files_uploads_url
 
 
@@ -443,13 +441,12 @@ def get_course_outline_url(course_locator, block_to_show=None) -> str:
     Gets course authoring microfrontend URL for course oultine page view.
     """
     course_outline_url = None
-    if use_new_course_outline_page(course_locator):
-        mfe_base_url = get_course_authoring_url(course_locator)
-        course_mfe_url = f'{mfe_base_url}/course/{course_locator}'
-        if block_to_show:
-            course_mfe_url += f'?show={quote_plus(block_to_show)}'
-        if mfe_base_url:
-            course_outline_url = course_mfe_url
+    mfe_base_url = get_course_authoring_url(course_locator)
+    course_mfe_url = f'{mfe_base_url}/course/{course_locator}'
+    if block_to_show:
+        course_mfe_url += f'?show={quote_plus(block_to_show)}'
+    if mfe_base_url:
+        course_outline_url = course_mfe_url
     return course_outline_url
 
 
@@ -1582,13 +1579,12 @@ def request_response_format_is_json(request, response_format):
 
 def get_library_context(request, request_is_json=False):
     """
-    Utils is used to get context of course home library tab.
-    It is used for both DRF and django views.
+    Utils is used to get context of course home library tab. Returned in DRF view.
     """
     from cms.djangoapps.contentstore.views.course import (
         _accessible_libraries_iter,
-        _format_library_for_view,
         _get_course_creator_status,
+        format_library_for_view,
         get_allowed_organizations,
         get_allowed_organizations_for_libraries,
         user_can_create_organizations,
@@ -1600,21 +1596,25 @@ def get_library_context(request, request_is_json=False):
         user_can_create_library,
     )
 
+    is_migrated: bool | None  # None means: do not filter on is_migrated
+    if (is_migrated_param := request.GET.get('is_migrated')) is not None:
+        is_migrated = BooleanField().to_internal_value(is_migrated_param)
+    else:
+        is_migrated = None
     libraries = list(_accessible_libraries_iter(request.user) if libraries_v1_enabled() else [])
-    library_keys = [lib.location.library_key for lib in libraries]
-    migration_info = get_migration_info(library_keys)
-    is_migrated_filter = request.GET.get('is_migrated', None)
+    migration_info: dict[LibraryLocator, ModulestoreMigration | None] = {
+        lib.id: migrator_api.get_forwarding(lib.id)
+        for lib in libraries
+    }
     data = {
         'libraries': [
-            _format_library_for_view(
+            format_library_for_view(
                 lib,
                 request,
-                migrated_to=migration_info.get(lib.location.library_key)
+                migration=migration_info[lib.id],
             )
             for lib in libraries
-            if is_migrated_filter is None or (
-                BooleanField().to_internal_value(is_migrated_filter) == (lib.location.library_key in migration_info)
-            )
+            if is_migrated is None or is_migrated == bool(migration_info[lib.id])
         ]
     }
 
@@ -1723,8 +1723,7 @@ def get_course_context_v2(request):
 
 def get_home_context(request, no_course=False):
     """
-    Utils is used to get context of course home.
-    It is used for both DRF and django views.
+    Utils is used to get context of course home. Returned by DRF view.
     """
 
     from cms.djangoapps.contentstore.views.course import (
@@ -2411,10 +2410,11 @@ def _create_or_update_component_link(created: datetime | None, xblock):
 
     top_level_parent_usage_key = None
     if xblock.top_level_downstream_parent_key is not None:
+        block_key = BlockKey.from_string(xblock.top_level_downstream_parent_key)
         top_level_parent_usage_key = BlockUsageLocator(
             xblock.usage_key.course_key,
-            xblock.top_level_downstream_parent_key.get('type'),
-            xblock.top_level_downstream_parent_key.get('id'),
+            block_key.type,
+            block_key.id,
         )
 
     ComponentLink.update_or_create(
@@ -2426,7 +2426,7 @@ def _create_or_update_component_link(created: datetime | None, xblock):
         top_level_parent_usage_key=top_level_parent_usage_key,
         version_synced=xblock.upstream_version,
         version_declined=xblock.upstream_version_declined,
-        downstream_is_modified=len(getattr(xblock, "downstream_customized", [])) > 0,
+        downstream_customized=getattr(xblock, "downstream_customized", []),
         created=created,
     )
 
@@ -2444,10 +2444,11 @@ def _create_or_update_container_link(created: datetime | None, xblock):
 
     top_level_parent_usage_key = None
     if xblock.top_level_downstream_parent_key is not None:
+        block_key = BlockKey.from_string(xblock.top_level_downstream_parent_key)
         top_level_parent_usage_key = BlockUsageLocator(
             xblock.usage_key.course_key,
-            xblock.top_level_downstream_parent_key.get('type'),
-            xblock.top_level_downstream_parent_key.get('id'),
+            block_key.type,
+            block_key.id,
         )
 
     ContainerLink.update_or_create(
@@ -2459,7 +2460,7 @@ def _create_or_update_container_link(created: datetime | None, xblock):
         version_synced=xblock.upstream_version,
         top_level_parent_usage_key=top_level_parent_usage_key,
         version_declined=xblock.upstream_version_declined,
-        downstream_is_modified=len(getattr(xblock, "downstream_customized", [])) > 0,
+        downstream_customized=getattr(xblock, "downstream_customized", []),
         created=created,
     )
 

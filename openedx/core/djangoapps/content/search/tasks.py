@@ -59,7 +59,8 @@ def delete_xblock_index_doc(usage_key_str: str) -> None:
 
     log.info("Updating content index document for XBlock with id: %s", usage_key)
 
-    api.delete_index_doc(usage_key)
+    # Delete children index data for course blocks.
+    api.delete_index_doc(usage_key, delete_children=True)
 
 
 @shared_task(base=LoggedTask, autoretry_for=(MeilisearchError, ConnectionError))
@@ -90,7 +91,7 @@ def delete_library_block_index_doc(usage_key_str: str) -> None:
 
 @shared_task(base=LoggedTask, autoretry_for=(MeilisearchError, ConnectionError))
 @set_code_owner_attribute
-def update_content_library_index_docs(library_key_str: str) -> None:
+def update_content_library_index_docs(library_key_str: str, full_index: bool = False) -> None:
     """
     Celery task to update the content index documents for all library blocks in a library
     """
@@ -98,7 +99,8 @@ def update_content_library_index_docs(library_key_str: str) -> None:
 
     log.info("Updating content index documents for library with id: %s", library_key)
 
-    api.upsert_content_library_index_docs(library_key)
+    # If full_index is True, also update collections and containers data
+    api.upsert_content_library_index_docs(library_key, full_index=full_index)
 
 
 @shared_task(base=LoggedTask, autoretry_for=(MeilisearchError, ConnectionError))
@@ -168,3 +170,17 @@ def delete_library_container_index_doc(container_key_str: str) -> None:
     log.info("Deleting content index document for library block with id: %s", container_key)
 
     api.delete_index_doc(container_key)
+
+
+@shared_task(base=LoggedTask, autoretry_for=(MeilisearchError, ConnectionError))
+@set_code_owner_attribute
+def delete_course_index_docs(course_key_str: str) -> None:
+    """
+    Celery task to delete the content index documents for a Course
+    """
+    course_key = CourseKey.from_string(course_key_str)
+
+    log.info("Deleting all index documents related to course_key: %s", course_key)
+
+    # Delete children index data for course blocks.
+    api.delete_docs_with_context_key(course_key)

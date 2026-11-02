@@ -41,7 +41,7 @@ $headings-base-color:                       $gray-d2;
 %hd-3 {
   margin-bottom: ($baseline / 2);
   font-size: 1.35em;
-  font-weight: $headings-font-weight-normal;
+  font-weight: $headings-font-weight-bold;
   line-height: 1.4em;
 }
 
@@ -105,15 +105,13 @@ $headings-base-color:                       $gray-d2;
   // ----------------------------
   // canned heading classes
   @for $i from 1 through $headings-count {
+    h#{$i},
     .hd-#{$i} {
       @extend %hd-#{$i};
     }
   }
 
   h3 {
-    @extend %hd-2;
-
-    font-weight: $headings-font-weight-normal;
     // override external modules and xblocks that use inline CSS
     text-transform: initial;
   }

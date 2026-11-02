@@ -15,24 +15,29 @@ from importlib import import_module
 
 from fs.osfs import OSFS
 from lxml import etree
-from opaque_keys.edx.keys import CourseKey
+from opaque_keys.edx.keys import CourseKey, UsageKey
 from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator, LibraryLocator
 from path import Path as path
+from xblock.core import XBlockAside
 from xblock.field_data import DictFieldData
-from xblock.fields import ScopeIds
+from xblock.fields import (
+    Reference,
+    ReferenceList,
+    ReferenceValueDict,
+    ScopeIds,
+)
 from xblock.runtime import DictKeyValueStore
 
 from common.djangoapps.util.monitoring import monitor_import_failure
 from xmodule.error_block import ErrorBlock
 from xmodule.errortracker import exc_info_to_str, make_error_tracker
-from xmodule.mako_block import MakoDescriptorSystem
 from xmodule.modulestore import COURSE_ROOT, LIBRARY_ROOT, ModuleStoreEnum, ModuleStoreReadBase
 from xmodule.modulestore.xml_exporter import DEFAULT_CONTENT_FIELDS
 from xmodule.tabs import CourseTabList
-from xmodule.x_module import (  # lint-amnesty, pylint: disable=unused-import
+from xmodule.x_module import (
     AsideKeyGenerator,
     OpaqueKeyReader,
-    XMLParsingSystem,
+    ModuleStoreRuntime,
     policy_key
 )
 
@@ -46,12 +51,129 @@ etree.set_default_parser(edx_xml_parser)
 log = logging.getLogger(__name__)
 
 
-class ImportSystem(XMLParsingSystem, MakoDescriptorSystem):  # lint-amnesty, pylint: disable=abstract-method, missing-class-docstring
+class XMLParsingModuleStoreRuntime(ModuleStoreRuntime):
+    """
+    ModuleStoreRuntime with some tweaks for XML processing.
+    """
+    def __init__(self, process_xml, **kwargs):
+        """
+        process_xml: Takes an xml string, and returns a XModuleDescriptor
+            created from that xml
+        """
+
+        super().__init__(**kwargs)
+        self.process_xml = process_xml
+
+    def _usage_id_from_node(self, node, parent_id):
+        """Create a new usage id from an XML dom node.
+
+        Args:
+            node (lxml.etree.Element): The DOM node to interpret.
+            parent_id: The usage ID of the parent block
+        Returns:
+            UsageKey: the usage key for the new xblock
+        """
+        return self.xblock_from_node(node, parent_id, self.id_generator).scope_ids.usage_id
+
+    def xblock_from_node(self, node, parent_id, id_generator=None):
+        """
+        Create an XBlock instance from XML data.
+
+        Args:
+            id_generator (IdGenerator): An :class:`~xblock.runtime.IdGenerator` that
+                will be used to construct the usage_id and definition_id for the block.
+
+        Returns:
+            XBlock: The fully instantiated :class:`~xblock.core.XBlock`.
+
+        """
+        id_generator = id_generator or self.id_generator
+        # leave next line commented out - useful for low-level debugging
+        # log.debug('[_usage_id_from_node] tag=%s, class=%s' % (node.tag, xblock_class))
+
+        block_type = node.tag
+        # remove xblock-family from elements
+        node.attrib.pop('xblock-family', None)
+
+        url_name = node.get('url_name')  # difference from XBlock.runtime
+        def_id = id_generator.create_definition(block_type, url_name)
+        usage_id = id_generator.create_usage(def_id)
+
+        keys = ScopeIds(None, block_type, def_id, usage_id)
+        block_class = self.mixologist.mix(self.load_block_type(block_type))
+
+        aside_children = self.parse_asides(node, def_id, usage_id, id_generator)
+        asides_tags = [x.tag for x in aside_children]
+
+        block = block_class.parse_xml(node, self, keys)
+        self._convert_reference_fields_to_keys(block)  # difference from XBlock.runtime
+        block.parent = parent_id
+        block.save()
+
+        asides = self.get_asides(block)
+        for asd in asides:
+            if asd.scope_ids.block_type in asides_tags:
+                block.add_aside(asd)
+
+        return block
+
+    def parse_asides(self, node, def_id, usage_id, id_generator):
+        """pull the asides out of the xml payload and instantiate them"""
+        aside_children = []
+        for child in node.iterchildren():
+            # get xblock-family from node
+            xblock_family = child.attrib.pop('xblock-family', None)
+            if xblock_family:
+                xblock_family = self._family_id_to_superclass(xblock_family)
+                if issubclass(xblock_family, XBlockAside):
+                    aside_children.append(child)
+        # now process them & remove them from the xml payload
+        for child in aside_children:
+            self._aside_from_xml(child, def_id, usage_id)
+            node.remove(child)
+        return aside_children
+
+    def _make_usage_key(self, course_key, value):
+        """
+        Makes value into a UsageKey inside the specified course.
+        If value is already a UsageKey, returns that.
+        """
+        if isinstance(value, UsageKey):
+            return value
+        usage_key = UsageKey.from_string(value)
+        return usage_key.map_into_course(course_key)
+
+    def _convert_reference_fields_to_keys(self, xblock):
+        """
+        Find all fields of type reference and convert the payload into UsageKeys
+        """
+        course_key = xblock.scope_ids.usage_id.course_key
+
+        for field in xblock.fields.values():
+            if field.is_set_on(xblock):
+                field_value = getattr(xblock, field.name)
+                if field_value is None:
+                    continue
+                elif isinstance(field, Reference):
+                    setattr(xblock, field.name, self._make_usage_key(course_key, field_value))
+                elif isinstance(field, ReferenceList):
+                    setattr(xblock, field.name, [self._make_usage_key(course_key, ele) for ele in field_value])
+                elif isinstance(field, ReferenceValueDict):
+                    for key, subvalue in field_value.items():
+                        assert isinstance(subvalue, str)
+                        field_value[key] = self._make_usage_key(course_key, subvalue)
+                    setattr(xblock, field.name, field_value)
+
+
+class XMLImportingModuleStoreRuntime(XMLParsingModuleStoreRuntime):  # pylint: disable=abstract-method
+    """
+    A runtime for importing OLX into ModuleStore.
+    """
     def __init__(self, xmlstore, course_id, course_dir,  # lint-amnesty, pylint: disable=too-many-statements
                  error_tracker,
                  load_error_blocks=True, target_course_id=None, **kwargs):
         """
-        A class that handles loading from xml.  Does some munging to ensure that
+        A class that handles loading from xml to ModuleStore.  Does some munging to ensure that
         all elements have unique slugs.
 
         xmlstore: the XMLModuleStore to store the loaded blocks in
@@ -257,7 +379,7 @@ class ImportSystem(XMLParsingSystem, MakoDescriptorSystem):  # lint-amnesty, pyl
             )
         return super().construct_xblock_from_class(cls, scope_ids, field_data, *args, **kwargs)
 
-    # id_generator is ignored, because each ImportSystem is already local to
+    # id_generator is ignored, because each XMLImportingModuleStoreRuntime is already local to
     # a course, and has it's own id_generator already in place
     def add_node_as_child(self, block, node):  # lint-amnesty, pylint: disable=signature-differs
         child_block = self.process_xml(etree.tostring(node))
@@ -532,7 +654,7 @@ class XMLModuleStore(ModuleStoreReadBase):
             if self.user_service:
                 services['user'] = self.user_service
 
-            system = ImportSystem(
+            system = XMLImportingModuleStoreRuntime(
                 xmlstore=self,
                 course_id=course_id,
                 course_dir=course_dir,

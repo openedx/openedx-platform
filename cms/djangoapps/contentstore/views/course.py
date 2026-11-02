@@ -7,14 +7,19 @@ import logging
 import random
 import re
 import string
-from typing import Dict, NamedTuple, Optional
+from typing import Dict
 
 import django.utils
 from ccx_keys.locator import CCXLocator
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
-from django.core.exceptions import FieldError, PermissionDenied, ValidationError as DjangoValidationError
+from django.core.exceptions import (
+    FieldError,
+    ImproperlyConfigured,
+    PermissionDenied,
+    ValidationError as DjangoValidationError,
+)
 from django.db.models import QuerySet
 from django.db.models.functions import Lower
 from django.http import Http404, HttpResponse, HttpResponseBadRequest, HttpResponseNotFound
@@ -40,6 +45,7 @@ from cms.djangoapps.course_creators.models import CourseCreator
 from cms.djangoapps.models.settings.course_grading import CourseGradingModel
 from cms.djangoapps.models.settings.course_metadata import CourseMetadata
 from cms.djangoapps.models.settings.encoder import CourseSettingsEncoder
+from cms.djangoapps.modulestore_migrator.data import ModulestoreMigration
 from cms.djangoapps.contentstore.api.views.utils import get_bool_param
 from common.djangoapps.course_action_state.managers import CourseActionStateItemNotFoundError
 from common.djangoapps.course_action_state.models import CourseRerunState, CourseRerunUIStateManager
@@ -90,8 +96,6 @@ from ..tasks import rerun_course as rerun_course_task
 from ..toggles import (
     default_enable_flexible_peer_openassessments,
     expanded_library_creation_orgs_enabled,
-    use_new_course_outline_page,
-    use_new_home_page,
     use_new_updates_page,
     use_new_advanced_settings_page,
     use_new_grading_page,
@@ -103,15 +107,12 @@ from ..utils import (
     add_instructor,
     get_advanced_settings_url,
     get_course_grading,
-    get_course_index_context,
     get_course_outline_url,
     get_course_rerun_context,
     get_course_settings,
     get_grading_url,
     get_group_configurations_context,
     get_group_configurations_url,
-    get_home_context,
-    get_library_context,
     get_lms_link_for_item,
     get_proctored_exam_settings_url,
     get_schedule_details_url,
@@ -659,11 +660,7 @@ def course_listing(request):
     """
     List all courses and libraries available to the logged in user
     """
-    if use_new_home_page():
-        return redirect(get_studio_home_url())
-
-    home_context = get_home_context(request)
-    return render_to_response('index.html', home_context)
+    return redirect(get_studio_home_url())
 
 
 @login_required
@@ -672,15 +669,28 @@ def library_listing(request):
     """
     List all Libraries available to the logged in user
     """
-    data = get_library_context(request)
-    return render_to_response('index.html', data)
+    mfe_base_url = settings.COURSE_AUTHORING_MICROFRONTEND_URL
+    if mfe_base_url:
+        return redirect(f'{mfe_base_url}/libraries')
+
+    raise ImproperlyConfigured(
+        "The COURSE_AUTHORING_MICROFRONTEND_URL must be configured. "
+        "Please set it to the base url for your authoring MFE."
+    )
 
 
-def _format_library_for_view(library, request, migrated_to: Optional[NamedTuple]):
+def format_library_for_view(library, request, migration: ModulestoreMigration | None):
     """
     Return a dict of the data which the view requires for each library
     """
-
+    migration_info = {}
+    if migration:
+        migration_info = {
+            'migrated_to_key': migration.target_key,
+            'migrated_to_title': migration.target_title,
+            'migrated_to_collection_key': migration.target_collection_slug,
+            'migrated_to_collection_title': migration.target_collection_title,
+        }
     return {
         'display_name': library.display_name,
         'library_key': str(library.location.library_key),
@@ -688,7 +698,8 @@ def _format_library_for_view(library, request, migrated_to: Optional[NamedTuple]
         'org': library.display_org_with_default,
         'number': library.display_number_with_default,
         'can_edit': has_studio_write_access(request.user, library.location.library_key),
-        **(migrated_to._asdict() if migrated_to is not None else {}),
+        'is_migrated': migration is not None,
+        **migration_info,
     }
 
 
@@ -743,18 +754,8 @@ def course_index(request, course_key):
 
     org, course, name: Attributes of the Location for the item to edit
     """
-    if use_new_course_outline_page(course_key):
-        block_to_show = request.GET.get("show")
-        return redirect(get_course_outline_url(course_key, block_to_show))
-    with modulestore().bulk_operations(course_key):
-        # A depth of None implies the whole course. The course outline needs this in order to compute has_changes.
-        # A unit may not have a draft version, but one of its components could, and hence the unit itself has changes.
-        course_block = get_course_and_check_access(course_key, request.user, depth=None)
-        if not course_block:
-            raise Http404
-        # should be under bulk_operations if course_block is passed
-        course_index_context = get_course_index_context(request, course_key, course_block)
-        return render_to_response('course_outline.html', course_index_context)
+    block_to_show = request.GET.get("show")
+    return redirect(get_course_outline_url(course_key, block_to_show))
 
 
 @function_trace('get_courses_accessible_to_user')
@@ -1867,12 +1868,21 @@ def get_allowed_organizations_for_libraries(user):
         return list(
             Organization.objects.filter(active=True).order_by(Lower('short_name')).values_list('short_name', flat=True)
         )
+
+    organizations_set = set()
+
+    # This allows org-level staff to create libraries. We should re-evaluate
+    # whether this is necessary and try to normalize course and library creation
+    # authorization behavior.
     if settings.FEATURES.get('ENABLE_ORGANIZATION_STAFF_ACCESS_FOR_CONTENT_LIBRARIES', False):
-        return get_organizations_for_non_course_creators(user)
-    elif settings.FEATURES.get('ENABLE_CREATOR_GROUP', False):
-        return get_organizations(user)
-    else:
-        return []
+        organizations_set.update(get_organizations_for_non_course_creators(user))
+
+    # This allows people in the course creator group for an org to create
+    # libraries, which mimics course behavior.
+    if settings.FEATURES.get('ENABLE_CREATOR_GROUP', False):
+        organizations_set.update(get_organizations(user))
+
+    return sorted(organizations_set, key=str.lower)
 
 
 def user_can_create_organizations(user):

@@ -27,6 +27,7 @@ from openedx.core.djangoapps.xblock import api as xblock_api
 from openedx.core.djangolib.testing.utils import skip_unless_lms, skip_unless_cms
 from openedx.core.lib.xblock_serializer import api as serializer_api
 from common.djangoapps.student.tests.factories import UserFactory
+from common.test.utils import assert_dict_contains_subset
 
 
 class ContentLibraryContentTestMixin:
@@ -205,10 +206,14 @@ class ContentLibraryRuntimeTests(ContentLibraryContentTestMixin, TestCase):
         assert metadata_view_result.data['display_name'] == 'New Multi Choice Question'
         assert 'children' not in metadata_view_result.data
         assert 'editable_children' not in metadata_view_result.data
-        self.assertDictContainsSubset({
-            "content_type": "CAPA",
-            "problem_types": ["multiplechoiceresponse"],
-        }, metadata_view_result.data["index_dictionary"])
+        assert_dict_contains_subset(
+            self,
+            {
+                "content_type": "CAPA",
+                "problem_types": ["multiplechoiceresponse"],
+            },
+            metadata_view_result.data["index_dictionary"],
+        )
         assert metadata_view_result.data['student_view_data'] is None
         # Capa doesn't provide student_view_data
 
@@ -493,11 +498,15 @@ class ContentLibraryXBlockUserStateTest(ContentLibraryContentTestMixin, TestCase
         submit_result = client.post(problem_check_url, data={problem_key: "choice_3"})
         assert submit_result.status_code == 200
         submit_data = json.loads(submit_result.content.decode('utf-8'))
-        self.assertDictContainsSubset({
-            "current_score": 0,
-            "total_possible": 1,
-            "attempts_used": 1,
-        }, submit_data)
+        assert_dict_contains_subset(
+            self,
+            {
+                "current_score": 0,
+                "total_possible": 1,
+                "attempts_used": 1,
+            },
+            submit_data,
+        )
 
         # Now test that the score is also persisted in StudentModule:
         # If we add a REST API to get an individual block's score, that should be checked instead of StudentModule.
@@ -509,11 +518,15 @@ class ContentLibraryXBlockUserStateTest(ContentLibraryContentTestMixin, TestCase
         submit_result = client.post(problem_check_url, data={problem_key: "choice_1"})
         assert submit_result.status_code == 200
         submit_data = json.loads(submit_result.content.decode('utf-8'))
-        self.assertDictContainsSubset({
-            "current_score": 1,
-            "total_possible": 1,
-            "attempts_used": 2,
-        }, submit_data)
+        assert_dict_contains_subset(
+            self,
+            {
+                "current_score": 1,
+                "total_possible": 1,
+                "attempts_used": 2,
+            },
+            submit_data,
+        )
         # Now test that the score is also updated in StudentModule:
         # If we add a REST API to get an individual block's score, that should be checked instead of StudentModule.
         sm = get_score(self.student_a, block_id)

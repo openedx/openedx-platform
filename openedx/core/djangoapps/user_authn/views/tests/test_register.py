@@ -16,7 +16,7 @@ from django.test.client import RequestFactory
 from django.test.utils import override_settings
 from django.urls import reverse
 from openedx_events.tests.utils import OpenEdxEventsTestMixin
-from pytz import UTC
+from zoneinfo import ZoneInfo
 from social_django.models import Partial, UserSocialAuth
 from testfixtures import LogCapture
 
@@ -949,7 +949,7 @@ class RegistrationViewTestV1(
         )
 
     def test_register_form_year_of_birth(self):
-        this_year = datetime.now(UTC).year
+        this_year = datetime.now(ZoneInfo("UTC")).year
         year_options = (
             [
                 {

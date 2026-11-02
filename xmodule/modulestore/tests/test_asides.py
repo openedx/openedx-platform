@@ -33,7 +33,10 @@ class TestAsidesXmlStore(TestCase):
     Test Asides sourced from xml store
     """
 
-    @patch('xmodule.modulestore.xml.ImportSystem.applicable_aside_types', lambda self, block: ['test_aside'])
+    @patch(
+        'xmodule.modulestore.xml.XMLImportingModuleStoreRuntime.applicable_aside_types',
+        lambda self, block: ['test_aside']
+    )
     @XBlockAside.register_temp_plugin(AsideTestType, 'test_aside')
     def test_xml_aside(self):
         """

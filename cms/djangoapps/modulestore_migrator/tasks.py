@@ -9,23 +9,26 @@ import typing as t
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import Enum
-from itertools import groupby
+from gettext import ngettext
 
 from celery import shared_task
 from celery.utils.log import get_task_logger
 from django.core.exceptions import ObjectDoesNotExist
+from django.db import transaction
 from django.utils.text import slugify
+from django.utils.translation import gettext_lazy as _
 from edx_django_utils.monitoring import set_code_owner_attribute_from_module
 from lxml import etree
 from lxml.etree import _ElementTree as XmlTree
 from opaque_keys import InvalidKeyError
-from opaque_keys.edx.keys import CourseKey, UsageKey
+from opaque_keys.edx.keys import UsageKey
 from opaque_keys.edx.locator import (
+    BlockUsageLocator,
     CourseLocator,
     LibraryContainerLocator,
     LibraryLocator,
     LibraryLocatorV2,
-    LibraryUsageLocatorV2
+    LibraryUsageLocatorV2,
 )
 from openedx_learning.api import authoring as authoring_api
 from openedx_learning.api.authoring_models import (
@@ -34,20 +37,24 @@ from openedx_learning.api.authoring_models import (
     ComponentType,
     LearningPackage,
     PublishableEntity,
-    PublishableEntityVersion
+    PublishableEntityVersion,
 )
 from user_tasks.tasks import UserTask, UserTaskStatus
+from xblock.core import XBlock
+from xblock.plugin import PluginMissingError
 
 from common.djangoapps.split_modulestore_django.models import SplitModulestoreCourseIndex
+from common.djangoapps.util.date_utils import DEFAULT_DATE_TIME_FORMAT, strftime_localized
 from openedx.core.djangoapps.content_libraries import api as libraries_api
 from openedx.core.djangoapps.content_libraries.api import ContainerType, get_library
 from openedx.core.djangoapps.content_staging import api as staging_api
 from xmodule.modulestore import exceptions as modulestore_exceptions
 from xmodule.modulestore.django import modulestore
 
+from . import models, data
 from .constants import CONTENT_STAGING_PURPOSE_TEMPLATE
-from .data import CompositionLevel, RepeatHandlingStrategy
-from .models import ModulestoreBlockMigration, ModulestoreBlockSource, ModulestoreMigration, ModulestoreSource
+from .data import CompositionLevel, RepeatHandlingStrategy, SourceContextKey
+from .api.read_api import get_migrations, get_migration_blocks
 
 log = get_task_logger(__name__)
 
@@ -71,19 +78,35 @@ class MigrationStep(Enum):
     MAPPING_OLD_TO_NEW = 'Saving map of legacy content to migrated content'
     FORWARDING = 'Forwarding legacy content to migrated content'
     POPULATING_COLLECTION = 'Assigning imported items to the specified collection'
+    BULK_MIGRATION_PREFIX = 'Migrating legacy content'
 
 
-class _MigrationTask(UserTask):
+class _BulkMigrationTask(UserTask):
     """
-    Base class for migrate_to_modulestore
+    Base class for bulk_migrate_from_modulestore
     """
 
     @staticmethod
     def calculate_total_steps(arguments_dict):
         """
         Get number of in-progress steps in importing process, as shown in the UI.
+
+        There are steps that are general for all sources, but there are steps that are repeated in each source.
+        All of this is taken into account to make the sum
         """
-        return len(list(MigrationStep))
+        sources_count = len(arguments_dict.get('sources_pks', 1))
+
+        # STAGING, PARSING, IMPORTING_ASSETS, IMPORTING_STRUCTURE, MAPPING_OLD_TO_NEW, UNSTAGING
+        steps_repeated_count = 6
+
+        return (
+            # All migration steps and subtract the BULK_MIGRATION_PREFIX
+            len(list(MigrationStep)) - 1
+            # We don't want to count these steps again, they will be counted in the operation below.
+            - steps_repeated_count
+            # Each source repeats all the `steps_repeated_count`
+            + steps_repeated_count * sources_count
+        )
 
 
 @dataclass(frozen=True)
@@ -91,49 +114,21 @@ class _MigrationContext:
     """
     Context for the migration process.
     """
-    existing_source_to_target_keys: dict[  # Note: It's intended to be mutable to reflect changes during migration.
-        UsageKey, list[PublishableEntity]
-    ]
+    # Fields that get mutated as we migrate blocks
+    used_component_keys: set[LibraryUsageLocatorV2]
+    used_container_slugs: set[str]
+
+    # Fields that remain constant
+    previous_block_migrations: dict[UsageKey, data.ModulestoreBlockMigrationResult]
     target_package_id: int
     target_library_key: LibraryLocatorV2
-    source_context_key: CourseKey  # Note: This includes legacy LibraryLocators, which are sneakily CourseKeys.
+    source_context_key: SourceContextKey
     content_by_filename: dict[str, int]
     composition_level: CompositionLevel
     repeat_handling_strategy: RepeatHandlingStrategy
     preserve_url_slugs: bool
     created_by: int
     created_at: datetime
-
-    def is_already_migrated(self, source_key: UsageKey) -> bool:
-        return source_key in self.existing_source_to_target_keys
-
-    def get_existing_target(self, source_key: UsageKey) -> PublishableEntity:
-        """
-        Get the target entity for a given source key.
-
-        If the source key is already migrated, return the FIRST target entity.
-        If the source key is not found, raise a KeyError.
-        """
-        if source_key not in self.existing_source_to_target_keys:
-            raise KeyError(f"Source key {source_key} not found in existing source to target keys")
-
-        # NOTE: This is a list of PublishableEntities, but we always return the first one.
-        return self.existing_source_to_target_keys[source_key][0]
-
-    def add_migration(self, source_key: UsageKey, target: PublishableEntity) -> None:
-        """Update the context with a new migration (keeps it current)"""
-        if source_key not in self.existing_source_to_target_keys:
-            self.existing_source_to_target_keys[source_key] = [target]
-        else:
-            self.existing_source_to_target_keys[source_key].append(target)
-
-    def get_existing_target_entity_keys(self, base_key: str) -> set[str]:
-        return set(
-            publishable_entity.key
-            for publishable_entity_list in self.existing_source_to_target_keys.values()
-            for publishable_entity in publishable_entity_list
-            if publishable_entity.key.startswith(base_key)
-        )
 
     @property
     def should_skip_strategy(self) -> bool:
@@ -157,44 +152,36 @@ class _MigrationContext:
         return self.repeat_handling_strategy is RepeatHandlingStrategy.Fork
 
 
-@shared_task(base=_MigrationTask, bind=True)
-# Note: The decorator @set_code_owner_attribute cannot be used here because the UserTaskMixin
-#   does stack inspection and can't handle additional decorators.
-def migrate_from_modulestore(
-    self: _MigrationTask,
-    *,
-    user_id: int,
+@dataclass()
+class _MigrationSourceData:
+    """
+    Data related to a ModulestoreSource
+    """
+    source: models.ModulestoreSource
+    source_root_usage_key: BlockUsageLocator
+    source_version: str | None
+    migration: models.ModulestoreMigration
+    previous_migration: data.ModulestoreMigration | None
+
+
+def _validate_input(
+    status: UserTaskStatus,
     source_pk: int,
-    target_package_pk: int,
-    target_library_key: str,
-    target_collection_pk: int,
     repeat_handling_strategy: str,
     preserve_url_slugs: bool,
     composition_level: str,
-    forward_source_to_target: bool,
-) -> None:
+    target_library_key: LibraryLocatorV2,
+    target_package: LearningPackage,
+    target_collection: Collection | None,
+) -> _MigrationSourceData | None:
     """
-    Import a course or legacy library into a learning package.
-
-    Currently, the target learning package must be associated with a V2 content library, but that
-    restriction may be loosened in the future as more types of learning packages are developed.
+    Validates and build the source data related to `source_pk`
     """
-    # pylint: disable=too-many-statements
-    # This is a large function, but breaking it up futher would probably not
-    # make it any easier to understand.
-
-    set_code_owner_attribute_from_module(__name__)
-
-    status: UserTaskStatus = self.status
-    status.set_state(MigrationStep.VALIDATING_INPUT.value)
     try:
-        source = ModulestoreSource.objects.get(pk=source_pk)
-        target_package = LearningPackage.objects.get(pk=target_package_pk)
-        target_library = get_library(LibraryLocatorV2.from_string(target_library_key))
-        target_collection = Collection.objects.get(pk=target_collection_pk) if target_collection_pk else None
-    except (ObjectDoesNotExist, InvalidKeyError) as exc:
+        source = models.ModulestoreSource.objects.get(pk=source_pk)
+    except (ObjectDoesNotExist) as exc:
         status.fail(str(exc))
-        return
+        return None
 
     # The Model is used for Course and Legacy Library
     course_index = SplitModulestoreCourseIndex.objects.filter(course_id=source.key).first()
@@ -209,9 +196,19 @@ def migrate_from_modulestore(
             f"Not a valid source context key: {source.key}. "
             "Source key must reference a course or a legacy library."
         )
-        return
+        return None
 
-    migration = ModulestoreMigration.objects.create(
+    # Find the latest successful migration that occurred, if any.
+    # We're careful to do this before creating the new ModulestoreMigration object,
+    # otherwise we would just end up grabbing that by one accident.
+    # ( mypy gets confused by how use next(...) here )
+    previous_migration = next(  # type: ignore[call-overload]
+        get_migrations(
+            source.key, target_key=target_library_key, is_failed=False
+        ),
+        None,  # default
+    )
+    migration = models.ModulestoreMigration.objects.create(
         source=source,
         source_version=source_version,
         composition_level=composition_level,
@@ -221,21 +218,36 @@ def migrate_from_modulestore(
         target_collection=target_collection,
         task_status=status,
     )
-    status.increment_completed_steps()
-
-    status.set_state(MigrationStep.CANCELLING_OLD.value)
-    # In order to prevent a user from accidentally starting a bunch of identical import tasks...
-    migrations_to_cancel = ModulestoreMigration.objects.filter(
-        # get all Migration tasks by this user with the same source and target
-        task_status__user=status.user,
+    return _MigrationSourceData(
         source=source,
+        source_root_usage_key=source_root_usage_key,
+        source_version=source_version,
+        migration=migration,
+        previous_migration=previous_migration,
+    )
+
+
+def _cancel_old_tasks(
+    source_list: list[models.ModulestoreSource],
+    status: UserTaskStatus,
+    target_package: LearningPackage,
+    migration_ids_to_exclude: list[int],
+) -> None:
+    """
+    Cancel all migration tasks related to the user and the source list
+    """
+    # In order to prevent a user from accidentally starting a bunch of identical import tasks...
+    migrations_to_cancel = models.ModulestoreMigration.objects.filter(
+        # get all Migration tasks by this user with the same sources and target
+        task_status__user=status.user,
+        source__in=source_list,
         target=target_package,
     ).select_related('task_status').exclude(
         # (excluding that aren't running)
         task_status__state__in=(UserTaskStatus.CANCELED, UserTaskStatus.FAILED, UserTaskStatus.SUCCEEDED)
     ).exclude(
-        # (excluding this migration itself)
-        id=migration.id
+        # (excluding these migrations themselves)
+        id__in=migration_ids_to_exclude
     )
     # ... and cancel their tasks and clean away their staged content.
     for migration_to_cancel in migrations_to_cancel:
@@ -243,45 +255,41 @@ def migrate_from_modulestore(
             migration_to_cancel.task_status.cancel()
         if migration_to_cancel.staged_content:
             migration_to_cancel.staged_content.delete()
-    status.increment_completed_steps()
 
-    status.set_state(MigrationStep.LOADING)
+
+def _load_xblock(
+    status: UserTaskStatus,
+    usage_key: UsageKey,
+) -> XBlock | None:
+    """
+    Loads the Xblock for the given usage_key
+    """
     try:
-        legacy_root = modulestore().get_item(source_root_usage_key)
+        xblock = modulestore().get_item(usage_key)
     except modulestore_exceptions.ItemNotFoundError as exc:
-        status.fail(f"Failed to load source item '{source_root_usage_key}' from ModuleStore: {exc}")
-        return
-    if not legacy_root:
-        status.fail(f"Could not find source item '{source_root_usage_key}' in ModuleStore")
-        return
-    status.increment_completed_steps()
+        status.fail(f"Failed to load source item '{usage_key}' from ModuleStore: {exc}")
+        return None
+    if not xblock:
+        status.fail(f"Could not find source item '{usage_key}' in ModuleStore")
+        return None
+    return xblock
 
-    status.set_state(MigrationStep.STAGING.value)
-    staged_content = staging_api.stage_xblock_temporarily(
-        block=legacy_root,
-        user_id=status.user.pk,
-        purpose=CONTENT_STAGING_PURPOSE_TEMPLATE.format(source_key=source.key),
-    )
-    migration.staged_content = staged_content
-    status.increment_completed_steps()
 
-    status.set_state(MigrationStep.PARSING.value)
-    parser = etree.XMLParser(strip_cdata=False)
-    try:
-        root_node = etree.fromstring(staged_content.olx, parser=parser)
-    except etree.ParseError as exc:
-        status.fail(f"Failed to parse source OLX (from staged content with id = {staged_content.id}): {exc}")
-    status.increment_completed_steps()
+def _import_assets(migration: models.ModulestoreMigration) -> dict[str, int]:
+    """
+    Import the assets of the staged content to the migration target
+    """
+    if migration.staged_content is None:
+        return {}
 
-    status.set_state(MigrationStep.IMPORTING_ASSETS.value)
     content_by_filename: dict[str, int] = {}
     now = datetime.now(tz=timezone.utc)
-    for staged_content_file_data in staging_api.get_staged_content_static_files(staged_content.id):
+    for staged_content_file_data in staging_api.get_staged_content_static_files(migration.staged_content.id):
         old_path = staged_content_file_data.filename
-        file_data = staging_api.get_staged_content_static_file_data(staged_content.id, old_path)
+        file_data = staging_api.get_staged_content_static_file_data(migration.staged_content.id, old_path)
         if not file_data:
             log.error(
-                f"Staged content {staged_content.id} included referenced file {old_path}, "
+                f"Staged content {migration.staged_content.id} included referenced file {old_path}, "
                 "but no file data was found."
             )
             continue
@@ -294,89 +302,413 @@ def migrate_from_modulestore(
             data=file_data,
             created=now,
         ).id
-    status.increment_completed_steps()
+    return content_by_filename
 
-    status.set_state(MigrationStep.IMPORTING_STRUCTURE.value)
 
-    # "key" is locally unique across all PublishableEntities within
-    # a given LearningPackage.
-    # We use this mapping to ensure that we don't create duplicate
-    # PublishableEntities during the migration process for a given LearningPackage.
-    existing_source_to_target_keys: dict[UsageKey, list[PublishableEntity]] = {}
-    modulestore_blocks = (
-        ModulestoreBlockMigration.objects.filter(overall_migration__target=migration.target.id).order_by("source__key")
-    )
-    existing_source_to_target_keys = {
-        source_key: list(block.target for block in group) for source_key, group in groupby(
-            modulestore_blocks, key=lambda x: x.source.key)
-    }
+def _import_structure(
+    source_data: _MigrationSourceData,
+    target_library: libraries_api.ContentLibraryMetadata,
+    content_by_filename: dict[str, int],
+    root_node: XmlTree,
+    status: UserTaskStatus,
+) -> tuple[t.Any, _MigratedNode]:
+    """
+    Import the staged content structure into the target Learning Core library.
 
+    Args:
+        migration (ModulestoreMigration):
+            The migration record representing the ongoing modulestore-to-learning-core migration.
+        source_data (_MigrationSourceData):
+            Data extracted from the legacy modulestore, including the source root usage key.
+            Use `_validate_input()` to generate this data.
+        target_library (libraries_api.ContentLibraryMetadata):
+            The target library where the new Learning Core content will be created.
+        content_by_filename (dict[str, int]):
+            A mapping between OLX file names and their associated file IDs in the staging area.
+            Use `_import_assets` to generate this content.
+        root_node (XmlTree):
+            The parsed XML tree representing the root of the staged OLX content.
+        status (UserTaskStatus):
+            The user task used to record progress and state updates throughout the import.
+
+    Returns:
+        tuple[Any, _MigratedNode]:
+            A tuple containing:
+                - The first element (`change_log`): the bulk draft change log generated by
+                  `authoring_api.bulk_draft_changes_for`, containing all the imported changes.
+                - The second element (`root_migrated_node`): a `_MigratedNode` object that
+                  represents the mapping between the legacy root node and its newly created
+                  Learning Core equivalent.
+    """
+    migration = source_data.migration
     migration_context = _MigrationContext(
-        existing_source_to_target_keys=existing_source_to_target_keys,
-        target_package_id=target_package_pk,
+        used_component_keys=set(
+            LibraryUsageLocatorV2(target_library.key, block_type, block_id)  # type: ignore[abstract]
+            for block_type, block_id
+            in authoring_api.get_components(migration.target.pk).values_list(
+                "component_type__name", "local_key"
+            )
+        ),
+        used_container_slugs=set(
+            authoring_api.get_containers(
+                migration.target.pk
+            ).values_list("publishable_entity__key", flat=True)
+        ),
+        previous_block_migrations=(
+            get_migration_blocks(source_data.previous_migration.pk)
+            if source_data.previous_migration
+            else {}
+        ),
+        target_package_id=migration.target.pk,
         target_library_key=target_library.key,
-        source_context_key=source_root_usage_key.course_key,
+        source_context_key=source_data.source_root_usage_key.course_key,
         content_by_filename=content_by_filename,
-        composition_level=CompositionLevel(composition_level),
-        repeat_handling_strategy=RepeatHandlingStrategy(repeat_handling_strategy),
-        preserve_url_slugs=preserve_url_slugs,
+        composition_level=CompositionLevel(migration.composition_level),
+        repeat_handling_strategy=RepeatHandlingStrategy(migration.repeat_handling_strategy),
+        preserve_url_slugs=migration.preserve_url_slugs,
         created_by=status.user_id,
         created_at=datetime.now(timezone.utc),
     )
-
     with authoring_api.bulk_draft_changes_for(migration.target.id) as change_log:
         root_migrated_node = _migrate_node(
             context=migration_context,
             source_node=root_node,
         )
     change_log.save()
-    migration.change_log = change_log
-    status.increment_completed_steps()
+    return change_log, root_migrated_node
 
-    status.set_state(MigrationStep.UNSTAGING.value)
-    staged_content.delete()
-    status.increment_completed_steps()
 
-    _create_migration_artifacts_incrementally(
-        root_migrated_node=root_migrated_node,
-        source=source,
-        migration=migration,
-        status=status,
+def _forward_content(source_data: _MigrationSourceData) -> None:
+    """
+    Forwarding legacy content to migrated content
+    """
+    block_migrations = models.ModulestoreBlockMigration.objects.filter(overall_migration=source_data.migration)
+    block_sources_to_block_migrations = {
+        block_migration.source: block_migration for block_migration in block_migrations
+    }
+    for block_source, block_migration in block_sources_to_block_migrations.items():
+        block_source.forwarded = block_migration
+        block_source.save()
+
+    source_data.source.forwarded = source_data.migration
+    source_data.source.save()
+
+
+def _populate_collection(user_id: int, migration: models.ModulestoreMigration) -> None:
+    """
+    Assigning imported items to the specified collection in the migration
+    """
+    if migration.target_collection is None:
+        return
+
+    block_target_pks: list[int] = list(
+        models.ModulestoreBlockMigration.objects.filter(
+            overall_migration=migration
+        ).values_list('target_id', flat=True)
+    )
+    if block_target_pks:
+        authoring_api.add_to_collection(
+            learning_package_id=migration.target.pk,
+            key=migration.target_collection.key,
+            entities_qset=PublishableEntity.objects.filter(id__in=block_target_pks),
+            created_by=user_id,
+        )
+    else:
+        log.warning("No target entities found to add to collection")
+
+
+def _create_collection(library_key: LibraryLocatorV2, title: str) -> Collection:
+    """
+    Creates a collection in the given library
+
+    If there's a collection with the same key, try again, adding the attempt number at the end.
+    The same is true for the title.
+    """
+    key = slugify(title)
+    collection: Collection | None = None
+    attempt = 0
+    created_at = strftime_localized(datetime.now(timezone.utc), DEFAULT_DATE_TIME_FORMAT)
+    description = f"{_('This collection contains content migrated from a legacy library on')}: {created_at}"
+    while not collection:
+        modified_key = key if attempt == 0 else key + '-' + str(attempt)
+        try:
+            # Add transaction here to avoid TransactionManagementError on retry
+            with transaction.atomic():
+                collection = libraries_api.create_library_collection(
+                    library_key=library_key,
+                    collection_key=modified_key,
+                    title=f"{title}{f'_{attempt}' if attempt > 0 else ''}",
+                    description=description,
+                )
+        except libraries_api.LibraryCollectionAlreadyExists:
+            attempt += 1
+    return collection
+
+
+def _set_migrations_to_fail(source_data_list: list[_MigrationSourceData]):
+    """
+    Set and save all migrations in `source_data_list` as failed
+    """
+    for source_data in source_data_list:
+        source_data.migration.is_failed = True
+
+    models.ModulestoreMigration.objects.bulk_update(
+        [x.migration for x in source_data_list],
+        ["is_failed"],
     )
 
-    block_migrations = ModulestoreBlockMigration.objects.filter(overall_migration=migration)
-    status.increment_completed_steps()
 
-    status.set_state(MigrationStep.FORWARDING.value)
-    if forward_source_to_target:
-        block_sources_to_block_migrations = {
-            block_migration.source: block_migration for block_migration in block_migrations
-        }
-        for block_source, block_migration in block_sources_to_block_migrations.items():
-            block_source.forwarded = block_migration
-            block_source.save()
+@shared_task(base=_BulkMigrationTask, bind=True)
+# Note: The decorator @set_code_owner_attribute cannot be used here because the UserTaskMixin
+#   does stack inspection and can't handle additional decorators.
+def bulk_migrate_from_modulestore(
+    self: _BulkMigrationTask,
+    *,
+    user_id: int,
+    sources_pks: list[int],
+    target_library_key: str,
+    target_collection_pks: list[int | None],
+    create_collections: bool = False,
+    repeat_handling_strategy: str,
+    preserve_url_slugs: bool,
+    composition_level: str,
+    forward_source_to_target: bool | None,
+) -> None:
+    """
+    Import multiple legacy courses or libraries into a single V2 library.
 
-        source.forwarded = migration
-        source.save()
-    status.increment_completed_steps()
+    The bulk migration maintains **one unified status record** that tracks progress across
+    all included sources. This simplifies monitoring, since the client only needs to observe
+    one task state.
+    Each source item (course or library) still creates its own `ModulestoreMigration`
+    database record, but all of them share the same parent task (`UserTaskStatus`).
+    If any sub-migration fails (for example, due to invalid OLX or missing assets),
+    the bulk migration **marks the entire task as failed** — there is no partial success.
 
-    status.set_state(MigrationStep.POPULATING_COLLECTION.value)
-    if target_collection:
-        block_target_pks: list[int] = list(
-            ModulestoreBlockMigration.objects.filter(
-                overall_migration=migration
-            ).values_list('target_id', flat=True)
+    Args:
+        self (_BulkMigrationTask):
+            The Celery task instance that wraps the user task logic.
+        user_id (int):
+            The ID of the user initiating the migration.
+        sources_pks (list[int]):
+            Primary keys of the legacy modulestore sources to migrate.
+        target_library_key (str):
+            Key of the V2 library that will receive the imported content.
+        target_collection_pks (list[int | None]):
+            Optional list of target collection IDs corresponding to each source.
+        create_collections (bool):
+            Whether to automatically create new collections when none exist.
+        repeat_handling_strategy (str):
+            Strategy to handle repeated imports of the same content.
+        preserve_url_slugs (bool):
+            Whether to preserve existing XBlock URL slugs during import.
+        composition_level (str):
+            Composition level at which content should be imported (e.g. course, section).
+        forward_source_to_target (bool | None)
+            Whether to forward legacy content to its migrated equivalent after import.
+            If unspecified (None), then forward legacy content for a source if and only
+            if it's that source's first migration.
+
+    See Also:
+        - `migrate_from_modulestore`: Single-source migration equivalent.
+        - API docs: `/api/cms/v1/migrations/bulk/` for REST behavior and responses.
+    """
+    # pylint: disable=too-many-statements
+    # This is a large function, but breaking it up futher would probably not
+    # make it any easier to understand.
+
+    set_code_owner_attribute_from_module(__name__)
+    status: UserTaskStatus = self.status
+
+    # Validating input
+    status.set_state(MigrationStep.VALIDATING_INPUT.value)
+    target_collection_list: list[Collection | None] = []
+
+    try:
+        target_library_locator = LibraryLocatorV2.from_string(target_library_key)
+        target_library = get_library(target_library_locator)
+        if target_library.learning_package_id is None:
+            raise ValueError("Target library has no associated learning package.")
+
+        target_package = LearningPackage.objects.get(pk=target_library.learning_package_id)
+
+        if target_collection_pks:
+            for target_collection_pk in target_collection_pks:
+                target_collection_list.append(
+                    Collection.objects.get(pk=target_collection_pk) if target_collection_pk else None
+                )
+    except (ObjectDoesNotExist, InvalidKeyError, ValueError) as exc:
+        status.fail(str(exc))
+        return
+
+    source_data_list: list[_MigrationSourceData] = []
+
+    for i in range(len(sources_pks)):
+        source_data = _validate_input(
+            status,
+            sources_pks[i],
+            repeat_handling_strategy,
+            preserve_url_slugs,
+            composition_level,
+            target_library_locator,
+            target_package,
+            target_collection_list[i] if target_collection_list else None,
         )
-        if block_target_pks:
-            authoring_api.add_to_collection(
-                learning_package_id=target_package_pk,
-                key=target_collection.key,
-                entities_qset=PublishableEntity.objects.filter(id__in=block_target_pks),
-                created_by=user_id,
-            )
-        else:
-            log.warning("No target entities found to add to collection")
+        if source_data is None:
+            # Fail
+            return
+        source_data_list.append(source_data)
+
     status.increment_completed_steps()
+
+    try:  # pylint: disable=too-many-nested-blocks
+        # Cancelling old tasks
+        status.set_state(MigrationStep.CANCELLING_OLD.value)
+        _cancel_old_tasks(
+            [x.source for x in source_data_list],
+            status,
+            target_package,
+            [migration.id for migration in [x.migration for x in source_data_list]],
+        )
+        status.increment_completed_steps()
+
+        # Loading legacy blocks
+        status.set_state(MigrationStep.LOADING)
+        legacy_root_list: list[XBlock] = []
+        for source_data in source_data_list:
+            legacy_root = _load_xblock(status, source_data.source_root_usage_key)
+            if legacy_root is None:
+                # Fail
+                _set_migrations_to_fail(source_data_list)
+                return
+            legacy_root_list.append(legacy_root)
+        status.increment_completed_steps()
+
+        for i, source_pk in enumerate(sources_pks):
+            source_data = source_data_list[i]
+            try:
+                with transaction.atomic():
+                    # Start migration for `source_pk`
+                    # Staging legacy blocks
+                    status.set_state(
+                        f"{MigrationStep.STAGING.BULK_MIGRATION_PREFIX} ({source_pk}): {MigrationStep.STAGING.value}"
+                    )
+                    staged_content = staging_api.stage_xblock_temporarily(
+                        block=legacy_root_list[i],
+                        user_id=status.user.pk,
+                        purpose=CONTENT_STAGING_PURPOSE_TEMPLATE.format(source_key=source_pk),
+                    )
+                    source_data.migration.staged_content = staged_content
+                    status.increment_completed_steps()
+
+                    # Parsing OLX
+                    status.set_state(
+                        f"{MigrationStep.STAGING.BULK_MIGRATION_PREFIX} ({source_pk}): {MigrationStep.PARSING.value}"
+                    )
+                    parser = etree.XMLParser(strip_cdata=False)
+                    root_node = etree.fromstring(staged_content.olx, parser=parser)
+                    status.increment_completed_steps()
+
+                    # Importing assets
+                    status.set_state(
+                        f"{MigrationStep.STAGING.BULK_MIGRATION_PREFIX} ({source_pk}): "
+                        f"{MigrationStep.IMPORTING_ASSETS.value}"
+                    )
+                    content_by_filename = _import_assets(source_data.migration)
+                    status.increment_completed_steps()
+
+                    # Importing structure of the legacy block
+                    status.set_state(
+                        f"{MigrationStep.STAGING.BULK_MIGRATION_PREFIX} ({source_pk}): "
+                        f"{MigrationStep.IMPORTING_STRUCTURE.value}"
+                    )
+                    change_log, root_migrated_node = _import_structure(
+                        source_data=source_data,
+                        target_library=target_library,
+                        content_by_filename=content_by_filename,
+                        root_node=root_node,
+                        status=status,
+                    )
+                    source_data.migration.change_log = change_log
+                    source_data.migration.save()  # @@TODO keep or nah?
+                    status.increment_completed_steps()
+
+                    status.set_state(
+                        f"{MigrationStep.STAGING.BULK_MIGRATION_PREFIX} ({source_pk}): {MigrationStep.UNSTAGING.value}"
+                    )
+                    staged_content.delete()
+                    status.increment_completed_steps()
+
+                    _create_migration_artifacts_incrementally(
+                        root_migrated_node=root_migrated_node,
+                        source=source_data.source,
+                        migration=source_data.migration,
+                        status=status,
+                        source_pk=source_pk,
+                    )
+                    status.increment_completed_steps()
+            except Exception as _exc:  # pylint: disable=broad-exception-caught
+                log.exception("Failed: {source_data.migration}")
+                # Mark this library as failed, migration of other libraries can continue
+                # If this case occurs and the migration ends without any further issues,
+                # the bulk migration status is success,
+                # TODO: add an intermediate status such as 'partially satisfactory'
+                source_data.migration.is_failed = True
+
+        # Forwarding legacy content to migrated content
+        status.set_state(MigrationStep.FORWARDING.value)
+        for source_data in source_data_list:
+            if forward_source_to_target is False:
+                continue  # Explicitly requested not to forward.
+            if forward_source_to_target is None and source_data.source.forwarded:
+                # Unspecified whether or not to forward.
+                # So, forward iff there was no previous existing successful migration with forwarding.
+                continue
+            if source_data.migration.is_failed:
+                # Don't forward failed migrations.
+                continue
+            _forward_content(source_data)
+        status.increment_completed_steps()
+
+        # Populating collections
+        status.set_state(MigrationStep.POPULATING_COLLECTION.value)
+        for i, source_data in enumerate(source_data_list):
+            migration = source_data.migration
+            if migration.is_failed:
+                continue
+            if migration.target_collection is None and not create_collections:
+                continue
+            if migration.target_collection is None:
+                existing_collection_to_use: Collection | None = None
+                # For Fork strategy: Create an new collection every time.
+                # For Update and Skip strategies: Update an existing collection if possible.
+                if migration.repeat_handling_strategy != RepeatHandlingStrategy.Fork.value:
+                    if source_data.previous_migration:
+                        if previous_collection_slug := source_data.previous_migration.target_collection_slug:
+                            try:
+                                existing_collection_to_use = authoring_api.get_collection(
+                                    target_package.id, previous_collection_slug
+                                )
+                            except Collection.DoesNotExist:
+                                # Collection no longer exists.
+                                pass
+                migration.target_collection = (
+                    existing_collection_to_use or
+                    _create_collection(library_key=target_library_locator, title=legacy_root_list[i].display_name)
+                )
+            _populate_collection(user_id, migration)
+        models.ModulestoreMigration.objects.bulk_update(
+            [x.migration for x in source_data_list],
+            ["target_collection", "is_failed"],
+        )
+        status.increment_completed_steps()
+    except Exception as exc:  # pylint: disable=broad-exception-caught
+        # If there is an exception in this block, all migrations fail.
+        log.exception("Modulestore migrations failed")
+        status.fail(str(exc))
+
+
+SourceToTarget = tuple[UsageKey, PublishableEntityVersion | None, str | None]
 
 
 @dataclass(frozen=True)
@@ -388,10 +720,10 @@ class _MigratedNode:
     This happens, particularly, if the node is above the requested composition level
     but has descendents which are at or below that level.
     """
-    source_to_target: tuple[UsageKey, PublishableEntityVersion] | None
+    source_to_target: SourceToTarget | None
     children: list[_MigratedNode]
 
-    def all_source_to_target_pairs(self) -> t.Iterable[tuple[UsageKey, PublishableEntityVersion]]:
+    def all_source_to_target_pairs(self) -> t.Iterable[SourceToTarget]:
         """
         Get all source_key->target_ver pairs via a pre-order traversal.
         """
@@ -449,13 +781,13 @@ def _migrate_node(
             )
             for source_node_child in source_node.getchildren()
         ]
-    source_to_target: tuple[UsageKey, PublishableEntityVersion] | None = None
+    source_to_target: SourceToTarget | None = None
     if should_migrate_node:
         source_olx = etree.tostring(source_node).decode('utf-8')
         if source_block_id := source_node.get('url_name'):
             source_key: UsageKey = context.source_context_key.make_usage_key(source_node.tag, source_block_id)
             title = source_node.get('display_name', source_block_id)
-            target_entity_version = (
+            target_entity_version, reason = (
                 _migrate_container(
                     context=context,
                     source_key=source_key,
@@ -464,7 +796,7 @@ def _migrate_node(
                     children=[
                         migrated_child.source_to_target[1]
                         for migrated_child in migrated_children if
-                        migrated_child.source_to_target
+                        migrated_child.source_to_target and migrated_child.source_to_target[1]
                     ],
                 )
                 if container_type else
@@ -475,9 +807,18 @@ def _migrate_node(
                     title=title,
                 )
             )
-            if target_entity_version:
-                source_to_target = (source_key, target_entity_version)
-                context.add_migration(source_key, target_entity_version.entity)
+            if container_type is None and target_entity_version is None and reason is not None:
+                # Currently, components with children are not supported
+                children_length = len(source_node.getchildren())
+                if children_length:
+                    reason += (
+                        ngettext(
+                            ' It has {count} children block.',
+                            ' It has {count} children blocks.',
+                            children_length,
+                        )
+                    ).format(count=children_length)
+            source_to_target = (source_key, target_entity_version, reason)
         else:
             log.warning(
                 f"Cannot migrate node from {context.source_context_key} to {context.target_library_key} "
@@ -493,12 +834,14 @@ def _migrate_container(
     container_type: ContainerType,
     title: str,
     children: list[PublishableEntityVersion],
-) -> PublishableEntityVersion:
+) -> tuple[PublishableEntityVersion, str | None]:
     """
     Create, update, or replace a container in a library based on a source key and children.
 
     (We assume that the destination is a library rather than some other future kind of learning
-     package, but let's keep than an internal assumption.)
+    package, but let's keep than an internal assumption.)
+    For now this returns None value for unsupported_reason as second value of tuple as we
+    don't have any concrete condition where a container cannot be imported/migrated.
     """
     target_key = _get_distinct_target_container_key(
         context,
@@ -530,8 +873,9 @@ def _migrate_container(
         return PublishableEntityVersion.objects.get(
             entity_id=container.container_pk,
             version_num=container.draft_version_num,
-        )
-    return authoring_api.create_next_container_version(
+        ), None
+
+    container_publishable_entity_version = authoring_api.create_next_container_version(
         container.container_pk,
         title=title,
         entity_rows=[
@@ -543,6 +887,18 @@ def _migrate_container(
         container_version_cls=container_type.container_model_classes[1],
     ).publishable_entity_version
 
+    # Publish the container
+    # Call post publish events synchronously to avoid
+    # an error when calling `wait_for_post_publish_events`
+    # inside a celery task.
+    libraries_api.publish_container_changes(
+        container.container_key,
+        context.created_by,
+        call_post_publish_events_sync=True,
+    )
+    context.used_container_slugs.add(container.container_key.container_id)
+    return container_publishable_entity_version, None
+
 
 def _migrate_component(
     *,
@@ -550,7 +906,7 @@ def _migrate_component(
     source_key: UsageKey,
     olx: str,
     title: str,
-) -> PublishableEntityVersion | None:
+) -> tuple[PublishableEntityVersion | None, str | None]:
     """
     Create, update, or replace a component in a library based on a source key and OLX.
 
@@ -583,7 +939,10 @@ def _migrate_component(
             )
         except libraries_api.IncompatibleTypesError as e:
             log.error(f"Error validating block for library {context.target_library_key}: {e}")
-            return None
+            return None, str(e)
+        except PluginMissingError as e:
+            log.error(f"Block type not supported in {context.target_library_key}: {e}")
+            return None, f"Invalid block type: {e}"
         component = authoring_api.create_component(
             context.target_package_id,
             component_type=component_type,
@@ -594,7 +953,7 @@ def _migrate_component(
 
     # Component existed and we do not replace it and it is not deleted previously
     if component_existed and not component_deleted and context.should_skip_strategy:
-        return component.versioning.draft.publishable_entity_version
+        return component.versioning.draft.publishable_entity_version, None
 
     # If component existed and was deleted or we have to replace the current version
     # Create the new component version for it
@@ -607,7 +966,14 @@ def _migrate_component(
         authoring_api.create_component_version_content(
             component_version.pk, content_pk, key=new_path
         )
-    return component_version.publishable_entity_version
+
+    # Publish the component
+    libraries_api.publish_component_changes(target_key, context.created_by)
+    context.used_component_keys.add(target_key)
+    return component_version.publishable_entity_version, None
+
+
+_MAX_UNIQUE_SLUG_ATTEMPTS = 1000
 
 
 def _get_distinct_target_container_key(
@@ -617,39 +983,36 @@ def _get_distinct_target_container_key(
     title: str,
 ) -> LibraryContainerLocator:
     """
-    Find a unique key for block_id by appending a unique identifier if necessary.
-
-    Args:
-        context (_MigrationContext): The migration context.
-        source_key (UsageKey): The source key.
-        container_type (ContainerType): The container type.
-        title (str): The title.
-
-    Returns:
-        LibraryContainerLocator: The target container key.
+    Figure out the appropriate target container for this structural block.
     """
-    # Check if we already processed this block and we are not forking. If we are forking, we will
-    # want a new target key.
-    if context.is_already_migrated(source_key) and not context.should_fork_strategy:
-        existing_version = context.get_existing_target(source_key)
-
-        return LibraryContainerLocator(
-            context.target_library_key,
-            container_type.value,
-            existing_version.key
-        )
+    # If we're not forking, then check if this block was part of our past migration.
+    # (If we are forking, we will always want a new target key).
+    if not context.should_fork_strategy:
+        if previous_block_migration := context.previous_block_migrations.get(source_key):
+            if isinstance(previous_block_migration, data.ModulestoreBlockMigrationSuccess):
+                if isinstance(previous_block_migration.target_key, LibraryContainerLocator):
+                    return previous_block_migration.target_key
     # Generate new unique block ID
     base_slug = (
         source_key.block_id
         if context.preserve_url_slugs
         else (slugify(title) or source_key.block_id)
     )
-    unique_slug = _find_unique_slug(context, base_slug)
-
-    return LibraryContainerLocator(
-        context.target_library_key,
-        container_type.value,
-        unique_slug
+    # Use base base slug if available
+    if base_slug not in context.used_container_slugs:
+        return LibraryContainerLocator(
+            context.target_library_key, container_type.value, base_slug
+        )
+    # Try numbered variations until we find one that doesn't exist
+    for i in range(1, _MAX_UNIQUE_SLUG_ATTEMPTS + 1):
+        candidate_slug = f"{base_slug}_{i}"
+        if candidate_slug not in context.used_container_slugs:
+            return LibraryContainerLocator(
+                context.target_library_key, container_type.value, candidate_slug
+            )
+    # It would be extremely unlikely for us to run out of attempts
+    raise RuntimeError(
+        f"Unable to find unique slug after {_MAX_UNIQUE_SLUG_ATTEMPTS} attempts for base: {base_slug}"
     )
 
 
@@ -660,98 +1023,45 @@ def _get_distinct_target_usage_key(
     title: str,
 ) -> LibraryUsageLocatorV2:
     """
-    Find a unique key for block_id by appending a unique identifier if necessary.
-
-    Args:
-        context: The migration context
-        source_key: The original usage key from the source
-        component_type: The component type string
-        olx: The OLX content of the component
-
-    Returns:
-        A unique LibraryUsageLocatorV2 for the target
-
-    Raises:
-        ValueError: If source_key is invalid
+    Figure out the appropriate target component for this block.
     """
-    # Check if we already processed this block and we are not forking. If we are forking, we will
-    # want a new target key.
-    if context.is_already_migrated(source_key) and not context.should_fork_strategy:
-        log.debug(f"Block {source_key} already exists, reusing first existing target")
-        existing_target = context.get_existing_target(source_key)
-        block_id = existing_target.component.local_key
-
-        # mypy thinks LibraryUsageLocatorV2 is abstract. It's not.
-        return LibraryUsageLocatorV2(  # type: ignore[abstract]
-            context.target_library_key,
-            source_key.block_type,
-            block_id
-        )
-
+    # If we're not forking, then check if this block was part of our past migration.
+    # (If we are forking, we will always want a new target key).
+    if not context.should_fork_strategy:
+        if previous_block_migration := context.previous_block_migrations.get(source_key):
+            if isinstance(previous_block_migration, data.ModulestoreBlockMigrationSuccess):
+                if isinstance(previous_block_migration.target_key, LibraryUsageLocatorV2):
+                    return previous_block_migration.target_key
     # Generate new unique block ID
     base_slug = (
         source_key.block_id
         if context.preserve_url_slugs
         else (slugify(title) or source_key.block_id)
     )
-    unique_slug = _find_unique_slug(context, base_slug, component_type)
-
-    # mypy thinks LibraryUsageLocatorV2 is abstract. It's not.
-    return LibraryUsageLocatorV2(  # type: ignore[abstract]
-        context.target_library_key,
-        source_key.block_type,
-        unique_slug
+    # Use base base slug if available
+    base_key = LibraryUsageLocatorV2(  # type: ignore[abstract]
+        context.target_library_key, component_type.name, base_slug
     )
-
-
-def _find_unique_slug(
-    context: _MigrationContext,
-    base_slug: str,
-    component_type: ComponentType | None = None,
-    max_attempts: int = 1000
-) -> str:
-    """
-    Find a unique slug by appending incrementing numbers if necessary.
-    Using batch querying to avoid multiple database roundtrips.
-
-    Args:
-        component_type: The component type to check against
-        base_slug: The base slug to make unique
-        max_attempts: Maximum number of attempts to prevent infinite loops
-
-    Returns:
-        A unique slug string
-
-    Raises:
-        RuntimeError: If unable to find unique slug within max_attempts
-    """
-    if not component_type:
-        base_key = base_slug
-    else:
-        base_key = f"{component_type}:{base_slug}"
-
-    existing_publishable_entity_keys = context.get_existing_target_entity_keys(base_key)
-
-    # Check if base slug is available
-    if base_key not in existing_publishable_entity_keys:
-        return base_slug
-
+    if base_key not in context.used_component_keys:
+        return base_key
     # Try numbered variations until we find one that doesn't exist
-    for i in range(1, max_attempts + 1):
+    for i in range(1, _MAX_UNIQUE_SLUG_ATTEMPTS + 1):
         candidate_slug = f"{base_slug}_{i}"
-        candidate_key = f"{component_type}:{candidate_slug}" if component_type else candidate_slug
-
-        if candidate_key not in existing_publishable_entity_keys:
-            return candidate_slug
-
-    raise RuntimeError(f"Unable to find unique slug after {max_attempts} attempts for base: {base_slug}")
+        candidate_key = LibraryUsageLocatorV2(  # type: ignore[abstract]
+            context.target_library_key, component_type.name, candidate_slug
+        )
+        if candidate_key not in context.used_component_keys:
+            return candidate_key
+    # It would be extremely unlikely for us to run out of attempts
+    raise RuntimeError(f"Unable to find unique slug after {_MAX_UNIQUE_SLUG_ATTEMPTS} attempts for base: {base_slug}")
 
 
 def _create_migration_artifacts_incrementally(
     root_migrated_node: _MigratedNode,
-    source: ModulestoreSource,
-    migration: ModulestoreMigration,
-    status: UserTaskStatus
+    source: models.ModulestoreSource,
+    migration: models.ModulestoreMigration,
+    status: UserTaskStatus,
+    source_pk: int | None = None,
 ) -> None:
     """
     Create ModulestoreBlockSource and ModulestoreBlockMigration objects incrementally.
@@ -760,20 +1070,43 @@ def _create_migration_artifacts_incrementally(
     total_nodes = len(nodes)
     processed = 0
 
-    for source_usage_key, target_version in root_migrated_node.all_source_to_target_pairs():
-        block_source, _ = ModulestoreBlockSource.objects.get_or_create(
+    # Load a mapping from each modified entity's primary key
+    # to the primary key of the changelog record that captures its modification.
+    # This will not include any blocks whose migration failed to create a target entity.
+    entity_pks_to_change_log_record_pks: dict[int, int] = dict(
+        migration.change_log.records.values_list("entity_id", "id")
+    ) if migration.change_log else {}
+
+    for source_usage_key, target_version, unsupported_reason in root_migrated_node.all_source_to_target_pairs():
+        block_source, _ = models.ModulestoreBlockSource.objects.get_or_create(
             overall_source=source,
             key=source_usage_key
         )
+        # target_entity_pk should be None iff the block migration failed
+        target_entity_pk: int | None = target_version.entity_id if target_version else None
 
-        ModulestoreBlockMigration.objects.create(
-            overall_migration=migration,
-            source=block_source,
-            target_id=target_version.entity_id,
-        )
+        change_log_record_pk = entity_pks_to_change_log_record_pks.get(target_entity_pk) if target_entity_pk else None
+        # Only create a migration artifact for this source block if:
+        #  (a) we have a record of a change occuring, or
+        #  (b) it failed.
+        # If neither a nor b are true, then this source block was skipped.
+        if change_log_record_pk or unsupported_reason:
+            models.ModulestoreBlockMigration.objects.create(
+                overall_migration=migration,
+                source=block_source,
+                target_id=target_entity_pk,
+                change_log_record_id=change_log_record_pk,
+                unsupported_reason=unsupported_reason,
+            )
 
         processed += 1
         if processed % 10 == 0 or processed == total_nodes:
-            status.set_state(
-                f"{MigrationStep.MAPPING_OLD_TO_NEW.value} ({processed}/{total_nodes})"
-            )
+            if source_pk:
+                status.set_state(
+                    f"{MigrationStep.STAGING.BULK_MIGRATION_PREFIX} ({source_pk}): "
+                    f"{MigrationStep.MAPPING_OLD_TO_NEW.value} ({processed}/{total_nodes})"
+                )
+            else:
+                status.set_state(
+                    f"{MigrationStep.MAPPING_OLD_TO_NEW.value} ({processed}/{total_nodes})"
+                )

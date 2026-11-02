@@ -27,7 +27,7 @@ from edx_django_utils.monitoring import set_custom_attribute
 from openedx_events.learning.data import UserData, UserPersonalData
 from openedx_events.learning.signals import STUDENT_REGISTRATION_COMPLETED
 from openedx_filters.learning.filters import StudentRegistrationRequested
-from pytz import UTC
+from zoneinfo import ZoneInfo
 from django_ratelimit.decorators import ratelimit
 from requests import HTTPError
 from rest_framework.response import Response
@@ -390,7 +390,7 @@ def _track_user_registration(user, profile, params, third_party_provider, regist
             'name': profile.name,
             # Mailchimp requires the age & yearOfBirth to be integers, we send a sane integer default if falsey.
             'age': profile.age or -1,
-            'yearOfBirth': profile.year_of_birth or datetime.datetime.now(UTC).year,
+            'yearOfBirth': profile.year_of_birth or datetime.datetime.now(ZoneInfo("UTC")).year,
             'education': profile.level_of_education_display,
             'address': profile.mailing_address,
             'gender': profile.gender_display,
@@ -549,7 +549,9 @@ def _record_utm_registration_attribution(request, user):
             # We divide by 1000 here because the javascript timestamp generated is in milliseconds not seconds.
             # PYTHON: time.time()      => 1475590280.823698
             # JS: new Date().getTime() => 1475590280823
-            created_at_datetime = datetime.datetime.fromtimestamp(int(created_at_unixtime) / float(1000), tz=UTC)
+            created_at_datetime = datetime.datetime.fromtimestamp(
+                int(created_at_unixtime) / float(1000), tz=ZoneInfo("UTC")
+            )
             UserAttribute.set_user_attribute(
                 user,
                 REGISTRATION_UTM_CREATED_AT,

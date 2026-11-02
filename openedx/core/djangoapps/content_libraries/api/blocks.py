@@ -19,7 +19,8 @@ from django.urls import reverse
 from django.utils.text import slugify
 from django.utils.translation import gettext as _
 from lxml import etree
-from opaque_keys.edx.locator import LibraryLocatorV2, LibraryUsageLocatorV2
+from opaque_keys import InvalidKeyError
+from opaque_keys.edx.locator import LibraryContainerLocator, LibraryLocatorV2, LibraryUsageLocatorV2
 from opaque_keys.edx.keys import LearningContextKey, UsageKeyV2
 from openedx_events.content_authoring.data import (
     ContentObjectChangedData,
@@ -36,7 +37,10 @@ from openedx_events.content_authoring.signals import (
     LIBRARY_CONTAINER_UPDATED
 )
 from openedx_learning.api import authoring as authoring_api
-from openedx_learning.api.authoring_models import Component, ComponentVersion, LearningPackage, MediaType
+from openedx_learning.api.authoring_models import (
+    Component, ComponentVersion, LearningPackage, MediaType,
+    Container, Collection
+)
 from xblock.core import XBlock
 
 from openedx.core.djangoapps.xblock.api import (
@@ -79,6 +83,8 @@ log = logging.getLogger(__name__)
 __all__ = [
     # API methods
     "get_library_components",
+    "get_library_containers",
+    "get_library_collections",
     "get_library_block",
     "set_library_block_olx",
     "get_component_from_usage_key",
@@ -118,6 +124,33 @@ def get_library_components(
     )
 
     return components
+
+
+def get_library_containers(library_key: LibraryLocatorV2) -> QuerySet[Container]:
+    """
+    Get all containers in the given content library.
+    """
+    lib = ContentLibrary.objects.get_by_key(library_key)  # type: ignore[attr-defined]
+    learning_package = lib.learning_package
+    assert learning_package is not None
+    containers: QuerySet[Container] = authoring_api.get_containers(
+        learning_package.id
+    )
+
+    return containers
+
+
+def get_library_collections(library_key: LibraryLocatorV2) -> QuerySet[Collection]:
+    """
+    Get all collections in the given content library.
+    """
+    lib = ContentLibrary.objects.get_by_key(library_key)  # type: ignore[attr-defined]
+    learning_package = lib.learning_package
+    assert learning_package is not None
+    collections = authoring_api.get_collections(
+        learning_package.id
+    )
+    return collections
 
 
 def get_library_block(usage_key: LibraryUsageLocatorV2, include_collections=False) -> LibraryXBlockMetadata:
@@ -276,7 +309,7 @@ def validate_can_add_block_to_library(
     block_class = XBlock.load_class(block_type)  # Will raise an exception if invalid
     if block_class.has_children:
         raise IncompatibleTypesError(
-            'The "{block_type}" XBlock (ID: "{block_id}") has children, so it not supported in content libraries',
+            f'The "{block_type}" XBlock (ID: "{block_id}") has children, so it not supported in content libraries.',
         )
     # Make sure the new ID is not taken already:
     usage_key = LibraryUsageLocatorV2(  # type: ignore[abstract]
@@ -469,22 +502,36 @@ def _import_staged_block(
     return get_library_block(usage_key)
 
 
+def _is_container(block_type: str) -> bool:
+    """
+    Return True if the block type is a container.
+    """
+    return block_type in ["vertical", "sequential", "chapter"]
+
+
 def _import_staged_block_as_container(
-    olx_str: str,
     library_key: LibraryLocatorV2,
     source_context_key: LearningContextKey,
     user,
     staged_content_id: int,
     staged_content_files: list[StagedContentFileData],
     now: datetime,
+    *,
+    olx_str: str | None = None,
+    olx_node: etree.Element | None = None,
+    copied_from_map: dict[str, LibraryUsageLocatorV2 | LibraryContainerLocator] | None = None,
 ) -> ContainerMetadata:
     """
     Convert the given XBlock (e.g. "vertical") to a Container (e.g. Unit) and
     import it into the library, along with all its child XBlocks.
     """
-    olx_node = etree.fromstring(olx_str)
-    if olx_node.tag != "vertical":
-        raise ValueError("This method is only designed to work with <vertical> XBlocks (units).")
+    if olx_node is None:
+        if olx_str is None:
+            raise ValueError("Either olx_str or olx_node must be provided")
+        olx_node = etree.fromstring(olx_str)
+
+    assert olx_node is not None  # This assert to make sure olx_node has the correct type
+
     # The olx_str looks like this:
     # <vertical><block1>...[XML]...</block1><block2>...[XML]...</block2>...</vertical>
     # Ideally we could split it up and preserve the strings, but that is difficult to do correctly, so we'll split
@@ -493,34 +540,91 @@ def _import_staged_block_as_container(
 
     title = _title_from_olx_node(olx_node)
 
-    # Start an atomic section so the whole paste succeeds or fails together:
-    with transaction.atomic():
-        container = create_container(
-            library_key=library_key,
-            container_type=ContainerType.Unit,
-            slug=None,  # auto-generate slug from title
-            title=title,
-            user_id=user.id,
-        )
-        new_child_keys: list[LibraryUsageLocatorV2] = []
-        for child_node in olx_node:
+    container = create_container(
+        library_key=library_key,
+        container_type=ContainerType.from_source_olx_tag(olx_node.tag),
+        slug=None,  # auto-generate slug from title
+        title=title,
+        user_id=user.id,
+    )
+
+    # Keep track of which blocks were copied from the library, so we don't duplicate them
+    if copied_from_map is None:
+        copied_from_map = {}
+
+    # Handle children
+    new_child_keys: list[LibraryUsageLocatorV2 | LibraryContainerLocator] = []
+    for child_node in olx_node:
+        child_is_container = _is_container(child_node.tag)
+        copied_from_block = child_node.attrib.get('copied_from_block', None)
+        if copied_from_block:
+            # Get the key of the child block
             try:
-                child_metadata = _import_staged_block(
-                    block_type=child_node.tag,
-                    olx_str=etree.tostring(child_node, encoding='unicode'),
-                    library_key=library_key,
-                    source_context_key=source_context_key,
-                    user=user,
-                    staged_content_id=staged_content_id,
-                    staged_content_files=staged_content_files,
-                    now=now,
-                )
-                new_child_keys.append(child_metadata.usage_key)
-            except IncompatibleTypesError:
-                continue  # Skip blocks that won't work in libraries
-        update_container_children(container.container_key, new_child_keys, user_id=user.id)
-        # Re-fetch the container because the 'last_draft_created' will have changed when we added children
-        container = get_container(container.container_key)
+                child_key: LibraryContainerLocator | LibraryUsageLocatorV2
+                if child_is_container:
+                    child_key = LibraryContainerLocator.from_string(copied_from_block)
+                else:
+                    child_key = LibraryUsageLocatorV2.from_string(copied_from_block)
+
+                if child_key.context_key == library_key:
+                    # This is a block that was copied from the library, so we just link it to the container
+                    new_child_keys.append(child_key)
+                    continue
+
+            except InvalidKeyError:
+                # This is a XBlock copied from a course, so we need to create a new copy of it.
+                pass
+
+        # This block is not copied from a course, or it was copied from a different library.
+        # We need to create a new copy of it.
+        if child_is_container:
+            if copied_from_block in copied_from_map:
+                # This container was already copied from the library, so we just link it to the container
+                new_child_keys.append(copied_from_map[copied_from_block])
+                continue
+
+            child_container = _import_staged_block_as_container(
+                library_key=library_key,
+                source_context_key=source_context_key,
+                user=user,
+                staged_content_id=staged_content_id,
+                staged_content_files=staged_content_files,
+                now=now,
+                olx_node=child_node,
+                copied_from_map=copied_from_map,
+            )
+            if copied_from_block:
+                copied_from_map[copied_from_block] = child_container.container_key
+            new_child_keys.append(child_container.container_key)
+            continue
+
+        # This is not a container, so we import it as a standalone block
+        try:
+            if copied_from_block in copied_from_map:
+                # This block was already copied from the library, so we just link it to the container
+                new_child_keys.append(copied_from_map[copied_from_block])
+                continue
+
+            child_metadata = _import_staged_block(
+                block_type=child_node.tag,
+                olx_str=etree.tostring(child_node, encoding='unicode'),
+                library_key=library_key,
+                source_context_key=source_context_key,
+                user=user,
+                staged_content_id=staged_content_id,
+                staged_content_files=staged_content_files,
+                now=now,
+            )
+            if copied_from_block:
+                copied_from_map[copied_from_block] = child_metadata.usage_key
+            new_child_keys.append(child_metadata.usage_key)
+        except IncompatibleTypesError:
+            continue  # Skip blocks that won't work in libraries
+
+    update_container_children(container.container_key, new_child_keys, user_id=user.id)  # type: ignore[arg-type]
+    # Re-fetch the container because the 'last_draft_created' will have changed when we added children
+    container = get_container(container.container_key)
+
     return container
 
 
@@ -548,17 +652,19 @@ def import_staged_content_from_user_clipboard(library_key: LibraryLocatorV2, use
 
     now = datetime.now(tz=timezone.utc)
 
-    if user_clipboard.content.block_type == "vertical":
-        # This is a Unit. To import it into a library, we have to create it as a container.
-        return _import_staged_block_as_container(
-            olx_str,
-            library_key,
-            source_context_key,
-            user,
-            staged_content_id,
-            staged_content_files,
-            now,
-        )
+    if _is_container(user_clipboard.content.block_type):
+        # This is a container and we can import it as such.
+        # Start an atomic section so the whole paste succeeds or fails together:
+        with transaction.atomic():
+            return _import_staged_block_as_container(
+                library_key,
+                source_context_key,
+                user,
+                staged_content_id,
+                staged_content_files,
+                now,
+                olx_str=olx_str,
+            )
     else:
         return _import_staged_block(
             user_clipboard.content.block_type,
@@ -850,7 +956,7 @@ def delete_library_block_static_asset_file(usage_key, file_path, user=None):
         )
 
 
-def publish_component_changes(usage_key: LibraryUsageLocatorV2, user: UserType):
+def publish_component_changes(usage_key: LibraryUsageLocatorV2, user_id: int):
     """
     Publish all pending changes in a single component.
     """
@@ -863,7 +969,7 @@ def publish_component_changes(usage_key: LibraryUsageLocatorV2, user: UserType):
     drafts_to_publish = authoring_api.get_all_drafts(learning_package.id).filter(entity__key=component.key)
     # Publish the component and update anything that needs to be updated (e.g. search index):
     publish_log = authoring_api.publish_from_drafts(
-        learning_package.id, draft_qset=drafts_to_publish, published_by=user.id,
+        learning_package.id, draft_qset=drafts_to_publish, published_by=user_id,
     )
     # Since this is a single component, it should be safe to process synchronously and in-process:
     tasks.send_events_after_publish(publish_log.pk, str(library_key))

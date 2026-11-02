@@ -21,7 +21,7 @@ from openedx.core.lib.teams_config import TeamsConfig, DEFAULT_COURSE_RUN_MAX_TE
 import xmodule.course_block
 from xmodule.course_metadata_utils import DEFAULT_START_DATE
 from xmodule.data import CertificatesDisplayBehaviors
-from xmodule.modulestore.xml import ImportSystem, XMLModuleStore
+from xmodule.modulestore.xml import XMLImportingModuleStoreRuntime, XMLModuleStore
 from xmodule.modulestore.exceptions import InvalidProctoringProvider
 
 ORG = 'test_org'
@@ -52,7 +52,10 @@ class CourseFieldsTestCase(unittest.TestCase):  # lint-amnesty, pylint: disable=
             assert xmodule.course_block.CourseFields.enrollment_start.default == expected
 
 
-class DummySystem(ImportSystem):  # lint-amnesty, pylint: disable=abstract-method, missing-class-docstring
+class DummyModuleStoreRuntime(XMLImportingModuleStoreRuntime):  # pylint: disable=abstract-method
+    """
+    Minimal modulestore runtime for tests.
+    """
     @patch('xmodule.modulestore.xml.OSFS', lambda dir: MemoryFS())
     def __init__(self, load_error_blocks, course_id=None):
 
@@ -83,7 +86,7 @@ def get_dummy_course(
 ):
     """Get a dummy course"""
 
-    system = DummySystem(load_error_blocks=True)
+    system = DummyModuleStoreRuntime(load_error_blocks=True)
 
     def to_attrb(n, v):
         return '' if v is None else f'{n}="{v}"'.lower()
@@ -126,7 +129,7 @@ class HasEndedMayCertifyTestCase(unittest.TestCase):
     def setUp(self):
         super().setUp()
 
-        system = DummySystem(load_error_blocks=True)  # lint-amnesty, pylint: disable=unused-variable
+        system = DummyModuleStoreRuntime(load_error_blocks=True)  # lint-amnesty, pylint: disable=unused-variable
 
         past_end = (datetime.now() - timedelta(days=12)).strftime("%Y-%m-%dT%H:%M:00")
         future_end = (datetime.now() + timedelta(days=12)).strftime("%Y-%m-%dT%H:%M:00")

@@ -11,6 +11,7 @@ from xblock.validation import ValidationMessage
 
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase
 from openedx.core.djangoapps.content_tagging.toggles import DISABLE_TAGGING_FEATURE
+from openedx.core.djangoapps.content_libraries.tests import ContentLibrariesRestApiTest
 from xmodule.partitions.partitions import (
     ENROLLMENT_TRACK_PARTITION_ID,
     Group,
@@ -27,7 +28,7 @@ from xmodule.modulestore import (
 )  # lint-amnesty, pylint: disable=wrong-import-order
 
 
-class BaseXBlockContainer(CourseTestCase):
+class BaseXBlockContainer(CourseTestCase, ContentLibrariesRestApiTest):
     """
     Base xBlock container handler.
 
@@ -48,6 +49,20 @@ class BaseXBlockContainer(CourseTestCase):
         This method creates XBlock objects representing a course structure with chapters,
         sequentials, verticals and others.
         """
+        self.lib = self._create_library(
+            slug="containers",
+            title="Container Test Library",
+            description="Units and more",
+        )
+        self.unit = self._create_container(self.lib["id"], "unit", display_name="Unit", slug=None)
+        self.html_block = self._add_block_to_library(self.lib["id"], "html", "Html1", can_stand_alone=False)
+        self._set_library_block_olx(
+            self.html_block["id"],
+            '<html display_name="Html1">updated content upstream 1</html>'
+        )
+        # Set version of html to 2
+        self._publish_library_block(self.html_block["id"])
+
         self.chapter = self.create_block(
             parent=self.course.location,
             category="chapter",
@@ -60,7 +75,13 @@ class BaseXBlockContainer(CourseTestCase):
             display_name="Lesson 1",
         )
 
-        self.vertical = self.create_block(self.sequential.location, "vertical", "Unit")
+        self.vertical = self.create_block(
+            self.sequential.location,
+            "vertical",
+            "Unit",
+            upstream=self.unit["id"],
+            upstream_version=1,
+        )
 
         self.html_unit_first = self.create_block(
             parent=self.vertical.location,
@@ -72,8 +93,8 @@ class BaseXBlockContainer(CourseTestCase):
             parent=self.vertical.location,
             category="html",
             display_name="Html Content 2",
-            upstream="lb:FakeOrg:FakeLib:html:FakeBlock",
-            upstream_version=5,
+            upstream=self.html_block["id"],
+            upstream_version=1,
         )
 
     def create_block(self, parent, category, display_name, **kwargs):
@@ -204,9 +225,32 @@ class ContainerVerticalViewTest(BaseXBlockContainer):
         url = self.get_reverse_url(self.vertical.location)
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data["children"]), 2)
-        self.assertFalse(response.data["is_published"])
-        self.assertTrue(response.data["can_paste_component"])
+        data = response.json()
+        self.assertEqual(len(data["children"]), 2)
+        self.assertFalse(data["is_published"])
+        self.assertTrue(data["can_paste_component"])
+        self.assertEqual(data["display_name"], "Unit")
+        self.assertEqual(data["upstream_ready_to_sync_children_info"], [])
+
+    def test_success_response_with_upstream_info(self):
+        """
+        Check that endpoint returns valid response data using `get_upstream_info` query param
+        """
+        url = self.get_reverse_url(self.vertical.location)
+        response = self.client.get(f"{url}?get_upstream_info=true")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.json()
+        self.assertEqual(len(data["children"]), 2)
+        self.assertFalse(data["is_published"])
+        self.assertTrue(data["can_paste_component"])
+        self.assertEqual(data["display_name"], "Unit")
+        self.assertEqual(data["upstream_ready_to_sync_children_info"], [{
+            "id": str(self.html_unit_second.usage_key),
+            "upstream": self.html_block["id"],
+            "block_type": "html",
+            "downstream_customized": [],
+            "name": "Html Content 2",
+        }])
 
     def test_xblock_is_published(self):
         """
@@ -273,14 +317,14 @@ class ContainerVerticalViewTest(BaseXBlockContainer):
                     "can_manage_tags": True,
                 },
                 "upstream_link": {
-                    "upstream_ref": "lb:FakeOrg:FakeLib:html:FakeBlock",
-                    "version_synced": 5,
-                    "version_available": None,
+                    "upstream_ref": self.html_block["id"],
+                    "version_synced": 1,
+                    "version_available": 2,
                     "version_declined": None,
-                    "error_message": "Linked upstream library block was not found in the system",
-                    "ready_to_sync": False,
+                    "error_message": None,
+                    "ready_to_sync": True,
                     "has_top_level_parent": False,
-                    "is_modified": False,
+                    "downstream_customized": [],
                 },
                 "user_partition_info": expected_user_partition_info,
                 "user_partitions": expected_user_partitions,

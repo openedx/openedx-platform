@@ -14,7 +14,7 @@ from django.utils.translation import gettext as _
 from django.utils.translation import override as override_language
 from eventtracking import tracker
 from openedx_filters.learning.filters import AccountSettingsReadOnlyFieldsRequested
-from pytz import UTC
+from zoneinfo import ZoneInfo
 
 from common.djangoapps.student import views as student_views
 from common.djangoapps.student.models import (
@@ -422,7 +422,7 @@ def _store_old_name_if_needed(old_name, user_profile, requesting_user):
         meta['old_names'].append([
             old_name,
             f"Name change requested through account API by {requesting_user.username}",
-            datetime.datetime.now(UTC).isoformat()
+            datetime.datetime.now(ZoneInfo("UTC")).isoformat()
         ])
         user_profile.set_meta(meta)
         user_profile.save()

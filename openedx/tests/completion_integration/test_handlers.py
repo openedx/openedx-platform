@@ -11,7 +11,7 @@ from completion import handlers
 from completion.models import BlockCompletion
 from completion.test_utils import CompletionSetUpMixin
 from django.test import TestCase
-from pytz import utc
+from zoneinfo import ZoneInfo
 from xblock.completable import XBlockCompletionMode
 from xblock.core import XBlock
 
@@ -66,7 +66,7 @@ class ScorableCompletionHandlerTestCase(CompletionSetUpMixin, TestCase):
             usage_id=str(block_key),
             weighted_earned=0.0,
             weighted_possible=3.0,
-            modified=datetime.utcnow().replace(tzinfo=utc),
+            modified=datetime.utcnow().replace(tzinfo=ZoneInfo("UTC")),
             score_db_table='submissions',
             **params
         )
@@ -127,7 +127,7 @@ class ScorableCompletionHandlerTestCase(CompletionSetUpMixin, TestCase):
                 usage_id=str(self.block_key),
                 weighted_earned=0.0,
                 weighted_possible=3.0,
-                modified=datetime.utcnow().replace(tzinfo=utc),
+                modified=datetime.utcnow().replace(tzinfo=ZoneInfo("UTC")),
                 score_db_table='submissions',
             )
         mock_handler.assert_called()
@@ -153,7 +153,7 @@ class DisabledCompletionHandlerTestCase(CompletionSetUpMixin, TestCase):
             usage_id=str(self.block_key),
             weighted_earned=0.0,
             weighted_possible=3.0,
-            modified=datetime.utcnow().replace(tzinfo=utc),
+            modified=datetime.utcnow().replace(tzinfo=ZoneInfo("UTC")),
             score_db_table='submissions',
         )
         with pytest.raises(BlockCompletion.DoesNotExist):

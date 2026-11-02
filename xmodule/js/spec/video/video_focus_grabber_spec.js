@@ -18,7 +18,8 @@
 
             jasmine.stubRequests();
             loadFixtures('video_html5.html');
-            state = new Video('#example');
+            let runtime = jasmine.createSpyObj('TestRuntime', ['handlerUrl']);
+            state = new Video(runtime, '#example');
 
             spyOnEvent(state.el, 'mousemove');
             spyOn(state.focusGrabber, 'disableFocusGrabber').and.callThrough();

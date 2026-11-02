@@ -12,13 +12,11 @@ from unittest.mock import patch
 from ddt import data, ddt
 from django.conf import settings
 from django.test.utils import override_settings
-from edx_toggles.toggles.testutils import override_waffle_flag
 from opaque_keys.edx.keys import AssetKey
 from opaque_keys.edx.locator import CourseLocator
 from PIL import Image
 from pytz import UTC
 
-from cms.djangoapps.contentstore import toggles
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase
 from cms.djangoapps.contentstore.utils import reverse_course_url
 from cms.djangoapps.contentstore.views import assets
@@ -87,10 +85,9 @@ class BasicAssetsTestCase(AssetsTestCase):
     Test getting assets via html w/o additional args
     """
 
-    @override_waffle_flag(toggles.LEGACY_STUDIO_FILES_UPLOADS, True)
     def test_basic(self):
         resp = self.client.get(self.url, HTTP_ACCEPT='text/html')
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 302)
 
     def test_static_url_generation(self):
 

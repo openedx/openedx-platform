@@ -7,7 +7,7 @@ import json
 from unittest import mock
 
 import ddt
-import pytz
+from zoneinfo import ZoneInfo
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
 from django.contrib.sites.models import Site
 from django.core import mail
@@ -510,7 +510,7 @@ class TestPartnerReportingList(ModuleStoreTestCase):
         self.headers = build_jwt_headers(self.test_superuser)
         self.url = reverse('accounts_retirement_partner_report')
         self.maxDiff = None
-        self.test_created_datetime = datetime.datetime(2018, 1, 1, tzinfo=pytz.UTC)
+        self.test_created_datetime = datetime.datetime(2018, 1, 1, tzinfo=ZoneInfo("UTC"))
         ExternalIdType.objects.get_or_create(name=ExternalIdType.CALIPER)
 
     def get_user_dict(self, user, enrollments):
@@ -763,7 +763,7 @@ class TestAccountRetirementList(RetirementTestCase):
         # retirements = [2018-04-10..., 2018-04-09..., 2018-04-08...]
         pending_state = RetirementState.objects.get(state_name='PENDING')
         for days_back in range(1, days_back_to_test, -1):
-            create_datetime = datetime.datetime.now(pytz.UTC) - datetime.timedelta(days=days_back)
+            create_datetime = datetime.datetime.now(ZoneInfo("UTC")) - datetime.timedelta(days=days_back)
             retirements.append(create_retirement_status(
                 UserFactory(),
                 state=pending_state,
@@ -921,12 +921,12 @@ class TestAccountRetirementsByStatusAndDate(RetirementTestCase):
 
         # Create retirements for the last 10 days
         for days_back in range(0, 10):  # lint-amnesty, pylint: disable=simplifiable-range
-            create_datetime = datetime.datetime.now(pytz.UTC) - datetime.timedelta(days=days_back)
+            create_datetime = datetime.datetime.now(ZoneInfo("UTC")) - datetime.timedelta(days=days_back)
             ret = create_retirement_status(UserFactory(), state=complete_state, create_datetime=create_datetime)
             retirements.append(self._retirement_to_dict(ret))
 
         # Go back in time adding days to the query, assert the correct retirements are present
-        end_date = datetime.datetime.now(pytz.UTC)
+        end_date = datetime.datetime.now(ZoneInfo("UTC"))
         for days_back in range(1, 11):
             retirement_dicts = retirements[:days_back]
             start_date = end_date - datetime.timedelta(days=days_back - 1)

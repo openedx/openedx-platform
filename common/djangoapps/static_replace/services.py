@@ -16,7 +16,7 @@ class ReplaceURLService(Service):
     A service for replacing static/course/jump-to-id URLs with absolute URLs in XBlocks.
 
     Args:
-        block: (optional) An XBlock instance. Used when retrieving the service from the DescriptorSystem.
+        block: (optional) An XBlock instance. Used when retrieving the service from the ModuleStoreRuntime.
         static_asset_path: (optional) Path for static assets, which overrides data_directory and course_id, if nonempty
         static_paths_out: (optional) Array to collect tuples for each static URI found:
             * the original unmodified static URI
@@ -39,7 +39,7 @@ class ReplaceURLService(Service):
         self.jump_to_id_base_url = jump_to_id_base_url
         self.lookup_asset_url = lookup_asset_url
         # This is needed because the `Service` class initialization expects the XBlock passed as an `xblock` keyword
-        #  argument, but the `service` method from the `DescriptorSystem` passes a `block`.
+        #  argument, but the `service` method from the `ModuleStoreRuntime` passes a `block`.
         self._xblock = self.xblock() or block
 
     def replace_urls(self, text, static_replace_only=False):

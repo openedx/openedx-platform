@@ -11,14 +11,13 @@ from lxml import etree
 from opaque_keys.edx.keys import CourseKey
 from xblock.runtime import DictKeyValueStore, KvsFieldData
 
-from xmodule.mako_block import MakoDescriptorSystem
-from xmodule.modulestore.xml import CourseLocationManager
-from xmodule.x_module import XMLParsingSystem, policy_key
+from xmodule.modulestore.xml import XMLParsingModuleStoreRuntime, CourseLocationManager
+from xmodule.x_module import policy_key
 
 
-class InMemorySystem(XMLParsingSystem, MakoDescriptorSystem):  # pylint: disable=abstract-method
+class InMemoryModuleStoreRuntime(XMLParsingModuleStoreRuntime):  # pylint: disable=abstract-method
     """
-    The simplest possible XMLParsingSystem
+    The simplest possible ModuleStoreRuntime
     """
     def __init__(self, xml_import_data):
         self.course_id = CourseKey.from_string(xml_import_data.course_id)
@@ -63,5 +62,5 @@ class XModuleXmlImportTest(TestCase):
     @classmethod
     def process_xml(cls, xml_import_data):
         """Use the `xml_import_data` to import an :class:`XBlock` from XML."""
-        system = InMemorySystem(xml_import_data)
+        system = InMemoryModuleStoreRuntime(xml_import_data)
         return system.process_xml(xml_import_data.xml_string)

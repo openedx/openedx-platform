@@ -42,15 +42,6 @@ log "Ensuring vendor directories exist..."
 log_and_run mkdir -p "$vendor_js"
 log_and_run mkdir -p "$vendor_css"
 
-log "Copying studio-frontend JS & CSS from node_modules into vendor directores..."
-while read -r -d $'\0' src_file ; do
-    if [[ "$src_file" = *.css ]] || [[ "$src_file" = *.css.map ]] ; then
-        log_and_run cp --force "$src_file" "$vendor_css"
-    else
-        log_and_run cp --force "$src_file" "$vendor_js"
-    fi
-done < <(find "$node_modules/@edx/studio-frontend/dist" -type f -print0)
-
 log "Copying certain JS modules from node_modules into vendor directory..."
 log_and_run cp --force \
     "$node_modules/backbone.paginator/lib/backbone.paginator.js" \

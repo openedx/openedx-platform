@@ -11,7 +11,7 @@ from django.test import TestCase
 from openedx.core.lib.safe_lxml import etree
 from xmodule import poll_block
 from . import get_test_system
-from .test_import import DummySystem
+from .test_import import DummyModuleStoreRuntime
 
 
 class _PollBlockTestBase(TestCase):
@@ -67,7 +67,7 @@ class _PollBlockTestBase(TestCase):
         Make sure that poll_block will export fine if its xml contains
         unescaped characters.
         """
-        module_system = DummySystem(load_error_blocks=True)
+        module_system = DummyModuleStoreRuntime(load_error_blocks=True)
         module_system.id_generator.target_course_id = self.xblock.course_id
         sample_poll_xml = '''
         <poll_question display_name="Poll Question">

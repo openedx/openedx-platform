@@ -16,11 +16,18 @@ Architecture note:
 """
 from __future__ import annotations
 
+from io import StringIO
 import logging
 import os
 from datetime import datetime
-from tempfile import mkdtemp
+from tempfile import mkdtemp, NamedTemporaryFile
+import json
+import shutil
 
+from django.core.files.base import ContentFile
+from django.contrib.auth import get_user_model
+from django.core.serializers.json import DjangoJSONEncoder
+from django.conf import settings
 from celery import shared_task
 from celery.utils.log import get_task_logger
 from celery_utils.logged_task import LoggedTask
@@ -66,11 +73,17 @@ from xmodule.modulestore.django import modulestore
 from xmodule.modulestore.exceptions import ItemNotFoundError
 from xmodule.modulestore.mixed import MixedModuleStore
 
+from cms.djangoapps.contentstore.storage import course_import_export_storage
+
 from . import api
 from .models import ContentLibraryBlockImportTask
 
 log = logging.getLogger(__name__)
 TASK_LOGGER = get_task_logger(__name__)
+
+User = get_user_model()
+
+DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%SZ'  # Should match serializer format. Redefined to avoid circular import.
 
 
 @shared_task(base=LoggedTask)
@@ -115,6 +128,15 @@ def send_events_after_publish(publish_log_pk: int, library_key_str: str) -> None
         elif hasattr(record.entity, "container"):
             container_key = api.library_container_locator(library_key, record.entity.container)
             affected_containers.add(container_key)
+
+            try:
+                # We do need to notify listeners that the parent container(s) have changed,
+                # e.g. so the search index can update the "has_unpublished_changes"
+                for parent_container in api.get_containers_contains_item(container_key):
+                    affected_containers.add(parent_container.container_key)
+            except api.ContentLibraryContainerNotFound:
+                # The deleted children remains in the entity, so, in this case, the container may not be found.
+                pass
         else:
             log.warning(
                 f"PublishableEntity {record.entity.pk} / {record.entity.key} was modified during publish operation "
@@ -490,6 +512,7 @@ class LibraryBackupTask(UserTask):  # pylint: disable=abstract-method
     """
     Base class for tasks related with Library backup functionality.
     """
+    NAME_PREFIX = "Library Learning Package Backup"
 
     @classmethod
     def generate_name(cls, arguments_dict) -> str:
@@ -507,7 +530,7 @@ class LibraryBackupTask(UserTask):  # pylint: disable=abstract-method
             str: The generated name
         """
         key = arguments_dict['library_key_str']
-        return f'Backup of {key}'
+        return f'{cls.NAME_PREFIX} of {key}'
 
 
 @shared_task(base=LibraryBackupTask, bind=True)
@@ -536,7 +559,9 @@ def backup_library(self, user_id: int, library_key_str: str) -> None:
         timestamp = datetime.now().strftime("%Y-%m-%d-%H%M%S")
         filename = f'{sanitized_lib_key}-{timestamp}.zip'
         file_path = os.path.join(root_dir, filename)
-        create_lib_zip_file(lp_key=str(library_key), path=file_path)
+        user = User.objects.get(id=user_id)
+        origin_server = getattr(settings, 'CMS_BASE', None)
+        create_lib_zip_file(lp_key=str(library_key), path=file_path, user=user, origin_server=origin_server)
         set_custom_attribute("exporting_completed", str(library_key))
 
         with open(file_path, 'rb') as zipfile:
@@ -547,3 +572,123 @@ def backup_library(self, user_id: int, library_key_str: str) -> None:
         TASK_LOGGER.exception('Error exporting library %s', library_key, exc_info=True)
         if self.status.state != UserTaskStatus.FAILED:
             self.status.fail({'raw_error_msg': str(exception)})
+
+
+class LibraryRestoreLoadError(Exception):
+    def __init__(self, message, logfile=None):
+        super().__init__(message)
+        self.logfile = logfile
+
+
+class LibraryRestoreTask(UserTask):
+    """
+    Base class for library restore tasks.
+    """
+
+    ARTIFACT_NAMES = {
+        UserTaskStatus.FAILED: 'Error log',
+        UserTaskStatus.SUCCEEDED: 'Library Restore',
+    }
+
+    ERROR_LOG_ARTIFACT_NAME = 'Error log'
+
+    NAME_PREFIX = "Library Learning Package Restore"
+
+    @classmethod
+    def generate_name(cls, arguments_dict):
+        storage_path = arguments_dict['storage_path']
+        return f'{cls.NAME_PREFIX} of {storage_path}'
+
+    def fail_with_error_log(self, logfile) -> None:
+        """
+        Helper method to create an error log artifact and fail the task.
+
+        Args:
+            logfile (io.StringIO): The error log content
+        """
+        # Prepare the error log to be saved as a file
+        error_log_file = ContentFile(logfile.getvalue().encode("utf-8"))
+
+        # Save the error log as an artifact
+        artifact = UserTaskArtifact(status=self.status, name=self.ERROR_LOG_ARTIFACT_NAME)
+        artifact.file.save(name=f'{self.status.task_id}-error.log', content=error_log_file)
+        artifact.save()
+
+        self.status.fail(json.dumps({'error': 'Error(s) restoring learning package'}))
+
+    def load_learning_package(self, storage_path, user):
+        """
+        Load learning package from a backup file in storage.
+
+        Args:
+            storage_path (str): The path to the backup file in storage
+
+        Returns:
+            dict: The result of loading the learning package, including status and info
+        Raises:
+            LibraryRestoreLoadError: If there is an error loading the learning package
+        """
+        # First ensure the backup file exists
+        if not course_import_export_storage.exists(storage_path):
+            raise LibraryRestoreLoadError(f'Uploaded file {storage_path} not found')
+
+        # Temporarily copy the file locally, and then load the learning package from it
+        with NamedTemporaryFile(suffix=".zip") as tmp_file:
+            with course_import_export_storage.open(storage_path, "rb") as storage_file:
+                shutil.copyfileobj(storage_file, tmp_file)
+                tmp_file.flush()
+
+            TASK_LOGGER.info('Restoring learning package from temporary file %s', tmp_file.name)
+
+            result = authoring_api.load_learning_package(tmp_file.name, user=user)
+
+            # If there was an error during the load, fail the task with the error log
+            if result.get("status") == "error":
+                raise LibraryRestoreLoadError(
+                    "Error(s) loading learning package",
+                    logfile=result.get("log_file_error")
+                )
+
+            return result
+
+
+@shared_task(base=LibraryRestoreTask, bind=True)
+def restore_library(self, user_id, storage_path):
+    """
+    Restore a learning package from a backup file.
+    """
+    ensure_cms("restore_library may only be executed in a CMS context")
+    set_code_owner_attribute_from_module(__name__)
+
+    TASK_LOGGER.info('Starting restore of learning package from %s', storage_path)
+
+    try:
+        # Load the learning package from the backup file
+        user = User.objects.get(id=user_id)
+        result = self.load_learning_package(storage_path, user=user)
+        learning_package_data = result.get("lp_restored_data", {})
+
+        TASK_LOGGER.info(
+            'Restored learning package (id: %s) with key %s',
+            learning_package_data.get('id'),
+            learning_package_data.get('key')
+        )
+
+        # Save the restore details as an artifact in JSON format
+        restore_data = json.dumps(result, cls=DjangoJSONEncoder)
+
+        UserTaskArtifact.objects.create(
+            status=self.status,
+            name=self.ARTIFACT_NAMES[UserTaskStatus.SUCCEEDED],
+            text=restore_data
+        )
+        TASK_LOGGER.info('Finished restore of learning package from %s', storage_path)
+
+    except Exception as exc:  # pylint: disable=broad-except
+        TASK_LOGGER.exception('Error restoring learning package from %s', storage_path)
+        logfile = getattr(exc, 'logfile', StringIO("Unexpected error during library restore: " + str(exc)))
+        self.fail_with_error_log(logfile)
+    finally:
+        # Make sure to clean up the uploaded file from storage
+        course_import_export_storage.delete(storage_path)
+        TASK_LOGGER.info('Deleted uploaded file %s after restore', storage_path)

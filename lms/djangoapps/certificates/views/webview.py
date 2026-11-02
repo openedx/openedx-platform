@@ -312,7 +312,7 @@ def _update_social_context(request, context, course, user_certificate, platform_
     linkedin_config = LinkedInAddToProfileConfiguration.current()
     if linkedin_config.is_enabled():
         context['linked_in_url'] = linkedin_config.add_to_profile_url(
-            course.display_name, user_certificate.mode, smart_str(share_url), certificate=user_certificate
+            course, user_certificate.mode, smart_str(share_url), certificate=user_certificate
         )
 
 

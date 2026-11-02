@@ -5,6 +5,7 @@ import datetime
 import logging
 import uuid
 from typing import TYPE_CHECKING, Any, List, Union
+from zoneinfo import ZoneInfo
 
 import pycountry
 import requests
@@ -13,7 +14,6 @@ from django.core.exceptions import ObjectDoesNotExist
 from edx_rest_api_client.auth import SuppliedJwtAuth
 from edx_rest_api_client.client import USER_AGENT
 from opaque_keys.edx.keys import CourseKey
-from pytz import UTC
 
 from common.djangoapps.entitlements.utils import is_course_run_entitlement_fulfillable
 from common.djangoapps.student.models import CourseEnrollment
@@ -593,7 +593,7 @@ def get_fulfillable_course_runs_for_entitlement(entitlement, course_runs):
     enrollable_sessions = []
 
     # Only retrieve list of published course runs that can still be enrolled and upgraded
-    search_time = datetime.datetime.now(UTC)
+    search_time = datetime.datetime.now(ZoneInfo("UTC"))
     for course_run in course_runs:
         course_id = CourseKey.from_string(course_run.get("key"))
         (user_enrollment_mode, is_active) = CourseEnrollment.enrollment_mode_for_user(

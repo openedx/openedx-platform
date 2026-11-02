@@ -19,7 +19,7 @@ from xmodule.split_test_block import (
     user_partition_values,
 )
 from xmodule.tests import prepare_block_runtime
-from xmodule.tests.test_course_block import DummySystem as TestImportSystem
+from xmodule.tests.test_course_block import DummyModuleStoreRuntime
 from xmodule.tests.xml import XModuleXmlImportTest
 from xmodule.tests.xml import factories as xml
 from xmodule.validation import StudioValidationMessage
@@ -583,7 +583,7 @@ class SplitTestBlockExportImportTest(MixedSplitTestCase):
         # And compare.
         assert exported_olx == expected_olx
 
-        runtime = TestImportSystem(load_error_blocks=True, course_id=split_test_block.location.course_key)
+        runtime = DummyModuleStoreRuntime(load_error_blocks=True, course_id=split_test_block.location.course_key)
         runtime.resources_fs = export_fs
 
         # Now import it.

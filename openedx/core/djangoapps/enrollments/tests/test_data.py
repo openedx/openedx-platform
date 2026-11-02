@@ -8,7 +8,7 @@ from unittest.mock import patch
 
 import ddt
 import pytest
-from pytz import UTC
+from zoneinfo import ZoneInfo
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.course_modes.tests.factories import CourseModeFactory
@@ -369,7 +369,7 @@ class EnrollmentDataTest(ModuleStoreTestCase):
     def _update_verified_mode_as_expired(self, course_id):
         """Dry method to change verified mode expiration."""
         mode = CourseMode.objects.get(course_id=course_id, mode_slug=CourseMode.VERIFIED)
-        mode.expiration_datetime = datetime.datetime(year=1970, month=1, day=1, tzinfo=UTC)
+        mode.expiration_datetime = datetime.datetime(year=1970, month=1, day=1, tzinfo=ZoneInfo("UTC"))
         mode.save()
 
     def assert_enrollment_modes(self, expected_modes, include_expired):

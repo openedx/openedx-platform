@@ -73,7 +73,7 @@ class DraftModuleStore(MongoModuleStore):
                 Note: If the item is in DIRECT_ONLY_CATEGORIES, then returns only the PUBLISHED
                 version regardless of the revision.
 
-            using_descriptor_system (CachingDescriptorSystem): The existing CachingDescriptorSystem
+            using_descriptor_system (ModuleStoreRuntime): The existing runtime
                 to add data to, and to load the XBlocks from.
 
         Raises:

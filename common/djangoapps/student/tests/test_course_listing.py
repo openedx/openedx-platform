@@ -108,7 +108,7 @@ class TestCourseListing(ModuleStoreTestCase, MilestonesTestCaseMixin):
         self._create_course_with_access_groups(course_key)
 
         with mock.patch(
-            'xmodule.modulestore.split_mongo.caching_descriptor_system.SplitMongoKVS', mock.Mock(side_effect=Exception)
+            'xmodule.modulestore.split_mongo.runtime.SplitMongoKVS', mock.Mock(side_effect=Exception)
         ):
             assert isinstance(modulestore().get_course(course_key), ErrorBlock)
 

@@ -41,10 +41,8 @@ Conventions
 # pylint: disable=invalid-name
 
 import importlib.util
-import sys
 import os
 
-import django
 from corsheaders.defaults import default_headers as corsheaders_default_headers
 from path import Path as path
 from django.utils.translation import gettext_lazy as _

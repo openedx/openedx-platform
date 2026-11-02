@@ -9,6 +9,7 @@ from django.test import TestCase
 from oauth2_provider.models import AccessToken
 
 from common.djangoapps.student.tests.factories import UserFactory
+from common.test.utils import assert_dict_contains_subset
 
 OAUTH_PROVIDER_ENABLED = settings.FEATURES.get('ENABLE_OAUTH2_PROVIDER')
 if OAUTH_PROVIDER_ENABLED:
@@ -43,7 +44,8 @@ class TestOAuthDispatchAPI(TestCase):
         token = api.create_dot_access_token(HttpRequest(), self.user, self.client)
         assert token['access_token']
         assert token['refresh_token']
-        self.assertDictContainsSubset(
+        assert_dict_contains_subset(
+            self,
             {
                 'token_type': 'Bearer',
                 'expires_in': EXPECTED_DEFAULT_EXPIRES_IN,
@@ -63,5 +65,5 @@ class TestOAuthDispatchAPI(TestCase):
         token = api.create_dot_access_token(
             HttpRequest(), self.user, self.client, expires_in=expires_in, scopes=['profile'],
         )
-        self.assertDictContainsSubset({'scope': 'profile'}, token)
-        self.assertDictContainsSubset({'expires_in': expires_in}, token)
+        assert_dict_contains_subset(self, {'scope': 'profile'}, token)
+        assert_dict_contains_subset(self, {'expires_in': expires_in}, token)

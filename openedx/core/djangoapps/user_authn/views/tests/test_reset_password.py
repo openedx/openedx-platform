@@ -24,7 +24,7 @@ from django.urls import reverse
 from django.utils.http import int_to_base36
 from freezegun import freeze_time
 from oauth2_provider import models as dot_models
-from pytz import UTC
+from zoneinfo import ZoneInfo
 
 from common.djangoapps.student.tests.factories import TEST_PASSWORD, UserFactory
 from common.djangoapps.student.tests.test_configuration_overrides import fake_get_value
@@ -284,7 +284,7 @@ class ResetPasswordTests(EventTestMixin, CacheIsolationTestCase):
         self.request_password_reset(200)
         # now reset the time to 1 min from now in future and change the email and
         # verify that it will allow another request from same IP
-        reset_time = datetime.now(UTC) + timedelta(seconds=61)
+        reset_time = datetime.now(ZoneInfo("UTC")) + timedelta(seconds=61)
         with freeze_time(reset_time):
             for status in [200, 403]:
                 self.request_password_reset(status)

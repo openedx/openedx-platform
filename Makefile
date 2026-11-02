@@ -58,7 +58,6 @@ pull_translations: clean_translations  ## pull translations via atlas
 	make pull_plugin_translations
 	atlas pull $(ATLAS_OPTIONS) \
 	    translations/edx-platform/conf/locale:conf/locale \
-	    translations/studio-frontend/src/i18n/messages:conf/plugins-locale/studio-frontend \
 	    $(ATLAS_EXTRA_SOURCES)
 	python manage.py lms compilemessages
 	python manage.py lms compilejsi18n
@@ -118,7 +117,7 @@ $(COMMON_CONSTRAINTS_TXT):
 	printf "$(COMMON_CONSTRAINTS_TEMP_COMMENT)" | cat - $(@) > temp && mv temp $(@)
 
 compile-requirements: export CUSTOM_COMPILE_COMMAND=make upgrade
-compile-requirements: pre-requirements $(COMMON_CONSTRAINTS_TXT) ## Re-compile *.in requirements to *.txt
+compile-requirements: pre-requirements ## Re-compile *.in requirements to *.txt
 	@# Bootstrapping: Rebuild pip and pip-tools first, and then install them
 	@# so that if there are any failures we'll know now, rather than the next
 	@# time someone tries to use the outputs.
@@ -141,7 +140,7 @@ compile-requirements: pre-requirements $(COMMON_CONSTRAINTS_TXT) ## Re-compile *
 		export REBUILD=''; \
 	done
 
-upgrade:  ## update the pip requirements files to use the latest releases satisfying our constraints
+upgrade:  $(COMMON_CONSTRAINTS_TXT) ## update the pip requirements files to use the latest releases satisfying our constraints
 	$(MAKE) compile-requirements COMPILE_OPTS="--upgrade"
 
 upgrade-package: ## update just one package to the latest usable release

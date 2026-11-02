@@ -7,7 +7,7 @@ import ddt
 from django.test import TestCase
 from django.test.utils import override_settings
 from opaque_keys.edx.keys import CourseKey
-from opaque_keys.edx.locator import CourseLocator, LibraryLocator
+from opaque_keys.edx.locator import CourseLocator, LibraryLocator, LibraryLocatorV2
 
 from xmodule.contentstore.django import contentstore
 from xmodule.modulestore.tests.django_utils import upload_file_to_course
@@ -111,6 +111,23 @@ class SandboxServiceTest(TestCase):
     @override_settings(PYTHON_LIB_FILENAME=PYTHON_LIB_FILENAME)
     def test_get_python_lib_zip(self):
         assert self.sandbox_service.get_python_lib_zip() == self.zipfile
+
+    def test_no_python_lib_zip(self):
+        assert self.sandbox_service.get_python_lib_zip() is None
+
+
+class SandboxServiceForLibrariesV2Test(TestCase):
+    """
+    Test SandboxService methods for V2 Content Libraries.
+
+    (Lacks tests for anything other than python_lib_zip)
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        library_key = LibraryLocatorV2('test', 'sandbox_test')
+        cls.sandbox_service = SandboxService(course_id=library_key, contentstore=contentstore)
 
     def test_no_python_lib_zip(self):
         assert self.sandbox_service.get_python_lib_zip() is None

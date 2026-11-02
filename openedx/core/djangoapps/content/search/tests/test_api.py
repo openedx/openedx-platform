@@ -618,12 +618,16 @@ class TestSearchApi(ModuleStoreTestCase):
     @override_settings(MEILISEARCH_ENABLED=True)
     def test_delete_index_xblock(self, mock_meilisearch) -> None:
         """
-        Test deleting an XBlock doc from the index.
+        Test deleting an XBlock doc and its children docs from the index.
         """
-        api.delete_index_doc(self.sequential.usage_key)
+        api.delete_index_doc(self.sequential.usage_key, delete_children=True)
 
         mock_meilisearch.return_value.index.return_value.delete_document.assert_called_once_with(
             self.doc_sequential['id']
+        )
+
+        mock_meilisearch.return_value.index.return_value.delete_documents.assert_called_once_with(
+            filter=f'breadcrumbs.usage_key = "{self.sequential.usage_key}"'
         )
 
     @override_settings(MEILISEARCH_ENABLED=True)
@@ -819,6 +823,17 @@ class TestSearchApi(ModuleStoreTestCase):
 
         mock_meilisearch.return_value.index.return_value.delete_document.assert_called_once_with(
             self.doc_problem1['id']
+        )
+
+    @override_settings(MEILISEARCH_ENABLED=True)
+    def test_delete_docs_with_context_key(self, mock_meilisearch) -> None:
+        """
+        Test deleting a all Block docs from the index using context_key.
+        """
+        api.delete_docs_with_context_key(self.course.id)
+
+        mock_meilisearch.return_value.index.return_value.delete_documents.assert_called_once_with(
+            filter=f'context_key = "{self.course.id}"'
         )
 
     @override_settings(MEILISEARCH_ENABLED=True)

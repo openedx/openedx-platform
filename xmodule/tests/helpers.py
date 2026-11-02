@@ -9,7 +9,7 @@ import pprint
 import pytest
 from path import Path as path
 from xblock.reference.user_service import UserService, XBlockUser
-from xmodule.x_module import DescriptorSystem
+from xmodule.x_module import ModuleStoreRuntime
 
 
 def directories_equal(directory1, directory2):
@@ -132,7 +132,7 @@ class StubReplaceURLService:
 @pytest.fixture
 def override_descriptor_system(monkeypatch):
     """
-    Fixture to override get_block method of DescriptorSystem
+    Fixture to override get_block method of ModuleStoreRuntime
     """
 
     def get_block(self, usage_id, for_parent=None):
@@ -140,4 +140,4 @@ def override_descriptor_system(monkeypatch):
         block = self.load_item(usage_id, for_parent=for_parent)
         return block
 
-    monkeypatch.setattr(DescriptorSystem, "get_block", get_block)
+    monkeypatch.setattr(ModuleStoreRuntime, "get_block", get_block)

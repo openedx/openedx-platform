@@ -10,13 +10,13 @@ attrs==25.4.0
     # via zeep
 backoff==2.2.1
     # via -r scripts/user_retirement/requirements/base.in
-boto3==1.40.46
+boto3==1.40.62
     # via -r scripts/user_retirement/requirements/base.in
-botocore==1.40.46
+botocore==1.40.62
     # via
     #   boto3
     #   s3transfer
-cachetools==6.2.0
+cachetools==6.2.1
     # via google-auth
 certifi==2026.10.19
     # via requests
@@ -24,7 +24,7 @@ cffi==2.0.0
     # via
     #   cryptography
     #   pynacl
-charset-normalizer==3.4.3
+charset-normalizer==3.4.4
     # via requests
 click==8.3.0
     # via
@@ -34,7 +34,7 @@ cryptography==45.0.7
     # via
     #   -c requirements/constraints.txt
     #   pyjwt
-django==4.2.28
+django==5.2.18
     # via
     #   -c requirements/common_constraints.txt
     #   -c requirements/constraints.txt
@@ -49,24 +49,24 @@ edx-django-utils==8.0.1
     # via edx-rest-api-client
 edx-rest-api-client==6.2.0
     # via -r scripts/user_retirement/requirements/base.in
-google-api-core==2.25.2
+google-api-core==2.28.1
     # via google-api-python-client
-google-api-python-client==2.184.0
+google-api-python-client==2.185.0
     # via -r scripts/user_retirement/requirements/base.in
-google-auth==2.41.1
+google-auth==2.42.0
     # via
     #   google-api-core
     #   google-api-python-client
     #   google-auth-httplib2
 google-auth-httplib2==0.2.0
     # via google-api-python-client
-googleapis-common-protos==1.70.0
+googleapis-common-protos==1.71.0
     # via google-api-core
 httplib2==0.31.0
     # via
     #   google-api-python-client
     #   google-auth-httplib2
-idna==3.10
+idna==3.11
     # via requests
 isodate==0.7.2
     # via zeep
@@ -82,16 +82,16 @@ lxml==5.3.2
     #   zeep
 more-itertools==10.8.0
     # via simple-salesforce
-platformdirs==4.4.0
+platformdirs==4.5.0
     # via zeep
 proto-plus==1.26.1
     # via google-api-core
-protobuf==6.32.1
+protobuf==6.33.0
     # via
     #   google-api-core
     #   googleapis-common-protos
     #   proto-plus
-psutil==7.1.0
+psutil==7.1.2
     # via edx-django-utils
 pyasn1==0.6.1
     # via
@@ -127,7 +127,7 @@ requests==2.32.5
     #   requests-toolbelt
     #   simple-salesforce
     #   zeep
-requests-file==2.1.0
+requests-file==3.0.1
     # via zeep
 requests-toolbelt==1.0.0
     # via zeep

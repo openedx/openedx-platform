@@ -34,7 +34,7 @@ from opaque_keys.edx.locator import LibraryUsageLocator, LibraryUsageLocatorV2
 from pytz import UTC
 from xblock.core import XBlock
 from xblock.fields import Scope
-from .xblock_helpers import get_block_key_dict
+from .xblock_helpers import get_block_key_string
 
 from cms.djangoapps.contentstore.config.waffle import SHOW_REVIEW_RULES_FLAG
 from cms.djangoapps.contentstore.helpers import StaticFileNotices
@@ -621,7 +621,7 @@ def sync_library_content(
                         block_id=f"{block_type}{uuid4().hex[:8]}",
                         fields={
                             "upstream": upstream_key,
-                            "top_level_downstream_parent_key": get_block_key_dict(
+                            "top_level_downstream_parent_key": get_block_key_string(
                                 top_level_downstream_parent.usage_key,
                             ),
                         },

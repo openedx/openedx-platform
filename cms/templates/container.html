@@ -13,7 +13,7 @@ from django.urls import reverse
 from django.utils.translation import gettext as _
 
 from cms.djangoapps.contentstore.helpers import xblock_studio_url, xblock_type_display_name
-from cms.djangoapps.contentstore.toggles import use_new_text_editor, use_new_problem_editor, use_new_video_editor, use_video_gallery_flow
+from cms.djangoapps.contentstore.toggles import use_new_problem_editor, use_new_video_editor, use_video_gallery_flow
 from cms.djangoapps.contentstore.utils import get_editor_page_base_url
 from openedx.core.djangolib.js_utils import (
     dump_js_escaped_json, js_escaped_string
@@ -36,10 +36,6 @@ from openedx.core.djangolib.markup import HTML, Text
     <%static:include path="common/templates/image-modal.underscore" />
 </script>
 <link rel="stylesheet" type="text/css" href="${static.url('js/vendor/timepicker/jquery.timepicker.css')}" />
-% if not settings.STUDIO_FRONTEND_CONTAINER_URL:
-    <link rel="stylesheet" type="text/css" href="${static.url('common/css/vendor/common.min.css')}" />
-    <link rel="stylesheet" type="text/css" href="${static.url('common/css/vendor/editImageModal.min.css')}" />
-% endif
 </%block>
 
 <%block name="page_bundle">
@@ -115,7 +111,6 @@ from openedx.core.djangolib.markup import HTML, Text
 <%block name="content">
 
 <%
-use_new_editor_text = use_new_text_editor(xblock_locator.course_key)
 use_new_editor_video = use_new_video_editor(xblock_locator.course_key)
 use_new_editor_problem = use_new_problem_editor(xblock_locator.course_key)
 use_new_video_gallery_flow = use_video_gallery_flow()
@@ -172,7 +167,6 @@ use_new_video_gallery_flow = use_video_gallery_flow()
         </div>
 
         <nav class="nav-actions" aria-label="${_('Page Actions')}"
-        use-new-editor-text = ${use_new_editor_text}
         use-new-editor-video = ${use_new_editor_video}
         use-new-editor-problem = ${use_new_editor_problem}
         use-video-gallery-flow = ${use_new_video_gallery_flow}
@@ -276,25 +270,6 @@ use_new_video_gallery_flow = use_video_gallery_flow()
                 % endif
             </aside>
         </section>
-        <div id="edit-image-modal">
-        <%static:studiofrontend entry="editImageModal">
-            {
-            "course": {
-                "id": "${context_course.id | n, js_escaped_string}",
-                "name": "${context_course.display_name_with_default | n, js_escaped_string}",
-                "url_name": "${context_course.location.block_id | n, js_escaped_string}",
-                "org": "${context_course.location.org | n, js_escaped_string}",
-                "num": "${context_course.location.course | n, js_escaped_string}",
-                "display_course_number": "${context_course.display_coursenumber | n, js_escaped_string}",
-                "revision": "${context_course.location.revision | n, js_escaped_string}"
-            },
-            "help_tokens": {
-                "image_accessibility": "${get_online_help_info('image_accessibility')['doc_url'] | n, js_escaped_string}"
-            },
-            "lang": "${language_code | n, js_escaped_string}"
-            }
-        </%static:studiofrontend>
-        </div>
     </div>
 </div>
 

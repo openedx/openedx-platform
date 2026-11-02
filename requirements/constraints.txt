@@ -13,15 +13,15 @@
 # This file contains all common constraints for edx-repos
 -c common_constraints.txt
 
+# Date: 2025-10-07
+# Stay on LTS version, remove once this is added to common constraint
+Django<6.0
+
 # Date: 2020-02-26
 # As it is not clarified what exact breaking changes will be introduced as per
 # the next major release, ensure the installed version is within boundaries.
 # Issue for unpinning: https://github.com/openedx/edx-platform/issues/35280
 celery>=5.2.2,<6.0.0
-
-# Date: 2024-02-02
-# Stay on LTS version, remove once this is added to common constraint
-Django<5.0
 
 # Date: 2020-02-10
 # django-oauth-toolkit version >=2.0.0 has breaking changes. More details
@@ -61,7 +61,7 @@ numpy<2.0.0
 # Date: 2023-09-18
 # pinning this version to avoid updates while the library is being developed
 # Issue for unpinning: https://github.com/openedx/edx-platform/issues/35269
-openedx-learning==0.27.1
+openedx-learning==0.30.2
 
 # Date: 2023-11-29
 # Open AI version 1.0.0 dropped support for openai.ChatCompletion which is currently in use in enterprise.

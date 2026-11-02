@@ -2,7 +2,7 @@
 
 from datetime import datetime, timedelta
 
-import pytz
+from zoneinfo import ZoneInfo
 from django.conf import settings
 from django.utils.translation import gettext as _
 from icalendar import Calendar, Event, vCalAddress, vText
@@ -59,7 +59,7 @@ def generate_ics_files_for_user_course(course, user, user_calendar_sync_config_i
     assignments = get_course_assignments(course.id, user)
     platform_name = get_value('platform_name', settings.PLATFORM_NAME)
     platform_email = get_value('email_from_address', settings.DEFAULT_FROM_EMAIL)
-    now = datetime.now(pytz.utc)
+    now = datetime.now(ZoneInfo("UTC"))
     site_config = SiteConfiguration.get_configuration_for_org(course.org)
 
     ics_files = {}
