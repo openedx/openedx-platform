@@ -19,6 +19,7 @@ from openedx_filters.learning.filters import CourseModePriceRequested
 from common.djangoapps.course_modes.filters import TrackSelectionAPIRenderStarted
 from common.djangoapps.course_modes.helpers import get_verified_track_links
 from common.djangoapps.course_modes.models import CourseMode
+from common.djangoapps.course_modes.toggles import COURSE_MODES_TRACK_SELECTION_OPTIONS
 from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.util.date_utils import strftime_localized_html
 from lms.djangoapps.commerce.utils import EcommerceService
@@ -192,6 +193,9 @@ def get_track_selection_page_data(
 
     An ``intent`` of "upgrade" comes from upgrade links. The enrollment mode alone cannot tell, because
     ``change_enrollment`` enrolls new learners in audit before they reach this page.
+
+    The filter, the program, the options and the redirects that come with them need the
+    ``course_modes.track_selection_options`` flag.
     """
     course_key = CourseKey.from_string(course_id)
     if embargo_redirect := embargo_api.redirect_if_blocked(request, course_key):
@@ -281,8 +285,14 @@ def get_track_selection_page_data(
         "track_links": get_verified_track_links(get_language()),
         "verified_mode": verified_payload,
         "audit_mode": audit_payload,
-        "program": _get_program(request.user, course_key),
     }
+
+    # temporary guard: without the flag, the page data is what the API returned before the filter and the options
+    if not COURSE_MODES_TRACK_SELECTION_OPTIONS.is_enabled(course_key):
+        return track_selection_data
+
+    track_selection_data["program"] = _get_program(request.user, course_key)
+
     # this filter lets plugins add fields to the page data
     # .. filter_implemented_name: TrackSelectionAPIRenderStarted
     # .. filter_type: org.openedx.learning.course_mode.track_selection.api.rendered.started.v1

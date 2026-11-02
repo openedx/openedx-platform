@@ -15,7 +15,10 @@ from rest_framework.test import APITestCase
 from cms.djangoapps.contentstore.outlines import update_outline_from_modulestore
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.course_modes.tests.factories import CourseModeFactory
-from common.djangoapps.course_modes.toggles import COURSE_MODES_MFE_TRACK_SELECTION
+from common.djangoapps.course_modes.toggles import (
+    COURSE_MODES_MFE_TRACK_SELECTION,
+    COURSE_MODES_TRACK_SELECTION_OPTIONS,
+)
 from common.djangoapps.course_modes.track_selection_data import get_track_options
 from common.djangoapps.student.models import CourseEnrollment
 from lms.djangoapps.commerce.models import CommerceConfiguration
@@ -85,6 +88,7 @@ TEST_OFFER_STEP_PATH = f"{__name__}.{TestTrackSelectionOfferPipelineStep.__name_
 @ddt.ddt
 @skip_unless_lms
 @override_waffle_flag(COURSE_MODES_MFE_TRACK_SELECTION, active=True)
+@override_waffle_flag(COURSE_MODES_TRACK_SELECTION_OPTIONS, active=True)
 class TrackSelectionTestViews(ModuleStoreTestCase, APITestCase):
     """
     Tests for the Track Selection BFF API.
@@ -381,6 +385,42 @@ class TrackSelectionTestViews(ModuleStoreTestCase, APITestCase):
         response = self.client.post(self.url, {}, format="json")
         assert response.status_code == 200
         assert response.data["redirect_url"].endswith(f"/course/{self.course.id}/home")
+
+    @override_waffle_flag(COURSE_MODES_TRACK_SELECTION_OPTIONS, active=False)
+    @override_settings(
+        OPEN_EDX_FILTERS_CONFIG={
+            "org.openedx.learning.course_mode.track_selection.api.rendered.started.v1": {
+                "pipeline": [
+                    TEST_RENDER_STEP_PATH,
+                ],
+                "fail_silently": False,
+            },
+        },
+    )
+    @mock.patch("common.djangoapps.course_modes.track_selection_data.get_programs")
+    def test_post_page_data_without_the_options_flag(self, mock_get_programs):
+        """
+        Without the options flag, the page data has no program and no options, and the filter does not run.
+        """
+        response = self.client.post(self.url, {}, format="json")
+        assert response.status_code == 200
+        assert response.data["verified_mode"] is not None
+        assert response.data["audit_mode"] is not None
+        for key in ("plugin_field", "program", "options"):
+            assert key not in response.data
+        mock_get_programs.assert_not_called()
+
+    @override_waffle_flag(COURSE_MODES_TRACK_SELECTION_OPTIONS, active=False)
+    def test_post_upgrade_intent_shows_the_page_without_the_options_flag(self):
+        """
+        Without the options flag, an upgrading audit learner gets the page data, not a redirect.
+        """
+        CommerceConfiguration.objects.create(checkout_on_ecommerce_service=True)
+        CourseEnrollment.enroll(self.user, self.course.id, CourseMode.AUDIT)
+        response = self.client.post(self.url, {"intent": "upgrade"}, format="json")
+        assert response.status_code == 200
+        assert "redirect_url" not in response.data
+        assert response.data["verified_mode"] is not None
 
 
 @ddt.ddt

@@ -22,6 +22,7 @@ from common.djangoapps.student.roles import (
 )
 from common.djangoapps.student.tests.factories import UserFactory
 from lms.djangoapps.course_home_api.tests.utils import BaseCourseHomeTests
+from lms.djangoapps.course_home_api.toggles import COURSE_HOME_COURSE_METADATA_RENDER_FILTER
 from lms.djangoapps.courseware.toggles import (
     COURSEWARE_MFE_MILESTONES_STREAK_DISCOUNT,
     COURSEWARE_MICROFRONTEND_PROGRESS_MILESTONES,
@@ -272,6 +273,7 @@ class CourseHomeMetadataTests(BaseCourseHomeTests):
         assert response.status_code == 200
         assert response.data['has_course_author_access'] == has_course_author_access
 
+    @override_waffle_flag(COURSE_HOME_COURSE_METADATA_RENDER_FILTER, active=True)
     @override_settings(OPEN_EDX_FILTERS_CONFIG=TEST_RENDER_FILTERS_CONFIG)
     def test_course_home_metadata_render_filter(self):
         """
@@ -285,6 +287,17 @@ class CourseHomeMetadataTests(BaseCourseHomeTests):
         }
         assert response.data['course_id'] == str(self.course.id)
 
+    @override_settings(OPEN_EDX_FILTERS_CONFIG=TEST_RENDER_FILTERS_CONFIG)
+    def test_course_home_metadata_render_filter_needs_the_flag(self):
+        """
+        Without the flag, the CourseHomeMetadataAPIRenderStarted filter does not run.
+        """
+        response = self.client.get(self.url)
+        assert response.status_code == 200
+        assert 'plugin_field' not in response.data
+        assert response.data['course_id'] == str(self.course.id)
+
+    @override_waffle_flag(COURSE_HOME_COURSE_METADATA_RENDER_FILTER, active=True)
     @override_settings(OPEN_EDX_FILTERS_CONFIG=TEST_RENDER_FILTERS_CONFIG)
     def test_course_home_metadata_render_filter_gets_masqueraded_user(self):
         """

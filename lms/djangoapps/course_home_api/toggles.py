@@ -69,6 +69,23 @@ COURSE_HOME_AUDIT_LEARNER_VERIFIED_PREVIEW = CourseWaffleFlag(
 )
 
 
+# Waffle flag to run the CourseHomeMetadataAPIRenderStarted filter in the course home metadata API.
+#
+# .. toggle_name: course_home.course_metadata_render_filter
+# .. toggle_implementation: CourseWaffleFlag
+# .. toggle_default: False
+# .. toggle_description: When enabled, the course home metadata API runs the CourseHomeMetadataAPIRenderStarted
+#   filter, so plugins can add fields to the metadata. When disabled, the API returns the metadata without
+#   running the filter.
+# .. toggle_use_cases: temporary
+# .. toggle_creation_date: 2026-11-02
+# .. toggle_target_removal_date: 2027-01-27
+# .. toggle_tickets: LP-1415
+COURSE_HOME_COURSE_METADATA_RENDER_FILTER = CourseWaffleFlag(
+    f'{WAFFLE_FLAG_NAMESPACE}.course_metadata_render_filter', __name__
+)
+
+
 def course_home_mfe_progress_tab_is_active(course_key):
     # Avoiding a circular dependency
     from .models import DisableProgressPageStackedConfig

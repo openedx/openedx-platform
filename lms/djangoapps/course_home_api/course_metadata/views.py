@@ -11,7 +11,10 @@ from rest_framework.response import Response
 from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
 from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
 from lms.djangoapps.certificates.api import certificates_viewable_for_course
-from lms.djangoapps.course_home_api.toggles import new_discussion_sidebar_view_is_enabled
+from lms.djangoapps.course_home_api.toggles import (
+    COURSE_HOME_COURSE_METADATA_RENDER_FILTER,
+    new_discussion_sidebar_view_is_enabled,
+)
 from openedx.core.lib.api.authentication import BearerAuthenticationAllowInactiveUser
 from openedx.core.djangoapps.courseware_api.utils import get_celebrations_dict
 
@@ -64,7 +67,8 @@ class CourseHomeMetadataView(RetrieveAPIView):
         user_timezone: (str) The timezone of the given user
         can_view_certificate: Flag to determine whether or not the learner can view their course certificate.
 
-        Plugins can add fields through the CourseHomeMetadataAPIRenderStarted filter.
+        Plugins can add fields through the CourseHomeMetadataAPIRenderStarted filter, which needs the
+        course_home.course_metadata_render_filter flag.
 
     **Returns**
 
@@ -156,12 +160,15 @@ class CourseHomeMetadataView(RetrieveAPIView):
         context['course_overview'] = course
         context['enrollment'] = enrollment
         serializer = self.get_serializer_class()(data, context=context)
-        # this filter lets plugins add fields to the serialized data
-        # .. filter_implemented_name: CourseHomeMetadataAPIRenderStarted
-        # .. filter_type: org.openedx.learning.course_home.metadata.api.rendered.started.v1
-        course_home_metadata = CourseHomeMetadataAPIRenderStarted.run_filter(
-            user=request.user,
-            course_key=course_key,
-            course_home_metadata=serializer.data,
-        )
+        course_home_metadata = serializer.data
+        # temporary guard: without the flag, the metadata is returned without running the filter
+        if COURSE_HOME_COURSE_METADATA_RENDER_FILTER.is_enabled(course_key):
+            # this filter lets plugins add fields to the serialized data
+            # .. filter_implemented_name: CourseHomeMetadataAPIRenderStarted
+            # .. filter_type: org.openedx.learning.course_home.metadata.api.rendered.started.v1
+            course_home_metadata = CourseHomeMetadataAPIRenderStarted.run_filter(
+                user=request.user,
+                course_key=course_key,
+                course_home_metadata=course_home_metadata,
+            )
         return Response(course_home_metadata)
