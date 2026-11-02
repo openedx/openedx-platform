@@ -30,11 +30,14 @@ from openedx_events.content_authoring.signals import (
 )
 from openedx_events.testing import EventsIsolationMixin
 from openedx_events.tooling import OpenEdxPublicSignal
+from openedx_tagging.models import ObjectTag
 from user_tasks.models import UserTaskStatus
 
 from common.djangoapps.student.tests.factories import UserFactory
+from openedx.core.djangoapps.content_tagging import api as tagging_api
 
 from .. import api
+from ..api.serializers import ContainerSerializer
 from ..models import ContentLibrary
 from .base import ContentLibrariesRestApiTest
 
@@ -779,6 +782,44 @@ class ContentLibraryContainersTest(ContentLibrariesRestApiTest):
         # The subsections are re-used on paste into the same library, so they aren't modified at all since the publish:
         child_history = content_api.get_entity_draft_history(subsections[0].container_id)
         assert len(child_history) == 0
+
+    def test_copy_container_leaves_archived_tags_out(self) -> None:
+        """
+        Copying a container leaves out archived tag associations, on the container and on its children.
+
+        Pasting into a library does not apply tags, so this checks what the serializer and the clipboard carry.
+        """
+        taxonomy = tagging_api.create_taxonomy('Archived Tags Taxonomy')
+        tagging_api.set_taxonomy_orgs(taxonomy, all_orgs=True)
+        for value in ("one", "two", "three", "four"):
+            tagging_api.add_tag_to_taxonomy(taxonomy, value)
+
+        section_id = str(self.section1.container_key)
+        child_id = str(self.subsection1.container_key)
+        tagging_api.tag_object(section_id, taxonomy, ["one", "two"])
+        tagging_api.tag_object(child_id, taxonomy, ["three", "four"])
+        # Archive one association on the copied container and one on its child
+        ObjectTag.objects.filter(object_id=section_id, _value="two").update(archived=True)
+        ObjectTag.objects.filter(object_id=child_id, _value="four").update(archived=True)
+
+        serializer = ContainerSerializer(api.get_container(self.section1.container_key))
+
+        # The serializer also holds an empty entry for each untagged child block, so check the tagged ids by name.
+        assert serializer.tags[section_id] == {taxonomy.id: ["one"]}
+        assert serializer.tags[child_id] == {taxonomy.id: ["three"]}
+        assert all(not tags for object_id, tags in serializer.tags.items() if object_id not in (section_id, child_id))
+        # The clipboard receives the same tags
+        clipboard = api.copy_container(self.section1.container_key, self.user.id)
+        clipboard_values = {
+            object_id: sorted(value for values in by_taxonomy.values() for value in values)
+            for object_id, by_taxonomy in clipboard.content.tags.items()
+        }
+        assert clipboard_values[section_id] == ["one"]
+        assert clipboard_values[child_id] == ["three"]
+        assert all(not v for k, v in clipboard_values.items() if k not in (section_id, child_id))
+        # Copying does not delete the archived associations
+        assert ObjectTag.objects.filter(object_id=section_id, _value="two", archived=True).exists()
+        assert ObjectTag.objects.filter(object_id=child_id, _value="four", archived=True).exists()
 
     def test_copy_and_paste_container_another_library(self) -> None:
         """

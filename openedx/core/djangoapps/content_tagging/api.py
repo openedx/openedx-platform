@@ -295,7 +295,18 @@ def set_exported_object_tags(
     exported_tags: TagValuesByTaxonomyIdDict,
 ) -> None:
     """
-    Sets the tags for the given exported content object.
+    Replaces the tags of the given content object with the tags from an export, keeping what archiving hides.
+
+    ``exported_tags`` maps a taxonomy export id to the list of tag values for that taxonomy.
+
+    This clears only the associations that ``ObjectTag.objects.unarchived()`` returns. An archived association, and an
+    association whose tag or taxonomy is archived, is kept. A deletion-locked association is archived instead of
+    deleted. To clear every association of the object, archiving the deletion-locked ones, call
+    ``delete_object_tags`` instead.
+
+    For a live or disabled taxonomy, the object is tagged with the given values. An archived taxonomy is skipped and
+    logged, with no placeholder association and no event. A taxonomy that does not exist on this instance gets
+    placeholder associations, which a later import of that taxonomy can link to it.
     """
     content_key_str = str(content_key)
 
