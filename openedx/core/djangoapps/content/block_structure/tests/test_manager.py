@@ -177,6 +177,21 @@ class TestBlockStructureManager(UsageKeyFactoryMixin, ChildrenMapTestMixin, Test
             with pytest.raises(UsageKeyNotInBlockStructure):
                 self.bs_manager.get_transformed(self.transformers, starting_block_usage_key=100)
 
+    def test_get_collected_restores_user_known_on_error(self):
+        """
+        Collecting for a known user marks the user unknown only while collecting,
+        also when collection raises.
+        """
+        user = MagicMock(known=True)
+        self.bs_manager._update_collected = MagicMock(  # pylint: disable=protected-access
+            side_effect=RuntimeError('collection failed')
+        )
+
+        with pytest.raises(RuntimeError):
+            self.bs_manager.get_collected(user)
+
+        assert user.known is True
+
     def test_get_collected_cached(self):
         self.collect_and_verify(expect_modulestore_called=True, expect_cache_updated=True)
         self.collect_and_verify(expect_modulestore_called=False, expect_cache_updated=False)

@@ -131,6 +131,8 @@ class DatesTabView(RetrieveAPIView):
         context = self.get_serializer_context()
         context['learner_is_full_access'] = learner_is_full_access
         serializer = self.get_serializer_class()(data, context=context)
-        data = CourseHomeDatesAPIRenderStarted.run_filter(course_key=course_key, user=request.user, data=serializer.data)
+        data = CourseHomeDatesAPIRenderStarted.run_filter(
+            course_key=course_key, user=request.user, data=serializer.data
+        )
 
         return Response(data)
