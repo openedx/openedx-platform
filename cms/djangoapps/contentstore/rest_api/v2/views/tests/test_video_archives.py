@@ -19,8 +19,8 @@ from edxval.api import create_profile, create_video, remove_video_for_course
 from rest_framework import status
 from rest_framework.test import APIClient
 
+from cms.djangoapps.contentstore.rest_api.throttles import VideoDownloadThrottle
 from cms.djangoapps.contentstore.rest_api.v1.views.unknown_route import UnknownRouteView
-from cms.djangoapps.contentstore.rest_api.v1.views.videos import VideoDownloadThrottle
 from cms.djangoapps.contentstore.rest_api.v2.views.video_archives import CourseVideoArchiveView
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase
 from common.djangoapps.student.roles import (

@@ -8,7 +8,7 @@ from rest_framework.parsers import JSONParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 
-from cms.djangoapps.contentstore.rest_api.v1.views.videos import VideoDownloadThrottle
+from cms.djangoapps.contentstore.rest_api.throttles import VideoDownloadThrottle
 from cms.djangoapps.contentstore.rest_api.v2.serializers.video_archives import VideoArchiveRequestSerializer
 from cms.djangoapps.contentstore.rest_api.v2.video_management_service import (
     create_course_video_archive,
