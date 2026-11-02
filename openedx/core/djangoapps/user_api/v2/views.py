@@ -340,7 +340,7 @@ class AddressMetadata(SimpleMetadata):
             if served.get(method.lower()) not in bodiless
         }
 
-    def body_read_by(self, view, action, described):
+    def body_read_by(self, view, operation, described):
         """
         Return the fields the body of this method carries, where the view names them.
 
@@ -350,7 +350,7 @@ class AddressMetadata(SimpleMetadata):
         this description sends what it was told the method takes, so what it
         is told is the body that method reads.
         """
-        taken = getattr(view, "action_request_serializers", {}).get(action)
+        taken = getattr(view, "action_request_serializers", {}).get(operation)
         if taken is None:
             taken = getattr(view, "request_serializer_class", None)
         if taken is None:
