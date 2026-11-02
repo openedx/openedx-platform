@@ -510,7 +510,10 @@ def _run_learner_xblock_bound(block, user, course_key):
     """
     if not getattr(user, 'known', True) or getattr(block, '_learner_xblock_bound_user_id', _NOT_FILTERED) == user.id:
         return block
-    block = LearnerXBlockBound.run_filter(block=block, user=user, course_key=course_key)
+    filtered = LearnerXBlockBound.run_filter(block=block, user=user, course_key=course_key)
+    # A pipeline step that returns no block leaves the bound block as it is.
+    if filtered is not None:
+        block = filtered
     block._learner_xblock_bound_user_id = user.id  # pylint: disable=protected-access
     return block
 

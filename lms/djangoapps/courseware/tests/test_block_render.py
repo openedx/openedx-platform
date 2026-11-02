@@ -597,6 +597,17 @@ class BlockRenderTestCase(SharedModuleStoreTestCase, LoginEnrollmentTestCase):
 
         assert run_filter.call_count == 1
 
+    @patch('lms.djangoapps.courseware.block_render.LearnerXBlockBound.run_filter', return_value=None)
+    def test_learner_xblock_bound_filter_returns_no_block(self, run_filter):  # pylint: disable=unused-argument
+        """A pipeline step that returns no block leaves the bound block as it is."""
+        block = BlockFactory(category='html', parent=CourseFactory())
+
+        result = render._run_learner_xblock_bound(  # pylint: disable=protected-access
+            block, self.mock_user, self.toy_course.id
+        )
+
+        assert result is block
+
     @override_settings(FIELD_OVERRIDE_PROVIDERS=(
         'lms.djangoapps.courseware.student_field_overrides.IndividualStudentOverrideProvider',
     ))
