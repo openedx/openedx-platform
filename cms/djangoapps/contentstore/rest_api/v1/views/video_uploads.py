@@ -189,23 +189,39 @@ _EXAMPLE_VIDEO_NOT_FOUND = OpenApiExample(
     status_codes=["404"],
 )
 
+_EXAMPLE_COURSE_NOT_FOUND = OpenApiExample(
+    "No such course",
+    value={
+        "type": error_type_uri("not-found"),
+        "title": "Not Found",
+        "status": 404,
+        "detail": "Not found.",
+        "instance": "/api/authoring/v1/courses/course-v1:edX+NoSuch+Course/videos/",
+    },
+    response_only=True,
+    status_codes=["404"],
+)
+
 _RESPONSE_NOT_FOUND = OpenApiResponse(
     response=ErrorResponseSerializer,
-    description="The course does not accept video uploads, or the video is not attached to it.",
+    description=(
+        "The course does not exist or does not accept video uploads, or the video is not "
+        "attached to it."
+    ),
     examples=[_EXAMPLE_UPLOADS_NOT_CONFIGURED, _EXAMPLE_VIDEO_NOT_FOUND],
 )
 _RESPONSE_CREATE_NOT_FOUND = OpenApiResponse(
     response=ErrorResponseSerializer,
-    description="The course does not accept video uploads.",
-    examples=[_EXAMPLE_UPLOADS_NOT_CONFIGURED],
+    description="The course does not exist or does not accept video uploads.",
+    examples=[_EXAMPLE_UPLOADS_NOT_CONFIGURED, _EXAMPLE_COURSE_NOT_FOUND],
 )
 _RESPONSE_LIST_NOT_FOUND = OpenApiResponse(
     response=ErrorResponseSerializer,
     description=(
-        "The course does not accept video uploads, or the requested page is past the end of "
-        "the list."
+        "The course does not exist or does not accept video uploads, or the requested page is "
+        "past the end of the list."
     ),
-    examples=[_EXAMPLE_UPLOADS_NOT_CONFIGURED],
+    examples=[_EXAMPLE_UPLOADS_NOT_CONFIGURED, _EXAMPLE_COURSE_NOT_FOUND],
 )
 
 _CREATE_EXAMPLE_REQUEST = OpenApiExample(

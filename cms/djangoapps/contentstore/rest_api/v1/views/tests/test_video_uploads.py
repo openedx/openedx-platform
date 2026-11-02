@@ -1535,12 +1535,33 @@ class CourseVideoSchemaTest(CourseVideoUploadsTestBase):
             unconfigured = self.api_client.get(self.detail_url(video_ids[0]))
         assert {unknown.data["type"], unconfigured.data["type"]} == declared
 
-    def test_the_create_404_names_only_the_cause_it_can_have(self):
-        schema = self.generated_schema()
-        declared = self.declared_examples(schema, VIDEO_LIST_PATH, "post", "404")
-        assert {example["type"] for example in declared.values()} == {
-            "https://docs.openedx.org/errors/videos/uploads-not-configured",
+    def declared_404_types(self, method):
+        """Return the error types the collection's 404 examples name for ``method``."""
+        examples = self.declared_examples(self.generated_schema(), VIDEO_LIST_PATH, method, "404")
+        return {example["type"] for example in examples.values()}
+
+    def test_the_declared_list_404_types_are_the_ones_returned(self):
+        unknown_course = CourseKey.from_string("course-v1:no+such+course")
+        self.create_videos(count=1)
+        returned = {
+            self.api_client.get(reverse(LIST_URL_NAME, kwargs={"course_key": unknown_course})).data["type"],
+            self.api_client.get(self.list_url, {"page": 5}).data["type"],
         }
+        with override_settings(ENABLE_VIDEO_UPLOAD_PIPELINE=False):
+            returned.add(self.api_client.get(self.list_url).data["type"])
+        assert returned == self.declared_404_types("get")
+
+    def test_the_declared_create_404_types_are_the_ones_returned(self):
+        unknown_course = CourseKey.from_string("course-v1:no+such+course")
+        body = {"files": [{"file_name": "first.mp4", "content_type": "video/mp4"}]}
+        returned = {
+            self.api_client.post(
+                reverse(LIST_URL_NAME, kwargs={"course_key": unknown_course}), body, format="json"
+            ).data["type"],
+        }
+        with override_settings(ENABLE_VIDEO_UPLOAD_PIPELINE=False):
+            returned.add(self.api_client.post(self.list_url, body, format="json").data["type"])
+        assert returned == self.declared_404_types("post")
 
     def test_the_create_response_is_declared_as_the_upload_slots(self):
         slots = self.response_schema(self.generated_schema(), "/videos/", method="post", code="201")
