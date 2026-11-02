@@ -74,6 +74,12 @@ DECLARED_DIFFERENCES = (
         "the earlier address answers this server's failure carrying the sentence the pipeline "
         "raised; the conforming one answers that the request conflicts with what is held",
     ),
+    (
+        "asking what the address serves",
+        "the earlier address answers its own description to any caller holding an account; the "
+        "conforming one answers the description of the queue, and asks for the capability the "
+        "queue is read with",
+    ),
 )
 
 
@@ -423,20 +429,148 @@ class CredentialParityTests(RequestParityTestCase):
         ), {address: sent.content for address, sent in answered.items()}
 
 
+#: Everything a caller can notice about either address, as a measurement made
+#: at both of them, named by the method that makes it. What that method
+#: answers is compared across the two addresses, so a measurement that comes
+#: back different while no difference is declared for it fails, and a declared
+#: difference both addresses answer the same way fails too. Each measurement
+#: acts on an account of its own, because a request that is carried out leaves
+#: the account it was made from closed to the next one.
+MEASURED_AT_BOTH = (
+    ("a body sent as a web form", "measure_a_body_sent_as_a_web_form"),
+    ("a body sent as JSON", "measure_a_body_sent_as_json"),
+    ("a body in a form neither address reads", "measure_a_body_in_a_form_neither_address_reads"),
+    ("a refusal of the request itself", "measure_a_refusal_of_the_request_itself"),
+    (
+        "an account that already has a record while its password still signs its owner in",
+        "measure_an_account_that_already_has_a_record",
+    ),
+    ("the step a request is queued at", "measure_the_step_a_request_is_queued_at"),
+    ("what the request leaves behind", "measure_what_the_request_leaves_behind"),
+    ("the session the request was made from", "measure_the_session_the_request_was_made_from"),
+    ("an access token the endpoint handed out", "measure_an_access_token_the_endpoint_handed_out"),
+    ("asking what the address serves", "measure_asking_what_the_address_serves"),
+)
+
+
 @skip_unless_lms
 class DeclaredDifferenceTests(RequestParityTestCase):
-    """The differences between the two addresses are the ones written down."""
+    """
+    The differences between the two addresses are the ones written down.
+
+    Each measurement is made at both addresses and the two answers are held
+    against each other, so the list of differences is read from what the two
+    addresses do rather than restated beside itself.
+    """
+
+    def a_caller_of_their_own(self, address, named):
+        """Return an account this measurement alone acts on, with a session held for it."""
+        owner = UserFactory.create(
+            username=f"{named}-{address == EARLIER}",
+            email=f"{named}-{address == EARLIER}@example.com",
+            password=PASSWORD,
+        )
+        return owner, self.signed_in(owner)
+
+    def measure_a_body_sent_as_a_web_form(self, address):
+        """Return what each address answers the body both of them read."""
+        owner, client = self.a_caller_of_their_own(address, "form-body")
+        answered = self.ask(address, client=client)
+        return (answered.status_code, self.records_of(owner).count())
+
+    def measure_a_body_sent_as_json(self, address):
+        """Return what each address answers a body sent as JSON."""
+        _owner, client = self.a_caller_of_their_own(address, "json-body")
+        return self.ask(address, body="json", client=client).status_code
+
+    def measure_a_body_in_a_form_neither_address_reads(self, address):
+        """Return what each address answers a body sent as plain text."""
+        _owner, client = self.a_caller_of_their_own(address, "plain-body")
+        return self.ask(address, body="text", client=client).status_code
+
+    def measure_a_refusal_of_the_request_itself(self, address):
+        """
+        Return how far each address tells a caller what it refused the request for.
+
+        What is measured is the shape of the answer rather than its words: one
+        address answers a sentence, which says the same thing however the
+        request was refused, and the other answers an object whose members
+        name which refusal it was.
+        """
+        _owner, client = self.a_caller_of_their_own(address, "wrong-password")
+        answered = self.ask(address, password=WRONG_PASSWORD, client=client)
+        refusal = answered.json()
+        return (
+            answered.status_code,
+            sorted(refusal) if isinstance(refusal, dict) else "not an object at all",
+        )
+
+    def measure_an_account_that_already_has_a_record(self, address):
+        """Return what each address answers where a record is held and the password still works."""
+        owner, client = self.a_caller_of_their_own(address, "already-recorded")
+        UserRetirementStatus.create_retirement(owner)
+        return self.ask(address, client=client).status_code
+
+    def measure_the_step_a_request_is_queued_at(self, address):
+        """Return the step a request is queued at, and the order that step carries."""
+        owner, client = self.a_caller_of_their_own(address, "first-step")
+        self.ask(address, client=client)
+        queued = self.records_of(owner).get().current_state
+        return (queued.state_name, queued.state_execution_order)
+
+    def measure_what_the_request_leaves_behind(self, address):
+        """Return what is stored about the account once the request has been carried out."""
+        owner, client = self.a_caller_of_their_own(address, "left-behind")
+        self.ask(address, client=client)
+        stored = User.objects.get(id=owner.id)
+        return (
+            self.records_of(owner).count(),
+            UserRetirementRequest.objects.filter(user=owner).count(),
+            stored.email == get_retired_email_by_email(owner.email),
+            stored.check_password(PASSWORD),
+            len(self.messages_to(owner.email)),
+        )
+
+    def measure_the_session_the_request_was_made_from(self, address):
+        """Return what the same session is answered once the account is queued."""
+        _owner, client = self.a_caller_of_their_own(address, "session-after")
+        self.ask(address, client=client)
+        return self.ask(address, client=client).status_code
+
+    def measure_an_access_token_the_endpoint_handed_out(self, address):
+        """Return what each address answers a request carrying an access token."""
+        owner = UserFactory.create(
+            username=f"token-holder-{address == EARLIER}", password=PASSWORD,
+        )
+        answered = self.ask(address, **self.holding_an_access_token(owner))
+        return (answered.status_code, self.records_of(owner).count())
+
+    def measure_asking_what_the_address_serves(self, address):
+        """
+        Return what each address answers a caller asking for its own description.
+
+        The description is each address's own text and differs by design, so
+        what is measured is whether the caller is given one at all.
+        """
+        _owner, client = self.a_caller_of_their_own(address, "describing")
+        return client.options(self.url_of(address)).status_code
 
     def test_the_differences_a_caller_would_notice_are_the_ones_declared(self):
-        """A difference measured above and not listed here, or listed and not measured, fails."""
-        assert [name for name, _reason in DECLARED_DIFFERENCES] == [
-            "a body sent as JSON",
-            "a body in a form neither address reads",
-            "a refusal of the request itself",
-            "an account that already has a record while its password still signs its owner in",
-        ]
-        for name, reason in DECLARED_DIFFERENCES:
-            with self.subTest(difference=name):
+        """A measured difference that is not declared, or declared and not measured, fails."""
+        measured = {}
+        for difference, measurement in MEASURED_AT_BOTH:
+            measured[difference] = {
+                address: getattr(self, measurement)(address) for address, _owner in self.addresses()
+            }
+        assert [
+            difference for difference, answers in measured.items()
+            if answers[EARLIER] != answers["conforming"]
+        ] == [difference for difference, _reason in DECLARED_DIFFERENCES]
+
+    def test_every_declared_difference_says_what_each_address_does(self):
+        """The reason is read by whoever moves a caller from one address to the other."""
+        for difference, reason in DECLARED_DIFFERENCES:
+            with self.subTest(difference=difference):
                 assert "the earlier address" in reason
                 assert "the conforming one" in reason
 

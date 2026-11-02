@@ -6,7 +6,7 @@ from unittest import mock
 
 import pytest
 from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
-from django.db import connection
+from django.db import DatabaseError, connection
 from django.test import override_settings
 from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
@@ -15,12 +15,14 @@ from rest_framework.test import APITestCase
 
 from common.djangoapps.student.models import get_retired_username_by_username
 from common.djangoapps.student.tests.factories import UserFactory
+from openedx.core.djangoapps.credit.models import CreditEligibility
 from openedx.core.djangoapps.user_api.accounts.tests.retirement_helpers import (  # pylint: disable=unused-import
     create_retirement_status,
     setup_retirement_states,  # noqa: F401
 )
 from openedx.core.djangoapps.user_api.v2 import view_services
 from openedx.core.djangoapps.user_api.v2.serializers import (
+    REPLACEMENT_MAX_MAPPINGS,
     REPLACEMENT_NO_SUCH_ACCOUNT,
     REPLACEMENT_REPLACED,
 )
@@ -59,6 +61,16 @@ DECLARED_DIFFERENCES = (
         "a body sent as a web form",
         "the earlier address answers that the body does not match what it reads, the conforming "
         "one that it cannot read the form",
+    ),
+    (
+        "the most mappings one request may carry",
+        "the earlier address carries any number of them, the conforming one refuses a request "
+        "carrying more than one page of them",
+    ),
+    (
+        "space around the name asked for",
+        "the earlier address stores the name with the space it was given with, the conforming one "
+        "stores what is left once the space on either end is taken off",
     ),
     (
         "a write that fails part way through",
@@ -206,20 +218,6 @@ class ReplacementOutcomeParityTests(ReplacementParityTestCase):
         assert answered[EARLIER].status_code == status.HTTP_400_BAD_REQUEST
         assert answered["conforming"].status_code == status.HTTP_415_UNSUPPORTED_MEDIA_TYPE
 
-    def test_the_differences_a_caller_would_notice_are_the_ones_declared(self):
-        """A difference measured above and not listed here, or listed and not measured, fails."""
-        assert [name for name, _reason in DECLARED_DIFFERENCES] == [
-            "the answer",
-            "a name no account is stored under",
-            "a request carrying no mappings at all",
-            "a body sent as a web form",
-            "a write that fails part way through",
-        ]
-        for name, reason in DECLARED_DIFFERENCES:
-            with self.subTest(difference=name):
-                assert "the earlier address" in reason
-                assert "the conforming one" in reason
-
 
 @skip_unless_lms
 @pytest.mark.usefixtures("setup_retirement_states")
@@ -317,3 +315,137 @@ class ReplacementCostParityTests(ReplacementParityTestCase):
             assert measured[EARLIER] == measured["conforming"], count
             counts[count] = len(measured[EARLIER])
         assert counts == MAPPING_COSTS
+
+
+#: Everything a caller can notice about either address, as a measurement made
+#: at both of them, named by the method that makes it. What that method
+#: answers is compared across the two addresses, so a measurement that comes
+#: back different while no difference is declared for it fails, and a declared
+#: difference both addresses answer the same way fails too.
+MEASURED_AT_BOTH = (
+    ("the answer", "measure_the_shape_of_the_answer"),
+    ("a name an account is stored under", "measure_a_name_an_account_is_stored_under"),
+    ("a name another account holds", "measure_a_name_another_account_holds"),
+    ("a name no account is stored under", "measure_a_name_no_account_is_stored_under"),
+    ("a request carrying no mappings at all", "measure_a_request_carrying_no_mappings_at_all"),
+    ("a mapping naming several accounts", "measure_a_mapping_naming_several_accounts"),
+    ("mappings sent as something other than a list", "measure_mappings_sent_as_something_else"),
+    ("a body sent as a web form", "measure_a_body_sent_as_a_web_form"),
+    ("the most mappings one request may carry", "measure_the_most_mappings_one_request_may_carry"),
+    ("space around the name asked for", "measure_space_around_the_name_asked_for"),
+    ("asking what the address serves", "measure_asking_what_the_address_serves"),
+    ("a write that fails part way through", "measure_a_write_that_fails_part_way_through"),
+)
+
+
+@skip_unless_lms
+class DeclaredDifferenceTests(ReplacementParityTestCase):
+    """
+    The differences between the two addresses are the ones written down.
+
+    Each measurement is made at both addresses and the two answers are held
+    against each other, so the list of differences is read from what the
+    service does rather than restated beside itself. Where the accounts a
+    measurement acts on have to differ between the addresses, what it answers
+    is a statement about them rather than their names.
+    """
+
+    def measure_the_shape_of_the_answer(self, address):
+        """Return what the answer is made of for a mapping naming an account."""
+        held = UserFactory.create(username=f"shape-{address == EARLIER}")
+        answered = self.ask(address, [{held.username: f"shaped-{address == EARLIER}"}])
+        return (answered.status_code, sorted(answered.json()))
+
+    def measure_a_name_an_account_is_stored_under(self, address):
+        """Return whether the account is stored under the name asked for it afterwards."""
+        held = UserFactory.create(username=f"stored-{address == EARLIER}")
+        asked_for = f"renamed-{address == EARLIER}"
+        answered = self.ask(address, [{held.username: asked_for}])
+        return (answered.status_code, User.objects.get(id=held.id).username == asked_for)
+
+    def measure_a_name_another_account_holds(self, address):
+        """Return whether the name handed out is the one asked for with a suffix on it."""
+        held = UserFactory.create(username=f"asking-{address == EARLIER}")
+        taken = UserFactory.create(username=f"held-already-{address == EARLIER}")
+        answered = self.with_a_fixed_suffix(
+            lambda: self.ask(address, [{held.username: taken.username}]),
+        )
+        return (
+            answered.status_code,
+            User.objects.get(id=held.id).username == f"{taken.username}-{FIXED_SUFFIX}",
+        )
+
+    def measure_a_name_no_account_is_stored_under(self, address):
+        """Return what the answer says about a name nothing is stored under."""
+        answered = self.ask(address, [{"nobody-is-stored-under-this": "asked-for-nobody"}])
+        return (answered.status_code, answered.json())
+
+    def measure_a_request_carrying_no_mappings_at_all(self, address):
+        """Return what each address answers a request that asks for nothing."""
+        return self.ask(address, []).status_code
+
+    def measure_a_mapping_naming_several_accounts(self, address):
+        """Return what each address answers a mapping that names more than one account."""
+        return self.ask(address, [{"one": "first", "two": "second"}]).status_code
+
+    def measure_mappings_sent_as_something_else(self, address):
+        """Return what each address answers mappings that are not a list of them."""
+        return self.ask(address, {"one": "first"}).status_code
+
+    def measure_a_body_sent_as_a_web_form(self, address):
+        """Return what each address answers a body sent as a web form."""
+        return self.ask(address, [], as_form=True).status_code
+
+    def measure_the_most_mappings_one_request_may_carry(self, address):
+        """Return what each address answers one mapping more than a page holds."""
+        mappings = [
+            {f"over-{address == EARLIER}-{index}": f"renamed-over-{address == EARLIER}-{index}"}
+            for index in range(REPLACEMENT_MAX_MAPPINGS + 1)
+        ]
+        return self.ask(address, mappings).status_code
+
+    def measure_space_around_the_name_asked_for(self, address):
+        """Return the name stored for an account whose new name carried space around it."""
+        held = UserFactory.create(username=f"padded-{address == EARLIER}")
+        self.ask(address, [{held.username: "  padded name  "}])
+        return User.objects.get(id=held.id).username
+
+    def measure_asking_what_the_address_serves(self, address):
+        """
+        Return what each address answers a request for its own description.
+
+        The description is each address's own text and differs by design, so
+        what is measured is whether a caller holding the capability is given
+        one at all.
+        """
+        return self.client.options(self.url_of(address)).status_code
+
+    def measure_a_write_that_fails_part_way_through(self, address):
+        """Return what each address answers when one place a name is kept cannot be written."""
+        held = UserFactory.create(username=f"failing-{address == EARLIER}")
+        broken = mock.Mock()
+        broken.filter.return_value.update.side_effect = DatabaseError(
+            "the rows of that table would not take it",
+        )
+        with mock.patch.object(CreditEligibility, "objects", broken):
+            answered = self.ask(address, [{held.username: f"failed-{address == EARLIER}"}])
+        return (answered.status_code, User.objects.get(id=held.id).username == held.username)
+
+    def test_the_differences_a_caller_would_notice_are_the_ones_declared(self):
+        """A measured difference that is not declared, or declared and not measured, fails."""
+        measured = {}
+        for difference, measurement in MEASURED_AT_BOTH:
+            measured[difference] = {
+                address: getattr(self, measurement)(address) for address in self.addresses()
+            }
+        assert [
+            difference for difference, answers in measured.items()
+            if answers[EARLIER] != answers["conforming"]
+        ] == [difference for difference, _reason in DECLARED_DIFFERENCES]
+
+    def test_every_declared_difference_says_what_each_address_does(self):
+        """The reason is read by whoever moves a caller from one address to the other."""
+        for difference, reason in DECLARED_DIFFERENCES:
+            with self.subTest(difference=difference):
+                assert "the earlier address" in reason
+                assert "the conforming one" in reason
