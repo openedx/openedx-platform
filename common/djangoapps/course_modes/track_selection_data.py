@@ -14,6 +14,7 @@ from django.utils.translation import get_language
 from opaque_keys.edx.keys import CourseKey
 from openedx_filters.learning.filters import CourseModePriceRequested
 
+from common.djangoapps.course_modes.filters import TrackSelectionAPIRenderStarted
 from common.djangoapps.course_modes.helpers import get_verified_track_links
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.student.models import CourseEnrollment
@@ -193,7 +194,7 @@ def get_track_selection_page_data(
     elif CourseMode.HONOR in modes:
         audit_payload = _serialize_mode(modes[CourseMode.HONOR])
 
-    return {
+    track_selection_data = {
         "course_id": course_id,
         "course_name": course.display_name_with_default,
         "course_org": course.display_org_with_default,
@@ -204,6 +205,14 @@ def get_track_selection_page_data(
         "verified_mode": verified_payload,
         "audit_mode": audit_payload,
     }
+    # this filter lets plugins add fields to the page data
+    # .. filter_implemented_name: TrackSelectionAPIRenderStarted
+    # .. filter_type: org.openedx.learning.course_mode.track_selection.api.rendered.started.v1
+    return TrackSelectionAPIRenderStarted.run_filter(
+        user=request.user,
+        course_key=course_key,
+        track_selection_data=track_selection_data,
+    )
 
 
 def submit_track_selection_choice(

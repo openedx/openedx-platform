@@ -20,6 +20,7 @@ from common.djangoapps.student.auth import has_course_author_access
 from common.djangoapps.student.models import CourseEnrollment
 from lms.djangoapps.course_api.api import course_detail
 from lms.djangoapps.course_goals.models import UserActivity
+from lms.djangoapps.course_home_api.course_metadata.filters import CourseHomeMetadataAPIRenderStarted
 from lms.djangoapps.course_home_api.course_metadata.serializers import CourseHomeMetadataSerializer
 from lms.djangoapps.courseware.access import has_access, has_cms_access
 from lms.djangoapps.courseware.context_processor import user_timezone_locale_prefs
@@ -62,6 +63,8 @@ class CourseHomeMetadataView(RetrieveAPIView):
         celebrations: (dict) a dict of celebration data
         user_timezone: (str) The timezone of the given user
         can_view_certificate: Flag to determine whether or not the learner can view their course certificate.
+
+        Plugins can add fields through the CourseHomeMetadataAPIRenderStarted filter.
 
     **Returns**
 
@@ -153,4 +156,12 @@ class CourseHomeMetadataView(RetrieveAPIView):
         context['course_overview'] = course
         context['enrollment'] = enrollment
         serializer = self.get_serializer_class()(data, context=context)
-        return Response(serializer.data)
+        # this filter lets plugins add fields to the serialized data
+        # .. filter_implemented_name: CourseHomeMetadataAPIRenderStarted
+        # .. filter_type: org.openedx.learning.course_home.metadata.api.rendered.started.v1
+        course_home_metadata = CourseHomeMetadataAPIRenderStarted.run_filter(
+            user=request.user,
+            course_key=course_key,
+            course_home_metadata=serializer.data,
+        )
+        return Response(course_home_metadata)

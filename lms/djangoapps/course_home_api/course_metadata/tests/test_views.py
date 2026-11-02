@@ -6,8 +6,10 @@ from unittest.mock import patch
 
 import ddt
 from django.db import transaction
+from django.test import override_settings
 from django.urls import reverse
 from edx_toggles.toggles.testutils import override_waffle_flag
+from openedx_filters import PipelineStep
 from openedx_filters.learning.filters import CoursewareAccessChecksRequested
 
 from common.djangoapps.course_modes.models import CourseMode
@@ -26,6 +28,25 @@ from lms.djangoapps.courseware.toggles import (
     COURSEWARE_MICROFRONTEND_PROGRESS_MILESTONES_STREAK_CELEBRATION
 )
 from openedx.core.djangoapps.discussions.models import DiscussionsConfiguration
+
+
+class TestCourseHomeMetadataAPIRenderStartedPipelineStep(PipelineStep):
+    """
+    Utility pipeline step that adds a field to the course home metadata.
+    """
+
+    def run_filter(self, user, course_key, course_home_metadata):  # pylint: disable=arguments-differ
+        """Pipeline step that adds a field built from the learner and the course."""
+        course_home_metadata['plugin_field'] = {'course_id': str(course_key), 'username': user.username}
+        return {'course_home_metadata': course_home_metadata}
+
+
+TEST_RENDER_FILTERS_CONFIG = {
+    'org.openedx.learning.course_home.metadata.api.rendered.started.v1': {
+        'pipeline': [f'{__name__}.{TestCourseHomeMetadataAPIRenderStartedPipelineStep.__name__}'],
+        'fail_silently': False,
+    },
+}
 
 
 @ddt.ddt
@@ -250,3 +271,28 @@ class CourseHomeMetadataTests(BaseCourseHomeTests):
         response = self.client.get(self.url)
         assert response.status_code == 200
         assert response.data['has_course_author_access'] == has_course_author_access
+
+    @override_settings(OPEN_EDX_FILTERS_CONFIG=TEST_RENDER_FILTERS_CONFIG)
+    def test_course_home_metadata_render_filter(self):
+        """
+        A configured CourseHomeMetadataAPIRenderStarted step can add fields to the response.
+        """
+        response = self.client.get(self.url)
+        assert response.status_code == 200
+        assert response.data['plugin_field'] == {
+            'course_id': str(self.course.id),
+            'username': self.user.username,
+        }
+        assert response.data['course_id'] == str(self.course.id)
+
+    @override_settings(OPEN_EDX_FILTERS_CONFIG=TEST_RENDER_FILTERS_CONFIG)
+    def test_course_home_metadata_render_filter_gets_masqueraded_user(self):
+        """
+        The filter gets the masqueraded learner, not the staff user.
+        """
+        CourseEnrollment.enroll(self.user, self.course.id, CourseMode.VERIFIED)
+        self.client.logout()
+        self.client.login(username=self.staff_user.username, password='bar')
+        self.update_masquerade(username=self.user.username)
+        response = self.client.get(self.url)
+        assert response.data['plugin_field']['username'] == self.user.username

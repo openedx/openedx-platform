@@ -48,6 +48,20 @@ class TestCourseModePriceRequestedPipelineStep(PipelineStep):
 TEST_STEP_PATH = f"{__name__}.{TestCourseModePriceRequestedPipelineStep.__name__}"
 
 
+class TestTrackSelectionAPIRenderStartedPipelineStep(PipelineStep):
+    """
+    Utility pipeline step that adds a field to the track selection data.
+    """
+
+    def run_filter(self, user, course_key, track_selection_data):  # pylint: disable=arguments-differ
+        """Pipeline step that adds a field built from the learner and the course."""
+        track_selection_data["plugin_field"] = {"course_id": str(course_key), "username": user.username}
+        return {"track_selection_data": track_selection_data}
+
+
+TEST_RENDER_STEP_PATH = f"{__name__}.{TestTrackSelectionAPIRenderStartedPipelineStep.__name__}"
+
+
 @ddt.ddt
 @skip_unless_lms
 @override_waffle_flag(COURSE_MODES_MFE_TRACK_SELECTION, active=True)
@@ -202,3 +216,25 @@ class TrackSelectionTestViews(ModuleStoreTestCase, APITestCase):
         response = self.client.post(self.url, {"mode": "unsupported"}, format="json")
         assert response.status_code == 400
         assert response.data["error"] == "Enrollment mode not supported"
+
+    @override_settings(
+        OPEN_EDX_FILTERS_CONFIG={
+            "org.openedx.learning.course_mode.track_selection.api.rendered.started.v1": {
+                "pipeline": [
+                    TEST_RENDER_STEP_PATH,
+                ],
+                "fail_silently": False,
+            },
+        },
+    )
+    def test_post_page_data_uses_track_selection_render_filter(self):
+        """
+        A configured TrackSelectionAPIRenderStarted step can add fields to the page data.
+        """
+        response = self.client.post(self.url, {}, format="json")
+        assert response.status_code == 200
+        assert response.data["plugin_field"] == {
+            "course_id": str(self.course.id),
+            "username": self.user.username,
+        }
+        assert response.data["verified_mode"] is not None
