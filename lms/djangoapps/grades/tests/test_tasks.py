@@ -431,7 +431,10 @@ class RollUpCompetencyStatusesForUserTest(TestCase):
         mock_roll_up.assert_called_once_with(**self.task_kwargs)
 
     @patch('lms.djangoapps.grades.tasks.roll_up_competency_statuses_for_user.retry')
-    @patch('lms.djangoapps.grades.tasks.roll_up_competency_statuses', new=MagicMock(side_effect=IntegrityError("WHAMMY")))
+    @patch(
+        'lms.djangoapps.grades.tasks.roll_up_competency_statuses',
+        new=MagicMock(side_effect=IntegrityError("WHAMMY")),
+    )
     def test_retries_with_same_kwargs_on_known_error(self, mock_retry):
         roll_up_competency_statuses_for_user.apply(kwargs=self.task_kwargs)
 
@@ -440,7 +443,10 @@ class RollUpCompetencyStatusesForUserTest(TestCase):
         assert isinstance(mock_retry.call_args.kwargs['exc'], IntegrityError)
 
     @patch('lms.djangoapps.grades.tasks.roll_up_competency_statuses_for_user.retry')
-    @patch('lms.djangoapps.grades.tasks.roll_up_competency_statuses', new=MagicMock(side_effect=ValueError("not retryable")))
+    @patch(
+        'lms.djangoapps.grades.tasks.roll_up_competency_statuses',
+        new=MagicMock(side_effect=ValueError("not retryable")),
+    )
     def test_reraises_unknown_error_without_retry(self, mock_retry):
         result = roll_up_competency_statuses_for_user.apply(kwargs=self.task_kwargs)
 
