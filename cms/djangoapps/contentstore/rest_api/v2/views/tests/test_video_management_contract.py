@@ -112,6 +112,7 @@ class VideoRoutesTest(TestCase):
         assert resolver.app_name == "authoring_v2"
         assert not [name for name in names if "v1" in name or "v2" in name]
 
+
 @ddt.ddt
 class HasStudioReadAccessTest(CourseTestCase):
     """The permission grants exactly the callers with Studio read access to the course in the path."""
@@ -409,8 +410,8 @@ class StudioApiDocsTest(TestCase):
     """
     The service-wide documentation site, which documents every endpoint of Studio.
 
-    It applies none of the Authoring API's filtering or prefix stripping, so it
-    carries both new operations at their full addresses.
+    It applies none of the Authoring API's filtering, but runs the same
+    post-processing hooks.
     """
 
     ARCHIVE_DOCS_PATH = "/api/authoring/v2/courses/{course_key}/video_archives/"

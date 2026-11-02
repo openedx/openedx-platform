@@ -781,7 +781,9 @@ class VideoArchiveThrottleTest(VideoArchiveTestBase):
         response = self.post(client, [])
 
         assert_error_envelope(response, expected_status=429, expected_type_slug="rate-limited")
-        assert response["Retry-After"] == "3600"
+        # The wait counts down from the first request of the window, so a slow
+        # run may already be a second or two into the hour.
+        assert 3590 <= int(response["Retry-After"]) <= 3600
 
     def test_the_budget_is_shared_with_the_legacy_address(self, fetch):
         client = self.client_for(self.user)

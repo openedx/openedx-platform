@@ -81,8 +81,7 @@ class CourseVideoArchiveView(StandardizedErrorMixin, APIView):
     no collection to list and no member to fetch or delete afterwards; that is
     why this is a single POST handler rather than a ViewSet. Each requested
     address must be one of the course's own encoded-video URLs and is checked
-    before any video is fetched, so the server only ever fetches addresses the
-    course already holds.
+    before any video is fetched.
 
     The body is accepted as JSON only: a list of objects has no form encoding
     that both the published schema and the parser agree on.
@@ -92,8 +91,8 @@ class CourseVideoArchiveView(StandardizedErrorMixin, APIView):
     endpoints draw on one budget.
     """
 
-    # The v1 endpoint this replaces admits inactive accounts over a session, as
-    # the other views of this API do; the default session class refuses them.
+    # Studio authors reach this endpoint from the authoring UI while their
+    # account is still inactive, which the default session class rejects.
     authentication_classes = (JwtAuthentication, SessionAuthenticationAllowInactiveUser)
     permission_classes = (IsAuthenticated, HasStudioReadAccess)
     parser_classes = (JSONParser,)

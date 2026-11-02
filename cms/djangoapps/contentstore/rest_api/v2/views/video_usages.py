@@ -67,8 +67,8 @@ class CourseVideoUsageViewSet(StandardizedErrorMixin, viewsets.ViewSet):
     video store does not hold.
     """
 
-    # The v1 endpoint this replaces admits inactive accounts over a session, as
-    # the other views of this API do; the default session class refuses them.
+    # Studio authors reach this endpoint from the authoring UI while their
+    # account is still inactive, which the default session class rejects.
     authentication_classes = (JwtAuthentication, SessionAuthenticationAllowInactiveUser)
     permission_classes = (IsAuthenticated, HasStudioReadAccess)
     serializer_class = CourseVideoUsageSerializer
