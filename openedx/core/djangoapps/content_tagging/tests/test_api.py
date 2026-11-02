@@ -1,5 +1,6 @@
 """Tests for the Tagging models"""
 import copy
+import csv
 import io
 import os
 import tempfile
@@ -7,6 +8,7 @@ from unittest import mock
 
 import ddt
 import pytest
+from django.db.models import Q
 from django.test.testcases import TestCase
 from fs.osfs import OSFS
 from opaque_keys.edx.keys import CourseKey, UsageKey
@@ -337,6 +339,25 @@ class TestAPIObjectTags(TestGetAllObjectTagsMixin, TestCase):
             self.taxonomy_2.id: self.taxonomy_2,
         }
 
+    def test_get_library_object_tags_excludes_archived_association(self):
+        """
+        An archived association is left out of a library's tags, and a block with no other tags is dropped.
+        """
+        problem_id = f"lb:orgA:lib_{self.block_suffix}:problem:problem1_{self.block_suffix}"
+        ObjectTag.objects.filter(object_id=problem_id, _value="Tag 1.1").update(archived=True)
+
+        object_tags, taxonomies = api.get_all_object_tags(
+            LibraryLocatorV2.from_string(f"lib:orgA:lib_{self.block_suffix}")
+        )
+
+        expected = copy.deepcopy(self.expected_library_objecttags)
+        del expected[problem_id]
+        assert object_tags == expected
+        assert taxonomies == {
+            self.taxonomy_1.id: self.taxonomy_1,
+            self.taxonomy_2.id: self.taxonomy_2,
+        }
+
     def test_get_course_object_tags_excludes_archived_association(self):
         """
         An archived association is left out, and the other associations on the same block are kept.
@@ -544,6 +565,23 @@ class TestExportImportTags(TaggedCourseMixin):
             '"    untagged vertical","vertical","untagged_vertical",""\r\n'
         )
 
+    def test_generate_csv_rows_all_archived(self) -> None:
+        # The same prefix get_all_object_tags() uses to find the course's blocks.
+        block_id_prefix = str(self.course.id).replace("course-v1:", "block-v1:", 1)
+        ObjectTag.objects.filter(
+            Q(object_id=str(self.course.id)) | Q(object_id__startswith=block_id_prefix)
+        ).update(archived=True)
+
+        buffer = io.StringIO()
+        list(api.generate_csv_rows(str(self.course.id), buffer))
+        buffer.seek(0)
+        csv_rows = list(csv.reader(buffer))
+
+        # Nothing is left to export, so no taxonomy columns remain, but every block still has a row.
+        expected_rows = [row[:3] for row in csv.reader(io.StringIO(self.expected_csv))]
+        assert expected_rows[0] == ["Name", "Type", "ID"]
+        assert csv_rows == expected_rows
+
     def test_generate_csv_rows_keeps_disabled_taxonomy(self) -> None:
         # Disabled taxonomies are not archived, so their tags are still exported.
         self.taxonomy_1.enabled = False
@@ -634,11 +672,10 @@ class TestExportImportTags(TaggedCourseMixin):
         assert object_tag.taxonomy is None
         assert object_tag.export_id == '1-taxonomy-1-1'
 
-    @ddt.data("association", "tag", "taxonomy")
-    def test_import_keeps_hidden_association(self, hidden_by: str) -> None:
-        course_id = str(self.course.id)
-        api.tag_object(object_id=course_id, taxonomy=self.taxonomy_2, tags=["Tag 2.1"])
-        hidden_pk = ObjectTag.objects.get(object_id=course_id, _value="Tag 2.1").pk
+    def _hide_association(self, hidden_by: str, hidden_pk: int) -> None:
+        """
+        Hides the given association by archiving the association, its tag, or its taxonomy.
+        """
         if hidden_by == "association":
             ObjectTag.objects.filter(pk=hidden_pk).update(archived=True)
         elif hidden_by == "tag":
@@ -646,16 +683,35 @@ class TestExportImportTags(TaggedCourseMixin):
         else:
             Taxonomy.objects.filter(pk=self.taxonomy_2.pk).update(archived=True)
 
-        csv_path = self._create_csv_file(
-            '"Name","Type","ID","1-taxonomy-1","2-taxonomy-2"\r\n'
-            '"Test Course","course","course-v1:orgA+test_course+test_run","Tag 1.2",""\r\n'
-        )
+    @ddt.data(
+        ("association", False),
+        ("tag", False),
+        ("taxonomy", False),
+        # An archived taxonomy is skipped before tag_object() runs, so it has no same-taxonomy case.
+        ("association", True),
+        ("tag", True),
+    )
+    @ddt.unpack
+    def test_import_keeps_hidden_association(self, hidden_by: str, visible_in_same_taxonomy: bool) -> None:
+        course_id = str(self.course.id)
+        api.tag_object(object_id=course_id, taxonomy=self.taxonomy_2, tags=["Tag 2.1"])
+        hidden_pk = ObjectTag.objects.get(object_id=course_id, _value="Tag 2.1").pk
+        self._hide_association(hidden_by, hidden_pk)
+
+        if visible_in_same_taxonomy:
+            # tag_object() runs on the taxonomy that holds the hidden row, and must leave that row alone.
+            row = '"Test Course","course","course-v1:orgA+test_course+test_run","","Tag 2.2"\r\n'
+            expected_visible = ["Tag 2.2"]
+        else:
+            row = '"Test Course","course","course-v1:orgA+test_course+test_run","Tag 1.2",""\r\n'
+            expected_visible = ["Tag 1.2"]
+        csv_path = self._create_csv_file('"Name","Type","ID","1-taxonomy-1","2-taxonomy-2"\r\n' + row)
         api.import_course_tags_from_csv(csv_path, self.course.id)
 
         visible_tags = list(api.get_object_tags(self.course.id))
-        assert [t.value for t in visible_tags] == ["Tag 1.2"]
+        assert [t.value for t in visible_tags] == expected_visible
         assert ObjectTag.objects.filter(object_id=course_id, _value="Tag 2.1").count() == 1
-        assert ObjectTag.objects.get(pk=hidden_pk)  # The same row survives.
+        assert ObjectTag.objects.filter(pk=hidden_pk).exists()  # The same row survives.
         assert hidden_pk not in [t.pk for t in visible_tags]  # It is still hidden.
 
     def test_import_clears_placeholder_and_deleted_reference_rows(self) -> None:

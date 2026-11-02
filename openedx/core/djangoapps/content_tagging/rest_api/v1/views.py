@@ -103,7 +103,7 @@ class TaxonomyOrgView(TaxonomyView):
         # Prefetch taxonomyorgs so we can check permissions
         queryset = queryset.prefetch_related("taxonomyorg_set__org")
 
-        # Annotate with tags_count to avoid selecting all the tags
+        # Annotate with tags_count to avoid selecting all the tags. The count leaves archived tags out.
         queryset = queryset.annotate(tags_count=Count("tag", filter=Q(tag__archived=False), distinct=True))
 
         # Select the competency taxonomy relation (if any) so is_competency_taxonomy()
