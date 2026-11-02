@@ -12,19 +12,19 @@ click-log==0.4.0
 colorama==0.4.6 ; sys_platform == 'win32'
     # via pytest
 ddt==1.7.2
-dnspython==2.8.0
+dnspython==2.9.0
     # via pymongo
-edx-opaque-keys==4.0.0
+edx-opaque-keys==4.0.1
     # via edx-platform-structures-pruning-scripts
-iniconfig==2.3.0
+iniconfig==2.3.1
     # via pytest
 packaging==26.3
     # via pytest
-pluggy==1.6.0
+pluggy==1.7.0
     # via pytest
 pygments==2.21.0
     # via pytest
-pymongo==4.4.0
+pymongo==4.19.0
     # via
     #   edx-opaque-keys
     #   edx-platform-structures-pruning-scripts

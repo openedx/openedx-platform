@@ -649,14 +649,28 @@ def get_home_url():
 
 
 @pluggable_override('OVERRIDE_GET_LEARNER_DISPLAY_USERNAME')
+def get_learner_display_name_override(user: AbstractBaseUser) -> str | None:
+    """
+    Return a name to display for ``user`` in place of their own, or None.
+
+    One possible use case of this override: render an obfuscated name when the
+    learner's real one contains sensitive information fed by SSO.
+    """
+    return None
+
+
 def get_learner_display_username(user: AbstractBaseUser) -> str:
     """
     Return the username to display for ``user``.
 
-    One possible use case of this override: render an obfuscated username when
-    it contains sensitive information fed by SSO.
+    This is the learner's own username, unless a display name override supplies
+    a name in its place.
     """
-    return user.username
+    display_name = user.username
+    override = get_learner_display_name_override(user=user)
+    if override is not None:
+        display_name = override
+    return display_name
 
 
 class EnterpriseLearnerPortalLink(TypedDict):

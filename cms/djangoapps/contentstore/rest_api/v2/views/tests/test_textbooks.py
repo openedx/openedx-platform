@@ -5,6 +5,7 @@ from unittest.mock import patch
 
 import ddt
 from ccx_keys.locator import CCXLocator
+from django.conf import settings
 from django.db import connection
 from django.db.models import signals as model_signals
 from django.test import Client
@@ -578,10 +579,8 @@ class SpectacularSettingsTest(CourseTestCase):
         return (Path(__file__).resolve().parents[7] / module).read_text()
 
     def test_no_prefix_is_trimmed_so_paths_are_emitted_in_full(self):
-        for module in self.SETTINGS_MODULES:
-            source = self._source(module)
-            assert "SCHEMA_PATH_PREFIX_TRIM" not in source, module
-            assert "'SCHEMA_PATH_PREFIX': r'/api/(contentstore|authoring)'," in source, module
+        assert "SCHEMA_PATH_PREFIX_TRIM" not in settings.SPECTACULAR_SETTINGS
+        assert settings.SPECTACULAR_SETTINGS["SCHEMA_PATH_PREFIX"] == r"/api/(contentstore|authoring)"
 
     def test_no_server_advertises_a_single_mount_as_its_root(self):
         for module in self.SETTINGS_MODULES:

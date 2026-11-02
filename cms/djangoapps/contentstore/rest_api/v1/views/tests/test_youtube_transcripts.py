@@ -16,6 +16,7 @@ from cms.djangoapps.contentstore.rest_api.v0.views.transcripts import (
     YoutubeTranscriptCheckView,
     YoutubeTranscriptUploadView,
 )
+from cms.djangoapps.contentstore.rest_api.v2.views.tests.helpers import generate_cms_schema
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase
 from common.djangoapps.student.tests.factories import GlobalStaffFactory, InstructorFactory, UserFactory
 from openedx.core.djangoapps.content_libraries import api as lib_api
@@ -829,3 +830,28 @@ class TestYoutubeTranscriptParity(BaseYoutubeTranscriptTest):
             )
         ]
         assert missing == [], f"declared but never produced: {missing}"
+
+
+class TestYoutubeTranscriptSchema(CourseTestCase):
+    """What the published schema says each endpoint returns."""
+
+    CHECK_PATH = "/api/authoring/v1/courses/{course_key}/youtube_transcript_checks/"
+    IMPORT_PATH = "/api/authoring/v1/courses/{course_key}/youtube_transcript_imports/"
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.schema = generate_cms_schema()
+
+    def _success(self, path, method):
+        return self.schema["paths"][path][method]["responses"]["200"]["content"]["application/json"]["schema"]
+
+    def test_the_check_returns_one_report_not_a_list(self):
+        assert self._success(self.CHECK_PATH, "get") == {
+            "$ref": "#/components/schemas/YoutubeTranscriptCheckResult"
+        }
+
+    def test_the_import_returns_one_record(self):
+        assert self._success(self.IMPORT_PATH, "post") == {
+            "$ref": "#/components/schemas/YoutubeTranscriptImportResult"
+        }

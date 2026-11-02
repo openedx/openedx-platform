@@ -24,13 +24,14 @@ class GenerateCSVCommandTestCase(TestCase):
     COURSE_ID = "course-v1:edX+Test101+2024"
 
     @staticmethod
-    def _make_block(display_name, block_type):
+    def _make_block(display_name, block_type, editor="visual"):
         """
         Creates a mock block
         """
         component = MagicMock()
         component.display_name = display_name
         component.location.block_type = block_type
+        component.editor = editor
         component.get_children.return_value = []
         return component
 
@@ -93,6 +94,7 @@ class GenerateCSVCommandTestCase(TestCase):
             "Component Name",
             "Xblock Type",
             "Full Hierarchy",
+            "Editor",
         ]
 
     def test_all_components_included_by_default(self):
@@ -110,6 +112,7 @@ class GenerateCSVCommandTestCase(TestCase):
         assert row[5] == "My HTML"
         assert row[6] == "html"
         assert row[7] == "Section 1 > Subsection 1 > Unit 1 > My HTML"
+        assert row[8] == "visual"
 
     def test_exclude_core_xblocks(self):
         rows = self._run_generate(exclude_core_xblocks=True)
@@ -289,3 +292,22 @@ class GenerateCSVCommandTestCase(TestCase):
         named_row = rows[2]
         assert named_row[5] == "My HTML"
         assert named_row[7] == "Section 1 > Subsection 1 > Unit 1 > My HTML"
+
+    def test_editor_column(self):
+        visual_html = self._make_block("Text", "html", editor="visual")
+        raw_html = self._make_block("Raw HTML", "html", editor="raw")
+        video = self._make_block("My Video", "video")
+        unit = self._make_container("Unit 1", [visual_html, raw_html, video])
+        subsection = self._make_container("Subsection 1", [unit])
+        section = self._make_container("Section 1", [subsection])
+        course = self._make_course(self.COURSE_ID, "Test Course", [section])
+
+        output = StringIO()
+        with patch(MODULESTORE_PATH) as mock_modulestore:
+            mock_modulestore.return_value.get_courses.return_value = [course]
+
+            generate_xblocks_csv(output, False, None)
+
+        output.seek(0)
+        rows = list(csv.reader(output))
+        assert [row[8] for row in rows[1:]] == ["visual", "raw", ""]

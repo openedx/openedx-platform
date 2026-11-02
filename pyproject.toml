@@ -99,7 +99,7 @@ dependencies = [
     "openedx-core",
     "openedx-django-require",
     "openedx-events", # Open edX Events from Hooks Extension Framework (OEP-50)
-    "openedx-filters", # Open edX Filters from Hooks Extension Framework (OEP-50)
+    "openedx-filters>=3.16.0", # openedx-filters 3.16.0 adds ManagementCommandContextmanagerRequested, used by manage.py; Open edX Filters from Hooks Extension Framework (OEP-50)
     "openedx-forum", # Open edX forum v2 application
     "openedx-django-wiki",
     "path",
@@ -283,15 +283,15 @@ constraint-dependencies = [
     "numpy<2.0.0",
     "openedx-core<2",
     "path<16.12.0",
-    "pymongo<4.4.1",
     "lxml==5.3.2",
     "xmlsec==1.3.14",
     "django-debug-toolbar<6.0.0",
     "sphinx-autoapi<3.6.1",
     "setuptools<82",
     "astroid==4.0.4",
-    "edx-enterprise==8.17.0",
+    "edx-enterprise==9.0.0",
     "djangorestframework<3.18",
+    "openedx-forum<0.6.0",
 ]
 [tool.edx_lint]
 uv_constraints = [
@@ -340,10 +340,6 @@ uv_constraints = [
     # needs to be investigated and fixed separately
     # Issue for unpinning: https://github.com/openedx/edx-platform/issues/35267
     "path<16.12.0",
-    # Date: 2020-04-08
-    # Adding pin to avoid any major upgrade
-    # Issue for unpinning: https://github.com/openedx/edx-platform/issues/35265
-    "pymongo<4.4.1",
     # Date: 2024-08-06
     # social-auth-app-django 5.4.2 introduces a new migration that will not play nicely with large installations. This will touch
     # user tables, which are quite large, especially on instances like edx.org.
@@ -407,12 +403,17 @@ uv_constraints = [
     # The team that owns this package will manually bump this package rather than
     # having it pulled in automatically. This is to allow them to better control its
     # deployment and to do it in a process that works better for them.
-    "edx-enterprise==8.17.0",
+    "edx-enterprise==9.0.0",
     # Date: 2026-08-31
     # DRF 3.18.0 changes many=True validation errors from a list to a dict keyed by
     # item index, which breaks the error response shape of several write endpoints.
     # Issue for unpinning: https://github.com/openedx/openedx-platform/issues/39048
     "djangorestframework<3.18",
+    # Date: 2026-10-28
+    # openedx-forum 0.6.0 adds the ModerationAuditLog model, which has no PII annotation
+    # and fails `make pii_check`. It also isn't cleared on user retirement.
+    # Issue for unpinning: https://github.com/openedx/forum/issues/301
+    "openedx-forum<0.6.0",
 ]
 
 [tool.setuptools]
@@ -773,12 +774,6 @@ ignore_imports = [
     #  -> openedx.core.djangoapps.content.learning_sequences.api.permissions
     #  -> lms.djangoapps.courseware.access
     "openedx.core.djangoapps.content.learning_sequences.api.permissions -> lms.djangoapps.courseware.access",
-    # cms.djangoapps.contentstore.[various]
-    #  -> openedx.features.content_type_gating.partitions
-    #  -> openedx.features.discounts.utils
-    #  -> openedx.features.discounts.applicability
-    #  -> openedx.features.enterprise_support.utils
-    "openedx.features.enterprise_support.utils -> lms.djangoapps.branding.api",
     "cms.djangoapps.contentstore.rest_api.v1.views.settings -> lms.djangoapps.certificates.api",
     # We are ignoring this existing import until we can refactor contenstore/helpers.
     # https://github.com/openedx/edx-platform/issues/37637

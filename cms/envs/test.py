@@ -240,3 +240,8 @@ ENTERPRISE_CONSENT_API_URL = "https://localhost:18000/consent/api/v1/"
 INACTIVE_USER_URL = "http://localhost:18010"
 POLICY_CHANGE_GRADES_ROUTING_KEY = "edx.lms.core.default"
 SINGLE_LEARNER_COURSE_REGRADE_ROUTING_KEY = "edx.lms.core.default"
+
+# lms/envs/test.py sets this; the CMS side never has, but embed_block_view (used to preview
+# library content, including from Studio) reads settings.CORS_ORIGIN_WHITELIST directly with
+# no fallback, so any test that exercises it fails with an AttributeError unless this is set.
+CORS_ORIGIN_WHITELIST = []

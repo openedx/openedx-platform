@@ -9,11 +9,11 @@ click==8.5.0
     #   edx-platform-structures-pruning-scripts
 click-log==0.4.0
     # via edx-platform-structures-pruning-scripts
-dnspython==2.8.0
+dnspython==2.9.0
     # via pymongo
-edx-opaque-keys==4.0.0
+edx-opaque-keys==4.0.1
     # via edx-platform-structures-pruning-scripts
-pymongo==4.4.0
+pymongo==4.19.0
     # via
     #   edx-opaque-keys
     #   edx-platform-structures-pruning-scripts

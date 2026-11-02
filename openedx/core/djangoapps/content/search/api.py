@@ -38,7 +38,16 @@ from openedx.core.djangoapps.content.search.index_config import (
     INDEX_SEARCHABLE_ATTRIBUTES,
     INDEX_SORTABLE_ATTRIBUTES,
 )
-from openedx.core.djangoapps.content.search.models import IncrementalIndexCompleted, get_access_ids_for_request
+from openedx.core.djangoapps.content.search.models import (
+    IncrementalIndexCompleted,
+    _get_authz_library_org_keys_for_search,
+    _get_authz_org_keys_for_search,
+    _get_authz_platform_org_keys_for_search,
+    authz_has_all_libraries_access,
+    authz_has_platform_access,
+    get_course_access_ids_for_request,
+    get_library_access_ids_for_request,
+)
 from openedx.core.djangoapps.content_libraries import api as lib_api
 from xmodule.modulestore.django import modulestore
 from xmodule.modulestore.exceptions import ItemNotFoundError
@@ -58,6 +67,16 @@ from .documents import (
 )
 
 log = logging.getLogger(__name__)
+
+# Socket timeout, in seconds, for HTTP calls to Meilisearch. The Meilisearch client defaults to no
+# timeout, which lets an unresponsive search backend pin a web worker indefinitely.
+MEILISEARCH_HTTP_TIMEOUT = 30
+
+# How long a request may block waiting for Meilisearch to finish applying an index update before
+# giving up and returning. Giving up does not lose the update: Meilisearch has already accepted the
+# documents and will apply them regardless, so this only bounds how long the user waits for the
+# index to become consistent.
+SYNC_INDEX_WAIT_TIMEOUT = 3.0
 
 User = get_user_model()
 
@@ -140,7 +159,13 @@ def _get_meilisearch_client():
     if _MEILI_CLIENT is not None:
         return _MEILI_CLIENT
 
-    _MEILI_CLIENT = MeilisearchClient(settings.MEILISEARCH_URL, settings.MEILISEARCH_API_KEY)
+    _MEILI_CLIENT = MeilisearchClient(
+        settings.MEILISEARCH_URL,
+        settings.MEILISEARCH_API_KEY,
+        # Without this the client has no socket timeout at all, so a Meilisearch that accepts
+        # the connection and then stops responding blocks the calling thread forever.
+        timeout=MEILISEARCH_HTTP_TIMEOUT,
+    )
     try:
         _MEILI_CLIENT.health()
     except MeilisearchError as err:
@@ -165,17 +190,24 @@ def _get_meili_api_key_uid():
     return _MEILI_API_KEY_UID
 
 
-def _wait_for_meili_task(info: TaskInfo) -> None:
+def _wait_for_meili_task(info: TaskInfo, timeout: float | None = None) -> bool:
     """
     Simple helper method to wait for a Meilisearch task to complete
-    This method will block until the task is completed, so it should only be used in celery tasks
-    or management commands.
+
+    By default this blocks until the task is completed, so the default should only be used in celery
+    tasks or management commands. Pass ``timeout`` (seconds) to bound the wait when calling from a
+    request thread.
+
+    Returns True if the task completed, False if we stopped waiting because ``timeout`` elapsed.
+    Giving up does not lose the update: Meilisearch has already accepted the documents and will apply
+    them regardless. Waiting only tells us *when* the index became consistent.
 
     ✨ Note: "Meilisearch processes tasks in the order they were added to the queue."
        per https://www.meilisearch.com/docs/capabilities/indexing/tasks_and_batches/monitor_tasks#monitoring-task-status
        so if you need to wait for multiple tasks, simply wait for the final (last) task.
     """
     client = _get_meilisearch_client()
+    deadline = None if timeout is None else time.monotonic() + timeout
     # This function almost always gets called immediately after enqueing a task, and from experiments, an initial wait
     # of at least 15ms is warranted, as the task is almost never done in less than 10ms. We are using 20ms which seems
     # to work well without requiring an additional wait in most cases.
@@ -183,6 +215,16 @@ def _wait_for_meili_task(info: TaskInfo) -> None:
     time.sleep(sleep_delay)
     current_status = client.get_task(info.task_uid)
     while current_status.status in ("enqueued", "processing"):
+        if deadline is not None and time.monotonic() >= deadline:
+            log.warning(
+                "Stopped waiting for Meilisearch task %s after %.1fs (status=%s). The update has been "
+                "accepted by Meilisearch and will still be applied; the search index is briefly stale.",
+                info.task_uid, timeout, current_status.status,
+            )
+            return False
+        # Never sleep past the deadline - otherwise a 2s backoff can overshoot a short timeout.
+        if deadline is not None:
+            sleep_delay = min(sleep_delay, max(deadline - time.monotonic(), 0.005))
         time.sleep(sleep_delay)
         sleep_delay = min(sleep_delay * 1.5, 2.0)  # Increase delay up to 2s
         current_status = client.get_task(info.task_uid)
@@ -192,6 +234,7 @@ def _wait_for_meili_task(info: TaskInfo) -> None:
         except (TypeError, KeyError):
             err_reason = "Unknown error"
         raise MeilisearchError(err_reason)
+    return True
 
 
 def _index_exists(index_name: str) -> bool:
@@ -335,11 +378,14 @@ def _recurse_children(block, fn, status_cb: Callable[[str], None] | None = None)
                 fn(child)
 
 
-def _update_index_docs(index_name: str, docs) -> None:
+def _update_index_docs(index_name: str, docs, wait_timeout: float | None = None) -> None:
     """
     Helper function that updates the documents in the given search index
 
     If there is a rebuild of that index in progress, the document will also be added to the new index.
+
+    ``wait_timeout`` bounds how long we wait for Meilisearch to finish applying the update. The
+    documents are applied either way; see ``_wait_for_meili_task``.
     """
     if not docs:
         return
@@ -350,7 +396,7 @@ def _update_index_docs(index_name: str, docs) -> None:
     if current_rebuild_index_name:
         # If there is a rebuild in progress, the document will also be added to the new index.
         client.index(current_rebuild_index_name).update_documents(docs)
-    _wait_for_meili_task(client.index(index_name).update_documents(docs))
+    _wait_for_meili_task(client.index(index_name).update_documents(docs), timeout=wait_timeout)
 
 
 def only_if_meilisearch_enabled(f):
@@ -942,9 +988,12 @@ def _delete_index_doc(index_name: str, doc_id) -> None:
     _wait_for_meili_task(client.index(index_name).delete_document(doc_id))
 
 
-def upsert_library_block_index_doc(usage_key: UsageKey) -> None:
+def upsert_library_block_index_doc(usage_key: UsageKey, wait_timeout: float | None = None) -> None:
     """
     Creates or updates the document for the given Library Block in the search index
+
+    ``wait_timeout`` bounds how long to wait for Meilisearch to apply the update; pass it when
+    calling from a request thread so a slow search backend cannot hold the response open.
     """
 
     library_block = lib_api.get_component_from_usage_key(usage_key)
@@ -952,7 +1001,7 @@ def upsert_library_block_index_doc(usage_key: UsageKey) -> None:
 
     docs = [searchable_doc_for_library_block(library_block_metadata)]
 
-    _update_index_docs(STUDIO_LIBRARY_INDEX_NAME, docs)
+    _update_index_docs(STUDIO_LIBRARY_INDEX_NAME, docs, wait_timeout=wait_timeout)
 
 
 def _get_document_from_index(index_name: str, document_id: str) -> dict:
@@ -1159,26 +1208,81 @@ def _get_user_orgs(request: Request) -> list[str]:
     Get the org.short_names for the organizations that the requesting user has OrgStaffRole or OrgInstructorRole.
 
     Note: org-level roles have course_id=None to distinguish them from course-level roles.
+
+    Also includes orgs where the user holds an org-wide (glob) authz course role, so that
+    authz-only users granted at the org level (e.g. ``course-v1:Org+*``) are covered by the
+    ``org IN [...]`` search filter clause rather than being dropped.
     """
     course_roles = get_course_roles(request.user)
-    return list(
-        set(role.org for role in course_roles if role.course_id is None and role.role in ["staff", "instructor"])
+    orgs = set(
+        role.org for role in course_roles if role.course_id is None and role.role in ["staff", "instructor"]
     )
+    # Union in org-level authz grants (flag-gated per org inside the helper).
+    orgs.update(_get_authz_org_keys_for_search(request.user, omit_orgs=list(orgs)))
+    # A platform-wide (course-v1:*) authz grant, when the flag is not globally on,
+    # surfaces its force-on-override orgs here. (When the flag IS globally on,
+    # _get_course_access_filter short-circuits to see-everything before this runs.)
+    orgs.update(_get_authz_platform_org_keys_for_search(request.user, omit_orgs=list(orgs)))
+    return list(orgs)
 
 
-def _get_meili_access_filter(request: Request) -> dict:
+def _get_user_library_orgs(request: Request) -> list[str]:
     """
-    Return meilisearch filter based on the requesting user's permissions.
+    Get the org short_names for the organizations where the requesting user holds
+    an org-wide (``lib:Org:*``) authz ``view_library`` grant, so those users are
+    covered by the library filter's ``org IN [...]`` clause rather than dropped.
+
+    Legacy library-team access is per-library, not org-wide, so it contributes
+    only to the library access-id clause, not here.
+    """
+    return list(_get_authz_library_org_keys_for_search(request.user, omit_orgs=[]))
+
+
+def _get_course_access_filter(request: Request) -> dict:
+    """
+    Return the meilisearch filter for the COURSE index based on the requesting
+    user's course-view permissions (legacy course/org roles unioned with authz
+    ``view_course`` grants). An empty dict means "see everything".
     """
     # Global staff can see anything, so no filters required.
     if GlobalStaff().has_user(request.user):
         return {}
 
+    # An authz platform-wide grant (course-v1:*) is the authz analogue of global
+    # staff -- it means "all courses across the platform", so no filters required.
+    if authz_has_platform_access(request.user):
+        return {}
+
     # Everyone else is limited to their org staff roles...
     user_orgs = _get_user_orgs(request)[:MAX_ORGS_IN_FILTER]
 
-    # ...or the N most recent courses and libraries they can access.
-    access_ids = get_access_ids_for_request(request, omit_orgs=user_orgs)[:MAX_ACCESS_IDS_IN_FILTER]
+    # ...or the N most recent courses they can access.
+    access_ids = get_course_access_ids_for_request(request, omit_orgs=user_orgs)[:MAX_ACCESS_IDS_IN_FILTER]
+    return {
+        "filter": f"org IN {user_orgs} OR access_id IN {access_ids}",
+    }
+
+
+def _get_library_access_filter(request: Request) -> dict:
+    """
+    Return the meilisearch filter for the LIBRARY index based on the requesting
+    user's library-view permissions (legacy library-team access unioned with authz
+    ``view_library`` grants). An empty dict means "see everything".
+    """
+    # Global staff can see anything, so no filters required.
+    if GlobalStaff().has_user(request.user):
+        return {}
+
+    # An authz platform-wide library grant (lib:*) admits every library, so no
+    # filters required.
+    if authz_has_all_libraries_access(request.user):
+        return {}
+
+    # Everyone else is limited to the orgs they hold an org-wide library grant on...
+    user_orgs = _get_user_library_orgs(request)[:MAX_ORGS_IN_FILTER]
+
+    # ...or the N most recent libraries they can access.
+    access_ids = get_library_access_ids_for_request(request, omit_orgs=user_orgs)[:MAX_ACCESS_IDS_IN_FILTER]
     return {
         "filter": f"org IN {user_orgs} OR access_id IN {access_ids}",
     }
@@ -1190,10 +1294,11 @@ def generate_user_token_for_studio_search(request):
     """
     expires_at = datetime.now(tz=timezone.utc) + timedelta(days=7)  # noqa: UP017
 
-    access_filter = _get_meili_access_filter(request)
+    # The course and library indexes are filtered independently: course visibility
+    # is built from view_course grants, library visibility from view_library grants.
     search_rules = {
-        STUDIO_COURSE_INDEX_NAME: access_filter,
-        STUDIO_LIBRARY_INDEX_NAME: access_filter,
+        STUDIO_COURSE_INDEX_NAME: _get_course_access_filter(request),
+        STUDIO_LIBRARY_INDEX_NAME: _get_library_access_filter(request),
     }
     # Note: the following is just generating a JWT. It doesn't actually make an API call to Meilisearch.
     restricted_api_key = _get_meilisearch_client().generate_tenant_token(

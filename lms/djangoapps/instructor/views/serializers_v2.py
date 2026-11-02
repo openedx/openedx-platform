@@ -38,7 +38,7 @@ from openedx.core.djangoapps.django_comment_common.models import FORUM_ROLE_ADMI
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from xmodule.modulestore.django import modulestore
 
-from .tools import DashboardError, get_student_from_identifier, parse_datetime
+from .tools import DashboardError, get_student_from_identifier, parse_datetime, proctored_exams_enabled
 
 User = get_user_model()
 log = logging.getLogger(__name__)
@@ -93,6 +93,9 @@ class CourseInformationSerializerV2(serializers.Serializer):
     )
     certificates_enabled = serializers.SerializerMethodField(
         help_text="Whether certificate management features are enabled for this course"
+    )
+    proctored_exams_enabled = serializers.SerializerMethodField(
+        help_text="Whether proctored exams, and the proctored exam results report, are enabled for this course"
     )
 
     @staticmethod
@@ -529,6 +532,10 @@ class CourseInformationSerializerV2(serializers.Serializer):
         course_key = data['course'].id
         # Check if certificate generation is enabled (not available for CCX courses)
         return certs_api.is_certificate_generation_enabled() and not hasattr(course_key, 'ccx')
+
+    def get_proctored_exams_enabled(self, data):
+        """Check if proctored exams are enabled for the course."""
+        return proctored_exams_enabled(data['course'])
 
 
 class InstructorTaskSerializer(serializers.Serializer):

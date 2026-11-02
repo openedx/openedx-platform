@@ -13,7 +13,7 @@ app_name = "authoring_v1"
 urlpatterns = [
     path(
         "courses/<course_key:course_key>/youtube_transcript_checks/",
-        YoutubeTranscriptChecksViewSet.as_view({"get": "list"}),
+        YoutubeTranscriptChecksViewSet.as_view({"get": "retrieve"}),
         name="youtube_transcript_check_list",
     ),
     path(

@@ -4,7 +4,700 @@ info:
   version: 0.1.0
   description: Experimental API to edit xblocks and course content.
 paths:
-  /v0/advanced_settings/{course_id}:
+  /api/authoring/v1/courses/{course_key}/youtube_transcript_checks/:
+    get:
+      operationId: v1_courses_youtube_transcript_checks_list
+      description: Reports which transcripts exist for the video named by the `data`
+        parameter, and whether the transcript published on YouTube differs from the
+        stored one.
+      summary: Report the transcript availability of a video
+      parameters:
+      - in: path
+        name: course_key
+        schema:
+          type: string
+          pattern: ^[^/]+$
+        required: true
+      - in: query
+        name: data
+        schema:
+          type: string
+        description: JSON object naming the video to inspect. It carries a `locator`
+          holding the usage key of the video block, and a `videos` list of `{type,
+          video, mode}` entries describing the block's declared sources.
+        required: true
+      tags:
+      - openedx-platform-sdk
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/YoutubeTranscriptCheckResult'
+          description: The transcript availability of the requested video.
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: The request body is invalid.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: The requester is not authenticated.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: The requester cannot author the course or the addressed video.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: The course or the addressed video block does not exist.
+  /api/authoring/v1/courses/{course_key}/youtube_transcript_imports/:
+    post:
+      operationId: v1_courses_youtube_transcript_imports_create
+      description: Downloads the transcript YouTube publishes for the video named
+        in the request body and stores it against that video, replacing any transcript
+        already stored.
+      summary: Import a video's transcript from YouTube
+      parameters:
+      - in: path
+        name: course_key
+        schema:
+          type: string
+          pattern: ^[^/]+$
+        required: true
+      tags:
+      - openedx-platform-sdk
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/YoutubeTranscriptImportRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/YoutubeTranscriptImportRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/YoutubeTranscriptImportRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/YoutubeTranscriptImportResult'
+          description: The transcript was downloaded and stored.
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: The request body is invalid.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: The requester is not authenticated.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: The requester cannot author the course or the addressed video.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: The course or the addressed video block does not exist.
+  /api/authoring/v1/xblocks/:
+    post:
+      operationId: v1_xblocks_create
+      description: Create a new xblock under a parent block. The ``parent_locator``
+        field on the request body identifies the parent and (implicitly) the course.
+      summary: Create an xblock
+      tags:
+      - openedx-platform-sdk
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Xblock'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Xblock'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Xblock'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Xblock'
+          description: The xblock was created successfully.
+        '400':
+          description: Request body failed validation.
+        '401':
+          description: The requester is not authenticated.
+        '403':
+          description: The requester does not have permission for this xblock's course.
+        '404':
+          description: The requested xblock does not exist.
+        '406':
+          description: Requested representation is not available (e.g. non-JSON ``Accept``).
+  /api/authoring/v1/xblocks/{usage_key_string}/:
+    get:
+      operationId: v1_xblocks_retrieve
+      description: Retrieve an xblock (and, by default, its nested tree) by usage
+        key. Supports ADR 0036 ``?view=minimal`` to strip contextual fields, plus
+        the legacy ``?fields=`` type-of-response selector.
+      summary: Retrieve an xblock
+      parameters:
+      - in: query
+        name: fields
+        schema:
+          type: string
+        description: |-
+          **Legacy pass-through** (v0/v1 semantics). Selects a *type* of response rather than a subset of top-level keys:
+            * ``fields=graderType`` — return the grader-type value directly
+            * ``fields=ancestorInfo`` — return concise ancestor info
+            * ``fields=customReadToken`` — include parent + children on the response
+          Note: this is **not** the ADR 0036 ``?fields=`` CSV subset convention. New callers should use ``?view=minimal`` instead.
+        deprecated: true
+      - in: path
+        name: usage_key_string
+        schema:
+          type: string
+        description: Usage key identifying the xblock (e.g. ``block-v1:edX+DemoX+Demo_Course+type@vertical+block@abcd``).
+          Also accepts legacy ``i4x://`` locators.
+        required: true
+      - in: query
+        name: view
+        schema:
+          type: string
+          enum:
+          - minimal
+        description: ADR 0036 response preset. ``minimal`` drops heavy/contextual
+          xblock fields (``data``, ``metadata``, ``fields``, ``student_view_data``,
+          ``edited_on``, ``published`` …) and keeps only the structural fields (``id``,
+          ``display_name``, ``category``, ``children``, ``has_children``, ``studio_url``).
+          Omit the parameter to receive the full xblock response.
+      tags:
+      - openedx-platform-sdk
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Xblock'
+          description: The xblock representation.
+        '401':
+          description: The requester is not authenticated.
+        '403':
+          description: The requester does not have permission for this xblock's course.
+        '404':
+          description: The requested xblock does not exist.
+        '406':
+          description: Requested representation is not available (e.g. non-JSON ``Accept``).
+    put:
+      operationId: v1_xblocks_update
+      description: Fully update an xblock identified by its usage key.
+      summary: Update an xblock
+      parameters:
+      - in: path
+        name: usage_key_string
+        schema:
+          type: string
+        description: Usage key identifying the xblock (e.g. ``block-v1:edX+DemoX+Demo_Course+type@vertical+block@abcd``).
+          Also accepts legacy ``i4x://`` locators.
+        required: true
+      tags:
+      - openedx-platform-sdk
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Xblock'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Xblock'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Xblock'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Xblock'
+          description: The xblock was updated successfully.
+        '400':
+          description: Request body failed validation.
+        '401':
+          description: The requester is not authenticated.
+        '403':
+          description: The requester does not have permission for this xblock's course.
+        '404':
+          description: The requested xblock does not exist.
+        '406':
+          description: Requested representation is not available (e.g. non-JSON ``Accept``).
+    patch:
+      operationId: v1_xblocks_partial_update
+      description: Partially update an xblock identified by its usage key. Only the
+        fields present in the request body are updated.
+      summary: Partially update an xblock
+      parameters:
+      - in: path
+        name: usage_key_string
+        schema:
+          type: string
+        description: Usage key identifying the xblock (e.g. ``block-v1:edX+DemoX+Demo_Course+type@vertical+block@abcd``).
+          Also accepts legacy ``i4x://`` locators.
+        required: true
+      tags:
+      - openedx-platform-sdk
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedXblock'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedXblock'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedXblock'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Xblock'
+          description: The xblock was updated successfully.
+        '400':
+          description: Request body failed validation.
+        '401':
+          description: The requester is not authenticated.
+        '403':
+          description: The requester does not have permission for this xblock's course.
+        '404':
+          description: The requested xblock does not exist.
+        '406':
+          description: Requested representation is not available (e.g. non-JSON ``Accept``).
+    delete:
+      operationId: v1_xblocks_destroy
+      description: Delete an xblock identified by its usage key.
+      summary: Delete an xblock
+      parameters:
+      - in: path
+        name: usage_key_string
+        schema:
+          type: string
+        description: Usage key identifying the xblock (e.g. ``block-v1:edX+DemoX+Demo_Course+type@vertical+block@abcd``).
+          Also accepts legacy ``i4x://`` locators.
+        required: true
+      tags:
+      - openedx-platform-sdk
+      responses:
+        '200':
+          description: The xblock was deleted successfully.
+        '401':
+          description: The requester is not authenticated.
+        '403':
+          description: The requester does not have permission for this xblock's course.
+        '404':
+          description: The requested xblock does not exist.
+        '406':
+          description: Requested representation is not available (e.g. non-JSON ``Accept``).
+  /api/authoring/v2/courses/{course_key}/textbooks/:
+    get:
+      operationId: v2_courses_textbooks_list
+      description: Returns one page of the course's PDF textbooks, each with its chapters,
+        in the order the course stores them, which is also the order of the course's
+        textbook tabs.
+      summary: List a course's PDF textbooks
+      parameters:
+      - in: path
+        name: course_key
+        schema:
+          type: string
+          pattern: ^[^/]+$
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - openedx-platform-sdk
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCourseTextbookList'
+          description: A page of the course's textbooks.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: The requester is not authenticated.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: The requester cannot view the pages and resources of this course.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: The course does not exist, or the requested page is out of
+            range.
+  /api/authoring/v2/courses/{course_key}/video_settings/:
+    get:
+      operationId: v2_courses_video_settings_retrieve
+      description: Returns the course's video upload limits, thumbnail image limits,
+        transcript settings and the Studio addresses that act on them. The course's
+        uploaded videos are listed by `GET /api/authoring/v1/courses/{course_key}/videos/`.
+      summary: Retrieve a course's video settings
+      parameters:
+      - in: path
+        name: course_key
+        schema:
+          type: string
+          pattern: ^[^/]+$
+        required: true
+      tags:
+      - openedx-platform-sdk
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CourseVideoSettings'
+          description: The course's video settings.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: The requester is not authenticated.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: The requester does not have Studio read access to this course.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: The course does not exist.
+  /api/authoring/v3/courses/{course_id}/details/:
+    get:
+      operationId: v3_courses_details_retrieve
+      description: Get an object containing the course details for the specified course.
+        Supports the ADR 0036 ``?view=minimal`` preset and ``?fields=`` explicit field
+        selection (see the parameter descriptions for details).
+      summary: Retrieve a course's details
+      parameters:
+      - in: path
+        name: course_id
+        schema:
+          type: string
+        description: Course ID
+        required: true
+      - in: query
+        name: fields
+        schema:
+          type: string
+        description: ADR 0036 explicit field selection. Comma-separated list of top-level
+          keys to include in the response (e.g. ``course_id,title,start_date``). When
+          combined with ``?view=``, the preset is applied first and ``?fields=`` is
+          applied to the result. Unknown keys are silently skipped.
+      - in: query
+        name: view
+        schema:
+          type: string
+          enum:
+          - minimal
+        description: ADR 0036 response preset. ``minimal`` drops heavy fields (overview,
+          syllabus, description, instructor_info, learning_info, banner/video assets,
+          license) leaving only identification, schedule, and flags. Omit the parameter
+          to receive the full response.
+      tags:
+      - openedx-platform-sdk
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CourseDetails'
+          description: Course details retrieved successfully. The schema below is
+            the full default response; when ``?view=minimal`` and/or ``?fields=``
+            is supplied, the response contains a subset of these top-level keys (see
+            ADR 0036).
+        '401':
+          description: The requester is not authenticated.
+        '403':
+          description: The requester cannot access the specified course.
+        '404':
+          description: The requested course does not exist.
+    put:
+      operationId: v3_courses_details_update
+      description: Update the details for the specified course.
+      summary: Update a course's details
+      parameters:
+      - in: path
+        name: course_id
+        schema:
+          type: string
+        description: Course ID
+        required: true
+      tags:
+      - openedx-platform-sdk
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CourseDetails'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CourseDetails'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CourseDetails'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CourseDetails'
+          description: Course details updated successfully.
+        '400':
+          description: Bad request — invalid data.
+        '401':
+          description: The requester is not authenticated.
+        '403':
+          description: The requester cannot access the specified course.
+        '404':
+          description: The requested course does not exist.
+  /api/authoring/v3/courses/{course_key}/grading/:
+    patch:
+      operationId: v3_courses_grading_partial_update
+      description: Partially update the grading settings for the specified course.
+      summary: Update a course's grading settings
+      parameters:
+      - in: path
+        name: course_key
+        schema:
+          type: string
+        description: OEP-68 course key (e.g. course-v1:org+course+run).
+        required: true
+      tags:
+      - openedx-platform-sdk
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Patchedauthoring_grading.CourseGrading.v0'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Patchedauthoring_grading.CourseGrading.v0'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Patchedauthoring_grading.CourseGrading.v0'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/authoring_grading.CourseGrading.v0'
+          description: Grading settings updated successfully.
+        '401':
+          description: The requester is not authenticated.
+        '403':
+          description: The requester cannot access the specified course.
+        '404':
+          description: The requested course does not exist.
+  /api/authoring/v3/home/:
+    get:
+      operationId: v3_home_retrieve
+      description: |-
+        Get an object containing all courses and libraries on home page.
+
+        **Example Request**
+
+            GET /api/contentstore/v3/home/
+            GET /api/contentstore/v3/home/?fields=courses,libraries  (ADR 0036)
+      parameters:
+      - in: query
+        name: fields
+        schema:
+          type: string
+        description: ADR 0036 explicit field selection. Comma-separated list of top-level
+          keys to include in the response (e.g. ``courses,libraries,studio_name``).
+          Omit for the full response. Unknown keys are silently skipped.
+      - in: query
+        name: org
+        schema:
+          type: string
+        description: Filter by course org
+      tags:
+      - openedx-platform-sdk
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudioHome'
+          description: ''
+      x-internal: true
+  /api/authoring/v3/home/courses/:
+    get:
+      operationId: v3_home_courses_retrieve
+      description: |-
+        Get an object containing all courses.
+
+        **Example Request**
+
+            GET /api/contentstore/v3/home/courses/
+      parameters:
+      - in: query
+        name: org
+        schema:
+          type: string
+        description: Query param to filter by course org
+      tags:
+      - openedx-platform-sdk
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CourseHomeTab'
+          description: ''
+        '401':
+          description: The requester is not authenticated.
+      x-internal: true
+  /api/authoring/v3/home/libraries/:
+    get:
+      operationId: v3_home_libraries_retrieve
+      description: |-
+        Get an object containing all libraries on home page.
+
+        **Example Request**
+
+            GET /api/contentstore/v3/home/libraries/
+      parameters:
+      - in: query
+        name: is_migrated
+        schema:
+          type: boolean
+        description: Query param to filter by migrated status of library. If present
+          (true or false), it will filter by migration status else it will return
+          all legacy libraries.
+      - in: query
+        name: org
+        schema:
+          type: string
+        description: Query param to filter by course org
+      tags:
+      - openedx-platform-sdk
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LibraryTab'
+          description: ''
+        '401':
+          description: The requester is not authenticated.
+      x-internal: true
+  /api/authoring/v4/courses/:
+    get:
+      operationId: v4_courses_retrieve
+      description: Returns a paginated list of all courses available to the logged-in
+        user, with optional filtering and ordering. Supersedes ``GET /api/contentstore/v2/home/courses``.
+      summary: List courses for the Studio home page (paginated)
+      parameters:
+      - in: query
+        name: active_only
+        schema:
+          type: string
+        description: Filter to active courses only
+      - in: query
+        name: archived_only
+        schema:
+          type: string
+        description: Filter to archived courses only
+      - in: query
+        name: order
+        schema:
+          type: string
+        description: Deprecated alias for 'ordering' (ADR 0033). Use 'ordering' instead.
+        deprecated: true
+      - in: query
+        name: ordering
+        schema:
+          type: string
+        description: 'Order by course field: display_name, org, number, or run (ADR
+          0033 standard parameter).'
+      - in: query
+        name: org
+        schema:
+          type: string
+        description: Filter by course org
+      - in: query
+        name: page
+        schema:
+          type: string
+        description: Page number for pagination
+      - in: query
+        name: page_size
+        schema:
+          type: string
+        description: Number of courses per page (default 10, max 100)
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: Filter by course name, org, or number
+      tags:
+      - openedx-platform-sdk
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedV4HomeCoursesResponse'
+          description: Paginated course list retrieved successfully.
+        '401':
+          description: The requester is not authenticated.
+  /api/contentstore/v0/advanced_settings/{course_id}:
     get:
       operationId: v0_advanced_settings_retrieve
       description: |-
@@ -167,7 +860,7 @@ paths:
           description: The requester cannot access the specified course.
         '404':
           description: The requested course does not exist.
-  /v0/file_assets/{course_id}:
+  /api/contentstore/v0/file_assets/{course_id}:
     get:
       operationId: v0_file_assets_retrieve
       description: |-
@@ -226,7 +919,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Asset'
           description: ''
-  /v0/file_assets/{course_id}/{asset_key_string}:
+  /api/contentstore/v0/file_assets/{course_id}/{asset_key_string}:
     put:
       operationId: v0_file_assets_update
       description: |-
@@ -335,7 +1028,7 @@ paths:
       responses:
         '204':
           description: No response body
-  /v0/grading/{course_id}:
+  /api/contentstore/v0/grading/{course_id}:
     post:
       operationId: v0_grading_create
       description: |-
@@ -414,7 +1107,7 @@ paths:
           description: The requester cannot access the specified course.
         '404':
           description: The requested course does not exist.
-  /v0/heartbeat:
+  /api/contentstore/v0/heartbeat:
     get:
       operationId: v0_heartbeat_retrieve
       description: |-
@@ -447,7 +1140,7 @@ paths:
           description: The requester is not authenticated.
         '403':
           description: The API is not availible
-  /v0/link_check/{course_id}:
+  /api/contentstore/v0/link_check/{course_id}:
     post:
       operationId: v0_link_check_create
       description: |-
@@ -479,7 +1172,7 @@ paths:
           description: The requester cannot access the specified course.
         '404':
           description: The requested course does not exist.
-  /v0/link_check_status/{course_id}:
+  /api/contentstore/v0/link_check_status/{course_id}:
     get:
       operationId: v0_link_check_status_retrieve
       description: |-
@@ -622,7 +1315,7 @@ paths:
           description: The requester cannot access the specified course.
         '404':
           description: The requested course does not exist.
-  /v0/rerun_link_update/{course_id}:
+  /api/contentstore/v0/rerun_link_update/{course_id}:
     post:
       operationId: v0_rerun_link_update_create
       description: |-
@@ -689,7 +1382,7 @@ paths:
           description: The requester cannot access the specified course.
         '404':
           description: The requested course does not exist.
-  /v0/rerun_link_update_status/{course_id}:
+  /api/contentstore/v0/rerun_link_update_status/{course_id}:
     get:
       operationId: v0_rerun_link_update_status_retrieve
       description: |-
@@ -762,7 +1455,7 @@ paths:
           description: The requester cannot access the specified course.
         '404':
           description: The requested course does not exist.
-  /v0/tabs/{course_id}:
+  /api/contentstore/v0/tabs/{course_id}:
     get:
       operationId: v0_tabs_retrieve
       description: |-
@@ -830,7 +1523,7 @@ paths:
           description: The requester cannot access the specified course.
         '404':
           description: The requested course does not exist.
-  /v0/tabs/{course_id}/reorder:
+  /api/contentstore/v0/tabs/{course_id}/reorder:
     post:
       operationId: v0_tabs_reorder_create
       description: |-
@@ -890,7 +1583,7 @@ paths:
           description: The requester cannot access the specified course.
         '404':
           description: The requested course does not exist.
-  /v0/tabs/{course_id}/settings:
+  /api/contentstore/v0/tabs/{course_id}/settings:
     post:
       operationId: v0_tabs_settings_create
       description: |-
@@ -956,7 +1649,7 @@ paths:
           description: The requester cannot access the specified course.
         '404':
           description: The requested course does not exist.
-  /v0/video_transcripts/{course_id}:
+  /api/contentstore/v0/video_transcripts/{course_id}:
     get:
       operationId: v0_video_transcripts_retrieve
       description: |-
@@ -1034,7 +1727,7 @@ paths:
       responses:
         '204':
           description: No response body
-  /v0/videos/encodings/{course_id}:
+  /api/contentstore/v0/videos/encodings/{course_id}:
     get:
       operationId: v0_videos_encodings_retrieve
       description: |-
@@ -1052,7 +1745,7 @@ paths:
       responses:
         '200':
           description: No response body
-  /v0/videos/features:
+  /api/contentstore/v0/videos/features:
     get:
       operationId: v0_videos_features_retrieve
       description: public rest API endpoint providing a list of enabled video features.
@@ -1061,7 +1754,7 @@ paths:
       responses:
         '200':
           description: No response body
-  /v0/videos/images/{course_id}/{edx_video_id}:
+  /api/contentstore/v0/videos/images/{course_id}/{edx_video_id}:
     post:
       operationId: v0_videos_images_create
       description: |-
@@ -1102,7 +1795,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/VideoImage'
           description: ''
-  /v0/videos/uploads/{course_id}:
+  /api/contentstore/v0/videos/uploads/{course_id}:
     post:
       operationId: v0_videos_uploads_create
       description: |-
@@ -1136,7 +1829,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/VideoUpload'
           description: ''
-  /v0/videos/uploads/{course_id}/{edx_video_id}:
+  /api/contentstore/v0/videos/uploads/{course_id}/{edx_video_id}:
     get:
       operationId: v0_videos_uploads_retrieve
       description: |-
@@ -1189,7 +1882,7 @@ paths:
       responses:
         '204':
           description: No response body
-  /v0/xblock/{course_id}:
+  /api/contentstore/v0/xblock/{course_id}:
     post:
       operationId: v0_xblock_create
       description: |-
@@ -1226,7 +1919,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Xblock'
           description: ''
-  /v0/xblock/{course_id}/{usage_key_string}:
+  /api/contentstore/v0/xblock/{course_id}/{usage_key_string}:
     get:
       operationId: v0_xblock_retrieve
       description: |-
@@ -1369,7 +2062,7 @@ paths:
       responses:
         '204':
           description: No response body
-  /v0/youtube_transcripts/{course_id}/check:
+  /api/contentstore/v0/youtube_transcripts/{course_id}/check:
     get:
       operationId: v0_youtube_transcripts_check_retrieve
       description: |-
@@ -1393,7 +2086,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/YoutubeTranscriptCheck'
           description: ''
-  /v0/youtube_transcripts/{course_id}/upload:
+      deprecated: true
+  /api/contentstore/v0/youtube_transcripts/{course_id}/upload:
     get:
       operationId: v0_youtube_transcripts_upload_retrieve
       description: |-
@@ -1416,7 +2110,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/YoutubeTranscriptUpload'
           description: ''
-  /v1/certificates/{course_id}:
+      deprecated: true
+  /api/contentstore/v1/certificates/{course_id}:
     get:
       operationId: v1_certificates_retrieve
       description: |-
@@ -1494,7 +2189,7 @@ paths:
           description: The requester cannot access the specified course.
         '404':
           description: The requested course does not exist.
-  /v1/container/{usage_key_string}/children:
+  /api/contentstore/v1/container/{usage_key_string}/children:
     get:
       operationId: v1_container_children_retrieve
       description: |-
@@ -1626,7 +2321,7 @@ paths:
           description: The requester is not authenticated.
         '404':
           description: The requested locator does not exist.
-  /v1/container_handler/{usage_key_string}:
+  /api/contentstore/v1/container_handler/{usage_key_string}:
     get:
       operationId: v1_container_handler_retrieve
       description: |-
@@ -1733,7 +2428,7 @@ paths:
           description: The requester is not authenticated.
         '404':
           description: The requested locator does not exist.
-  /v1/course_details/{course_id}:
+  /api/contentstore/v1/course_details/{course_id}:
     get:
       operationId: v1_course_details_retrieve
       description: |-
@@ -1876,7 +2571,7 @@ paths:
           description: The requester cannot access the specified course.
         '404':
           description: The requested course does not exist.
-  /v1/course_grading/{course_id}:
+  /api/contentstore/v1/course_grading/{course_id}:
     get:
       operationId: v1_course_grading_retrieve
       description: |-
@@ -2031,7 +2726,7 @@ paths:
           description: The requester cannot access the specified course.
         '404':
           description: The requested course does not exist.
-  /v1/course_index/{course_id}:
+  /api/contentstore/v1/course_index/{course_id}:
     get:
       operationId: v1_course_index_retrieve
       description: |-
@@ -2111,7 +2806,7 @@ paths:
           description: The requester cannot access the specified course.
         '404':
           description: The requested course does not exist.
-  /v1/course_rerun/{course_id}:
+  /api/contentstore/v1/course_rerun/{course_id}:
     get:
       operationId: v1_course_rerun_retrieve
       description: |-
@@ -2162,7 +2857,7 @@ paths:
           description: The requester cannot access the specified course.
         '404':
           description: The requested course does not exist.
-  /v1/course_settings/{course_id}:
+  /api/contentstore/v1/course_settings/{course_id}:
     get:
       operationId: v1_course_settings_retrieve
       description: |-
@@ -2249,7 +2944,7 @@ paths:
           description: The requester cannot access the specified course.
         '404':
           description: The requested course does not exist.
-  /v1/course_team/{course_id}:
+  /api/contentstore/v1/course_team/{course_id}:
     get:
       operationId: v1_course_team_retrieve
       description: |-
@@ -2304,7 +2999,7 @@ paths:
           description: The requester cannot access the specified course.
         '404':
           description: The requested course does not exist.
-  /v1/course_waffle_flags:
+  /api/contentstore/v1/course_waffle_flags:
     get:
       operationId: v1_course_waffle_flags_retrieve
       description: |-
@@ -2359,7 +3054,7 @@ paths:
       responses:
         '200':
           description: No response body
-  /v1/group_configurations/{course_id}:
+  /api/contentstore/v1/group_configurations/{course_id}:
     get:
       operationId: v1_group_configurations_retrieve
       description: |-
@@ -2482,7 +3177,7 @@ paths:
           description: The requester cannot access the specified course.
         '404':
           description: The requested course does not exist.
-  /v1/help_urls:
+  /api/contentstore/v1/help_urls:
     get:
       operationId: v1_help_urls_retrieve
       description: |-
@@ -2514,7 +3209,7 @@ paths:
       responses:
         '200':
           description: No response body
-  /v1/home:
+  /api/contentstore/v1/home:
     get:
       operationId: v1_home_retrieve
       description: |-
@@ -2581,7 +3276,7 @@ paths:
           description: ''
         '401':
           description: The requester is not authenticated.
-  /v1/home/libraries:
+  /api/contentstore/v1/home/libraries:
     get:
       operationId: v1_home_libraries_retrieve
       description: |-
@@ -2644,7 +3339,7 @@ paths:
           description: ''
         '401':
           description: The requester is not authenticated.
-  /v1/proctored_exam_settings/{course_id}:
+  /api/contentstore/v1/proctored_exam_settings/{course_id}:
     get:
       operationId: v1_proctored_exam_settings_retrieve
       description: GET handler
@@ -2675,7 +3370,7 @@ paths:
       responses:
         '200':
           description: No response body
-  /v1/proctoring_errors/{course_id}:
+  /api/contentstore/v1/proctoring_errors/{course_id}:
     get:
       operationId: v1_proctoring_errors_retrieve
       description: |-
@@ -2738,7 +3433,7 @@ paths:
           description: The requester cannot access the specified course.
         '404':
           description: The requested course does not exist.
-  /v1/textbooks/{course_id}:
+  /api/contentstore/v1/textbooks/{course_id}:
     get:
       operationId: v1_textbooks_retrieve
       description: |-
@@ -2799,7 +3494,7 @@ paths:
           description: The requester cannot access the specified course.
         '404':
           description: The requested course does not exist.
-  /v1/videos/{course_id}:
+  /api/contentstore/v1/videos/{course_id}:
     get:
       operationId: v1_videos_retrieve
       description: |-
@@ -2902,7 +3597,7 @@ paths:
           description: The requester cannot access the specified course
         '404':
           description: The requested course does not exist
-  /v1/videos/{course_id}/{edx_video_id}/usage:
+  /api/contentstore/v1/videos/{course_id}/{edx_video_id}/usage:
     get:
       operationId: v1_videos_usage_retrieve
       description: |-
@@ -2947,7 +3642,7 @@ paths:
           description: The requester cannot access the specified course
         '404':
           description: The requested course does not exist
-  /v1/videos/{course_id}/download:
+  /api/contentstore/v1/videos/{course_id}/download:
     put:
       operationId: v1_videos_download_update
       description: |-
@@ -2994,7 +3689,7 @@ paths:
           description: The requested course does not exist
         '429':
           description: The requester has exceeded the per-user rate limit
-  /v1/xblock/:
+  /api/contentstore/v1/xblock/:
     post:
       operationId: v1_xblock_create
       description: Create a new xblock under a parent block. The ``parent_locator``
@@ -3030,7 +3725,8 @@ paths:
           description: The requested xblock does not exist.
         '406':
           description: Requested representation is not available (e.g. non-JSON ``Accept``).
-  /v1/xblock/{usage_key_string}/:
+      deprecated: true
+  /api/contentstore/v1/xblock/{usage_key_string}/:
     get:
       operationId: v1_xblock_retrieve
       description: Retrieve an xblock (and, by default, its nested tree) by usage
@@ -3084,6 +3780,7 @@ paths:
           description: The requested xblock does not exist.
         '406':
           description: Requested representation is not available (e.g. non-JSON ``Accept``).
+      deprecated: true
     put:
       operationId: v1_xblock_update
       description: Fully update an xblock identified by its usage key.
@@ -3126,6 +3823,7 @@ paths:
           description: The requested xblock does not exist.
         '406':
           description: Requested representation is not available (e.g. non-JSON ``Accept``).
+      deprecated: true
     patch:
       operationId: v1_xblock_partial_update
       description: Partially update an xblock identified by its usage key. Only the
@@ -3169,6 +3867,7 @@ paths:
           description: The requested xblock does not exist.
         '406':
           description: Requested representation is not available (e.g. non-JSON ``Accept``).
+      deprecated: true
     delete:
       operationId: v1_xblock_destroy
       description: Delete an xblock identified by its usage key.
@@ -3194,7 +3893,8 @@ paths:
           description: The requested xblock does not exist.
         '406':
           description: Requested representation is not available (e.g. non-JSON ``Accept``).
-  /v2/downstreams/:
+      deprecated: true
+  /api/contentstore/v2/downstreams/:
     get:
       operationId: v2_downstreams_retrieve
       description: Fetches publishable entity links for given course key
@@ -3203,7 +3903,7 @@ paths:
       responses:
         '200':
           description: No response body
-  /v2/downstreams/{course_key_string}/summary:
+  /api/contentstore/v2/downstreams/{course_key_string}/summary:
     get:
       operationId: v2_downstreams_summary_retrieve
       description: |-
@@ -3237,7 +3937,7 @@ paths:
       responses:
         '200':
           description: No response body
-  /v2/downstreams/{usage_key_string}:
+  /api/contentstore/v2/downstreams/{usage_key_string}:
     get:
       operationId: v2_downstreams_retrieve_2
       description: Inspect an XBlock's link to upstream content.
@@ -3283,7 +3983,7 @@ paths:
       responses:
         '204':
           description: No response body
-  /v2/downstreams/{usage_key_string}/sync:
+  /api/contentstore/v2/downstreams/{usage_key_string}/sync:
     post:
       operationId: v2_downstreams_sync_create
       description: |-
@@ -3321,7 +4021,7 @@ paths:
       responses:
         '204':
           description: No response body
-  /v2/home/courses:
+  /api/contentstore/v2/home/courses:
     get:
       operationId: v2_home_courses_retrieve
       description: |-
@@ -3337,8 +4037,8 @@ paths:
             GET /api/contentstore/v2/home/courses?archived_only=true
             GET /api/contentstore/v2/home/courses?page=2
             GET /api/contentstore/v2/home/courses?page_size=20
-            GET /api/contentstore/v2/home/courses?start_date_on_or_after=2024-01-01
-            GET /api/contentstore/v2/home/courses?start_date_on_or_before=2024-12-31
+            GET /api/contentstore/v2/home/courses?start_date_on_or_after=2024-01-01T00:00:00%2B04:00
+            GET /api/contentstore/v2/home/courses?start_date_on_or_before=2024-12-31T23:59:59.999999Z
 
         **Response Values**
 
@@ -3408,14 +4108,16 @@ paths:
         name: start_date_on_or_after
         schema:
           type: string
-        description: Query param to filter courses with a start date on or after this
-          date (YYYY-MM-DD).
+        description: Query param to filter courses with a start on or after this instant.
+          Must be an ISO 8601 datetime with a UTC offset or Z, e.g. 2024-01-01T00:00:00+04:00.
+          Percent-encode '+' as %2B in the URL.
       - in: query
         name: start_date_on_or_before
         schema:
           type: string
-        description: Query param to filter courses with a start date on or before
-          this date (YYYY-MM-DD).
+        description: Query param to filter courses with a start on or before this
+          instant. Must be an ISO 8601 datetime with a UTC offset or Z, e.g. 2024-12-31T23:59:59.999999+04:00.
+          Percent-encode '+' as %2B in the URL.
       tags:
       - v2
       responses:
@@ -3427,7 +4129,7 @@ paths:
           description: ''
         '401':
           description: The requester is not authenticated.
-  /v2/validate/numerical-input/:
+  /api/contentstore/v2/validate/numerical-input/:
     post:
       operationId: v2_validate_numerical_input_create
       description: function to validate a math expression (formula) and return of
@@ -3453,7 +4155,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/NumericalInputValidationRequest'
           description: ''
-  /v3/authoring_grading/{course_key}/:
+  /api/contentstore/v3/authoring_grading/{course_key}/:
     patch:
       operationId: v3_authoring_grading_partial_update
       description: Partially update the grading settings for the specified course.
@@ -3491,7 +4193,8 @@ paths:
           description: The requester cannot access the specified course.
         '404':
           description: The requested course does not exist.
-  /v3/course_details/{course_id}/:
+      deprecated: true
+  /api/contentstore/v3/course_details/{course_id}/:
     get:
       operationId: v3_course_details_retrieve
       description: Get an object containing the course details for the specified course.
@@ -3541,6 +4244,7 @@ paths:
           description: The requester cannot access the specified course.
         '404':
           description: The requested course does not exist.
+      deprecated: true
     put:
       operationId: v3_course_details_update
       description: Update the details for the specified course.
@@ -3581,9 +4285,10 @@ paths:
           description: The requester cannot access the specified course.
         '404':
           description: The requested course does not exist.
-  /v3/home/:
+      deprecated: true
+  /api/contentstore/v3/home/:
     get:
-      operationId: v3_home_retrieve
+      operationId: v3_home_retrieve_legacy
       description: |-
         Get an object containing all courses and libraries on home page.
 
@@ -3613,9 +4318,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/StudioHome'
           description: ''
-  /v3/home/courses/:
+      deprecated: true
+      x-internal: true
+  /api/contentstore/v3/home/courses/:
     get:
-      operationId: v3_home_courses_retrieve
+      operationId: v3_home_courses_retrieve_legacy
       description: |-
         Get an object containing all courses.
 
@@ -3639,9 +4346,11 @@ paths:
           description: ''
         '401':
           description: The requester is not authenticated.
-  /v3/home/libraries/:
+      deprecated: true
+      x-internal: true
+  /api/contentstore/v3/home/libraries/:
     get:
-      operationId: v3_home_libraries_retrieve
+      operationId: v3_home_libraries_retrieve_legacy
       description: |-
         Get an object containing all libraries on home page.
 
@@ -3672,7 +4381,9 @@ paths:
           description: ''
         '401':
           description: The requester is not authenticated.
-  /v4/home/courses/:
+      deprecated: true
+      x-internal: true
+  /api/contentstore/v4/home/courses/:
     get:
       operationId: v4_home_courses_retrieve
       description: Returns a paginated list of all courses available to the logged-in
@@ -3732,6 +4443,7 @@ paths:
           description: Paginated course list retrieved successfully.
         '401':
           description: The requester is not authenticated.
+      deprecated: true
   /api/courses/{course_key_string}/bulk_enable_disable_discussions:
     put:
       operationId: api_courses_bulk_enable_disable_discussions_update
@@ -5089,6 +5801,34 @@ components:
       - allow_actions
       - show_transfer_ownership_hint
       - users
+    CourseTextbook:
+      type: object
+      description: |-
+        One PDF textbook of a course, as stored in the course's settings.
+
+        A stored textbook can lack ``id``, ``chapters`` or ``tab_title``: imported
+        courses may carry textbooks written by other tools, such as the single-file
+        form that has a ``url`` and no chapters. Such a textbook is returned with
+        ``null`` for the missing scalar and an empty chapter list, rather than
+        failing the whole page. A stored ``null`` chapter list is returned empty
+        too. Stored keys not declared here are not returned.
+      properties:
+        id:
+          type: string
+          nullable: true
+          description: Identifier of the textbook, unique within its course. Null
+            when the stored textbook has none.
+        chapters:
+          type: array
+          items:
+            $ref: '#/components/schemas/TextbookChapter'
+          description: Chapters in reading order. Empty when the stored textbook has
+            no chapter list.
+        tab_title:
+          type: string
+          nullable: true
+          description: Title of the course tab that opens the textbook. Null when
+            the stored textbook has none.
     CourseTextbookChapter:
       type: object
       description: Serializer for representing textbook chapter.
@@ -5126,6 +5866,83 @@ components:
             $ref: '#/components/schemas/CourseTextbookItem'
       required:
       - textbooks
+    CourseVideoSettings:
+      type: object
+      description: The course's video upload and transcript settings.
+      properties:
+        image_upload_url:
+          type: string
+          description: Studio address that uploads a video's thumbnail image.
+        video_handler_url:
+          type: string
+          description: Studio address that manages the course's video uploads.
+        encodings_download_url:
+          type: string
+          description: Studio address that downloads the course's video encodings
+            as CSV.
+        default_video_image_url:
+          type: string
+          description: Address of the image shown for videos without one.
+        concurrent_upload_limit:
+          type: integer
+          description: How many videos a client may upload at the same time.
+        video_supported_file_formats:
+          type: array
+          items:
+            type: string
+          description: Accepted video file extensions.
+        video_upload_max_file_size:
+          type: integer
+          description: Largest accepted video file, in gigabytes.
+        video_image_settings:
+          allOf:
+          - $ref: '#/components/schemas/VideoSettingsImage'
+          description: Limits for video thumbnail images.
+        is_video_transcript_enabled:
+          type: boolean
+          description: Whether third-party transcription is enabled for the course.
+        is_ai_translations_enabled:
+          type: boolean
+          description: Whether AI translation of transcripts is enabled for the course.
+        active_transcript_preferences:
+          allOf:
+          - $ref: '#/components/schemas/VideoSettingsTranscriptPreferences'
+          nullable: true
+          description: The course's transcription preferences. Null when transcripts
+            are disabled or none are saved.
+        transcript_credentials:
+          type: object
+          additionalProperties:
+            type: boolean
+          nullable: true
+          description: Whether the course's organization has credentials for each
+            transcription provider, keyed by provider name. Null when transcripts
+            are disabled.
+        transcript_available_languages:
+          type: array
+          items:
+            $ref: '#/components/schemas/TranscriptLanguage'
+          description: Every language a transcript may be written in, ordered by display
+            name.
+        video_transcript_settings:
+          allOf:
+          - $ref: '#/components/schemas/VideoSettingsTranscript'
+          description: Studio handler addresses and options for transcripts.
+      required:
+      - active_transcript_preferences
+      - concurrent_upload_limit
+      - default_video_image_url
+      - encodings_download_url
+      - image_upload_url
+      - is_ai_translations_enabled
+      - is_video_transcript_enabled
+      - transcript_available_languages
+      - transcript_credentials
+      - video_handler_url
+      - video_image_settings
+      - video_supported_file_formats
+      - video_transcript_settings
+      - video_upload_max_file_size
     CourseVideos:
       type: object
       description: Serializer for course videos
@@ -5191,6 +6008,53 @@ components:
       - video_supported_file_formats
       - video_transcript_settings
       - video_upload_max_file_size
+    ErrorResponse:
+      type: object
+      description: |-
+        Plain-DRF serializer describing the ADR 0029 error envelope.
+
+        Intended for OpenAPI response declarations so error responses are
+        documented with their real shape, e.g. with drf-spectacular::
+
+            @extend_schema(responses={
+                200: MyResourceSerializer,
+                404: ErrorResponseSerializer,
+            })
+
+        It is a documentation serializer: nothing deserializes through it, so it
+        implements no ``create``/``update``.
+      properties:
+        type:
+          type: string
+          format: uri
+          description: Error-type URI (https://docs.openedx.org/errors/<slug>).
+        title:
+          type: string
+          description: Human-readable error title.
+        status:
+          type: integer
+          description: HTTP status code, repeated from the response.
+        detail:
+          type: string
+          description: Flattened human-readable error message.
+        instance:
+          type: string
+          description: Path of the request that produced the error.
+        user_message:
+          type: string
+          description: End-user-facing message, when the raising code supplied one.
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+          description: Per-field validation errors (validation errors only).
+      required:
+      - detail
+      - status
+      - title
+      - type
     FileSpec:
       type: object
       description: Strict Serializer for file specs
@@ -5411,6 +6275,43 @@ components:
           type: string
       required:
       - formula
+    PaginatedCourseTextbookList:
+      type: object
+      required:
+      - count
+      - num_pages
+      - current_page
+      - start
+      - next
+      - previous
+      - results
+      properties:
+        count:
+          type: integer
+          description: Total number of items.
+        num_pages:
+          type: integer
+          description: Total number of pages.
+        current_page:
+          type: integer
+          description: Number of this page, starting at 1.
+        start:
+          type: integer
+          description: Zero-based index of the first item on this page.
+        next:
+          type: string
+          format: uri
+          nullable: true
+          description: Address of the next page, or null on the last page.
+        previous:
+          type: string
+          format: uri
+          nullable: true
+          description: Address of the previous page, or null on the first page.
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/CourseTextbook'
     PaginatedV4HomeCoursesResponse:
       type: object
       properties:
@@ -6166,6 +7067,24 @@ components:
         tab_locator:
           type: string
           description: Location (Usage Key) of tab to update
+    TextbookChapter:
+      type: object
+      description: |-
+        One chapter of a course PDF textbook.
+
+        A stored chapter missing ``title`` or ``url``, or holding null for either,
+        is returned with an empty string in its place rather than failing the page.
+      properties:
+        title:
+          type: string
+          default: ''
+          description: Chapter title shown in the textbook's table of contents. Empty
+            when the stored chapter has none.
+        url:
+          type: string
+          default: ''
+          description: Address of the chapter's PDF file, usually a course asset path.
+            Empty when the stored chapter has none.
     Transcript:
       type: object
       description: Strict Serializer for video transcripts.
@@ -6184,6 +7103,19 @@ components:
       required:
       - edx_video_id
       - file
+    TranscriptLanguage:
+      type: object
+      description: A language a transcript may be written in.
+      properties:
+        language_code:
+          type: string
+          description: Language code.
+        language_text:
+          type: string
+          description: Display name of the language.
+      required:
+      - language_code
+      - language_text
     UnsucceededCourse:
       type: object
       description: Serializer for unsucceeded course
@@ -6461,6 +7393,123 @@ components:
       - transcript_urls
       - transcription_status
       - transcripts
+    VideoSettingsImage:
+      type: object
+      description: Limits that apply to video thumbnail images uploaded to the course.
+      properties:
+        video_image_upload_enabled:
+          type: boolean
+          description: Whether thumbnail images may be uploaded for the course's videos.
+        max_size:
+          type: integer
+          description: Largest accepted image, in bytes.
+        min_size:
+          type: integer
+          description: Smallest accepted image, in bytes.
+        max_width:
+          type: integer
+          description: Largest accepted image width, in pixels.
+        max_height:
+          type: integer
+          description: Largest accepted image height, in pixels.
+        supported_file_formats:
+          type: object
+          additionalProperties:
+            type: string
+          description: Accepted image file extensions, each mapped to its MIME type.
+      required:
+      - max_height
+      - max_size
+      - max_width
+      - min_size
+      - supported_file_formats
+      - video_image_upload_enabled
+    VideoSettingsTranscript:
+      type: object
+      description: Studio handler addresses and options for the course's video transcripts.
+      properties:
+        transcript_download_handler_url:
+          type: string
+          description: Studio address that downloads a transcript.
+        transcript_upload_handler_url:
+          type: string
+          description: Studio address that uploads a transcript.
+        transcript_delete_handler_url:
+          type: string
+          description: Studio address that deletes a transcript of this course.
+        transcript_download_file_format:
+          type: string
+          description: File format transcripts are downloaded in.
+        transcript_preferences_handler_url:
+          type: string
+          nullable: true
+          description: Studio address that saves the course's transcript preferences.
+            Null when transcripts are disabled.
+        transcript_credentials_handler_url:
+          type: string
+          nullable: true
+          description: Studio address that saves transcript provider credentials.
+            Null when transcripts are disabled.
+        transcription_plans:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties: {}
+          nullable: true
+          description: Third-party transcription plans, keyed by provider name, with
+            each plan's options as the provider defines them. Null when transcripts
+            are disabled.
+      required:
+      - transcript_credentials_handler_url
+      - transcript_delete_handler_url
+      - transcript_download_file_format
+      - transcript_download_handler_url
+      - transcript_preferences_handler_url
+      - transcript_upload_handler_url
+      - transcription_plans
+    VideoSettingsTranscriptPreferences:
+      type: object
+      description: The course's saved preferences for third-party transcription.
+      properties:
+        course_id:
+          type: string
+          description: Key of the course the preferences belong to.
+        provider:
+          type: string
+          description: Transcription provider.
+        cielo24_fidelity:
+          type: string
+          nullable: true
+          description: Cielo24 fidelity level, when Cielo24 is used.
+        cielo24_turnaround:
+          type: string
+          nullable: true
+          description: Cielo24 turnaround, when Cielo24 is used.
+        three_play_turnaround:
+          type: string
+          nullable: true
+          description: 3Play Media turnaround, when 3Play Media is used.
+        preferred_languages:
+          type: array
+          items:
+            type: string
+          description: Language codes transcripts are requested in.
+        video_source_language:
+          type: string
+          nullable: true
+          description: Language code of the videos' spoken language.
+        modified:
+          type: string
+          description: When the preferences were last changed.
+      required:
+      - cielo24_fidelity
+      - cielo24_turnaround
+      - course_id
+      - modified
+      - preferred_languages
+      - provider
+      - three_play_turnaround
+      - video_source_language
     VideoTranscriptSettings:
       type: object
       description: Serializer for transcript settings
@@ -6713,6 +7762,89 @@ components:
       - youtube_diff
       - youtube_local
       - youtube_server
+    YoutubeTranscriptCheckResult:
+      type: object
+      description: Transcript availability of one video block, across its declared
+        sources.
+      properties:
+        html5_local:
+          type: array
+          items:
+            type: string
+          description: Identifiers of the HTML5 sources that already have a transcript
+            stored for this course.
+        html5_equal:
+          type: boolean
+          description: Whether exactly two HTML5 sources were found and their stored
+            transcripts are identical.
+        is_youtube_mode:
+          type: boolean
+          description: Whether the block declares a YouTube source, which takes priority
+            over HTML5 sources.
+        youtube_local:
+          type: boolean
+          description: Whether a transcript for the YouTube source is already stored
+            for this course.
+        youtube_server:
+          type: boolean
+          description: Whether YouTube is currently serving a transcript for the video.
+        youtube_diff:
+          type: boolean
+          description: Whether the transcript on YouTube differs from the stored one.
+        current_item_subs:
+          type: string
+          nullable: true
+          description: Name of the transcript currently attached to the block, or
+            null when none is attached.
+        status:
+          type: string
+          description: 'Outcome of the check: "Success" when the block could be inspected.'
+        command:
+          type: string
+          description: 'Action the caller should take next: replace, found, import,
+            choose, use_existing, or not_found.'
+      required:
+      - command
+      - html5_equal
+      - html5_local
+      - is_youtube_mode
+      - status
+      - youtube_diff
+      - youtube_local
+      - youtube_server
+    YoutubeTranscriptImportRequest:
+      type: object
+      description: Input identifying the video block to import a YouTube transcript
+        into.
+      properties:
+        locator:
+          type: string
+          description: Usage key of the video block to import the transcript into.
+        videos:
+          type: array
+          items:
+            $ref: '#/components/schemas/YoutubeTranscriptVideo'
+          description: Video sources declared on the block. An entry of type "youtube"
+            is required.
+      required:
+      - locator
+      - videos
+    YoutubeTranscriptImportResult:
+      type: object
+      description: Outcome of importing a YouTube transcript into a video block.
+      properties:
+        edx_video_id:
+          type: string
+          nullable: true
+          description: Video pipeline identifier the transcript was attached to. Null
+            when the block lives in a content library, where transcripts are stored
+            on the block itself.
+        status:
+          type: string
+          description: 'Outcome of the import: "Success" when the transcript was stored.'
+      required:
+      - edx_video_id
+      - status
     YoutubeTranscriptUpload:
       type: object
       description: Strict Serializer for YouTube transcripts upload
@@ -6724,6 +7856,26 @@ components:
       required:
       - edx_video_id
       - status
+    YoutubeTranscriptVideo:
+      type: object
+      description: One entry of the video list identifying a source to inspect or
+        import from.
+      properties:
+        type:
+          type: string
+          description: Source kind. "youtube" names a YouTube video id, "edx_video_id"
+            names a video in the video pipeline, and any other value is treated as
+            an HTML5 source.
+        video:
+          type: string
+          description: Identifier of the source, interpreted according to the type
+            field.
+        mode:
+          type: string
+          description: Playback mode of an HTML5 source, such as "mp4" or "webm".
+      required:
+      - type
+      - video
     authoring_grading.CourseGrading.v0:
       type: object
       description: Serializer for course grading model data

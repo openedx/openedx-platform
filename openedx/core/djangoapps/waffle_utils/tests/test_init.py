@@ -225,3 +225,39 @@ class TestCourseWaffleFlag(CacheIsolationTestCase):
         test_course_flag = CourseWaffleFlag(self.NAMESPACED_FLAG_NAME, __name__)
         with override_waffle_flag(self.TEST_COURSE_FLAG, active=True):
             assert test_course_flag.is_enabled(self.TEST_COURSE_KEY) is True
+
+    @ddt.data(
+        (False, WaffleFlagOrgOverrideModel.ALL_CHOICES.unset, False),
+        (True, WaffleFlagOrgOverrideModel.ALL_CHOICES.unset, True),
+        (False, WaffleFlagOrgOverrideModel.ALL_CHOICES.on, True),
+        (True, WaffleFlagOrgOverrideModel.ALL_CHOICES.on, True),
+        (False, WaffleFlagOrgOverrideModel.ALL_CHOICES.off, False),
+        (True, WaffleFlagOrgOverrideModel.ALL_CHOICES.off, False),
+    )
+    @ddt.unpack
+    def test_is_enabled_for_org(self, waffle_enabled, org_override_choice, is_enabled):
+        """
+        Tests is_enabled_for_org: an org override (on/off) takes precedence, otherwise
+        the base waffle switch decides. Takes an org short_name, not a course key.
+
+        on    = active (enabled)
+        off   = inactive (disabled)
+        unset = mirror the base waffle flag's activity
+        """
+        WaffleFlagOrgOverrideModel.objects.create(
+            waffle_flag=self.NAMESPACED_FLAG_NAME,
+            org=self.TEST_ORG,
+            override_choice=org_override_choice,
+            note='',
+            enabled=True
+        )
+        with override_waffle_flag(self.TEST_COURSE_FLAG, active=waffle_enabled):
+            assert self.TEST_COURSE_FLAG.is_enabled_for_org(self.TEST_ORG) == is_enabled
+
+    def test_is_enabled_for_org_no_override_uses_global_switch(self):
+        """
+        With no org override at all, is_enabled_for_org falls back to the global switch.
+        """
+        with override_waffle_flag(self.TEST_COURSE_FLAG, active=True):
+            assert self.TEST_COURSE_FLAG.is_enabled_for_org("SomeUnoverriddenOrg") is True
+        assert self.TEST_COURSE_FLAG.is_enabled_for_org("SomeUnoverriddenOrg") is False
