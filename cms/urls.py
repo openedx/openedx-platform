@@ -309,13 +309,14 @@ if settings.DEBUG:
         document_root=settings.VIDEO_TRANSCRIPTS_SETTINGS['STORAGE_KWARGS']['location']
     )
 
+    # UX reference templates: development only. The view renders any template with
+    # request.GET as its context, so it must never be routed in production.
+    urlpatterns.append(path('template/<path:template>', openedx.core.djangoapps.debug.views.show_reference_template,
+                            name='openedx.core.djangoapps.debug.views.show_reference_template'))
+
 if 'debug_toolbar' in settings.INSTALLED_APPS:
     import debug_toolbar
     urlpatterns.append(path('__debug__/', include(debug_toolbar.urls)))
-
-# UX reference templates
-urlpatterns.append(path('template/<path:template>', openedx.core.djangoapps.debug.views.show_reference_template,
-                        name='openedx.core.djangoapps.debug.views.show_reference_template'))
 
 urlpatterns.append(
     path('api/learning_sequences/', include(

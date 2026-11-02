@@ -1,8 +1,10 @@
 """Tests for the CMS drf-spectacular hooks and schema class."""
 
+import re
 from pathlib import Path
 from unittest import TestCase, mock
 
+from django.conf import settings
 from django.test import SimpleTestCase
 from django.urls import path as url_path
 from drf_spectacular.generators import SchemaGenerator
@@ -134,44 +136,47 @@ class CmsMarkMigratedPathsTest(SimpleTestCase):
         assert list(result["paths"]) == ["/api/contentstore/v1/xblock/"]
 
 
-class SpectacularSettingsTest(TestCase):
+class SpectacularSettingsTest(SimpleTestCase):
     """
     The service settings the hooks depend on.
 
-    Read from the environment modules that define them, because the test
-    settings module does not configure the schema at all.
+    They are defined once in cms/envs/common.py, which every environment
+    inherits, so the test settings carry the same values.
     """
 
+    # devstack.py and production.py only add environment-specific keys.
     SETTINGS_MODULES = ("cms/envs/devstack.py", "cms/envs/production.py")
 
     def _source(self, module):
         return (Path(__file__).resolve().parents[3] / module).read_text()
 
-    def test_both_hooks_are_configured_in_every_environment(self):
-        for module in self.SETTINGS_MODULES:
-            source = self._source(module)
-            assert "'PREPROCESSING_HOOKS': ['cms.lib.spectacular.cms_api_filter']" in source, module
-            assert "'cms.lib.spectacular.cms_mark_superseded_paths'," in source, module
-            assert "'cms.lib.spectacular.cms_mark_migrated_paths'," in source, module
+    def test_both_hooks_are_configured(self):
+        assert settings.SPECTACULAR_SETTINGS["PREPROCESSING_HOOKS"] == ["cms.lib.spectacular.cms_api_filter"]
+        hooks = settings.SPECTACULAR_SETTINGS["POSTPROCESSING_HOOKS"]
+        assert "cms.lib.spectacular.cms_mark_superseded_paths" in hooks
+        assert "cms.lib.spectacular.cms_mark_migrated_paths" in hooks
 
     def test_the_default_enum_hook_is_kept_alongside_the_new_one(self):
         """Setting the key replaces drf-spectacular's default list, so it is restated."""
-        for module in self.SETTINGS_MODULES:
-            source = self._source(module)
-            assert "'drf_spectacular.hooks.postprocess_schema_enums'," in source, module
+        assert "drf_spectacular.hooks.postprocess_schema_enums" in settings.SPECTACULAR_SETTINGS["POSTPROCESSING_HOOKS"]
 
     def test_no_prefix_is_trimmed_so_paths_are_emitted_in_full(self):
-        for module in self.SETTINGS_MODULES:
-            assert "SCHEMA_PATH_PREFIX_TRIM" not in self._source(module), module
+        assert "SCHEMA_PATH_PREFIX_TRIM" not in settings.SPECTACULAR_SETTINGS
 
     def test_the_tag_prefix_covers_both_mounts(self):
-        for module in self.SETTINGS_MODULES:
-            source = self._source(module)
-            assert "'SCHEMA_PATH_PREFIX': r'/api/(contentstore|authoring)'," in source, module
+        assert settings.SPECTACULAR_SETTINGS["SCHEMA_PATH_PREFIX"] == r"/api/(contentstore|authoring)"
 
     def test_no_server_advertises_a_single_mount_as_its_root(self):
         for module in self.SETTINGS_MODULES:
             assert "CMS-contentstore" not in self._source(module), module
+
+    def test_environments_do_not_replace_the_common_settings(self):
+        """Replacing the dict drops every hook common.py adds unless it is copied in."""
+        for module in self.SETTINGS_MODULES:
+            source = self._source(module)
+            assert "SPECTACULAR_SETTINGS = {" not in source, module
+            # A hook is set by its quoted key; a comment that names one is fine.
+            assert not re.search(r"_HOOKS['\"]", source), module
 
 
 class _EmptySerializer(serializers.Serializer):  # pylint: disable=abstract-method

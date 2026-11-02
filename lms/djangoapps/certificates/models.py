@@ -1136,8 +1136,11 @@ class CertificateHtmlViewConfiguration(ConfigurationModel):
 class CertificateTemplate(TimeStampedModel):
     """A set of custom web certificate templates.
 
-    Web certificate templates are Django web templates
+    Web certificate templates are Mako templates
     to replace PDF certificate.
+
+    Mako runs arbitrary Python, so anyone who can edit a template can run
+    code on the LMS server.
 
     A particular course may have several kinds of certificate templates
     (e.g. honor and verified).
@@ -1155,7 +1158,10 @@ class CertificateTemplate(TimeStampedModel):
         help_text=_('Description and/or admin notes.'),
     )
     template = models.TextField(
-        help_text=_('Django template HTML.'),
+        help_text=_(
+            'Mako template HTML. Mako runs any Python code in the template on the LMS server, so only give '
+            'add or change access to certificate templates to users you would trust with shell access to the LMS.'
+        ),
     )
     organization_id = models.IntegerField(
         null=True,
