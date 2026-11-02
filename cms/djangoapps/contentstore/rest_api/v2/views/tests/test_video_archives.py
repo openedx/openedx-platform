@@ -18,6 +18,7 @@ from edx_rest_framework_extensions.auth.jwt.tests.utils import generate_jwt
 from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
 from edx_rest_framework_extensions.testing import assert_error_envelope
 from edxval.api import create_profile, create_video, remove_video_for_course
+from openedx_authz.constants.roles import COURSE_AUDITOR, COURSE_STAFF
 from rest_framework import status
 from rest_framework.test import APIClient
 
@@ -30,6 +31,7 @@ from common.djangoapps.student.roles import (
     CourseStaffRole,
 )
 from common.djangoapps.student.tests.factories import UserFactory
+from openedx.core.djangoapps.authz.tests.mixins import CourseAuthoringAuthzTestMixin
 from openedx.core.djangoapps.oauth_dispatch.tests.factories import AccessTokenFactory, ApplicationFactory
 from xmodule.modulestore.tests.factories import CourseFactory
 
@@ -571,6 +573,40 @@ class VideoArchiveAuthorizationTest(VideoArchiveTestBase):
         assert [klass.__name__ for klass in CourseVideoArchiveView.permission_classes[:2]] == [
             "IsAuthenticated", "HasStudioReadAccess",
         ]
+
+
+@patch(FETCH)
+class VideoArchiveAuthzEnabledTest(CourseAuthoringAuthzTestMixin, VideoArchiveTestBase):
+    """Access when course-authoring policy is enabled: the same callers as legacy, and no others."""
+
+    def policy_client(self, role):
+        user = UserFactory.create()
+        self.add_user_to_role_in_course(user, role.external_key, self.course.id)
+        return self.client_for(user)
+
+    def test_a_policy_auditor_is_refused_as_on_legacy(self, fetch):
+        client = self.policy_client(COURSE_AUDITOR)
+
+        new = self.post(client, [{"url": FIRST_URL, "name": "one.mp4"}])
+        legacy = self.put_legacy(client, [{"url": FIRST_URL, "name": "one.mp4"}])
+
+        assert_error_envelope(new, expected_status=403, expected_type_slug="authz")
+        assert legacy.status_code == status.HTTP_403_FORBIDDEN
+        fetch.assert_not_called()
+
+    def test_a_policy_staff_role_is_served_as_on_legacy(self, fetch):
+        fetch.return_value = upstream_response()
+        client = self.policy_client(COURSE_STAFF)
+
+        assert archive_entries(self.post(client, [{"url": FIRST_URL, "name": "one.mp4"}])) == {
+            "one.mp4": b"video-bytes",
+        }
+        assert self.put_legacy(client, []).status_code == status.HTTP_200_OK
+
+    def test_a_legacy_course_role_is_still_served(self, fetch):
+        client = self.client_for(self.user_with_role(CourseStaffRole))
+
+        assert self.post(client, []).status_code == status.HTTP_200_OK
 
 
 class VideoArchiveUnexpectedFailureTest(VideoArchiveTestBase):

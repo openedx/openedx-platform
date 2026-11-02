@@ -17,6 +17,7 @@ from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthenticat
 from edx_rest_framework_extensions.auth.jwt.tests.utils import generate_jwt
 from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
 from edx_rest_framework_extensions.testing import assert_error_envelope
+from openedx_authz.constants.roles import COURSE_AUDITOR, COURSE_STAFF
 from openedx_authz.models.engine import PolicyCacheControl
 from rest_framework import status
 from rest_framework.test import APIClient
@@ -29,6 +30,7 @@ from common.djangoapps.student.roles import (
     CourseStaffRole,
 )
 from common.djangoapps.student.tests.factories import UserFactory
+from openedx.core.djangoapps.authz.tests.mixins import CourseAuthoringAuthzTestMixin
 from openedx.core.djangoapps.oauth_dispatch.tests.factories import AccessTokenFactory, ApplicationFactory
 from xmodule.modulestore.django import SwitchedSignal
 from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
@@ -461,6 +463,32 @@ class VideoUsageAuthorizationTest(VideoUsageTestBase):
         assert [klass.__name__ for klass in CourseVideoUsageViewSet.permission_classes[:2]] == [
             "IsAuthenticated", "HasStudioReadAccess",
         ]
+
+
+class VideoUsageAuthzEnabledTest(CourseAuthoringAuthzTestMixin, VideoUsageTestBase):
+    """Access when course-authoring policy is enabled: the same callers as legacy, and no others."""
+
+    def policy_client(self, role):
+        user = UserFactory.create()
+        self.add_user_to_role_in_course(user, role.external_key, self.course.id)
+        return self.client_for(user)
+
+    def test_a_policy_auditor_is_refused_as_on_legacy(self):
+        client = self.policy_client(COURSE_AUDITOR)
+
+        assert_error_envelope(client.get(self.url("single-use")), expected_status=403, expected_type_slug="authz")
+        assert client.get(self.legacy_url("single-use")).status_code == status.HTTP_403_FORBIDDEN
+
+    def test_a_policy_staff_role_is_served_as_on_legacy(self):
+        client = self.policy_client(COURSE_STAFF)
+
+        assert client.get(self.url("single-use")).json() == self.expected_body("single-use")
+        assert client.get(self.legacy_url("single-use")).status_code == status.HTTP_200_OK
+
+    def test_a_legacy_course_role_is_still_served(self):
+        client = self.client_for(self.user_with_role(CourseStaffRole))
+
+        assert client.get(self.url("single-use")).status_code == status.HTTP_200_OK
 
 
 class VideoUsageUnexpectedFailureTest(VideoUsageTestBase):
