@@ -14,7 +14,9 @@ from django.test import override_settings
 from django.urls import resolve, reverse
 from drf_spectacular.generators import SchemaGenerator
 from edx_django_utils.cache import TieredCache
+from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
 from edx_rest_framework_extensions.auth.jwt.tests.utils import generate_jwt
+from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
 from edx_rest_framework_extensions.testing import assert_error_envelope
 from edxval.api import create_profile, create_video
 from edxval.models import CourseVideo, EncodedVideo, Video
@@ -952,7 +954,7 @@ class CourseVideoReadOnlyTest(CourseVideoUploadsTestBase):
 
 
 class CourseVideoAuthenticationTest(CourseVideoUploadsTestBase):
-    """The endpoints use the platform's default authentication."""
+    """The endpoints accept the same callers as the legacy addresses, inactive accounts included."""
 
     def test_session_caller_succeeds(self):
         client = APIClient()
@@ -980,7 +982,7 @@ class CourseVideoAuthenticationTest(CourseVideoUploadsTestBase):
     def test_inactive_author_is_refused(self):
         response = self.deactivated_session_client().get(self.list_url)
 
-        assert_error_envelope(response, expected_status=401, expected_type_slug="authn")
+        assert_error_envelope(response, expected_status=403, expected_type_slug="authz")
 
     def test_inactive_author_is_refused_by_the_legacy_address_too(self):
         video_ids = self.create_videos(count=1)
@@ -990,10 +992,16 @@ class CourseVideoAuthenticationTest(CourseVideoUploadsTestBase):
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
-    def test_inactive_global_staff_is_refused(self):
+    def test_inactive_global_staff_is_allowed(self):
         response = self.deactivated_session_client(is_staff=True).get(self.list_url)
 
-        assert_error_envelope(response, expected_status=401, expected_type_slug="authn")
+        assert response.status_code == status.HTTP_200_OK
+
+    def test_inactive_global_staff_is_allowed_with_a_jwt(self):
+        staff = UserFactory.create(is_staff=True, is_active=False)
+        response = APIClient().get(self.list_url, HTTP_AUTHORIZATION=f"JWT {generate_jwt(staff)}")
+
+        assert response.status_code == status.HTTP_200_OK
 
     def test_inactive_global_staff_still_reaches_the_legacy_address(self):
         video_ids = self.create_videos(count=1)
@@ -1003,11 +1011,9 @@ class CourseVideoAuthenticationTest(CourseVideoUploadsTestBase):
 
         assert response.status_code == status.HTTP_200_OK
 
-    def test_the_viewset_does_not_declare_authentication_classes(self):
-        assert "authentication_classes" not in CourseVideoUploadsViewSet.__dict__
-        assert not any(
-            "Bearer" in klass.__name__ or "OAuth2" in klass.__name__
-            for klass in CourseVideoUploadsViewSet.authentication_classes
+    def test_the_viewset_keeps_the_legacy_inactive_session_class_without_bearer(self):
+        assert CourseVideoUploadsViewSet.authentication_classes == (
+            JwtAuthentication, SessionAuthenticationAllowInactiveUser,
         )
 
 

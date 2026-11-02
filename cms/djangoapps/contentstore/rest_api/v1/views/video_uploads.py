@@ -10,6 +10,8 @@ from drf_spectacular.utils import (
     PolymorphicProxySerializer,
     extend_schema,
 )
+from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
+from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
 from edx_rest_framework_extensions.errors import ErrorResponseSerializer, error_type_uri
 from edx_rest_framework_extensions.mixins import StandardizedErrorMixin
 from edx_rest_framework_extensions.paginators import DefaultPagination, IterablePaginationMixin
@@ -267,6 +269,9 @@ class CourseVideoUploadsViewSet(
     ``fail_stuck_video_uploads`` management command marks it failed.
     """
 
+    # Studio authors reach this endpoint from the authoring UI while their
+    # account is still inactive, which the default session class rejects.
+    authentication_classes = (JwtAuthentication, SessionAuthenticationAllowInactiveUser)
     permission_classes = (IsAuthenticated, HasCourseAuthorAccess)
     serializer_class = CourseVideoSerializer
     pagination_class = CourseVideoPagination
