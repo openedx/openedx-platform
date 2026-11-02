@@ -36,6 +36,7 @@ from openedx.core.djangoapps.user_api.schema import (
     mark_superseded_user_paths,
     superseded_bodies,
 )
+from openedx.core.djangoapps.user_api.schema_components import CREDENTIAL_SCHEMES
 
 ENROLLMENT_VIEWS = "openedx.core.djangoapps.enrollments.views"
 USER_API_V1_VIEWS = "openedx.core.djangoapps.user_api.views"
@@ -1141,7 +1142,30 @@ class ServiceWideDocumentSettingsTest(TestCase):
         ]
         assert "PatchedRetirementUpdate" not in self.schema["components"]["schemas"]
 
+    def test_the_credentials_this_service_describes_reach_the_document_it_publishes(self):
+        """
+        The reference a client is generated from carries the schemes the service appends.
 
+        One credential is named by an address of this API that the
+        authentication application serves and is described only in the
+        settings the published reference is generated from, at the published
+        base as well as here; it is named here so the rest of the claim is
+        exact.
+        """
+        described = set(self.schema["components"]["securitySchemes"])
+        assert set(CREDENTIAL_SCHEMES) <= described, sorted(set(CREDENTIAL_SCHEMES) - described)
+        named = {
+            credential
+            for path_item in self.schema["paths"].values()
+            for operation in path_item.values()
+            if isinstance(operation, dict)
+            for alternative in operation.get("security", ())
+            for credential in alternative
+        }
+        assert named - described <= {"csrf"}, sorted(named - described)
+        assert self.schema["paths"]["/api/user/v2/retirements/"]["post"]["security"] == [
+            {"cookieAuth": []}, {"jwt": []}, {"bearer": []},
+        ]
 
 
 class PublishedDocumentTest(TestCase):

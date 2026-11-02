@@ -24,7 +24,10 @@ from cms.lib.spectacular import (
     cms_mark_superseded_paths,
 )
 from openedx.core.apidocs import get_api_docs_settings
-from openedx.core.djangoapps.user_api.schema_components import PATCHED_USER_RETIREMENT_STATUS
+from openedx.core.djangoapps.user_api.schema_components import (
+    CREDENTIAL_SCHEMES,
+    PATCHED_USER_RETIREMENT_STATUS,
+)
 
 
 def _endpoint(path):
@@ -357,13 +360,16 @@ class SupersededUserOperationTest(DjangoTestCase):
         published = {key: operation["operationId"] for key, operation in self._operations().items()}
         assert published == SUPERSEDED_USER_OPERATION_IDS
 
-    def test_every_credential_an_operation_names_is_described_by_this_document_too(self):
+    def test_no_operation_here_names_a_credential_only_the_other_service_describes(self):
         """
-        This service describes the credentials its own operations name and no others.
+        The other service appends a scheme for each credential an operation of it names.
 
-        The other service appends a scheme for each credential an operation of
-        it names; an operation served here that named one of those would leave
-        a client generated from this document with a name it cannot resolve.
+        An operation served here that named one of those would leave a client
+        generated from this document with a name it cannot resolve. One
+        credential is named by an address of this API that the authentication
+        application serves, in both services and at the published base, and
+        only the settings the reference is generated from describe it; that
+        one is named here so the rest of the claim is exact.
         """
         described = set(self.schema["components"].get("securitySchemes", {}))
         named = {
@@ -374,7 +380,8 @@ class SupersededUserOperationTest(DjangoTestCase):
             for alternative in operation.get("security", ())
             for credential in alternative
         }
-        assert named <= described, sorted(named - described)
+        assert named - described <= {"csrf"}, sorted(named - described)
+        assert named & set(CREDENTIAL_SCHEMES) == set()
 
     def test_the_retirement_status_model_is_published_as_the_other_service_appends_it(self):
         """
