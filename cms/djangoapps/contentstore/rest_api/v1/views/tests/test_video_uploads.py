@@ -1279,6 +1279,15 @@ class CourseVideoParityTest(RowParityMixin, CourseVideoUploadsTestBase):
                 course_id=str(self.course.id), video=video
             ).exists()
 
+    def test_an_empty_create_is_refused_where_the_legacy_create_accepted_it(self):
+        legacy = self.api_client.post(self.legacy_list_url(), {"files": []}, format="json")
+        new = self.api_client.post(self.list_url, {"files": []}, format="json")
+
+        assert legacy.status_code == status.HTTP_200_OK
+        assert json.loads(legacy.content) == {"files": []}
+        assert_error_envelope(new, expected_status=400, expected_type_slug="validation")
+        assert new.data["errors"]["files"] == ["This list may not be empty."]
+
     def test_delete_matches_the_legacy_delete(self):
         video_ids = self.create_videos(count=2)
 
