@@ -49,7 +49,7 @@ cryptography==47.0.0
     #   pyjwt
 ddt==1.7.2
     # via -r scripts/user_retirement/requirements/testing.in
-django==5.2.13
+django==5.2.19
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   django-crum
