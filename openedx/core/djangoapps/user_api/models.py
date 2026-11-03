@@ -16,8 +16,8 @@ from opaque_keys.edx.django.models import CourseKeyField
 # pylint: disable=unused-import
 from common.djangoapps.student.models import get_retired_email_by_email, get_retired_username_by_username
 from common.djangoapps.util.model_utils import emit_settings_changed_event, get_changed_fields_dict
+from openedx.core.djangoapps.user_api.helpers import get_cached_preferences, set_cached_preferences
 from openedx.core.djangolib.model_mixins import DeletableByUserValue
-from openedx.core.lib.cache_utils import request_cached
 
 # Currently, the "student" app is responsible for
 # accounts, profiles, enrollments, and the student dashboard.
@@ -47,14 +47,19 @@ class UserPreference(models.Model):  # noqa: DJ008
         unique_together = ("user", "key")
 
     @staticmethod
-    @request_cached()
     def get_all_preferences(user):
         """
         Gets all preferences for a given user
 
         Returns: Set of (preference type, value) pairs for each of the user's preferences
         """
-        return {pref.key: pref.value for pref in user.preferences.all()}
+        preferences = get_cached_preferences(user)
+
+        if preferences is None:
+            preferences = {pref.key: pref.value for pref in user.preferences.all()}
+            set_cached_preferences(user, preferences)
+
+        return preferences
 
     @classmethod
     def get_value(cls, user, preference_key, default=None):

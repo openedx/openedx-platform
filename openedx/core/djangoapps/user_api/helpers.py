@@ -2,8 +2,6 @@
 Helper functions for the account/profile Python APIs.
 This is NOT part of the public API.
 """
-
-
 import json
 import logging
 import traceback
@@ -12,11 +10,71 @@ from functools import wraps
 
 from django import forms
 from django.conf import settings
+from django.core.cache import cache
 from django.core.serializers.json import DjangoJSONEncoder
 from django.utils.encoding import force_str
 from django.utils.functional import Promise
 
 LOGGER = logging.getLogger(__name__)
+
+USER_PREFERENCE_CACHE_TIMEOUT = getattr(settings, 'USER_PREFERENCE_CACHE_TIMEOUT', 5 * 60)
+USER_PREFERENCE_CACHE_KEY_PREFIX = getattr(settings, 'USER_PREFERENCE_CACHE_KEY_PREFIX', 'user_preferences')
+
+
+def user_preferences_cache_key(user_id):
+    """
+    Generate a unique cache key for a specific user's preferences.
+
+    Args:
+        user_id (int|str): The unique identifier of the user.
+
+    Returns:
+        str: A formatted cache key string.
+    """
+    return f"{USER_PREFERENCE_CACHE_KEY_PREFIX}.{user_id}"
+
+
+def get_cached_preferences(user):
+    """
+    Retrieve the cached preferences dictionary for a given user.
+
+    Args:
+        user (User): The user object whose preferences are being requested.
+
+    Returns:
+        dict|None: The cached preferences if found, otherwise None on a cache miss.
+    """
+    return cache.get(user_preferences_cache_key(user.id))
+
+
+def set_cached_preferences(user, preferences):
+    """
+    Store the user's preferences in the cache.
+
+    Args:
+        user (User): The user object associated with the preferences.
+        preferences (dict): A dictionary containing the user's preference settings.
+
+    Returns:
+        None
+    """
+    cache.set(user_preferences_cache_key(user.id), preferences, USER_PREFERENCE_CACHE_TIMEOUT)
+
+
+def invalidate_user_preferences_cache(user):
+    """
+    Remove the cached preferences for a specific user.
+
+    This should be called whenever user preferences are updated to ensure
+    cache consistency.
+
+    Args:
+        user (User): The user object whose cache entry needs to be deleted.
+
+    Returns:
+        None
+    """
+    cache.delete(user_preferences_cache_key(user.id))
 
 
 def intercept_errors(api_error, ignore_errors=None):

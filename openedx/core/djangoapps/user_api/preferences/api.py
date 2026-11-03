@@ -26,7 +26,7 @@ from ..errors import (  # pylint: disable=unused-import
     UserNotAuthorized,
     UserNotFound,
 )
-from ..helpers import intercept_errors, serializer_is_dirty
+from ..helpers import intercept_errors, invalidate_user_preferences_cache, serializer_is_dirty
 from ..models import UserOrgTag, UserPreference
 from ..serializers import RawUserPreferenceSerializer
 
@@ -55,7 +55,8 @@ def has_user_preference(requesting_user, preference_key, username=None):
          UserAPIInternalError: the operation failed due to an unexpected error.
     """
     existing_user = _get_authorized_user(requesting_user, username, allow_staff=True)
-    return UserPreference.has_value(existing_user, preference_key)
+    preferences = UserPreference.get_all_preferences(existing_user)
+    return preference_key in preferences
 
 
 @intercept_errors(UserAPIInternalError, ignore_errors=[UserAPIRequestError])
@@ -80,7 +81,8 @@ def get_user_preference(requesting_user, preference_key, username=None):
          UserAPIInternalError: the operation failed due to an unexpected error.
     """
     existing_user = _get_authorized_user(requesting_user, username, allow_staff=True)
-    return UserPreference.get_value(existing_user, preference_key)
+    preferences = UserPreference.get_all_preferences(existing_user)
+    return preferences.get(preference_key)
 
 
 @intercept_errors(UserAPIInternalError, ignore_errors=[UserAPIRequestError])
@@ -171,6 +173,7 @@ def update_user_preferences(requesting_user, update, user=None):
                 raise _create_preference_update_error(preference_key, preference_value, error)  # pylint: disable=raise-missing-from  # noqa: B904
         else:
             delete_user_preference(requesting_user, preference_key)
+    invalidate_user_preferences_cache(user)
 
 
 @intercept_errors(UserAPIInternalError, ignore_errors=[UserAPIRequestError])
@@ -209,6 +212,7 @@ def set_user_preference(requesting_user, preference_key, preference_value, usern
             serializer.save()
         except Exception as error:
             raise _create_preference_update_error(preference_key, preference_value, error)  # pylint: disable=raise-missing-from  # noqa: B904
+        invalidate_user_preferences_cache(existing_user)
 
 
 @intercept_errors(UserAPIInternalError, ignore_errors=[UserAPIRequestError])
@@ -254,6 +258,7 @@ def delete_user_preference(requesting_user, preference_key, username=None):
                 preference_key=preference_key
             ),
         )
+    invalidate_user_preferences_cache(existing_user)
     return True
 
 
