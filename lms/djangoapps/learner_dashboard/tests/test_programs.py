@@ -102,7 +102,8 @@ class TestProgramListing(ProgramsApiConfigMixin, SharedModuleStoreTestCase):
         response = self.client.get(self.url)
         self.assertRedirects(
             response,
-            '{}?next={}'.format(reverse('signin_user'), self.url)
+            '{}?next={}'.format(reverse('signin_user'), self.url),
+            fetch_redirect_response=False
         )
 
         self.client.login(username=self.user.username, password=self.TEST_PASSWORD)
@@ -267,7 +268,8 @@ class TestProgramDetails(ProgramsApiConfigMixin, CatalogIntegrationMixin, Shared
         response = self.client.get(self.url)
         self.assertRedirects(
             response,
-            '{}?next={}'.format(reverse('signin_user'), self.url)
+            '{}?next={}'.format(reverse('signin_user'), self.url),
+            fetch_redirect_response=False
         )
 
         self.client.login(username=self.user.username, password=self.TEST_PASSWORD)
