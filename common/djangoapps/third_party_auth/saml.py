@@ -3,6 +3,7 @@ Slightly customized python-social-auth backend for SAML 2.0 support
 """
 
 import logging
+from urllib.parse import unquote
 from copy import deepcopy
 
 import requests
@@ -15,6 +16,7 @@ from onelogin.saml2.settings import OneLogin_Saml2_Settings
 from social_core.backends.saml import OID_EDU_PERSON_ENTITLEMENT, SAMLAuth, SAMLIdentityProvider
 from social_core.exceptions import AuthForbidden, AuthInvalidParameter, AuthMissingParameter
 
+from openedx.core.djangoapps.user_authn.utils import is_safe_login_or_logout_redirect
 from common.djangoapps.third_party_auth.exceptions import IncorrectConfigurationException
 from openedx.core.djangoapps.theming.helpers import get_current_request
 
@@ -88,12 +90,71 @@ class SAMLAuthBackend(SAMLAuth):  # pylint: disable=abstract-method
         """
         Handle exceptions that happen during SAML authentication
         """
+        # For IdP-initiated flows (where the user doesn't first hit /auth/login/...),
+        # allow callers to provide a post-auth redirect by packing it into RelayState.
+        # Store it in the session so the rest of the pipeline behaves consistently.
+        try:
+            request = get_current_request()
+            # Allow RelayState to carry both IdP slug and a post-auth destination.
+            # Format: "<idp_slug>|<next>", where <next> is typically a relative LMS path.
+            self._maybe_set_next_url_from_relay_state(request)
+        except Exception:  # pylint: disable=broad-exception-caught  # pragma: no cover
+            # Never fail auth due to redirect bookkeeping.
+            pass
+
         try:
             return super().auth_complete(*args, **kwargs)
         # We are seeing errors of MultiValueDictKeyError looking for the parameter 'RelayState'.
         # We would like to have a more specific error to handle for observability purposes.
         except MultiValueDictKeyError as e:
-            raise AuthMissingParameter(self.name, e.args[0]) from e
+            raise AuthMissingParameter(self.name, e.args[0] if e.args else '') from e
+
+    @staticmethod
+    def _maybe_set_next_url_from_relay_state(request):
+        """Optionally extract a safe `next` from RelayState and rewrite RelayState to the IdP slug.
+
+        This is specifically to support IdP-initiated flows where Auth0 (and some IdPs) can only
+        reliably influence the SAML POST via RelayState.
+        """
+        if request is None or not hasattr(request, 'POST'):
+            return
+        if not hasattr(request, 'session'):
+            return
+
+        relay_state = None
+        try:
+            relay_state = request.POST.get('RelayState')
+        except Exception:  # pylint: disable=broad-exception-caught  # pragma: no cover
+            relay_state = None
+
+        if not relay_state or '|' not in str(relay_state):
+            return
+
+        slug_part, next_part = str(relay_state).split('|', 1)
+        slug_part = slug_part.strip()
+        next_part = next_part.strip()
+        if not slug_part or not next_part:
+            return
+
+        # URL-decode next (Auth0 or callers may URL-encode it).
+        next_decoded = unquote(next_part)
+
+        # Only store next if it's safe per existing Open edX redirect policy.
+        if is_safe_login_or_logout_redirect(
+            redirect_to=next_decoded,
+            request_host=request.get_host(),
+            dot_client_id=(request.GET.get('client_id') if hasattr(request, 'GET') else None),
+            require_https=request.is_secure(),
+        ):
+            request.session['next'] = next_decoded
+        else:
+            # RelayState included an unsafe destination; clear any stale 'next' value
+            request.session.pop('next', None)
+
+        # Always rewrite RelayState to just the IdP slug so the SAML backend can locate the provider.
+        post_copy = request.POST.copy()
+        post_copy['RelayState'] = slug_part
+        request._post = post_copy  # pylint: disable=protected-access
 
     def get_user_id(self, details, response):
         """
