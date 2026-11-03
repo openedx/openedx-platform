@@ -38,7 +38,7 @@ cryptography==50.0.2
     #   moto
     #   pyjwt
 ddt==1.7.2
-django==5.2.18
+django==5.2.19
     # via
     #   django-crum
     #   django-waffle

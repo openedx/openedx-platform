@@ -179,7 +179,7 @@ defusedxml==0.7.1
     #   python3-openid
     #   social-auth-core
     #   xblocks-contrib
-django==5.2.18
+django==5.2.19
     # via
     #   casbin-django-orm-adapter
     #   django-appconf
