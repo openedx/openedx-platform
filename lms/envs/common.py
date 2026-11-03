@@ -819,12 +819,12 @@ XBLOCK_NOAUTH_HANDLER_ALLOWLIST = [
     # LTI 1.1 tools posting grades back; these verify the OAuth1 body signature.
     'xmodule.lti_block._BuiltInLTIBlock.grade_handler',
     'xmodule.lti_2_util.LTI20BlockMixin.lti_2_0_result_rest_handler',
-    'xblocks_contrib.lti.lti.LTIBlock.grade_handler',
-    'xblocks_contrib.lti.lti_2_util.LTI20BlockMixin.lti_2_0_result_rest_handler',
+    'xblock_lti.block.LTIBlock.grade_handler',
+    'xblock_lti.lti_2_util.LTI20BlockMixin.lti_2_0_result_rest_handler',
     'lti_consumer.lti_xblock.LtiConsumerXBlock.outcome_service_handler',
     'lti_consumer.lti_xblock.LtiConsumerXBlock.result_service_handler',
     # Video transcripts, fetched without a session by the mobile apps.
-    'xblocks_contrib.video.video_handlers.VideoStudentViewHandlers.transcript',
+    'xblock_video.video_handlers.VideoStudentViewHandlers.transcript',
 ]
 
 # Used for A/B testing
