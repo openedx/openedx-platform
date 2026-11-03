@@ -31,7 +31,7 @@ cryptography==50.0.2
     # via
     #   google-auth
     #   pyjwt
-django==5.2.18
+django==5.2.19
     # via
     #   django-crum
     #   django-waffle

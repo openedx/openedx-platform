@@ -218,7 +218,7 @@ dill==0.4.1
     # via pylint
 distlib==0.4.4
     # via virtualenv
-django==5.2.18
+django==5.2.19
     # via
     #   casbin-django-orm-adapter
     #   django-appconf
