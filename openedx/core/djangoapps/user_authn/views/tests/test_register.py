@@ -2869,6 +2869,30 @@ class RegistrationValidationViewTests(test_utils.ApiTestCase, OpenEdxEventsTestM
         # Email should validate as OK
         assert validation_decisions['email'] == ''
 
+    def test_json_payload_with_single_form_field_key(self):
+        """
+        JSON bodies parse to a plain dict (no getlist); a single string form_field_key must still work.
+        """
+        response = self.client.post(
+            self.path,
+            json.dumps({'form_field_key': 'email', 'email': 'user@email.com'}),
+            content_type='application/json',
+        )
+        assert response.status_code == 200
+        assert self.get_validation_decision(response) == {'email': ''}
+
+    def test_json_payload_with_multi_valued_form_field_key(self):
+        """
+        A JSON list of several form_field_key values falls back to validating submitted fields.
+        """
+        response = self.client.post(
+            self.path,
+            json.dumps({'form_field_key': ['email', 'username'], 'email': 'user@email.com'}),
+            content_type='application/json',
+        )
+        assert response.status_code == 200
+        assert self.get_validation_decision(response) == {'email': ''}
+
     @ddt.data(
         ['name', list(testutils.VALID_NAMES)],
         ['email', list(testutils.VALID_EMAILS)],

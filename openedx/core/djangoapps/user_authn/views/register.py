@@ -930,8 +930,12 @@ class RegistrationValidationView(APIView):
             validation = self.validation_handlers[field_name](self, request)
             validation_decisions[field_name] = validation
 
-        # Use getlist() to detect multi-valued form_field_key; require exactly one value
-        field_keys = request.data.getlist('form_field_key')
+        # Form-encoded payloads are QueryDicts (have getlist); JSON payloads are plain dicts.
+        if hasattr(request.data, 'getlist'):
+            field_keys = request.data.getlist('form_field_key')
+        else:
+            value = request.data.get('form_field_key')
+            field_keys = value if isinstance(value, list) else ([value] if value is not None else [])
         if field_keys and len(field_keys) == 1:
             field_key = field_keys[0]
             if isinstance(field_key, str) and field_key in self.validation_handlers:
