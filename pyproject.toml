@@ -292,6 +292,7 @@ constraint-dependencies = [
     "edx-enterprise==9.0.0",
     "djangorestframework<3.18",
     "openedx-forum<0.6.0",
+    "pytest<9.2.0",
 ]
 [tool.edx_lint]
 uv_constraints = [
@@ -414,6 +415,15 @@ uv_constraints = [
     # and fails `make pii_check`. It also isn't cleared on user retirement.
     # Issue for unpinning: https://github.com/openedx/forum/issues/301
     "openedx-forum<0.6.0",
+    # Date: 2026-11-02
+    # pytest 9.2.0 renamed the private FixtureManager._arg2fixturedefs that
+    # pylint-pytest reads in its session-finish hook, so pylint crashes with
+    # F0002 (astroid-error) on every file it checks. Fixed upstream in
+    # https://github.com/pylint-dev/pylint-pytest/pull/164 but not yet released
+    # (latest is 1.1.9.post1). Remove once a pylint-pytest release includes it.
+    # Upstream bug: https://github.com/pylint-dev/pylint-pytest/issues/163
+    # Issue for unpinning: https://github.com/openedx/openedx-platform/issues/39337
+    "pytest<9.2.0",
 ]
 
 [tool.setuptools]
