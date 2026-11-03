@@ -1156,7 +1156,7 @@ pysrt==1.1.2
     # via
     #   edxval
     #   openedx-platform
-pytest==9.2.0
+pytest==9.1.1
     # via
     #   pylint-pytest
     #   pytest-attrib
