@@ -23,7 +23,7 @@ cycler==0.12.1
     # via matplotlib
 defusedxml==0.7.1
     # via nltk
-fonttools==4.67.0
+fonttools==4.68.0
     # via matplotlib
 joblib==1.6.0
     # via nltk
@@ -71,7 +71,7 @@ pyparsing==3.3.3
     #   edx-sandbox
     #   matplotlib
     #   openedx-calc
-python-dateutil==3.0.0
+python-dateutil==4.0.0
     # via matplotlib
 random2==1.0.2
     # via edx-sandbox
@@ -82,14 +82,12 @@ scipy==1.17.1
     #   chem
     #   edx-sandbox
 six==1.17.0
-    # via
-    #   openedx-calc
-    #   python-dateutil
+    # via openedx-calc
 sympy==1.14.0
     # via
     #   edx-sandbox
     #   openedx-calc
 tqdm==4.70.1
     # via nltk
-tzdata==2026.5
+tzdata==2026.6
     # via python-dateutil
