@@ -90,6 +90,10 @@ OVERSIZED_IMAGE_MESSAGE = "The image declares more pixels than this site draws."
 #: it can draw: a file whose bytes stop early, or metadata that does not parse.
 UNREADABLE_IMAGE_ERRORS = (OSError, struct.error)
 
+#: What the metadata library raises on metadata it cannot take apart, or
+#: cannot write back once taken apart, which each stored size does with it.
+UNREADABLE_METADATA_ERRORS = (ValueError, IndexError, TypeError)
+
 
 class NamedImageUploadParser(TypedFileUploadParser):
     """
@@ -235,9 +239,10 @@ class ProfileImageView(
         Read the uploaded image once, refusing bytes no picture can be drawn from.
 
         Every stored size is drawn from these bytes and carries the metadata
-        found in them, so a file whose bytes stop early, whose metadata does
-        not parse, or whose header declares a picture far larger than any this
-        site draws fails partway through that work. Reading it here tells a
+        found in them, taken apart and written back, so a file whose bytes stop
+        early, whose metadata cannot be taken apart or written back, or whose
+        header declares a picture far larger than any this site draws fails
+        partway through that work. Reading it here, metadata included, tells a
         fault in the request apart from a failure to store what was drawn from
         it, which is the site's own.
         """
@@ -246,7 +251,10 @@ class ProfileImageView(
             image.load()
             metadata = image.info.get("exif")
             if metadata is not None:
-                piexif.load(metadata)
+                try:
+                    piexif.dump(piexif.load(metadata))
+                except UNREADABLE_METADATA_ERRORS as error:
+                    raise self._unusable_image(username, UNREADABLE_IMAGE_MESSAGE, error) from error
         except Image.DecompressionBombError as error:
             raise self._unusable_image(username, OVERSIZED_IMAGE_MESSAGE, error) from error
         except UNREADABLE_IMAGE_ERRORS as error:

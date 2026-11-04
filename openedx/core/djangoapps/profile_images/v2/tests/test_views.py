@@ -139,6 +139,20 @@ class ProfileImageTestCase(APITestCase):
         """Return a JPEG carrying a metadata block that is not the metadata it announces."""
         return self.noisy_image(exif=b"Exif\x00\x00" + b"\xff" * 64)
 
+    def image_with_metadata_entries(self, *entries):
+        """
+        Return a JPEG whose metadata holds one directory of the given raw entries.
+
+        Each entry is a tag, a value type, a count and the four bytes that
+        carry the value, written as they stand, so an entry can say something
+        about itself that its value does not bear out.
+        """
+        directory = struct.pack("<H", len(entries))
+        for tag, value_type, count, value in entries:
+            directory += struct.pack("<HHL", tag, value_type, count) + value
+        directory += struct.pack("<L", 0)
+        return self.noisy_image(exif=b"Exif\x00\x00II*\x00" + struct.pack("<L", 8) + directory)
+
     def image_declaring_more_pixels_than_it_holds(self, dimensions=(40000, 40000)):
         """
         Return a PNG of a few hundred bytes whose header declares a vast picture.
@@ -380,6 +394,48 @@ class ProfileImageUploadTests(ProfileImageTestCase):
         }
         assert self.stored_sizes(self.owner.username) == set()
         assert self.has_image(self.owner) is False
+
+    def assert_refused_as_unreadable(self, data):
+        """Send ``data`` as the owner's image and check it is refused and nothing is stored."""
+        self.login(self.owner)
+        upload = SimpleUploadedFile("picture.jpg", data, content_type="image/jpeg")
+        envelope = assert_error_envelope(
+            self.client.post(self.url, {"file": upload}, format="multipart"),
+            expected_status=status.HTTP_400_BAD_REQUEST,
+            expected_type_slug="validation",
+        )
+        assert envelope["errors"] == {
+            "file": ["The image could not be read. The file may be incomplete or corrupted."],
+        }
+        assert self.stored_sizes(self.owner.username) == set()
+        assert self.has_image(self.owner) is False
+
+    def test_metadata_naming_a_value_type_that_does_not_exist_is_refused(self):
+        """The manufacturer entry claims value type 99, which the metadata library cannot decode."""
+        self.assert_refused_as_unreadable(self.image_with_metadata_entries((0x010F, 99, 1, b"\0\0\0\0")))
+
+    def test_metadata_that_reads_but_cannot_be_written_back_is_refused(self):
+        """
+        A resolution held as a short with no values is read, and fails when each size writes it back.
+
+        Only writing the metadata back finds the fault, so reading it alone
+        would let the image through to fail once the sizes were being stored.
+        """
+        self.assert_refused_as_unreadable(self.image_with_metadata_entries((0x011A, 3, 0, b"\0\0\0\0")))
+
+    def test_metadata_whose_pointer_claims_two_places_is_refused(self):
+        """The pointer to the second directory claims two offsets, which the library cannot follow."""
+        self.assert_refused_as_unreadable(self.image_with_metadata_entries((0x8769, 4, 2, b"\0\0\0\0")))
+
+    def test_an_image_whose_metadata_reads_and_writes_back_is_stored(self):
+        self.login(self.owner)
+        with make_image_file(orientation=8) as image_file:
+            assert Image.open(image_file).info.get("exif") is not None
+            image_file.seek(0)
+            response = self.client.post(self.url, {"file": image_file}, format="multipart")
+        assert response.status_code == status.HTTP_204_NO_CONTENT, response.content
+        assert self.stored_sizes(self.owner.username) == self.all_sizes(self.owner.username)
+        assert self.has_image(self.owner) is True
 
     def test_an_image_declaring_more_pixels_than_the_site_draws_is_refused(self):
         """The refusal names the declaration, which is not the same fault as a file that stops early."""
