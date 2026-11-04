@@ -1058,6 +1058,13 @@ class CourseFields:  # pylint: disable=missing-class-docstring
         scope=Scope.settings,
     )
 
+    course_theme_variant = String(
+        display_name=_("Course Theme Variant"),
+        help=_("Enter a theme variant name to apply to the course."),
+        scope=Scope.settings,
+        default="",
+    )
+
     other_course_settings = Dict(
         display_name=_("Other Course Settings"),
         help=_(
