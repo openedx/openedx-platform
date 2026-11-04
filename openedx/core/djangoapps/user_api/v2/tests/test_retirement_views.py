@@ -2203,13 +2203,15 @@ class RetirementRecordAccessReachTests(RetirementApiTestCase):
             "create": (CanRetireUser,),
             "metadata": (CanRetireUser,),
         }
-        for action in RetirementCleanupViewSet.action_permissions:
-            with self.subTest(action=action):
-                viewset = RetirementCleanupViewSet()
-                viewset.action = action
-                built = [type(permission) for permission in viewset.get_permissions()]
-                assert built[-1] is CanRetireUser
-                assert permissions.IsAuthenticated in built
+        # Read from the declaration, so the answer does not depend on whether a
+        # request to this view earlier in the run let the middleware copy it.
+        with layers_read_from_their_own_declaration(RetirementCleanupViewSet):
+            for action in RetirementCleanupViewSet.action_permissions:
+                with self.subTest(action=action):
+                    viewset = RetirementCleanupViewSet()
+                    viewset.action = action
+                    built = [type(permission) for permission in viewset.get_permissions()]
+                    assert built == [permissions.IsAuthenticated, CanRetireUser, NotJwtRestrictedApplication]
 
     def test_asking_the_disposal_what_it_serves_asks_for_the_same_capability(self):
         """Describing an address is reading it, and this address is read by whoever may work it."""
