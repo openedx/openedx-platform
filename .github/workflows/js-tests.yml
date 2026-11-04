@@ -10,7 +10,10 @@ on:
 jobs:
   run_tests:
     name: JS
-    runs-on: ${{ matrix.os }}
+    # Pinned to ubuntu-24.04: video specs time out on ubuntu-26.04, which ubuntu-latest
+    # is migrating to by 2026-11-19. See https://github.com/openedx/openedx-platform/issues/39346
+    # matrix.os stays ubuntu-latest so the job name (and any required check) is unchanged.
+    runs-on: ubuntu-24.04
     strategy:
       matrix:
         os: [ubuntu-latest]
