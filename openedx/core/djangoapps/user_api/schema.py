@@ -3,7 +3,6 @@
 import re
 from collections import namedtuple
 from functools import cache
-from importlib import import_module
 
 from drf_spectacular.utils import OpenApiResponse
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
@@ -71,13 +70,11 @@ def superseded_bodies():
     of the same shape; a request by the members the v1 handler reads, without the
     v2 bounds, under the media types that handler reads; ``None`` reads no body.
     """
-    # Imported here because the serializers need loaded models; the v2 user
-    # serializers reach single-service models, so they are imported by name.
+    # Imported here because the serializers need loaded models.
     # pylint: disable=import-outside-toplevel
     from openedx.core.djangoapps.profile_images.v2.serializers import IMAGE_UPLOAD_REQUEST
+    from openedx.core.djangoapps.user_api.v2 import serializers as replacing
     from openedx.core.lib.api.parsers import MergePatchParser
-
-    replacing = import_module("openedx.core.djangoapps.user_api.v2.serializers")
 
     account = {200: replacing.AccountSerializer}
     account_change = {
