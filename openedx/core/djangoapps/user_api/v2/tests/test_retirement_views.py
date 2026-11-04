@@ -1784,6 +1784,40 @@ class _BatchTestsMixin(_AccessMatrixMixin):
         assert response.status_code == status.HTTP_200_OK
         assert response.data == {"results": [{"username": name, "outcome": "already_absent"} for name in names]}
 
+    def test_each_refused_name_is_listed_by_its_position(self):
+        self.login("worker")
+        envelope = assert_error_envelope(
+            self.post(["subject", None, ""]),
+            expected_status=status.HTTP_400_BAD_REQUEST,
+            expected_type_slug="validation",
+        )
+        assert envelope["errors"] == {
+            "usernames[1]": ["This field may not be null."],
+            "usernames[2]": ["This field may not be blank."],
+        }
+        assert envelope["detail"] == (
+            "usernames[1]: This field may not be null. usernames[2]: This field may not be blank."
+        )
+
+    def test_no_refusal_of_a_body_is_written_out_as_program_text(self):
+        """Whatever is wrong with the body, neither the line nor the list prints a data structure."""
+        self.login("worker")
+        bodies = (
+            {"usernames": [None]},
+            {"usernames": ["subject", {"name": "subject"}]},
+            {"usernames": [["subject"]]},
+            {"usernames": "subject"},
+            {"usernames": []},
+            {},
+        )
+        for body in bodies:
+            with self.subTest(body=body):
+                response = self.client.post(self.url, body, format="json")
+                assert response.status_code == status.HTTP_400_BAD_REQUEST
+                text = response.content.decode()
+                printed = [mark for mark in ("ErrorDetail(", "string=") if mark in text]
+                assert not printed, text
+
     def test_a_body_that_is_not_an_object_is_refused(self):
         self.login("worker")
         assert_error_envelope(
