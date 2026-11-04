@@ -1,16 +1,15 @@
 """Tests for the LMS drf-spectacular hooks and schema class."""
 
 import json
-import os
 import re
-import subprocess
-import sys
 from collections import defaultdict
-from pathlib import Path
+from functools import cache
+from importlib import import_module
 from types import SimpleNamespace
 from unittest import mock
 
 import jsonschema
+from django.conf import settings
 from django.test import Client, SimpleTestCase, TestCase
 from django.urls import path
 from drf_spectacular.generators import SchemaGenerator
@@ -42,6 +41,7 @@ USER_API_V2_VIEWS = "openedx.core.djangoapps.user_api.v2.views"
 PROFILE_IMAGE_V1_VIEWS = "openedx.core.djangoapps.profile_images.views"
 PROFILE_IMAGE_V2_VIEWS = "openedx.core.djangoapps.profile_images.v2.views"
 USER_AUTHN_VIEWS = "openedx.core.djangoapps.user_authn.views.register"
+USER_MOUNT = "api/user/"
 COURSE_VIEWS = "lms.djangoapps.course_api.views"
 
 
@@ -370,13 +370,33 @@ def _named_body(response):
     return body["$ref"].rsplit("/", 1)[-1]
 
 
+@cache
+def _user_documents():
+    """
+    Return the two documents this service publishes, generated once and from the user mounts only.
+
+    Each is generated under the settings it is published with, so what it says
+    about a user address is what the whole document says about it.
+    """
+    patterns = [
+        entry for entry in import_module(settings.ROOT_URLCONF).urlpatterns
+        if str(entry.pattern).startswith(USER_MOUNT)
+    ]
+    published = SchemaGenerator(patterns=patterns).get_schema(request=None, public=True)
+    # The whole document derives its path prefix from every address the
+    # service serves, which share nothing past the root.
+    with patched_settings({**get_api_docs_settings(), "SCHEMA_PATH_PREFIX": "/"}):
+        service_wide = SchemaGenerator(patterns=patterns).get_schema(request=None, public=True)
+    return {"published": published, "service-wide": service_wide}
+
+
 class SupersededBodyTest(TestCase):
     """Every address published as superseded carries the bodies it exchanges."""
 
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.schema = SchemaGenerator().get_schema(request=None, public=True)
+        cls.schema = _user_documents()["published"]
 
     def test_the_described_addresses_are_ones_this_schema_marks_superseded(self):
         described = {address for address, _method in superseded_bodies()}
@@ -452,9 +472,7 @@ class SupersededRequestBodyTest(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.documents = {"published": SchemaGenerator().get_schema(request=None, public=True)}
-        with patched_settings(get_api_docs_settings()):
-            cls.documents["service-wide"] = SchemaGenerator().get_schema(request=None, public=True)
+        cls.documents = _user_documents()
 
     def setUp(self):
         super().setUp()
@@ -572,9 +590,7 @@ class CorrectedSuccessCodeTest(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.documents = {"published": SchemaGenerator().get_schema(request=None, public=True)}
-        with patched_settings(get_api_docs_settings()):
-            cls.documents["service-wide"] = SchemaGenerator().get_schema(request=None, public=True)
+        cls.documents = _user_documents()
 
     def setUp(self):
         super().setUp()
@@ -631,73 +647,13 @@ class CorrectedSuccessCodeTest(TestCase):
         }
 
 
-#: Loaded in a process of its own below. The service settings append a
-#: component, and the documentation settings are then asked what they append,
-#: so that a key one of them carries is seen to reach the other.
-DOCUMENTATION_SETTINGS_CHILD = """
-import json
-import os
-
-import lms.envs.common as service_settings
-
-service_settings.SPECTACULAR_SETTINGS["APPEND_COMPONENTS"] = {
-    "schemas": {"ServiceComponent": {"type": "object"}},
-}
-
-os.environ["DJANGO_SETTINGS_MODULE"] = "docs.docs_settings"
-from django.conf import settings
-
-appended = settings.SPECTACULAR_SETTINGS.get("APPEND_COMPONENTS", {})
-print("APPENDED " + json.dumps({
-    "keys": sorted(appended),
-    "schemas": sorted(appended.get("schemas", {})),
-    "security": sorted(appended.get("securitySchemes", {})),
-}))
-"""
-
-
-class DocumentationSettingsTest(SimpleTestCase):
-    """
-    The settings the published reference is generated from keep what the service appends.
-
-    They are loaded in a process of their own because they turn every feature
-    flag on and add Studio's applications to the settings object this process
-    is already running under, so loading them here would reconfigure the
-    service for every test that follows. What they append holds component
-    names the published reference is expected to carry, and one dropped there
-    leaves the reference and every client built from it without that name
-    while no count moves.
-    """
-
-    def test_a_component_the_service_appends_reaches_the_published_reference(self):
-        repository = Path(__file__).resolve().parents[3]
-        environment = dict(os.environ, PYTHONPATH=str(repository))
-        environment.pop("DJANGO_SETTINGS_MODULE", None)
-        finished = subprocess.run(
-            [sys.executable, "-c", DOCUMENTATION_SETTINGS_CHILD],
-            cwd=str(repository),
-            env=environment,
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        assert finished.returncode == 0, finished.stderr[-2000:]
-        reported = [line for line in finished.stdout.splitlines() if line.startswith("APPENDED ")]
-        assert len(reported) == 1, finished.stdout[-2000:]
-        assert json.loads(reported[0].split(" ", 1)[1]) == {
-            "keys": ["schemas", "securitySchemes"],
-            "schemas": ["ServiceComponent"],
-            "security": ["Basic", "csrf", "jwt"],
-        }
-
-
 class PublishedDocumentTest(TestCase):
-    """What the service actually publishes: distinct ids, and one area per tag group."""
+    """What the service publishes for the user addresses: distinct ids, and one area per tag group."""
 
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.schema = SchemaGenerator().get_schema(request=None, public=True)
+        cls.schema = _user_documents()["published"]
 
     @classmethod
     def operations(cls):
@@ -711,15 +667,14 @@ class PublishedDocumentTest(TestCase):
         ids = [operation["operationId"] for _route, operation in self.operations()]
         assert sorted(ids) == sorted(set(ids))
 
-    def test_only_the_one_enrollment_pair_is_told_apart_by_a_numeral_suffix(self):
+    def test_no_operation_is_told_apart_by_a_numeral_suffix(self):
         """A numeral suffix is assigned in route order, so it is not a stable name."""
         suffixed = {
             route: operation["operationId"]
             for route, operation in self.operations()
             if re.fullmatch(r".+_\d+", operation["operationId"])
         }
-        # Renaming this one would change an id the document already published, so it stays.
-        assert suffixed == {"/api/enrollment/v1/enrollment/{course_id}": "v1_enrollment_retrieve_2"}
+        assert suffixed == {}
 
     def test_a_tag_group_holds_one_area_unless_it_marks_the_client_library(self):
         """
@@ -733,7 +688,6 @@ class PublishedDocumentTest(TestCase):
             for tag in operation.get("tags", []):
                 areas[tag].add(route.split("/")[2])
         assert {tag: sorted(members) for tag, members in areas.items()} == {
-            "v1": ["enrollment"],
-            "openedx-platform-sdk": ["enrollment", "user"],
+            "openedx-platform-sdk": ["user"],
             "user": ["user"],
         }

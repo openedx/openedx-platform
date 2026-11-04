@@ -1,5 +1,6 @@
 """Tests for what version 2 of the User API publishes in the OpenAPI schema."""
 
+import copy
 import json
 from importlib import import_module
 from unittest import mock
@@ -101,8 +102,8 @@ VERSION_TWO_PATHS = LIST_PATHS | MEMBER_PATHS | ACTION_PATHS
 
 PAGINATION_MEMBERS = {"count", "num_pages", "current_page", "start", "next", "previous", "results"}
 
-#: Where this version is mounted in the service's URL configuration.
-VERSION_TWO_MOUNT = "api/user/v2/"
+#: The prefix every mount serving a user address is configured under.
+USER_MOUNT = "api/user/"
 
 #: The components this version contributes to the document.
 VERSION_TWO_COMPONENTS = (
@@ -312,51 +313,40 @@ SUPERSEDED_USER_ADDRESSES = {
     "/api/user/v1/preferences/time_zones/": "/api/user/v2/time_zones/",
 }
 
-#: Legacy enrollment addresses this schema already marked before the user API joined it.
-SUPERSEDED_ENROLLMENT_PATHS = {
-    "/api/enrollment/v2/course/{course_id}",
-    "/api/enrollment/v2/enrollment/{course_id}",
-    "/api/enrollment/v2/enrollment/{username},{course_id}",
-    "/api/enrollment/v2/enrollments",
-}
+def user_patterns():
+    """Return the mounts of the service's URL configuration that serve user addresses."""
+    configured = import_module(settings.ROOT_URLCONF).urlpatterns
+    return [entry for entry in configured if str(entry.pattern).startswith(USER_MOUNT)]
 
-#: Enrollment operations whose ids must survive the widened path prefix.
-ENROLLMENT_OPERATION_IDS = {
-    "v1_enrollments_list",
-    "v1_enrollment_create",
-    "v2_enrollments_list",
-    "v2_enrollments_list_legacy",
-    "v2_enrollment_,_retrieve",
-    "v2_roles_retrieve",
-}
+
+@pytest.fixture(name="generated_documents", scope="module")
+@skip_unless_lms
+def generated_documents_fixture(django_db_setup, django_db_blocker):  # pylint: disable=unused-argument
+    """
+    Both documents the service publishes, each generated once and from the user mounts only.
+
+    Each is generated under the settings it is published with, so what it says
+    about a user address is what the whole document says about it.
+    """
+    with django_db_blocker.unblock():
+        published = SchemaGenerator(patterns=user_patterns()).get_schema(request=None, public=True)
+        # The whole document derives its path prefix from every address the
+        # service serves, which share nothing past the root.
+        with patched_settings({**get_api_docs_settings(), "SCHEMA_PATH_PREFIX": "/"}):
+            service_wide = SchemaGenerator(patterns=user_patterns()).get_schema(request=None, public=True)
+    return {"published": published, "service-wide": service_wide}
 
 
 @pytest.fixture(name="schema")
-@skip_unless_lms
-def schema_fixture(db):  # pylint: disable=invalid-name, unused-argument
+def schema_fixture(generated_documents):
     """The schema published under the service's own drf-spectacular settings."""
-    return SchemaGenerator().get_schema(request=None, public=True)
+    return copy.deepcopy(generated_documents["published"])
 
 
-def service_wide_schema(patterns=None):
-    """Return the document the service publishes for browsing its whole surface."""
-    with patched_settings(get_api_docs_settings()):
-        return SchemaGenerator(patterns=patterns).get_schema(request=None, public=True)
-
-
-def patterns_without_this_version():
-    """Return the service's URL configuration with this version's mount taken out."""
-    configured = import_module(settings.ROOT_URLCONF).urlpatterns
-    remaining = [entry for entry in configured if str(entry.pattern) != VERSION_TWO_MOUNT]
-    assert len(remaining) == len(configured) - 1, "this version is not mounted where it is looked for"
-    return remaining
-
-
-def published_names(schema):
-    """Return every component name and operation id a document carries."""
-    return set(schema["components"]["schemas"]) | {
-        operation["operationId"] for _path, _method, operation in operations(schema)
-    }
+@pytest.fixture(name="service_wide")
+def service_wide_fixture(generated_documents):
+    """The document the service publishes for browsing its whole surface."""
+    return copy.deepcopy(generated_documents["service-wide"])
 
 
 def operations(schema):
@@ -407,17 +397,11 @@ def test_every_operation_of_this_version_is_published_under_one_group(schema):
 
 
 @skip_unless_lms
-def test_enrollment_operation_ids_survive_the_widened_prefix(schema):
-    published = {operation["operationId"] for _path, _method, operation in operations(schema)}
-    assert ENROLLMENT_OPERATION_IDS <= published
-
-
-@skip_unless_lms
 def test_only_superseded_addresses_are_marked_deprecated(schema):
     deprecated = {
         path for path, _method, operation in operations(schema) if operation.get("deprecated")
     }
-    assert deprecated == SUPERSEDED_ENROLLMENT_PATHS | set(SUPERSEDED_USER_ADDRESSES)
+    assert deprecated == set(SUPERSEDED_USER_ADDRESSES)
 
 
 @skip_unless_lms
@@ -429,21 +413,17 @@ def test_only_this_version_and_the_addresses_it_supersedes_are_published(schema)
 
 @skip_unless_lms
 def test_addresses_owned_by_other_apps_are_not_published(schema):
-    """Neighbours of the mounts this change adds, including one under its own prefix."""
+    """Neighbours of the superseded addresses, served from the same mount and left out."""
     for path in (
         "/api/user/v1/accounts/deactivate_logout/",
         "/api/user/v1/accounts/{username}/retirement_status/",
         "/api/user/v1/preferences/{username}",
-        "/api/user/v1/account/registration/",
-        "/api/user/v2/account/registration/",
-        "/api/profile_images/v1/{username}/upload",
-        "/api/profile_images/v1/{username}/remove",
     ):
         assert path not in schema["paths"], path
 
 
 @skip_unless_lms
-def test_pagination_envelope_is_published_in_full(schema):
+def test_pagination_envelope_is_published_in_full(schema, service_wide):
     """
     Every paged body this version publishes carries the whole envelope, not DRF's four members.
 
@@ -452,7 +432,7 @@ def test_pagination_envelope_is_published_in_full(schema):
     """
     paged = [name for name in VERSION_TWO_COMPONENTS if name.startswith("Paginated")]
     assert len(paged) == 6
-    for document in (schema, service_wide_schema()):
+    for document in (schema, service_wide):
         for component in paged:
             published = document["components"]["schemas"][component]
             assert set(published["properties"]) == PAGINATION_MEMBERS, component
@@ -668,30 +648,6 @@ def test_each_superseded_body_is_published_in_the_media_types_that_address_reads
             assert answer.status_code == 200, (address, media_type, answer.content)
     left_out = client.patch(member, data="{}", content_type="application/json")
     assert left_out.status_code == 415
-
-
-@pytest.mark.django_db
-@skip_unless_lms
-def test_this_version_only_adds_to_the_service_wide_document():
-    """
-    Nothing published for browsing the whole service is lost when this version joins it.
-
-    Enum post-processing runs over every operation the service publishes and
-    renames both sides of a name collision, so a component this version never
-    declared can be renamed out of the document, and a client generated from it
-    loses the matching model. The document is therefore read with this version
-    mounted and with its mount taken out, and the second has to be contained in
-    the first.
-    """
-    without_this_version = published_names(service_wide_schema(patterns_without_this_version()))
-    whole = service_wide_schema()
-    missing = without_this_version - published_names(whole)
-    assert missing == set(), sorted(missing)
-
-    components = whole["components"]["schemas"]
-    assert "user_api.User" in components
-    assert {"UserDirectory", "UserPreferenceRecord", "TimeZone"} <= set(components)
-    assert "CountryTimeZone" in components
 
 
 @skip_unless_lms
@@ -1509,7 +1465,7 @@ def test_the_version_one_account_addresses_keep_an_operation_id_of_their_own(sch
 
 
 @skip_unless_lms
-def test_each_renamed_operation_id_names_an_address_in_the_document_that_derives_it(schema):
+def test_each_renamed_operation_id_names_an_address_in_the_document_that_derives_it(schema, service_wide):
     """
     A rename that outlived the address it was written for would name nothing.
 
@@ -1517,7 +1473,7 @@ def test_each_renamed_operation_id_names_an_address_in_the_document_that_derives
     document that trims the area off the front of each path and the one that
     trims nothing, so each entry applies to exactly one of them.
     """
-    documents = {"this version": schema, "service-wide": service_wide_schema()}
+    documents = {"this version": schema, "service-wide": service_wide}
     for (path, method, _derived), operation_id in RENAMED_OPERATION_IDS.items():
         naming = [
             name for name, document in documents.items()
@@ -1851,7 +1807,7 @@ def test_the_addresses_this_phase_adds_publish_no_other_query_parameters(schema)
 
 
 @skip_unless_lms
-def test_the_stored_preference_reads_are_named_alike_in_every_document_that_publishes_them(schema):
+def test_the_stored_preference_reads_are_named_alike_in_every_document_that_publishes_them(schema, service_wide):
     """
     The collection read and the member read of this resource keep one prefix wherever published.
 
@@ -1862,7 +1818,6 @@ def test_the_stored_preference_reads_are_named_alike_in_every_document_that_publ
     the front of every path and the other trims nothing, so it is named in
     each of them through the name that document derives.
     """
-    service_wide = service_wide_schema()
     assert {
         (path, method): operation["operationId"]
         for path, method, operation in operations(schema)

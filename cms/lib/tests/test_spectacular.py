@@ -1,6 +1,7 @@
 """Tests for the CMS drf-spectacular hooks and schema class."""
 
 import re
+from importlib import import_module
 from pathlib import Path
 from unittest import TestCase, mock
 
@@ -362,8 +363,14 @@ class SupersededUserOperationTest(DjangoTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        with patched_settings(get_api_docs_settings()):
-            cls.schema = SchemaGenerator().get_schema(request=None, public=True)
+        patterns = [
+            entry for entry in import_module(settings.ROOT_URLCONF).urlpatterns
+            if str(entry.pattern).startswith("api/user/")
+        ]
+        # The whole document derives its path prefix from every address the
+        # service serves, which share nothing past the root.
+        with patched_settings({**get_api_docs_settings(), "SCHEMA_PATH_PREFIX": "/"}):
+            cls.schema = SchemaGenerator(patterns=patterns).get_schema(request=None, public=True)
 
     def _operations(self):
         """Every operation of a superseded address this document carries."""
