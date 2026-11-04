@@ -26,6 +26,10 @@ from .test_preference_views import (
 #: list of them.
 STORED_COUNTS = (0, 1, 25)
 
+#: Time zones the preference holds, sent with whitespace around them, which
+#: makes each of them a value it does not hold.
+TIME_ZONES_WITH_WHITESPACE = (" Asia/Tokyo", "Asia/Tokyo ", "\tEurope/Paris\n")
+
 #: The members every refusal of this version carries, which the earlier
 #: addresses answer with bodies of their own instead.
 ENVELOPE_MEMBERS = {"type", "title", "status", "detail", "instance"}
@@ -152,6 +156,54 @@ class PreferenceDocumentParityTests(PreferenceApiTestCase):
         assert json.loads(current.content)["errors"] == {"time_zone": [message]}
         assert self.stored() == {"time_zone": "Asia/Tokyo"}
 
+    def test_both_versions_check_a_time_zone_as_it_was_sent(self):
+        """A zone with whitespace around it is not one of the zones the preference holds."""
+        self.login(self.owner)
+        for sent in TIME_ZONES_WITH_WHITESPACE:
+            body = json.dumps({"time_zone": sent})
+            earlier = self.client.patch(
+                earlier_document_address(self.owner.username), body, content_type=MERGE_PATCH,
+            )
+            current = self.client.patch(self.document_url, body, content_type=MERGE_PATCH)
+            assert (earlier.status_code, current.status_code) == (
+                status.HTTP_400_BAD_REQUEST, status.HTTP_400_BAD_REQUEST,
+            ), sent
+            message = f"Value '{sent}' is not a valid time zone selection."
+            assert json.loads(earlier.content)["field_errors"]["time_zone"]["user_message"] == message
+            assert json.loads(current.content)["errors"] == {"time_zone": [message]}
+            assert self.stored() == {"time_zone": "Asia/Tokyo"}, sent
+
+    def test_both_versions_store_any_other_value_without_the_whitespace_around_it(self):
+        self.login(self.owner)
+        body = json.dumps({"account_privacy": "  private  ", "pref-lang": "\tfr\n"})
+        assert self.client.patch(
+            earlier_document_address(self.owner.username), body, content_type=MERGE_PATCH,
+        ).status_code == status.HTTP_204_NO_CONTENT
+        after_earlier = self.stored()
+
+        UserPreference.objects.filter(user=self.owner).exclude(key="time_zone").delete()
+        assert self.client.patch(
+            self.document_url, body, content_type=MERGE_PATCH,
+        ).status_code == status.HTTP_204_NO_CONTENT
+        assert self.stored() == after_earlier == {
+            "time_zone": "Asia/Tokyo", "account_privacy": "private", "pref-lang": "fr",
+        }
+
+    def test_both_versions_refuse_a_value_of_whitespace_alone(self):
+        self.login(self.owner)
+        body = json.dumps({"account_privacy": "   "})
+        earlier = self.client.patch(
+            earlier_document_address(self.owner.username), body, content_type=MERGE_PATCH,
+        )
+        current = self.client.patch(self.document_url, body, content_type=MERGE_PATCH)
+        assert (earlier.status_code, current.status_code) == (
+            status.HTTP_400_BAD_REQUEST, status.HTTP_400_BAD_REQUEST,
+        )
+        message = "Preference 'account_privacy' cannot be set to an empty value."
+        assert json.loads(earlier.content)["field_errors"]["account_privacy"]["user_message"] == message
+        assert json.loads(current.content)["errors"] == {"account_privacy": [message]}
+        assert self.stored() == {"time_zone": "Asia/Tokyo"}
+
     def test_a_value_that_is_not_text_was_spelled_out_and_stored_and_is_now_refused(self):
         """Declared difference: a value of another type is the caller's mistake, not a string."""
         self.login(self.owner)
@@ -249,6 +301,56 @@ class PreferenceMemberParityTests(PreferenceApiTestCase):
         )
         assert current.status_code == status.HTTP_400_BAD_REQUEST
         assert json.loads(current.content)["errors"] == {"value": ["This field may not be blank."]}
+
+    def test_both_versions_check_a_time_zone_sent_to_the_member_address_as_it_was_sent(self):
+        self.login(self.owner)
+        for sent in TIME_ZONES_WITH_WHITESPACE:
+            earlier = self.client.put(
+                earlier_member_address(self.owner.username, "time_zone"),
+                json.dumps(sent),
+                content_type="application/json",
+            )
+            current = self.put_value(self.member_url, {"value": sent})
+            assert (earlier.status_code, current.status_code) == (
+                status.HTTP_400_BAD_REQUEST, status.HTTP_400_BAD_REQUEST,
+            ), sent
+            message = f"Value '{sent}' is not a valid time zone selection."
+            assert json.loads(earlier.content)["user_message"] == message
+            assert json.loads(current.content)["errors"] == {"value": [message]}
+            assert self.stored() == {"time_zone": "Asia/Tokyo"}, sent
+
+    def test_both_versions_store_another_value_sent_to_the_member_address_without_the_whitespace_around_it(self):
+        self.login(self.owner)
+        assert self.client.put(
+            earlier_member_address(self.owner.username, "account_privacy"),
+            json.dumps("  private  "),
+            content_type="application/json",
+        ).status_code == status.HTTP_204_NO_CONTENT
+        after_earlier = self.stored()
+
+        UserPreference.objects.filter(user=self.owner, key="account_privacy").delete()
+        assert self.put_value(
+            self.member_address(self.owner.username, "account_privacy"), {"value": "  private  "},
+        ).status_code == status.HTTP_204_NO_CONTENT
+        assert self.stored() == after_earlier == {"time_zone": "Asia/Tokyo", "account_privacy": "private"}
+
+    def test_both_versions_refuse_a_value_of_whitespace_alone_with_the_same_message(self):
+        self.login(self.owner)
+        earlier = self.client.put(
+            earlier_member_address(self.owner.username, "account_privacy"),
+            json.dumps("   "),
+            content_type="application/json",
+        )
+        current = self.put_value(
+            self.member_address(self.owner.username, "account_privacy"), {"value": "   "},
+        )
+        assert (earlier.status_code, current.status_code) == (
+            status.HTTP_400_BAD_REQUEST, status.HTTP_400_BAD_REQUEST,
+        )
+        message = "Preference 'account_privacy' cannot be set to an empty value."
+        assert json.loads(earlier.content)["user_message"] == message
+        assert json.loads(current.content)["errors"] == {"value": [message]}
+        assert self.stored() == {"time_zone": "Asia/Tokyo"}
 
     def test_a_preference_is_removed_by_both_versions(self):
         self.login(self.owner)

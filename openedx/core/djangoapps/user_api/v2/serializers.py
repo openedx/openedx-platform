@@ -940,9 +940,13 @@ class AccountPreferenceChangesField(serializers.DictField):
         "empty": "Name at least one preference to change.",
     }
 
+    # The value reaches the preference service as it was sent: the service
+    # checks some values, a time zone among them, before it trims what it
+    # stores, so trimming here would store a value that check refuses.
     child = _PreferenceChangeField(
         allow_null=True,
         allow_blank=True,
+        trim_whitespace=False,
         help_text="Value to store under the preference name this member is, or null to remove it.",
     )
 
@@ -1005,7 +1009,9 @@ class AccountPreferenceSerializer(serializers.Serializer):  # pylint: disable=ab
 class AccountPreferenceValueSerializer(serializers.Serializer):  # pylint: disable=abstract-method
     """The value to store under one preference of one account."""
 
+    # Read as sent, for the reason the document's values are.
     value = _TextField(
+        trim_whitespace=False,
         help_text=(
             "Value to store, as text. A preference cannot hold an empty value; remove the "
             "preference instead."
