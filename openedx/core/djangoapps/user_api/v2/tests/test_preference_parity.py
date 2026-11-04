@@ -1,6 +1,7 @@
 """Behaviour parity between the version 1 and version 2 account preference addresses."""
 
 import json
+from urllib.parse import quote
 
 from edx_rest_framework_extensions.auth.jwt.tests.utils import generate_jwt
 from edx_rest_framework_extensions.testing import assert_error_envelope
@@ -29,6 +30,11 @@ STORED_COUNTS = (0, 1, 25)
 #: Time zones the preference holds, sent with whitespace around them, which
 #: makes each of them a value it does not hold.
 TIME_ZONES_WITH_WHITESPACE = (" Asia/Tokyo", "Asia/Tokyo ", "\tEurope/Paris\n")
+
+#: Preference names with whitespace at one end or both: one the account already
+#: stores without it, one whose value the service checks, and one it holds
+#: nothing under at all.
+NAMES_WITH_WHITESPACE = (" account_privacy", "account_privacy ", "\taccount_privacy", " time_zone", " fresh ")
 
 #: The members every refusal of this version carries, which the earlier
 #: addresses answer with bodies of their own instead.
@@ -188,6 +194,20 @@ class PreferenceDocumentParityTests(PreferenceApiTestCase):
         assert self.stored() == after_earlier == {
             "time_zone": "Asia/Tokyo", "account_privacy": "private", "pref-lang": "fr",
         }
+
+    def test_both_versions_store_a_name_sent_in_the_document_without_the_whitespace_around_it(self):
+        self.login(self.owner)
+        body = json.dumps({" notes ": "draft"})
+        assert self.client.patch(
+            earlier_document_address(self.owner.username), body, content_type=MERGE_PATCH,
+        ).status_code == status.HTTP_204_NO_CONTENT
+        after_earlier = self.stored()
+
+        UserPreference.objects.filter(user=self.owner, key="notes").delete()
+        assert self.client.patch(
+            self.document_url, body, content_type=MERGE_PATCH,
+        ).status_code == status.HTTP_204_NO_CONTENT
+        assert self.stored() == after_earlier == {"time_zone": "Asia/Tokyo", "notes": "draft"}
 
     def test_both_versions_refuse_a_value_of_whitespace_alone(self):
         self.login(self.owner)
@@ -351,6 +371,32 @@ class PreferenceMemberParityTests(PreferenceApiTestCase):
         assert json.loads(earlier.content)["user_message"] == message
         assert json.loads(current.content)["errors"] == {"value": [message]}
         assert self.stored() == {"time_zone": "Asia/Tokyo"}
+
+    def test_both_versions_answer_a_name_with_whitespace_around_it_as_absent(self):
+        """
+        Neither version stores, reads or removes anything at such an address.
+
+        The earlier member address carries no whitespace at all. The service
+        stores a name without the whitespace around it, so a value stored from
+        such an address here could not be read back or removed there.
+        """
+        self.login(self.owner)
+        self.prefer("account_privacy", "private")
+        for name in NAMES_WITH_WHITESPACE:
+            earlier = earlier_member_address(self.owner.username, quote(name))
+            current = self.member_address(self.owner.username, name)
+            answered = {
+                "earlier store": self.client.put(earlier, json.dumps("Not/AZone"), content_type="application/json"),
+                "earlier read": self.client.get(earlier),
+                "earlier removal": self.client.delete(earlier),
+                "current store": self.put_value(current, {"value": "Not/AZone"}),
+                "current read": self.client.get(current),
+                "current removal": self.client.delete(current),
+            }
+            assert {case: answer.status_code for case, answer in answered.items()} == dict.fromkeys(
+                answered, status.HTTP_404_NOT_FOUND,
+            ), name
+            assert self.stored() == {"time_zone": "Asia/Tokyo", "account_privacy": "private"}, name
 
     def test_a_preference_is_removed_by_both_versions(self):
         self.login(self.owner)

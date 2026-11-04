@@ -643,6 +643,34 @@ class PreferenceMemberTests(PreferenceApiTestCase):
         assert envelope["errors"] == {"value": ["Not a valid string."]}
         assert self.stored() == {"time_zone": "Asia/Tokyo"}
 
+    def test_a_name_with_whitespace_around_it_is_absent_to_its_owner_and_refused_to_anyone_else(self):
+        """The caller is admitted first, so the address tells nobody else anything about it."""
+        address = self.member_address(self.owner.username, " time_zone")
+        self.login(self.other)
+        assert_error_envelope(
+            self.put_value(address, {"value": "Europe/Paris"}),
+            expected_status=status.HTTP_403_FORBIDDEN,
+            expected_type_slug="authz",
+        )
+        self.client.logout()
+        assert_error_envelope(
+            self.put_value(address, {"value": "Europe/Paris"}),
+            expected_status=status.HTTP_401_UNAUTHORIZED,
+            expected_type_slug="authn",
+        )
+        self.login(self.owner)
+        for case, send in {
+            "store": lambda: self.put_value(address, {"value": "Europe/Paris"}),
+            "read": lambda: self.client.get(address),
+            "removal": lambda: self.client.delete(address),
+            "description": lambda: self.client.options(address),
+        }.items():
+            with self.subTest(case=case):
+                assert_error_envelope(
+                    send(), expected_status=status.HTTP_404_NOT_FOUND, expected_type_slug="not-found",
+                )
+        assert self.stored() == {"time_zone": "Asia/Tokyo"}
+
     def test_an_empty_value_is_refused(self):
         self.login(self.owner)
         envelope = assert_error_envelope(

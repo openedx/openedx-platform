@@ -1849,7 +1849,8 @@ _ACCOUNT_PREFERENCE_KEY_PATH_PARAM = path_param(
     "name carrying a slash has no address of its own, because the segment ends at the slash; "
     "such a name is read with the whole document and removed by sending a null for it there. "
     f"Nothing is stored under a name longer than {PREFERENCE_NAME_MAX_LENGTH} characters, nor "
-    "under one carrying no letter, digit, hyphen or underscore.",
+    "under one carrying no letter, digit, hyphen or underscore. A name with whitespace at either "
+    "end names no preference: one is stored under its name without the whitespace around it.",
     rf"^{PREFERENCE_KEY_PATTERN_PARTIAL}$",
 )
 
@@ -1976,6 +1977,20 @@ class AccountPreferenceViewSet(
         """
         return self.action == DESCRIBE_ADDRESS_ACTION and self.request.method == "OPTIONS"
 
+    def initial(self, request, *args, **kwargs):
+        """
+        Admit the caller, then answer an address whose name has whitespace at either end as absent.
+
+        The preference service stores a name without the whitespace around it,
+        so a value stored from such an address would land under another name
+        and could not be read back or removed there. The address is therefore
+        absent whatever is asked of it.
+        """
+        super().initial(request, *args, **kwargs)
+        key = kwargs.get("key")
+        if key is not None and key != key.strip():
+            raise NotFound
+
     def initialize_request(self, request, *args, **kwargs):
         """
         Record which action is being served before anything reads the request.
@@ -2098,7 +2113,8 @@ class AccountPreferenceViewSet(
             "cannot hold is refused under `value`, and a preference cannot hold an empty value. "
             "A name nothing can be stored under, whether because it is longer than the store "
             "holds or because it carries none of the characters a name is made of, is refused "
-            "under `key`, which is the part of the address that carried it."
+            "under `key`, which is the part of the address that carried it. A name with "
+            "whitespace at either end is absent, and nothing is stored."
         ),
         parameters=[_ACCOUNT_PREFERENCES_PATH_PARAM, _ACCOUNT_PREFERENCE_KEY_PATH_PARAM],
         request=AccountPreferenceValueSerializer,
@@ -2107,6 +2123,10 @@ class AccountPreferenceViewSet(
             400: _RESP_PREFERENCE_NOT_STORED,
             401: RESP_UNAUTHENTICATED,
             403: _RESP_FORBIDDEN,
+            404: OpenApiResponse(
+                ErrorResponse,
+                description="The name in the address has whitespace at one end or both, so it names no preference.",
+            ),
             406: RESP_NOT_ACCEPTABLE,
             415: RESP_UNREADABLE_BODY,
             500: _RESP_PREFERENCE_SERVICE_FAILED,

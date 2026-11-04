@@ -941,7 +941,8 @@ def test_member_addresses_describe_the_parts_they_are_built_from(schema):
                 "segment ends at the slash; such a name is read with the whole document and "
                 "removed by sending a null for it there. Nothing is stored under a name longer "
                 f"than {PREFERENCE_NAME_MAX_LENGTH} characters, nor under one carrying no "
-                "letter, digit, hyphen or underscore."
+                "letter, digit, hyphen or underscore. A name with whitespace at either end names "
+                "no preference: one is stored under its name without the whitespace around it."
             ),
         },
     }
@@ -2175,7 +2176,7 @@ PREFERENCE_PUBLISHED_ANSWERS = {
     (PREFERENCE_DOCUMENT_PATH, "get"): ["200", "400", "401", "403", "404", "406", "500"],
     (PREFERENCE_DOCUMENT_PATH, "patch"): ["204", "400", "401", "403", "406", "415", "500"],
     (PREFERENCE_NAME_PATH, "get"): ["200", "400", "401", "403", "404", "406", "500"],
-    (PREFERENCE_NAME_PATH, "put"): ["204", "400", "401", "403", "406", "415", "500"],
+    (PREFERENCE_NAME_PATH, "put"): ["204", "400", "401", "403", "404", "406", "415", "500"],
     (PREFERENCE_NAME_PATH, "delete"): ["204", "400", "401", "403", "404", "406", "500"],
 }
 
