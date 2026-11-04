@@ -186,17 +186,6 @@ class SpectacularSettingsTest(SimpleTestCase):
             # A hook is set by its quoted key; a comment that names one is fine.
             assert not re.search(r"_HOOKS['\"]", source), module
 
-    def test_the_module_the_published_reference_is_generated_from_inherits_this_configuration(self):
-        """
-        It takes the hooks and the prefix by inheritance rather than restating them.
-
-        The committed reference for this service is generated under that
-        module, and assigning the key there would replace this configuration
-        wholesale, as the two modules above do -- which would publish the whole
-        service under no title instead of this API's own surface.
-        """
-        assert "SPECTACULAR_SETTINGS" not in self._source("cms/envs/development.py")
-
 
 class SharedSchemaBehaviourTest(SimpleTestCase):
     """

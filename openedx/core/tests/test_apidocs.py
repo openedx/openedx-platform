@@ -44,21 +44,20 @@ class UntagDeprecatedOperationsRegistrationTest(SimpleTestCase):
     """Every schema configuration runs the hook after the hooks that mark operations deprecated."""
 
     # The other environments inherit the hooks from these two modules.
-    SHARED_HOOK = "'openedx.core.djangoapps.user_api.schema.mark_superseded_user_paths',"
     MARKING_HOOKS = {
-        "cms/envs/common.py": (
-            "'cms.lib.spectacular.cms_mark_migrated_paths',",
-            SHARED_HOOK,
-        ),
-        "lms/envs/common.py": (
-            "'lms.lib.spectacular.lms_mark_legacy_paths_deprecated',",
-            SHARED_HOOK,
-        ),
+        "cms/envs/common.py": "'cms.lib.spectacular.cms_mark_migrated_paths',",
+        "lms/envs/common.py": "'lms.lib.spectacular.lms_mark_legacy_paths_deprecated',",
     }
+    SHARED_HOOK = "'openedx.core.djangoapps.user_api.schema.mark_superseded_user_paths',"
 
     def test_the_hook_runs_last(self):
-        for module, marking_hooks in self.MARKING_HOOKS.items():
+        for module, marking_hook in self.MARKING_HOOKS.items():
             source = (REPO_ROOT / module).read_text()
             assert HOOK in source, module
-            for marking_hook in marking_hooks:
-                assert source.index(marking_hook) < source.index(HOOK), (module, marking_hook)
+            assert source.index(marking_hook) < source.index(HOOK), module
+
+    def test_the_hook_runs_after_the_hook_marking_the_superseded_user_addresses(self):
+        for module in self.MARKING_HOOKS:
+            source = (REPO_ROOT / module).read_text()
+            assert self.SHARED_HOOK in source, module
+            assert source.index(self.SHARED_HOOK) < source.index(HOOK), module

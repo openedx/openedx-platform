@@ -45,7 +45,11 @@ USER_MOUNT = "api/user/"
 COURSE_VIEWS = "lms.djangoapps.course_api.views"
 
 
-def _endpoint(route, view_module=COURSE_VIEWS):
+def _endpoint(route):
+    return (route, route, "GET", None)
+
+
+def _served_endpoint(route, view_module=COURSE_VIEWS):
     """An endpoint tuple as the generator hands it to the hook, served from ``view_module``."""
     callback = SimpleNamespace(cls=type("_View", (), {"__module__": view_module}))
     return (route, route, "GET", callback)
@@ -56,32 +60,47 @@ def _schema(*routes):
 
 
 class LmsApiFilterTest(SimpleTestCase):
-    """The hook keeps the enrollment mounts, this version of the user mounts, and what they supersede."""
+    """The pre-processing hook keeps enrollment endpoints and drops unrelated ones."""
+
+    def test_keeps_enrollment_drops_the_rest(self):
+        kept = lms_api_filter([
+            _endpoint("/api/enrollment/v2/enrollments/"),
+            _endpoint("/api/enrollment/v1/enrollment"),
+            _endpoint("/api/user/v1/accounts/"),
+        ])
+        assert [path for path, *_ in kept] == [
+            "/api/enrollment/v2/enrollments/",
+            "/api/enrollment/v1/enrollment",
+        ]
+
+
+class LmsApiFilterUserAddressTest(SimpleTestCase):
+    """The hook keeps the current user mounts and the addresses they supersede, beside enrollment."""
 
     def test_keeps_enrollment_this_version_and_the_addresses_it_supersedes(self):
         kept = lms_api_filter([
-            _endpoint("/api/enrollment/v2/enrollments/", ENROLLMENT_VIEWS),
-            _endpoint("/api/enrollment/v1/enrollment", ENROLLMENT_VIEWS),
-            _endpoint("/api/user/v2/users/", USER_API_V2_VIEWS),
-            _endpoint("/api/user/v2/user_preferences/{username},{key}/", USER_API_V2_VIEWS),
+            _served_endpoint("/api/enrollment/v2/enrollments/", ENROLLMENT_VIEWS),
+            _served_endpoint("/api/enrollment/v1/enrollment", ENROLLMENT_VIEWS),
+            _served_endpoint("/api/user/v2/users/", USER_API_V2_VIEWS),
+            _served_endpoint("/api/user/v2/user_preferences/{username},{key}/", USER_API_V2_VIEWS),
             # Superseded, and spelled with the parameter name the generator has
             # not renamed to ``{id}`` yet.
-            _endpoint("/api/user/v1/users/{pk}/", USER_API_V1_VIEWS),
-            _endpoint("/api/user/v1/preferences/time_zones/", USER_API_V1_VIEWS),
-            _endpoint("/api/user/v1/accounts", USER_API_V1_VIEWS),
-            _endpoint("/api/user/v1/accounts/{username}", USER_API_V1_VIEWS),
-            _endpoint("/api/user/v1/me", USER_API_V1_VIEWS),
-            _endpoint("/api/user/v1/accounts/{username}/image", USER_API_V1_VIEWS),
-            _endpoint("/api/user/v1/accounts/name_change/", USER_API_V1_VIEWS),
+            _served_endpoint("/api/user/v1/users/{pk}/", USER_API_V1_VIEWS),
+            _served_endpoint("/api/user/v1/preferences/time_zones/", USER_API_V1_VIEWS),
+            _served_endpoint("/api/user/v1/accounts", USER_API_V1_VIEWS),
+            _served_endpoint("/api/user/v1/accounts/{username}", USER_API_V1_VIEWS),
+            _served_endpoint("/api/user/v1/me", USER_API_V1_VIEWS),
+            _served_endpoint("/api/user/v1/accounts/{username}/image", USER_API_V1_VIEWS),
+            _served_endpoint("/api/user/v1/accounts/name_change/", USER_API_V1_VIEWS),
             # Served by this version from the app that owns the resource.
-            _endpoint("/api/user/v2/accounts/{username}/profile_image/", PROFILE_IMAGE_V2_VIEWS),
+            _served_endpoint("/api/user/v2/accounts/{username}/profile_image/", PROFILE_IMAGE_V2_VIEWS),
             # Neither served nor superseded by this version.
-            _endpoint("/api/user/v2/account/registration/", USER_AUTHN_VIEWS),
-            _endpoint("/api/profile_images/v1/{username}/upload", PROFILE_IMAGE_V1_VIEWS),
-            _endpoint("/api/user/v1/preferences/{username}", USER_API_V1_VIEWS),
-            _endpoint("/api/courses/v1/courses/", COURSE_VIEWS),
-            _endpoint("/api/user_tours/v1/tours/"),
-            _endpoint("/user_api/v1/users/", USER_API_V1_VIEWS),
+            _served_endpoint("/api/user/v2/account/registration/", USER_AUTHN_VIEWS),
+            _served_endpoint("/api/profile_images/v1/{username}/upload", PROFILE_IMAGE_V1_VIEWS),
+            _served_endpoint("/api/user/v1/preferences/{username}", USER_API_V1_VIEWS),
+            _served_endpoint("/api/courses/v1/courses/", COURSE_VIEWS),
+            _served_endpoint("/api/user_tours/v1/tours/"),
+            _served_endpoint("/user_api/v1/users/", USER_API_V1_VIEWS),
         ])
         assert [path for path, *_ in kept] == [
             "/api/enrollment/v2/enrollments/",
@@ -102,7 +121,7 @@ class LmsApiFilterTest(SimpleTestCase):
         """Other apps are mounted under the same prefix, so the path alone cannot admit an address."""
         route = "/api/user/v2/account/registration/"
         admitted = {
-            view_module: [path for path, *_ in lms_api_filter([_endpoint(route, view_module)])]
+            view_module: [path for path, *_ in lms_api_filter([_served_endpoint(route, view_module)])]
             for view_module in (USER_AUTHN_VIEWS, USER_API_V2_VIEWS)
         }
         assert admitted == {USER_AUTHN_VIEWS: [], USER_API_V2_VIEWS: [route]}
