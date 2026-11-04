@@ -1723,7 +1723,6 @@ class GradebookBulkUpdateViewTest(GradebookViewTestBase):
             assert status.HTTP_422_UNPROCESSABLE_ENTITY == resp.status_code
             assert expected_data == resp.data
 
-    @override_settings(ENABLE_COMPETENCY_MASTERY_TRACKING=True)
     def test_override_for_unattempted_learner_records_competency_status(self):
         """
         A staff-entered grade counts toward competency status even though the learner never attempted the subsection.
