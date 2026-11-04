@@ -95,6 +95,7 @@ from .serializers import (
     EMBEDDABLE_OWNER_IDS,
     FULL_VIEW,
     MINIMAL_VIEW,
+    PARTNER_REPORT_CLAIM_MAX,
     PREFERENCE_MINIMAL_FIELDS,
     PREFERENCE_NAME_MAX_LENGTH,
     RETIREMENT_MINIMAL_FIELDS,
@@ -2359,10 +2360,15 @@ _RETIREMENT_VIEW_PARAM = query_param(
 #: The number of days is published from the filter that reads it, so the two
 #: cannot disagree. It is declared here because the kind of value a filter
 #: taking a method of its own reads cannot be worked out from the records.
+_COOL_OFF_FILTER = RetirementFilterSet.base_filters["cool_off_days"]
 _RETIREMENT_COOL_OFF_PARAM = query_param(
     "cool_off_days",
-    RetirementFilterSet.base_filters["cool_off_days"].extra["help_text"],
-    type=int,
+    _COOL_OFF_FILTER.extra["help_text"],
+    type={
+        "type": "integer",
+        "minimum": _COOL_OFF_FILTER.extra["min_value"],
+        "maximum": _COOL_OFF_FILTER.extra["max_value"],
+    },
 )
 _RETIREMENT_ORDERING_PARAM = query_param(
     "ordering",
@@ -2821,8 +2827,9 @@ _RESP_PARTNER_REPORTS_TAKEN = OpenApiResponse(
         parameters=[
             query_param(
                 "limit",
-                "Take at most this many entries. Omit it to take every entry waiting.",
-                type=int,
+                f"Take at most this many entries, from 1 to {PARTNER_REPORT_CLAIM_MAX}. Omit it to "
+                "take every entry waiting.",
+                type={"type": "integer", "minimum": 1, "maximum": PARTNER_REPORT_CLAIM_MAX},
             ),
         ],
         request=None,

@@ -2530,7 +2530,7 @@ def test_the_queue_publishes_the_filters_it_narrows_by(schema):
         assert parameters[name]["in"] == "query"
         assert parameters[name].get("required", False) is False, name
         assert parameters[name]["description"], name
-    assert parameters["cool_off_days"]["schema"]["type"] == "integer"
+    assert parameters["cool_off_days"]["schema"] == {"type": "integer", "minimum": 0, "maximum": 36500}
     assert parameters["created_after"]["schema"]["format"] == "date-time"
     assert parameters["created_before"]["schema"]["format"] == "date-time"
     assert parameters["state"]["schema"]["type"] == "string"
@@ -2547,7 +2547,7 @@ def test_the_claim_publishes_how_many_entries_it_can_be_held_to(schema):
         for parameter in schema["paths"][PARTNER_REPORT_LIST_PATH]["post"]["parameters"]
     }
     assert set(parameters) == {"limit"}
-    assert parameters["limit"]["schema"]["type"] == "integer"
+    assert parameters["limit"]["schema"] == {"type": "integer", "minimum": 1, "maximum": 100}
     assert parameters["limit"].get("required", False) is False
     assert "requestBody" not in schema["paths"][PARTNER_REPORT_LIST_PATH]["post"]
 

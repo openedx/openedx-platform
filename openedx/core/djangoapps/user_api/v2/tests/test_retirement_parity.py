@@ -124,6 +124,11 @@ QUEUE_FILTER_DIFFERENCES = (
         "the bound is exclusive, where the end_date it is read in place of took in the whole of "
         "the day named; the same rows are asked for by naming the day after",
     ),
+    (
+        "cool_off_days",
+        "a period longer than a century is refused, where the queue read answered it, and failed "
+        "with a server error once the period reached back past the first year of the calendar",
+    ),
 )
 
 #: Each view of this version with the view whose operations it takes over, for
@@ -633,7 +638,46 @@ class QueueFilterParityTests(RetirementParityTestCase):
         """Measured both ways: the day named is in the version 1 answer and out of this one."""
         assert self.legacy_by_date("2020-06-01", "2020-06-10") == ["the-day-before", "the-day-itself"]
         assert self.conforming_by_date("2020-06-01", "2020-06-10") == ["the-day-before"]
-        assert [name for name, _reason in QUEUE_FILTER_DIFFERENCES] == ["created_before"]
+        assert [name for name, _reason in QUEUE_FILTER_DIFFERENCES] == ["created_before", "cool_off_days"]
+
+    def legacy_queue(self, cool_off_days):
+        """Ask the version 1 queue read for the finished retirements this many days old."""
+        return self.client.get(
+            reverse("accounts_retirement_queue"), {"cool_off_days": cool_off_days, "states": "COMPLETE"},
+        )
+
+    def conforming_queue(self, cool_off_days):
+        """Ask the merged list for the finished retirements this many days old."""
+        return self.client.get(
+            reverse("user_v2:retirement_list"), {"cool_off_days": cool_off_days, "state": "COMPLETE", "page_size": 100},
+        )
+
+    def test_a_cooling_off_period_of_a_century_answers_the_same_rows_on_both_versions(self):
+        create_retirement_status(
+            UserFactory.create(username="requested-long-ago"),
+            state=RetirementState.objects.get(state_name="COMPLETE"),
+            create_datetime=datetime.datetime(1900, 1, 1, tzinfo=ZoneInfo("UTC")),
+        )
+        legacy = self.legacy_queue(36500)
+        conforming = self.conforming_queue(36500)
+        assert (legacy.status_code, conforming.status_code) == (status.HTTP_200_OK, status.HTTP_200_OK)
+        assert [row["original_username"] for row in legacy.json()] == ["requested-long-ago"]
+        assert [row["original_username"] for row in conforming.json()["results"]] == ["requested-long-ago"]
+
+    def test_the_declared_difference_is_a_cooling_off_period_longer_than_a_century(self):
+        """Measured both ways: refused here, where version 1 answered it or failed outright."""
+        longer = self.legacy_queue(36501)
+        assert longer.status_code == status.HTTP_200_OK
+        assert longer.json() == []
+        with pytest.raises(OverflowError):
+            self.legacy_queue(800000)
+        for value in (36501, 800000):
+            with self.subTest(value=value):
+                refused = self.conforming_queue(value)
+                assert refused.status_code == status.HTTP_400_BAD_REQUEST
+                assert refused.json()["errors"] == {
+                    "cool_off_days": ["Ensure this value is less than or equal to 36500."],
+                }
 
     def test_the_rows_the_declared_difference_leaves_out_are_asked_for_by_naming_the_day_after(self):
         assert self.conforming_by_date("2020-06-01", "2020-06-11") == [

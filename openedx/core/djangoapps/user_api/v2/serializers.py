@@ -1389,15 +1389,22 @@ class RetirementPartnerReportRecordSerializer(serializers.Serializer):  # pylint
     created = serializers.DateTimeField(help_text="When this user was added to the partner reporting queue.")
 
 
+#: The most entries one claim can be held to, which is the number of rows a
+#: page of any collection of this version holds. A claim held to nothing takes
+#: every entry waiting.
+PARTNER_REPORT_CLAIM_MAX = UserApiPagination.max_page_size
+
+
 class RetirementPartnerReportQuerySerializer(serializers.Serializer):  # pylint: disable=abstract-method
     """The query string of a request that takes partner reports for processing."""
 
     limit = serializers.IntegerField(
         required=False,
         min_value=1,
+        max_value=PARTNER_REPORT_CLAIM_MAX,
         help_text=(
-            "Take at most this many entries. Omit it to take every entry waiting, which is what "
-            "the pipeline does: nothing releases an entry once it is taken, so a caller that "
-            "takes fewer than it processes cannot hand the rest back."
+            f"Take at most this many entries, from 1 to {PARTNER_REPORT_CLAIM_MAX}. Omit it to take "
+            "every entry waiting, which is what the pipeline does: nothing releases an entry once "
+            "it is taken, so a caller that takes fewer than it processes cannot hand the rest back."
         ),
     )

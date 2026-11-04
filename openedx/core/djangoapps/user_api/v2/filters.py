@@ -227,6 +227,11 @@ class _WholeNumberFilter(filters.NumberFilter):
     field_class = forms.IntegerField
 
 
+#: The longest cooling-off period a caller may ask for: a century, which reaches
+#: further back than any retirement a deployment holds.
+MAX_COOL_OFF_DAYS = 36500
+
+
 class RetirementFilterSet(filters.FilterSet):
     """
     Narrows the retirement pipeline's queue.
@@ -253,9 +258,10 @@ class RetirementFilterSet(filters.FilterSet):
     cool_off_days = _WholeNumberFilter(
         method="filter_cool_off_days",
         min_value=0,
+        max_value=MAX_COOL_OFF_DAYS,
         help_text=(
-            "Return only retirements requested at least this many days ago. The pipeline uses "
-            "this to leave a learner time to change their mind."
+            "Return only retirements requested at least this many days ago, from 0 to "
+            f"{MAX_COOL_OFF_DAYS}. The pipeline uses this to leave a learner time to change their mind."
         ),
     )
     created_after = filters.DateTimeFilter(

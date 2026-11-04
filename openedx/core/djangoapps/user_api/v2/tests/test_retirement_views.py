@@ -501,6 +501,24 @@ class RetirementListTests(_AccessMatrixMixin, RetirementApiTestCase):
         )
         assert "cool_off_days" in envelope["errors"]
 
+    def test_a_cooling_off_period_of_a_century_is_taken(self):
+        self.login("worker")
+        response = self.client.get(self.url, {"cool_off_days": 36500, "page_size": 100})
+        assert response.status_code == status.HTTP_200_OK
+        assert self.names_in(response) == []
+
+    def test_a_cooling_off_period_longer_than_a_century_is_refused(self):
+        """Up to a count of days that reaches back past the first year of the calendar, and beyond."""
+        self.login("worker")
+        for value in (36501, 800000):
+            with self.subTest(value=value):
+                envelope = assert_error_envelope(
+                    self.client.get(self.url, {"cool_off_days": value}),
+                    expected_status=status.HTTP_400_BAD_REQUEST,
+                    expected_type_slug="validation",
+                )
+                assert envelope["errors"] == {"cool_off_days": ["Ensure this value is less than or equal to 36500."]}
+
     def test_the_later_bound_includes_the_moment_it_names(self):
         self.login("worker")
         response = self.client.get(
@@ -1652,6 +1670,26 @@ class PartnerReportClaimTests(_AccessMatrixMixin, RetirementApiTestCase):
             expected_type_slug="validation",
         )
         assert "limit" in envelope["errors"]
+        assert UserRetirementPartnerReportingStatus.objects.filter(is_being_processed=True).count() == 0
+
+    def test_a_claim_held_to_a_page_of_entries_is_taken(self):
+        self.queued(self.learner)
+        self.login("worker")
+        response = self.client.post(f"{self.url}?limit=100", {}, format="json")
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data) == 2
+        assert UserRetirementPartnerReportingStatus.objects.filter(is_being_processed=False).count() == 0
+
+    def test_a_claim_held_to_more_than_a_page_of_entries_is_refused(self):
+        self.login("worker")
+        for value in ("101", "9" * 30):
+            with self.subTest(value=value):
+                envelope = assert_error_envelope(
+                    self.client.post(f"{self.url}?limit={value}", {}, format="json"),
+                    expected_status=status.HTTP_400_BAD_REQUEST,
+                    expected_type_slug="validation",
+                )
+                assert envelope["errors"] == {"limit": ["Ensure this value is less than or equal to 100."]}
         assert UserRetirementPartnerReportingStatus.objects.filter(is_being_processed=True).count() == 0
 
     def test_a_query_parameter_this_address_does_not_read_is_refused(self):
