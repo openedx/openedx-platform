@@ -16,7 +16,6 @@ from .views import (
     IDVerificationStatusView,
     IDVerificationViewSet,
     NameChangeViewSet,
-    UnknownAddressView,
     UserPreferenceViewSet,
     UserViewSet,
 )
@@ -27,15 +26,6 @@ app_name = "user_v2"
 #: database-id member route is dropped and replaced by the address declared
 #: below under the same name.
 REPLACED_ROUTER_ROUTE = "user_preference_detail"
-
-#: The addresses under this prefix that belong to the authentication app, which
-#: this mount is matched before. They are spelled out one by one rather than by
-#: the segment they share, so that only what that app serves is left to it and
-#: every other address under this prefix is answered here. The trailing slash is
-#: optional, which leaves an address sent without one to be redirected to the
-#: slashed form the app serves rather than answered as unknown.
-OTHER_APP_ADDRESSES = r"account/(registration|login_session)/?"
-
 
 def without_route(routes, name):
     """
@@ -119,17 +109,4 @@ urlpatterns = [
         UserPreferenceViewSet.as_view({"get": "retrieve"}),
         name="user_preference_detail",
     ),
-    # Everything under this prefix that the authentication app does not serve
-    # belongs to this version, including an address no route of it answers,
-    # which is refused in the body the rest of this version answers with. The
-    # route answers rather than reverses, so it carries no name.
-    #
-    # This claims the whole prefix: it matches every address under it that the
-    # routes above and the addresses named in OTHER_APP_ADDRESSES do not, and
-    # the service mounts it ahead of the patterns contributed by installed
-    # plugins. An address a plugin registers under this prefix is therefore
-    # reached by nothing and answered 404 here. A plugin that needs an address
-    # of its own serves it under a prefix of its own; one that has to extend
-    # this version is added to OTHER_APP_ADDRESSES or to the routes above.
-    re_path(rf"^(?!{OTHER_APP_ADDRESSES}$).*$", UnknownAddressView.as_view()),
 ]

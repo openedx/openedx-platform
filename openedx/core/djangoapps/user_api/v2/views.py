@@ -1872,20 +1872,3 @@ class IDVerificationViewSet(
             request,
             sorted(attempts, key=_verification_sort_key, reverse=ordering.startswith("-")),
         )
-
-
-@extend_schema(exclude=True)
-class UnknownAddressView(StandardizedErrorMixin, RestrictedApplicationGuardMixin, APIView):
-    """
-    Refuses an address under this version of the API that no route serves.
-
-    The refusal carries the same JSON body as every other failure of this
-    version, rather than the service's HTML error page, which a client that
-    asked for JSON cannot read.
-    """
-
-    permission_classes = (permissions.AllowAny,)
-
-    def initial(self, request, *args, **kwargs):
-        """Refuse the address before a handler is chosen, whatever the method."""
-        raise NotFound

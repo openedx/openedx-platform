@@ -4,17 +4,14 @@ import re
 
 import pytest
 from django.core.exceptions import ImproperlyConfigured
-from django.urls import get_resolver, resolve, reverse
+from django.urls import Resolver404, get_resolver, resolve, reverse
 from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
 from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
-from edx_rest_framework_extensions.testing import assert_error_envelope
-from rest_framework import status
 from rest_framework.request import Request
 from rest_framework.settings import api_settings
 from rest_framework.test import APIRequestFactory, APITestCase
 from rest_framework.views import APIView
 
-from common.djangoapps.student.tests.factories import AdminFactory
 from openedx.core.djangoapps.profile_images.v2.views import ProfileImageView
 from openedx.core.djangoapps.user_api.v2 import urls as v2_urls
 from openedx.core.djangoapps.user_api.v2.views import (
@@ -27,8 +24,6 @@ from openedx.core.djangoapps.user_api.v2.views import (
     UserViewSet,
 )
 from openedx.core.djangolib.testing.utils import skip_unless_lms
-
-PASSWORD = "Password1234"
 
 V2_VIEW_MODULE = "openedx.core.djangoapps.user_api.v2.views"
 PROFILE_IMAGE_VIEW_MODULE = "openedx.core.djangoapps.profile_images.v2.views"
@@ -304,28 +299,21 @@ class UrlLiteralTests(APITestCase):
         ) == "/api/user/v2/user_preferences/ada.lovelace,a,b/"
 
     def test_a_username_outside_the_allowed_pattern_does_not_reach_the_viewset(self):
-        match = resolve("/api/user/v2/user_preferences/al!ce,pref-lang/")
-        assert view_identity(match.func) == (V2_VIEW_MODULE, "UnknownAddressView")
+        with pytest.raises(Resolver404):
+            resolve("/api/user/v2/user_preferences/al!ce,pref-lang/")
 
     def test_no_database_id_member_address_is_served(self):
-        match = resolve("/api/user/v2/user_preferences/42/")
-        assert view_identity(match.func) == (V2_VIEW_MODULE, "UnknownAddressView")
+        with pytest.raises(Resolver404):
+            resolve("/api/user/v2/user_preferences/42/")
 
 
 @skip_unless_lms
 class RouteShapeTests(APITestCase):
-    """
-    Every address this version serves is named and ends in a slash.
-
-    The mount also carries one pattern that is neither: the fallback matched
-    after all of them, which answers an address no route serves. It addresses
-    no resource and reverses to nothing, which is why it has no name, and
-    pinning it here keeps a second wildcard from being added quietly beside
-    it.
-    """
+    """Every address this version serves is named and ends in a slash."""
 
     def test_every_address_is_named_and_ends_in_a_slash(self):
-        addresses = [pattern for pattern in v2_urls.urlpatterns if pattern.name]
+        addresses = v2_urls.urlpatterns
+        assert all(pattern.name for pattern in addresses), [str(p.pattern) for p in addresses if not p.name]
         assert sorted(pattern.name for pattern in addresses) == [
             "account_deactivation",
             "account_detail",
@@ -366,11 +354,6 @@ class RouteShapeTests(APITestCase):
         with pytest.raises(ImproperlyConfigured):
             v2_urls.without_route(routes, "user_preference_detail_renamed")
 
-    def test_the_one_unnamed_pattern_is_the_fallback_and_it_is_matched_last(self):
-        unnamed = [pattern for pattern in v2_urls.urlpatterns if not pattern.name]
-        assert len(unnamed) == 1
-        assert unnamed[0] is v2_urls.urlpatterns[-1]
-        assert view_identity(unnamed[0].callback) == (V2_VIEW_MODULE, "UnknownAddressView")
 
 
 @skip_unless_lms
@@ -471,98 +454,3 @@ class LegacyAddressTests(APITestCase):
     def test_unversioned_twins_still_resolve(self):
         match = resolve("/user_api/v1/users/")
         assert view_identity(match.func) == (V1_VIEW_MODULE, "UserViewSet")
-
-
-@skip_unless_lms
-class MalformedAddressTests(APITestCase):
-    """An address that matches no route is refused in the body shape this API answers with."""
-
-    def setUp(self):
-        super().setUp()
-        self.admin = AdminFactory.create(username="url-admin", password=PASSWORD)
-        assert self.client.login(username=self.admin.username, password=PASSWORD)
-
-    def assert_refused_in_json(self, response):
-        """Assert the refusal is the standard error body and not a page meant for a browser."""
-        assert response["Content-Type"].startswith("application/json"), response["Content-Type"]
-        assert "<html" not in response.content.decode().lower()
-        envelope = assert_error_envelope(
-            response, expected_status=status.HTTP_404_NOT_FOUND, expected_type_slug="not-found",
-        )
-        assert envelope["title"] == "Not Found"
-        return envelope
-
-    def test_preference_member_address_without_a_key_is_not_found(self):
-        self.assert_refused_in_json(self.client.get("/api/user/v2/user_preferences/42/"))
-
-    def test_unknown_collection_is_not_found(self):
-        self.assert_refused_in_json(self.client.get("/api/user/v2/not_a_collection/"))
-
-    def test_a_caller_that_asked_for_json_is_answered_in_json(self):
-        response = self.client.get(
-            "/api/user/v2/user_preferences/garbage/",
-            HTTP_ACCEPT="application/json",
-            content_type="application/json",
-        )
-        envelope = self.assert_refused_in_json(response)
-        assert envelope["instance"] == "/api/user/v2/user_preferences/garbage/"
-
-    def test_a_username_outside_the_allowed_pattern_is_not_found(self):
-        self.assert_refused_in_json(self.client.get("/api/user/v2/user_preferences/al!ce,pref-lang/"))
-
-    def test_an_anonymous_caller_is_refused_the_same_way(self):
-        self.client.logout()
-        self.assert_refused_in_json(self.client.get("/api/user/v2/not_a_collection/"))
-
-    def test_a_write_to_an_unknown_address_is_not_found_rather_than_not_allowed(self):
-        self.assert_refused_in_json(
-            self.client.post("/api/user/v2/not_a_collection/", {}, format="json"),
-        )
-
-    def test_the_version_this_mount_shares_its_prefix_with_is_left_alone(self):
-        """The authentication app's addresses under this prefix keep reaching it."""
-        for address in (
-            "/api/user/v2/account/registration/",
-            "/api/user/v2/account/login_session/",
-        ):
-            match = resolve(address)
-            assert match.func.view_class.__module__.startswith(
-                "openedx.core.djangoapps.user_authn",
-            ), address
-
-    def test_the_singular_spelling_of_the_account_collection_is_refused_in_json(self):
-        """The nearest misspelling of a collection of this version is answered by it."""
-        for address in (
-            "/api/user/v2/account/",
-            "/api/user/v2/account/alice/",
-            "/api/user/v2/account/alice/profile_image/",
-        ):
-            response = self.client.get(address, HTTP_ACCEPT="application/json")
-            assert view_identity(resolve(address).func) == (V2_VIEW_MODULE, "UnknownAddressView"), address
-            self.assert_refused_in_json(response)
-
-    def test_an_address_of_the_other_app_sent_without_its_slash_is_still_redirected(self):
-        """That app serves the slashed form, which the caller is sent to as it was before."""
-        response = self.client.get("/api/user/v2/account/registration")
-        assert response.status_code == status.HTTP_301_MOVED_PERMANENTLY
-        assert response["Location"] == "/api/user/v2/account/registration/"
-
-    def test_every_address_left_to_the_other_app_is_one_that_app_serves(self):
-        """
-        An address that app adds under this prefix is answered here until it is named.
-
-        The two are matched by the pattern that keeps them out of the fallback
-        and are read back from the routes serving them, so neither side can be
-        edited alone.
-        """
-        left_alone = re.compile(rf"{v2_urls.OTHER_APP_ADDRESSES}\Z")
-        served = {
-            reverse("user_api_registration_v2"),
-            reverse("user_api_login_session", kwargs={"api_version": "v2"}),
-        }
-        assert served == {
-            "/api/user/v2/account/registration/",
-            "/api/user/v2/account/login_session/",
-        }
-        for address in served:
-            assert left_alone.match(address.removeprefix("/api/user/v2/")), address
