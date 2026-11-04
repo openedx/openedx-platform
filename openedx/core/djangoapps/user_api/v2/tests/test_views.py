@@ -10,7 +10,7 @@ from django.contrib.auth.models import User  # pylint: disable=imported-auth-use
 from django.core.exceptions import ImproperlyConfigured
 from django.db import connection
 from django.test import SimpleTestCase
-from django.test.utils import CaptureQueriesContext
+from django.test.utils import CaptureQueriesContext, override_settings
 from django.urls import reverse
 from edx_rest_framework_extensions.testing import assert_error_envelope
 from opaque_keys.edx.keys import CourseKey
@@ -31,6 +31,7 @@ from openedx.core.djangoapps.user_api.v2.views import UserPreferenceViewSet, Use
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 
 PASSWORD = "Password1234"
+API_KEY = "directory-test-api-key"
 COURSE_KEY = CourseKey.from_string("course-v1:edX+DemoX+Demo")
 OTHER_COURSE_KEY = CourseKey.from_string("course-v1:edX+OtherX+Other")
 
@@ -143,6 +144,7 @@ class WriteCaptureFilterTests(SimpleTestCase):
         assert write_target(self.USER_SELECT) is None
 
 
+@override_settings(EDX_API_KEY=API_KEY)
 class UserApiV2TestCase(APITestCase):
     """Fixtures shared by the version 2 User API tests."""
 
@@ -158,6 +160,10 @@ class UserApiV2TestCase(APITestCase):
     def login(self, user):
         """Sign the given user in through the session the platform default accepts."""
         assert self.client.login(username=user.username, password=PASSWORD)
+
+    def send_api_key(self):
+        """Send the site's API key with every later request, which is how the directory is read."""
+        self.client.credentials(HTTP_X_EDX_API_KEY=API_KEY)
 
     def usernames_in(self, response):
         """Return the usernames carried by a paginated directory page."""
@@ -176,18 +182,18 @@ class UserListViewTests(UserApiV2TestCase):
         response = self.client.get(self.url)
         assert_error_envelope(response, expected_status=status.HTTP_401_UNAUTHORIZED, expected_type_slug="authn")
 
-    def test_non_admin_caller_is_forbidden(self):
+    def test_a_caller_without_the_key_is_forbidden(self):
         self.login(self.learner)
         response = self.client.get(self.url)
         assert_error_envelope(response, expected_status=status.HTTP_403_FORBIDDEN, expected_type_slug="authz")
 
-    def test_non_admin_cannot_list_another_users_preference_holders(self):
+    def test_a_caller_without_the_key_cannot_list_another_users_preference_holders(self):
         self.login(self.learner)
         response = self.client.get(self.url, {"preference_key": "pref-lang"})
         assert_error_envelope(response, expected_status=status.HTTP_403_FORBIDDEN, expected_type_slug="authz")
 
-    def test_admin_caller_receives_the_directory(self):
-        self.login(self.admin)
+    def test_a_caller_with_the_key_receives_the_directory(self):
+        self.send_api_key()
         response = self.client.get(self.url, {"page_size": 100})
         assert response.status_code == status.HTTP_200_OK
         assert set(response.data) == PAGINATION_KEYS
@@ -198,7 +204,7 @@ class UserListViewTests(UserApiV2TestCase):
         assert response.data["start"] == 0
 
     def test_row_shape_matches_the_declared_fields(self):
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.url, {"username": "alice"})
         row = response.data["results"][0]
         assert set(row) == {"id", "url", "email", "name", "username", "preferences"}
@@ -209,7 +215,7 @@ class UserListViewTests(UserApiV2TestCase):
         assert row["url"].endswith("/api/user/v2/users/alice/")
 
     def test_second_page_reports_its_position(self):
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.url, {"page_size": 2, "page": 2})
         assert response.status_code == status.HTTP_200_OK
         assert self.usernames_in(response) == ["bob", "learner-caller"]
@@ -220,17 +226,17 @@ class UserListViewTests(UserApiV2TestCase):
         assert response.data["next"] is None
 
     def test_a_page_beyond_the_last_one_is_not_found(self):
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.url, {"page": 9999})
         assert_error_envelope(response, expected_status=status.HTTP_404_NOT_FOUND, expected_type_slug="not-found")
 
     def test_a_page_number_that_is_not_a_number_is_not_found(self):
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.url, {"page": "abc"})
         assert_error_envelope(response, expected_status=status.HTTP_404_NOT_FOUND, expected_type_slug="not-found")
 
     def test_ordering_can_be_reversed(self):
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.url, {"ordering": "-username", "page_size": 100})
         assert self.usernames_in(response) == ["learner-caller", "bob", "alice", "admin-caller"]
 
@@ -239,12 +245,12 @@ class UserListViewTests(UserApiV2TestCase):
         self.alice.save()
         self.bob.date_joined = datetime(2019, 1, 1, tzinfo=UTC)
         self.bob.save()
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.url, {"ordering": "date_joined", "page_size": 100})
         assert self.usernames_in(response)[-2:] == ["bob", "alice"]
 
     def test_unknown_ordering_is_refused(self):
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.url, {"ordering": "password", "page_size": 100})
         envelope = assert_error_envelope(
             response, expected_status=status.HTTP_400_BAD_REQUEST, expected_type_slug="validation",
@@ -254,14 +260,14 @@ class UserListViewTests(UserApiV2TestCase):
         }
 
     def test_one_unknown_field_refuses_the_whole_sort(self):
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.url, {"ordering": "username,password", "page_size": 100})
         assert_error_envelope(
             response, expected_status=status.HTTP_400_BAD_REQUEST, expected_type_slug="validation",
         )
 
     def test_filter_by_username(self):
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.url, {"username": "bob", "page_size": 100})
         assert self.usernames_in(response) == ["bob"]
 
@@ -274,45 +280,45 @@ class UserListViewTests(UserApiV2TestCase):
         page of the accounts asked for rather than as a value this collection
         does not take.
         """
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.url, {"username": "alice,bob", "page_size": 100})
         assert response.status_code == status.HTTP_200_OK
         assert self.usernames_in(response) == ["alice", "bob"]
         assert response.data["count"] == 2
 
     def test_a_name_in_the_list_that_no_account_holds_is_left_out_of_the_page(self):
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.url, {"username": "alice,nobody", "page_size": 100})
         assert self.usernames_in(response) == ["alice"]
         assert response.data["count"] == 1
 
     def test_a_position_in_the_list_that_carries_nothing_names_nothing(self):
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.url, {"username": ",alice,,bob,", "page_size": 100})
         assert self.usernames_in(response) == ["alice", "bob"]
 
     def test_an_empty_name_narrows_nothing(self):
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.url, {"username": "", "page_size": 100})
         assert response.status_code == status.HTTP_200_OK
         assert self.usernames_in(response) == ["admin-caller", "alice", "bob", "learner-caller"]
 
     def test_filter_by_email(self):
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.url, {"email": "bob@example.com"})
         assert self.usernames_in(response) == ["bob"]
 
     def test_filter_by_is_active(self):
         self.alice.is_active = False
         self.alice.save()
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.url, {"is_active": "false", "page_size": 100})
         assert self.usernames_in(response) == ["alice"]
 
     def test_filter_by_is_active_keeps_only_the_active_accounts(self):
         self.alice.is_active = False
         self.alice.save()
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.url, {"is_active": "true", "page_size": 100})
         assert self.usernames_in(response) == ["admin-caller", "bob", "learner-caller"]
 
@@ -320,7 +326,7 @@ class UserListViewTests(UserApiV2TestCase):
         """A mistyped value must be refused, not read as "no preference" and answered unfiltered."""
         self.alice.is_active = False
         self.alice.save()
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.url, {"is_active": "maybe", "page_size": 100})
         envelope = assert_error_envelope(
             response, expected_status=status.HTTP_400_BAD_REQUEST, expected_type_slug="validation",
@@ -330,18 +336,18 @@ class UserListViewTests(UserApiV2TestCase):
     def test_an_empty_is_active_value_narrows_nothing(self):
         self.alice.is_active = False
         self.alice.save()
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.url, {"is_active": "", "page_size": 100})
         assert response.status_code == status.HTTP_200_OK
         assert self.usernames_in(response) == ["admin-caller", "alice", "bob", "learner-caller"]
 
     def test_filter_by_preference_key(self):
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.url, {"preference_key": "pref-lang", "page_size": 100})
         assert self.usernames_in(response) == ["alice"]
 
     def test_filter_by_unknown_preference_key_returns_no_rows(self):
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.url, {"preference_key": "nope", "page_size": 100})
         assert response.data["results"] == []
         assert response.data["count"] == 0
@@ -356,7 +362,7 @@ class UserListViewTests(UserApiV2TestCase):
         self.give_alice_the_moderator_role()
         other_role = Role.objects.create(course_id=OTHER_COURSE_KEY, name="Moderator")
         other_role.users.add(self.bob)
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(
             self.url, {"forum_role": "Moderator", "course_key": str(COURSE_KEY), "page_size": 100},
         )
@@ -369,7 +375,7 @@ class UserListViewTests(UserApiV2TestCase):
         )
         assert_error_envelope(response, expected_status=status.HTTP_401_UNAUTHORIZED, expected_type_slug="authn")
 
-    def test_non_admin_cannot_list_a_courses_forum_role_holders(self):
+    def test_a_caller_without_the_key_cannot_list_a_courses_forum_role_holders(self):
         self.give_alice_the_moderator_role()
         self.login(self.learner)
         response = self.client.get(
@@ -393,14 +399,14 @@ class UserListViewTests(UserApiV2TestCase):
         ).group(1)
         role = Role.objects.create(course_id=COURSE_KEY, name="Moderator")
         role.users.add(self.alice)
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(f"{self.url}?forum_role=Moderator&course_key={example}")
         assert response.status_code == status.HTTP_200_OK
         assert self.usernames_in(response) == ["alice"]
 
     def test_a_course_key_whose_plus_signs_are_not_encoded_is_refused(self):
         """An unencoded plus sign arrives as a space, which no course key may contain."""
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(
             f"{self.url}?forum_role=Moderator&course_key=course-v1:edX+DemoX+Demo",
         )
@@ -414,7 +420,7 @@ class UserListViewTests(UserApiV2TestCase):
         for _ in range(2):
             role = Role.objects.create(course_id=COURSE_KEY, name="Moderator")
             role.users.add(self.alice)
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(
             self.url, {"forum_role": "Moderator", "course_key": str(COURSE_KEY), "page_size": 100},
         )
@@ -422,7 +428,7 @@ class UserListViewTests(UserApiV2TestCase):
         assert response.data["count"] == 1
 
     def test_forum_role_without_course_key_is_rejected(self):
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.url, {"forum_role": "Moderator"})
         envelope = assert_error_envelope(
             response, expected_status=status.HTTP_400_BAD_REQUEST, expected_type_slug="validation",
@@ -432,7 +438,7 @@ class UserListViewTests(UserApiV2TestCase):
         }
 
     def test_course_key_without_forum_role_is_rejected(self):
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.url, {"course_key": str(COURSE_KEY)})
         envelope = assert_error_envelope(
             response, expected_status=status.HTTP_400_BAD_REQUEST, expected_type_slug="validation",
@@ -442,7 +448,7 @@ class UserListViewTests(UserApiV2TestCase):
         }
 
     def test_malformed_course_key_is_rejected(self):
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.url, {"forum_role": "Moderator", "course_key": "not a course"})
         envelope = assert_error_envelope(
             response, expected_status=status.HTTP_400_BAD_REQUEST, expected_type_slug="validation",
@@ -450,7 +456,7 @@ class UserListViewTests(UserApiV2TestCase):
         assert envelope["errors"] == {"course_key": ["Enter a valid course key."]}
 
     def test_unknown_forum_role_returns_no_rows_and_creates_nothing(self):
-        self.login(self.admin)
+        self.send_api_key()
         with CaptureQueriesContext(connection) as captured:
             response = self.client.get(
                 self.url, {"forum_role": "Inquisitor", "course_key": str(COURSE_KEY)},
@@ -461,26 +467,26 @@ class UserListViewTests(UserApiV2TestCase):
         assert write_queries(captured.captured_queries) == []
 
     def test_minimal_view_returns_only_identifying_fields(self):
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.url, {"username": "alice", "view": "minimal"})
         row = response.data["results"][0]
         assert set(row) == {"id", "username", "email"}
         assert row["username"] == "alice"
 
     def test_fields_parameter_projects_the_row(self):
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.url, {"username": "alice", "fields": "username,email"})
         assert response.data["results"] == [{"username": "alice", "email": "alice@example.com"}]
 
     def test_fields_parameter_narrows_the_minimal_view(self):
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(
             self.url, {"username": "alice", "view": "minimal", "fields": "username"},
         )
         assert response.data["results"] == [{"username": "alice"}]
 
     def test_a_field_name_the_row_does_not_carry_is_refused(self):
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.url, {"fields": "user_name"})
         envelope = assert_error_envelope(
             response, expected_status=status.HTTP_400_BAD_REQUEST, expected_type_slug="validation",
@@ -494,7 +500,7 @@ class UserListViewTests(UserApiV2TestCase):
 
     def test_a_field_the_minimal_preset_drops_is_refused(self):
         """The preset decides what the row carries, so the selection is judged against it."""
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.url, {"view": "minimal", "fields": "name"})
         envelope = assert_error_envelope(
             response, expected_status=status.HTTP_400_BAD_REQUEST, expected_type_slug="validation",
@@ -504,7 +510,7 @@ class UserListViewTests(UserApiV2TestCase):
         }
 
     def test_every_unknown_field_name_is_named_at_once(self):
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.url, {"fields": "username,e_mail,joined"})
         envelope = assert_error_envelope(
             response, expected_status=status.HTTP_400_BAD_REQUEST, expected_type_slug="validation",
@@ -512,7 +518,7 @@ class UserListViewTests(UserApiV2TestCase):
         assert envelope["errors"]["fields"][0].startswith("No such field: e_mail, joined.")
 
     def test_a_field_name_with_surrounding_space_is_accepted(self):
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.url, {"username": "alice", "fields": " username , email "})
         assert response.data["results"] == [{"username": "alice", "email": "alice@example.com"}]
 
@@ -521,7 +527,7 @@ class UserListViewTests(UserApiV2TestCase):
         assert_error_envelope(response, expected_status=status.HTTP_401_UNAUTHORIZED, expected_type_slug="authn")
 
     def test_an_unknown_response_preset_is_refused(self):
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.url, {"view": "nonsense"})
         envelope = assert_error_envelope(
             response, expected_status=status.HTTP_400_BAD_REQUEST, expected_type_slug="validation",
@@ -531,7 +537,7 @@ class UserListViewTests(UserApiV2TestCase):
         }
 
     def test_the_preset_that_belongs_to_the_preference_list_is_refused_here(self):
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.url, {"view": "full"})
         assert_error_envelope(
             response, expected_status=status.HTTP_400_BAD_REQUEST, expected_type_slug="validation",
@@ -539,7 +545,7 @@ class UserListViewTests(UserApiV2TestCase):
 
     def test_an_empty_response_preset_returns_the_default_shape(self):
         """A query string built from an empty variable narrows nothing rather than failing."""
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.url, {"username": "alice", "view": ""})
         assert response.status_code == status.HTTP_200_OK
         assert set(response.data["results"][0]) == {
@@ -551,13 +557,13 @@ class UserListViewTests(UserApiV2TestCase):
         assert_error_envelope(response, expected_status=status.HTTP_401_UNAUTHORIZED, expected_type_slug="authn")
 
     def test_listing_writes_nothing(self):
-        self.login(self.admin)
+        self.send_api_key()
         with CaptureQueriesContext(connection) as captured:
             self.client.get(self.url, {"page_size": 100})
         assert write_queries(captured.captured_queries) == []
 
     def test_head_writes_nothing(self):
-        self.login(self.admin)
+        self.send_api_key()
         with CaptureQueriesContext(connection) as captured:
             response = self.client.head(self.url)
         assert response.status_code == status.HTTP_200_OK
@@ -576,18 +582,18 @@ class UserDetailViewTests(UserApiV2TestCase):
         response = self.client.get(self.url_for("alice"))
         assert_error_envelope(response, expected_status=status.HTTP_401_UNAUTHORIZED, expected_type_slug="authn")
 
-    def test_non_admin_caller_is_forbidden(self):
+    def test_a_caller_without_the_key_is_forbidden(self):
         self.login(self.learner)
         response = self.client.get(self.url_for("alice"))
         assert_error_envelope(response, expected_status=status.HTTP_403_FORBIDDEN, expected_type_slug="authz")
 
-    def test_owner_who_is_not_an_admin_is_forbidden(self):
+    def test_the_owner_without_the_key_is_forbidden(self):
         self.login(self.alice)
         response = self.client.get(self.url_for("alice"))
         assert_error_envelope(response, expected_status=status.HTTP_403_FORBIDDEN, expected_type_slug="authz")
 
-    def test_admin_caller_receives_the_entry(self):
-        self.login(self.admin)
+    def test_a_caller_with_the_key_receives_the_entry(self):
+        self.send_api_key()
         response = self.client.get(self.url_for("alice"))
         assert response.status_code == status.HTTP_200_OK
         assert response.data["username"] == "alice"
@@ -595,24 +601,24 @@ class UserDetailViewTests(UserApiV2TestCase):
         assert response.data["preferences"] == {"pref-lang": "en"}
 
     def test_unknown_username_is_not_found(self):
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.url_for("nobody"))
         assert_error_envelope(response, expected_status=status.HTTP_404_NOT_FOUND, expected_type_slug="not-found")
 
     def test_username_containing_a_dot_resolves(self):
         UserFactory.create(username="ada.lovelace", email="ada@example.com", password=PASSWORD)
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.url_for("ada.lovelace"))
         assert response.status_code == status.HTTP_200_OK
         assert response.data["username"] == "ada.lovelace"
 
     def test_minimal_view_returns_only_identifying_fields(self):
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.url_for("alice"), {"view": "minimal"})
         assert set(response.data) == {"id", "username", "email"}
 
     def test_a_field_name_the_entry_does_not_carry_is_refused(self):
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.url_for("alice"), {"fields": "user_name"})
         envelope = assert_error_envelope(
             response, expected_status=status.HTTP_400_BAD_REQUEST, expected_type_slug="validation",
@@ -625,12 +631,12 @@ class UserDetailViewTests(UserApiV2TestCase):
         }
 
     def test_fields_parameter_projects_the_entry(self):
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.url_for("alice"), {"fields": "username"})
         assert response.data == {"username": "alice"}
 
     def test_an_unknown_response_preset_is_refused(self):
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.url_for("alice"), {"view": "nonsense"})
         envelope = assert_error_envelope(
             response, expected_status=status.HTTP_400_BAD_REQUEST, expected_type_slug="validation",
@@ -640,13 +646,13 @@ class UserDetailViewTests(UserApiV2TestCase):
         }
 
     def test_retrieval_writes_nothing(self):
-        self.login(self.admin)
+        self.send_api_key()
         with CaptureQueriesContext(connection) as captured:
             self.client.get(self.url_for("alice"))
         assert write_queries(captured.captured_queries) == []
 
     def test_head_writes_nothing(self):
-        self.login(self.admin)
+        self.send_api_key()
         with CaptureQueriesContext(connection) as captured:
             response = self.client.head(self.url_for("alice"))
         assert response.status_code == status.HTTP_200_OK
@@ -659,7 +665,7 @@ class ProfilelessUserTests(UserApiV2TestCase):
 
     def test_user_without_a_profile_has_a_null_name(self):
         User.objects.create_user("profileless", "profileless@example.com", PASSWORD)
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(
             reverse("user_v2:user_detail", kwargs={"username": "profileless"}),
         )
@@ -683,25 +689,25 @@ class UserPreferenceListViewTests(UserApiV2TestCase):
         response = self.client.get(self.url)
         assert_error_envelope(response, expected_status=status.HTTP_401_UNAUTHORIZED, expected_type_slug="authn")
 
-    def test_non_admin_caller_is_forbidden(self):
+    def test_a_caller_without_the_key_is_forbidden(self):
         self.login(self.learner)
         response = self.client.get(self.url)
         assert_error_envelope(response, expected_status=status.HTTP_403_FORBIDDEN, expected_type_slug="authz")
 
-    def test_owner_who_is_not_an_admin_is_forbidden(self):
+    def test_the_owner_without_the_key_is_forbidden(self):
         self.login(self.alice)
         response = self.client.get(self.url, {"username": "alice"})
         assert_error_envelope(response, expected_status=status.HTTP_403_FORBIDDEN, expected_type_slug="authz")
 
-    def test_admin_caller_receives_every_preference(self):
-        self.login(self.admin)
+    def test_a_caller_with_the_key_receives_every_preference(self):
+        self.send_api_key()
         response = self.client.get(self.url, {"page_size": 100})
         assert response.status_code == status.HTTP_200_OK
         assert set(response.data) == PAGINATION_KEYS
         assert self.keys_in(response) == [("alice", "pref-lang"), ("bob", "time_zone")]
 
     def test_row_shape_is_flat_by_default(self):
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.url, {"username": "alice"})
         row = response.data["results"][0]
         assert set(row) == {"username", "key", "value", "url", "user"}
@@ -712,7 +718,7 @@ class UserPreferenceListViewTests(UserApiV2TestCase):
         assert row["url"].endswith("/api/user/v2/user_preferences/alice,pref-lang/")
 
     def test_full_view_embeds_the_owning_user(self):
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.url, {"username": "alice", "view": "full"})
         row = response.data["results"][0]
         assert set(row["user"]) == {"id", "url", "email", "name", "username", "preferences"}
@@ -720,12 +726,12 @@ class UserPreferenceListViewTests(UserApiV2TestCase):
         assert row["user"]["preferences"] == {"pref-lang": "en"}
 
     def test_minimal_view_drops_the_address_and_owner(self):
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.url, {"username": "alice", "view": "minimal"})
         assert response.data["results"] == [{"username": "alice", "key": "pref-lang", "value": "en"}]
 
     def test_a_field_name_the_row_does_not_carry_is_refused(self):
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.url, {"fields": "preference_key"})
         envelope = assert_error_envelope(
             response, expected_status=status.HTTP_400_BAD_REQUEST, expected_type_slug="validation",
@@ -738,48 +744,48 @@ class UserPreferenceListViewTests(UserApiV2TestCase):
         }
 
     def test_a_page_beyond_the_last_one_is_not_found(self):
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.url, {"page": 9999})
         assert_error_envelope(response, expected_status=status.HTTP_404_NOT_FOUND, expected_type_slug="not-found")
 
     def test_fields_parameter_projects_the_row(self):
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.url, {"username": "alice", "fields": "key,value"})
         assert response.data["results"] == [{"key": "pref-lang", "value": "en"}]
 
     def test_filter_by_key(self):
         UserPreferenceFactory.create(user=self.bob, key="pref-lang", value="fr")
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.url, {"key": "pref-lang", "page_size": 100})
         assert self.keys_in(response) == [("alice", "pref-lang"), ("bob", "pref-lang")]
 
     def test_filter_by_username(self):
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.url, {"username": "bob", "page_size": 100})
         assert self.keys_in(response) == [("bob", "time_zone")]
 
     def test_several_names_select_the_preferences_of_each(self):
         """The value is a list of names, as it is on the sibling collections of this version."""
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.url, {"username": "alice,bob", "page_size": 100})
         assert response.status_code == status.HTTP_200_OK
         assert self.keys_in(response) == [("alice", "pref-lang"), ("bob", "time_zone")]
         assert response.data["count"] == 2
 
     def test_a_name_in_the_list_that_no_account_holds_is_left_out_of_the_page(self):
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.url, {"username": "alice,nobody", "page_size": 100})
         assert self.keys_in(response) == [("alice", "pref-lang")]
 
     def test_an_empty_name_narrows_nothing(self):
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.url, {"username": "", "page_size": 100})
         assert response.status_code == status.HTTP_200_OK
         assert self.keys_in(response) == [("alice", "pref-lang"), ("bob", "time_zone")]
 
     def test_the_owner_id_the_earlier_list_took_is_refused_rather_than_ignored(self):
         """A caller that ported by changing the version segment is told, not quietly unfiltered."""
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.url, {"user": self.alice.id, "page_size": 100})
         envelope = assert_error_envelope(
             response, expected_status=status.HTTP_400_BAD_REQUEST, expected_type_slug="validation",
@@ -789,26 +795,26 @@ class UserPreferenceListViewTests(UserApiV2TestCase):
         }
 
     def test_an_answered_page_announces_no_deprecated_parameter(self):
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.url, {"username": "alice"})
         assert response.status_code == status.HTTP_200_OK
         assert "Deprecation" not in response
 
     def test_ordering_by_key_descending(self):
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.url, {"ordering": "-key", "page_size": 100})
         assert self.keys_in(response) == [("bob", "time_zone"), ("alice", "pref-lang")]
 
     def test_ordering_takes_the_fields_in_the_order_they_are_named(self):
         UserPreferenceFactory.create(user=self.bob, key="pref-lang", value="fr")
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.url, {"ordering": "key,-username", "page_size": 100})
         assert self.keys_in(response) == [
             ("bob", "pref-lang"), ("alice", "pref-lang"), ("bob", "time_zone"),
         ]
 
     def test_unknown_ordering_is_refused(self):
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.url, {"ordering": "value", "page_size": 100})
         envelope = assert_error_envelope(
             response, expected_status=status.HTTP_400_BAD_REQUEST, expected_type_slug="validation",
@@ -818,26 +824,26 @@ class UserPreferenceListViewTests(UserApiV2TestCase):
         }
 
     def test_listing_writes_nothing(self):
-        self.login(self.admin)
+        self.send_api_key()
         with CaptureQueriesContext(connection) as captured:
             self.client.get(self.url, {"page_size": 100})
         assert write_queries(captured.captured_queries) == []
 
     def test_full_view_writes_nothing(self):
-        self.login(self.admin)
+        self.send_api_key()
         with CaptureQueriesContext(connection) as captured:
             self.client.get(self.url, {"page_size": 100, "view": "full"})
         assert write_queries(captured.captured_queries) == []
 
     def test_head_writes_nothing(self):
-        self.login(self.admin)
+        self.send_api_key()
         with CaptureQueriesContext(connection) as captured:
             response = self.client.head(self.url)
         assert response.status_code == status.HTTP_200_OK
         assert write_queries(captured.captured_queries) == []
 
     def test_an_unknown_response_preset_is_refused(self):
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.url, {"view": "nonsense"})
         envelope = assert_error_envelope(
             response, expected_status=status.HTTP_400_BAD_REQUEST, expected_type_slug="validation",
@@ -861,18 +867,18 @@ class UserPreferenceDetailViewTests(UserApiV2TestCase):
         response = self.client.get(self.url_for("alice", "pref-lang"))
         assert_error_envelope(response, expected_status=status.HTTP_401_UNAUTHORIZED, expected_type_slug="authn")
 
-    def test_non_admin_caller_is_forbidden(self):
+    def test_a_caller_without_the_key_is_forbidden(self):
         self.login(self.learner)
         response = self.client.get(self.url_for("alice", "pref-lang"))
         assert_error_envelope(response, expected_status=status.HTTP_403_FORBIDDEN, expected_type_slug="authz")
 
-    def test_owner_who_is_not_an_admin_is_forbidden(self):
+    def test_the_owner_without_the_key_is_forbidden(self):
         self.login(self.alice)
         response = self.client.get(self.url_for("alice", "pref-lang"))
         assert_error_envelope(response, expected_status=status.HTTP_403_FORBIDDEN, expected_type_slug="authz")
 
-    def test_admin_caller_receives_the_preference(self):
-        self.login(self.admin)
+    def test_a_caller_with_the_key_receives_the_preference(self):
+        self.send_api_key()
         response = self.client.get(self.url_for("alice", "pref-lang"))
         assert response.status_code == status.HTTP_200_OK
         assert set(response.data) == {"username", "key", "value", "url", "user"}
@@ -882,12 +888,12 @@ class UserPreferenceDetailViewTests(UserApiV2TestCase):
         assert response.data["user"] is None
 
     def test_full_view_embeds_the_owning_user(self):
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.url_for("alice", "pref-lang"), {"view": "full"})
         assert response.data["user"]["username"] == "alice"
 
     def test_a_field_name_the_preference_does_not_carry_is_refused(self):
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.url_for("alice", "pref-lang"), {"fields": "preference_key"})
         envelope = assert_error_envelope(
             response, expected_status=status.HTTP_400_BAD_REQUEST, expected_type_slug="validation",
@@ -900,30 +906,30 @@ class UserPreferenceDetailViewTests(UserApiV2TestCase):
         }
 
     def test_unknown_key_is_not_found(self):
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.url_for("alice", "nope"))
         assert_error_envelope(response, expected_status=status.HTTP_404_NOT_FOUND, expected_type_slug="not-found")
 
     def test_key_belonging_to_another_user_is_not_found(self):
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.url_for("alice", "time_zone"))
         assert_error_envelope(response, expected_status=status.HTTP_404_NOT_FOUND, expected_type_slug="not-found")
 
     def test_an_unknown_response_preset_is_refused(self):
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.url_for("alice", "pref-lang"), {"view": "nonsense"})
         assert_error_envelope(
             response, expected_status=status.HTTP_400_BAD_REQUEST, expected_type_slug="validation",
         )
 
     def test_retrieval_writes_nothing(self):
-        self.login(self.admin)
+        self.send_api_key()
         with CaptureQueriesContext(connection) as captured:
             self.client.get(self.url_for("alice", "pref-lang"))
         assert write_queries(captured.captured_queries) == []
 
     def test_head_writes_nothing(self):
-        self.login(self.admin)
+        self.send_api_key()
         with CaptureQueriesContext(connection) as captured:
             response = self.client.head(self.url_for("alice", "pref-lang"))
         assert response.status_code == status.HTTP_200_OK
@@ -944,6 +950,7 @@ class NameSelectorTests(UserApiV2TestCase):
         would be answering a value its own addresses spell differently.
         """
         self.login(self.admin)
+        self.send_api_key()
         selection = {"username": "alice,bob", "page_size": 100}
         pages = {
             name: self.client.get(reverse(f"user_v2:{name}"), selection)
@@ -1049,7 +1056,7 @@ class PageSizeCapTests(UserApiV2TestCase):
             User(username=f"extra-{index:03d}", email=f"extra-{index:03d}@example.com")
             for index in range(self.MAX_PAGE_SIZE)
         )
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(reverse("user_v2:user_list"), {"page_size": 1000})
         assert response.status_code == status.HTTP_200_OK
         assert response.data["count"] == self.MAX_PAGE_SIZE + 4
@@ -1062,7 +1069,7 @@ class PageSizeCapTests(UserApiV2TestCase):
             UserPreference(user=self.alice, key=f"extra-{index:03d}", value="x")
             for index in range(self.MAX_PAGE_SIZE)
         )
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(reverse("user_v2:user_preference_list"), {"page_size": 1000})
         assert response.status_code == status.HTTP_200_OK
         assert response.data["count"] == self.MAX_PAGE_SIZE + 2
@@ -1114,7 +1121,7 @@ class RefusedRequestTests(UserApiV2TestCase):
         assert response["Content-Type"] == "application/json"
 
     def test_a_refused_method_is_named_on_the_gated_collections(self):
-        self.login(self.admin)
+        self.send_api_key()
         for url_name in ("user_v2:user_list", "user_v2:user_preference_list"):
             response = self.client.delete(reverse(url_name))
             envelope = assert_error_envelope(
@@ -1125,7 +1132,7 @@ class RefusedRequestTests(UserApiV2TestCase):
             assert envelope["detail"] == 'Method "DELETE" not allowed.'
 
     def test_a_refused_method_is_named_on_the_gated_members(self):
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.put(reverse("user_v2:user_detail", args=[self.alice.username]))
         envelope = assert_error_envelope(
             response,
@@ -1174,17 +1181,17 @@ class UnknownQueryParameterTests(UserApiV2TestCase):
                 assert response.status_code == status.HTTP_200_OK, response.content
 
     def test_the_directory_refuses_a_parameter_it_does_not_read(self):
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.user_list, {"lms_user_id": self.alice.id, "page_size": 100})
         self.assert_refused(response, "lms_user_id", USER_QUERY_PARAMS)
 
     def test_a_mistyped_filter_refuses_the_page_instead_of_returning_every_row(self):
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.user_list, {"usernme": "alice", "page_size": 100})
         self.assert_refused(response, "usernme", USER_QUERY_PARAMS)
 
     def test_every_unrecognised_parameter_is_named_at_once(self):
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.user_list, {"sort": "username", "limit": "10"})
         envelope = assert_error_envelope(
             response, expected_status=status.HTTP_400_BAD_REQUEST, expected_type_slug="validation",
@@ -1192,17 +1199,17 @@ class UnknownQueryParameterTests(UserApiV2TestCase):
         assert sorted(envelope["errors"]) == ["limit", "sort"]
 
     def test_a_directory_entry_refuses_a_parameter_it_does_not_read(self):
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.user_detail, {"expand": "profile"})
         self.assert_refused(response, "expand", USER_QUERY_PARAMS)
 
     def test_the_preference_list_refuses_a_parameter_it_does_not_read(self):
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.preference_list, {"value": "en", "page_size": 100})
         self.assert_refused(response, "value", PREFERENCE_QUERY_PARAMS)
 
     def test_a_stored_preference_refuses_a_parameter_it_does_not_read(self):
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.preference_detail, {"value": "en"})
         self.assert_refused(response, "value", PREFERENCE_QUERY_PARAMS)
 
@@ -1221,7 +1228,7 @@ class UnknownQueryParameterTests(UserApiV2TestCase):
             response, expected_status=status.HTTP_401_UNAUTHORIZED, expected_type_slug="authn",
         )
 
-    def test_an_unknown_parameter_does_not_answer_a_non_admin_caller(self):
+    def test_an_unknown_parameter_does_not_answer_a_caller_without_the_key(self):
         self.login(self.learner)
         response = self.client.get(self.preference_list, {"lms_user_id": self.alice.id})
         assert_error_envelope(
@@ -1229,7 +1236,7 @@ class UnknownQueryParameterTests(UserApiV2TestCase):
         )
 
     def test_the_directory_answers_every_parameter_it_reads(self):
-        self.login(self.admin)
+        self.send_api_key()
         self.assert_each_is_answered(self.user_list, [
             {"page": 1},
             {"page_size": 2},
@@ -1245,13 +1252,13 @@ class UnknownQueryParameterTests(UserApiV2TestCase):
         ])
 
     def test_a_directory_entry_answers_every_parameter_it_reads(self):
-        self.login(self.admin)
+        self.send_api_key()
         self.assert_each_is_answered(self.user_detail, [
             {"view": "minimal"}, {"fields": "username"}, {"format": "json"}, {"ordering": "username"},
         ])
 
     def test_the_preference_list_answers_every_parameter_it_reads(self):
-        self.login(self.admin)
+        self.send_api_key()
         self.assert_each_is_answered(self.preference_list, [
             {"page": 1},
             {"page_size": 2},
@@ -1264,7 +1271,7 @@ class UnknownQueryParameterTests(UserApiV2TestCase):
         ])
 
     def test_a_stored_preference_answers_every_parameter_it_reads(self):
-        self.login(self.admin)
+        self.send_api_key()
         self.assert_each_is_answered(self.preference_detail, [
             {"view": "full"}, {"fields": "key"}, {"format": "json"},
         ])
@@ -1276,14 +1283,20 @@ class UnknownQueryParameterTests(UserApiV2TestCase):
 
     def test_a_page_of_the_directory_is_still_narrowed_by_the_filters_it_takes(self):
         """The refusal guards the parameters, not the filtering they ask for."""
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(self.user_list, {"username": "alice", "page_size": 100})
         assert self.usernames_in(response) == ["alice"]
 
 
 @skip_unless_lms
 class TokenCallerTests(UserApiV2TestCase):
-    """The staff-gated endpoints answer a bearer of a staff token and refuse everyone else."""
+    """
+    The directory addresses answer a request carrying the site's API key and refuse every other.
+
+    The key is what admits a caller here, whoever sends it: a token or a
+    session identifies the account a request comes from, and no account,
+    staff included, reads the directory without the key.
+    """
 
     def setUp(self):
         super().setUp()
@@ -1300,43 +1313,56 @@ class TokenCallerTests(UserApiV2TestCase):
         """Return the request headers that carry a token identifying the given user."""
         return {"HTTP_AUTHORIZATION": f"JWT {create_jwt_for_user(user)}"}
 
-    def test_a_staff_token_reaches_the_directory(self):
-        response = self.client.get(
-            self.addresses["user_list"], {"page_size": 100}, **self.token_headers(self.admin),
-        )
+    def test_the_key_alone_reaches_the_directory(self):
+        response = self.client.get(self.addresses["user_list"], {"page_size": 100}, HTTP_X_EDX_API_KEY=API_KEY)
         assert response.status_code == status.HTTP_200_OK
         assert self.usernames_in(response) == ["admin-caller", "alice", "bob", "learner-caller"]
         assert response.data["count"] == 4
 
-    def test_a_staff_token_reaches_every_staff_gated_address(self):
-        headers = self.token_headers(self.admin)
-        detail = self.client.get(self.addresses["user_detail"], **headers)
+    def test_the_key_alone_reaches_every_directory_address(self):
+        self.send_api_key()
+        detail = self.client.get(self.addresses["user_detail"])
         assert detail.status_code == status.HTTP_200_OK
         assert detail.data["username"] == "alice"
 
-        preferences = self.client.get(
-            self.addresses["preference_list"], {"username": "alice"}, **headers,
-        )
+        preferences = self.client.get(self.addresses["preference_list"], {"username": "alice"})
         assert preferences.status_code == status.HTTP_200_OK
         assert [(row["username"], row["key"]) for row in preferences.data["results"]] == [
             ("alice", "pref-lang"),
         ]
 
-        preference = self.client.get(self.addresses["preference_detail"], **headers)
+        preference = self.client.get(self.addresses["preference_detail"])
         assert preference.status_code == status.HTTP_200_OK
         assert preference.data["value"] == "en"
 
-    def test_the_token_and_not_a_session_identifies_the_caller(self):
-        token = create_jwt_for_user(self.admin)
+    def test_the_key_admits_whichever_account_sends_it(self):
         response = self.client.get(
-            self.addresses["user_list"], {"username": "alice"}, HTTP_AUTHORIZATION=f"JWT {token}",
+            self.addresses["user_list"], {"username": "alice"},
+            HTTP_X_EDX_API_KEY=API_KEY, **self.token_headers(self.learner),
         )
         assert response.status_code == status.HTTP_200_OK
-        assert response.wsgi_request.user == self.admin
-        assert response.wsgi_request.auth == token
-        assert "sessionid" not in response.wsgi_request.COOKIES
+        assert response.wsgi_request.user == self.learner
+        assert self.usernames_in(response) == ["alice"]
 
-    def test_a_learners_token_is_forbidden_on_every_staff_gated_address(self):
+    def test_a_staff_token_without_the_key_is_forbidden_on_every_directory_address(self):
+        headers = self.token_headers(self.admin)
+        for name, address in self.addresses.items():
+            with self.subTest(address=name):
+                assert_error_envelope(
+                    self.client.get(address, **headers),
+                    expected_status=status.HTTP_403_FORBIDDEN, expected_type_slug="authz",
+                )
+
+    def test_a_staff_session_without_the_key_is_forbidden_on_every_directory_address(self):
+        self.login(self.admin)
+        for name, address in self.addresses.items():
+            with self.subTest(address=name):
+                assert_error_envelope(
+                    self.client.get(address),
+                    expected_status=status.HTTP_403_FORBIDDEN, expected_type_slug="authz",
+                )
+
+    def test_a_learners_token_is_forbidden_on_every_directory_address(self):
         headers = self.token_headers(self.learner)
         for name, address in self.addresses.items():
             with self.subTest(address=name):
@@ -1345,7 +1371,7 @@ class TokenCallerTests(UserApiV2TestCase):
                     response, expected_status=status.HTTP_403_FORBIDDEN, expected_type_slug="authz",
                 )
 
-    def test_the_owner_of_the_record_is_still_not_staff(self):
+    def test_the_owner_of_the_record_is_still_refused_without_the_key(self):
         response = self.client.get(
             self.addresses["preference_detail"], **self.token_headers(self.alice),
         )
@@ -1353,9 +1379,24 @@ class TokenCallerTests(UserApiV2TestCase):
             response, expected_status=status.HTTP_403_FORBIDDEN, expected_type_slug="authz",
         )
 
+    def test_a_key_other_than_the_sites_is_unauthenticated(self):
+        for name, address in self.addresses.items():
+            with self.subTest(address=name):
+                assert_error_envelope(
+                    self.client.get(address, HTTP_X_EDX_API_KEY=f"{API_KEY}-other"),
+                    expected_status=status.HTTP_401_UNAUTHORIZED, expected_type_slug="authn",
+                )
+
+    @override_settings(EDX_API_KEY=None)
+    def test_no_key_admits_a_caller_on_a_site_that_configures_none(self):
+        assert_error_envelope(
+            self.client.get(self.addresses["user_list"], HTTP_X_EDX_API_KEY="None"),
+            expected_status=status.HTTP_401_UNAUTHORIZED, expected_type_slug="authn",
+        )
+
     def test_a_token_that_does_not_decode_is_unauthenticated(self):
         response = self.client.get(
-            self.addresses["user_list"], HTTP_AUTHORIZATION="JWT not.a.token",
+            self.addresses["user_list"], HTTP_AUTHORIZATION="JWT not.a.token", HTTP_X_EDX_API_KEY=API_KEY,
         )
         assert_error_envelope(
             response, expected_status=status.HTTP_401_UNAUTHORIZED, expected_type_slug="authn",
@@ -1372,7 +1413,7 @@ class SharedSortValueTests(UserApiV2TestCase):
         joined = datetime(2024, 3, 1, tzinfo=UTC)
         for username in ("zoe-shared", "mia-shared", "ada-shared"):
             UserFactory.create(username=username, date_joined=joined)
-        self.login(self.admin)
+        self.send_api_key()
 
     def test_users_sharing_a_join_date_are_ordered_by_username(self):
         response = self.client.get(self.url, {"ordering": "date_joined", "page_size": 100})
@@ -1399,16 +1440,20 @@ class SharedSortValueTests(UserApiV2TestCase):
 @skip_unless_lms
 class DeactivatedStaffCallerTests(UserApiV2TestCase):
     """
-    A staff account whose user record has been deactivated is refused by both halves of
-    the default authentication pair: the session half stops accepting it, and the active
-    account these views require refuses a token issued before the account was deactivated.
+    A staff account is refused here without the key whether or not it is still active.
+
+    Deactivating the account changes only which half of the default
+    authentication pair refuses it: the session half stops accepting it, while
+    a token issued before the account was deactivated is still read and then
+    refused for the missing key. The key admits the request whatever state the
+    account sending it is in.
     """
 
     def setUp(self):
         super().setUp()
         self.url = reverse("user_v2:user_list")
         self.staff = AdminFactory.create(username="deactivated-admin", password=PASSWORD)
-        self.staff_gated = {
+        self.directory = {
             "user_list": self.url,
             "user_detail": reverse("user_v2:user_detail", kwargs={"username": "alice"}),
             "preference_list": reverse("user_v2:user_preference_list"),
@@ -1422,38 +1467,43 @@ class DeactivatedStaffCallerTests(UserApiV2TestCase):
         user.is_active = False
         user.save()
 
-    def test_a_session_held_by_a_deactivated_staff_account_is_refused(self):
+    def test_a_session_held_by_a_staff_account_is_refused_before_and_after_it_is_deactivated(self):
         self.login(self.staff)
-        assert self.client.get(self.url).status_code == status.HTTP_200_OK
+        assert_error_envelope(
+            self.client.get(self.url), expected_status=status.HTTP_403_FORBIDDEN, expected_type_slug="authz",
+        )
         self.deactivate(self.staff)
         response = self.client.get(self.url)
         assert_error_envelope(
             response, expected_status=status.HTTP_401_UNAUTHORIZED, expected_type_slug="authn",
         )
 
-    def test_a_token_held_by_a_deactivated_staff_account_is_refused(self):
+    def test_a_token_held_by_a_staff_account_is_refused_before_and_after_it_is_deactivated(self):
         headers = {"HTTP_AUTHORIZATION": f"JWT {create_jwt_for_user(self.staff)}"}
-        assert self.client.get(self.url, **headers).status_code == status.HTTP_200_OK
+        assert_error_envelope(
+            self.client.get(self.url, **headers),
+            expected_status=status.HTTP_403_FORBIDDEN, expected_type_slug="authz",
+        )
         self.deactivate(self.staff)
         response = self.client.get(self.url, {"page_size": 100}, **headers)
         assert_error_envelope(
             response, expected_status=status.HTTP_403_FORBIDDEN, expected_type_slug="authz",
         )
 
-    def test_a_deactivated_staff_token_is_refused_at_every_staff_gated_address(self):
+    def test_a_deactivated_staff_token_is_refused_at_every_directory_address(self):
         self.deactivate(self.staff)
         headers = {"HTTP_AUTHORIZATION": f"JWT {create_jwt_for_user(self.staff)}"}
-        for name, address in self.staff_gated.items():
+        for name, address in self.directory.items():
             with self.subTest(address=name):
                 response = self.client.get(address, **headers)
                 assert_error_envelope(
                     response, expected_status=status.HTTP_403_FORBIDDEN, expected_type_slug="authz",
                 )
 
-    def test_a_deactivated_staff_session_is_refused_at_every_staff_gated_address(self):
+    def test_a_deactivated_staff_session_is_refused_at_every_directory_address(self):
         self.login(self.staff)
         self.deactivate(self.staff)
-        for name, address in self.staff_gated.items():
+        for name, address in self.directory.items():
             with self.subTest(address=name):
                 response = self.client.get(address)
                 assert_error_envelope(
@@ -1469,9 +1519,11 @@ class DeactivatedStaffCallerTests(UserApiV2TestCase):
         assert response.status_code == status.HTTP_403_FORBIDDEN
         assert "results" not in response.data
 
-    def test_an_active_staff_token_still_reaches_the_directory(self):
+    def test_the_key_admits_a_deactivated_staff_account_as_it_admits_anyone(self):
+        self.deactivate(self.staff)
         response = self.client.get(
-            self.url, {"page_size": 100}, HTTP_AUTHORIZATION=f"JWT {create_jwt_for_user(self.staff)}",
+            self.url, {"page_size": 100},
+            HTTP_AUTHORIZATION=f"JWT {create_jwt_for_user(self.staff)}", HTTP_X_EDX_API_KEY=API_KEY,
         )
         assert response.status_code == status.HTTP_200_OK
         assert "deactivated-admin" in self.usernames_in(response)
@@ -1518,8 +1570,8 @@ class QuerysetScopingSeamTests(UserApiV2TestCase):
 
     Each of these collections declares a policy that decides which rows a
     caller may see, and the rows it leaves out are absent from the answer
-    rather than refused. The policy that ships keeps every row, because only
-    platform administrators reach these collections at all, so these tests
+    rather than refused. The policy that ships keeps every row, because every
+    caller holding the site's API key may read all of them, so these tests
     put a narrowing policy in its place and read the answer: a collection
     that stopped consulting its policy would hand back the rows the policy
     left out, and a collection that no longer declared one would narrow
@@ -1533,6 +1585,7 @@ class QuerysetScopingSeamTests(UserApiV2TestCase):
 
     def test_user_list_leaves_out_the_rows_its_policy_excludes(self):
         self.login(self.admin)
+        self.send_api_key()
         patched, policy = self.scoped(UserViewSet, "alice")
         with patched:
             response = self.client.get(reverse("user_v2:user_list"))
@@ -1541,7 +1594,7 @@ class QuerysetScopingSeamTests(UserApiV2TestCase):
         assert policy.calls == [(User, self.admin)]
 
     def test_user_detail_of_an_excluded_row_is_not_found(self):
-        self.login(self.admin)
+        self.send_api_key()
         patched, _ = self.scoped(UserViewSet, "alice")
         with patched:
             response = self.client.get(reverse("user_v2:user_detail", kwargs={"username": "alice"}))
@@ -1550,7 +1603,7 @@ class QuerysetScopingSeamTests(UserApiV2TestCase):
         )
 
     def test_user_detail_of_an_included_row_is_returned(self):
-        self.login(self.admin)
+        self.send_api_key()
         patched, _ = self.scoped(UserViewSet, "alice")
         with patched:
             response = self.client.get(reverse("user_v2:user_detail", kwargs={"username": "bob"}))
@@ -1559,6 +1612,7 @@ class QuerysetScopingSeamTests(UserApiV2TestCase):
 
     def test_preference_list_leaves_out_the_rows_its_policy_excludes(self):
         self.login(self.admin)
+        self.send_api_key()
         patched, policy = self.scoped(UserPreferenceViewSet, "alice")
         with patched:
             response = self.client.get(reverse("user_v2:user_preference_list"))
@@ -1567,7 +1621,7 @@ class QuerysetScopingSeamTests(UserApiV2TestCase):
         assert policy.calls == [(UserPreference, self.admin)]
 
     def test_preference_detail_of_an_excluded_row_is_not_found(self):
-        self.login(self.admin)
+        self.send_api_key()
         patched, _ = self.scoped(UserPreferenceViewSet, "alice")
         with patched:
             response = self.client.get(
@@ -1578,7 +1632,7 @@ class QuerysetScopingSeamTests(UserApiV2TestCase):
         )
 
     def test_preference_detail_of_an_included_row_is_returned(self):
-        self.login(self.admin)
+        self.send_api_key()
         patched, _ = self.scoped(UserPreferenceViewSet, "alice")
         with patched:
             response = self.client.get(
@@ -1700,7 +1754,7 @@ class AddressSelfDescriptionTests(UserApiV2TestCase):
         This is what makes the text above published rather than internal: the
         framework answers an OPTIONS request with it verbatim.
         """
-        self.login(self.admin)
+        self.send_api_key()
         answer = self.client.options(reverse("user_v2:user_list"))
         assert answer.status_code == status.HTTP_200_OK
         assert answer.json()["description"] == UserViewSet().get_view_description()
@@ -1727,7 +1781,7 @@ class SelectedPropertyNameTests(UserApiV2TestCase):
         self.list_url = reverse("user_v2:user_list")
         self.member_url = reverse("user_v2:user_detail", kwargs={"username": "alice"})
         self.preference_list_url = reverse("user_v2:user_preference_list")
-        self.login(self.admin)
+        self.send_api_key()
 
     def test_a_name_written_with_a_dot_is_refused_on_the_directory_list(self):
         response = self.client.get(f"{self.list_url}?fields=username.first")
@@ -1803,7 +1857,7 @@ class UnsatisfiableAcceptTests(UserApiV2TestCase):
 
     def test_the_refusal_comes_back_in_the_body_this_version_answers_with(self):
         """The refusal is readable even though the caller asked for a representation it is not in."""
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(reverse("user_v2:user_list"), HTTP_ACCEPT="text/csv")
         assert_error_envelope(
             response, expected_status=status.HTTP_406_NOT_ACCEPTABLE, expected_type_slug="not-acceptable",
@@ -1829,7 +1883,7 @@ class UnsatisfiableAcceptTests(UserApiV2TestCase):
 
     def test_an_accept_header_the_address_can_satisfy_is_answered(self):
         """The refusal is about what was asked for, not about asking at all."""
-        self.login(self.admin)
+        self.send_api_key()
         response = self.client.get(reverse("user_v2:user_list"), HTTP_ACCEPT="application/json")
         assert response.status_code == status.HTTP_200_OK
         assert self.usernames_in(response) == ["admin-caller", "alice", "bob", "learner-caller"]
@@ -1902,7 +1956,7 @@ class EmbeddedRowScopingTests(UserApiV2TestCase):
 
     def test_the_preferences_inside_a_directory_entry_come_through_their_own_policy(self):
         policy = HiddenKeyPolicy("pref-lang")
-        self.login(self.admin)
+        self.send_api_key()
         with patch.object(UserViewSet, "embedded_preference_policy", policy, create=True):
             response = self.client.get(reverse("user_v2:user_detail", kwargs={"username": "alice"}))
         assert response.status_code == status.HTTP_200_OK
@@ -1911,7 +1965,7 @@ class EmbeddedRowScopingTests(UserApiV2TestCase):
 
     def test_a_preference_the_embedded_policy_keeps_is_still_carried(self):
         policy = HiddenKeyPolicy("pref-lang")
-        self.login(self.admin)
+        self.send_api_key()
         with patch.object(UserViewSet, "embedded_preference_policy", policy, create=True):
             response = self.client.get(reverse("user_v2:user_detail", kwargs={"username": "bob"}))
         assert response.status_code == status.HTTP_200_OK
@@ -1920,7 +1974,7 @@ class EmbeddedRowScopingTests(UserApiV2TestCase):
     def test_the_preferences_inside_a_page_of_entries_come_through_their_own_policy(self):
         self.directory_of(5)
         policy = HiddenKeyPolicy("pref-lang")
-        self.login(self.admin)
+        self.send_api_key()
         with patch.object(UserViewSet, "embedded_preference_policy", policy, create=True):
             response = self.client.get(reverse("user_v2:user_list"), {"page_size": 100})
         assert response.status_code == status.HTTP_200_OK
@@ -1935,7 +1989,7 @@ class EmbeddedRowScopingTests(UserApiV2TestCase):
         One row would hide a per-row query that cancels a prefetch, so this is
         measured at five rows and again at twenty-five.
         """
-        self.login(self.admin)
+        self.send_api_key()
         measured = {}
         for rows in (5, 25):
             User.objects.filter(username__startswith="row-").delete()
@@ -1955,7 +2009,7 @@ class EmbeddedRowScopingTests(UserApiV2TestCase):
     def test_the_preferences_inside_an_embedded_owner_come_through_their_own_policy(self):
         """A preference asked for whole carries its owner, whose own preferences are narrowed too."""
         policy = HiddenKeyPolicy("pref-lang")
-        self.login(self.admin)
+        self.send_api_key()
         with patch.object(UserPreferenceViewSet, "embedded_preference_policy", policy, create=True):
             response = self.client.get(
                 reverse("user_v2:user_preference_detail", kwargs={"username": "alice", "key": "pref-lang"}),
@@ -1965,7 +2019,7 @@ class EmbeddedRowScopingTests(UserApiV2TestCase):
         assert response.data["user"]["preferences"] == {}
 
     def test_narrowing_an_embedded_owners_preferences_costs_no_query_per_row(self):
-        self.login(self.admin)
+        self.send_api_key()
         measured = {}
         for rows in (5, 25):
             User.objects.filter(username__startswith="row-").delete()
@@ -2017,7 +2071,7 @@ class EmbeddedOwnerScopingTests(UserApiV2TestCase):
 
     def test_an_owner_the_embedded_policy_leaves_out_is_not_carried_inside_a_page(self):
         policy = HiddenOwnerPolicy("alice")
-        self.login(self.admin)
+        self.send_api_key()
         with patch.object(UserPreferenceViewSet, "embedded_user_policy", policy, create=True):
             response = self.client.get(
                 reverse("user_v2:user_preference_list"), {"view": "full", "page_size": 100},
@@ -2031,7 +2085,7 @@ class EmbeddedOwnerScopingTests(UserApiV2TestCase):
 
     def test_an_owner_the_embedded_policy_leaves_out_is_not_carried_inside_one_preference(self):
         policy = HiddenOwnerPolicy("alice")
-        self.login(self.admin)
+        self.send_api_key()
         with patch.object(UserPreferenceViewSet, "embedded_user_policy", policy, create=True):
             response = self.client.get(
                 reverse("user_v2:user_preference_detail", kwargs={"username": "alice", "key": "pref-lang"}),
@@ -2052,7 +2106,7 @@ class EmbeddedOwnerScopingTests(UserApiV2TestCase):
         consulted. It is here to show the answer is not narrowed too far.
         """
         policy = HiddenOwnerPolicy("alice")
-        self.login(self.admin)
+        self.send_api_key()
         with patch.object(UserPreferenceViewSet, "embedded_user_policy", policy, create=True):
             response = self.client.get(
                 reverse("user_v2:user_preference_detail", kwargs={"username": "bob", "key": "time_zone"}),
@@ -2069,7 +2123,7 @@ class EmbeddedOwnerScopingTests(UserApiV2TestCase):
         One row would hide a per-row lookup, so this is measured at five rows
         and again at twenty-five, and the policy is asked once either way.
         """
-        self.login(self.admin)
+        self.send_api_key()
         measured = {}
         address = reverse("user_v2:user_preference_list")
         for rows in (5, 25):
@@ -2090,7 +2144,7 @@ class EmbeddedOwnerScopingTests(UserApiV2TestCase):
 
     def test_no_owner_is_resolved_for_a_page_that_carries_none(self):
         """A page that does not carry its owners does not ask which owners it could carry."""
-        self.login(self.admin)
+        self.send_api_key()
         policy = HiddenOwnerPolicy("alice")
         with patch.object(UserPreferenceViewSet, "embedded_user_policy", policy, create=True):
             response = self.client.get(reverse("user_v2:user_preference_list"), {"page_size": 100})
@@ -2113,7 +2167,7 @@ class EmbeddedOwnerScopingTests(UserApiV2TestCase):
                 """Return the one owner this policy keeps, built without the given collection."""
                 return User.objects.filter(username="bob")
 
-        self.login(self.admin)
+        self.send_api_key()
         with patch.object(UserPreferenceViewSet, "embedded_user_policy", OwnCollectionPolicy(), create=True):
             response = self.client.get(
                 reverse("user_v2:user_preference_list"), {"view": "full", "page_size": 100},

@@ -1,15 +1,13 @@
 """Query-count guards for the version 2 User API list and member addresses."""
 
 import pytest
-from django.test.utils import override_settings
 from django.urls import reverse
 
-from common.djangoapps.student.tests.factories import AdminFactory, UserFactory
+from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.django_comment_common.models import Role
 from openedx.core.djangoapps.user_api.tests.factories import UserPreferenceFactory
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 
-PASSWORD = "Password1234"
 COURSE_KEY = "course-v1:edX+DemoX+Demo"
 
 #: Row counts a per-row query would show up at.
@@ -19,24 +17,26 @@ ROW_COUNTS = [1, 5, 25]
 #: not database rows and whose size is therefore set by the page alone.
 PAGE_SIZES = [1, 10, 100]
 
-USER_LIST_QUERIES = 16
-USER_DETAIL_QUERIES = 15
-PREFERENCE_LIST_QUERIES = 15
+USER_LIST_QUERIES = 11
+USER_DETAIL_QUERIES = 10
+PREFERENCE_LIST_QUERIES = 10
 #: One more than the list costs without the preset: the owners whose entry
 #: a page may carry are resolved for the whole page in a single query,
 #: whatever the number of rows.
-PREFERENCE_LIST_FULL_VIEW_QUERIES = 17
-PREFERENCE_DETAIL_QUERIES = 14
+PREFERENCE_LIST_FULL_VIEW_QUERIES = 12
+PREFERENCE_DETAIL_QUERIES = 9
 #: What the same address costs with the owner's entry asked for: the entry's
 #: own preferences, and the one query that settles which owners' entries may
 #: be carried.
-PREFERENCE_DETAIL_FULL_VIEW_QUERIES = 16
-TIME_ZONE_LIST_QUERIES = 13
+PREFERENCE_DETAIL_FULL_VIEW_QUERIES = 11
+TIME_ZONE_LIST_QUERIES = 8
 
-#: Address of the stored-preference list this version replaces, and the key it
-#: is gated by, so the cost of the two can be compared in one measurement.
+#: Address of the stored-preference list this version replaces, measured with
+#: the same key so that the cost of the two is compared in one measurement.
 EARLIER_PREFERENCE_LIST = "/api/user/v1/user_prefs/"
-EARLIER_API_KEY = "query-count-api-key"
+
+#: The site's API key, which both versions of the directory are read with.
+API_KEY = "query-count-api-key"
 
 #: What that list costs for a page holding two rows per user, measured the same
 #: way as the counts above: a constant part plus five queries for every user on
@@ -47,18 +47,18 @@ EARLIER_PREFERENCE_LIST_QUERIES = {1: 15, 5: 35, 25: 135}
 
 @pytest.fixture(name="directory")
 @skip_unless_lms
-def directory_fixture(request, client, django_user_model):  # pylint: disable=unused-argument
-    """Sign an administrator in and populate the directory with ``request.param`` users."""
-    admin = AdminFactory.create(username="count-admin", password=PASSWORD)
+def directory_fixture(request, client, settings, django_user_model):  # pylint: disable=unused-argument
+    """Send the site's API key with every request and populate the directory with ``request.param`` users."""
+    settings.EDX_API_KEY = API_KEY
+    client.defaults["HTTP_X_EDX_API_KEY"] = API_KEY
     users = [UserFactory.create(username=f"counted{index}") for index in range(request.param)]
     for user in users:
         UserPreferenceFactory.create(user=user, key="pref-lang", value="en")
         UserPreferenceFactory.create(user=user, key="time_zone", value="UTC")
     role = Role.objects.create(course_id=COURSE_KEY, name="Moderator")
     role.users.add(*users)
-    assert client.login(username=admin.username, password=PASSWORD)
-    # The first authenticated request of a session populates caches the rest
-    # of the session reuses; the counts below are the steady-state ones.
+    # The first request populates caches the later ones reuse; the counts
+    # below are the steady-state ones.
     client.get(reverse("user_v2:user_list"))
     return users
 
@@ -70,7 +70,7 @@ def test_user_list_query_count_does_not_grow_with_rows(client, directory, django
     url = reverse("user_v2:user_list")
     with django_assert_num_queries(USER_LIST_QUERIES):
         response = client.get(url, {"page_size": 100})
-    assert len(response.json()["results"]) == len(directory) + 1
+    assert len(response.json()["results"]) == len(directory)
 
 
 @pytest.mark.django_db
@@ -199,12 +199,6 @@ def test_the_earlier_preference_list_pays_per_row_where_this_one_does_not(
         current = client.get(reverse("user_v2:user_preference_list"), {"page_size": 100})
     assert len(current.json()["results"]) == 2 * len(directory)
 
-    client.logout()
-    with override_settings(EDX_API_KEY=EARLIER_API_KEY):
-        with django_assert_num_queries(EARLIER_PREFERENCE_LIST_QUERIES[len(directory)]):
-            earlier = client.get(
-                EARLIER_PREFERENCE_LIST,
-                {"page_size": 100},
-                HTTP_X_EDX_API_KEY=EARLIER_API_KEY,
-            )
+    with django_assert_num_queries(EARLIER_PREFERENCE_LIST_QUERIES[len(directory)]):
+        earlier = client.get(EARLIER_PREFERENCE_LIST, {"page_size": 100})
     assert len(earlier.json()["results"]) == 2 * len(directory)

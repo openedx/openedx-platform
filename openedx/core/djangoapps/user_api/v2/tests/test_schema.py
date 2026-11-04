@@ -42,6 +42,8 @@ from openedx.core.djangoapps.user_api.v2.views import PREFERENCE_KEY_PATTERN_PAR
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 
 PASSWORD = "Password1234"
+#: The site's API key, which the user directory and the stored preferences are read with.
+API_KEY = "schema-test-api-key"
 
 #: Stands for a property a response does not carry, where that is the assertion.
 ABSENT = "absent"
@@ -452,11 +454,11 @@ def test_pagination_envelope_is_published_in_full(schema):
 
 @pytest.mark.django_db
 @skip_unless_lms
-def test_published_pagination_envelope_matches_the_response_body(client, schema):
+def test_published_pagination_envelope_matches_the_response_body(client, schema, settings):
+    settings.EDX_API_KEY = API_KEY
     admin = AdminFactory.create(username="schema-admin", password=PASSWORD)
     UserPreferenceFactory.create(user=admin, key="pref-lang", value="en")
-    assert client.login(username=admin.username, password=PASSWORD)
-    body = client.get(reverse("user_v2:user_preference_list")).json()
+    body = client.get(reverse("user_v2:user_preference_list"), HTTP_X_EDX_API_KEY=API_KEY).json()
     published = schema["components"]["schemas"]["PaginatedUserPreferenceRecordResponseList"]
     assert set(body) == set(published["properties"])
 
@@ -771,12 +773,16 @@ def name_affirmation_answering(verified_name):
 
 @pytest.mark.django_db
 @skip_unless_lms
-def test_published_shapes_accept_every_body_the_endpoints_return(client, schema):
+def test_published_shapes_accept_every_body_the_endpoints_return(client, schema, settings):
     """Every preset and selection the parameters offer returns a body the document describes."""
+    settings.EDX_API_KEY = API_KEY
     admin = AdminFactory.create(username="shape-admin", password=PASSWORD)
     UserPreferenceFactory.create(user=admin, key="pref-lang", value="en")
     fill_in(admin)
     assert client.login(username=admin.username, password=PASSWORD)
+    # The account addresses read the signed-in administrator; the directory
+    # addresses read the key.
+    client.defaults["HTTP_X_EDX_API_KEY"] = API_KEY
     for published_path, address, params, component in SHAPE_CASES:
         case = (address, params)
         response = client.get(address, params)

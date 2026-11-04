@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 import ddt
 from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.test import SimpleTestCase
+from django.test.utils import override_settings
 from django.urls import reverse
 from edx_rest_framework_extensions.auth.jwt.tests.utils import generate_jwt
 from edx_rest_framework_extensions.permissions import NotJwtRestrictedApplication
@@ -25,6 +26,7 @@ from openedx.core.djangolib.testing.utils import skip_unless_lms
 
 PASSWORD = "Password1234"
 MERGE_PATCH = "application/merge-patch+json"
+API_KEY = "restricted-token-test-api-key"
 
 
 def routed_views():
@@ -87,6 +89,7 @@ class EveryOperationCarriesTheRefusalTests(SimpleTestCase):
 
 @skip_unless_lms
 @ddt.ddt
+@override_settings(EDX_API_KEY=API_KEY)
 class RestrictedApplicationTokenTests(APITestCase):
     """
     A token issued to a restricted application is refused at every operation that reads a token.
@@ -94,7 +97,9 @@ class RestrictedApplicationTokenTests(APITestCase):
     Each operation is called twice by the same staff account, once with a
     token issued to an ordinary application, which the operation answers, and
     once with the same token flagged as issued to a restricted application,
-    which it refuses before changing anything.
+    which it refuses before changing anything. The directory addresses are
+    sent the site's API key as well, since that is what admits a caller there,
+    so the token is the only thing that can refuse the request.
     """
 
     def setUp(self):
@@ -131,16 +136,17 @@ class RestrictedApplicationTokenTests(APITestCase):
         """Send the request that exercises ``operation``."""
         staff, learner = self.staff.username, self.learner.username
         client = self.client
+        directory = {**headers, "HTTP_X_EDX_API_KEY": API_KEY}
         if operation == "user_list":
-            return client.get(reverse("user_v2:user_list"), **headers)
+            return client.get(reverse("user_v2:user_list"), **directory)
         if operation == "user_detail":
-            return client.get(reverse("user_v2:user_detail", kwargs={"username": learner}), **headers)
+            return client.get(reverse("user_v2:user_detail", kwargs={"username": learner}), **directory)
         if operation == "user_preference_list":
-            return client.get(reverse("user_v2:user_preference_list"), **headers)
+            return client.get(reverse("user_v2:user_preference_list"), **directory)
         if operation == "user_preference_detail":
             return client.get(
                 reverse("user_v2:user_preference_detail", kwargs={"username": learner, "key": "pref-lang"}),
-                **headers,
+                **directory,
             )
         if operation == "time_zone_list":
             return client.get(reverse("user_v2:time_zone_list"), **headers)

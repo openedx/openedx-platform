@@ -590,7 +590,7 @@ class ProfileImageUploadTests(ProfileImageTestCase):
 
         with mock.patch(DEFAULT_AUTH_RECORDER) as recorded:
             on_the_default_pair = self.client.get(
-                reverse("user_v2:user_preference_list"), **self.token_headers(self.staff),
+                reverse("user_v2:time_zone_list"), **self.token_headers(self.staff),
             )
         assert on_the_default_pair.status_code == status.HTTP_200_OK
         assert [call.args for call in recorded.call_args_list] == [("using_default_auth_classes", True)]

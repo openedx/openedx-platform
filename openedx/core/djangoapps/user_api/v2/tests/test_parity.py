@@ -114,11 +114,8 @@ class ParityTests(APITestCase):
         return self.client.get(address, params or {}, HTTP_X_EDX_API_KEY=API_KEY)
 
     def conforming(self, address, params=None):
-        """Call a version 2 address as the administrator it is gated by."""
-        assert self.client.login(username=self.admin.username, password=PASSWORD)
-        response = self.client.get(address, params or {})
-        self.client.logout()
-        return response
+        """Call a version 2 address with the same API key."""
+        return self.client.get(address, params or {}, HTTP_X_EDX_API_KEY=API_KEY)
 
     def assert_parity(self, legacy, new, case, expected_status=status.HTTP_200_OK):
         """
@@ -161,28 +158,53 @@ class ParityTests(APITestCase):
         legacy_usernames = [row["username"] for row in json.loads(legacy.content)["results"]]
         assert sorted(legacy_usernames) == usernames
 
-    def test_the_api_key_admits_at_the_legacy_addresses_only(self):
-        """The header the version 1 addresses are gated by is not a credential at version 2."""
-        legacy = self.legacy("/api/user/v1/users/", {"page_size": 100})
-        assert legacy.status_code == status.HTTP_200_OK, legacy.content
-        assert sorted(row["username"] for row in json.loads(legacy.content)["results"]) == [
-            "parity-admin", "parity-user",
-        ]
-
-        for address in (
-            reverse("user_v2:user_list"),
-            reverse("user_v2:user_detail", kwargs={"username": "parity-user"}),
-            reverse("user_v2:user_preference_list"),
-            reverse(
-                "user_v2:user_preference_detail",
-                kwargs={"username": "parity-user", "key": "pref-lang"},
+    def directory_addresses(self):
+        """Return each directory address of version 1 beside the version 2 address replacing it."""
+        return {
+            "user_list": ("/api/user/v1/users/", reverse("user_v2:user_list")),
+            "user_detail": (
+                f"/api/user/v1/users/{self.user.id}/",
+                reverse("user_v2:user_detail", kwargs={"username": "parity-user"}),
             ),
-        ):
-            refused = self.client.get(address, HTTP_X_EDX_API_KEY=API_KEY)
-            envelope = assert_error_envelope(
-                refused, expected_status=status.HTTP_401_UNAUTHORIZED, expected_type_slug="authn",
-            )
-            assert envelope["detail"] == "Authentication credentials were not provided.", address
+            "preference_list": ("/api/user/v1/user_prefs/", reverse("user_v2:user_preference_list")),
+            "preference_detail": (
+                f"/api/user/v1/user_prefs/{self.preference.id}/",
+                reverse(
+                    "user_v2:user_preference_detail",
+                    kwargs={"username": "parity-user", "key": "pref-lang"},
+                ),
+            ),
+        }
+
+    def test_the_api_key_alone_admits_at_both_versions(self):
+        """The header the version 1 addresses are read with is what admits a caller to version 2."""
+        for name, (legacy_address, address) in self.directory_addresses().items():
+            with self.subTest(address=name):
+                legacy = self.legacy(legacy_address)
+                assert legacy.status_code == status.HTTP_200_OK, legacy.content
+                new = self.conforming(address)
+                assert new.status_code == status.HTTP_200_OK, new.content
+
+    def test_a_staff_account_without_the_key_is_refused_at_both_versions(self):
+        assert self.client.login(username=self.admin.username, password=PASSWORD)
+        for name, (legacy_address, address) in self.directory_addresses().items():
+            with self.subTest(address=name):
+                legacy = self.client.get(legacy_address)
+                assert legacy.status_code == status.HTTP_403_FORBIDDEN, legacy.content
+                envelope = assert_error_envelope(
+                    self.client.get(address), expected_status=status.HTTP_403_FORBIDDEN, expected_type_slug="authz",
+                )
+                assert envelope["detail"] == json.loads(legacy.content)["detail"]
+
+    def test_a_key_other_than_the_sites_is_refused_at_both_versions(self):
+        for name, (legacy_address, address) in self.directory_addresses().items():
+            with self.subTest(address=name):
+                legacy = self.client.get(legacy_address, HTTP_X_EDX_API_KEY=f"{API_KEY}-other")
+                assert legacy.status_code == status.HTTP_401_UNAUTHORIZED, legacy.content
+                assert_error_envelope(
+                    self.client.get(address, HTTP_X_EDX_API_KEY=f"{API_KEY}-other"),
+                    expected_status=status.HTTP_401_UNAUTHORIZED, expected_type_slug="authn",
+                )
 
     def test_user_detail_parity(self):
         legacy = self.legacy(f"/api/user/v1/users/{self.user.id}/")
@@ -375,6 +397,7 @@ class ParityTests(APITestCase):
 
 
 @skip_unless_lms
+@override_settings(EDX_API_KEY=API_KEY)
 class RefusedRequestMessageTests(APITestCase):
     """
     What a person reads when a request of either version is refused.
@@ -394,9 +417,9 @@ class RefusedRequestMessageTests(APITestCase):
         self.admin = AdminFactory.create(username="refusal-admin", password=PASSWORD)
 
     def refused(self, address, params):
-        """Call a version 2 address as the administrator it is gated by."""
+        """Call a version 2 address as an administrator carrying the site's API key."""
         assert self.client.login(username=self.admin.username, password=PASSWORD)
-        response = self.client.get(address, params)
+        response = self.client.get(address, params, HTTP_X_EDX_API_KEY=API_KEY)
         self.client.logout()
         return assert_error_envelope(
             response,
@@ -464,7 +487,9 @@ class RefusedRequestMessageTests(APITestCase):
     def test_a_refusal_naming_no_parameter_says_what_it_has_always_said(self):
         """Only the refusals built from a list of parameters change; the rest are untouched."""
         assert self.client.login(username=self.admin.username, password=PASSWORD)
-        missing = self.client.get(reverse("user_v2:user_detail", kwargs={"username": "nobody"}))
+        missing = self.client.get(
+            reverse("user_v2:user_detail", kwargs={"username": "nobody"}), HTTP_X_EDX_API_KEY=API_KEY,
+        )
         envelope = assert_error_envelope(
             missing, expected_status=status.HTTP_404_NOT_FOUND, expected_type_slug="not-found",
         )

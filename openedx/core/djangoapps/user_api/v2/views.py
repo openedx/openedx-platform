@@ -43,6 +43,7 @@ from openedx.core.djangoapps.user_api.errors import (
 from openedx.core.djangoapps.user_api.models import UserPreference
 from openedx.core.djangoapps.user_api.preferences.api import get_country_time_zones
 from openedx.core.lib.api.parsers import MergePatchParser
+from openedx.core.lib.api.permissions import ApiKeyHeaderPermission
 
 from .errors import AmbiguousAccountName, CatalogedRequestErrorsMixin, ErrorExtensionsMixin, RetiredAccount
 from .filters import StrictOrderingFilter, UserFilterSet, UserPreferenceFilterSet
@@ -259,6 +260,9 @@ _USER_ORDERING_PARAM = _ordering_param(USER_SORT_FIELDS, USER_DEFAULT_SORT)
 _PREFERENCE_ORDERING_PARAM = _ordering_param(PREFERENCE_SORT_FIELDS, PREFERENCE_DEFAULT_SORT)
 
 _RESP_FORBIDDEN = OpenApiResponse(ErrorResponse, description="The requester may not use this endpoint.")
+
+#: How a caller is admitted to the user directory and to the stored preferences.
+_API_KEY_ADMISSION = "Answered only to a request carrying the site's API key in the `X-Edx-Api-Key` header."
 #: Published by every operation of this version. Which representations an
 #: answer can be given in is settled as the request enters, before the address
 #: it names is read or written, so an ``Accept`` header naming none of them is
@@ -630,7 +634,8 @@ class _ResponsePresetMixin(MinimalViewMixin):
         description=(
             "Returns a page of the user directory. Supply `preference_key` to keep only the "
             "users who have stored a preference under that key, or `forum_role` together with "
-            "`course_key` to keep only the holders of a course forum role."
+            "`course_key` to keep only the holders of a course forum role. "
+            f"{_API_KEY_ADMISSION}"
         ),
         parameters=[_MINIMAL_VIEW_PARAM, _FIELDS_PARAM, _USER_ORDERING_PARAM],
         responses={
@@ -644,7 +649,7 @@ class _ResponsePresetMixin(MinimalViewMixin):
     ),
     retrieve=extend_schema(
         summary="Get one user",
-        description="Returns the directory entry of the user with this username.",
+        description=f"Returns the directory entry of the user with this username. {_API_KEY_ADMISSION}",
         parameters=[_USER_PATH_PARAM, _MINIMAL_VIEW_PARAM, _FIELDS_PARAM],
         responses={
             200: _USER_SHAPES,
@@ -671,8 +676,9 @@ class UserViewSet(
     Directory entries of the platform's users, each addressed by username.
 
     An entry carries the identifying properties of one account together with
-    the preferences stored against it. Only a platform administrator whose own
-    account is still active may read this directory.
+    the preferences stored against it. It is read by server integrations,
+    which send the site's API key in the X-Edx-Api-Key header, and is
+    refused to every request that does not carry that key.
     """
 
     # Who may read the directory is settled in three layers, each of which can
@@ -681,12 +687,12 @@ class UserViewSet(
     # such a caller may see, and the filter set narrows those rows by the
     # parameters the request carries.
 
-    permission_classes = (permissions.IsAuthenticated, IsActiveUser, permissions.IsAdminUser)
+    permission_classes = (ApiKeyHeaderPermission,)
     serializer_class = UserDirectorySerializer
     pagination_class = UserApiPagination
     queryset = User.objects.all().select_related("profile")
-    # Platform administrators may read every entry, so the policy keeps the
-    # queryset whole; a narrower policy can replace it without touching the
+    # A caller holding the API key may read every entry, so the policy keeps
+    # the queryset whole; a narrower policy can replace it without touching the
     # filtering below.
     scoping_policy = FullScopePolicy()
     #: The preferences carried inside an entry are rows of the stored
@@ -739,7 +745,8 @@ class UserViewSet(
         summary="List stored preferences",
         description=(
             "Returns a page of stored user preferences. Supply `key` to keep only the "
-            "preferences stored under that name, or `username` to keep only one user's."
+            "preferences stored under that name, or `username` to keep only one user's. "
+            f"{_API_KEY_ADMISSION}"
         ),
         parameters=[_PREFERENCE_VIEW_PARAM, _FIELDS_PARAM, _PREFERENCE_ORDERING_PARAM],
         responses={
@@ -756,7 +763,8 @@ class UserViewSet(
         description=(
             "Returns the preference stored under this key for this user. A preference is "
             "identified by the pair, which the address carries as the username, a comma and "
-            "the key, for example `alice,time_zone`."
+            "the key, for example `alice,time_zone`. "
+            f"{_API_KEY_ADMISSION}"
         ),
         parameters=[
             _PREFERENCE_USERNAME_PATH_PARAM,
@@ -789,8 +797,8 @@ class UserPreferenceViewSet(
 
     A preference is identified by the two together, so a member address
     carries the owner's username, a comma and the name the preference is
-    stored under, as in alice,time_zone. Only a platform administrator whose
-    own account is still active may read these.
+    stored under, as in alice,time_zone. Like the user directory, these are
+    read only by a request carrying the site's API key.
     """
 
     # The pair identifies a row, so the member address is built from it rather
@@ -798,7 +806,7 @@ class UserPreferenceViewSet(
     # the collection rather than generated. Who may read these rows is settled
     # in the same three layers as the user directory.
 
-    permission_classes = (permissions.IsAuthenticated, IsActiveUser, permissions.IsAdminUser)
+    permission_classes = (ApiKeyHeaderPermission,)
     serializer_class = UserPreferenceRecordSerializer
     pagination_class = UserApiPagination
     queryset = (

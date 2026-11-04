@@ -2,6 +2,7 @@
 
 import inspect
 
+from django.test.utils import override_settings
 from django.urls import reverse
 from edx_rest_framework_extensions.testing import assert_error_envelope
 from rest_framework import status
@@ -14,6 +15,10 @@ from openedx.core.djangoapps.user_api.v2.paginators import UserApiPagination
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 
 PASSWORD = "Password1234"
+API_KEY = "page-test-api-key"
+
+#: Stands for the caller the directory admits: a request carrying the site's API key.
+KEY_HOLDER = object()
 
 #: Values naming a number of rows no page can carry: none at all, fewer than
 #: none, and values that are not a whole number of rows in the first place.
@@ -27,6 +32,7 @@ REFUSAL = (
 
 
 @skip_unless_lms
+@override_settings(EDX_API_KEY=API_KEY)
 class PageSizeTests(APITestCase):
     """
     A page size the collection will not give is refused rather than answered.
@@ -48,8 +54,8 @@ class PageSizeTests(APITestCase):
     def collections(self):
         """Return each paginated collection, the caller it admits and how it is asked."""
         return {
-            "user_list": (self.admin, reverse("user_v2:user_list"), {}),
-            "user_preference_list": (self.admin, reverse("user_v2:user_preference_list"), {}),
+            "user_list": (KEY_HOLDER, reverse("user_v2:user_list"), {}),
+            "user_preference_list": (KEY_HOLDER, reverse("user_v2:user_preference_list"), {}),
             "time_zone_list": (None, reverse("user_v2:time_zone_list"), {}),
             "account_list": (self.learner, reverse("user_v2:account_list"), {}),
             "account_verification_list": (
@@ -70,7 +76,10 @@ class PageSizeTests(APITestCase):
     def ask(self, caller, address, page_size, body=None):
         """Ask one collection for a page of ``page_size`` rows as ``caller``."""
         self.client.logout()
-        if caller is not None:
+        self.client.credentials()
+        if caller is KEY_HOLDER:
+            self.client.credentials(HTTP_X_EDX_API_KEY=API_KEY)
+        elif caller is not None:
             assert self.client.login(username=caller.username, password=PASSWORD)
         query = "" if page_size is None else f"?page_size={page_size}"
         if body is None:
@@ -103,9 +112,9 @@ class PageSizeTests(APITestCase):
         """A number above the cap keeps being answered with the cap rather than refused."""
         for index in range(UserApiPagination.max_page_size + 5):
             UserFactory.create(username=f"page-filler{index:03d}")
-        self.client.logout()
-        assert self.client.login(username=self.admin.username, password=PASSWORD)
-        response = self.client.get(reverse("user_v2:user_list"), {"page_size": 100000})
+        response = self.client.get(
+            reverse("user_v2:user_list"), {"page_size": 100000}, HTTP_X_EDX_API_KEY=API_KEY,
+        )
         assert response.status_code == status.HTTP_200_OK, response.content
         assert len(response.data["results"]) == UserApiPagination.max_page_size
 
@@ -119,8 +128,7 @@ class PageSizeTests(APITestCase):
         """
         for index in range(5):
             UserFactory.create(username=f"page-walked{index:03d}")
-        self.client.logout()
-        assert self.client.login(username=self.admin.username, password=PASSWORD)
+        self.client.credentials(HTTP_X_EDX_API_KEY=API_KEY)
         response = self.client.get(reverse("user_v2:user_list"), {"page_size": 2})
         assert response.status_code == status.HTTP_200_OK, response.content
         assert len(response.data["results"]) == 2
