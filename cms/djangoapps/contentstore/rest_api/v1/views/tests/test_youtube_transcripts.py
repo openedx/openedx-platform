@@ -11,6 +11,7 @@ from opaque_keys.edx.keys import UsageKey
 from organizations.tests.factories import OrganizationFactory
 from rest_framework import status
 from rest_framework.test import APIClient
+from xblocks_contrib.video import VideoBlock
 
 from cms.djangoapps.contentstore.rest_api.v0.views.transcripts import (
     YoutubeTranscriptCheckView,
@@ -23,7 +24,6 @@ from openedx.core.djangoapps.content_libraries import api as lib_api
 from openedx.core.djangoapps.video_config.transcripts_utils import Transcript
 from xmodule.modulestore.django import modulestore
 from xmodule.modulestore.tests.factories import CourseFactory
-from xmodule.video_block import VideoBlock
 
 SRT_TRANSCRIPT_CONTENT = """0
 00:00:10,500 --> 00:00:13,000
