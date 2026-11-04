@@ -1,0 +1,263 @@
+<%page expression_filter="h"/>
+
+<%!
+from django.conf import settings
+from django.utils.translation import gettext as _
+
+from openedx.core.djangolib.js_utils import dump_js_escaped_json, js_escaped_string
+%>
+
+<div class="vert-lazy-status" data-parent-usage-key="${parent_usage_key}" role="status" aria-live="polite"></div>
+
+<script type="text/javascript">
+(function () {
+    "use strict";
+
+    var parentUsageKey = "${parent_usage_key | n, js_escaped_string}";
+    var lazyChildren = ${lazy_children | n, dump_js_escaped_json};
+    var batchSize = ${settings.XBLOCK_CHILDREN_BATCH_MAX | n, dump_js_escaped_json};
+    var endpoint = "/api/courseware/xblock_children/" + encodeURIComponent(parentUsageKey) + "/";
+
+    var container = document.querySelector('.vert-mod[data-parent-usage-key="' + parentUsageKey + '"]');
+    var statusEl = document.querySelector('.vert-lazy-status[data-parent-usage-key="' + parentUsageKey + '"]');
+    if (!container || !statusEl || !lazyChildren.length) {
+        return;
+    }
+
+    var messages = {
+        loading: "${_('Loading question {loaded} of {total}...') | n, js_escaped_string}",
+        failed: "${_('Some questions could not be loaded.') | n, js_escaped_string}",
+        retry: "${_('Retry') | n, js_escaped_string}"
+    };
+
+    // Retry only failures a retry could plausibly fix. A 403 will still be a 403 in three seconds.
+    var RETRYABLE_STATUSES = [429, 500, 502, 503, 504];
+    var MAX_ATTEMPTS = 3;
+    var BACKOFF_MS = [1000, 3000, 7000];
+    var REQUEST_TIMEOUT_MS = 45000;
+
+    var total = lazyChildren.length;
+
+    function pendingKeys() {
+        return Array.prototype.map.call(
+            container.querySelectorAll('.vert-lazy-pending'),
+            function (el) { return el.getAttribute('data-usage-key'); }
+        );
+    }
+
+    function setStatus(text, showRetry, onRetry) {
+        statusEl.textContent = text || '';
+        if (showRetry) {
+            var button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'btn btn-link vert-lazy-retry';
+            button.textContent = messages.retry;
+            button.addEventListener('click', function () {
+                setStatus('', false);
+                onRetry();
+            });
+            statusEl.appendChild(document.createTextNode(' '));
+            statusEl.appendChild(button);
+        }
+    }
+
+    function reportProgress() {
+        var remaining = pendingKeys().length;
+        if (remaining === 0) {
+            setStatus('', false);
+            return;
+        }
+        setStatus(messages.loading.replace('{loaded}', total - remaining).replace('{total}', total), false);
+    }
+
+    // Re-post height after content changes, reusing the same parent.postMessage channel
+    // this page already posts through (see emit_event() in vert_module.html).
+    function postResize() {
+        try {
+            if (window.parent && window.parent !== window) {
+                window.parent.postMessage({
+                    type: 'plugin.resize',
+                    payload: {
+                        height: Math.max(document.body.scrollHeight, document.documentElement.scrollHeight)
+                    }
+                }, '*');
+            }
+        } catch (err) {
+            // Cross-origin parent that rejects the call; the iframe still renders correctly,
+            // only auto-resize is lost.
+        }
+    }
+
+    // The eagerly rendered children already loaded every asset and constructor this block
+    // type needs, so an injected child only has to be initialized -- there is nothing to
+    // download and nothing to poll for.
+    function initializeChild(el) {
+        if (!window.XBlock || !window.jQuery) {
+            return;
+        }
+        try {
+            window.XBlock.initializeBlocks(window.jQuery(el));
+        } catch (err) {
+            if (window.console && window.console.error) {
+                window.console.error('Incremental load: child failed to initialize', err);
+            }
+        }
+    }
+
+    function fillChild(usageKey, html) {
+        var el = container.querySelector('[data-usage-key="' + usageKey + '"]');
+        if (!el) {
+            return;
+        }
+        // innerHTML never runs inline <script>s, so per-child setup such as the
+        // setup_debug() call in staff_problem_info.html would silently not happen.
+        // HtmlUtils.setHtml runs them, the same as when the child renders inline. `html` is
+        // this LMS's own rendered fragment -- the markup the eager path inlines -- so it is
+        // marked trusted the same way capa's display.js marks its server-rendered HTML.
+        var HtmlUtils = window.edx && window.edx.HtmlUtils;
+        if (HtmlUtils) {
+            HtmlUtils.setHtml(el, HtmlUtils.HTML(html || ''));
+        } else {
+            el.innerHTML = html || '';
+        }
+        el.classList.remove('vert-lazy-pending');
+        el.setAttribute('aria-busy', 'false');
+        initializeChild(el);
+    }
+
+    function markChildError(usageKey, message) {
+        var el = container.querySelector('[data-usage-key="' + usageKey + '"]');
+        if (!el) {
+            return;
+        }
+
+        el.innerHTML = '';
+        el.classList.remove('vert-lazy-pending');
+        el.classList.add('vert-lazy-error');
+        el.setAttribute('aria-busy', 'false');
+        el.setAttribute('role', 'alert');
+
+        var messageEl = document.createElement('span');
+        messageEl.textContent = message || messages.failed;
+        el.appendChild(messageEl);
+
+        var retryButton = document.createElement('button');
+        retryButton.type = 'button';
+        retryButton.className = 'btn btn-link vert-lazy-retry';
+        retryButton.textContent = messages.retry;
+        retryButton.addEventListener('click', function () {
+            el.innerHTML = '';
+            el.classList.remove('vert-lazy-error');
+            el.classList.add('vert-lazy-pending');
+            el.removeAttribute('role');
+            el.setAttribute('aria-busy', 'true');
+            reportProgress();
+            loadBatch([usageKey]).catch(function (err) {
+                markChildError(usageKey, err.message);
+                reportProgress();
+            });
+        });
+        el.appendChild(document.createTextNode(' '));
+        el.appendChild(retryButton);
+    }
+
+    function fetchBatch(keys) {
+        var url = endpoint + '?child_usage_keys=' + encodeURIComponent(keys.join(','));
+        var controller = window.AbortController ? new window.AbortController() : null;
+        var timer = controller ? window.setTimeout(function () { controller.abort(); }, REQUEST_TIMEOUT_MS) : null;
+
+        return window.fetch(url, {
+            credentials: 'same-origin',
+            headers: { 'Accept': 'application/json' },
+            signal: controller ? controller.signal : undefined
+        }).then(function (response) {
+            if (timer) { window.clearTimeout(timer); }
+            if (!response.ok) {
+                var error = new Error('xblock_children request failed: ' + response.status);
+                error.status = response.status;
+                throw error;
+            }
+            return response.json();
+        }, function (err) {
+            if (timer) { window.clearTimeout(timer); }
+            throw err;
+        });
+    }
+
+    function jitter(ms) {
+        return ms + Math.floor(Math.random() * ms * 0.5);
+    }
+
+    function sleep(ms) {
+        return new window.Promise(function (resolve) { window.setTimeout(resolve, ms); });
+    }
+
+    function isRetryable(err) {
+        if (err.name === 'AbortError') {
+            return true;
+        }
+        if (typeof err.status === 'undefined') {
+            // Network error -- no response at all.
+            return true;
+        }
+        return RETRYABLE_STATUSES.indexOf(err.status) !== -1;
+    }
+
+    // Loads one batch of `keys`, retrying retryable failures up to MAX_ATTEMPTS times with
+    // jittered backoff -- jitter so a whole cohort doesn't retry in lockstep against a
+    // struggling LMS. A timeout (AbortError) halves the batch and retries as two smaller
+    // batches instead of retrying the same size again, self-tuning to whatever the real
+    // per-problem cost turns out to be instead of requiring the right batch size up front.
+    function loadBatch(keys, attempt) {
+        attempt = attempt || 1;
+        return fetchBatch(keys).then(function (data) {
+            (data.results || []).forEach(function (result) {
+                fillChild(result.usage_key, result.html);
+            });
+            (data.errors || []).forEach(function (error) {
+                markChildError(error.usage_key, error.message);
+            });
+            postResize();
+            reportProgress();
+        }, function (err) {
+            if (err.name === 'AbortError' && keys.length > 1) {
+                var mid = Math.ceil(keys.length / 2);
+                return loadBatch(keys.slice(0, mid), 1).then(function () {
+                    return loadBatch(keys.slice(mid), 1);
+                });
+            }
+            if (isRetryable(err) && attempt < MAX_ATTEMPTS) {
+                return sleep(jitter(BACKOFF_MS[attempt - 1])).then(function () {
+                    return loadBatch(keys, attempt + 1);
+                });
+            }
+            throw err;
+        });
+    }
+
+    function chunk(items, size) {
+        var chunks = [];
+        for (var i = 0; i < items.length; i += size) {
+            chunks.push(items.slice(i, i + size));
+        }
+        return chunks;
+    }
+
+    // Sequential, never parallel: the next batch starts only once the previous one has
+    // landed, so a learner never holds more than one in-flight batch request against the
+    // LMS at a time.
+    function run() {
+        var batches = chunk(pendingKeys(), batchSize);
+        var chain = window.Promise.resolve();
+        batches.forEach(function (batch) {
+            chain = chain.then(function () { return loadBatch(batch); });
+        });
+        chain.catch(function () {
+            setStatus(messages.failed, true, run);
+        });
+    }
+
+    reportProgress();
+    run();
+})();
+</script>

@@ -34,6 +34,7 @@ from edx_when.field_data import DateLookupFieldData
 from eventtracking import tracker
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey, UsageKey
+from openedx_filters.learning.filters import VerticalBlockChildRenderStarted
 from rest_framework.decorators import api_view
 from rest_framework.exceptions import APIException
 from web_fragments.fragment import Fragment
@@ -62,6 +63,7 @@ from lms.djangoapps.courseware.masquerade import (
 )
 from lms.djangoapps.courseware.model_data import DjangoKeyValueStore, FieldDataCache
 from lms.djangoapps.courseware.services import UserStateService
+from lms.djangoapps.courseware.toggles import incremental_assessment_load_is_enabled
 from lms.djangoapps.grades.api import GradesUtilService
 from lms.djangoapps.lms_xblock.field_data import LmsFieldData
 from lms.djangoapps.lms_xblock.runtime import UserTagsService, lms_applicable_aside_types, lms_wrappers_aside
@@ -80,6 +82,7 @@ from openedx.core.lib.api.view_utils import view_auth_classes
 from openedx.core.lib.cache_utils import CacheService
 from openedx.core.lib.gating.services import GatingService
 from openedx.core.lib.license import wrap_with_license
+from openedx.core.lib.mobile_utils import is_request_from_mobile_app
 from openedx.core.lib.url_utils import quote_slashes, unquote_slashes
 from openedx.core.lib.xblock_services.call_to_action import CallToActionService
 from openedx.core.lib.xblock_utils import (
@@ -92,6 +95,7 @@ from openedx.core.lib.xblock_utils import (
 from openedx.core.lib.xblock_utils import request_token as xblock_request_token
 from openedx.features.content_type_gating.services import ContentTypeGatingService
 from openedx.features.course_duration_limits.access import course_expiration_wrapper
+from openedx.features.course_experience.url_helpers import is_request_from_learning_mfe
 from openedx.features.discounts.utils import offer_banner_wrapper
 from xmodule.contentstore.django import contentstore
 from xmodule.exceptions import NotFoundError as XModuleNotFoundError
@@ -107,6 +111,7 @@ from xmodule.services import (
     XQueueService,
 )
 from xmodule.util.sandboxing import SandboxService
+from xmodule.x_module import STUDENT_VIEW
 
 if TYPE_CHECKING:
     from rest_framework.request import Request
@@ -895,9 +900,20 @@ def _get_block_by_usage_key(usage_key):
 
 
 def get_block_by_usage_id(request, course_id, usage_id, disable_staff_debug_info=False, course=None,
-                          will_recheck_access=False):
+                          will_recheck_access=False, field_data_cache_depth=None, field_data_cache=None):
     """
     Gets a block instance based on its `usage_id` in a course, for a given request/user
+
+    Arguments:
+        field_data_cache_depth: depth passed through to
+            FieldDataCache.cache_for_block_descendents. None (the default) prefetches every
+            descendant, matching historical behavior. Used by the incremental assessment load
+            (see render_xblock_children) so a batch of children only prefetches state for
+            themselves, not their own descendants.
+        field_data_cache: optional FieldDataCache to populate and bind the block with,
+            instead of building a new one. The runtime binding the block is shared with
+            every block loaded through it later in the request, so a caller that adds more
+            state to this cache afterwards makes that state visible to those blocks too.
 
     Returns (instance, tracking_context)
     """
@@ -906,12 +922,16 @@ def get_block_by_usage_id(request, course_id, usage_id, disable_staff_debug_info
     block, tracking_context = _get_block_by_usage_key(usage_key)
 
     _, user = setup_masquerade(request, course_key, has_access(request.user, 'staff', block, course_key))
-    field_data_cache = FieldDataCache.cache_for_block_descendents(
-        course_key,
-        user,
-        block,
-        read_only=CrawlersConfig.is_crawler(request),
-    )
+    if field_data_cache is None:
+        field_data_cache = FieldDataCache.cache_for_block_descendents(
+            course_key,
+            user,
+            block,
+            depth=field_data_cache_depth,
+            read_only=CrawlersConfig.is_crawler(request),
+        )
+    else:
+        field_data_cache.add_block_descendents(block, depth=field_data_cache_depth)
     instance = get_block_for_descriptor(
         user,
         request,
@@ -1122,3 +1142,344 @@ def append_data_to_webob_response(response, data):
         response_data.update(data)
         response.body = json.dumps(response_data).encode('utf-8')
     return response
+
+
+# Leaf block types counted by count_renderable_descendants. Only types whose render cost
+# is significant are counted -- a unit with fifty short HTML blocks renders quickly and
+# gains nothing from being split up.
+INCREMENTAL_LOAD_COUNTED_BLOCK_TYPES = frozenset(['problem'])
+
+
+def count_renderable_descendants(block, depth=4):
+    """
+    Estimate how many leaf blocks a learner will actually be shown under `block`.
+
+    Used only to decide whether a unit is large enough to be worth loading incrementally.
+    For randomized banks (blocks whose has_dynamic_children() is True, such as
+    library_content / item_bank) this counts what the learner will see -- `max_count`, or
+    the whole pool when it is unset or -1 -- rather than the full candidate pool.
+    """
+    if block is None or depth < 0:
+        return 0
+
+    has_dynamic_children = getattr(block, 'has_dynamic_children', None)
+    if callable(has_dynamic_children) and has_dynamic_children():
+        max_count = getattr(block, 'max_count', None)
+        pool_size = len(getattr(block, 'children', None) or [])
+        if isinstance(max_count, int) and max_count > 0:
+            return min(max_count, pool_size) if pool_size else max_count
+        # max_count of -1 (or unset) means "show all of them".
+        return pool_size
+
+    block_type = getattr(getattr(block, 'location', None), 'block_type', None)
+    get_children = getattr(block, 'get_children', None)
+    if not callable(get_children):
+        return 1 if block_type in INCREMENTAL_LOAD_COUNTED_BLOCK_TYPES else 0
+
+    children = get_children()
+    if not children:
+        return 1 if block_type in INCREMENTAL_LOAD_COUNTED_BLOCK_TYPES else 0
+
+    return sum(count_renderable_descendants(child, depth=depth - 1) for child in children)
+
+
+def should_use_incremental_load(request, block):
+    """
+    Return True when `block` should be rendered as a shell -- the first
+    settings.INCREMENTAL_LOAD_EAGER_COUNT children rendered inline and the rest left as
+    placeholders for XBlockChildren to fill in batches -- instead of rendering every
+    child in one response.
+
+    All of the following must hold:
+    1. courseware.incremental_assessment_load is enabled for the course (kill switch,
+       off by default).
+    2. `block` is a vertical -- the only block the courseware iframe renders as a unit,
+       and the only place a shell makes sense.
+    3. The unit is big enough that a single render risks the upstream request timeout.
+    4. The request is not from a mobile app -- mobile webviews have not been validated
+       against the incremental-load bootstrap.
+    """
+    block_type = getattr(getattr(block, 'location', None), 'block_type', None)
+    if block_type not in ('vertical', 'unit'):
+        return False
+
+    if is_request_from_mobile_app(request):
+        return False
+
+    course_key = block.location.course_key
+    if not incremental_assessment_load_is_enabled(course_key):
+        return False
+
+    return count_renderable_descendants(block) > settings.INCREMENTAL_LOAD_PROBLEM_THRESHOLD
+
+
+def _allowed_child_usage_keys(parent):
+    """
+    Return the set of usage keys the current learner is allowed to load under `parent`.
+
+    This is the batch endpoint's security boundary: without it, a learner could ask for
+    any usage key under a randomized bank, including problems it never assigned them.
+    Dynamic blocks (has_dynamic_children() is True, such as library_content / item_bank)
+    expose only the learner's persisted selection via get_child_blocks(); everything else
+    exposes its ordinary children.
+    """
+    has_dynamic_children = getattr(parent, 'has_dynamic_children', None)
+    get_child_blocks = getattr(parent, 'get_child_blocks', None)
+    if callable(has_dynamic_children) and has_dynamic_children() and callable(get_child_blocks):
+        children = get_child_blocks()
+        return {child.location for child in children if child is not None}
+
+    # ``children`` is a content-scoped field containing UsageKeys. Reading it does not
+    # instantiate/bind the child blocks. Calling ``parent.get_children()`` here would
+    # create child instances through the parent's shallow field-data cache; those
+    # instances must not later be rendered with a different learner-state cache.
+    child_usage_keys = getattr(parent, 'children', None)
+    if isinstance(child_usage_keys, (list, tuple)):
+        return {child_usage_key for child_usage_key in child_usage_keys if child_usage_key is not None}
+
+    # Keep compatibility with XBlocks that do not expose their children as a normal
+    # UsageKey list (and with older test doubles). This fallback is only an access check;
+    # the endpoint still resolves the objects it renders from the modulestore below.
+    children = parent.get_children()
+    return {child.location for child in children if child is not None}
+
+
+def _load_unbound_child_descriptors(child_usage_keys, parent=None):
+    """
+    Resolve child usage keys to fresh, unbound XBlock descriptors.
+
+    The parent is intentionally not used for this lookup. A parent loaded with a shallow
+    FieldDataCache can already have child instances bound to that cache. Reusing one of
+    those instances and then passing a second cache to ``get_block_for_descriptor`` is
+    unsafe because ``bind_for_student`` skips rebinding when the user id is unchanged.
+
+    ``parent`` is optional and is used only to carry over the runtime's export filesystem
+    setting, which ``XModuleMixin.get_child()`` normally copies to child instances.
+    """
+    descriptors = {}
+    missing = []
+    store = modulestore()
+    for child_usage_key in child_usage_keys:
+        try:
+            descriptor = store.get_item(child_usage_key)
+        except ItemNotFoundError:
+            missing.append(child_usage_key)
+            continue
+        if descriptor is None:
+            missing.append(child_usage_key)
+            continue
+        if parent is not None:
+            descriptor.runtime.export_fs = parent.runtime.export_fs
+        descriptors[child_usage_key] = descriptor
+    return descriptors, missing
+
+
+def _lazy_child_student_view_context(request):
+    """
+    Build the child render context used by the incremental load endpoint.
+
+    Keep this aligned with render_xblock's student_view_context and
+    VerticalBlock._student_or_public_view's child context so lazily-rendered
+    children behave like children rendered inline by the unit.
+    """
+    context = request.GET.dict()
+    context['show_bookmark_button'] = request.GET.get('show_bookmark_button', '0') == '1'
+    context['show_title'] = request.GET.get('show_title', '1') == '1'
+    context['hide_access_error_blocks'] = (
+        is_request_from_learning_mfe(request) and request.GET.get('recheck_access') == '1'
+    )
+    context['is_mobile_app'] = is_request_from_mobile_app(request)
+    context['child_of_vertical'] = True
+    return context
+
+
+def render_xblock_children(request, parent_usage_key, child_usage_keys, course=None):
+    """
+    Render a bounded batch of `parent`'s children and return their HTML.
+
+    Backs the XBlockChildren API that the incremental assessment load bootstrap calls
+    repeatedly to fill in the placeholders VerticalBlock leaves for children past its
+    eager-render window. One FieldDataCache is built for the whole batch, and the
+    masquerade user is resolved once and reused for every child in it -- building a
+    separate cache, or re-resolving masquerade, per child would multiply exactly the
+    per-child render cost this feature exists to bound.
+
+    A child that fails to render is reported in `errors` rather than failing the whole
+    batch, so one bad problem doesn't cost the learner the rest of the batch.
+
+    Returns:
+        dict with `parent_usage_key`, `results` (list of `{usage_key, html}`) and
+        `errors` (list of `{usage_key, error, message}`).
+
+    Raises:
+        ValueError: the request is malformed or the batch is too large. Callers should
+            map this to a 400.
+    """
+    if not child_usage_keys:
+        raise ValueError('child_usage_keys is required')
+
+    max_batch = settings.XBLOCK_CHILDREN_BATCH_MAX
+    if len(child_usage_keys) > max_batch:
+        raise ValueError(f'At most {max_batch} child_usage_keys are allowed per request')
+
+    course_key = parent_usage_key.course_key
+    staff_access = bool(has_access(request.user, 'staff', course_key))
+    _, user = setup_masquerade(request, course_key, staff_access)
+
+    # One cache for the parent and the whole batch. Binding the parent prepares the shared
+    # runtime around this cache, and blocks a child loads itself through that runtime --
+    # e.g. the problem an item_bank / library_content child selected -- are bound with it
+    # too, so they only see the learner's state if it is added to this same cache.
+    field_data_cache = FieldDataCache([], course_key, user, read_only=CrawlersConfig.is_crawler(request))
+
+    with modulestore().bulk_operations(course_key):
+        parent, _ = get_block_by_usage_id(
+            request,
+            str(course_key),
+            str(parent_usage_key),
+            course=course,
+            field_data_cache_depth=0,
+            will_recheck_access=True,
+            field_data_cache=field_data_cache,
+        )
+
+        requested = []
+        errors = []
+        allowed_keys = _allowed_child_usage_keys(parent)
+        for child_key in child_usage_keys:
+            if child_key in allowed_keys:
+                requested.append(child_key)
+            else:
+                errors.append({
+                    'usage_key': str(child_key),
+                    'error': 'forbidden',
+                    'message': "Block is not among this learner's children for that parent.",
+                })
+
+        results = []
+        if not requested:
+            return {'parent_usage_key': str(parent_usage_key), 'results': results, 'errors': errors}
+
+        # Resolve from the modulestore rather than reusing parent.get_children() instances.
+        # The latter may already be bound to the parent's depth-0 cache for this same user.
+        # Those instances would then skip rebinding when get_block_for_descriptor() is
+        # called with the batch cache, causing a valid StudentModule row to look absent.
+        children_by_key, missing_keys = _load_unbound_child_descriptors(requested, parent=parent)
+        for child_key in missing_keys:
+            errors.append({
+                'usage_key': str(child_key),
+                'error': 'not_found',
+                'message': 'Block could not be loaded.',
+            })
+
+        renderable_children = [
+            children_by_key[child_key] for child_key in requested if child_key in children_by_key
+        ]
+
+        # One state lookup for the whole batch, not one per child. Depth=1 also covers the
+        # problems inside each library_content/item_bank child, without recursing further.
+        field_data_cache.add_block_descendents_batch(renderable_children, depth=1)
+
+        # Bind each fresh descriptor exactly once, after the cache containing the learner's
+        # state has been populated. Besides fixing state hydration, doing this before the
+        # completion/access pass keeps those checks aligned with the eventual render.
+        instances_by_key = {}
+        for child_key in requested:
+            child = children_by_key.get(child_key)
+            if child is None:
+                continue
+            try:
+                instance = get_block_for_descriptor(
+                    user,
+                    request,
+                    child,
+                    field_data_cache,
+                    course_key,
+                    course=course,
+                    will_recheck_access=True,
+                )
+            except Exception as exc:  # pylint: disable=broad-except
+                log.exception('Incremental load: child %s under %s failed to bind', child_key, parent_usage_key)
+                errors.append({
+                    'usage_key': str(child_key),
+                    'error': 'render_failed',
+                    'message': str(exc),
+                })
+                continue
+            if instance is None:
+                errors.append({
+                    'usage_key': str(child_key),
+                    'error': 'forbidden',
+                    'message': 'Learner does not have access to this block.',
+                })
+                continue
+            log.debug(
+                'Incremental load: bound child %s for parent %s with the batch state cache; '
+                'user_id before=%s after=%s',
+                child_key,
+                parent_usage_key,
+                getattr(child.scope_ids, 'user_id', None),
+                getattr(instance.scope_ids, 'user_id', None),
+            )
+            instances_by_key[child_key] = instance
+
+        # Both computed once for the whole batch, not per child, matching how
+        # VerticalBlock computes them once for its own eager-rendered children.
+        block_has_access_error = getattr(parent, 'block_has_access_error', None)
+        completion_service = parent.runtime.service(parent, 'completion')
+        child_blocks_to_complete_on_view = set()
+        complete_on_view_delay = None
+        if completion_service and completion_service.completion_tracking_enabled():
+            requested_children = [
+                instances_by_key[child_key] for child_key in requested if child_key in instances_by_key
+            ]
+            child_blocks_to_complete_on_view = completion_service.blocks_to_mark_complete_on_view(
+                requested_children
+            )
+            complete_on_view_delay = completion_service.get_complete_on_view_delay_ms()
+
+        for child_key in requested:
+            instance = instances_by_key.get(child_key)
+            if instance is None:
+                continue
+
+            child_context = _lazy_child_student_view_context(request)
+            if (
+                child_context.get('hide_access_error_blocks')
+                and callable(block_has_access_error)
+                and block_has_access_error(instance)
+            ):
+                # Matches VerticalBlock's own eager-render skip (block_has_access_error):
+                # a block gated for this learner must stay hidden whether it renders
+                # inline or gets lazy-loaded later.
+                results.append({'usage_key': str(child_key), 'html': ''})
+                continue
+            if instance in child_blocks_to_complete_on_view:
+                child_context['wrap_xblock_data'] = {
+                    'mark-completed-on-view-after-delay': complete_on_view_delay
+                }
+
+            try:
+                instance, child_context = VerticalBlockChildRenderStarted.run_filter(
+                    block=instance,
+                    context=child_context
+                )
+                fragment = instance.render(STUDENT_VIEW, context=child_context)
+                results.append({'usage_key': str(child_key), 'html': fragment.content})
+            except VerticalBlockChildRenderStarted.PreventChildBlockRender as exc:
+                log.info('Incremental load: skipping child %s. Reason: %s', child_key, exc.message)
+                errors.append({
+                    'usage_key': str(child_key),
+                    'error': 'forbidden',
+                    'message': exc.message,
+                })
+            except Exception as exc:  # pylint: disable=broad-except
+                # One problem failing to render must not cost the learner the rest of the batch.
+                log.exception('Incremental load: child %s under %s failed to render', child_key, parent_usage_key)
+                errors.append({
+                    'usage_key': str(child_key),
+                    'error': 'render_failed',
+                    'message': str(exc),
+                })
+
+    return {'parent_usage_key': str(parent_usage_key), 'results': results, 'errors': errors}

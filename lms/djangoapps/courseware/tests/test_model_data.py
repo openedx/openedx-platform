@@ -452,3 +452,35 @@ class TestStudentInfoStorage(OtherUserFailureTestMixin, StorageTestBase, TestCas
     storage_class = XModuleStudentInfoField
     other_key_factory = partial(DjangoKeyValueStore.Key, Scope.user_info, 2, 'mock_problem')  # user_id=2, not 1
     existing_field_name = "existing_field"
+
+
+class TestFieldDataCacheBatchDescendents(TestCase):
+    """
+    Tests for FieldDataCache.add_block_descendents_batch.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.user = UserFactory()
+
+    def test_batch_descendent_prefetch_populates_the_cache_once(self):
+        """
+        Sibling lazy children share one user-state lookup instead of triggering one
+        cache population call per child.
+        """
+        first = mock_block()
+        first.location = COURSE_KEY.make_usage_key('problem', 'first')
+        first.get_children.return_value = []
+        first.get_required_block_descriptors.return_value = []
+
+        second = mock_block()
+        second.location = COURSE_KEY.make_usage_key('problem', 'second')
+        second.get_children.return_value = []
+        second.get_required_block_descriptors.return_value = []
+
+        cache = FieldDataCache([], COURSE_KEY, self.user)
+        with patch.object(cache, 'add_blocks_to_cache') as add_blocks_to_cache:
+            cache.add_block_descendents_batch([first, second], depth=1)
+
+        add_blocks_to_cache.assert_called_once()
+        assert add_blocks_to_cache.call_args.args[0] == [first, second]
