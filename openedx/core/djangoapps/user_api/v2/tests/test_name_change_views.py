@@ -569,6 +569,36 @@ class NameChangeParityTests(NameChangeTestCase):
         }
         assert PendingNameChange.objects.count() == 0
 
+    def test_both_versions_store_a_name_as_it_was_sent(self):
+        """Spaces around a name are kept, so the profile's name with one in front is another name."""
+        self.login(self.owner)
+        for sent in ("  Jon Doe  ", " Original Name"):
+            with self.subTest(name=sent):
+                earlier = self.client.post(EARLIER_REQUEST, {"name": sent}, format="json")
+                assert earlier.status_code == status.HTTP_201_CREATED
+                assert self.pending_name(self.owner) == sent
+                PendingNameChange.objects.filter(user=self.owner).delete()
+
+                later = self.request_name(sent)
+                assert later.status_code == earlier.status_code
+                assert later.data == {"name": sent}
+                assert self.pending_name(self.owner) == sent
+                PendingNameChange.objects.filter(user=self.owner).delete()
+
+    def test_both_versions_refuse_a_name_of_spaces_alone(self):
+        self.login(self.owner)
+        earlier = self.client.post(EARLIER_REQUEST, {"name": "   "}, format="json")
+        assert earlier.status_code == status.HTTP_400_BAD_REQUEST
+        assert earlier.data == {"new_name": ["This field may not be blank."]}
+
+        envelope = assert_error_envelope(
+            self.request_name("   "),
+            expected_status=status.HTTP_400_BAD_REQUEST,
+            expected_type_slug="validation",
+        )
+        assert envelope["errors"] == {"name": ["This field may not be blank."]}
+        assert PendingNameChange.objects.count() == 0
+
     def test_both_versions_confirm_a_request_the_same_way(self):
         PendingNameChange.objects.create(user=self.owner, new_name="Jon Doe", rationale="a test")
         self.login(self.staff)

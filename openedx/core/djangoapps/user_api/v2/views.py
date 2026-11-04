@@ -1204,10 +1204,9 @@ class AccountViewSet(
 
         Which accounts a request addresses is read both before the handler
         runs, to settle what the answer can carry, and inside it, to cut the
-        page. Both read the values the serializer validated, so a name sent
-        with spaces around it names the same account at each point; and the
-        serializer runs once, because it is what refuses a selector the list
-        does not take.
+        page. Both read the values the serializer validated, so the two cannot
+        disagree about which accounts are meant; and the serializer runs once,
+        because it is what refuses a selector the list does not take.
         """
         if self._validated_selection is None:
             query = self.query_serializer_class(data=request.query_params)

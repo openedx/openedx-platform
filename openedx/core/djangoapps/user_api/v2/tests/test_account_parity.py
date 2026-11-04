@@ -481,6 +481,52 @@ class AccountRefusalParityTests(APITestCase):
             "emails": ["Ensure this field has no more than 100 elements."],
         }
 
+    def test_a_name_with_spaces_before_it_selects_no_account_in_either_version(self):
+        """Both versions match a name exactly as it was sent."""
+        self.login(self.staff)
+        for asked in (" refusal-owner", "refusal-other, refusal-owner"):
+            with self.subTest(username=asked):
+                earlier = self.client.get(EARLIER_LIST, {"username": asked})
+                current = self.client.get(reverse("user_v2:account_list"), {"username": asked})
+                assert current.status_code == status.HTTP_200_OK
+                selected = [row["username"] for row in json.loads(current.content)["results"]]
+                if "," in asked:
+                    assert earlier.status_code == status.HTTP_200_OK
+                    assert [row["username"] for row in json.loads(earlier.content)] == ["refusal-other"]
+                    assert selected == ["refusal-other"]
+                else:
+                    assert earlier.status_code == status.HTTP_404_NOT_FOUND
+                    assert selected == []
+
+    def test_an_address_with_spaces_before_it_selects_no_account_in_either_version(self):
+        """
+        Both versions read the address exactly as it was sent.
+
+        The earlier address looked it up and found nothing behind it; this
+        version refuses it as an address that is not well formed.
+        """
+        self.login(self.staff)
+        asked = {"email": " refusal-owner@example.com"}
+        earlier = self.client.get(EARLIER_LIST, asked)
+        assert earlier.status_code == status.HTTP_404_NOT_FOUND
+
+        current = self.client.get(reverse("user_v2:account_list"), asked)
+        envelope = assert_error_envelope(
+            current, expected_status=status.HTTP_400_BAD_REQUEST, expected_type_slug="validation",
+        )
+        assert envelope["errors"] == {"email": ["Enter a valid email address."]}
+
+    def test_a_searched_address_with_spaces_before_it_matches_no_account_in_either_version(self):
+        self.login(self.staff)
+        emails = {"emails": ["refusal-other@example.com", " refusal-owner@example.com"]}
+        earlier = self.client.post(EARLIER_SEARCH, emails, format="json")
+        assert earlier.status_code == status.HTTP_200_OK
+        assert [row["username"] for row in json.loads(earlier.content)] == ["refusal-other"]
+
+        current = self.client.post(reverse("user_v2:email_search_list"), emails, format="json")
+        assert current.status_code == status.HTTP_200_OK
+        assert [row["username"] for row in json.loads(current.content)["results"]] == ["refusal-other"]
+
     def test_the_address_of_a_retired_account_keeps_what_the_earlier_body_carried(self):
         self.login(self.staff)
         retired_email = self.other.email

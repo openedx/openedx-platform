@@ -452,6 +452,7 @@ class AccountQuerySerializer(serializers.Serializer):  # pylint: disable=abstrac
     username = serializers.CharField(
         required=False,
         allow_blank=True,
+        trim_whitespace=False,
         help_text=(
             "Comma-separated usernames. A name no account holds is left out of the page rather than refused. "
             "Omit this and the other selectors to receive your own account."
@@ -460,6 +461,7 @@ class AccountQuerySerializer(serializers.Serializer):  # pylint: disable=abstrac
     email = serializers.EmailField(
         required=False,
         allow_blank=True,
+        trim_whitespace=False,
         help_text="Address of the one account to return. Only staff may select an account this way.",
     )
     lms_user_id = serializers.IntegerField(
@@ -636,7 +638,7 @@ class EmailSearchSerializer(serializers.Serializer):  # pylint: disable=abstract
     """The addresses an account search is asked to resolve."""
 
     emails = _TextListField(
-        child=serializers.CharField(allow_blank=True),
+        child=serializers.CharField(allow_blank=True, trim_whitespace=False),
         allow_empty=True,
         max_length=EMAIL_SEARCH_MAX_ADDRESSES,
         help_text=(
@@ -664,15 +666,18 @@ NAME_MAX_LENGTH = 255
 
 
 class NameChangeSerializer(serializers.Serializer):  # pylint: disable=abstract-method
-    """A request to put a different full name on a user's profile."""
+    """A request to put a different full name on a user's profile, stored as it is sent."""
 
     name = serializers.CharField(
         max_length=NAME_MAX_LENGTH,
+        trim_whitespace=False,
         help_text="Full name to put on the profile once the request is confirmed.",
     )
 
     def validate_name(self, name):
-        """Refuse a name carrying markup or a web address."""
+        """Refuse a name of spaces alone, or one carrying markup or a web address."""
+        if not name.strip():
+            self.fields["name"].fail("blank")
         if contains_html(name):
             raise serializers.ValidationError("Name cannot contain the following characters: < >")
         if contains_url(name):

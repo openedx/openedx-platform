@@ -229,20 +229,16 @@ class AccountListViewTests(AccountApiV2TestCase):
                 }
                 assert "results" not in envelope
 
-    def test_a_name_sent_with_spaces_around_it_names_the_same_account_throughout(self):
-        """
-        The name is read the same way when the answer is shaped and when the page is cut.
-
-        What a caller may select depends on whose accounts the page carries,
-        and spaces around the name they sent do not make their own account
-        somebody else's for that purpose.
-        """
-        self.login(self.owner)
-        for asked in ("owner-caller", " owner-caller", "owner-caller "):
+    def test_a_name_sent_with_spaces_around_it_is_read_as_sent(self):
+        """A name is matched exactly as it was sent, so spaces around it name no account."""
+        self.login(self.staff)
+        exact = self.client.get(self.list_url, {"username": "owner-caller"})
+        assert self.usernames_in(exact) == ["owner-caller"]
+        for asked in (" owner-caller", "other-caller, owner-caller"):
             with self.subTest(username=asked):
-                response = self.client.get(self.list_url, {"username": asked, "fields": "email"})
+                response = self.client.get(self.list_url, {"username": asked})
                 assert response.status_code == status.HTTP_200_OK, response.content
-                assert response.data["results"] == [{"email": "owner-caller@example.com"}]
+                assert self.usernames_in(response) == (["other-caller"] if "," in asked else [])
 
     def test_a_name_no_account_holds_is_left_out_rather_than_refused(self):
         self.login(self.staff)
