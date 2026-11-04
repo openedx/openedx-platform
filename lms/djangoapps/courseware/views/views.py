@@ -359,6 +359,8 @@ def load_metadata_from_youtube(video_id, request):
     endpoint, or via the video XBlock as a its 'yt_video_metadata' handler.
     """
     metadata = {}
+    if video_id and (not settings.YOUTUBE_API_KEY or settings.YOUTUBE_API_KEY == 'PUT_YOUR_API_KEY_HERE'):
+        return metadata, 200
     status_code = 500
     if video_id and settings.YOUTUBE_API_KEY and settings.YOUTUBE_API_KEY != 'PUT_YOUR_API_KEY_HERE':
         yt_api_key = settings.YOUTUBE_API_KEY
