@@ -46,8 +46,14 @@ from openedx.core.djangoapps.user_api.accounts.views import (
     AccountRetirementView,
     LMSAccountRetirementView,
 )
-from openedx.core.djangoapps.user_api.models import RetirementState, UserOrgTag, UserRetirementStatus
+from openedx.core.djangoapps.user_api.models import (
+    RetirementState,
+    UserOrgTag,
+    UserRetirementPartnerReportingStatus,
+    UserRetirementStatus,
+)
 from openedx.core.djangoapps.user_api.v2 import view_services
+from openedx.core.djangoapps.user_api.v2.paginators import UserApiPagination
 from openedx.core.djangoapps.user_api.v2.views import (
     RetirementCleanupViewSet,
     RetirementPartnerReportCleanupViewSet,
@@ -683,6 +689,88 @@ class QueueFilterParityTests(RetirementParityTestCase):
         assert [row["original_username"] for row in conforming.json()["results"]] == [
             row["original_username"] for row in legacy.json()
         ]
+
+
+#: More names than a page of any collection of this version holds, which is
+#: what the pipeline sends when it disposes of a whole queue in one request.
+WHOLE_QUEUE = UserApiPagination.max_page_size + 1
+
+
+@skip_unless_lms
+class BatchDisposalParityTests(RetirementParityTestCase):
+    """
+    The two disposals of a set of records named in the body, on both versions.
+
+    The pipeline's jobs take every entry waiting and then dispose of all of
+    them in a single request, so neither version bounds how many names that
+    request carries.
+    """
+
+    def finished_retirements(self, prefix):
+        """Return a whole queue of retirements the pipeline has finished with."""
+        complete = RetirementState.objects.get(state_name="COMPLETE")
+        return [
+            create_retirement_status(UserFactory.create(username=f"{prefix}-{index}"), state=complete)
+            for index in range(WHOLE_QUEUE)
+        ]
+
+    def queue_partner_reports(self, prefix):
+        """Queue a whole queue of partner report entries, none of them taken yet."""
+        for index in range(WHOLE_QUEUE):
+            user = UserFactory.create(username=f"{prefix}-{index}")
+            UserRetirementPartnerReportingStatus.objects.create(
+                user=user, original_username=user.username, original_email=user.email,
+            )
+
+    def test_a_whole_queue_of_finished_retirements_is_disposed_of_in_one_request_on_both_versions(self):
+        legacy = self.finished_retirements("legacy")
+        conforming = self.finished_retirements("conforming")
+
+        legacy_answer = self.client.post(
+            reverse("accounts_retirement_cleanup"),
+            {"usernames": [record.original_username for record in legacy]},
+            format="json",
+        )
+        conforming_answer = self.client.post(
+            reverse("user_v2:retirement_cleanup_list"),
+            {"usernames": [record.original_username for record in conforming]},
+            format="json",
+        )
+
+        assert legacy_answer.status_code == status.HTTP_204_NO_CONTENT
+        assert conforming_answer.status_code == status.HTTP_200_OK
+        assert [result["outcome"] for result in conforming_answer.data["results"]] == ["deleted"] * WHOLE_QUEUE
+        left = {
+            version: UserRetirementStatus.objects.filter(id__in=[record.id for record in records]).count()
+            for version, records in (("legacy", legacy), ("conforming", conforming))
+        }
+        assert left == {"legacy": 0, "conforming": 0}
+
+    def test_a_whole_queue_of_partner_reports_is_taken_and_then_disposed_of_on_both_versions(self):
+        """The partner report job disposes of every entry it took, in the request after the reports go out."""
+        self.queue_partner_reports("legacy")
+        taken = self.client.post(reverse("accounts_retirement_partner_report")).json()
+        legacy_answer = self.client.post(
+            reverse("accounts_retirement_partner_report_cleanup"),
+            [{"original_username": entry["original_username"]} for entry in taken],
+            format="json",
+        )
+        legacy_left = UserRetirementPartnerReportingStatus.objects.count()
+
+        self.queue_partner_reports("conforming")
+        claimed = self.client.post(reverse("user_v2:retirement_partner_report_list")).json()
+        conforming_answer = self.client.post(
+            reverse("user_v2:retirement_partner_report_cleanup_list"),
+            {"usernames": [entry["original_username"] for entry in claimed]},
+            format="json",
+        )
+        conforming_left = UserRetirementPartnerReportingStatus.objects.count()
+
+        assert (len(taken), len(claimed)) == (WHOLE_QUEUE, WHOLE_QUEUE)
+        assert (legacy_answer.status_code, conforming_answer.status_code) == (
+            status.HTTP_204_NO_CONTENT, status.HTTP_200_OK,
+        )
+        assert (legacy_left, conforming_left) == (0, 0)
 
 
 class MediaTypeParityTests(SimpleTestCase):

@@ -1777,14 +1777,12 @@ class _BatchTestsMixin(_AccessMatrixMixin):
         )
         assert "usernames" in envelope["errors"]
 
-    def test_a_body_naming_more_accounts_than_a_batch_carries_is_refused(self):
+    def test_a_body_naming_more_accounts_than_a_page_holds_is_answered_for_every_name(self):
         self.login("worker")
-        envelope = assert_error_envelope(
-            self.post([f"name-{index}" for index in range(MAXIMUM_PAGE_SIZE + 1)]),
-            expected_status=status.HTTP_400_BAD_REQUEST,
-            expected_type_slug="validation",
-        )
-        assert "usernames" in envelope["errors"]
+        names = [f"name-{index}" for index in range(MAXIMUM_PAGE_SIZE + 1)]
+        response = self.post(names)
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == {"results": [{"username": name, "outcome": "already_absent"} for name in names]}
 
     def test_a_body_that_is_not_an_object_is_refused(self):
         self.login("worker")

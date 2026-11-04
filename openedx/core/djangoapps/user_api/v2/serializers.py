@@ -1144,10 +1144,6 @@ BATCH_OUTCOME_CHOICES = (
     (OUTCOME_ALREADY_ABSENT, "There was no such record, so this request left nothing to do."),
 )
 
-#: The largest number of names one batch may carry, which is the number of
-#: rows a page of any collection of this version holds.
-BATCH_MAX_NAMES = UserApiPagination.max_page_size
-
 
 def why_a_state_is_not_configured(name):
     """Return why this deployment has no such pipeline step, or ``None`` when it has one."""
@@ -1326,13 +1322,14 @@ class RetirementBatchSerializer(serializers.Serializer):  # pylint: disable=abst
     reported once.
     """
 
+    # As many names as the caller sends: the pipeline disposes of everything it
+    # has finished with, a whole queue at a time, in one request.
     usernames = serializers.ListField(
         child=serializers.CharField(),
         allow_empty=False,
-        max_length=BATCH_MAX_NAMES,
         help_text=(
-            "Names the accounts were stored under before retirement was requested. At most "
-            f"{BATCH_MAX_NAMES} names, compared exactly as spelled."
+            "Names the accounts were stored under before retirement was requested, compared "
+            "exactly as spelled. There is no limit on how many one request names."
         ),
     )
 
