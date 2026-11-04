@@ -100,6 +100,7 @@ class UserFilterSet(filters.FilterSet):
 
     username = filters.CharFilter(
         method="filter_usernames",
+        strip=False,
         help_text=(
             "Comma-separated usernames. Only these users are returned, and a name no user holds "
             "is left out of the page rather than refused."
@@ -183,6 +184,7 @@ class UserPreferenceFilterSet(filters.FilterSet):
     username = filters.CharFilter(
         field_name="user__username",
         method="filter_usernames",
+        strip=False,
         help_text=(
             "Comma-separated usernames. Only these users' preferences are returned, and a name "
             "no user holds is left out of the page rather than refused."

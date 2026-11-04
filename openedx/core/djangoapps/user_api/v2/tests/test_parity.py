@@ -206,6 +206,29 @@ class ParityTests(APITestCase):
                     expected_status=status.HTTP_401_UNAUTHORIZED, expected_type_slug="authn",
                 )
 
+    def test_a_name_with_spaces_before_it_selects_nothing_in_either_version(self):
+        """
+        Both versions match a username exactly as it was sent.
+
+        The directory addresses of version 1 take no username, so its account
+        list, the one place it selects by name, is the reading compared here.
+        """
+        assert self.client.login(username=self.admin.username, password=PASSWORD)
+        exact = self.client.get("/api/user/v1/accounts", {"username": "parity-user"})
+        padded = self.client.get("/api/user/v1/accounts", {"username": " parity-user"})
+        self.client.logout()
+        assert exact.status_code == status.HTTP_200_OK
+        assert [account["username"] for account in json.loads(exact.content)] == ["parity-user"]
+        assert padded.status_code == status.HTTP_404_NOT_FOUND
+
+        for name in ("user_v2:user_list", "user_v2:user_preference_list"):
+            with self.subTest(address=name):
+                selected = self.conforming(reverse(name), {"username": "parity-user"})
+                assert [row["username"] for row in json.loads(selected.content)["results"]] == ["parity-user"]
+                padded = self.conforming(reverse(name), {"username": " parity-user"})
+                assert padded.status_code == status.HTTP_200_OK, padded.content
+                assert json.loads(padded.content)["results"] == []
+
     def test_user_detail_parity(self):
         legacy = self.legacy(f"/api/user/v1/users/{self.user.id}/")
         new = self.conforming(reverse("user_v2:user_detail", kwargs={"username": "parity-user"}))

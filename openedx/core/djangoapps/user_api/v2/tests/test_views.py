@@ -303,6 +303,15 @@ class UserListViewTests(UserApiV2TestCase):
         assert response.status_code == status.HTTP_200_OK
         assert self.usernames_in(response) == ["admin-caller", "alice", "bob", "learner-caller"]
 
+    def test_a_name_sent_with_spaces_around_it_is_read_as_sent(self):
+        """A name is matched exactly as it was sent, so a space before it names no user."""
+        self.send_api_key()
+        for asked, expected in ((" alice", []), ("bob, alice", ["bob"]), ("  ", [])):
+            with self.subTest(username=asked):
+                response = self.client.get(self.url, {"username": asked, "page_size": 100})
+                assert response.status_code == status.HTTP_200_OK, response.content
+                assert self.usernames_in(response) == expected
+
     def test_filter_by_email(self):
         self.send_api_key()
         response = self.client.get(self.url, {"email": "bob@example.com"})
@@ -782,6 +791,15 @@ class UserPreferenceListViewTests(UserApiV2TestCase):
         response = self.client.get(self.url, {"username": "", "page_size": 100})
         assert response.status_code == status.HTTP_200_OK
         assert self.keys_in(response) == [("alice", "pref-lang"), ("bob", "time_zone")]
+
+    def test_a_name_sent_with_spaces_around_it_is_read_as_sent(self):
+        """A name is matched exactly as it was sent, so a space before it names no owner."""
+        self.send_api_key()
+        for asked, expected in ((" alice", []), ("bob, alice", [("bob", "time_zone")]), ("  ", [])):
+            with self.subTest(username=asked):
+                response = self.client.get(self.url, {"username": asked, "page_size": 100})
+                assert response.status_code == status.HTTP_200_OK, response.content
+                assert self.keys_in(response) == expected
 
     def test_the_owner_id_the_earlier_list_took_is_refused_rather_than_ignored(self):
         """A caller that ported by changing the version segment is told, not quietly unfiltered."""
