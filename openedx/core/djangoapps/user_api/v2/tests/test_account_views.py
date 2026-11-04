@@ -1455,11 +1455,9 @@ class AccountChangeBodyShapeTests(AccountApiV2TestCase):
         envelope = assert_error_envelope(
             response, expected_status=status.HTTP_400_BAD_REQUEST, expected_type_slug="validation",
         )
-        # The envelope carries one line per property, so a refusal from inside a
-        # list arrives as the text of the refusal rather than as its own object.
-        assert list(envelope["errors"]) == ["social_links"]
-        assert "social_link" in envelope["errors"]["social_links"][0]
-        assert "This field is required." in envelope["errors"]["social_links"][0]
+        # A refusal from inside a list is listed under the item it is about.
+        assert envelope["errors"] == {"social_links[0].social_link": ["This field is required."]}
+        assert envelope["detail"] == "social_links[0].social_link: This field is required."
         assert self.owner.profile.social_links.count() == 0
 
     def test_an_empty_address_still_drops_a_platform(self):

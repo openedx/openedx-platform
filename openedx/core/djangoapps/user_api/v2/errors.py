@@ -51,6 +51,53 @@ def refusal_sentence(refusals):
     )
 
 
+def _holds_a_structure(value):
+    """Whether a refusal's value is a mapping, or a list holding anything but messages."""
+    return isinstance(value, dict) or (
+        isinstance(value, list) and any(isinstance(item, (dict, list)) for item in value)
+    )
+
+
+def _refusals_by_item(detail, name):
+    """
+    Yield each message of a refusal with the name of the thing it is about.
+
+    An item of a list is named after its position, counted from 0, and a
+    property of an object after the property: ``social_links[0]``,
+    ``social_links[0].social_link``. A refusal of an object as a whole keeps the
+    object's name.
+    """
+    if isinstance(detail, dict):
+        for key, inner in detail.items():
+            if isinstance(key, int):
+                yield from _refusals_by_item(inner, f"{name}[{key}]")
+            elif key == api_settings.NON_FIELD_ERRORS_KEY:
+                yield from _refusals_by_item(inner, name)
+            else:
+                yield from _refusals_by_item(inner, f"{name}.{key}")
+    elif _holds_a_structure(detail):
+        for index, inner in enumerate(detail):
+            yield from _refusals_by_item(inner, f"{name}[{index}]")
+    else:
+        yield from ((name, message) for message in (detail if isinstance(detail, list) else [detail]))
+
+
+def _named_by_item(detail):
+    """
+    Return a refusal with each refused item of a list listed under a name of its own.
+
+    Nothing changes for a refusal naming only parameters or properties; one
+    that names nothing in particular is never nested.
+    """
+    if not isinstance(detail, dict) or not any(_holds_a_structure(value) for value in detail.values()):
+        return detail
+    named = {}
+    for field, refusal in detail.items():
+        for name, message in _refusals_by_item(refusal, field):
+            named.setdefault(name, []).append(message)
+    return named
+
+
 class ReadableErrorDetailMixin:
     """
     Writes the one-line message of a refused request as a sentence.
@@ -61,12 +108,20 @@ class ReadableErrorDetailMixin:
     Everything that puts the line in front of a person then shows the
     brackets, the quoting and the class names that write a data structure
     out: the message of the exception a generated client raises, a line in an
-    integration's log, the notification a page puts on the screen. The list is
-    left exactly as it was; only the line is rewritten, from the same values.
+    integration's log, the notification a page puts on the screen. The line is
+    rewritten from the values in the list.
+
+    A list a body carries is refused item by item, which the standard body
+    would print, positions and class names included, as one message under the
+    list's name. Each refused item is listed under a name of its own instead
+    -- ``social_links[0].social_link`` -- so that the list and the line both say in words
+    which item was refused and why.
     """
 
     def handle_exception(self, exc):
         """Answer with the standard body, its one-line message written in words."""
+        if isinstance(exc, ValidationError):
+            exc.detail = _named_by_item(exc.detail)
         response = super().handle_exception(exc)
         body = getattr(response, "data", None)
         if isinstance(body, dict) and isinstance(body.get("errors"), dict):
