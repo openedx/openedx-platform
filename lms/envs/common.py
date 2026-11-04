@@ -817,8 +817,6 @@ COURSE_BLOCKS_API_EXTRA_FIELDS = []
 #     e.g. ``'my_package.blocks.MyXBlock.my_callback_handler'``. Paths that cannot be imported are skipped.
 XBLOCK_NOAUTH_HANDLER_ALLOWLIST = [
     # LTI 1.1 tools posting grades back; these verify the OAuth1 body signature.
-    'xmodule.lti_block._BuiltInLTIBlock.grade_handler',
-    'xmodule.lti_2_util.LTI20BlockMixin.lti_2_0_result_rest_handler',
     'xblock_lti.block.LTIBlock.grade_handler',
     'xblock_lti.lti_2_util.LTI20BlockMixin.lti_2_0_result_rest_handler',
     'lti_consumer.lti_xblock.LtiConsumerXBlock.outcome_service_handler',
