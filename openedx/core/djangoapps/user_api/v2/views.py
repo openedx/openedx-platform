@@ -484,13 +484,14 @@ def _the_one_addressed(username, records, name_of):
     stored under exactly the name given is the one addressed. Where none of
     them is stored under it the address names no one of them, so it is refused
     rather than worked on: which record came back first is no basis for
-    reading or changing an account.
+    reading or changing an account. The refusal is reported under the path
+    parameter that carried the name.
     """
     stored_under_it = [record for record in records if name_of(record) == username]
     if stored_under_it:
         return stored_under_it[0]
     if len(records) > 1:
-        raise AmbiguousAccountName({api_settings.NON_FIELD_ERRORS_KEY: [AMBIGUOUS_ACCOUNT_ADDRESS]})
+        raise AmbiguousAccountName({"username": [AMBIGUOUS_ACCOUNT_ADDRESS]})
     if not records:
         raise NotFound
     return records[0]

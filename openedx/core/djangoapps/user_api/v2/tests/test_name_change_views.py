@@ -472,7 +472,7 @@ class NameChangeAmbiguousTargetTests(NameChangeTestCase):
                 expected_status=status.HTTP_400_BAD_REQUEST,
                 expected_type_slug="user/ambiguous-account-name",
             )
-        assert envelope["errors"] == {"non_field_errors": [AMBIGUOUS_ACCOUNT_ADDRESS]}
+        assert envelope["errors"] == {"username": [AMBIGUOUS_ACCOUNT_ADDRESS]}
         assert self.profile_name(self.owner) == "Original Name"
         assert self.pending_name(self.owner) == "Jon Doe"
         sibling.profile.refresh_from_db()

@@ -1,6 +1,7 @@
 """Tests for the version 2 User API identity verification views."""
 
 import datetime
+from unittest import mock
 from zoneinfo import ZoneInfo
 
 import pytest
@@ -20,6 +21,7 @@ from lms.djangoapps.verify_student.models import (
 )
 from lms.djangoapps.verify_student.tests.factories import SSOVerificationFactory
 from openedx.core.djangoapps.oauth_dispatch.jwt import create_jwt_for_user
+from openedx.core.djangoapps.user_api.v2.views import AMBIGUOUS_ACCOUNT_ADDRESS
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 
 from .test_views import PAGINATION_KEYS, write_queries
@@ -870,6 +872,28 @@ class VerificationAddressedNameTests(VerificationTestCase):
                 expected_status=status.HTTP_404_NOT_FOUND,
                 expected_type_slug="not-found",
             )
+
+    def test_a_name_more_than_one_account_answers_to_is_refused_under_the_name(self):
+        """
+        Where the database answers a name with several accounts and none is stored under it, none is read.
+
+        The test database resolves a name only to the record stored under
+        exactly it, so the lookup is answered here the way it answers where a
+        name resolves more widely.
+        """
+        self.login(self.staff)
+        with mock.patch(
+            "openedx.core.djangoapps.user_api.v2.views.accounts_named",
+            return_value=[self.other, self.staff],
+        ):
+            for address in (self.status_url, self.list_url):
+                with self.subTest(address=address):
+                    envelope = assert_error_envelope(
+                        self.client.get(address),
+                        expected_status=status.HTTP_400_BAD_REQUEST,
+                        expected_type_slug="user/ambiguous-account-name",
+                    )
+                    assert envelope["errors"] == {"username": [AMBIGUOUS_ACCOUNT_ADDRESS]}
 
     def test_the_account_holding_that_name_is_served_at_it(self):
         """A user may register the name, and reads their own records where it is addressed."""

@@ -799,7 +799,7 @@ class AccountDetailViewTests(AccountApiV2TestCase):
             response, expected_status=status.HTTP_400_BAD_REQUEST, expected_type_slug="user/ambiguous-account-name",
         )
         assert envelope["title"] == "Ambiguous Account Name"
-        assert envelope["errors"] == {"non_field_errors": [AMBIGUOUS_ACCOUNT_ADDRESS]}
+        assert envelope["errors"] == {"username": [AMBIGUOUS_ACCOUNT_ADDRESS]}
 
     def test_a_member_address_one_of_several_accounts_is_stored_under_carries_that_one(self):
         """The account stored under exactly the name addressed is the answer, in whatever order they come."""
@@ -2123,7 +2123,7 @@ class AccountWriteTargetTests(AccountApiV2TestCase):
                 expected_status=status.HTTP_400_BAD_REQUEST,
                 expected_type_slug="user/ambiguous-account-name",
             )
-        assert envelope["errors"] == {"non_field_errors": [AMBIGUOUS_ACCOUNT_ADDRESS]}
+        assert envelope["errors"] == {"username": [AMBIGUOUS_ACCOUNT_ADDRESS]}
         for user in (self.owner, self.other, self.staff):
             user.refresh_from_db()
             assert user.has_usable_password(), user.username
