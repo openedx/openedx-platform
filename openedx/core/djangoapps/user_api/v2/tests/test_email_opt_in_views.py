@@ -6,6 +6,7 @@ from urllib.parse import urlencode
 
 from django.conf import settings
 from django.urls import reverse
+from edx_rest_framework_extensions.auth.jwt.tests.utils import generate_jwt
 from edx_rest_framework_extensions.testing import assert_error_envelope
 from rest_framework import status
 from rest_framework.test import APIClient, APITestCase
@@ -641,6 +642,20 @@ class EmailOptInParityTests(EmailOptInTestCase):
             UserOrgTag.objects.filter(user=self.user, key=OPT_IN_KEY).delete()
             assert self.choose().status_code == status.HTTP_404_NOT_FOUND
         assert self.choices() == left_by_the_earlier_address == {"edX": NO_CHOICE_AT_ALL}
+
+    def test_every_address_refuses_a_restricted_applications_token(self):
+        """The earlier addresses read no token at all, and this one reads it and refuses the application."""
+        restricted = {"HTTP_AUTHORIZATION": f"JWT {generate_jwt(self.user, is_restricted=True)}"}
+        earlier = self.client.post(EARLIER_ADDRESS, {"course_id": COURSE_KEY, "email_opt_in": "True"}, **restricted)
+        unversioned = self.client.post(
+            UNVERSIONED_EARLIER_ADDRESS, {"course_id": COURSE_KEY, "email_opt_in": "True"}, **restricted,
+        )
+        current = self.choose(**restricted)
+        assert (earlier.status_code, unversioned.status_code) == (
+            status.HTTP_403_FORBIDDEN, status.HTTP_403_FORBIDDEN,
+        )
+        assert_error_envelope(current, expected_status=status.HTTP_403_FORBIDDEN, expected_type_slug="authz")
+        assert self.choices() == {}
 
     def test_the_unversioned_earlier_address_records_the_same_row(self):
         """It keeps serving the clients that call it, and this version adds no third address."""

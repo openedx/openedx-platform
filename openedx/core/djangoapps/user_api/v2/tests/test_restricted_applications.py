@@ -2,8 +2,10 @@
 
 import json
 from datetime import UTC, datetime
+from unittest import mock
 
 import ddt
+from django.conf import settings
 from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.test import SimpleTestCase
 from django.test.utils import override_settings
@@ -19,14 +21,29 @@ from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.profile_images.images import get_profile_image_storage
 from openedx.core.djangoapps.profile_images.tests.helpers import make_image_file
 from openedx.core.djangoapps.user_api.accounts.image_helpers import get_profile_image_names
+from openedx.core.djangoapps.user_api.models import UserOrgTag, UserPreference
 from openedx.core.djangoapps.user_api.tests.factories import UserPreferenceFactory
 from openedx.core.djangoapps.user_api.v2 import urls as v2_urls
 from openedx.core.djangoapps.user_api.v2.permissions import RestrictedApplicationGuardMixin
+from openedx.core.djangoapps.user_api.v2.views import AccountPreferenceViewSet, EmailOptInViewSet
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 
 PASSWORD = "Password1234"
 MERGE_PATCH = "application/merge-patch+json"
 API_KEY = "restricted-token-test-api-key"
+COURSE_KEY = "course-v1:edX+DemoX+Demo"
+
+#: The middleware that adds the restricted-application refusal to the classes a
+#: view declares, once that view has served a request.
+JWT_SETTINGS_MIDDLEWARE = "edx_rest_framework_extensions.auth.jwt.middleware.EnsureJWTAuthSettingsMiddleware"
+
+#: The classes the preference and email choice views declare, read when this
+#: module is imported, which is before any request has been served and so before
+#: the middleware has added anything to them.
+DECLARED_PERMISSION_CLASSES = {
+    view_class: view_class.permission_classes
+    for view_class in (AccountPreferenceViewSet, EmailOptInViewSet)
+}
 
 
 def routed_views():
@@ -247,3 +264,110 @@ class RestrictedApplicationTokenTests(APITestCase):
         assert response.status_code == status.HTTP_204_NO_CONTENT
         assert UserProfile.objects.get(user=self.learner).name == "Renamed Learner"
         assert not PendingNameChange.objects.filter(user=self.learner).exists()
+
+
+@skip_unless_lms
+@ddt.ddt
+@override_settings(MIDDLEWARE=[entry for entry in settings.MIDDLEWARE if entry != JWT_SETTINGS_MIDDLEWARE])
+class PreferenceTokenRefusalTests(APITestCase):
+    """
+    The preference and email choice addresses refuse a restricted application's token themselves.
+
+    The platform middleware adds the same refusal to the classes a view
+    declares once that view has served a request. It is left out of these
+    requests, and whatever it added to these views earlier in the run is set
+    aside, so the refusal seen here is the one each operation resolves for
+    itself. Each operation is called with the owner's token, or a staff
+    member's for what staff may do with another account, once as issued to an
+    ordinary application, which the operation answers, and once as issued to a
+    restricted one, which it refuses before reading or changing anything.
+    """
+
+    def setUp(self):
+        super().setUp()
+        for view_class, declared in DECLARED_PERMISSION_CLASSES.items():
+            declared_only = mock.patch.object(view_class, "permission_classes", declared)
+            declared_only.start()
+            self.addCleanup(declared_only.stop)
+        self.owner = UserFactory.create(
+            username="token-owner", email="token-owner@example.com", password=PASSWORD,
+        )
+        self.staff = UserFactory.create(
+            username="token-reader", email="token-reader@example.com", password=PASSWORD, is_staff=True,
+        )
+        UserPreferenceFactory.create(user=self.owner, key="time_zone", value="Asia/Tokyo")
+
+    def call(self, operation, is_restricted):
+        """Send the request that exercises ``operation`` with a token flagged restricted or not."""
+        caller = self.staff if operation.startswith("staff_") else self.owner
+        headers = {"HTTP_AUTHORIZATION": f"JWT {generate_jwt(caller, is_restricted=is_restricted)}"}
+        owner = self.owner.username
+        document = reverse("user_v2:account_preference_list", kwargs={"username": owner})
+        member = reverse("user_v2:account_preference_detail", kwargs={"username": owner, "key": "time_zone"})
+        client = self.client
+        requests = {
+            "document_read": lambda: client.get(document, **headers),
+            "document_description": lambda: client.options(document, **headers),
+            "document_change": lambda: client.patch(
+                document, json.dumps({"time_zone": "Europe/Paris"}), content_type=MERGE_PATCH, **headers,
+            ),
+            "preference_read": lambda: client.get(member, **headers),
+            "preference_description": lambda: client.options(member, **headers),
+            "preference_store": lambda: client.put(
+                member, json.dumps({"value": "Europe/Paris"}), content_type="application/json", **headers,
+            ),
+            "preference_removal": lambda: client.delete(member, **headers),
+            "staff_document_read": lambda: client.get(document, **headers),
+            "staff_document_description": lambda: client.options(document, **headers),
+            "staff_preference_read": lambda: client.get(member, **headers),
+            "staff_preference_description": lambda: client.options(member, **headers),
+            "email_opt_in": lambda: client.post(
+                reverse("user_v2:email_opt_in_list"),
+                {"course_key": COURSE_KEY, "email_opt_in": True},
+                format="json",
+                **headers,
+            ),
+        }
+        return requests[operation]()
+
+    def state(self):
+        """Return what any of these operations could change."""
+        return {
+            "preferences": sorted(UserPreference.objects.values_list("user__username", "key", "value")),
+            "email_choices": sorted(UserOrgTag.objects.values_list("user__username", "org", "value")),
+        }
+
+    OPERATIONS = {
+        "document_read": status.HTTP_200_OK,
+        "document_description": status.HTTP_200_OK,
+        "document_change": status.HTTP_204_NO_CONTENT,
+        "preference_read": status.HTTP_200_OK,
+        "preference_description": status.HTTP_200_OK,
+        "preference_store": status.HTTP_204_NO_CONTENT,
+        "preference_removal": status.HTTP_204_NO_CONTENT,
+        "staff_document_read": status.HTTP_200_OK,
+        "staff_document_description": status.HTTP_200_OK,
+        "staff_preference_read": status.HTTP_200_OK,
+        "staff_preference_description": status.HTTP_200_OK,
+        "email_opt_in": status.HTTP_204_NO_CONTENT,
+    }
+
+    @ddt.data(*OPERATIONS)
+    def test_a_restricted_applications_token_is_refused(self, operation):
+        before = self.state()
+        response = self.call(operation, is_restricted=True)
+        assert_error_envelope(response, expected_status=status.HTTP_403_FORBIDDEN, expected_type_slug="authz")
+        assert self.state() == before
+
+    @ddt.data(*OPERATIONS.items())
+    @ddt.unpack
+    def test_the_same_token_from_an_ordinary_application_is_answered(self, operation, expected_status):
+        response = self.call(operation, is_restricted=False)
+        assert response.status_code == expected_status, response.content
+
+    def test_the_reads_answer_the_ordinary_token_with_what_the_account_stores(self):
+        """What the restricted token is refused is the stored preference itself."""
+        assert self.call("document_read", is_restricted=False).json() == {"time_zone": "Asia/Tokyo"}
+        assert self.call("staff_preference_read", is_restricted=False).json() == {
+            "key": "time_zone", "value": "Asia/Tokyo",
+        }

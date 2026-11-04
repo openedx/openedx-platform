@@ -2,6 +2,8 @@
 
 import json
 
+from edx_rest_framework_extensions.auth.jwt.tests.utils import generate_jwt
+from edx_rest_framework_extensions.testing import assert_error_envelope
 from rest_framework import status
 
 from openedx.core.djangoapps.user_api.models import UserPreference
@@ -339,6 +341,61 @@ class PreferenceRefusalParityTests(PreferenceApiTestCase):
             )
             assert set(json.loads(earlier.content)) == {"detail"}
             assert set(json.loads(current.content)) >= ENVELOPE_MEMBERS
+
+    def test_both_versions_refuse_a_restricted_applications_token(self):
+        """
+        Declared difference: the earlier member address reads no token of this kind at all.
+
+        It answers such a token as it answers a request carrying no credentials,
+        while the member address of this version reads the token and refuses the
+        application it was issued to, as both document addresses do.
+        """
+        (earlier_document, document), (earlier_member, member) = self.addresses(self.owner.username)
+        change = json.dumps({"time_zone": "Europe/Paris"})
+
+        def restricted(user):
+            return {"HTTP_AUTHORIZATION": f"JWT {generate_jwt(user, is_restricted=True)}"}
+
+        def answers(document_address, member_address, value_body):
+            owner, staff = restricted(self.owner), restricted(self.staff)
+            return {
+                "owner document read": self.client.get(document_address, **owner),
+                "owner document description": self.client.options(document_address, **owner),
+                "owner document change": self.client.patch(
+                    document_address, change, content_type=MERGE_PATCH, **owner,
+                ),
+                "owner member read": self.client.get(member_address, **owner),
+                "owner member description": self.client.options(member_address, **owner),
+                "owner member store": self.client.put(
+                    member_address, value_body, content_type="application/json", **owner,
+                ),
+                "owner member removal": self.client.delete(member_address, **owner),
+                "staff document read": self.client.get(document_address, **staff),
+                "staff document description": self.client.options(document_address, **staff),
+                "staff member read": self.client.get(member_address, **staff),
+                "staff member description": self.client.options(member_address, **staff),
+            }
+
+        earlier = answers(earlier_document, earlier_member, json.dumps("Europe/Paris"))
+        current = answers(document, member, json.dumps({"value": "Europe/Paris"}))
+        refused, unread = status.HTTP_403_FORBIDDEN, status.HTTP_401_UNAUTHORIZED
+        assert {case: answer.status_code for case, answer in earlier.items()} == {
+            "owner document read": refused,
+            "owner document description": refused,
+            "owner document change": refused,
+            "owner member read": unread,
+            "owner member description": unread,
+            "owner member store": unread,
+            "owner member removal": unread,
+            "staff document read": refused,
+            "staff document description": refused,
+            "staff member read": unread,
+            "staff member description": unread,
+        }
+        assert {case: answer.status_code for case, answer in current.items()} == dict.fromkeys(earlier, refused)
+        for answer in current.values():
+            assert_error_envelope(answer, expected_status=refused, expected_type_slug="authz")
+        assert self.stored() == {"time_zone": "Asia/Tokyo"}
 
     def test_a_query_parameter_neither_version_reads_is_ignored_by_one_and_refused_by_the_other(self):
         """Declared difference: a parameter this version does not read is refused."""
