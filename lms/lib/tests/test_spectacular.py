@@ -1077,7 +1077,7 @@ class ServiceWideDocumentSettingsTest(TestCase):
         assert "servers" not in self.schema
 
     def test_the_body_read_whole_is_published_whole_in_that_document_too(self):
-        """Building this is what holds a setting while the rest of the document is built."""
+        """The body is read whole under the settings of every document, not only the service's own."""
         body = self.schema["paths"]["/api/user/v2/retirements/{username}/"]["patch"]["requestBody"]
         assert body["required"] is True
         assert body["content"]["application/json"]["schema"] == {

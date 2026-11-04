@@ -1269,8 +1269,21 @@ class RetirementUpdateSerializer(serializers.Serializer):  # pylint: disable=abs
     whole, so it is read whole and a body missing either is refused.
     """
 
-    #: Read whole, so what this requires is what is published as required.
-    reads_the_whole_body = True
+    @property
+    def partial(self):
+        """
+        Always false: this body is read whole, whichever method carries it.
+
+        DRF makes the serializer of a ``PATCH`` partial, which would let either
+        required field be left out, and a schema generated from a partial
+        serializer publishes it as a set of changes with nothing required.
+        Neither is true of this body.
+        """
+        return False
+
+    @partial.setter
+    def partial(self, _value):
+        """Leave this body read whole when it is asked to be read partially."""
 
     new_state = serializers.CharField(help_text="Name of the pipeline step to move this retirement to.")
     response = serializers.CharField(

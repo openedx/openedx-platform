@@ -75,6 +75,7 @@ from openedx.core.djangoapps.user_api.v2.paginators import UserApiPagination
 from openedx.core.djangoapps.user_api.v2.serializers import (
     RETIREMENT_MINIMAL_FIELDS,
     RetirementSerializer,
+    RetirementUpdateSerializer,
 )
 from openedx.core.djangoapps.user_api.v2.views import (
     RETIREMENT_ACTION_PERMISSIONS,
@@ -1218,6 +1219,13 @@ class RetirementUpdateTests(_AccessMatrixMixin, RetirementApiTestCase):
         assert sorted(envelope["errors"]) == MOVE_REQUIRED_VALUES
         self.retirement.refresh_from_db()
         assert self.retirement.current_state.state_name == "LOCKING_ACCOUNT"
+
+    def test_the_move_is_read_whole_even_when_built_to_read_a_set_of_changes(self):
+        """What a partial body would let a caller leave out, this body still refuses."""
+        move = RetirementUpdateSerializer(data={"new_state": "LOCKING_COMPLETE"}, partial=True)
+        assert move.partial is False
+        assert move.is_valid() is False
+        assert sorted(move.errors) == ["response"]
 
     def test_a_name_spelled_differently_from_the_registered_one_is_not_found(self):
         self.login("worker")

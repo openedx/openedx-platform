@@ -2,11 +2,8 @@
 
 import re
 from collections import namedtuple
-from contextlib import contextmanager
 from functools import cache
 
-from drf_spectacular.plumbing import force_instance
-from drf_spectacular.settings import spectacular_settings
 from drf_spectacular.utils import OpenApiResponse
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.settings import api_settings
@@ -105,39 +102,6 @@ REQUIRED_REQUEST_BODIES = frozenset({
     ("/api/user/v1/preferences/email_opt_in/", "POST"),
     ("/api/user/v2/accounts/{}/preferences/", "PATCH"),
 })
-
-# A serializer carries this attribute, set to true, where the body it describes
-# is read whole: every field it requires is needed however the body is sent,
-# and a method whose bodies are read as a set of changes to a stored
-# representation does not make them optional.
-WHOLE_BODY_ATTRIBUTE = "reads_the_whole_body"
-
-#: Stands for a generation setting that has not been asked for a value yet.
-_NOT_HELD = object()
-
-
-@contextmanager
-def _generation_setting(name, value):
-    """
-    Hold one schema generation setting at this value for the length of the block.
-
-    Only this setting is touched, and only this block's hold on it is let go
-    of, so a document being generated under settings of its own -- its title,
-    its version and the address to write to about it are given that way --
-    keeps every one of them while a part of it is built under this setting. A
-    setting nothing had asked for is left unasked for afterwards rather than
-    fixed at whatever it stood at here, so that a later change to the
-    deployment's settings still reaches it.
-    """
-    held = spectacular_settings.__dict__.get(name, _NOT_HELD)
-    setattr(spectacular_settings, name, value)
-    try:
-        yield
-    finally:
-        if held is _NOT_HELD:
-            spectacular_settings.__dict__.pop(name, None)
-        else:
-            setattr(spectacular_settings, name, held)
 
 
 _PATH_PARAMETER = re.compile(r"\{([\w-]+)\}")
@@ -455,8 +419,6 @@ class SupersededUserOperations:
     """
     Describe each superseded user address by what it reads and answers with, under the name it keeps.
 
-    A body read whole is published as the whole shape, under ``PATCH`` as well.
-
     Ids not named in ``RENAMED_OPERATION_IDS`` stay as the generator derives them.
     """
 
@@ -490,23 +452,6 @@ class SupersededUserOperations:
     def _requires_a_body(self, shape, direction):
         """Say whether this form of the body names a member the request must carry."""
         return _names_what_it_needs(shape) or self._get_request_for_media_type(shape, direction)[1]
-
-    def _get_request_for_media_type(self, serializer, direction="request"):
-        """
-        Keep a body the operation reads whole whole, under a method read as a change set.
-
-        A ``PATCH`` body usually carries the changes to make to a stored
-        representation, which leaves every field in it optional and publishes
-        the shape under a name of its own. A body that is an instruction
-        instead -- read whole by the operation, which refuses it when a field
-        the instruction cannot be carried out without is missing -- is not
-        that, and publishing it as a change set would promise a caller a
-        request the operation refuses.
-        """
-        if self.method == "PATCH" and getattr(force_instance(serializer), WHOLE_BODY_ATTRIBUTE, False):
-            with _generation_setting("COMPONENT_SPLIT_PATCH", False):
-                return super()._get_request_for_media_type(serializer, direction)
-        return super()._get_request_for_media_type(serializer, direction)
 
     def get_request_serializer(self):
         """Return the body this operation reads, named here for the addresses this one supersedes."""
