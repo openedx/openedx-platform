@@ -1848,21 +1848,31 @@ class EmailSearchTests(AccountApiV2TestCase):
         )
         assert by_session["detail"] == by_token["detail"]
 
-    def test_an_unconfirmed_learner_gets_one_refusal_whichever_way_it_signs_in(self):
+    def test_an_unconfirmed_learner_is_told_there_is_nothing_here_whichever_way_it_signs_in(self):
+        """A caller who may not search is answered as an active one is, so the refusal does not confirm the search."""
         self.owner.is_active = False
         self.owner.save()
         by_token = assert_error_envelope(
             self.search(["other-caller@example.com"], **self.token_headers(self.owner)),
-            expected_status=status.HTTP_403_FORBIDDEN,
-            expected_type_slug="authz",
+            expected_status=status.HTTP_404_NOT_FOUND,
+            expected_type_slug="not-found",
         )
         self.login(self.owner)
         by_session = assert_error_envelope(
             self.search(["other-caller@example.com"]),
-            expected_status=status.HTTP_403_FORBIDDEN,
-            expected_type_slug="authz",
+            expected_status=status.HTTP_404_NOT_FOUND,
+            expected_type_slug="not-found",
         )
-        assert by_session["detail"] == by_token["detail"]
+        self.client.logout()
+        self.owner.is_active = True
+        self.owner.save()
+        self.login(self.other)
+        active = assert_error_envelope(
+            self.search(["owner-caller@example.com"]),
+            expected_status=status.HTTP_404_NOT_FOUND,
+            expected_type_slug="not-found",
+        )
+        assert by_session["detail"] == by_token["detail"] == active["detail"]
 
     def test_the_search_is_not_read_with_a_get(self):
         self.login(self.staff)

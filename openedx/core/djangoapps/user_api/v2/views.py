@@ -1532,7 +1532,8 @@ class EmailSearchViewSet(
     made with POST, and the links on a page of results are followed by sending
     the body to them again rather than by fetching them. Only a platform
     administrator may search here; every other caller is told there is nothing
-    at this address.
+    at this address, whatever state their own account is in. An administrator
+    whose account is not active is refused.
     """
 
     # The addresses are sent in a body so that they stay out of server logs
@@ -1543,17 +1544,19 @@ class EmailSearchViewSet(
     # register any name.
 
     # The session of an account that has not confirmed its email address is
-    # read rather than dropped, so the active-account check refuses it with the
-    # answer a token of that account gets instead of the request being treated
-    # as anonymous. A token is read by the library class the platform's own
-    # pair is built on, named because a view declaring its own classes is not
-    # one that pair serves.
+    # read rather than dropped, so it gets the answer a token of that account
+    # gets instead of the request being treated as anonymous. A token is read
+    # by the library class the platform's own pair is built on, named because
+    # a view declaring its own classes is not one that pair serves.
     authentication_classes = (JwtAuthentication, SessionAuthenticationAllowInactiveUser)
+    # A caller who is not an administrator is told there is nothing here
+    # before the state of their own account is read, so an inactive account
+    # is not refused in a way that confirms the search exists.
     permission_classes = (
         permissions.IsAuthenticated,
-        IsActiveUser,
         CanGetAccountInfo,
         IsStaffOrAbsent,
+        IsActiveUser,
     )
     # A platform administrator may read every account the addresses match, so
     # the policy keeps the selection whole; a narrower policy can replace it

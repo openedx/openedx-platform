@@ -13,6 +13,7 @@ from common.djangoapps.student.tests.factories import (
     PermissionFactory,
     UserFactory,
 )
+from openedx.core.djangoapps.oauth_dispatch.jwt import create_jwt_for_user
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 
 from .test_parity import diff, unexpected
@@ -442,6 +443,25 @@ class AccountRefusalParityTests(APITestCase):
         assert_error_envelope(
             current, expected_status=status.HTTP_404_NOT_FOUND, expected_type_slug="not-found",
         )
+
+    def test_the_search_hides_itself_from_an_unconfirmed_learner_in_both_versions(self):
+        """The answer is the same whether the account signs in with a session or a token."""
+        self.owner.is_active = False
+        self.owner.save()
+        emails = {"emails": ["refusal-other@example.com"]}
+        token = {"HTTP_AUTHORIZATION": f"JWT {create_jwt_for_user(self.owner)}"}
+        for transport in ("session", "token"):
+            with self.subTest(transport=transport):
+                headers = token if transport == "token" else {}
+                if transport == "session":
+                    self.login(self.owner)
+                earlier = self.client.post(EARLIER_SEARCH, emails, format="json", **headers)
+                assert earlier.status_code == status.HTTP_404_NOT_FOUND, earlier.content
+                current = self.client.post(reverse("user_v2:email_search_list"), emails, format="json", **headers)
+                assert_error_envelope(
+                    current, expected_status=status.HTTP_404_NOT_FOUND, expected_type_slug="not-found",
+                )
+                self.client.logout()
 
     def test_a_search_without_addresses_keeps_its_status_and_names_the_property(self):
         self.login(self.staff)
