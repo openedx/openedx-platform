@@ -1898,14 +1898,14 @@ def _get_course_index_context(request, course_key, course_block):
         _course_outline_json,
         _deprecated_blocks_info,
         course_outline_initial_state,
+        user_can_reindex_course,
     )
     from openedx.core.djangoapps.content_staging import api as content_staging_api
 
     lms_link = get_lms_link_for_item(course_block.location)
     reindex_link = None
-    if settings.FEATURES.get('ENABLE_COURSEWARE_INDEX', False):
-        if GlobalStaff().has_user(request.user):
-            reindex_link = f"/course/{str(course_key)}/search_reindex"
+    if settings.FEATURES.get('ENABLE_COURSEWARE_INDEX', False) and user_can_reindex_course(course_key, request.user):
+        reindex_link = f"/course/{str(course_key)}/search_reindex"
     sections = course_block.get_children()
     course_structure = _course_outline_json(request, course_block)
     locator_to_show = request.GET.get('show', None)
