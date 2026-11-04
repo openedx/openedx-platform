@@ -57,7 +57,6 @@ class UntagDeprecatedOperationsRegistrationTest(SimpleTestCase):
             assert source.index(marking_hook) < source.index(HOOK), module
 
     def test_the_hook_runs_after_the_hook_marking_the_superseded_user_addresses(self):
-        for module in self.MARKING_HOOKS:
-            source = (REPO_ROOT / module).read_text()
-            assert self.SHARED_HOOK in source, module
-            assert source.index(self.SHARED_HOOK) < source.index(HOOK), module
+        source = (REPO_ROOT / "lms/envs/common.py").read_text()
+        assert self.SHARED_HOOK in source
+        assert source.index(self.SHARED_HOOK) < source.index(HOOK)

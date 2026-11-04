@@ -1338,8 +1338,6 @@ SPECTACULAR_SETTINGS = {
         'drf_spectacular.hooks.postprocess_schema_enums',
         'cms.lib.spectacular.cms_mark_superseded_paths',
         'cms.lib.spectacular.cms_mark_migrated_paths',
-        # Studio serves the user API too, so it marks the same addresses superseded as the LMS.
-        'openedx.core.djangoapps.user_api.schema.mark_superseded_user_paths',
         'openedx.core.apidocs.untag_deprecated_operations',
     ],
     # Stripped from each path to derive its tags and operationId, so changing

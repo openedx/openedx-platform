@@ -4,10 +4,8 @@ import re
 
 from drf_spectacular.openapi import AutoSchema
 
-from openedx.core.djangoapps.user_api.schema import SupersededUserOperations
-
-# Legacy operations superseded by a conforming address under /api/authoring/.
-# Each is listed in the truncated spelling as well as the full one: the routes
+# Legacy operations superseded by a conforming address. Each contentstore one
+# is listed in the truncated spelling as well as the full one: the routes
 # make the final character optional, so both addresses resolve, and which one
 # the generator emits depends on how it renders that regex.
 SUPERSEDED_PATHS = (
@@ -15,6 +13,24 @@ SUPERSEDED_PATHS = (
     "/api/contentstore/v0/youtube_transcripts/{course_id}/check",
     "/api/contentstore/v0/youtube_transcripts/{course_id}/uploa",
     "/api/contentstore/v0/youtube_transcripts/{course_id}/upload",
+    # The user API this service mounts as the LMS does; the LMS serves the replacements.
+    "/api/user/v1/me",
+    "/api/user/v1/accounts",
+    "/api/user/v1/accounts/search_emails",
+    "/api/user/v1/accounts/{username}",
+    "/api/user/v1/accounts/{username}/deactivate/",
+    "/api/user/v1/accounts/{username}/image",
+    "/api/user/v1/accounts/{username}/verification_status/",
+    "/api/user/v1/accounts/{username}/verifications/",
+    "/api/user/v1/accounts/name_change/",
+    "/api/user/v1/accounts/name_change/{username}/confirm/",
+    "/api/user/v1/users/",
+    "/api/user/v1/users/{id}/",
+    "/api/user/v1/user_prefs/",
+    "/api/user/v1/user_prefs/{id}/",
+    "/api/user/v1/preferences/{pref_key}/users/",
+    "/api/user/v1/forum_roles/{name}/users/",
+    "/api/user/v1/preferences/time_zones/",
 )
 
 # Legacy addresses of APIs migrated to /api/authoring/, marked deprecated for
@@ -74,7 +90,7 @@ def cms_mark_superseded_paths(result, generator, request, public):  # pylint: di
     return result
 
 
-class CmsAutoSchema(SupersededUserOperations, AutoSchema):
+class CmsAutoSchema(AutoSchema):
     """
     Give a colliding legacy address a distinct operationId.
 
@@ -82,8 +98,6 @@ class CmsAutoSchema(SupersededUserOperations, AutoSchema):
     operationId, drf-spectacular would otherwise break the tie with a numeral
     suffix in registration order. The conforming address keeps the clean id;
     the deprecated one is suffixed ``_legacy``.
-
-    The superseded user addresses are described as in the LMS document.
     """
 
     def get_operation_id(self):

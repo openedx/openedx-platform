@@ -135,7 +135,7 @@ def superseded_bodies():
 
 class SupersededUserOperations:
     """
-    Describe the superseded user addresses the same way in both services' documents.
+    Describe each superseded user address by what it reads and answers with, under the name it keeps.
 
     Ids not named in ``RENAMED_OPERATION_IDS`` stay as the generator derives them.
     """

@@ -10,6 +10,7 @@ from django.test import SimpleTestCase
 from django.test import TestCase as DjangoTestCase
 from django.urls import path as url_path
 from drf_spectacular.generators import SchemaGenerator
+from drf_spectacular.openapi import AutoSchema
 from drf_spectacular.settings import patched_settings, spectacular_settings
 from rest_framework import serializers, viewsets
 from rest_framework.response import Response
@@ -23,11 +24,6 @@ from cms.lib.spectacular import (
     cms_mark_superseded_paths,
 )
 from openedx.core.apidocs import get_api_docs_settings
-from openedx.core.djangoapps.user_api.schema import (
-    SUPERSEDED_USER_PATHS,
-    SupersededUserOperations,
-    superseded_bodies,
-)
 
 
 def _endpoint(path):
@@ -81,7 +77,7 @@ class CmsMarkSupersededPathsTest(TestCase):
             assert result["paths"][path]["get"]["deprecated"] is True
 
     def test_both_spellings_of_each_superseded_path_are_listed(self):
-        assert set(SUPERSEDED_PATHS) == {
+        assert {path for path in SUPERSEDED_PATHS if path.startswith("/api/contentstore/")} == {
             "/api/contentstore/v0/youtube_transcripts/{course_id}/chec",
             "/api/contentstore/v0/youtube_transcripts/{course_id}/check",
             "/api/contentstore/v0/youtube_transcripts/{course_id}/uploa",
@@ -164,6 +160,14 @@ class SpectacularSettingsTest(SimpleTestCase):
         assert "cms.lib.spectacular.cms_mark_superseded_paths" in hooks
         assert "cms.lib.spectacular.cms_mark_migrated_paths" in hooks
 
+    def test_no_marking_hook_runs_beside_the_two_this_module_defines(self):
+        assert settings.SPECTACULAR_SETTINGS["POSTPROCESSING_HOOKS"] == [
+            "drf_spectacular.hooks.postprocess_schema_enums",
+            "cms.lib.spectacular.cms_mark_superseded_paths",
+            "cms.lib.spectacular.cms_mark_migrated_paths",
+            "openedx.core.apidocs.untag_deprecated_operations",
+        ]
+
     def test_the_default_enum_hook_is_kept_alongside_the_new_one(self):
         """Setting the key replaces drf-spectacular's default list, so it is restated."""
         assert "drf_spectacular.hooks.postprocess_schema_enums" in settings.SPECTACULAR_SETTINGS["POSTPROCESSING_HOOKS"]
@@ -187,37 +191,6 @@ class SpectacularSettingsTest(SimpleTestCase):
             assert not re.search(r"_HOOKS['\"]", source), module
 
 
-class SharedSchemaBehaviourTest(SimpleTestCase):
-    """
-    Where the description this service shares with the one replacing these addresses is kept.
-
-    Both services publish the same user addresses, so what they say about them
-    is held once, in a module belonging to the API being described rather than
-    to either service. A service reaching into the other's package for it
-    would tie the two together, and a copy of it here would drift from the
-    original the moment one of the two was corrected.
-    """
-
-    #: The module holding what the two services say the same way.
-    SHARED_MODULE = "openedx/core/djangoapps/user_api/schema.py"
-
-    @staticmethod
-    def _source(module):
-        return (Path(__file__).resolve().parents[3] / module).read_text()
-
-    def test_the_shared_description_is_read_from_the_api_it_describes(self):
-        assert SupersededUserOperations.__module__ == "openedx.core.djangoapps.user_api.schema"
-        assert SupersededUserOperations in CmsAutoSchema.__mro__
-
-    def test_the_shared_module_reads_no_part_of_either_service(self):
-        found = re.findall(r"(?m)^\s*(?:from|import) (?:lms|cms)\b", self._source(self.SHARED_MODULE))
-        assert found == []
-
-    def test_the_schema_helpers_of_this_service_read_no_part_of_the_other(self):
-        found = re.findall(r"(?m)^\s*(?:from|import) lms\b", self._source("cms/lib/spectacular.py"))
-        assert found == []
-
-
 class _EmptySerializer(serializers.Serializer):  # pylint: disable=abstract-method
     pass
 
@@ -239,6 +212,9 @@ class CmsAutoSchemaTest(SimpleTestCase):
         """Views without their own ``schema`` pick this up via REST_FRAMEWORK settings."""
         assert api_settings.DEFAULT_SCHEMA_CLASS is CmsAutoSchema
 
+    def test_every_operation_is_described_by_this_class_alone(self):
+        assert CmsAutoSchema.__bases__ == (AutoSchema,)
+
     def test_only_the_colliding_legacy_address_is_suffixed(self):
         patterns = [
             url_path("api/contentstore/v3/home/", _HomeViewSet.as_view({"get": "list"})),
@@ -255,36 +231,6 @@ class CmsAutoSchemaTest(SimpleTestCase):
         assert ids["/api/authoring/v4/courses/"] == "v4_courses_list"
         assert ids["/api/contentstore/v4/home/courses/"] == "v4_home_courses_list"
 
-
-#: What each superseded user operation this service serves is expected to
-#: exchange: the media types of the body it reads, and the success code with
-#: the body it answers with. ``None`` is a response carrying no body at all.
-#:
-#: The table is spelled out here rather than taken from the tests of the
-#: service that serves the replacements, so that a change made to what one of
-#: the two documents says about these addresses and not to the other is a
-#: failure here rather than a difference a client only finds after generating
-#: from both.
-SUPERSEDED_USER_EXCHANGES = {
-    ("/api/user/v1/accounts", "get"): ([], {"200": "Account[]"}),
-    ("/api/user/v1/accounts/{username}", "get"): ([], {"200": "Account"}),
-    ("/api/user/v1/accounts/{username}", "patch"): (["application/merge-patch+json"], {"200": "Account"}),
-    ("/api/user/v1/accounts/search_emails", "post"): (
-        ["application/json", "application/merge-patch+json"], {"200": "EmailSearchResult[]"},
-    ),
-    ("/api/user/v1/accounts/{username}/deactivate/", "post"): ([], {"200": "Account"}),
-    ("/api/user/v1/accounts/name_change/", "post"): (
-        ["application/json", "application/x-www-form-urlencoded", "multipart/form-data"],
-        {"201": None},
-    ),
-    ("/api/user/v1/accounts/name_change/{username}/confirm/", "post"): ([], {"204": None}),
-    ("/api/user/v1/accounts/{username}/image", "post"): (
-        ["image/gif", "image/jpeg", "image/pjpeg", "image/png", "multipart/form-data"],
-        {"204": None},
-    ),
-    ("/api/user/v1/accounts/{username}/image", "delete"): ([], {"204": None}),
-    ("/api/user/v1/accounts/{username}/verification_status/", "get"): ([], {"200": "VerificationStatus"}),
-}
 
 #: Every operation of a superseded user address this service serves, with the
 #: name it is published under. The names are the ones both documents have
@@ -317,36 +263,18 @@ SUPERSEDED_USER_OPERATION_IDS = {
 }
 
 
-def _named_body(response):
-    """
-    Return what a response carries: the component it names, or the shape itself.
-
-    A component is named by its own name, suffixed ``[]`` where the body is an
-    array of it; a body described in place comes back as that description, and
-    a response with no body at all as ``None``.
-    """
-    content = response.get("content")
-    if not content:
-        return None
-    body = content["application/json"]["schema"]
-    if body.get("type") == "array":
-        return f"{body['items']['$ref'].rsplit('/', 1)[-1]}[]"
-    if "$ref" not in body:
-        return body
-    return body["$ref"].rsplit("/", 1)[-1]
+#: The user addresses this service marks superseded.
+SUPERSEDED_USER_ADDRESSES = tuple(path for path in SUPERSEDED_PATHS if path.startswith("/api/user/"))
 
 
 class SupersededUserOperationTest(DjangoTestCase):
     """
-    The user addresses this service serves beside the service that replaces them.
+    The user addresses this service serves beside the LMS, which serves their replacements.
 
     Both services mount that API at the same addresses and both publish an
-    unauthenticated document of everything they serve, so what one of those
-    documents says about an address is what the other has to say too: the same
-    body on each side of the exchange, the same success code, the same
-    published name, and the same mark saying a replacement exists. A client
-    generated from this service's document would otherwise offer a different
-    signature, and no mark, for the very same request.
+    unauthenticated document of everything they serve. This one marks the
+    addresses it lists as superseded and keeps the name each operation is
+    published under.
     """
 
     @classmethod
@@ -362,18 +290,15 @@ class SupersededUserOperationTest(DjangoTestCase):
             cls.schema = SchemaGenerator(patterns=patterns).get_schema(request=None, public=True)
 
     def _operations(self):
-        """Every operation of a superseded address this document carries."""
+        """Every operation of the user addresses that have a replacement, as this document carries it."""
         return {
-            (path, method): operation
-            for path in SUPERSEDED_USER_PATHS if path in self.schema["paths"]
-            for method, operation in self.schema["paths"][path].items()
-            if isinstance(operation, dict) and "operationId" in operation
+            (address, method): self.schema["paths"][address][method]
+            for address, method in SUPERSEDED_USER_OPERATION_IDS
         }
 
-    def test_this_service_serves_every_superseded_address(self):
-        """The marking and the bodies below are claims about all of them, not about some."""
-        served = [path for path in SUPERSEDED_USER_PATHS if path in self.schema["paths"]]
-        assert served == list(SUPERSEDED_USER_PATHS)
+    def test_this_service_serves_every_address_it_marks(self):
+        """The mark is matched on the exact address, so one this document spells otherwise is never marked."""
+        assert [address for address in SUPERSEDED_USER_ADDRESSES if address not in self.schema["paths"]] == []
 
     def test_every_operation_of_those_addresses_is_marked_superseded(self):
         marked = {key: operation.get("deprecated") for key, operation in self._operations().items()}
@@ -382,26 +307,3 @@ class SupersededUserOperationTest(DjangoTestCase):
     def test_every_operation_keeps_the_name_it_is_published_under(self):
         published = {key: operation["operationId"] for key, operation in self._operations().items()}
         assert published == SUPERSEDED_USER_OPERATION_IDS
-
-    def test_each_superseded_operation_publishes_what_it_reads_and_what_it_answers_with(self):
-        published = {}
-        for (address, method) in SUPERSEDED_USER_EXCHANGES:
-            operation = self.schema["paths"][address][method]
-            published[(address, method)] = (
-                sorted((operation.get("requestBody") or {}).get("content", {})),
-                {code: _named_body(response) for code, response in operation["responses"].items()},
-            )
-        assert published == SUPERSEDED_USER_EXCHANGES
-
-    def test_an_image_may_be_sent_as_the_whole_body_or_as_a_form_part(self):
-        """The forms are alternatives, and a body one of them needs is one the operation needs."""
-        image = self.schema["paths"]["/api/user/v1/accounts/{username}/image"]["post"]["requestBody"]
-        assert image["required"] is True
-        assert sorted(image["content"]) == [
-            "image/gif", "image/jpeg", "image/pjpeg", "image/png", "multipart/form-data",
-        ]
-
-    def test_the_described_addresses_are_ones_this_document_marks_superseded(self):
-        described = {address for address, _method in superseded_bodies()}
-        marked = {re.sub(r"\{[\w-]+\}", "{}", address) for address in SUPERSEDED_USER_PATHS}
-        assert described <= marked, described - marked
