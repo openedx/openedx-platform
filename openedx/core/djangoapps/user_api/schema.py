@@ -8,9 +8,8 @@ from importlib import import_module
 from drf_spectacular.utils import OpenApiResponse
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 
-# Addresses listed here are superseded by a conforming address this schema also
-# publishes. Each entry is spelled out rather than matched by prefix, so an
-# address whose replacement has not been written yet is never marked.
+# Addresses superseded by a conforming address this schema also publishes, spelled
+# out rather than matched by prefix so an address with no replacement is never marked.
 SUPERSEDED_USER_PATHS = (
     "/api/user/v1/me",
     "/api/user/v1/accounts",
@@ -31,25 +30,9 @@ SUPERSEDED_USER_PATHS = (
     "/api/user/v1/preferences/time_zones/",
 )
 
-# A path parameter leaves no token behind, and the version 1 account collection
-# has no trailing slash to tell it from the member address, so the two tokenize
-# to one operation id and are told apart only by a numeral handed out in
-# registration order. The collection answers with a list of accounts, which the
-# generator names for a list, while the document that trims nothing off the
-# front of each path has always published that address under the name derived
-# for a single account -- the name that leaves the member address the numeral it
-# carries there -- so that one is pinned. The key carries the id the generator
-# derives, so an entry applies only to the document that derives it; a key no
-# document derives would never be reached.
-#
-# A stored preference is addressed by the pair that identifies it, and the
-# comma between the two parameters is left behind as a token of its own, so
-# every document derives an id for that read carrying a bare separator where
-# the rest of the resource carries a word. That read is named here in each
-# document through the id that document derives, which leaves the collection
-# read and the member read of the resource under the same leading tokens
-# wherever they are published; neither document has published either name, so
-# nothing a client imports is taken away.
+# Ids pinned over the one a document derives, keyed by (path, method, derived id): the
+# v1 account collection keeps the id it is already published under, and the preference
+# member read drops the bare "," token its two path parameters leave.
 RENAMED_OPERATION_IDS = {
     ("/api/user/v1/accounts", "GET", "api_user_v1_accounts_list"): "api_user_v1_accounts_retrieve",
     (
@@ -67,9 +50,7 @@ RENAMED_OPERATION_IDS = {
 
 _PATH_PARAMETER = re.compile(r"\{([\w-]+)\}")
 
-# The superseded addresses with their parameter names removed. The generator
-# renames a ``{pk}`` parameter to ``{id}`` only after this filter has run, so
-# the comparison cannot depend on how a parameter is spelled.
+# Compared without parameter names: the generator renames ``{pk}`` to ``{id}`` after filtering.
 _SUPERSEDED_USER_SHAPES = frozenset(_PATH_PARAMETER.sub("{}", path) for path in SUPERSEDED_USER_PATHS)
 
 
@@ -84,37 +65,14 @@ _SupersededBodies = namedtuple("_SupersededBodies", ("request", "response"))
 @cache
 def superseded_bodies():
     """
-    Return the bodies of each superseded operation, keyed by address and method.
+    Return the request and success bodies of each superseded operation, keyed by address and method.
 
-    The views serving those addresses name no serializer, so an address
-    published beside the one that replaces it would carry nothing on either
-    side of the exchange. Each entry below names the shape the handler returns
-    with the serializer describing that same shape at the replacing address,
-    which the parity tests of this area hold to the same values; a request of
-    ``None`` is an operation that reads no body. An address whose view names a
-    serializer of its own is absent from the table and keeps the component it
-    has always published.
-
-    A body a handler reads is described by the members it reads and nothing
-    more: those handlers take a list of any length, a name of any length and a
-    number where text is expected, so the bounds and types the replacing
-    serializers publish would have a generated client refuse requests these
-    addresses accept.
-
-    A request is keyed by media type, because a shape named on its own is
-    published under every type the view's parsers accept: where that is more
-    types than the handler reads, a client generated from the document would
-    pick one it refuses, and where the handler reads a body no serializer
-    describes, such as an image sent as the whole body, the document would
-    leave that form out. An address whose body is also read at the address
-    replacing it takes the same mapping from there, so the two cannot drift.
+    The v1 views name no serializer. A response is described by the v2 serializer
+    of the same shape; a request by the members the v1 handler reads, without the
+    v2 bounds, under the media types that handler reads; ``None`` reads no body.
     """
-    # The serializers read models, which are not loaded when this module is
-    # first imported, so each module is read inside this one. One of them
-    # reaches models belonging to a single service, which code shared by both
-    # services may not import: a service picks that application up by name
-    # through its settings, and that module is picked up by name here for the
-    # same reason.
+    # Imported here because the serializers need loaded models; the v2 user
+    # serializers reach single-service models, so they are imported by name.
     # pylint: disable=import-outside-toplevel
     from openedx.core.djangoapps.profile_images.v2.serializers import IMAGE_UPLOAD_REQUEST
     from openedx.core.lib.api.parsers import MergePatchParser
@@ -177,21 +135,9 @@ def superseded_bodies():
 
 class SupersededUserOperations:
     """
-    Describe the superseded user addresses wherever a service publishes them.
+    Describe the superseded user addresses the same way in both services' documents.
 
-    Both services mount that API at the same addresses and both publish an
-    unauthenticated document of everything they serve, so what one of those
-    documents says about one of these addresses is what the other has to say
-    about it as well: a client generated from either reads the same body on
-    each side of the exchange, branches on the same success code, and imports
-    the same name. The behaviour is shared rather than restated in each
-    service's schema class, which is what keeps the two documents a deployment
-    publishes from describing one address two ways.
-
-    Every address ``RENAMED_OPERATION_IDS`` does not name keeps the id the
-    generator derives for it, because a client generated from a document takes
-    a module from each operationId, so renaming one drops what a consumer
-    already imports.
+    Ids not named in ``RENAMED_OPERATION_IDS`` stay as the generator derives them.
     """
 
     def get_operation_id(self):
@@ -201,13 +147,10 @@ class SupersededUserOperations:
 
     def _get_request_body(self, direction="request"):
         """
-        Publish a body as one the operation needs when any form it may be sent in is.
+        Mark the body required when any of its media types requires it.
 
-        An operation that names the media types it reads loses that mark as
-        soon as one of them is the bare body of a file, which carries no field
-        that can be called required. The forms are alternatives rather than
-        parts of one request, so a body that is required in any of them is a
-        body the operation cannot be called without.
+        Overrides a private method of drf-spectacular 0.30, which requires a body
+        only when every media type does and never requires an inline shape.
         """
         body = super()._get_request_body(direction)
         if not body:
@@ -220,13 +163,7 @@ class SupersededUserOperations:
         return body
 
     def _requires_a_body(self, shape, direction):
-        """
-        Say whether a request cannot be sent without this form of the body.
-
-        A shape written out in full is published as it stands, and the
-        generator calls none of those required; it is required when it names a
-        member the request must carry, the way a serializer's is.
-        """
+        """Say whether this form of the body names a member the request must carry."""
         if isinstance(shape, dict):
             return bool(shape.get("required"))
         return self._get_request_for_media_type(shape, direction)[1]

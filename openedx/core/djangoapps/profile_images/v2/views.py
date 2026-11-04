@@ -40,12 +40,7 @@ from .serializers import IMAGE_UPLOAD_REQUEST, UPLOAD_MEDIA_TYPES, ProfileImageU
 
 log = logging.getLogger(__name__)
 
-# The name in this address is read as the name of a stored account, and the
-# shorthand the account collection takes for the caller's own account is not
-# translated here: a request sent under that name works on the account
-# registered under it. The description below publishes that to a caller; it is
-# written here for the reader of the module, because an address serving one
-# account from another app follows the same rule.
+# A stored username; the account collection's shorthand for the caller is not translated here.
 _USERNAME_PATH_PARAM = path_param(
     "username",
     "Unique name of the user whose image is addressed. The name is read as it is stored, so "
@@ -131,20 +126,10 @@ class ProfileImageView(
     the stored sizes are served from are carried by the account itself.
     """
 
-    # An account has one image, set and cleared whole and never listed or
-    # addressed by an identifier of its own, so it is served from this one
-    # address rather than routed as a collection. Clearing an image is an
-    # account change rather than a moderation tool, so staff are not admitted
-    # to somebody else's; that is not what the account collection admits,
-    # which is the other reason this is a view of its own rather than an
-    # action of that collection.
+    # A view of its own: only the owner is admitted, unlike the account collection.
 
-    # The site's own pages let a user who has not confirmed their email
-    # address set a picture, and the platform default refuses a session
-    # belonging to such an account. Only the session class differs in what it
-    # admits: a token is read by the library class the platform's own pair is
-    # built on, named here because a view declaring its own classes is not one
-    # that pair serves.
+    # Admits the session of an account whose email is not yet confirmed, which
+    # the platform default refuses; tokens are read as the platform reads them.
     authentication_classes = (JwtAuthentication, SessionAuthenticationAllowInactiveUser)
     permission_classes = (permissions.IsAuthenticated, IsAddressedUser)
     parser_classes = (MultiPartParser, FormParser, NamedImageUploadParser)

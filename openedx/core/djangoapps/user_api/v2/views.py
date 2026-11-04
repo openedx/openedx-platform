@@ -148,14 +148,8 @@ _PREFERENCE_KEY_PATH_PARAM = path_param(
 #: The presets an account response answers to.
 ACCOUNT_PRESETS = (MINIMAL_VIEW, SHARED_VIEW)
 
-#: The member of the account collection that addresses the caller's own account.
-#: It belongs to that collection, and the addresses beneath one account do not
-#: translate it: each of those reads the name it is given as the name of a
-#: stored account, so a request sent to one of them under this name works on
-#: the account registered under it, whichever account that is. The deactivation
-#: of an account publishes that in the description of the name it carries; it
-#: is written here as well because an address added beside it inherits the rule
-#: and not the sentence.
+#: The account-collection member naming the caller's own account. Addresses
+#: beneath an account do not translate it: there it is a stored username.
 OWN_ACCOUNT_IDENTIFIER = "me"
 
 #: What a caller is told about a member address that more than one account
@@ -821,14 +815,8 @@ class UserPreferenceViewSet(
     #: entry rather than as rows of the page, so the policy that governs them
     #: is applied where they are fetched.
     embedded_preference_policy = FullScopePolicy()
-    #: The owner's entry is itself a row of the user collection rather than of
-    #: this one, so which owners a caller may be given the entry of is that
-    #: collection's decision and is declared separately for that reason. It is
-    #: settled for a whole page in one query, because asking it of each row in
-    #: turn would cost a query per row. An owner the policy leaves out is left
-    #: out of the row that carries it; the row itself stays, named by the owner
-    #: it is stored against, because which rows come back is this collection's
-    #: own decision and is made by the policy above it.
+    #: Which owners' user entries a row may embed, settled once per page; a row
+    #: whose owner is left out keeps only the owner's name.
     embedded_user_policy = FullScopePolicy()
     filter_backends = (DjangoFilterBackend, StrictOrderingFilter)
     filterset_class = UserPreferenceFilterSet
@@ -958,14 +946,8 @@ def _shareable_account_fields():
     return set(settings.ACCOUNT_VISIBILITY_CONFIGURATION["custom_shareable_fields"])
 
 
-#: The classes every operation on an account admits a caller by, wherever it is
-#: served from. The account collection declares this tuple and every address
-#: that works on one of its accounts carries it, so the rules of the resource
-#: are declared once rather than restated by each address that reaches into it.
-#: It is read from here rather than from the collection's own attribute because
-#: that attribute is added to in place, by the first request to reach a view
-#: that reads a token, and admission must not depend on which addresses a
-#: process has served already.
+#: Admission classes for every operation on an account, wherever it is served.
+#: Read from here, not from a view attribute that middleware may extend in place.
 ACCOUNT_RESOURCE_PERMISSIONS = (
     permissions.IsAuthenticated,
     CanGetAccountInfo,
@@ -1107,24 +1089,11 @@ class AccountViewSet(
     rather than answered as an empty object.
     """
 
-    # The properties of an account are read from the account service rather
-    # than from a table of this app's, so there is no queryset to narrow and
-    # the page is cut from the names the selection resolved to. The service is
-    # what settles which properties of each account the caller may see; the
-    # selection settles which accounts the page carries, and is applied in the
-    # handler rather than declared as a filter set because a filter set has no
-    # room for the retired-address refusal, which reports rows it cannot carry
-    # instead of leaving them out. Which properties the answer can carry is
-    # settled before the address is read, so a request for a property this
-    # kind of answer never carries is refused without reading or writing
-    # anything on the way to it.
+    # Accounts come from the account service, not a queryset, and a filter set
+    # cannot report a retired address, so the selection is applied in the handler.
 
-    # Account settings are reached from the site's own pages by users who have
-    # not confirmed their email address yet, and the platform default refuses
-    # a session belonging to such an account. Only the session class differs in
-    # what it admits: a token is read by the library class the platform's own
-    # pair is built on, named here because a view declaring its own classes is
-    # not one that pair serves.
+    # Admits the session of an account whose email is not yet confirmed, which
+    # the platform default refuses; tokens are read as the platform reads them.
     authentication_classes = (JwtAuthentication, SessionAuthenticationAllowInactiveUser)
     permission_classes = ACCOUNT_RESOURCE_PERMISSIONS
     #: A change is a merge patch: a body in any other media type is refused.
@@ -1255,13 +1224,8 @@ class AccountViewSet(
             raise ValidationError({
                 api_settings.NON_FIELD_ERRORS_KEY: ["Send the properties to change as an object."],
             })
-        # The body is measured against the shape this endpoint publishes before
-        # anything is done with it, and then carried out as it was sent: the
-        # account service takes properties this version does not publish, and
-        # refuses the ones that cannot be changed, which dropping them here
-        # would turn into silence. Every property is optional of itself, which
-        # is what makes the body a merge patch, and a property that is an
-        # object of its own is still sent whole.
+        # Validated against the published shape, then passed on as sent so the
+        # account service still refuses properties that cannot be changed.
         AccountUpdateSerializer(data=changes).is_valid(raise_exception=True)
         if "email" in changes and not settings.ALLOW_EMAIL_ADDRESS_CHANGE:
             raise ValidationError({"email": ["This site does not let an email address be changed here."]})
@@ -1295,12 +1259,8 @@ class AccountViewSet(
         if not names:
             return []
         found = self._accounts_found(request, names, preset)
-        # The accounts come back in the order the database returned them, which
-        # is not the order of the page they were selected for, so each is put
-        # back under the name it is stored as. Which stored names a selection
-        # resolves to is the database's decision and need not be the names it
-        # was given, so an account none of those names is written as is carried
-        # at the end of the page rather than left out of it.
+        # Restore the page's order; an account stored under none of the selected
+        # spellings is kept, at the end.
         by_name = {account["username"]: account for account in found}
         claimed = {name for name in names if name in by_name}
         ordered = [by_name[name] for name in names if name in by_name]
@@ -1455,13 +1415,7 @@ class AccountDeactivationView(
     removed. Asking for a password reset does not undo this.
     """
 
-    # Disabling an account is something a privileged caller does to somebody
-    # else's account rather than a property of that account, and it shares
-    # neither its callers nor its body with the way an account is read or
-    # changed: the caller holds the privilege to disable accounts and has
-    # confirmed their own address, and the body is read as JSON rather than as
-    # a merge patch. It is therefore a view of its own rather than an action
-    # of the account collection.
+    # A view of its own: its callers and body differ from the account collection's.
 
     permission_classes = (permissions.IsAuthenticated, IsActiveUser, CanDeactivateUser)
 
@@ -1538,12 +1492,7 @@ class EmailSearchViewSet(
     whose account is not active is refused.
     """
 
-    # The addresses are sent in a body so that they stay out of server logs
-    # and browser histories, which is what makes the search a POST and what
-    # makes its pages be followed with a body. The search stands beside the
-    # accounts rather than under them because what follows the account
-    # collection in an address is the name of an account, and a user may
-    # register any name.
+    # A POST so the addresses stay out of server logs and browser histories.
 
     # The session of an account that has not confirmed its email address is
     # read rather than dropped, so it gets the answer a token of that account
@@ -1752,12 +1701,8 @@ class IDVerificationStatusView(
     account is still active may read anyone's.
     """
 
-    # The summary is computed rather than stored and is never listed, so it is
-    # served from this one address rather than routed as a collection, and it
-    # is read from the identity verification service rather than from a table
-    # of this app's. It admits a different set of callers from the account
-    # collection, which is why it is a view of its own rather than an action
-    # of that collection.
+    # Computed by the identity verification service, one per account; a view of
+    # its own because it admits different callers from the account collection.
 
     permission_classes = (
         permissions.IsAuthenticated,
@@ -1840,12 +1785,8 @@ class IDVerificationViewSet(
     absent only when the user it names is.
     """
 
-    # The attempts are collected from the identity verification service, which
-    # holds a table per kind of check, so there is no queryset of this app's to
-    # narrow: the page is cut from what those tables return and is sorted in
-    # the view rather than by a filter backend. An attempt is reached by no
-    # route other than this one, which is why the collection is addressed
-    # beneath the account it belongs to.
+    # Collected from the identity verification service's tables and sorted
+    # here, since there is no queryset of this app's to narrow.
 
     permission_classes = (
         permissions.IsAuthenticated,

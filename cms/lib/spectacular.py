@@ -83,13 +83,7 @@ class CmsAutoSchema(SupersededUserOperations, AutoSchema):
     suffix in registration order. The conforming address keeps the clean id;
     the deprecated one is suffixed ``_legacy``.
 
-    This service also serves the user API at the same addresses the service
-    that replaces it does, and both publish an unauthenticated document of
-    everything they serve. The shared behaviour describes those addresses the
-    one way, so that a client generated from either document reads the same
-    signature and the same success code for the same request; it is taken from
-    where that API's own schema lives rather than copied, because two copies
-    of a description drift.
+    The superseded user addresses are described as in the LMS document.
     """
 
     def get_operation_id(self):
