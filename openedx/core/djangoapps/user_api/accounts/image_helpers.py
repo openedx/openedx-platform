@@ -160,17 +160,14 @@ def _get_default_profile_image_urls():
     )
 
 
-def set_has_profile_image(user, is_uploaded, upload_dt=None):
+def set_has_profile_image(username, is_uploaded, upload_dt=None):
     """
     System (not user-facing) API call used to store whether the user has
     uploaded a profile image, and if so, when.  Used by profile_image API.
 
     Arguments:
-        user (django.contrib.auth.User or django.contrib.auth.User.username):
-            the user who uploaded an image, as either that user or the
-            username of one. A caller that has already settled which user it
-            is acting for passes that user, so that this records the image on
-            that user and nothing else is consulted on the way to it.
+        username (django.contrib.auth.User.username): references the user who
+            uploaded an image.
 
         is_uploaded (bool): whether or not the user has an uploaded profile
             image.
@@ -181,15 +178,14 @@ def set_has_profile_image(user, is_uploaded, upload_dt=None):
 
     Raises:
         ValueError: is_uploaded was True, but no upload datetime was supplied.
-        UserNotFound: there is no such user, or the user has no profile.
+        UserNotFound: no user with username `username` exists.
     """
     if is_uploaded and upload_dt is None:  # pylint: disable=no-else-raise
         raise ValueError("No upload datetime was supplied.")
     elif not is_uploaded:
         upload_dt = None
-    selected = {'user__username': user} if isinstance(user, str) else {'user': user}
     try:
-        profile = UserProfile.objects.get(**selected)
+        profile = UserProfile.objects.get(user__username=username)
     except ObjectDoesNotExist:
         raise UserNotFound()  # pylint: disable=raise-missing-from  # noqa: B904
 

@@ -2153,22 +2153,25 @@ class AccountWriteTargetTests(AccountApiV2TestCase):
         """
         What the image is recorded on is the account the request was admitted for.
 
-        The account is handed to the write as a record rather than as a name
-        for the write to find for itself, which is what keeps the account
-        written to the account the caller was admitted for.
+        The profile written is reached from that account rather than looked up
+        again by name, so a name that answers for more than one account never
+        comes into it.
         """
         address = reverse(
             "user_v2:account_profile_image", kwargs={"username": self.owner.username},
         )
         self.login(self.owner)
-        with mock.patch(
-            "openedx.core.djangoapps.profile_images.v2.views.set_has_profile_image",
-        ) as recorded:
+        found = UserProfile.objects.get
+
+        def found_by_account_only(*args, **kwargs):
+            if "user__username" in kwargs:
+                raise UserProfile.MultipleObjectsReturned
+            return found(*args, **kwargs)
+
+        with mock.patch.object(UserProfile.objects, "get", side_effect=found_by_account_only):
             assert self.client.delete(address).status_code == status.HTTP_204_NO_CONTENT
-        assert recorded.call_args.args[0] == self.owner
-        assert recorded.call_args.args[1] is False
         self.owner.profile.refresh_from_db()
-        assert self.owner.profile.has_profile_image is True
+        assert self.owner.profile.has_profile_image is False
 
 
 @skip_unless_lms

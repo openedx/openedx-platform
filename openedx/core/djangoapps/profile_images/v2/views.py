@@ -18,8 +18,8 @@ from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from openedx.core.djangoapps.user_api.accounts.image_helpers import get_profile_image_names, set_has_profile_image
-from openedx.core.djangoapps.user_api.errors import UserNotFound
+from common.djangoapps.student.models import UserProfile
+from openedx.core.djangoapps.user_api.accounts.image_helpers import get_profile_image_names
 from openedx.core.djangoapps.user_api.v2.errors import ReadableErrorDetailMixin
 from openedx.core.djangoapps.user_api.v2.permissions import IsAddressedUser, RestrictedApplicationGuardMixin
 from openedx.core.djangoapps.user_api.v2.serializers import ErrorResponse
@@ -266,15 +266,16 @@ class ProfileImageView(
         """
         Record on the account whether it carries an image of its own.
 
-        The account recorded on is the one the request was admitted for, which
-        is handed over here, so what is recorded lands on that account and on
-        no other.
+        The profile written is reached from the account the request was
+        admitted for rather than looked up again by name, so what is recorded
+        lands on that account and on no other.
         """
-        uploaded_at = datetime.datetime.now(ZoneInfo("UTC")) if is_uploaded else None
         try:
-            set_has_profile_image(user, is_uploaded, uploaded_at)
-        except UserNotFound as exc:
+            profile = UserProfile.objects.get(user=user)
+        except UserProfile.DoesNotExist as exc:
             raise NotFound from exc
+        profile.profile_image_uploaded_at = datetime.datetime.now(ZoneInfo("UTC")) if is_uploaded else None
+        profile.save()
 
     def _unusable_image(self, username, message, reason):
         """Return the refusal telling the caller what the site cannot do with this image."""
