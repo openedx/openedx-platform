@@ -25,14 +25,11 @@ from openedx.core.djangoapps.user_api.accounts.signals import (
     USER_RETIRE_MAILINGS,
 )
 from openedx.core.djangoapps.user_api.accounts.utils import (
+    get_orgs_for_user,
     handle_retirement_cancellation,
     redact_and_delete_historical_social_auth,
 )
-from openedx.core.djangoapps.user_api.accounts.views import (
-    AccountRetirementPartnerReportView,
-    AccountRetirementView,
-    LMSAccountRetirementView,
-)
+from openedx.core.djangoapps.user_api.accounts.views import AccountRetirementView, LMSAccountRetirementView
 from openedx.core.djangoapps.user_api.models import (
     RetirementStateError,
     UserOrgTag,
@@ -254,8 +251,7 @@ def erase_account_data(retirement, scope):
 
 def record_partner_report(retirement):
     """Queue this retirement for reporting to the organizations the account studied with."""
-    # pylint: disable=protected-access
-    organizations = AccountRetirementPartnerReportView._get_orgs_for_user(retirement.user)
+    organizations = get_orgs_for_user(retirement.user)
     if not organizations:
         return
     UserRetirementPartnerReportingStatus.objects.get_or_create(
@@ -270,13 +266,12 @@ def record_partner_report(retirement):
 
 def _partner_report_of(report):
     """Return what a partner needs in order to forget the account this queue entry names."""
-    # pylint: disable=protected-access
-    organizations = AccountRetirementPartnerReportView._get_orgs_for_user(report.user)
+    organizations = get_orgs_for_user(report.user)
     return {
         "user_id": report.user.pk,
         "original_username": report.original_username,
-        AccountRetirementPartnerReportView.ORIGINAL_EMAIL_KEY: report.original_email,
-        AccountRetirementPartnerReportView.ORIGINAL_NAME_KEY: report.original_name,
+        "original_email": report.original_email,
+        "original_name": report.original_name,
         "orgs": sorted(organizations),
         "created": report.created,
     }

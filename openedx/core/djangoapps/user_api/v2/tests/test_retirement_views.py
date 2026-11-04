@@ -226,6 +226,8 @@ def captured_signals():
 
 COURSE_KEY = CourseKey.from_string("course-v1:edX+DemoX+Demo")
 OTHER_COURSE_KEY = CourseKey.from_string("course-v1:OtherOrg+OtherX+Other")
+#: A course under the placeholder organization name, which is never reported to a partner.
+PLACEHOLDER_ORG_COURSE_KEY = CourseKey.from_string("course-v1:outdated_entry+OldX+Old")
 
 
 def grant(user, codename, app_label="user_api"):
@@ -1614,6 +1616,13 @@ class PartnerReportClaimTests(_AccessMatrixMixin, RetirementApiTestCase):
         response = self.client.post(self.url, {}, format="json")
         assert response.data[0]["orgs"] == []
 
+    def test_the_placeholder_organization_is_not_named_to_partners(self):
+        CourseEnrollmentFactory.create(user=self.subject, course_id=COURSE_KEY)
+        CourseEnrollmentFactory.create(user=self.subject, course_id=PLACEHOLDER_ORG_COURSE_KEY)
+        self.login("worker")
+        response = self.client.post(self.url, {}, format="json")
+        assert response.data[0]["orgs"] == ["edX"]
+
     def test_the_entries_returned_are_exactly_the_entries_taken(self):
         other = self.queued(self.learner)
         self.login("worker")
@@ -1731,6 +1740,21 @@ class PartnerReportQueueTests(_AccessMatrixMixin, RetirementApiTestCase):
 
     def test_an_account_that_studied_with_nobody_is_not_queued(self):
         learner_retirement = self.retirement_in("ADDING_TO_PARTNER_QUEUE", user=self.learner)
+        self.login("worker")
+        response = self.client.put(
+            reverse(
+                "user_v2:retirement_partner_report_detail",
+                kwargs={"username": learner_retirement.original_username},
+            ),
+            {},
+            format="json",
+        )
+        assert response.status_code == status.HTTP_204_NO_CONTENT
+        assert not UserRetirementPartnerReportingStatus.objects.filter(user=self.learner).exists()
+
+    def test_an_account_enrolled_only_under_the_placeholder_organization_is_not_queued(self):
+        learner_retirement = self.retirement_in("ADDING_TO_PARTNER_QUEUE", user=self.learner)
+        CourseEnrollmentFactory.create(user=self.learner, course_id=PLACEHOLDER_ORG_COURSE_KEY)
         self.login("worker")
         response = self.client.put(
             reverse(
