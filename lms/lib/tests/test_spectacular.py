@@ -12,7 +12,7 @@ import jsonschema
 from django.conf import settings
 from django.test import Client, SimpleTestCase, TestCase
 from django.test.client import FakePayload
-from django.urls import path
+from django.urls import path, resolve
 from drf_spectacular.generators import SchemaGenerator
 from drf_spectacular.settings import patched_settings, spectacular_settings
 from rest_framework import serializers, viewsets
@@ -484,6 +484,24 @@ def _user_documents():
     return {"published": published, "service-wide": service_wide}
 
 
+#: The unversioned twin of the version 1 email choice address, as published.
+OPT_IN_TWIN = "/user_api/v1/preferences/email_opt_in/"
+
+
+def _opt_in_twin_operation():
+    """
+    Return the operation the service-wide document publishes at the email choice's unversioned twin.
+
+    The twin is mounted outside the user mounts, so it is generated from its
+    own route, under the settings that document is published with.
+    """
+    routes = import_module("openedx.core.djangoapps.user_api.legacy_urls").urlpatterns
+    twin = [route for route in routes if getattr(route, "name", None) == "preferences_email_opt_in_legacy"]
+    with patched_settings({**get_api_docs_settings(), "SCHEMA_PATH_PREFIX": "/"}):
+        schema = SchemaGenerator(patterns=twin).get_schema(request=None, public=True)
+    return schema["paths"][OPT_IN_TWIN]["post"]
+
+
 class SupersededBodyTest(TestCase):
     """Every address published as superseded carries the bodies it exchanges."""
 
@@ -694,6 +712,15 @@ class SupersededBodyInTheServiceWideDocumentTest(TestCase):
                 {code: _named_body(response) for code, response in operation["responses"].items()},
             )
         assert published == PREFERENCE_EXCHANGES
+
+    def test_the_twin_of_the_opt_in_is_left_as_that_document_always_published_it(self):
+        """It keeps resolving, is described by nothing here, and is not marked superseded."""
+        assert resolve(OPT_IN_TWIN).url_name == "preferences_email_opt_in_legacy"
+        twin = _opt_in_twin_operation()
+        assert "requestBody" not in twin
+        assert sorted(twin["responses"]) == ["200"]
+        assert "content" not in twin["responses"]["200"]
+        assert twin.get("deprecated", False) is False
 
 
 #: Each address this document already published before its body was described,

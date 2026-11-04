@@ -1168,6 +1168,21 @@ class RefusedRequestTests(UserApiV2TestCase):
         )
         assert envelope["detail"] == 'Method "PUT" not allowed.'
 
+    def test_no_other_collection_of_this_version_learns_a_method_from_this_one(self):
+        """The document beneath an account is merge-patched; the collections above it are not."""
+        self.login(self.admin)
+        for address in (reverse("user_v2:account_list"), reverse("user_v2:user_list")):
+            with self.subTest(address=address):
+                response = self.client.patch(
+                    address, "{}", content_type="application/merge-patch+json", HTTP_X_EDX_API_KEY=API_KEY,
+                )
+                envelope = assert_error_envelope(
+                    response,
+                    expected_status=status.HTTP_405_METHOD_NOT_ALLOWED,
+                    expected_type_slug=REFUSED_METHOD_SLUG,
+                )
+                assert envelope["detail"] == 'Method "PATCH" not allowed.'
+
     def test_another_api_is_classified_exactly_as_the_shared_catalog_classifies_it(self):
         """The catalog names no refused method, and nothing here changes that for anyone else."""
         response = self.client.post(self.OTHER_API_URL, {}, format="json")
