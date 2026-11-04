@@ -34,7 +34,7 @@ from xmodule.modulestore.tests.factories import CourseFactory
 
 from .. import api as embargo_api
 from ..exceptions import InvalidAccessPoint
-from ..models import Country, CountryAccessRule, RestrictedCourse
+from ..models import Country, CountryAccessRule, GlobalRestrictedCountry, RestrictedCourse
 
 QUERY_COUNT_TABLE_IGNORELIST = WAFFLE_TABLES + AUTHZ_TABLES
 
@@ -126,13 +126,16 @@ class EmbargoCheckAccessApiTests(ModuleStoreTestCase):
             assert not result
 
     def test_course_not_restricted(self):
-        # No restricted course model for this course key,
-        # so all access checks should be skipped.
+        # No `RestrictedCourse` row for this course, and no `GlobalRestrictedCountry`
+        # rows either, so `check_course_access` takes its fast path: it only needs
+        # to warm the two "is anything restricted at all" caches, then returns
+        # without ever looking at the IP or the user's profile.
         unrestricted_course = CourseFactory.create()
-        with self.assertNumQueries(1):
+        with self.assertNumQueries(2):
             embargo_api.check_course_access(unrestricted_course.id, user=self.user, ip_addresses=['0.0.0.0'])
 
-        # The second check should require no database queries
+        # The second check should require no database queries - both caches
+        # (restricted-course list, global-country list) are warm by now.
         with self.assertNumQueries(0):
             embargo_api.check_course_access(unrestricted_course.id, user=self.user, ip_addresses=['0.0.0.0'])
 
@@ -174,8 +177,14 @@ class EmbargoCheckAccessApiTests(ModuleStoreTestCase):
             # Test the scenario that will go through every check
             # (restricted course, but pass all the checks)
             # This is the worst case, so it will hit all of the
-            # caching code.
-            with self.assertNumQueries(5, table_ignorelist=QUERY_COUNT_TABLE_IGNORELIST):
+            # caching code: restricted-course cache (1) + global-country
+            # cache (1) + per-course country-access-rule cache (1) = 3.
+            # `CountryAccessRule.check_country_access` caches its allowed-countries
+            # list per course_key, so the IP check and the profile check below share
+            # that single query rather than each paying for their own. This scenario
+            # also doesn't pay for the `has_course_author_access` role lookup, since
+            # that's deferred until a block is about to happen, and nothing blocks here.
+            with self.assertNumQueries(3, table_ignorelist=QUERY_COUNT_TABLE_IGNORELIST):
                 embargo_api.check_course_access(self.course.id, user=self.user, ip_addresses=['0.0.0.0'])
 
             with self.assertNumQueries(0, table_ignorelist=QUERY_COUNT_TABLE_IGNORELIST):
@@ -185,7 +194,8 @@ class EmbargoCheckAccessApiTests(ModuleStoreTestCase):
         RestrictedCourse.objects.all().delete()
         cache.clear()
 
-        with self.assertNumQueries(1):
+        # Same fast path as `test_course_not_restricted` - see there for the count.
+        with self.assertNumQueries(2):
             embargo_api.check_course_access(self.course.id, user=self.user, ip_addresses=['0.0.0.0'])
 
         with self.assertNumQueries(0):
@@ -213,22 +223,134 @@ class EmbargoCheckAccessApiTests(ModuleStoreTestCase):
         # Expect that the user is blocked, because the user isn't staff
         assert not result, "User should not have access because the user isn't staff."
 
-        # Instantiate the role, configuring it for this course or org
-        if issubclass(staff_role_cls, CourseRole):
-            staff_role = staff_role_cls(self.course.id)
-        elif issubclass(staff_role_cls, OrgRole):
-            staff_role = staff_role_cls(self.course.id.org)
-        else:
-            staff_role = staff_role_cls()
-
-        # Add the user to the role
-        staff_role.add_users(self.user)
+        self._add_staff_role(staff_role_cls, self.course.id)
 
         # Now the user should have access
         with self._mock_geoip('US'):
             result = embargo_api.check_course_access(self.course.id, user=self.user, ip_addresses=['0.0.0.0'])
 
         assert result, 'User should have access because the user is staff.'
+
+    @ddt.data(
+        GlobalStaff,
+        CourseStaffRole,
+        CourseInstructorRole,
+        OrgStaffRole,
+        OrgInstructorRole,
+    )
+    def test_staff_access_global_country_block(self, staff_role_cls):
+        # Staff should bypass a `GlobalRestrictedCountry` block too, on a
+        # course that has no `RestrictedCourse` row at all.
+        course_key = CourseFactory.create().id
+        GlobalRestrictedCountry.objects.create(country=Country.objects.get(country='IR'))
+
+        with self._mock_geoip('IR'):
+            result = embargo_api.check_course_access(course_key, user=self.user, ip_addresses=['0.0.0.0'])
+        assert not result, "User should not have access because the user isn't staff."
+
+        self._add_staff_role(staff_role_cls, course_key)
+
+        with self._mock_geoip('IR'):
+            result = embargo_api.check_course_access(course_key, user=self.user, ip_addresses=['0.0.0.0'])
+        assert result, 'User should have access because the user is staff.'
+
+    def _add_staff_role(self, staff_role_cls, course_key):
+        """Instantiate `staff_role_cls` for `course_key` (or its org) and add `self.user` to it."""
+        if issubclass(staff_role_cls, CourseRole):
+            staff_role = staff_role_cls(course_key)
+        elif issubclass(staff_role_cls, OrgRole):
+            staff_role = staff_role_cls(course_key.org)
+        else:
+            staff_role = staff_role_cls()
+        staff_role.add_users(self.user)
+
+    @ddt.data(
+        # course_restricted, rule_type, rule_country, global_country, country, source, allow_access
+        (False, None, None, 'IR', 'IR', 'ip', False),  # no RestrictedCourse row at all, blocked globally
+        (False, None, None, 'IR', 'US', 'ip', True),  # no RestrictedCourse row, unrelated country is fine
+        (False, None, None, 'IR', 'IR', 'profile', False),  # global block also applies via profile country
+        (True, CountryAccessRule.BLACKLIST_RULE, 'CU', None, 'CU', 'ip', False),  # existing per-course rule, unaffected
+        (True, CountryAccessRule.BLACKLIST_RULE, 'CU', None, 'US', 'ip', True),
+        (True, CountryAccessRule.WHITELIST_RULE, 'IR', 'IR', 'IR', 'ip', False),  # global restriction beats whitelist
+    )
+    @ddt.unpack
+    def test_global_restricted_country_access(
+        self, course_restricted, rule_type, rule_country, global_country, country, source, allow_access,
+    ):
+        course_key = self.course.id if course_restricted else CourseFactory.create().id
+
+        if rule_type is not None:
+            CountryAccessRule.objects.create(
+                rule_type=rule_type,
+                restricted_course=self.restricted_course,
+                country=Country.objects.get(country=rule_country),
+            )
+
+        if global_country is not None:
+            GlobalRestrictedCountry.objects.create(country=Country.objects.get(country=global_country))
+
+        if source == 'profile':
+            self.user.profile.country = country
+            self.user.profile.save()
+            ip_country = ''
+        else:
+            ip_country = country
+
+        with self._mock_geoip(ip_country):
+            result = embargo_api.check_course_access(course_key, user=self.user, ip_addresses=['0.0.0.0'])
+        assert result == allow_access
+
+    def test_redirect_if_blocked_global_restricted_country(self):
+        # A course with no `RestrictedCourse` row still redirects to the
+        # default blocked-message page when blocked by `GlobalRestrictedCountry`.
+        unrestricted_course = CourseFactory.create()
+        GlobalRestrictedCountry.objects.create(country=Country.objects.get(country='IR'))
+
+        request = RequestFactory().get('', HTTP_X_FORWARDED_FOR='0.0.0.0')
+        request.user = self.user
+
+        with self._mock_geoip('IR'):
+            redirect_url = embargo_api.redirect_if_blocked(request, unrestricted_course.id, access_point='courseware')
+        assert redirect_url == '/embargo/blocked-message/courseware/default/'
+
+    def test_disable_access_check_does_not_bypass_global_restriction(self):
+        # `disable_access_check` is a per-course escape hatch for `CountryAccessRule`
+        # blocks. It must NOT let a `GlobalRestrictedCountry` block through too.
+        self.restricted_course.disable_access_check = True
+        self.restricted_course.save()
+        GlobalRestrictedCountry.objects.create(country=Country.objects.get(country='IR'))
+
+        request = RequestFactory().get('', HTTP_X_FORWARDED_FOR='0.0.0.0')
+        request.user = self.user
+
+        with self._mock_geoip('IR'):
+            redirect_url = embargo_api.redirect_if_blocked(request, self.course.id, access_point='courseware')
+        assert redirect_url is not None, "A global restriction should still redirect even with disable_access_check."
+
+    def test_global_restriction_via_profile_not_masked_by_earlier_ip_rule_match(self):
+        # A per-course `CountryAccessRule` match on the IP must not short-circuit
+        # before the profile country is also checked against `GlobalRestrictedCountry` -
+        # otherwise a globally-restricted user could slip through via disable_access_check
+        # just because their IP happened to also fail a (unrelated) per-course rule first.
+        self.restricted_course.disable_access_check = True
+        self.restricted_course.save()
+        CountryAccessRule.objects.create(
+            rule_type=CountryAccessRule.BLACKLIST_RULE,
+            restricted_course=self.restricted_course,
+            country=Country.objects.get(country='CU'),
+        )
+        GlobalRestrictedCountry.objects.create(country=Country.objects.get(country='IR'))
+        self.user.profile.country = 'IR'
+        self.user.profile.save()
+
+        request = RequestFactory().get('', HTTP_X_FORWARDED_FOR='0.0.0.0')
+        request.user = self.user
+
+        # IP matches the per-course blacklist (CU), not the global list - but the
+        # profile country (IR) is globally restricted, and that must still win.
+        with self._mock_geoip('CU'):
+            redirect_url = embargo_api.redirect_if_blocked(request, self.course.id, access_point='courseware')
+        assert redirect_url is not None, "Global restriction must not be masked by an earlier IP rule match."
 
     @ddt.data(
         # (Note that any '0.x.x.x' IP _should_ be blocked in this test.)
@@ -262,8 +384,14 @@ class EmbargoCheckAccessApiTests(ModuleStoreTestCase):
         ('courseware', True, True),  # Unless the access check has been disabled, then we allow them
     )
     @ddt.unpack
-    @mock.patch('openedx.core.djangoapps.embargo.api.check_course_access', return_value=False)
+    @mock.patch(
+        'openedx.core.djangoapps.embargo.api._check_course_access',
+        return_value=embargo_api._AccessCheckResult(False, False),  # pylint: disable=protected-access
+    )
     def test_redirect_if_blocked_courseware(self, access_point, check_disabled, allow_access, _mock_access):  # noqa: PT019  # pylint: disable=line-too-long
+        # blocked_globally=False here - this test is specifically about the
+        # per-course disable_access_check override, which only ever applies
+        # to a non-global (CountryAccessRule) block.
         self.restricted_course.disable_access_check = check_disabled
         self.restricted_course.save()
 
@@ -341,8 +469,10 @@ class EmbargoMessageUrlApiTests(UrlResetMixin, ModuleStoreTestCase):
         # No restrictions for the course
         url_path = embargo_api.message_url_path(self.course.id, access_point)
 
-        # Use a default path
-        assert url_path == '/embargo/blocked-message/courseware/default/'
+        # Use a default path - the default for the access point the user was blocked at.
+        # A course blocked only by `GlobalRestrictedCountry` has no `RestrictedCourse` row,
+        # so this fallback is what an embargoed learner actually sees.
+        assert url_path == f'/embargo/blocked-message/{access_point}/default/'
 
     def test_invalid_access_point(self):
         with pytest.raises(InvalidAccessPoint):
