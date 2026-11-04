@@ -16,12 +16,14 @@ from django.core.files.base import ContentFile
 from django.test import RequestFactory
 from django.utils.timezone import now
 from edxval import api
+from edxval.models import VideoTranscript
 from webob import Request, Response
 from xblock.django.request import DjangoWebobRequest
 
 from common.djangoapps.student.tests.factories import UserFactory
 from common.test.utils import normalize_repr
 from openedx.core.djangoapps.contentserver.caching import del_cached_content
+from openedx.core.djangoapps.video_config.services import VideoConfigService
 from openedx.core.djangoapps.video_config.transcripts_utils import (  # pylint: disable=wrong-import-order
     Transcript,
     edxval_api,
@@ -505,6 +507,57 @@ class TestTranscriptDownloadDispatch(TestVideo):  # pylint: disable=test-inherit
     def setUp(self):
         super().setUp()
         self.block.render(STUDENT_VIEW)
+
+    def _create_val_transcript(self, missing_file=True):
+        """Keep a real transcript row when its backing file goes missing."""
+        self.block.edx_video_id = api.create_video({
+            "edx_video_id": "missing-transcript-file",
+            "client_video_id": "missing-transcript-file",
+            "duration": 10,
+            "status": "ready",
+            "encoded_videos": [],
+        })
+        api.create_video_transcript(
+            self.block.edx_video_id, "en", "sjson",
+            ContentFile(json.dumps(TRANSCRIPT).encode(), name="transcript.sjson"),
+        )
+        record = VideoTranscript.objects.get(video__edx_video_id=self.block.edx_video_id, language_code="en")
+        self.addCleanup(record.transcript.storage.delete, record.transcript.name)
+        if missing_file:
+            record.transcript.storage.delete(record.transcript.name)
+
+    def test_missing_val_file_uses_static_transcript(self):
+        self._create_val_transcript()
+        static = _create_file(json.dumps(TRANSCRIPT))
+        _upload_sjson_file(static, self.block.location)
+        self.block.sub = _get_subs_id(static.name)
+        response = self.block.transcript(request=Request.blank("/download"), dispatch="download")
+        assert response.status_code == 200
+        assert "Hi, welcome to Edx." in response.text
+
+    def test_missing_val_file_without_static_returns_404(self):
+        self._create_val_transcript()
+        response = self.block.transcript(request=Request.blank("/download"), dispatch="download")
+        assert response.status_code == 404
+
+    def test_missing_val_file_excluded_from_verified_translations(self):
+        self._create_val_transcript()
+        translations = VideoConfigService().available_translations(
+            self.block, {"sub": self.block.sub, "transcripts": {}}, verify_assets=True,
+        )
+        assert not translations
+
+    def test_existing_val_file_is_downloaded(self):
+        self._create_val_transcript(missing_file=False)
+        response = self.block.transcript(request=Request.blank("/download"), dispatch="download")
+        assert response.status_code == 200
+        assert "Hi, welcome to Edx." in response.text
+
+    @patch("openedx.core.djangoapps.video_config.transcripts_utils.edxval_api.get_video_transcript_data")
+    def test_unrelated_val_failure_propagates(self, get_data):
+        get_data.side_effect = PermissionError("Storage denied access")
+        with pytest.raises(PermissionError):
+            get_transcript(self.block)
 
     def test_download_transcript_not_exist(self):
         request = Request.blank('/download')
