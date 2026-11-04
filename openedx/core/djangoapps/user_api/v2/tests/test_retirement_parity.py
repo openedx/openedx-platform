@@ -703,7 +703,7 @@ class BatchDisposalParityTests(RetirementParityTestCase):
 
     The pipeline's jobs take every entry waiting and then dispose of all of
     them in a single request, so neither version bounds how many names that
-    request carries.
+    request carries. Each name is matched exactly as it was sent.
     """
 
     def finished_retirements(self, prefix):
@@ -771,6 +771,52 @@ class BatchDisposalParityTests(RetirementParityTestCase):
             status.HTTP_204_NO_CONTENT, status.HTTP_200_OK,
         )
         assert (legacy_left, conforming_left) == (0, 0)
+
+    def test_a_name_sent_with_spaces_around_it_disposes_of_no_retirement_on_either_version(self):
+        complete = RetirementState.objects.get(state_name="COMPLETE")
+        legacy = create_retirement_status(UserFactory.create(username="padded-legacy"), state=complete)
+        conforming = create_retirement_status(UserFactory.create(username="padded-conforming"), state=complete)
+
+        legacy_answer = self.client.post(
+            reverse("accounts_retirement_cleanup"), {"usernames": [" padded-legacy "]}, format="json",
+        )
+        conforming_answer = self.client.post(
+            reverse("user_v2:retirement_cleanup_list"), {"usernames": [" padded-conforming "]}, format="json",
+        )
+
+        assert legacy_answer.status_code == status.HTTP_400_BAD_REQUEST
+        # No record was requested under the name as it was sent, so it is
+        # reported as absent, under that name, rather than refused.
+        assert conforming_answer.data == {
+            "results": [{"username": " padded-conforming ", "outcome": "already_absent"}],
+        }
+        kept = set(UserRetirementStatus.objects.filter(id__in=(legacy.id, conforming.id)).values_list("id", flat=True))
+        assert kept == {legacy.id, conforming.id}
+
+    def test_a_name_sent_with_spaces_around_it_disposes_of_no_partner_report_on_either_version(self):
+        for name in ("padded-legacy", "padded-conforming"):
+            user = UserFactory.create(username=name)
+            UserRetirementPartnerReportingStatus.objects.create(
+                user=user, original_username=name, original_email=user.email, is_being_processed=True,
+            )
+
+        legacy_answer = self.client.post(
+            reverse("accounts_retirement_partner_report_cleanup"),
+            [{"original_username": " padded-legacy "}],
+            format="json",
+        )
+        conforming_answer = self.client.post(
+            reverse("user_v2:retirement_partner_report_cleanup_list"),
+            {"usernames": [" padded-conforming "]},
+            format="json",
+        )
+
+        assert legacy_answer.status_code == status.HTTP_400_BAD_REQUEST
+        assert conforming_answer.data == {
+            "results": [{"username": " padded-conforming ", "outcome": "already_absent"}],
+        }
+        kept = set(UserRetirementPartnerReportingStatus.objects.values_list("original_username", flat=True))
+        assert kept == {"padded-legacy", "padded-conforming"}
 
 
 class MediaTypeParityTests(SimpleTestCase):

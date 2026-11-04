@@ -1325,7 +1325,7 @@ class RetirementBatchSerializer(serializers.Serializer):  # pylint: disable=abst
     # As many names as the caller sends: the pipeline disposes of everything it
     # has finished with, a whole queue at a time, in one request.
     usernames = serializers.ListField(
-        child=serializers.CharField(),
+        child=serializers.CharField(trim_whitespace=False),
         allow_empty=False,
         help_text=(
             "Names the accounts were stored under before retirement was requested, compared "
