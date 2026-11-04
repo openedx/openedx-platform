@@ -1274,6 +1274,7 @@ class AccountViewSet(
                 )
         except UserNotAuthorized as exc:
             raise PermissionDenied from exc
+        # The caller's own row is read again here and can be gone by now.
         except UserNotFound as exc:
             raise NotFound from exc
         except AccountValidationError as exc:

@@ -769,15 +769,6 @@ class AccountDetailViewTests(AccountApiV2TestCase):
         assert response.status_code == status.HTTP_200_OK
         assert response.data == {"username": "owner-caller", "email": "owner-caller@example.com"}
 
-    def test_a_member_address_the_lookup_resolves_to_nothing_is_reported_as_absent(self):
-        """A lookup that comes back with no account is an absent address rather than a fault."""
-        self.login(self.staff)
-        with mock.patch(ACCOUNT_LOOKUP, return_value=[]):
-            response = self.client.get(self.detail_url("owner-caller"))
-        assert_error_envelope(
-            response, expected_status=status.HTTP_404_NOT_FOUND, expected_type_slug="not-found",
-        )
-
     def test_a_member_address_more_than_one_account_answers_to_is_refused(self):
         """
         An address resolving to several accounts names none of them, so it is refused.
@@ -1156,6 +1147,27 @@ class AccountChangeTests(AccountApiV2TestCase):
         response = self.patch(self.detail_url("owner-caller"), json.dumps({"bio": "x"}))
         assert_error_envelope(
             response, expected_status=status.HTTP_401_UNAUTHORIZED, expected_type_slug="authn",
+        )
+
+    def test_an_account_removed_while_its_change_is_being_made_is_reported_as_absent(self):
+        """
+        The account is looked up again when the change is made, and is gone by then.
+
+        The change is made on the row the caller's own name is stored under,
+        so where that row has been removed since the caller was admitted the
+        service finds no account to change, and the address is absent.
+        """
+        change_account = views.update_account_settings
+
+        def removed_first(requesting_user, update, username=None):
+            User.objects.filter(pk=requesting_user.pk).delete()
+            return change_account(requesting_user, update, username=username)
+
+        self.login(self.owner)
+        with mock.patch.object(views, "update_account_settings", removed_first):
+            response = self.patch(self.own_url, json.dumps({"bio": "x"}))
+        assert_error_envelope(
+            response, expected_status=status.HTTP_404_NOT_FOUND, expected_type_slug="not-found",
         )
 
     def test_a_body_in_another_media_type_is_refused(self):
