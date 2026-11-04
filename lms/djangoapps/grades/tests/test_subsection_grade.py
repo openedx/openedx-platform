@@ -10,7 +10,6 @@ from unittest.mock import patch
 import pytest
 from ddt import data, ddt, unpack
 from django.db import DatabaseError, connection
-from django.test import override_settings
 from kombu.exceptions import OperationalError as KombuOperationalError
 from openedx_catalog import api as catalog_api
 from openedx_catalog.models_api import CourseRun
@@ -102,7 +101,6 @@ class SubsectionGradeFixtureMixin:
         return factory.create(subsection or self.sequence, read_only=True, force_calculate=True)
 
 
-@override_settings(ENABLE_COMPETENCY_MASTERY_TRACKING=True)
 @ddt
 class SubsectionGradeCompetencyStatusTest(SubsectionGradeFixtureMixin, GradeTestBase):
     """
@@ -177,17 +175,6 @@ class SubsectionGradeCompetencyStatusTest(SubsectionGradeFixtureMixin, GradeTest
             self._create_grade().update_or_create_model(self.request.user, force_update_subsections=True)
 
         mock_record.assert_not_called()
-
-    @override_settings(ENABLE_COMPETENCY_MASTERY_TRACKING=False)
-    def test_setting_off_saves_grades_without_calling_core(self):
-        with mock_get_score(1, 2), patch(RECORD_PATH) as mock_record:
-            self._create_grade().update_or_create_model(self.request.user)
-            CreateSubsectionGrade.bulk_create_models(
-                UserFactory(), [self._create_grade(self.sequence2)], self.course.id,
-            )
-
-        mock_record.assert_not_called()
-        assert PersistentSubsectionGrade.objects.count() == 2
 
     def test_bulk_path_records_each_qualifying_subsection(self):
         with mock_get_score(1, 2), patch(RECORD_PATH) as mock_record, patch(EMIT_PATH) as mock_emit:
@@ -277,17 +264,6 @@ class SubsectionGradeCompetencyStatusTest(SubsectionGradeFixtureMixin, GradeTest
         mock_roll_up.assert_called_once_with(
             user_id=self.request.user.id, object_ids=[str(self.sequence.location)],
         )
-
-    @override_settings(ENABLE_COMPETENCY_MASTERY_TRACKING=False)
-    def test_setting_off_does_not_enqueue(self):
-        with mock_get_score(1, 2), patch(RECORD_PATH, return_value=1), patch(ENQUEUE_PATH) as mock_enqueue:
-            with self.captureOnCommitCallbacks(execute=True):
-                self._create_grade().update_or_create_model(self.request.user)
-                CreateSubsectionGrade.bulk_create_models(
-                    UserFactory(), [self._create_grade(self.sequence2)], self.course.id,
-                )
-
-        mock_enqueue.assert_not_called()
 
     def test_bulk_path_enqueues_one_rollup_with_every_scored_object(self):
         with mock_get_score(1, 2), patch(RECORD_PATH, return_value=2), patch(ENQUEUE_PATH) as mock_enqueue:
@@ -429,7 +405,6 @@ class SubsectionGradeEventTest(SubsectionGradeFixtureMixin, GradeTestBase):
         )
 
 
-@override_settings(ENABLE_COMPETENCY_MASTERY_TRACKING=True)
 class SubsectionGradeCompetencyIntegrationTest(SubsectionGradeFixtureMixin, GradeTestBase):
     """
     Grades a subsection against a real competency criterion and checks the learner status stored with the grade.
