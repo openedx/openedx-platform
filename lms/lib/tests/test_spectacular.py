@@ -679,6 +679,35 @@ class SupersededRequestBodyTest(TestCase):
         }
 
 
+#: The preference operations this service serves replacements for. Studio
+#: mounts the same addresses and serves no replacement, so only this service
+#: marks them.
+SUPERSEDED_PREFERENCE_OPERATIONS = (
+    ("/api/user/v1/preferences/{username}", "get"),
+    ("/api/user/v1/preferences/{username}", "patch"),
+    ("/api/user/v1/preferences/{username}/{preference_key}", "delete"),
+    ("/api/user/v1/preferences/{username}/{preference_key}", "get"),
+    ("/api/user/v1/preferences/{username}/{preference_key}", "put"),
+    ("/api/user/v1/preferences/email_opt_in/", "post"),
+)
+
+
+class SupersededPreferenceMarkTest(TestCase):
+    """Both documents of this service mark each preference operation it serves a replacement for."""
+
+    def test_every_preference_operation_is_marked_superseded_in_both_documents(self):
+        marked = {
+            (name, address, method): document["paths"][address][method].get("deprecated")
+            for name, document in _user_documents().items()
+            for address, method in SUPERSEDED_PREFERENCE_OPERATIONS
+        }
+        assert marked == {
+            (name, address, method): True
+            for name in ("published", "service-wide")
+            for address, method in SUPERSEDED_PREFERENCE_OPERATIONS
+        }
+
+
 #: The exchanges of the preference and opt-in addresses this change describes.
 PREFERENCE_EXCHANGES = {
     operation: exchange for operation, exchange in SUPERSEDED_EXCHANGES.items()

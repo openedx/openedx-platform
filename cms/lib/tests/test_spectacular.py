@@ -272,6 +272,17 @@ SUPERSEDED_USER_OPERATION_IDS = {
 #: The user addresses this service marks superseded.
 SUPERSEDED_USER_ADDRESSES = tuple(path for path in SUPERSEDED_PATHS if path.startswith("/api/user/"))
 
+#: The preference operations this service's own pages call. It serves no
+#: replacement for them, so its document publishes them as current.
+CURRENT_PREFERENCE_OPERATIONS = frozenset({
+    ("/api/user/v1/preferences/{username}", "get"),
+    ("/api/user/v1/preferences/{username}", "patch"),
+    ("/api/user/v1/preferences/{username}/{preference_key}", "delete"),
+    ("/api/user/v1/preferences/{username}/{preference_key}", "get"),
+    ("/api/user/v1/preferences/{username}/{preference_key}", "put"),
+    ("/api/user/v1/preferences/email_opt_in/", "post"),
+})
+
 
 class SupersededUserOperationTest(DjangoTestCase):
     """
@@ -306,9 +317,17 @@ class SupersededUserOperationTest(DjangoTestCase):
         """The mark is matched on the exact address, so one this document spells otherwise is never marked."""
         assert [address for address in SUPERSEDED_USER_ADDRESSES if address not in self.schema["paths"]] == []
 
-    def test_every_operation_of_those_addresses_is_marked_superseded(self):
-        marked = {key: operation.get("deprecated") for key, operation in self._operations().items()}
-        assert marked == dict.fromkeys(SUPERSEDED_USER_OPERATION_IDS, True)
+    def test_every_operation_of_the_addresses_it_lists_is_marked_superseded(self):
+        marked = {
+            key: operation.get("deprecated") for key, operation in self._operations().items()
+            if key not in CURRENT_PREFERENCE_OPERATIONS
+        }
+        assert marked == dict.fromkeys(set(SUPERSEDED_USER_OPERATION_IDS) - CURRENT_PREFERENCE_OPERATIONS, True)
+
+    def test_the_preference_addresses_its_own_pages_call_are_published_as_current(self):
+        operations = self._operations()
+        marked = {key: "deprecated" in operations[key] for key in CURRENT_PREFERENCE_OPERATIONS}
+        assert marked == dict.fromkeys(CURRENT_PREFERENCE_OPERATIONS, False)
 
     def test_every_operation_keeps_the_name_it_is_published_under(self):
         published = {key: operation["operationId"] for key, operation in self._operations().items()}

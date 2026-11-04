@@ -14,6 +14,8 @@ SUPERSEDED_PATHS = (
     "/api/contentstore/v0/youtube_transcripts/{course_id}/uploa",
     "/api/contentstore/v0/youtube_transcripts/{course_id}/upload",
     # The user API this service mounts as the LMS does; the LMS serves the replacements.
+    # The preference addresses are left out: this service's own pages change a
+    # preference through them, and it serves no replacement for them.
     "/api/user/v1/me",
     "/api/user/v1/accounts",
     "/api/user/v1/accounts/search_emails",
@@ -28,9 +30,6 @@ SUPERSEDED_PATHS = (
     "/api/user/v1/users/{id}/",
     "/api/user/v1/user_prefs/",
     "/api/user/v1/user_prefs/{id}/",
-    "/api/user/v1/preferences/{username}",
-    "/api/user/v1/preferences/{username}/{preference_key}",
-    "/api/user/v1/preferences/email_opt_in/",
     "/api/user/v1/preferences/{pref_key}/users/",
     "/api/user/v1/forum_roles/{name}/users/",
     "/api/user/v1/preferences/time_zones/",
