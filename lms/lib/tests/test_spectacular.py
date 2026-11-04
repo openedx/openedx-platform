@@ -10,6 +10,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
 
+import jsonschema
 from django.test import Client, SimpleTestCase, TestCase
 from django.urls import path
 from drf_spectacular.generators import SchemaGenerator
@@ -410,6 +411,142 @@ class SupersededBodyTest(TestCase):
             if body is None and "content" in self.schema["paths"][address][method]["responses"][code]
         ]
         assert undescribed == []
+
+
+#: A request each superseded address answers with success that the body the
+#: replacing address reads would refuse: more addresses than a search there
+#: takes, a longer name than a change there takes, and a number where a change
+#: there takes only text.
+ACCEPTED_ONLY_BY_THE_SUPERSEDED_ADDRESS = {
+    ("/api/user/v1/accounts/search_emails", "post"): {
+        "emails": [f"crowd-{index:03d}@example.com" for index in range(101)],
+    },
+    ("/api/user/v1/accounts/name_change/", "post"): {"name": "N" * 256},
+    ("/api/user/v1/accounts/{username}", "patch"): {"bio": 5},
+}
+
+#: What a published body may say only where the handler reading it holds a
+#: request to it.
+BOUNDING_KEYWORDS = {"$ref", "format", "maxItems", "maxLength", "minItems", "minLength", "pattern"}
+
+
+def _keywords(node):
+    """Return every key used anywhere inside a JSON schema."""
+    if isinstance(node, dict):
+        return set(node).union(*(_keywords(value) for value in node.values()))
+    if isinstance(node, list):
+        return set().union(*(_keywords(value) for value in node))
+    return set()
+
+
+class SupersededRequestBodyTest(TestCase):
+    """
+    A superseded address publishes no bound or type its handler does not hold a request to.
+
+    Its replacement reads the same members with bounds of its own. A client
+    generated from either document enforces what the body it reads publishes,
+    so a bound borrowed from the replacement would have that client refuse,
+    on its own side, a request the superseded handler answers with success.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.documents = {"published": SchemaGenerator().get_schema(request=None, public=True)}
+        with patched_settings(get_api_docs_settings()):
+            cls.documents["service-wide"] = SchemaGenerator().get_schema(request=None, public=True)
+
+    def setUp(self):
+        super().setUp()
+        self.owner = UserFactory.create(username="bodyowner", password=TEST_PASSWORD)
+        self.staff = UserFactory.create(username="bodystaff", password=TEST_PASSWORD, is_staff=True)
+
+    def _published_bodies(self, address, method):
+        """Yield each document's name, a media type and the body published for it at one operation."""
+        for name, document in self.documents.items():
+            for media_type, content in document["paths"][address][method]["requestBody"]["content"].items():
+                yield name, media_type, content["schema"]
+
+    def test_each_body_publishes_the_members_it_reads_and_nothing_that_bounds_them(self):
+        published = {}
+        for address, method in ACCEPTED_ONLY_BY_THE_SUPERSEDED_ADDRESS:
+            for name, media_type, body in self._published_bodies(address, method):
+                published[(name, address, media_type)] = body
+        for key, body in published.items():
+            assert _keywords(body) & BOUNDING_KEYWORDS == set(), key
+        assert published[("published", "/api/user/v1/accounts/search_emails", "application/json")] == {
+            "type": "object",
+            "properties": {"emails": {"type": "array", "items": {}}},
+            "required": ["emails"],
+        }
+        assert published[("service-wide", "/api/user/v1/accounts/name_change/", "multipart/form-data")] == {
+            "type": "object",
+            "properties": {"name": {"type": "string"}},
+            "required": ["name"],
+        }
+        change = published[("published", "/api/user/v1/accounts/{username}", "application/merge-patch+json")]
+        assert {"bio", "email", "name", "social_links", "year_of_birth"} <= set(change["properties"])
+        assert set(map(json.dumps, change["properties"].values())) == {"{}"}
+
+    def test_each_request_the_handler_accepts_is_one_its_published_body_allows(self):
+        for (address, method), request in ACCEPTED_ONLY_BY_THE_SUPERSEDED_ADDRESS.items():
+            for name, media_type, body in self._published_bodies(address, method):
+                with self.subTest(document=name, address=address, media_type=media_type):
+                    jsonschema.Draft202012Validator(body).validate(request)
+
+    def test_each_handler_answers_those_requests_with_success(self):
+        owner, staff = Client(), Client()
+        assert owner.login(username=self.owner.username, password=TEST_PASSWORD)
+        assert staff.login(username=self.staff.username, password=TEST_PASSWORD)
+        requests = ACCEPTED_ONLY_BY_THE_SUPERSEDED_ADDRESS
+        answered = {
+            "search": staff.post(
+                "/api/user/v1/accounts/search_emails",
+                requests[("/api/user/v1/accounts/search_emails", "post")],
+                content_type="application/json",
+            ).status_code,
+            "name change": owner.post(
+                "/api/user/v1/accounts/name_change/",
+                requests[("/api/user/v1/accounts/name_change/", "post")],
+                content_type="application/json",
+            ).status_code,
+            "account change": owner.patch(
+                f"/api/user/v1/accounts/{self.owner.username}",
+                requests[("/api/user/v1/accounts/{username}", "patch")],
+                content_type="application/merge-patch+json",
+            ).status_code,
+        }
+        assert answered == {"search": 200, "name change": 201, "account change": 200}
+
+    def test_the_replacing_addresses_publish_the_bounds_they_hold_a_request_to(self):
+        for name, document in self.documents.items():
+            components = document["components"]["schemas"]
+            with self.subTest(document=name):
+                assert components["EmailSearch"]["properties"]["emails"]["maxItems"] == 100
+                assert components["NameChange"]["properties"]["name"]["maxLength"] == 255
+                assert components["PatchedAccountUpdate"]["properties"]["bio"]["type"] == "string"
+                paths = document["paths"]
+                assert paths["/api/user/v2/email_searches/"]["post"]["requestBody"]["content"][
+                    "application/json"
+                ]["schema"] == {"$ref": "#/components/schemas/EmailSearch"}
+                assert paths["/api/user/v2/name_changes/"]["post"]["requestBody"]["content"][
+                    "application/json"
+                ]["schema"] == {"$ref": "#/components/schemas/NameChange"}
+                assert paths["/api/user/v2/accounts/{username}/"]["patch"]["requestBody"]["content"][
+                    "application/merge-patch+json"
+                ]["schema"] == {"$ref": "#/components/schemas/PatchedAccountUpdate"}
+
+    def test_a_body_that_names_a_member_it_must_carry_is_published_as_required(self):
+        required = {
+            (name, address): document["paths"][address][method]["requestBody"].get("required", False)
+            for name, document in self.documents.items()
+            for address, method in ACCEPTED_ONLY_BY_THE_SUPERSEDED_ADDRESS
+        }
+        assert required == {
+            (name, address): address != "/api/user/v1/accounts/{username}"
+            for name in self.documents
+            for address, _method in ACCEPTED_ONLY_BY_THE_SUPERSEDED_ADDRESS
+        }
 
 
 #: Each address this document already published before its body was described,

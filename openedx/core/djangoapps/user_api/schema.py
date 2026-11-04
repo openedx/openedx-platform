@@ -6,6 +6,7 @@ from functools import cache
 from importlib import import_module
 
 from drf_spectacular.utils import OpenApiResponse
+from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 
 # Addresses listed here are superseded by a conforming address this schema also
 # publishes. Each entry is spelled out rather than matched by prefix, so an
@@ -87,12 +88,18 @@ def superseded_bodies():
 
     The views serving those addresses name no serializer, so an address
     published beside the one that replaces it would carry nothing on either
-    side of the exchange. Each entry below names the shape the handler reads or
-    returns with the serializer describing that same shape at the replacing
-    address, which the parity tests of this area hold to the same values; a
-    request of ``None`` is an operation that reads no body. An address whose
-    view names a serializer of its own is absent from the table and keeps the
-    component it has always published.
+    side of the exchange. Each entry below names the shape the handler returns
+    with the serializer describing that same shape at the replacing address,
+    which the parity tests of this area hold to the same values; a request of
+    ``None`` is an operation that reads no body. An address whose view names a
+    serializer of its own is absent from the table and keeps the component it
+    has always published.
+
+    A body a handler reads is described by the members it reads and nothing
+    more: those handlers take a list of any length, a name of any length and a
+    number where text is expected, so the bounds and types the replacing
+    serializers publish would have a generated client refuse requests these
+    addresses accept.
 
     A request is keyed by media type, because a shape named on its own is
     published under every type the view's parsers accept: where that is more
@@ -115,18 +122,35 @@ def superseded_bodies():
     replacing = import_module("openedx.core.djangoapps.user_api.v2.serializers")
 
     account = {200: replacing.AccountSerializer}
+    account_change = {
+        "type": "object",
+        "properties": {name: {} for name in replacing.AccountUpdateSerializer().fields},
+    }
+    email_search = {
+        "type": "object",
+        "properties": {"emails": {"type": "array", "items": {}}},
+        "required": ["emails"],
+    }
+    name_change = {
+        "type": "object",
+        "properties": {"name": {"type": "string"}},
+        "required": ["name"],
+    }
     described = {
         ("/api/user/v1/accounts", "GET"): _SupersededBodies(None, {200: replacing.AccountSerializer(many=True)}),
         ("/api/user/v1/accounts/{username}", "GET"): _SupersededBodies(None, account),
         ("/api/user/v1/accounts/{username}", "PATCH"): _SupersededBodies(
-            {MergePatchParser.media_type: replacing.AccountUpdateSerializer}, account,
+            {MergePatchParser.media_type: account_change}, account,
         ),
         ("/api/user/v1/accounts/search_emails", "POST"): _SupersededBodies(
-            replacing.EmailSearchSerializer, {200: replacing.EmailSearchResultSerializer(many=True)},
+            {JSONParser.media_type: email_search, MergePatchParser.media_type: email_search},
+            {200: replacing.EmailSearchResultSerializer(many=True)},
         ),
         ("/api/user/v1/accounts/{username}/deactivate/", "POST"): _SupersededBodies(None, account),
         ("/api/user/v1/accounts/name_change/", "POST"): _SupersededBodies(
-            replacing.NameChangeSerializer,
+            dict.fromkeys(
+                (JSONParser.media_type, FormParser.media_type, MultiPartParser.media_type), name_change,
+            ),
             {201: OpenApiResponse(description="The change was recorded and waits to be confirmed.")},
         ),
         ("/api/user/v1/accounts/name_change/{username}/confirm/", "POST"): _SupersededBodies(
@@ -191,9 +215,21 @@ class SupersededUserOperations:
         shapes = self.get_request_serializer()
         if body.get("required") or not isinstance(shapes, dict):
             return body
-        if any(self._get_request_for_media_type(shape, direction)[1] for shape in shapes.values()):
+        if any(self._requires_a_body(shape, direction) for shape in shapes.values()):
             body["required"] = True
         return body
+
+    def _requires_a_body(self, shape, direction):
+        """
+        Say whether a request cannot be sent without this form of the body.
+
+        A shape written out in full is published as it stands, and the
+        generator calls none of those required; it is required when it names a
+        member the request must carry, the way a serializer's is.
+        """
+        if isinstance(shape, dict):
+            return bool(shape.get("required"))
+        return self._get_request_for_media_type(shape, direction)[1]
 
     def get_request_serializer(self):
         """Return the body this operation reads, named here for the addresses this one supersedes."""
