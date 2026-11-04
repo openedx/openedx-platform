@@ -21,7 +21,7 @@ from rest_framework.views import APIView
 from openedx.core.djangoapps.user_api.accounts.image_helpers import get_profile_image_names, set_has_profile_image
 from openedx.core.djangoapps.user_api.errors import UserNotFound
 from openedx.core.djangoapps.user_api.v2.errors import CatalogedRequestErrorsMixin
-from openedx.core.djangoapps.user_api.v2.permissions import IsAddressedUser
+from openedx.core.djangoapps.user_api.v2.permissions import IsAddressedUser, RestrictedApplicationGuardMixin
 from openedx.core.djangoapps.user_api.v2.serializers import ErrorResponse
 from openedx.core.djangoapps.user_api.v2.view_utils import (
     RESP_UNAUTHENTICATED,
@@ -112,6 +112,7 @@ class NamedImageUploadParser(TypedFileUploadParser):
 @extend_schema(tags=[SDK_TAG])
 class ProfileImageView(
     StandardizedErrorMixin,
+    RestrictedApplicationGuardMixin,
     CatalogedRequestErrorsMixin,
     AccountResourceMixin,
     StrictQueryParametersMixin,

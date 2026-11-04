@@ -47,7 +47,13 @@ from openedx.core.lib.api.parsers import MergePatchParser
 from .errors import AmbiguousAccountName, CatalogedRequestErrorsMixin, ErrorExtensionsMixin, RetiredAccount
 from .filters import StrictOrderingFilter, UserFilterSet, UserPreferenceFilterSet
 from .paginators import UserApiPagination
-from .permissions import CanSelectAccountsByContact, IsActiveUser, IsAddressedUser, IsStaffOrAbsent
+from .permissions import (
+    CanSelectAccountsByContact,
+    IsActiveUser,
+    IsAddressedUser,
+    IsStaffOrAbsent,
+    RestrictedApplicationGuardMixin,
+)
 from .schema import ResponseShapes
 from .selectors import (
     accounts_holding_emails,
@@ -652,6 +658,7 @@ class _ResponsePresetMixin(MinimalViewMixin):
 )
 class UserViewSet(
     StandardizedErrorMixin,
+    RestrictedApplicationGuardMixin,
     CatalogedRequestErrorsMixin,
     _ActionAddressMixin,
     _MemberLookupMixin,
@@ -769,6 +776,7 @@ class UserViewSet(
 )
 class UserPreferenceViewSet(
     StandardizedErrorMixin,
+    RestrictedApplicationGuardMixin,
     CatalogedRequestErrorsMixin,
     _ActionAddressMixin,
     _ResponsePresetMixin,
@@ -884,6 +892,7 @@ class UserPreferenceViewSet(
 @extend_schema(tags=[USER_TAG])
 class CountryTimeZoneViewSet(
     StandardizedErrorMixin,
+    RestrictedApplicationGuardMixin,
     CatalogedRequestErrorsMixin,
     _ActionAddressMixin,
     StrictQueryParametersMixin,
@@ -1062,6 +1071,7 @@ class AccountResourceMixin:
 )
 class AccountViewSet(
     StandardizedErrorMixin,
+    RestrictedApplicationGuardMixin,
     CatalogedRequestErrorsMixin,
     ErrorExtensionsMixin,
     AccountResourceMixin,
@@ -1423,6 +1433,7 @@ class AccountViewSet(
 )
 class AccountDeactivationView(
     StandardizedErrorMixin,
+    RestrictedApplicationGuardMixin,
     CatalogedRequestErrorsMixin,
     AccountResourceMixin,
     StrictQueryParametersMixin,
@@ -1499,6 +1510,7 @@ class _SearchedAccountsMixin:
 )
 class EmailSearchViewSet(
     StandardizedErrorMixin,
+    RestrictedApplicationGuardMixin,
     CatalogedRequestErrorsMixin,
     StrictQueryParametersMixin,
     IterablePaginationMixin,
@@ -1590,6 +1602,7 @@ _NAME_CHANGE_PATH_PARAM = path_param(
 )
 class NameChangeViewSet(
     StandardizedErrorMixin,
+    RestrictedApplicationGuardMixin,
     CatalogedRequestErrorsMixin,
     _ActionAddressMixin,
     StrictQueryParametersMixin,
@@ -1705,6 +1718,7 @@ def _verification_sort_key(attempt):
 @extend_schema(tags=[SDK_TAG])
 class IDVerificationStatusView(
     StandardizedErrorMixin,
+    RestrictedApplicationGuardMixin,
     CatalogedRequestErrorsMixin,
     AccountResourceMixin,
     StrictQueryParametersMixin,
@@ -1792,6 +1806,7 @@ class IDVerificationStatusView(
 )
 class IDVerificationViewSet(
     StandardizedErrorMixin,
+    RestrictedApplicationGuardMixin,
     CatalogedRequestErrorsMixin,
     AccountResourceMixin,
     StrictQueryParametersMixin,
@@ -1841,7 +1856,7 @@ class IDVerificationViewSet(
 
 
 @extend_schema(exclude=True)
-class UnknownAddressView(StandardizedErrorMixin, APIView):
+class UnknownAddressView(StandardizedErrorMixin, RestrictedApplicationGuardMixin, APIView):
     """
     Refuses an address under this version of the API that no route serves.
 

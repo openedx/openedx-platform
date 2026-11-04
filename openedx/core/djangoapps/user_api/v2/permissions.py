@@ -1,5 +1,6 @@
 """Permission classes for version 2 of the User API."""
 
+from edx_rest_framework_extensions.permissions import NotJwtRestrictedApplication
 from rest_framework.exceptions import NotFound
 from rest_framework.permissions import BasePermission
 
@@ -77,3 +78,23 @@ class IsStaffOrAbsent(BasePermission):
         if request.user and request.user.is_staff:
             return True
         raise NotFound
+
+
+class RestrictedApplicationGuardMixin:
+    """
+    Refuses a token issued to a restricted application on every operation of the view.
+
+    ``EnsureJWTAuthSettingsMiddleware`` adds this refusal to a view's
+    ``permission_classes`` attribute and nowhere else, so an operation whose
+    classes come from somewhere else, such as the ``permission_classes`` of an
+    extra action, would be left without it. Appending it to whatever
+    ``get_permissions`` resolves keeps it on every operation however that
+    operation composes its classes. A request that carries no token passes it.
+    """
+
+    def get_permissions(self):
+        """Return the classes this operation resolves, ending with the restricted-application refusal."""
+        resolved = list(super().get_permissions())
+        if not any(isinstance(permission, NotJwtRestrictedApplication) for permission in resolved):
+            resolved.append(NotJwtRestrictedApplication())
+        return resolved
