@@ -1150,14 +1150,7 @@ urlpatterns += [
     path('xqueue/', include((submissions_urls, 'submissions'), namespace='submissions')),
 ]
 
-# LMS API schema for openedx-platform-sdk generation. Served from the same
-# cache the service-wide document uses: it is public, it is generated from
-# scratch on every request, and it grew several times over when this API was
-# added to it.
+# LMS API schema for openedx-platform-sdk generation.
 urlpatterns += [
-    path(
-        'lms-api/schema/',
-        cached_schema_view(SpectacularAPIView.as_view(), resource='lms-api-schema'),
-        name='lms-schema',
-    ),
+    path('lms-api/schema/', SpectacularAPIView.as_view(), name='lms-schema'),
 ]

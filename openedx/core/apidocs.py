@@ -84,16 +84,9 @@ def untag_deprecated_operations(result, generator, request, public):  # pylint: 
     return result
 
 
-def cached_schema_view(view=None, resource='apidocs-schema'):
+def cached_schema_view():
     """
-    Serve a generated schema document from the cache, stored compressed.
-
-    With no arguments this builds the service-wide ``/api-docs`` view. A view
-    passed in is served the same way under the ``resource`` name given, which
-    is what keeps each document a service publishes in a key space of its own:
-    the narrower document each service serves for client generation is
-    otherwise regenerated on every anonymous request, and it is the one schema
-    address with nothing in front of it.
+    Build the ``/api-docs`` schema view, caching the rendered document compressed.
 
     ``cache_page`` stores the pickled ``Response``, which for this schema is over
     memcached's default 1MB item limit. ``CACHES['default']`` sets
@@ -102,18 +95,16 @@ def cached_schema_view(view=None, resource='apidocs-schema'):
     whole schema on every request. Storing the zlib-compressed body instead
     brings it to roughly a tenth of the limit.
 
-    The key covers the resource, the URLconf, the path, the negotiated
-    representation and the active language. The URLconf because the LMS and the
-    CMS serve this view at the same path and share one cache by default, so
-    without it whichever service generated first would serve its document at
-    the other's URL. The language because drf-spectacular renders the document
-    under whatever language is active, and ``LocaleMiddleware`` sets that from
-    the request's cookie or ``Accept-Language`` before this runs.
-
-    The key does not cover who asked: a document stored here is served to every
-    later caller, so an address wrapped this way must publish one document for
-    all of them. The narrower document is held to that by a test that asks for
-    it anonymously, as staff and as a superuser and compares the three.
+    The key covers the URLconf, the path, the negotiated representation and the
+    active language. The URLconf because the LMS and the CMS serve this view at
+    the same path and share one cache by default, so without it whichever
+    service generated first would serve its document at the other's URL. The
+    language because drf-spectacular renders the document under whatever
+    language is active, and ``LocaleMiddleware`` sets that from the request's
+    cookie or ``Accept-Language`` before this runs. Nothing else in it varies by
+    requester -- ``SERVE_PUBLIC`` defaults to ``True``, ``SERVE_*`` cannot be set
+    through ``custom_settings``, and ``API_DOCS_SETTINGS`` sets ``'SERVERS': []``
+    so no ``servers`` block is emitted.
 
     Only GET and HEAD are cached, as ``cache_page`` did: DRF answers OPTIONS on
     this view with a 200 metadata document, which would otherwise be stored and
@@ -127,8 +118,7 @@ def cached_schema_view(view=None, resource='apidocs-schema'):
     """
     from drf_spectacular.views import SpectacularAPIView  # pylint: disable=import-outside-toplevel
 
-    if view is None:
-        view = SpectacularAPIView.as_view(custom_settings=get_api_docs_settings())
+    view = SpectacularAPIView.as_view(custom_settings=get_api_docs_settings())
 
     def _response(content_type, body):
         """Build the response, marking it uncacheable downstream as drf-yasg did."""
@@ -142,7 +132,7 @@ def cached_schema_view(view=None, resource='apidocs-schema'):
             return view(request, *args, **kwargs)
 
         cache_key = get_cache_key(
-            resource=resource,
+            resource='apidocs-schema',
             urlconf=settings.ROOT_URLCONF,
             path=request.get_full_path(),
             accept=request.META.get('HTTP_ACCEPT', ''),
