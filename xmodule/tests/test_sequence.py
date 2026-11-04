@@ -17,8 +17,9 @@ from edx_toggles.toggles.testutils import override_waffle_flag
 from freezegun import freeze_time
 from web_fragments.fragment import Fragment
 
+from openedx.core.lib.gating.api import PrerequisiteSettings
 from openedx.features.content_type_gating.models import ContentTypeGatingConfig
-from xmodule.seq_block import TIMED_EXAM_GATING_WAFFLE_FLAG, SequenceBlock
+from xmodule.seq_block import PREREQ_OLX_ATTRIBUTES, TIMED_EXAM_GATING_WAFFLE_FLAG, SequenceBlock
 from xmodule.tests import get_test_system, prepare_block_runtime
 from xmodule.tests.helpers import StubUserService
 from xmodule.tests.xml import XModuleXmlImportTest
@@ -572,3 +573,75 @@ class SequenceBlockTestCase(XModuleXmlImportTest):
         assert metadata["items"] == "rendered_blocks"
         assert metadata["next_url"] == "next_url"
         assert metadata["prev_url"] == "prev_url"
+
+    PREREQ_USAGE_KEY = "block-v1:TestX+TestCourse+1+type@sequential+block@required_sequential"
+
+    def _definition_to_xml(self, block):
+        """
+        Exports the definition of the block, stubbing out the export of its children.
+        """
+        with patch.object(block.runtime, 'add_block_as_child_node') as mock_add_block_as_child_node:
+            xml_object = block.definition_to_xml(Mock())
+        assert mock_add_block_as_child_node.call_count == len(block.children)
+        return xml_object
+
+    @patch("openedx.core.lib.gating.api.get_prerequisite_settings")
+    def test_definition_to_xml_with_prerequisite_settings(self, mock_get_prerequisite_settings):
+        """
+        The prerequisite settings of a subsection are exported as attributes of the sequential element.
+        """
+        mock_get_prerequisite_settings.return_value = PrerequisiteSettings(
+            is_prerequisite=True,
+            prereq_content_key=self.PREREQ_USAGE_KEY,
+            min_score=80,
+            min_completion='90',
+        )
+
+        xml_object = self._definition_to_xml(self.sequence_3_1)
+
+        mock_get_prerequisite_settings.assert_called_once_with(
+            self.sequence_3_1.location.course_key, self.sequence_3_1.location
+        )
+        assert xml_object.get('is_prereq') == 'true'
+        assert xml_object.get('prereq') == 'required_sequential'
+        assert xml_object.get('prereq_min_score') == '80'
+        assert xml_object.get('prereq_min_completion') == '90'
+
+    @ddt.data(
+        # Not a prerequisite and not gated.
+        (PrerequisiteSettings(False, None, None, None), {}),
+        # A prerequisite that is not gated.
+        (PrerequisiteSettings(True, None, None, None), {'is_prereq': 'true'}),
+        # Gated without a minimum score or completion. The gating API returns whatever Studio stored.
+        (PrerequisiteSettings(False, PREREQ_USAGE_KEY, '', None), {'prereq': 'required_sequential'}),
+        (
+            PrerequisiteSettings(False, PREREQ_USAGE_KEY, 0, ''),
+            {'prereq': 'required_sequential', 'prereq_min_score': '0'},
+        ),
+    )
+    @ddt.unpack
+    @patch("openedx.core.lib.gating.api.get_prerequisite_settings")
+    def test_definition_to_xml_with_partial_prerequisite_settings(
+        self, prerequisite_settings, expected_attributes, mock_get_prerequisite_settings
+    ):
+        """
+        Only the prerequisite settings that are set are exported.
+        """
+        mock_get_prerequisite_settings.return_value = prerequisite_settings
+
+        xml_object = self._definition_to_xml(self.sequence_3_1)
+
+        exported_attributes = {
+            attr: xml_object.get(attr) for attr in PREREQ_OLX_ATTRIBUTES if attr in xml_object.attrib
+        }
+        assert exported_attributes == expected_attributes
+
+    @patch("openedx.core.lib.gating.api.get_prerequisite_settings")
+    def test_definition_to_xml_of_chapter_skips_prerequisite_settings(self, mock_get_prerequisite_settings):
+        """
+        Chapters cannot have prerequisites, so their export does not look them up.
+        """
+        xml_object = self._definition_to_xml(self.chapter_1)
+
+        mock_get_prerequisite_settings.assert_not_called()
+        assert not set(PREREQ_OLX_ATTRIBUTES) & set(xml_object.attrib)
