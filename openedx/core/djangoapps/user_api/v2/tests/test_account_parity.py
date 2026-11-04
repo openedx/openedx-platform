@@ -527,6 +527,50 @@ class AccountRefusalParityTests(APITestCase):
         assert current.status_code == status.HTTP_200_OK
         assert [row["username"] for row in json.loads(current.content)["results"]] == ["refusal-other"]
 
+    def test_an_address_that_is_not_well_formed_is_refused_here_and_found_nothing_before(self):
+        """A difference this version declares: a malformed address is refused rather than looked up."""
+        self.login(self.staff)
+        asked = {"email": "notanemail"}
+        earlier = self.client.get(EARLIER_LIST, asked)
+        assert earlier.status_code == status.HTTP_404_NOT_FOUND
+        assert earlier.content == b""
+
+        current = self.client.get(reverse("user_v2:account_list"), asked)
+        envelope = assert_error_envelope(
+            current, expected_status=status.HTTP_400_BAD_REQUEST, expected_type_slug="validation",
+        )
+        assert envelope["errors"] == {"email": ["Enter a valid email address."]}
+
+    def test_a_preset_this_version_does_not_offer_is_refused_here_and_ignored_before(self):
+        """
+        A difference this version declares: an unknown ``view`` is refused rather than ignored.
+
+        The earlier addresses answered any value other than ``shared`` with the
+        whole account, so a mistyped preset returned more than was asked for.
+        """
+        self.login(self.owner)
+        refusal = {
+            "view": ["Ask for any of: minimal, shared, or omit this parameter for the default response."],
+        }
+        for earlier_address, address in (
+            (EARLIER_LIST, reverse("user_v2:account_list")),
+            (earlier_detail("refusal-owner"), self.member),
+        ):
+            with self.subTest(address=address):
+                earlier = self.client.get(earlier_address, {"view": "bogus"})
+                assert earlier.status_code == status.HTTP_200_OK
+                rows = json.loads(earlier.content)
+                rows = rows if isinstance(rows, list) else [rows]
+                assert [(row["username"], row["email"]) for row in rows] == [
+                    ("refusal-owner", "refusal-owner@example.com"),
+                ]
+
+                current = self.client.get(address, {"view": "bogus"})
+                envelope = assert_error_envelope(
+                    current, expected_status=status.HTTP_400_BAD_REQUEST, expected_type_slug="validation",
+                )
+                assert envelope["errors"] == refusal
+
     def test_the_address_of_a_retired_account_keeps_what_the_earlier_body_carried(self):
         self.login(self.staff)
         retired_email = self.other.email
