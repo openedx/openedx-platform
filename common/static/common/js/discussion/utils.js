@@ -495,7 +495,7 @@
         DiscussionUtil.typesetMathJax = function(element) {
             if (typeof MathJax !== 'undefined' && MathJax !== null && typeof MathJax.startup !== 'undefined') {
                 MathJax.startup.promise
-                    .then(() => MathJax.typesetPromise([element[0]]));
+                    .then(function() { return MathJax.typesetPromise([element[0]]); });
             }
         };
 
