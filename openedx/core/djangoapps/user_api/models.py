@@ -382,22 +382,6 @@ class UserRetirementStatus(TimeStampedModel):
         self.responses += "\n Moved from {} to {}:\n{}\n".format(old_state, self.current_state, update['response'])
         self.save()
 
-    def check_state_allows_retirement_action(self):
-        """
-        Raise RetirementStateError unless this row's state is acceptable to be acted upon.
-
-        The row should be in a "working state" (not a dead end state, PENDING, or *_COMPLETE),
-        which is what keeps a step of the retirement from being run twice over one account.
-
-        A caller that has already resolved the row it means to act on gates that row with this,
-        rather than resolving the name a second time, so that the row judged is the row acted on.
-        """
-        state = self.current_state
-
-        if state.required or state.state_name.endswith('_COMPLETE'):
-            raise RetirementStateError('{} is in {}, not a valid state to perform retirement '  # noqa: UP032
-                                       'actions on.'.format(self, state.state_name))
-
     @classmethod
     def get_retirement_for_retirement_action(cls, username):
         """
@@ -426,7 +410,11 @@ class UserRetirementStatus(TimeStampedModel):
             raise UserRetirementStatus.DoesNotExist('{} does not have an exact match in UserRetirementStatus. '  # noqa: UP032  # pylint: disable=line-too-long
                                                     '{} similar rows found.'.format(username, len(retirements)))
 
-        retirement.check_state_allows_retirement_action()
+        state = retirement.current_state
+
+        if state.required or state.state_name.endswith('_COMPLETE'):
+            raise RetirementStateError('{} is in {}, not a valid state to perform retirement '  # noqa: UP032
+                                       'actions on.'.format(retirement, state.state_name))
 
         return retirement
 

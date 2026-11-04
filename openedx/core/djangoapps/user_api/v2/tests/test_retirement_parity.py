@@ -48,11 +48,13 @@ from openedx.core.djangoapps.user_api.accounts.views import (
 )
 from openedx.core.djangoapps.user_api.models import (
     RetirementState,
+    RetirementStateError,
     UserOrgTag,
     UserRetirementPartnerReportingStatus,
     UserRetirementStatus,
 )
 from openedx.core.djangoapps.user_api.v2 import view_services
+from openedx.core.djangoapps.user_api.v2.errors import RetirementStateConflict
 from openedx.core.djangoapps.user_api.v2.paginators import UserApiPagination
 from openedx.core.djangoapps.user_api.v2.views import (
     RetirementCleanupViewSet,
@@ -532,6 +534,70 @@ class StateMachineParityTests(RetirementParityTestCase):
                     conforming_retirement.last_state.state_name
                     == legacy_retirement.last_state.state_name
                 )
+
+
+@skip_unless_lms
+class ActionGateParityTests(RetirementParityTestCase):
+    """Both versions refuse pipeline work on a retirement at the same steps, and admit it at the rest."""
+
+    #: The configured steps neither version admits work at: the steps the
+    #: pipeline requires, and every step recording a finished part of it.
+    REFUSED_STEPS = {
+        "PENDING",
+        "LOCKING_COMPLETE",
+        "CREDENTIALS_COMPLETE",
+        "ECOM_COMPLETE",
+        "FORUMS_COMPLETE",
+        "EMAIL_LISTS_COMPLETE",
+        "ENROLLMENTS_COMPLETE",
+        "NOTES_COMPLETE",
+        "LMS_COMPLETE",
+        "PARTNER_QUEUE_COMPLETE",
+        "ERRORED",
+        "ABORTED",
+        "COMPLETE",
+    }
+
+    @staticmethod
+    def refused_by_version_1(username):
+        """Whether the version 1 gate refuses work on the retirement requested under this name."""
+        try:
+            UserRetirementStatus.get_retirement_for_retirement_action(username)
+        except RetirementStateError:
+            return True
+        return False
+
+    @staticmethod
+    def refused_by_version_2(username):
+        """Whether the version 2 gate refuses work on the retirement requested under this name."""
+        try:
+            view_services.retirement_open_to_action(UserRetirementStatus.objects.all(), username)
+        except RetirementStateConflict:
+            return True
+        return False
+
+    def test_both_versions_refuse_work_at_the_same_steps(self):
+        steps = set(RetirementState.objects.values_list("state_name", flat=True))
+        refused = {"version 1": set(), "version 2": set()}
+        for state in RetirementState.objects.all():
+            username = create_retirement_status(UserFactory.create(), state=state).original_username
+            if self.refused_by_version_1(username):
+                refused["version 1"].add(state.state_name)
+            if self.refused_by_version_2(username):
+                refused["version 2"].add(state.state_name)
+        assert refused == {"version 1": self.REFUSED_STEPS, "version 2": self.REFUSED_STEPS}
+        # Steps that admit work are configured too, so each gate's admitting side ran.
+        assert steps - self.REFUSED_STEPS == {
+            "LOCKING_ACCOUNT",
+            "RETIRING_CREDENTIALS",
+            "RETIRING_ECOM",
+            "RETIRING_FORUMS",
+            "RETIRING_EMAIL_LISTS",
+            "RETIRING_ENROLLMENTS",
+            "RETIRING_NOTES",
+            "RETIRING_LMS",
+            "ADDING_TO_PARTNER_QUEUE",
+        }
 
 
 @skip_unless_lms

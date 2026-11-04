@@ -108,6 +108,21 @@ def retirement_requested_as(records, username):
     )
 
 
+def _admits_pipeline_work(retirement):
+    """
+    Say whether the step this retirement stands at admits pipeline work.
+
+    A step the pipeline itself requires -- the step waiting for the learner
+    and the steps a retirement ends at -- admits none, and neither does a step
+    recording that a part of the pipeline has finished. This is the rule
+    ``UserRetirementStatus.get_retirement_for_retirement_action`` applies to a
+    name, applied here to the record already resolved, so that the record
+    judged is the record the caller is handed to work on.
+    """
+    state = retirement.current_state
+    return not (state.required or state.state_name.endswith("_COMPLETE"))
+
+
 def retirement_open_to_action(records, username):
     """
     Return the retirement requested under this name while it admits pipeline work.
@@ -117,16 +132,12 @@ def retirement_open_to_action(records, username):
     keeps a step from being run twice over the same account.
     """
     retirement = retirement_requested_as(records, username)
-    try:
-        # Which steps admit work is decided by the pipeline's own model layer,
-        # where the order of the steps is kept, rather than being written out a
-        # second time here. It is asked about the record resolved above rather
-        # than about the name it was resolved under, so the record this answers
-        # for is the record the caller is handed to work on.
-        retirement.check_state_allows_retirement_action()
-    except RetirementStateError as exc:
-        log.info("The retirement requested as %r admits no pipeline work: %s", username, exc)
-        raise RetirementStateConflict(NOT_OPEN_TO_ACTION) from exc
+    if not _admits_pipeline_work(retirement):
+        log.info(
+            "The retirement requested as %r stands at %s, which admits no pipeline work.",
+            username, retirement.current_state.state_name,
+        )
+        raise RetirementStateConflict(NOT_OPEN_TO_ACTION)
     return retirement
 
 
