@@ -2197,8 +2197,6 @@ class AccountPreferenceViewSet(
         """
         try:
             yield
-        except UserNotAuthorized as exc:
-            raise PermissionDenied from exc
         except UserNotFound as exc:
             raise NotFound from exc
         except PreferenceValidationError as exc:
