@@ -444,12 +444,21 @@ def test_addresses_owned_by_other_apps_are_not_published(schema):
 
 @skip_unless_lms
 def test_pagination_envelope_is_published_in_full(schema):
-    """Every paged body this version publishes carries the whole envelope, not DRF's four members."""
+    """
+    Every paged body this version publishes carries the whole envelope, not DRF's four members.
+
+    Each member is in every page, the links as null where there is no page
+    to link to, so each one is published as required in both documents.
+    """
     paged = [name for name in VERSION_TWO_COMPONENTS if name.startswith("Paginated")]
     assert len(paged) == 6
-    for component in paged:
-        published = schema["components"]["schemas"][component]
-        assert set(published["properties"]) == PAGINATION_MEMBERS, component
+    for document in (schema, service_wide_schema()):
+        for component in paged:
+            published = document["components"]["schemas"][component]
+            assert set(published["properties"]) == PAGINATION_MEMBERS, component
+            assert set(published["required"]) == PAGINATION_MEMBERS, component
+            assert published["properties"]["next"]["nullable"] is True, component
+            assert published["properties"]["previous"]["nullable"] is True, component
 
 
 @pytest.mark.django_db

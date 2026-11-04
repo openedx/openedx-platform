@@ -50,10 +50,14 @@ class UserApiPagination(DefaultPagination):
         return min(rows, self.max_page_size)
 
     def get_paginated_response_schema(self, schema):
-        """Describe the full envelope the paginator returns."""
+        """
+        Describe the full envelope the paginator returns.
+
+        Remove this override once ``DefaultPagination`` in edx-drf-extensions describes all seven members.
+        """
         return {
             "type": "object",
-            "required": ["count", "num_pages", "current_page", "start", "results"],
+            "required": ["count", "num_pages", "current_page", "start", "next", "previous", "results"],
             "properties": {
                 "count": {
                     "type": "integer",
