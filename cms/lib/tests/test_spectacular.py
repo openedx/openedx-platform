@@ -355,25 +355,16 @@ class SupersededUserOperationTest(DjangoTestCase):
         published = {key: operation["operationId"] for key, operation in self._operations().items()}
         assert published == SUPERSEDED_USER_OPERATION_IDS
 
-    def test_the_component_no_operation_refers_to_any_more_is_still_published_here(self):
+    def test_the_retirement_status_model_is_published_as_the_other_service_appends_it(self):
         """
         A client generated from this document names a class after each component in it.
 
-        One of these addresses was the only reference to the retirement-status
-        model, and it now publishes the object its handler really reads, so
-        nothing in either service's document generates that model any more. It
-        is appended by this service as well, under the name it has always been
-        published under and with the definition the other service appends, so
-        that a client generated from this document still carries the class.
+        The partial update of a version 1 retirement refers to the
+        retirement-status model here, as it always has. The other service
+        publishes that operation's real body instead and appends the model so
+        that the class keeps its name, and the two describe it identically.
         """
-        components = self.schema["components"]["schemas"]
-        assert components["PatchedUserRetirementStatus"] == PATCHED_USER_RETIREMENT_STATUS
-        referred_to = {
-            member["allOf"][0]["$ref"].rsplit("/", 1)[-1]
-            for member in components["PatchedUserRetirementStatus"]["properties"].values()
-            if "allOf" in member
-        }
-        assert referred_to == {"RetirementUser", "RetirementState"}
-        # The appended component is described in place, so nothing checks that
-        # what it points at is published beside it.
-        assert referred_to - set(components) == set()
+        operation = self.schema["paths"]["/api/user/v1/accounts/update_retirement_status/"]["patch"]
+        bodies = {content["schema"]["$ref"] for content in operation["requestBody"]["content"].values()}
+        assert bodies == {"#/components/schemas/PatchedUserRetirementStatus"}
+        assert self.schema["components"]["schemas"]["PatchedUserRetirementStatus"] == PATCHED_USER_RETIREMENT_STATUS

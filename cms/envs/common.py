@@ -49,7 +49,6 @@ from path import Path as path
 
 from cms.lib.xblock.authoring_mixin import AuthoringMixin
 from cms.lib.xblock.upstream_sync import UpstreamSyncMixin
-from openedx.core.djangoapps.user_api.schema_components import KEPT_COMPONENT_SCHEMAS
 from openedx.core.lib.derived import Derived
 from openedx.core.lib.features_setting_proxy import FeaturesProxy
 from openedx.envs.common import *  # pylint: disable=wildcard-import  # noqa: F403
@@ -1341,14 +1340,6 @@ SPECTACULAR_SETTINGS = {
         'cms.lib.spectacular.cms_mark_migrated_paths',
         'openedx.core.apidocs.untag_deprecated_operations',
     ],
-    # This service also serves the user API, which names a component no
-    # operation of it refers to any more. It is appended here, from the
-    # definition the other service appends as well, so that a client generated
-    # from either service's document carries that class. Every document built
-    # from these settings carries it, the service-wide one included.
-    'APPEND_COMPONENTS': {
-        'schemas': dict(KEPT_COMPONENT_SCHEMAS),
-    },
     # Stripped from each path to derive its tags and operationId, so changing
     # it renames every operationId. Paths are published in full, from the
     # service root, so /api/contentstore and /api/authoring resolve against the

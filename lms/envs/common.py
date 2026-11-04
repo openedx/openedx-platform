@@ -2196,8 +2196,8 @@ SPECTACULAR_SETTINGS = {
     ],
     # Carried by every document built from these settings, including the
     # service-wide one, which overlays its own keys over them. The other
-    # service that serves this API appends the same components, read from the
-    # same definition, so neither document names one the other does not.
+    # service that serves this API still generates these components from its
+    # own description of the operations, identical to the definition here.
     'APPEND_COMPONENTS': {
         'schemas': dict(KEPT_COMPONENT_SCHEMAS),
     },

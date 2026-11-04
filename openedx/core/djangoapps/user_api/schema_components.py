@@ -5,12 +5,11 @@
 # reads a setting of its own.
 
 # The retirement-status model that a partial update of a version 1 retirement
-# was published as reading. That operation now publishes the object its handler
-# really reads, which leaves this model with no reference to generate it from,
+# was published as reading. Where that operation publishes the object its
+# handler really reads, the model has no reference left to generate it from,
 # and a client generated from a document names a class after each model in it.
-# The model is therefore named here, exactly as it was published, and appended
-# by each service that serves this API, so the class keeps its name in every
-# document either of them builds.
+# The model is therefore named here, exactly as it was published, for such a
+# service to append, so the class keeps its name in every document it builds.
 PATCHED_USER_RETIREMENT_STATUS = {
     'type': 'object',
     'description': 'Perform serialization for the RetirementStatus model',
