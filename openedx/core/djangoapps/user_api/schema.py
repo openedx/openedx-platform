@@ -125,9 +125,22 @@ def superseded_bodies():
         "properties": {"name": {"type": "string"}},
         "required": ["name"],
     }
-    # One preference is answered and stored as the bare value, which is what
-    # the address replacing it carries as a property of an object.
+    # One preference is answered as the bare value it is stored as. The writes
+    # store the text of a value of any type, so their values carry no type.
     preference_value = {"type": "string"}
+    preference_changes = {
+        "type": "object",
+        "minProperties": 1,
+        "additionalProperties": {},
+        "description": (
+            "Preferences to change, as an object of preference name to the value to store under it. "
+            "A value that is not text is stored as its text, and a null removes the preference. Names "
+            "the body leaves out are left as they are. At least one name must be given."
+        ),
+    }
+    preference_change = {
+        "description": "Value to store under the name. A value that is not text is stored as its text.",
+    }
     preferences_changed = {
         204: OpenApiResponse(description="The preferences now stand as the body asked."),
     }
@@ -170,13 +183,13 @@ def superseded_bodies():
             },
         ),
         ("/api/user/v1/preferences/{username}", "PATCH"): _SupersededBodies(
-            {MergePatchParser.media_type: replacing.ACCOUNT_PREFERENCE_CHANGES_SCHEMA}, preferences_changed,
+            {MergePatchParser.media_type: preference_changes}, preferences_changed,
         ),
         ("/api/user/v1/preferences/{username}/{preference_key}", "GET"): _SupersededBodies(
             None, {200: preference_value},
         ),
         ("/api/user/v1/preferences/{username}/{preference_key}", "PUT"): _SupersededBodies(
-            {"application/json": preference_value}, preferences_changed,
+            {"application/json": preference_change}, preferences_changed,
         ),
         ("/api/user/v1/preferences/{username}/{preference_key}", "DELETE"): _SupersededBodies(
             None, {204: OpenApiResponse(description="The account stores no value under that name.")},

@@ -29,6 +29,7 @@ from openedx.core.djangoapps.user_api.accounts.image_helpers import (
     get_profile_image_names,
     get_profile_image_storage,
 )
+from openedx.core.djangoapps.user_api.models import UserPreference
 from openedx.core.djangoapps.user_api.schema import (
     RENAMED_OPERATION_IDS,
     SUPERSEDED_USER_PATHS,
@@ -676,6 +677,106 @@ class SupersededRequestBodyTest(TestCase):
             (name, address): address != "/api/user/v1/accounts/{username}"
             for name in self.documents
             for address, _method in ACCEPTED_ONLY_BY_THE_SUPERSEDED_ADDRESS
+        }
+
+
+#: A value each superseded preference write stores as its text that the body
+#: the replacing address reads would refuse, because that body takes only text.
+PREFERENCE_VALUES_ACCEPTED_ONLY_BY_THE_SUPERSEDED_ADDRESS = {
+    ("/api/user/v1/preferences/{username}", "patch"): {"num_pref": 5},
+    ("/api/user/v1/preferences/{username}/{preference_key}", "put"): 7,
+}
+
+
+class SupersededPreferenceRequestBodyTest(TestCase):
+    """
+    A superseded preference write publishes values of any type, as its handler stores them.
+
+    Both handlers store the text of whatever value they are sent, where the
+    replacing addresses take text alone. A client generated from a body that
+    borrowed that type would refuse, on its own side, a value the superseded
+    handler stores.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.documents = _user_documents()
+
+    def _published_bodies(self, address, method):
+        """Yield each document's name, a media type and the body published for it at one operation."""
+        for name, document in self.documents.items():
+            for media_type, content in document["paths"][address][method]["requestBody"]["content"].items():
+                yield name, media_type, content["schema"]
+
+    def test_each_body_publishes_a_value_of_any_type(self):
+        published = {
+            (name, address, media_type): {key: value for key, value in body.items() if key != "description"}
+            for address, method in PREFERENCE_VALUES_ACCEPTED_ONLY_BY_THE_SUPERSEDED_ADDRESS
+            for name, media_type, body in self._published_bodies(address, method)
+        }
+        assert published == {
+            **{
+                (name, "/api/user/v1/preferences/{username}", "application/merge-patch+json"): {
+                    "type": "object", "minProperties": 1, "additionalProperties": {},
+                }
+                for name in ("published", "service-wide")
+            },
+            **{
+                (name, "/api/user/v1/preferences/{username}/{preference_key}", "application/json"): {}
+                for name in ("published", "service-wide")
+            },
+        }
+
+    def test_each_value_the_handler_stores_is_one_its_published_body_allows(self):
+        for (address, method), request in PREFERENCE_VALUES_ACCEPTED_ONLY_BY_THE_SUPERSEDED_ADDRESS.items():
+            for name, media_type, body in self._published_bodies(address, method):
+                with self.subTest(document=name, address=address, media_type=media_type):
+                    jsonschema.Draft202012Validator(body).validate(request)
+
+    def test_each_handler_stores_those_values_as_their_text(self):
+        owner = UserFactory.create(username="prefbodyowner", password=TEST_PASSWORD)
+        client = Client()
+        assert client.login(username=owner.username, password=TEST_PASSWORD)
+        values = PREFERENCE_VALUES_ACCEPTED_ONLY_BY_THE_SUPERSEDED_ADDRESS
+        answered = {
+            "change": client.patch(
+                f"/api/user/v1/preferences/{owner.username}",
+                values[("/api/user/v1/preferences/{username}", "patch")],
+                content_type="application/merge-patch+json",
+            ).status_code,
+            "write": client.put(
+                f"/api/user/v1/preferences/{owner.username}/other_pref",
+                json.dumps(values[("/api/user/v1/preferences/{username}/{preference_key}", "put")]),
+                content_type="application/json",
+            ).status_code,
+        }
+        assert answered == {"change": 204, "write": 204}
+        assert dict(UserPreference.objects.filter(user=owner).values_list("key", "value")) == {
+            "num_pref": "5", "other_pref": "7",
+        }
+
+    def test_the_replacing_addresses_publish_values_as_text(self):
+        for name, document in self.documents.items():
+            paths = document["paths"]
+            with self.subTest(document=name):
+                change = paths["/api/user/v2/accounts/{username}/preferences/"]["patch"]["requestBody"]
+                assert change["content"]["application/merge-patch+json"]["schema"]["additionalProperties"] == {
+                    "type": "string", "nullable": True,
+                }
+                value = document["components"]["schemas"]["AccountPreferenceValue"]["properties"]["value"]
+                assert value["type"] == "string"
+
+    def test_a_change_is_published_as_needing_a_body_and_a_write_as_not(self):
+        required = {
+            (name, address): document["paths"][address][method]["requestBody"].get("required", False)
+            for name, document in self.documents.items()
+            for address, method in PREFERENCE_VALUES_ACCEPTED_ONLY_BY_THE_SUPERSEDED_ADDRESS
+        }
+        assert required == {
+            (name, address): address == "/api/user/v1/preferences/{username}"
+            for name in ("published", "service-wide")
+            for address, _method in PREFERENCE_VALUES_ACCEPTED_ONLY_BY_THE_SUPERSEDED_ADDRESS
         }
 
 
