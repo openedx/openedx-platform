@@ -46,7 +46,7 @@ class Bookmark(TimeStampedModel):
 
     .. no_pii:
     """
-    user = models.ForeignKey(User, db_index=True, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, db_index=True, on_delete=models.CASCADE, db_constraint=False)
     course_key = CourseKeyField(max_length=255, db_index=True)
     usage_key = UsageKeyField(max_length=255, db_index=True)
     _path = JSONField(db_column='path', help_text='Path in course tree to the block')
