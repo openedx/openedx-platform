@@ -1816,26 +1816,57 @@ class EmailSearchTests(AccountApiV2TestCase):
             expected_type_slug="authz",
         )
 
-    def test_a_session_whose_owner_has_not_confirmed_their_address_identifies_nobody_here(self):
+    def test_a_session_whose_owner_has_not_confirmed_their_address_is_refused_as_a_token_is(self):
         """
-        Searching other people's accounts is not done from the pages an unconfirmed account reaches.
+        Searching other people's accounts is not done from an account that has not been confirmed.
 
-        The account addresses accept such a session because the site's own
-        settings pages are reached with one; this address keeps the platform
-        default, under which it identifies nobody, and the same session still
-        reads the account it belongs to.
+        The session is read, as it is at the account addresses, so the refusal
+        is the one a token of the same account gets, and the same session
+        still reads the account it belongs to.
         """
         self.staff.is_active = False
         self.staff.save()
         self.login(self.staff)
         assert_error_envelope(
             self.search(["owner-caller@example.com"]),
-            expected_status=status.HTTP_401_UNAUTHORIZED,
-            expected_type_slug="authn",
+            expected_status=status.HTTP_403_FORBIDDEN,
+            expected_type_slug="authz",
         )
         own = self.client.get(self.own_url)
         assert own.status_code == status.HTTP_200_OK
         assert own.data["username"] == "staff-caller"
+
+    def test_an_unconfirmed_staff_account_gets_one_refusal_whichever_way_it_signs_in(self):
+        self.staff.is_active = False
+        self.staff.save()
+        by_token = assert_error_envelope(
+            self.search(["owner-caller@example.com"], **self.token_headers(self.staff)),
+            expected_status=status.HTTP_403_FORBIDDEN,
+            expected_type_slug="authz",
+        )
+        self.login(self.staff)
+        by_session = assert_error_envelope(
+            self.search(["owner-caller@example.com"]),
+            expected_status=status.HTTP_403_FORBIDDEN,
+            expected_type_slug="authz",
+        )
+        assert by_session["detail"] == by_token["detail"]
+
+    def test_an_unconfirmed_learner_gets_one_refusal_whichever_way_it_signs_in(self):
+        self.owner.is_active = False
+        self.owner.save()
+        by_token = assert_error_envelope(
+            self.search(["other-caller@example.com"], **self.token_headers(self.owner)),
+            expected_status=status.HTTP_403_FORBIDDEN,
+            expected_type_slug="authz",
+        )
+        self.login(self.owner)
+        by_session = assert_error_envelope(
+            self.search(["other-caller@example.com"]),
+            expected_status=status.HTTP_403_FORBIDDEN,
+            expected_type_slug="authz",
+        )
+        assert by_session["detail"] == by_token["detail"]
 
     def test_the_search_is_not_read_with_a_get(self):
         self.login(self.staff)

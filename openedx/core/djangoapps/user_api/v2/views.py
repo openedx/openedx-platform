@@ -1543,6 +1543,13 @@ class EmailSearchViewSet(
     # collection in an address is the name of an account, and a user may
     # register any name.
 
+    # The session of an account that has not confirmed its email address is
+    # read rather than dropped, so the active-account check refuses it with the
+    # answer a token of that account gets instead of the request being treated
+    # as anonymous. A token is read by the library class the platform's own
+    # pair is built on, named because a view declaring its own classes is not
+    # one that pair serves.
+    authentication_classes = (JwtAuthentication, SessionAuthenticationAllowInactiveUser)
     permission_classes = (
         permissions.IsAuthenticated,
         IsActiveUser,
