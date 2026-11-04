@@ -173,7 +173,7 @@ defusedxml==0.7.1
     #   python3-openid
     #   social-auth-core
     #   xblocks-contrib
-django==5.2.13
+django==5.2.19
     # via
     #   -c requirements/common_constraints.txt
     #   -c requirements/constraints.txt
