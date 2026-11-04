@@ -2,6 +2,7 @@
 Unit tests for instructor API v2 report endpoints.
 """
 from unittest.mock import Mock, patch
+from uuid import uuid4
 
 import ddt
 from django.test import override_settings
@@ -11,6 +12,7 @@ from rest_framework.test import APIClient
 
 from common.djangoapps.student.roles import CourseDataResearcherRole
 from common.djangoapps.student.tests.factories import InstructorFactory, StaffFactory, UserFactory
+from lms.djangoapps.instructor_task.tests.factories import InstructorTaskFactory
 from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory
 
@@ -294,7 +296,10 @@ class GenerateReportViewTest(SharedModuleStoreTestCase):
         """
         Test generating a grade report.
         """
-        mock_submit.return_value = None
+        mock_submit.return_value = InstructorTaskFactory(
+            course_id=self.course_key, requester=self.data_researcher,
+            task_id=str(uuid4()), task_key=str(uuid4()), task_state="SUCCESS",
+        )
 
         self.client.force_authenticate(user=self.data_researcher)
         response = self.client.post(self._get_url(report_type='grade'))
@@ -302,6 +307,11 @@ class GenerateReportViewTest(SharedModuleStoreTestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
         self.assertIn('status', response.data)  # noqa: PT009
         mock_submit.assert_called_once()
+        assert response.data["task_id"] == mock_submit.return_value.task_id
+        task_status = self.client.get(response.data["status_url"])
+        assert task_status.status_code == 200
+        assert task_status.data["task_id"] == response.data["task_id"]
+        assert task_status.data["state"] == "completed"
 
     @patch('lms.djangoapps.instructor.views.api_v2.instructor_analytics_basic.get_available_features')
     @patch('lms.djangoapps.instructor.views.api_v2.task_api.submit_calculate_students_features_csv')
@@ -310,7 +320,10 @@ class GenerateReportViewTest(SharedModuleStoreTestCase):
         Test generating an enrolled students report.
         Verifies that get_available_features is called to support custom attributes.
         """
-        mock_submit.return_value = None
+        mock_submit.return_value = InstructorTaskFactory(
+            course_id=self.course_key, requester=self.data_researcher,
+            task_id=str(uuid4()), task_key=str(uuid4()), task_state="SUCCESS",
+        )
         mock_get_features.return_value = ('id', 'username', 'email', 'custom_field')
 
         self.client.force_authenticate(user=self.data_researcher)
@@ -320,13 +333,21 @@ class GenerateReportViewTest(SharedModuleStoreTestCase):
         self.assertIn('status', response.data)  # noqa: PT009
         mock_get_features.assert_called_once_with(self.course.id)
         mock_submit.assert_called_once()
+        assert response.data["task_id"] == mock_submit.return_value.task_id
+        task_status = self.client.get(response.data["status_url"])
+        assert task_status.status_code == 200
+        assert task_status.data["task_id"] == response.data["task_id"]
+        assert task_status.data["state"] == "completed"
 
     @patch('lms.djangoapps.instructor.views.api_v2.task_api.submit_calculate_may_enroll_csv')
     def test_generate_pending_enrollments_report(self, mock_submit):
         """
         Test generating a pending enrollments report.
         """
-        mock_submit.return_value = None
+        mock_submit.return_value = InstructorTaskFactory(
+            course_id=self.course_key, requester=self.data_researcher,
+            task_id=str(uuid4()), task_key=str(uuid4()), task_state="SUCCESS",
+        )
 
         self.client.force_authenticate(user=self.data_researcher)
         response = self.client.post(self._get_url(report_type='pending_enrollments'))
@@ -334,13 +355,21 @@ class GenerateReportViewTest(SharedModuleStoreTestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
         self.assertIn('status', response.data)  # noqa: PT009
         mock_submit.assert_called_once()
+        assert response.data["task_id"] == mock_submit.return_value.task_id
+        task_status = self.client.get(response.data["status_url"])
+        assert task_status.status_code == 200
+        assert task_status.data["task_id"] == response.data["task_id"]
+        assert task_status.data["state"] == "completed"
 
     @patch('lms.djangoapps.instructor.views.api_v2.task_api.submit_calculate_inactive_enrolled_students_csv')
     def test_generate_pending_activations_report(self, mock_submit):
         """
         Test generating a pending activations report.
         """
-        mock_submit.return_value = None
+        mock_submit.return_value = InstructorTaskFactory(
+            course_id=self.course_key, requester=self.data_researcher,
+            task_id=str(uuid4()), task_key=str(uuid4()), task_state="SUCCESS",
+        )
 
         self.client.force_authenticate(user=self.data_researcher)
         response = self.client.post(self._get_url(report_type='pending_activations'))
@@ -348,13 +377,21 @@ class GenerateReportViewTest(SharedModuleStoreTestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
         self.assertIn('status', response.data)  # noqa: PT009
         mock_submit.assert_called_once()
+        assert response.data["task_id"] == mock_submit.return_value.task_id
+        task_status = self.client.get(response.data["status_url"])
+        assert task_status.status_code == 200
+        assert task_status.data["task_id"] == response.data["task_id"]
+        assert task_status.data["state"] == "completed"
 
     @patch('lms.djangoapps.instructor.views.api_v2.task_api.generate_anonymous_ids')
     def test_generate_anonymized_ids_report(self, mock_submit):
         """
         Test generating an anonymized student IDs report.
         """
-        mock_submit.return_value = None
+        mock_submit.return_value = InstructorTaskFactory(
+            course_id=self.course_key, requester=self.data_researcher,
+            task_id=str(uuid4()), task_key=str(uuid4()), task_state="SUCCESS",
+        )
 
         self.client.force_authenticate(user=self.data_researcher)
         response = self.client.post(self._get_url(report_type='anonymized_student_ids'))
@@ -362,13 +399,21 @@ class GenerateReportViewTest(SharedModuleStoreTestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
         self.assertIn('status', response.data)  # noqa: PT009
         mock_submit.assert_called_once()
+        assert response.data["task_id"] == mock_submit.return_value.task_id
+        task_status = self.client.get(response.data["status_url"])
+        assert task_status.status_code == 200
+        assert task_status.data["task_id"] == response.data["task_id"]
+        assert task_status.data["state"] == "completed"
 
     @patch('lms.djangoapps.instructor.views.api_v2.task_api.submit_problem_grade_report')
     def test_generate_problem_grade_report(self, mock_submit):
         """
         Test generating a problem grade report.
         """
-        mock_submit.return_value = None
+        mock_submit.return_value = InstructorTaskFactory(
+            course_id=self.course_key, requester=self.data_researcher,
+            task_id=str(uuid4()), task_key=str(uuid4()), task_state="SUCCESS",
+        )
 
         self.client.force_authenticate(user=self.data_researcher)
         response = self.client.post(self._get_url(report_type='problem_grade'))
@@ -376,6 +421,11 @@ class GenerateReportViewTest(SharedModuleStoreTestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
         self.assertIn('status', response.data)  # noqa: PT009
         mock_submit.assert_called_once()
+        assert response.data["task_id"] == mock_submit.return_value.task_id
+        task_status = self.client.get(response.data["status_url"])
+        assert task_status.status_code == 200
+        assert task_status.data["task_id"] == response.data["task_id"]
+        assert task_status.data["state"] == "completed"
 
     def test_generate_problem_responses_report_missing_location(self):
         """
@@ -400,7 +450,10 @@ class GenerateReportViewTest(SharedModuleStoreTestCase):
         mock_store.get_item.return_value = mock_problem
         mock_store.make_course_usage_key.return_value = self.course.location
         mock_modulestore.return_value = mock_store
-        mock_submit.return_value = None
+        mock_submit.return_value = InstructorTaskFactory(
+            course_id=self.course_key, requester=self.data_researcher,
+            task_id=str(uuid4()), task_key=str(uuid4()), task_state="SUCCESS",
+        )
 
         self.client.force_authenticate(user=self.data_researcher)
         response = self.client.post(
@@ -410,13 +463,21 @@ class GenerateReportViewTest(SharedModuleStoreTestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
         mock_submit.assert_called_once()
+        assert response.data["task_id"] == mock_submit.return_value.task_id
+        task_status = self.client.get(response.data["status_url"])
+        assert task_status.status_code == 200
+        assert task_status.data["task_id"] == response.data["task_id"]
+        assert task_status.data["state"] == "completed"
 
     @patch('lms.djangoapps.instructor.views.api_v2.task_api.submit_export_ora2_summary')
     def test_generate_ora2_summary_report(self, mock_submit):
         """
         Test generating an ORA2 summary report.
         """
-        mock_submit.return_value = None
+        mock_submit.return_value = InstructorTaskFactory(
+            course_id=self.course_key, requester=self.data_researcher,
+            task_id=str(uuid4()), task_key=str(uuid4()), task_state="SUCCESS",
+        )
 
         self.client.force_authenticate(user=self.data_researcher)
         response = self.client.post(self._get_url(report_type='ora2_summary'))
@@ -424,13 +485,21 @@ class GenerateReportViewTest(SharedModuleStoreTestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
         self.assertIn('status', response.data)  # noqa: PT009
         mock_submit.assert_called_once()
+        assert response.data["task_id"] == mock_submit.return_value.task_id
+        task_status = self.client.get(response.data["status_url"])
+        assert task_status.status_code == 200
+        assert task_status.data["task_id"] == response.data["task_id"]
+        assert task_status.data["state"] == "completed"
 
     @patch('lms.djangoapps.instructor.views.api_v2.task_api.submit_export_ora2_data')
     def test_generate_ora2_data_report(self, mock_submit):
         """
         Test generating an ORA2 data report.
         """
-        mock_submit.return_value = None
+        mock_submit.return_value = InstructorTaskFactory(
+            course_id=self.course_key, requester=self.data_researcher,
+            task_id=str(uuid4()), task_key=str(uuid4()), task_state="SUCCESS",
+        )
 
         self.client.force_authenticate(user=self.data_researcher)
         response = self.client.post(self._get_url(report_type='ora2_data'))
@@ -438,13 +507,21 @@ class GenerateReportViewTest(SharedModuleStoreTestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
         self.assertIn('status', response.data)  # noqa: PT009
         mock_submit.assert_called_once()
+        assert response.data["task_id"] == mock_submit.return_value.task_id
+        task_status = self.client.get(response.data["status_url"])
+        assert task_status.status_code == 200
+        assert task_status.data["task_id"] == response.data["task_id"]
+        assert task_status.data["state"] == "completed"
 
     @patch('lms.djangoapps.instructor.views.api_v2.task_api.submit_export_ora2_submission_files')
     def test_generate_ora2_submission_files_report(self, mock_submit):
         """
         Test generating an ORA2 submission files archive.
         """
-        mock_submit.return_value = None
+        mock_submit.return_value = InstructorTaskFactory(
+            course_id=self.course_key, requester=self.data_researcher,
+            task_id=str(uuid4()), task_key=str(uuid4()), task_state="SUCCESS",
+        )
 
         self.client.force_authenticate(user=self.data_researcher)
         response = self.client.post(self._get_url(report_type='ora2_submission_files'))
@@ -452,6 +529,11 @@ class GenerateReportViewTest(SharedModuleStoreTestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
         self.assertIn('status', response.data)  # noqa: PT009
         mock_submit.assert_called_once()
+        assert response.data["task_id"] == mock_submit.return_value.task_id
+        task_status = self.client.get(response.data["status_url"])
+        assert task_status.status_code == 200
+        assert task_status.data["task_id"] == response.data["task_id"]
+        assert task_status.data["state"] == "completed"
 
     @patch('lms.djangoapps.instructor.views.api_v2.instructor_analytics_basic.issued_certificates')
     @patch('lms.djangoapps.instructor.views.api_v2.instructor_analytics_csvs.format_dictlist')
@@ -473,6 +555,7 @@ class GenerateReportViewTest(SharedModuleStoreTestCase):
         self.assertIn('status', response.data)  # noqa: PT009
         mock_issued_certs.assert_called_once()
         mock_upload.assert_called_once()
+        assert set(response.data) == {"status"}
 
     @override_settings(ENABLE_SPECIAL_EXAMS=True)
     @patch('lms.djangoapps.instructor.views.api_v2.task_api.submit_proctored_exam_results_report')
