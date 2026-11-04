@@ -203,7 +203,6 @@ VERSION_TWO_COMPONENTS = (
     "PaginatedEmailSearchResultList",
     "PaginatedVerificationList",
     "PatchedAccountUpdate",
-    "OutcomeEnum",
     "PaginatedRetirementResponseList",
     "Retirement",
     "RetirementAccount",
@@ -211,13 +210,14 @@ VERSION_TWO_COMPONENTS = (
     "RetirementBatch",
     "RetirementBatchOutcome",
     "RetirementBatchResult",
+    "RetirementBatchResultOutcomeEnum",
     "RetirementErasure",
+    "RetirementErasureScopeEnum",
     "RetirementMinimal",
     "RetirementPartnerReportRecord",
     "RetirementProjection",
     "RetirementResponse",
     "RetirementUpdate",
-    "ScopeEnum",
     "PaginatedTimeZoneList",
     "PaginatedUserDirectoryResponseList",
     "PaginatedUserPreferenceRecordResponseList",
@@ -815,8 +815,8 @@ def test_each_superseded_body_is_published_in_the_media_types_that_address_reads
 #: The sets of choices this version publishes as a model of their own, with
 #: the name each is published under and the values it offers.
 PINNED_CHOICE_SETS = {
-    "ScopeEnum": list(ERASURE_SCOPES),
-    "OutcomeEnum": list(BATCH_OUTCOMES),
+    "RetirementErasureScopeEnum": list(ERASURE_SCOPES),
+    "RetirementBatchResultOutcomeEnum": list(BATCH_OUTCOMES),
 }
 
 #: A second field of each of those names, with the value it would offer and

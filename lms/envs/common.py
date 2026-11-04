@@ -2206,10 +2206,13 @@ SPECTACULAR_SETTINGS = {
     # moment a second field of the same name carries a different set, both are
     # renamed after the models they sit in, so the plain name disappears and a
     # client generated from the document loses that class. The names below are
-    # fixed here so that the sets keep them whatever else the service grows.
+    # fixed here so that the sets keep them whatever else the service grows,
+    # and each names the model it sits in, so that none claims a plain name
+    # another field of the service may come to carry.
     'ENUM_NAME_OVERRIDES': {
-        'ScopeEnum': 'openedx.core.djangoapps.user_api.v2.serializers.ERASURE_SCOPE_CHOICES',
-        'OutcomeEnum': 'openedx.core.djangoapps.user_api.v2.serializers.BATCH_OUTCOME_CHOICES',
+        'RetirementErasureScopeEnum': 'openedx.core.djangoapps.user_api.v2.serializers.ERASURE_SCOPE_CHOICES',
+        'RetirementBatchResultOutcomeEnum':
+            'openedx.core.djangoapps.user_api.v2.serializers.BATCH_OUTCOME_CHOICES',
     },
     # Stripped from each path to derive its tags and operationId, so changing
     # it renames every operationId. Paths themselves are emitted in full.
