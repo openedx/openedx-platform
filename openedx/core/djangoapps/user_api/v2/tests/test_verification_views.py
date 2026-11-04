@@ -24,7 +24,7 @@ from openedx.core.djangoapps.oauth_dispatch.jwt import create_jwt_for_user
 from openedx.core.djangoapps.user_api.v2.views import AMBIGUOUS_ACCOUNT_ADDRESS
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 
-from .test_views import PAGINATION_KEYS, write_queries
+from .test_views import PAGINATION_KEYS, REFUSED_METHOD_SLUG, write_queries
 
 PASSWORD = "Password1234"
 
@@ -282,7 +282,7 @@ class VerificationStatusTests(VerificationTestCase):
         assert_error_envelope(
             self.client.post(self.status_url, {}, format="json"),
             expected_status=status.HTTP_405_METHOD_NOT_ALLOWED,
-            expected_type_slug="method-not-allowed",
+            expected_type_slug=REFUSED_METHOD_SLUG,
         )
 
 
@@ -514,7 +514,7 @@ class VerificationListTests(VerificationTestCase):
         assert_error_envelope(
             self.client.post(self.list_url, {}, format="json"),
             expected_status=status.HTTP_405_METHOD_NOT_ALLOWED,
-            expected_type_slug="method-not-allowed",
+            expected_type_slug=REFUSED_METHOD_SLUG,
         )
 
 

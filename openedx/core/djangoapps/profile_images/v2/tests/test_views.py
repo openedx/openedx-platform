@@ -14,9 +14,11 @@ import pytest
 from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
+from edx_rest_framework_extensions.errors import classify_error
 from edx_rest_framework_extensions.testing import assert_error_envelope
 from PIL import Image
 from rest_framework import status
+from rest_framework.exceptions import MethodNotAllowed, ParseError, UnsupportedMediaType
 from rest_framework.test import APITestCase
 
 from common.djangoapps.student.tests.factories import UserFactory
@@ -32,6 +34,12 @@ from openedx.core.djangolib.testing.utils import skip_unless_lms
 from ...tests.helpers import make_image_file
 
 PASSWORD = "Password1234"
+
+#: What the shared catalog calls each failure a request meets before a handler
+#: runs; this endpoint answers them as every other standardized API does.
+REFUSED_METHOD_SLUG = classify_error(MethodNotAllowed("GET"))[0]
+UNSUPPORTED_MEDIA_TYPE_SLUG = classify_error(UnsupportedMediaType("text/plain"))[0]
+MALFORMED_BODY_SLUG, MALFORMED_BODY_TITLE = classify_error(ParseError())
 
 #: Where the view records what it refused, which is where an operator reads
 #: why a caller was told their image could not be used.
@@ -486,9 +494,9 @@ class ProfileImageUploadTests(ProfileImageTestCase):
         envelope = assert_error_envelope(
             response,
             expected_status=status.HTTP_400_BAD_REQUEST,
-            expected_type_slug="malformed-body",
+            expected_type_slug=MALFORMED_BODY_SLUG,
         )
-        assert envelope["title"] == "Malformed Request Body"
+        assert envelope["title"] == MALFORMED_BODY_TITLE
         assert self.stored_sizes(self.owner.username) == set()
         assert self.has_image(self.owner) is False
 
@@ -501,9 +509,9 @@ class ProfileImageUploadTests(ProfileImageTestCase):
         envelope = assert_error_envelope(
             response,
             expected_status=status.HTTP_400_BAD_REQUEST,
-            expected_type_slug="malformed-body",
+            expected_type_slug=MALFORMED_BODY_SLUG,
         )
-        assert envelope["title"] == "Malformed Request Body"
+        assert envelope["title"] == MALFORMED_BODY_TITLE
         assert self.stored_sizes(self.owner.username) == set()
         assert self.has_image(self.owner) is False
 
@@ -656,7 +664,7 @@ class ProfileImageUploadTests(ProfileImageTestCase):
         assert_error_envelope(
             self.client.post(self.url, {"file": "not an image"}, format="json"),
             expected_status=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-            expected_type_slug="unsupported-media-type",
+            expected_type_slug=UNSUPPORTED_MEDIA_TYPE_SLUG,
         )
         assert self.stored_sizes(self.owner.username) == set()
 
@@ -676,7 +684,7 @@ class ProfileImageUploadTests(ProfileImageTestCase):
         assert_error_envelope(
             self.client.get(self.url),
             expected_status=status.HTTP_405_METHOD_NOT_ALLOWED,
-            expected_type_slug="method-not-allowed",
+            expected_type_slug=REFUSED_METHOD_SLUG,
         )
 
 

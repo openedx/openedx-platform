@@ -17,6 +17,7 @@ from openedx.core.djangoapps.oauth_dispatch.jwt import create_jwt_for_user
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 
 from .test_parity import diff, unexpected
+from .test_views import UNSUPPORTED_MEDIA_TYPE_SLUG
 
 PASSWORD = "Password1234"
 MERGE_PATCH = "application/merge-patch+json"
@@ -427,7 +428,7 @@ class AccountRefusalParityTests(APITestCase):
         assert_error_envelope(
             current,
             expected_status=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-            expected_type_slug="unsupported-media-type",
+            expected_type_slug=UNSUPPORTED_MEDIA_TYPE_SLUG,
         )
 
     def test_the_search_hides_itself_from_a_learner_in_both_versions(self):

@@ -1,31 +1,8 @@
 """Error types this version of the User API classifies for itself."""
 
 from edx_rest_framework_extensions.errors import register_error_type
-from rest_framework.exceptions import (
-    MethodNotAllowed,
-    NotAcceptable,
-    NotFound,
-    ParseError,
-    UnsupportedMediaType,
-    ValidationError,
-)
+from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.settings import api_settings
-
-
-class RefusedMethod(MethodNotAllowed):
-    """A request method this API does not serve at the address it was sent to."""
-
-
-class UnsatisfiableAccept(NotAcceptable):
-    """An ``Accept`` header naming no representation this API can produce."""
-
-
-class UnreadableRepresentation(UnsupportedMediaType):
-    """A request body in a media type this API cannot read."""
-
-
-class MalformedBody(ParseError):
-    """A request body that is not well formed in the media type it was sent as."""
 
 
 class AmbiguousAccountName(ValidationError):
@@ -56,10 +33,6 @@ class RetiredAccount(NotFound):
         }
 
 
-register_error_type(RefusedMethod, "method-not-allowed", "Method Not Allowed")
-register_error_type(UnsatisfiableAccept, "not-acceptable", "Not Acceptable")
-register_error_type(UnreadableRepresentation, "unsupported-media-type", "Unsupported Media Type")
-register_error_type(MalformedBody, "malformed-body", "Malformed Request Body")
 register_error_type(RetiredAccount, "user/retired-account", "Retired Account")
 register_error_type(AmbiguousAccountName, "user/ambiguous-account-name", "Ambiguous Account Name")
 
@@ -101,36 +74,6 @@ class ReadableErrorDetailMixin:
             if sentence:
                 body["detail"] = sentence
         return response
-
-
-class CatalogedRequestErrorsMixin(ReadableErrorDetailMixin):
-    """
-    Names the error type of a refused method, an unanswerable ``Accept``
-    header, a body in a media type this API cannot read and a body that is not
-    well formed in the media type it was sent as.
-
-    The shared catalog classifies none of them, so each would reach the caller
-    described as a server fault at a 4xx status. Raising this API's own
-    subclasses of them names each error without changing how the same failure
-    is classified for any other API in the process; once the shared catalog
-    covers them, the subclasses can give way to it.
-
-    A view that classifies its request failures also wants the one-line
-    message of each of them to read as a sentence, so this carries what the
-    class it extends does as well, and a view names one mixin rather than two.
-    """
-
-    def handle_exception(self, exc):
-        """Classify the request failures the shared catalog leaves unnamed."""
-        if isinstance(exc, MethodNotAllowed) and not isinstance(exc, RefusedMethod):
-            exc = RefusedMethod(self.request.method, detail=exc.detail)
-        elif isinstance(exc, NotAcceptable) and not isinstance(exc, UnsatisfiableAccept):
-            exc = UnsatisfiableAccept(detail=exc.detail)
-        elif isinstance(exc, UnsupportedMediaType) and not isinstance(exc, UnreadableRepresentation):
-            exc = UnreadableRepresentation(self.request.content_type, detail=exc.detail)
-        elif isinstance(exc, ParseError) and not isinstance(exc, MalformedBody):
-            exc = MalformedBody(detail=exc.detail)
-        return super().handle_exception(exc)
 
 
 class ErrorExtensionsMixin:

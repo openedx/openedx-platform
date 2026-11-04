@@ -45,7 +45,7 @@ from openedx.core.djangoapps.user_api.preferences.api import get_country_time_zo
 from openedx.core.lib.api.parsers import MergePatchParser
 from openedx.core.lib.api.permissions import ApiKeyHeaderPermission
 
-from .errors import AmbiguousAccountName, CatalogedRequestErrorsMixin, ErrorExtensionsMixin, RetiredAccount
+from .errors import AmbiguousAccountName, ErrorExtensionsMixin, ReadableErrorDetailMixin, RetiredAccount
 from .filters import StrictOrderingFilter, UserFilterSet, UserPreferenceFilterSet
 from .paginators import UserApiPagination
 from .permissions import (
@@ -665,7 +665,7 @@ class _ResponsePresetMixin(MinimalViewMixin):
 class UserViewSet(
     StandardizedErrorMixin,
     RestrictedApplicationGuardMixin,
-    CatalogedRequestErrorsMixin,
+    ReadableErrorDetailMixin,
     _ActionAddressMixin,
     _MemberLookupMixin,
     _ResponsePresetMixin,
@@ -786,7 +786,7 @@ class UserViewSet(
 class UserPreferenceViewSet(
     StandardizedErrorMixin,
     RestrictedApplicationGuardMixin,
-    CatalogedRequestErrorsMixin,
+    ReadableErrorDetailMixin,
     _ActionAddressMixin,
     _ResponsePresetMixin,
     StrictQueryParametersMixin,
@@ -902,7 +902,7 @@ class UserPreferenceViewSet(
 class CountryTimeZoneViewSet(
     StandardizedErrorMixin,
     RestrictedApplicationGuardMixin,
-    CatalogedRequestErrorsMixin,
+    ReadableErrorDetailMixin,
     _ActionAddressMixin,
     StrictQueryParametersMixin,
     IterablePaginationMixin,
@@ -1081,7 +1081,7 @@ class AccountResourceMixin:
 class AccountViewSet(
     StandardizedErrorMixin,
     RestrictedApplicationGuardMixin,
-    CatalogedRequestErrorsMixin,
+    ReadableErrorDetailMixin,
     ErrorExtensionsMixin,
     AccountResourceMixin,
     _ActionAddressMixin,
@@ -1443,7 +1443,7 @@ class AccountViewSet(
 class AccountDeactivationView(
     StandardizedErrorMixin,
     RestrictedApplicationGuardMixin,
-    CatalogedRequestErrorsMixin,
+    ReadableErrorDetailMixin,
     AccountResourceMixin,
     StrictQueryParametersMixin,
     APIView,
@@ -1520,7 +1520,7 @@ class _SearchedAccountsMixin:
 class EmailSearchViewSet(
     StandardizedErrorMixin,
     RestrictedApplicationGuardMixin,
-    CatalogedRequestErrorsMixin,
+    ReadableErrorDetailMixin,
     StrictQueryParametersMixin,
     IterablePaginationMixin,
     ScopedQuerysetMixin,
@@ -1622,7 +1622,7 @@ _NAME_CHANGE_PATH_PARAM = path_param(
 class NameChangeViewSet(
     StandardizedErrorMixin,
     RestrictedApplicationGuardMixin,
-    CatalogedRequestErrorsMixin,
+    ReadableErrorDetailMixin,
     _ActionAddressMixin,
     StrictQueryParametersMixin,
     viewsets.ViewSet,
@@ -1738,7 +1738,7 @@ def _verification_sort_key(attempt):
 class IDVerificationStatusView(
     StandardizedErrorMixin,
     RestrictedApplicationGuardMixin,
-    CatalogedRequestErrorsMixin,
+    ReadableErrorDetailMixin,
     AccountResourceMixin,
     StrictQueryParametersMixin,
     APIView,
@@ -1826,7 +1826,7 @@ class IDVerificationStatusView(
 class IDVerificationViewSet(
     StandardizedErrorMixin,
     RestrictedApplicationGuardMixin,
-    CatalogedRequestErrorsMixin,
+    ReadableErrorDetailMixin,
     AccountResourceMixin,
     StrictQueryParametersMixin,
     IterablePaginationMixin,

@@ -14,6 +14,8 @@ from openedx.core.djangoapps.oauth_dispatch.jwt import create_jwt_for_user
 from openedx.core.djangoapps.user_api.v2.views import AMBIGUOUS_ACCOUNT_ADDRESS
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 
+from .test_views import MALFORMED_BODY_SLUG, MALFORMED_BODY_TITLE, REFUSED_METHOD_SLUG, UNSUPPORTED_MEDIA_TYPE_SLUG
+
 PASSWORD = "Password1234"
 
 #: The version 1 addresses these views supersede.
@@ -227,9 +229,9 @@ class NameChangeRequestTests(NameChangeTestCase):
         envelope = assert_error_envelope(
             self.client.post(self.request_url, "{not json", content_type="application/json"),
             expected_status=status.HTTP_400_BAD_REQUEST,
-            expected_type_slug="malformed-body",
+            expected_type_slug=MALFORMED_BODY_SLUG,
         )
-        assert envelope["title"] == "Malformed Request Body"
+        assert envelope["title"] == MALFORMED_BODY_TITLE
         assert PendingNameChange.objects.count() == 0
 
     def test_a_body_in_a_media_type_this_endpoint_cannot_read_is_refused(self):
@@ -237,7 +239,7 @@ class NameChangeRequestTests(NameChangeTestCase):
         assert_error_envelope(
             self.client.post(self.request_url, "<name>Jon Doe</name>", content_type="application/xml"),
             expected_status=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-            expected_type_slug="unsupported-media-type",
+            expected_type_slug=UNSUPPORTED_MEDIA_TYPE_SLUG,
         )
         assert PendingNameChange.objects.count() == 0
 
@@ -260,7 +262,7 @@ class NameChangeRequestTests(NameChangeTestCase):
         assert_error_envelope(
             self.client.get(self.request_url),
             expected_status=status.HTTP_405_METHOD_NOT_ALLOWED,
-            expected_type_slug="method-not-allowed",
+            expected_type_slug=REFUSED_METHOD_SLUG,
         )
 
 
@@ -384,7 +386,7 @@ class NameChangeConfirmationTests(NameChangeTestCase):
         assert_error_envelope(
             self.client.get(self.url),
             expected_status=status.HTTP_405_METHOD_NOT_ALLOWED,
-            expected_type_slug="method-not-allowed",
+            expected_type_slug=REFUSED_METHOD_SLUG,
         )
         assert self.profile_name(self.owner) == "Original Name"
 

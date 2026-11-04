@@ -12,9 +12,11 @@ from django.db import connection
 from django.test import SimpleTestCase
 from django.test.utils import CaptureQueriesContext, override_settings
 from django.urls import reverse
+from edx_rest_framework_extensions.errors import classify_error
 from edx_rest_framework_extensions.testing import assert_error_envelope
 from opaque_keys.edx.keys import CourseKey
 from rest_framework import status
+from rest_framework.exceptions import MethodNotAllowed, NotAcceptable, ParseError, UnsupportedMediaType
 from rest_framework.test import APIClient, APITestCase
 
 from common.djangoapps.student.models import PendingNameChange, UserProfile
@@ -34,6 +36,13 @@ PASSWORD = "Password1234"
 API_KEY = "directory-test-api-key"
 COURSE_KEY = CourseKey.from_string("course-v1:edX+DemoX+Demo")
 OTHER_COURSE_KEY = CourseKey.from_string("course-v1:edX+OtherX+Other")
+
+#: What the shared catalog calls each failure a request meets before a handler
+#: runs; this API answers them as every other standardized API does.
+REFUSED_METHOD_SLUG, REFUSED_METHOD_TITLE = classify_error(MethodNotAllowed("GET"))
+NOT_ACCEPTABLE_SLUG, NOT_ACCEPTABLE_TITLE = classify_error(NotAcceptable())
+UNSUPPORTED_MEDIA_TYPE_SLUG = classify_error(UnsupportedMediaType("text/plain"))[0]
+MALFORMED_BODY_SLUG, MALFORMED_BODY_TITLE = classify_error(ParseError())
 
 PAGINATION_KEYS = {"count", "num_pages", "current_page", "start", "next", "previous", "results"}
 
@@ -1108,54 +1117,54 @@ class PageSizeCapTests(UserApiV2TestCase):
 class RefusedRequestTests(UserApiV2TestCase):
     """A method this API does not serve, and an Accept header it cannot answer."""
 
-    #: Public, standardized, and served by another API: what its refused method
-    #: is called must not change because this one names its own.
+    #: Public, standardized, and served by another API, which answers the same
+    #: failures with the same type.
     OTHER_API_URL = "/api/enrollment/v2/courses/course-v1:edX+DemoX+Demo/"
 
     def setUp(self):
         super().setUp()
         self.public_url = reverse("user_v2:time_zone_list")
 
-    def test_a_refused_method_is_named_for_an_anonymous_caller(self):
+    def test_a_method_this_address_does_not_serve_is_refused_for_an_anonymous_caller(self):
         response = self.client.post(self.public_url, {}, format="json")
         envelope = assert_error_envelope(
             response,
             expected_status=status.HTTP_405_METHOD_NOT_ALLOWED,
-            expected_type_slug="method-not-allowed",
+            expected_type_slug=REFUSED_METHOD_SLUG,
         )
-        assert envelope["title"] == "Method Not Allowed"
+        assert envelope["title"] == REFUSED_METHOD_TITLE
         assert envelope["detail"] == 'Method "POST" not allowed.'
         assert response["Content-Type"] == "application/json"
 
-    def test_an_accept_header_this_api_cannot_answer_is_named(self):
+    def test_an_accept_header_this_api_cannot_answer_is_refused(self):
         response = self.client.get(self.public_url, HTTP_ACCEPT="application/xml")
         envelope = assert_error_envelope(
             response,
             expected_status=status.HTTP_406_NOT_ACCEPTABLE,
-            expected_type_slug="not-acceptable",
+            expected_type_slug=NOT_ACCEPTABLE_SLUG,
         )
-        assert envelope["title"] == "Not Acceptable"
+        assert envelope["title"] == NOT_ACCEPTABLE_TITLE
         assert envelope["detail"] == "Could not satisfy the request Accept header."
         assert response["Content-Type"] == "application/json"
 
-    def test_a_refused_method_is_named_on_the_gated_collections(self):
+    def test_a_method_the_gated_collections_do_not_serve_is_refused(self):
         self.send_api_key()
         for url_name in ("user_v2:user_list", "user_v2:user_preference_list"):
             response = self.client.delete(reverse(url_name))
             envelope = assert_error_envelope(
                 response,
                 expected_status=status.HTTP_405_METHOD_NOT_ALLOWED,
-                expected_type_slug="method-not-allowed",
+                expected_type_slug=REFUSED_METHOD_SLUG,
             )
             assert envelope["detail"] == 'Method "DELETE" not allowed.'
 
-    def test_a_refused_method_is_named_on_the_gated_members(self):
+    def test_a_method_the_gated_members_do_not_serve_is_refused(self):
         self.send_api_key()
         response = self.client.put(reverse("user_v2:user_detail", args=[self.alice.username]))
         envelope = assert_error_envelope(
             response,
             expected_status=status.HTTP_405_METHOD_NOT_ALLOWED,
-            expected_type_slug="method-not-allowed",
+            expected_type_slug=REFUSED_METHOD_SLUG,
         )
         assert envelope["detail"] == 'Method "PUT" not allowed.'
 
@@ -1168,6 +1177,11 @@ class RefusedRequestTests(UserApiV2TestCase):
             expected_type_slug="internal",
         )
         assert envelope["title"] == "Internal Server Error"
+
+    def test_a_refused_method_is_typed_here_as_another_api_types_it(self):
+        ours = self.client.post(self.public_url, {}, format="json").json()
+        theirs = self.client.post(self.OTHER_API_URL, {}, format="json").json()
+        assert (ours["status"], ours["type"], ours["title"]) == (theirs["status"], theirs["type"], theirs["title"])
 
 
 @skip_unless_lms
@@ -1878,7 +1892,7 @@ class UnsatisfiableAcceptTests(UserApiV2TestCase):
         self.send_api_key()
         response = self.client.get(reverse("user_v2:user_list"), HTTP_ACCEPT="text/csv")
         assert_error_envelope(
-            response, expected_status=status.HTTP_406_NOT_ACCEPTABLE, expected_type_slug="not-acceptable",
+            response, expected_status=status.HTTP_406_NOT_ACCEPTABLE, expected_type_slug=NOT_ACCEPTABLE_SLUG,
         )
 
     def test_an_address_that_answers_with_no_body_refuses_it_too(self):

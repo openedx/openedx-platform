@@ -37,7 +37,15 @@ from openedx.core.djangoapps.user_authn.views.password_reset import PasswordRese
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 
 from .test_schema import name_affirmation_answering
-from .test_views import PAGINATION_KEYS, write_queries, write_target
+from .test_views import (
+    MALFORMED_BODY_SLUG,
+    MALFORMED_BODY_TITLE,
+    PAGINATION_KEYS,
+    REFUSED_METHOD_SLUG,
+    UNSUPPORTED_MEDIA_TYPE_SLUG,
+    write_queries,
+    write_target,
+)
 
 PASSWORD = "Password1234"
 
@@ -1178,16 +1186,16 @@ class AccountChangeTests(AccountApiV2TestCase):
         assert_error_envelope(
             response,
             expected_status=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-            expected_type_slug="unsupported-media-type",
+            expected_type_slug=UNSUPPORTED_MEDIA_TYPE_SLUG,
         )
 
     def test_a_body_that_is_not_well_formed_is_refused_as_the_callers_fault(self):
         self.login(self.owner)
         response = self.client.patch(self.own_url, "{not json", content_type=MERGE_PATCH)
         envelope = assert_error_envelope(
-            response, expected_status=status.HTTP_400_BAD_REQUEST, expected_type_slug="malformed-body",
+            response, expected_status=status.HTTP_400_BAD_REQUEST, expected_type_slug=MALFORMED_BODY_SLUG,
         )
-        assert envelope["title"] == "Malformed Request Body"
+        assert envelope["title"] == MALFORMED_BODY_TITLE
 
     def test_a_body_that_is_not_an_object_is_refused(self):
         self.login(self.owner)
@@ -1627,14 +1635,11 @@ class SelectionIsSettledBeforeTheAddressIsReadTests(AccountApiV2TestCase):
 @skip_unless_lms
 class OtherApiClassificationTests(AccountApiV2TestCase):
     """
-    What another API calls a request failure is not changed by what this one calls it.
+    A body that does not parse, or arrives in a media type nothing reads, is
+    typed here as at a standardized address of another API.
 
-    The catalog of error types is shared by every API in the process, so naming
-    one of the failures below for this API by registering the type it is raised
-    as would rename it for all of them. The names used here belong to this
-    API's own exception classes; the same two failures are read below at a
-    standardized address of another API, which keeps the name the shared
-    catalog gives a failure it does not know.
+    The catalog of error types is shared by every API in the process, so a type
+    registered for one of these failures here would rename it for all of them.
     """
 
     #: Standardized, served by another API, and reads a request body.
@@ -1663,20 +1668,11 @@ class OtherApiClassificationTests(AccountApiV2TestCase):
         )
         self.assert_unnamed(response, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
 
-    def test_the_same_two_failures_are_named_at_an_address_of_this_api(self):
-        """The contrast the two above are measured against."""
+    def test_the_same_two_failures_are_typed_alike_at_an_address_of_this_api(self):
         malformed = self.client.patch(self.own_url, "{not json", content_type=MERGE_PATCH)
-        assert_error_envelope(
-            malformed,
-            expected_status=status.HTTP_400_BAD_REQUEST,
-            expected_type_slug="malformed-body",
-        )
+        self.assert_unnamed(malformed, status.HTTP_400_BAD_REQUEST)
         unreadable = self.client.patch(self.own_url, "bio=x", content_type="text/plain")
-        assert_error_envelope(
-            unreadable,
-            expected_status=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-            expected_type_slug="unsupported-media-type",
-        )
+        self.assert_unnamed(unreadable, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
 
 
 @skip_unless_lms
@@ -1790,9 +1786,9 @@ class EmailSearchTests(AccountApiV2TestCase):
         self.login(self.staff)
         response = self.client.post(self.url, "{not json", content_type="application/json")
         envelope = assert_error_envelope(
-            response, expected_status=status.HTTP_400_BAD_REQUEST, expected_type_slug="malformed-body",
+            response, expected_status=status.HTTP_400_BAD_REQUEST, expected_type_slug=MALFORMED_BODY_SLUG,
         )
-        assert envelope["title"] == "Malformed Request Body"
+        assert envelope["title"] == MALFORMED_BODY_TITLE
 
     def test_a_learner_is_told_there_is_nothing_at_this_address(self):
         """The search is hidden rather than refused, so it does not confirm what it is for."""
@@ -1892,7 +1888,7 @@ class EmailSearchTests(AccountApiV2TestCase):
         assert_error_envelope(
             response,
             expected_status=status.HTTP_405_METHOD_NOT_ALLOWED,
-            expected_type_slug="method-not-allowed",
+            expected_type_slug=REFUSED_METHOD_SLUG,
         )
 
     def test_the_rest_of_a_search_is_read_by_sending_the_body_to_the_link_again(self):
@@ -1993,7 +1989,7 @@ class EmailSearchTests(AccountApiV2TestCase):
         assert_error_envelope(
             response,
             expected_status=status.HTTP_405_METHOD_NOT_ALLOWED,
-            expected_type_slug="method-not-allowed",
+            expected_type_slug=REFUSED_METHOD_SLUG,
         )
 
     def test_a_page_the_search_does_not_have_is_not_found(self):
@@ -2456,7 +2452,7 @@ class AccountDeactivationTests(AccountApiV2TestCase):
         assert_error_envelope(
             response,
             expected_status=status.HTTP_405_METHOD_NOT_ALLOWED,
-            expected_type_slug="method-not-allowed",
+            expected_type_slug=REFUSED_METHOD_SLUG,
         )
         self.other.refresh_from_db()
         assert self.other.has_usable_password()
