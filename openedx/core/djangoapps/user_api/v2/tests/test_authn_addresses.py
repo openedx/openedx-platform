@@ -1,6 +1,8 @@
 """Tests for the registration, sign-in and password reset addresses of version 2 of the User API."""
 
 import contextlib
+import copy
+import functools
 import json
 import re
 from collections import defaultdict
@@ -45,7 +47,7 @@ from openedx.core.apidocs import get_api_docs_settings
 from openedx.core.djangoapps.oauth_dispatch.jwt import create_jwt_for_user
 from openedx.core.djangoapps.user_api import accounts
 from openedx.core.djangoapps.user_api.v2 import authn_views
-from openedx.core.djangoapps.user_api.v2.tests.test_schema import as_json_schema
+from openedx.core.djangoapps.user_api.v2.tests.test_schema import as_json_schema, user_patterns
 from openedx.core.djangoapps.user_authn.views import login, password_reset, register
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 from openedx.envs.common import REGISTRATION_EXTRA_FIELDS as STOCK_REGISTRATION_EXTRA_FIELDS
@@ -333,15 +335,30 @@ def limit_of(rate):
     return int(rate.split("/")[0])
 
 
+@functools.cache
+def user_documents():
+    """
+    Return both documents the service publishes, generated once and from the mounts serving user addresses.
+
+    Each is generated under the settings it is published with, so what it says
+    about these addresses is what the whole document says about them.
+    """
+    narrow = SchemaGenerator(patterns=user_patterns()).get_schema(request=None, public=True)
+    # The whole document derives its path prefix from every address the
+    # service serves, which share nothing past the root.
+    with patched_settings({**get_api_docs_settings(), "SCHEMA_PATH_PREFIX": "/"}):
+        service_wide = SchemaGenerator(patterns=user_patterns()).get_schema(request=None, public=True)
+    return {"narrow": narrow, "service-wide": service_wide}
+
+
 def narrow_document():
-    """Return the document the service publishes for the APIs it standardizes."""
-    return SchemaGenerator().get_schema(request=None, public=True)
+    """Return a copy of the document the service publishes for the APIs it standardizes."""
+    return copy.deepcopy(user_documents()["narrow"])
 
 
 def service_wide_document():
-    """Return the document the service publishes for browsing its whole surface."""
-    with patched_settings(get_api_docs_settings()):
-        return SchemaGenerator().get_schema(request=None, public=True)
+    """Return a copy of the document the service publishes for browsing its whole surface."""
+    return copy.deepcopy(user_documents()["service-wide"])
 
 
 @skip_unless_lms
