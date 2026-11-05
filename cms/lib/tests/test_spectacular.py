@@ -1,14 +1,17 @@
 """Tests for the CMS drf-spectacular hooks and schema class."""
 
 import re
+from importlib import import_module
 from pathlib import Path
 from unittest import TestCase, mock
 
 from django.conf import settings
 from django.test import SimpleTestCase
+from django.test import TestCase as DjangoTestCase
 from django.urls import path as url_path
 from drf_spectacular.generators import SchemaGenerator
-from drf_spectacular.settings import spectacular_settings
+from drf_spectacular.openapi import AutoSchema
+from drf_spectacular.settings import patched_settings, spectacular_settings
 from rest_framework import serializers, viewsets
 from rest_framework.response import Response
 from rest_framework.settings import api_settings
@@ -20,6 +23,7 @@ from cms.lib.spectacular import (
     cms_mark_migrated_paths,
     cms_mark_superseded_paths,
 )
+from openedx.core.apidocs import get_api_docs_settings
 
 
 def _endpoint(path):
@@ -73,7 +77,7 @@ class CmsMarkSupersededPathsTest(TestCase):
             assert result["paths"][path]["get"]["deprecated"] is True
 
     def test_both_spellings_of_each_superseded_path_are_listed(self):
-        assert set(SUPERSEDED_PATHS) == {
+        assert {path for path in SUPERSEDED_PATHS if path.startswith("/api/contentstore/")} == {
             "/api/contentstore/v0/youtube_transcripts/{course_id}/chec",
             "/api/contentstore/v0/youtube_transcripts/{course_id}/check",
             "/api/contentstore/v0/youtube_transcripts/{course_id}/uploa",
@@ -156,6 +160,14 @@ class SpectacularSettingsTest(SimpleTestCase):
         assert "cms.lib.spectacular.cms_mark_superseded_paths" in hooks
         assert "cms.lib.spectacular.cms_mark_migrated_paths" in hooks
 
+    def test_no_marking_hook_runs_beside_the_two_this_module_defines(self):
+        assert settings.SPECTACULAR_SETTINGS["POSTPROCESSING_HOOKS"] == [
+            "drf_spectacular.hooks.postprocess_schema_enums",
+            "cms.lib.spectacular.cms_mark_superseded_paths",
+            "cms.lib.spectacular.cms_mark_migrated_paths",
+            "openedx.core.apidocs.untag_deprecated_operations",
+        ]
+
     def test_the_default_enum_hook_is_kept_alongside_the_new_one(self):
         """Setting the key replaces drf-spectacular's default list, so it is restated."""
         assert "drf_spectacular.hooks.postprocess_schema_enums" in settings.SPECTACULAR_SETTINGS["POSTPROCESSING_HOOKS"]
@@ -200,6 +212,9 @@ class CmsAutoSchemaTest(SimpleTestCase):
         """Views without their own ``schema`` pick this up via REST_FRAMEWORK settings."""
         assert api_settings.DEFAULT_SCHEMA_CLASS is CmsAutoSchema
 
+    def test_every_operation_is_described_by_this_class_alone(self):
+        assert CmsAutoSchema.__bases__ == (AutoSchema,)
+
     def test_only_the_colliding_legacy_address_is_suffixed(self):
         patterns = [
             url_path("api/contentstore/v3/home/", _HomeViewSet.as_view({"get": "list"})),
@@ -215,3 +230,80 @@ class CmsAutoSchemaTest(SimpleTestCase):
         # Already distinct from its conforming twin's id, so it keeps its name.
         assert ids["/api/authoring/v4/courses/"] == "v4_courses_list"
         assert ids["/api/contentstore/v4/home/courses/"] == "v4_home_courses_list"
+
+
+#: Every operation of a superseded user address this service serves, with the
+#: name it is published under. The names are the ones both documents have
+#: always carried: a client imports a function per name, so an operation that
+#: comes back under a different one has been taken away from it.
+SUPERSEDED_USER_OPERATION_IDS = {
+    ("/api/user/v1/accounts", "get"): "api_user_v1_accounts_retrieve",
+    ("/api/user/v1/accounts/name_change/", "post"): "api_user_v1_accounts_name_change_create",
+    ("/api/user/v1/accounts/name_change/{username}/confirm/", "post"): (
+        "api_user_v1_accounts_name_change_confirm_create"
+    ),
+    ("/api/user/v1/accounts/search_emails", "post"): "api_user_v1_accounts_search_emails_create",
+    ("/api/user/v1/accounts/{username}", "get"): "api_user_v1_accounts_retrieve_2",
+    ("/api/user/v1/accounts/{username}", "patch"): "api_user_v1_accounts_partial_update",
+    ("/api/user/v1/accounts/{username}/deactivate/", "post"): "api_user_v1_accounts_deactivate_create",
+    ("/api/user/v1/accounts/{username}/image", "delete"): "api_user_v1_accounts_image_destroy",
+    ("/api/user/v1/accounts/{username}/image", "post"): "api_user_v1_accounts_image_create",
+    ("/api/user/v1/accounts/{username}/verification_status/", "get"): (
+        "api_user_v1_accounts_verification_status_retrieve"
+    ),
+    ("/api/user/v1/accounts/{username}/verifications/", "get"): "api_user_v1_accounts_verifications_list",
+    ("/api/user/v1/forum_roles/{name}/users/", "get"): "api_user_v1_forum_roles_users_list",
+    ("/api/user/v1/me", "get"): "api_user_v1_me_retrieve",
+    ("/api/user/v1/preferences/time_zones/", "get"): "api_user_v1_preferences_time_zones_list",
+    ("/api/user/v1/preferences/{pref_key}/users/", "get"): "api_user_v1_preferences_users_list",
+    ("/api/user/v1/user_prefs/", "get"): "api_user_v1_user_prefs_list",
+    ("/api/user/v1/user_prefs/{id}/", "get"): "api_user_v1_user_prefs_retrieve",
+    ("/api/user/v1/users/", "get"): "api_user_v1_users_list",
+    ("/api/user/v1/users/{id}/", "get"): "api_user_v1_users_retrieve",
+}
+
+
+#: The user addresses this service marks superseded.
+SUPERSEDED_USER_ADDRESSES = tuple(path for path in SUPERSEDED_PATHS if path.startswith("/api/user/"))
+
+
+class SupersededUserOperationTest(DjangoTestCase):
+    """
+    The user addresses this service serves beside the LMS, which serves their replacements.
+
+    Both services mount that API at the same addresses and both publish an
+    unauthenticated document of everything they serve. This one marks the
+    addresses it lists as superseded and keeps the name each operation is
+    published under.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        patterns = [
+            entry for entry in import_module(settings.ROOT_URLCONF).urlpatterns
+            if str(entry.pattern).startswith("api/user/")
+        ]
+        # The whole document derives its path prefix from every address the
+        # service serves, which share nothing past the root.
+        with patched_settings({**get_api_docs_settings(), "SCHEMA_PATH_PREFIX": "/"}):
+            cls.schema = SchemaGenerator(patterns=patterns).get_schema(request=None, public=True)
+
+    def _operations(self):
+        """Every operation of the user addresses that have a replacement, as this document carries it."""
+        return {
+            (address, method): self.schema["paths"][address][method]
+            for address, method in SUPERSEDED_USER_OPERATION_IDS
+        }
+
+    def test_this_service_serves_every_address_it_marks(self):
+        """The mark is matched on the exact address, so one this document spells otherwise is never marked."""
+        assert [address for address in SUPERSEDED_USER_ADDRESSES if address not in self.schema["paths"]] == []
+
+    def test_every_operation_of_those_addresses_is_marked_superseded(self):
+        marked = {key: operation.get("deprecated") for key, operation in self._operations().items()}
+        assert marked == dict.fromkeys(SUPERSEDED_USER_OPERATION_IDS, True)
+
+    def test_every_operation_keeps_the_name_it_is_published_under(self):
+        published = {key: operation["operationId"] for key, operation in self._operations().items()}
+        assert published == SUPERSEDED_USER_OPERATION_IDS
