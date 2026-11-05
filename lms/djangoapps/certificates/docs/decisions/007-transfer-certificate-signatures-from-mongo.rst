@@ -3,7 +3,9 @@ Transfer certificate signatures to Credentials IDA
 
 Status
 ------
-Accepted
+2022: Accepted
+
+2026: Still unimplemented. Future of Credentials IDA is uncertain. Unclear if we will use this migration, or migrate the signatures somewhere else.
 
 Context
 -------
