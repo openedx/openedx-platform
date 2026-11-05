@@ -1335,6 +1335,8 @@ class ServedCredentialSchemesTest(TestCase):
         for address, document in self.documents.items():
             described = set(document["components"].get("securitySchemes", {}))
             named = credentials_named(document)
+            # The sign-in names the CSRF token and other operations the session cookie.
+            assert {"cookieAuth", "csrf"} <= set(named), (address, sorted(named))
             assert {name: sorted(named[name]) for name in set(named) - described} == {}, address
 
     def test_the_csrf_token_is_described_where_the_sign_in_names_it(self):

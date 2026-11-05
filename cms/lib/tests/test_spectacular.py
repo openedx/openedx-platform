@@ -390,10 +390,10 @@ class SupersededUserOperationTest(DjangoTestCase):
 
     def test_no_address_replacing_a_superseded_one_is_published_here(self):
         """This service serves none of them, so its document describes only what it serves."""
-        replacing = {
-            path for path in self.schema["paths"]
-            if path.startswith("/api/user/v2/") and not path.startswith("/api/user/v2/account/")
-        }
+        under_version_two = {path for path in self.schema["paths"] if path.startswith("/api/user/v2/")}
+        # The authentication app serves a superseded registration under the same prefix.
+        assert "/api/user/v2/account/registration/" in under_version_two, sorted(under_version_two)
+        replacing = {path for path in under_version_two if not path.startswith("/api/user/v2/account/")}
         assert replacing == set()
 
     def test_the_retirement_status_model_is_published_as_the_other_service_appends_it(self):
@@ -463,10 +463,12 @@ class ServedCredentialSchemesTest(DjangoTestCase):
             cls.documents[address] = json.loads(response.content)
 
     def test_every_credential_an_operation_names_is_described_in_the_same_document(self):
+        named = {address: credentials_named(document) for address, document in self.documents.items()}
+        # The older sign-in served here names the CSRF token, and other operations the session cookie.
+        assert {"cookieAuth", "csrf"} <= set(named["/api-docs/schema/"]), sorted(named["/api-docs/schema/"])
         for address, document in self.documents.items():
             described = set(document["components"].get("securitySchemes", {}))
-            named = credentials_named(document)
-            assert {name: sorted(named[name]) for name in set(named) - described} == {}, address
+            assert {name: sorted(named[address][name]) for name in set(named[address]) - described} == {}, address
 
     def test_the_csrf_token_is_described_where_the_older_sign_in_names_it(self):
         document = self.documents["/api-docs/schema/"]
@@ -479,6 +481,7 @@ class ServedCredentialSchemesTest(DjangoTestCase):
             address: document["components"].get("securitySchemes", {}).get("csrf")
             for address, document in self.documents.items()
         }
-        assert {address: scheme for address, scheme in described.items() if scheme is not None} == {
-            address: CSRF_SCHEME for address, scheme in described.items() if scheme is not None
-        }
+        describing = {address: scheme for address, scheme in described.items() if scheme is not None}
+        # The document whose older sign-in names the token is one of them.
+        assert "/api-docs/schema/" in describing, sorted(describing)
+        assert describing == dict.fromkeys(describing, CSRF_SCHEME)

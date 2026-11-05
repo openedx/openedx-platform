@@ -791,6 +791,14 @@ def test_every_superseded_address_has_a_published_replacement(schema):
         assert replacement in schema["paths"]
 
 
+@skip_unless_lms
+def test_the_superseded_address_left_out_is_generated_from_the_same_mounts(schema, service_wide):
+    """The document covering the whole service carries it, so its absence from this one is this one's choice."""
+    for superseded in SUPERSEDED_USER_ADDRESSES_LEFT_OUT:
+        assert superseded in service_wide["paths"]
+        assert superseded not in schema["paths"]
+
+
 #: The media types each superseded body is published in, by address and method.
 SUPERSEDED_REQUEST_MEDIA_TYPES = {
     ("/api/user/v1/accounts/{username}", "patch"): {"application/merge-patch+json"},

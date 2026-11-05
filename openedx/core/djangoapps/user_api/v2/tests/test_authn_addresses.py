@@ -1739,7 +1739,10 @@ class SupersededDocumentTests(TestCase):
 
     def test_the_narrow_document_leaves_out_the_address_that_takes_its_version_as_a_parameter(self):
         """Signing in by posting there is described by its handler, and that description is not what it does."""
-        narrow = self.documents["narrow"]
+        service_wide, narrow = self.documents["service-wide"], self.documents["narrow"]
+        # The service serves the address and its models, so their absence below is the document's own choice.
+        assert LOGIN_SESSION_KEY in service_wide["paths"]
+        assert {"LoginUserRequest", "LoginUserResponse"} <= set(service_wide["components"]["schemas"])
         assert LOGIN_SESSION_KEY not in narrow["paths"]
         assert {"LoginUserRequest", "LoginUserResponse"} & set(narrow["components"]["schemas"]) == set()
 
