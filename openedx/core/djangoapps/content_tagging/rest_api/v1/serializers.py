@@ -6,8 +6,9 @@ from __future__ import annotations
 
 from openedx_authz import api as authz_api
 from openedx_authz.constants.permissions import COURSES_MANAGE_TAGS
-from openedx_learning.api import is_competency_taxonomy
+from openedx_learning.api import is_competency_taxonomy, select_competency_taxonomies
 from openedx_tagging.api import TaxonomyType
+from openedx_tagging.models import ObjectTag, Taxonomy
 from openedx_tagging.rest_api.v1.serializers import (
     ObjectTagMinimalSerializer,
     ObjectTagsByTaxonomySerializer,
@@ -118,7 +119,8 @@ class TaxonomyOrgSerializer(TaxonomySerializer):
 
 class ObjectTagOrgByTaxonomySerializer(ObjectTagsByTaxonomySerializer):
     """
-    Extend ObjectTagsByTaxonomySerializer to conditionally use openedx-authz for can_tag_object.
+    Extend ObjectTagsByTaxonomySerializer to conditionally use openedx-authz for can_tag_object,
+    and to report each taxonomy's ``taxonomy_type`` ("competency" or "tags").
     """
 
     def can_tag_object(self, obj_tag) -> bool | None:
@@ -137,6 +139,30 @@ class ObjectTagOrgByTaxonomySerializer(ObjectTagsByTaxonomySerializer):
 
         # Fall back to parent implementation
         return super().can_tag_object(obj_tag)
+
+    def to_representation(self, instance: list[ObjectTag]) -> dict:
+        """
+        Serialize the object tags grouped by taxonomy, adding ``taxonomy_type`` to each taxonomy entry.
+
+        ``taxonomy_type`` is "competency" when ``is_competency_taxonomy`` (the CBE public API) says the
+        taxonomy is competency-backed, and "tags" otherwise. All the taxonomies are checked with one query,
+        through ``select_competency_taxonomies``, however many there are; no query runs for an untagged object.
+        """
+        data = super().to_representation(instance)
+        taxonomy_ids = {obj_tag.taxonomy_id for obj_tag in instance if obj_tag.taxonomy_id is not None}
+        competency_taxonomy_ids = {
+            taxonomy.pk
+            for taxonomy in select_competency_taxonomies(Taxonomy.objects.filter(pk__in=taxonomy_ids))
+            if is_competency_taxonomy(taxonomy)
+        }
+        for by_object in data.values():
+            for entry in by_object["taxonomies"]:
+                entry["taxonomy_type"] = (
+                    TaxonomyType.COMPETENCY.value
+                    if entry["taxonomy_id"] in competency_taxonomy_ids
+                    else TaxonomyType.TAGS.value
+                )
+        return data
 
 
 class ObjectTagCopiedMinimalSerializer(ObjectTagMinimalSerializer):
