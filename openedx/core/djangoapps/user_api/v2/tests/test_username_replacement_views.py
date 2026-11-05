@@ -375,7 +375,13 @@ class EveryPlaceTheNameIsKeptTests(UsernameReplacementTestCase):
         ):
             answered = self.ask([{"plain-learner": "first"}, {"other-learner": "second"}])
         assert answered.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
-        assert answered.json()["detail"] == "An unexpected error occurred. Please try again later."
+        assert answered.json() == {
+            "type": error_type_uri(INTERNAL_ERROR_SLUG),
+            "title": INTERNAL_ERROR_TITLE,
+            "status": status.HTTP_500_INTERNAL_SERVER_ERROR,
+            "detail": "An unexpected error occurred. Please try again later.",
+            "instance": self.url,
+        }
         assert "would not take it" not in answered.content.decode()
         assert User.objects.get(id=self.learner.id).username == "plain-learner"
         assert User.objects.get(id=other.id).username == "other-learner"
