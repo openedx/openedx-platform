@@ -546,10 +546,15 @@ def _named_body(response):
     return body["$ref"].rsplit("/", 1)[-1]
 
 
+#: The authentication app's mount, which serves the superseded registration,
+#: sign-in and password reset addresses from outside the user API's own mounts.
+AUTHN_MOUNT = "openedx.core.djangoapps.user_authn.urls"
+
+
 @cache
 def _user_documents():
     """
-    Return the two documents this service publishes, generated once and from the user mounts only.
+    Return the two documents this service publishes, generated once and from the mounts serving user addresses.
 
     Each is generated under the settings it is published with, so what it says
     about a user address is what the whole document says about it.
@@ -557,6 +562,7 @@ def _user_documents():
     patterns = [
         entry for entry in import_module(settings.ROOT_URLCONF).urlpatterns
         if str(entry.pattern).startswith(USER_MOUNT)
+        or getattr(getattr(entry, "urlconf_module", None), "__name__", None) == AUTHN_MOUNT
     ]
     published = SchemaGenerator(patterns=patterns).get_schema(request=None, public=True)
     # The whole document derives its path prefix from every address the
@@ -1226,6 +1232,53 @@ class PublishedDocumentTest(TestCase):
         assert {tag: sorted(members) for tag, members in areas.items()} == {
             "openedx-platform-sdk": ["user"],
             "user": ["user"],
+        }
+
+
+#: The operations of the registration, sign-in and password reset addresses
+#: this version supersedes that both documents publish.
+SUPERSEDED_AUTHENTICATION_OPERATIONS = (
+    ("/api/user/v1/account/registration/", "get"),
+    ("/api/user/v1/account/registration/", "post"),
+    ("/api/user/v2/account/registration/", "get"),
+    ("/api/user/v2/account/registration/", "post"),
+    ("/api/user/v1/account/password_reset/", "get"),
+    ("/api/user/v1/account/password_reset/token/validate/", "post"),
+    ("/api/user/v1/validation/registration", "post"),
+)
+
+#: The superseded sign-in at the address that takes its version as a parameter,
+#: which only the document covering the whole service publishes.
+SUPERSEDED_VERSIONED_SIGN_IN_OPERATIONS = (
+    ("/api/user/{api_version}/account/login_session/", "get"),
+    ("/api/user/{api_version}/account/login_session/", "post"),
+)
+
+
+class SupersededAuthenticationAddressTest(TestCase):
+    """
+    Both documents carry the registration, sign-in and password reset addresses this version supersedes.
+
+    The authentication app serves them from a mount of its own rather than from
+    the user mounts, so the checks made over every operation of a document,
+    such as those of ``PublishedDocumentTest``, see them only while that mount
+    is generated with the rest.
+    """
+
+    def test_each_document_carries_each_of_their_operations_marked_superseded(self):
+        superseded = SUPERSEDED_AUTHENTICATION_OPERATIONS + SUPERSEDED_VERSIONED_SIGN_IN_OPERATIONS
+        addresses = {address for address, _method in superseded}
+        marked = {
+            name: {
+                (address, method): operation.get("deprecated")
+                for address, path_item in document["paths"].items() if address in addresses
+                for method, operation in path_item.items()
+            }
+            for name, document in _user_documents().items()
+        }
+        assert marked == {
+            "published": dict.fromkeys(SUPERSEDED_AUTHENTICATION_OPERATIONS, True),
+            "service-wide": dict.fromkeys(superseded, True),
         }
 
 
