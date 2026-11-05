@@ -41,7 +41,6 @@ from openedx.core.djangoapps.user_api.v2.serializers import (
     BATCH_OUTCOMES,
     ERASURE_SCOPES,
     EXPIRATION_DAY_PATTERN,
-    LONGEST_NAME_AN_ACCOUNT_IS_STORED_UNDER,
     PREFERENCE_NAME_MAX_LENGTH,
     REPLACEMENT_MAX_MAPPINGS,
     REPLACEMENT_OUTCOMES,
@@ -3014,12 +3013,19 @@ def test_the_replacement_publishes_the_body_it_reads_rather_than_the_one_it_answ
 
 
 @skip_unless_lms
-def test_the_published_mapping_holds_a_name_to_what_an_address_carries(schema):
-    """A client building a request from the document builds one the endpoint applies."""
+def test_the_published_mapping_takes_a_name_of_any_shape(schema):
+    """
+    A client building a request from the document builds one the endpoint carries out.
+
+    A name is written as asked for and a null is reported as failed, so the
+    name asked for carries no bound and may be null; a mapping still names
+    exactly one account.
+    """
     mappings = schema["components"]["schemas"]["UsernameReplacementRequest"]["properties"][
         "username_mappings"
     ]
     assert mappings["maxItems"] == REPLACEMENT_MAX_MAPPINGS
-    asked_for = mappings["items"]["additionalProperties"]
-    assert asked_for["maxLength"] == LONGEST_NAME_AN_ACCOUNT_IS_STORED_UNDER
-    assert asked_for["pattern"] == f"^{settings.USERNAME_REGEX_PARTIAL}$"
+    assert {key: mappings["items"][key] for key in ("type", "minProperties", "maxProperties")} == {
+        "type": "object", "minProperties": 1, "maxProperties": 1,
+    }
+    assert mappings["items"]["additionalProperties"] == {"type": "string", "nullable": True}

@@ -3,13 +3,13 @@
 import json
 from unittest import mock
 
-import pytest
 from django.apps import apps
 from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.core.handlers.base import BaseHandler
-from django.db import connections
+from django.db import DatabaseError, DataError, connections
+from django.db.models.query import QuerySet
 from django.test import override_settings
-from django.urls import NoReverseMatch, resolve, reverse
+from django.urls import resolve, reverse
 from edx_rest_framework_extensions.errors import INTERNAL_ERROR_SLUG, INTERNAL_ERROR_TITLE, error_type_uri
 from edx_rest_framework_extensions.testing import assert_error_envelope
 from rest_framework import status
@@ -31,7 +31,7 @@ from openedx.core.djangoapps.user_api.models import (
 )
 from openedx.core.djangoapps.user_api.v2 import view_services
 from openedx.core.djangoapps.user_api.v2.serializers import (
-    LONGEST_NAME_AN_ACCOUNT_IS_STORED_UNDER,
+    REPLACEMENT_FAILED,
     REPLACEMENT_MAX_MAPPINGS,
     REPLACEMENT_NO_SUCH_ACCOUNT,
     REPLACEMENT_REPLACED,
@@ -51,6 +51,21 @@ REPLACEMENT_WORKER_USERNAME = "replacement-worker"
 EARLIER_ADDRESS = "/api/user/v1/accounts/replace_usernames/"
 
 FORM = "application/x-www-form-urlencoded"
+
+#: The longest name the column an account's name is kept in holds.
+LONGEST_NAME = User._meta.get_field("username").max_length  # pylint: disable=protected-access
+
+
+def refusing_names_longer_than_their_column():
+    """Refuse every write of a name longer than its column, as a database holding it to the column does."""
+    update = QuerySet.update
+
+    def write(queryset, **values):
+        if any(isinstance(value, str) and len(value) > LONGEST_NAME for value in values.values()):
+            raise DataError("the value is too long for the column")
+        return update(queryset, **values)
+
+    return mock.patch.object(QuerySet, "update", autospec=True, side_effect=write)
 
 
 @override_settings(USERNAME_REPLACEMENT_WORKER=REPLACEMENT_WORKER_USERNAME)
@@ -386,13 +401,13 @@ class _ReplacementFailureCases:
         self.login(self.replacer)
         self.other = UserFactory.create(username="other-learner")
 
-    def failing_for(self, name):
-        """Fail the rewrite of the retirement records kept under this name, and of no other."""
+    def failing_for(self, name, failure):
+        """Fail the rewrite of the retirement records kept under this name, and of no other, with this."""
         rewrites = UserRetirementStatus.objects.filter
 
         def rewrite(**selected):
             if selected.get("original_username") == name:
-                raise ValueError("the rows would not take it")
+                raise failure("the rows would not take it")
             return rewrites(**selected)
 
         return mock.patch.object(UserRetirementStatus.objects, "filter", side_effect=rewrite)
@@ -401,9 +416,26 @@ class _ReplacementFailureCases:
         view = resolve(self.url).func
         assert (BaseHandler().make_view_atomic(view) is not view) is self.REQUESTS_RUN_IN_A_TRANSACTION
 
-    def test_a_write_that_fails_part_way_through_replaces_nothing(self):
-        """The mapping carried out before the failure is not kept either."""
-        with self.failing_for("other-learner"):
+    def test_a_write_the_database_refuses_is_reported_and_the_rest_are_carried_out(self):
+        third = UserFactory.create(username="third-learner")
+        with self.failing_for("other-learner", DatabaseError):
+            answered = self.ask([
+                {"plain-learner": "first"}, {"other-learner": "second"}, {"third-learner": "third"},
+            ])
+        assert answered.status_code == status.HTTP_200_OK, answered.content
+        assert self.results_of(answered) == [
+            {"current_username": "plain-learner", "new_username": "first", "outcome": REPLACEMENT_REPLACED},
+            {"current_username": "other-learner", "new_username": None, "outcome": REPLACEMENT_FAILED},
+            {"current_username": "third-learner", "new_username": "third", "outcome": REPLACEMENT_REPLACED},
+        ]
+        assert "would not take it" not in answered.content.decode()
+        assert User.objects.get(id=self.learner.id).username == "first"
+        assert User.objects.get(id=self.other.id).username == "other-learner"
+        assert User.objects.get(id=third.id).username == "third"
+
+    def test_a_fault_part_way_through_replaces_nothing(self):
+        """A failure other than the database refusing a write keeps none of the mappings before it."""
+        with self.failing_for("other-learner", ValueError):
             answered = self.ask([{"plain-learner": "first"}, {"other-learner": "second"}])
         assert answered.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
         assert answered.json() == {
@@ -492,31 +524,63 @@ class UsernameReplacementBodyTests(UsernameReplacementTestCase):
         assert answered.status_code == status.HTTP_200_OK, answered.content
         assert len(self.results_of(answered)) == REPLACEMENT_MAX_MAPPINGS
 
-    def test_a_name_no_address_can_carry_is_refused_before_anything_is_written(self):
-        """
-        Such a name would leave the account, and the record of its retirement, unreachable.
+    def test_a_name_carrying_characters_no_address_carries_is_written_as_asked(self):
+        """The earlier address writes it too; the job sending the list expects every mapping carried out."""
+        asked_for = "has/a/slash#and o'brien"
+        assert self.results_of(self.ask([{"plain-learner": asked_for}])) == [{
+            "current_username": "plain-learner",
+            "new_username": asked_for,
+            "outcome": REPLACEMENT_REPLACED,
+        }]
+        assert User.objects.get(id=self.learner.id).username == asked_for
 
-        The work that erases a retired account's data reaches the record of it
-        by the name the account was registered under, and every address of
-        this version carries the same names, so a name outside them would be
-        written and then addressable nowhere.
-        """
-        self.assert_refused_for(
-            self.ask([{"plain-learner": "has/a/slash"}]), "username_mappings[0].plain-learner",
-        )
-        assert User.objects.get(id=self.learner.id).username == "plain-learner"
-        with pytest.raises(NoReverseMatch):
-            reverse("user_v2:retirement_detail", kwargs={"username": "has/a/slash"})
+    def test_an_empty_name_is_written_as_asked(self):
+        assert self.results_of(self.ask([{"plain-learner": ""}])) == [{
+            "current_username": "plain-learner",
+            "new_username": "",
+            "outcome": REPLACEMENT_REPLACED,
+        }]
+        assert User.objects.get(id=self.learner.id).username == ""
 
-    def test_a_name_longer_than_the_column_that_stores_it_is_refused(self):
-        """One database takes it and another refuses it part way through a request."""
-        asked_for = "x" * (LONGEST_NAME_AN_ACCOUNT_IS_STORED_UNDER + 1)
-        self.assert_refused_for(self.ask([{"plain-learner": asked_for}]), "username_mappings[0].plain-learner")
+    def test_a_null_name_is_reported_as_failed_and_the_mappings_after_it_are_carried_out(self):
+        """The database stores no account under a null, so it refuses that rewrite alone."""
+        other = UserFactory.create(username="other-learner")
+        answered = self.ask([{"plain-learner": None}, {"other-learner": "renamed-other"}])
+        assert answered.status_code == status.HTTP_200_OK, answered.content
+        assert self.results_of(answered) == [
+            {"current_username": "plain-learner", "new_username": None, "outcome": REPLACEMENT_FAILED},
+            {"current_username": "other-learner", "new_username": "renamed-other", "outcome": REPLACEMENT_REPLACED},
+        ]
         assert User.objects.get(id=self.learner.id).username == "plain-learner"
+        assert User.objects.get(id=other.id).username == "renamed-other"
+
+    def test_a_null_name_for_a_name_no_account_is_stored_under_reaches_no_account(self):
+        assert self.results_of(self.ask([{"nobody-holds-this": None}])) == [{
+            "current_username": "nobody-holds-this",
+            "new_username": None,
+            "outcome": REPLACEMENT_NO_SUCH_ACCOUNT,
+        }]
+
+    def test_a_name_longer_than_its_column_is_written_where_the_database_takes_it(self):
+        """The database these tests run on stores a name of any length, as it does at the earlier address."""
+        asked_for = "x" * (LONGEST_NAME + 1)
+        assert self.results_of(self.ask([{"plain-learner": asked_for}]))[0]["outcome"] == REPLACEMENT_REPLACED
+        assert User.objects.get(id=self.learner.id).username == asked_for
+
+    def test_a_name_longer_than_its_column_is_reported_as_failed_where_the_database_refuses_it(self):
+        other = UserFactory.create(username="other-learner")
+        with refusing_names_longer_than_their_column():
+            answered = self.ask([{"plain-learner": "x" * (LONGEST_NAME + 1)}, {"other-learner": "renamed-other"}])
+        assert [result["outcome"] for result in self.results_of(answered)] == [
+            REPLACEMENT_FAILED, REPLACEMENT_REPLACED,
+        ]
+        assert self.results_of(answered)[0]["new_username"] is None
+        assert User.objects.get(id=self.learner.id).username == "plain-learner"
+        assert User.objects.get(id=other.id).username == "renamed-other"
 
     def test_a_name_as_long_as_that_column_is_answered(self):
-        """The measurement the refusal above is read against, at the boundary."""
-        asked_for = "x" * LONGEST_NAME_AN_ACCOUNT_IS_STORED_UNDER
+        """A name as long as the column storing it is written on every database."""
+        asked_for = "x" * LONGEST_NAME
         answered = self.ask([{"plain-learner": asked_for}])
         assert answered.status_code == status.HTTP_200_OK, answered.content
         assert User.objects.get(id=self.learner.id).username == asked_for

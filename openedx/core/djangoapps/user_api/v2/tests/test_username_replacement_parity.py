@@ -6,7 +6,7 @@ from unittest import mock
 
 import pytest
 from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
-from django.db import DatabaseError, connection, connections
+from django.db import DatabaseError, connection, connections, transaction
 from django.test import override_settings
 from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
@@ -22,11 +22,14 @@ from openedx.core.djangoapps.user_api.accounts.tests.retirement_helpers import (
 )
 from openedx.core.djangoapps.user_api.v2 import view_services
 from openedx.core.djangoapps.user_api.v2.serializers import (
+    REPLACEMENT_FAILED,
     REPLACEMENT_MAX_MAPPINGS,
     REPLACEMENT_NO_SUCH_ACCOUNT,
     REPLACEMENT_REPLACED,
 )
 from openedx.core.djangolib.testing.utils import skip_unless_lms
+
+from .test_username_replacement_views import LONGEST_NAME, refusing_names_longer_than_their_column
 
 PASSWORD = "Password1234"
 REPLACEMENT_WORKER_USERNAME = "parity-replacement-worker"
@@ -73,11 +76,28 @@ DECLARED_DIFFERENCES = (
         "stores what is left once the space on either end is taken off",
     ),
     (
-        "a write that fails part way through",
-        "the earlier address reports that one mapping as failed and keeps the rest, the conforming "
-        "one answers this server's failure and keeps none of them, whether or not the deployment "
-        "runs each request in a transaction",
+        "a fault of this server part way through",
+        "the earlier address reports the mapping it was carrying out as failed and keeps the rest, "
+        "the conforming one answers this server's failure and keeps none of them, whether or not "
+        "the deployment runs each request in a transaction",
     ),
+)
+
+#: A name no account is stored under.
+NOBODY = "nobody"
+
+#: Names of every shape the earlier address writes, each asked for an account
+#: of its own, beside a null asked for a name no account is stored under. The
+#: null is the one the database refuses for an account; the long name is
+#: taken by the database these tests run on and refused by one holding a name
+#: to its column, which is measured apart.
+EVERY_SHAPE_OF_NAME = (
+    {"slashed": "has/a/slash#and o'brien"},
+    {"lengthy": "n" * (LONGEST_NAME + 1)},
+    {"emptied": ""},
+    {"nulled": None},
+    {"plain": "plain-renamed"},
+    {NOBODY: None},
 )
 
 
@@ -124,20 +144,20 @@ class ReplacementParityTestCase(APITestCase):
         with legacy_patch, conforming_patch:
             return call()
 
-    def refusing_the_write_for(self, name):
-        """Refuse the rewrite of the eligibility kept under this name, as a database would."""
+    def failing_the_write_for(self, name, failure):
+        """Fail the rewrite of the eligibility kept under this name, and of no other, with this."""
         rewrites = CreditEligibility.objects.filter
 
         def rewrite(**selected):
             if selected.get("username") == name:
-                raise DatabaseError("the rows of that table would not take it")
+                raise failure("the rows of that table would not take it")
             return rewrites(**selected)
 
         return mock.patch.object(CreditEligibility.objects, "filter", side_effect=rewrite)
 
-    def fail_part_way_through(self, address, in_a_transaction):
+    def fail_part_way_through(self, address, in_a_transaction, failure=DatabaseError):
         """
-        Return what this address answers and keeps when the second of two mappings cannot be written.
+        Return what this address answers and keeps when the second of two mappings fails with this.
 
         That is the status, whether the first account is stored under the
         name asked for it, and whether the second is stored under the name it
@@ -147,7 +167,7 @@ class ReplacementParityTestCase(APITestCase):
         named = f"{address == EARLIER}-{in_a_transaction}"
         carried = UserFactory.create(username=f"carried-{named}")
         failing = UserFactory.create(username=f"failing-{named}")
-        with self.refusing_the_write_for(failing.username), mock.patch.dict(
+        with self.failing_the_write_for(failing.username, failure), mock.patch.dict(
             connections.settings["default"], {"ATOMIC_REQUESTS": in_a_transaction},
         ):
             answered = self.ask(
@@ -158,6 +178,34 @@ class ReplacementParityTestCase(APITestCase):
             User.objects.get(id=carried.id).username == f"renamed-{named}",
             User.objects.get(id=failing.id).username == failing.username,
         )
+
+    def carried_out_alone(self, address, mappings):
+        """
+        Return what this address answers these mappings over accounts of their own, then undo it.
+
+        Every name a mapping replaces but ``NOBODY`` is given an account, the
+        request is sent, and the name each account is stored under afterwards
+        is read; then all of it is rolled back, so the other address is sent
+        the very same mappings over the very same accounts.
+        """
+        with transaction.atomic():
+            held = {
+                current: UserFactory.create(username=current)
+                for mapping in mappings for current in mapping if current != NOBODY
+            }
+            answered = self.ask(address, list(mappings))
+            stored = {current: User.objects.get(id=user.id).username for current, user in held.items()}
+            transaction.set_rollback(True)
+        return answered, stored
+
+    def failures_reported(self, address, answered):
+        """Return the names this address reported as failed, in the order it reported them."""
+        if address == EARLIER:
+            return [current for mapping in answered.json()["failed_replacements"] for current in mapping]
+        return [
+            result["current_username"] for result in answered.json()["results"]
+            if result["outcome"] == REPLACEMENT_FAILED
+        ]
 
 
 @skip_unless_lms
@@ -254,16 +302,71 @@ class ReplacementOutcomeParityTests(ReplacementParityTestCase):
         assert answered[EARLIER].status_code == status.HTTP_400_BAD_REQUEST
         assert answered["conforming"].status_code == status.HTTP_415_UNSUPPORTED_MEDIA_TYPE
 
-    def test_a_write_that_fails_part_way_through_is_answered_differently(self):
+    def test_a_write_the_database_refuses_part_way_through_is_reported_alike_by_both(self):
+        """Both report that mapping as failed and keep the rest, however requests run."""
+        for in_a_transaction in (True, False):
+            with self.subTest(in_a_transaction=in_a_transaction):
+                for address in self.addresses():
+                    assert self.fail_part_way_through(address, in_a_transaction) == (
+                        status.HTTP_200_OK, True, True,
+                    ), address
+
+    def test_a_fault_part_way_through_is_answered_differently(self):
         """The earlier address keeps the rest; the conforming one keeps none, however requests run."""
         for in_a_transaction in (True, False):
             with self.subTest(in_a_transaction=in_a_transaction):
-                assert self.fail_part_way_through(EARLIER, in_a_transaction) == (
+                assert self.fail_part_way_through(EARLIER, in_a_transaction, ValueError) == (
                     status.HTTP_200_OK, True, True,
                 )
-                assert self.fail_part_way_through("conforming", in_a_transaction) == (
+                assert self.fail_part_way_through("conforming", in_a_transaction, ValueError) == (
                     status.HTTP_500_INTERNAL_SERVER_ERROR, False, True,
                 )
+
+    def test_names_of_every_shape_are_carried_out_alike_by_both(self):
+        """The same mappings over the same accounts: each address writes the same names and fails the same one."""
+        answered, stored = {}, {}
+        for address in self.addresses():
+            answered[address], stored[address] = self.carried_out_alone(address, EVERY_SHAPE_OF_NAME)
+        written = {
+            "slashed": "has/a/slash#and o'brien",
+            "lengthy": "n" * (LONGEST_NAME + 1),
+            "emptied": "",
+            "nulled": "nulled",
+            "plain": "plain-renamed",
+        }
+        assert stored == {EARLIER: written, "conforming": written}
+        assert {address: self.failures_reported(address, sent) for address, sent in answered.items()} == {
+            EARLIER: ["nulled"], "conforming": ["nulled"],
+        }
+        assert answered[EARLIER].json() == {
+            "successful_replacements": [
+                {"slashed": written["slashed"]},
+                {"lengthy": written["lengthy"]},
+                {"emptied": ""},
+                {"plain": "plain-renamed"},
+                {NOBODY: None},
+            ],
+            "failed_replacements": [{"nulled": None}],
+        }
+        assert answered["conforming"].json() == {"results": [
+            {"current_username": "slashed", "new_username": written["slashed"], "outcome": REPLACEMENT_REPLACED},
+            {"current_username": "lengthy", "new_username": written["lengthy"], "outcome": REPLACEMENT_REPLACED},
+            {"current_username": "emptied", "new_username": "", "outcome": REPLACEMENT_REPLACED},
+            {"current_username": "nulled", "new_username": None, "outcome": REPLACEMENT_FAILED},
+            {"current_username": "plain", "new_username": "plain-renamed", "outcome": REPLACEMENT_REPLACED},
+            {"current_username": NOBODY, "new_username": None, "outcome": REPLACEMENT_NO_SUCH_ACCOUNT},
+        ]}
+
+    def test_a_name_longer_than_its_column_is_failed_by_both_where_the_database_refuses_it(self):
+        mappings = ({"lengthy": "n" * (LONGEST_NAME + 1)}, {"plain": "plain-renamed"})
+        answered, stored = {}, {}
+        with refusing_names_longer_than_their_column():
+            for address in self.addresses():
+                answered[address], stored[address] = self.carried_out_alone(address, mappings)
+        assert stored == dict.fromkeys(stored, {"lengthy": "lengthy", "plain": "plain-renamed"})
+        assert {address: self.failures_reported(address, sent) for address, sent in answered.items()} == {
+            EARLIER: ["lengthy"], "conforming": ["lengthy"],
+        }
 
 
 @skip_unless_lms
@@ -401,8 +504,14 @@ MEASURED_AT_BOTH = (
     ("a body sent as a web form", "measure_a_body_sent_as_a_web_form"),
     ("the most mappings one request may carry", "measure_the_most_mappings_one_request_may_carry"),
     ("space around the name asked for", "measure_space_around_the_name_asked_for"),
+    ("names of every shape", "measure_names_of_every_shape"),
+    (
+        "a name longer than its column where the database refuses it",
+        "measure_a_name_longer_than_its_column_where_the_database_refuses_it",
+    ),
     ("asking what the address serves", "measure_asking_what_the_address_serves"),
-    ("a write that fails part way through", "measure_a_write_that_fails_part_way_through"),
+    ("a write the database refuses part way through", "measure_a_write_the_database_refuses_part_way_through"),
+    ("a fault of this server part way through", "measure_a_fault_of_this_server_part_way_through"),
 )
 
 
@@ -488,10 +597,30 @@ class DeclaredDifferenceTests(ReplacementParityTestCase):
         """
         return self.client.options(self.url_of(address)).status_code
 
-    def measure_a_write_that_fails_part_way_through(self, address):
+    def measure_names_of_every_shape(self, address):
+        """Return the status, the name each account is stored under and the names reported as failed."""
+        answered, stored = self.carried_out_alone(address, EVERY_SHAPE_OF_NAME)
+        return (answered.status_code, stored, self.failures_reported(address, answered))
+
+    def measure_a_name_longer_than_its_column_where_the_database_refuses_it(self, address):
+        """Return the same, where the database holds a name to its column."""
+        with refusing_names_longer_than_their_column():
+            answered, stored = self.carried_out_alone(
+                address, ({"lengthy": "n" * (LONGEST_NAME + 1)}, {"plain": "plain-renamed"}),
+            )
+        return (answered.status_code, stored, self.failures_reported(address, answered))
+
+    def measure_a_write_the_database_refuses_part_way_through(self, address):
         """Return what each address answers and keeps, with and without a transaction per request."""
         return {
             in_a_transaction: self.fail_part_way_through(address, in_a_transaction)
+            for in_a_transaction in (True, False)
+        }
+
+    def measure_a_fault_of_this_server_part_way_through(self, address):
+        """Return the same where the failure is not the database refusing a write."""
+        return {
+            in_a_transaction: self.fail_part_way_through(address, in_a_transaction, ValueError)
             for in_a_transaction in (True, False)
         }
 

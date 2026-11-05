@@ -7,7 +7,7 @@ from django.conf import settings
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.contrib.sites.models import Site
-from django.db import transaction
+from django.db import DatabaseError, transaction
 from edx_ace import ace
 from edx_ace.recipient import Recipient
 from rest_framework.exceptions import APIException, NotFound
@@ -63,6 +63,7 @@ from .serializers import (
     ERASURE_MISC_SCOPE,
     OUTCOME_ALREADY_ABSENT,
     OUTCOME_DELETED,
+    REPLACEMENT_FAILED,
     REPLACEMENT_NO_SUCH_ACCOUNT,
     REPLACEMENT_REPLACED,
 )
@@ -605,12 +606,19 @@ def replace_usernames(mappings):
     was stored under the name given, the name worked out is simply not
     reported and no account holds it.
 
-    The mappings are carried out inside one transaction of their own, so a
-    failure part way through keeps none of them whether or not the deployment
-    opens a transaction around each request. The answer to such a failure is
-    built from the exception rather than raised out of the view, so a
-    transaction the deployment opens around the request would otherwise commit
-    what the mappings before the failure wrote.
+    A name is written as it was asked for, whatever its shape, and the
+    database decides what it stores: a mapping whose rewrite it refuses, such
+    as one asking for a null, is reported as failed with nothing of it kept,
+    and the mappings after it are carried out, as the operation this one
+    replaces does. Its caller sends a whole list in one request and forwards
+    each name replaced here to the other services.
+
+    The mappings are carried out inside one transaction of their own, so any
+    other failure part way through keeps none of them whether or not the
+    deployment opens a transaction around each request. The answer to such a
+    failure is built from the exception rather than raised out of the view, so
+    a transaction the deployment opens around the request would otherwise
+    commit what the mappings before the failure wrote.
     """
     places = _where_names_are_kept()
     results = []
@@ -618,7 +626,16 @@ def replace_usernames(mappings):
         for mapping in mappings:
             (current_username, asked_for), = mapping.items()
             replacement = _name_nobody_is_stored_under(asked_for)
-            rewritten = _rewrite_name(current_username, replacement, places)
+            try:
+                rewritten = _rewrite_name(current_username, replacement, places)
+            except DatabaseError:
+                log.exception("The database refused the name asked for one account; it was left as it was.")
+                results.append({
+                    "current_username": current_username,
+                    "new_username": None,
+                    "outcome": REPLACEMENT_FAILED,
+                })
+                continue
             handed_to_an_account = bool(rewritten[WHERE_AN_ACCOUNT_HOLDS_ITS_NAME])
             if handed_to_an_account:
                 log.info(

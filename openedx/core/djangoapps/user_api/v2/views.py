@@ -3311,7 +3311,8 @@ _RESP_NAMES_REPLACED = OpenApiResponse(
     UsernameReplacementOutcomeSerializer,
     description=(
         "What was done about each mapping given. A name no account was stored under is reported "
-        "as such rather than refused, so a repeat of a request already carried out is answered."
+        "as such rather than refused, so a repeat of a request already carried out is answered, "
+        "and a name the database would not store is reported as failed for its own mapping."
     ),
 )
 _RESP_NAMES_WERE_NOT_REPLACED = OpenApiResponse(
@@ -3339,10 +3340,13 @@ _RESP_NAMES_WERE_NOT_REPLACED = OpenApiResponse(
             "service keeps it. Each mapping is the name an account is stored under carrying the "
             "name asked for it; where another account already holds the name asked for, a suffix "
             "is added to it.\n\n"
+            "A name is written as it is asked for. Where the database will not store it, such as a "
+            "null, that mapping is reported as failed with nothing of it changed, and the other "
+            "mappings are carried out all the same.\n\n"
             "The answer reports what was done about every mapping given, in the order they were "
-            "given, so that a name that reached no account can be told from a name that was "
-            "replaced. Only the replacements are the caller's to forward to the other services "
-            "holding the same name.\n\n"
+            "given, so that a name that reached no account, or one that failed, can be told from a "
+            "name that was replaced. Only the replacements are the caller's to forward to the "
+            "other services holding the same name.\n\n"
             "This is one step of a longer job: a name replaced here and nowhere else leaves an "
             "account holding one name in this service and another in the rest."
         ),
@@ -3377,8 +3381,8 @@ class UsernameReplacementViewSet(
     the job to carry.
 
     Every mapping given is reported, so that a name no account was stored
-    under is told apart from a name that was replaced rather than counted as
-    one.
+    under, or one the database would not store, is told apart from a name
+    that was replaced rather than counted as one.
     """
 
     serializer_class = UsernameReplacementOutcomeSerializer

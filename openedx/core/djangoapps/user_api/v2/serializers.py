@@ -2,9 +2,7 @@
 
 import re
 
-from django.conf import settings
 from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
-from django.core.validators import RegexValidator
 from django.urls import reverse
 from drf_spectacular.utils import extend_schema_field
 from edx_rest_framework_extensions.errors import ErrorResponseSerializer
@@ -1397,7 +1395,8 @@ class RetirementBatchOutcomeSerializer(serializers.Serializer):  # pylint: disab
 #: What a replacement reports about each mapping it was given.
 REPLACEMENT_REPLACED = "replaced"
 REPLACEMENT_NO_SUCH_ACCOUNT = "no_such_account"
-REPLACEMENT_OUTCOMES = (REPLACEMENT_REPLACED, REPLACEMENT_NO_SUCH_ACCOUNT)
+REPLACEMENT_FAILED = "failed"
+REPLACEMENT_OUTCOMES = (REPLACEMENT_REPLACED, REPLACEMENT_NO_SUCH_ACCOUNT, REPLACEMENT_FAILED)
 
 #: Each outcome with what it means, offered and named as the erasure scopes
 #: are: the pair is declared here so that the name the published set of
@@ -1412,6 +1411,12 @@ REPLACEMENT_OUTCOME_CHOICES = (
         "No account is stored under that name, so no name was handed out and the other services "
         "have nothing to be told about it.",
     ),
+    (
+        REPLACEMENT_FAILED,
+        "The database would not store the name asked for, so nothing was changed for that mapping "
+        "and the other services have nothing to be told about it. The other mappings were carried "
+        "out all the same.",
+    ),
 )
 
 #: The largest number of mappings one request may carry, which is the number
@@ -1419,20 +1424,6 @@ REPLACEMENT_OUTCOME_CHOICES = (
 #: one result per mapping, so a request without a ceiling is an answer without
 #: one, over a write across several tables.
 REPLACEMENT_MAX_MAPPINGS = UserApiPagination.max_page_size
-
-#: The longest name an account is stored under, which is the column storing
-#: it: a longer one is taken by one database and refused by another part way
-#: through a request, so it is refused before any of the request is carried
-#: out.
-LONGEST_NAME_AN_ACCOUNT_IS_STORED_UNDER = (
-    User._meta.get_field("username").max_length  # pylint: disable=protected-access
-)
-
-#: The names an address of this version carries. A name asked for is held to
-#: this because the account given it is addressed by it afterwards: a name no
-#: address carries leaves the account, and the record of the work that has to
-#: erase its data, at an address nothing resolves.
-NAME_AN_ADDRESS_CARRIES = settings.USERNAME_REGEX_PARTIAL
 
 #: One mapping, as the body carries it: an object whose single member is the
 #: name an account is stored under, carrying the name asked for it. The shape
@@ -1443,32 +1434,15 @@ USERNAME_MAPPING_SCHEMA = {
     "type": "object",
     "minProperties": 1,
     "maxProperties": 1,
-    "additionalProperties": {"type": "string"},
+    "additionalProperties": {"type": "string", "nullable": True},
     "description": (
         "One account, as the name it is stored under carrying the name asked for it. Exactly one "
-        "name per object."
-    ),
-}
-
-#: The same mapping where the name asked for is held to what stores it and to
-#: what addresses it. The operation this one replaces reads a name of any
-#: shape, so the shape above is left as it is and the bounds are published
-#: here, by the operation that holds a name to them.
-BOUNDED_USERNAME_MAPPING_SCHEMA = {
-    **USERNAME_MAPPING_SCHEMA,
-    "additionalProperties": {
-        "type": "string",
-        "maxLength": LONGEST_NAME_AN_ACCOUNT_IS_STORED_UNDER,
-        "pattern": f"^{NAME_AN_ADDRESS_CARRIES}$",
-    },
-    "description": (
-        "One account, as the name it is stored under carrying the name asked for it. Exactly one "
-        "name per object, and the name asked for is one an address can carry."
+        "name per object. A name the database will not store, such as null, is reported as failed."
     ),
 }
 
 
-@extend_schema_field(BOUNDED_USERNAME_MAPPING_SCHEMA)
+@extend_schema_field(USERNAME_MAPPING_SCHEMA)
 class UsernameMappingField(serializers.DictField):
     """
     One account whose name is to be replaced, with the name asked for it.
@@ -1485,19 +1459,14 @@ class UsernameMappingField(serializers.DictField):
         "several": "Each mapping names one account, and this one names several.",
     }
 
+    # A name of any shape is written as it is asked for, and one the database
+    # will not store is reported for its own mapping, so that the replacing
+    # job, which sends a whole list in one request, gets every other mapping
+    # carried out as it did at the address this one replaces.
     child = serializers.CharField(
-        max_length=LONGEST_NAME_AN_ACCOUNT_IS_STORED_UNDER,
-        validators=[RegexValidator(
-            regex=rf"\A(?:{NAME_AN_ADDRESS_CARRIES})\Z",
-            message=(
-                "A name asked for carries letters, digits, spaces and the characters . @ _ + - "
-                "and nothing else, so that the account given it can be addressed afterwards."
-            ),
-        )],
-        help_text=(
-            "Name asked for the account stored under the name this member carries. It is a name "
-            "an address can carry, so the account given it is reachable under it."
-        ),
+        allow_blank=True,
+        allow_null=True,
+        help_text="Name asked for the account stored under the name this member carries.",
     )
 
     def to_internal_value(self, data):
@@ -1514,8 +1483,10 @@ class UsernameReplacementRequestSerializer(serializers.Serializer):  # pylint: d
 
     A name no account is stored under is reported as such rather than
     refusing the request, so a repeat of a request already carried out is
-    answered. A name given twice is acted on in the order the mappings are
-    given, which leaves the second of them nothing to replace.
+    answered. A name the database will not store is reported as failed for its
+    own mapping rather than refusing the others. A name given twice is acted
+    on in the order the mappings are given, which leaves the second of them
+    nothing to replace.
     """
 
     username_mappings = serializers.ListField(
@@ -1539,16 +1510,18 @@ class UsernameReplacementResultSerializer(serializers.Serializer):  # pylint: di
         allow_null=True,
         help_text=(
             "Name the account is stored under now, which is the name asked for, or that name with "
-            "a suffix added where another account already held it. Null where no account is "
-            "stored under the name given, since no name was handed to an account."
+            "a suffix added where another account already held it. Null where no name was handed "
+            "to an account: none is stored under the name given, or the database would not store "
+            "the name asked for."
         ),
     )
     outcome = serializers.ChoiceField(
         choices=REPLACEMENT_OUTCOME_CHOICES,
         help_text=(
             f"`{REPLACEMENT_REPLACED}` where an account is stored under the name answered "
-            f"with, and `{REPLACEMENT_NO_SUCH_ACCOUNT}` where no account is stored under the "
-            "name given."
+            f"with, `{REPLACEMENT_NO_SUCH_ACCOUNT}` where no account is stored under the "
+            f"name given, and `{REPLACEMENT_FAILED}` where the database would not store the name "
+            "asked for."
         ),
     )
 
