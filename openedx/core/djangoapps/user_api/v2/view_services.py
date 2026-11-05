@@ -605,24 +605,31 @@ def replace_usernames(mappings):
     was stored under the name given, the name worked out is simply not
     reported and no account holds it.
 
+    The mappings are carried out inside one transaction of their own, so a
+    failure part way through keeps none of them whether or not the deployment
+    opens a transaction around each request. The answer to such a failure is
+    built from the exception rather than raised out of the view, so a
+    transaction the deployment opens around the request would otherwise commit
+    what the mappings before the failure wrote.
     """
     places = _where_names_are_kept()
     results = []
-    for mapping in mappings:
-        (current_username, asked_for), = mapping.items()
-        replacement = _name_nobody_is_stored_under(asked_for)
-        rewritten = _rewrite_name(current_username, replacement, places)
-        handed_to_an_account = bool(rewritten[WHERE_AN_ACCOUNT_HOLDS_ITS_NAME])
-        if handed_to_an_account:
-            log.info(
-                "The name of one account was replaced in %s places.",
-                sum(rewritten.values()),
-            )
-        results.append({
-            "current_username": current_username,
-            "new_username": replacement if handed_to_an_account else None,
-            "outcome": (
-                REPLACEMENT_REPLACED if handed_to_an_account else REPLACEMENT_NO_SUCH_ACCOUNT
-            ),
-        })
+    with transaction.atomic():
+        for mapping in mappings:
+            (current_username, asked_for), = mapping.items()
+            replacement = _name_nobody_is_stored_under(asked_for)
+            rewritten = _rewrite_name(current_username, replacement, places)
+            handed_to_an_account = bool(rewritten[WHERE_AN_ACCOUNT_HOLDS_ITS_NAME])
+            if handed_to_an_account:
+                log.info(
+                    "The name of one account was replaced in %s places.",
+                    sum(rewritten.values()),
+                )
+            results.append({
+                "current_username": current_username,
+                "new_username": replacement if handed_to_an_account else None,
+                "outcome": (
+                    REPLACEMENT_REPLACED if handed_to_an_account else REPLACEMENT_NO_SUCH_ACCOUNT
+                ),
+            })
     return results

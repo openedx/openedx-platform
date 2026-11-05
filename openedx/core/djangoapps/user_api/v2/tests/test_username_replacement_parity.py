@@ -6,7 +6,7 @@ from unittest import mock
 
 import pytest
 from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
-from django.db import DatabaseError, connection
+from django.db import DatabaseError, connection, connections
 from django.test import override_settings
 from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
@@ -75,7 +75,8 @@ DECLARED_DIFFERENCES = (
     (
         "a write that fails part way through",
         "the earlier address reports that one mapping as failed and keeps the rest, the conforming "
-        "one answers this server's failure and keeps none of them",
+        "one answers this server's failure and keeps none of them, whether or not the deployment "
+        "runs each request in a transaction",
     ),
 )
 
@@ -122,6 +123,41 @@ class ReplacementParityTestCase(APITestCase):
         legacy_patch, conforming_patch = self.fixed_suffix()
         with legacy_patch, conforming_patch:
             return call()
+
+    def refusing_the_write_for(self, name):
+        """Refuse the rewrite of the eligibility kept under this name, as a database would."""
+        rewrites = CreditEligibility.objects.filter
+
+        def rewrite(**selected):
+            if selected.get("username") == name:
+                raise DatabaseError("the rows of that table would not take it")
+            return rewrites(**selected)
+
+        return mock.patch.object(CreditEligibility.objects, "filter", side_effect=rewrite)
+
+    def fail_part_way_through(self, address, in_a_transaction):
+        """
+        Return what this address answers and keeps when the second of two mappings cannot be written.
+
+        That is the status, whether the first account is stored under the
+        name asked for it, and whether the second is stored under the name it
+        had. The deployment decides whether each request runs in a
+        transaction, so it is measured both ways.
+        """
+        named = f"{address == EARLIER}-{in_a_transaction}"
+        carried = UserFactory.create(username=f"carried-{named}")
+        failing = UserFactory.create(username=f"failing-{named}")
+        with self.refusing_the_write_for(failing.username), mock.patch.dict(
+            connections.settings["default"], {"ATOMIC_REQUESTS": in_a_transaction},
+        ):
+            answered = self.ask(
+                address, [{carried.username: f"renamed-{named}"}, {failing.username: f"failed-{named}"}],
+            )
+        return (
+            answered.status_code,
+            User.objects.get(id=carried.id).username == f"renamed-{named}",
+            User.objects.get(id=failing.id).username == failing.username,
+        )
 
 
 @skip_unless_lms
@@ -218,6 +254,17 @@ class ReplacementOutcomeParityTests(ReplacementParityTestCase):
         assert answered[EARLIER].status_code == status.HTTP_400_BAD_REQUEST
         assert answered["conforming"].status_code == status.HTTP_415_UNSUPPORTED_MEDIA_TYPE
 
+    def test_a_write_that_fails_part_way_through_is_answered_differently(self):
+        """The earlier address keeps the rest; the conforming one keeps none, however requests run."""
+        for in_a_transaction in (True, False):
+            with self.subTest(in_a_transaction=in_a_transaction):
+                assert self.fail_part_way_through(EARLIER, in_a_transaction) == (
+                    status.HTTP_200_OK, True, True,
+                )
+                assert self.fail_part_way_through("conforming", in_a_transaction) == (
+                    status.HTTP_500_INTERNAL_SERVER_ERROR, False, True,
+                )
+
 
 @skip_unless_lms
 @pytest.mark.usefixtures("setup_retirement_states")
@@ -263,18 +310,37 @@ class ReplacementOfARetiringAccountParityTests(ReplacementParityTestCase):
 #: The statements of one request, as a shape with the values taken out of it.
 _VALUE = re.compile(r"\d+|'[^']*'")
 
-#: How many statements a request carrying this many mappings makes, which is
-#: what the address this one replaces makes for the same request: one look for
-#: a name nobody holds and one write per place a name is kept, for every
-#: mapping, on both. The numbers are measured rather than worked out, because
-#: the statements that open and release the part of a request one mapping can
-#: have undone on its own are not issued for every one of them.
+#: How many statements a request carrying this many mappings makes at the
+#: address this one replaces: one look for a name nobody holds and one write per
+#: place a name is kept, for every mapping. The numbers are measured rather than
+#: worked out, because the statements that open and release the part of a
+#: request one mapping can have undone on its own are not issued for every one
+#: of them.
 MAPPING_COSTS = {1: 24, 2: 36, 10: 125}
+
+#: The look for a name nobody holds, which is the first statement of a mapping.
+NAME_LOOKUP = 'SELECT ? AS "a" FROM "auth_user" WHERE "auth_user"."username" = ? LIMIT ?'
+
+#: The statements opening and closing a transaction inside a request.
+OPENS_A_TRANSACTION = 'SAVEPOINT "s?_x?"'
+CLOSES_A_TRANSACTION = 'RELEASE SAVEPOINT "s?_x?"'
 
 
 @skip_unless_lms
 class ReplacementCostParityTests(ReplacementParityTestCase):
-    """Both addresses cost the same, and both cost one mapping's worth per mapping."""
+    """
+    Both addresses cost one mapping's worth per mapping, and the same statements for it.
+
+    The conforming address adds the two statements that open and close the
+    one transaction it carries every mapping out in, whatever their number.
+    """
+
+    def without_the_transaction_around_the_mappings(self, statements):
+        """Return the statements without the transaction opened before the first mapping and closed after the last."""
+        opened = statements.index(NAME_LOOKUP) - 1
+        closed = max(index for index, sql in enumerate(statements) if sql.startswith("UPDATE ")) + 2
+        assert [statements[opened], statements[closed]] == [OPENS_A_TRANSACTION, CLOSES_A_TRANSACTION]
+        return statements[:opened] + statements[opened + 1:closed] + statements[closed + 1:]
 
     def statements(self, address, mappings):
         """Return what each statement of this request does, without the values."""
@@ -305,16 +371,18 @@ class ReplacementCostParityTests(ReplacementParityTestCase):
 
     def test_both_addresses_make_the_same_statements_for_one_mapping(self):
         measured = self.measured(1)
-        assert measured[EARLIER] == measured["conforming"]
+        assert self.without_the_transaction_around_the_mappings(measured["conforming"]) == measured[EARLIER]
 
     def test_both_addresses_cost_the_same_for_every_mapping_added(self):
         """A read per mapping that only one of them makes would show up here as a longer list."""
         counts = {}
         for count in (1, 2, 10):
             measured = self.measured(count)
-            assert measured[EARLIER] == measured["conforming"], count
-            counts[count] = len(measured[EARLIER])
-        assert counts == MAPPING_COSTS
+            assert self.without_the_transaction_around_the_mappings(measured["conforming"]) == (
+                measured[EARLIER]
+            ), count
+            counts[count] = (len(measured[EARLIER]), len(measured["conforming"]))
+        assert counts == {count: (cost, cost + 2) for count, cost in MAPPING_COSTS.items()}
 
 
 #: Everything a caller can notice about either address, as a measurement made
@@ -421,15 +489,11 @@ class DeclaredDifferenceTests(ReplacementParityTestCase):
         return self.client.options(self.url_of(address)).status_code
 
     def measure_a_write_that_fails_part_way_through(self, address):
-        """Return what each address answers when one place a name is kept cannot be written."""
-        held = UserFactory.create(username=f"failing-{address == EARLIER}")
-        broken = mock.Mock()
-        broken.filter.return_value.update.side_effect = DatabaseError(
-            "the rows of that table would not take it",
-        )
-        with mock.patch.object(CreditEligibility, "objects", broken):
-            answered = self.ask(address, [{held.username: f"failed-{address == EARLIER}"}])
-        return (answered.status_code, User.objects.get(id=held.id).username == held.username)
+        """Return what each address answers and keeps, with and without a transaction per request."""
+        return {
+            in_a_transaction: self.fail_part_way_through(address, in_a_transaction)
+            for in_a_transaction in (True, False)
+        }
 
     def test_the_differences_a_caller_would_notice_are_the_ones_declared(self):
         """A measured difference that is not declared, or declared and not measured, fails."""

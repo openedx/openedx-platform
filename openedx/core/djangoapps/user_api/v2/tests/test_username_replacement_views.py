@@ -6,6 +6,8 @@ from unittest import mock
 import pytest
 from django.apps import apps
 from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
+from django.core.handlers.base import BaseHandler
+from django.db import connections
 from django.test import override_settings
 from django.urls import NoReverseMatch, resolve, reverse
 from edx_rest_framework_extensions.errors import INTERNAL_ERROR_SLUG, INTERNAL_ERROR_TITLE, error_type_uri
@@ -367,12 +369,41 @@ class EveryPlaceTheNameIsKeptTests(UsernameReplacementTestCase):
         assert "no such application" not in answered.content.decode()
         assert "plain-learner" in self.names_stored()
 
+
+class _ReplacementFailureCases:
+    """
+    What a failure part way through a request leaves.
+
+    The platform's settings run every request in a transaction of its own and
+    a deployment may run them otherwise, so these run both ways.
+    """
+
+    #: Whether each request is carried out inside a transaction of its own.
+    REQUESTS_RUN_IN_A_TRANSACTION = None
+
+    def setUp(self):
+        super().setUp()
+        self.login(self.replacer)
+        self.other = UserFactory.create(username="other-learner")
+
+    def failing_for(self, name):
+        """Fail the rewrite of the retirement records kept under this name, and of no other."""
+        rewrites = UserRetirementStatus.objects.filter
+
+        def rewrite(**selected):
+            if selected.get("original_username") == name:
+                raise ValueError("the rows would not take it")
+            return rewrites(**selected)
+
+        return mock.patch.object(UserRetirementStatus.objects, "filter", side_effect=rewrite)
+
+    def test_requests_are_carried_out_as_this_class_says(self):
+        view = resolve(self.url).func
+        assert (BaseHandler().make_view_atomic(view) is not view) is self.REQUESTS_RUN_IN_A_TRANSACTION
+
     def test_a_write_that_fails_part_way_through_replaces_nothing(self):
-        """The earlier address reports that mapping as failed and keeps the rest."""
-        other = UserFactory.create(username="other-learner")
-        with mock.patch.object(
-            UserRetirementStatus.objects, "filter", side_effect=ValueError("the rows would not take it"),
-        ):
+        """The mapping carried out before the failure is not kept either."""
+        with self.failing_for("other-learner"):
             answered = self.ask([{"plain-learner": "first"}, {"other-learner": "second"}])
         assert answered.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
         assert answered.json() == {
@@ -384,7 +415,27 @@ class EveryPlaceTheNameIsKeptTests(UsernameReplacementTestCase):
         }
         assert "would not take it" not in answered.content.decode()
         assert User.objects.get(id=self.learner.id).username == "plain-learner"
-        assert User.objects.get(id=other.id).username == "other-learner"
+        assert User.objects.get(id=self.other.id).username == "other-learner"
+
+
+@skip_unless_lms
+class ReplacementFailureTests(_ReplacementFailureCases, UsernameReplacementTestCase):
+    """A failure part way through, where each request runs in a transaction of its own."""
+
+    REQUESTS_RUN_IN_A_TRANSACTION = True
+
+
+@skip_unless_lms
+class ReplacementFailureWithoutRequestTransactionsTests(_ReplacementFailureCases, UsernameReplacementTestCase):
+    """A failure part way through, where the deployment runs no request in a transaction of its own."""
+
+    REQUESTS_RUN_IN_A_TRANSACTION = False
+
+    def setUp(self):
+        super().setUp()
+        untransacted = mock.patch.dict(connections.settings["default"], {"ATOMIC_REQUESTS": False})
+        untransacted.start()
+        self.addCleanup(untransacted.stop)
 
 
 @skip_unless_lms
