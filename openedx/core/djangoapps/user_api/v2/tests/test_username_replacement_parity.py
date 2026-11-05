@@ -21,9 +21,9 @@ from openedx.core.djangoapps.user_api.accounts.tests.retirement_helpers import (
     setup_retirement_states,  # noqa: F401
 )
 from openedx.core.djangoapps.user_api.v2 import view_services
+from openedx.core.djangoapps.user_api.v2.paginators import UserApiPagination
 from openedx.core.djangoapps.user_api.v2.serializers import (
     REPLACEMENT_FAILED,
-    REPLACEMENT_MAX_MAPPINGS,
     REPLACEMENT_NO_SUCH_ACCOUNT,
     REPLACEMENT_REPLACED,
 )
@@ -56,19 +56,9 @@ DECLARED_DIFFERENCES = (
         "as a name that reached no account",
     ),
     (
-        "a request carrying no mappings at all",
-        "the earlier address answers two empty arrays, the conforming one refuses a request that "
-        "asks for nothing",
-    ),
-    (
         "a body sent as a web form",
         "the earlier address answers that the body does not match what it reads, the conforming "
         "one that it cannot read the form",
-    ),
-    (
-        "the most mappings one request may carry",
-        "the earlier address carries any number of them, the conforming one refuses a request "
-        "carrying more than one page of them",
     ),
     (
         "space around the name asked for",
@@ -85,6 +75,10 @@ DECLARED_DIFFERENCES = (
 
 #: A name no account is stored under.
 NOBODY = "nobody"
+
+#: How many mappings the replacing job sends when it was given more than a
+#: page of any collection holds: it sends every one of them in one request.
+MORE_THAN_A_PAGE = UserApiPagination.max_page_size + 1
 
 #: Names of every shape the earlier address writes, each asked for an account
 #: of its own, beside a null asked for a name no account is stored under. The
@@ -274,11 +268,38 @@ class ReplacementOutcomeParityTests(ReplacementParityTestCase):
         }
         assert not User.objects.filter(username="asked-for").exists()
 
-    def test_a_request_carrying_no_mappings_at_all_is_answered_differently(self):
+    def test_a_request_carrying_no_mappings_at_all_is_answered_by_both(self):
+        """The replacing job sends an empty list when it was given no mapping."""
         answered = {address: self.ask(address, []) for address in self.addresses()}
-        assert answered[EARLIER].status_code == status.HTTP_200_OK
+        assert {address: sent.status_code for address, sent in answered.items()} == dict.fromkeys(
+            answered, status.HTTP_200_OK,
+        )
         assert answered[EARLIER].json() == {"successful_replacements": [], "failed_replacements": []}
-        assert answered["conforming"].status_code == status.HTTP_400_BAD_REQUEST
+        assert answered["conforming"].json() == {"results": []}
+
+    def test_more_mappings_than_a_page_holds_are_carried_out_by_both(self):
+        """
+        The replacing job reads every mapping it was given and sends them in one request.
+
+        Each address is sent the very same mappings over the very same
+        accounts, and both store every account under the name asked for it.
+        """
+        mappings = [{f"many-{index}": f"renamed-many-{index}"} for index in range(MORE_THAN_A_PAGE)]
+        asked_for = {current: new for mapping in mappings for current, new in mapping.items()}
+        answered, stored = {}, {}
+        for address in self.addresses():
+            answered[address], stored[address] = self.carried_out_alone(address, mappings)
+        assert {address: sent.status_code for address, sent in answered.items()} == dict.fromkeys(
+            answered, status.HTTP_200_OK,
+        )
+        assert stored == dict.fromkeys(answered, asked_for)
+        assert answered[EARLIER].json() == {"successful_replacements": mappings, "failed_replacements": []}
+        assert answered["conforming"].json() == {
+            "results": [
+                {"current_username": current, "new_username": new, "outcome": REPLACEMENT_REPLACED}
+                for current, new in asked_for.items()
+            ],
+        }
 
     def test_a_mapping_naming_several_accounts_is_refused_by_both(self):
         answered = {
@@ -502,7 +523,7 @@ MEASURED_AT_BOTH = (
     ("a mapping naming several accounts", "measure_a_mapping_naming_several_accounts"),
     ("mappings sent as something other than a list", "measure_mappings_sent_as_something_else"),
     ("a body sent as a web form", "measure_a_body_sent_as_a_web_form"),
-    ("the most mappings one request may carry", "measure_the_most_mappings_one_request_may_carry"),
+    ("more mappings than a page holds", "measure_more_mappings_than_a_page_holds"),
     ("space around the name asked for", "measure_space_around_the_name_asked_for"),
     ("names of every shape", "measure_names_of_every_shape"),
     (
@@ -558,8 +579,9 @@ class DeclaredDifferenceTests(ReplacementParityTestCase):
         return (answered.status_code, answered.json())
 
     def measure_a_request_carrying_no_mappings_at_all(self, address):
-        """Return what each address answers a request that asks for nothing."""
-        return self.ask(address, []).status_code
+        """Return what each address answers a request that asks for nothing, and how many mappings it reports."""
+        answered = self.ask(address, [])
+        return (answered.status_code, sum(len(reported) for reported in answered.json().values()))
 
     def measure_a_mapping_naming_several_accounts(self, address):
         """Return what each address answers a mapping that names more than one account."""
@@ -573,13 +595,12 @@ class DeclaredDifferenceTests(ReplacementParityTestCase):
         """Return what each address answers a body sent as a web form."""
         return self.ask(address, [], as_form=True).status_code
 
-    def measure_the_most_mappings_one_request_may_carry(self, address):
-        """Return what each address answers one mapping more than a page holds."""
-        mappings = [
-            {f"over-{address == EARLIER}-{index}": f"renamed-over-{address == EARLIER}-{index}"}
-            for index in range(REPLACEMENT_MAX_MAPPINGS + 1)
-        ]
-        return self.ask(address, mappings).status_code
+    def measure_more_mappings_than_a_page_holds(self, address):
+        """Return the status, the name each account is stored under and the names reported as failed."""
+        answered, stored = self.carried_out_alone(
+            address, [{f"over-{index}": f"renamed-over-{index}"} for index in range(MORE_THAN_A_PAGE)],
+        )
+        return (answered.status_code, stored, self.failures_reported(address, answered))
 
     def measure_space_around_the_name_asked_for(self, address):
         """Return the name stored for an account whose new name carried space around it."""

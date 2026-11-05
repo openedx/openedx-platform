@@ -1423,12 +1423,6 @@ REPLACEMENT_OUTCOME_CHOICES = (
     ),
 )
 
-#: The largest number of mappings one request may carry, which is the number
-#: of rows a page of any collection of this version holds. The answer carries
-#: one result per mapping, so a request without a ceiling is an answer without
-#: one, over a write across several tables.
-REPLACEMENT_MAX_MAPPINGS = UserApiPagination.max_page_size
-
 #: One mapping, as the body carries it: an object whose single member is the
 #: name an account is stored under, carrying the name asked for it. The shape
 #: is written out because a field alone publishes an object of no stated
@@ -1493,13 +1487,15 @@ class UsernameReplacementRequestSerializer(serializers.Serializer):  # pylint: d
     nothing to replace.
     """
 
+    # The replacing job sends every mapping it was given in one request, and
+    # sends an empty list when it was given none, so the list is bounded
+    # neither way.
     username_mappings = serializers.ListField(
         child=UsernameMappingField(allow_empty=False),
-        allow_empty=False,
-        max_length=REPLACEMENT_MAX_MAPPINGS,
         help_text=(
-            "Accounts whose names are to be replaced, each as an object naming one of them. At "
-            f"most {REPLACEMENT_MAX_MAPPINGS} of them, and at least one."
+            "Accounts whose names are to be replaced, each as an object naming one of them. There "
+            "is no limit on how many one request names, and a request naming none is answered "
+            "with no results."
         ),
     )
 

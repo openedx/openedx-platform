@@ -42,7 +42,6 @@ from openedx.core.djangoapps.user_api.v2.serializers import (
     ERASURE_SCOPES,
     EXPIRATION_DAY_PATTERN,
     PREFERENCE_NAME_MAX_LENGTH,
-    REPLACEMENT_MAX_MAPPINGS,
     REPLACEMENT_OUTCOMES,
     AccountPreferenceChangesField,
     AccountPreferenceDocumentField,
@@ -3019,12 +3018,21 @@ def test_the_published_mapping_takes_a_name_of_any_shape(schema):
 
     A name is written as asked for and a null is reported as failed, so the
     name asked for carries no bound and may be null; a mapping still names
-    exactly one account.
+    exactly one account. The replacing job sends every mapping it was given
+    in one request, so the list carries no bound on how many it holds, at
+    either end.
     """
     mappings = schema["components"]["schemas"]["UsernameReplacementRequest"]["properties"][
         "username_mappings"
     ]
-    assert mappings["maxItems"] == REPLACEMENT_MAX_MAPPINGS
+    assert {key: value for key, value in mappings.items() if key != "items"} == {
+        "type": "array",
+        "description": (
+            "Accounts whose names are to be replaced, each as an object naming one of them. There "
+            "is no limit on how many one request names, and a request naming none is answered "
+            "with no results."
+        ),
+    }
     assert {key: mappings["items"][key] for key in ("type", "minProperties", "maxProperties")} == {
         "type": "object", "minProperties": 1, "maxProperties": 1,
     }

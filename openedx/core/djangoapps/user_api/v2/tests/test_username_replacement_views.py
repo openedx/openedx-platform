@@ -30,9 +30,9 @@ from openedx.core.djangoapps.user_api.models import (
     UserRetirementStatus,
 )
 from openedx.core.djangoapps.user_api.v2 import view_services
+from openedx.core.djangoapps.user_api.v2.paginators import UserApiPagination
 from openedx.core.djangoapps.user_api.v2.serializers import (
     REPLACEMENT_FAILED,
-    REPLACEMENT_MAX_MAPPINGS,
     REPLACEMENT_NO_SUCH_ACCOUNT,
     REPLACEMENT_REPLACED,
 )
@@ -491,9 +491,13 @@ class UsernameReplacementBodyTests(UsernameReplacementTestCase):
     def test_a_request_carrying_no_mappings_at_all_names_what_it_needs(self):
         self.assert_refused_for(self.client.post(self.url, {}, format="json"), "username_mappings")
 
-    def test_a_request_carrying_an_empty_list_is_refused(self):
-        """The earlier address answers two empty arrays, which says nothing was asked for."""
-        self.assert_refused_for(self.ask([]), "username_mappings")
+    def test_a_request_carrying_an_empty_list_is_answered_with_no_results(self):
+        """The replacing job sends an empty list when it was given no mapping, and is answered."""
+        before = self.names_stored()
+        answered = self.ask([])
+        assert answered.status_code == status.HTTP_200_OK, answered.content
+        assert answered.json() == {"results": []}
+        assert self.names_stored() == before
 
     def test_a_mapping_that_is_not_an_object_is_refused(self):
         self.assert_refused_for(self.ask(["plain-learner"]), "username_mappings[0]")
@@ -510,19 +514,24 @@ class UsernameReplacementBodyTests(UsernameReplacementTestCase):
     def test_mappings_sent_as_an_object_rather_than_a_list_are_refused(self):
         self.assert_refused_for(self.ask({"plain-learner": "asked-for"}), "username_mappings")
 
-    def test_more_mappings_than_one_request_may_carry_are_refused(self):
+    def test_more_mappings_than_a_page_holds_are_all_carried_out(self):
+        """The replacing job sends every mapping it was given in one request, however many."""
         held = [UserFactory.create(username=f"held-{index}") for index in range(2)]
         mappings = [{f"held-{index}": f"renamed-{index}"} for index in range(2)]
-        mappings += [{f"nobody-{index}": f"asked-{index}"} for index in range(REPLACEMENT_MAX_MAPPINGS)]
-        assert len(mappings) == REPLACEMENT_MAX_MAPPINGS + 2
-        self.assert_refused_for(self.ask(mappings), "username_mappings")
-        assert {account.username for account in held} <= self.names_stored()
-
-    def test_as_many_mappings_as_one_request_may_carry_are_answered(self):
-        mappings = [{f"nobody-{index}": f"asked-{index}"} for index in range(REPLACEMENT_MAX_MAPPINGS)]
+        mappings += [
+            {f"nobody-{index}": f"asked-{index}"} for index in range(UserApiPagination.max_page_size)
+        ]
+        assert len(mappings) == UserApiPagination.max_page_size + 2
         answered = self.ask(mappings)
         assert answered.status_code == status.HTTP_200_OK, answered.content
-        assert len(self.results_of(answered)) == REPLACEMENT_MAX_MAPPINGS
+        assert self.results_of(answered) == [
+            {"current_username": f"held-{index}", "new_username": f"renamed-{index}", "outcome": REPLACEMENT_REPLACED}
+            for index in range(2)
+        ] + [
+            {"current_username": f"nobody-{index}", "new_username": None, "outcome": REPLACEMENT_NO_SUCH_ACCOUNT}
+            for index in range(UserApiPagination.max_page_size)
+        ]
+        assert [User.objects.get(id=account.id).username for account in held] == ["renamed-0", "renamed-1"]
 
     def test_a_name_carrying_characters_no_address_carries_is_written_as_asked(self):
         """The earlier address writes it too; the job sending the list expects every mapping carried out."""
