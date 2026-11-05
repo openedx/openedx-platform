@@ -6,6 +6,9 @@ Course-authoring grants resolve to course keys and org short_names under
 ``AUTHZ_COURSE_AUTHORING_FLAG``. Content-library grants resolve to library keys
 and org short_names; libraries have no authoring waffle flag, so a library grant
 is authoritative on its own.
+
+Scopes that were already fetched can also be resolved into concrete course keys
+with ``get_authz_course_keys_from_scopes``.
 """
 
 from __future__ import annotations
@@ -23,10 +26,13 @@ from openedx_authz.api.data import (
     OrgCourseOverviewGlobData,
     PlatformContentLibraryGlobData,
     PlatformCourseOverviewGlobData,
+    ScopeData,
 )
 from openedx_authz.api.users import get_scopes_for_user_and_permission
 
+from common.djangoapps.student.roles import enable_authz_course_authoring
 from openedx.core import toggles as core_toggles
+from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from openedx.core.lib.cache_utils import request_cached
 
 log = logging.getLogger(__name__)
@@ -227,3 +233,82 @@ def authz_grants_all_libraries(user: User, action: str) -> bool:
         isinstance(scope, PlatformContentLibraryGlobData)
         for scope in get_cached_scopes_for_permission(user, action)
     )
+
+
+# ---------------------------------------------------------------------------
+# Scope-to-course-key expansion shared by Studio course listing and tagging.
+# ---------------------------------------------------------------------------
+
+
+def _get_course_keys_for_org_scope(org_keys: set[str]):
+    """Return the course keys of every course that belongs to the given orgs.
+
+    The flag is not applied here; callers are responsible for filtering the result.
+
+    Args:
+        org_keys: Org short_names, matched case-insensitively.
+
+    Returns:
+        A queryset of ``CourseKey`` values, one per course in those orgs.
+    """
+    return CourseOverview.get_all_courses(orgs=org_keys).values_list('id', flat=True)
+
+
+def _get_course_keys_from_platform_scope() -> set[CourseKey]:
+    """Resolve the course keys covered by a platform-wide (``course-v1:*``) scope.
+
+    When the AuthZ course authoring flag is globally enabled, every course is
+    returned without per-course validation. Otherwise, only courses where the flag
+    is enabled (for example through a per-course override) are returned.
+
+    Returns:
+        The course keys the platform-wide scope grants access to.
+    """
+    course_keys = CourseOverview.get_all_courses().values_list("id", flat=True)
+
+    if core_toggles.AUTHZ_COURSE_AUTHORING_FLAG.is_enabled():
+        return set(course_keys)
+
+    return {course_key for course_key in course_keys if enable_authz_course_authoring(course_key)}
+
+
+def get_authz_course_keys_from_scopes(authz_scopes: list[ScopeData]) -> set[CourseKey]:
+    """Return the course keys where the authz flag is enabled, from already-fetched scopes.
+
+    A platform-wide scope (``PlatformCourseOverviewGlobData``) short-circuits the
+    rest: it already covers every course, so the other scopes are ignored. Without
+    one, the result is the union of:
+
+    * the course of each ``CourseOverviewData`` scope, and
+    * every course in the org of each ``OrgCourseOverviewGlobData`` scope.
+
+    In every case a course is included only if ``enable_authz_course_authoring``
+    is true for it, so courses that still rely on legacy roles are left out.
+
+    Args:
+        authz_scopes: Scopes returned by openedx-authz for a user and permission.
+            Scopes of other types, such as content libraries, are ignored.
+
+    Returns:
+        The set of course keys the scopes grant access to.
+    """
+    if any(isinstance(access, PlatformCourseOverviewGlobData) for access in authz_scopes):
+        return _get_course_keys_from_platform_scope()
+
+    course_keys = set()
+    org_keys = set()
+
+    for access in authz_scopes:
+        if isinstance(access, CourseOverviewData) and access.course_key:
+            if enable_authz_course_authoring(access.course_key):
+                course_keys.add(access.course_key)
+        elif isinstance(access, OrgCourseOverviewGlobData) and access.org:
+            org_keys.add(access.org)
+
+    if org_keys:
+        course_keys.update(
+            key for key in _get_course_keys_for_org_scope(org_keys)
+            if enable_authz_course_authoring(key)
+        )
+
+    return course_keys
